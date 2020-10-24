@@ -1,0 +1,256 @@
+import _ from 'lodash';
+import { pathToRegexp } from 'path-to-regexp';
+import { ResourceType } from './resource';
+
+export interface ParseRequest {
+  path: string;
+  method: string;
+  // 资源类型
+  type?: ResourceType;
+}
+
+export interface ParseOptions {
+  prefix?: string;
+  accessors?: {
+    list?: string;
+    create?: string;
+    get?: string;
+    update?: string;
+    delete?: string;
+    set?: string;
+    add?: string;
+  };
+}
+
+export interface ParaseParams {
+  actionName?: string;
+  resourceName?: string;
+  resourceKey?: string;
+  associatedName?: string;
+  associatedKey?: string;
+  // table: string;
+  // tableKey?: string | number;
+  // relatedTable?: string;
+  // relatedKey?: string | number;
+  // action?: ActionName,
+}
+
+export function getNameByParams(params: ParaseParams): string {
+  const { resourceName, associatedName } = params;
+  return associatedName ? `${associatedName}.${resourceName}` : resourceName;
+}
+
+export function parseRequest(request: ParseRequest, options: ParseOptions = {}): ParaseParams | false {
+
+  const accessors = {
+    // 常规 actions
+    list: 'list',
+    create: 'create',
+    get: 'get',
+    update: 'update',
+    delete: 'destroy',
+    // associate 操作
+    add: 'add',
+    set: 'set',
+    remove: 'remove',
+    ...(options.accessors || {}),
+  };
+  const keys = [];
+  const regexp = pathToRegexp('/resourcer/{:associatedName.}?:resourceName{\\::actionName}', keys);
+  const matches = regexp.exec(request.path);
+  if (matches) {
+    const params = {};
+    keys.forEach((obj, index) => {
+      if (matches[index+1] === undefined) {
+        return;
+      }
+      params[obj.name] = matches[index+1];
+    });
+    return params;
+  }
+  const defaults = {
+    single: {
+      '/:resourceName': {
+        get: accessors.list,
+        post: accessors.create,
+      },
+      '/:resourceName/:resourceKey': {
+        get: accessors.get,
+        put: accessors.update,
+        patch: accessors.update,
+        delete: accessors.delete,
+      },
+      '/:associatedName/:associatedKey/:resourceName': {
+        get: accessors.list,
+        post: accessors.create,
+      },
+      '/:associatedName/:associatedKey/:resourceName/:resourceKey': {
+        get: accessors.get,
+        post: accessors.create,
+        put: accessors.update,
+        patch: accessors.update,
+        delete: accessors.delete,
+      },
+    },
+    hasOne: {
+      '/:associatedName/:associatedKey/:resourceName': {
+        get: accessors.get,
+        post: accessors.update,
+        put: accessors.update,
+        patch: accessors.update,
+        delete: accessors.delete,
+      },
+    },
+    hasMany: {
+      '/:associatedName/:associatedKey/:resourceName': {
+        get: accessors.list,
+        post: accessors.create,
+      },
+      '/:associatedName/:associatedKey/:resourceName/:resourceKey': {
+        get: accessors.get,
+        post: accessors.create,
+        put: accessors.update,
+        patch: accessors.update,
+        delete: accessors.delete,
+      },
+    },
+    belongsTo: {
+      '/:associatedName/:associatedKey/:resourceName': {
+        get: accessors.get,
+        delete: accessors.remove,
+      },
+      '/:associatedName/:associatedKey/:resourceName/:resourceKey': {
+        post: accessors.set,
+      },
+    },
+    belongsToMany: {
+      '/:associatedName/:associatedKey/:resourceName': {
+        get: accessors.list,
+        post: accessors.set,
+      },
+      '/:associatedName/:associatedKey/:resourceName/:resourceKey': {
+        get: accessors.get,
+        post: accessors.add,
+        put: accessors.update, // Many to Many 的 update 是针对 through
+        patch: accessors.update, // Many to Many 的 update 是针对 through
+        delete: accessors.remove,
+      },
+    },
+  };
+
+  const params: ParaseParams = {};
+
+  let prefix = (options.prefix||'').trim();
+
+  if (prefix && !prefix.startsWith('/')) {
+    prefix = `/${prefix}`;
+  }
+
+  const { type = 'single' } = request;
+
+  for (const path in defaults[type]) {
+    const keys = [];
+    const regexp = pathToRegexp(`${prefix}${path}`, keys, {});
+    const matches = regexp.exec(request.path);
+    if (!matches) {
+      continue;
+    }
+    keys.forEach((obj, index) => {
+      if (matches[index+1] === undefined) {
+        return;
+      }
+      params[obj.name] = matches[index+1];
+    });
+    params.actionName = _.get(defaults, [type, path, request.method.toLowerCase()]);
+  }
+
+  if (Object.keys(params).length === 0) {
+    return false;
+  }
+
+  if (params.resourceName) {
+    const [resourceName, actionName] = params.resourceName.split(':');
+    if (actionName) {
+      params.resourceName = resourceName;
+      params.actionName = actionName;
+    }
+  }
+
+  return params;
+}
+
+export function requireModule(module: any) {
+  if (typeof module === 'string') {
+    module = require(module);
+  }
+  if (typeof module !== 'object') {
+    return module;
+  }
+  return module.__esModule ? module.default : module;
+}
+
+export function paraseFields(fields: any) {
+  if (!fields) {
+    return {}
+  }
+  if (typeof fields === 'string') {
+    fields = fields.split(',').map(field => field.trim());
+  }
+  if (Array.isArray(fields)) {
+    return {
+      only: fields,
+      appends: [],
+    }
+  }
+  if (fields.only && typeof fields.only === 'string') {
+    fields.only = fields.only.split(',').map(field => field.trim());
+  }
+  if (fields.except && typeof fields.except === 'string') {
+    fields.except = fields.except.split(',').map(field => field.trim());
+  }
+  if (fields.appends && typeof fields.appends === 'string') {
+    fields.appends = fields.appends.split(',').map(field => field.trim());
+  }
+  return fields;
+}
+
+export function mergeFields(defaults: any, inputs: any) {
+  let fields: any = {};
+  defaults = paraseFields(defaults);
+  inputs = paraseFields(inputs);
+  if (inputs.only) {
+    // 前端提供 only，后端提供 only
+    if (defaults.only) {
+      fields.only = defaults.only.filter(field => inputs.only.includes(field))
+    }
+    // 前端提供 only，后端提供 except，输出 only 排除 except
+    else if (defaults.except) {
+      fields.only = inputs.only.filter(field => !defaults.except.includes(field))
+    }
+    // 前端提供 only，后端没有提供 only 或 except
+    else {
+      fields.only = inputs.only;
+    }
+  } else if (inputs.except) {
+    // 前端提供 except，后端提供 only，只输出 only 里排除 except 的字段
+    if (defaults.only) {
+      fields.only = defaults.only.filter(field => !inputs.except.includes(field))
+    }
+    // 前端提供 except，后端提供 except 或不提供，合并 except
+    else {
+      fields.except = _.uniq([...inputs.except, ...(defaults.except||[])]);
+    }
+  }
+  // 前端没提供 only 或 except
+  else {
+    fields = defaults;
+  }
+  // 如果前端提供了 appends
+  if (!_.isEmpty(inputs.appends)) {
+    fields.appends = _.uniq([...inputs.appends, ...(defaults.appends||[])]);
+  }
+  if (!fields.appends) {
+    fields.appends = [];
+  }
+  return fields;
+}

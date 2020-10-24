@@ -1,0 +1,38 @@
+version: "3"
+networks:
+  node-network:
+    driver: bridge
+services:
+  verdaccio:
+    image: verdaccio/verdaccio
+    container_name: "verdaccio"
+    networks:
+      - node-network
+    environment:
+      - VERDACCIO_PORT=4873
+    ports:
+      - "4873:4873"
+    # volumes:
+      # - "./verdaccio/storage:/verdaccio/storage"
+      # - "./verdaccio/config:/verdaccio/conf"
+      # - "./verdaccio/plugins:/verdaccio/plugins"
+  mysql:
+    image: mysql:5.7
+    environment:
+      MYSQL_DATABASE: "test"
+      MYSQL_USER: "test"
+      MYSQL_PASSWORD: "test"
+      MYSQL_ROOT_PASSWORD: "test"
+    restart: always
+    ports:
+      - "43306:3306"
+  postgres:
+    image: postgres:10
+    restart: always
+    ports:
+      - "45432:5432"
+    command: postgres -c wal_level=logical
+    environment:
+      POSTGRES_USER: test
+      POSTGRES_DB: test
+      POSTGRES_PASSWORD: test

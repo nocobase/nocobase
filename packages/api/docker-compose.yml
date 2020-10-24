@@ -1,0 +1,41 @@
+version: "3"
+networks:
+  backend:
+    driver: bridge
+services:
+  app:
+    build:
+      context: ./
+    volumes:
+      - ./:/app
+    ports:
+      - "${HTTP_PORT}:23000"
+    command: [ "yarn", "start" ]
+    env_file:
+      - ./.env
+    networks:
+      - backend
+  mysql:
+    image: mysql:5.7
+    environment:
+      MYSQL_DATABASE: ${DB_DATABASE}
+      MYSQL_USER: ${DB_USER}
+      MYSQL_PASSWORD: ${DB_PASSWORD}
+      MYSQL_ROOT_PASSWORD: ${DB_PASSWORD}
+    restart: always
+    ports:
+      - "23306:3306"
+    networks:
+      - backend
+  postgres:
+    image: postgres:10
+    restart: always
+    ports:
+      - "25432:5432"
+    networks:
+      - backend
+    command: postgres -c wal_level=logical
+    environment:
+      POSTGRES_DB: ${DB_DATABASE}
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}

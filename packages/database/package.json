@@ -1,0 +1,23 @@
+{
+  "name": "@nocobase/database",
+  "version": "0.3.0-alpha.0",
+  "description": "",
+  "main": "./lib/index.js",
+  "types": "./lib/index.d.ts",
+  "scripts": {
+  },
+  "license": "MIT",
+  "dependencies": {
+    "bcrypt": "^5.0.0",
+    "glob": "^7.1.6",
+    "sequelize": "^6.3.3"
+  },
+  "devDependencies": {
+    "typescript": "^3.9.6"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/nocobase/nocobase.git",
+    "directory": "packages/database"
+  }
+}

@@ -1,0 +1,20 @@
+{
+  "compilerOptions": {
+    "lib": [ "es5", "es6" ],
+    "module": "commonjs",
+    "target": "es6",
+    "allowJs": true,
+    "declaration": true,
+    "resolveJsonModule": true,
+    "esModuleInterop": true,
+    "sourceMap": true,
+    "baseUrl": "./",
+    "paths": {
+    }
+  },
+  "exclude": [
+    "dotenv.js",
+    "jest.config.js",
+    "node_modules"
+  ]
+}

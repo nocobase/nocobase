@@ -1,0 +1,6 @@
+{
+  "name": "@nocobase/plugin-pages",
+  "version": "0.3.0-alpha.0",
+  "main": "lib/index.js",
+  "license": "MIT"
+}
