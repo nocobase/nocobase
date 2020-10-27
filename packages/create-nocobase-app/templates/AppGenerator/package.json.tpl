@@ -24,6 +24,7 @@
     "@umijs/preset-react": "1.x",
     "@umijs/test": "^3.2.23",
     "@nocobase/api": "^{{{ version }}}",
+    "@nocobase/ui": "^{{{ version }}}",
     "@nocobase/father-build": "^{{{ version }}}",
     "@nocobase/plugin-collections": "^{{{ version }}}",
     "concurrently": "^5.3.0",

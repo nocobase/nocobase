@@ -7,6 +7,7 @@ const headPkgs = [
   'database',
   'resourcer',
   'actions',
+  'ui',
 ];
 const tailPkgs = [];
 const otherPkgs = readdirSync(join(__dirname, 'packages')).filter(

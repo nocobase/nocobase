@@ -22,7 +22,7 @@ const api = Api.create({
       charset: 'utf8mb4',
       collate: 'utf8mb4_unicode_ci',
     },
-    // logging: false,
+    logging: false,
     define: {},
     sync,
   },
@@ -34,6 +34,7 @@ const api = Api.create({
 api
   .plugins([
     [require('../../plugin-collections/src/index').default, {}],
+    [require('../../plugin-pages/src/index').default, {}],
   ])
   .then(() => {
     api.listen(23001, () => {

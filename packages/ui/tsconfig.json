@@ -1,22 +1,21 @@
 {
   "compilerOptions": {
-    "jsx": "react",
     "lib": [ "es5", "es6" ],
     "module": "commonjs",
     "target": "es6",
-    "allowJs": true,
-    "allowSyntheticDefaultImports": true,
-    "declaration": true,
-    "resolveJsonModule": true,
+    "moduleResolution": "node",
+    "importHelpers": true,
+    "jsx": "react",
     "esModuleInterop": true,
     "sourceMap": true,
     "baseUrl": "./",
+    "strict": true,
+    "declaration": true,
     "paths": {
-    }
+    },
+    "allowSyntheticDefaultImports": true
   },
   "exclude": [
-    "dotenv.js",
-    "jest.config.js",
     "node_modules"
   ]
 }
