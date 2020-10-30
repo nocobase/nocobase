@@ -1,5 +1,3 @@
-// @ts-nocheck
-
 import { extend } from 'umi-request';
 
 export const request = extend({

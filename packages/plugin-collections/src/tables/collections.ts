@@ -20,9 +20,6 @@ export default {
       type: 'string',
       name: 'name',
       unique: true,
-      primaryKey: true,
-      autoIncrement: false,
-      showInTable: true,
       required: true,
       component: {
         type: 'string',
@@ -48,8 +45,8 @@ export default {
       name: 'options',
     },
     {
-      name: 'fields',
       type: 'hasMany',
+      name: 'fields',
     },
   ],
 } as TableOptions;

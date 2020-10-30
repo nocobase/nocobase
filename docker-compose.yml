@@ -10,6 +10,7 @@ services:
       - node-network
     environment:
       - VERDACCIO_PORT=4873
+    restart: always
     ports:
       - "4873:4873"
     # volumes:

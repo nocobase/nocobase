@@ -141,6 +141,9 @@ export default class Database {
    * @param names 
    */
   public getModels(names: string[]): Array<ModelCtor<Model>> {
+    if (names.length === 0) {
+      return this.sequelize.models as any;
+    }
     return names.map(name => this.getModel(name));
   }
 
@@ -163,6 +166,9 @@ export default class Database {
    * @param names 
    */
   public getTables(names: string[]): Array<Table> {
+    if (names.length === 0) {
+      return [...this.tables.values()];
+    }
     return names.map(name => this.getTable(name));
   }
 

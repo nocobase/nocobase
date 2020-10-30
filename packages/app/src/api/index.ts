@@ -1,4 +1,4 @@
-import Api from '../src';
+import Api from '../../../api/src';
 import dotenv from 'dotenv';
 import path from 'path';
 import Database from '@nocobase/database';
@@ -36,8 +36,8 @@ const api = Api.create({
 (async () => {
   await api
     .plugins([
-      [path.resolve(__dirname, '../../plugin-collections'), {}],
-      [path.resolve(__dirname, '../../plugin-pages'), {}],
+      [path.resolve(__dirname, '../../../plugin-collections'), {}],
+      [path.resolve(__dirname, '../../../plugin-pages'), {}],
       // [require('../../plugin-collections/src/index').default, {}],
       // [require('../../plugin-pages/src/index').default, {}],
     ]);
@@ -70,7 +70,7 @@ const api = Api.create({
   //   return await collection.modelInit();
   // }));
 
-  api.listen(23001, () => {
-    console.log('http://localhost:23001/');
+  api.listen(process.env.HTTP_PORT, () => {
+    console.log(`http://localhost:${process.env.HTTP_PORT}/`);
   });
 })();
