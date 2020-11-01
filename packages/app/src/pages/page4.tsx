@@ -4,8 +4,8 @@ import { Link } from 'umi';
 export default (props: any) => {
   return (
     <div>
-      Page1
-      <Link to={'/page2'}>Page2</Link>
+      Page4
+      <Link to={'/page1'}>Page1</Link>
     </div>
   );
 };

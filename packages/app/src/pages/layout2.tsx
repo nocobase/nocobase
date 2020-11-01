@@ -1,11 +1,10 @@
 import React from 'react';
-import { Link } from 'umi';
 
 export default (props: any) => {
   return (
     <div>
-      Page1
-      <Link to={'/page2'}>Page2</Link>
+      <h1>LAYOUT 2</h1>
+      {props.children}
     </div>
   );
 };

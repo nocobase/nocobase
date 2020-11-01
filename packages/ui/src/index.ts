@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { extend } from 'umi-request';
 
 export const request = extend({
@@ -10,4 +11,6 @@ export const request = extend({
 export { default as useRequest  } from '@ahooksjs/use-request';
 
 // @ts-ignore
-export { history } from 'umi';
+export { history, Redirect } from 'umi';
+
+export { Spin } from './spin';

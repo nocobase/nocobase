@@ -1,8 +1,6 @@
 import React from 'react';
-import { Redirect } from 'umi';
 import get from 'lodash/get';
-// import { Spin } from 'antd';
-import Spin from '@/components/spin';
+import { Spin, Redirect } from '@nocobase/ui';
 
 function getRoutes(path: string, pages: any) {
   const keys = path.split('/');
@@ -20,8 +18,8 @@ function getRoutes(path: string, pages: any) {
   return routes;
 }
 
-export default function PageLoader(props: any) {
-  const { loading, pathname, templates, pages } = props;
+export function TemplateLoader(props: any) {
+  const { loading, pathname, pages } = props;
   if (loading) {
     return <Spin size={'large'} className={'spinning--absolute'}></Spin>;
   }
@@ -36,7 +34,8 @@ export default function PageLoader(props: any) {
   const componentProps = {...props};
   while(routes.length) {
     const route = routes.shift();
-    const Component = templates[route.template]||templates.default;
+    console.log(route.template);
+    const Component = require(route.template).default;
     if (route.type === 'collection') {
       componentProps.match.params['collection'] = route.collection;
     }
