@@ -1,5 +1,5 @@
 {
-  "name": "@nocobase/api",
+  "name": "@nocobase/server",
   "version": "0.3.0-alpha.0",
   "main": "lib/index.js",
   "types": "./lib/index.d.ts",

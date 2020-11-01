@@ -3,6 +3,7 @@
   "private": true,
   "scripts": {
     "start": "cd packages/app && npm start",
+    "start-server": "yarn nodemon",
     "bootstrap": "lerna bootstrap --no-ci",
     "build": "npm run build-father-build && node packages/father-build/bin/father-build.js",
     "build-father-build": "cd packages/father-build && npm run build",
