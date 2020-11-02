@@ -1,3 +1,3 @@
-export { Form } from "./form";
-export { Table } from "./table";
-export { Details } from "./details";
+export { Form } from './Form';
+export { Table } from './Table';
+export { Details } from './Details';

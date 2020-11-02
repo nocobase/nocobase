@@ -1,42 +1,8 @@
 import React from 'react';
-import * as View from '@/components/views';
-
-function CollectionIndex(props) {
-  return (
-    <div>
-      <View.Table/>
-    </div>
-  );
-}
-
-function CollectionHeader(props) {
-  return (
-    <div>Collection Header</div>
-  );
-}
-
-function CollectionTab(props) {
-  return (
-    <div>
-      <View.Details/>
-    </div>
-  );
-}
-
-function CollectionSingle(props) {
-  return (
-    <div>
-      <CollectionHeader/>
-      <CollectionTab/>
-    </div>
-  );
-}
-
-function Breadcrumb(props) {
-  return (
-    <div>Breadcrumb</div>
-  )
-}
+import Breadcrumb from './Breadcrumb';
+import CollectionIndex from './CollectionIndex';
+import CollectionSingle from './CollectionSingle';
+import './style.less';
 
 export function CollectionLoader(props: any) {
   let { path, pagepath, collection } = props.match.params;
@@ -59,16 +25,20 @@ export function CollectionLoader(props: any) {
   console.log(props.match, path);
 
   return (
-    <div>
-      <div className={'collection-list'}>
+    <div className={'collection'}>
+      <div className={'collection-index'}>
         <CollectionIndex/>
       </div>
       {items.length > 0 && (
         <div className={'collection-item'}>
-          <Breadcrumb></Breadcrumb>
+          {/* <Breadcrumb>
+            {items.map(item => <Breadcrumb.Item/>)}
+          </Breadcrumb> */}
           {items.map(item => {
             return (
-              <CollectionSingle/>
+              <div className={'collection-single'}>
+                <CollectionSingle/>
+              </div>
             );
           })}
         </div>

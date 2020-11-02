@@ -1,4 +1,6 @@
-export { PageLoader } from './page-loader';
-export { TemplateLoader } from './template-loader';
-export { CollectionLoader } from './collection-loader';
-export { PageLoader as default } from './page-loader';
+export { PageLoader } from './PageLoader';
+export { TemplateLoader } from './TemplateLoader';
+export { CollectionLoader } from './CollectionLoader';
+export { PageLoader as default } from './PageLoader';
+export { SideMenuLayout } from './SideMenuLayout/index';
+export { TopMenuLayout } from './TopMenuLayout/index';

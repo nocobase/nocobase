@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 // import { request } from 'umi';
-import { TemplateLoader } from './template-loader';
+import { TemplateLoader } from './TemplateLoader';
 import { useRequest, request } from '@nocobase/client';
+import templates from '@/templates';
 
 export function PageLoader(props: any) {
   const { path } = props.match.params;
@@ -15,9 +16,12 @@ export function PageLoader(props: any) {
   return (
     <TemplateLoader
       {...props}
+      templates={templates}
       loading={loading && first}
       pages={data.data||{}}
       pathname={`/${path}`}
     />
   );
 }
+
+export default PageLoader;

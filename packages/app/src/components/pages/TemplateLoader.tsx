@@ -3,7 +3,7 @@ import { Redirect } from 'umi';
 import get from 'lodash/get';
 // import { Spin } from 'antd';
 import Spin from '@/components/spin';
-import { CollectionLoader } from './collection-loader';
+import { CollectionLoader } from './CollectionLoader';
 
 function getRoutes(path: string, pages: any) {
   const keys = path.split('/');
@@ -22,7 +22,7 @@ function getRoutes(path: string, pages: any) {
 }
 
 export function TemplateLoader(props: any) {
-  const { loading, pathname, pages } = props;
+  const { loading, pathname, pages, templates } = props;
   if (loading) {
     return <Spin size={'large'} className={'spinning--absolute'}></Spin>;
   }
@@ -32,18 +32,22 @@ export function TemplateLoader(props: any) {
   }
   const routes = getRoutes(pathname, pages);
   let component: any;
-  console.log(...routes);
+  console.log(templates);
   const len = routes.length;
   const componentProps = {...props};
   while(routes.length) {
     const route = routes.shift();
     console.log(route.template);
-    const tmp = route.template.replace(/^@\/pages\//g, '');
-    const Component = route.type === 'collection' 
-      ? CollectionLoader
-      : require(`@/pages/${tmp}`).default;
+    // const tmp = route.template.replace(/^@\/pages\//g, '');
+    let Component: any;
+    // const Component = route.type === 'collection' 
+    //   ? CollectionLoader
+    //   : require(`@/pages/${tmp}`).default;
     if (route.type === 'collection') {
+      Component = CollectionLoader;
       componentProps.match.params['collection'] = route.collection;
+    } else {
+      Component = templates[route.template];
     }
     if (len === routes.length+1) {
       componentProps.match.params['pagepath'] = route.path.replace(/^\//g, '');
@@ -57,3 +61,5 @@ export function TemplateLoader(props: any) {
   }
   return component;
 }
+
+export default TemplateLoader;

@@ -6,7 +6,7 @@ const data = {
   title: '布局1',
   path: '/',
   type: 'layout',
-  template: '@/pages/layout1',
+  template: 'layout1',
   order: 1,
   children: [
     {
@@ -14,7 +14,7 @@ const data = {
       type: 'page',
       path: '/page1',
       icon: 'dashboard',
-      template: '@/pages/page1',
+      template: 'page1',
       order: 2,
     },
     {
@@ -22,15 +22,15 @@ const data = {
       type: 'page',
       path: '/page2',
       icon: 'dashboard',
-      template: '@/pages/page2',
+      template: 'page2',
       order: 3,
     },
     {
-      title: '页面3',
+      title: '布局2',
       type: 'layout',
       path: '/layout2',
       icon: 'dashboard',
-      template: '@/pages/layout2',
+      template: 'layout2',
       order: 4,
       children: [
         {
@@ -38,7 +38,7 @@ const data = {
           type: 'page',
           path: '/layout2/page3',
           icon: 'dashboard',
-          template: '@/pages/page3',
+          template: 'page3',
           order: 5,
         },
         {
@@ -46,7 +46,7 @@ const data = {
           type: 'page',
           path: '/layout2/page4',
           icon: 'dashboard',
-          template: '@/pages/page4',
+          template: 'page4',
           order: 6,
         },
         {
@@ -54,7 +54,7 @@ const data = {
           type: 'collection',
           path: '/layout2/collection1',
           icon: 'dashboard',
-          template: '@/pages/collection',
+          template: 'collection',
           collection: 'collection1',
           order: 7,
         },
