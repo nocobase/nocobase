@@ -1,6 +1,43 @@
 import React from 'react';
 import * as View from '@/components/views';
 
+function CollectionIndex(props) {
+  return (
+    <div>
+      <View.Table/>
+    </div>
+  );
+}
+
+function CollectionHeader(props) {
+  return (
+    <div>Collection Header</div>
+  );
+}
+
+function CollectionTab(props) {
+  return (
+    <div>
+      <View.Details/>
+    </div>
+  );
+}
+
+function CollectionSingle(props) {
+  return (
+    <div>
+      <CollectionHeader/>
+      <CollectionTab/>
+    </div>
+  );
+}
+
+function Breadcrumb(props) {
+  return (
+    <div>Breadcrumb</div>
+  )
+}
+
 export function CollectionLoader(props: any) {
   let { path, pagepath, collection } = props.match.params;
   if (path.startsWith(pagepath)) {
@@ -20,9 +57,24 @@ export function CollectionLoader(props: any) {
   }));
   props.match.params['items'] = items;
   console.log(props.match, path);
+
   return (
     <div>
-      <View.Table/>
+      <div className={'collection-list'}>
+        <CollectionIndex/>
+      </div>
+      {items.length > 0 && (
+        <div className={'collection-item'}>
+          <Breadcrumb></Breadcrumb>
+          {items.map(item => {
+            return (
+              <CollectionSingle/>
+            );
+          })}
+        </div>
+      )}
     </div>
-  )
+  );
 }
+
+export default CollectionLoader;

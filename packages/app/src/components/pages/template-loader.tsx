@@ -3,6 +3,7 @@ import { Redirect } from 'umi';
 import get from 'lodash/get';
 // import { Spin } from 'antd';
 import Spin from '@/components/spin';
+import { CollectionLoader } from './collection-loader';
 
 function getRoutes(path: string, pages: any) {
   const keys = path.split('/');
@@ -38,7 +39,9 @@ export function TemplateLoader(props: any) {
     const route = routes.shift();
     console.log(route.template);
     const tmp = route.template.replace(/^@\/pages\//g, '');
-    const Component = require(`@/pages/${tmp}`).default;
+    const Component = route.type === 'collection' 
+      ? CollectionLoader
+      : require(`@/pages/${tmp}`).default;
     if (route.type === 'collection') {
       componentProps.match.params['collection'] = route.collection;
     }

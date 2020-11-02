@@ -1,6 +1,6 @@
 import React from 'react';
 import get from 'lodash/get';
-import { Spin, Redirect } from '@nocobase/ui';
+import { Spin, Redirect } from '@nocobase/client';
 
 function getRoutes(path: string, pages: any) {
   const keys = path.split('/');

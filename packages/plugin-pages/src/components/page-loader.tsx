@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { TemplateLoader } from './template-loader';
-import { useRequest, request } from '@nocobase/ui';
+import { useRequest, request } from '@nocobase/client';
 
 export function PageLoader(props: any) {
   const { path } = props.match.params;

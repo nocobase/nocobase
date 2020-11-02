@@ -1,4 +1,4 @@
-import Api from '../../../api/src';
+import Api from '../../../server/src';
 import dotenv from 'dotenv';
 import path from 'path';
 import Database from '@nocobase/database';
