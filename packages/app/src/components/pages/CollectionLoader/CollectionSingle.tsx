@@ -1,13 +1,21 @@
 import React from 'react';
-import * as View from '@/components/views';
 import { PageHeader, Tabs, Button, Statistic, Descriptions } from 'antd';
+import { CollectionTabPane } from './CollectionTabPane';
+import { getPathName, redirectTo } from './utils';
 
 export function CollectionSingle(props) {
+  console.log(props);
+  const { item = {} } = props;
+  const { tabs = [] } = props.collection;
+  const activeTab = tabs.find(tab => tab.id == item.tabId)||{};
+  if (!activeTab) {
+    return null;
+  }
   return (
     <div>
       <PageHeader
         ghost={false}
-        title="企业信息库"
+        title={'企业信息库'}
         // subTitle="This is a subtitle"
         extra={[
           // <Button key="3">Operation</Button>,
@@ -17,14 +25,18 @@ export function CollectionSingle(props) {
           // </Button>,
         ]}
         footer={
-          <Tabs size={'small'} defaultActiveKey="1">
-            <Tabs.TabPane tab="详情" key="1" />
-            <Tabs.TabPane tab="相关数据" key="2" />
+          <Tabs size={'small'}
+            defaultActiveKey={`${activeTab.id}`}
+            onTabClick={(activeKey) => {
+              redirectTo(props.match.params, {tabId: activeKey});
+            }}
+          >
+            {tabs.map(tab => <Tabs.TabPane tab={tab.title} key={`${tab.id}`} />)}
           </Tabs>
         }
       />
       <div className={'collection-content'}>
-        <View.Details/>
+        <CollectionTabPane {...props} activeTab={activeTab}/>
       </div>
     </div>
   );

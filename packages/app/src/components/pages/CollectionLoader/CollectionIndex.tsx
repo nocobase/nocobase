@@ -1,13 +1,25 @@
 import React from 'react';
-import * as View from '@/components/views';
+import ViewFactory from '@/components/views';
 import { PageHeader, Tabs, Button, Statistic, Descriptions } from 'antd';
+import { useRequest, request, Spin } from '@nocobase/client';
+import { getPathName } from './utils';
 
 export function CollectionIndex(props) {
+  const { viewId } = props.match.params;
+  const { title, defaultViewId } = props.collection;
+  const { data = {}, error, loading, run } = useRequest(() => request(`/ui/views/${viewId||defaultViewId}`), {
+    refreshDeps: [defaultViewId, viewId],
+  });
+
+  if (loading) {
+    return <Spin/>;
+  }
+
   return (
     <div>
       <PageHeader
         ghost={false}
-        title="数据表配置"
+        title={title}
         // subTitle="This is a subtitle"
         extra={[
           // <Button key="3">Operation</Button>,
@@ -24,7 +36,7 @@ export function CollectionIndex(props) {
         // }
       />
       <div className={'collection-content'}>
-        <View.Table/>
+        <ViewFactory {...props} schema={data.data}/>
       </div>
     </div>
   );

@@ -1,15 +1,16 @@
 import React from 'react';
 import { Table as AntdTable } from 'antd';
+import { redirectTo } from '@/components/pages/CollectionLoader/utils';
 
 const dataSource = [
   {
-    key: '1',
+    id: '1',
     name: '胡彦斌',
     age: 32,
     address: '西湖区湖底公园1号',
   },
   {
-    key: '2',
+    id: '2',
     name: '胡彦祖',
     age: 42,
     address: '西湖区湖底公园1号',
@@ -35,9 +36,19 @@ const columns = [
 ];
 
 export function Table(props: any) {
+  console.log(props);
+  const { schema } = props;
+  const { defaultTabId } = schema;
   return (
     <div>
-      <AntdTable dataSource={dataSource} columns={columns} />
+      <AntdTable dataSource={dataSource} onRow={(data) => ({
+        onClick: () => {
+          redirectTo(props.match.params, {
+            itemId: data.id,
+            tabId: defaultTabId,
+          });
+        },
+      })} columns={columns} />
     </div>
   );
 }

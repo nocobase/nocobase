@@ -3,6 +3,7 @@ import Breadcrumb from './Breadcrumb';
 import CollectionIndex from './CollectionIndex';
 import CollectionSingle from './CollectionSingle';
 import './style.less';
+import { useRequest, request, Spin } from '@nocobase/client';
 
 export function CollectionLoader(props: any) {
   let { path, pagepath, collection } = props.match.params;
@@ -15,19 +16,24 @@ export function CollectionLoader(props: any) {
     props.match.params['viewId'] = matches[1];
     path = path.substring(`/views/${matches[1]}`.length);
   }
-  const re = /\/items\/([^/]+)\/([^/]+)/g;
+  const re = /\/items\/([^/]+)\/tabs\/([^/]+)/g;
   matches = [...path.matchAll(re)];
   let items = matches.map((match, index) => ({
     itemId: match[1],
-    tabKey: match[2],
+    tabId: match[2],
   }));
   props.match.params['items'] = items;
   console.log(props.match, path);
+  const { data = {}, error, loading, run } = useRequest(() => request(`/ui/collections/${collection}`));
+
+  if (loading) {
+    return <Spin/>;
+  }
 
   return (
     <div className={'collection'}>
       <div className={'collection-index'}>
-        <CollectionIndex/>
+        <CollectionIndex collection={data.data||{}} {...props}/>
       </div>
       {items.length > 0 && (
         <div className={'collection-item'}>
@@ -37,7 +43,7 @@ export function CollectionLoader(props: any) {
           {items.map(item => {
             return (
               <div className={'collection-single'}>
-                <CollectionSingle/>
+                <CollectionSingle item={item} collection={data.data||{}} {...props}/>
               </div>
             );
           })}
