@@ -9,10 +9,10 @@ services:
     networks:
       - node-network
     environment:
-      - VERDACCIO_PORT=4873
+      - VERDACCIO_PORT=${VERDACCIO_PORT}
     restart: always
     ports:
-      - "4873:4873"
+      - "${VERDACCIO_PORT}:4873"
     # volumes:
       # - "./verdaccio/storage:/verdaccio/storage"
       # - "./verdaccio/config:/verdaccio/conf"
@@ -20,20 +20,20 @@ services:
   mysql:
     image: mysql:5.7
     environment:
-      MYSQL_DATABASE: "test"
-      MYSQL_USER: "test"
-      MYSQL_PASSWORD: "test"
-      MYSQL_ROOT_PASSWORD: "test"
+      MYSQL_DATABASE: ${DB_DATABASE}
+      MYSQL_USER: ${DB_USER}
+      MYSQL_PASSWORD: ${DB_PASSWORD}
+      MYSQL_ROOT_PASSWORD: ${DB_PASSWORD}
     restart: always
     ports:
-      - "43306:3306"
+      - "${DB_MYSQL_PORT}:3306"
   postgres:
     image: postgres:10
     restart: always
     ports:
-      - "45432:5432"
+      - "${DB_POSTGRES_PORT}:5432"
     command: postgres -c wal_level=logical
     environment:
-      POSTGRES_USER: test
-      POSTGRES_DB: test
-      POSTGRES_PASSWORD: test
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_DB: ${DB_DATABASE}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}

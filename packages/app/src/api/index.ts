@@ -17,9 +17,9 @@ const api = Api.create({
     username: process.env.DB_USER,
     password: process.env.DB_PASSWORD,
     database: process.env.DB_DATABASE,
-    host: process.platform === 'linux' ? process.env.DB_HOST : 'localhost',
-    port: process.platform === 'linux' ? parseInt(process.env.DB_PORT) : ( process.env.DB_DIALECT == 'postgres' ? 45432 : 23306 ),
-    dialect: process.env.DB_DIALECT as any,
+    host: process.env.DB_HOST,
+    port: process.env.DB_PORT,
+    dialect: process.env.DB_DIALECT,
     dialectOptions: {
       charset: 'utf8mb4',
       collate: 'utf8mb4_unicode_ci',
