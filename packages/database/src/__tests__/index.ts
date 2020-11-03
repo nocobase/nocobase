@@ -31,7 +31,7 @@ export const config: {
 };
 
 export function getDatabase(options: Options = {}) {
-  // console.log(process.env.DIALECT);
-  const db = new Database({...config[process.env.DIALECT||'postgres'], ...options});
+  // console.log(process.env.DB_DIALECT);
+  const db = new Database({...config[process.env.DB_DIALECT||'postgres'], ...options});
   return db;
 };
