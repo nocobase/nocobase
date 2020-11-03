@@ -16,7 +16,7 @@ export default {
                 id: 1,
                 type: 'edit',
                 title: '编辑',
-                viewId: 33,
+                viewId: 44,
               },
             ],
             template: 'Details',
@@ -40,6 +40,15 @@ export default {
             template: 'Form',
             defaultTabId: 1,
           }
+        } else if (resourceKey == '44') {
+          ctx.body = {
+            title: '表单',
+            type: 'Form',
+            fields: [],
+            actions: [],
+            template: 'DrawerForm',
+            defaultTabId: 1,
+          }
         } else {
           ctx.body = {
             title: '视图1',
@@ -52,7 +61,7 @@ export default {
                 id: 3,
                 type: 'create',
                 title: '创建',
-                viewId: 33,
+                viewId: 44,
               },
             ],
           }

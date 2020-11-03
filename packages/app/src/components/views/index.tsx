@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { Form } from './Form';
+import { Form, DrawerForm } from './Form/index';
 import { Table } from './Table';
 import { Details } from './Details';
 import { useRequest, request, Spin } from '@nocobase/client';
@@ -15,12 +15,13 @@ export function getViewTemplate(template: string) {
   return TEMPLATES.get(template);
 }
 
+registerView('DrawerForm', DrawerForm);
 registerView('Form', Form);
 registerView('Table', Table);
 registerView('Details', Details);
 
 export default function ViewFactory(props) {
-  const { id } = props;
+  const { id, reference } = props;
   const { data = {}, error, loading, run } = useRequest(() => request(`/ui/views/${id}`), {
     refreshDeps: [id],
   });
@@ -29,5 +30,5 @@ export default function ViewFactory(props) {
   }
   const { template } = data.data;
   const Template = getViewTemplate(template);
-  return Template && <Template {...props} schema={data.data}/>;
+  return Template && <Template {...props} ref={reference} schema={data.data}/>;
 }

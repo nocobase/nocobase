@@ -18,7 +18,7 @@ export function getAction(type: string) {
 
 export function Action(props) {
   const { schema = {} } = props;
-  console.log(schema);
+  // cnsole.log(schema);
   const { type } = schema;
   const Action = getAction(type);
   return Action && <Action {...props}/>;

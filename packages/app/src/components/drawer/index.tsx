@@ -12,6 +12,7 @@ export const DrawerRef = forwardRef((props: any, ref) => {
       destroyOnClose
       visible={visible}
       width={'40%'}
+      
       onClose={() => {
         setVisible(false);
       }}

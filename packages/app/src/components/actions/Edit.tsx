@@ -9,9 +9,7 @@ export function Edit(props) {
   const drawerRef = useRef<any>();
   return (
     <>
-      <Drawer title={'标题'} ref={drawerRef}>
-        <ViewFactory id={viewId}/>
-      </Drawer>
+      <ViewFactory reference={drawerRef} id={viewId}/>
       <Button type={'primary'} onClick={() => {
         drawerRef.current.setVisible(true);
       }}>{title}</Button>
