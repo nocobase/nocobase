@@ -6,6 +6,7 @@ import CollectionModel from './models/collection';
 export default async function (this: any, options = {}) {
   const database: Database = this.database;
   const resourcer: Resourcer = this.resourcer;
+  const uiResourcer: Resourcer = this.uiResourcer;
 
   const tables = database.import({
     directory: path.resolve(__dirname, 'tables'),
@@ -17,5 +18,9 @@ export default async function (this: any, options = {}) {
 
   resourcer.import({
     directory: path.resolve(__dirname, 'resources'),
+  });
+
+  uiResourcer.import({
+    directory: path.resolve(__dirname, 'ui.resources'),
   });
 }

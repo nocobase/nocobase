@@ -1,6 +1,6 @@
 import Koa from 'koa';
 import Database from '@nocobase/database';
-import Resourcer, { Action } from '@nocobase/resourcer';
+import Resourcer, { Action, ParaseParams } from '@nocobase/resourcer';
 import actions from '@nocobase/actions';
 import Router from '@koa/router';
 import cors from '@koa/cors';
@@ -10,9 +10,11 @@ export class Application extends Koa {
 
   database: Database;
 
+  router: Router;
+
   resourcer: Resourcer;
 
-  router: Router;
+  uiResourcer: Resourcer;
 
   async plugins(plugins: any[]) {
     await Promise.all(plugins.map(async (pluginOption) => {
@@ -36,18 +38,25 @@ export class Application extends Koa {
   }
 }
 
+export function getNameByParams(params: ParaseParams): string {
+  const { resourceName, associatedName } = params;
+  return associatedName ? `${associatedName}.${resourceName}` : resourceName;
+}
+
 export default {
   create(options: any): Application {
     console.log(options);
 
     const app = new Application();
-    const resourcer = new Resourcer();
     const database = new Database(options.database);
     const router = new Router();
+    const resourcer = new Resourcer();
+    const uiResourcer = new Resourcer();
 
     app.database = database;
-    app.resourcer = resourcer;
     app.router = router;
+    app.resourcer = resourcer;
+    app.uiResourcer = uiResourcer;
 
     app.use(bodyParser());
     app.use(cors());
@@ -82,6 +91,10 @@ export default {
 
     app.use(resourcer.middleware(options.resourcer || {
       prefix: '/api',
+    }));
+
+    app.use(uiResourcer.middleware(options.uiResourcer || {
+      prefix: '/api/ui',
     }));
 
     return app;
