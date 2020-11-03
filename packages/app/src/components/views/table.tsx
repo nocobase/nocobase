@@ -1,6 +1,7 @@
 import React from 'react';
-import { Table as AntdTable } from 'antd';
+import { Table as AntdTable, Card } from 'antd';
 import { redirectTo } from '@/components/pages/CollectionLoader/utils';
+import { Actions } from '@/components/actions';
 
 const dataSource = [];
 for (let i = 0; i < 46; i++) {
@@ -33,9 +34,11 @@ const columns = [
 export function Table(props: any) {
   console.log(props);
   const { activeTab, schema } = props;
-  const { defaultTabId } = schema;
+  const { defaultTabId, actions = [] } = schema;
   return (
-    <div>
+    <Card bordered={false}>
+      <Actions actions={actions}/>
+      <div style={{marginBottom: 14}}/>
       <AntdTable dataSource={dataSource} onRow={(data) => ({
         onClick: () => {
           redirectTo({
@@ -47,6 +50,6 @@ export function Table(props: any) {
           });
         },
       })} columns={columns} />
-    </div>
+    </Card>
   );
 }

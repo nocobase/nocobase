@@ -7,13 +7,6 @@ import { getPathName } from './utils';
 export function CollectionIndex(props) {
   const { viewId } = props.match.params;
   const { title, defaultViewId } = props.collection;
-  const { data = {}, error, loading, run } = useRequest(() => request(`/ui/views/${viewId||defaultViewId}`), {
-    refreshDeps: [defaultViewId, viewId],
-  });
-
-  if (loading) {
-    return <Spin/>;
-  }
 
   return (
     <div>
@@ -36,7 +29,7 @@ export function CollectionIndex(props) {
         // }
       />
       <div className={'collection-content'}>
-        <ViewFactory {...props} schema={data.data}/>
+        <ViewFactory {...props} id={viewId||defaultViewId}/>
       </div>
     </div>
   );

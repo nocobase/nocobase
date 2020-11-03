@@ -11,7 +11,14 @@ export default {
             title: '详情',
             type: 'Details',
             fields: [],
-            actions: [],
+            actions: [
+              {
+                id: 1,
+                type: 'edit',
+                title: '编辑',
+                viewId: 33,
+              },
+            ],
             template: 'Details',
             defaultTabId: 1,
           }
@@ -38,9 +45,16 @@ export default {
             title: '视图1',
             type: 'Table',
             fields: [],
-            actions: [],
             template: 'Table',
             defaultTabId: 1,
+            actions: [
+              {
+                id: 3,
+                type: 'create',
+                title: '创建',
+                viewId: 33,
+              },
+            ],
           }
         }
         await next();
