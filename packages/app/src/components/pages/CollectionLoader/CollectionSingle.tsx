@@ -28,7 +28,12 @@ export function CollectionSingle(props) {
           <Tabs size={'small'}
             defaultActiveKey={`${activeTab.id}`}
             onTabClick={(activeKey) => {
-              redirectTo(props.match.params, {tabId: activeKey});
+              redirectTo({
+                ...props.match.params,
+                lastItem: {
+                  tabId: activeKey,
+                },
+              });
             }}
           >
             {tabs.map(tab => <Tabs.TabPane tab={tab.title} key={`${tab.id}`} />)}

@@ -12,6 +12,7 @@ export default {
             type: 'Details',
             fields: [],
             actions: [],
+            template: 'Details',
             defaultTabId: 1,
           }
         } else if (resourceKey == '22') {
@@ -20,6 +21,7 @@ export default {
             type: 'Table',
             fields: [],
             actions: [],
+            template: 'Table',
             defaultTabId: 1,
           }
         } else if (resourceKey == '33') {
@@ -28,6 +30,7 @@ export default {
             type: 'Form',
             fields: [],
             actions: [],
+            template: 'Form',
             defaultTabId: 1,
           }
         } else {
@@ -36,6 +39,7 @@ export default {
             type: 'Table',
             fields: [],
             actions: [],
+            template: 'Table',
             defaultTabId: 1,
           }
         }

@@ -2,20 +2,15 @@ import React from 'react';
 import { Table as AntdTable } from 'antd';
 import { redirectTo } from '@/components/pages/CollectionLoader/utils';
 
-const dataSource = [
-  {
-    id: '1',
-    name: '胡彦斌',
+const dataSource = [];
+for (let i = 0; i < 46; i++) {
+  dataSource.push({
+    id: i,
+    name: `Edward King ${i}`,
     age: 32,
-    address: '西湖区湖底公园1号',
-  },
-  {
-    id: '2',
-    name: '胡彦祖',
-    age: 42,
-    address: '西湖区湖底公园1号',
-  },
-];
+    address: `London, Park Lane no. ${i}`,
+  });
+}
 
 const columns = [
   {
@@ -37,15 +32,18 @@ const columns = [
 
 export function Table(props: any) {
   console.log(props);
-  const { schema } = props;
+  const { activeTab, schema } = props;
   const { defaultTabId } = schema;
   return (
     <div>
       <AntdTable dataSource={dataSource} onRow={(data) => ({
         onClick: () => {
-          redirectTo(props.match.params, {
-            itemId: data.id,
-            tabId: defaultTabId,
+          redirectTo({
+            ...props.match.params,
+            [activeTab ? 'newItem' : 'lastItem']: {
+              itemId: data.id,
+              tabId: defaultTabId,
+            },
           });
         },
       })} columns={columns} />
