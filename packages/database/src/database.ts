@@ -64,12 +64,13 @@ export default class Database {
   public import(options: ImportOptions): Map<string, Table> {
     const { extensions = ['js', 'ts', 'json'], directory } = options;
     const patten = `${directory}/*.{${extensions.join(',')}}`;
-    const files = glob.sync(patten);
+    const files = glob.sync(patten, {
+      ignore: [
+        '**/*.d.ts'
+      ]
+    });
     const tables = new Map<string, Table>();
     files.forEach((file: string) => {
-      if (file.endsWith('.d.ts')) {
-        return;
-      }
       const options = requireModule(file);
       const table = this.table(typeof options === 'function' ? options(this) : options);
       tables.set(table.getName(), table);
@@ -246,6 +247,6 @@ export default class Database {
    * 关闭数据库连接
    */
   public async close() {
-    return await this.sequelize.close();
+    return this.sequelize.close();
   }
 }
