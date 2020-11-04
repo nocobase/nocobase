@@ -138,12 +138,13 @@ export class Resourcer {
   public import(options: ImportOptions): Map<string, Resource> {
     const { extensions = ['js', 'ts', 'json'], directory } = options;
     const patten = `${directory}/*.{${extensions.join(',')}}`;
-    const files = glob.sync(patten);
+    const files = glob.sync(patten, {
+      ignore: [
+        '**/*.d.ts'
+      ]
+    });
     const resources = new Map<string, Resource>();
     files.forEach((file: string) => {
-      if (file.endsWith('.d.ts')) {
-        return;
-      }
       const options = requireModule(file);
       const table = this.define(typeof options === 'function' ? options(this) : options);
       resources.set(table.getName(), table);
