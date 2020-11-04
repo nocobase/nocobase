@@ -1,9 +1,8 @@
-import React, { useState, useEffect, useImperativeHandle, forwardRef, useRef } from 'react';
+import React, { useRef } from 'react';
 import { Button } from 'antd';
-import Drawer from '../drawer';
 import ViewFactory from '@/components/views';
 
-export function Edit(props) {
+export function Update(props) {
   console.log(props);
   const { title, viewId } = props.schema;
   const drawerRef = useRef<any>();
@@ -17,4 +16,4 @@ export function Edit(props) {
   )
 }
 
-export default Edit;
+export default Update;

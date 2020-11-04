@@ -3,40 +3,32 @@ import Database from '@nocobase/database';
 import Resourcer from '@nocobase/resourcer';
 
 const data = {
-  title: '布局1',
+  title: '后台应用',
   path: '/',
   type: 'layout',
-  template: 'layout1',
+  template: 'TopMenuLayout',
   order: 1,
   children: [
     {
-      title: '页面1',
+      title: '仪表盘',
       type: 'page',
-      path: '/page1',
+      path: '/dashboard',
       icon: 'dashboard',
       template: 'page1',
       order: 2,
     },
     {
-      title: '页面2',
-      type: 'page',
-      path: '/page2',
-      icon: 'dashboard',
-      template: 'page2',
-      order: 3,
-    },
-    {
-      title: '布局2',
+      title: '数据',
       type: 'layout',
-      path: '/layout2',
+      path: '/collections',
       icon: 'dashboard',
-      template: 'layout2',
-      order: 4,
+      template: 'SideMenuLayout',
+      order: 3,
       children: [
         {
           title: '页面3',
           type: 'page',
-          path: '/layout2/page3',
+          path: '/collections/page3',
           icon: 'dashboard',
           template: 'page3',
           order: 5,
@@ -44,7 +36,7 @@ const data = {
         {
           title: '页面4',
           type: 'page',
-          path: '/layout2/page4',
+          path: '/collections/page4',
           icon: 'dashboard',
           template: 'page4',
           order: 6,
@@ -52,11 +44,45 @@ const data = {
         {
           title: '页面5',
           type: 'collection',
-          path: '/layout2/collection1',
+          path: '/collections/collection1',
           icon: 'dashboard',
           template: 'collection',
           collection: 'collection1',
           order: 7,
+        },
+      ]
+    },
+    {
+      title: '配置',
+      type: 'layout',
+      path: '/settings',
+      icon: 'dashboard',
+      template: 'SideMenuLayout',
+      order: 4,
+      children: [
+        {
+          title: '页面与菜单',
+          type: 'collection',
+          collection: 'pages',
+          path: '/settings/pages',
+          icon: 'dashboard',
+          order: 1,
+        },
+        {
+          title: '数据表配置',
+          type: 'collection',
+          collection: 'collections',
+          path: '/settings/collections',
+          icon: 'dashboard',
+          order: 2,
+        },
+        {
+          title: '权限配置',
+          type: 'collection',
+          collection: 'roles',
+          path: '/settings/roles',
+          icon: 'dashboard',
+          order: 3,
         },
       ]
     },

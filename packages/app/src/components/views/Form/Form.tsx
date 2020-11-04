@@ -49,7 +49,7 @@ export function Form(props: any) {
           },
         }}
       >
-        <FormButtonGroup>
+        <FormButtonGroup sticky>
           <Submit/>
         </FormButtonGroup>
       </SchemaForm>

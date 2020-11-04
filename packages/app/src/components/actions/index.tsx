@@ -1,7 +1,8 @@
 
 import React from 'react';
 import Create from './Create';
-import Edit from './Edit';
+import Update from './Update';
+import { Space } from 'antd';
 
 const ACTIONS = new Map<string, any>();
 
@@ -9,7 +10,7 @@ export function registerAction(type: string, Action: any) {
   ACTIONS.set(type, Action);
 }
 
-registerAction('edit', Edit);
+registerAction('update', Update);
 registerAction('create', Create);
 
 export function getAction(type: string) {
@@ -25,11 +26,11 @@ export function Action(props) {
 }
 
 export function Actions(props) {
-  const { schema, actions = [] } = props;
-  return (
-    <div>
+  const { style, schema, actions = [] } = props;
+  return actions.length > 0 && (
+    <Space style={style}>
       {actions.map(action => <Action {...props} view={schema} schema={action}/>)}
-    </div>
+    </Space>
   );
 }
 

@@ -27,9 +27,16 @@ export default {
             title: '相关数据',
             type: 'Table',
             fields: [],
-            actions: [],
             template: 'Table',
             defaultTabId: 1,
+            actions: [
+              {
+                id: 3,
+                type: 'create',
+                title: '创建',
+                viewId: 44,
+              },
+            ],
           }
         } else if (resourceKey == '33') {
           ctx.body = {

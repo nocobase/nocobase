@@ -6,8 +6,7 @@ export function Details(props: any) {
   const { actions = [], fields = [] } = props.schema;
   return (
     <Card bordered={false}>
-      <Actions {...props} actions={actions}/>
-      <div style={{marginBottom: 14}}/>
+      <Actions style={{ marginBottom: 14 }} actions={actions}/>
       <Descriptions bordered column={1}>
         <Descriptions.Item label="Product">Cloud Database</Descriptions.Item>
         <Descriptions.Item label="Billing Mode">Prepaid</Descriptions.Item>

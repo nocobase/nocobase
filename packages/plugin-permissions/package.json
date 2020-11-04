@@ -2,5 +2,8 @@
   "name": "@nocobase/plugin-permissions",
   "version": "0.3.0-alpha.0",
   "main": "lib/index.js",
-  "license": "MIT"
+  "license": "MIT",
+  "dependencies": {
+    "@nocobase/database": "^0.3.0-alpha.0"
+  }
 }

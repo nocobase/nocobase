@@ -37,8 +37,7 @@ export function Table(props: any) {
   const { defaultTabId, actions = [] } = schema;
   return (
     <Card bordered={false}>
-      <Actions actions={actions}/>
-      <div style={{marginBottom: 14}}/>
+      <Actions style={{ marginBottom: 14 }} actions={actions}/>
       <AntdTable dataSource={dataSource} onRow={(data) => ({
         onClick: () => {
           redirectTo({

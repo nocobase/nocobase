@@ -38,6 +38,7 @@ const api = Api.create({
     .plugins([
       [path.resolve(__dirname, '../../../plugin-collections'), {}],
       [path.resolve(__dirname, '../../../plugin-pages'), {}],
+      [path.resolve(__dirname, '../../../plugin-permissions'), {}],
       // [require('../../plugin-collections/src/index').default, {}],
       // [require('../../plugin-pages/src/index').default, {}],
     ]);

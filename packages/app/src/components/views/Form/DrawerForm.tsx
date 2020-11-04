@@ -30,6 +30,7 @@ export const DrawerForm = forwardRef((props: any, ref) => {
       onClose={() => {
         setVisible(false);
       }}
+      title={'表单标题'}
       footer={[
         <Button type={'primary'} onClick={async () => {
           await actions.submit();

@@ -15,6 +15,12 @@ export function CollectionSingle(props) {
     <div>
       <PageHeader
         ghost={false}
+        onBack={() => {
+          redirectTo({
+            ...props.match.params,
+            removeLastItem: true,
+          });
+        }}
         title={'企业信息库'}
         // subTitle="This is a subtitle"
         extra={[

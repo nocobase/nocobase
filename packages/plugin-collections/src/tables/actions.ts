@@ -1,8 +1,8 @@
 import { TableOptions } from '@nocobase/database';
 
 export default {
-  name: 'fields',
-  title: '字段配置',
+  name: 'actions',
+  title: '操作配置',
   fields: [
     {
       type: 'string',

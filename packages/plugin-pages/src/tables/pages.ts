@@ -3,31 +3,6 @@ import { TableOptions } from '@nocobase/database';
 export default {
   name: 'pages',
   title: '页面配置',
-  onlyEdit: true,
-  showInMenu: false,
-  pagination: {
-    enabled: false,
-  },
-  actions: [
-    {
-      title: '创建',
-      name: 'create',
-      align: 'right',
-      mode: 'list',
-    },
-    {
-      title: '编辑',
-      name: 'update',
-      align: 'right',
-      mode: 'item',
-    },
-    {
-      title: '删除',
-      name: 'delete',
-      align: 'right',
-      mode: 'list',
-    },
-  ],
   fields: [
     {
       type: 'integer',
@@ -178,7 +153,55 @@ export default {
     },
     {
       type: 'json',
-      name: 'meta',
+      name: 'options',
+    },
+  ],
+  actions: [
+    {
+      type: 'list',
+      name: 'list',
+      title: '查看',
+    },
+    {
+      type: 'create',
+      name: 'create',
+      title: '创建',
+    },
+    {
+      type: 'update',
+      name: 'update',
+      title: '编辑',
+    },
+    {
+      type: 'destroy',
+      name: 'destroy',
+      title: '删除',
+    },
+  ],
+  views: [
+    {
+      type: 'form',
+      name: 'form',
+      title: '表单',
+      template: 'Form',
+    },
+    {
+      type: 'details',
+      name: 'details',
+      title: '详情',
+      template: 'Details',
+    },
+    {
+      type: 'simple',
+      name: 'simple',
+      title: '简易模式',
+      template: 'SimpleTable',
+    },
+    {
+      type: 'table',
+      name: 'table',
+      title: '列表',
+      template: 'Table',
     },
   ],
 } as TableOptions;
