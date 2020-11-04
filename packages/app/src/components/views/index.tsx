@@ -4,6 +4,7 @@ import { Form, DrawerForm } from './Form/index';
 import { Table } from './Table';
 import { Details } from './Details';
 import { useRequest, request, Spin } from '@nocobase/client';
+import { SimpleTable } from './SimpleTable';
 
 const TEMPLATES = new Map<string, any>();
 
@@ -18,6 +19,7 @@ export function getViewTemplate(template: string) {
 registerView('DrawerForm', DrawerForm);
 registerView('Form', Form);
 registerView('Table', Table);
+registerView('SimpleTable', SimpleTable);
 registerView('Details', Details);
 
 export default function ViewFactory(props) {

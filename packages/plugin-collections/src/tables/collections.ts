@@ -9,21 +9,21 @@ export default {
     {
       type: 'string',
       name: 'title',
+      title: '名称',
       showInTable: true,
       required: true,
       component: {
         type: 'string',
-        label: '名称',
       },
     },
     {
       type: 'string',
       name: 'name',
+      title: '标识',
       unique: true,
       required: true,
       component: {
         type: 'string',
-        label: '标识',
         'x-rules': [
           {
             format: 'slug',
@@ -35,9 +35,9 @@ export default {
     {
       type: 'string',
       name: 'description',
+      title: '描述',
       component: {
         type: 'textarea',
-        label: '描述',
       },
     },
     {
@@ -47,18 +47,22 @@ export default {
     {
       type: 'hasMany',
       name: 'fields',
+      sourceKey: 'name',
     },
     {
       type: 'hasMany',
       name: 'actions',
+      sourceKey: 'name',
     },
     {
       type: 'hasMany',
       name: 'tabs',
+      sourceKey: 'name',
     },
     {
       type: 'hasMany',
       name: 'views',
+      sourceKey: 'name',
     },
   ],
   actions: [
@@ -71,11 +75,13 @@ export default {
       type: 'create',
       name: 'create',
       title: '创建',
+      viewName: 'form',
     },
     {
       type: 'update',
       name: 'update',
       title: '编辑',
+      viewName: 'form',
     },
     {
       type: 'destroy',
@@ -88,53 +94,60 @@ export default {
       type: 'form',
       name: 'form',
       title: '表单',
-      template: 'Form',
+      template: 'DrawerForm',
     },
     {
       type: 'details',
       name: 'details',
       title: '详情',
       template: 'Details',
+      actionNames: ['update'],
     },
     {
       type: 'simple',
       name: 'simple',
       title: '简易模式',
       template: 'SimpleTable',
+      actionNames: ['create', 'destroy'],
+      detailsViewName: 'details',
+      updateViewName: 'form',
     },
     {
       type: 'table',
       name: 'table',
       title: '列表',
       template: 'Table',
+      actionNames: ['create', 'destroy'],
+      default: true,
     },
   ],
   tabs: [
     {
+      type: 'details',
       name: 'details',
       title: '详情',
-      type: 'details',
       viewName: 'details',
+      default: true,
     },
     {
+      type: 'association',
       name: 'fields',
       title: '字段',
-      type: 'relation',
-      collection: 'fields',
+      association: 'fields',
       viewName: 'simple',
     },
     {
+      type: 'association',
       name: 'views',
       title: '视图',
-      type: 'relation',
-      collection: 'views',
+      association: 'views',
       viewName: 'simple',
     },
     {
+      type: 'association',
       name: 'tabs',
       title: '标签页',
-      type: 'relation',
-      collection: 'tabs',
+      association: 'tabs',
       viewName: 'simple',
     },
   ],

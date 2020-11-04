@@ -7,46 +7,46 @@ export default {
     {
       type: 'integer',
       name: 'parent_id',
+      title: '父级页面',
       component: {
         type: 'number',
-        label: '父级页面',
       },
     },
     {
       type: 'string',
       name: 'title',
+      title: '名称',
       showInTable: true,
       isMainTitle: true,
       component: {
         type: 'string',
-        label: '名称',
       },
     },
     {
       type: 'string',
       name: 'path',
+      title: '路径',
       unique: true,
       showInTable: true,
       component: {
         type: 'string',
-        label: '路径',
       },
     },
     {
       type: 'string',
       name: 'icon',
+      title: '图标',
       component: {
         type: 'string',
-        label: '图标',
       },
     },
     {
       type: 'string',
       name: 'type',
+      title: '类型',
       showInTable: true,
       component: {
         type: 'string',
-        label: '类型',
         enum: [
           {
             label: '页面',
@@ -73,18 +73,18 @@ export default {
     {
       type: 'string',
       name: 'collection',
+      title: '属于哪种数据集？',
       component: {
         type: 'string',
-        label: '属于哪种数据集？',
       },
     },
     {
       type: 'string',
       name: 'template',
+      title: '模板',
       showInTable: true,
       component: {
         type: 'string',
-        label: '模板',
         enum: [
           {
             label: '顶部菜单布局',
@@ -124,20 +124,20 @@ export default {
     {
       type: 'boolean',
       name: 'showInMenu',
+      title: '在菜单里显示',
       // showInTable: true,
       defaultValue: false,
       component: {
         type: 'boolean',
-        label: '在菜单里显示',
       },
     },
     {
       type: 'boolean',
       name: 'inherit',
+      title: '继承父级页面内容',
       defaultValue: true,
       component: {
         type: 'boolean',
-        label: '继承父级页面内容',
       },
     },
     {
@@ -166,11 +166,13 @@ export default {
       type: 'create',
       name: 'create',
       title: '创建',
+      viewName: 'form',
     },
     {
       type: 'update',
       name: 'update',
       title: '编辑',
+      viewName: 'form',
     },
     {
       type: 'destroy',
@@ -183,25 +185,31 @@ export default {
       type: 'form',
       name: 'form',
       title: '表单',
-      template: 'Form',
+      template: 'DrawerForm',
     },
     {
       type: 'details',
       name: 'details',
       title: '详情',
       template: 'Details',
+      actionNames: ['update'],
     },
     {
       type: 'simple',
       name: 'simple',
       title: '简易模式',
       template: 'SimpleTable',
+      default: true,
+      actionNames: ['create', 'destroy'],
+      detailsViewName: 'details',
+      updateViewName: 'form',
     },
     {
       type: 'table',
       name: 'table',
       title: '列表',
       template: 'Table',
+      actionNames: ['create', 'destroy'],
     },
   ],
 } as TableOptions;

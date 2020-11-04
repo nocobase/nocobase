@@ -1,8 +1,7 @@
 import React from 'react';
 import { Redirect } from 'umi';
 import get from 'lodash/get';
-// import { Spin } from 'antd';
-import Spin from '@/components/spin';
+import { Spin } from '@nocobase/client';
 import { CollectionLoader } from './CollectionLoader';
 
 function getRoutes(path: string, pages: any) {
