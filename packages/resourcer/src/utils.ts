@@ -22,7 +22,7 @@ export interface ParseOptions {
   };
 }
 
-export interface ParaseParams {
+export interface ParsedParams {
   actionName?: string;
   resourceName?: string;
   resourceKey?: string;
@@ -35,12 +35,12 @@ export interface ParaseParams {
   // action?: ActionName,
 }
 
-export function getNameByParams(params: ParaseParams): string {
+export function getNameByParams(params: ParsedParams): string {
   const { resourceName, associatedName } = params;
   return associatedName ? `${associatedName}.${resourceName}` : resourceName;
 }
 
-export function parseRequest(request: ParseRequest, options: ParseOptions = {}): ParaseParams | false {
+export function parseRequest(request: ParseRequest, options: ParseOptions = {}): ParsedParams | false {
 
   const accessors = {
     // 常规 actions
@@ -138,7 +138,7 @@ export function parseRequest(request: ParseRequest, options: ParseOptions = {}):
     },
   };
 
-  const params: ParaseParams = {};
+  const params: ParsedParams = {};
 
   let prefix = (options.prefix||'').trim();
 
@@ -189,7 +189,7 @@ export function requireModule(module: any) {
   return module.__esModule ? module.default : module;
 }
 
-export function paraseFields(fields: any) {
+export function parseFields(fields: any) {
   if (!fields) {
     return {}
   }
@@ -216,8 +216,8 @@ export function paraseFields(fields: any) {
 
 export function mergeFields(defaults: any, inputs: any) {
   let fields: any = {};
-  defaults = paraseFields(defaults);
-  inputs = paraseFields(inputs);
+  defaults = parseFields(defaults);
+  inputs = parseFields(inputs);
   if (inputs.only) {
     // 前端提供 only，后端提供 only
     if (defaults.only) {
