@@ -3,13 +3,13 @@ import glob from 'glob';
 import compose from 'koa-compose';
 import Action, { ActionName } from './action';
 import Resource, { ResourceOptions } from './resource';
-import { parseRequest, getNameByParams, ParaseParams, requireModule } from './utils';
+import { parseRequest, getNameByParams, ParsedParams, requireModule } from './utils';
 import { pathToRegexp } from 'path-to-regexp';
 
 export interface ResourcerContext {
   resourcer?: Resourcer;
   action?: Action;
-  params?: ParaseParams;
+  params?: ParsedParams;
   [key: string]: any;
 }
 
@@ -25,7 +25,7 @@ export interface KoaMiddlewareOptions {
    * 
    * 默认规则 relatedTable ? relatedTable.table : table
    */
-  nameRule?: (params: ParaseParams) => string;
+  nameRule?: (params: ParsedParams) => string;
 
   /**
    * 上下文中的 key - ctx[paramsKey]
