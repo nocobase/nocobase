@@ -17,6 +17,7 @@ export function getViewTemplate(template: string) {
 }
 
 registerView('DrawerForm', DrawerForm);
+registerView('PermissionForm', DrawerForm);
 registerView('Form', Form);
 registerView('Table', Table);
 registerView('SimpleTable', SimpleTable);

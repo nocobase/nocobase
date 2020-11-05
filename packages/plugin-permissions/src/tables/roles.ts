@@ -49,6 +49,12 @@ export default {
       template: 'DrawerForm',
     },
     {
+      type: 'form',
+      name: 'permission_form',
+      title: '数据表配置',
+      template: 'PermissionForm',
+    },
+    {
       type: 'details',
       name: 'details',
       title: '详情',
@@ -62,7 +68,15 @@ export default {
       template: 'SimpleTable',
       actionNames: ['create', 'destroy'],
       detailsViewName: 'details',
-      updateViewName: 'form',
+      updateViewName: 'permission_form',
+    },
+    {
+      type: 'simple',
+      name: 'simple2',
+      title: '简易模式',
+      template: 'SimpleTable',
+      detailsViewName: 'details',
+      updateViewName: 'permission_form',
     },
     {
       type: 'table',

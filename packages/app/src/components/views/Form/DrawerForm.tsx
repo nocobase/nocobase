@@ -21,6 +21,7 @@ export const DrawerForm = forwardRef((props: any, ref) => {
     setVisible,
   }));
   const actions = createAsyncFormActions();
+  const { title } = props.schema||{};
   return (
     <Drawer
       {...props}
@@ -30,7 +31,7 @@ export const DrawerForm = forwardRef((props: any, ref) => {
       onClose={() => {
         setVisible(false);
       }}
-      title={'表单标题'}
+      title={title}
       footer={[
         <Button type={'primary'} onClick={async () => {
           await actions.submit();
