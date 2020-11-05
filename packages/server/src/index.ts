@@ -1,6 +1,6 @@
 import Koa from 'koa';
 import Database from '@nocobase/database';
-import Resourcer, { Action, ParaseParams } from '@nocobase/resourcer';
+import Resourcer, { Action, ParsedParams } from '@nocobase/resourcer';
 import actions from '@nocobase/actions';
 import Router from '@koa/router';
 import cors from '@koa/cors';
@@ -38,7 +38,7 @@ export class Application extends Koa {
   }
 }
 
-export function getNameByParams(params: ParaseParams): string {
+export function getNameByParams(params: ParsedParams): string {
   const { resourceName, associatedName } = params;
   return associatedName ? `${associatedName}.${resourceName}` : resourceName;
 }
