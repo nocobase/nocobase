@@ -2,6 +2,8 @@ import path from 'path';
 import Database, { ModelCtor } from '@nocobase/database';
 import Resourcer from '@nocobase/resourcer';
 import CollectionModel from './models/collection';
+import getCollection from './actions/getCollection';
+import getView from './actions/getView';
 
 export default async function (this: any, options = {}) {
   const database: Database = this.database;
@@ -15,6 +17,11 @@ export default async function (this: any, options = {}) {
   await database.sync({
     tables,
   });
+
+  resourcer.registerHandler('getCollection', getCollection);
+  resourcer.registerHandler('getView', getView);
+
+  // console.log(resourcer.getRegisteredHandlers());
 
   resourcer.import({
     directory: path.resolve(__dirname, 'resources'),

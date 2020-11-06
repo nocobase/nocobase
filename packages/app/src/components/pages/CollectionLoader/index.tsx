@@ -13,18 +13,18 @@ export function CollectionLoader(props: any) {
   let matches: any;
   matches = /\/views\/([^/]+)/.exec(path);
   if (matches) {
-    props.match.params['viewId'] = matches[1];
+    props.match.params['viewName'] = matches[1];
     path = path.substring(`/views/${matches[1]}`.length);
   }
   const re = /\/items\/([^/]+)\/tabs\/([^/]+)/g;
   matches = [...path.matchAll(re)];
   let items = matches.map((match, index) => ({
     itemId: match[1],
-    tabId: match[2],
+    tabName: match[2],
   }));
   props.match.params['items'] = items;
   console.log(props.match, path);
-  const { data = {}, error, loading, run } = useRequest(() => request(`/ui/collections/${collection}`));
+  const { data = {}, error, loading, run } = useRequest(() => request(`/${collection}:getCollection`));
 
   if (loading) {
     return <Spin/>;

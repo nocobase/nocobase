@@ -35,12 +35,12 @@ const columns = [
 export function SimpleTable(props: any) {
   console.log(props);
   const { activeTab, schema } = props;
-  const { rowViewId, actions = [] } = schema;
+  const { viewCollectionName, rowViewName, actions = [] } = schema;
   const drawerRef = useRef<any>();
   return (
     <Card bordered={false}>
       <Actions style={{ marginBottom: 14 }} actions={actions}/>
-      <ViewFactory reference={drawerRef} id={rowViewId}/>
+      <ViewFactory reference={drawerRef} viewCollectionName={viewCollectionName} viewName={rowViewName}/>
       <AntdTable dataSource={dataSource} onRow={(data) => ({
         onClick: () => {
           drawerRef.current.setVisible(true);

@@ -145,6 +145,13 @@ export default {
     },
     {
       type: 'association',
+      name: 'actions',
+      title: '动作',
+      association: 'actions',
+      viewName: 'simple',
+    },
+    {
+      type: 'association',
       name: 'tabs',
       title: '标签页',
       association: 'tabs',

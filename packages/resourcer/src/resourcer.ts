@@ -174,6 +174,10 @@ export class Resourcer {
     this.handlers = new Map(Object.entries(handlers));
   }
 
+  registerHandler(name: ActionName, handler: HandlerType) {
+    this.handlers.set(name, handler);
+  }
+
   getRegisteredHandler(name: ActionName) {
     return this.handlers.get(name);
   }

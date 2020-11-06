@@ -6,7 +6,7 @@ import templates from '@/templates';
 
 export function PageLoader(props: any) {
   const { path } = props.match.params;
-  const { data = {}, error, loading, run } = useRequest(() => request('/ui/routes'));
+  const { data = {}, error, loading, run } = useRequest(() => request('/pages:getRoutes'));
   const [first, setFirst] = useState(true);
   (window as any).routesReload = async () => {
     setFirst(false);

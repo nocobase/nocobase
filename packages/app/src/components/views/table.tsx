@@ -2,6 +2,7 @@ import React from 'react';
 import { Table as AntdTable, Card } from 'antd';
 import { redirectTo } from '@/components/pages/CollectionLoader/utils';
 import { Actions } from '@/components/actions';
+import { request, useRequest } from 'umi';
 
 const dataSource = [];
 for (let i = 0; i < 46; i++) {
@@ -34,17 +35,19 @@ const columns = [
 export function Table(props: any) {
   console.log(props);
   const { activeTab, schema } = props;
-  const { defaultTabId, actions = [] } = schema;
+  const { defaultTabId, defaultTabName, actions = [] } = schema;
+  const { data } = useRequest(() => request('/collections'));
+  console.log(data);
   return (
     <Card bordered={false}>
       <Actions style={{ marginBottom: 14 }} actions={actions}/>
-      <AntdTable dataSource={dataSource} onRow={(data) => ({
+      <AntdTable dataSource={data} onRow={(data) => ({
         onClick: () => {
           redirectTo({
             ...props.match.params,
             [activeTab ? 'newItem' : 'lastItem']: {
               itemId: data.id,
-              tabId: defaultTabId,
+              tabName: defaultTabName,
             },
           });
         },

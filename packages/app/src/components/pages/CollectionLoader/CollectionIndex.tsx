@@ -5,8 +5,8 @@ import { useRequest, request, Spin } from '@nocobase/client';
 import { getPathName } from './utils';
 
 export function CollectionIndex(props) {
-  const { viewId } = props.match.params;
-  const { title, defaultViewId } = props.collection;
+  const { viewName, collection } = props.match.params;
+  const { title, defaultViewName } = props.collection;
 
   return (
     <div>
@@ -29,7 +29,7 @@ export function CollectionIndex(props) {
         // }
       />
       <div className={'collection-content'}>
-        <ViewFactory {...props} id={viewId||defaultViewId}/>
+        <ViewFactory {...props} viewCollectionName={collection} viewName={viewName||defaultViewName}/>
       </div>
     </div>
   );

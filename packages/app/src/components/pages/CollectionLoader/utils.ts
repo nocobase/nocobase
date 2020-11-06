@@ -2,22 +2,22 @@ import cloneDeep from 'lodash/cloneDeep';
 import { history } from 'umi';
 
 export function getPathName(params) {
-  const { pagepath, viewId, removeLastItem, items = [], lastItem = {}, newItem = {} } = cloneDeep(params);
+  const { pagepath, viewName, removeLastItem, items = [], lastItem = {}, newItem = {} } = cloneDeep(params);
   let path = `/${pagepath}`;
-  if (viewId) {
-    path += `/views/${viewId}`;
+  if (viewName) {
+    path += `/views/${viewName}`;
   }
   let last = items.pop();
-  path += items.map(item => `/items/${item.itemId}/tabs/${item.tabId}`).join('/');
+  path += items.map(item => `/items/${item.itemId}/tabs/${item.tabName}`).join('/');
   if (removeLastItem) {
     return path;
   }
   last = {...last, ...lastItem};
   if (typeof last.itemId !== 'undefined') {
-    path += `/items/${last.itemId}/tabs/${last.tabId}`;
+    path += `/items/${last.itemId}/tabs/${last.tabName}`;
   }
   if (typeof newItem.itemId !== 'undefined') {
-    path += `/items/${newItem.itemId}/tabs/${newItem.tabId}`;
+    path += `/items/${newItem.itemId}/tabs/${newItem.tabName}`;
   }
   return path;
 }

@@ -7,7 +7,7 @@ export function CollectionSingle(props) {
   console.log(props);
   const { item = {} } = props;
   const { tabs = [] } = props.collection;
-  const activeTab = tabs.find(tab => tab.id == item.tabId)||{};
+  const activeTab = tabs.find(tab => tab.name == item.tabName)||{};
   if (!activeTab) {
     return null;
   }
@@ -32,17 +32,17 @@ export function CollectionSingle(props) {
         ]}
         footer={
           <Tabs size={'small'}
-            defaultActiveKey={`${activeTab.id}`}
+            defaultActiveKey={`${activeTab.name}`}
             onTabClick={(activeKey) => {
               redirectTo({
                 ...props.match.params,
                 lastItem: {
-                  tabId: activeKey,
+                  tabName: activeKey,
                 },
               });
             }}
           >
-            {tabs.map(tab => <Tabs.TabPane tab={tab.title} key={`${tab.id}`} />)}
+            {tabs.map(tab => <Tabs.TabPane tab={tab.title} key={`${tab.name}`} />)}
           </Tabs>
         }
       />

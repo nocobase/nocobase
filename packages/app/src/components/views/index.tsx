@@ -24,9 +24,9 @@ registerView('SimpleTable', SimpleTable);
 registerView('Details', Details);
 
 export default function ViewFactory(props) {
-  const { id, reference } = props;
-  const { data = {}, error, loading, run } = useRequest(() => request(`/ui/views/${id}`), {
-    refreshDeps: [id],
+  const { viewCollectionName, viewName, reference } = props;
+  const { data = {}, error, loading, run } = useRequest(() => request(`/${viewCollectionName}:getView/${viewName}`), {
+    refreshDeps: [viewCollectionName, viewName],
   });
   if (loading) {
     return <Spin/>;

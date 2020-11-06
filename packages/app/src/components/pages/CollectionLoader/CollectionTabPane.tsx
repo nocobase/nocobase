@@ -5,11 +5,11 @@ import { useRequest, request, Spin } from '@nocobase/client';
 
 export function CollectionTabPane(props) {
   const { activeTab = {} } = props;
-  const { viewId } = activeTab;
+  const { viewCollectionName, viewName } = activeTab;
 
   return (
     <div>
-      <ViewFactory {...props} id={viewId}/>
+      <ViewFactory {...props} viewCollectionName={viewCollectionName} viewName={viewName}/>
     </div>
   );
 }

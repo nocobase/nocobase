@@ -17,7 +17,7 @@ export class Application extends Koa {
   uiResourcer: Resourcer;
 
   async plugins(plugins: any[]) {
-    await Promise.all(plugins.map(async (pluginOption) => {
+    for (const pluginOption of plugins) {
       let plugin: Function;
       let options = {};
       if (Array.isArray(pluginOption)) {
@@ -33,8 +33,8 @@ export class Application extends Koa {
       } else if (typeof pluginOption === 'function') {
         plugin = pluginOption.bind(this);
       }
-      return await plugin(options);
-    }));
+      await plugin(options);
+    }
   }
 }
 
