@@ -53,6 +53,25 @@ const data = {
       ]
     },
     {
+      title: '用户',
+      type: 'layout',
+      path: '/users',
+      icon: 'dashboard',
+      template: 'SideMenuLayout',
+      order: 3,
+      children: [
+        {
+          title: '用户管理',
+          type: 'collection',
+          path: '/users/users',
+          icon: 'dashboard',
+          template: 'collection',
+          collection: 'users',
+          order: 1,
+        },
+      ]
+    },
+    {
       title: '配置',
       type: 'layout',
       path: '/settings',
@@ -92,10 +111,9 @@ const data = {
 export default async function (options = {}) {
   const database: Database = this.database;
   const resourcer: Resourcer = this.resourcer;
-  const uiResourcer: Resourcer = this.uiResourcer;
 
   const tables = database.import({
-    directory: path.resolve(__dirname, 'tables'),
+    directory: path.resolve(__dirname, 'collections'),
   });
 
   await database.sync({
@@ -109,9 +127,5 @@ export default async function (options = {}) {
 
   resourcer.import({
     directory: path.resolve(__dirname, 'resources'),
-  });
-
-  uiResourcer.import({
-    directory: path.resolve(__dirname, 'ui.resources'),
   });
 }

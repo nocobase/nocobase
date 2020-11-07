@@ -40,6 +40,8 @@ const api = Api.create({
       [path.resolve(__dirname, '../../../plugin-collections'), {}],
       [path.resolve(__dirname, '../../../plugin-pages'), {}],
       [path.resolve(__dirname, '../../../plugin-permissions'), {}],
+      [path.resolve(__dirname, '../../../plugin-users'), {}],
+      [path.resolve(__dirname, '../../../plugin-file-manager'), {}],
       // [require('../../plugin-collections/src/index').default, {}],
       // [require('../../plugin-pages/src/index').default, {}],
     ]);

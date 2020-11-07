@@ -40,7 +40,7 @@ export function Table(props: any) {
   console.log(data);
   return (
     <Card bordered={false}>
-      <Actions style={{ marginBottom: 14 }} actions={actions}/>
+      <Actions {...props} style={{ marginBottom: 14 }} actions={actions}/>
       <AntdTable dataSource={data} onRow={(data) => ({
         onClick: () => {
           redirectTo({

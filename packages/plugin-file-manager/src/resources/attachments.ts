@@ -1,5 +1,5 @@
 import { ResourceOptions } from '@nocobase/resourcer';
 
 export default {
-  name: 'users',
+  name: 'attachments',
 } as ResourceOptions;

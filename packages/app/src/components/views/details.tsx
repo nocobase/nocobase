@@ -3,10 +3,11 @@ import { Card, Descriptions, Button } from 'antd';
 import { Actions } from '@/components/actions';
 
 export function Details(props: any) {
+  console.log(props);
   const { actions = [], fields = [] } = props.schema;
   return (
     <Card bordered={false}>
-      <Actions style={{ marginBottom: 14 }} actions={actions}/>
+      <Actions {...props} style={{ marginBottom: 14 }} actions={actions}/>
       <Descriptions bordered column={1}>
         <Descriptions.Item label="Product">Cloud Database</Descriptions.Item>
         <Descriptions.Item label="Billing Mode">Prepaid</Descriptions.Item>

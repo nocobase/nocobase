@@ -16,6 +16,7 @@ import {
 import { QuestionCircleOutlined } from '@ant-design/icons';
 
 export const DrawerForm = forwardRef((props: any, ref) => {
+  console.log(props);
   const [visible, setVisible] = useState(false);
   useImperativeHandle(ref, () => ({
     setVisible,
