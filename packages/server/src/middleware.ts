@@ -18,7 +18,6 @@ export default function middleware(options: MiddlewareOptions = {}) {
     paramsKey = 'params',
     nameRule = getNameByParams,
   } = options;
-  console.log(resourcer)
   return async (ctx: ResourcerContext, next: () => Promise<any>) => {
     ctx.resourcer = resourcer;
     let params = parseRequest({
@@ -34,7 +33,6 @@ export default function middleware(options: MiddlewareOptions = {}) {
     try {
       const resourceName = nameRule(params);
       if (!resourcer.isDefined(resourceName)) {
-        console.log('undefined')
         const names = resourceName.split('.');
         const tableName = names.shift();
         if (database.isDefined(tableName)) {
@@ -75,10 +73,9 @@ export default function middleware(options: MiddlewareOptions = {}) {
           return next();
         }
       }
-      console.log(resource);
+      // console.log(resource);
       // action 需要 clone 之后再赋给 ctx
       ctx.action = resourcer.getAction(resourceName, params.actionName).clone();
-      console.log(ctx.action);
       ctx.action.setContext(ctx);
       // 自带 query 处理的不太给力，需要用 qs 转一下
       const query = qs.parse(qs.stringify(ctx.query));
