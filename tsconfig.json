@@ -1,9 +1,11 @@
 {
   "compilerOptions": {
+    "jsx": "react",
     "lib": [ "es5", "es6" ],
     "module": "commonjs",
     "target": "es6",
     "allowJs": true,
+    "allowSyntheticDefaultImports": true,
     "declaration": true,
     "resolveJsonModule": true,
     "esModuleInterop": true,

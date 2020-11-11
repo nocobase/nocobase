@@ -1,6 +1,0 @@
-{
-  "watch": ["src", ".env", ".env.dev", "../plugin-collections/src"],
-  "ext": "ts",
-  "ignore": ["src/**/*.test.ts"],
-  "exec": "ts-node ./example/index.ts"
-}

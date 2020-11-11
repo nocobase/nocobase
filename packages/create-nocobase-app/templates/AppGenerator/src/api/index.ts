@@ -1,4 +1,4 @@
-import Api from '@nocobase/api';
+import Api from '@nocobase/server';
 import dotenv from 'dotenv';
 
 const sync = {

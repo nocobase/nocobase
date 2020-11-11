@@ -2,5 +2,12 @@
   "name": "@nocobase/plugin-pages",
   "version": "0.3.0-alpha.0",
   "main": "lib/index.js",
-  "license": "MIT"
+  "license": "MIT",
+  "dependencies": {
+    "@nocobase/server": "^0.3.0-alpha.0",
+    "@nocobase/database": "^0.3.0-alpha.0",
+    "@nocobase/resourcer": "^0.3.0-alpha.0",
+    "@nocobase/client": "^0.3.0-alpha.0",
+    "react": "^16.12.0"
+  }
 }

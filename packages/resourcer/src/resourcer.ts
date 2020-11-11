@@ -3,13 +3,13 @@ import glob from 'glob';
 import compose from 'koa-compose';
 import Action, { ActionName } from './action';
 import Resource, { ResourceOptions } from './resource';
-import { parseRequest, getNameByParams, ParaseParams, requireModule } from './utils';
+import { parseRequest, getNameByParams, ParsedParams, requireModule } from './utils';
 import { pathToRegexp } from 'path-to-regexp';
 
 export interface ResourcerContext {
   resourcer?: Resourcer;
   action?: Action;
-  params?: ParaseParams;
+  params?: ParsedParams;
   [key: string]: any;
 }
 
@@ -25,7 +25,7 @@ export interface KoaMiddlewareOptions {
    * 
    * 默认规则 relatedTable ? relatedTable.table : table
    */
-  nameRule?: (params: ParaseParams) => string;
+  nameRule?: (params: ParsedParams) => string;
 
   /**
    * 上下文中的 key - ctx[paramsKey]
@@ -138,12 +138,13 @@ export class Resourcer {
   public import(options: ImportOptions): Map<string, Resource> {
     const { extensions = ['js', 'ts', 'json'], directory } = options;
     const patten = `${directory}/*.{${extensions.join(',')}}`;
-    const files = glob.sync(patten);
+    const files = glob.sync(patten, {
+      ignore: [
+        '**/*.d.ts'
+      ]
+    });
     const resources = new Map<string, Resource>();
     files.forEach((file: string) => {
-      if (file.endsWith('.d.ts')) {
-        return;
-      }
       const options = requireModule(file);
       const table = this.define(typeof options === 'function' ? options(this) : options);
       resources.set(table.getName(), table);
@@ -171,6 +172,10 @@ export class Resourcer {
    */
   registerHandlers(handlers: Handlers) {
     this.handlers = new Map(Object.entries(handlers));
+  }
+
+  registerHandler(name: ActionName, handler: HandlerType) {
+    this.handlers.set(name, handler);
   }
 
   getRegisteredHandler(name: ActionName) {

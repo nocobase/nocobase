@@ -1,0 +1,14 @@
+{
+	"name": "@nocobase/client",
+	"version": "0.3.0-alpha.0",
+	"main": "lib/index.js",
+	"license": "MIT",
+	"dependencies": {
+		"@ant-design/icons": "^4.2.2",
+		"ahooks": "^2.7.1",
+		"antd": "^4.7.3",
+		"react": "^16.12.0",
+		"umi": "^3.2.24",
+		"umi-request": "^1.3.5"
+	}
+}

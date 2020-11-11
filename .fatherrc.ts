@@ -7,11 +7,12 @@ const headPkgs = [
   'database',
   'resourcer',
   'actions',
+  'client',
 ];
 const tailPkgs = [];
 const otherPkgs = readdirSync(join(__dirname, 'packages')).filter(
   (pkg) => {
-    return pkg !== 'father-build' && pkg.charAt(0) !== '.' && !headPkgs.includes(pkg) && !tailPkgs.includes(pkg)
+    return !['father-build', 'app'].includes(pkg) && pkg.charAt(0) !== '.' && !headPkgs.includes(pkg) && !tailPkgs.includes(pkg)
   },
 );
 
