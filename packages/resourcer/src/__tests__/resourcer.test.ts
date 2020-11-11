@@ -127,7 +127,7 @@ describe('resourcer', () => {
     const resourcer = new Resourcer();
 
     resourcer.registerHandlers({
-      'test.list': async(ctx, next) => {
+      'test:list': async(ctx, next) => {
         ctx.arr.push(1);
         await next();
         ctx.arr.push(2);

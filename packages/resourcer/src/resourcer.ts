@@ -165,6 +165,10 @@ export class Resourcer {
     return resource;
   }
 
+  isDefined(name: string) {
+    return this.resources.has(name);
+  }
+
   /**
    * 注册全局的 action handlers
    * 
@@ -196,7 +200,7 @@ export class Resourcer {
   getAction(name: string, action: ActionName): Action {
     // 支持注册局部 action
     if (this.handlers.has(`${name}.${action}`)) {
-      return this.getResource(name).getAction(`${name}.${action}`);
+      return this.getResource(name).getAction(`${name}:${action}`);
     }
     return this.getResource(name).getAction(action);
   }
