@@ -1,10 +1,5 @@
 import Database from '../database';
 import { Options } from 'sequelize';
-import path from 'path';
-
-require('dotenv').config({
-  path: path.resolve(__dirname, '.env'),
-})
 
 export const config: {
   [key: string]: Options;
@@ -36,7 +31,7 @@ export const config: {
 };
 
 export function getDatabase(options: Options = {}) {
-  // console.log(process.env.DIALECT);
-  const db = new Database({...config[process.env.DIALECT||'postgres'], ...options});
+  // console.log(process.env.DB_DIALECT);
+  const db = new Database({...config[process.env.DB_DIALECT||'postgres'], ...options});
   return db;
 };

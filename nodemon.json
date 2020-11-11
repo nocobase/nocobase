@@ -1,0 +1,5 @@
+{
+  "watch": ["packages", ".env"],
+  "ext": "ts",
+  "exec": "ts-node ./packages/server/example/index.ts"
+}

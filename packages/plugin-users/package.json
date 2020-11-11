@@ -2,5 +2,16 @@
   "name": "@nocobase/plugin-users",
   "version": "0.3.0-alpha.0",
   "main": "lib/index.js",
-  "license": "MIT"
+  "license": "MIT",
+  "peerDependencies": {
+    "umi": "^3.2.23"
+  },
+  "devDependencies": {
+    "umi": "^3.2.23"
+  },
+  "dependencies": {
+    "@nocobase/client": "^0.3.0-alpha.0",
+    "@nocobase/database": "^0.3.0-alpha.0",
+    "@nocobase/resourcer": "^0.3.0-alpha.0"
+  }
 }

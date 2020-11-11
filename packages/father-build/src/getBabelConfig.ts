@@ -69,7 +69,7 @@ export default function(opts: IGetBabelConfigOpts) {
           }]]
           : []),
         ...(lessInBabelMode ? [transformImportLess2Css] : []),
-        ...(isBrowser ? require.resolve('babel-plugin-react-require') : []),
+        ...(isBrowser ? [require.resolve('babel-plugin-react-require')] : []),
         require.resolve('@babel/plugin-syntax-dynamic-import'),
         require.resolve('@babel/plugin-proposal-export-default-from'),
         require.resolve('@babel/plugin-proposal-export-namespace-from'),

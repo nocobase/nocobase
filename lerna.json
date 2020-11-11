@@ -10,7 +10,7 @@
       ]
     },
     "publish": {
-      "allowBranch": "master",
+      "allowBranch": ["master", "develop"],
       "ignoreChanges": [
         "*.md"
       ]
