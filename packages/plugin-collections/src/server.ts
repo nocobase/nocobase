@@ -9,8 +9,4 @@ export default async function (this: any, options = {}) {
   database.import({
     directory: path.resolve(__dirname, 'collections'),
   });
-
-  resourcer.import({
-    directory: path.resolve(__dirname, 'resources'),
-  });
 }
