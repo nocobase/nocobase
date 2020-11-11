@@ -194,6 +194,10 @@ export class Resourcer {
   }
 
   getAction(name: string, action: ActionName): Action {
+    // 支持注册局部 action
+    if (this.handlers.has(`${name}.${action}`)) {
+      return this.getResource(name).getAction(`${name}.${action}`);
+    }
     return this.getResource(name).getAction(action);
   }
 
