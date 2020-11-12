@@ -8,8 +8,12 @@ interface MiddlewareOptions extends KoaMiddlewareOptions {
   resourcer?: Resourcer;
   database?: Database;
 }
-
-export default function middleware(options: MiddlewareOptions = {}) {
+/**
+ * database + resourcer 结合的中间件（暂时不知道起什么名好）
+ * 
+ * @param options 
+ */
+export function middleware(options: MiddlewareOptions = {}) {
   const {
     prefix,
     database,
@@ -111,3 +115,5 @@ export default function middleware(options: MiddlewareOptions = {}) {
     }
   }
 }
+
+export default middleware;
