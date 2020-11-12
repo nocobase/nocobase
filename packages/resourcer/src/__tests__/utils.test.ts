@@ -186,7 +186,7 @@ describe('utils', () => {
 
     it('actions options', () => {
       const params = parseRequest({
-        path: '/user.posts:list',
+        path: '/resourcer/user.posts:list',
         method: 'GET',
       });
       expect(params).toEqual({ associatedName: 'user', resourceName: 'posts', actionName: 'list' });
