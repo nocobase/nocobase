@@ -175,7 +175,9 @@ export class Resourcer {
    * @param handlers 
    */
   registerHandlers(handlers: Handlers) {
-    this.handlers = new Map(Object.entries(handlers));
+    for (const [name, handler] of Object.entries(handlers)) {
+      this.registerHandler(name, handler);
+    }
   }
 
   registerHandler(name: ActionName, handler: HandlerType) {
