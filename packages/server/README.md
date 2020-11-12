@@ -1,16 +1,18 @@
-**Server** 是 NocoBase 的应用服务入口，用于启动一个基于 NocoBase 低代码框架的应用服务容器。
+**Server** 是 NocoBase 的应用服务入口，提供一个可基于 NocoBase 低代码框架启动的应用服务容器。
 
 应用启动后除了拥有基于框架快速提供服务的能力，也可以通过内置的插件机制安装各类插件为应用扩展更多的功能。
 
 快速开始
 ----------
 
+<!-- TODO: docker 使用方式 -->
+
 ### Docker
 
 如果需要直接启动一个无代码应用服务，使用 Docker 是最容易的方式。
 
 ~~~shell
-docker run nocobase/nocobase
+docker run nocobase/server
 ~~~
 
 ### Node 应用
