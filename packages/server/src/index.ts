@@ -1,3 +1,5 @@
+require('dotenv').config();
+
 import Database from '@nocobase/database';
 import Resourcer, { Action } from '@nocobase/resourcer';
 import actions from '@nocobase/actions';
@@ -53,7 +55,7 @@ export default {
     });
 
     app.use(middleware({
-      prefix: '/api',
+      prefix: process.env.BASE_PATH,
       database: app.database,
       resourcer: app.resourcer,
       ...(options.resourcer||{}),
