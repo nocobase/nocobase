@@ -16,7 +16,7 @@ docker run nocobase/nocobase
 ### Node 应用
 
 ~~~shell
-npm install @nocobase/serve
+npm install @nocobase/server
 ~~~
 
 在应用入口文件（例如 `server.js`）中：
