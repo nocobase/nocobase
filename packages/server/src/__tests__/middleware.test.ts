@@ -28,12 +28,12 @@ describe('middleware', () => {
       },
     });
     database = new Database({
-      username: process.env.TEST_DB_USER,
-      password: process.env.TEST_DB_PASSWORD,
-      database: process.env.TEST_DB_DATABASE,
-      host: process.env.TEST_DB_HOST,
-      port: process.env.TEST_DB_PORT as any,
-      dialect: process.env.TEST_DB_DIALECT as any,
+      username: process.env.DB_USER,
+      password: process.env.DB_PASSWORD,
+      database: process.env.DB_DATABASE,
+      host: process.env.DB_HOST,
+      port: process.env.DB_PORT as any,
+      dialect: process.env.DB_DIALECT as any,
       dialectOptions: {
         charset: 'utf8mb4',
         collate: 'utf8mb4_unicode_ci',
