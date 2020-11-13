@@ -5,6 +5,7 @@ import { Table } from './Table';
 import { Details } from './Details';
 import { useRequest, request, Spin } from '@nocobase/client';
 import { SimpleTable } from './SimpleTable';
+import api from '@/api-client';
 
 const TEMPLATES = new Map<string, any>();
 
@@ -24,10 +25,14 @@ registerView('SimpleTable', SimpleTable);
 registerView('Details', Details);
 
 export default function ViewFactory(props) {
-  const { viewCollectionName, viewName, reference } = props;
-  const { data = {}, error, loading, run } = useRequest(() => request(`/${viewCollectionName}:getView/${viewName}`), {
+  const { activeTab, viewCollectionName, viewName, reference } = props;
+  console.log({viewCollectionName, viewName});
+  const { data = {}, error, loading, run } = useRequest(() => api.resource(viewCollectionName).getView({
+    resourceKey: viewName,
+  }), {
     refreshDeps: [viewCollectionName, viewName],
   });
+  console.log(activeTab);
   if (loading) {
     return <Spin/>;
   }

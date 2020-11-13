@@ -3,16 +3,7 @@ import { Table as AntdTable, Card } from 'antd';
 import { redirectTo } from '@/components/pages/CollectionLoader/utils';
 import { Actions } from '@/components/actions';
 import { request, useRequest } from 'umi';
-
-const dataSource = [];
-for (let i = 0; i < 46; i++) {
-  dataSource.push({
-    id: i,
-    name: `Edward King ${i}`,
-    age: 32,
-    address: `London, Park Lane no. ${i}`,
-  });
-}
+import api from '@/api-client';
 
 const columns = [
   {
@@ -32,12 +23,31 @@ const columns = [
   },
 ];
 
-export function Table(props: any) {
-  console.log(props);
-  const { activeTab, schema } = props;
-  const { defaultTabId, defaultTabName, actions = [] } = schema;
-  const { data } = useRequest(() => request('/collections'));
+export interface TableProps {
+  schema?: any;
+  activeTab?: any;
+  resourceName: string;
+  associatedName?: string;
+  associatedKey?: string;
+  [key: string]: any;
+}
+
+export function Table(props: TableProps) {
+  const {
+    activeTab = {},
+    schema,
+    resourceName,
+    associatedName,
+    associatedKey,
+  } = props;
+  const { defaultTabId, fields, defaultTabName, rowKey = 'id', actions = [] } = schema;
+  const name = associatedName ? `${associatedName}.${resourceName}` : resourceName;
+  const { data } = useRequest(() => api.resource(name).list({
+    associatedKey,
+  }));
+  const { sourceKey = 'id' } = activeTab.field||{};
   console.log(data);
+  console.log(activeTab);
   return (
     <Card bordered={false}>
       <Actions {...props} style={{ marginBottom: 14 }} actions={actions}/>
@@ -46,12 +56,12 @@ export function Table(props: any) {
           redirectTo({
             ...props.match.params,
             [activeTab ? 'newItem' : 'lastItem']: {
-              itemId: data.id,
+              itemId: data[rowKey]||data.id,
               tabName: defaultTabName,
             },
           });
         },
-      })} columns={columns} />
+      })} columns={fields} />
     </Card>
   );
 }
