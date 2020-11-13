@@ -104,7 +104,7 @@ export default {
       actionNames: ['update'],
     },
     {
-      type: 'simple',
+      type: 'table',
       name: 'simple',
       title: '简易模式',
       template: 'SimpleTable',

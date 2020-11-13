@@ -4,7 +4,7 @@ import { get } from 'lodash';
 
 export default async (ctx, next) => {
   const { resourceName, resourceKey } = ctx.action.params;
-  const [Collection, Tab, View] = ctx.db.getModels(['collections', 'tabs', 'views']) as ModelCtor<Model>[];
+  const [Collection, Field, Tab, View] = ctx.db.getModels(['collections', 'fields', 'tabs', 'views']) as ModelCtor<Model>[];
   const collection = await Collection.findOne(Collection.parseApiJson({
     filter: {
       name: resourceName,
@@ -20,14 +20,33 @@ export default async (ctx, next) => {
   });
   collection.setDataValue('defaultViewId', get(views, [0, 'id']));
   collection.setDataValue('defaultViewName', get(views, [0, 'name']));
-  const tabs = await collection.getTabs();
-  ctx.body = {
-    ...collection.toJSON(),
-    tabs: tabs.map(tab => ({
+  const tabs = await collection.getTabs() as Model[];
+  const tabItems = [];
+  for (const tab of tabs) {
+    const itemTab = {
       ...tab.toJSON(),
       ...tab.options,
-      viewCollectionName: tab.type == 'association' ? tab.options.association : tab.collection_name,
-    })),
+    };
+    if (itemTab.type == 'association') {
+      const field = await Field.findOne({
+        where: {
+          collection_name: itemTab.collection_name,
+          name: itemTab.association,
+        },
+      });
+      itemTab.field = field ? {
+        ...field.toJSON(),
+        ...field.options,
+      } : {};
+      itemTab.viewCollectionName = itemTab.association;
+    } else {
+      itemTab.viewCollectionName = itemTab.collection_name;
+    }
+    tabItems.push(itemTab);
+  }
+  ctx.body = {
+    ...collection.toJSON(),
+    tabs: tabItems,
   };
   await next();
 }

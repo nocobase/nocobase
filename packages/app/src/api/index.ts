@@ -2,7 +2,8 @@ import Api from '../../../server/src';
 import dotenv from 'dotenv';
 import path from 'path';
 import Database, { Model } from '@nocobase/database';
-import { get } from 'lodash';
+import actions from '../../../actions/src';
+import associated from '../../../actions/src/middlewares/associated';
 
 const sync = {
   force: true,
@@ -33,6 +34,9 @@ const api = Api.create({
     prefix: '/api',
   },
 });
+
+api.resourcer.use(associated);
+api.resourcer.registerHandlers(actions.associate);
 
 const data = {
   title: '后台应用',

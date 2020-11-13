@@ -4,23 +4,27 @@ import { PageHeader, Tabs, Button, Statistic, Descriptions } from 'antd';
 import { useRequest, request, Spin } from '@nocobase/client';
 
 export function CollectionTabPane(props) {
-  const { activeTab = {}, item = {} } = props;
-  const { viewCollectionName, viewName, association, collection_name } = activeTab;
+  const { pageInfo = {}, activeTab = {}, item = {} } = props;
+  const { viewCollectionName, viewName, association, collection_name, field = {} } = activeTab;
+  const { sourceKey = 'id' } = field;
 
   const params = {};
 
   if (association) {
     params['resourceName'] = association;
     params['associatedName'] = collection_name;
-    params['associatedKey'] = item.itemId;
+    params['associatedKey'] = pageInfo[sourceKey] || item.itemId;
   } else {
     params['resourceName'] = collection_name;
     params['resourceKey'] = item.itemId;
   }
 
+  console.log(activeTab);
+
   return (
     <div>
-      <ViewFactory {...props} 
+      <ViewFactory
+        {...props} 
         viewCollectionName={viewCollectionName} 
         viewName={viewName}
         {...params}

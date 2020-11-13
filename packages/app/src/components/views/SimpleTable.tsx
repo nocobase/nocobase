@@ -1,8 +1,10 @@
-import React, { useRef } from 'react';
+import React, { useEffect, useRef } from 'react';
 import { Table as AntdTable, Card } from 'antd';
 import { redirectTo } from '@/components/pages/CollectionLoader/utils';
 import { Actions } from '@/components/actions';
 import ViewFactory from '@/components/views';
+import { request, useRequest } from 'umi';
+import api from '@/api-client';
 
 const dataSource = [];
 for (let i = 0; i < 46; i++) {
@@ -32,20 +34,42 @@ const columns = [
   },
 ];
 
-export function SimpleTable(props: any) {
+export interface SimpleTableProps {
+  schema?: any;
+  activeTab?: any;
+  resourceName: string;
+  associatedName?: string;
+  associatedKey?: string;
+  [key: string]: any;
+}
+
+export function SimpleTable(props: SimpleTableProps) {
   console.log(props);
-  const { activeTab, schema } = props;
-  const { viewCollectionName, rowViewName, actions = [] } = schema;
+  const {
+    activeTab = {},
+    pageInfo = {},
+    schema,
+    resourceName,
+    associatedName,
+    associatedKey,
+  } = props;
+  const { fields, viewCollectionName, rowViewName, actions = [] } = schema;
+  const { sourceKey = 'id' } = activeTab.field||{};
   const drawerRef = useRef<any>();
+  const name = associatedName ? `${associatedName}.${resourceName}` : resourceName;
+  const { data } = useRequest(() => api.resource(name).list({
+    associatedKey,
+  }));
+  console.log(activeTab);
   return (
     <Card bordered={false}>
       <Actions {...props} style={{ marginBottom: 14 }} actions={actions}/>
       <ViewFactory reference={drawerRef} viewCollectionName={viewCollectionName} viewName={rowViewName}/>
-      <AntdTable dataSource={dataSource} onRow={(data) => ({
+      <AntdTable dataSource={data} onRow={(data) => ({
         onClick: () => {
           drawerRef.current.setVisible(true);
         },
-      })} columns={columns} />
+      })} columns={fields} />
     </Card>
   );
 }
