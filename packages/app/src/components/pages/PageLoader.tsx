@@ -3,10 +3,11 @@ import React, { useState } from 'react';
 import { TemplateLoader } from './TemplateLoader';
 import { useRequest, request } from '@nocobase/client';
 import templates from '@/templates';
+import api from '@/api-client';
 
 export function PageLoader(props: any) {
   const { path } = props.match.params;
-  const { data = {}, error, loading, run } = useRequest(() => request('/pages:getRoutes'));
+  const { data = {}, error, loading, run } = useRequest(() => api.resource('pages').getRoutes());
   const [first, setFirst] = useState(true);
   (window as any).routesReload = async () => {
     setFirst(false);

@@ -4,6 +4,7 @@ import CollectionIndex from './CollectionIndex';
 import CollectionSingle from './CollectionSingle';
 import './style.less';
 import { useRequest, request, Spin } from '@nocobase/client';
+import api from '@/api-client';
 
 export function CollectionLoader(props: any) {
   let { path, pagepath, collection } = props.match.params;
@@ -24,7 +25,7 @@ export function CollectionLoader(props: any) {
   }));
   props.match.params['items'] = items;
   console.log(props.match, path);
-  const { data = {}, error, loading, run } = useRequest(() => request(`/${collection}:getCollection`));
+  const { data = {}, error, loading, run } = useRequest(() => api.resource(collection).getCollection());
 
   if (loading) {
     return <Spin/>;
