@@ -24,15 +24,26 @@ registerView('Table', Table);
 registerView('SimpleTable', SimpleTable);
 registerView('Details', Details);
 
-export default function ViewFactory(props) {
-  const { activeTab, viewCollectionName, viewName, reference } = props;
-  console.log({viewCollectionName, viewName});
-  const { data = {}, error, loading, run } = useRequest(() => api.resource(viewCollectionName).getView({
+export interface ViewProps {
+  resourceName: string;
+  resourceKey?: string | number;
+  associatedName?: string;
+  associatedKey?: string | number;
+  viewName?: string;
+  [key: string]: any;
+}
+
+export default function ViewFactory(props: ViewProps) {
+  const { activeTab, associatedName, associatedKey, resourceName, viewCollectionName, viewName, reference } = props;
+  const name = associatedName ? `collections.${resourceName}` : resourceName;
+  console.log({name, associatedKey, viewName});
+  const { data = {}, error, loading, run } = useRequest(() => api.resource(name).getView({
+    associatedKey: associatedName,
     resourceKey: viewName,
   }), {
-    refreshDeps: [viewCollectionName, viewName],
+    refreshDeps: [associatedName, resourceName, associatedKey, viewName],
   });
-  console.log(activeTab);
+  console.log(data);
   if (loading) {
     return <Spin/>;
   }

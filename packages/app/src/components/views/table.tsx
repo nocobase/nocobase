@@ -46,8 +46,7 @@ export function Table(props: TableProps) {
     associatedKey,
   }));
   const { sourceKey = 'id' } = activeTab.field||{};
-  console.log(data);
-  console.log(activeTab);
+  console.log(props);
   return (
     <Card bordered={false}>
       <Actions {...props} style={{ marginBottom: 14 }} actions={actions}/>

@@ -29,7 +29,8 @@ export function CollectionIndex(props) {
         // }
       />
       <div className={'collection-content'}>
-        <ViewFactory {...props} 
+        <ViewFactory
+          {...props}
           viewCollectionName={collection} 
           viewName={viewName||defaultViewName}
           resourceName={collection}

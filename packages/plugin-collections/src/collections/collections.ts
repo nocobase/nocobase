@@ -157,12 +157,12 @@ export default {
       association: 'tabs',
       viewName: 'simple',
     },
-    {
-      type: 'association',
-      name: 'roles',
-      title: '权限',
-      association: 'roles',
-      viewName: 'simple2',
-    },
+    // {
+    //   type: 'association',
+    //   name: 'roles',
+    //   title: '权限',
+    //   association: 'roles',
+    //   viewName: 'simple2',
+    // },
   ],
 } as TableOptions;

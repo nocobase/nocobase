@@ -64,7 +64,7 @@ export function SimpleTable(props: SimpleTableProps) {
   return (
     <Card bordered={false}>
       <Actions {...props} style={{ marginBottom: 14 }} actions={actions}/>
-      <ViewFactory reference={drawerRef} viewCollectionName={viewCollectionName} viewName={rowViewName}/>
+      <ViewFactory {...props} reference={drawerRef} viewCollectionName={viewCollectionName} viewName={rowViewName}/>
       <AntdTable dataSource={data} onRow={(data) => ({
         onClick: () => {
           drawerRef.current.setVisible(true);
