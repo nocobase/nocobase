@@ -1,6 +1,6 @@
 import { initDatabase, agent } from './index';
 
-describe('list', () => {
+describe('set', () => {
   let db;
   
   beforeEach(async () => {
