@@ -1,21 +1,20 @@
-import Koa from 'koa';
-import http from 'http';
-import request from 'supertest';
-import actions from '../';
-import { getConfig } from './index';
-import Database from '@nocobase/database';
-import Resourcer from '@nocobase/resourcer';
+import actions from '..';
 import { Context } from '../actions';
 import jsonReponse from '../middlewares/json-reponse';
+import { initDatabase, agent, resourcer } from './index';
 
-describe('middleware', () => {
-  let db: Database;
-  let resourcer: Resourcer;
-  let app: Koa;
+describe('list', () => {
+  let db;
+  
   beforeAll(async () => {
-    const config = getConfig();
-    app = config.app;
-    db = config.database;
+    resourcer.define({
+      name: 'posts',
+      middlewares: [
+        jsonReponse,
+      ],
+      actions: actions.common,
+    });
+    db = await initDatabase();
     db.table({
       name: 'posts',
       tableName: 'actions__m__posts',
@@ -43,28 +42,21 @@ describe('middleware', () => {
     await db.sync({
       force: true,
     });
-    resourcer = config.resourcer;
-    resourcer.define({
-      name: 'posts',
-      middlewares: [
-        jsonReponse,
-      ],
-      actions: actions.common,
-    });
   });
-  afterAll(async () => {
-    await db.close();
-  });
+  
+  afterAll(() => db.close());
+
   it('create', async () => {
-    const response = await request(http.createServer(app.callback()))
+    const response = await agent
       .post('/posts')
       .send({
         title: 'title1',
       });
     expect(response.body.data.title).toBe('title1');
   });
+
   it('list', async () => {
-    const response = await request(http.createServer(app.callback())).get('/posts?fields=title&page=1');
+    const response = await agent.get('/posts?fields=title&page=1');
     expect(response.body).toEqual({
       data: [ { title: 'title1' } ],
       meta: { count: 1, page: 1, per_page: 20 }
