@@ -1,95 +1,99 @@
-import Koa from 'koa';
-import http from 'http';
-import request from 'supertest';
-import actions from '..';
-import { getConfig } from './index';
-import Database, { Model } from '@nocobase/database';
-import Resourcer from '@nocobase/resourcer';
-import { resolve } from 'path';
+import { Op } from 'sequelize';
+
+import { initDatabase, agent } from './index';
 
 describe('list', () => {
-  let db: Database;
-  // let resourcer: Resourcer;
-  let app: Koa;
-  beforeAll(async () => {
-    const config = getConfig();
-    app = config.app;
-    db = config.database;
-    db.import({
-      directory: resolve(__dirname, './tables'),
-    });
-    await db.sync({
-      force: true,
-    });
-    // resourcer = config.resourcer;
+  let db;
+  
+  beforeEach(async () => {
+    db = await initDatabase();
   });
-
-  afterAll(async () => {
-    await db.close();
-  });
+  
+  afterAll(() => db.close());
 
   describe('common', () => {
-
-    beforeAll(async () => {
+    beforeEach(async () => {
       const Post = db.getModel('posts');
       const items = [];
       for (let index = 0; index < 2; index++) {
         items.push({
           title: `title${index}`,
-          status: 'common',
+          status: index % 2 ? 'published' : 'draft'
         });
       }
       await Post.bulkCreate(items);
     });
 
-    it('list1', async () => {
-      const Post = db.getModel('posts');
-      const response = await request(http.createServer(app.callback())).get('/posts?filter[status]=common');
-      expect(response.body.count).toBe(await Post.count({where: {status: 'common'}}));
-    });
-  
-    it('list2', async () => {
-      const Post = db.getModel('posts');
-      const response = await request(http.createServer(app.callback())).get('/posts?filter[title]=title1');
-      expect(response.body.count).toBe(await Post.count({
-        where: {
-          title: 'title1',
-        },
-      }));
-    });
-  
-    it('list3', async () => {
-      const response = await request(http.createServer(app.callback())).get('/posts?filter[status]=common&fields=title&page=1');
-      expect(response.body).toEqual({
-        count: 2,
-        page: 1,
-        per_page: 20,
-        rows: [ { title: 'title0' }, { title: 'title1' } ],
+    describe('filter', () => {
+      describe('equal', () => {
+        it('should be filtered by `status` equal to `published`', async () => {
+          const Post = db.getModel('posts');
+          const response = await agent.get('/posts?filter[status]=published');
+          expect(response.body.count).toBe(await Post.count({ where: { status: 'published' } }));
+        });
+      
+        it('should be filtered by `title` equal to `title1`', async () => {
+          const Post = db.getModel('posts');
+          const response = await agent.get('/posts?filter[title]=title1');
+          expect(response.body.count).toBe(await Post.count({
+            where: {
+              title: 'title1',
+            },
+          }));
+        });
+      });
+
+      describe('not equal', () => {
+        it('filter[status][ne]=published', async () => {
+          const Post = db.getModel('posts');
+          const drafts = (await Post.findAll({
+            where: {
+              status: {
+                [Op.ne]: 'published'
+              }
+            }
+          })).map(item => item.get('title'));
+          const response = await agent.get('/posts?filter[status][ne]=published');
+          expect(response.body.count).toBe(drafts.length);
+          expect(response.body.rows[0].title).toBe(drafts[0]);
+        });
       });
     });
-  
-    it('list4', async () => {
-      const response = await request(http.createServer(app.callback())).get('/posts?filter[status]=common&fields=title&sort=title&page=2&perPage=1');
-      expect(response.body).toEqual({
-        count: 2,
-        page: 2,
-        per_page: 1,
-        rows: [ { title: 'title1' } ],
+
+    describe('page', () => {
+      it('page by default size(20) should be ok', async () => {
+        const response = await agent.get('/posts?fields=title&page=1');
+        expect(response.body).toEqual({
+          count: 2,
+          page: 1,
+          per_page: 20,
+          rows: [ { title: 'title0' }, { title: 'title1' } ],
+        });
       });
-    });
-  
-    it('list5', async () => {
-      const response = await request(http.createServer(app.callback())).get('/posts?filter[status]=common&fields=title&page=2&per_page=1');
-      expect(response.body).toEqual({
-        count: 2,
-        page: 2,
-        per_page: 1,
-        rows: [ { title: 'title1' } ],
+    
+      it('page 1 by size(1) should be ok', async () => {
+        const response = await agent.get('/posts?fields=title&page=2&perPage=1');
+        expect(response.body).toEqual({
+          count: 2,
+          page: 2,
+          per_page: 1,
+          rows: [ { title: 'title1' } ],
+        });
+      });
+    
+      it('page 2 by size(1) should be ok', async () => {
+        const response = await agent.get('/posts?fields=title&page=2&per_page=1');
+        expect(response.body).toEqual({
+          count: 2,
+          page: 2,
+          per_page: 1,
+          rows: [ { title: 'title1' } ],
+        });
       });
     });
   
     it('list6', async () => {
-      const response = await request(http.createServer(app.callback())).get('/posts?fields=title&filter[customTitle]=title0&filter[status]=common');
+      const response = await agent.get('/posts?fields=title&filter[customTitle]=title0');
       expect(response.body).toEqual({ count: 1, rows: [ { title: 'title0' } ] });
     });
   });
@@ -108,7 +112,7 @@ describe('list', () => {
           {content: 'content6', status: 'published'},
         ],
       });
-      const response = await request(http.createServer(app.callback()))
+      const response = await agent
         .get(`/posts/${post.id}/comments?page=2&perPage=2&sort=content&fields=content&filter[published]=1`);
       expect(response.body).toEqual({
         rows: [ { content: 'content4' }, { content: 'content6' } ],
@@ -134,7 +138,7 @@ describe('list', () => {
           {name: 'tag7', status: 'published'},
         ],
       });
-      const response = await request(http.createServer(app.callback()))
+      const response = await agent
         .get(`/posts/${post.id}/tags?page=2&perPage=2&sort=name&fields=name&filter[published]=1`);
       expect(response.body).toEqual({
         rows: [ { name: 'tag5' }, { name: 'tag7' } ],

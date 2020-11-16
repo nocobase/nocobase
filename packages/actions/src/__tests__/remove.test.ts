@@ -1,33 +1,13 @@
-import Koa from 'koa';
-import http from 'http';
-import request from 'supertest';
-import actions from '..';
-import { getConfig } from './index';
-import Database, { Model } from '@nocobase/database';
-import Resourcer from '@nocobase/resourcer';
-import { resolve } from 'path';
+import { initDatabase, agent } from './index';
 
 describe('remove', () => {
-  let db: Database;
-  // let resourcer: Resourcer;
-  let app: Koa;
-
-  beforeAll(async () => {
-    const config = getConfig();
-    app = config.app;
-    db = config.database;
-    db.import({
-      directory: resolve(__dirname, './tables'),
-    });
-    await db.sync({
-      force: true,
-    });
-    // resourcer = config.resourcer;
+  let db;
+  
+  beforeEach(async () => {
+    db = await initDatabase();
   });
-
-  afterAll(async () => {
-    await db.close();
-  });
+  
+  afterAll(() => db.close());
 
   it('hasOne1', async () => {
     const User = db.getModel('users');
@@ -37,7 +17,7 @@ describe('remove', () => {
         email: 'email1122',
       }
     });
-    const response = await request(http.createServer(app.callback()))
+    const response = await agent
       .post(`/users/${user.id}/profile:remove`);
     const profile = await user.getProfile();
     expect(profile).toBeNull();
@@ -52,8 +32,8 @@ describe('remove', () => {
       ],
     });
     let [comment] = await post.getComments();
-    await request(http.createServer(app.callback()))
-    .post(`/posts/${post.id}/comments:remove/${comment.id}`);
+    await agent
+      .post(`/posts/${post.id}/comments:remove/${comment.id}`);
     const count = await post.countComments();
     expect(count).toBe(0);
   });
@@ -64,7 +44,7 @@ describe('remove', () => {
     await post.updateAssociations({
       user: {name: 'name121234'},
     });
-    await request(http.createServer(app.callback())).post(`/posts/${post.id}/user:remove`);
+    await agent.post(`/posts/${post.id}/user:remove`);
     post = await Post.findOne({
       where: {
         id: post.id,
@@ -88,7 +68,7 @@ describe('remove', () => {
       ],
     });
     const [tag] = await post.getTags();
-    await request(http.createServer(app.callback()))
+    await agent
       .delete(`/posts/${post.id}/tags:remove/${tag.id}`);
     const tags = await post.getTags();
     expect(tags.length).toBe(0);

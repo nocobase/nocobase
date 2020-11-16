@@ -10,7 +10,7 @@
     "clean": "lerna clean",
     "db:start": "docker-compose up -d",
     "lint": "eslint --ext .ts,.tsx,.js \"packages/*/src/**.@(ts|tsx|js)\" --fix",
-    "test": "npm run lint && jest --clearCache && jest",
+    "test": "npm run lint && jest",
     "release": "npm run build && lerna publish --yes --registry https://npm.pkg.github.com"
   },
   "devDependencies": {
