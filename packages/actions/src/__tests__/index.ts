@@ -2,9 +2,9 @@ import { resolve } from 'path';
 
 import glob from 'glob';
 import Koa from 'koa';
-import { Options, Dialect } from 'sequelize';
+import { Dialect } from 'sequelize';
 import bodyParser from 'koa-bodyparser';
-import supertest, { SuperAgentTest } from 'supertest';
+import supertest from 'supertest';
 
 import Database, { requireModule } from '@nocobase/database';
 import Resourcer from '@nocobase/resourcer';
