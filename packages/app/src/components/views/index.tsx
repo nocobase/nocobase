@@ -34,14 +34,21 @@ export interface ViewProps {
 }
 
 export default function ViewFactory(props: ViewProps) {
-  const { activeTab, associatedName, associatedKey, resourceName, viewCollectionName, viewName, reference } = props;
-  const name = associatedName ? `collections.${resourceName}` : resourceName;
-  console.log({name, associatedKey, viewName});
-  const { data = {}, error, loading, run } = useRequest(() => api.resource(name).getView({
-    associatedKey: associatedName,
-    resourceKey: viewName,
-  }), {
-    refreshDeps: [associatedName, resourceName, associatedKey, viewName],
+  const {
+    associatedName,
+    associatedKey,
+    resourceName,
+    viewName,
+    reference,
+  } = props;
+  const { data = {}, loading } = useRequest(() => {
+    const params = {
+      resourceKey: viewName,
+      associatedName: associatedName,
+    };
+    return api.resource(resourceName).getView(params);
+  }, {
+    refreshDeps: [associatedName, resourceName, viewName],
   });
   console.log(data);
   if (loading) {

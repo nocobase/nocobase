@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Table as AntdTable, Card } from 'antd';
 import { redirectTo } from '@/components/pages/CollectionLoader/utils';
 import { Actions } from '@/components/actions';
@@ -53,7 +53,7 @@ export function SimpleTable(props: SimpleTableProps) {
     associatedName,
     associatedKey,
   } = props;
-  const { fields, viewCollectionName, rowViewName, actions = [] } = schema;
+  const { fields, rowViewName, actions = [] } = schema;
   const { sourceKey = 'id' } = activeTab.field||{};
   const drawerRef = useRef<any>();
   const name = associatedName ? `${associatedName}.${resourceName}` : resourceName;
@@ -64,12 +64,21 @@ export function SimpleTable(props: SimpleTableProps) {
   return (
     <Card bordered={false}>
       <Actions {...props} style={{ marginBottom: 14 }} actions={actions}/>
-      <ViewFactory {...props} reference={drawerRef} viewCollectionName={viewCollectionName} viewName={rowViewName}/>
-      <AntdTable dataSource={data} onRow={(data) => ({
-        onClick: () => {
-          drawerRef.current.setVisible(true);
-        },
-      })} columns={fields} />
+      <ViewFactory
+        {...props}
+        viewName={rowViewName}
+        reference={drawerRef}
+      />
+      <AntdTable
+        columns={fields}
+        dataSource={data}
+        onRow={(record) => ({
+          onClick: () => {
+            drawerRef.current.setVisible(true);
+            drawerRef.current.getData(record.id);
+          }
+        })}
+      />
     </Card>
   );
 }

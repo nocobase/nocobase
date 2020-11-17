@@ -1,8 +1,26 @@
 import React from 'react';
 import { Card, Descriptions, Button } from 'antd';
 import { Actions } from '@/components/actions';
+import api from '@/api-client';
+import { useRequest } from 'umi';
 
 export function Details(props: any) {
+  const {
+    activeTab = {},
+    pageInfo = {},
+    schema,
+    resourceName,
+    associatedName,
+    associatedKey,
+    resourceKey,
+  } = props;
+  const { data, loading } = useRequest(() => {
+    const name = associatedName ? `${associatedName}.${resourceName}` : resourceName;
+    return api.resource(name).get({
+      resourceKey,
+      associatedKey,
+    });
+  });
   console.log(props);
   const { actions = [], fields = [] } = props.schema;
   return (

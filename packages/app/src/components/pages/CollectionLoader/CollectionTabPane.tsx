@@ -5,7 +5,7 @@ import { useRequest, request, Spin } from '@nocobase/client';
 
 export function CollectionTabPane(props) {
   const { pageInfo = {}, activeTab = {}, item = {} } = props;
-  const { viewCollectionName, viewName, association, collection_name, field = {} } = activeTab;
+  const { viewName, association, collection_name, field = {} } = activeTab;
   const { sourceKey = 'id' } = field;
 
   const params = {};
@@ -25,7 +25,6 @@ export function CollectionTabPane(props) {
     <div>
       <ViewFactory
         {...props} 
-        viewCollectionName={viewCollectionName} 
         viewName={viewName}
         {...params}
       />

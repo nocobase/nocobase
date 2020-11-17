@@ -14,12 +14,32 @@ import {
   setValidationLanguage,
 } from '@formily/antd';
 import { QuestionCircleOutlined } from '@ant-design/icons';
+import { useRequest } from 'umi';
+import api from '@/api-client';
 
 export const DrawerForm = forwardRef((props: any, ref) => {
   console.log(props);
+  const {
+    activeTab = {},
+    pageInfo = {},
+    schema,
+    resourceName,
+    associatedName,
+    associatedKey,
+  } = props;
   const [visible, setVisible] = useState(false);
+  const { data, run } = useRequest((resourceKey) => {
+    const name = associatedName ? `${associatedName}.${resourceName}` : resourceName;
+    return api.resource(name).get({
+      resourceKey,
+      associatedKey,
+    });
+  }, {
+    manual: true,
+  });
   useImperativeHandle(ref, () => ({
     setVisible,
+    getData: run,
   }));
   const actions = createAsyncFormActions();
   const { title } = props.schema||{};
