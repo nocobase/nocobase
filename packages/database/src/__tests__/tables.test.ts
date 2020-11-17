@@ -3,20 +3,19 @@ import Database from '../database';
 import Table from '../table';
 import Model from '../model';
 
+let db: Database;
+
+beforeEach(async () => {
+  db = await getDatabase();
+});
+
+afterEach(async () => {
+  await db.close();
+});
+
 describe('tables', () => {
-  let db: Database;
-
-  // beforeAll(() => {
-  //   db = getDatabase();
-  // });
-
-  // afterAll(async () => {
-  //   await db.sequelize.close();
-  // });
-
   describe('options', () => {
-    it('shoud be defined', () => {
-      db = getDatabase();
+    it('should be defined', () => {
       db.table({
         name: 'foo',
       });
@@ -34,7 +33,6 @@ describe('tables', () => {
           return 'test12345';
         }
       }
-      db = getDatabase();
       const table = db.table({
         name: 'abc',
         model: Abc,
@@ -44,8 +42,7 @@ describe('tables', () => {
       expect(Abc.getModel('abc').test12345()).toBe('test12345');
     });
 
-    it('shoud tableName === name', async () => {
-      db = getDatabase();
+    it('should tableName === name', async () => {
       db.table({
         name: 'foos',
       });
@@ -53,8 +50,7 @@ describe('tables', () => {
       expect(db.getModel('foos').getTableName()).toBe('foos');
     });
 
-    it('shoud be custom when tableName is defined', async () => {
-      db = getDatabase();
+    it('should be custom when tableName is defined', async () => {
       db.table({
         name: 'bar',
         tableName: 'bar_v2'
@@ -63,8 +59,7 @@ describe('tables', () => {
       expect(db.getModel('bar').getTableName()).toBe('bar_v2');
     });
 
-    it('shoud be custom when timestamps is defined', async () => {
-      db = getDatabase();
+    it('should be custom when timestamps is defined', async () => {
       db.table({
         name: 'baz',
         createdAt: 'created',
@@ -74,8 +69,7 @@ describe('tables', () => {
       expect(db.getModel('baz').rawAttributes.updated).toBeDefined();
     });
 
-    it('index shound be defined', async () => {
-      db = getDatabase();
+    it('index should be defined', async () => {
       db.table({
         name: 'baz',
         fields: [
@@ -104,8 +98,7 @@ describe('tables', () => {
       ]);
     });
 
-    it('index shound be defined', async () => {
-      db = getDatabase();
+    it('index should be defined', async () => {
       db.table({
         name: 'baz2',
         indexes: [
@@ -140,8 +133,7 @@ describe('tables', () => {
   });
 
   describe('#extend()', () => {
-    it('shoud be extend', async () => {
-      db = getDatabase();
+    it('should be extend', async () => {
       db.table({
         name: 'baz',
       });
@@ -155,8 +147,7 @@ describe('tables', () => {
       expect(db.getModel('baz').rawAttributes.created).toBeDefined();
       expect(db.getModel('baz').rawAttributes.updated).toBeDefined();
     });
-    it('shoud be extend', async () => {
-      db = getDatabase();
+    it('should be extend', async () => {
       db.table({
         name: 'foos',
       });
@@ -196,10 +187,9 @@ describe('tables', () => {
 
   describe('associations', () => {
     beforeAll(() => {
-      db = getDatabase();
     });
 
-    it('shound be undefined when target table does not exist', () => {
+    it('should be undefined when target table does not exist', () => {
       db.table({
         name: 'bars',
         fields: [
@@ -212,14 +202,22 @@ describe('tables', () => {
       expect(db.getModel('bars').associations.foo).toBeUndefined();
     });
 
-    it('shound be defined when target table exists', () => {
+    it('should be defined when target table exists', () => {
+      db.table({
+        name: 'bars',
+        fields: [
+          {
+            type: 'hasOne',
+            name: 'foo',
+          }
+        ],
+      });
       db.table({name: 'foos'});
       expect(db.getModel('bars').associations.foo).toBeDefined();
     });
 
     describe('#setFields()', () => {
-      beforeAll(() => {
-        db = getDatabase();
+      beforeEach(() => {
         db.table({
           name: 'table1',
           fields: [
@@ -239,13 +237,13 @@ describe('tables', () => {
           name: 'table2',
         });
       });
-      it('shound be defined', () => {
+      it('should be defined', () => {
         const table1 = db.getModel('table1');
         expect(Object.keys(table1.associations).length).toBe(2);
         expect(table1.associations.table21).toBeDefined();
         expect(table1.associations.table22).toBeDefined();
       });
-      it('shound be defined', () => {
+      it('should be defined', () => {
         db.getTable('table1').setFields([
           {
             type: 'string',
@@ -267,8 +265,7 @@ describe('tables', () => {
     });
 
     describe('#addField()', () => {
-      beforeAll(() => {
-        db = getDatabase();
+      beforeEach(() => {
         db.table({
           name: 'table1',
         });
@@ -276,7 +273,7 @@ describe('tables', () => {
           name: 'table2',
         });
       });
-      it('shound be defined when the field be added after initialization', () => {
+      it('should be defined when the field be added after initialization', () => {
         db.getTable('table1').addField({
           type: 'hasOne',
           name: 'table2',
@@ -285,7 +282,12 @@ describe('tables', () => {
         expect(Object.keys(db.getModel('table1').associations).length).toBe(1);
         expect(db.getModel('table1').associations.table2).toBeDefined();
       });
-      it('shound be defined when continue to add', () => {
+      it('should be defined when continue to add', () => {
+        db.getTable('table1').addField({
+          type: 'hasOne',
+          name: 'table2',
+          target: 'table2',
+        });
         db.getTable('table1').addField({
           type: 'hasOne',
           name: 'table21',
