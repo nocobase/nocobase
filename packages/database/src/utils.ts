@@ -19,8 +19,11 @@ interface ToWhereContext {
 }
 
 export function toWhere(options: any, context: ToWhereContext = {}) {
-  if (options === null || Array.isArray(options) || typeof options !== 'object') {
+  if (options === null || typeof options !== 'object') {
     return options;
+  }
+  if (Array.isArray(options)) {
+    return options.map((item) => toWhere(item, context));
   }
   const { Model, associations = {}, ctx, dialect } = context;
   const items = {};
@@ -48,6 +51,7 @@ export function toWhere(options: any, context: ToWhereContext = {}) {
       }
     }
     else {
+      // TODO: to fix same op key as field name
       values[op.has(key) ? op.get(key) : key] = toWhere(items[key], context);
     }
   }

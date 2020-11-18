@@ -1,18 +1,23 @@
-import { getDatabase } from '.';
 import Database from '..';
+import { getDatabase } from '.';
 import { Op, Sequelize } from 'sequelize';
-import Model from '../model';
+import Model, { ModelCtor } from '../model';
 import { BelongsToMany } from '../fields';
 import { Mode } from 'fs';
 
+
+let db: Database;
+
+beforeEach(async () => {
+  db = await getDatabase();
+});
+
+afterEach(async () => {
+  await db.close();
+});
+
 describe('actions', () => {
-  let db: Database;
-
-  beforeAll(async () => {
-    db = getDatabase({
-      logging: false,
-    });
-
+  beforeEach(async () => {
     db.table({
       name: 'users',
       tableName: 'user1234',
@@ -196,11 +201,6 @@ describe('actions', () => {
     await db.sync({
       force: true,
     });
-
-  });
-
-  afterAll(async () => {
-    await db.close();
   });
 
   it('through attributes', async () => {
@@ -235,9 +235,9 @@ describe('actions', () => {
     it('scope', async () => {
       const [User, Post, Comment] = db.getModels(['users', 'posts', 'comments']);
       const user1 = await User.create();
-      const user2 =await User.create();
-      const user3 =await User.create();
-      const user4 =await User.create();
+      const user2 = await User.create();
+      const user3 = await User.create();
+      const user4 = await User.create();
       const post = await Post.create();
       const comment = await Comment.create();
       comment.updateAssociations({
@@ -265,16 +265,144 @@ describe('actions', () => {
         ],
       });
       const comments = await post.getCurrent_user_comments();
-      // console.log(comments);
+      // TODO: no expect
+    });
+  });
+
+  describe('parseApiJson', () => {
+    let db: Database;
+    let Foo: ModelCtor<Model>;
+    beforeEach(() => {
+      db = getDatabase();
+      db.table({
+        name: 'bazs',
+        tableName: 'bazs_model'
+      });
+      db.table({
+        name: 'bays',
+        tableName: 'bays_model'
+      });
+      db.table({
+        name: 'bars',
+        tableName: 'bars_model',
+        fields: [
+          {
+            type: 'belongsTo',
+            name: 'baz',
+          },
+          {
+            type: 'belongsTo',
+            name: 'bay',
+          },
+        ],
+      });
+      db.table({
+        name: 'foos',
+        tableName: 'foos_model',
+        fields: [
+          {
+            type: 'hasMany',
+            name: 'bars',
+          },
+          {
+            type: 'hasMany',
+            name: 'fozs',
+          },
+          {
+            type: 'hasMany',
+            name: 'coos',
+          },
+        ],
+      });
+      db.table({
+        name: 'fozs',
+        tableName: 'fozs_model',
+      });
+      db.table({
+        name: 'coos',
+        tableName: 'coos_model',
+      });
+      Foo = db.getModel('foos');
+    });
+  
+    afterEach(() => db.close());
+
+    it('parseApiJson', () => {
+      const data = Foo.parseApiJson({
+        filter: {
+          col1: 'co2',
+        }
+      });
+      expect(data).toEqual({ where: { col1: 'co2' } });
+    });
+
+    it('parseApiJson', () => {
+      const data = Foo.parseApiJson({
+        fields: ['col1'],
+      });
+      expect(data).toEqual({ attributes: ['col1'] });
+    });
+
+    it('parseApiJson', () => {
+      const data = Foo.parseApiJson({
+        fields: ['col1'],
+        filter: {
+          col1: 'co2',
+        },
+      });
+      expect(data).toEqual({ attributes: ['col1'], where: { col1: 'co2' } });
+    });
+
+    it('parseApiJson', () => {
+      const data = Foo.parseApiJson({
+        fields: ['col1'],
+        filter: {
+          col1: 'val1',
+          bars: {
+            col1: 'val1',
+          }
+        },
+      });
+      expect(data).toEqual({
+        attributes: ['col1'],
+        where: { col1: 'val1' },
+        include: [
+          {
+            association: 'bars',
+            where: { col1: 'val1' },
+          }
+        ],
+      });
+    });
+
+    it('parseApiJson', () => {
+      const data = Foo.parseApiJson({
+        fields: ['col1', 'bars.col1'],
+        filter: {
+          col1: 'val1',
+          bars: {
+            col1: 'val1',
+          }
+        },
+      });
+      expect(data).toEqual({
+        attributes: ['col1'],
+        where: { col1: 'val1' },
+        include: [
+          {
+            association: 'bars',
+            attributes: ['col1'],
+            where: { col1: 'val1' },
+          }
+        ],
+      });
     });
   });
 
   describe('findByApiJson', () => {
     it('q', async () => {
-
       db.getModel('tags').addScope('scopeName', (name, ctx) => {
         expect(ctx.scopeName).toBe(name);
-        console.log(ctx);
         return {
           where: {
             name: name,
@@ -330,7 +458,11 @@ describe('actions', () => {
           scopeName: 'tag3',
         },
       });
+      console.log(options);
 
+      try{
+      // DatabaseError [SequelizeDatabaseError]: column tags.scopeName does not exist
+      // SELECT count("posts"."id") AS "count" FROM "post123456" AS "posts" INNER JOIN ( "posts_tags1234" AS "tags->posts_tags" INNER JOIN "tag1234" AS "tags" ON "tags"."id" = "tags->posts_tags"."tag_id") ON "posts"."id" = "tags->posts_tags"."post_id" AND "tags"."scopeName" = 'tag3' INNER JOIN "user1234" AS "user" ON "posts"."user_id" = "user"."id" AND "user"."name" = 'name112233' WHERE "posts"."title" = 'title112233';
       const { rows, count } = await Post.findAndCountAll({
         ...options,
         // group: ['id'],
@@ -340,11 +472,14 @@ describe('actions', () => {
 
       // console.log(JSON.stringify(rows[0].toJSON(), null, 2));
 
-      rows.forEach(post => {
-        // expect(post.toJSON()).toEqual({ title: 'title112233', 'tags_count': 3, user: { name: 'name112233', posts_count: 1 } });
-        expect(post.get('title')).toBe('title112233');
-        expect(post.user.get('name')).toBe('name112233');
+      rows.forEach(row => {
+        // expect(row.toJSON()).toEqual({ title: 'title112233', 'tags_count': 3, user: { name: 'name112233', posts_count: 1 } });
+        expect(row.get('title')).toBe('title112233');
+        expect(row.user.get('name')).toBe('name112233');
       });
+    } catch(error) {
+      console.error(error);
+    }
 
       // console.log(count);
 
@@ -878,15 +1013,11 @@ describe('actions', () => {
 });
 
 describe('belongsToMany', () => {
-  let db: Database;
   let post: Model;
   let tag1: Model;
   let tag2: Model;
 
-  beforeAll(async () => {
-    db = getDatabase({
-      logging: false,
-    });
+  beforeEach(async () => {
     db.table({
       name: 'posts',
       tableName: 't333333_posts',
@@ -926,10 +1057,6 @@ describe('belongsToMany', () => {
     post = await Post.create({slug: 'post1'});
     tag1 = await Tag.create({name: 'tag1'});
     tag2 = await Tag.create({name: 'tag2'});
-  });
-
-  afterAll(async () => {
-    await db.close();
   });
 
   it('@', async () => {

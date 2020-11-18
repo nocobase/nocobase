@@ -28,7 +28,7 @@ import Database from '..';
 
 describe('field types', () => {
   const assertTypeInstanceOf = (expected, actual) => {
-    const db = getDatabase();
+    const db: Database = getDatabase();
     const table = db.table({
       name: 'test',
     });
@@ -56,6 +56,7 @@ describe('field types', () => {
         expect(type).toBe(field.getDataType());
       }
     }
+    db.close();
   }
 
   it('shound be boolean', () => {
@@ -212,7 +213,7 @@ describe('field types', () => {
 
   describe('virtual', () => {
     let db: Database;
-    beforeAll(async () => {
+    beforeEach(async () => {
       db = getDatabase();
       db.table({
         name: 'formula_tests',
@@ -283,7 +284,7 @@ describe('field types', () => {
       })
       await db.sync({force: true});
     });
-    afterAll(async () => {
+    afterEach(async () => {
       await db.close();
     });
     it('pwd', async () => {
