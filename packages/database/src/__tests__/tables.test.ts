@@ -6,7 +6,7 @@ import Model from '../model';
 let db: Database;
 
 beforeEach(async () => {
-  db = await getDatabase();
+  db = getDatabase();
 });
 
 afterEach(async () => {
@@ -47,7 +47,8 @@ describe('tables', () => {
         name: 'foos',
       });
       expect(db.getModel('foos').name).toBe('foos');
-      expect(db.getModel('foos').getTableName()).toBe('foos');
+      // hooked by beforeDefine in index.ts
+      expect(db.getModel('foos').getTableName()).toBe('_packages_database_src___tests___tables_foos');
     });
 
     it('should be custom when tableName is defined', async () => {
@@ -56,7 +57,8 @@ describe('tables', () => {
         tableName: 'bar_v2'
       });
       expect(db.getModel('bar').name).toBe('bar');
-      expect(db.getModel('bar').getTableName()).toBe('bar_v2');
+      // hooked by beforeDefine in index.ts
+      expect(db.getModel('bar').getTableName()).toBe('_packages_database_src___tests___tables_bar_v2');
     });
 
     it('should be custom when timestamps is defined', async () => {

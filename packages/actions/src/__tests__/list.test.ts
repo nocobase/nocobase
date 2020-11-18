@@ -18,7 +18,8 @@ describe('list', () => {
       for (let index = 0; index < 2; index++) {
         items.push({
           title: `title${index}`,
-          status: index % 2 ? 'published' : 'draft'
+          status: index % 2 ? 'published' : 'draft',
+          published_at: index % 2 ? new Date() : null
         });
       }
       await Post.bulkCreate(items);
@@ -56,6 +57,48 @@ describe('list', () => {
           const response = await agent.get('/posts?filter[status][ne]=published');
           expect(response.body.count).toBe(drafts.length);
           expect(response.body.rows[0].title).toBe(drafts[0]);
+        });
+      });
+
+      describe('null', () => {
+        it('filter[published_at.is]', async () => {
+          const Post = db.getModel('posts');
+          const expected = await Post.findAll({
+            where: {
+              published_at: {
+                [Op.is]: null
+              }
+            }
+          });
+          const response = await agent.get('/posts?filter[published_at.is]');
+          expect(response.body.count).toBe(expected.length);
+        });
+
+        it('filter[published_at.not]', async () => {
+          const Post = db.getModel('posts');
+          const expected = await Post.findAll({
+            where: {
+              published_at: {
+                [Op.not]: null
+              }
+            }
+          });
+          const response = await agent.get('/posts?filter[published_at.not]');
+          expect(response.body.count).toBe(expected.length);
+        });
+
+        // TODO(bug): should use `user.is`
+        it('filter[user_id.is]', async () => {
+          const Post = db.getModel('posts');
+          const expected = await Post.findAll({
+            where: {
+              user_id: {
+                [Op.is]: null
+              }
+            }
+          });
+          const response = await agent.get('/posts?filter[user_id.is]');
+          expect(response.body.count).toBe(expected.length);
         });
       });
     });

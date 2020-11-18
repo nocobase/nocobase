@@ -36,7 +36,7 @@ const connection = {
         },
       },
     },
-    logging: false,
+    logging: process.env.DB_LOG_SQL === 'on' ? console.log : false,
   },
   database: null,
   create() {

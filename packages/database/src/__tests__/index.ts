@@ -1,7 +1,14 @@
 import Database from '../database';
 import { Dialect } from 'sequelize';
 
-
+function getTestKey() {
+  const { id } = require.main;
+  const key = id
+    .replace(process.env.PWD, '')
+    .replace('.test.ts', '')
+    .replace(/[^\w]/g, '_');
+  return key
+}
 
 const config = {
   username: process.env.DB_USER,
@@ -21,5 +28,12 @@ const config = {
 };
 
 export function getDatabase() {
-  return new Database(config);
+  return new Database({
+    ...config,
+    hooks: {
+      beforeDefine(columns, model) {
+        model.tableName = `${getTestKey()}_${model.tableName || model.name.plural}`;
+      }
+    }
+  });
 };
