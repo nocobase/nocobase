@@ -3,11 +3,21 @@ import {
   HasMany, HasOne, Integer, BelongsTo, BelongsToMany
 } from '../fields';
 import { DataTypes } from 'sequelize';
+import Database from '..';
+
+let db: Database;
+
+beforeEach(() => {
+  db = getDatabase();
+});
+
+afterEach(() => {
+  db.close();
+});
 
 describe('associations', () => {
   describe('hasOne', () => {
-    it('shound be defaults', async () => {
-      const db = getDatabase();
+    it('should be defaults', async () => {
       db.table({
         name: 'foos',
       });
@@ -25,8 +35,7 @@ describe('associations', () => {
       expect(field.options.foreignKey).toBe('bar_id');
       expect(field.options.sourceKey).toBe('id');
     });
-    it('shound be ok when the association table is defined later', async () => {
-      const db = getDatabase();
+    it('should be ok when the association table is defined later', async () => {
       db.table({
         name: 'bars',
         fields: [
@@ -44,8 +53,7 @@ describe('associations', () => {
       expect(field.options.foreignKey).toBe('bar_id');
       expect(field.options.sourceKey).toBe('id');
     });
-    it('shound be custom when target is defined', () => {
-      const db = getDatabase();
+    it('should be custom when target is defined', () => {
       db.table({
         name: 'foos',
       });
@@ -65,8 +73,7 @@ describe('associations', () => {
       expect(field.options.sourceKey).toBe('id');
     });
 
-    it('shound be custom when sourceKey is defined', () => {
-      const db = getDatabase();
+    it('should be custom when sourceKey is defined', () => {
       db.table({
         name: 'foos',
       });
@@ -86,8 +93,7 @@ describe('associations', () => {
       expect(field.options.sourceKey).toBe('sid');
     });
 
-    it('shound be integer type when the column of sourceKey does not exist', () => {
-      const db = getDatabase();
+    it('should be integer type when the column of sourceKey does not exist', () => {
       db.table({
         name: 'foos',
       });
@@ -112,8 +118,7 @@ describe('associations', () => {
   });
 
   describe('hasMany', () => {
-    it('shound be defaults', async () => {
-      const db = getDatabase();
+    it('should be defaults', async () => {
       db.table({
         name: 'foo',
       });
@@ -131,8 +136,7 @@ describe('associations', () => {
       expect(field.options.foreignKey).toBe('bar_id');
       expect(field.options.sourceKey).toBe('id');
     });
-    it('shound be ok when the association table is defined later', async () => {
-      const db = getDatabase();
+    it('should be ok when the association table is defined later', async () => {
       db.table({
         name: 'bars',
         fields: [
@@ -150,8 +154,7 @@ describe('associations', () => {
       expect(field.options.foreignKey).toBe('bar_id');
       expect(field.options.sourceKey).toBe('id');
     });
-    it('shound be custom when target is defined', () => {
-      const db = getDatabase();
+    it('should be custom when target is defined', () => {
       db.table({
         name: 'foos',
       });
@@ -171,8 +174,7 @@ describe('associations', () => {
       expect(field.options.sourceKey).toBe('id');
     });
 
-    it('shound be custom when sourceKey is defined', () => {
-      const db = getDatabase();
+    it('should be custom when sourceKey is defined', () => {
       db.table({
         name: 'foos',
       });
@@ -192,8 +194,7 @@ describe('associations', () => {
       expect(field.options.sourceKey).toBe('sid');
     });
 
-    it('shound be integer type when the column of sourceKey does not exist', () => {
-      const db = getDatabase();
+    it('should be integer type when the column of sourceKey does not exist', () => {
       db.table({
         name: 'foos',
       });
@@ -218,8 +219,7 @@ describe('associations', () => {
   });
 
   describe('belongsTo', () => {
-    it('shound be custom foreignKey', async () => {
-      const db = getDatabase();
+    it('should be custom foreignKey', async () => {
       db.table({
         name: 'bars',
         fields: [
@@ -236,8 +236,7 @@ describe('associations', () => {
       expect(field.options.targetKey).toBe('id');
       expect(field.options.foreignKey).toBe('foo_id');
     });
-    it('shound be custom foreignKey', async () => {
-      const db = getDatabase();
+    it('should be custom foreignKey', async () => {
       db.table({
         name: 'bars',
         fields: [
@@ -255,8 +254,7 @@ describe('associations', () => {
       expect(field.options.targetKey).toBe('id');
       expect(field.options.foreignKey).toBe('custom_foo_id');
     });
-    it('shound be custom primaryKey', () => {
-      const db = getDatabase();
+    it('should be custom primaryKey', () => {
       db.table({
         name: 'foos',
         fields: [
@@ -282,8 +280,7 @@ describe('associations', () => {
       expect(field.options.targetKey).toBe('fid');
       expect(field.options.foreignKey).toBe('foo_fid');
     });
-    it('shound be custom primaryKey', () => {
-      const db = getDatabase();
+    it('should be custom primaryKey', () => {
       db.table({
         name: 'bars',
         fields: [
@@ -309,8 +306,7 @@ describe('associations', () => {
       expect(field.options.targetKey).toBe('fid');
       expect(field.options.foreignKey).toBe('foo_fid');
     });
-    it('shound throw error', () => {
-      const db = getDatabase();
+    it('should throw error', () => {
       db.table({
         name: 'foos',
       });
@@ -327,8 +323,7 @@ describe('associations', () => {
         });
       }).toThrow('Unknown attribute "fid" passed as targetKey, define this attribute on model "foos" first')
     });
-    it('shound be ok when the association table is defined later', async () => {
-      const db = getDatabase();
+    it('should be ok when the association table is defined later', async () => {
       db.table({
         name: 'bars',
         fields: [
@@ -353,8 +348,7 @@ describe('associations', () => {
       expect(field.options.foreignKey).toBe('foo_fid');
     });
 
-    it('shound work', async () => {
-      const db = getDatabase();
+    it('should work', async () => {
       db.table({
         name: 'rows',
         fields: [
@@ -392,10 +386,7 @@ describe('associations', () => {
   });
 
   describe('belongsToMany', () => {
-    it('shound be defaults', async () => {
-      const db = getDatabase({
-        logging: false,
-      });
+    it('should be defaults', async () => {
       db.table({
         name: 'foos',
         fields: [
@@ -447,8 +438,7 @@ describe('associations', () => {
       expect(db.getModel('bars').associations.foos).toBeDefined();
     });
 
-    it('shound be correct when use custom primary key', async () => {
-      const db = getDatabase();
+    it('should be correct when use custom primary key', async () => {
       db.table({
         name: 'foos',
         fields: [
@@ -515,9 +505,6 @@ describe('associations', () => {
     });
 
     it('through be defined after source and target', async () => {
-      const db = getDatabase({
-        logging: false,
-      });
       db.table({
         name: 'foos',
         fields: [
@@ -555,9 +542,6 @@ describe('associations', () => {
     });
 
     it('through be defined after source', async () => {
-      const db = getDatabase({
-        logging: false,
-      });
       db.table({
         name: 'foos',
         fields: [
@@ -596,9 +580,6 @@ describe('associations', () => {
     });
 
     it('#', () => {
-      const db = getDatabase({
-        logging: false,
-      });
       db.table({
         name: 'posts',
         fields: [
@@ -657,8 +638,7 @@ describe('associations', () => {
     });
   });
 
-  it('shound be defined', () => {
-    const db = getDatabase();
+  it('should be defined', () => {
     db.table({
       name: 'bars',
       fields: [

@@ -1,37 +1,25 @@
 import Database from '../database';
-import { Options } from 'sequelize';
+import { Dialect } from 'sequelize';
 
-export const config: {
-  [key: string]: Options;
-} = {
-  mysql: {
-    username: 'test',
-    password: 'test',
-    database: 'test',
-    host: '127.0.0.1',
-    port: 43306,
-    dialect: 'mysql',
-  },
-  postgres: {
-    username: 'test',
-    password: 'test',
-    database: 'test',
-    host: '127.0.0.1',
-    port: 45432,
-    dialect: 'postgres',
-    define: {
-      hooks: {
-        beforeCreate(model, options) {
-          
-        },
+
+
+const config = {
+  username: process.env.DB_USER,
+  password: process.env.DB_PASSWORD,
+  database: process.env.DB_DATABASE,
+  host: process.env.DB_HOST,
+  port: Number.parseInt(process.env.DB_PORT, 10),
+  dialect: process.env.DB_DIALECT as Dialect,
+  define: {
+    hooks: {
+      beforeCreate(model, options) {
+        
       },
     },
-    // logging: false,
   },
+  logging: false,
 };
 
-export function getDatabase(options: Options = {}) {
-  // console.log(process.env.DB_DIALECT);
-  const db = new Database({...config[process.env.DB_DIALECT||'postgres'], ...options});
-  return db;
+export function getDatabase() {
+  return new Database(config);
 };

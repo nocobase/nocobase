@@ -1,21 +1,27 @@
+import Database from '..';
 import { getDatabase } from './';
+
+
+
+let db: Database;
+
+beforeEach(async () => {
+  db = await getDatabase();
+});
+
+afterEach(async () => {
+  await db.close();
+});
 
 describe('db sync', () => {
   describe('table.sync', () => {
     it('shound be ok1', async () => {
-      const db = getDatabase({
-        logging: false,
-      });
       const table = db.table({
         name: 'foos',
       });
       await table.sync();
-      await db.close();
     });
     it('sync#belongsTo', async () => {
-      const db = getDatabase({
-        logging: false,
-      });
       db.table({
         name: 'foos',
         tableName: 'foos1',
@@ -43,12 +49,8 @@ describe('db sync', () => {
           drop: false,
         }
       });
-      await db.close();
     });
     it('sync#hasMany', async () => {
-      const db = getDatabase({
-        logging: false,
-      });
       db.table({
         name: 'foos',
         tableName: 'foos2',
@@ -76,12 +78,8 @@ describe('db sync', () => {
           drop: false,
         }
       });
-      await db.close();
     });
     it('sync#belongsToMany', async () => {
-      const db = getDatabase({
-        logging: false,
-      });
       db.table({
         name: 'foos',
         fields: [
@@ -134,12 +132,8 @@ describe('db sync', () => {
         col1: 'val1'
       });
       expect(await db.getModel('bars').count()).toBe(2);
-      await db.close();
     });
     it('shound be ok2', async () => {
-      const db = getDatabase({
-        logging: false,
-      });
       const table = db.table({
         name: 'goos',
       });
@@ -166,7 +160,6 @@ describe('db sync', () => {
           drop: false,
         }
       });
-      await db.close();
     });
   });
 });
