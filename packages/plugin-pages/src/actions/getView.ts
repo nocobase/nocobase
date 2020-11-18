@@ -15,15 +15,14 @@ const transforms = {
     return arr;
   },
   form: async (fields: Model[]) => {
-    const arr = [];
+    const schema = {};
     for (const field of fields) {
-      arr.push({
-        ...field.toJSON(),
-        ...field.options,
-        dataIndex: field.name,
-      });
+      schema[field.name] = {
+        type: 'string',
+        title: field.title||field.name,
+      };
     }
-    return arr;
+    return schema;
   },
   details: async (fields: Model[]) => {
     const arr = [];
