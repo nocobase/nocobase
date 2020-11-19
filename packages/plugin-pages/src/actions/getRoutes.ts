@@ -34,7 +34,9 @@ function pages2routes(pages: Array<any>) {
 export default async function getRoutes(ctx, next) {
   const database: Database = ctx.database;
   const Page = database.getModel('pages');
-  let pages = await Page.findAll({});
+  let pages = await Page.findAll({
+    order: [['sort', 'asc']],
+  });
   const data = flatToTree(pages.map(row => row.toJSON()), {
     id: 'id',
     parentId: 'parent_id',

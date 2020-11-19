@@ -4,20 +4,22 @@ import ViewFactory from '@/components/views';
 
 export function Create(props) {
   console.log(props);
-  const { title, viewCollectionName, viewName } = props.schema;
+  const { title, viewName, collection_name } = props.schema;
   const { activeTab = {}, item = {} } = props;
-  const { association, collection_name } = activeTab;
+  const { association  } = activeTab;
 
   const params = {};
 
   if (association) {
     params['resourceName'] = association;
-    params['associatedName'] = collection_name;
+    params['associatedName'] = activeTab.collection_name;
     params['associatedKey'] = item.itemId;
   } else {
     params['resourceName'] = collection_name;
     params['resourceKey'] = item.itemId;
   }
+
+  console.log(params);
 
   const drawerRef = useRef<any>();
   return (
@@ -25,7 +27,6 @@ export function Create(props) {
       <ViewFactory 
         {...props}
         reference={drawerRef}
-        viewCollectionName={viewCollectionName}
         viewName={viewName}
         {...params}
       />

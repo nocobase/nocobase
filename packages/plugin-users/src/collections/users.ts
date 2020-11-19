@@ -7,6 +7,7 @@ export default {
     {
       type: 'string',
       name: 'username',
+      title: '用户名',
     },
   ],
   actions: [

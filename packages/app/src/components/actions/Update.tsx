@@ -4,15 +4,15 @@ import ViewFactory from '@/components/views';
 
 export function Update(props) {
   console.log(props);
-  const { title, viewCollectionName, viewName } = props.schema;
+  const { title, viewName, resourceName, collection_name } = props.schema;
   const { activeTab = {}, item = {} } = props;
-  const { association, collection_name } = activeTab;
+  const { association  } = activeTab;
 
   const params = {};
 
   if (association) {
     params['resourceName'] = association;
-    params['associatedName'] = collection_name;
+    params['associatedName'] = resourceName;
     params['associatedKey'] = item.itemId;
   } else {
     params['resourceName'] = collection_name;
@@ -22,15 +22,15 @@ export function Update(props) {
   const drawerRef = useRef<any>();
   return (
     <>
-      <ViewFactory
+      <ViewFactory 
         {...props}
         reference={drawerRef}
-        viewCollectionName={viewCollectionName}
         viewName={viewName}
         {...params}
       />
       <Button type={'primary'} onClick={() => {
         drawerRef.current.setVisible(true);
+        drawerRef.current.getData(item.itemId);
       }}>{title}</Button>
     </>
   )

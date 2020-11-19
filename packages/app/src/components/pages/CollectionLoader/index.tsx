@@ -34,7 +34,7 @@ export function CollectionLoader(props: any) {
   return (
     <div className={'collection'}>
       <div className={'collection-index'}>
-        <CollectionIndex collection={data.data||{}} {...props}/>
+        { items.length === 0 && <CollectionIndex collection={data.data||{}} {...props}/> }
       </div>
       {items.length > 0 && (
         <div className={'collection-item'}>

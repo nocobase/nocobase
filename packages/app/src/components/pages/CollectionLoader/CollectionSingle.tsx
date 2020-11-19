@@ -4,6 +4,7 @@ import { CollectionTabPane } from './CollectionTabPane';
 import { getPathName, redirectTo } from './utils';
 import api from '@/api-client';
 import { useRequest } from 'umi';
+import { Spin } from '@nocobase/client';
 
 export function CollectionSingle(props) {
   console.log(props);
@@ -11,12 +12,15 @@ export function CollectionSingle(props) {
   const { tabs = [] } = props.collection;
   const activeTab = tabs.find(tab => tab.name == item.tabName)||{};
   console.log(activeTab);
-  const { data = {} } = useRequest(() => activeTab && api.resource(activeTab.collection_name).getPageInfo({
+  const { data = {}, loading } = useRequest(() => activeTab && api.resource(activeTab.collection_name).getPageInfo({
     resourceKey: item.itemId,
   }));
   console.log(data);
   if (!activeTab) {
     return null;
+  }
+  if (loading) {
+    return <Spin/>;
   }
   return (
     <div>

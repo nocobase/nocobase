@@ -5,9 +5,23 @@ export default {
   title: '字段配置',
   fields: [
     {
+      type: 'integer',
+      name: 'sort',
+      title: '排序',
+      component: {
+        type: 'sort',
+        className: 'drag-visible',
+        width: 60,
+      },
+    },
+    {
       type: 'string',
       name: 'type',
       title: '类型',
+      component: {
+        type: 'string',
+        className: 'drag-visible',
+      },
     },
     {
       type: 'string',
@@ -20,12 +34,23 @@ export default {
       title: '名称',
     },
     {
+      type: 'boolean',
+      name: 'showInListAction',
+      title: '显示在表格里',
+    },
+    {
+      type: 'boolean',
+      name: 'showInGetAction',
+      title: '显示在详情里',
+    },
+    {
       type: 'json',
       name: 'options',
     },
     {
       type: 'belongsTo',
       name: 'collection',
+      title: '所属数据表',
       target: 'collections',
       targetKey: 'name',
     },

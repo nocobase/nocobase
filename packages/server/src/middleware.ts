@@ -44,6 +44,7 @@ export function middleware(options: MiddlewareOptions = {}) {
           const field = table.getField(names[0]) as BelongsTo | HasMany | BelongsToMany | HasOne;
           if (names.length == 0 || field) {
             let resourceType = 'single';
+            let actions = {};
             if (field) {
               if (field instanceof HasOne) {
                 resourceType = 'hasOne';
@@ -54,10 +55,14 @@ export function middleware(options: MiddlewareOptions = {}) {
               } else if (field instanceof BelongsToMany) {
                 resourceType = 'belongsToMany';
               }
+              if (field.options.actions) {
+                actions = field.options.actions;
+              }
             }
             resourcer.define({
               type: resourceType as any,
               name: resourceName,
+              actions,
             });
           }
         }

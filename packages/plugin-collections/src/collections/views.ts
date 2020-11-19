@@ -5,9 +5,23 @@ export default {
   title: '视图配置',
   fields: [
     {
+      type: 'integer',
+      name: 'sort',
+      title: '排序',
+      component: {
+        type: 'sort',
+        className: 'drag-visible',
+        width: 60,
+      },
+    },
+    {
       type: 'string',
       name: 'type',
       title: '类型',
+      component: {
+        type: 'string',
+        className: 'drag-visible',
+      },
     },
     {
       type: 'string',
