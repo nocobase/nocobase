@@ -43,7 +43,7 @@ const data = {
   path: '/',
   type: 'layout',
   template: 'TopMenuLayout',
-  order: 1,
+  sort: 10,
   children: [
     {
       title: '仪表盘',
@@ -51,7 +51,7 @@ const data = {
       path: '/dashboard',
       icon: 'dashboard',
       template: 'page1',
-      order: 2,
+      sort: 20,
     },
     {
       title: '数据',
@@ -59,7 +59,7 @@ const data = {
       path: '/collections',
       icon: 'dashboard',
       template: 'SideMenuLayout',
-      order: 3,
+      sort: 30,
       children: [
         {
           title: '页面3',
@@ -67,7 +67,7 @@ const data = {
           path: '/collections/page3',
           icon: 'dashboard',
           template: 'page3',
-          order: 5,
+          sort: 40,
         },
         {
           title: '页面4',
@@ -75,7 +75,7 @@ const data = {
           path: '/collections/page4',
           icon: 'dashboard',
           template: 'page4',
-          order: 6,
+          sort: 50,
         },
         {
           title: '页面5',
@@ -84,7 +84,7 @@ const data = {
           icon: 'dashboard',
           template: 'collection',
           collection: 'collection1',
-          order: 7,
+          sort: 60,
         },
       ]
     },
@@ -94,7 +94,7 @@ const data = {
       path: '/users',
       icon: 'dashboard',
       template: 'SideMenuLayout',
-      order: 3,
+      sort: 70,
       children: [
         {
           title: '用户管理',
@@ -103,7 +103,7 @@ const data = {
           icon: 'dashboard',
           template: 'collection',
           collection: 'users',
-          order: 1,
+          sort: 80,
         },
       ]
     },
@@ -113,7 +113,7 @@ const data = {
       path: '/settings',
       icon: 'dashboard',
       template: 'SideMenuLayout',
-      order: 4,
+      sort: 90,
       children: [
         {
           title: '页面与菜单',
@@ -121,7 +121,7 @@ const data = {
           collection: 'pages',
           path: '/settings/pages',
           icon: 'dashboard',
-          order: 1,
+          sort: 100,
         },
         {
           title: '数据表配置',
@@ -129,7 +129,7 @@ const data = {
           collection: 'collections',
           path: '/settings/collections',
           icon: 'dashboard',
-          order: 2,
+          sort: 110,
         },
         {
           title: '权限配置',
@@ -137,7 +137,7 @@ const data = {
           collection: 'roles',
           path: '/settings/roles',
           icon: 'dashboard',
-          order: 3,
+          sort: 120,
         },
       ]
     },
@@ -173,117 +173,121 @@ const data = {
     // console.log(options);
     const associations: any = {};
     if (options.fields) {
-      associations['fields'] = options.fields.map(item => ({
+      associations['fields'] = options.fields.map((item, sort) => ({
         ...item,
         options: item,
+        sort,
       }))
     }
     if (options.tabs) {
-      associations['tabs'] = options.tabs.map(item => ({
+      associations['tabs'] = options.tabs.map((item, sort) => ({
         ...item,
         options: item,
+        sort,
       }))
     }
     if (options.actions) {
-      associations['actions'] = options.actions.map(item => ({
+      associations['actions'] = options.actions.map((item, sort) => ({
         ...item,
         options: item,
+        sort,
       }))
     }
     if (options.views) {
-      associations['views'] = options.views.map(item => ({
+      associations['views'] = options.views.map((item, sort) => ({
         ...item,
         options: item,
+        sort,
       }))
     }
     await collection.updateAssociations(associations);
   }
 
-  const actions = await Action.findAll();
+  // const actions = await Action.findAll();
 
-  for (const action of actions) {
-    const viewName = action.options.viewName;
-    console.log({viewName});
-    if (viewName) {
-      const view = await View.findOne({
-        where: {
-          name: viewName,
-          collection_name: action.collection_name
-        },
-      });
-      if (view) {
-        action.options.viewId = view.id;
-        console.log(action.options);
-        action.setDataValue('options', action.options);
-        action.changed('options', true);
-        await action.save();
-      }
-    }
-  }
-  const tabs = await Tab.findAll();
+  // for (const action of actions) {
+  //   const viewName = action.options.viewName;
+  //   console.log({viewName});
+  //   if (viewName) {
+  //     const view = await View.findOne({
+  //       where: {
+  //         name: viewName,
+  //         collection_name: action.collection_name
+  //       },
+  //     });
+  //     if (view) {
+  //       action.options.viewId = view.id;
+  //       console.log(action.options);
+  //       action.setDataValue('options', action.options);
+  //       action.changed('options', true);
+  //       await action.save();
+  //     }
+  //   }
+  // }
+  // const tabs = await Tab.findAll();
 
-  for (const tab of tabs) {
-    const viewName = tab.options.viewName;
-    if (!viewName) {
-      continue;
-    }
-    let view: any;
-    if (tab.type === 'association') {
-      view = await View.findOne({
-        where: {
-          name: viewName,
-          collection_name: tab.options.association,
-        },
-      });
-    } else {
-      view = await View.findOne({
-        where: {
-          name: viewName,
-          collection_name: tab.collection_name,
-        },
-      });
-    }
-    if (view) {
-      tab.options.viewId = view.id;
-      tab.setDataValue('options', tab.options);
-      tab.changed('options', true);
-      await tab.save();
-    }
-  }
-  const views = await View.findAll();
-  for (const view of views) {
-    const detailsViewName = view.options.detailsViewName;
-    if (detailsViewName) {
-      const v = await View.findOne({
-        where: {
-          name: detailsViewName,
-          collection_name: view.collection_name
-        },
-      });
-      if (v) {
-        view.options.detailsViewId = v.id;
-        view.setDataValue('options', view.options);
-        view.changed('options', true);
-        await view.save();
-      }
-    }
-    const updateViewName = view.options.updateViewName;
-    if (updateViewName) {
-      const v = await View.findOne({
-        where: {
-          name: updateViewName,
-          collection_name: view.collection_name
-        },
-      });
-      if (v) {
-        view.options.updateViewId = v.id;
-        view.setDataValue('options', view.options);
-        view.changed('options', true);
-        await view.save();
-      }
-    }
-    console.log({detailsViewName, updateViewName});
-  }
+  // for (const tab of tabs) {
+  //   const viewName = tab.options.viewName;
+  //   if (!viewName) {
+  //     continue;
+  //   }
+  //   let view: any;
+  //   if (tab.type === 'association') {
+  //     view = await View.findOne({
+  //       where: {
+  //         name: viewName,
+  //         collection_name: tab.options.association,
+  //       },
+  //     });
+  //   } else {
+  //     view = await View.findOne({
+  //       where: {
+  //         name: viewName,
+  //         collection_name: tab.collection_name,
+  //       },
+  //     });
+  //   }
+  //   if (view) {
+  //     tab.options.viewId = view.id;
+  //     tab.setDataValue('options', tab.options);
+  //     tab.changed('options', true);
+  //     await tab.save();
+  //   }
+  // }
+  // const views = await View.findAll();
+  // for (const view of views) {
+  //   const detailsViewName = view.options.detailsViewName;
+  //   if (detailsViewName) {
+  //     const v = await View.findOne({
+  //       where: {
+  //         name: detailsViewName,
+  //         collection_name: view.collection_name
+  //       },
+  //     });
+  //     if (v) {
+  //       view.options.detailsViewId = v.id;
+  //       view.setDataValue('options', view.options);
+  //       view.changed('options', true);
+  //       await view.save();
+  //     }
+  //   }
+  //   const updateViewName = view.options.updateViewName;
+  //   if (updateViewName) {
+  //     const v = await View.findOne({
+  //       where: {
+  //         name: updateViewName,
+  //         collection_name: view.collection_name
+  //       },
+  //     });
+  //     if (v) {
+  //       view.options.updateViewId = v.id;
+  //       view.setDataValue('options', view.options);
+  //       view.changed('options', true);
+  //       await view.save();
+  //     }
+  //   }
+  //   console.log({detailsViewName, updateViewName});
+  // }
 
   // for (let table of tables) {
   //   const options = table.getOptions();

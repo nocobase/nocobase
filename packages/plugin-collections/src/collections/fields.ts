@@ -11,6 +11,7 @@ export default {
       component: {
         type: 'sort',
         className: 'drag-visible',
+        width: 60,
       },
     },
     {
@@ -41,11 +42,6 @@ export default {
       type: 'boolean',
       name: 'showInGetAction',
       title: '显示在详情里',
-    },
-    {
-      type: 'integer',
-      name: 'sort',
-      title: '排序',
     },
     {
       type: 'json',

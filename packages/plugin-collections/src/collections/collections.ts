@@ -13,6 +13,7 @@ export default {
       component: {
         type: 'sort',
         className: 'drag-visible',
+        width: 60,
       },
     },
     {

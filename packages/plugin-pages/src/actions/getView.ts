@@ -49,8 +49,16 @@ export default async (ctx, next) => {
     // },
   }));
   const collection = await view.getCollection();
-  const fields = await collection.getFields();
-  const actions = await collection.getActions();
+  const fields = await collection.getFields({
+    order: [
+      ['sort', 'asc'],
+    ]
+  });
+  const actions = await collection.getActions({
+    order: [
+      ['sort', 'asc'],
+    ]
+  });
   const actionNames = view.options.actionNames||[];
   console.log(view.options);
   if (view.type === 'table') {
