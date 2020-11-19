@@ -59,21 +59,41 @@ export default {
       type: 'hasMany',
       name: 'fields',
       sourceKey: 'name',
+      actions: {
+        list: {
+          sort: 'sort',
+        },
+      },
     },
     {
       type: 'hasMany',
       name: 'actions',
       sourceKey: 'name',
+      actions: {
+        list: {
+          sort: 'sort',
+        },
+      },
     },
     {
       type: 'hasMany',
       name: 'tabs',
       sourceKey: 'name',
+      actions: {
+        list: {
+          sort: 'sort',
+        },
+      },
     },
     {
       type: 'hasMany',
       name: 'views',
       sourceKey: 'name',
+      actions: {
+        list: {
+          sort: 'sort',
+        },
+      },
     },
   ],
   actions: [
