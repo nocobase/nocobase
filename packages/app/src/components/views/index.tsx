@@ -1,11 +1,12 @@
 
 import React from 'react';
-import { Form, DrawerForm } from './Form/index';
-import { Table } from './Table';
-import { Details } from './Details';
-import { useRequest, request, Spin } from '@nocobase/client';
-import { SimpleTable } from './SimpleTable';
 import api from '@/api-client';
+import { useRequest } from 'umi';
+import { Spin } from '@nocobase/client';
+import { SimpleTable } from './SimpleTable';
+import { Table } from './Table';
+import { Form, DrawerForm } from './Form/index';
+import { Details } from './Details';
 
 const TEMPLATES = new Map<string, any>();
 
@@ -24,19 +25,37 @@ registerView('Table', Table);
 registerView('SimpleTable', SimpleTable);
 registerView('Details', Details);
 
-export default function ViewFactory(props) {
-  const { activeTab, viewCollectionName, viewName, reference } = props;
-  console.log({viewCollectionName, viewName});
-  const { data = {}, error, loading, run } = useRequest(() => api.resource(viewCollectionName).getView({
-    resourceKey: viewName,
-  }), {
-    refreshDeps: [viewCollectionName, viewName],
+export interface ViewProps {
+  resourceName: string;
+  resourceKey?: string | number;
+  associatedName?: string;
+  associatedKey?: string | number;
+  viewName?: string;
+  [key: string]: any;
+}
+
+export default function ViewFactory(props: ViewProps) {
+  const {
+    associatedName,
+    associatedKey,
+    resourceName,
+    viewName,
+    reference,
+  } = props;
+  const { data = {}, loading } = useRequest(() => {
+    const params = {
+      resourceKey: viewName,
+      associatedName: associatedName,
+    };
+    return api.resource(resourceName).getView(params);
+  }, {
+    refreshDeps: [associatedName, resourceName, viewName],
   });
-  console.log(activeTab);
+  console.log(data);
   if (loading) {
     return <Spin/>;
   }
-  const { template } = data.data;
+  const { template } = data;
   const Template = getViewTemplate(template);
-  return Template && <Template {...props} ref={reference} schema={data.data}/>;
+  return Template && <Template {...props} ref={reference} schema={data}/>;
 }

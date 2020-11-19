@@ -6,10 +6,12 @@ export default {
   fields: [
     {
       type: 'integer',
-      name: 'parent_id',
-      title: '父级页面',
+      name: 'sort',
+      title: '排序',
       component: {
-        type: 'number',
+        type: 'sort',
+        className: 'drag-visible',
+        width: 60,
       },
     },
     {
@@ -20,6 +22,15 @@ export default {
       isMainTitle: true,
       component: {
         type: 'string',
+        className: 'drag-visible',
+      },
+    },
+    {
+      type: 'integer',
+      name: 'parent_id',
+      title: '父级页面',
+      component: {
+        type: 'number',
       },
     },
     {
@@ -139,10 +150,6 @@ export default {
       component: {
         type: 'boolean',
       },
-    },
-    {
-      type: 'integer',
-      name: 'order',
     },
     {
       type: 'hasMany',

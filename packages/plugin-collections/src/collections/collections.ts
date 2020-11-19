@@ -7,6 +7,16 @@ export default {
   model: CollectionModel,
   fields: [
     {
+      type: 'integer',
+      name: 'sort',
+      title: '排序',
+      component: {
+        type: 'sort',
+        className: 'drag-visible',
+        width: 60,
+      },
+    },
+    {
       type: 'string',
       name: 'title',
       title: '名称',
@@ -14,6 +24,7 @@ export default {
       required: true,
       component: {
         type: 'string',
+        className: 'drag-visible',
       },
     },
     {
@@ -48,21 +59,41 @@ export default {
       type: 'hasMany',
       name: 'fields',
       sourceKey: 'name',
+      actions: {
+        list: {
+          sort: 'sort',
+        },
+      },
     },
     {
       type: 'hasMany',
       name: 'actions',
       sourceKey: 'name',
+      actions: {
+        list: {
+          sort: 'sort',
+        },
+      },
     },
     {
       type: 'hasMany',
       name: 'tabs',
       sourceKey: 'name',
+      actions: {
+        list: {
+          sort: 'sort',
+        },
+      },
     },
     {
       type: 'hasMany',
       name: 'views',
       sourceKey: 'name',
+      actions: {
+        list: {
+          sort: 'sort',
+        },
+      },
     },
   ],
   actions: [

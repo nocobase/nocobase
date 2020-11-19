@@ -20,7 +20,9 @@ export default async (ctx, next) => {
   });
   collection.setDataValue('defaultViewId', get(views, [0, 'id']));
   collection.setDataValue('defaultViewName', get(views, [0, 'name']));
-  const tabs = await collection.getTabs() as Model[];
+  const tabs = await collection.getTabs({
+    order: [['sort', 'asc']],
+  }) as Model[];
   const tabItems = [];
   for (const tab of tabs) {
     const itemTab = {
