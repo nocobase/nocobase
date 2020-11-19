@@ -77,15 +77,15 @@ const data = {
           template: 'page4',
           sort: 50,
         },
-        {
-          title: '页面5',
-          type: 'collection',
-          path: '/collections/collection1',
-          icon: 'dashboard',
-          template: 'collection',
-          collection: 'collection1',
-          sort: 60,
-        },
+        // {
+        //   title: '页面5',
+        //   type: 'collection',
+        //   path: '/collections/collection1',
+        //   icon: 'dashboard',
+        //   template: 'collection',
+        //   collection: 'collection1',
+        //   sort: 60,
+        // },
       ]
     },
     {

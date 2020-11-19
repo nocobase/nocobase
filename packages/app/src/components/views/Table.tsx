@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Table as AntdTable, Card } from 'antd';
 import { redirectTo } from '@/components/pages/CollectionLoader/utils';
 import { Actions } from '@/components/actions';
@@ -41,19 +41,30 @@ export function Table(props: TableProps) {
     associatedName,
     associatedKey,
   } = props;
-  const { defaultTabId, fields, defaultTabName, rowKey = 'id', actions = [] } = schema;
+  const { fields, defaultTabName, rowKey = 'id', actions = [] } = schema;
   const name = associatedName ? `${associatedName}.${resourceName}` : resourceName;
   const { data, mutate } = useRequest(() => api.resource(name).list({
     associatedKey,
   }));
   const { sourceKey = 'id' } = activeTab.field||{};
   console.log(props);
+  const [selectedRowKeys, setSelectedRowKeys] = useState([]);
+  const onChange = (selectedRowKeys: React.ReactText[]) => {
+    setSelectedRowKeys(selectedRowKeys);
+  }
+  const tableProps: any = {};
+  if (actions.length) {
+    tableProps.rowSelection = {
+      selectedRowKeys,
+      onChange,
+    }
+  }
   return (
     <Card bordered={false}>
       <Actions {...props} style={{ marginBottom: 14 }} actions={actions}/>
       <AntdTable 
         dataSource={data}
-        rowKey={'id'}
+        rowKey={rowKey}
         columns={fields2columns(fields)}
         components={components({data, mutate})}
         onRow={(data) => ({
@@ -67,6 +78,7 @@ export function Table(props: TableProps) {
             });
           },
         })}
+        {...tableProps}
       />
     </Card>
   );

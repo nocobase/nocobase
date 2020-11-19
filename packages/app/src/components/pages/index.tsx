@@ -4,3 +4,4 @@ export { CollectionLoader } from './CollectionLoader';
 export { PageLoader as default } from './PageLoader';
 export { SideMenuLayout } from './SideMenuLayout/index';
 export { TopMenuLayout } from './TopMenuLayout/index';
+export { Page } from './Page';

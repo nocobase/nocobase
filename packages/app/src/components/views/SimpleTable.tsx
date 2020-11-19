@@ -26,7 +26,7 @@ export function SimpleTable(props: SimpleTableProps) {
     associatedName,
     associatedKey,
   } = props;
-  const { fields = [], rowViewName, actions = [] } = schema;
+  const { rowKey = 'id', fields = [], rowViewName, actions = [] } = schema;
   const { sourceKey = 'id' } = activeTab.field||{};
   const drawerRef = useRef<any>();
   const name = associatedName ? `${associatedName}.${resourceName}` : resourceName;
@@ -34,6 +34,17 @@ export function SimpleTable(props: SimpleTableProps) {
     associatedKey,
   }));
   console.log(activeTab);
+  const [selectedRowKeys, setSelectedRowKeys] = useState([]);
+  const onChange = (selectedRowKeys: React.ReactText[]) => {
+    setSelectedRowKeys(selectedRowKeys);
+  }
+  const tableProps: any = {};
+  if (actions.length) {
+    tableProps.rowSelection = {
+      selectedRowKeys,
+      onChange,
+    }
+  }
   return (
     <Card bordered={false}>
       <Actions {...props} style={{ marginBottom: 14 }} actions={actions}/>
@@ -45,14 +56,15 @@ export function SimpleTable(props: SimpleTableProps) {
       <AntdTable
         columns={fields2columns(fields)}
         dataSource={data}
-        rowKey={'id'}
+        rowKey={rowKey}
         components={components({data, mutate})}
         onRow={(record) => ({
           onClick: () => {
             drawerRef.current.setVisible(true);
-            drawerRef.current.getData(record.id);
+            drawerRef.current.getData(record[rowKey]);
           }
         })}
+        {...tableProps}
       />
     </Card>
   );
