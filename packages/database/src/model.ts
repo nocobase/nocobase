@@ -82,6 +82,12 @@ export interface ApiJsonOptions {
    */
   sort?: any;
 
+  /**
+   * 页码
+   */
+  page?: number;
+  perPage?: number;
+
   context?: any;
 
   [key: string]: any;
@@ -226,13 +232,17 @@ export abstract class Model extends SequelizeModel {
   }
 
   static parseApiJson(options: ApiJsonOptions) {
-    const { fields, filter, sort, context, ...restOptions } = options;
+    const { fields, filter, sort, context, page, perPage } = options;
     const data = toInclude({fields, filter, sort}, {
       Model: this,
       associations: this.associations,
       dialect: this.sequelize.getDialect(),
       ctx: context,
     });
+    if (page || perPage) {
+      data.limit = perPage || 20;
+      data.offset = data.limit * (page > 0 ? page - 1 : 0);
+    }
     if (data.attributes && data.attributes.length === 0) {
       delete data.attributes;
     }

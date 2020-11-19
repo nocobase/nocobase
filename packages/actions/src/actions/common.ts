@@ -37,10 +37,6 @@ export async function list(ctx: Context, next: Next) {
     context: ctx,
   });
   let data = {};
-  if (page || perPage) {
-    options.limit =  1*(perPage||20);
-    options.offset = options.limit * (page > 0 ? page - 1 : 0);
-  }
   if (associated && resourceField) {
     const AssociatedModel = ctx.db.getModel(associatedName);
     if (!(associated instanceof AssociatedModel)) {

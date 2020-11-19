@@ -1,15 +1,13 @@
-import Database from '..';
-import { getDatabase } from '.';
-import { Op, Sequelize } from 'sequelize';
-import Model, { ModelCtor } from '../model';
-import { BelongsToMany } from '../fields';
-import { Mode } from 'fs';
+import Database from '../..';
+import { getDatabase } from '..';
+import Model, { ModelCtor } from '../../model';
+
 
 
 let db: Database;
 
 beforeEach(async () => {
-  db = await getDatabase();
+  db = getDatabase();
 });
 
 afterEach(async () => {
@@ -269,137 +267,7 @@ describe('actions', () => {
     });
   });
 
-  describe('parseApiJson', () => {
-    let db: Database;
-    let Foo: ModelCtor<Model>;
-    beforeEach(() => {
-      db = getDatabase();
-      db.table({
-        name: 'bazs',
-        tableName: 'bazs_model'
-      });
-      db.table({
-        name: 'bays',
-        tableName: 'bays_model'
-      });
-      db.table({
-        name: 'bars',
-        tableName: 'bars_model',
-        fields: [
-          {
-            type: 'belongsTo',
-            name: 'baz',
-          },
-          {
-            type: 'belongsTo',
-            name: 'bay',
-          },
-        ],
-      });
-      db.table({
-        name: 'foos',
-        tableName: 'foos_model',
-        fields: [
-          {
-            type: 'hasMany',
-            name: 'bars',
-          },
-          {
-            type: 'hasMany',
-            name: 'fozs',
-          },
-          {
-            type: 'hasMany',
-            name: 'coos',
-          },
-        ],
-      });
-      db.table({
-        name: 'fozs',
-        tableName: 'fozs_model',
-      });
-      db.table({
-        name: 'coos',
-        tableName: 'coos_model',
-      });
-      Foo = db.getModel('foos');
-    });
-  
-    afterEach(() => db.close());
-
-    it('parseApiJson', () => {
-      const data = Foo.parseApiJson({
-        filter: {
-          col1: 'co2',
-        }
-      });
-      expect(data).toEqual({ where: { col1: 'co2' } });
-    });
-
-    it('parseApiJson', () => {
-      const data = Foo.parseApiJson({
-        fields: ['col1'],
-      });
-      expect(data).toEqual({ attributes: ['col1'] });
-    });
-
-    it('parseApiJson', () => {
-      const data = Foo.parseApiJson({
-        fields: ['col1'],
-        filter: {
-          col1: 'co2',
-        },
-      });
-      expect(data).toEqual({ attributes: ['col1'], where: { col1: 'co2' } });
-    });
-
-    it('parseApiJson', () => {
-      const data = Foo.parseApiJson({
-        fields: ['col1'],
-        filter: {
-          col1: 'val1',
-          bars: {
-            col1: 'val1',
-          }
-        },
-      });
-      expect(data).toEqual({
-        attributes: ['col1'],
-        where: { col1: 'val1' },
-        include: [
-          {
-            association: 'bars',
-            where: { col1: 'val1' },
-          }
-        ],
-      });
-    });
-
-    it('parseApiJson', () => {
-      const data = Foo.parseApiJson({
-        fields: ['col1', 'bars.col1'],
-        filter: {
-          col1: 'val1',
-          bars: {
-            col1: 'val1',
-          }
-        },
-      });
-      expect(data).toEqual({
-        attributes: ['col1'],
-        where: { col1: 'val1' },
-        include: [
-          {
-            association: 'bars',
-            attributes: ['col1'],
-            where: { col1: 'val1' },
-          }
-        ],
-      });
-    });
-  });
-
-  describe('findByApiJson', () => {
+  describe('query', () => {
     it('q', async () => {
       db.getModel('tags').addScope('scopeName', (name, ctx) => {
         expect(ctx.scopeName).toBe(name);
@@ -477,17 +345,15 @@ describe('actions', () => {
         expect(row.get('title')).toBe('title112233');
         expect(row.user.get('name')).toBe('name112233');
       });
-    } catch(error) {
-      console.error(error);
-    }
+      } catch(error) {
+        console.error(error);
+      }
 
       // console.log(count);
 
       // expect(count).toBe(1);
     });
-  });
 
-  describe('query', () => {
     it('to be explained', async () => {
       const [User, Post] = db.getModels(['users', 'posts']);
       const postData = [];

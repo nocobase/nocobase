@@ -6,7 +6,7 @@ import { getDatabase } from './';
 let db: Database;
 
 beforeEach(async () => {
-  db = await getDatabase();
+  db = getDatabase();
 });
 
 afterEach(async () => {
