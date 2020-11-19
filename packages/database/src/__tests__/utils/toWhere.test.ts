@@ -86,12 +86,28 @@ describe('utils.toWhere', () => {
         },
       });
     });
+    
+    it('Op.lt', () => {
+      expect(toWhere({
+        'id.lt': 1
+      })).toEqual({
+        id: { [Op.lt]: 1 }
+      });
+    });
 
     it('Op.between', () => {
       expect(toWhere({
         'id.between': [1, 2]
       })).toEqual({
         id: { [Op.between]: [1, 2] }
+      });
+    });
+
+    it('Op.between date', () => {
+      expect(toWhere({
+        'id.between': ['2020-11-01T00:00:00.000Z', '2020-12-01T00:00:00.000Z']
+      })).toEqual({
+        id: { [Op.between]: ['2020-11-01T00:00:00.000Z', '2020-12-01T00:00:00.000Z'] }
       });
     });
   });
@@ -149,6 +165,30 @@ describe('utils.toWhere', () => {
       });
     });
 
+    it('or in or (not fully parsed)', () => {
+      expect(toWhere({
+        or: [{ a: 1 }, { 'b.or': [3, 4] }],
+      })).toEqual({
+        [Op.or]: [{ a: 1 }, { b: { [Op.or]: [3, 4] } }],
+      });
+    });
+
+    it('or in or (parsed)', () => {
+      expect(toWhere({
+        or: [{ a: 1 }, { b: { or: [3, 4] } }],
+      })).toEqual({
+        [Op.or]: [{ a: 1 }, { b: { [Op.or]: [3, 4] } }],
+      });
+    });
+
+    it('or in or in or', () => {
+      expect(toWhere({
+        or: [{ a: 1 }, { or: { b: 3, c: { or: [5, 6] } } }],
+      })).toEqual({
+        [Op.or]: [{ a: 1 }, { [Op.or]: { b: 3, c: { [Op.or]: [5, 6] } } }],
+      });
+    });
+
     it('or in and', () => {
       expect(toWhere({
         and: [{ a: 1 }, { 'b.or': [3, 4] }],
@@ -165,8 +205,16 @@ describe('utils.toWhere', () => {
       });
     });
 
+    it('logical and other comparation', () => {
+      expect(toWhere({
+        or: [{ a: 1 }, { b: { gt: 2 } }],
+      })).toEqual({
+        [Op.or]: [{ a: 1 }, { b: { [Op.gt]: 2 } }],
+      });
+    });
+
     // TODO: bug
-    it.skip('field as or', () => {
+    it.skip('field as "or"', () => {
       expect(toWhere({
         or: 1,
       })).toEqual({
@@ -175,7 +223,7 @@ describe('utils.toWhere', () => {
     });
 
     // TODO: bug
-    it.skip('or for field as or', () => {
+    it.skip('or for field as "or"', () => {
       expect(toWhere({
         'or.or': [1, 2],
       })).toEqual({
@@ -186,60 +234,59 @@ describe('utils.toWhere', () => {
 
   describe('association', () => {
     let db: Database;
-    let Foo: ModelCtor<Model>;
     beforeAll(() => {
       db = getDatabase();
       db.table({
-        name: 'bazs',
+        name: 'users',
       });
       db.table({
-        name: 'bars',
+        name: 'posts',
         fields: [
           {
             type: 'belongsTo',
-            name: 'baz',
+            name: 'user',
           }
         ]
       });
       db.table({
-        name: 'foos',
+        name: 'categories',
         fields: [
           {
             type: 'hasMany',
-            name: 'bars',
+            name: 'posts',
           }
         ],
       });
-      Foo = db.getModel('foos');
     });
     afterAll(() => db.close());
 
-    const toWhereExpect = (options, logging = false) => {
+    const toWhereExpect = (options: any) => {
+      const Category = db.getModel('categories');
       const where = toWhere(options, {
-        associations: Foo.associations,
+        associations: Category.associations,
       });
       return expect(where);
     }
 
-    it('association', () => {
+    it('with included association where', () => {
       toWhereExpect({
         col1: 'val1',
-        bars: {
+        posts: {
           name: {
             ilike: 'aa',
           },
           col2: {
             lt: 2,
           },
-          baz: {
+          user: {
             col1: 12,
           },
         },
-        'bars.col3.ilike': 'aa',
+        'posts.col3.ilike': 'aa',
       }).toEqual({
         col1: 'val1',
         $__include: {
-          bars: {
+          posts: {
             name: {
               [Op.iLike]: 'aa',
             },
@@ -250,13 +297,27 @@ describe('utils.toWhere', () => {
               [Op.iLike]: 'aa',
             },
             $__include: {
-              baz: {
+              user: {
                 col1: 12
               },
             },
           },
         },
       });
+    });
+
+    // TODO: 是否要考虑跨关联表的逻辑分组这种情况
+    it.skip('logical across association', () => {
+      toWhereExpect({
+        or: {
+          status: 1,
+          posts: {
+            status: 1
+          }
+        }
+      }).toEqual({
+
+      })
     });
   });
 });

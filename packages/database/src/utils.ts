@@ -111,11 +111,12 @@ export function toInclude(options: any, context: ToIncludeContext = {}) {
       if (Array.isArray(key)) {
         order.push(key);
       } else {
-        const direction = key.indexOf('-') === 0 ? 'DESC' : 'ASC';
+        const direction = key[0] === '-' ? 'DESC' : 'ASC';
         const field = key.replace(/^-/, '');
-        items.appends.push(field);
-        // TODO：暂时只支持 postgresql
-        order.push([Sequelize.literal(dialect === 'mysql' ? `\`${field}\`` : `"${field}"`), direction]);
+        // TODO(verify): 理论上只是排序并不一定要输出相关字段
+        // items.appends.push(field);
+        // TODO: 暂时只支持主表排序，后续需要按`.`分隔符拆分 field 为关联排序
+        order.push([field, direction]);
       }
     });
   }

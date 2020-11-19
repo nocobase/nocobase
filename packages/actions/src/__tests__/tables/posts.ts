@@ -14,6 +14,10 @@ export default {
       defaultValue: 'publish',
     },
     {
+      type: 'date',
+      name: 'published_at'
+    },
+    {
       type: 'belongsTo',
       name: 'user',
     },
