@@ -1,11 +1,12 @@
 
 import React from 'react';
-import { Form, DrawerForm } from './Form/index';
-import { Table } from './Table';
-import { Details } from './Details';
-import { useRequest, request, Spin } from '@nocobase/client';
-import { SimpleTable } from './SimpleTable';
 import api from '@/api-client';
+import { useRequest } from 'umi';
+import { Spin } from '@nocobase/client';
+import { SimpleTable } from './SimpleTable';
+import { Table } from './Table';
+import { Form, DrawerForm } from './Form/index';
+import { Details } from './Details';
 
 const TEMPLATES = new Map<string, any>();
 
@@ -54,7 +55,7 @@ export default function ViewFactory(props: ViewProps) {
   if (loading) {
     return <Spin/>;
   }
-  const { template } = data.data;
+  const { template } = data;
   const Template = getViewTemplate(template);
-  return Template && <Template {...props} ref={reference} schema={data.data}/>;
+  return Template && <Template {...props} ref={reference} schema={data}/>;
 }

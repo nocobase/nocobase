@@ -5,9 +5,22 @@ export default {
   title: '操作配置',
   fields: [
     {
+      type: 'integer',
+      name: 'sort',
+      title: '排序',
+      component: {
+        type: 'sort',
+        className: 'drag-visible',
+      },
+    },
+    {
       type: 'string',
       name: 'type',
       title: '类型',
+      component: {
+        type: 'string',
+        className: 'drag-visible',
+      },
     },
     {
       type: 'string',

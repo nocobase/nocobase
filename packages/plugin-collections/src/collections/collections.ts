@@ -7,6 +7,15 @@ export default {
   model: CollectionModel,
   fields: [
     {
+      type: 'integer',
+      name: 'sort',
+      title: '排序',
+      component: {
+        type: 'sort',
+        className: 'drag-visible',
+      },
+    },
+    {
       type: 'string',
       name: 'title',
       title: '名称',
@@ -14,6 +23,7 @@ export default {
       required: true,
       component: {
         type: 'string',
+        className: 'drag-visible',
       },
     },
     {
