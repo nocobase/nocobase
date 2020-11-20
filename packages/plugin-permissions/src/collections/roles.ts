@@ -77,6 +77,7 @@ export default {
       template: 'SimpleTable',
       detailsViewName: 'details',
       updateViewName: 'permission_form',
+      paginated: false,
     },
     {
       type: 'table',
