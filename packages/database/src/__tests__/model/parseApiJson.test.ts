@@ -62,6 +62,10 @@ afterAll(() => db.close());
 
 describe('parseApiJson', () => {
   describe('self table', () => {
+    it('empty', () => {
+      expect(Foo.parseApiJson({})).toEqual({});
+    });
+
     it('filter', () => {
       const data = Foo.parseApiJson({
         filter: {
@@ -76,6 +80,27 @@ describe('parseApiJson', () => {
         fields: ['col1'],
       });
       expect(data).toEqual({ attributes: ['col1'] });
+    });
+
+    // TODO(bug): should not contain `include: []`
+    it.skip('fields.except', () => {
+      expect(Foo.parseApiJson({
+        fields: {
+          except: ['col']
+        },
+      })).toEqual({ attributes: {
+        exclude: ['col']
+      }});
+    });
+
+    it('fields.appends', () => {
+      expect(Foo.parseApiJson({
+        fields: {
+          appends: ['col']
+        },
+      })).toEqual({ attributes: {
+        include: ['col']
+      }});
     });
   
     it('filter and fields', () => {
