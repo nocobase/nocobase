@@ -75,7 +75,7 @@ export function SimpleTable(props: SimpleTableProps) {
         loading={loading}
         columns={fields2columns(fields)}
         dataSource={data?.list||(data as any)}
-        components={components({data: data?.list, mutate})}
+        components={components({data, mutate})}
         onRow={(record) => ({
           onClick: () => {
             drawerRef.current.setVisible(true);

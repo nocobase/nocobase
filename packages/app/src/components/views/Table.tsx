@@ -86,7 +86,7 @@ export function Table(props: TableProps) {
         rowKey={rowKey}
         columns={fields2columns(fields)}
         dataSource={data?.list||(data as any)}
-        components={components({data: data?.list, mutate})}
+        components={components({data, mutate})}
         onRow={(data) => ({
           onClick: () => {
             redirectTo({
