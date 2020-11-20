@@ -12,7 +12,7 @@ for (const key in Op) {
 }
 
 interface ToWhereContext {
-  Model?: ModelCtor<Model> | Model | typeof Model;
+  model?: ModelCtor<Model> | Model | typeof Model;
   associations?: any;
   dialect?: string;
   ctx?: any;
@@ -25,7 +25,7 @@ export function toWhere(options: any, context: ToWhereContext = {}) {
   if (Array.isArray(options)) {
     return options.map((item) => toWhere(item, context));
   }
-  const { Model, associations = {}, ctx, dialect } = context;
+  const { model, associations = {}, ctx, dialect } = context;
   const items = {};
   // 先处理「点号」的问题
   for (const key in options) {
@@ -37,13 +37,13 @@ export function toWhere(options: any, context: ToWhereContext = {}) {
       values['$__include'] = values['$__include'] || {}
       values['$__include'][key] = toWhere(items[key], {
         ...context,
-        Model: associations[key].target,
+        model: associations[key].target,
         associations: associations[key].target.associations,
       });
     }
-    else if (Model && Model.options.scopes && Model.options.scopes[key]) {
+    else if (model && model.options.scopes && model.options.scopes[key]) {
       values['$__scopes'] = values['$__scopes'] || [];
-      const scope = Model.options.scopes[key];
+      const scope = model.options.scopes[key];
       if (typeof scope === 'function') {
         values['$__scopes'].push({ method: [key, items[key], ctx] });
       } else {
@@ -59,7 +59,7 @@ export function toWhere(options: any, context: ToWhereContext = {}) {
 }
 
 interface ToIncludeContext {
-  Model?: ModelCtor<Model> | Model | typeof Model;
+  model?: ModelCtor<Model> | Model | typeof Model;
   sourceAlias?: string;
   associations?: any;
   dialect?: string;
@@ -68,13 +68,13 @@ interface ToIncludeContext {
 
 export function toInclude(options: any, context: ToIncludeContext = {}) {
   const { fields = [] } = options;
-  const { Model, sourceAlias, associations = {}, ctx, dialect } = context;
+  const { model, sourceAlias, associations = {}, ctx, dialect } = context;
 
   let where = options.where || {};
 
   if (options.filter) {
     where = toWhere(options.filter, {
-      Model,
+      model,
       associations,
       ctx,
     }) || {};
@@ -96,6 +96,7 @@ export function toInclude(options: any, context: ToIncludeContext = {}) {
   const children = new Map();
 
   const items = Array.isArray(fields) ? { only: fields } : fields;
+  items.appends = items.appends || [];
 
   let sort = options.sort;
 
@@ -106,17 +107,23 @@ export function toInclude(options: any, context: ToIncludeContext = {}) {
   const order = [];
 
   if (Array.isArray(sort) && sort.length > 0) {
-    items.appends = items.appends || [];
     sort.forEach(key => {
       if (Array.isArray(key)) {
         order.push(key);
       } else {
         const direction = key[0] === '-' ? 'DESC' : 'ASC';
-        const field = key.replace(/^-/, '');
-        // TODO(verify): 理论上只是排序并不一定要输出相关字段
-        // items.appends.push(field);
-        // TODO: 暂时只支持主表排序，后续需要按`.`分隔符拆分 field 为关联排序
-        order.push([field, direction]);
+        const keys = key.replace(/^-/, '').split('.');
+        const field = keys.pop();
+        const by = [];
+        let associationModel = model;
+        for (let i = 0; i < keys.length; i++) {
+          const association = model.associations[keys[i]];
+          if (association && association.target) {
+            associationModel = association.target;
+            by.push(associationModel);
+          }
+        }
+        order.push([...by, field, direction]);
       }
     });
   }
@@ -245,7 +252,7 @@ export function toInclude(options: any, context: ToIncludeContext = {}) {
   for (const [key, child] of children) {
     const result = toInclude(child, {
       ...context,
-      Model: associations[key].target,
+      model: associations[key].target,
       sourceAlias: key,
       associations: associations[key].target.associations,
     });

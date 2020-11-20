@@ -234,7 +234,7 @@ export abstract class Model extends SequelizeModel {
   static parseApiJson(options: ApiJsonOptions) {
     const { fields, filter, sort, context, page, perPage } = options;
     const data = toInclude({fields, filter, sort}, {
-      Model: this,
+      model: this,
       associations: this.associations,
       dialect: this.sequelize.getDialect(),
       ctx: context,

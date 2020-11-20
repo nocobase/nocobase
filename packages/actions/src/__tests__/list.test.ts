@@ -241,10 +241,9 @@ describe('list', () => {
       });
     });
 
-    // TODO(bug): order in children field
-    it.skip('get comments within a post, order by comments.content', async () => {
+    it('get comments within a post, order by comments.content', async () => {
       const response = await agent
-        .get('/posts?fields=title,comments.content&filter[comments.status]=draft&page=1&perPage=2&order=-comments.content');
+        .get('/posts?fields=title,comments.content&filter[comments.status]=draft&page=1&perPage=2&sort=-comments.content');
       expect(response.body).toEqual({
         rows: [{
           title: null,
