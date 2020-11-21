@@ -6,26 +6,37 @@ import Model, { ModelCtor } from '../../model';
 
 let db: Database;
 let Bar: ModelCtor<Model>;
+let Baz: ModelCtor<Model>;
+let Bay: ModelCtor<Model>;
 let Foo: ModelCtor<Model>;
 
 beforeAll(() => {
   db = getDatabase();
   db.table({
     name: 'bazs',
+    fields: [
+      {
+        type: 'belongsToMany',
+        name: 'bays'
+      },
+    ]
   });
   db.table({
     name: 'bays',
+    fields: [
+      {
+        type: 'belongsToMany',
+        name: 'bazs'
+      },
+    ]
   });
+
   db.table({
     name: 'bars',
     fields: [
       {
         type: 'belongsTo',
-        name: 'baz',
-      },
-      {
-        type: 'belongsTo',
-        name: 'bay',
+        name: 'foo',
       },
     ],
   });
@@ -53,6 +64,8 @@ beforeAll(() => {
     name: 'coos',
   });
   Bar = db.getModel('bars');
+  Baz = db.getModel('bazs');
+  Bay = db.getModel('bays');
   Foo = db.getModel('foos');
 });
 
@@ -142,7 +155,6 @@ describe('parseApiJson', () => {
       });
     });
 
-    // TODO(bug): should not contain additional attributes
     it('sort: multiple self fields', () => {
       expect(Foo.parseApiJson({
         sort: 'a,-b'
@@ -154,13 +166,22 @@ describe('parseApiJson', () => {
       });
     });
 
-    // TODO(feature): order by association should be ok
-    it.skip('sort: association field', () => {
+    it('sort: association field', () => {
       expect(Bar.parseApiJson({
-        sort: '-foo.a'
+        sort: '-baz.a'
       })).toEqual({
         order: [
-          [{ model: Foo, as: 'foo' }, 'a', 'DESC'],
+          [Baz, 'a', 'DESC'],
+        ]
+      });
+    });
+
+    it('sort: many to many association field', () => {
+      expect(Baz.parseApiJson({
+        sort: '-bays.a'
+      })).toEqual({
+        order: [
+          [Bay, 'a', 'DESC'],
         ]
       });
     });

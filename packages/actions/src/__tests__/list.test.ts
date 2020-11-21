@@ -173,7 +173,6 @@ describe('list', () => {
       });
 
       // TODO(question): 当 fields 只填写了关联字段时，当前表的其他字段是否需要输出？
-      // 是否有必要定义不同的 fields 策略，比如 `fields.only`/`fields.except`/`fields.append` ？
       it.skip('only belongs to', async () => {
         const response = await agent.get('/posts?fields=user&filter[title]=title0');
         expect(response.body).toEqual({
@@ -187,21 +186,19 @@ describe('list', () => {
         });
       });
 
-      // TODO(bug): except field should be excluded
-      it.skip('except fields', async () => {
-        const response = await agent.get('/posts?fields.except=status&filter[title]=title0');
+      it('except fields', async () => {
+        const response = await agent.get('/posts?fields[except]=status&filter[title]=title0');
         expect(response.body.rows[0].status).toBeUndefined();
       });
 
       it('only and except fields', async () => {
-        const response = await agent.get('/posts?fields=title&fields.except=status&filter[title]=title0');
+        const response = await agent.get('/posts?fields=title&fields[except]=status&filter[title]=title0');
         expect(response.body.rows[0].status).toBeUndefined();
         expect(response.body.rows).toEqual([{ title: 'title0' }]);
       });
 
-      // TODO(bug)
-      it.skip('appends fields', async () => {
-        const response = await agent.get('/posts?fields=title&fields.appends=user.name&filter[title]=title0');
+      it('appends fields', async () => {
+        const response = await agent.get('/posts?fields[only]=title&fields[appends]=user.name&filter[title]=title0');
         expect(response.body.rows[0].user).toBeDefined();
         // expect(response.body.rows).toEqual([{ title: 'title0' }]);
       });
@@ -274,7 +271,7 @@ describe('list', () => {
   });
 
   describe('belongsToMany', () => {
-    it('list1', async () => {
+    beforeEach(async () => {
       const Post = db.getModel('posts');
       const post = await Post.create();
       await post.updateAssociations({
@@ -288,6 +285,11 @@ describe('list', () => {
           {name: 'tag7', status: 'published'},
         ],
       });
+    });
+
+    it('list1', async () => {
+      const Post = db.getModel('posts');
+      const post = await Post.findByPk(1);
       const response = await agent
         .get(`/posts/${post.id}/tags?page=2&perPage=2&sort=name&fields=name&filter[published]=1`);
       expect(response.body).toEqual({

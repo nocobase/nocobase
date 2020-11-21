@@ -1,5 +1,6 @@
 import _ from 'lodash';
 import { pathToRegexp } from 'path-to-regexp';
+import qs from 'qs';
 import { ResourceType } from './resource';
 
 export interface ParseRequest {
@@ -189,6 +190,20 @@ export function requireModule(module: any) {
   return module.__esModule ? module.default : module;
 }
 
+export function parseQuery(input: string): any {
+  // 自带 query 处理的不太给力，需要用 qs 转一下
+  const query = qs.parse(input, {
+    // 原始 query string 中如果一个键连等号“=”都没有可以被认为是 null 类型
+    strictNullHandling: true
+  });
+  // filter 支持 json string
+  if (typeof query.filter === 'string') {
+    query.filter = JSON.parse(query.filter);
+  }
+
+  return query;
+}
+
 export function parseFields(fields: any) {
   if (!fields) {
     return {}
@@ -197,10 +212,22 @@ export function parseFields(fields: any) {
     fields = fields.split(',').map(field => field.trim());
   }
   if (Array.isArray(fields)) {
-    return {
-      only: fields,
-      appends: [],
+    const onlyFields = [];
+    const output: any = {};
+    fields.forEach(item => {
+      if (typeof item === 'string') {
+        onlyFields.push(item);
+      } else if (typeof item === 'object') {
+        if (item.only) {
+          onlyFields.push(...item.only.toString().split(','));
+        }
+        Object.assign(output, parseFields(item));
+      }
+    });
+    if (onlyFields.length) {
+      output.only = onlyFields;
     }
+    return output;
   }
   if (fields.only && typeof fields.only === 'string') {
     fields.only = fields.only.split(',').map(field => field.trim());

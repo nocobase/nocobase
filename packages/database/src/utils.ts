@@ -200,7 +200,7 @@ export function toInclude(options: any, context: ToIncludeContext = {}) {
         include.set(col, includeItem);
         return;
       }
-      const matches: Array<any> = /(.+)\_count$/.exec(col);
+      const matches: Array<any> = /(.+)_count$/.exec(col);
       if (matches && associations[matches[1]]) {
         attributes.appends.push(Model.withCountAttribute({
           association: matches[1],

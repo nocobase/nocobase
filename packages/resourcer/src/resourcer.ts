@@ -3,7 +3,7 @@ import glob from 'glob';
 import compose from 'koa-compose';
 import Action, { ActionName } from './action';
 import Resource, { ResourceOptions } from './resource';
-import { parseRequest, getNameByParams, ParsedParams, requireModule } from './utils';
+import { parseRequest, getNameByParams, ParsedParams, requireModule, parseQuery } from './utils';
 import { pathToRegexp } from 'path-to-regexp';
 
 export interface ResourcerContext {
@@ -256,15 +256,7 @@ export class Resourcer {
         // action 需要 clone 之后再赋给 ctx
         ctx.action = this.getAction(nameRule(params), params.actionName).clone();
         ctx.action.setContext(ctx);
-        // 自带 query 处理的不太给力，需要用 qs 转一下
-        const query = qs.parse(ctx.request.querystring, {
-          // 原始 query string 中如果一个键连等号“=”都没有可以被认为是 null 类型
-          strictNullHandling: true
-        });
-        // filter 支持 json string
-        if (typeof query.filter === 'string') {
-          query.filter = JSON.parse(query.filter);
-        }
+        const query = parseQuery(ctx.request.querystring);
         // 兼容 ctx.params 的处理，之后的版本里会去掉
         ctx[paramsKey] = {
           table: params.resourceName,
