@@ -210,6 +210,7 @@ export default {
       actionNames: ['create', 'destroy'],
       detailsViewName: 'details',
       updateViewName: 'form',
+      paginated: false,
     },
     {
       type: 'table',

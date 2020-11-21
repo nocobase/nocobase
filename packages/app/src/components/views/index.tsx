@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import api from '@/api-client';
 import { useRequest } from 'umi';
 import { Spin } from '@nocobase/client';
@@ -51,7 +51,6 @@ export default function ViewFactory(props: ViewProps) {
   }, {
     refreshDeps: [associatedName, resourceName, viewName],
   });
-  console.log(data);
   if (loading) {
     return <Spin/>;
   }

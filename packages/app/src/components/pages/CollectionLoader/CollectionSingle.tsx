@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { PageHeader, Tabs, Button, Statistic, Descriptions } from 'antd';
 import { CollectionTabPane } from './CollectionTabPane';
 import { getPathName, redirectTo } from './utils';
@@ -15,7 +15,9 @@ export function CollectionSingle(props) {
   const { data = {}, loading } = useRequest(() => activeTab && api.resource(activeTab.collection_name).getPageInfo({
     resourceKey: item.itemId,
   }));
-  console.log(data);
+
+  const [activing, setActiving] = useState(false);
+
   if (!activeTab) {
     return null;
   }
@@ -45,12 +47,16 @@ export function CollectionSingle(props) {
           <Tabs size={'small'}
             defaultActiveKey={`${activeTab.name}`}
             onTabClick={(activeKey) => {
+              setActiving(true);
               redirectTo({
                 ...props.match.params,
                 lastItem: {
                   tabName: activeKey,
                 },
               });
+              setTimeout(() => {
+                setActiving(false);
+              }, 2)
             }}
           >
             {tabs.map(tab => <Tabs.TabPane tab={tab.title} key={`${tab.name}`} />)}
@@ -58,7 +64,7 @@ export function CollectionSingle(props) {
         }
       />
       <div className={'collection-content'}>
-        <CollectionTabPane {...props} pageInfo={data} activeTab={activeTab}/>
+        <CollectionTabPane  {...props} loading={activing} pageInfo={data} activeTab={activeTab}/>
       </div>
     </div>
   );
