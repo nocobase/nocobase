@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Table as AntdTable, Card } from 'antd';
+import { Table as AntdTable, Card, Pagination } from 'antd';
 import { redirectTo } from '@/components/pages/CollectionLoader/utils';
 import { Actions } from '@/components/actions';
 import { request, useRequest } from 'umi';
@@ -41,11 +41,31 @@ export function Table(props: TableProps) {
     associatedName,
     associatedKey,
   } = props;
-  const { fields, defaultTabName, rowKey = 'id', actions = [] } = schema;
+  const { fields, defaultTabName, rowKey = 'id', actions = [], paginated = true, defaultPageSize = 10 } = schema;
   const name = associatedName ? `${associatedName}.${resourceName}` : resourceName;
-  const { data, mutate } = useRequest(() => api.resource(name).list({
-    associatedKey,
-  }));
+  // const { data, mutate } = useRequest(() => api.resource(name).list({
+  //   associatedKey,
+  // }));
+  const { data, loading, pagination, mutate } = useRequest((params = {}) => {
+    const { current, pageSize, ...restParams } = params;
+    const name = associatedName ? `${associatedName}.${resourceName}` : resourceName;
+    return api.resource(name).list({
+      associatedKey,
+      page: paginated ? current : 1,
+      perPage: paginated ? pageSize : -1,
+    })
+    .then(({data = [], meta = {}}) => {
+      return {
+        data: {
+          list: data,
+          total: meta.count||data.length,
+        },
+      };
+    });
+  }, {
+    paginated,
+    defaultPageSize,
+  });
   const { sourceKey = 'id' } = activeTab.field||{};
   console.log(props);
   const [selectedRowKeys, setSelectedRowKeys] = useState([]);
@@ -63,9 +83,9 @@ export function Table(props: TableProps) {
     <Card bordered={false}>
       <Actions {...props} style={{ marginBottom: 14 }} actions={actions}/>
       <AntdTable 
-        dataSource={data}
         rowKey={rowKey}
         columns={fields2columns(fields)}
+        dataSource={data?.list||(data as any)}
         components={components({data, mutate})}
         onRow={(data) => ({
           onClick: () => {
@@ -78,8 +98,14 @@ export function Table(props: TableProps) {
             });
           },
         })}
+        pagination={false}
         {...tableProps}
       />
+      {paginated && (
+        <div>
+          <Pagination {...pagination} showQuickJumper showSizeChanger size={'default'}/>
+        </div>
+      )}
     </Card>
   );
 }

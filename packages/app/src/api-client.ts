@@ -13,6 +13,7 @@ interface Params {
   associatedKey?: string | number;
   fields?: any;
   filter?: any;
+  [key: string]: any;
 }
 
 interface Handler {

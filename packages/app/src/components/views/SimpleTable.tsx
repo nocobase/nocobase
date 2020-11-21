@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Table as AntdTable, Card } from 'antd';
+import { Table as AntdTable, Card, Pagination } from 'antd';
 import { Actions } from '@/components/actions';
 import ViewFactory from '@/components/views';
 import { useRequest } from 'umi';
@@ -26,14 +26,30 @@ export function SimpleTable(props: SimpleTableProps) {
     associatedName,
     associatedKey,
   } = props;
-  const { rowKey = 'id', fields = [], rowViewName, actions = [] } = schema;
+  const { rowKey = 'id', fields = [], rowViewName, actions = [], paginated = true, defaultPageSize = 10 } = schema;
   const { sourceKey = 'id' } = activeTab.field||{};
   const drawerRef = useRef<any>();
-  const name = associatedName ? `${associatedName}.${resourceName}` : resourceName;
-  const { data, mutate } = useRequest(() => api.resource(name).list({
-    associatedKey,
-  }));
-  console.log(activeTab);
+  const { data, loading, pagination, mutate } = useRequest((params = {}) => {
+    const { current, pageSize, ...restParams } = params;
+    const name = associatedName ? `${associatedName}.${resourceName}` : resourceName;
+    return api.resource(name).list({
+      associatedKey,
+      page: paginated ? current : 1,
+      perPage: paginated ? pageSize : -1,
+    })
+    .then(({data = [], meta = {}}) => {
+      return {
+        data: {
+          list: data,
+          total: meta.count||data.length,
+        },
+      };
+    });
+  }, {
+    paginated,
+    defaultPageSize,
+  });
+  console.log(schema, data);
   const [selectedRowKeys, setSelectedRowKeys] = useState([]);
   const onChange = (selectedRowKeys: React.ReactText[]) => {
     setSelectedRowKeys(selectedRowKeys);
@@ -45,6 +61,7 @@ export function SimpleTable(props: SimpleTableProps) {
       onChange,
     }
   }
+  console.log('rowViewName', {rowViewName})
   return (
     <Card bordered={false}>
       <Actions {...props} style={{ marginBottom: 14 }} actions={actions}/>
@@ -54,9 +71,10 @@ export function SimpleTable(props: SimpleTableProps) {
         reference={drawerRef}
       />
       <AntdTable
-        columns={fields2columns(fields)}
-        dataSource={data}
         rowKey={rowKey}
+        loading={loading}
+        columns={fields2columns(fields)}
+        dataSource={data?.list||(data as any)}
         components={components({data, mutate})}
         onRow={(record) => ({
           onClick: () => {
@@ -64,8 +82,14 @@ export function SimpleTable(props: SimpleTableProps) {
             drawerRef.current.getData(record[rowKey]);
           }
         })}
+        pagination={false}
         {...tableProps}
       />
+      {paginated && (
+        <div>
+          <Pagination {...pagination} showQuickJumper showSizeChanger size={'default'}/>
+        </div>
+      )}
     </Card>
   );
 }
