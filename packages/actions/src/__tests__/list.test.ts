@@ -1,12 +1,17 @@
+import { times } from 'lodash';
 import { Op } from 'sequelize';
 
 import { initDatabase, agent } from './index';
 
 describe('list', () => {
   let db;
+  let now: string;
+  let timestamps: { created_at: string; updated_at: string; };
   
   beforeEach(async () => {
     db = await initDatabase();
+    now = (new Date()).toISOString();
+    timestamps = { created_at: now, updated_at: now };
   });
   
   afterAll(() => db.close());
@@ -15,9 +20,9 @@ describe('list', () => {
     beforeEach(async () => {
       const User = db.getModel('users');
       await User.bulkCreate([
-        { name: 'a' },
-        { name: 'b' },
-        { name: 'c' }
+        { name: 'a', ...timestamps },
+        { name: 'b', ...timestamps },
+        { name: 'c', ...timestamps }
       ]);
       const users = await User.findAll();
 
@@ -26,7 +31,8 @@ describe('list', () => {
         title: `title${index}`,
         status: index % 2 ? 'published' : 'draft',
         published_at: index % 2 ? new Date(2020, 10, 30 - index, 0, 0, 0) : null,
-        user_id: users[index % users.length].id
+        user_id: users[index % users.length].id,
+        ...timestamps
       })));
     });
 
@@ -197,10 +203,16 @@ describe('list', () => {
         expect(response.body.rows).toEqual([{ title: 'title0' }]);
       });
 
+      it('only with belongs to fields', async () => {
+        const response = await agent.get('/posts?fields[only]=title&fields[only]=user.name&filter[title]=title0');
+        expect(response.body.rows[0].user.name).toEqual('a');
+        expect(response.body.rows).toEqual([{ title: 'title0', user: { name: 'a' } }]);
+      });
+
       it('appends fields', async () => {
         const response = await agent.get('/posts?fields[only]=title&fields[appends]=user.name&filter[title]=title0');
-        expect(response.body.rows[0].user).toBeDefined();
-        // expect(response.body.rows).toEqual([{ title: 'title0' }]);
+        expect(response.body.rows[0].user.name).toEqual('a');
+        expect(response.body.rows).toEqual([{ title: 'title0', user: { id: 1, name: 'a', ...timestamps } }]);
       });
     });
   });

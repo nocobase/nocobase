@@ -65,13 +65,13 @@ describe('utils', () => {
       });
   
       it('appends', async () => {
-        expect(mergeFields({}, { appends: ['col'] }))
-          .toEqual({ appends: ['col'] });
+        expect(mergeFields({}, { only: ['col1'], appends: ['col2'] }))
+          .toEqual({ only: ['col1'], appends: ['col2'] });
       });
     });
 
     describe('options provided', () => {
-      it.only('defaults provided: only, except, appends', () => {
+      it('defaults provided: only, except, appends', () => {
         expect(mergeFields({
           only: ['col1', 'col2'],
           except: ['col3'],
