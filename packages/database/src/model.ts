@@ -239,8 +239,10 @@ export abstract class Model extends SequelizeModel {
       dialect: this.sequelize.getDialect(),
       ctx: context,
     });
-    if (page || perPage) {
-      data.limit = perPage || 20;
+    // 这里可以认为 parseApiJson 之前的 action.params 已经解决了默认值的问题
+    // 只要有值都应该是成对出现
+    if (page && perPage) {
+      data.limit = perPage;
       data.offset = data.limit * (page > 0 ? page - 1 : 0);
     }
     if (data.attributes && data.attributes.length === 0) {

@@ -78,6 +78,10 @@ export interface ActionOptions {
    */
   perPage?: number;
   /**
+   * 最大页码
+   */
+  maxPerPage?: number;
+  /**
    * 中间件
    */
   middleware?: MiddlewareType;
@@ -167,6 +171,10 @@ export interface ActionParams {
   [key: string]: any;
 }
 
+const DEFAULT_PAGE = 1;
+const DEFAULT_PAGE_SIZE = 20;
+const MAX_PAGE_SIZE = 100;
+
 export class Action {
 
   protected handler: any;
@@ -230,9 +238,23 @@ export class Action {
 
   async mergeParams(params: ActionParams) {
     const { filter, fields, values, ...restPrams } = params;
-    let { filter: optionsFilter, fields: optionsFields } = this.options;
+    const {
+      filter: optionsFilter,
+      fields: optionsFields,
+      page = DEFAULT_PAGE,
+      perPage = DEFAULT_PAGE_SIZE,
+      maxPerPage = MAX_PAGE_SIZE
+    } = this.options;
     const options = _.omit(this.options, [
-      'defaultValues', 'filter', 'fields', 'handler', 'middlewares', 'middleware',
+      'defaultValues',
+      'filter',
+      'fields',
+      'maxPerPage',
+      'page',
+      'perPage',
+      'handler',
+      'middlewares',
+      'middleware',
     ]);
     const data: ActionParams = {
       ...options,
@@ -243,6 +265,10 @@ export class Action {
     }
     if (data.per_page) {
       data.perPage = data.per_page;
+    }
+    if (data.page || data.perPage) {
+      data.page = data.page || page;
+      data.perPage = Math.min(data.perPage || perPage, maxPerPage);
     }
     // if (typeof optionsFilter === 'function') {
     //   this.parameters = _.cloneDeep(data);

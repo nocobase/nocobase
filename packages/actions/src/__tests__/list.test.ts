@@ -155,6 +155,26 @@ describe('list', () => {
           rows: [ { title: 'title1' } ],
         });
       });
+    
+      it('page 1 by size(101) should be change to 100', async () => {
+        const response = await agent.get('/posts?fields=title&page=1&per_page=101');
+        expect(response.body).toEqual({
+          count: 25,
+          page: 1,
+          per_page: 100,
+          rows: Array(25).fill(null).map((_, index) => ({ title: `title${index}` })),
+        });
+      });
+    
+      it('page 2 by size(101) should be change to 100 and result is empty', async () => {
+        const response = await agent.get('/posts?fields=title&page=2&per_page=101');
+        expect(response.body).toEqual({
+          count: 25,
+          page: 2,
+          per_page: 100,
+          rows: [],
+        });
+      });
     });
   
     describe('fields', () => {
@@ -303,14 +323,16 @@ describe('list', () => {
       const Post = db.getModel('posts');
       const post = await Post.findByPk(1);
       const response = await agent
-        .get(`/posts/${post.id}/tags?page=2&perPage=2&sort=name&fields=name&filter[published]=1`);
+        .get(`/posts/${post.id}/tags?page=2&perPage=2&sort=-name&fields=name&filter[status]=published`);
       expect(response.body).toEqual({
-        rows: [ { name: 'tag5' }, { name: 'tag7' } ],
+        rows: [ { name: 'tag3' }, { name: 'tag1' } ],
         count: 4,
         page: 2,
         per_page: 2
       });
     });
+
+    
   });
 
 });

@@ -2,6 +2,7 @@ import { Context, Next } from '.';
 import { Relation, Model, Field, HasOne, HasMany, BelongsTo, BelongsToMany } from '@nocobase/database';
 import { Utils, Op, Sequelize } from 'sequelize';
 import { isEmpty } from 'lodash';
+import _ from 'lodash';
 
 /**
  * 查询数据列表
@@ -50,17 +51,19 @@ export async function list(ctx: Context, next: Next) {
       ...options,
       context: ctx,
     });
-    delete options.attributes;
-    delete options.limit;
-    delete options.offset;
-    delete options.order;
-    if (options.include) {
-      options.include = options.include.map(includeOptions => {
+    const associatedOptions = _.omit(options, [
+      'attributes',
+      'limit',
+      'offset',
+      'order'
+    ]);
+    if (associatedOptions.include) {
+      associatedOptions.include = associatedOptions.include.map(includeOptions => {
         includeOptions.attributes = [];
         return includeOptions;
       });
     }
-    const count = await associated[countAccessor]({ ...options, context: ctx });
+    const count = await associated[countAccessor]({ ...associatedOptions, context: ctx });
     data = {
       rows,
       count,
@@ -72,9 +75,10 @@ export async function list(ctx: Context, next: Next) {
       context: ctx,
     });
   }
-  if (page || perPage) {
-    data['page'] = 1*(page||1);
-    data[Utils.underscoredIf('perPage', Model.options.underscored)] = 1*(perPage||20);
+  if (options.limit || typeof options.offset !== 'undefined') {
+    // Math.round 避免精度问题
+    data['page'] = Math.round((options.offset || 0) / options.limit + 1);
+    data[Utils.underscoredIf('perPage', Model.options.underscored)] = options.limit;
   }
   ctx.body = data;
   await next();
