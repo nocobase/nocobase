@@ -1,5 +1,6 @@
 import { Context, Next } from '.';
 import { Relation, Model, Field, HasOne, HasMany, BelongsTo, BelongsToMany } from '@nocobase/database';
+import { DEFAULT_PAGE, DEFAULT_PER_PAGE } from '@nocobase/resourcer';
 import { Utils, Op, Sequelize } from 'sequelize';
 import { isEmpty } from 'lodash';
 import _ from 'lodash';
@@ -18,8 +19,8 @@ import _ from 'lodash';
  */
 export async function list(ctx: Context, next: Next) {
   const {
-    page = 1,
-    perPage,
+    page = DEFAULT_PAGE,
+    perPage = DEFAULT_PER_PAGE,
     sort = [],
     fields = [],
     filter = {},

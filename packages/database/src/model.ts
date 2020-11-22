@@ -127,9 +127,9 @@ export interface WithCountAttributeOptions {
   [key: string]: any;
 }
 
-const DEFAULT_OFFSET = 0;
-const DEFAULT_LIMIT = 20;
-const MAX_LIMIT = 500;
+export const DEFAULT_OFFSET = 0;
+export const DEFAULT_LIMIT = 100;
+export const MAX_LIMIT = 500;
 
 /**
  * Model 相关
