@@ -18,7 +18,7 @@ import _ from 'lodash';
  */
 export async function list(ctx: Context, next: Next) {
   const {
-    page,
+    page = 1,
     perPage,
     sort = [],
     fields = [],
@@ -31,7 +31,7 @@ export async function list(ctx: Context, next: Next) {
   const Model = ctx.db.getModel(resourceName);
   const options = Model.parseApiJson({
     sort,
-    page: page || 1,
+    page,
     perPage,
     filter,
     fields,
