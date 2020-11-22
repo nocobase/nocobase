@@ -127,6 +127,10 @@ export interface WithCountAttributeOptions {
   [key: string]: any;
 }
 
+const DEFAULT_OFFSET = 0;
+const DEFAULT_LIMIT = 20;
+const MAX_LIMIT = 500;
+
 /**
  * Model 相关
  * 
@@ -239,11 +243,9 @@ export abstract class Model extends SequelizeModel {
       dialect: this.sequelize.getDialect(),
       ctx: context,
     });
-    // 这里可以认为 parseApiJson 之前的 action.params 已经解决了默认值的问题
-    // 只要有值都应该是成对出现
-    if (page && perPage) {
-      data.limit = perPage;
-      data.offset = data.limit * (page > 0 ? page - 1 : 0);
+    if (page || perPage) {
+      data.limit = perPage === -1 ? MAX_LIMIT : Math.min(perPage || DEFAULT_LIMIT, MAX_LIMIT);
+      data.offset = data.limit * (page > 0 ? page - 1 : DEFAULT_OFFSET);
     }
     if (data.attributes && data.attributes.length === 0) {
       delete data.attributes;

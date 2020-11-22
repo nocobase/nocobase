@@ -172,8 +172,8 @@ export interface ActionParams {
 }
 
 const DEFAULT_PAGE = 1;
-const DEFAULT_PAGE_SIZE = 20;
-const MAX_PAGE_SIZE = 100;
+const DEFAULT_PER_PAGE = 20;
+const MAX_PER_PAGE = 100;
 
 export class Action {
 
@@ -223,7 +223,7 @@ export class Action {
 
   setParam(key: string, value: any) {
     if (/\[\]$/.test(key)) {
-      key = key.substr(0, key.length-2);
+      key = key.substr(0, key.length - 2);
       let values = _.get(this.parameters, key);
       if (_.isArray(values)) {
         values.push(value);
@@ -237,13 +237,21 @@ export class Action {
   }
 
   async mergeParams(params: ActionParams) {
-    const { filter, fields, values, ...restPrams } = params;
+    const {
+      filter,
+      fields,
+      values,
+      page: paramPage,
+      perPage: paramPerPage,
+      per_page,
+      ...restPrams
+    } = params;
     const {
       filter: optionsFilter,
       fields: optionsFields,
       page = DEFAULT_PAGE,
-      perPage = DEFAULT_PAGE_SIZE,
-      maxPerPage = MAX_PAGE_SIZE
+      perPage = DEFAULT_PER_PAGE,
+      maxPerPage = MAX_PER_PAGE
     } = this.options;
     const options = _.omit(this.options, [
       'defaultValues',
@@ -263,12 +271,13 @@ export class Action {
     if (!_.isEmpty(this.options.defaultValues) || !_.isEmpty(values)) {
       data.values = _.merge(_.cloneDeep(this.options.defaultValues), values);
     }
-    if (data.per_page) {
-      data.perPage = data.per_page;
+    // TODO: to be unified by style funciton
+    if (per_page || paramPerPage) {
+      data.perPage = per_page || paramPerPage;
     }
-    if (data.page || data.perPage) {
-      data.page = data.page || page;
-      data.perPage = Math.min(data.perPage || perPage, maxPerPage);
+    if (paramPage || data.perPage) {
+      data.page = paramPage || page;
+      data.perPage = data.perPage == -1 ? maxPerPage : Math.min(data.perPage || perPage, maxPerPage);
     }
     // if (typeof optionsFilter === 'function') {
     //   this.parameters = _.cloneDeep(data);

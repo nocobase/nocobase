@@ -126,8 +126,8 @@ describe('list', () => {
     });
 
     describe('page', () => {
-      it('page by default size(20) should be ok', async () => {
-        const response = await agent.get('/posts?fields=title&page=1');
+      it('default page and size(20) should be ok', async () => {
+        const response = await agent.get('/posts?fields=title');
         expect(response.body).toEqual({
           count: 25,
           page: 1,
@@ -175,18 +175,45 @@ describe('list', () => {
           rows: [],
         });
       });
+    
+      it('default page by size(-1) should be change to 100 and result will be 25 items', async () => {
+        const response = await agent.get('/posts?fields=title&per_page=-1');
+        expect(response.body).toEqual({
+          count: 25,
+          page: 1,
+          per_page: 100,
+          rows: Array(25).fill(null).map((_, index) => ({ title: `title${index}` })),
+        });
+      });
+    
+      it('page 2 by size(-1) should be change to 100 and result is empty', async () => {
+        const response = await agent.get('/posts?fields=title&page=2&per_page=-1');
+        expect(response.body).toEqual({
+          count: 25,
+          page: 2,
+          per_page: 100,
+          rows: [],
+        });
+      });
     });
   
     describe('fields', () => {
       it('custom field', async () => {
         const response = await agent.get('/posts?fields=title&filter[customTitle]=title0');
-        expect(response.body).toEqual({ count: 1, rows: [ { title: 'title0' } ] });
+        expect(response.body).toEqual({
+          count: 1,
+          page: 1,
+          per_page: 20,
+          rows: [ { title: 'title0' } ]
+        });
       });
 
       it('self field and belongs to field', async () => {
         const response = await agent.get('/posts?fields=title,user.name&filter[title]=title0');
         expect(response.body).toEqual({
           count: 1,
+          page: 1,
+          per_page: 20,
           rows: [
             {
               title: 'title0',

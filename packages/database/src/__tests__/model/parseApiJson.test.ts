@@ -138,10 +138,29 @@ describe('parseApiJson', () => {
 
     it('pagination: only page', () => {
       expect(Foo.parseApiJson({
-        page: 1
+        page: 2
+      })).toEqual({
+        offset: 20,
+        limit: 20,
+      });
+    });
+
+    it('pagination: only perPage and max limit', () => {
+      expect(Foo.parseApiJson({
+        perPage: 1000
       })).toEqual({
         offset: 0,
-        limit: 20,
+        limit: 500,
+      });
+    });
+
+    it('pagination: perPage=-1 stand for max limit', () => {
+      expect(Foo.parseApiJson({
+        page: 2,
+        perPage: -1
+      })).toEqual({
+        offset: 500,
+        limit: 500,
       });
     });
 
@@ -168,10 +187,10 @@ describe('parseApiJson', () => {
 
     it('sort: association field', () => {
       expect(Bar.parseApiJson({
-        sort: '-baz.a'
+        sort: '-foo.a'
       })).toEqual({
         order: [
-          [Baz, 'a', 'DESC'],
+          [Foo, 'a', 'DESC'],
         ]
       });
     });

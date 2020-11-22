@@ -158,9 +158,9 @@ export function toInclude(options: any, context: ToIncludeContext = {}) {
         include.set(col, includeItem);
         return;
       }
-      const matches: Array<any> = /(.+)\_count$/.exec(col);
+      const matches: Array<any> = /(.+)_count$/.exec(col);
       if (matches && associations[matches[1]]) {
-        attributes.only.push(Model.withCountAttribute({
+        attributes.only.push(model.withCountAttribute({
           association: matches[1],
           sourceAlias: sourceAlias
         }));
@@ -202,7 +202,7 @@ export function toInclude(options: any, context: ToIncludeContext = {}) {
       }
       const matches: Array<any> = /(.+)_count$/.exec(col);
       if (matches && associations[matches[1]]) {
-        attributes.appends.push(Model.withCountAttribute({
+        attributes.appends.push(model.withCountAttribute({
           association: matches[1],
           sourceAlias: sourceAlias
         }));

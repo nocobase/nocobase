@@ -31,7 +31,7 @@ export async function list(ctx: Context, next: Next) {
   const Model = ctx.db.getModel(resourceName);
   const options = Model.parseApiJson({
     sort,
-    page,
+    page: page || 1,
     perPage,
     filter,
     fields,
