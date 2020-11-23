@@ -1,4 +1,3 @@
-import { times } from 'lodash';
 import { Op } from 'sequelize';
 
 import { initDatabase, agent } from './index';
@@ -274,7 +273,7 @@ describe('list', () => {
       ]);
       const users = await User.findAll();
       const Post = db.getModel('posts');
-      const post = await Post.create();
+      const post = await Post.create({ user_id: users[0].id });
       await post.updateAssociations({
         comments: Array(6).fill(null).map((_, index) => ({
           content: `content${index}`,
@@ -324,6 +323,27 @@ describe('list', () => {
         rows: [
           { content: 'content4', user: { name: 'b' } },
           { content: 'content2', user: { name: 'c' } }
+        ]
+      });
+    });
+
+    // TODO(bug)
+    it.skip('get posts of user with comments', async () => {
+      const response = await agent
+        .get(`/users/1/posts?fields=comments.content,user.name&filter[comments.status]=draft&sort=-content&page=1&perPage=2`);
+      
+      expect(response.body).toEqual({
+        count: 1,
+        page: 1,
+        per_page: 2,
+        rows: [
+          {
+            comments: [
+              { content: 'content4' },
+              { content: 'content2' }
+            ],
+            user: { name: 'a' }
+          }
         ]
       });
     });
