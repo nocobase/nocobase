@@ -95,8 +95,7 @@ describe('parseApiJson', () => {
       expect(data).toEqual({ attributes: ['col1'] });
     });
 
-    // TODO(bug): should not contain `include: []`
-    it.skip('fields.except', () => {
+    it('fields.except', () => {
       expect(Foo.parseApiJson({
         fields: {
           except: ['col']
@@ -140,8 +139,8 @@ describe('parseApiJson', () => {
       expect(Foo.parseApiJson({
         page: 2
       })).toEqual({
-        offset: 20,
-        limit: 20,
+        offset: 100,
+        limit: 100,
       });
     });
 
@@ -242,6 +241,7 @@ describe('parseApiJson', () => {
             where: { col1: 'val1' },
           }
         ],
+        distinct: true,
       });
     });
   
@@ -265,6 +265,7 @@ describe('parseApiJson', () => {
             where: { col1: 'val1' },
           }
         ],
+        distinct: true,
       });
     });
   });

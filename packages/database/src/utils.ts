@@ -67,6 +67,50 @@ interface ToIncludeContext {
 }
 
 export function toInclude(options: any, context: ToIncludeContext = {}) {
+  function makeFields(key) {
+    if (!Array.isArray(items[key])) {
+      return;
+    }
+    items[key].forEach(field => {
+      const arr: Array<string> = Array.isArray(field) ? Utils.cloneDeep(field) : field.split('.');
+      const col = arr.shift();
+      // 内嵌的情况
+      if (arr.length > 0) {
+        if (!children.has(col)) {
+          children.set(col, {
+            fields: {
+              only: [],
+              except: [],
+              appends: [],
+            },
+          });
+        }
+        children.get(col).fields[key].push(arr);
+        return;
+      }
+      // 关系字段
+      if (associations[col]) {
+        const includeItem: any = {
+          association: col,
+        };
+        if (includeWhere[col]) {
+          includeItem.where = includeWhere[col];
+        }
+        include.set(col, includeItem);
+        return;
+      }
+      const matches: Array<any> = /(.+)_count$/.exec(col);
+      if (matches && associations[matches[1]]) {
+        attributes[key].push(model.withCountAttribute({
+          association: matches[1],
+          sourceAlias: sourceAlias
+        }));
+      } else {
+        attributes[key].push(col);
+      }
+    });
+  }
+
   const { fields = [] } = options;
   const { model, sourceAlias, associations = {}, ctx, dialect } = context;
 
@@ -127,90 +171,9 @@ export function toInclude(options: any, context: ToIncludeContext = {}) {
       }
     });
   }
-
-  if (Array.isArray(items.only) && items.only.length > 0) {
-    items.only.forEach(field => {
-      const arr: Array<string> = Array.isArray(field) ? Utils.cloneDeep(field) : field.split('.');
-      const col = arr.shift();
-      // 内嵌的情况
-      if (arr.length > 0) {
-        if (!children.has(col)) {
-          children.set(col, {
-            fields: {
-              only: [arr],
-              except: [],
-              appends: [],
-            },
-          });
-        } else {
-          children.get(col).fields.only.push(arr);
-        }
-        return;
-      }
-      // 关系字段
-      if (associations[col]) {
-        const includeItem: any = {
-          association: col,
-        };
-        if (includeWhere[col]) {
-          includeItem.where = includeWhere[col];
-        }
-        include.set(col, includeItem);
-        return;
-      }
-      const matches: Array<any> = /(.+)_count$/.exec(col);
-      if (matches && associations[matches[1]]) {
-        attributes.only.push(model.withCountAttribute({
-          association: matches[1],
-          sourceAlias: sourceAlias
-        }));
-      } else {
-        attributes.only.push(col);
-      }
-    });
-  }
-
-  if (Array.isArray(items.appends) && items.appends.length > 0) {
-    items.appends.forEach(field => {
-      const arr: Array<string> = Array.isArray(field) ? Utils.cloneDeep(field) : field.split('.');
-      const col = arr.shift();
-      // 内嵌的情况
-      if (arr.length > 0) {
-        if (!children.has(col)) {
-          children.set(col, {
-            fields: {
-              only: [],
-              except: [],
-              appends: [arr],
-            },
-          });
-        } else {
-          children.get(col).fields.appends.push(arr);
-        }
-        return;
-      }
-      // 关系字段
-      if (associations[col]) {
-        const includeItem: any = {
-          association: col,
-        };
-        if (includeWhere[col]) {
-          includeItem.where = includeWhere[col];
-        }
-        include.set(col, includeItem);
-        return;
-      }
-      const matches: Array<any> = /(.+)_count$/.exec(col);
-      if (matches && associations[matches[1]]) {
-        attributes.appends.push(model.withCountAttribute({
-          association: matches[1],
-          sourceAlias: sourceAlias
-        }));
-      } else {
-        attributes.appends.push(col);
-      }
-    });
-  }
+  
+  makeFields('only');
+  makeFields('appends');
 
   if (Array.isArray(items.except) && items.except.length > 0) {
     items.except.forEach(field => {
@@ -274,14 +237,16 @@ export function toInclude(options: any, context: ToIncludeContext = {}) {
     include.set(key, item);
   }
 
-  const data:any = {};
+  const data: any = {};
 
   // 存在黑名单时
   if (attributes.except.length > 0) {
     data.attributes = {
-      include: attributes.appends,
       exclude: attributes.except,
     };
+    if (attributes.appends.length) {
+      data.attributes.include = attributes.appends;
+    }
   }
   // 存在白名单时
   else if (attributes.only.length > 0) {
@@ -299,6 +264,7 @@ export function toInclude(options: any, context: ToIncludeContext = {}) {
       data.attributes = [];
     }
     data.include = Array.from(include.values());
+    data.distinct = true;
   }
 
   if (Object.keys(where).length > 0) {

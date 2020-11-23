@@ -305,7 +305,7 @@ describe('list', () => {
           title: null,
           comments: [{ content: 'content4' }, { content: 'content2' }, { content: 'content0'}]
         }],
-        count: 3,
+        count: 1,
         page: 1,
         per_page: 2
       });

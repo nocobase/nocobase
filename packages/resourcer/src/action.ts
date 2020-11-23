@@ -78,7 +78,7 @@ export interface ActionOptions {
    */
   perPage?: number;
   /**
-   * 最大页码
+   * 最大每页显示数量
    */
   maxPerPage?: number;
   /**
