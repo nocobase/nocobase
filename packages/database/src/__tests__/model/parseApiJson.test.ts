@@ -6,26 +6,37 @@ import Model, { ModelCtor } from '../../model';
 
 let db: Database;
 let Bar: ModelCtor<Model>;
+let Baz: ModelCtor<Model>;
+let Bay: ModelCtor<Model>;
 let Foo: ModelCtor<Model>;
 
 beforeAll(() => {
   db = getDatabase();
   db.table({
     name: 'bazs',
+    fields: [
+      {
+        type: 'belongsToMany',
+        name: 'bays'
+      },
+    ]
   });
   db.table({
     name: 'bays',
+    fields: [
+      {
+        type: 'belongsToMany',
+        name: 'bazs'
+      },
+    ]
   });
+
   db.table({
     name: 'bars',
     fields: [
       {
         type: 'belongsTo',
-        name: 'baz',
-      },
-      {
-        type: 'belongsTo',
-        name: 'bay',
+        name: 'foo',
       },
     ],
   });
@@ -53,6 +64,8 @@ beforeAll(() => {
     name: 'coos',
   });
   Bar = db.getModel('bars');
+  Baz = db.getModel('bazs');
+  Bay = db.getModel('bays');
   Foo = db.getModel('foos');
 });
 
@@ -62,6 +75,10 @@ afterAll(() => db.close());
 
 describe('parseApiJson', () => {
   describe('self table', () => {
+    it('empty', () => {
+      expect(Foo.parseApiJson({})).toEqual({});
+    });
+
     it('filter', () => {
       const data = Foo.parseApiJson({
         filter: {
@@ -76,6 +93,26 @@ describe('parseApiJson', () => {
         fields: ['col1'],
       });
       expect(data).toEqual({ attributes: ['col1'] });
+    });
+
+    it('fields.except', () => {
+      expect(Foo.parseApiJson({
+        fields: {
+          except: ['col']
+        },
+      })).toEqual({ attributes: {
+        exclude: ['col']
+      }});
+    });
+
+    it('fields.appends', () => {
+      expect(Foo.parseApiJson({
+        fields: {
+          appends: ['col']
+        },
+      })).toEqual({ attributes: {
+        include: ['col']
+      }});
     });
   
     it('filter and fields', () => {
@@ -100,10 +137,29 @@ describe('parseApiJson', () => {
 
     it('pagination: only page', () => {
       expect(Foo.parseApiJson({
-        page: 1
+        page: 2
+      })).toEqual({
+        offset: 100,
+        limit: 100,
+      });
+    });
+
+    it('pagination: only perPage and max limit', () => {
+      expect(Foo.parseApiJson({
+        perPage: 1000
       })).toEqual({
         offset: 0,
-        limit: 20,
+        limit: 500,
+      });
+    });
+
+    it('pagination: perPage=-1 stand for max limit', () => {
+      expect(Foo.parseApiJson({
+        page: 2,
+        perPage: -1
+      })).toEqual({
+        offset: 500,
+        limit: 500,
       });
     });
 
@@ -117,7 +173,6 @@ describe('parseApiJson', () => {
       });
     });
 
-    // TODO(bug): should not contain additional attributes
     it('sort: multiple self fields', () => {
       expect(Foo.parseApiJson({
         sort: 'a,-b'
@@ -129,13 +184,22 @@ describe('parseApiJson', () => {
       });
     });
 
-    // TODO(feature): order by association should be ok
-    it.skip('sort: association field', () => {
+    it('sort: association field', () => {
       expect(Bar.parseApiJson({
         sort: '-foo.a'
       })).toEqual({
         order: [
-          [{ model: Foo, as: 'foo' }, 'a', 'DESC'],
+          [Foo, 'a', 'DESC'],
+        ]
+      });
+    });
+
+    it('sort: many to many association field', () => {
+      expect(Baz.parseApiJson({
+        sort: '-bays.a'
+      })).toEqual({
+        order: [
+          [Bay, 'a', 'DESC'],
         ]
       });
     });
@@ -177,6 +241,7 @@ describe('parseApiJson', () => {
             where: { col1: 'val1' },
           }
         ],
+        distinct: true,
       });
     });
   
@@ -200,6 +265,7 @@ describe('parseApiJson', () => {
             where: { col1: 'val1' },
           }
         ],
+        distinct: true,
       });
     });
   });

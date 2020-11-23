@@ -59,7 +59,7 @@ describe('toInclude', () => {
 
   const toIncludeExpect = (options: any, logging = false) => {
     const include = toInclude(options, {
-      Model: Foo,
+      model: Foo,
       associations: Foo.associations,
     });
     if (logging) {

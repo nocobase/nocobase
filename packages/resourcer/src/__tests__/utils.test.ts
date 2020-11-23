@@ -1,6 +1,94 @@
-import { parseRequest } from '..';
+import { mergeFields, parseFields, parseQuery, parseRequest } from '..';
 
 describe('utils', () => {
+  describe('parseQuery', () => {
+    it('filter support normal json type', () => {
+      const object = {
+        number: -1.1,
+        string: 'str=a',
+        boolean: true,
+        null: null,
+        array: [5],
+        object: {
+          member: {}
+        },
+        undefined: undefined
+      };
+      const json = JSON.stringify(object);
+      expect(parseQuery(`filter=${encodeURIComponent(json)}&sort=-col`)).toEqual({
+        filter: object,
+        sort: '-col'
+      });
+    });
+  });
+
+  describe('parseFields', () => {
+    it('plain string fields equal to only', () => {
+      expect(parseFields('name,age')).toEqual({
+        only: ['name', 'age']
+      });
+    });
+
+    it('plain array fields equal to only', () => {
+      expect(parseFields(['name', 'age'])).toEqual({
+        only: ['name', 'age']
+      });
+    });
+
+    it('only string fields equal to only', () => {
+      expect(parseFields({ only: 'name,age' })).toEqual({
+        only: ['name', 'age']
+      });
+    });
+
+    it('only array fields equal to only', () => {
+      expect(parseFields({ only: ['name', 'age'] })).toEqual({
+        only: ['name', 'age']
+      });
+    });
+
+    it('plain only and expect fields', () => {
+      // input as "fields=title&fields[only]=content&fields[except]=status&fields[except]=created_at"
+      const result = parseFields([ 'title', { only: 'content' }, { except: ['status', 'created_at'] } ]);
+      expect(result).toEqual({
+        only: ['title', 'content'],
+        except: ['status', 'created_at']
+      });
+    });
+  });
+
+  describe('mergeFields', () => {
+    describe('empty default', () => {
+      it('always contains "appends"', async () => {
+        expect(mergeFields({}, { only: ['col'] }))
+          .toEqual({ appends: [], only: ['col'] });
+      });
+  
+      it('appends', async () => {
+        expect(mergeFields({}, { only: ['col1'], appends: ['col2'] }))
+          .toEqual({ only: ['col1'], appends: ['col2'] });
+      });
+    });
+
+    describe('options provided', () => {
+      it('defaults provided: only, except, appends', () => {
+        expect(mergeFields({
+          only: ['col1', 'col2'],
+          except: ['col3'],
+          appends: ['col4']
+        }, {
+          only: ['col1', 'col3', 'col4'],
+          except: ['col5'],
+          appends: ['col6']
+        }))
+          .toEqual({
+            only: ['col1'],
+            appends: ['col6', 'col4']
+          });
+      });
+    });
+  });
+
   describe('parseRequest', () => {
     it('index action', () => {
       const params = parseRequest({

@@ -78,6 +78,10 @@ export interface ActionOptions {
    */
   perPage?: number;
   /**
+   * 最大每页显示数量
+   */
+  maxPerPage?: number;
+  /**
    * 中间件
    */
   middleware?: MiddlewareType;
@@ -167,6 +171,10 @@ export interface ActionParams {
   [key: string]: any;
 }
 
+export const DEFAULT_PAGE = 1;
+export const DEFAULT_PER_PAGE = 20;
+export const MAX_PER_PAGE = 100;
+
 export class Action {
 
   protected handler: any;
@@ -215,7 +223,7 @@ export class Action {
 
   setParam(key: string, value: any) {
     if (/\[\]$/.test(key)) {
-      key = key.substr(0, key.length-2);
+      key = key.substr(0, key.length - 2);
       let values = _.get(this.parameters, key);
       if (_.isArray(values)) {
         values.push(value);
@@ -229,10 +237,32 @@ export class Action {
   }
 
   async mergeParams(params: ActionParams) {
-    const { filter, fields, values, ...restPrams } = params;
-    let { filter: optionsFilter, fields: optionsFields } = this.options;
+    const {
+      filter,
+      fields,
+      values,
+      page: paramPage,
+      perPage: paramPerPage,
+      per_page,
+      ...restPrams
+    } = params;
+    const {
+      filter: optionsFilter,
+      fields: optionsFields,
+      page = DEFAULT_PAGE,
+      perPage = DEFAULT_PER_PAGE,
+      maxPerPage = MAX_PER_PAGE
+    } = this.options;
     const options = _.omit(this.options, [
-      'defaultValues', 'filter', 'fields', 'handler', 'middlewares', 'middleware',
+      'defaultValues',
+      'filter',
+      'fields',
+      'maxPerPage',
+      'page',
+      'perPage',
+      'handler',
+      'middlewares',
+      'middleware',
     ]);
     const data: ActionParams = {
       ...options,
@@ -241,8 +271,13 @@ export class Action {
     if (!_.isEmpty(this.options.defaultValues) || !_.isEmpty(values)) {
       data.values = _.merge(_.cloneDeep(this.options.defaultValues), values);
     }
-    if (data.per_page) {
-      data.perPage = data.per_page;
+    // TODO: to be unified by style funciton
+    if (per_page || paramPerPage) {
+      data.perPage = per_page || paramPerPage;
+    }
+    if (paramPage || data.perPage) {
+      data.page = paramPage || page;
+      data.perPage = data.perPage == -1 ? maxPerPage : Math.min(data.perPage || perPage, maxPerPage);
     }
     // if (typeof optionsFilter === 'function') {
     //   this.parameters = _.cloneDeep(data);
