@@ -127,6 +127,10 @@ export interface WithCountAttributeOptions {
   [key: string]: any;
 }
 
+export const DEFAULT_OFFSET = 0;
+export const DEFAULT_LIMIT = 100;
+export const MAX_LIMIT = 500;
+
 /**
  * Model 相关
  * 
@@ -234,14 +238,14 @@ export abstract class Model extends SequelizeModel {
   static parseApiJson(options: ApiJsonOptions) {
     const { fields, filter, sort, context, page, perPage } = options;
     const data = toInclude({fields, filter, sort}, {
-      Model: this,
+      model: this,
       associations: this.associations,
       dialect: this.sequelize.getDialect(),
       ctx: context,
     });
     if (page || perPage) {
-      data.limit = perPage || 20;
-      data.offset = data.limit * (page > 0 ? page - 1 : 0);
+      data.limit = perPage === -1 ? MAX_LIMIT : Math.min(perPage || DEFAULT_LIMIT, MAX_LIMIT);
+      data.offset = data.limit * (page > 0 ? page - 1 : DEFAULT_OFFSET);
     }
     if (data.attributes && data.attributes.length === 0) {
       delete data.attributes;
