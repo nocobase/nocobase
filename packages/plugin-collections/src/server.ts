@@ -29,7 +29,7 @@ export default async function (this: any, options = {}) {
 
   Field.addHook('afterCreate', async function (model: FieldModel) {
     console.log('afterCreate', model.toJSON());
-    // await model.migrate();
+    await model.migrate();
   });
 
   Action.addHook('beforeCreate', async function (model: CollectionModel) {

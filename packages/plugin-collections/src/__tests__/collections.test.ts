@@ -20,16 +20,6 @@ describe('collection hooks', () => {
       values: {
         name: 'tests',
         title: 'tests',
-        fields: [
-          {
-            type: 'string',
-            name: 'title',
-            options: {
-              type: 'string',
-              name: 'title',
-            },
-          },
-        ],
       },
     });
     console.log(response.body);
@@ -52,10 +42,9 @@ describe('collection hooks', () => {
     console.log(response.body);
   });
 
-  // bug: 关系数据的新增有问题
   it('create field', async () => {
     const response = await agent.resource('collections.fields').create({
-      associatedKey: 1,
+      associatedKey: 'tests',
       values: {
         type: 'string',
         name: 'name',
