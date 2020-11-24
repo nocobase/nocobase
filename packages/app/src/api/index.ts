@@ -158,158 +158,20 @@ const data = {
 
   const database: Database = api.database;
 
-  await database.sync();
+  await database.sync({
+    // tables: ['collections', 'fields', 'actions', 'views', 'tabs'],
+  });
+
+  const Collection = database.getModel('collections');
+  const tables = database.getTables([]);
+
+  for (let table of tables) {
+    await Collection.import(table.getOptions(), { hooks: false });
+  }
 
   const Page = database.getModel('pages');
   const page = await Page.create(data);
   await page.updateAssociations(data);
-
-  const [Collection, View, Action, Tab] = database.getModels(['collections', 'views', 'actions', 'tabs']);
-  const tables = database.getTables([]);
-
-  for (let table of tables) {
-    const options = table.getOptions();
-    const collection = await Collection.create(options);
-    // console.log(options);
-    const associations: any = {};
-    if (options.fields) {
-      associations['fields'] = options.fields.map((item, sort) => ({
-        ...item,
-        options: item,
-        sort,
-      }))
-    }
-    if (options.tabs) {
-      associations['tabs'] = options.tabs.map((item, sort) => ({
-        ...item,
-        options: item,
-        sort,
-      }))
-    }
-    if (options.actions) {
-      associations['actions'] = options.actions.map((item, sort) => ({
-        ...item,
-        options: item,
-        sort,
-      }))
-    }
-    if (options.views) {
-      associations['views'] = options.views.map((item, sort) => ({
-        ...item,
-        options: item,
-        sort,
-      }))
-    }
-    await collection.updateAssociations(associations);
-  }
-
-  // const actions = await Action.findAll();
-
-  // for (const action of actions) {
-  //   const viewName = action.options.viewName;
-  //   console.log({viewName});
-  //   if (viewName) {
-  //     const view = await View.findOne({
-  //       where: {
-  //         name: viewName,
-  //         collection_name: action.collection_name
-  //       },
-  //     });
-  //     if (view) {
-  //       action.options.viewId = view.id;
-  //       console.log(action.options);
-  //       action.setDataValue('options', action.options);
-  //       action.changed('options', true);
-  //       await action.save();
-  //     }
-  //   }
-  // }
-  // const tabs = await Tab.findAll();
-
-  // for (const tab of tabs) {
-  //   const viewName = tab.options.viewName;
-  //   if (!viewName) {
-  //     continue;
-  //   }
-  //   let view: any;
-  //   if (tab.type === 'association') {
-  //     view = await View.findOne({
-  //       where: {
-  //         name: viewName,
-  //         collection_name: tab.options.association,
-  //       },
-  //     });
-  //   } else {
-  //     view = await View.findOne({
-  //       where: {
-  //         name: viewName,
-  //         collection_name: tab.collection_name,
-  //       },
-  //     });
-  //   }
-  //   if (view) {
-  //     tab.options.viewId = view.id;
-  //     tab.setDataValue('options', tab.options);
-  //     tab.changed('options', true);
-  //     await tab.save();
-  //   }
-  // }
-  // const views = await View.findAll();
-  // for (const view of views) {
-  //   const detailsViewName = view.options.detailsViewName;
-  //   if (detailsViewName) {
-  //     const v = await View.findOne({
-  //       where: {
-  //         name: detailsViewName,
-  //         collection_name: view.collection_name
-  //       },
-  //     });
-  //     if (v) {
-  //       view.options.detailsViewId = v.id;
-  //       view.setDataValue('options', view.options);
-  //       view.changed('options', true);
-  //       await view.save();
-  //     }
-  //   }
-  //   const updateViewName = view.options.updateViewName;
-  //   if (updateViewName) {
-  //     const v = await View.findOne({
-  //       where: {
-  //         name: updateViewName,
-  //         collection_name: view.collection_name
-  //       },
-  //     });
-  //     if (v) {
-  //       view.options.updateViewId = v.id;
-  //       view.setDataValue('options', view.options);
-  //       view.changed('options', true);
-  //       await view.save();
-  //     }
-  //   }
-  //   console.log({detailsViewName, updateViewName});
-  // }
-
-  // for (let table of tables) {
-  //   const options = table.getOptions();
-  //   const collection = await Collection.findOne({
-  //     where: {
-  //       name: options.name,
-  //     },
-  //   });
-  //   const tabs = await collection.getTabs() as Model[];
-  //   const actions = await collection.getActions() as Model[];
-  //   const views = await collection.getViews() as Model[];
-  //   for (const tab of tabs) {
-  //     tab.options.viewName;
-      
-  //   }
-  // }
-
-  // const collections = await Collection.findAll();
-
-  // await Promise.all(collections.map(async (collection) => {
-  //   return await collection.modelInit();
-  // }));
 
   api.listen(process.env.HTTP_PORT, () => {
     console.log(`http://localhost:${process.env.HTTP_PORT}/`);

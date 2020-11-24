@@ -1,8 +1,10 @@
 import { TableOptions } from '@nocobase/database';
+import FieldModel from '../models/field';
 
 export default {
   name: 'fields',
   title: '字段配置',
+  model: FieldModel,
   fields: [
     {
       type: 'integer',
