@@ -1,5 +1,4 @@
-import { Model } from '@nocobase/database';
-import { TableOptions } from '@nocobase/database';
+import { Model, TableOptions } from '@nocobase/database';
 import { SaveOptions } from 'sequelize';
 
 export class CollectionModel extends Model {

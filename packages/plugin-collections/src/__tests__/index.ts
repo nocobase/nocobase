@@ -2,7 +2,7 @@ import Database from '@nocobase/database';
 import { Application, middleware} from '@nocobase/server';
 import { Dialect } from 'sequelize';
 import supertest from 'supertest';
-import actions, { associated } from '@nocobase/actions';
+import { actions, middlewares } from '@nocobase/actions';
 import plugin from '../server';
 import qs from 'qs';
 import bodyParser from 'koa-bodyparser';
@@ -53,7 +53,7 @@ export async function getApp() {
       prefix: '/api',
     },
   });
-  app.resourcer.use(associated);
+  app.resourcer.use(middlewares.associated);
   app.resourcer.registerHandlers(actions.associate);
   await app.plugins([plugin]);
   await app.database.sync({
