@@ -5,6 +5,7 @@ export default {
   name: 'collections',
   title: '数据表配置',
   sortable: true,
+  draggable: true,
   model: CollectionModel,
   fields: [
     {
@@ -126,6 +127,7 @@ export default {
       type: 'json',
       name: 'options',
       title: '配置信息',
+      defaultValue: {},
       component: {
         type: 'hidden',
       },
@@ -136,6 +138,7 @@ export default {
       name: 'fields',
       title: '字段',
       sourceKey: 'name',
+      draggable: true,
       actions: {
         list: {
           sort: 'sort',
@@ -151,6 +154,7 @@ export default {
       name: 'actions',
       title: '动作',
       sourceKey: 'name',
+      draggable: true,
       actions: {
         list: {
           sort: 'sort',
@@ -166,6 +170,7 @@ export default {
       name: 'tabs',
       title: '标签页',
       sourceKey: 'name',
+      draggable: true,
       actions: {
         list: {
           sort: 'sort',
@@ -181,6 +186,7 @@ export default {
       name: 'views',
       title: '视图',
       sourceKey: 'name',
+      draggable: true,
       actions: {
         list: {
           sort: 'sort',

@@ -13,6 +13,7 @@ export default {
       type: 'integer',
       name: 'sort',
       title: '排序',
+      defaultValue: 1,
       component: {
         type: 'sort',
         className: 'drag-visible',
@@ -147,6 +148,7 @@ export default {
       type: 'json',
       name: 'options',
       title: '配置信息',
+      defaultValue: {},
       component: {
         type: 'hidden',
       },

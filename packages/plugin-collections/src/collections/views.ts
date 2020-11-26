@@ -95,6 +95,7 @@ export default {
       type: 'json',
       name: 'options',
       title: '配置信息',
+      defaultValue: {},
       component: {
         type: 'hidden',
       },

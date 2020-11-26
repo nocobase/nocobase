@@ -14,6 +14,7 @@ export const textarea = {
   options: {
     interface: 'textarea',
     type: 'text',
+    filterable: true,
     component: {
       type: 'textarea',
     },
@@ -25,6 +26,7 @@ export const phone = {
   options: {
     interface: 'phone',
     type: 'string',
+    filterable: true,
     format: 'phone', // 验证的问题
     component: {
       type: 'string',
@@ -37,6 +39,7 @@ export const email = {
   options: {
     interface: 'email',
     type: 'string',
+    filterable: true,
     format: 'email',
     component: {
       type: 'string',
@@ -49,6 +52,8 @@ export const number = {
   options: {
     interface: 'number',
     type: 'integer',
+    filterable: true,
+    sortable: true,
     component: {
       type: 'number',
       precision: 0,
@@ -61,6 +66,8 @@ export const percent = {
   options: {
     interface: 'percent',
     type: 'integer',
+    filterable: true,
+    sortable: true,
     component: {
       type: 'number',
       suffix: '%',
@@ -85,6 +92,7 @@ export const attachment = {
   options: {
     interface: 'attachment',
     type: 'belongsToMany',
+    filterable: true,
     target: 'attachments',
     component: {
       type: 'fileManager',
@@ -97,6 +105,7 @@ export const select = {
   options: {
     interface: 'select',
     type: 'belongsTo',
+    filterable: true,
     fields: [
       {
         interface: 'sort',
@@ -128,6 +137,7 @@ export const multipleSelect = {
   options: {
     interface: 'multipleSelect',
     type: 'belongsToMany',
+    filterable: true,
     fields: [
       {
         interface: 'sort',
@@ -160,6 +170,7 @@ export const radio = {
   options: {
     interface: 'radio',
     type: 'belongsTo',
+    filterable: true,
     fields: [
       {
         interface: 'sort',
@@ -191,6 +202,7 @@ export const checkboxes = {
   options: {
     interface: 'checkboxes',
     type: 'belongsToMany',
+    filterable: true,
     fields: [
       {
         interface: 'sort',
@@ -222,6 +234,7 @@ export const boolean = {
   options: {
     interface: 'boolean',
     type: 'boolean',
+    filterable: true,
     component: {
       type: 'checkbox', // switch
     },
@@ -233,6 +246,8 @@ export const date = {
   options: {
     interface: 'date',
     type: 'date',
+    filterable: true,
+    sortable: true,
     component: {
       type: 'date',
     },
@@ -244,6 +259,8 @@ export const time = {
   options: {
     interface: 'time',
     type: 'time',
+    filterable: true,
+    sortable: true,
     component: {
       type: 'time',
     },
@@ -266,6 +283,7 @@ export const linkTo = {
   options: {
     interface: 'linkTo',
     type: 'belongsToMany',
+    filterable: true,
     component: {
       type: 'drawerSelect',
     },
@@ -277,6 +295,7 @@ export const createdBy = {
   options: {
     interface: 'createdBy',
     type: 'belongsTo',
+    filterable: true,
     component: {
       type: 'drawerSelect',
     },
@@ -289,6 +308,8 @@ export const createdAt = {
     interface: 'createdAt',
     type: 'date',
     required: true,
+    filterable: true,
+    sortable: true,
     component: {
       type: 'date',
     },
@@ -300,6 +321,7 @@ export const updatedBy = {
   options: {
     interface: 'updatedBy',
     type: 'belongsTo',
+    filterable: true,
     component: {
       type: 'drawerSelect',
     },
@@ -312,6 +334,8 @@ export const updatedAt = {
     interface: 'updatedAt',
     type: 'date',
     required: true,
+    filterable: true,
+    sortable: true,
     component: {
       type: 'date',
     },
@@ -327,6 +351,7 @@ export const primaryKey = {
     required: true,
     autoIncrement: true,
     primaryKey: true,
+    filterable: true,
     component: {
       type: 'number',
     },

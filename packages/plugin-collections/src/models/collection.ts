@@ -51,6 +51,7 @@ export class CollectionModel extends Model {
     data = _.cloneDeep(data);
     const collection = await this.create({
       ...data,
+      options: _.omit(data, ['model', 'fields', 'tabs', 'actions', 'views']),
     }, options);
     const items: any = {};
     const associations = ['fields', 'tabs', 'actions', 'views'];
