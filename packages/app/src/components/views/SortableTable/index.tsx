@@ -14,20 +14,30 @@ export const DragHandle = sortableHandle(() => (
   <MenuOutlined style={{ cursor: 'pointer', color: '#999' }} />
 ));
 
-export const components = ({data = {}, mutate}: {data: any, mutate: any}) => {
+interface Props {
+  data: any, 
+  mutate: any,
+  rowKey: any, 
+  onMoved: any,
+}
+
+export const components = ({data = {}, rowKey, mutate, onMoved}: Props) => {
   return {
     body: {
       wrapper: props => (
         <SortableContainer
           useDragHandle
           helperClass="row-dragging"
-          onSortEnd={({ oldIndex, newIndex }) => {
+          onSortEnd={async ({ oldIndex, newIndex, ...restProps }) => {
             if (oldIndex !== newIndex) {
               const list = arrayMove([].concat(data.list), oldIndex, newIndex).filter(el => !!el);
+              console.log({oldIndex, newIndex, list});
               mutate({
                 ...data,
                 list,
               });
+              const resourceKey = get(list, [newIndex, rowKey]);
+              await onMoved({resourceKey, offset: newIndex - oldIndex});
             }
           }}
           {...props}
@@ -35,7 +45,7 @@ export const components = ({data = {}, mutate}: {data: any, mutate: any}) => {
       ),
       row: ({ className, style, ...restProps }) => {
         // function findIndex base on Table rowKey props and should always be a right array index
-        const index = findIndex(data.list, (x: any) => x.id === restProps['data-row-key']);
+        const index = findIndex(data.list, (x: any) => x[rowKey] === restProps['data-row-key']);
         return <SortableItem index={index} {...restProps} />;
       },
     },

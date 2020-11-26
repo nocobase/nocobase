@@ -42,13 +42,12 @@ export function Table(props: TableProps) {
     associatedKey,
   } = props;
   const { fields, defaultTabName, rowKey = 'id', actions = [], paginated = true, defaultPageSize = 10 } = schema;
-  const name = associatedName ? `${associatedName}.${resourceName}` : resourceName;
   // const { data, mutate } = useRequest(() => api.resource(name).list({
   //   associatedKey,
   // }));
-  const { data, loading, pagination, mutate } = useRequest((params = {}) => {
+  const name = associatedName ? `${associatedName}.${resourceName}` : resourceName;
+  const { data, loading, pagination, mutate, refresh } = useRequest((params = {}) => {
     const { current, pageSize, ...restParams } = params;
-    const name = associatedName ? `${associatedName}.${resourceName}` : resourceName;
     return api.resource(name).list({
       associatedKey,
       page: paginated ? current : 1,
@@ -86,7 +85,21 @@ export function Table(props: TableProps) {
         rowKey={rowKey}
         columns={fields2columns(fields)}
         dataSource={data?.list||(data as any)}
-        components={components({data, mutate})}
+        components={components({
+          data, 
+          mutate,
+          rowKey,
+          onMoved: async ({resourceKey, offset}) => {
+            await api.resource(name).sort({
+              associatedKey,
+              resourceKey,
+              field: 'sort',
+              offset,
+            });
+            await refresh();
+            console.log({resourceKey, offset});
+          }
+        })}
         onRow={(data) => ({
           onClick: () => {
             redirectTo({
