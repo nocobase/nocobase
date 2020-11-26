@@ -26,7 +26,7 @@ export class CollectionModel extends Model {
    * @param title 显示的名称
    */
   static generateName(title?: string): string {
-    return `t_${Date.now().toString(36)}_${Math.random().toString(36).substr(-4)}`;
+    return `t_${Date.now().toString(36)}_${Math.random().toString(36).replace('0.', '').slice(-4).padStart(4, '0')}`;
   }
 
   /**
