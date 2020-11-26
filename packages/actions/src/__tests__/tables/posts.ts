@@ -29,6 +29,10 @@ export default {
       type: 'belongsToMany',
       name: 'tags',
     },
+    {
+      type: 'integer',
+      name: 'sort'
+    }
   ],
   hooks: {
     beforeCreate(model, options) {
@@ -43,4 +47,5 @@ export default {
       }
     },
   },
+  sortable: true
 } as TableOptions;
