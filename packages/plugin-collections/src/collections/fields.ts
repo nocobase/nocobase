@@ -7,6 +7,7 @@ export default {
   model: FieldModel,
   fields: [
     {
+      interface: 'sort',
       type: 'integer',
       name: 'sort',
       title: '排序',
@@ -17,44 +18,135 @@ export default {
       },
     },
     {
+      interface: 'string',
       type: 'string',
-      name: 'type',
-      title: '类型',
+      name: 'title',
+      title: '字段名称',
+      component: {
+        type: 'string',
+      },
+    },
+    {
+      interface: 'string',
+      type: 'string',
+      name: 'name',
+      title: '标识',
+      component: {
+        type: 'string',
+      },
+    },
+    {
+      interface: 'string',
+      type: 'string',
+      name: 'interface',
+      title: '字段类型',
       component: {
         type: 'string',
         className: 'drag-visible',
       },
     },
     {
+      interface: 'string',
       type: 'string',
-      name: 'name',
-      title: '标识',
+      name: 'type',
+      title: '数据类型',
+      component: {
+        type: 'string',
+      },
+    },
+    // 分组的先不考虑
+    // {
+    //   interface: 'linkTo',
+    //   type: 'belongsTo',
+    //   name: 'parent',
+    //   target: 'fields',
+    //   foreignKey: 'parent_id',
+    //   title: '所属分组',
+    //   component: {
+    //     type: 'drawerSelect',
+    //   },
+    // },
+    // {
+    //   type: 'hasMany',
+    //   name: 'children',
+    //   target: 'fields',
+    //   foreignKey: 'parent_id',
+    //   sourceKey: 'id',
+    // },
+    // {
+    //   type: 'integer',
+    //   name: 'parent_id',
+    //   component: {
+    //     type: 'number',
+    //   },
+    // },
+    {
+      interface: 'string',
+      type: 'virtual',
+      name: 'component.tooltip',
+      title: '提示信息',
+      component: {
+        type: 'string',
+      },
     },
     {
-      type: 'string',
-      name: 'title',
-      title: '名称',
-    },
-    {
+      interface: 'boolean',
       type: 'boolean',
-      name: 'showInListAction',
-      title: '显示在表格里',
+      name: 'required',
+      title: '必填项',
+      component: {
+        type: 'checkbox',
+      },
     },
     {
+      interface: 'boolean',
       type: 'boolean',
-      name: 'showInGetAction',
-      title: '显示在详情里',
+      name: 'showInTable',
+      title: '显示在表格中',
+      component: {
+        type: 'checkbox',
+        tooltip: '若勾选，该字段将作为一列显示在数据表里',
+      },
     },
     {
-      type: 'json',
-      name: 'options',
+      interface: 'boolean',
+      type: 'boolean',
+      name: 'showInForm',
+      title: '显示在表单中',
+      component: {
+        type: 'checkbox',
+        tooltip: '若勾选，该字段将出现在表单中',
+      },
     },
     {
+      interface: 'boolean',
+      type: 'boolean',
+      name: 'showInDetail',
+      title: '显示在详情中',
+      component: {
+        type: 'checkbox',
+        tooltip: '若勾选，该字段将出现在详情中',
+      },
+    },
+    {
+      interface: 'linkTo',
       type: 'belongsTo',
       name: 'collection',
       title: '所属数据表',
       target: 'collections',
       targetKey: 'name',
+      component: {
+        type: 'drawerSelect',
+      },
+    },
+    {
+      interface: 'json',
+      type: 'json',
+      name: 'options',
+      title: '配置信息',
+      component: {
+        type: 'hidden',
+      },
     },
   ],
   actions: [

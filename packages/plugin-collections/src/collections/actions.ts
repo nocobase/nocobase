@@ -5,6 +5,7 @@ export default {
   title: '操作配置',
   fields: [
     {
+      interface: 'sort',
       type: 'integer',
       name: 'sort',
       title: '排序',
@@ -15,33 +16,52 @@ export default {
       },
     },
     {
+      interface: 'string',
       type: 'string',
-      name: 'type',
-      title: '类型',
+      name: 'title',
+      title: '名称',
       component: {
         type: 'string',
         className: 'drag-visible',
       },
     },
     {
+      interface: 'string',
       type: 'string',
       name: 'name',
       title: '标识',
+      component: {
+        type: 'string',
+      },
     },
     {
+      interface: 'string',
       type: 'string',
-      name: 'title',
-      title: '名称',
+      name: 'type',
+      title: '类型',
+      component: {
+        type: 'string',
+      },
     },
     {
-      type: 'json',
-      name: 'options',
-    },
-    {
+      interface: 'linkTo',
       type: 'belongsTo',
       name: 'collection',
+      title: '所属数据表',
       target: 'collections',
       targetKey: 'name',
+      component: {
+        type: 'drawerSelect',
+      },
+    },
+    {
+      interface: 'json',
+      type: 'json',
+      name: 'options',
+      title: '配置信息',
+      component: {
+        type: 'hidden',
+      },
     },
   ],
   actions: [

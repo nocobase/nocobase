@@ -7,9 +7,11 @@ export default {
   model: CollectionModel,
   fields: [
     {
+      interface: 'sort',
       type: 'integer',
       name: 'sort',
       title: '排序',
+      showInTable: true,
       component: {
         type: 'sort',
         className: 'drag-visible',
@@ -17,10 +19,13 @@ export default {
       },
     },
     {
+      interface: 'string',
       type: 'string',
       name: 'title',
-      title: '名称',
+      title: '数据表名称',
       showInTable: true,
+      showInForm: true,
+      showInDetail: true,
       required: true,
       component: {
         type: 'string',
@@ -28,6 +33,7 @@ export default {
       },
     },
     {
+      interface: 'string',
       type: 'string',
       name: 'name',
       title: '标识',
@@ -35,64 +41,152 @@ export default {
       required: true,
       component: {
         type: 'string',
-        'x-rules': [
-          {
-            format: 'slug',
-            message: '只允许英文数字和下划线',
-          },
+      },
+    },
+    {
+      interface: 'string',
+      type: 'virtual',
+      name: 'options.icon',
+      title: '图标',
+      showInForm: true,
+      component: {
+        type: 'string',
+      },
+    },
+    {
+      interface: 'radio',
+      type: 'virtual',
+      name: 'options.defaultView',
+      title: '默认视图',
+      showInForm: true,
+      component: {
+        type: 'radio',
+        options: [
+          {label: '表格', value: 'table'},
+          {label: '看板', value: 'kanban', disabled: true},
+          {label: '日历', value: 'calendar', disabled: true},
         ],
       },
     },
     {
-      type: 'string',
-      name: 'description',
-      title: '描述',
+      interface: 'radio',
+      type: 'virtual',
+      name: 'options.mode',
+      title: '表格模式',
+      showInForm: true,
       component: {
-        type: 'textarea',
+        type: 'radio',
+        tooltip: `
+          <p>常规模式：点击数据进入详情页进行各项查看和操作；<br/>简易模式：点击数据直接打开编辑表单</p>
+        `,
+        options: [
+          {label: '常规模式', value: 'default'},
+          {label: '简易模式', value: 'simple'},
+        ],
       },
     },
     {
+      interface: 'radio',
+      type: 'virtual',
+      name: 'options.defaultPerPage',
+      title: '每页显示几行数据',
+      showInForm: true,
+      showInDetail: true,
+      component: {
+        type: 'radio',
+        options: [
+          {label: '20', value: 20},
+          {label: '50', value: 50},
+        ],
+      },
+    },
+    {
+      interface: 'boolean',
+      type: 'virtual',
+      name: 'options.sortable',
+      title: '支持拖拽数据排序',
+      showInForm: true,
+      component: {
+        type: 'checkbox',
+      },
+    },
+    {
+      interface: 'boolean',
+      type: 'boolean',
+      name: 'showInDataMenu',
+      title: '显示在“数据”菜单里',
+      showInForm: true,
+      component: {
+        type: 'checkbox',
+      },
+    },
+    {
+      interface: 'json',
       type: 'json',
       name: 'options',
+      title: '配置信息',
+      component: {
+        type: 'hidden',
+      },
     },
     {
+      interface: 'linkTo',
       type: 'hasMany',
       name: 'fields',
+      title: '字段',
       sourceKey: 'name',
       actions: {
         list: {
           sort: 'sort',
         },
       },
+      component: {
+        type: 'drawerSelect',
+      },
     },
     {
+      interface: 'linkTo',
       type: 'hasMany',
       name: 'actions',
+      title: '动作',
       sourceKey: 'name',
       actions: {
         list: {
           sort: 'sort',
         },
       },
+      component: {
+        type: 'drawerSelect',
+      },
     },
     {
+      interface: 'linkTo',
       type: 'hasMany',
       name: 'tabs',
+      title: '标签页',
       sourceKey: 'name',
       actions: {
         list: {
           sort: 'sort',
         },
       },
+      component: {
+        type: 'drawerSelect',
+      },
     },
     {
+      interface: 'linkTo',
       type: 'hasMany',
       name: 'views',
+      title: '视图',
       sourceKey: 'name',
       actions: {
         list: {
           sort: 'sort',
         },
+      },
+      component: {
+        type: 'drawerSelect',
       },
     },
   ],

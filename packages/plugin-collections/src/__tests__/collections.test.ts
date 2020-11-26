@@ -1,4 +1,4 @@
-import { Agent, getAgent, getApp, getDatabase } from '.';
+import { Agent, getAgent, getApp } from '.';
 import { Application } from '@nocobase/server';
 
 describe('collection hooks', () => {

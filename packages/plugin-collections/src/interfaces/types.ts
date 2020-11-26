@@ -85,7 +85,7 @@ export const attachment = {
   options: {
     interface: 'attachment',
     type: 'belongsToMany',
-    targetKey: 'attachments',
+    target: 'attachments',
     component: {
       type: 'fileManager',
     },

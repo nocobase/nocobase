@@ -1,11 +1,11 @@
-import Database from '@nocobase/database';
-import { Application, middleware} from '@nocobase/server';
-import { Dialect } from 'sequelize';
-import supertest from 'supertest';
-import { actions, middlewares } from '@nocobase/actions';
-import plugin from '../server';
 import qs from 'qs';
+import plugin from '../server';
+import supertest from 'supertest';
 import bodyParser from 'koa-bodyparser';
+import { Dialect } from 'sequelize';
+import Database from '@nocobase/database';
+import { actions, middlewares } from '@nocobase/actions';
+import { Application, middleware } from '@nocobase/server';
 
 function getTestKey() {
   const { id } = require.main;
@@ -59,6 +59,12 @@ export async function getApp() {
   await app.database.sync({
     force: true,
   });
+  // 表配置信息存到数据库里
+  // const tables = app.database.getTables([]);
+  // for (const table of tables) {
+  //   const Collection = app.database.getModel('collections');
+  //   await Collection.import(table.getOptions(), { hooks: false });
+  // }
   app.use(async (ctx, next) => {
     ctx.db = app.database;
     await next();
