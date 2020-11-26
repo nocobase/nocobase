@@ -1,8 +1,7 @@
 import { Context, Next } from '.';
 import { Relation, Model, Field, HasOne, HasMany, BelongsTo, BelongsToMany } from '@nocobase/database';
 import { DEFAULT_PAGE, DEFAULT_PER_PAGE } from '@nocobase/resourcer';
-import { Utils, Op, Sequelize } from 'sequelize';
-import { isEmpty } from 'lodash';
+import { Utils, Op } from 'sequelize';
 import _ from 'lodash';
 
 /**
@@ -253,7 +252,7 @@ export async function update(ctx: Context, next: Next) {
           delete values[throughName];
         }
       }
-      if (!isEmpty(values)) {
+      if (!_.isEmpty(values)) {
         // @ts-ignore
         await model.update(values, { context: ctx });
         await model.updateAssociations(values, { context: ctx });
@@ -350,10 +349,158 @@ export async function destroy(ctx: Context, next: Next) {
   await next();
 }
 
+/**
+ * 人工排序
+ * 
+ * 基于偏移量策略实现的排序方法
+ *
+ * TODO 字段验证
+ * 
+ * @param ctx 
+ * @param next 
+ */
+export async function sort(ctx: Context, next: Next) {
+  const {
+    resourceName,
+    resourceKey,
+    resourceField,
+    associatedName,
+    associatedKey,
+    associated,
+    filter = {},
+    values
+  } = ctx.action.params;
+
+  if (associated && resourceField) {
+    if (resourceField instanceof HasOne || resourceField instanceof BelongsTo) {
+      throw new Error(`the association (${resourceName} belongs to ${associatedName}) cannot be sorted`);
+    }
+    // TODO(feature)
+    if (resourceField instanceof BelongsToMany) {
+      throw new Error('sorting for belongs to many association has not been implemented');
+    }
+  }
+
+  const Model = ctx.db.getModel(resourceName);
+  const table = ctx.db.getTable(resourceName);
+
+  if (!table.getOptions().sortable || !values.offset) {
+    return next();
+  }
+  const [primaryField] = Model.primaryKeyAttributes;
+  const sortField = values.field || table.getOptions().sortField || 'sort';
+
+  // offset 的有效值为：整型 | 'Infinity' | '-Infinity'
+  const offset = Number(values.offset);
+  const sign = offset < 0 ? {
+    op: Op.lte,
+    order: 'DESC',
+    direction: 1,
+    extremum: 'min'
+  } : {
+    op: Op.gte,
+    order: 'ASC',
+    direction: -1,
+    extremum: 'max'
+  };
+
+  const transaction = await ctx.db.sequelize.transaction();
+
+  const { where = {} } = Model.parseApiJson({ filter });
+  if (associated && resourceField instanceof HasMany) {
+    where[resourceField.options.foreignKey] = associatedKey;
+  }
+
+  // 找到操作对象
+  const operand = await Model.findOne({
+    // 这里增加 where 条件是要求如果有 filter 条件，就应该在同条件的组中排序，不是同条件组的报错处理。
+    where: {
+      ...where,
+      [primaryField]: resourceKey
+    },
+    transaction
+  });
+
+  if (!operand) {
+    await transaction.rollback();
+    // TODO: 错误需要后面统一处理
+    throw new Error(`resource(${resourceKey}) with filter does not exist`);
+  }
+
+  let target;
+
+  // 如果是有限的变动值
+  if (Number.isFinite(offset)) {
+    const absChange = Math.abs(offset);
+    const group = await Model.findAll({
+      where: {
+        ...where,
+        [primaryField]: {
+          [Op.ne]: resourceKey
+        },
+        [sortField]: {
+          [sign.op]: operand[sortField]
+        }
+      },
+      limit: absChange,
+      // offset: 0,
+      attributes: [primaryField, sortField],
+      order: [
+        [sortField, sign.order]
+      ],
+      transaction
+    });
+
+    if (!group.length) {
+      // 如果变动范围内的元素数比范围小
+      // 说明全部数据不足一页
+      // target = group[0][priorityKey] - sign.direction;
+      // 没有元素无需变动
+      await transaction.commit();
+      ctx.body = operand;
+      return next();
+    }
+    
+    // 如果变动范围内都有元素（可能出现 limit 范围内元素不足的情况）
+    if (group.length === absChange) {
+      target = group[group.length - 1][sortField];
+
+      await Model.increment(sortField, {
+        by: sign.direction,
+        where: {
+          [primaryField]: {
+            [Op.in]: group.map(item => item[primaryField])
+          }
+        },
+        transaction
+      });
+    }
+  }
+  // 如果要求置顶或沉底(未在上一过程中计算出目标值)
+  if (typeof target === 'undefined') {
+    target = await Model[sign.extremum](sortField, {
+      where,
+      transaction
+    }) - sign.direction;
+  }
+  await operand.update({
+    [sortField]: target
+  }, {
+    transaction
+  });
+
+  await transaction.commit();
+
+  ctx.body = operand;
+
+  await next();
+}
+
 export default {
   list, // single、hasMany、belongsToMany
   create, // signle、hasMany
   get, // all
   update, // single、
   destroy,
+  sort
 };
