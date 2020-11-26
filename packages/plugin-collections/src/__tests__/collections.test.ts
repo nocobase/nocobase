@@ -5,12 +5,12 @@ describe('collection hooks', () => {
   let app: Application;
   let agent: Agent;
 
-  beforeAll(async () => {
+  beforeEach(async () => {
     app = await getApp();
     agent = getAgent(app);
   });
 
-  afterAll(() => app.database.close());
+  afterEach(() => app.database.close());
 
   it('create table', async () => {
     const response = await agent.resource('collections').create({
@@ -19,12 +19,27 @@ describe('collection hooks', () => {
         title: 'tests',
       },
     });
-    console.log(response.body);
+    
+    const table = app.database.getTable('tests');
+    expect(table).toBeDefined();
   });
 
-  it('list', async () => {
-    const response = await agent.resource('collections').list();
-    console.log(response.body);
+  it('create table without name', async () => {
+    const created = await agent.resource('collections').create({
+      values: {
+        title: 'tests',
+      },
+    });
+    
+    const { name } = created.body;
+    const table = app.database.getTable(name);
+    expect(table).toBeDefined();
+    expect(table.getOptions().title).toBe('tests');
+
+    const list = await agent.resource('collections').list();
+    expect(list.body.rows.length).toBe(1);
+
+    await table.getModel().drop();
   });
 
   it('list fields', async () => {
