@@ -1,5 +1,6 @@
 import { Model, TableOptions } from '@nocobase/database';
 import { SaveOptions } from 'sequelize';
+import _ from 'lodash';
 
 export class CollectionModel extends Model {
 
@@ -17,8 +18,9 @@ export class CollectionModel extends Model {
    */
   async migrate() {
     const options = await this.getOptions();
-    const tableOptions = this.database.getTable(this.get('name'));
-    const table = this.database.table({...tableOptions, ...options});
+    const prevTable = this.database.getTable(this.get('name'));
+    // table 是初始化和重新初始化
+    const table = this.database.table({...prevTable.getOptions(), ...options});
     return await table.sync({
       force: false,
       alter: {
@@ -38,15 +40,18 @@ export class CollectionModel extends Model {
 
   async getOptions(): Promise<TableOptions> {
     return {
+      ...this.get('options'),
       name: this.get('name'),
       title: this.get('title'),
-      ...this.get('options'),
       fields: await this.getFieldsOptions(),
     };
   }
 
   static async import(data: TableOptions, options: SaveOptions = {}): Promise<CollectionModel> {
-    const collection = await this.create(data, options);
+    data = _.cloneDeep(data);
+    const collection = await this.create({
+      ...data,
+    }, options);
     const items: any = {};
     const associations = ['fields', 'tabs', 'actions', 'views'];
     for (const key of associations) {

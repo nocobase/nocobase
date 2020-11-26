@@ -4,6 +4,7 @@ import CollectionModel from '../models/collection';
 export default {
   name: 'collections',
   title: '数据表配置',
+  sortable: true,
   model: CollectionModel,
   fields: [
     {

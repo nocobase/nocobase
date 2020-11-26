@@ -3,9 +3,9 @@ import { FieldOptions, Model } from '@nocobase/database';
 export class FieldModel extends Model {
   async getOptions(): Promise<FieldOptions> {
     return {
+      ...this.get('options'),
       type: this.get('type'),
       name: this.get('name'),
-      ...this.get('options'),
     };
   }
 

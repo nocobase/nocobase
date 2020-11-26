@@ -3,6 +3,7 @@ import { TableOptions } from '@nocobase/database';
 export default {
   name: 'actions',
   title: '操作配置',
+  sortable: true,
   fields: [
     {
       interface: 'sort',

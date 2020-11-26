@@ -7,7 +7,7 @@ export const string = {
       type: 'string',
     },
   },
-}
+};
 
 export const textarea = {
   title: '多行文本',
@@ -18,19 +18,19 @@ export const textarea = {
       type: 'textarea',
     },
   }
-}
+};
 
 export const phone = {
   title: '手机号码',
   options: {
     interface: 'phone',
     type: 'string',
-    format: 'phone',
+    format: 'phone', // 验证的问题
     component: {
       type: 'string',
     },
   },
-}
+};
 
 export const email = {
   title: '邮箱',
@@ -42,7 +42,7 @@ export const email = {
       type: 'string',
     },
   },
-}
+};
 
 export const number = {
   title: '数字',
@@ -54,7 +54,7 @@ export const number = {
       precision: 0,
     },
   }
-}
+};
 
 export const percent = {
   title: '百分比',
@@ -67,7 +67,7 @@ export const percent = {
       precision: 0,
     },
   },
-}
+};
 
 export const wysiwyg = {
   title: '可视化编辑器',
@@ -78,7 +78,7 @@ export const wysiwyg = {
       type: 'wysiwyg',
     },
   },
-}
+};
 
 export const attachment = {
   title: '附件',
@@ -90,7 +90,7 @@ export const attachment = {
       type: 'fileManager',
     },
   },
-}
+};
 
 export const select = {
   title: '下拉选择（单选）',
@@ -184,7 +184,7 @@ export const radio = {
       type: 'radio',
     },
   },
-}
+};
 
 export const checkboxes = {
   title: '多选框',
@@ -215,7 +215,7 @@ export const checkboxes = {
       type: 'checkboxes',
     },
   },
-}
+};
 
 export const boolean = {
   title: '是/否',
@@ -226,7 +226,7 @@ export const boolean = {
       type: 'checkbox', // switch
     },
   },
-}
+};
 
 export const date = {
   title: '日期',
@@ -248,7 +248,7 @@ export const time = {
       type: 'time',
     },
   },
-}
+};
 
 export const subTable = {
   title: '子表格',
@@ -259,7 +259,7 @@ export const subTable = {
       type: 'subTable',
     },
   },
-}
+};
 
 export const linkTo = {
   title: '关联数据',
@@ -270,7 +270,7 @@ export const linkTo = {
       type: 'drawerSelect',
     },
   },
-}
+};
 
 export const createdBy = {
   title: '创建者',
@@ -281,7 +281,7 @@ export const createdBy = {
       type: 'drawerSelect',
     },
   },
-}
+};
 
 export const createdAt = {
   title: '创建时间',
@@ -304,7 +304,7 @@ export const updatedBy = {
       type: 'drawerSelect',
     },
   },
-}
+};
 
 export const updatedAt = {
   title: '更新日期',
