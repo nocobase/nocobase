@@ -1,5 +1,6 @@
 import { TableOptions } from '@nocobase/database';
 import FieldModel from '../models/field';
+import { options } from '../interfaces';
 
 export default {
   name: 'fields',
@@ -24,6 +25,7 @@ export default {
       title: '字段名称',
       component: {
         type: 'string',
+        className: 'drag-visible',
       },
     },
     {
@@ -36,13 +38,13 @@ export default {
       },
     },
     {
-      interface: 'string',
+      interface: 'select',
       type: 'string',
       name: 'interface',
       title: '字段类型',
       component: {
-        type: 'string',
-        className: 'drag-visible',
+        type: 'select',
+        options,
       },
     },
     {

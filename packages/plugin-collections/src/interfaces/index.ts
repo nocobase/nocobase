@@ -62,6 +62,7 @@ export const options = [
       types.primaryKey,
       types.sort,
       types.password,
+      types.json,
     ],
   }
 ].map(({title, children}) => ({

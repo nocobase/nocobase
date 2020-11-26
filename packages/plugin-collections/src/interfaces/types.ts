@@ -355,3 +355,14 @@ export const password = {
     },
   },
 };
+
+export const json = {
+  title: 'JSON',
+  options: {
+    interface: 'json',
+    type: 'json',
+    component: {
+      type: 'hidden',
+    },
+  },
+};
