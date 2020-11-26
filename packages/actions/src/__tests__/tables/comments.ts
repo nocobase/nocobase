@@ -19,6 +19,10 @@ export default {
     {
       type: 'belongsTo',
       name: 'user',
+    },
+    {
+      type: 'integer',
+      name: 'sort'
     }
   ],
   scopes: {
@@ -28,4 +32,5 @@ export default {
       }
     }
   },
+  sortable: true
 } as TableOptions;
