@@ -250,7 +250,17 @@ export class Table {
       sourceTable: this,
       database: this.database,
     });
+    // 添加字段后 table.options 中的 fields 并不会更新，这导致 table.getOptions() 拿不到最新的字段配置
+    // 所以在同时更新 table.options.fields 数组
+    const existIndex = this.options.fields.findIndex(field => field.name === name);
+    if (existIndex !== -1) {
+      this.options.fields.splice(existIndex, 1, options);
+    } else {
+      this.options.fields.push(options);
+    }
+
     this.fields.set(name, field);
+
     if (field instanceof Relation) {
       // 关系字段先放到 associating 里待处理，等相关 target model 初始化之后，再通过 associate 建立关系
       this.associating.set(name, field);

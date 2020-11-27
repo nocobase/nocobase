@@ -35,8 +35,9 @@ export class CollectionModel extends Model {
   async migrate() {
     const options = await this.getOptions();
     const prevTable = this.database.getTable(this.get('name'));
+    const prevOptions = prevTable ? prevTable.getOptions() : {};
     // table 是初始化和重新初始化
-    const table = this.database.table({...prevTable.getOptions(), ...options});
+    const table = this.database.table({...prevOptions, ...options});
     return await table.sync({
       force: false,
       alter: {
