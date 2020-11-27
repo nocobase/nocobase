@@ -14,8 +14,10 @@ export default async function (this: any, options = {}) {
 
   const [Collection, Field, Action] = database.getModels(['collections', 'fields', 'actions']);
 
-  Collection.addHook('beforeCreate', async function (model: CollectionModel) {
-    console.log('beforeCreate');
+  Collection.addHook('beforeValidate', async function (model: CollectionModel) {
+    if (!model.get('name')) {
+      model.setDataValue('name', this.generateName());
+    }
   });
 
   Collection.addHook('afterCreate', async function (model: CollectionModel) {

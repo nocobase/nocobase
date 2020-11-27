@@ -14,6 +14,22 @@ export class CollectionModel extends Model {
   }
 
   /**
+   * 生成随机数据库表名
+   * 
+   * 策略：暂时使用  3+2
+   *   1. 自增 id
+   *   2. 随机字母
+   *   3. 时间戳
+   *   4. 转拼音
+   *   5. 常见词翻译
+   * 
+   * @param title 显示的名称
+   */
+  static generateName(title?: string): string {
+    return `t_${Date.now().toString(36)}_${Math.random().toString(36).replace('0.', '').slice(-4).padStart(4, '0')}`;
+  }
+
+  /**
    * 迁移
    */
   async migrate() {

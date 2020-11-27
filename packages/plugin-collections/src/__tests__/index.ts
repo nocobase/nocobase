@@ -12,7 +12,8 @@ function getTestKey() {
   const key = id
     .replace(`${process.env.PWD}/packages`, '')
     .replace('.test.ts', '')
-    .replace(/[^\w]/g, '_');
+    .replace(/[^\w]/g, '_')
+    .replace(/_+/g, '_');
   return key
 }
 
@@ -45,7 +46,7 @@ export async function getApp() {
       ...config,
       hooks: {
         beforeDefine(columns, model) {
-          model.tableName = `${getTestKey()}_${model.tableName || model.name.plural}`.replace(/_+/g, '_');
+          model.tableName = `${getTestKey()}_${model.tableName || model.name.plural}`;
         }
       },
     },
