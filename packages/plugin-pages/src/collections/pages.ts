@@ -5,6 +5,7 @@ export default {
   title: '页面配置',
   fields: [
     {
+      interface: 'sort',
       type: 'integer',
       name: 'sort',
       title: '排序',
@@ -15,17 +16,18 @@ export default {
       },
     },
     {
+      interface: 'string',
       type: 'string',
       name: 'title',
       title: '名称',
       showInTable: true,
-      isMainTitle: true,
       component: {
         type: 'string',
         className: 'drag-visible',
       },
     },
     {
+      interface: 'number',
       type: 'integer',
       name: 'parent_id',
       title: '父级页面',
@@ -34,6 +36,7 @@ export default {
       },
     },
     {
+      interface: 'string',
       type: 'string',
       name: 'path',
       title: '路径',
@@ -44,6 +47,7 @@ export default {
       },
     },
     {
+      interface: 'string',
       type: 'string',
       name: 'icon',
       title: '图标',
@@ -52,13 +56,14 @@ export default {
       },
     },
     {
+      interface: 'select',
       type: 'string',
       name: 'type',
       title: '类型',
       showInTable: true,
       component: {
         type: 'string',
-        enum: [
+        options: [
           {
             label: '页面',
             value: 'page',
@@ -82,85 +87,74 @@ export default {
       },
     },
     {
+      interface: 'select',
       type: 'string',
       name: 'collection',
       title: '属于哪种数据集？',
       component: {
-        type: 'string',
+        type: 'select',
       },
     },
     {
+      interface: 'select',
       type: 'string',
       name: 'template',
       title: '模板',
       showInTable: true,
       component: {
-        type: 'string',
-        enum: [
+        type: 'select',
+        options: [
           {
             label: '顶部菜单布局',
-            value: 'LayoutWithTopMenu',
+            value: 'TopMenuLayout',
           },
           {
             label: '左侧菜单布局',
-            value: 'LayoutWithSideMenu',
-          },
-          {
-            label: '数据集（全部）',
-            value: 'collections',
-          },
-          {
-            label: '数据集（某种）',
-            value: 'collection',
-          },
-          {
-            label: '登录',
-            value: 'login',
-          },
-          {
-            label: '注册',
-            value: 'register',
-          },
-          {
-            label: '分析页',
-            value: 'analysis',
-          },
-          {
-            label: '工作区',
-            value: 'workplace',
+            value: 'SideMenuLayout',
           },
         ],
       },
     },
     {
+      interface: 'boolean',
       type: 'boolean',
       name: 'showInMenu',
       title: '在菜单里显示',
-      // showInTable: true,
       defaultValue: false,
       component: {
-        type: 'boolean',
+        type: 'checkbox',
       },
     },
     {
+      interface: 'boolean',
       type: 'boolean',
       name: 'inherit',
       title: '继承父级页面内容',
       defaultValue: true,
       component: {
-        type: 'boolean',
+        type: 'checkbox',
       },
     },
     {
+      interface: 'linkTo',
       type: 'hasMany',
       name: 'children',
+      title: '子页面',
       target: 'pages',
       foreignKey: 'parent_id',
       sourceKey: 'id',
+      component: {
+        type: 'drawerSelect',
+      },
     },
     {
+      interface: 'json',
       type: 'json',
       name: 'options',
+      title: '元数据',
+      component: {
+        type: 'json',
+      },
     },
   ],
   actions: [

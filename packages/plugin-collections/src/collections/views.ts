@@ -47,14 +47,14 @@ export default {
       type: 'string',
       name: 'type',
       title: '视图类型',
+      options: [
+        { label: '表格', value: 'table' },
+        { label: '看板', value: 'kanban', disabled: true },
+        { label: '日历', value: 'calendar', disabled: true },
+        { label: '地图', value: 'map', disabled: true },
+      ],
       component: {
         type: 'radio',
-        options: [
-          { label: '表格', value: 'table' },
-          { label: '看板', value: 'kanban', disabled: true },
-          { label: '日历', value: 'calendar', disabled: true },
-          { label: '地图', value: 'map', disabled: true },
-        ],
         showInTable: true,
         showInDetail: true,
         showInForm: true,

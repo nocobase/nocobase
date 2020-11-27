@@ -52,9 +52,9 @@ export default {
       type: 'string',
       name: 'interface',
       title: '字段类型',
+      options,
       component: {
         type: 'select',
-        options,
         showInTable: true,
         showInDetail: true,
         showInForm: true,

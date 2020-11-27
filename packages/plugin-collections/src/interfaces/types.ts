@@ -54,9 +54,9 @@ export const number = {
     type: 'integer',
     filterable: true,
     sortable: true,
+    precision: 0,
     component: {
       type: 'number',
-      precision: 0,
     },
   }
 };
@@ -68,10 +68,10 @@ export const percent = {
     type: 'integer',
     filterable: true,
     sortable: true,
+    precision: 0,
     component: {
       type: 'number',
       suffix: '%',
-      precision: 0,
     },
   },
 };
@@ -241,13 +241,15 @@ export const boolean = {
   },
 };
 
-export const date = {
+export const datetime = {
   title: '日期',
   options: {
-    interface: 'date',
+    interface: 'datetime',
     type: 'date',
+    dateonly: false,
     filterable: true,
     sortable: true,
+    format: 'YYYY-MM-DD HH:mm:ss',
     component: {
       type: 'date',
     },
@@ -282,6 +284,7 @@ export const linkTo = {
   title: '关联数据',
   options: {
     interface: 'linkTo',
+    multiple: true,
     type: 'belongsToMany',
     filterable: true,
     component: {

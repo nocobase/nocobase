@@ -66,13 +66,13 @@ export default {
       name: 'options.defaultView',
       title: '默认视图',
       defaultValue: 'table',
+      options: [
+        {label: '表格', value: 'table'},
+        {label: '看板', value: 'kanban', disabled: true},
+        {label: '日历', value: 'calendar', disabled: true},
+      ],
       component: {
         type: 'radio',
-        options: [
-          {label: '表格', value: 'table'},
-          {label: '看板', value: 'kanban', disabled: true},
-          {label: '日历', value: 'calendar', disabled: true},
-        ],
         showInTable: true,
         showInForm: true,
         showInDetail: true,
