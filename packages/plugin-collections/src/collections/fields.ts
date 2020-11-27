@@ -13,6 +13,7 @@ export default {
       type: 'integer',
       name: 'sort',
       title: '排序',
+      showInTable: true,
       defaultValue: 1,
       component: {
         type: 'sort',
@@ -25,6 +26,9 @@ export default {
       type: 'string',
       name: 'title',
       title: '字段名称',
+      showInTable: true,
+      showInDetail: true,
+      showInForm: true,
       component: {
         type: 'string',
         className: 'drag-visible',
@@ -35,6 +39,9 @@ export default {
       type: 'string',
       name: 'name',
       title: '标识',
+      showInTable: true,
+      showInDetail: true,
+      showInForm: true,
       required: true,
       component: {
         type: 'string',
@@ -45,6 +52,9 @@ export default {
       type: 'string',
       name: 'interface',
       title: '字段类型',
+      showInTable: true,
+      showInDetail: true,
+      showInForm: true,
       component: {
         type: 'select',
         options,
@@ -55,6 +65,9 @@ export default {
       type: 'string',
       name: 'type',
       title: '数据类型',
+      showInTable: true,
+      showInDetail: true,
+      showInForm: true,
       component: {
         type: 'string',
       },
@@ -90,6 +103,8 @@ export default {
       type: 'virtual',
       name: 'component.tooltip',
       title: '提示信息',
+      showInDetail: true,
+      showInForm: true,
       component: {
         type: 'string',
       },
@@ -99,6 +114,9 @@ export default {
       type: 'boolean',
       name: 'required',
       title: '必填项',
+      showInTable: true,
+      showInDetail: true,
+      showInForm: true,
       component: {
         type: 'checkbox',
       },
@@ -108,6 +126,9 @@ export default {
       type: 'boolean',
       name: 'showInTable',
       title: '显示在表格中',
+      showInTable: true,
+      showInDetail: true,
+      showInForm: true,
       component: {
         type: 'checkbox',
         tooltip: '若勾选，该字段将作为一列显示在数据表里',
@@ -118,6 +139,9 @@ export default {
       type: 'boolean',
       name: 'showInForm',
       title: '显示在表单中',
+      showInTable: true,
+      showInDetail: true,
+      showInForm: true,
       component: {
         type: 'checkbox',
         tooltip: '若勾选，该字段将出现在表单中',
@@ -128,6 +152,9 @@ export default {
       type: 'boolean',
       name: 'showInDetail',
       title: '显示在详情中',
+      showInTable: true,
+      showInDetail: true,
+      showInForm: true,
       component: {
         type: 'checkbox',
         tooltip: '若勾选，该字段将出现在详情中',

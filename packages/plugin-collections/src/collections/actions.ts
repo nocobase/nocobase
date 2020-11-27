@@ -10,6 +10,7 @@ export default {
       type: 'integer',
       name: 'sort',
       title: '排序',
+      showInTable: true,
       component: {
         type: 'sort',
         className: 'drag-visible',
@@ -21,6 +22,9 @@ export default {
       type: 'string',
       name: 'title',
       title: '名称',
+      showInForm: true,
+      showInTable: true,
+      showInDetail: true,
       component: {
         type: 'string',
         className: 'drag-visible',
@@ -31,6 +35,9 @@ export default {
       type: 'string',
       name: 'name',
       title: '标识',
+      showInForm: true,
+      showInTable: true,
+      showInDetail: true,
       component: {
         type: 'string',
       },
@@ -40,6 +47,9 @@ export default {
       type: 'string',
       name: 'type',
       title: '类型',
+      showInForm: true,
+      showInTable: true,
+      showInDetail: true,
       component: {
         type: 'string',
       },

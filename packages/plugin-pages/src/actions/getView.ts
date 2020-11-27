@@ -6,6 +6,9 @@ const transforms = {
   table: async (fields: Model[]) => {
     const arr = [];
     for (const field of fields) {
+      if (!field.get('showInTable')) {
+        continue;
+      }
       arr.push({
         ...field.toJSON(),
         ...field.options,
@@ -17,9 +20,26 @@ const transforms = {
   form: async (fields: Model[]) => {
     const schema = {};
     for (const field of fields) {
-      schema[field.name] = {
-        type: 'string',
+      if (!field.get('showInForm')) {
+        continue;
+      }
+      const type = get(field.options, 'component.type', 'string');
+      const prop: any = {
+        type,
         title: field.title||field.name,
+      }
+      if (type === 'select') {
+        prop.type = 'string'
+      }
+      const defaultValue = get(field.options, 'defaultValue');
+      if (defaultValue) {
+        prop.default = defaultValue;
+      }
+      if (['radio'].includes(type)) {
+        prop.enum = get(field.options, 'component.options', []);
+      }
+      schema[field.name] = {
+        ...prop,
       };
     }
     return schema;
@@ -27,6 +47,9 @@ const transforms = {
   details: async (fields: Model[]) => {
     const arr = [];
     for (const field of fields) {
+      if (!field.get('showInDetail')) {
+        continue;
+      }
       arr.push({
         ...field.toJSON(),
         ...field.options,

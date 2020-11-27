@@ -384,7 +384,7 @@ export async function sort(ctx: Context, next: Next) {
   const Model = ctx.db.getModel(resourceName);
   const table = ctx.db.getTable(resourceName);
 
-  if (!table.getOptions().sortable || !values.offset) {
+  if (!values.offset) {
     return next();
   }
   const [primaryField] = Model.primaryKeyAttributes;

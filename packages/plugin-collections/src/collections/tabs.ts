@@ -10,6 +10,7 @@ export default {
       type: 'integer',
       name: 'sort',
       title: '排序',
+      showInTable: true,
       component: {
         type: 'sort',
         className: 'drag-visible',
@@ -21,6 +22,9 @@ export default {
       type: 'string',
       name: 'title',
       title: '名称',
+      showInTable: true,
+      showInDetail: true,
+      showInForm: true,
       component: {
         type: 'string',
         className: 'drag-visible',
@@ -31,6 +35,9 @@ export default {
       type: 'string',
       name: 'name',
       title: '标识',
+      showInTable: true,
+      showInDetail: true,
+      showInForm: true,
       component: {
         type: 'string',
       },
@@ -40,12 +47,15 @@ export default {
       type: 'string',
       name: 'type',
       title: '类型',
+      showInTable: true,
+      showInDetail: true,
+      showInForm: true,
       component: {
         type: 'radio',
         options: [
-          { label: '模块组合', value: 'module' },
+          { label: '详情数据', value: 'details' },
           { label: '相关数据', value: 'association' },
-          { label: '详情数据', value: 'detail' },
+          { label: '模块组合', value: 'module' },
         ],
       },
     },
@@ -54,6 +64,8 @@ export default {
       type: 'virtual',
       name: 'options.association',
       title: '相关数据表',
+      showInDetail: true,
+      showInForm: true,
       component: {
         type: 'string',
       },
@@ -63,6 +75,9 @@ export default {
       type: 'boolean',
       name: 'default',
       title: '默认标签页',
+      showInTable: true,
+      showInDetail: true,
+      showInForm: true,
       defaultValue: false,
       component: {
         type: 'checkbox',
@@ -73,6 +88,9 @@ export default {
       type: 'boolean',
       name: 'enabled',
       title: '启动',
+      showInTable: true,
+      showInDetail: true,
+      showInForm: true,
       defaultValue: false,
       component: {
         type: 'checkbox',

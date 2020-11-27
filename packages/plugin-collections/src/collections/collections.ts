@@ -40,6 +40,9 @@ export default {
       name: 'name',
       title: '标识',
       unique: true,
+      showInTable: true,
+      showInForm: true,
+      showInDetail: true,
       required: true,
       component: {
         type: 'string',
@@ -50,7 +53,9 @@ export default {
       type: 'virtual',
       name: 'options.icon',
       title: '图标',
+      showInTable: true,
       showInForm: true,
+      showInDetail: true,
       component: {
         type: 'string',
       },
@@ -60,7 +65,10 @@ export default {
       type: 'virtual',
       name: 'options.defaultView',
       title: '默认视图',
+      showInTable: true,
       showInForm: true,
+      showInDetail: true,
+      defaultValue: 'table',
       component: {
         type: 'radio',
         options: [
@@ -76,6 +84,8 @@ export default {
       name: 'options.mode',
       title: '表格模式',
       showInForm: true,
+      showInDetail: true,
+      defaultValue: 'default',
       component: {
         type: 'radio',
         tooltip: `
@@ -94,11 +104,13 @@ export default {
       title: '每页显示几行数据',
       showInForm: true,
       showInDetail: true,
+      defaultValue: 50,
       component: {
         type: 'radio',
         options: [
           {label: '20', value: 20},
           {label: '50', value: 50},
+          {label: '100', value: 100},
         ],
       },
     },
@@ -108,6 +120,7 @@ export default {
       name: 'options.sortable',
       title: '支持拖拽数据排序',
       showInForm: true,
+      showInDetail: true,
       component: {
         type: 'checkbox',
       },
@@ -117,7 +130,9 @@ export default {
       type: 'boolean',
       name: 'showInDataMenu',
       title: '显示在“数据”菜单里',
+      showInTable: true,
       showInForm: true,
+      showInDetail: true,
       component: {
         type: 'checkbox',
       },

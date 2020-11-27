@@ -10,6 +10,7 @@ export default {
       type: 'integer',
       name: 'sort',
       title: '排序',
+      showInTable: true,
       component: {
         type: 'sort',
         className: 'drag-visible',
@@ -21,6 +22,9 @@ export default {
       type: 'string',
       name: 'title',
       title: '视图名称',
+      showInTable: true,
+      showInDetail: true,
+      showInForm: true,
       component: {
         type: 'string',
         className: 'drag-visible',
@@ -31,6 +35,9 @@ export default {
       type: 'string',
       name: 'name',
       title: '标识',
+      showInTable: true,
+      showInDetail: true,
+      showInForm: true,
       component: {
         type: 'string',
       },
@@ -40,6 +47,9 @@ export default {
       type: 'string',
       name: 'type',
       title: '视图类型',
+      showInTable: true,
+      showInDetail: true,
+      showInForm: true,
       component: {
         type: 'radio',
         options: [
@@ -55,6 +65,9 @@ export default {
       type: 'string',
       name: 'template',
       title: '模板',
+      showInTable: true,
+      showInDetail: true,
+      showInForm: true,
       component: {
         type: 'string',
       },
@@ -64,6 +77,9 @@ export default {
       type: 'boolean',
       name: 'default',
       title: '默认视图',
+      showInTable: true,
+      showInDetail: true,
+      showInForm: true,
       defaultValue: false,
       component: {
         type: 'checkbox',
@@ -74,6 +90,9 @@ export default {
       type: 'boolean',
       name: 'showInDataMenu',
       title: '作为数据表子菜单',
+      showInTable: true,
+      showInDetail: true,
+      showInForm: true,
       defaultValue: false,
       component: {
         type: 'checkbox',
