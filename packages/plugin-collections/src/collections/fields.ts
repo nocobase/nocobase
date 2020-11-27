@@ -35,6 +35,7 @@ export default {
       type: 'string',
       name: 'name',
       title: '标识',
+      required: true,
       component: {
         type: 'string',
       },

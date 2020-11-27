@@ -27,7 +27,7 @@ export default async function (options = {}) {
     await model.migrate();
   });
 
-  Field.addHook('beforeCreate', async function (model: FieldModel) {
+  Field.addHook('beforeValidate', async function (model: FieldModel) {
     if (!model.get('name')) {
       model.setDataValue('name', this.generateName());
     }
