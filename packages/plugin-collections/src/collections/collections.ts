@@ -13,11 +13,11 @@ export default {
       type: 'integer',
       name: 'sort',
       title: '排序',
-      showInTable: true,
       component: {
         type: 'sort',
         className: 'drag-visible',
         width: 60,
+        showInTable: true,
       },
     },
     {
@@ -25,13 +25,13 @@ export default {
       type: 'string',
       name: 'title',
       title: '数据表名称',
-      showInTable: true,
-      showInForm: true,
-      showInDetail: true,
       required: true,
       component: {
         type: 'string',
         className: 'drag-visible',
+        showInTable: true,
+        showInForm: true,
+        showInDetail: true,
       },
     },
     {
@@ -40,12 +40,12 @@ export default {
       name: 'name',
       title: '标识',
       unique: true,
-      showInTable: true,
-      showInForm: true,
-      showInDetail: true,
       required: true,
       component: {
         type: 'string',
+        showInTable: true,
+        showInForm: true,
+        showInDetail: true,
       },
     },
     {
@@ -53,11 +53,11 @@ export default {
       type: 'virtual',
       name: 'options.icon',
       title: '图标',
-      showInTable: true,
-      showInForm: true,
-      showInDetail: true,
       component: {
         type: 'string',
+        showInTable: true,
+        showInForm: true,
+        showInDetail: true,
       },
     },
     {
@@ -65,9 +65,6 @@ export default {
       type: 'virtual',
       name: 'options.defaultView',
       title: '默认视图',
-      showInTable: true,
-      showInForm: true,
-      showInDetail: true,
       defaultValue: 'table',
       component: {
         type: 'radio',
@@ -76,6 +73,9 @@ export default {
           {label: '看板', value: 'kanban', disabled: true},
           {label: '日历', value: 'calendar', disabled: true},
         ],
+        showInTable: true,
+        showInForm: true,
+        showInDetail: true,
       },
     },
     {
@@ -83,8 +83,6 @@ export default {
       type: 'virtual',
       name: 'options.mode',
       title: '表格模式',
-      showInForm: true,
-      showInDetail: true,
       defaultValue: 'default',
       component: {
         type: 'radio',
@@ -95,6 +93,8 @@ export default {
           {label: '常规模式', value: 'default'},
           {label: '简易模式', value: 'simple'},
         ],
+        showInForm: true,
+        showInDetail: true,
       },
     },
     {
@@ -102,8 +102,6 @@ export default {
       type: 'virtual',
       name: 'options.defaultPerPage',
       title: '每页显示几行数据',
-      showInForm: true,
-      showInDetail: true,
       defaultValue: 50,
       component: {
         type: 'radio',
@@ -112,6 +110,8 @@ export default {
           {label: '50', value: 50},
           {label: '100', value: 100},
         ],
+        showInForm: true,
+        showInDetail: true,
       },
     },
     {
@@ -123,6 +123,8 @@ export default {
       showInDetail: true,
       component: {
         type: 'checkbox',
+        showInForm: true,
+        showInDetail: true,
       },
     },
     {
@@ -130,11 +132,11 @@ export default {
       type: 'boolean',
       name: 'showInDataMenu',
       title: '显示在“数据”菜单里',
-      showInTable: true,
-      showInForm: true,
-      showInDetail: true,
       component: {
         type: 'checkbox',
+        showInTable: true,
+        showInForm: true,
+        showInDetail: true,
       },
     },
     {
