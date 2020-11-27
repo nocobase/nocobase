@@ -72,32 +72,41 @@ export default {
         showInForm: true,
       },
     },
-    // 分组的先不考虑
-    // {
-    //   interface: 'linkTo',
-    //   type: 'belongsTo',
-    //   name: 'parent',
-    //   target: 'fields',
-    //   foreignKey: 'parent_id',
-    //   title: '所属分组',
-    //   component: {
-    //     type: 'drawerSelect',
-    //   },
-    // },
-    // {
-    //   type: 'hasMany',
-    //   name: 'children',
-    //   target: 'fields',
-    //   foreignKey: 'parent_id',
-    //   sourceKey: 'id',
-    // },
-    // {
-    //   type: 'integer',
-    //   name: 'parent_id',
-    //   component: {
-    //     type: 'number',
-    //   },
-    // },
+    {
+      interface: 'number',
+      type: 'integer',
+      name: 'parent_id',
+      title: '所属分组',
+      component: {
+        type: 'number',
+      },
+    },
+    {
+      interface: 'linkTo',
+      multiple: false,
+      type: 'belongsTo',
+      name: 'parent',
+      title: '所属分组',
+      target: 'fields',
+      foreignKey: 'parent_id',
+      targetKey: 'id',
+      component: {
+        type: 'drawerSelect',
+      },
+    },
+    {
+      interface: 'linkTo',
+      multiple: true,
+      type: 'hasMany',
+      name: 'children',
+      title: '子字段',
+      target: 'fields',
+      foreignKey: 'parent_id',
+      sourceKey: 'id',
+      component: {
+        type: 'drawerSelect',
+      },
+    },
     {
       interface: 'string',
       type: 'virtual',

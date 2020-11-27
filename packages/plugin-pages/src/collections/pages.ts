@@ -13,6 +13,7 @@ export default {
         type: 'sort',
         className: 'drag-visible',
         width: 60,
+        showInTable: true,
       },
     },
     {
@@ -20,10 +21,12 @@ export default {
       type: 'string',
       name: 'title',
       title: '名称',
-      showInTable: true,
       component: {
         type: 'string',
         className: 'drag-visible',
+        showInTable: true,
+        showInForm: true,
+        showInDetail: true,
       },
     },
     {
@@ -33,6 +36,8 @@ export default {
       title: '父级页面',
       component: {
         type: 'number',
+        showInForm: true,
+        showInDetail: true,
       },
     },
     {
@@ -41,9 +46,11 @@ export default {
       name: 'path',
       title: '路径',
       unique: true,
-      showInTable: true,
       component: {
         type: 'string',
+        showInTable: true,
+        showInForm: true,
+        showInDetail: true,
       },
     },
     {
@@ -53,6 +60,9 @@ export default {
       title: '图标',
       component: {
         type: 'string',
+        showInTable: true,
+        showInForm: true,
+        showInDetail: true,
       },
     },
     {
@@ -60,23 +70,25 @@ export default {
       type: 'string',
       name: 'type',
       title: '类型',
-      showInTable: true,
+      options: [
+        {
+          label: '页面',
+          value: 'page',
+        },
+        {
+          label: '布局',
+          value: 'layout',
+        },
+        {
+          label: '数据集',
+          value: 'collection',
+        },
+      ],
       component: {
         type: 'string',
-        options: [
-          {
-            label: '页面',
-            value: 'page',
-          },
-          {
-            label: '布局',
-            value: 'layout',
-          },
-          {
-            label: '数据集',
-            value: 'collection',
-          },
-        ],
+        showInTable: true,
+        showInForm: true,
+        showInDetail: true,
         'x-linkages': [
           {
             "type": "value:visible",
@@ -93,6 +105,8 @@ export default {
       title: '属于哪种数据集？',
       component: {
         type: 'select',
+        showInForm: true,
+        showInDetail: true,
       },
     },
     {
@@ -100,19 +114,21 @@ export default {
       type: 'string',
       name: 'template',
       title: '模板',
-      showInTable: true,
+      options: [
+        {
+          label: '顶部菜单布局',
+          value: 'TopMenuLayout',
+        },
+        {
+          label: '左侧菜单布局',
+          value: 'SideMenuLayout',
+        },
+      ],
       component: {
         type: 'select',
-        options: [
-          {
-            label: '顶部菜单布局',
-            value: 'TopMenuLayout',
-          },
-          {
-            label: '左侧菜单布局',
-            value: 'SideMenuLayout',
-          },
-        ],
+        showInTable: true,
+        showInForm: true,
+        showInDetail: true,
       },
     },
     {
@@ -123,6 +139,9 @@ export default {
       defaultValue: false,
       component: {
         type: 'checkbox',
+        showInTable: true,
+        showInForm: true,
+        showInDetail: true,
       },
     },
     {
@@ -133,6 +152,9 @@ export default {
       defaultValue: true,
       component: {
         type: 'checkbox',
+        showInTable: true,
+        showInForm: true,
+        showInDetail: true,
       },
     },
     {
@@ -153,7 +175,7 @@ export default {
       name: 'options',
       title: '元数据',
       component: {
-        type: 'json',
+        type: 'hidden',
       },
     },
   ],

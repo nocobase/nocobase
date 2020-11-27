@@ -47,13 +47,13 @@ export default {
       type: 'string',
       name: 'type',
       title: '类型',
+      options: [
+        { label: '详情数据', value: 'details' },
+        { label: '相关数据', value: 'association' },
+        { label: '模块组合', value: 'module' },
+      ],
       component: {
         type: 'radio',
-        options: [
-          { label: '详情数据', value: 'details' },
-          { label: '相关数据', value: 'association' },
-          { label: '模块组合', value: 'module' },
-        ],
         showInTable: true,
         showInDetail: true,
         showInForm: true,

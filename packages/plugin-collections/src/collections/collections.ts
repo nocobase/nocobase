@@ -84,15 +84,15 @@ export default {
       name: 'options.mode',
       title: '表格模式',
       defaultValue: 'default',
+      options: [
+        {label: '常规模式', value: 'default'},
+        {label: '简易模式', value: 'simple'},
+      ],
       component: {
         type: 'radio',
         tooltip: `
           <p>常规模式：点击数据进入详情页进行各项查看和操作；<br/>简易模式：点击数据直接打开编辑表单</p>
         `,
-        options: [
-          {label: '常规模式', value: 'default'},
-          {label: '简易模式', value: 'simple'},
-        ],
         showInForm: true,
         showInDetail: true,
       },
@@ -103,13 +103,13 @@ export default {
       name: 'options.defaultPerPage',
       title: '每页显示几行数据',
       defaultValue: 50,
+      options: [
+        {label: '20', value: 20},
+        {label: '50', value: 50},
+        {label: '100', value: 100},
+      ],
       component: {
         type: 'radio',
-        options: [
-          {label: '20', value: 20},
-          {label: '50', value: 50},
-          {label: '100', value: 100},
-        ],
         showInForm: true,
         showInDetail: true,
       },

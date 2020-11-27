@@ -369,6 +369,7 @@ export const sort = {
     required: true,
     component: {
       type: 'sort',
+      showInTable: true,
     },
   },
 };
@@ -378,6 +379,7 @@ export const password = {
   options: {
     interface: 'password',
     type: 'password',
+    hidden: true, // hidden 用来控制 api 不输出这个字段，但是可能这个字段显示在表单里 showInForm
     component: {
       type: 'password',
     },
