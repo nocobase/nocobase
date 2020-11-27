@@ -55,7 +55,14 @@ describe('collection hooks', () => {
   });
 
   it('create field', async () => {
-    const response = await agent.resource('collections.fields').create({
+    await agent.resource('collections').create({
+      values: {
+        name: 'tests',
+        title: 'tests',
+      },
+    });
+    
+    await agent.resource('collections.fields').create({
       associatedKey: 'tests',
       values: {
         type: 'string',
@@ -66,6 +73,40 @@ describe('collection hooks', () => {
         },
       },
     });
-    console.log(response.body);
+    
+    const table = app.database.getTable('tests');
+    expect(table.getOptions().fields.find(({ name }) => name === 'name')).toBeDefined();
+
+    const { body } = await agent.resource('tests').create({
+      values: { name: 'a' }
+    });
+
+    expect(body.name).toBe('a');
+  });
+
+  it('create field without name', async () => {
+    await agent.resource('collections').create({
+      values: {
+        name: 'tests',
+        title: 'tests',
+      },
+    });
+    
+    const createdField = await agent.resource('collections.fields').create({
+      associatedKey: 'tests',
+      values: {
+        type: 'string',
+      },
+    });
+    const { name: createdFieldName } = createdField.body;
+
+    const table = app.database.getTable('tests');
+    expect(table.getOptions().fields.find(({ name }) => name === createdFieldName)).toBeDefined();
+
+    const createdRow = await agent.resource('tests').create({
+      values: { [createdFieldName]: 'a' }
+    });
+
+    expect(createdRow.body[createdFieldName]).toBe('a');
   });
 });
