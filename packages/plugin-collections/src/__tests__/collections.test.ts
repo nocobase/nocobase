@@ -109,4 +109,27 @@ describe('collection hooks', () => {
 
     expect(createdRow.body[createdFieldName]).toBe('a');
   });
+
+  it('create string field by interface', async () => {
+    await agent.resource('collections').create({
+      values: {
+        name: 'tests',
+        title: 'tests',
+      },
+    });
+
+    const createdField = await agent.resource('collections.fields').create({
+      associatedKey: 'tests',
+      values: {
+        interface: 'string',
+        title: '名称',
+        required: true,
+        // viewable: true,
+        // sortable: true,
+        // filterable: true
+      },
+    });
+    const { type } = createdField.body;
+    expect(type).toBe('string');
+  });
 });

@@ -52,7 +52,8 @@ export default {
       type: 'string',
       name: 'interface',
       title: '字段类型',
-      options,
+      // TODO(bug): 这个配置项会导致报错，层级太深暂时先注释
+      // options,
       component: {
         type: 'select',
         showInTable: true,

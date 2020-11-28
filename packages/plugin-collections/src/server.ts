@@ -1,7 +1,6 @@
 import path from 'path';
 import { Application } from '@nocobase/server';
-import CollectionModel from './models/collection';
-import FieldModel from './models/field';
+import hooks from './hooks';
 
 export default async function (this: Application, options = {}) {
   const database = this.database;
@@ -11,37 +10,15 @@ export default async function (this: Application, options = {}) {
     directory: path.resolve(__dirname, 'collections'),
   });
 
-  const [Collection, Field, Action] = database.getModels(['collections', 'fields', 'actions']);
-
+  Object.keys(hooks).forEach(modelName => {
+    const Model = database.getModel(modelName);
+    Object.keys(hooks[modelName]).forEach(hookKey => {
+      // TODO(types): 多层 map 映射类型定义较为复杂，暂时忽略
+      // @ts-ignore
+      Model.addHook(hookKey, hooks[modelName][hookKey]);
+    });
+  });
+  
   // 加载数据库表 collections 中已经保存的表配置
   // await Collection.findAll();
-
-  Collection.addHook('beforeValidate', async function (model: CollectionModel) {
-    if (!model.get('name')) {
-      model.setDataValue('name', this.generateName());
-    }
-  });
-
-  Collection.addHook('afterCreate', async function (model: CollectionModel) {
-    await model.migrate();
-  });
-
-  Field.addHook('beforeValidate', async function (model: FieldModel) {
-    if (!model.get('name')) {
-      model.setDataValue('name', this.generateName());
-    }
-  });
-
-  Field.addHook('afterCreate', async function (model: FieldModel) {
-    console.log('afterCreate', model.toJSON());
-    await model.migrate();
-  });
-
-  Action.addHook('beforeCreate', async function (model: CollectionModel) {
-    console.log('beforeCreate', model.toJSON());
-  });
-
-  Action.addHook('afterCreate', async function (model: CollectionModel) {
-    // console.log('afterCreate');
-  });
 }
