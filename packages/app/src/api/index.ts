@@ -329,6 +329,13 @@ const data = {
     order: 130,
   });
 
+  await database.getModel('users').create({
+    nickname: "admin",
+    password: "admin",
+    username: "admin",
+    token: "38979f07e1fca68fb3d2",
+  });
+
   api.listen(process.env.HTTP_PORT, () => {
     console.log(`http://localhost:${process.env.HTTP_PORT}/`);
   });

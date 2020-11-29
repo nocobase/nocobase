@@ -23,7 +23,6 @@ export const request: RequestConfig = {
   ],
 };
 
-
 export async function getInitialState() {
   const { pathname, search } = location;
   console.log(location);
@@ -38,7 +37,7 @@ export async function getInitialState() {
         method: 'post',
       });
 
-      if (!data.data) {
+      if (!data.id) {
         history.push('/login' + redirect);
         return {
           currentUser: {},
@@ -46,7 +45,7 @@ export async function getInitialState() {
       }
 
       return {
-        currentUser: data.data,
+        currentUser: data,
       };
     } catch (error) {
       console.log(error)

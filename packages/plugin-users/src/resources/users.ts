@@ -4,9 +4,14 @@ export default {
   name: 'users',
   middlewares: [
     {
-      only: ['check'],
+      // only: ['check'],
       handler: async (ctx, next) => {
         const token = ctx.get('Authorization').replace(/^Bearer\s+/gi, '');
+        console.log(ctx.action.params.actionName);
+        const { actionName } = ctx.action.params;
+        if (actionName !== 'check') {
+          return next();
+        }
         if (!token) {
           ctx.throw(401, 'Unauthorized');
         }
