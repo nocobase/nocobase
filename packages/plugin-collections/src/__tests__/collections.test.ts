@@ -136,11 +136,9 @@ describe('collection hooks', () => {
       type: 'string',
       required: true,
       collection_name: 'tests',
-      options: {
-        viewable: true,
-        sortable: true,
-        filterable: true
-      }
+      viewable: true,
+      sortable: true,
+      filterable: true
     });
   });
 });

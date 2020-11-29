@@ -25,9 +25,34 @@ export class FieldModel extends Model {
     });
   }
 
+  get(key?, options?) {
+    if (typeof key === 'string') {
+      // 如果有该字段的值，则按默认处理返回
+      if (typeof this.dataValues[key] !== 'undefined') {
+        return super.get(key, options);
+      }
+      // 否则使用 options 字段中的值
+      const opts = this.dataValues.options || {};
+      return opts[key];
+    }
+    const { options: opts = {}, ...values } = super.get(key, options);
+    return {
+      ...opts,
+      ...values
+    };
+  }
+
+  getDataValue(key) {
+    if (typeof this.dataValues[key] !== 'undefined') {
+      return this.dataValues[key];
+    }
+    const options = this.dataValues.options || {};
+    return options[key];
+  }
+
   set(key: any, value: any, options?: any) {
     if (typeof key === 'string') {
-      const opts = this.get('options') || {};
+      const opts = this.get('options', options) || {};
       const attribute = this.rawAttributes[key];
 
       if (attribute) {
@@ -48,6 +73,28 @@ export class FieldModel extends Model {
     }
 
     super.set(key, value, options);
+    return this;
+  }
+
+  setDataValue(key, value) {
+    const attribute = this.rawAttributes[key];
+    if (!attribute) {
+      const opts = this.get('options') || {};
+      if (value == null) {
+        delete opts[key];
+      } else {
+        opts[key] = value;
+      }
+      super.setDataValue('options', opts);
+      return this;
+    }
+
+    if (attribute.type instanceof DataTypes.VIRTUAL) {
+      // TODO: 虚拟字段
+      return this;
+    }
+
+    super.setDataValue(key, value);
     return this;
   }
 }
