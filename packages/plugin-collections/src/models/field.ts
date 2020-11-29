@@ -1,3 +1,4 @@
+import { DataTypes } from 'sequelize';
 import { FieldOptions, Model } from '@nocobase/database';
 
 export class FieldModel extends Model {
@@ -22,6 +23,32 @@ export class FieldModel extends Model {
         drop: false,
       }
     });
+  }
+
+  set(key: any, value: any, options?: any) {
+    if (typeof key === 'string') {
+      const opts = this.get('options') || {};
+      const attribute = this.rawAttributes[key];
+
+      if (attribute) {
+        if (key === 'options') {
+          Object.assign(opts, value);
+        } else if (attribute.type instanceof DataTypes.VIRTUAL) {
+          // TODO: 如何处理虚拟字段
+          return this;
+        } else {
+          super.set(key, value, options);
+          return this;
+        }
+      } else {
+        opts[key] = value;
+      }
+      super.set('options', opts, options);
+      return this;
+    }
+
+    super.set(key, value, options);
+    return this;
   }
 }
 

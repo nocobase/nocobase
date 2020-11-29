@@ -75,7 +75,7 @@ describe('collection hooks', () => {
     });
     
     const table = app.database.getTable('tests');
-    expect(table.getOptions().fields.find(({ name }) => name === 'name')).toBeDefined();
+    expect(table.getField('name')).toBeDefined();
 
     const { body } = await agent.resource('tests').create({
       values: { name: 'a' }
@@ -101,7 +101,7 @@ describe('collection hooks', () => {
     const { name: createdFieldName } = createdField.body;
 
     const table = app.database.getTable('tests');
-    expect(table.getOptions().fields.find(({ name }) => name === createdFieldName)).toBeDefined();
+    expect(table.getField(createdFieldName)).toBeDefined();
 
     const createdRow = await agent.resource('tests').create({
       values: { [createdFieldName]: 'a' }
@@ -124,12 +124,23 @@ describe('collection hooks', () => {
         interface: 'string',
         title: '名称',
         required: true,
-        // viewable: true,
-        // sortable: true,
-        // filterable: true
+        viewable: true,
+        sortable: true,
+        filterable: true
       },
     });
-    const { type } = createdField.body;
-    expect(type).toBe('string');
+
+    expect(createdField.body).toMatchObject({
+      interface: 'string',
+      title: '名称',
+      type: 'string',
+      required: true,
+      collection_name: 'tests',
+      options: {
+        viewable: true,
+        sortable: true,
+        filterable: true
+      }
+    });
   });
 });
