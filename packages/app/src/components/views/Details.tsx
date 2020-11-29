@@ -29,9 +29,11 @@ export function Details(props: any) {
       <Actions {...props} style={{ marginBottom: 14 }} actions={actions}/>
       {loading ? <Spin/> : (
         <Descriptions bordered column={1}>
-          {fields.map((field: any) => (
-            <Descriptions.Item label={field.title||field.name}>{data[field.name]}</Descriptions.Item>
-          ))}
+          {fields.map((field: any) => {
+            return (
+              <Descriptions.Item label={field.title||field.name}>{JSON.stringify(data[field.name])}</Descriptions.Item>
+            )
+          })}
         </Descriptions>
       )}
     </Card>

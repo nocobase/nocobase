@@ -100,7 +100,7 @@ export function SimpleTable(props: SimpleTableProps) {
         {...tableProps}
       />
       {paginated && (
-        <div>
+        <div className={'table-pagination'}>
           <Pagination {...pagination} showQuickJumper showSizeChanger size={'default'}/>
         </div>
       )}
