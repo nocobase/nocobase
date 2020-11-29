@@ -57,7 +57,8 @@ export const DrawerForm = forwardRef((props: any, ref) => {
       title={title}
       footer={[
         <Button type={'primary'} onClick={async () => {
-          await actions.submit();
+          const values = await actions.submit();
+          console.log(values);
         }}>提交</Button>
       ]}
     >

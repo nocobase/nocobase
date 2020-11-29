@@ -131,14 +131,14 @@ const data = {
           icon: 'dashboard',
           sort: 110,
         },
-        {
-          title: '权限配置',
-          type: 'collection',
-          collection: 'roles',
-          path: '/settings/roles',
-          icon: 'dashboard',
-          sort: 120,
-        },
+        // {
+        //   title: '权限配置',
+        //   type: 'collection',
+        //   collection: 'roles',
+        //   path: '/settings/roles',
+        //   icon: 'dashboard',
+        //   sort: 120,
+        // },
       ]
     },
   ],
@@ -310,6 +310,24 @@ const data = {
   // await Promise.all(collections.map(async (collection) => {
   //   return await collection.modelInit();
   // }));
+
+  await Page.create({
+    title: '登录页面',
+    path: '/login',
+    type: 'page',
+    inherit: false,
+    template: 'login',
+    order: 120,
+  });
+
+  await Page.create({
+    title: '注册页面',
+    path: '/register',
+    type: 'page',
+    inherit: false,
+    template: 'register',
+    order: 130,
+  });
 
   api.listen(process.env.HTTP_PORT, () => {
     console.log(`http://localhost:${process.env.HTTP_PORT}/`);
