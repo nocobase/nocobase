@@ -1,4 +1,5 @@
 import { DataTypes } from 'sequelize';
+import _ from 'lodash';
 import { FieldOptions, Model } from '@nocobase/database';
 
 export class FieldModel extends Model {
@@ -27,8 +28,9 @@ export class FieldModel extends Model {
 
   get(key?, options?) {
     if (typeof key === 'string') {
-      // 如果有该字段的值，则按默认处理返回
-      if (typeof this.dataValues[key] !== 'undefined') {
+      const attribute = this.rawAttributes[key];
+      // 如果有该字段的值，则按默认处理返回 或 为虚拟字段
+      if (typeof this.dataValues[key] !== 'undefined' || attribute.type instanceof DataTypes.VIRTUAL) {
         return super.get(key, options);
       }
       // 否则使用 options 字段中的值
@@ -54,12 +56,19 @@ export class FieldModel extends Model {
     if (typeof key === 'string') {
       const opts = this.get('options', options) || {};
       const attribute = this.rawAttributes[key];
-
       if (attribute) {
         if (key === 'options') {
           Object.assign(opts, value);
         } else if (attribute.type instanceof DataTypes.VIRTUAL) {
-          // TODO: 如何处理虚拟字段
+          // TODO(bug): 如何判断一个字段是虚拟字段？当前写法不成立
+          if (key.indexOf('.') !== -1) {
+            const [column, ...rest] = key.split('.');
+            if (this.rawAttributes[column]) {
+              const target = this.get(column);
+              _.set(target, rest, value);
+              this.set(column, target, options);
+            }
+          }
           return this;
         } else {
           super.set(key, value, options);

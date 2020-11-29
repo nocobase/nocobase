@@ -1,5 +1,6 @@
 import { Agent, getAgent, getApp } from '.';
 import { Application } from '@nocobase/server';
+import * as types from '../interfaces/types';
 
 describe('collection hooks', () => {
   let app: Application;
@@ -51,7 +52,7 @@ describe('collection hooks', () => {
       //   title: '标题',
       // },
     });
-    console.log(response.body);
+    // console.log(response.body);
   });
 
   it('create field', async () => {
@@ -118,27 +119,35 @@ describe('collection hooks', () => {
       },
     });
 
+    const values = {
+      interface: 'string',
+      title: '名称',
+      name: 'name',
+      required: true,
+      viewable: true,
+      sortable: true,
+      filterable: true,
+      'component.tooltip': 'test'
+    }
+
     const createdField = await agent.resource('collections.fields').create({
       associatedKey: 'tests',
-      values: {
-        interface: 'string',
-        title: '名称',
-        required: true,
-        viewable: true,
-        sortable: true,
-        filterable: true
-      },
+      values,
     });
 
     expect(createdField.body).toMatchObject({
-      interface: 'string',
-      title: '名称',
-      type: 'string',
-      required: true,
+      ...values,
+      ...types['string'].options,
       collection_name: 'tests',
       viewable: true,
       sortable: true,
       filterable: true
     });
+
+    const gotField = await agent.resource('fields').get({
+      resourceKey: createdField.body.id
+    });
+
+    console.log(gotField.body);
   });
 });
