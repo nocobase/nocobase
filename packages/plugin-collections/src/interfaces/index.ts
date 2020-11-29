@@ -36,7 +36,7 @@ export const options = [
   {
     title: '日期和时间',
     children: [
-      types.date,
+      types.datetime,
       types.time,
     ],
   },
