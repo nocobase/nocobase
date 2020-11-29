@@ -7,6 +7,9 @@ import { SimpleTable } from './SimpleTable';
 import { Table } from './Table';
 import { Form, DrawerForm } from './Form/index';
 import { Details } from './Details';
+import './style.less';
+import { Login } from './Form/Login';
+import { Register } from './Form/Register';
 
 const TEMPLATES = new Map<string, any>();
 
@@ -24,6 +27,8 @@ registerView('Form', Form);
 registerView('Table', Table);
 registerView('SimpleTable', SimpleTable);
 registerView('Details', Details);
+registerView('Login', Login);
+registerView('Register', Register);
 
 export interface ViewProps {
   resourceName: string;
