@@ -12,6 +12,7 @@ import {
   FormValidator,
   setValidationLanguage,
 } from '@formily/antd';
+import './style.less';
 
 setup();
 setValidationLanguage('zh-CN');

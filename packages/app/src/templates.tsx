@@ -10,4 +10,6 @@ export default {
   'page2': require('@/pages/page2').default,
   'page3': require('@/pages/page3').default,
   'page4': require('@/pages/page4').default,
+  login: require('@/pages/login').default,
+  register: require('@/pages/register').default,
 };
