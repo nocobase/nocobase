@@ -138,16 +138,14 @@ describe('collection hooks', () => {
     expect(createdField.body).toMatchObject({
       ...values,
       ...types['string'].options,
+      sort: 1,
       collection_name: 'tests',
-      viewable: true,
-      sortable: true,
-      filterable: true
     });
 
     const gotField = await agent.resource('fields').get({
       resourceKey: createdField.body.id
     });
 
-    console.log(gotField.body);
+    expect(gotField.body).toEqual(createdField.body);
   });
 });

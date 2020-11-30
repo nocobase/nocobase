@@ -29,55 +29,62 @@ export class FieldModel extends Model {
   get(key?, options?) {
     if (typeof key === 'string') {
       const attribute = this.rawAttributes[key];
-      // 如果有该字段的值，则按默认处理返回 或 为虚拟字段
-      if (typeof this.dataValues[key] !== 'undefined' || attribute.type instanceof DataTypes.VIRTUAL) {
-        return super.get(key, options);
+      const [column, ...path] = key.split('.');
+      if (attribute) {
+        const value = super.get(column, options);
+        if (path.length) {
+          return _.get(value, path);
+        }
+        return value;
       }
       // 否则使用 options 字段中的值
-      const opts = this.dataValues.options || {};
-      return opts[key];
+      return _.get(super.get('options', options) || {}, key);
     }
-    const { options: opts = {}, ...values } = super.get(key, options);
-    return {
-      ...opts,
-      ...values
-    };
+    // 未设置 key 时 sequelize 只取 dataValues 的内容遍历，无法满足要求
+    const result = super.get('options', options);
+    Object.keys(this.rawAttributes).forEach(k => {
+      if (k !== 'options') {
+        result[k] = this.get(k, options);
+      }
+    });
+
+    return result;
   }
 
   getDataValue(key) {
-    if (typeof this.dataValues[key] !== 'undefined') {
-      return this.dataValues[key];
+    const attribute = this.rawAttributes[key];
+    const [column, ...path] = key.split('.');
+    if (attribute) {
+      const value = super.getDataValue(column);
+      if (path.length) {
+        return _.get(value, path);
+      }
+      return value;
     }
-    const options = this.dataValues.options || {};
-    return options[key];
+    const options = super.getDataValue('options') || {};
+    return _.get(options, key);
   }
 
   set(key: any, value: any, options?: any) {
     if (typeof key === 'string') {
-      const opts = this.get('options', options) || {};
       const attribute = this.rawAttributes[key];
+      const [column, ...path] = key.split('.');
+      const opts = this.get('options', options) || {};
+      let val = value;
+      let col = column;
       if (attribute) {
-        if (key === 'options') {
-          Object.assign(opts, value);
-        } else if (attribute.type instanceof DataTypes.VIRTUAL) {
-          // TODO(bug): 如何判断一个字段是虚拟字段？当前写法不成立
-          if (key.indexOf('.') !== -1) {
-            const [column, ...rest] = key.split('.');
-            if (this.rawAttributes[column]) {
-              const target = this.get(column);
-              _.set(target, rest, value);
-              this.set(column, target, options);
-            }
-          }
-          return this;
-        } else {
-          super.set(key, value, options);
-          return this;
+        if (col === 'options') {
+          val = Object.assign(opts, value);
+        } else if (path.length) {
+          val = this.get(col, options) || {};
+          _.set(val, path, value);
         }
       } else {
-        opts[key] = value;
+        col = 'options';
+        val = opts;
+        _.set(val, key, value);
       }
-      super.set('options', opts, options);
+      super.set(col, val, options);
       return this;
     }
 
@@ -87,23 +94,23 @@ export class FieldModel extends Model {
 
   setDataValue(key, value) {
     const attribute = this.rawAttributes[key];
-    if (!attribute) {
-      const opts = this.get('options') || {};
-      if (value == null) {
-        delete opts[key];
-      } else {
-        opts[key] = value;
+    const [column, ...path] = key.split('.');
+    const opts = this.getDataValue('options') || {};
+    let val = value;
+    let col = column;
+    if (attribute) {
+      if (col === 'options') {
+        val = Object.assign(opts, value);
+      } else if (path.length) {
+        val = this.getDataValue(col) || {};
+        _.set(val, path, value);
       }
-      super.setDataValue('options', opts);
-      return this;
+    } else {
+      col = 'options';
+      val = opts;
+      _.set(val, key, value);
     }
-
-    if (attribute.type instanceof DataTypes.VIRTUAL) {
-      // TODO: 虚拟字段
-      return this;
-    }
-
-    super.setDataValue(key, value);
+    super.setDataValue(col, val);
     return this;
   }
 }
