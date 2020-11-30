@@ -27,6 +27,7 @@ const transforms = {
       const prop: any = {
         type,
         title: field.title||field.name,
+        ...(field.component||{}),
       }
       if (type === 'select') {
         prop.type = 'string'
@@ -35,8 +36,8 @@ const transforms = {
       if (defaultValue) {
         prop.default = defaultValue;
       }
-      if (['radio'].includes(type)) {
-        prop.enum = get(field.options, 'options', []);
+      if (['radio', 'select', 'checkboxes'].includes(type)) {
+        prop.enum = get(field.options, 'dataSource', []);
       }
       schema[field.name] = {
         ...prop,

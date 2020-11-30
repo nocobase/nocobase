@@ -66,7 +66,7 @@ export default {
       name: 'options.defaultView',
       title: '默认视图',
       defaultValue: 'table',
-      options: [
+      dataSource: [
         {label: '表格', value: 'table'},
         {label: '看板', value: 'kanban', disabled: true},
         {label: '日历', value: 'calendar', disabled: true},
@@ -84,7 +84,7 @@ export default {
       name: 'options.mode',
       title: '表格模式',
       defaultValue: 'default',
-      options: [
+      dataSource: [
         {label: '常规模式', value: 'default'},
         {label: '简易模式', value: 'simple'},
       ],
@@ -103,7 +103,7 @@ export default {
       name: 'options.defaultPerPage',
       title: '每页显示几行数据',
       defaultValue: 50,
-      options: [
+      dataSource: [
         {label: '20', value: 20},
         {label: '50', value: 50},
         {label: '100', value: 100},

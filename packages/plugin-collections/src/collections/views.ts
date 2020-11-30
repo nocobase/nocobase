@@ -47,7 +47,7 @@ export default {
       type: 'string',
       name: 'type',
       title: '视图类型',
-      options: [
+      dataSource: [
         { label: '表格', value: 'table' },
         { label: '看板', value: 'kanban', disabled: true },
         { label: '日历', value: 'calendar', disabled: true },

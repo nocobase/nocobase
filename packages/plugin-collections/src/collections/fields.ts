@@ -52,12 +52,39 @@ export default {
       type: 'string',
       name: 'interface',
       title: '字段类型',
-      options,
+      dataSource: options,
       component: {
         type: 'select',
         showInTable: true,
         showInDetail: true,
         showInForm: true,
+      },
+    },
+    {
+      interface: 'subTable',
+      type: 'virtual',
+      name: 'dataSource',
+      title: '可选项',
+      component: {
+        type: 'table',
+        // showInTable: true,
+        // showInDetail: true,
+        showInForm: true,
+        items: {
+          type: 'object',
+          properties: {
+            value: {
+              type: "string",
+              title: "选项值",
+              required: true
+            },
+            label: {
+              type: "string",
+              title: "选项",
+              required: true
+            },
+          },
+        },
       },
     },
     {
