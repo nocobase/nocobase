@@ -18,6 +18,31 @@ describe('base model', () => {
           type: 'string',
         },
         {
+          name: 'title',
+          type: 'virtual',
+        },
+        {
+          name: 'content',
+          type: 'virtual',
+          set(val) {
+            // 留空
+          }
+        },
+        {
+          name: 'key1',
+          type: 'virtual',
+          set(val) {
+            this.setDataValue('options.key1', `111${val}111`);
+          }
+        },
+        {
+          name: 'key2',
+          type: 'virtual',
+          get() {
+            return 'val2';
+          }
+        },
+        {
           type: 'json',
           name: 'component',
           defaultValue: {},
@@ -142,5 +167,26 @@ describe('base model', () => {
       component: { a: 'a', b: 'b', d: 'd' },
       arr: [{a: 'a'}, {b: 'b'}],
     });
+  });
+
+  it.only('update virtual attribute', async () => {
+    await test.update({
+      title: 'xxx', // 虚拟字段没 set 转存 options
+      content: 'content123', // set 留空，这个 key 什么也不做
+      key1: 'val1', // 走 set 方法
+    });
+    // 重新获取再验证
+    const test2 = await TestModel.findByPk(test.id);
+    expect(test2.get()).toMatchObject({
+      abc: { aa: 'aa', bb: 'bb' },
+      bcd: 'bbb',
+      name: '123',
+      component: { a: 'a', b: 'b' },
+      arr: [{a: 'a'}, {b: 'b'}],
+      title: 'xxx',
+      key2: 'val2', // key2 为 get 方法取的
+      key1: '111val1111',
+    });
+    expect(test2.get('content')).toBeUndefined();
   });
 });

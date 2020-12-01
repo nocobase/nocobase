@@ -62,7 +62,7 @@ export default {
     {
       interface: 'subTable',
       type: 'virtual',
-      name: 'options.dataSource',
+      name: 'dataSource',
       title: '可选项',
       component: {
         type: 'table',

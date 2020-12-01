@@ -1,5 +1,5 @@
 import _ from 'lodash';
-import { Model } from '@nocobase/database';
+import { getDataTypeKey, Model } from '@nocobase/database';
 
 export class BaseModel extends Model {
   get additionalAttribute() {
@@ -7,11 +7,28 @@ export class BaseModel extends Model {
     return _.get(tableOptions, 'additionalAttribute') || 'options';
   }
 
+  hasGetAttribute(key: string) {
+    const attribute = this.rawAttributes[key];
+    // virtual 如果有 get 方法就直接走 get
+    if (attribute && attribute.type && getDataTypeKey(attribute.type) === 'VIRTUAL') {
+      return !!attribute.get;
+    }
+    return !!attribute;
+  }
+
+  hasSetAttribute(key: string) {
+    const attribute = this.rawAttributes[key];
+    // virtual 如果有 set 方法就直接走 set
+    if (attribute && attribute.type && getDataTypeKey(attribute.type) === 'VIRTUAL') {
+      return !!attribute.set;
+    }
+    return !!attribute;
+  }
+
   get(key?: any, options?: any) {
     if (typeof key === 'string') {
       const [column, ...path] = key.split('.');
-      const attribute = this.rawAttributes[column];
-      if (attribute) {
+      if (this.hasGetAttribute(column)) {
         const value = super.get(column, options);
         if (path.length) {
           return _.get(value, path);
@@ -29,8 +46,7 @@ export class BaseModel extends Model {
 
   getDataValue(key: any) {
     const [column, ...path] = key.split('.');
-    const attribute = this.rawAttributes[column];
-    if (attribute) {
+    if (this.hasGetAttribute(column)) {
       const value = super.getDataValue(column);
       if (path.length) {
         return _.get(value, path);
@@ -54,8 +70,7 @@ export class BaseModel extends Model {
       }
       const [column, ...path] = key.split('.');
       this.changed(column, true);
-      const attribute = this.rawAttributes[column];
-      if (attribute) {
+      if (this.hasSetAttribute(column)) {
         if (!path.length) {
           return super.set(key, value, options);
         }
@@ -83,8 +98,7 @@ export class BaseModel extends Model {
     }
     const [column, ...path] = key.split('.');
     this.changed(column, true);
-    const attribute = this.rawAttributes[column];
-    if (attribute) {
+    if (this.hasSetAttribute(column)) {
       if (!path.length) {
         return super.setDataValue(key, value);
       }
