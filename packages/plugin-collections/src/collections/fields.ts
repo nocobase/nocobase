@@ -1,12 +1,11 @@
 import { TableOptions } from '@nocobase/database';
-import FieldModel from '../models/field';
 import { options } from '../interfaces';
 
 export default {
   name: 'fields',
   title: '字段配置',
-  sortable: true,
-  model: FieldModel,
+  draggable: true,
+  model: 'FieldModel',
   fields: [
     {
       interface: 'sort',
@@ -63,7 +62,7 @@ export default {
     {
       interface: 'subTable',
       type: 'virtual',
-      name: 'dataSource',
+      name: 'options.dataSource',
       title: '可选项',
       component: {
         type: 'table',
@@ -75,7 +74,7 @@ export default {
           properties: {
             value: {
               type: "string",
-              title: "选项值",
+              title: "值",
               required: true
             },
             label: {

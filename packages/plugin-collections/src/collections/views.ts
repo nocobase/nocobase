@@ -4,6 +4,7 @@ export default {
   name: 'views',
   title: '视图配置',
   sortable: true,
+  model: 'ViewModel',
   fields: [
     {
       interface: 'sort',

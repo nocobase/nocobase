@@ -136,7 +136,15 @@ describe('collection hooks', () => {
     });
 
     expect(createdField.body).toMatchObject({
-      ...values,
+      ...{
+        interface: 'string',
+        title: '名称',
+        name: 'name',
+        required: true,
+        viewable: true,
+        sortable: true,
+        filterable: true,
+      },
       ...types['string'].options,
       sort: 1,
       collection_name: 'tests',

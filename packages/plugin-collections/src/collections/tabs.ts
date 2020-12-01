@@ -4,6 +4,7 @@ export default {
   name: 'tabs',
   title: '标签配置',
   sortable: true,
+  model: 'TabModel',
   fields: [
     {
       interface: 'sort',

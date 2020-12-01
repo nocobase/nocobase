@@ -1,12 +1,11 @@
 import { TableOptions } from '@nocobase/database';
-import CollectionModel from '../models/collection';
 
 export default {
   name: 'collections',
   title: '数据表配置',
   sortable: true,
   draggable: true,
-  model: CollectionModel,
+  model: 'CollectionModel',
   fields: [
     {
       interface: 'sort',
@@ -117,7 +116,7 @@ export default {
     {
       interface: 'boolean',
       type: 'virtual',
-      name: 'options.sortable',
+      name: 'options.draggable',
       title: '支持拖拽数据排序',
       showInForm: true,
       showInDetail: true,

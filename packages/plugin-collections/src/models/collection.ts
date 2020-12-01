@@ -1,8 +1,9 @@
-import { Model, TableOptions } from '@nocobase/database';
-import { SaveOptions } from 'sequelize';
 import _ from 'lodash';
+import BaseModel from './base';
+import { TableOptions } from '@nocobase/database';
+import { SaveOptions, Utils } from 'sequelize';
 
-export class CollectionModel extends Model {
+export class CollectionModel extends BaseModel {
 
   /**
    * 通过 name 获取 collection
@@ -68,7 +69,6 @@ export class CollectionModel extends Model {
     data = _.cloneDeep(data);
     const collection = await this.create({
       ...data,
-      options: _.omit(data, ['model', 'fields', 'tabs', 'actions', 'views']),
     }, options);
     const items: any = {};
     const associations = ['fields', 'tabs', 'actions', 'views'];
@@ -78,11 +78,14 @@ export class CollectionModel extends Model {
       }
       items[key] = data[key].map((item, sort) => ({
         ...item,
-        options: item,
         sort,
       }));
+      for (const item of items[key]) {
+        await collection[`create${_.upperFirst(Utils.singularize(key))}`](item);
+      }
     }
-    await collection.updateAssociations(items, options);
+    // updateAssociations 有 BUG
+    // await collection.updateAssociations(items, options);
     return collection;
   }
 }
