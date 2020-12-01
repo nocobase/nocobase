@@ -50,7 +50,7 @@ export default {
     {
       interface: 'string',
       type: 'virtual',
-      name: 'options.icon',
+      name: 'icon',
       title: '图标',
       component: {
         type: 'string',
@@ -62,7 +62,7 @@ export default {
     {
       interface: 'radio',
       type: 'virtual',
-      name: 'options.defaultView',
+      name: 'defaultView',
       title: '默认视图',
       defaultValue: 'table',
       dataSource: [
@@ -80,7 +80,7 @@ export default {
     {
       interface: 'radio',
       type: 'virtual',
-      name: 'options.mode',
+      name: 'mode',
       title: '表格模式',
       defaultValue: 'default',
       dataSource: [
@@ -99,7 +99,7 @@ export default {
     {
       interface: 'radio',
       type: 'virtual',
-      name: 'options.defaultPerPage',
+      name: 'defaultPerPage',
       title: '每页显示几行数据',
       defaultValue: 50,
       dataSource: [
@@ -116,7 +116,7 @@ export default {
     {
       interface: 'boolean',
       type: 'virtual',
-      name: 'options.draggable',
+      name: 'draggable',
       title: '支持拖拽数据排序',
       showInForm: true,
       showInDetail: true,
