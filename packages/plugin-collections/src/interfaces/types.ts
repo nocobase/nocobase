@@ -4,9 +4,6 @@
 // 参数的优先级：
 // 1、interface，type 尽量只随 interface 变动，而不受别的字段影响（特殊情况除外）
 // 2、
-
-import database from "packages/database/lib/database";
-
 // TODO: interface 的修改
 export const string = {
   title: '单行文本',
