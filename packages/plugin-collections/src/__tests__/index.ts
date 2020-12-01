@@ -55,7 +55,7 @@ export async function getApp() {
     },
   });
   app.resourcer.use(middlewares.associated);
-  app.resourcer.registerHandlers(actions.associate);
+  app.resourcer.registerHandlers({...actions.associate, ...actions.common});
   await app.plugins([plugin]);
   await app.database.sync({
     force: true,
@@ -116,6 +116,9 @@ export function getAgent(app: Application): Agent {
               url = `/api/${name.split('.').join(`/${associatedKey}/`)}`;
             }
             url += `:${method as string}`;
+            if (resourceKey) {
+              url += `/${resourceKey}`;
+            }
             console.log(url);
             if (['list', 'get'].indexOf(method as string) !== -1) {
               return agent.get(`${url}?${qs.stringify(restParams)}`);

@@ -1,5 +1,6 @@
 import { Agent, getAgent, getApp } from '.';
 import { Application } from '@nocobase/server';
+import * as types from '../interfaces/types';
 
 describe('collection hooks', () => {
   let app: Application;
@@ -51,7 +52,7 @@ describe('collection hooks', () => {
       //   title: '标题',
       // },
     });
-    console.log(response.body);
+    // console.log(response.body);
   });
 
   it('create field', async () => {
@@ -75,7 +76,7 @@ describe('collection hooks', () => {
     });
     
     const table = app.database.getTable('tests');
-    expect(table.getOptions().fields.find(({ name }) => name === 'name')).toBeDefined();
+    expect(table.getField('name')).toBeDefined();
 
     const { body } = await agent.resource('tests').create({
       values: { name: 'a' }
@@ -101,12 +102,50 @@ describe('collection hooks', () => {
     const { name: createdFieldName } = createdField.body;
 
     const table = app.database.getTable('tests');
-    expect(table.getOptions().fields.find(({ name }) => name === createdFieldName)).toBeDefined();
+    expect(table.getField(createdFieldName)).toBeDefined();
 
     const createdRow = await agent.resource('tests').create({
       values: { [createdFieldName]: 'a' }
     });
 
     expect(createdRow.body[createdFieldName]).toBe('a');
+  });
+
+  it('create string field by interface', async () => {
+    await agent.resource('collections').create({
+      values: {
+        name: 'tests',
+        title: 'tests',
+      },
+    });
+
+    const values = {
+      interface: 'string',
+      title: '名称',
+      name: 'name',
+      required: true,
+      viewable: true,
+      sortable: true,
+      filterable: true,
+      'component.tooltip': 'test'
+    }
+
+    const createdField = await agent.resource('collections.fields').create({
+      associatedKey: 'tests',
+      values,
+    });
+
+    expect(createdField.body).toMatchObject({
+      ...values,
+      ...types['string'].options,
+      sort: 1,
+      collection_name: 'tests',
+    });
+
+    const gotField = await agent.resource('fields').get({
+      resourceKey: createdField.body.id
+    });
+
+    expect(gotField.body).toEqual(createdField.body);
   });
 });
