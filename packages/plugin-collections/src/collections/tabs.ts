@@ -63,7 +63,7 @@ export default {
     {
       interface: 'string',
       type: 'virtual',
-      name: 'options.association',
+      name: 'association',
       title: '相关数据表',
       component: {
         type: 'string',
