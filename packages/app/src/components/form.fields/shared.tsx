@@ -46,7 +46,23 @@ const createEnum = (enums: any) => {
 export const Select: React.FC<SelectProps> = styled((props: SelectProps) => {
   const { dataSource = [], onChange, ...others } = props
   const children = createEnum(dataSource).map(item => {
-    const { label, value, ...others } = item
+    const { label, value, children = [], ...others } = item
+    if (children.length) {
+      return (
+        <AntSelect.OptGroup label={label}>
+          {children.map(({value, label, ...others}: any) => (
+            <AntSelect.Option
+              key={value}
+              {...others}
+              title={label}
+              value={value}
+            >
+              {label}
+            </AntSelect.Option>
+          ))}
+        </AntSelect.OptGroup>
+      );
+    }
     return (
       <AntSelect.Option
         key={value}
