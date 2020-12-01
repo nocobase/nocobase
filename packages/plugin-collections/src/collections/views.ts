@@ -3,8 +3,11 @@ import { TableOptions } from '@nocobase/database';
 export default {
   name: 'views',
   title: '视图配置',
+  sortable: true,
+  model: 'ViewModel',
   fields: [
     {
+      interface: 'sort',
       type: 'integer',
       name: 'sort',
       title: '排序',
@@ -12,56 +15,126 @@ export default {
         type: 'sort',
         className: 'drag-visible',
         width: 60,
+        showInTable: true,
       },
     },
     {
+      interface: 'string',
       type: 'string',
-      name: 'type',
-      title: '类型',
+      name: 'title',
+      title: '视图名称',
       component: {
         type: 'string',
         className: 'drag-visible',
+        showInTable: true,
+        showInDetail: true,
+        showInForm: true,
       },
     },
     {
+      interface: 'string',
       type: 'string',
       name: 'name',
       title: '标识',
+      component: {
+        type: 'string',
+        showInTable: true,
+        showInDetail: true,
+        showInForm: true,
+      },
     },
     {
+      interface: 'radio',
       type: 'string',
-      name: 'title',
-      title: '名称',
+      name: 'type',
+      title: '视图类型',
+      dataSource: [
+        { label: '表格', value: 'table' },
+        { label: '看板', value: 'kanban', disabled: true },
+        { label: '日历', value: 'calendar', disabled: true },
+        { label: '地图', value: 'map', disabled: true },
+      ],
+      component: {
+        type: 'radio',
+        showInTable: true,
+        showInDetail: true,
+        showInForm: true,
+      },
     },
     {
+      interface: 'string',
       type: 'string',
       name: 'template',
       title: '模板',
+      component: {
+        type: 'string',
+        showInTable: true,
+        showInDetail: true,
+        showInForm: true,
+      },
     },
     {
+      interface: 'boolean',
       type: 'boolean',
       name: 'default',
       title: '默认视图',
       defaultValue: false,
+      component: {
+        type: 'checkbox',
+        showInTable: true,
+        showInDetail: true,
+        showInForm: true,
+      },
     },
     {
-      type: 'json',
-      name: 'options',
+      interface: 'boolean',
+      type: 'boolean',
+      name: 'showInDataMenu',
+      title: '作为数据表子菜单',
+      defaultValue: false,
+      component: {
+        type: 'checkbox',
+        showInTable: true,
+        showInDetail: true,
+        showInForm: true,
+      },
     },
     {
+      interface: 'linkTo',
       type: 'belongsTo',
       name: 'collection',
+      title: '所属数据表',
       target: 'collections',
       targetKey: 'name',
+      component: {
+        type: 'drawerSelect',
+      },
     },
     {
-      type: 'belongsToMany',
-      name: 'fields',
+      interface: 'json',
+      type: 'json',
+      name: 'options',
+      title: '配置信息',
+      defaultValue: {},
+      component: {
+        type: 'hidden',
+      },
     },
-    {
-      type: 'belongsToMany',
-      name: 'actions',
-    },
+    // 以下暂不考虑
+    // {
+    //   type: 'belongsToMany',
+    //   name: 'fields',
+    //   component: {
+    //     type: 'drawerSelect',
+    //   },
+    // },
+    // {
+    //   type: 'belongsToMany',
+    //   name: 'actions',
+    //   component: {
+    //     type: 'drawerSelect',
+    //   },
+    // },
   ],
   actions: [
     {

@@ -5,6 +5,7 @@ export default {
   title: '页面配置',
   fields: [
     {
+      interface: 'sort',
       type: 'integer',
       name: 'sort',
       title: '排序',
@@ -12,66 +13,82 @@ export default {
         type: 'sort',
         className: 'drag-visible',
         width: 60,
+        showInTable: true,
       },
     },
     {
+      interface: 'string',
       type: 'string',
       name: 'title',
       title: '名称',
-      showInTable: true,
-      isMainTitle: true,
       component: {
         type: 'string',
         className: 'drag-visible',
+        showInTable: true,
+        showInForm: true,
+        showInDetail: true,
       },
     },
     {
+      interface: 'number',
       type: 'integer',
       name: 'parent_id',
       title: '父级页面',
       component: {
         type: 'number',
+        showInForm: true,
+        showInDetail: true,
       },
     },
     {
+      interface: 'string',
       type: 'string',
       name: 'path',
       title: '路径',
       unique: true,
-      showInTable: true,
       component: {
         type: 'string',
+        showInTable: true,
+        showInForm: true,
+        showInDetail: true,
       },
     },
     {
+      interface: 'string',
       type: 'string',
       name: 'icon',
       title: '图标',
       component: {
         type: 'string',
+        showInTable: true,
+        showInForm: true,
+        showInDetail: true,
       },
     },
     {
+      interface: 'select',
       type: 'string',
       name: 'type',
       title: '类型',
-      showInTable: true,
+      options: [
+        {
+          label: '页面',
+          value: 'page',
+        },
+        {
+          label: '布局',
+          value: 'layout',
+        },
+        {
+          label: '数据集',
+          value: 'collection',
+        },
+      ],
       component: {
         type: 'string',
-        enum: [
-          {
-            label: '页面',
-            value: 'page',
-          },
-          {
-            label: '布局',
-            value: 'layout',
-          },
-          {
-            label: '数据集',
-            value: 'collection',
-          },
-        ],
+        showInTable: true,
+        showInForm: true,
+        showInDetail: true,
         'x-linkages': [
           {
             "type": "value:visible",
@@ -82,85 +99,84 @@ export default {
       },
     },
     {
+      interface: 'select',
       type: 'string',
       name: 'collection',
       title: '属于哪种数据集？',
       component: {
-        type: 'string',
+        type: 'select',
+        showInForm: true,
+        showInDetail: true,
       },
     },
     {
+      interface: 'select',
       type: 'string',
       name: 'template',
       title: '模板',
-      showInTable: true,
+      options: [
+        {
+          label: '顶部菜单布局',
+          value: 'TopMenuLayout',
+        },
+        {
+          label: '左侧菜单布局',
+          value: 'SideMenuLayout',
+        },
+      ],
       component: {
-        type: 'string',
-        enum: [
-          {
-            label: '顶部菜单布局',
-            value: 'LayoutWithTopMenu',
-          },
-          {
-            label: '左侧菜单布局',
-            value: 'LayoutWithSideMenu',
-          },
-          {
-            label: '数据集（全部）',
-            value: 'collections',
-          },
-          {
-            label: '数据集（某种）',
-            value: 'collection',
-          },
-          {
-            label: '登录',
-            value: 'login',
-          },
-          {
-            label: '注册',
-            value: 'register',
-          },
-          {
-            label: '分析页',
-            value: 'analysis',
-          },
-          {
-            label: '工作区',
-            value: 'workplace',
-          },
-        ],
+        type: 'select',
+        showInTable: true,
+        showInForm: true,
+        showInDetail: true,
       },
     },
     {
+      interface: 'boolean',
       type: 'boolean',
       name: 'showInMenu',
       title: '在菜单里显示',
-      // showInTable: true,
       defaultValue: false,
       component: {
-        type: 'boolean',
+        type: 'checkbox',
+        showInTable: true,
+        showInForm: true,
+        showInDetail: true,
       },
     },
     {
+      interface: 'boolean',
       type: 'boolean',
       name: 'inherit',
       title: '继承父级页面内容',
       defaultValue: true,
       component: {
-        type: 'boolean',
+        type: 'checkbox',
+        showInTable: true,
+        showInForm: true,
+        showInDetail: true,
       },
     },
     {
+      interface: 'linkTo',
       type: 'hasMany',
       name: 'children',
+      title: '子页面',
       target: 'pages',
       foreignKey: 'parent_id',
       sourceKey: 'id',
+      component: {
+        type: 'drawerSelect',
+      },
     },
     {
+      interface: 'json',
       type: 'json',
       name: 'options',
+      title: '元数据',
+      component: {
+        type: 'hidden',
+      },
     },
   ],
   actions: [

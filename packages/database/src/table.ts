@@ -16,6 +16,28 @@ import {
 import Database from './database';
 import { Model, ModelCtor } from './model';
 
+const registeredModels = new Map<string, any>();
+
+export function registerModel(key: string, model: any) {
+  registeredModels.set(key, model);
+}
+
+export function registerModels(models) {
+  for (const key in models) {
+    if (models.hasOwnProperty(key)) {
+      registerModel(key, models[key]);
+    }
+  }
+}
+
+// TODO: 判断如果 key 是 model 直接返回
+export function getRegisteredModel(key) {
+  if (typeof key === 'string') {
+    return registeredModels.get(key);
+  }
+  return key;
+}
+
 export interface TableOptions extends Omit<ModelOptions<Model>, 'name'|'modelName'> {
 
   /**
@@ -32,7 +54,7 @@ export interface TableOptions extends Omit<ModelOptions<Model>, 'name'|'modelNam
   /**
    * 自定义 model
    */
-  model?: ModelCtor<Model>;
+  model?: ModelCtor<Model> | string;
 
   /**
    * 字段配置
@@ -95,6 +117,8 @@ export class Table {
 
   protected Model: ModelCtor<Model>;
 
+  protected defaultModel: ModelCtor<Model>;
+
   /**
    * 是否是中间表
    */
@@ -108,6 +132,7 @@ export class Table {
       name,
       fields = [],
       indexes = [],
+      model,
       ...restOptions
     } = options;
     this.options = options;
@@ -118,6 +143,8 @@ export class Table {
       sequelize: database.sequelize,
       ...restOptions,
     };
+    // 初始化的时候获取
+    this.defaultModel = getRegisteredModel(model);
     this.modelAttributes = {};
     // 在 set fields 之前 model init 的原因是因为关系字段可能需要用到 model 的相关配置
     this.addIndexes(indexes, 'modelOnly');
@@ -127,7 +154,7 @@ export class Table {
 
   public modelInit(reinitialize: Reinitialize = false) {
     if (reinitialize || !this.Model) {
-      this.Model = this.options.model || class extends Model {};
+      this.Model = this.defaultModel || class extends Model {};
       this.Model.database = this.database;
       // 关系的建立是在 model.init 之后，在配置中表字段（Column）和关系（Relation）都在 fields，
       // 所以需要单独提炼出 associations 字段，并在 Model.init 之后执行 Model.associate
@@ -250,7 +277,17 @@ export class Table {
       sourceTable: this,
       database: this.database,
     });
+    // 添加字段后 table.options 中的 fields 并不会更新，这导致 table.getOptions() 拿不到最新的字段配置
+    // 所以在同时更新 table.options.fields 数组
+    const existIndex = this.options.fields.findIndex(field => field.name === name);
+    if (existIndex !== -1) {
+      this.options.fields.splice(existIndex, 1, options);
+    } else {
+      this.options.fields.push(options);
+    }
+
     this.fields.set(name, field);
+
     if (field instanceof Relation) {
       // 关系字段先放到 associating 里待处理，等相关 target model 初始化之后，再通过 associate 建立关系
       this.associating.set(name, field);

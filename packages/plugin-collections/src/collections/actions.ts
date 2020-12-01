@@ -3,8 +3,11 @@ import { TableOptions } from '@nocobase/database';
 export default {
   name: 'actions',
   title: '操作配置',
+  draggable: true,
+  model: 'ActionModel',
   fields: [
     {
+      interface: 'sort',
       type: 'integer',
       name: 'sort',
       title: '排序',
@@ -12,36 +15,66 @@ export default {
         type: 'sort',
         className: 'drag-visible',
         width: 60,
+        showInTable: true,
       },
     },
     {
+      interface: 'string',
+      type: 'string',
+      name: 'title',
+      title: '名称',
+      component: {
+        type: 'string',
+        className: 'drag-visible',
+        showInForm: true,
+        showInTable: true,
+        showInDetail: true,
+      },
+    },
+    {
+      interface: 'string',
+      type: 'string',
+      name: 'name',
+      title: '标识',
+      component: {
+        type: 'string',
+        showInForm: true,
+        showInTable: true,
+        showInDetail: true,
+      },
+    },
+    {
+      interface: 'string',
       type: 'string',
       name: 'type',
       title: '类型',
       component: {
         type: 'string',
-        className: 'drag-visible',
+        showInForm: true,
+        showInTable: true,
+        showInDetail: true,
       },
     },
     {
-      type: 'string',
-      name: 'name',
-      title: '标识',
-    },
-    {
-      type: 'string',
-      name: 'title',
-      title: '名称',
-    },
-    {
-      type: 'json',
-      name: 'options',
-    },
-    {
+      interface: 'linkTo',
       type: 'belongsTo',
       name: 'collection',
+      title: '所属数据表',
       target: 'collections',
       targetKey: 'name',
+      component: {
+        type: 'drawerSelect',
+      },
+    },
+    {
+      interface: 'json',
+      type: 'json',
+      name: 'options',
+      title: '配置信息',
+      defaultValue: {},
+      component: {
+        type: 'hidden',
+      },
     },
   ],
   actions: [

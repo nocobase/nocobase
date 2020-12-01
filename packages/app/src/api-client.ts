@@ -1,31 +1,32 @@
 import { request } from 'umi';
 
-interface ResourceProxyConstructor {
-  new <T, H extends object>(target: T, handler: ProxyHandler<H>): H
-}
-
-const ResourceProxy = Proxy as ResourceProxyConstructor;
-
-interface Params {
+interface ActionParams {
   resourceKey?: string | number;
   // resourceName?: string;
   // associatedName?: string;
   associatedKey?: string | number;
   fields?: any;
   filter?: any;
+  values?: any;
+  page?: any;
+  perPage?: any;
   [key: string]: any;
 }
 
-interface Handler {
-  [name: string]: (params?: Params) => Promise<any>;
+interface Resource {
+  get: (params?: ActionParams) => Promise<any>;
+  list: (params?: ActionParams) => Promise<any>;
+  create: (params?: ActionParams) => Promise<any>;
+  update: (params?: ActionParams) => Promise<any>;
+  destroy: (params?: ActionParams) => Promise<any>;
+  [name: string]: (params?: ActionParams) => Promise<any>;
 }
 
-class APIClient {
-  resource(name: string) {
-    return new ResourceProxy<object, Handler>({}, {
+class ApiClient {
+  resource(name: string): Resource {
+    const proxy: any = new Proxy({}, {
       get(target, method, receiver) {
-        return (params: Params = {}) => {
-          console.log(params);
+        return (params: ActionParams = {}) => {
           const { associatedKey, resourceKey, ...restParams } = params;
           let url = `/${name}`;
           let options: any = {};
@@ -49,9 +50,10 @@ class APIClient {
         };
       }
     });
+    return proxy;
   }
 }
 
-const api = new APIClient();
+const api = new ApiClient();
 
 export default api;

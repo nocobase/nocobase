@@ -29,9 +29,9 @@ export function SimpleTable(props: SimpleTableProps) {
   const { rowKey = 'id', fields = [], rowViewName, actions = [], paginated = true, defaultPageSize = 10 } = schema;
   const { sourceKey = 'id' } = activeTab.field||{};
   const drawerRef = useRef<any>();
-  const { data, loading, pagination, mutate } = useRequest((params = {}) => {
+  const name = associatedName ? `${associatedName}.${resourceName}` : resourceName;
+  const { data, loading, pagination, mutate, refresh } = useRequest((params = {}) => {
     const { current, pageSize, ...restParams } = params;
-    const name = associatedName ? `${associatedName}.${resourceName}` : resourceName;
     return api.resource(name).list({
       associatedKey,
       page: paginated ? current : 1,
@@ -75,7 +75,21 @@ export function SimpleTable(props: SimpleTableProps) {
         loading={loading}
         columns={fields2columns(fields)}
         dataSource={data?.list||(data as any)}
-        components={components({data, mutate})}
+        components={components({
+          data, 
+          mutate,
+          rowKey,
+          onMoved: async ({resourceKey, offset}) => {
+            await api.resource(name).sort({
+              associatedKey,
+              resourceKey,
+              field: 'sort',
+              offset,
+            });
+            await refresh();
+            console.log({resourceKey, offset});
+          }
+        })}
         onRow={(record) => ({
           onClick: () => {
             drawerRef.current.setVisible(true);
