@@ -90,6 +90,7 @@ describe('toInclude', () => {
           association: 'bars',
         }
       ],
+      distinct: true,
     });
   });
 
@@ -104,6 +105,7 @@ describe('toInclude', () => {
           attributes: [ 'col1', 'col2' ],
         }
       ],
+      distinct: true,
     });
   });
 
@@ -118,6 +120,7 @@ describe('toInclude', () => {
           attributes: [ 'col1', 'col2' ],
         }
       ],
+      distinct: true,
     });
   });
 
@@ -137,6 +140,7 @@ describe('toInclude', () => {
           ]
         }
       ],
+      distinct: true,
     });
   });
 
@@ -156,6 +160,7 @@ describe('toInclude', () => {
           ]
         }
       ],
+      distinct: true,
     });
   });
 
@@ -175,6 +180,7 @@ describe('toInclude', () => {
           ]
         }
       ],
+      distinct: true,
     });
   });
 
@@ -196,6 +202,7 @@ describe('toInclude', () => {
           ]
         }
       ],
+      distinct: true,
     });
   });
 
@@ -227,7 +234,8 @@ describe('toInclude', () => {
             include: ['col1'],
           },
         }
-      ]
+      ],
+      distinct: true,
     });
   });
 
@@ -256,6 +264,7 @@ describe('toInclude', () => {
           attributes: ['col1'],
         }
       ],
+      distinct: true,
     });
   });
 
@@ -266,7 +275,6 @@ describe('toInclude', () => {
       },
     }).toEqual({
       attributes: {
-        include: [],
         exclude: ['col1'],
       },
     });
@@ -279,18 +287,17 @@ describe('toInclude', () => {
       },
     }).toEqual({
       attributes: {
-        include: [],
         exclude: ['col1'],
       },
       include: [
         {
           association: 'bars',
           attributes: {
-            include: [],
             exclude: ['col1'],
           }
         }
-      ]
+      ],
+      distinct: true,
     });
   });
 
@@ -356,7 +363,8 @@ describe('toInclude', () => {
               col1: 'val1',
             }
           }
-        ]
+        ],
+        distinct: true,
       });
     });
 
@@ -387,7 +395,8 @@ describe('toInclude', () => {
               col1: 'val1',
             }
           }
-        ]
+        ],
+        distinct: true,
       });
     });
     
