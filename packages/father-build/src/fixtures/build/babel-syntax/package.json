@@ -1,5 +1,5 @@
 {
   "dependencies": {
-    "react": "^16.8.4"
+    "react": "16"
   }
 }
