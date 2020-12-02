@@ -22,7 +22,8 @@ jobs:
         image: postgres:${{ matrix.pg_version }}
         # Provide the password for postgres
         env:
-          POSTGRES_PASSWORD: postgres
+          POSTGRES_USER: nocobase
+          POSTGRES_PASSWORD: password
         # Set health checks to wait until postgres has started
         options: >-
           --health-cmd pg_isready
@@ -41,3 +42,6 @@ jobs:
         DB_DIALECT: ${{ matrix.db_dialect }}
         DB_HOST: ${{ matrix.db_dialect }}
         DB_PORT: 5432
+        DB_USER: nocobase
+        DB_PASSWORD: password
+        DB_DATABASE: nocobase
