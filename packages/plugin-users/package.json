@@ -11,13 +11,13 @@
   },
   "devDependencies": {
     "@nocobase/actions": "^0.3.0-alpha.0",
-    "@types/react": "16.14.0",
     "crypto-random-string": "^3.3.0",
     "umi": "^3.2.23"
   },
   "dependencies": {
     "@nocobase/client": "^0.3.0-alpha.0",
     "@nocobase/database": "^0.3.0-alpha.0",
-    "@nocobase/resourcer": "^0.3.0-alpha.0"
+    "@nocobase/resourcer": "^0.3.0-alpha.0",
+    "@types/react": "16.14.0"
   }
 }
