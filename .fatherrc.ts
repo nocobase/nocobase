@@ -8,6 +8,7 @@ const headPkgs = [
   'resourcer',
   'actions',
   'client',
+  'server'
 ];
 const tailPkgs = [];
 const otherPkgs = readdirSync(join(__dirname, 'packages')).filter(
