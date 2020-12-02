@@ -13,7 +13,7 @@ describe('middleware', () => {
   beforeAll(() => {
     app = new Koa();
     resourcer = new Resourcer();
-    resourcer.registerHandlers({
+    resourcer.registerActionHandlers({
       list: async (ctx, next) => {
         ctx.body = [1,2];
         await next();

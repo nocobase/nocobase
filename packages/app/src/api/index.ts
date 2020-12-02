@@ -36,7 +36,7 @@ const api = Api.create({
 });
 
 api.resourcer.use(associated);
-api.resourcer.registerHandlers({...actions.common, ...actions.associate});
+api.resourcer.registerActionHandlers({...actions.common, ...actions.associate});
 
 const data = {
   title: '后台应用',

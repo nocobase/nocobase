@@ -14,7 +14,7 @@ export default async function (options = {}) {
     directory: path.resolve(__dirname, 'collections'),
   });
 
-  resourcer.registerHandlers({
+  resourcer.registerActionHandlers({
     'users:login': login,
     'users:register': register,
     'users:logout': logout,

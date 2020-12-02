@@ -23,7 +23,7 @@ export default {
     app.use(cors());
 
     // 这段代码处理的不完整
-    app.resourcer.registerHandlers(actions.common);
+    app.resourcer.registerActionHandlers(actions.common);
 
     app.use(async (ctx, next) => {
       ctx.db = app.database;

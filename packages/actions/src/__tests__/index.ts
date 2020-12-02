@@ -52,7 +52,7 @@ const tableFiles = glob.sync(`${resolve(__dirname, './tables')}/*.ts`);
 // resourcer 在内存中是单例，需要谨慎使用
 export const resourcer = new Resourcer();
 resourcer.use(associated);
-resourcer.registerHandlers({...actions.associate, ...actions.common});
+resourcer.registerActionHandlers({...actions.associate, ...actions.common});
 resourcer.define({
   name: 'posts',
   actions: actions.common,

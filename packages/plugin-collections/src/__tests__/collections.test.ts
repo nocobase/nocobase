@@ -1,7 +1,7 @@
 import { Agent, getAgent, getApp } from '.';
 import { Application } from '@nocobase/server';
 import * as types from '../interfaces/types';
-
+jest.setTimeout(30000);
 describe('collection hooks', () => {
   let app: Application;
   let agent: Agent;
@@ -13,6 +13,14 @@ describe('collection hooks', () => {
 
   afterEach(() => app.database.close());
 
+  it('import', async () => {
+    const tables = app.database.getTables([]);
+    for (const table of tables) {
+      const Collection = app.database.getModel('collections');
+      await Collection.import(table.getOptions(), { hooks: false });
+    }
+  });
+
   it('create table', async () => {
     const response = await agent.resource('collections').create({
       values: {
@@ -20,7 +28,6 @@ describe('collection hooks', () => {
         title: 'tests',
       },
     });
-    
     const table = app.database.getTable('tests');
     expect(table).toBeDefined();
   });
