@@ -78,10 +78,10 @@ describe('resourcer', () => {
     expect(context.arr).toStrictEqual([11,22]);
   });
 
-  it('registerHandlers()', async () => {
+  it('registerActionHandlers()', async () => {
     const resourcer = new Resourcer();
 
-    resourcer.registerHandlers({
+    resourcer.registerActionHandlers({
       async list(ctx, next) {
         ctx.arr.push(1);
         await next();
@@ -123,10 +123,10 @@ describe('resourcer', () => {
     expect(context.arr).toStrictEqual([11,22]);
   });
 
-  it('registerHandlers()', async () => {
+  it('registerActionHandlers()', async () => {
     const resourcer = new Resourcer();
 
-    resourcer.registerHandlers({
+    resourcer.registerActionHandlers({
       'test:list': async(ctx, next) => {
         ctx.arr.push(1);
         await next();
@@ -170,10 +170,10 @@ describe('resourcer', () => {
     expect(context.arr).toStrictEqual([11,22]);
   });
 
-  it('registerHandlers()', async () => {
+  it('registerActionHandlers()', async () => {
     const resourcer = new Resourcer();
 
-    resourcer.registerHandlers({
+    resourcer.registerActionHandlers({
       'list': async(ctx, next) => {
         ctx.arr.push(11);
         await next();
@@ -181,7 +181,7 @@ describe('resourcer', () => {
       },
     });
 
-    resourcer.registerHandlers({
+    resourcer.registerActionHandlers({
       'get': async(ctx, next) => {
         ctx.arr.push(33);
         await next();
@@ -219,7 +219,7 @@ describe('resourcer', () => {
   it('only', async () => {
     const resourcer = new Resourcer();
 
-    resourcer.registerHandlers({
+    resourcer.registerActionHandlers({
       async list(ctx, next) {
         ctx.arr.push(1);
         await next();
@@ -263,7 +263,7 @@ describe('resourcer', () => {
   it('except', async () => {
     const resourcer = new Resourcer();
 
-    resourcer.registerHandlers({
+    resourcer.registerActionHandlers({
       async list(ctx, next) {
         ctx.arr.push(1);
         await next();

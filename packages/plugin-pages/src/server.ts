@@ -14,8 +14,8 @@ export default async function (options = {}) {
     directory: path.resolve(__dirname, 'collections'),
   });
 
-  resourcer.registerHandler('getCollection', getCollection);
-  resourcer.registerHandler('getView', getView);
-  resourcer.registerHandler('getPageInfo', getPageInfo);
-  resourcer.registerHandler('pages:getRoutes', getRoutes);
+  resourcer.registerActionHandler('getCollection', getCollection);
+  resourcer.registerActionHandler('getView', getView);
+  resourcer.registerActionHandler('getPageInfo', getPageInfo);
+  resourcer.registerActionHandler('pages:getRoutes', getRoutes);
 }

@@ -48,7 +48,7 @@ describe('koa middleware', () => {
 
     const resourcer = new Resourcer();
 
-    resourcer.registerHandlers({
+    resourcer.registerActionHandlers({
       async index(ctx, next) {
         ctx.body = ctx.body || {};
         ctx.body.arr = ctx.body.arr || [];
@@ -188,7 +188,7 @@ describe('koa middleware', () => {
         ctx.body = ctx.action.params;
         await next();
       };
-      resourcer.registerHandlers({
+      resourcer.registerActionHandlers({
         list: handler,
         create: handler,
         update: handler,

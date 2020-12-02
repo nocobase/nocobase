@@ -169,7 +169,7 @@ describe('base model', () => {
     });
   });
 
-  it.only('update virtual attribute', async () => {
+  it('update virtual attribute', async () => {
     await test.update({
       title: 'xxx', // 虚拟字段没 set 转存 options
       content: 'content123', // set 留空，这个 key 什么也不做

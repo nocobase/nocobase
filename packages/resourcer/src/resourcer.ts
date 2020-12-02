@@ -122,6 +122,10 @@ export class Resourcer {
    */
   protected handlers = new Map<ActionName, any>();
 
+  protected actionHandlers = new Map<ActionName, any>();
+
+  protected middlewareHandlers = new Map<string, any>();
+
   protected paramsKey = 'params';
 
   protected middlewares = [];
@@ -174,22 +178,22 @@ export class Resourcer {
    * 
    * @param handlers 
    */
-  registerHandlers(handlers: Handlers) {
+  registerActionHandlers(handlers: Handlers) {
     for (const [name, handler] of Object.entries(handlers)) {
-      this.registerHandler(name, handler);
+      this.registerActionHandler(name, handler);
     }
   }
 
-  registerHandler(name: ActionName, handler: HandlerType) {
-    this.handlers.set(name, handler);
+  registerActionHandler(name: ActionName, handler: HandlerType) {
+    this.actionHandlers.set(name, handler);
   }
 
   getRegisteredHandler(name: ActionName) {
-    return this.handlers.get(name);
+    return this.actionHandlers.get(name);
   }
 
   getRegisteredHandlers() {
-    return this.handlers;
+    return this.actionHandlers;
   }
 
   getResource(name: string): Resource {
@@ -201,7 +205,7 @@ export class Resourcer {
 
   getAction(name: string, action: ActionName): Action {
     // 支持注册局部 action
-    if (this.handlers.has(`${name}:${action}`)) {
+    if (this.actionHandlers.has(`${name}:${action}`)) {
       return this.getResource(name).getAction(`${name}:${action}`);
     }
     return this.getResource(name).getAction(action);
