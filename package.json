@@ -13,6 +13,9 @@
     "test": "npm run lint && jest",
     "release": "npm run build && lerna publish --yes --registry https://npm.pkg.github.com"
   },
+  "resolutions": {
+    "@types/react": "16.14.0"
+  },
   "devDependencies": {
     "@koa/router": "^9.3.1",
     "@types/jest": "^26.0.4",
