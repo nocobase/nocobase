@@ -279,6 +279,9 @@ export class Table {
     });
     // 添加字段后 table.options 中的 fields 并不会更新，这导致 table.getOptions() 拿不到最新的字段配置
     // 所以在同时更新 table.options.fields 数组
+    if (!this.options.fields) {
+      this.options.fields = [];
+    }
     const existIndex = this.options.fields.findIndex(field => field.name === name);
     if (existIndex !== -1) {
       this.options.fields.splice(existIndex, 1, options);
