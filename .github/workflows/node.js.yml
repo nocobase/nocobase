@@ -11,7 +11,7 @@ jobs:
       matrix:
         node_version: ['12']
         db_dialect: ['postgres']
-        pg_version: ['12']
+        pg_version: ['11', '12']
 
     runs-on: ubuntu-latest
     container: node:${{ matrix.node_version }}
