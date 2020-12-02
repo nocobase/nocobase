@@ -8,4 +8,7 @@ module.exports = {
     // '**/__tests__/**/*.[jt]s?(x)',
     '**/?(*.)+(spec|test).[jt]s?(x)'
   ],
+  modulePathIgnorePatterns: [
+    "<rootDir>/packages/father-build/"
+  ],
 };
