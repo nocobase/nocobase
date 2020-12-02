@@ -3,6 +3,9 @@
 	"version": "0.3.0-alpha.0",
 	"main": "lib/index.js",
 	"license": "MIT",
+  "resolutions": {
+    "@types/react": "16.14.0"
+  },
 	"dependencies": {
 		"@ant-design/icons": "^4.2.2",
 		"ahooks": "^2.7.1",
