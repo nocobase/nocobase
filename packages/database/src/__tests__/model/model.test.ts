@@ -337,34 +337,34 @@ describe('model', () => {
         expect(tagged.map(item => item.tag_id)).toEqual([1,2,3,4]);
       });
     });
-  });
 
-  it('through attributes', async () => {
-    const [Post, Tag] = db.getModels(['posts', 'tags']);
-    const post = await Post.create();
-    const tag = await Tag.create();
-    await post.updateAssociations({
-      tags: [{
-        name: 'xxx',
-        posts_tags: {
-          name: 'name134',
-        }
-      }, {
-        id: tag.id,
-        posts_tags: {
-          name: 'name234',
-        }
-      }],
+    it('through attributes', async () => {
+      const [Post, Tag] = db.getModels(['posts', 'tags']);
+      const post = await Post.create();
+      const tag = await Tag.create();
+      await post.updateAssociations({
+        tags: [{
+          name: 'xxx',
+          posts_tags: {
+            name: 'name134',
+          }
+        }, {
+          id: tag.id,
+          posts_tags: {
+            name: 'name234',
+          }
+        }],
+      });
+      const PostTag = db.getModel('posts_tags');
+      const [t1, t2] = await PostTag.findAll({
+        where: {
+          post_id: post.id,
+        },
+        order: ['tag_id'],
+      });
+      expect(t1.name).toBe('name234');
+      expect(t2.name).toBe('name134');
     });
-    const PostTag = db.getModel('posts_tags');
-    const [t1, t2] = await PostTag.findAll({
-      where: {
-        post_id: post.id,
-      },
-      order: ['tag_id'],
-    });
-    expect(t1.name).toBe('name234');
-    expect(t2.name).toBe('name134');
   });
 
   describe('scope', () => {

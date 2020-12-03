@@ -253,44 +253,47 @@ export abstract class Model extends SequelizeModel {
     return data;
   }
 
-  async updateSingleAssociation(key, data, options) {
+  async updateSingleAssociation(key: string, data: any, options: SaveOptions<any> & { context?: any; } = {}) {
+    const { transaction = await this.sequelize.transaction() } = options;
     const table = this.database.getTable(this.constructor.name);
     const association = table.getAssociations().get(key);
     const accessors = association.getAccessors();
     if (typeof data === 'number' || typeof data === 'string' || data instanceof SequelizeModel) {
-      await this[accessors.set](data, options);
-      return;
-    }
-    if (typeof data !== 'object') {
-      return;
-    }
-    const Target = association.getTargetModel();
-    const targetAttribute = association instanceof BelongsTo 
-      ? association.options.targetKey 
-      : association.options.sourceKey;
-    if (data[targetAttribute]) {
-      await this[accessors.set](data[targetAttribute], options);
-      if (Object.keys(data).length > 1) {
-        const target = await Target.findOne({
-          where: {
-            [targetAttribute]: data[targetAttribute],
-          },
-        });
-        await target.update(data, options);
-        // @ts-ignore
-        await target.updateAssociations(data, options);
+      await this[accessors.set](data, { transaction });
+    } else if (typeof data === 'object') {
+      const Target = association.getTargetModel();
+      const targetAttribute = association instanceof BelongsTo 
+        ? association.options.targetKey 
+        : association.options.sourceKey;
+      if (data[targetAttribute]) {
+        await this[accessors.set](data[targetAttribute], { transaction });
+        if (Object.keys(data).length > 1) {
+          const target = await Target.findOne({
+            where: {
+              [targetAttribute]: data[targetAttribute],
+            },
+            transaction
+          });
+          await target.update(data, { transaction });
+          // @ts-ignore
+          await target.updateAssociations(data, { ...options, transaction });
+        }
+      } else {
+        const t = await this[accessors.create](data, { transaction });
+        await t.updateAssociations(data, { ...options, transaction });
       }
-      return;
     }
-    const t = await this[accessors.create](data, options);
-    await t.updateAssociations(data, options);
+    if (!options.transaction) {
+      await transaction.commit();
+    }
   }
 
-  async updateManyAssociation(associationName: string, data: any, options: SaveOptions<any> & { context?: any; }) {
+  async updateManyAssociation(associationName: string, data: any, options: SaveOptions<any> & { context?: any; } = {}) {
     const items = Array.isArray(data) ? data : [data];
     if (!items.length) {
       return;
     }
+    const { transaction = await this.sequelize.transaction() } = options;
     const table = this.database.getTable(this.constructor.name);
     const association = table.getAssociations().get(associationName);
     const accessors = association.getAccessors();
@@ -343,13 +346,13 @@ export abstract class Model extends SequelizeModel {
     /* 仅传关联键处理开始 */
     // 查找已存在的关联数据
     const byPkExistItems = toSetPks.size ? await this[accessors.get]({
-      ...options,
       where: {
         [targetPk]: {
           [Op.in]: Array.from(toSetPks)
         }
       },
-      attributes: [targetPk]
+      attributes: [targetPk],
+      transaction
     }) : [];
     const pkExistItems = new Map();
     byPkExistItems.forEach(item => {
@@ -362,13 +365,13 @@ export abstract class Model extends SequelizeModel {
     }
 
     const byUkExistItems = await this[accessors.get]({
-      ...options,
       where: {
         [targetKey]: {
           [Op.in]: Array.from(toSetUks)
         }
       },
-      attributes: [targetPk, targetKey]
+      attributes: [targetPk, targetKey],
+      transaction
     });
     const ukExistItems = new Map();
     byUkExistItems.forEach(item => {
@@ -386,7 +389,8 @@ export abstract class Model extends SequelizeModel {
           [Op.in]: Array.from(toSetUks)
         }
       },
-      attributes: [targetPk, targetKey]
+      attributes: [targetPk, targetKey],
+      transaction
     }) : [];
     byUkItems.forEach(item => {
       toAddItems.add(item);
@@ -398,19 +402,20 @@ export abstract class Model extends SequelizeModel {
       let target;
       if (typeof item[targetKey] === 'undefined') {
         // TODO(optimize): 不确定 bulkCreate 的结果是否能保证顺序，能保证的话这里可以优化为批量处理
-        target = await Target.create(item, options);
+        target = await Target.create(item, { transaction });
       } else {
         let created: boolean;
         [target, created] = await Target.findOrCreate({
           where: { [targetKey]: item[targetKey] },
           defaults: item,
-          ...options
+          transaction
         });
         if (!created) {
-          await target.update(item, options);
+          await target.update(item, { transaction });
         }
       }
-      await this[accessors.add](target, options);
+      // TODO: 未对 update 的情形详细甄别，有可能有问题，需要进一步解决
+      await this[accessors.add](target, { transaction });
 
       if (association instanceof BelongsToMany) {
         const ThroughModel = association.getThroughModel();
@@ -423,20 +428,25 @@ export abstract class Model extends SequelizeModel {
               [foreignKey]: this.get(sourceKey),
               [otherKey]: target.get(targetKey),
             },
+            transaction
           });
-          await through.update(throughValues);
-          await through.updateAssociations(throughValues);
+          await through.update(throughValues, { transaction });
+          await through.updateAssociations(throughValues, { ...options, transaction });
         }
       } else {
         toAddItems.add(target);
       }
 
-      await target.updateAssociations(item, options);
+      await target.updateAssociations(item, { ...options, transaction });
     }
     /* 值为对象处理结束 */
     
     // 添加所有计算后的关联
-    await this[accessors.add](Array.from(toAddItems), options);
+    await this[accessors.add](Array.from(toAddItems), { transaction });
+
+    if (!options.transaction) {
+      await transaction.commit();
+    }
   }
 
   async updateAssociation(key: string, data: any, options: SaveOptions<any> & { context?: any; }) {
@@ -459,15 +469,21 @@ export abstract class Model extends SequelizeModel {
    * 
    * @param data
    */
-  async updateAssociations(data: any, options?: SaveOptions & { context?: any }) {
-    // const { transaction = await this.sequelize.transaction() } = options;
-    const model = this;
+  async updateAssociations(data: any, options: SaveOptions & { context?: any } = {}) {
+    const { transaction = await this.sequelize.transaction() } = options;
     const table = this.database.getTable(this.constructor.name);
     for (const key of table.getAssociations().keys()) {
       if (!data[key]) {
         continue;
       }
-      await this.updateAssociation(key, data[key], options);
+      await this.updateAssociation(key, data[key], {
+        ...options,
+        transaction
+      });
+    }
+
+    if (!options.transaction) {
+      await transaction.commit();
     }
   }
 }
