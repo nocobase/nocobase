@@ -24,7 +24,7 @@ const config = {
       },
     },
   },
-  logging: false,
+  logging: process.env.DB_LOG_SQL === 'on'
 };
 
 export function getDatabase() {
