@@ -414,10 +414,10 @@ export abstract class Model extends SequelizeModel {
           await target.update(item, { transaction });
         }
       }
-      // TODO: 未对 update 的情形详细甄别，有可能有问题，需要进一步解决
-      await this[accessors.add](target, { transaction });
-
+      
       if (association instanceof BelongsToMany) {
+        // TODO(optimize): 这里暂时未能批量执行
+        await this[accessors.add](target, { transaction });
         const ThroughModel = association.getThroughModel();
         const throughName = association.getThroughName();
         const throughValues = item[throughName];
@@ -440,7 +440,7 @@ export abstract class Model extends SequelizeModel {
       await target.updateAssociations(item, { ...options, transaction });
     }
     /* 值为对象处理结束 */
-    
+
     // 添加所有计算后的关联
     await this[accessors.add](Array.from(toAddItems), { transaction });
 

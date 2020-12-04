@@ -300,6 +300,74 @@ describe('model', () => {
         });
         expect(postCommentIds.map(item => item.id)).toEqual([1,2,3,4]);
       });
+
+      it('update with exist objects', async () => {
+        const [Post, Comment] = db.getModels(['posts', 'comments']);
+        const post = await Post.create();
+        const comments = await Comment.bulkCreate([{}, {}, {}, {}]);
+        await post.updateAssociations({
+          comments
+        });
+        await post.updateAssociations({
+          comments: comments.map(item => ({
+            ...item.get(),
+            content: `content${item.id}`
+          }))
+        });
+        const postComments = await Comment.findAll({
+          where: { post_id: post.id },
+          attributes: ['id', 'content']
+        });
+        expect(postComments.map(({ id, content }) => ({ id, content }))).toEqual([
+          { id: 1, content: 'content1' },
+          { id: 2, content: 'content2' },
+          { id: 3, content: 'content3' },
+          { id: 4, content: 'content4' }
+        ]);
+      });
+
+      it('update another with exist objects', async () => {
+        const [Post, Comment] = db.getModels(['posts', 'comments']);
+        const post = await Post.create();
+        const post2 = await Post.create();
+        const comments = await Comment.bulkCreate([{}, {}, {}, {}]);
+        await post.updateAssociations({
+          comments
+        });
+        const postComments = await Comment.findAll({
+          where: { post_id: post.id }
+        });
+        expect(postComments.map(({ id, post_id }) => ({ id, post_id }))).toEqual([
+          { id: 1, post_id: post.id },
+          { id: 2, post_id: post.id },
+          { id: 3, post_id: post.id },
+          { id: 4, post_id: post.id }
+        ]);
+
+        await post2.updateAssociations({
+          comments: postComments.map(item => ({
+            ...item.get(),
+            content: `content${item.id}`
+          }))
+        });
+        const updatedComments = await Comment.findAll();
+        console.log(updatedComments);
+        const post1CommentsCount = await Comment.count({
+          where: { post_id: post.id }
+        });
+        expect(post1CommentsCount).toBe(0);
+
+        const post2Comments = await Comment.findAll({
+          where: { post_id: post2.id },
+          attributes: ['id', 'content']
+        });
+        expect(post2Comments.map(({ id, content }) => ({ id, content }))).toEqual([
+          { id: 1, content: 'content1' },
+          { id: 2, content: 'content2' },
+          { id: 3, content: 'content3' },
+          { id: 4, content: 'content4' }
+        ]);
+      });
     });
 
     describe('belongsToMany', () => {
@@ -332,9 +400,38 @@ describe('model', () => {
         });
         const tagged = await PostTag.findAll({
           where: { post_id: post.id },
-          attributes: ['tag_id']
+          attributes: ['tag_id', 'post_id']
         });
-        expect(tagged.map(item => item.tag_id)).toEqual([1,2,3,4]);
+        expect(tagged.map(({ post_id, tag_id }) => ({ post_id, tag_id }))).toEqual([
+          { tag_id: 1, post_id: 1 },
+          { tag_id: 2, post_id: 1 },
+          { tag_id: 3, post_id: 1 },
+          { tag_id: 4, post_id: 1 },
+        ]);
+      });
+
+      it('update other with exist rows/primaryKeys', async () => {
+        const [Post, Tag, PostTag] = db.getModels(['posts', 'tags', 'posts_tags']);
+        const post = await Post.create();
+        const post2 = await Post.create();
+        const tags = await Tag.bulkCreate([{}, {}, {}, {}]);
+        await post.updateAssociations({
+          tags: tags.map(item => item.id)
+        });
+        await post2.updateAssociations({
+          tags
+        });
+        const tagged = await PostTag.findAll();
+        expect(tagged.map(({ post_id, tag_id }) => ({ post_id, tag_id }))).toEqual([
+          { tag_id: 1, post_id: 1 },
+          { tag_id: 2, post_id: 1 },
+          { tag_id: 3, post_id: 1 },
+          { tag_id: 4, post_id: 1 },
+          { tag_id: 1, post_id: 2 },
+          { tag_id: 2, post_id: 2 },
+          { tag_id: 3, post_id: 2 },
+          { tag_id: 4, post_id: 2 },
+        ]);
       });
     });
 
