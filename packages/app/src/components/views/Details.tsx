@@ -15,7 +15,7 @@ export function Details(props: any) {
     associatedKey,
     resourceKey,
   } = props;
-  const { data = {}, loading } = useRequest(() => {
+  const { data = {}, loading, refresh } = useRequest(() => {
     const name = associatedName ? `${associatedName}.${resourceName}` : resourceName;
     return api.resource(name).get({
       resourceKey,
@@ -26,7 +26,9 @@ export function Details(props: any) {
   const { actions = [], fields = [] } = props.schema;
   return (
     <Card bordered={false}>
-      <Actions {...props} style={{ marginBottom: 14 }} actions={actions}/>
+      <Actions {...props} onFinish={() => {
+        refresh();
+      }} style={{ marginBottom: 14 }} actions={actions}/>
       {loading ? <Spin/> : (
         <Descriptions bordered column={1}>
           {fields.map((field: any) => {

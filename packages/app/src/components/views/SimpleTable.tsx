@@ -64,9 +64,17 @@ export function SimpleTable(props: SimpleTableProps) {
   console.log('rowViewName', {rowViewName})
   return (
     <Card bordered={false}>
-      <Actions {...props} style={{ marginBottom: 14 }} actions={actions}/>
+      <Actions
+        {...props}
+        style={{ marginBottom: 14 }}
+        actions={actions}
+        onFinish={() => {
+          refresh();
+        }}
+      />
       <ViewFactory
         {...props}
+        mode={'update'}
         viewName={rowViewName}
         reference={drawerRef}
       />
