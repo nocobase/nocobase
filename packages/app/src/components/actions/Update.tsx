@@ -26,6 +26,7 @@ export function Update(props) {
         {...props}
         reference={drawerRef}
         viewName={viewName}
+        mode={'update'}
         {...params}
       />
       <Button type={'primary'} onClick={() => {

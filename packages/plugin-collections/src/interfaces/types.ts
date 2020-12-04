@@ -453,6 +453,7 @@ export const json = {
   options: {
     interface: 'json',
     type: 'json',
+    dottie: true,
     component: {
       type: 'hidden',
     },

@@ -80,7 +80,14 @@ export function Table(props: TableProps) {
   }
   return (
     <Card bordered={false}>
-      <Actions {...props} style={{ marginBottom: 14 }} actions={actions}/>
+      <Actions
+        {...props}
+        style={{ marginBottom: 14 }}
+        actions={actions}
+        onFinish={() => {
+          refresh();
+        }}
+      />
       <AntdTable 
         rowKey={rowKey}
         columns={fields2columns(fields)}

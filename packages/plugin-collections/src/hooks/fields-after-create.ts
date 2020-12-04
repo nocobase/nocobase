@@ -1,6 +1,8 @@
 import FieldModel from '../models/field';
 
-export default async function (model: FieldModel) {
-  // console.log('afterCreate', model.toJSON());
-  await model.migrate();
+export default async function (model: FieldModel, options: any = {}) {
+  const { migrate = true } = options;
+  if (migrate) {
+    await model.migrate();
+  }
 }

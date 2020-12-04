@@ -5,15 +5,15 @@ import ViewFactory from '@/components/views';
 export function Create(props) {
   console.log(props);
   const { title, viewName, collection_name } = props.schema;
-  const { activeTab = {}, item = {} } = props;
+  const { activeTab = {}, item = {}, associatedName, associatedKey } = props;
   const { association  } = activeTab;
 
   const params = {};
 
   if (association) {
     params['resourceName'] = association;
-    params['associatedName'] = activeTab.collection_name;
-    params['associatedKey'] = item.itemId;
+    params['associatedName'] = associatedName;
+    params['associatedKey'] = associatedKey;
   } else {
     params['resourceName'] = collection_name;
     params['resourceKey'] = item.itemId;

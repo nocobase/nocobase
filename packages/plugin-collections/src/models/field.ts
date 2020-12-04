@@ -1,10 +1,30 @@
 import _ from 'lodash';
 import BaseModel from './base';
 import { FieldOptions } from '@nocobase/database';
+import * as types from '../interfaces/types';
+import { Utils } from 'sequelize';
+
+export function generateFieldName(title?: string): string {
+  return `f_${Math.random().toString(36).replace('0.', '').slice(-4).padStart(4, '0')}`;
+}
 
 export class FieldModel extends BaseModel {
-  static generateName(title?: string): string {
-    return `f_${Math.random().toString(36).replace('0.', '').slice(-4).padStart(4, '0')}`;
+
+  generateName() {
+    this.set('name', generateFieldName());
+  }
+
+  generateNameIfNull() {
+    if (!this.get('name')) {
+      this.generateName();
+    }
+  }
+
+  setInterface(value) {
+    const { options } = types[value];
+    // @ts-ignore
+    const values = Utils.merge(options, this.get());
+    this.set(values);
   }
 
   async getOptions(): Promise<FieldOptions> {

@@ -45,12 +45,14 @@ export default function ViewFactory(props: ViewProps) {
     associatedKey,
     resourceName,
     viewName,
+    mode,
     reference,
   } = props;
   const { data = {}, loading } = useRequest(() => {
     const params = {
       resourceKey: viewName,
       associatedName: associatedName,
+      mode,
     };
     return api.resource(resourceName).getView(params);
   }, {
