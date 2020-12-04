@@ -139,7 +139,7 @@ export default {
       name: 'component.tooltip',
       title: '提示信息',
       component: {
-        type: 'string',
+        type: 'textarea',
         showInDetail: true,
         showInForm: true,
       },

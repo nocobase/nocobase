@@ -166,7 +166,7 @@ const data = {
   const tables = database.getTables([]);
 
   for (let table of tables) {
-    await Collection.import(table.getOptions(), { hooks: false });
+    await Collection.import(table.getOptions(), { migrate: false });
   }
 
   const Page = database.getModel('pages');

@@ -1,6 +1,7 @@
 import Database, { ModelCtor } from '@nocobase/database';
 import { getDatabase } from '.';
 import BaseModel from '../models/base';
+import _ from 'lodash';
 
 describe('base model', () => {
   let database: Database;
@@ -20,6 +21,11 @@ describe('base model', () => {
         {
           name: 'title',
           type: 'virtual',
+        },
+        {
+          name: 'xyz',
+          type: 'virtual',
+          defaultValue: 'xyz1',
         },
         {
           name: 'content',
@@ -92,6 +98,7 @@ describe('base model', () => {
         bb: 'bb',
       },
       bcd: 'bbb',
+      xyz: "xyz1",
       arr: [{a: 'a'}, {b: 'b'}],
     });
   });
@@ -188,5 +195,65 @@ describe('base model', () => {
       key1: '111val1111',
     });
     expect(test2.get('content')).toBeUndefined();
+  });
+
+  it('update', async () => {
+    const t = await TestModel.create({
+      name: 'name1',
+      // xyz: 'xyz',
+    });
+    await t.update({
+      abc: 'abc',
+    });
+    const t2 = await TestModel.findOne({
+      where: {
+        name: 'name1',
+      }
+    });
+    expect(t2.get()).toMatchObject({
+      xyz: 'xyz1',
+      abc: 'abc',
+      key2: 'val2',
+      id: 2,
+      name: 'name1',
+    });
+    await t2.update({
+      abc: 'abcdef',
+    });
+    const t3 = await TestModel.findOne({
+      where: {
+        name: 'name1',
+      }
+    });
+    // 查询之后更新再重新查询
+    expect(t3.get()).toMatchObject({
+      xyz: 'xyz1',
+      abc: 'abcdef',
+      key2: 'val2',
+      id: 2,
+      name: 'name1',
+    });
+  });
+
+  it('update', async () => {
+    const t = await TestModel.create({
+      name: 'name1',
+      xyz: 'xyz',
+    });
+    await t.update({
+      abc: 'abc',
+    });
+    const t2 = await TestModel.findOne({
+      where: {
+        name: 'name1',
+      }
+    });
+    expect(t2.get()).toMatchObject({
+      xyz: 'xyz',
+      abc: 'abc',
+      key2: 'val2',
+      id: 2,
+      name: 'name1',
+    });
   });
 });
