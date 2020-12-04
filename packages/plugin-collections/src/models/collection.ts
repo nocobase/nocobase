@@ -1,9 +1,35 @@
 import _ from 'lodash';
 import BaseModel from './base';
 import { TableOptions } from '@nocobase/database';
-import { SaveOptions, Utils } from 'sequelize';
+import { SaveOptions } from 'sequelize';
+
+/**
+ * 生成随机数据库表名
+ * 
+ * 策略：暂时使用  3+2
+ *   1. 自增 id
+ *   2. 随机字母
+ *   3. 时间戳
+ *   4. 转拼音
+ *   5. 常见词翻译
+ * 
+ * @param title 显示的名称
+ */
+export function generateCollectionName(title?: string): string {
+  return `t_${Date.now().toString(36)}_${Math.random().toString(36).replace('0.', '').slice(-4).padStart(4, '0')}`;
+}
 
 export class CollectionModel extends BaseModel {
+
+  generateName() {
+    this.set('name', generateCollectionName());
+  }
+
+  generateNameIfNull() {
+    if (!this.get('name')) {
+      this.generateName();
+    }
+  }
 
   /**
    * 通过 name 获取 collection
@@ -12,22 +38,6 @@ export class CollectionModel extends BaseModel {
    */
   static async findByName(name: string) {
     return this.findOne({ where: { name } });
-  }
-
-  /**
-   * 生成随机数据库表名
-   * 
-   * 策略：暂时使用  3+2
-   *   1. 自增 id
-   *   2. 随机字母
-   *   3. 时间戳
-   *   4. 转拼音
-   *   5. 常见词翻译
-   * 
-   * @param title 显示的名称
-   */
-  static generateName(title?: string): string {
-    return `t_${Date.now().toString(36)}_${Math.random().toString(36).replace('0.', '').slice(-4).padStart(4, '0')}`;
   }
 
   /**
@@ -80,12 +90,8 @@ export class CollectionModel extends BaseModel {
         ...item,
         sort,
       }));
-      for (const item of items[key]) {
-        await collection[`create${_.upperFirst(Utils.singularize(key))}`](item);
-      }
     }
-    // updateAssociations 有 BUG
-    // await collection.updateAssociations(items, options);
+    await collection.updateAssociations(items, options);
     return collection;
   }
 }
