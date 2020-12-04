@@ -253,6 +253,230 @@ export abstract class Model extends SequelizeModel {
     return data;
   }
 
+  async updateSingleAssociation(key: string, data: any, options: SaveOptions<any> & { context?: any; } = {}) {
+    const {
+      fields,
+      transaction = await this.sequelize.transaction(),
+      ...opts
+    } = options;
+    Object.assign(opts, { transaction });
+
+    const table = this.database.getTable(this.constructor.name);
+    const association = table.getAssociations().get(key);
+    const accessors = association.getAccessors();
+
+    if (typeof data === 'number' || typeof data === 'string' || data instanceof SequelizeModel) {
+      await this[accessors.set](data, opts);
+    } else if (typeof data === 'object') {
+      const Target = association.getTargetModel();
+      const targetAttribute = association instanceof BelongsTo 
+        ? association.options.targetKey 
+        : association.options.sourceKey;
+      if (data[targetAttribute]) {
+        await this[accessors.set](data[targetAttribute], opts);
+        if (Object.keys(data).length > 1) {
+          const target = await Target.findOne({
+            where: {
+              [targetAttribute]: data[targetAttribute],
+            },
+            transaction
+          });
+          await target.update(data, opts);
+          // @ts-ignore
+          await target.updateAssociations(data, opts);
+        }
+      } else {
+        const t = await this[accessors.create](data, opts);
+        await t.updateAssociations(data, opts);
+      }
+    }
+    if (!options.transaction) {
+      await transaction.commit();
+    }
+  }
+
+  async updateMultipleAssociation(associationName: string, data: any, options: SaveOptions<any> & { context?: any; } = {}) {
+    const items = Array.isArray(data) ? data : [data];
+    if (!items.length) {
+      return;
+    }
+
+    const {
+      fields,
+      transaction = await this.sequelize.transaction(),
+      ...opts
+    } = options;
+    Object.assign(opts, { transaction });
+
+    const table = this.database.getTable(this.constructor.name);
+    const association = table.getAssociations().get(associationName);
+    const accessors = association.getAccessors();
+    const Target = association.getTargetModel();
+    // 当前表关联 target 表的外键（大部分情况与 target 表主键相同，但可以设置为不同的，要考虑）
+    const { targetKey = Target.primaryKeyAttribute } = association.options;
+    // target 表的主键
+    const targetPk = Target.primaryKeyAttribute;
+    const targetKeyIsPk = targetKey === targetPk;
+    // 准备设置的关联主键
+    const toSetPks = new Set();
+    const toSetUks = new Set();
+    // 筛选后准备添加的关联主键
+    const toAddItems = new Set();
+    // 准备添加的关联对象
+    const toUpsertObjects = [];
+
+    // 遍历所有值成员准备数据
+    items.forEach(item => {
+      if (item instanceof SequelizeModel) {
+        if (targetKeyIsPk) {
+          toSetPks.add(item.getDataValue(targetPk));
+        } else {
+          toSetUks.add(item.getDataValue(targetKey));
+        }
+        return;
+      }
+      if (typeof item === 'number' || typeof item === 'string') {
+        let targetKeyType = getDataTypeKey(Target.rawAttributes[targetKey].type).toLocaleLowerCase();
+        if (targetKeyType === 'integer') {
+          targetKeyType = 'number';
+        }
+        // 如果传值类型与之前在 Model 上定义的 targetKey 不同，则报错。
+        // 不应兼容定义的 targetKey 不是 primaryKey 却传了 primaryKey 的值的情况。
+        if (typeof item !== targetKeyType) {
+          throw new Error(`target key type [${typeof item}] does not match to [${targetKeyType}]`);
+        }
+        if (targetKeyIsPk) {
+          toSetPks.add(item);
+        } else {
+          toSetUks.add(item);
+        }
+        return;
+      }
+      if (typeof item === 'object') {
+        toUpsertObjects.push(item);
+      }
+    });
+
+    /* 仅传关联键处理开始 */
+    // 查找已存在的关联数据
+    const byPkExistItems = toSetPks.size ? await this[accessors.get]({
+      ...opts,
+      where: {
+        [targetPk]: {
+          [Op.in]: Array.from(toSetPks)
+        }
+      },
+      attributes: [targetPk]
+    }) : [];
+    const pkExistItems = new Map();
+    byPkExistItems.forEach(item => {
+      pkExistItems.set(item[targetPk], item);
+    });
+    for (const key of toSetPks) {
+      if (!pkExistItems.has(key)) {
+        toAddItems.add(key);
+      }
+    }
+
+    const byUkExistItems = await this[accessors.get]({
+      ...opts,
+      where: {
+        [targetKey]: {
+          [Op.in]: Array.from(toSetUks)
+        }
+      },
+      attributes: [targetPk, targetKey],
+      transaction
+    });
+    const ukExistItems = new Map();
+    byUkExistItems.forEach(item => {
+      ukExistItems.set(item[targetKey], item);
+    });
+    for (const key of toSetUks) {
+      if (ukExistItems.has(key)) {
+        toSetUks.delete(key);
+      }
+    }
+    const byUkItems = toSetUks.size ? await Target.findAll({
+      ...opts,
+      // @ts-ignore
+      where: {
+        [targetKey]: {
+          [Op.in]: Array.from(toSetUks)
+        }
+      },
+      attributes: [targetPk, targetKey]
+    }) : [];
+    byUkItems.forEach(item => {
+      toAddItems.add(item);
+    });
+    /* 仅传关联键处理结束 */
+
+    /* 值为对象处理开始 */
+    for (const item of toUpsertObjects) {
+      let target;
+      if (typeof item[targetKey] === 'undefined') {
+        // TODO(optimize): 不确定 bulkCreate 的结果是否能保证顺序，能保证的话这里可以优化为批量处理
+        target = await Target.create(item, opts);
+      } else {
+        let created: boolean;
+        [target, created] = await Target.findOrCreate({
+          where: { [targetKey]: item[targetKey] },
+          defaults: item,
+          transaction
+        });
+        if (!created) {
+          await target.update(item, opts);
+        }
+      }
+      
+      if (association instanceof BelongsToMany) {
+        // TODO(optimize): 这里暂时未能批量执行
+        await this[accessors.add](target, opts);
+        const ThroughModel = association.getThroughModel();
+        const throughName = association.getThroughName();
+        const throughValues = item[throughName];
+        if (typeof throughValues === 'object') {
+          const { foreignKey, sourceKey, otherKey } = association.options;
+          const through = await ThroughModel.findOne({
+            where: {
+              [foreignKey]: this.get(sourceKey),
+              [otherKey]: target.get(targetKey),
+            },
+            transaction
+          });
+          await through.update(throughValues, opts);
+          await through.updateAssociations(throughValues, opts);
+        }
+      } else {
+        toAddItems.add(target);
+      }
+
+      await target.updateAssociations(item, opts);
+    }
+    /* 值为对象处理结束 */
+
+    // 添加所有计算后的关联
+    await this[accessors.add](Array.from(toAddItems), opts);
+
+    if (!options.transaction) {
+      await transaction.commit();
+    }
+  }
+
+  async updateAssociation(key: string, data: any, options: SaveOptions<any> & { context?: any; }) {
+    const table = this.database.getTable(this.constructor.name);
+    const association = table.getAssociations().get(key);
+    switch (true) {
+      case association instanceof BelongsTo:
+      case association instanceof HasOne:
+        return this.updateSingleAssociation(key, data, options);
+      case association instanceof HasMany:
+      case association instanceof BelongsToMany:
+        return this.updateMultipleAssociation(key, data, options);
+    }
+  }
+
   /**
    * 关联数据的更新
    * 
@@ -260,166 +484,21 @@ export abstract class Model extends SequelizeModel {
    * 
    * @param data
    */
-  async updateAssociations(data: any, options?: SaveOptions & { context?: any }) {
-    const model = this;
-    const name = this.constructor.name;
-    const table = this.database.getTable(name);
-    for (const [key, association] of table.getAssociations()) {
+  async updateAssociations(data: any, options: SaveOptions & { context?: any } = {}) {
+    const { transaction = await this.sequelize.transaction() } = options;
+    const table = this.database.getTable(this.constructor.name);
+    for (const key of table.getAssociations().keys()) {
       if (!data[key]) {
         continue;
       }
-      let item = data[key];
-      const accessors = association.getAccessors();
-      if (association instanceof BelongsTo || association instanceof HasOne) {
-        if (typeof item === 'number' || typeof item === 'string') {
-          await model[accessors.set](item, options);
-          continue;
-        }
-        if (item instanceof SequelizeModel) {
-          await model[accessors.set](item, options);
-          continue;
-        }
-        if (typeof item !== 'object') {
-          continue;
-        }
-        const Target = association.getTargetModel();
-        const targetAttribute = association instanceof BelongsTo 
-          ? association.options.targetKey 
-          : association.options.sourceKey;
-        if (item[targetAttribute]) {
-          await model[accessors.set](item[targetAttribute], options);
-          if (Object.keys(item).length > 1) {
-            const target = await Target.findOne({
-              where: {
-                [targetAttribute]: item[targetAttribute],
-              },
-            });
-            await target.update(item, options);
-            // @ts-ignore
-            await target.updateAssociations(item, options);
-          }
-          continue;
-        }
-        const t = await model[accessors.create](item, options);
-        await t.updateAssociations(item, options);
-      }
-      if (association instanceof HasMany || association instanceof BelongsToMany) {
-        if (!Array.isArray(item)) {
-          item = [item];
-        }
-        if (item.length === 0) {
-          continue;
-        }
-        await model[accessors.set](null, options);
-        const Target = association.getTargetModel();
-        await Promise.all(item.map(async value => {
-          let target: SequelizeModel;
-          let targetKey: string;
-          // 支持 number 和 string 类型的字段作为关联字段
-          if (typeof value === 'number' || typeof value === 'string') {
-            targetKey = (association instanceof BelongsToMany ? association.options.targetKey : Target.primaryKeyAttribute) as string;
-            let targetKeyType = getDataTypeKey(Target.rawAttributes[targetKey].type).toLocaleLowerCase();
-            if (targetKeyType === 'integer') {
-              targetKeyType = 'number';
-            }
-            let primaryKeyType = getDataTypeKey(Target.rawAttributes[Target.primaryKeyAttribute].type).toLocaleLowerCase();
-            if (primaryKeyType === 'integer') {
-              primaryKeyType = 'number';
-            }
-            if (typeof value === targetKeyType) {
-              target = await Target.findOne({
-                where: {
-                  [targetKey] : value,
-                },
-              });
-            }
-            if (Target.primaryKeyAttribute !== targetKey && !target && typeof value === primaryKeyType) {
-              target = await Target.findOne({
-                where: {
-                  [Target.primaryKeyAttribute] : value,
-                },
-              });
-            }
-            if (!target) {
-              console.log(targetKey);
-              throw new Error(`target [${value}] does not exist`);
-            }
-            return await model[accessors.add](target, options);
-          }
-          if (value instanceof SequelizeModel) {
-            if (association instanceof HasMany) {
-              return await model[accessors.add](value.getDataValue(Target.primaryKeyAttribute), options);
-            }
-            return await model[accessors.add](value, options);
-          }
-          if (typeof value !== 'object') {
-            return;
-          }
-          targetKey = association.options.targetKey as string;
-          // 如果有主键，直接查询主键
-          if (value[Target.primaryKeyAttribute]) {
-            target = await Target.findOne({
-              where: {
-                [Target.primaryKeyAttribute]: value[Target.primaryKeyAttribute],
-              },
-            });
-          }
-          // 如果主键和关系字段配置的不一样
-          else if (Target.primaryKeyAttribute !== targetKey && value[targetKey]) {
-            target = await Target.findOne({
-              where: {
-                [targetKey]: value[targetKey],
-              },
-            });
-          }
-          if (target) {
-            await model[accessors.add](target, options);
-            if (Object.keys(value).length > 1) {
-              await target.update(value, options);
-              // @ts-ignore
-              await target.updateAssociations(value, options);
-            }
-            if (association instanceof BelongsToMany) {
-              const ThroughModel = association.getThroughModel();
-              const throughName = association.getThroughName();
-              if (typeof value[throughName] === 'object') {
-                const { foreignKey, sourceKey, otherKey, targetKey } = association.options;
-                const through = await ThroughModel.findOne({
-                  where: {
-                    [foreignKey]: this.get(sourceKey),
-                    [otherKey]: target.get(targetKey),
-                  },
-                });
-                const throughValues = value[throughName];
-                await through.update(throughValues);
-                await through.updateAssociations(throughValues);
-              }
-            }
-            return;
-          }
-          const t = await model[accessors.create](value, options);
-          // console.log(t);
-          await model[accessors.add](t, options);
-          await t.updateAssociations(value, options);
-          if (association instanceof BelongsToMany) {
-            const ThroughModel = association.getThroughModel();
-            const throughName = association.getThroughName();
-            if (typeof value[throughName] === 'object') {
-              const { foreignKey, sourceKey, otherKey, targetKey } = association.options;
-              const through = await ThroughModel.findOne({
-                where: {
-                  [foreignKey]: this.get(sourceKey),
-                  [otherKey]: t.get(targetKey),
-                },
-              });
-              const throughValues = value[throughName];
-              await through.update(throughValues);
-              await through.updateAssociations(throughValues);
-            }
-          }
-          return;
-        }));
-      }
+      await this.updateAssociation(key, data[key], {
+        ...options,
+        transaction
+      });
+    }
+
+    if (!options.transaction) {
+      await transaction.commit();
     }
   }
 }
