@@ -238,7 +238,7 @@ export async function update(ctx: Context, next: Next) {
     if (!(associated instanceof AssociatedModel)) {
       throw new Error(`${associatedName} associated model invalid`);
     }
-    const {get: getAccessor, create: createAccessor, add: addAccessor} = resourceField.getAccessors();
+    const { get: getAccessor } = resourceField.getAccessors();
     const TargetModel = ctx.db.getModel(resourceField.getTarget());
     const onlyFields = getOnlyFields(fields, TargetModel);
     if (resourceField instanceof HasOne || resourceField instanceof BelongsTo) {
@@ -246,12 +246,9 @@ export async function update(ctx: Context, next: Next) {
       if (model) {
         // @ts-ignore
         await model.update(values, { fields: onlyFields, context: ctx });
-      } else if (!model && resourceField instanceof HasOne) {
-        // TODO(question): update 在没有找到对象的情况下需要新增？
-        model = await associated[createAccessor](values, { context: ctx });
+        await model.updateAssociations(values, { context: ctx });
+        ctx.body = model;
       }
-      await model.updateAssociations(values, { context: ctx });
-      ctx.body = model;
     } else if (resourceField instanceof HasMany || resourceField instanceof BelongsToMany) {
       const [model]: Model[] = await associated[getAccessor]({
         where: {

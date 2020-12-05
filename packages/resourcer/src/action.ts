@@ -237,7 +237,6 @@ export class Action {
   }
 
   async mergeParams(params: ActionParams) {
-    // TODO(feature): scope 参数
     const {
       filter,
       fields,
@@ -271,7 +270,6 @@ export class Action {
     };
     if (!_.isEmpty(this.options.defaultValues) || !_.isEmpty(values)) {
       data.values = _.merge(_.cloneDeep(this.options.defaultValues), values);
-      console.log(this.options.defaultValues, values, data.values);
     }
     // TODO: to be unified by style funciton
     if (per_page || paramPerPage) {
