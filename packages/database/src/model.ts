@@ -236,6 +236,7 @@ export abstract class Model extends SequelizeModel {
   }
 
   static parseApiJson(options: ApiJsonOptions) {
+    // TODO(feature): scope 参数
     const { fields, filter, sort, context, page, perPage } = options;
     const data = toInclude({fields, filter, sort}, {
       model: this,

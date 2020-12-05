@@ -43,6 +43,35 @@ describe('update', () => {
       // console.log(updated.body);
     });
 
+    // TODO(question): json 字段的覆盖/合并策略
+    it.skip('update with fields overwrite default values', async () => {
+      const Post = db.getModel('posts');
+      const post = await Post.create();
+      const response = await agent
+        .put(`/posts:update1/${post.id}`).send({
+          meta: { a: 1 },
+        });
+      expect(response.body.meta).toEqual({ a: 1 });
+
+      const result = await agent
+        .get(`/posts/${post.id}`);
+
+      expect(result.body.meta).toEqual({ a: 1 });
+    });
+
+    // TODO(bug): action 的默认值处理时机不对
+    it.skip('update with different fields to default values', async () => {
+      const Post = db.getModel('posts');
+      const post = await Post.create({
+        meta: { location: 'Beijing' }
+      });
+      const response = await agent
+        .put(`/posts:update1/${post.id}`).send({
+          meta: { a: 1 },
+        });
+      expect(response.body.meta).toEqual({ location: 'Beijing', a: 1 });
+    });
+
     it('update with options.fields.expect in action', async () => {
       const Post = db.getModel('posts');
       const post = await Post.create();
@@ -51,6 +80,17 @@ describe('update', () => {
           title: 'title11112222',
         });
       expect(response.body.title).toBe(null);
+      expect(response.body.meta).toEqual({
+        location: 'Kunming'
+      });
+
+      const result = await agent
+        .get(`/posts/${post.id}`);
+      
+      expect(result.body.title).toBe(null);
+      expect(result.body.meta).toEqual({
+        location: 'Kunming'
+      });
     });
 
     it('update with options.fields.only in action', async () => {
