@@ -27,10 +27,14 @@ export const DrawerForm = forwardRef((props: any, ref) => {
     resourceName,
     associatedName,
     associatedKey,
+    onFinish,
   } = props;
+  console.log(associatedKey);
+  const [resourceKey, setResourceKey] = useState(props.resourceKey);
   const [visible, setVisible] = useState(false);
+  const name = associatedName ? `${associatedName}.${resourceName}` : resourceName;
   const { data, run, loading } = useRequest((resourceKey) => {
-    const name = associatedName ? `${associatedName}.${resourceName}` : resourceName;
+    setResourceKey(resourceKey);
     return api.resource(name).get({
       resourceKey,
       associatedKey,
@@ -44,7 +48,7 @@ export const DrawerForm = forwardRef((props: any, ref) => {
   }));
   const actions = createAsyncFormActions();
   const { title, fields: properties ={} } = props.schema||{};
-  console.log({properties});
+  console.log({onFinish});
   return (
     <Drawer
       {...props}
@@ -57,8 +61,22 @@ export const DrawerForm = forwardRef((props: any, ref) => {
       title={title}
       footer={[
         <Button type={'primary'} onClick={async () => {
-          const values = await actions.submit();
+          const { values = {} } = await actions.submit();
           console.log(values);
+          if (resourceKey) {
+            await api.resource(name).update({
+              resourceKey,
+              associatedKey,
+              ...values,
+            });
+          } else {
+            await api.resource(name).create({
+              associatedKey,
+              ...values,
+            });
+          }
+          setVisible(false);
+          onFinish && onFinish(values);
         }}>提交</Button>
       ]}
     >

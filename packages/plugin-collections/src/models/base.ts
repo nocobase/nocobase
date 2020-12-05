@@ -1,7 +1,9 @@
 import _ from 'lodash';
 import { getDataTypeKey, Model } from '@nocobase/database';
+import { Utils } from 'sequelize';
 
 export class BaseModel extends Model {
+
   get additionalAttribute() {
     const tableOptions = this.database.getTable(this.constructor.name).getOptions();
     return _.get(tableOptions, 'additionalAttribute') || 'options';
@@ -57,19 +59,22 @@ export class BaseModel extends Model {
     return _.get(options, key);
   }
 
-  set(key?: any, value?: any, options?: any) {
+  set(key?: any, value?: any, options: any = {}) {
     if (typeof key === 'string') {
       // 不处理关系数据
-    // @ts-ignore
+      // @ts-ignore
       if (_.get(this.constructor.associations, key)) {
         return this;
       }
       // 如果是 object 数据，merge 处理
       if (_.isPlainObject(value)) {
-        value = _.merge(this.get(key)||{}, value);
+        // @ts-ignore
+        value = Utils.merge(this.get(key)||{}, value);
       }
       const [column, ...path] = key.split('.');
-      this.changed(column, true);
+      if (!options.raw) {
+        this.changed(column, true);
+      }
       if (this.hasSetAttribute(column)) {
         if (!path.length) {
           return super.set(key, value, options);
@@ -81,7 +86,9 @@ export class BaseModel extends Model {
       // 如果未设置 attribute，存到 additionalAttribute 里
       const opts = this.get(this.additionalAttribute, options) || {};
       _.set(opts, key, value);
-      this.changed(this.additionalAttribute, true);
+      if (!options.raw) {
+        this.changed(this.additionalAttribute, true);
+      }
       return super.set(this.additionalAttribute, opts, options);
     }
     return super.set(key, value, options);
@@ -94,7 +101,8 @@ export class BaseModel extends Model {
       return this;
     }
     if (_.isPlainObject(value)) {
-      value = _.merge(this.get(key)||{}, value);
+      // @ts-ignore
+      value = Utils.merge(this.get(key)||{}, value);
     }
     const [column, ...path] = key.split('.');
     this.changed(column, true);

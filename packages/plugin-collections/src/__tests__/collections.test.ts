@@ -17,7 +17,7 @@ describe('collection hooks', () => {
     const tables = app.database.getTables([]);
     for (const table of tables) {
       const Collection = app.database.getModel('collections');
-      await Collection.import(table.getOptions(), { hooks: false });
+      await Collection.import(table.getOptions(), { migrate: false });
     }
   });
 
