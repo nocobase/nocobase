@@ -8,6 +8,6 @@
     "@nocobase/database": "^0.3.0-alpha.0",
     "@nocobase/resourcer": "^0.3.0-alpha.0",
     "@nocobase/client": "^0.3.0-alpha.0",
-    "react": "^16.12.0"
+    "react": "16.14.0"
   }
 }
