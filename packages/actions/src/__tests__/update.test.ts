@@ -9,14 +9,67 @@ describe('update', () => {
   
   afterAll(() => db.close());
 
-  it('common1', async () => {
-    const Post = db.getModel('posts');
-    const post = await Post.create();
-    const response = await agent
-      .put(`/posts/${post.id}`).send({
-        title: 'title11112222'
-      });
-    expect(response.body.title).toBe('title11112222');
+  describe('common', () => {
+    it('basic', async () => {
+      const Post = db.getModel('posts');
+      const post = await Post.create();
+      const response = await agent
+        .put(`/posts/${post.id}`).send({
+          title: 'title11112222'
+        });
+      expect(response.body.title).toBe('title11112222');
+    });
+
+    it('update json field by replacing', async () => {
+      const Post = db.getModel('posts');
+      const post = await Post.create({ meta: { a: 1, b: 'c', c: { d: false } } });
+      const updated = await agent
+        .put(`/posts/${post.id}`).send({
+          meta: {}
+        });
+      expect(updated.body.meta).toEqual({});
+    });
+
+    it.skip('update json field by path based update', async () => {
+      const Post = db.getModel('posts');
+      const post = await Post.create({ meta: { a: 1, b: 'c', c: { d: false } } });
+      const updated = await agent
+        .put(`/posts/${post.id}?options[json]=merge`).send({
+          meta: {
+            b: 'b',
+            c: { d: true }
+          }
+        });
+      // console.log(updated.body);
+    });
+
+    it('update with options.fields.expect in action', async () => {
+      const Post = db.getModel('posts');
+      const post = await Post.create();
+      const response = await agent
+        .put(`/posts:update1/${post.id}`).send({
+          title: 'title11112222',
+        });
+      expect(response.body.title).toBe(null);
+    });
+
+    it('update with options.fields.only in action', async () => {
+      const Post = db.getModel('posts');
+      const post = await Post.create();
+      const response = await agent
+        .put(`/posts:update2/${post.id}`).send({
+          title: 'title11112222',
+          meta: { a: 1 }
+        });
+      expect(response.body.title).toBe('title11112222');
+      expect(response.body.meta).toBe(null);
+
+      const result = await agent
+        .get(`/posts/${post.id}`);
+      
+      expect(result.body.title).toBe('title11112222');
+      expect(result.body.meta).toBe(null);
+    });
   });
 
   it('hasOne1', async () => {

@@ -1,8 +1,24 @@
 import { Context, Next } from '.';
-import { Relation, Model, Field, HasOne, HasMany, BelongsTo, BelongsToMany } from '@nocobase/database';
+import { Relation, ModelCtor, Model, HasOne, HasMany, BelongsTo, BelongsToMany } from '@nocobase/database';
 import { DEFAULT_PAGE, DEFAULT_PER_PAGE } from '@nocobase/resourcer';
 import { Utils, Op } from 'sequelize';
 import _ from 'lodash';
+
+function getOnlyFields(fields: any, ResourceModel: ModelCtor<Model>): any {
+  const { attributes } = ResourceModel.parseApiJson({ fields });
+  if (!attributes) {
+    return;
+  }
+
+  const {
+    include = Array.isArray(attributes) ? attributes : Object.keys(ResourceModel.rawAttributes),
+    exclude = []
+  } = attributes;
+  const excludeSet = new Set(exclude);
+  return excludeSet.size
+    ? include.filter(item => !excludeSet.has(item))
+    : include;
+}
 
 /**
  * 查询数据列表
@@ -103,24 +119,35 @@ export async function create(ctx: Context, next: Next) {
     associated,
     resourceField,
     associatedName,
+    resourceName,
     values,
-  } = ctx.action.params as { associated: Model, associatedName: string, resourceField: Relation, values: any };
+    fields
+  } = ctx.action.params;
+  const ResourceModel = ctx.db.getModel(resourceName);
+  const onlyFields = getOnlyFields(fields, ResourceModel);
   if (associated && resourceField) {
     const AssociatedModel = ctx.db.getModel(associatedName);
     if (!(associated instanceof AssociatedModel)) {
       throw new Error(`${associatedName} associated model invalid`);
     }
-    const create = resourceField.getAccessors().create;
-    const model: Model = await associated[create](values, { context: ctx });
+    const { create } = resourceField.getAccessors();
+    const model: Model = await associated[create](values, {
+      fields: onlyFields,
+      // @ts-ignore
+      context: ctx
+    });
     await model.updateAssociations(values, { context: ctx });
     ctx.body = model;
   } else {
-    const { resourceName } = ctx.action.params;
-    const Model = ctx.db.getModel(resourceName);
+    const model = await ResourceModel.create(values, {
+      fields: onlyFields,
+      // @ts-ignore
+      context: ctx
+    });
     // @ts-ignore
-    const model = await Model.create(values, { context: ctx });
-    // @ts-ignore
-    await model.updateAssociations(values, { context: ctx });
+    await model.updateAssociations(values, {
+      context: ctx
+    });
     ctx.body = model;
   }
   await next();
@@ -197,38 +224,36 @@ export async function get(ctx: Context, next: Next) {
 export async function update(ctx: Context, next: Next) {
   const {
     associated,
-    resourceField,
     associatedName,
-  } = ctx.action.params as {
-    associated: Model, 
-    associatedName: string, 
-    resourceField: Relation,
-    values: any,
-  };
+    resourceField,
+    resourceName,
+    resourceKey,
+    // TODO(question): 这个属性从哪设置的？
+    resourceKeyAttribute,
+    fields,
+    values
+  } = ctx.action.params;
   if (associated && resourceField) {
     const AssociatedModel = ctx.db.getModel(associatedName);
     if (!(associated instanceof AssociatedModel)) {
       throw new Error(`${associatedName} associated model invalid`);
     }
     const {get: getAccessor, create: createAccessor, add: addAccessor} = resourceField.getAccessors();
-    const { resourceKey, resourceKeyAttribute, fields = [], values } = ctx.action.params;
     const TargetModel = ctx.db.getModel(resourceField.getTarget());
-    const options = TargetModel.parseApiJson({
-      fields,
-    });
+    const onlyFields = getOnlyFields(fields, TargetModel);
     if (resourceField instanceof HasOne || resourceField instanceof BelongsTo) {
-      let model: Model = await associated[getAccessor]({ ...options, context: ctx });
+      let model: Model = await associated[getAccessor]({ context: ctx });
       if (model) {
         // @ts-ignore
-        await model.update(values, { context: ctx });
+        await model.update(values, { fields: onlyFields, context: ctx });
       } else if (!model && resourceField instanceof HasOne) {
+        // TODO(question): update 在没有找到对象的情况下需要新增？
         model = await associated[createAccessor](values, { context: ctx });
       }
       await model.updateAssociations(values, { context: ctx });
       ctx.body = model;
     } else if (resourceField instanceof HasMany || resourceField instanceof BelongsToMany) {
       const [model]: Model[] = await associated[getAccessor]({
-        ...options,
         where: {
           [resourceKeyAttribute || resourceField.options.targetKey || TargetModel.primaryKeyAttribute]: resourceKey,
         },
@@ -260,13 +285,9 @@ export async function update(ctx: Context, next: Next) {
       ctx.body = model;
     }
   } else {
-    const { resourceName, resourceKey, resourceKeyAttribute, fields = [], values } = ctx.action.params;
     const Model = ctx.db.getModel(resourceName);
-    const options = Model.parseApiJson({
-      fields,
-    });
+    const onlyFields = getOnlyFields(fields, Model);
     const model = await Model.findOne({
-      ...options,
       where: {
         [resourceKeyAttribute || Model.primaryKeyAttribute]: resourceKey,
       },
@@ -274,7 +295,10 @@ export async function update(ctx: Context, next: Next) {
       context: ctx,
     });
     // @ts-ignore
-    await model.update(values, { context: ctx });
+    await model.update(values, {
+      fields: onlyFields,
+      context: ctx
+    });
     // @ts-ignore
     await model.updateAssociations(values, { context: ctx });
     ctx.body = model;
