@@ -95,9 +95,9 @@ describe('tables', () => {
       });
       expect(db.getModel('baz').options.indexes).toStrictEqual(db.getTable('baz').getModelOptions().indexes);
       // @ts-ignore
-      expect(db.getTable('baz').getModelOptions().indexes).toStrictEqual([
-        { fields: [ 'col1' ], name: 'baz_col1', type: '', parser: null },
-        { fields: [ 'col2', 'col3' ], name: 'baz_col2_col3', type: '', parser: null }
+      expect(db.getTable('baz').getModelOptions().indexes).toMatchObject([
+        { fields: [ 'col1' ], name: 'baz_col1', parser: null },
+        { fields: [ 'col2', 'col3' ], name: 'baz_col2_col3', parser: null }
       ]);
     });
 
