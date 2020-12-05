@@ -112,14 +112,27 @@ describe('update', () => {
     });
   });
 
-  it('hasOne1', async () => {
+  it('hasOne', async () => {
+    const User = db.getModel('users');
+    const user = await User.create();
+    await user.updateAssociations({
+      profile: { email: 'email1122' }
+    });
+    const response = await agent
+      .put(`/users/${user.id}/profile`).send({
+        email: 'email1111',
+      });
+    expect(response.body.email).toEqual('email1111');
+  });
+
+  it('hasOne without exist target', async () => {
     const User = db.getModel('users');
     const user = await User.create();
     const response = await agent
       .put(`/users/${user.id}/profile`).send({
         email: 'email1122',
       });
-    expect(response.body.email).toEqual('email1122');
+    expect(response.body).toEqual({});
   });
 
   it('hasMany1', async () => {
