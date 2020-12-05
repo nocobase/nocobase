@@ -237,6 +237,22 @@ describe('model', () => {
         const authorizedPost = await Post.findByPk(post.id);
         expect(authorizedPost.user_id).toBe(user.id);
       });
+
+      it('update with exist model', async () => {
+        const [User, Post] = db.getModels(['users', 'posts']);
+        const user1 = await User.create();
+        const user2 = await Post.create();
+        const post = await Post.create();
+        await post.updateAssociations({
+          user: user1.id
+        });
+        await post.updateAssociations({
+          user: user2.id
+        });
+
+        const authorizedPost = await Post.findByPk(post.id);
+        expect(authorizedPost.user_id).toBe(user2.id);
+      });
     });
     
     describe('hasMany', () => {
