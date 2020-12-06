@@ -109,6 +109,7 @@ export async function create(ctx: Context, next: Next) {
     fields
   } = ctx.action.params;
   const values = filterByFields(data, fields);
+  const transaction = await ctx.db.sequelize.transaction();
   let model: Model;
   if (associated && resourceField) {
     const AssociatedModel = ctx.db.getModel(associatedName);
@@ -117,19 +118,18 @@ export async function create(ctx: Context, next: Next) {
     }
     const { create } = resourceField.getAccessors();
     // @ts-ignore
-    model = await associated[create](values, { context: ctx });
-    await model.updateAssociations(values, { context: ctx });
+    model = await associated[create](values, { transaction, context: ctx });
+    await model.updateAssociations(values, { transaction, context: ctx });
     ctx.body = model;
   } else {
     const ResourceModel = ctx.db.getModel(resourceName);
     // @ts-ignore
-    model = await ResourceModel.create(values, { context: ctx });
+    model = await ResourceModel.create(values, { transaction, context: ctx });
     // @ts-ignore
-    await model.updateAssociations(values, {
-      context: ctx
-    });
+    await model.updateAssociations(values, { transaction, context: ctx });
     ctx.body = model;
   }
+  await transaction.commit();
   await next();
 }
 
@@ -214,18 +214,20 @@ export async function update(ctx: Context, next: Next) {
     values: data
   } = ctx.action.params;
   const values = filterByFields(data, fields);
+  const transaction = await ctx.db.sequelize.transaction();
   if (associated && resourceField) {
     const AssociatedModel = ctx.db.getModel(associatedName);
     if (!(associated instanceof AssociatedModel)) {
+      await transaction.rollback();
       throw new Error(`${associatedName} associated model invalid`);
     }
     const { get: getAccessor } = resourceField.getAccessors();
     if (resourceField instanceof HasOne || resourceField instanceof BelongsTo) {
-      let model: Model = await associated[getAccessor]({ context: ctx });
+      let model: Model = await associated[getAccessor]({ transaction, context: ctx });
       if (model) {
         // @ts-ignore
-        await model.update(values, { context: ctx });
-        await model.updateAssociations(values, { context: ctx });
+        await model.update(values, { transaction, context: ctx });
+        await model.updateAssociations(values, { transaction, context: ctx });
         ctx.body = model;
       }
     } else if (resourceField instanceof HasMany || resourceField instanceof BelongsToMany) {
@@ -234,9 +236,10 @@ export async function update(ctx: Context, next: Next) {
         where: {
           [resourceKeyAttribute || resourceField.options.targetKey || TargetModel.primaryKeyAttribute]: resourceKey,
         },
+        transaction,
         context: ctx,
       });
-      
+
       if (resourceField instanceof BelongsToMany) {
         const throughName = resourceField.getThroughName();
         if (typeof values[throughName] === 'object') {
@@ -248,16 +251,17 @@ export async function update(ctx: Context, next: Next) {
               [foreignKey]: associated[sourceKey],
               [otherKey]: resourceKey,
             },
+            transaction
           });
-          await through.update(throughValues);
-          await through.updateAssociations(throughValues);
+          await through.updateAssociations(throughValues, { transaction, context: ctx });
+          await through.update(throughValues, { transaction, context: ctx });
           delete values[throughName];
         }
       }
       if (!_.isEmpty(values)) {
         // @ts-ignore
-        await model.update(values, { context: ctx });
-        await model.updateAssociations(values, { context: ctx });
+        await model.update(values, { transaction, context: ctx });
+        await model.updateAssociations(values, { transaction, context: ctx });
       }
       ctx.body = model;
     }
@@ -269,13 +273,15 @@ export async function update(ctx: Context, next: Next) {
       },
       // @ts-ignore hooks 里添加 context
       context: ctx,
+      transaction
     });
     // @ts-ignore
-    await model.update(values, { context: ctx });
+    await model.update(values, { transaction, context: ctx });
     // @ts-ignore
-    await model.updateAssociations(values, { context: ctx });
+    await model.updateAssociations(values, { transaction, context: ctx });
     ctx.body = model;
   }
+  await transaction.commit();
   await next();
 }
 
