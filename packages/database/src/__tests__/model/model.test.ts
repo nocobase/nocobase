@@ -237,6 +237,22 @@ describe('model', () => {
         const authorizedPost = await Post.findByPk(post.id);
         expect(authorizedPost.user_id).toBe(user.id);
       });
+
+      it('update with exist model', async () => {
+        const [User, Post] = db.getModels(['users', 'posts']);
+        const user1 = await User.create();
+        const user2 = await Post.create();
+        const post = await Post.create();
+        await post.updateAssociations({
+          user: user1.id
+        });
+        await post.updateAssociations({
+          user: user2.id
+        });
+
+        const authorizedPost = await Post.findByPk(post.id);
+        expect(authorizedPost.user_id).toBe(user2.id);
+      });
     });
     
     describe('hasMany', () => {
@@ -368,6 +384,26 @@ describe('model', () => {
           { id: 4, content: 'content4' }
         ]);
       });
+
+      it('update with different primaryKey/row/object', async () => {
+        const [Post, Comment] = db.getModels(['posts', 'comments']);
+        const post = await Post.create();
+        const comments = await Comment.bulkCreate([{}, {}, {}, {}]);
+        await post.updateAssociations({
+          comments
+        });
+        await post.updateAssociations({
+          comments: comments
+            .filter(({ id }) => Boolean(id % 2))
+            .concat(...[await Comment.create()])
+        });
+
+        const postComments = await Comment.findAll({
+          where: { post_id: post.id },
+          attributes: ['id']
+        });
+        expect(postComments.map(({ id }) => id)).toEqual([1,3,5]);
+      });
     });
 
     describe('belongsToMany', () => {
@@ -408,6 +444,23 @@ describe('model', () => {
           { tag_id: 3, post_id: 1 },
           { tag_id: 4, post_id: 1 },
         ]);
+      });
+
+      it('update with exist rows/primaryKeys and new objects', async () => {
+        const [Post, Tag, PostTag] = db.getModels(['posts', 'tags', 'posts_tags']);
+        const post = await Post.create();
+        const tags = await Tag.bulkCreate([{}, {}, {}, {}]);
+        await post.updateAssociations({
+          tags: tags.map(item => item.id)
+        });
+        await post.updateAssociations({
+          tags: tags.filter(({ id }) => Boolean(id % 2)).concat(await Tag.create({}))
+        });
+        const tagged = await PostTag.findAll({
+          where: { post_id: post.id },
+          attributes: ['tag_id']
+        });
+        expect(tagged.map(({ tag_id }) => tag_id)).toEqual([1,3,5]);
       });
 
       it('update other with exist rows/primaryKeys', async () => {
