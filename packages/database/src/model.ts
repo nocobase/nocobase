@@ -320,8 +320,8 @@ export abstract class Model extends SequelizeModel {
     // 准备设置的关联主键
     const toSetPks = new Set();
     const toSetUks = new Set();
-    // 筛选后准备添加的关联主键
-    const toAddItems = new Set();
+    // 筛选后准备设置的关联主键
+    const toSetItems = new Set();
     // 准备添加的关联对象
     const toUpsertObjects = [];
 
@@ -358,9 +358,10 @@ export abstract class Model extends SequelizeModel {
     });
 
     /* 仅传关联键处理开始 */
-    // 查找已存在的关联数据
-    const byPkExistItems = toSetPks.size ? await this[accessors.get]({
+    // 查找已存在的数据
+    const byPkExistItems = toSetPks.size ? await Target.findAll({
       ...opts,
+      // @ts-ignore
       where: {
         [targetPk]: {
           [Op.in]: Array.from(toSetPks)
@@ -368,36 +369,11 @@ export abstract class Model extends SequelizeModel {
       },
       attributes: [targetPk]
     }) : [];
-    const pkExistItems = new Map();
     byPkExistItems.forEach(item => {
-      pkExistItems.set(item[targetPk], item);
+      toSetItems.add(item);
     });
-    for (const key of toSetPks) {
-      if (!pkExistItems.has(key)) {
-        toAddItems.add(key);
-      }
-    }
 
-    const byUkExistItems = await this[accessors.get]({
-      ...opts,
-      where: {
-        [targetKey]: {
-          [Op.in]: Array.from(toSetUks)
-        }
-      },
-      attributes: [targetPk, targetKey],
-      transaction
-    });
-    const ukExistItems = new Map();
-    byUkExistItems.forEach(item => {
-      ukExistItems.set(item[targetKey], item);
-    });
-    for (const key of toSetUks) {
-      if (ukExistItems.has(key)) {
-        toSetUks.delete(key);
-      }
-    }
-    const byUkItems = toSetUks.size ? await Target.findAll({
+    const byUkExistItems = toSetUks.size ? await Target.findAll({
       ...opts,
       // @ts-ignore
       where: {
@@ -407,11 +383,12 @@ export abstract class Model extends SequelizeModel {
       },
       attributes: [targetPk, targetKey]
     }) : [];
-    byUkItems.forEach(item => {
-      toAddItems.add(item);
+    byUkExistItems.forEach(item => {
+      toSetItems.add(item);
     });
     /* 仅传关联键处理结束 */
 
+    const belongsToManyList = [];
     /* 值为对象处理开始 */
     for (const item of toUpsertObjects) {
       let target;
@@ -431,10 +408,26 @@ export abstract class Model extends SequelizeModel {
       }
       
       if (association instanceof BelongsToMany) {
-        // TODO(optimize): 这里暂时未能批量执行
-        await this[accessors.add](target, opts);
-        const ThroughModel = association.getThroughModel();
-        const throughName = association.getThroughName();
+        belongsToManyList.push({
+          item,
+          target
+        });
+      }
+      toSetItems.add(target);
+
+      await target.updateAssociations(item, opts);
+    }
+    /* 值为对象处理结束 */
+
+    // 添加所有计算后的关联
+    await this[accessors.set](Array.from(toSetItems), opts);
+
+    // 后处理 belongsToMany 的更新内容
+    if (belongsToManyList.length) {
+      const ThroughModel = (association as BelongsToMany).getThroughModel();
+      const throughName = (association as BelongsToMany).getThroughName();
+
+      for (const { item, target } of belongsToManyList) {
         const throughValues = item[throughName];
         if (typeof throughValues === 'object') {
           const { foreignKey, sourceKey, otherKey } = association.options;
@@ -448,16 +441,8 @@ export abstract class Model extends SequelizeModel {
           await through.update(throughValues, opts);
           await through.updateAssociations(throughValues, opts);
         }
-      } else {
-        toAddItems.add(target);
       }
-
-      await target.updateAssociations(item, opts);
     }
-    /* 值为对象处理结束 */
-
-    // 添加所有计算后的关联
-    await this[accessors.add](Array.from(toAddItems), opts);
 
     if (!options.transaction) {
       await transaction.commit();
