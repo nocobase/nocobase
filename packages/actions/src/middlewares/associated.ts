@@ -24,7 +24,7 @@ export async function associated(ctx: Context, next: Next) {
 
   switch (true) {
     case field instanceof BelongsTo:
-      key = Model.primaryKeyAttribute;
+      key = field.options.targetKey || Model.primaryKeyAttribute;
       break;
     case field instanceof HasOne:
     case field instanceof HasMany:
