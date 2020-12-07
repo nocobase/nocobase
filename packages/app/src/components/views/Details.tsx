@@ -26,9 +26,14 @@ export function Details(props: any) {
   const { actions = [], fields = [] } = props.schema;
   return (
     <Card bordered={false}>
-      <Actions {...props} onFinish={() => {
-        refresh();
-      }} style={{ marginBottom: 14 }} actions={actions}/>
+      <Actions
+        {...props}
+        onFinish={() => {
+          refresh();
+        }}
+        style={{ marginBottom: 14 }}
+        actions={actions}
+      />
       {loading ? <Spin/> : (
         <Descriptions bordered column={1}>
           {fields.map((field: any) => {
