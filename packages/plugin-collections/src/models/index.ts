@@ -1,3 +1,4 @@
+export * from './base';
 export * from './action';
 export * from './collection';
 export * from './field';

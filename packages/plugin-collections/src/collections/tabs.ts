@@ -5,6 +5,7 @@ export default {
   title: '标签配置',
   sortable: true,
   model: 'TabModel',
+  developerMode: true,
   fields: [
     {
       interface: 'sort',
@@ -98,6 +99,16 @@ export default {
       },
     },
     {
+      interface: 'boolean',
+      type: 'boolean',
+      name: 'developerMode',
+      title: '开发者模式',
+      defaultValue: false,
+      component: {
+        type: 'boolean',
+      },
+    },
+    {
       interface: 'linkTo',
       type: 'belongsTo',
       name: 'collection',
@@ -149,6 +160,7 @@ export default {
       name: 'form',
       title: '表单',
       template: 'DrawerForm',
+      developerMode: true,
     },
     {
       type: 'details',
@@ -156,6 +168,7 @@ export default {
       title: '详情',
       template: 'Details',
       actionNames: ['update'],
+      developerMode: true,
     },
     {
       type: 'table',

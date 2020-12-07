@@ -6,6 +6,7 @@ export default {
   title: '字段配置',
   draggable: true,
   model: 'FieldModel',
+  developerMode: true,
   fields: [
     {
       interface: 'sort',
@@ -207,6 +208,16 @@ export default {
       },
     },
     {
+      interface: 'boolean',
+      type: 'boolean',
+      name: 'developerMode',
+      title: '开发者模式',
+      defaultValue: false,
+      component: {
+        type: 'boolean',
+      },
+    },
+    {
       interface: 'json',
       type: 'json',
       name: 'component',
@@ -257,6 +268,7 @@ export default {
       name: 'form',
       title: '表单',
       template: 'DrawerForm',
+      developerMode: true,
     },
     {
       type: 'details',
@@ -264,6 +276,7 @@ export default {
       title: '详情',
       template: 'Details',
       actionNames: ['update'],
+      developerMode: true,
     },
     {
       type: 'table',
