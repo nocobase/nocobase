@@ -3,6 +3,7 @@
   "private": true,
   "scripts": {
     "start": "cd packages/app && npm start",
+    "db-migrate": "cd packages/app && npm run db-migrate",
     "start-server": "yarn nodemon",
     "bootstrap": "lerna bootstrap --no-ci",
     "build": "npm run build-father-build && node packages/father-build/bin/father-build.js",
