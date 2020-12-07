@@ -5,6 +5,7 @@ export default {
   title: '操作配置',
   draggable: true,
   model: 'ActionModel',
+  developerMode: true,
   fields: [
     {
       interface: 'sort',
@@ -53,6 +54,16 @@ export default {
         showInForm: true,
         showInTable: true,
         showInDetail: true,
+      },
+    },
+    {
+      interface: 'boolean',
+      type: 'boolean',
+      name: 'developerMode',
+      title: '开发者模式',
+      defaultValue: false,
+      component: {
+        type: 'boolean',
       },
     },
     {
@@ -107,6 +118,7 @@ export default {
       name: 'form',
       title: '表单',
       template: 'DrawerForm',
+      developerMode: true,
     },
     {
       type: 'details',
@@ -114,6 +126,7 @@ export default {
       title: '详情',
       template: 'Details',
       actionNames: ['update'],
+      developerMode: true,
     },
     {
       type: 'table',

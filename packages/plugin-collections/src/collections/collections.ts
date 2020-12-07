@@ -6,6 +6,7 @@ export default {
   sortable: true,
   draggable: true,
   model: 'CollectionModel',
+  developerMode: true,
   fields: [
     {
       interface: 'sort',
@@ -139,6 +140,16 @@ export default {
       },
     },
     {
+      interface: 'boolean',
+      type: 'boolean',
+      name: 'developerMode',
+      title: '开发者模式',
+      defaultValue: false,
+      component: {
+        type: 'boolean',
+      },
+    },
+    {
       interface: 'json',
       type: 'json',
       name: 'options',
@@ -243,6 +254,7 @@ export default {
       name: 'form',
       title: '表单',
       template: 'DrawerForm',
+      developerMode: true,
     },
     {
       type: 'details',
@@ -250,6 +262,7 @@ export default {
       title: '详情',
       template: 'Details',
       actionNames: ['update'],
+      developerMode: true,
     },
     {
       type: 'table',
@@ -297,6 +310,7 @@ export default {
       title: '动作',
       association: 'actions',
       viewName: 'simple',
+      developerMode: true,
     },
     {
       type: 'association',
@@ -305,12 +319,12 @@ export default {
       association: 'tabs',
       viewName: 'simple',
     },
-    {
-      type: 'association',
-      name: 'roles',
-      title: '权限',
-      association: 'roles',
-      viewName: 'simple2',
-    },
+    // {
+    //   type: 'association',
+    //   name: 'roles',
+    //   title: '权限',
+    //   association: 'roles',
+    //   viewName: 'simple2',
+    // },
   ],
 } as TableOptions;
