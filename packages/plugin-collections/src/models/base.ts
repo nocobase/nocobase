@@ -2,7 +2,21 @@ import _ from 'lodash';
 import { getDataTypeKey, Model } from '@nocobase/database';
 import { Utils } from 'sequelize';
 
+export function generateName(title?: string): string {
+  return `${Math.random().toString(36).replace('0.', '').slice(-4).padStart(4, '0')}`;
+}
+
 export class BaseModel extends Model {
+
+  generateName() {
+    this.set('name', generateName());
+  }
+
+  generateNameIfNull() {
+    if (!this.get('name')) {
+      this.generateName();
+    }
+  }
 
   get additionalAttribute() {
     const tableOptions = this.database.getTable(this.constructor.name).getOptions();
