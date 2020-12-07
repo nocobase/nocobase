@@ -73,5 +73,5 @@ export default async function (model: CollectionModel, options: any = {}) {
   if (migrate) {
     await model.migrate();
   }
-  await model.updateAssociations(defaultValues);
+  await model.updateAssociations(defaultValues, options);
 }
