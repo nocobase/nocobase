@@ -76,6 +76,8 @@ export const DrawerForm = forwardRef((props: any, ref) => {
             });
           }
           setVisible(false);
+          // @ts-ignore
+          window.routesReload && window.routesReload();
           onFinish && onFinish(values);
         }}>提交</Button>
       ]}

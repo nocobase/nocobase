@@ -3,6 +3,7 @@ import { TableOptions } from '@nocobase/database';
 export default {
   name: 'pages',
   title: '页面配置',
+  model: 'BaseModel',
   fields: [
     {
       interface: 'sort',

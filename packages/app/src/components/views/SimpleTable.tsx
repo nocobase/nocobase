@@ -77,6 +77,9 @@ export function SimpleTable(props: SimpleTableProps) {
         mode={'update'}
         viewName={rowViewName}
         reference={drawerRef}
+        onFinish={() => {
+          refresh();
+        }}
       />
       <AntdTable
         rowKey={rowKey}
