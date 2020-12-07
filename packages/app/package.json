@@ -5,6 +5,7 @@
   "scripts": {
     "start": "concurrently \"nodemon\" \"umi dev\"",
     "start-api": "nodemon",
+    "db-migrate": "ts-node ./src/api/migrate.ts",
     "build": "father-build && umi build",
     "postinstall": "umi generate tmp",
     "prettier": "prettier --write '**/*.{js,jsx,tsx,ts,less,md,json}'",
