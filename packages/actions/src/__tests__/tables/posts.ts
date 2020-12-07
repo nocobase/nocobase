@@ -22,7 +22,7 @@ export default {
       name: 'user',
     },
     {
-      type: 'hasmany',
+      type: 'hasMany',
       name: 'comments',
     },
     {
@@ -32,6 +32,10 @@ export default {
     {
       type: 'integer',
       name: 'sort'
+    },
+    {
+      type: 'json',
+      name: 'meta'
     }
   ],
   hooks: {

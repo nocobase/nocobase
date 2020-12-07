@@ -11,6 +11,10 @@ import Resourcer from '@nocobase/resourcer';
 
 import associated from '../middlewares/associated';
 import actions from '..';
+import create1 from './actions/create1';
+import create2 from './actions/create2';
+import update1 from './actions/update1';
+import update2 from './actions/update2';
 
 function getTestKey() {
   const { id } = require.main;
@@ -52,9 +56,23 @@ const tableFiles = glob.sync(`${resolve(__dirname, './tables')}/*.ts`);
 // resourcer 在内存中是单例，需要谨慎使用
 export const resourcer = new Resourcer();
 resourcer.use(associated);
-resourcer.registerActionHandlers({...actions.associate, ...actions.common});
+resourcer.registerActionHandlers({...actions.associate, ...actions.common });
 resourcer.define({
   name: 'posts',
+  actions: {
+    ...actions.common,
+    create1,
+    create2,
+    update1,
+    update2
+  },
+});
+resourcer.define({
+  name: 'comments',
+  actions: actions.common,
+});
+resourcer.define({
+  name: 'users',
   actions: actions.common,
 });
 resourcer.define({

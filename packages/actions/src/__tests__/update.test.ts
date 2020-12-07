@@ -9,24 +9,130 @@ describe('update', () => {
   
   afterAll(() => db.close());
 
-  it('common1', async () => {
-    const Post = db.getModel('posts');
-    const post = await Post.create();
-    const response = await agent
-      .put(`/posts/${post.id}`).send({
-        title: 'title11112222'
+  describe('common', () => {
+    it('basic', async () => {
+      const Post = db.getModel('posts');
+      const post = await Post.create();
+      const response = await agent
+        .put(`/posts/${post.id}`).send({
+          title: 'title11112222'
+        });
+      expect(response.body.title).toBe('title11112222');
+    });
+
+    it('update json field by replacing', async () => {
+      const Post = db.getModel('posts');
+      const post = await Post.create({ meta: { a: 1, b: 'c', c: { d: false } } });
+      const updated = await agent
+        .put(`/posts/${post.id}`).send({
+          meta: {}
+        });
+      expect(updated.body.meta).toEqual({});
+    });
+
+    it.skip('update json field by path based update', async () => {
+      const Post = db.getModel('posts');
+      const post = await Post.create({ meta: { a: 1, b: 'c', c: { d: false } } });
+      const updated = await agent
+        .put(`/posts/${post.id}?options[json]=merge`).send({
+          meta: {
+            b: 'b',
+            c: { d: true }
+          }
+        });
+      // console.log(updated.body);
+    });
+
+    // TODO(question): json 字段的覆盖/合并策略
+    it.skip('update with fields overwrite default values', async () => {
+      const Post = db.getModel('posts');
+      const post = await Post.create();
+      const response = await agent
+        .put(`/posts:update1/${post.id}`).send({
+          meta: { a: 1 },
+        });
+      expect(response.body.meta).toEqual({ a: 1 });
+
+      const result = await agent
+        .get(`/posts/${post.id}`);
+
+      expect(result.body.meta).toEqual({ a: 1 });
+    });
+
+    // TODO(bug): action 的默认值处理时机不对
+    it.skip('update with different fields to default values', async () => {
+      const Post = db.getModel('posts');
+      const post = await Post.create({
+        meta: { location: 'Beijing' }
       });
-    expect(response.body.title).toBe('title11112222');
+      const response = await agent
+        .put(`/posts:update1/${post.id}`).send({
+          meta: { a: 1 },
+        });
+      expect(response.body.meta).toEqual({ location: 'Beijing', a: 1 });
+    });
+
+    it('update with options.fields.expect in action', async () => {
+      const Post = db.getModel('posts');
+      const post = await Post.create();
+      const response = await agent
+        .put(`/posts:update1/${post.id}`).send({
+          title: 'title11112222',
+        });
+      expect(response.body.title).toBe(null);
+      expect(response.body.meta).toEqual({
+        location: 'Kunming'
+      });
+
+      const result = await agent
+        .get(`/posts/${post.id}`);
+      
+      expect(result.body.title).toBe(null);
+      expect(result.body.meta).toEqual({
+        location: 'Kunming'
+      });
+    });
+
+    it('update with options.fields.only in action', async () => {
+      const Post = db.getModel('posts');
+      const post = await Post.create();
+      const response = await agent
+        .put(`/posts:update2/${post.id}`).send({
+          title: 'title11112222',
+          meta: { a: 1 }
+        });
+      expect(response.body.title).toBe('title11112222');
+      expect(response.body.meta).toBe(null);
+
+      const result = await agent
+        .get(`/posts/${post.id}`);
+      
+      expect(result.body.title).toBe('title11112222');
+      expect(result.body.meta).toBe(null);
+    });
   });
 
-  it('hasOne1', async () => {
+  it('hasOne', async () => {
+    const User = db.getModel('users');
+    const user = await User.create();
+    await user.updateAssociations({
+      profile: { email: 'email1122' }
+    });
+    const response = await agent
+      .put(`/users/${user.id}/profile`).send({
+        email: 'email1111',
+      });
+    expect(response.body.email).toEqual('email1111');
+  });
+
+  it('hasOne without exist target', async () => {
     const User = db.getModel('users');
     const user = await User.create();
     const response = await agent
       .put(`/users/${user.id}/profile`).send({
         email: 'email1122',
       });
-    expect(response.body.email).toEqual('email1122');
+    expect(response.body).toEqual({});
   });
 
   it('hasMany1', async () => {
