@@ -15,6 +15,7 @@ import {
 } from './fields';
 import Database from './database';
 import { Model, ModelCtor } from './model';
+import _ from 'lodash';
 
 const registeredModels = new Map<string, any>();
 
@@ -219,6 +220,7 @@ export class Table {
       updatedAt: Utils.underscoredIf('updatedAt', underscored),
       indexes: Array.from(this.indexes.values()),
       // freezeTableName: true,
+      hooks: _.get(this.Model.options, 'hooks') || {},
       ...this.modelOptions,
     };
   }

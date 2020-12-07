@@ -22,7 +22,11 @@ export default async function (this: Application, options = {}) {
       Model.addHook(hookKey, hooks[modelName][hookKey]);
     });
   });
-
-  // 加载数据库表 collections 中已经保存的表配置
-  // await Collection.findAll();
+  try {
+    // 加载数据库表 collections 中已经保存的表配置
+    // 如果未 sync 可能报错
+    // TODO collections sync
+    await database.getModel('collections').load();
+  } catch (error) {
+  }
 }
