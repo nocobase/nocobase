@@ -40,15 +40,19 @@ export class CollectionModel extends BaseModel {
     return this.findOne({ where: { name } });
   }
 
-  /**
-   * 迁移
-   */
-  async migrate() {
+  async loadTableOptions() {
     const options = await this.getOptions();
     const prevTable = this.database.getTable(this.get('name'));
     const prevOptions = prevTable ? prevTable.getOptions() : {};
     // table 是初始化和重新初始化
-    const table = this.database.table({...prevOptions, ...options});
+    return this.database.table({...prevOptions, ...options});
+  }
+
+  /**
+   * 迁移
+   */
+  async migrate() {
+    const table = await this.loadTableOptions();
     return await table.sync({
       force: false,
       alter: {
@@ -73,6 +77,13 @@ export class CollectionModel extends BaseModel {
       title: this.get('title'),
       fields: await this.getFieldsOptions(),
     };
+  }
+
+  static async load() {
+    const collections = await this.findAll();
+    for (const collection of collections) {
+      await collection.loadTableOptions();
+    }
   }
 
   static async import(data: TableOptions, options: SaveOptions = {}): Promise<CollectionModel> {
