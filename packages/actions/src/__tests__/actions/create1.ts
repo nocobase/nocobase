@@ -9,7 +9,7 @@ export default {
   },
 
   fields: {
-    except: ['sort', 'user.profile']
+    except: ['sort', 'user.profile', 'comments.status']
   },
 
   handler: create

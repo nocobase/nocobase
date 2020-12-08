@@ -41,5 +41,47 @@ describe('utils', () => {
         user: { name: 'aaa' }
       });
     });
+
+    it('only and except fields with array', async () => {
+      const values = filterByFields({
+        title: 'title1',
+        comments: [
+          { content: 'comment1', status: 'published', sort: 1 },
+          { content: 'comment2', status: 'draft', sort: 2 }
+        ]
+      }, {
+        only: ['comments'],
+        except: ['comments.status', 'comments.sort']
+      });
+      expect(values).toEqual({
+        comments: [
+          { content: 'comment1' },
+          { content: 'comment2' }
+        ]
+      });
+    });
+
+    it('only and except fields with array', async () => {
+      const values = filterByFields({
+        title: 'title1',
+        user: { name: 'aaa', profile: { email: 'email' } },
+        comments: [
+          { content: 'comment1', status: 'published', sort: 1 },
+          { content: 'comment2', status: 'draft', sort: 2 }
+        ]
+      }, {
+        only: ['comments.content'],
+        except: ['user.name']
+      });
+      expect(values).toEqual({
+        user: {
+          profile: { email: 'email' }
+        },
+        comments: [
+          { content: 'comment1' },
+          { content: 'comment2' }
+        ]
+      });
+    });
   });
 });

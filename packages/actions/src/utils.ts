@@ -37,7 +37,7 @@ export function filterByFields(data: any, fields: any = {}): any {
       const result = {};
       Object.keys(v).forEach(key => {
         // 未定义 except 时继续判断 only
-        if (typeof exceptMap[key] === 'undefined') {
+        if (!exceptMap || typeof exceptMap[key] === 'undefined') {
           if (onlyMap) {
             if (typeof onlyMap[key] !== 'undefined') {
               // 防止 fields 参数和传入类型不匹配时的报错

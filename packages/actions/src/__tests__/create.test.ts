@@ -41,7 +41,11 @@ describe('create', () => {
         .send({
           title: 'title1',
           sort: 100,
-          user: { name: 'aaa', profile: { email: 'email' } }
+          user: { name: 'aaa', profile: { email: 'email' } },
+          comments: [
+            { content: 'comment1', status: 'published' },
+            { content: 'comment2', status: 'draft' },
+          ]
         });
       expect(response.body.sort).toBe(null);
       expect(response.body.user_id).toBe(1);
@@ -53,6 +57,14 @@ describe('create', () => {
       const user = await agent
         .get(`/users/${postWithUser.body.user.id}?fields=profile`);
       expect(user.body.profile).toBe(null);
+
+      const postWithComments = await agent
+        .get(`/posts/${response.body.id}?fields=comments`);
+      const comments = postWithComments.body.comments.map(({ content, status }) => ({ content, status }));
+      expect(comments).toEqual([
+        { content: 'comment1', status: null },
+        { content: 'comment2', status: null },
+      ]);
     });
 
     it('create with options.fields.only by custom action', async () => {
