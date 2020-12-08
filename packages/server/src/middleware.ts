@@ -39,6 +39,14 @@ export function middleware(options: MiddlewareOptions = {}) {
       if (!resourcer.isDefined(resourceName)) {
         const names = resourceName.split('.');
         const tableName = names.shift();
+        const Collection = database.getModel('collections');
+        if (!database.isDefined(tableName) && Collection) {
+          await Collection.load({
+            where: {
+              name: tableName,
+            },
+          });
+        }
         if (database.isDefined(tableName)) {
           const table = database.getTable(tableName);
           const field = table.getField(names[0]) as BelongsTo | HasMany | BelongsToMany | HasOne;

@@ -1,7 +1,7 @@
 import _ from 'lodash';
 import BaseModel from './base';
 import { TableOptions } from '@nocobase/database';
-import { SaveOptions } from 'sequelize';
+import { SaveOptions, Op } from 'sequelize';
 
 /**
  * 生成随机数据库表名
@@ -17,6 +17,16 @@ import { SaveOptions } from 'sequelize';
  */
 export function generateCollectionName(title?: string): string {
   return `t_${Date.now().toString(36)}_${Math.random().toString(36).replace('0.', '').slice(-4).padStart(4, '0')}`;
+}
+
+export interface LoadOptions {
+  reset?: boolean;
+  where?: any;
+  [key: string]: any;
+}
+
+export interface MigrateOptions {
+  [key: string]: any;
 }
 
 export class CollectionModel extends BaseModel {
@@ -40,18 +50,44 @@ export class CollectionModel extends BaseModel {
     return this.findOne({ where: { name } });
   }
 
-  async loadTableOptions() {
+  /**
+   * DOTO：
+   * - database.table 初始化可能存在一些缺陷
+   * - 是否需要考虑关系数据的重载？
+   *
+   * @param opts 
+   */
+  async loadTableOptions(opts: any = {}) {
     const options = await this.getOptions();
     const prevTable = this.database.getTable(this.get('name'));
     const prevOptions = prevTable ? prevTable.getOptions() : {};
     // table 是初始化和重新初始化
-    return this.database.table({...prevOptions, ...options});
+    const table = this.database.table({...prevOptions, ...options});
+    // 如果关系表未加载，一起处理
+    const associationTableNames = [];
+    for (const [key, association] of table.getAssociations()) {
+      // TODO：是否需要考虑重载的情况？（暂时是跳过处理）
+      if (!this.database.isDefined(association.options.target)) {
+        continue;
+      }
+      associationTableNames.push(association.options.target);
+    }
+    if (associationTableNames.length) {
+      await CollectionModel.load({
+        where: {
+          name: {
+            [Op.in]: associationTableNames,
+          }
+        }
+      });
+    }
+    return table;
   }
 
   /**
    * 迁移
    */
-  async migrate() {
+  async migrate(options: MigrateOptions = {}) {
     const table = await this.loadTableOptions();
     return await table.sync({
       force: false,
@@ -79,10 +115,20 @@ export class CollectionModel extends BaseModel {
     };
   }
 
-  static async load() {
-    const collections = await this.findAll();
+  /**
+   * TODO：需要考虑是初次加载还是重载
+   *
+   * @param options 
+   */
+  static async load(options: LoadOptions = {}) {
+    const { reset = false, where = {} } = options;
+    const collections = await this.findAll({
+      where,
+    });
     for (const collection of collections) {
-      await collection.loadTableOptions();
+      await collection.loadTableOptions({
+        reset,
+      });
     }
   }
 
