@@ -5,7 +5,7 @@ import { useRequest } from 'umi';
 import { Spin } from '@nocobase/client';
 import { SimpleTable } from './SimpleTable';
 import { Table } from './Table';
-import { Form, DrawerForm } from './Form/index';
+import { Form, DrawerForm, FilterForm } from './Form/index';
 import { Details } from './Details';
 import './style.less';
 import { Login } from './Form/Login';
@@ -21,6 +21,7 @@ export function getViewTemplate(template: string) {
   return TEMPLATES.get(template);
 }
 
+registerView('FilterForm', FilterForm)
 registerView('DrawerForm', DrawerForm);
 registerView('PermissionForm', DrawerForm);
 registerView('Form', Form);
