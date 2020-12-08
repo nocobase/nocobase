@@ -40,6 +40,7 @@ export default {
       name: 'name',
       title: '标识',
       required: true,
+      createOnly: true,
       component: {
         type: 'string',
         showInTable: true,
@@ -92,6 +93,7 @@ export default {
       type: 'string',
       name: 'type',
       title: '数据类型',
+      developerMode: true,
       component: {
         type: 'string',
         showInTable: true,

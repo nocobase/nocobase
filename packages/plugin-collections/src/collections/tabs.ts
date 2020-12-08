@@ -52,7 +52,7 @@ export default {
       dataSource: [
         { label: '详情数据', value: 'details' },
         { label: '相关数据', value: 'association' },
-        { label: '模块组合', value: 'module' },
+        { label: '模块组合', value: 'module', disabled: true },
       ],
       component: {
         type: 'radio',

@@ -38,6 +38,7 @@ export default {
       interface: 'string',
       type: 'string',
       name: 'name',
+      createOnly: true,
       title: '标识',
       unique: true,
       required: true,

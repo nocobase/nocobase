@@ -22,7 +22,7 @@ export default async (ctx, next) => {
   collection.setDataValue('defaultViewName', get(views, [0, 'name']));
   const tabs = await collection.getTabs({
     where: {
-      developerMode: false,
+      developerMode: ctx.state.developerMode,
     },
     order: [['sort', 'asc']],
   }) as Model[];
