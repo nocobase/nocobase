@@ -3,6 +3,7 @@ import { TableOptions } from '@nocobase/database';
 export default {
   name: 'users',
   title: '用户',
+  developerMode: true,
   fields: [
     {
       interface: 'string',
@@ -95,18 +96,21 @@ export default {
       name: 'form',
       title: '表单',
       template: 'DrawerForm',
+      developerMode: true,
     },
     {
       type: 'form',
       name: 'login',
       title: '登录',
       template: 'Login',
+      developerMode: true,
     },
     {
       type: 'form',
       name: 'register',
       title: '注册',
       template: 'Register',
+      developerMode: true,
     },
     {
       type: 'details',
@@ -114,6 +118,7 @@ export default {
       title: '详情',
       template: 'Details',
       actionNames: ['update'],
+      developerMode: true,
     },
     {
       type: 'simple',

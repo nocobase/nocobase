@@ -413,6 +413,7 @@ export const primaryKey = {
     autoIncrement: true,
     primaryKey: true,
     filterable: true,
+    developerMode: true,
     component: {
       type: 'number',
     },
@@ -429,6 +430,7 @@ export const sort = {
     interface: 'sort',
     type: 'integer',
     required: true,
+    developerMode: true,
     component: {
       type: 'sort',
       showInTable: true,
@@ -441,6 +443,7 @@ export const password = {
   options: {
     interface: 'password',
     type: 'password',
+    developerMode: true,
     hidden: true, // hidden 用来控制 api 不输出这个字段，但是可能这个字段显示在表单里 showInForm
     component: {
       type: 'password',
@@ -454,6 +457,7 @@ export const json = {
     interface: 'json',
     type: 'json',
     dottie: true,
+    developerMode: true,
     component: {
       type: 'hidden',
     },
