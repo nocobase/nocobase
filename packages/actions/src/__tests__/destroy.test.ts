@@ -79,13 +79,15 @@ describe('destroy', () => {
         comments: [
           { content: 'content1', status: 'published' },
           { content: 'content2', status: 'draft'},
+          { content: 'content3', status: 'published' },
+          { content: 'content4', status: 'draft'},
         ],
       });
       await agent
         .delete(`/posts/${post.id}/comments?filter[status]=draft`);
       const comments = await post.getComments();
-      expect(comments.length).toBe(1);
-      expect(comments[0].content).toBe('content1');
+      expect(comments.length).toBe(2);
+      expect(comments.map(({ content }) => content)).toEqual(['content1', 'content3']);
     });
   });
 
@@ -129,16 +131,18 @@ describe('destroy', () => {
         tags: [
           { name: 'tag1', status: 'enabled'},
           { name: 'tag2', status: 'disabled' },
+          { name: 'tag3', status: 'enabled'},
+          { name: 'tag4', status: 'disabled' },
         ],
       });
       await agent
         .delete(`/posts/${post.id}/tags:destroy?filter[status]=disabled`);
       const tags = await post.getTags();
-      expect(tags.length).toBe(1);
+      expect(tags.length).toBe(2);
 
       const PostsTags = db.getModel('posts_tags');
       const postsTags = await PostsTags.findAll();
-      expect(postsTags.length).toBe(1);
+      expect(postsTags.length).toBe(2);
     });
   });
 });

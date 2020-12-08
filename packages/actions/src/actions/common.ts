@@ -322,13 +322,16 @@ export async function destroy(ctx: Context, next: Next) {
       ctx.body = await model.destroy(commonOptions);
     } else if (resourceField instanceof HasMany || resourceField instanceof BelongsToMany) {
       const primaryKey = resourceKeyAttribute || resourceField.options.targetKey || TargetModel.primaryKeyAttribute;
-      const [model]: Model[] = await associated[getAccessor]({
+      const models: Model[] = await associated[getAccessor]({
         where: resourceKey ? { [primaryKey]: resourceKey } : where,
         ...commonOptions
       });
-      await associated[removeAccessor](model, commonOptions);
+      await associated[removeAccessor](models, commonOptions);
       // @ts-ignore
-      ctx.body = await model.destroy(commonOptions);
+      ctx.body = await TargetModel.destroy({
+        where: { [primaryKey]: { [Op.in]: models.map(item => item[primaryKey]) } },
+        ...commonOptions
+      });
     }
   } else {
     const Model = ctx.db.getModel(resourceName);
