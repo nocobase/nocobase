@@ -34,6 +34,14 @@ const api = Api.create({
   },
 });
 
+api.resourcer.use(async (ctx, next) => {
+  const { resourceName } = ctx.action.params;
+  const table = ctx.db.getTable(resourceName);
+  if (table && table.hasField('developerMode')) {
+    ctx.action.setParam('filter.developerMode', false);
+  }
+  await next();
+});
 api.resourcer.use(associated);
 api.resourcer.registerActionHandlers({...actions.common, ...actions.associate});
 
@@ -46,6 +54,8 @@ api.resourcer.registerActionHandlers({...actions.common, ...actions.associate});
       // [path.resolve(__dirname, '../../../plugin-permissions'), {}],
       // [path.resolve(__dirname, '../../../plugin-file-manager'), {}],
     ]);
+
+  // await api.database.getModel('collections').load();
 
   api.listen(process.env.HTTP_PORT, () => {
     console.log(`http://localhost:${process.env.HTTP_PORT}/`);

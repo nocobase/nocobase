@@ -35,6 +35,9 @@ export default async function getRoutes(ctx, next) {
   const database: Database = ctx.database;
   const Page = database.getModel('pages');
   let pages = await Page.findAll({
+    where: {
+      developerMode: false,
+    },
     order: [['sort', 'asc']],
   });
   const data = flatToTree(pages.map(row => row.toJSON()), {

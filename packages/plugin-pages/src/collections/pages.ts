@@ -4,6 +4,7 @@ export default {
   name: 'pages',
   title: '页面配置',
   model: 'BaseModel',
+  developerMode: true,
   fields: [
     {
       interface: 'sort',
@@ -156,6 +157,16 @@ export default {
         showInTable: true,
         showInForm: true,
         showInDetail: true,
+      },
+    },
+    {
+      interface: 'boolean',
+      type: 'boolean',
+      name: 'developerMode',
+      title: '开发者模式',
+      defaultValue: false,
+      component: {
+        type: 'boolean',
       },
     },
     {

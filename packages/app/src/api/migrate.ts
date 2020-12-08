@@ -113,6 +113,7 @@ const data = {
           path: '/settings/pages',
           icon: 'dashboard',
           sort: 100,
+          developerMode: true,
         },
         {
           title: '数据表配置',
@@ -178,6 +179,8 @@ const data = {
     username: "admin",
     token: "38979f07e1fca68fb3d2",
   });
+
+  await database.getModel('collections').import(require('./collections/example').default);
 
   await database.close();
 })();
