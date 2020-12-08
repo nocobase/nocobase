@@ -66,13 +66,47 @@ interface ToIncludeContext {
   ctx?: any
 }
 
+export function toOrder(sort: string | string[], model: any): string[][] {
+  if (sort && typeof sort === 'string') {
+    sort = sort.split(',');
+  }
+
+  const order = [];
+
+  if (Array.isArray(sort) && sort.length > 0) {
+    sort.forEach(key => {
+      if (Array.isArray(key)) {
+        order.push(key);
+      } else {
+        const direction = key[0] === '-' ? 'DESC' : 'ASC';
+        const keys = key.replace(/^-/, '').split('.');
+        const field = keys.pop();
+        const by = [];
+        let associationModel = model;
+        for (let i = 0; i < keys.length; i++) {
+          const association = model.associations[keys[i]];
+          if (association && association.target) {
+            associationModel = association.target;
+            by.push(associationModel);
+          }
+        }
+        order.push([...by, field, direction]);
+      }
+    });
+  }
+
+  return order;
+}
+
 export function toInclude(options: any, context: ToIncludeContext = {}) {
   function makeFields(key) {
     if (!Array.isArray(items[key])) {
       return;
     }
     items[key].forEach(field => {
+      // 按点分隔转化为数组
       const arr: Array<string> = Array.isArray(field) ? Utils.cloneDeep(field) : field.split('.');
+      // 当前列
       const col = arr.shift();
       // 内嵌的情况
       if (arr.length > 0) {
@@ -111,13 +145,13 @@ export function toInclude(options: any, context: ToIncludeContext = {}) {
     });
   }
 
-  const { fields = [] } = options;
+  const { fields = [], filter } = options;
   const { model, sourceAlias, associations = {}, ctx, dialect } = context;
 
   let where = options.where || {};
 
-  if (options.filter) {
-    where = toWhere(options.filter, {
+  if (filter) {
+    where = toWhere(filter, {
       model,
       associations,
       ctx,
@@ -141,36 +175,6 @@ export function toInclude(options: any, context: ToIncludeContext = {}) {
 
   const items = Array.isArray(fields) ? { only: fields } : fields;
   items.appends = items.appends || [];
-
-  let sort = options.sort;
-
-  if (sort && typeof sort === 'string') {
-    sort = sort.split(',');
-  }
-
-  const order = [];
-
-  if (Array.isArray(sort) && sort.length > 0) {
-    sort.forEach(key => {
-      if (Array.isArray(key)) {
-        order.push(key);
-      } else {
-        const direction = key[0] === '-' ? 'DESC' : 'ASC';
-        const keys = key.replace(/^-/, '').split('.');
-        const field = keys.pop();
-        const by = [];
-        let associationModel = model;
-        for (let i = 0; i < keys.length; i++) {
-          const association = model.associations[keys[i]];
-          if (association && association.target) {
-            associationModel = association.target;
-            by.push(associationModel);
-          }
-        }
-        order.push([...by, field, direction]);
-      }
-    });
-  }
   
   makeFields('only');
   makeFields('appends');
@@ -260,6 +264,8 @@ export function toInclude(options: any, context: ToIncludeContext = {}) {
   }
 
   if (include.size > 0) {
+    // TODO(bug): 当遇到多层关联时，attributes 控制不正确
+    // ['user.profile.age', 'user.status', 'user', 'title', 'status']
     if (!data.attributes) {
       data.attributes = [];
     }
@@ -274,6 +280,8 @@ export function toInclude(options: any, context: ToIncludeContext = {}) {
   if (scopes.length > 0) {
     data.scopes = scopes;
   }
+
+  const order = toOrder(options.sort, model);
 
   if (order.length > 0) {
     data.order = order;
