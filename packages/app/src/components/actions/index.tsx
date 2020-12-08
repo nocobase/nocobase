@@ -3,6 +3,7 @@ import React from 'react';
 import Create from './Create';
 import Update from './Update';
 import Destroy from './Destroy';
+import Filter from './Filter';
 import { Space } from 'antd';
 
 const ACTIONS = new Map<string, any>();
@@ -14,6 +15,7 @@ export function registerAction(type: string, Action: any) {
 registerAction('update', Update);
 registerAction('create', Create);
 registerAction('destroy', Destroy);
+registerAction('filter', Filter);
 
 export function getAction(type: string) {
   return ACTIONS.get(type);

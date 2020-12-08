@@ -13,6 +13,7 @@ import { Radio } from './radio'
 import { Range } from './range'
 import { Rating } from './rating'
 import { Upload } from './upload'
+import { Filter } from './filter'
 
 export const setup = () => {
   registerFormFields({
@@ -37,6 +38,7 @@ export const setup = () => {
     radio: Radio.Group,
     range: Range,
     rating: Rating,
-    upload: Upload
+    upload: Upload,
+    filter: Filter,
   })
 }

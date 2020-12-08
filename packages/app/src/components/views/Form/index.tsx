@@ -19,3 +19,4 @@ setValidationLanguage('zh-CN');
 
 export { Form } from './Form';
 export { DrawerForm } from './DrawerForm';
+export { FilterForm } from './FilterForm';

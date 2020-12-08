@@ -21,10 +21,11 @@ const transforms = {
     const mode = get(ctx.action.params, ['values', 'mode'], ctx.action.params.mode);
     const schema = {};
     for (const field of fields) {
-      if (!get(field.component, 'showInForm')) {
+      if (!field.get('component.showInForm')) {
         continue;
       }
-      const type = get(field.component, 'type', 'string');
+      const interfaceType = field.get('interface');
+      const type = field.get('component.type') || 'string';
       const prop: any = {
         type,
         title: field.title||field.name,
@@ -40,7 +41,7 @@ const transforms = {
       if (defaultValue) {
         prop.default = defaultValue;
       }
-      if (['radio', 'select', 'checkboxes'].includes(type)) {
+      if (['radio', 'select', 'checkboxes'].includes(interfaceType)) {
         prop.enum = get(field.options, 'dataSource', []);
       }
       schema[field.name] = {
@@ -62,12 +63,23 @@ const transforms = {
     }
     return arr;
   },
+  filter: async (fields: Model[], ctx?: any) => {
+    const properties = {
+      filter: {
+        type: 'filter',
+        'x-component-props': {
+          fields,
+        },
+      }
+    }
+    return properties;
+  },
 };
 
 export default async (ctx, next) => {
   const { resourceName, resourceKey } = ctx.action.params;
-  const [View, Field, Action] = ctx.db.getModels(['views', 'fields', 'actions']) as ModelCtor<Model>[];
-  const view = await View.findOne(View.parseApiJson({
+  const [View, Collection, Field, Action] = ctx.db.getModels(['views', 'collections', 'fields', 'actions']) as ModelCtor<Model>[];
+  let view = await View.findOne(View.parseApiJson({
     filter: {
       collection_name: resourceName,
       name: resourceKey,
@@ -76,8 +88,15 @@ export default async (ctx, next) => {
     //   appends: ['actions', 'fields'],
     // },
   }));
-  // console.log('getView', ctx.action.params, mode);
-  const collection = await view.getCollection();
+  if (!view) {
+    // 如果不存在 view，新建一个
+    view = new View({type: resourceKey, template: 'FilterForm'});
+  }
+  const collection = await Collection.findOne({
+    where: {
+      name: resourceName,
+    },
+  });
   const fields = await collection.getFields({
     where: {
       developerMode: ctx.state.developerMode,
@@ -94,9 +113,8 @@ export default async (ctx, next) => {
       ['sort', 'asc'],
     ]
   });
-  const actionNames = view.options.actionNames||[];
-  console.log(view.options);
-  if (view.type === 'table') {
+  const actionNames = view.get('actionNames') || [];
+  if (view.get('type') === 'table') {
     const defaultTabs = await collection.getTabs({
       where: {
         default: true,
@@ -104,14 +122,21 @@ export default async (ctx, next) => {
     });
     view.setDataValue('defaultTabName', get(defaultTabs, [0, 'name']));
   }
-  if (view.options.updateViewName) {
-    view.setDataValue('rowViewName', view.options.updateViewName);
+  if (view.get('updateViewName')) {
+    view.setDataValue('rowViewName', view.get('updateViewName'));
   }
   view.setDataValue('viewCollectionName', view.collection_name);
+  let title = collection.get('title');
+  const mode = get(ctx.action.params, ['values', 'mode'], ctx.action.params.mode);
+  if (mode === 'update') {
+    title = `编辑${title}`;
+  } else {
+    title = `创建${title}`;
+  }
   ctx.body = {
-    ...view.toJSON(),
-    ...(view.options||{}),
-    ofs: fields,
+    ...view.get(),
+    title,
+    original: fields,
     fields: await (transforms[view.type]||transforms.table)(fields, ctx),
     actions: actions.filter(action => actionNames.includes(action.name)).map(action => ({
       ...action.toJSON(),
