@@ -37,8 +37,9 @@ const api = Api.create({
 api.resourcer.use(async (ctx, next) => {
   const { resourceName } = ctx.action.params;
   const table = ctx.db.getTable(resourceName);
+  ctx.state.developerMode = false;
   if (table && table.hasField('developerMode')) {
-    ctx.action.setParam('filter.developerMode', false);
+    ctx.action.setParam('filter.developerMode', ctx.state.developerMode);
   }
   await next();
 });

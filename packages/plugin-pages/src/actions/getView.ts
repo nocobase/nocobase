@@ -1,9 +1,9 @@
 import { ResourceOptions } from '@nocobase/resourcer';
 import { Model, ModelCtor } from '@nocobase/database';
-import { get } from 'lodash';
+import { get, set } from 'lodash';
 
 const transforms = {
-  table: async (fields: Model[]) => {
+  table: async (fields: Model[], context?: any) => {
     const arr = [];
     for (const field of fields) {
       if (!get(field.component, 'showInTable')) {
@@ -17,7 +17,8 @@ const transforms = {
     }
     return arr;
   },
-  form: async (fields: Model[]) => {
+  form: async (fields: Model[], ctx?: any) => {
+    const mode = get(ctx.action.params, ['values', 'mode'], ctx.action.params.mode);
     const schema = {};
     for (const field of fields) {
       if (!get(field.component, 'showInForm')) {
@@ -32,6 +33,9 @@ const transforms = {
       if (type === 'select') {
         prop.type = 'string'
       }
+      if (mode === 'update' && field.get('createOnly')) {
+        set(prop, 'x-component-props.disabled', true);
+      }
       const defaultValue = get(field.options, 'defaultValue');
       if (defaultValue) {
         prop.default = defaultValue;
@@ -45,7 +49,7 @@ const transforms = {
     }
     return schema;
   },
-  details: async (fields: Model[]) => {
+  details: async (fields: Model[], context?: any) => {
     const arr = [];
     for (const field of fields) {
       if (!get(field.component, 'showInDetail')) {
@@ -72,13 +76,20 @@ export default async (ctx, next) => {
     //   appends: ['actions', 'fields'],
     // },
   }));
+  // console.log('getView', ctx.action.params, mode);
   const collection = await view.getCollection();
   const fields = await collection.getFields({
+    where: {
+      developerMode: ctx.state.developerMode,
+    },
     order: [
       ['sort', 'asc'],
     ]
   });
   const actions = await collection.getActions({
+    where: {
+      developerMode: ctx.state.developerMode,
+    },
     order: [
       ['sort', 'asc'],
     ]
@@ -100,7 +111,8 @@ export default async (ctx, next) => {
   ctx.body = {
     ...view.toJSON(),
     ...(view.options||{}),
-    fields: await (transforms[view.type]||transforms.table)(fields),
+    ofs: fields,
+    fields: await (transforms[view.type]||transforms.table)(fields, ctx),
     actions: actions.filter(action => actionNames.includes(action.name)).map(action => ({
       ...action.toJSON(),
       ...action.options,

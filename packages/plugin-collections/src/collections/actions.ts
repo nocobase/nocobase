@@ -78,6 +78,16 @@ export default {
       },
     },
     {
+      interface: 'boolean',
+      type: 'boolean',
+      name: 'developerMode',
+      title: '开发者模式',
+      defaultValue: false,
+      component: {
+        type: 'boolean',
+      },
+    },
+    {
       interface: 'json',
       type: 'json',
       name: 'options',

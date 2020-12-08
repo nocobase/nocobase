@@ -36,7 +36,7 @@ export default async function getRoutes(ctx, next) {
   const Page = database.getModel('pages');
   let pages = await Page.findAll({
     where: {
-      developerMode: false,
+      developerMode: ctx.state.developerMode,
     },
     order: [['sort', 'asc']],
   });
