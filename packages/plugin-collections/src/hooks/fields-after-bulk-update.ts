@@ -14,7 +14,7 @@ export default async function (options: any = {}) {
       transaction,
     });
     for (const field of fields) {
-      await field.migrate();
+      await field.migrate(options);
     }
   }
 }
