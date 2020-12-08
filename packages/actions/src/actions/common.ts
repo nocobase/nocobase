@@ -144,19 +144,17 @@ export async function get(ctx: Context, next: Next) {
     associated,
     resourceField,
     associatedName,
-  } = ctx.action.params as {
-    associated: Model, 
-    associatedName: string, 
-    resourceField: Relation,
-    values: any,
-  };
+    resourceName,
+    resourceKey,
+    resourceKeyAttribute,
+    fields = []
+  } = ctx.action.params;
   if (associated && resourceField) {
     const AssociatedModel = ctx.db.getModel(associatedName);
     if (!(associated instanceof AssociatedModel)) {
       throw new Error(`${associatedName} associated model invalid`);
     }
     const getAccessor = resourceField.getAccessors().get;
-    const { resourceKey, resourceKeyAttribute, fields = [] } = ctx.action.params;
     const TargetModel = ctx.db.getModel(resourceField.getTarget());
     const options = TargetModel.parseApiJson({
       fields,
@@ -175,7 +173,6 @@ export async function get(ctx: Context, next: Next) {
       ctx.body = model;
     }
   } else {
-    const { resourceName, resourceKey, resourceKeyAttribute, fields = [] } = ctx.action.params;
     const Model = ctx.db.getModel(resourceName);
     const options = Model.parseApiJson({
       fields,
@@ -302,53 +299,49 @@ export async function destroy(ctx: Context, next: Next) {
     associated,
     resourceField,
     associatedName,
-  } = ctx.action.params as {
-    associated: Model, 
-    associatedName: string, 
-    resourceField: Relation,
-    values: any,
-  };
+    resourceName,
+    resourceKey,
+    resourceKeyAttribute,
+    filter
+  } = ctx.action.params;
+  const transaction = await ctx.db.sequelize.transaction();
+  const commonOptions = { transaction, context: ctx };
   if (associated && resourceField) {
     const AssociatedModel = ctx.db.getModel(associatedName);
     if (!(associated instanceof AssociatedModel)) {
+      await transaction.rollback();
       throw new Error(`${associatedName} associated model invalid`);
     }
     const {get: getAccessor, remove: removeAccessor, set: setAccessor} = resourceField.getAccessors();
-    const { resourceKey, resourceKeyAttribute, fields = [] } = ctx.action.params;
     const TargetModel = ctx.db.getModel(resourceField.getTarget());
-    const options = TargetModel.parseApiJson({
-      fields,
-    });
+    const { where } = TargetModel.parseApiJson({ filter, context: ctx });
     if (resourceField instanceof HasOne || resourceField instanceof BelongsTo) {
-      const model: Model = await associated[getAccessor]({ ...options, context: ctx });
-      await associated[setAccessor](null);
-      ctx.body = await model.destroy();
+      const model: Model = await associated[getAccessor](commonOptions);
+      await associated[setAccessor](null, commonOptions);
+      // @ts-ignore
+      ctx.body = await model.destroy(commonOptions);
     } else if (resourceField instanceof HasMany || resourceField instanceof BelongsToMany) {
+      const primaryKey = resourceKeyAttribute || resourceField.options.targetKey || TargetModel.primaryKeyAttribute;
       const [model]: Model[] = await associated[getAccessor]({
-        ...options,
-        where: {
-          [resourceKeyAttribute || resourceField.options.targetKey || TargetModel.primaryKeyAttribute]: resourceKey,
-        },
-        context: ctx,
+        where: resourceKey ? { [primaryKey]: resourceKey } : where,
+        ...commonOptions
       });
-      await associated[removeAccessor](model);
-      ctx.body = await model.destroy();
+      await associated[removeAccessor](model, commonOptions);
+      // @ts-ignore
+      ctx.body = await model.destroy(commonOptions);
     }
   } else {
-    const { resourceName, resourceKey, resourceKeyAttribute, values } = ctx.action.params;
     const Model = ctx.db.getModel(resourceName);
-    const resourceKeys = resourceKey ? resourceKey.split(',') : values[`${resourceKeyAttribute || Model.primaryKeyAttribute}s`];
+    const { where } = Model.parseApiJson({ filter, context: ctx });
+    const primaryKey = resourceKeyAttribute || Model.primaryKeyAttribute;
     const data = await Model.destroy({
-      where: {
-        [resourceKeyAttribute || Model.primaryKeyAttribute]: {
-          [Op.in]: resourceKeys,
-        },
-      },
+      where: resourceKey ? { [primaryKey]: resourceKey } : where,
       // @ts-ignore hooks 里添加 context
-      context: ctx,
+      ...commonOptions,
     });
     ctx.body = data;
   }
+  await transaction.commit();
   await next();
 }
 
