@@ -3,6 +3,11 @@ import CollectionModel from '../models/collection';
 const defaultValues = {
   actions: [
     {
+      type: 'filter',
+      name: 'filter',
+      title: '筛选',
+    },
+    {
       type: 'list',
       name: 'list',
       title: '查看',
@@ -55,7 +60,7 @@ const defaultValues = {
       name: 'table',
       title: '列表',
       template: 'Table',
-      actionNames: ['create', 'destroy'],
+      actionNames: ['filter', 'create', 'destroy'],
       default: true,
     },
   ],
@@ -73,7 +78,7 @@ const defaultValues = {
 export default async function (model: CollectionModel, options: any = {}) {
   const { migrate = true } = options;
   if (migrate) {
-    await model.migrate();
+    await model.migrate(options);
   }
   await model.updateAssociations(defaultValues, options);
 }

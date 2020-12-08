@@ -10,6 +10,7 @@ export const string = {
   options: {
     interface: 'string',
     type: 'string',
+    filterable: true,
     component: {
       type: 'string',
     },

@@ -35,11 +35,12 @@ export class FieldModel extends BaseModel {
     };
   }
 
-  async migrate() {
-    if (!this.get('collection_name')) {
+  async migrate(options: any = {}) {
+    const collectionName = this.get('collection_name');
+    if (!collectionName) {
       return false;
     }
-    const table = this.database.getTable(this.get('collection_name'));
+    const table = this.database.getTable(collectionName);
     table.addField(await this.getOptions());
     await table.sync({
       force: false,

@@ -74,6 +74,7 @@ export class CollectionModel extends BaseModel {
     }
     if (associationTableNames.length) {
       await CollectionModel.load({
+        ...opts,
         where: {
           name: {
             [Op.in]: associationTableNames,
@@ -88,7 +89,7 @@ export class CollectionModel extends BaseModel {
    * 迁移
    */
   async migrate(options: MigrateOptions = {}) {
-    const table = await this.loadTableOptions();
+    const table = await this.loadTableOptions(options);
     return await table.sync({
       force: false,
       alter: {
@@ -121,12 +122,14 @@ export class CollectionModel extends BaseModel {
    * @param options 
    */
   static async load(options: LoadOptions = {}) {
-    const { reset = false, where = {} } = options;
+    const { reset = false, where = {}, transaction } = options;
     const collections = await this.findAll({
+      transaction,
       where,
     });
     for (const collection of collections) {
       await collection.loadTableOptions({
+        transaction,
         reset,
       });
     }
