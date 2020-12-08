@@ -36,6 +36,9 @@ export class FieldModel extends BaseModel {
   }
 
   async migrate() {
+    if (!this.get('collection_name')) {
+      return false;
+    }
     const table = this.database.getTable(this.get('collection_name'));
     table.addField(await this.getOptions());
     await table.sync({
