@@ -74,6 +74,7 @@ export function parseRequest(request: ParseRequest, options: ParseOptions = {}):
       '/:resourceName': {
         get: accessors.list,
         post: accessors.create,
+        delete: accessors.delete
       },
       '/:resourceName/:resourceKey': {
         get: accessors.get,
@@ -84,6 +85,7 @@ export function parseRequest(request: ParseRequest, options: ParseOptions = {}):
       '/:associatedName/:associatedKey/:resourceName': {
         get: accessors.list,
         post: accessors.create,
+        delete: accessors.delete,
       },
       '/:associatedName/:associatedKey/:resourceName/:resourceKey': {
         get: accessors.get,
@@ -106,6 +108,7 @@ export function parseRequest(request: ParseRequest, options: ParseOptions = {}):
       '/:associatedName/:associatedKey/:resourceName': {
         get: accessors.list,
         post: accessors.create,
+        delete: accessors.delete,
       },
       '/:associatedName/:associatedKey/:resourceName/:resourceKey': {
         get: accessors.get,
