@@ -1,9 +1,9 @@
 import Database, { ModelCtor } from '@nocobase/database';
-import { getDatabase } from '.';
-import BaseModel from '../models/base';
+import { getDatabase } from '../';
+import BaseModel from '../../models/base';
 import _ from 'lodash';
 
-describe('base model', () => {
+describe('models.base', () => {
   let database: Database;
   let TestModel: ModelCtor<BaseModel>;
   let test: BaseModel;

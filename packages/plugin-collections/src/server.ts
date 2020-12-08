@@ -26,7 +26,7 @@ export default async function (this: Application, options = {}) {
     // 加载数据库表 collections 中已经保存的表配置
     // 如果未 sync 可能报错
     // TODO collections sync
-    await database.getModel('collections').load();
+    // await database.getModel('collections').load();
   } catch (error) {
   }
 }

@@ -4,6 +4,7 @@ import collectionsAfterCreate from './collections-after-create';
 import fieldsBeforeValidate from './fields-before-validate';
 import fieldsAfterCreate from './fields-after-create';
 import generateName from './generateName';
+import fieldsAfterBulkUpdate from './fields-after-bulk-update';
 
 export default {
   collections: {
@@ -12,7 +13,8 @@ export default {
   },
   fields: {
     beforeValidate: fieldsBeforeValidate,
-    afterCreate: fieldsAfterCreate
+    afterCreate: fieldsAfterCreate,
+    afterBulkUpdate: fieldsAfterBulkUpdate,
   },
   actions: {
     beforeValidate: generateName
