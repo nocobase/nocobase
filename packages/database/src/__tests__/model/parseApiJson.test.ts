@@ -30,7 +30,15 @@ beforeAll(() => {
       },
     ]
   });
-
+  db.table({
+    name: 'bobs',
+    fields: [
+      {
+        type: 'belongsTo',
+        name: 'bar'
+      }
+    ]
+  });
   db.table({
     name: 'bars',
     fields: [
@@ -38,6 +46,10 @@ beforeAll(() => {
         type: 'belongsTo',
         name: 'foo',
       },
+      {
+        type: 'hasOne',
+        name: 'bob'
+      }
     ],
   });
   db.table({
@@ -113,6 +125,25 @@ describe('parseApiJson', () => {
       })).toEqual({ attributes: {
         include: ['col']
       }});
+    });
+
+    // TODO(bug): 当遇到多层关联时，attributes 控制不正确
+    it.skip('assciation fields', () => {
+      expect(Foo.parseApiJson({
+        fields: ['bars.bob', 'bars'],
+      })).toEqual({
+        include: [
+          {
+            association: 'bars',
+            include: [
+              {
+                association: 'bob',
+              }
+            ]
+          }
+        ],
+        distinct: true
+      });
     });
   
     it('filter and fields', () => {

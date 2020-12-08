@@ -40,9 +40,19 @@ describe('create', () => {
         .post('/posts:create1')
         .send({
           title: 'title1',
-          sort: 100
+          sort: 100,
+          user: { name: 'aaa', profile: { email: 'email' } }
         });
       expect(response.body.sort).toBe(null);
+      expect(response.body.user_id).toBe(1);
+      
+      const postWithUser = await agent
+        .get(`/posts/${response.body.id}?fields=user`);
+      expect(postWithUser.body.user.id).toBe(1);
+      
+      const user = await agent
+        .get(`/users/${postWithUser.body.user.id}?fields=profile`);
+      expect(user.body.profile).toBe(null);
     });
 
     it('create with options.fields.only by custom action', async () => {
