@@ -51,6 +51,7 @@ export default {
       title: '视图类型',
       dataSource: [
         { label: '表格', value: 'table' },
+        { label: '表单', value: 'form' },
         { label: '看板', value: 'kanban', disabled: true },
         { label: '日历', value: 'calendar', disabled: true },
         { label: '地图', value: 'map', disabled: true },
@@ -63,15 +64,50 @@ export default {
       },
     },
     {
-      interface: 'string',
+      interface: 'select',
       type: 'string',
       name: 'template',
       title: '模板',
+      dataSource: [
+        { label: '表单', value: 'DrawerForm' },
+        { label: '常规表格', value: 'Table' },
+        { label: '简易表格', value: 'SimpleTable' },
+      ],
       component: {
         type: 'string',
         showInTable: true,
         showInDetail: true,
         showInForm: true,
+      },
+    },
+    {
+      interface: 'radio',
+      type: 'virtual',
+      name: 'defaultPerPage',
+      title: '每页显示几行数据',
+      defaultValue: 50,
+      dataSource: [
+        {label: '20', value: 20},
+        {label: '50', value: 50},
+        {label: '100', value: 100},
+      ],
+      component: {
+        type: 'radio',
+        showInForm: true,
+        showInDetail: true,
+      },
+    },
+    {
+      interface: 'boolean',
+      type: 'virtual',
+      name: 'draggable',
+      title: '支持拖拽数据排序',
+      showInForm: true,
+      showInDetail: true,
+      component: {
+        type: 'checkbox',
+        showInForm: true,
+        showInDetail: true,
       },
     },
     {
