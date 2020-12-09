@@ -1,6 +1,6 @@
 import { Agent, getAgent, getApp } from '../';
 import { Application } from '@nocobase/server';
-import * as types from '../../interfaces/types';
+import { options, types } from '../../interfaces';
 jest.setTimeout(30000);
 import { FieldModel } from '../../models';
 describe('models.field', () => {
@@ -19,5 +19,35 @@ describe('models.field', () => {
     const field = new Field();
     field.setInterface('updatedAt');
     expect(field.get()).toMatchObject(types.updatedAt.options)
+  });
+
+  it('dataSource', async () => {
+    const Collection = app.database.getModel('collections');
+    // @ts-ignore
+    const collection = await Collection.create({
+      title: 'tests',
+    });
+    await collection.updateAssociations({
+      fields: [
+        {
+          title: 'xx',
+          name: 'xx',
+          interface: 'select',
+          type: 'virtual',
+          dataSource: [
+            {label: 'xx', value: 'xx'},
+          ],
+          component: {
+            type: 'string',
+            showInDetail: true,
+            showInForm: true,
+          },
+        }
+      ],
+    });
+    const fields = await collection.getFields();
+    expect(fields[0].get('dataSource')).toEqual([
+      {label: 'xx', value: 'xx'},
+    ]);
   });
 });
