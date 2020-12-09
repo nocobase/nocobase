@@ -37,6 +37,9 @@ const transforms = {
       if (mode === 'update' && field.get('createOnly')) {
         set(prop, 'x-component-props.disabled', true);
       }
+      if (typeof field.get('showTime') === 'boolean') {
+        set(prop, 'x-component-props.showTime', field.get('showTime'));
+      }
       const defaultValue = get(field.options, 'defaultValue');
       if (defaultValue) {
         prop.default = defaultValue;
