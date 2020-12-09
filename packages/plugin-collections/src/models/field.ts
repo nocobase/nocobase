@@ -14,7 +14,8 @@ export class FieldModel extends BaseModel {
   constructor(values: any = {}, options: any = {}) {
     let data = {
       ...(values.options||{}),
-      ..._.omit(values, 'options'),
+      ...values,
+      // ..._.omit(values, 'options'),
     };
     const interfaceType = data.interface;
     if (interfaceType) {
@@ -25,6 +26,7 @@ export class FieldModel extends BaseModel {
     }
     // @ts-ignore
     super(data, options);
+    // console.log(data);
   }
 
   generateName() {
