@@ -63,6 +63,20 @@ export interface TableOptions extends Omit<ModelOptions<Model>, 'name'|'modelNam
   fields?: Array<FieldOptions>;
 
   /**
+   * 是否可排序
+   */
+  sortable?: boolean;
+
+  /**
+   * 排序字段配置
+   */
+  sortField?: string | {
+    name?: string,
+    scope?: string[],
+    next?: 'max' | 'min'
+  };
+
+  /**
    * 其他的一些情况
    */
   [key: string]: any;
@@ -180,6 +194,10 @@ export class Table {
     this.Model.init(this.getModelAttributes(), this.getModelOptions());
 
     if (reinitialize === true) {
+      if (this.options.sortable) {
+        this.Model.addHook('beforeCreate', this.Model.setSortValueHook);
+      }
+
       this.associating = new Map(this.associations);
       // 需要额外处理 associating 的情况
       // 建立表关系需要遍历多个 Model，所以在这里需要标记哪些已定义的 Model 需要建立表关系
