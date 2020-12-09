@@ -220,7 +220,7 @@ export class Table {
       updatedAt: Utils.underscoredIf('updatedAt', underscored),
       indexes: Array.from(this.indexes.values()),
       // freezeTableName: true,
-      hooks: _.get(this.Model.options, 'hooks') || {},
+      hooks: _.get(this.getModel(), 'options.hooks') || {},
       ...this.modelOptions,
     };
   }
