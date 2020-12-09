@@ -211,6 +211,17 @@ export default {
     },
     {
       interface: 'boolean',
+      type: 'virtual',
+      name: 'showTime',
+      title: '显示时间',
+      defaultValue: false,
+      component: {
+        type: 'boolean',
+        showInForm: true,
+      },
+    },
+    {
+      interface: 'boolean',
       type: 'boolean',
       name: 'developerMode',
       title: '开发者模式',

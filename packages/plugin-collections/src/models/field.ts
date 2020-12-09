@@ -22,8 +22,16 @@ export class FieldModel extends BaseModel {
 
   setInterface(value) {
     const { options } = types[value];
+    let args = [];
+    // 如果是新数据或 interface 不相等，interface options 放后
+    if (this.isNewRecord || this.get('interface') !== value) {
+      args = [this.get(), options];
+    } else {
+      // 已存在的数据更新，不相等，interface options 放前面
+      args = [options, this.get()];
+    }
     // @ts-ignore
-    const values = Utils.merge(options, this.get());
+    const values = Utils.merge(...args);
     this.set(values);
   }
 

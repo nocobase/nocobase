@@ -85,7 +85,7 @@ export const percent = {
     sortable: true,
     precision: 0,
     component: {
-      type: 'number',
+      type: 'percent',
       suffix: '%',
     },
   },
@@ -205,7 +205,7 @@ export const datetime = {
   options: {
     interface: 'datetime',
     type: 'date',
-    dateonly: false, // dateonly 
+    showTime: false,
     filterable: true,
     sortable: true,
     format: 'YYYY-MM-DD HH:mm:ss',
@@ -349,6 +349,8 @@ export const createdAt = {
   options: {
     interface: 'createdAt',
     type: 'date',
+    name: 'created_at',
+    showTime: true,
     required: true,
     filterable: true,
     sortable: true,
@@ -375,6 +377,8 @@ export const updatedAt = {
   options: {
     interface: 'updatedAt',
     type: 'date',
+    name: 'updated_at',
+    showTime: true,
     required: true,
     filterable: true,
     sortable: true,
