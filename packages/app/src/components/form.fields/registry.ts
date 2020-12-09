@@ -7,7 +7,7 @@ import { ArrayTable } from './array-table'
 import { Checkbox } from './checkbox'
 import { DatePicker } from './date-picker'
 import { Input } from './input'
-import { NumberPicker } from './number-picker'
+import { NumberPicker, Percent } from './number-picker'
 import { Password } from './password'
 import { Radio } from './radio'
 import { Range } from './range'
@@ -34,6 +34,7 @@ export const setup = () => {
     string: Input,
     textarea: Input.TextArea,
     number: NumberPicker,
+    percent: Percent,
     password: Password,
     radio: Radio.Group,
     range: Range,
