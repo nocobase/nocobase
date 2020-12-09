@@ -208,7 +208,8 @@ export const datetime = {
     showTime: false,
     filterable: true,
     sortable: true,
-    format: 'YYYY-MM-DD HH:mm:ss',
+    dateFormat: 'YYYY-MM-DD',
+    timeFormat: 'HH:mm:ss',
     component: {
       type: 'date',
     },
@@ -222,7 +223,7 @@ export const time = {
     type: 'time',
     filterable: true,
     sortable: true,
-    format: 'HH:mm:ss',
+    timeFormat: 'HH:mm:ss',
     component: {
       type: 'time',
     },
@@ -271,7 +272,7 @@ export const subTable = {
     type: 'hasMany',
     // fields: [],
     component: {
-      type: 'subTable',
+      type: 'table',
     },
   },
 };
@@ -351,6 +352,8 @@ export const createdAt = {
     type: 'date',
     name: 'created_at',
     showTime: true,
+    dateFormat: 'YYYY-MM-DD',
+    timeFormat: 'HH:mm:ss',
     required: true,
     filterable: true,
     sortable: true,
@@ -373,12 +376,14 @@ export const updatedBy = {
 };
 
 export const updatedAt = {
-  title: '更新日期',
+  title: '更新时间',
   options: {
     interface: 'updatedAt',
     type: 'date',
     name: 'updated_at',
     showTime: true,
+    dateFormat: 'YYYY-MM-DD',
+    timeFormat: 'HH:mm:ss',
     required: true,
     filterable: true,
     sortable: true,

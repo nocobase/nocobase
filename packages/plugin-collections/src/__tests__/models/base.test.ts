@@ -256,4 +256,31 @@ describe('models.base', () => {
       name: 'name1',
     });
   });
+
+  it('component', async () => {
+    const t = await TestModel.create({
+      component: {
+        arr: [
+          {a: 'a', aa: 'aa'},
+          {b: 'b', bb: 'bb'},
+          {c: 'c', cc: 'cc'},
+        ],
+      },
+    });
+    t.set({
+      component: {
+        arr: [
+          {a: 'aa'},
+          {b: 'bb'},
+        ],
+      }
+    });
+    await t.save();
+    expect(t.get('component')).toEqual({
+      arr: [
+        {a: 'aa'},
+        {b: 'bb'},
+      ],
+    });
+  })
 });
