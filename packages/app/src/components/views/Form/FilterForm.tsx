@@ -15,7 +15,7 @@ import {
 import { QuestionCircleOutlined } from '@ant-design/icons';
 
 export function FilterForm(props: any) {
-  const actions = createAsyncFormActions();
+  const actions = createFormActions();
   const { title, fields: properties ={} } = props.schema||{};
   return (
       <SchemaForm 

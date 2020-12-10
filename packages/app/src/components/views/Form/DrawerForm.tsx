@@ -46,7 +46,7 @@ export const DrawerForm = forwardRef((props: any, ref) => {
     setVisible,
     getData: run,
   }));
-  const actions = createAsyncFormActions();
+  const actions = createFormActions();
   const { title, fields: properties ={} } = props.schema||{};
   console.log({onFinish});
   return (
