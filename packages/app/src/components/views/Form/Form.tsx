@@ -15,7 +15,7 @@ import {
 import { QuestionCircleOutlined } from '@ant-design/icons';
 
 export function Form(props: any) {
-  const actions = createAsyncFormActions();
+  const actions = createFormActions();
 
   return (
     <Card bordered={false}>

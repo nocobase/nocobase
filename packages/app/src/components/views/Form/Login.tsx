@@ -16,7 +16,7 @@ import { QuestionCircleOutlined } from '@ant-design/icons';
 import { Link, history, request, useModel, useLocation } from 'umi';
 
 export function Login(props: any) {
-  const actions = createAsyncFormActions();
+  const actions = createFormActions();
   const { initialState = {}, loading, error, refresh, setInitialState } = useModel('@@initialState');
   const { redirect } = props.location.query;
 
