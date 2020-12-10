@@ -30,6 +30,9 @@ const config = {
 export function getDatabase() {
   return new Database({
     ...config,
+    sync: {
+      force: true,
+    },
     hooks: {
       beforeDefine(columns, model) {
         model.tableName = `${getTestKey()}_${model.tableName || model.name.plural}`;
