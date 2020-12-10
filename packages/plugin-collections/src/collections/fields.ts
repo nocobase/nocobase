@@ -54,11 +54,39 @@ export default {
       name: 'interface',
       title: '字段类型',
       dataSource: options,
+      createOnly: true,
       component: {
         type: 'select',
         showInTable: true,
         showInDetail: true,
         showInForm: true,
+        "x-linkages": [
+          {
+            "type": "value:visible",
+            "target": "precision",
+            "condition": "{{ ['number', 'percent'].indexOf($self.value) !== -1 }}"
+          },
+          {
+            "type": "value:visible",
+            "target": "dataSource",
+            "condition": "{{ ['select', 'multipleSelect', 'radio', 'checkboxes'].indexOf($self.value) !== -1 }}"
+          },
+          {
+            "type": "value:visible",
+            "target": "dateFormat",
+            "condition": "{{ ['datetime', 'createdAt', 'updatedAt'].indexOf($self.value) !== -1 }}"
+          },
+          {
+            "type": "value:visible",
+            "target": "showTime",
+            "condition": "{{ ['datetime', 'createdAt', 'updatedAt'].indexOf($self.value) !== -1 }}"
+          },
+          {
+            "type": "value:visible",
+            "target": "timeFormat",
+            "condition": "{{ ['time', 'datetime', 'createdAt', 'updatedAt'].indexOf($self.value) !== -1 }}"
+          },
+        ],
       },
     },
     {
@@ -111,6 +139,70 @@ export default {
       },
     },
     {
+      interface: 'select',
+      type: 'virtual',
+      name: 'precision',
+      title: '精度',
+      defaultValue: 0,
+      dataSource: [
+        {value: 0, label: '1'},
+        {value: 1, label: '1.0'},
+        {value: 2, label: '1.00'},
+        {value: 3, label: '1.000'},
+        {value: 4, label: '1.0000'},
+      ],
+      component: {
+        type: 'number',
+        showInForm: true,
+      },
+    },
+    {
+      interface: 'select',
+      type: 'virtual',
+      name: 'dateFormat',
+      title: '日期格式',
+      defaultValue: 'YYYY-MM-DD',
+      dataSource: [
+        {value: 'YYYY-MM-DD', label: 'YYYY-MM-DD'},
+      ],
+      component: {
+        type: 'string',
+        showInForm: true,
+      },
+    },
+    {
+      interface: 'boolean',
+      type: 'virtual',
+      name: 'showTime',
+      title: '显示时间',
+      defaultValue: false,
+      component: {
+        type: 'boolean',
+        showInForm: true,
+        "x-linkages": [
+          {
+            "type": "value:visible",
+            "target": "timeFormat",
+            "condition": "{{ ($form.values && $form.values.interface === 'time') || $self.value === true }}"
+          },
+        ],
+      },
+    },
+    {
+      interface: 'select',
+      type: 'virtual',
+      name: 'timeFormat',
+      title: '时间格式',
+      defaultValue: 'HH:mm:ss',
+      dataSource: [
+        { value: 'HH:mm:ss', label: 'HH:mm:ss' },
+      ],
+      component: {
+        type: 'string',
+        showInForm: true,
+      },
+    },
+    {
       interface: 'linkTo',
       multiple: false,
       type: 'belongsTo',
@@ -137,7 +229,7 @@ export default {
       },
     },
     {
-      interface: 'string',
+      interface: 'textarea',
       type: 'virtual',
       name: 'component.tooltip',
       title: '提示信息',

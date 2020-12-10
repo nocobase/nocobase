@@ -6,7 +6,8 @@
   "dependencies": {
     "@nocobase/database": "^0.3.0-alpha.0",
     "@nocobase/resourcer": "^0.3.0-alpha.0",
-    "@nocobase/server": "^0.3.0-alpha.0"
+    "@nocobase/server": "^0.3.0-alpha.0",
+    "deepmerge": "^4.2.2"
   },
   "devDependencies": {
     "@nocobase/actions": "^0.3.0-alpha.0"

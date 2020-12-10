@@ -143,6 +143,7 @@ describe('collection hooks', () => {
     });
 
     expect(createdField.body).toMatchObject({
+      ...types['string'].options,
       ...{
         interface: 'string',
         title: '名称',
@@ -152,7 +153,6 @@ describe('collection hooks', () => {
         sortable: true,
         filterable: true,
       },
-      ...types['string'].options,
       sort: 1,
       collection_name: 'tests',
     });

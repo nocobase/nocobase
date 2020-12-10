@@ -1,6 +1,6 @@
 import _ from 'lodash';
 import { getDataTypeKey, Model } from '@nocobase/database';
-import { Utils } from 'sequelize';
+import { merge } from '../utils';
 
 export function generateName(title?: string): string {
   return `${Math.random().toString(36).replace('0.', '').slice(-4).padStart(4, '0')}`;
@@ -83,7 +83,7 @@ export class BaseModel extends Model {
       // 如果是 object 数据，merge 处理
       if (_.isPlainObject(value)) {
         // @ts-ignore
-        value = Utils.merge(this.get(key)||{}, value);
+        value = merge(this.get(key)||{}, value);
       }
       const [column, ...path] = key.split('.');
       if (!options.raw) {

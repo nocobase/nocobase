@@ -1,6 +1,10 @@
 import { getDatabase } from './';
 import {
-  HasMany, HasOne, Integer, BelongsTo, BelongsToMany
+  HASMANY as HasMany,
+  HASONE as HasOne, 
+  INTEGER as Integer, 
+  BELONGSTO as BelongsTo,
+  BELONGSTOMANY as BelongsToMany,
 } from '../fields';
 import { DataTypes } from 'sequelize';
 import Database from '..';

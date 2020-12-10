@@ -10,9 +10,9 @@ import {
   buildField,
   FieldOptions,
   Relation,
-  BelongsTo,
-  BelongsToMany,
-  Sort
+  BELONGSTO,
+  BELONGSTOMANY,
+  SORT
 } from './fields';
 import Database from './database';
 import { Model, ModelCtor } from './model';
@@ -129,7 +129,7 @@ export class Table {
   public relationTables = new Set<string>();
 
   get sortable(): boolean {
-    return Array.from(this.fields.values()).some(field => field instanceof Sort);
+    return Array.from(this.fields.values()).some(field => field instanceof SORT);
   }
 
   constructor(options: TableOptions, context: TabelContext) {
@@ -171,7 +171,7 @@ export class Table {
           if (this.database.isDefined(target)) {
             const TargetModel = this.database.getModel(target);
             // 如果关系表在之后才定义，未设置 targetKey 时，targetKey 默认值需要在 target model 初始化之后才能取到
-            if (association instanceof BelongsTo || association instanceof BelongsToMany) {
+            if (association instanceof BELONGSTO || association instanceof BELONGSTOMANY) {
               association.updateOptionsAfterTargetModelBeDefined();
             }
             this.Model[type](TargetModel, association.getAssociationOptions());
@@ -240,7 +240,7 @@ export class Table {
     for (const association of this.associations.values()) {
       const target = association.getTarget();
       names.add(target);
-      if (association instanceof BelongsToMany) {
+      if (association instanceof BELONGSTOMANY) {
         names.add(association.getThroughName());
       }
     }

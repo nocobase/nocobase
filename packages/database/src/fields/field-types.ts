@@ -81,13 +81,13 @@ export class Column extends Field {
   }
 }
 
-export class Boolean extends Column {
+export class BOOLEAN extends Column {
 }
 
-export class Number extends Column {
+export class NUMBER extends Column {
 }
 
-export class Integer extends Number {
+export class INTEGER extends NUMBER {
 
   public readonly options: Options.IntegerOptions;
 
@@ -117,7 +117,7 @@ export class Integer extends Number {
   }
 }
 
-export class Float extends Number {
+export class FLOAT extends NUMBER {
 
   public readonly options: Options.FloatOptions;
 
@@ -130,7 +130,7 @@ export class Float extends Number {
   }
 }
 
-export class Double extends Number {
+export class DOUBLE extends NUMBER {
   public readonly options: Options.DoubleOptions;
 
   public getAttributeOptions() {
@@ -142,7 +142,7 @@ export class Double extends Number {
   }
 }
 
-export class Decimal extends Number {
+export class DECIMAL extends NUMBER {
 
   public readonly options: Options.DecimalOptions;
 
@@ -155,7 +155,7 @@ export class Decimal extends Number {
   }
 }
 
-export class Real extends Number {
+export class REAL extends NUMBER {
 
   public readonly options: Options.RealOptions;
 
@@ -168,7 +168,7 @@ export class Real extends Number {
   }
 }
 
-export class String extends Column {
+export class STRING extends Column {
 
   public readonly options: Options.StringOptions;
 
@@ -182,7 +182,7 @@ export class String extends Column {
   }
 }
 
-export class Text extends Column {
+export class TEXT extends Column {
 
   public readonly options: Options.TextOptions;
 
@@ -206,10 +206,10 @@ export class Text extends Column {
   }
 }
 
-export class Time extends Column {
+export class TIME extends Column {
 }
 
-export class Date extends Column {
+export class DATE extends Column {
 
   public readonly options: Options.DateOptions;
 
@@ -223,13 +223,13 @@ export class Date extends Column {
   }
 }
 
-export class DateOnly extends Column {
+export class DATEONLY extends Column {
 }
 
-export class Virtual extends Column {
+export class VIRTUAL extends Column {
 }
 
-export class Reference extends Virtual {
+export class REFERENCE extends VIRTUAL {
 
   public getDataType() {
     return DataTypes.VIRTUAL;
@@ -248,7 +248,7 @@ export class Reference extends Virtual {
   }
 }
 
-export class Formula extends Virtual {
+export class FORMULA extends VIRTUAL {
 
   public getDataType() {
     return DataTypes.VIRTUAL;
@@ -284,7 +284,7 @@ export class Formula extends Virtual {
   }
 }
 
-export class Password extends String {
+export class PASSWORD extends STRING {
 
   public getDataType() {
     return DataTypes.STRING;
@@ -307,7 +307,7 @@ export class Password extends String {
   }
 }
 
-export class Array extends Column {
+export class ARRAY extends Column {
 
   public readonly options: Options.ArrayOptions;
 
@@ -324,10 +324,10 @@ export class Array extends Column {
   }
 }
 
-export class Json extends Column {
+export class JSON extends Column {
 }
 
-export class Jsonb extends Column {
+export class JSONB extends Column {
 }
 
 export interface HasOneAccessors {
@@ -371,16 +371,16 @@ export interface BelongsToManyAccessors {
 export abstract class Relation extends Field {
 
   public getAssociationType() {
-    if (this instanceof HasOne) {
+    if (this instanceof HASONE) {
       return 'hasOne';
     }
-    if (this instanceof HasMany) {
+    if (this instanceof HASMANY) {
       return 'hasMany';
     }
-    if (this instanceof BelongsTo) {
+    if (this instanceof BELONGSTO) {
       return 'belongsTo';
     }
-    if (this instanceof BelongsToMany) {
+    if (this instanceof BELONGSTOMANY) {
       return 'belongsToMany';
     }
   }
@@ -390,10 +390,10 @@ export abstract class Relation extends Field {
     if (target) {
       return target;
     }
-    if (this instanceof HasMany) {
+    if (this instanceof HASMANY) {
       return name;
     }
-    if (this instanceof BelongsToMany) {
+    if (this instanceof BELONGSTOMANY) {
       return name;
     }
     return Utils.pluralize(name);
@@ -462,7 +462,7 @@ class HasOneOrMany extends Relation {
   }
 }
 
-export class HasOne extends HasOneOrMany {
+export class HASONE extends HasOneOrMany {
 
   public readonly options: Options.HasOneOptions;
 
@@ -489,7 +489,7 @@ export class HasOne extends HasOneOrMany {
   }
 }
 
-export class HasMany extends HasOneOrMany {
+export class HASMANY extends HasOneOrMany {
 
   public readonly options: Options.HasManyOptions;
 
@@ -512,7 +512,7 @@ export class HasMany extends HasOneOrMany {
   }
 }
 
-export class BelongsTo extends Relation {
+export class BELONGSTO extends Relation {
 
   public readonly options: Options.BelongsToOptions;
 
@@ -567,7 +567,7 @@ export class BelongsTo extends Relation {
   }
 }
 
-export class BelongsToMany extends Relation {
+export class BELONGSTOMANY extends Relation {
 
   public readonly options: Options.BelongsToManyOptions;
 
@@ -690,10 +690,10 @@ export class BelongsToMany extends Relation {
   }
 }
 
-export class Sort extends Integer {
+export class SORT extends INTEGER {
   public readonly options: Options.SortOptions;
 
-  static async beforeCreateHook(this: Sort, model, options) {
+  static async beforeCreateHook(this: SORT, model, options) {
     const { transaction } = options;
     const table = this.context.sourceTable;
     const Model = table.getModel();
@@ -702,7 +702,7 @@ export class Sort extends Integer {
     const associations = table.getAssociations();
     scope.forEach(col => {
       const association = associations.get(col);
-      const dataKey = association && association instanceof BelongsTo
+      const dataKey = association && association instanceof BELONGSTO
         ? association.options.foreignKey
         : col;
       const value = model.getDataValue(dataKey);
@@ -712,7 +712,7 @@ export class Sort extends Integer {
     model.set(name, extremum + (next === 'max' ? 1 : -1));
   }
 
-  static async beforeBulkCreateHook(this: Sort, models, options) {
+  static async beforeBulkCreateHook(this: SORT, models, options) {
     const { transaction } = options;
     const table = this.context.sourceTable;
     const Model = table.getModel();
@@ -733,7 +733,7 @@ export class Sort extends Integer {
       const where = {};
       scope.forEach(col => {
         const association = associations.get(col);
-        const dataKey = association && association instanceof BelongsTo
+        const dataKey = association && association instanceof BELONGSTO
           ? association.options.foreignKey
           : col;
         const value = model.getDataValue(dataKey);
@@ -776,7 +776,7 @@ export class Sort extends Integer {
     super(options, context);
     const model = context.sourceTable.getModel();
     // TODO(feature): 可考虑策略模式，以在需要时对外提供接口
-    model.addHook('beforeCreate', Sort.beforeCreateHook.bind(this));
-    model.addHook('beforeBulkCreate', Sort.beforeBulkCreateHook.bind(this));
+    model.addHook('beforeCreate', SORT.beforeCreateHook.bind(this));
+    model.addHook('beforeBulkCreate', SORT.beforeBulkCreateHook.bind(this));
   }
 }

@@ -13,7 +13,7 @@ describe('models.collection', () => {
 
   afterEach(() => app.database.close());
 
-  it.only('import', async () => {
+  it('import', async () => {
     await app.database.getModel('collections').import({
       title: '示例',
       name: 'examples',
