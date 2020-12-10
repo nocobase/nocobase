@@ -8,7 +8,7 @@ describe('list', () => {
   
   beforeAll(async () => {
     resourcer.define({
-      name: 'posts',
+      name: 'articles',
       middlewares: [
         jsonReponse,
       ],
@@ -16,8 +16,8 @@ describe('list', () => {
     });
     db = await initDatabase();
     db.table({
-      name: 'posts',
-      tableName: 'actions__m__posts',
+      name: 'articles',
+      tableName: 'actions__articles',
       fields: [
         {
           type: 'string',
@@ -48,7 +48,7 @@ describe('list', () => {
 
   it('create', async () => {
     const response = await agent
-      .post('/posts')
+      .post('/articles')
       .send({
         title: 'title1',
       });
@@ -56,7 +56,7 @@ describe('list', () => {
   });
 
   it('list', async () => {
-    const response = await agent.get('/posts?fields=title&page=1');
+    const response = await agent.get('/articles?fields=title&page=1');
     expect(response.body).toEqual({
       data: [ { title: 'title1' } ],
       meta: { count: 1, page: 1, per_page: 20 }

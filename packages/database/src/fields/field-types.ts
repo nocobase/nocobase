@@ -708,8 +708,68 @@ export class Sort extends Integer {
       const value = model.getDataValue(dataKey);
       where[dataKey] = value != null ? value : null;
     });
-    const extremum = await Model[next](name, { where, transaction }) || 0;
+    const extremum: number = await Model[next](name, { where, transaction }) || 0;
     model.set(name, extremum + (next === 'max' ? 1 : -1));
+  }
+
+  static async beforeBulkCreateHook(this: Sort, models, options) {
+    const { transaction } = options;
+    const table = this.context.sourceTable;
+    const Model = table.getModel();
+    const { name, scope = [], next = 'max' } = this.options;
+    // 如果未配置范围限定，则可以进行性能优化处理（常用情况）。
+    if (!scope.length) {
+      const extremum: number = await Model[next](name, { transaction }) || 0;
+      models.forEach((model, i: number) => {
+        model.setDataValue(name, extremum + (i + 1) * (next === 'max' ? 1 : -1));
+      });
+      return;
+    }
+
+    const associations = table.getAssociations();
+    // 用于存放 where 条件与计算极值
+    const groups = new Map<Map<string, any>, number>();
+    await models.reduce((promise, model) => promise.then(async () => {
+      const where = {};
+      scope.forEach(col => {
+        const association = associations.get(col);
+        const dataKey = association && association instanceof BelongsTo
+          ? association.options.foreignKey
+          : col;
+        const value = model.getDataValue(dataKey);
+        where[dataKey] = value != null ? value : null;
+      });
+
+      const whereKeys = Object.keys(where);
+      let extremum: number;
+      // 以 map 作为 key
+      let combo: Map<string, any>;
+      // 查找与 where 值相等的组合
+      for (combo of groups.keys()) {
+        if (whereKeys.length === combo.size
+          && whereKeys.every(key => where[key] === combo.get(key))
+        ) {
+          // 如果找到的话则以之前储存的值作为基础极值
+          extremum = groups.get(combo);
+          break;
+        }
+      }
+      // 如未找到组合
+      if (typeof extremum === 'undefined') {
+        // 则使用 where 条件查询极值
+        extremum = await Model[next](name, { where, transaction }) || 0;
+        // 且使用 where 条件创建组合
+        combo = new Map();
+        whereKeys.forEach(key => {
+          combo.set(key, where[key]);
+        });
+      }
+      const nextValue = extremum + (next === 'max' ? 1 : -1);
+      // 设置数据行的排序值
+      model.setDataValue(name, nextValue);
+      // 保存新的排序值为对应 where 组合的极值，以供下次计算
+      groups.set(combo, nextValue);
+    }), Promise.resolve());
   }
 
   constructor(options: Options.SortOptions, context: FieldContext) {
@@ -717,5 +777,6 @@ export class Sort extends Integer {
     const model = context.sourceTable.getModel();
     // TODO(feature): 可考虑策略模式，以在需要时对外提供接口
     model.addHook('beforeCreate', Sort.beforeCreateHook.bind(this));
+    model.addHook('beforeBulkCreate', Sort.beforeBulkCreateHook.bind(this));
   }
 }

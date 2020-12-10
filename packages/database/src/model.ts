@@ -393,19 +393,22 @@ export abstract class Model extends SequelizeModel {
     for (const item of toUpsertObjects) {
       let target;
       if (typeof item[targetKey] === 'undefined') {
-        // TODO(optimize): 不确定 bulkCreate 的结果是否能保证顺序，能保证的话这里可以优化为批量处理
-        target = await Target.create(item, opts);
+        target = await this[accessors.create](item, opts);
       } else {
-        let created: boolean;
-        [target, created] = await Target.findOrCreate({
+        target = await Target.findOne({
+          ...opts,
           where: { [targetKey]: item[targetKey] },
-          defaults: item,
-          transaction
         });
-        if (!created) {
+        if (!target) {
+          target = await this[accessors.create](item, opts);
+        } else {
           await target.update(item, opts);
         }
       }
+      // TODO(optimize): 此处添加的对象其实已经创建了关联，
+      // 但考虑到单条 create 的 hook 要求带上关联键，且后面的 set，
+      // 所以仍然交给 set 再调用关联一次。
+      toSetItems.add(target);
 
       if (association instanceof BelongsToMany) {
         belongsToManyList.push({
@@ -413,7 +416,6 @@ export abstract class Model extends SequelizeModel {
           target
         });
       }
-      toSetItems.add(target);
 
       await target.updateAssociations(item, opts);
     }

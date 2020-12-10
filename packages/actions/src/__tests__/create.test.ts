@@ -47,7 +47,7 @@ describe('create', () => {
             { content: 'comment2', status: 'draft' },
           ]
         });
-      expect(response.body.sort).toBe(null);
+      expect(response.body.sort).toBe(1);
       expect(response.body.user_id).toBe(1);
       
       const postWithUser = await agent

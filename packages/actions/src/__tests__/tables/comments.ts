@@ -21,8 +21,18 @@ export default {
       name: 'user',
     },
     {
-      type: 'integer',
+      type: 'sort',
       name: 'sort'
+    },
+    {
+      type: 'sort',
+      name: 'sort_in_status',
+      scope: ['status']
+    },
+    {
+      type: 'sort',
+      name: 'sort_in_post',
+      scope: ['post']
     }
   ],
   scopes: {
@@ -31,6 +41,5 @@ export default {
         status: 'published'
       }
     }
-  },
-  sortable: true
+  }
 } as TableOptions;

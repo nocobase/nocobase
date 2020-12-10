@@ -159,11 +159,6 @@ export class Table {
   }
 
   public modelInit(reinitialize: Reinitialize = false) {
-    let modelOptions;
-    if (this.Model) {
-      console.log('model init first');
-      modelOptions = this.getModelOptions();
-    }
     if (reinitialize || !this.Model) {
       this.Model = this.defaultModel || class extends Model {};
       this.Model.database = this.database;
@@ -186,12 +181,8 @@ export class Table {
         }
       }
     }
-    if (!modelOptions) {
-      console.log('model init second');
-      modelOptions = this.getModelOptions();
-    }
 
-    this.Model.init(this.getModelAttributes(), modelOptions);
+    this.Model.init(this.getModelAttributes(), this.getModelOptions());
 
     if (reinitialize === true) {
       this.associating = new Map(this.associations);
@@ -271,7 +262,6 @@ export class Table {
     for (const key in fields) {
       this.addField(fields[key], false);
     }
-    console.log('fields all set');
     this.modelInit(true);
   }
 

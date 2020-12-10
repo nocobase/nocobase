@@ -6,13 +6,12 @@ describe('get', () => {
   beforeEach(async () => {
     db = await initDatabase();
     const User = db.getModel('users');
-    const users = await User.bulkCreate('abcdefg'.split('').map(name => ({ name })));
+    const users = await User.bulkCreate(Array.from('abcdefg').map(name => ({ name })));
 
     const Post = db.getModel('posts');
-    const posts = await Post.bulkCreate(Array(22).fill(null).map((_, i) => ({
+    const posts = await Post.bulkCreate(Array(10).fill(null).map((_, i) => ({
       title: `title_${i}`,
       status: i % 2 ? 'publish' : 'draft',
-      sort: i,
       user_id: users[i % users.length].id
     })));
 
@@ -20,58 +19,72 @@ describe('get', () => {
       comments: Array(post.sort % 5).fill(null).map((_, index) => ({
         content: `content_${index}`,
         status: index % 2 ? 'published' : 'draft',
-        user_id: users[index % users.length].id,
-        sort: index
+        user_id: users[index % users.length].id
       }))
     })), Promise.resolve());
-    // [
-    //   { id: 1, post_id: 2, sort: 0 },
-    //   { id: 2, post_id: 3, sort: 0 },
-    //   { id: 3, post_id: 3, sort: 1 },
-    //   { id: 4, post_id: 4, sort: 0 },
-    //   { id: 5, post_id: 4, sort: 1 },
-    //   { id: 6, post_id: 4, sort: 2 },
-    //   { id: 7, post_id: 5, sort: 0 },
-    //   { id: 8, post_id: 5, sort: 1 },
-    //   { id: 9, post_id: 5, sort: 2 },
-    //   { id: 10, post_id: 5, sort: 3 },
-    //   { id: 11, post_id: 7, sort: 0 },
-    //   { id: 12, post_id: 8, sort: 0 },
-    //   { id: 13, post_id: 8, sort: 1 },
-    //   { id: 14, post_id: 9, sort: 0 },
-    //   { id: 15, post_id: 9, sort: 1 },
-    //   { id: 16, post_id: 9, sort: 2 },
-    //   { id: 17, post_id: 10, sort: 0 },
-    //   { id: 18, post_id: 10, sort: 1 },
-    //   { id: 19, post_id: 10, sort: 2 },
-    //   { id: 20, post_id: 10, sort: 3 },
-    //   { id: 21, post_id: 15, sort: 0 },
-    //   { id: 22, post_id: 15, sort: 1 },
-    //   { id: 23, post_id: 15, sort: 2 },
-    //   { id: 24, post_id: 15, sort: 3 },
-    //   { id: 25, post_id: 12, sort: 0 },
-    //   { id: 26, post_id: 13, sort: 0 },
-    //   { id: 27, post_id: 13, sort: 1 },
-    //   { id: 28, post_id: 14, sort: 0 },
-    //   { id: 29, post_id: 14, sort: 1 },
-    //   { id: 30, post_id: 14, sort: 2 },
-    //   { id: 31, post_id: 17, sort: 0 },
-    //   { id: 32, post_id: 18, sort: 0 },
-    //   { id: 33, post_id: 18, sort: 1 },
-    //   { id: 34, post_id: 19, sort: 0 },
-    //   { id: 35, post_id: 19, sort: 1 },
-    //   { id: 36, post_id: 19, sort: 2 },
-    //   { id: 37, post_id: 20, sort: 0 },
-    //   { id: 38, post_id: 20, sort: 1 },
-    //   { id: 39, post_id: 20, sort: 2 },
-    //   { id: 40, post_id: 20, sort: 3 },
-    //   { id: 41, post_id: 22, sort: 0 }
-    // ]
   });
   
   afterAll(() => db.close());
 
+  describe.only('sort value initialization', () => {
+    it('initialization by bulkCreate', async () => {
+      const Post = db.getModel('posts');
+      const posts = await Post.findAll();
+      expect(posts.map(({ id, sort, sort_in_status, sort_in_user }) => ({ id, sort, sort_in_status, sort_in_user }))).toEqual([
+        { id: 1, sort: 1, sort_in_status: 1, sort_in_user: 1 },
+        { id: 2, sort: 2, sort_in_status: 1, sort_in_user: 1 },
+        { id: 3, sort: 3, sort_in_status: 2, sort_in_user: 1 },
+        { id: 4, sort: 4, sort_in_status: 2, sort_in_user: 1 },
+        { id: 5, sort: 5, sort_in_status: 3, sort_in_user: 1 },
+        { id: 6, sort: 6, sort_in_status: 3, sort_in_user: 1 },
+        { id: 7, sort: 7, sort_in_status: 4, sort_in_user: 1 },
+        { id: 8, sort: 8, sort_in_status: 4, sort_in_user: 2 },
+        { id: 9, sort: 9, sort_in_status: 5, sort_in_user: 2 },
+        { id: 10, sort: 10, sort_in_status: 5, sort_in_user: 2 }
+      ]);
+    });
+
+    it('initialization by updateAssociations', async () => {
+      const Comment = db.getModel('comments');
+      const comments = await Comment.findAll();
+      expect(comments.map(({ id, sort, sort_in_status, sort_in_post }) => ({ id, sort, sort_in_status, sort_in_post }))).toEqual([
+        { id: 1, sort: 1, sort_in_status: 1, sort_in_post: 1 },
+        { id: 2, sort: 2, sort_in_status: 2, sort_in_post: 1 },
+        { id: 3, sort: 3, sort_in_status: 1, sort_in_post: 2 },
+        { id: 4, sort: 4, sort_in_status: 3, sort_in_post: 1 },
+        { id: 5, sort: 5, sort_in_status: 2, sort_in_post: 2 },
+        { id: 6, sort: 6, sort_in_status: 4, sort_in_post: 3 },
+        { id: 7, sort: 7, sort_in_status: 5, sort_in_post: 1 },
+        { id: 8, sort: 8, sort_in_status: 3, sort_in_post: 2 },
+        { id: 9, sort: 9, sort_in_status: 6, sort_in_post: 3 },
+        { id: 10, sort: 10, sort_in_status: 4, sort_in_post: 4 },
+        { id: 11, sort: 11, sort_in_status: 7, sort_in_post: 1 },
+        { id: 12, sort: 12, sort_in_status: 8, sort_in_post: 1 },
+        { id: 13, sort: 13, sort_in_status: 5, sort_in_post: 2 },
+        { id: 14, sort: 14, sort_in_status: 9, sort_in_post: 1 },
+        { id: 15, sort: 15, sort_in_status: 6, sort_in_post: 2 },
+        { id: 16, sort: 16, sort_in_status: 10, sort_in_post: 3 },
+        { id: 17, sort: 17, sort_in_status: 11, sort_in_post: 1 },
+        { id: 18, sort: 18, sort_in_status: 7, sort_in_post: 2 },
+        { id: 19, sort: 19, sort_in_status: 12, sort_in_post: 3 },
+        { id: 20, sort: 20, sort_in_status: 8, sort_in_post: 4 }
+      ]);
+    });
+
+    it('sort value of append item', async () => {
+      const Post = db.getModel('posts');
+      const post = await Post.create({ user_id: 1 });
+      expect(post.sort).toBe(11);
+      expect(post.sort_in_status).toBe(6);
+      expect(post.sort_in_user).toBe(3);
+    });
+  });
+
   describe('sort in whole table', () => {
+    it('init sort value', async () => {
+      const Post = db.getModel('posts');
+    });
+
     it('move id=1 by offset=1', async () => {
       const Post = db.getModel('posts');
       await agent
@@ -165,10 +178,10 @@ describe('get', () => {
       expect(post1.get('sort')).toBe(0);
 
       const post2 = await Post.findByPk(2);
-      expect(post2.get('sort')).toBe(22);
+      expect(post2.get('sort')).toBe(10);
 
-      const post22 = await Post.findByPk(22);
-      expect(post22.get('sort')).toBe(21);
+      const post10 = await Post.findByPk(10);
+      expect(post10.get('sort')).toBe(9);
     });
 
     it('move id=2 by offset=-Infinity', async () => {
@@ -222,7 +235,7 @@ describe('get', () => {
       
       const Post = db.getModel('posts');
       const post2 = await Post.findByPk(2);
-      expect(post2.get('sort')).toBe(22);
+      expect(post2.get('sort')).toBe(10);
     });
   });
 
