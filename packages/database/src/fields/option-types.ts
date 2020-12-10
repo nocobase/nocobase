@@ -174,6 +174,11 @@ export interface BelongsToManyOptions extends Omit<SequelizeBelongsToManyOptions
   otherKey?: string;
 }
 
+export interface SortOptions extends IntegerOptions {
+  scope?: string[];
+  direction?: 'min' | 'max'
+}
+
 export type ColumnOptions = AbstractFieldOptions 
                           | BooleanOptions 
                           | NumberOptions 

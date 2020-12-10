@@ -12,6 +12,7 @@ import {
   Relation,
   BelongsTo,
   BelongsToMany,
+  Sort
 } from './fields';
 import Database from './database';
 import { Model, ModelCtor } from './model';
@@ -61,20 +62,6 @@ export interface TableOptions extends Omit<ModelOptions<Model>, 'name'|'modelNam
    * 字段配置
    */
   fields?: Array<FieldOptions>;
-
-  /**
-   * 是否可排序
-   */
-  sortable?: boolean;
-
-  /**
-   * 排序字段配置
-   */
-  sortField?: string | {
-    name?: string,
-    scope?: string[],
-    next?: 'max' | 'min'
-  };
 
   /**
    * 其他的一些情况
@@ -141,6 +128,10 @@ export class Table {
 
   public relationTables = new Set<string>();
 
+  get sortable(): boolean {
+    return Array.from(this.fields.values()).some(field => field instanceof Sort);
+  }
+
   constructor(options: TableOptions, context: TabelContext) {
     const { database } = context;
     const {
@@ -168,6 +159,11 @@ export class Table {
   }
 
   public modelInit(reinitialize: Reinitialize = false) {
+    let modelOptions;
+    if (this.Model) {
+      console.log('model init first');
+      modelOptions = this.getModelOptions();
+    }
     if (reinitialize || !this.Model) {
       this.Model = this.defaultModel || class extends Model {};
       this.Model.database = this.database;
@@ -190,14 +186,14 @@ export class Table {
         }
       }
     }
+    if (!modelOptions) {
+      console.log('model init second');
+      modelOptions = this.getModelOptions();
+    }
 
-    this.Model.init(this.getModelAttributes(), this.getModelOptions());
+    this.Model.init(this.getModelAttributes(), modelOptions);
 
     if (reinitialize === true) {
-      if (this.options.sortable) {
-        this.Model.addHook('beforeCreate', this.Model.setSortValueHook);
-      }
-
       this.associating = new Map(this.associations);
       // 需要额外处理 associating 的情况
       // 建立表关系需要遍历多个 Model，所以在这里需要标记哪些已定义的 Model 需要建立表关系
@@ -232,13 +228,15 @@ export class Table {
 
   public getModelOptions(): InitOptions {
     const { underscored = true } = this.modelOptions;
+    const hooks = _.get(this.getModel(), 'options.hooks') || {};
+    console.log(this.getName(), hooks);
     return {
       underscored,
       createdAt: Utils.underscoredIf('createdAt', underscored),
       updatedAt: Utils.underscoredIf('updatedAt', underscored),
       indexes: Array.from(this.indexes.values()),
       // freezeTableName: true,
-      hooks: _.get(this.getModel(), 'options.hooks') || {},
+      hooks,
       ...this.modelOptions,
     };
   }
@@ -274,6 +272,7 @@ export class Table {
     for (const key in fields) {
       this.addField(fields[key], false);
     }
+    console.log('fields all set');
     this.modelInit(true);
   }
 

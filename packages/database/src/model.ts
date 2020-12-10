@@ -253,36 +253,6 @@ export abstract class Model extends SequelizeModel {
     return data;
   }
 
-  static async setSortValueHook(model, options) {
-    const table = this.database.getTable(this.name);
-    const { sortField } = table.getOptions();
-    let sortOption;
-    switch (typeof sortField) {
-      case 'string':
-        sortOption = { name: sortField };
-        break;
-      case 'object':
-        sortOption = sortField;
-        break;
-      default:
-        sortOption = {};
-    }
-    const { name = 'sort', scope = [], next = 'max' } = sortOption;
-    const where = {};
-    const associations = table.getAssociations();
-    scope.forEach(col => {
-      const association = associations.get(col);
-      const dataKey = association && association instanceof BelongsTo
-        ? association.options.foreignKey
-        : col;
-      const value = model.getDataValue(dataKey);
-      where[dataKey] = value != null ? value : null;
-    });
-    const { transaction } = options;
-    const extremum = await this[next](name, { where, transaction }) || 0;
-    model.set(name, extremum + (next === 'max' ? 1 : -1));
-  }
-
   async updateSingleAssociation(key: string, data: any, options: SaveOptions<any> & { context?: any; } = {}) {
     const {
       fields,
@@ -300,7 +270,7 @@ export abstract class Model extends SequelizeModel {
     } else if (typeof data === 'object') {
       const Target = association.getTargetModel();
       const targetAttribute = association instanceof BelongsTo 
-        ? association.options.targetKey 
+        ? association.options.targetKey
         : association.options.sourceKey;
       if (data[targetAttribute]) {
         await this[accessors.set](data[targetAttribute], opts);
@@ -436,7 +406,7 @@ export abstract class Model extends SequelizeModel {
           await target.update(item, opts);
         }
       }
-      
+
       if (association instanceof BelongsToMany) {
         belongsToManyList.push({
           item,

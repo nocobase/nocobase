@@ -689,3 +689,33 @@ export class BelongsToMany extends Relation {
     }
   }
 }
+
+export class Sort extends Integer {
+  public readonly options: Options.SortOptions;
+
+  static async beforeCreateHook(this: Sort, model, options) {
+    const { transaction } = options;
+    const table = this.context.sourceTable;
+    const Model = table.getModel();
+    const { name, scope = [], next = 'max' } = this.options;
+    const where = {};
+    const associations = table.getAssociations();
+    scope.forEach(col => {
+      const association = associations.get(col);
+      const dataKey = association && association instanceof BelongsTo
+        ? association.options.foreignKey
+        : col;
+      const value = model.getDataValue(dataKey);
+      where[dataKey] = value != null ? value : null;
+    });
+    const extremum = await Model[next](name, { where, transaction }) || 0;
+    model.set(name, extremum + (next === 'max' ? 1 : -1));
+  }
+
+  constructor(options: Options.SortOptions, context: FieldContext) {
+    super(options, context);
+    const model = context.sourceTable.getModel();
+    // TODO(feature): 可考虑策略模式，以在需要时对外提供接口
+    model.addHook('beforeCreate', Sort.beforeCreateHook.bind(this));
+  }
+}

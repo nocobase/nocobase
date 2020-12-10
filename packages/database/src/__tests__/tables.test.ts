@@ -303,4 +303,35 @@ describe('tables', () => {
       });
     });
   });
+
+  describe('sort field', () => {
+    it.only('init field with hook', async () => {
+      db.table({
+        name: 'posts',
+        fields: [
+          {
+            type: 'string',
+            name: 'title',
+          },
+          {
+            type: 'sort',
+            name: 'sort',
+          },
+          {
+            type: 'string',
+            name: 'status',
+          },
+        ],
+        hooks: {
+          beforeCreate(model, options) {
+          },
+        },
+      });
+      await db.sync({ force: true });
+
+      const Post = db.getModel('posts');
+      const post = await Post.create({});
+      expect(post.sort).toBe(1);
+    });
+  });
 });
