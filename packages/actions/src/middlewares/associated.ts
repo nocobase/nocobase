@@ -1,6 +1,6 @@
-import { Context, Next, associate } from '../actions';
+import { Context, Next } from '../actions';
 import { Action } from '@nocobase/resourcer';
-import { HasOne, HasMany, BelongsTo, BelongsToMany, Model } from '@nocobase/database';
+import { HASONE, HASMANY, BELONGSTO, BELONGSTOMANY } from '@nocobase/database';
 
 export async function associated(ctx: Context, next: Next) {
   if (!(ctx.action instanceof Action)) {
@@ -23,12 +23,12 @@ export async function associated(ctx: Context, next: Next) {
   let key: string;
 
   switch (true) {
-    case field instanceof BelongsTo:
+    case field instanceof BELONGSTO:
       key = field.options.targetKey || Model.primaryKeyAttribute;
       break;
-    case field instanceof HasOne:
-    case field instanceof HasMany:
-    case field instanceof BelongsToMany:
+    case field instanceof HASONE:
+    case field instanceof HASMANY:
+    case field instanceof BELONGSTOMANY:
       key = field.options.sourceKey;
       break;
   }

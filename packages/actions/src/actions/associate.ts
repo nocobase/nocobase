@@ -1,8 +1,13 @@
 import { Context, Next } from '.';
-
 import { list, get, create, update, destroy } from './common';
-import { HasOne, BelongsTo, BelongsToMany, HasMany, Model, Relation } from '@nocobase/database';
-import { Op } from 'sequelize';
+import {
+  Model,
+  Relation,
+  HASONE,
+  BELONGSTO,
+  BELONGSTOMANY,
+  HASMANY,
+} from '@nocobase/database';
 
 /**
  * 建立关联
@@ -116,9 +121,9 @@ export async function remove(ctx: Context, next: Next) {
   const options = TargetModel.parseApiJson({
     fields,
   });
-  if (resourceField instanceof HasOne || resourceField instanceof BelongsTo) {
+  if (resourceField instanceof HASONE || resourceField instanceof BELONGSTO) {
     ctx.body = await associated[setAccessor](null);
-  } else if (resourceField instanceof HasMany || resourceField instanceof BelongsToMany) {
+  } else if (resourceField instanceof HASMANY || resourceField instanceof BELONGSTOMANY) {
     const [model]: Model[] = await associated[getAccessor]({
       ...options,
       where: {
@@ -153,7 +158,7 @@ export async function toggle(ctx: Context, next: Next) {
   const options = TargetModel.parseApiJson({
     fields,
   });
-  if (resourceField instanceof HasOne || resourceField instanceof BelongsTo) {
+  if (resourceField instanceof HASONE || resourceField instanceof BELONGSTO) {
     const m1 = await associated[getAccessor]();
     if (m1 && m1[resourceKeyAttribute || resourceField.options.targetKey || TargetModel.primaryKeyAttribute] == resourceKey) {
       ctx.body = await associated[setAccessor](null);
@@ -168,7 +173,7 @@ export async function toggle(ctx: Context, next: Next) {
       });
       ctx.body = await associated[setAccessor](m2);
     }
-  } else if (resourceField instanceof HasMany || resourceField instanceof BelongsToMany) {
+  } else if (resourceField instanceof HASMANY || resourceField instanceof BELONGSTOMANY) {
     const [model]: Model[] = await associated[getAccessor]({
       ...options,
       where: {

@@ -1,5 +1,11 @@
 import { Context, Next } from '.';
-import { Relation, Model, HasOne, HasMany, BelongsTo, BelongsToMany } from '@nocobase/database';
+import {
+  Model, 
+  HASONE,
+  HASMANY,
+  BELONGSTO,
+  BELONGSTOMANY,
+} from '@nocobase/database';
 import { DEFAULT_PAGE, DEFAULT_PER_PAGE } from '@nocobase/resourcer';
 import { Utils, Op } from 'sequelize';
 import _ from 'lodash';
@@ -159,10 +165,10 @@ export async function get(ctx: Context, next: Next) {
     const options = TargetModel.parseApiJson({
       fields,
     });
-    if (resourceField instanceof HasOne || resourceField instanceof BelongsTo) {
+    if (resourceField instanceof HASONE || resourceField instanceof BELONGSTO) {
       const model: Model = await associated[getAccessor]({ ...options, context: ctx });
       ctx.body = model;
-    } else if (resourceField instanceof HasMany || resourceField instanceof BelongsToMany) {
+    } else if (resourceField instanceof HASMANY || resourceField instanceof BELONGSTOMANY) {
       const [model]: Model[] = await associated[getAccessor]({
         ...options,
         where: {
@@ -219,7 +225,7 @@ export async function update(ctx: Context, next: Next) {
       throw new Error(`${associatedName} associated model invalid`);
     }
     const { get: getAccessor } = resourceField.getAccessors();
-    if (resourceField instanceof HasOne || resourceField instanceof BelongsTo) {
+    if (resourceField instanceof HASONE || resourceField instanceof BELONGSTO) {
       let model: Model = await associated[getAccessor]({ transaction, context: ctx });
       if (model) {
         // @ts-ignore
@@ -227,7 +233,7 @@ export async function update(ctx: Context, next: Next) {
         await model.updateAssociations(values, { transaction, context: ctx });
         ctx.body = model;
       }
-    } else if (resourceField instanceof HasMany || resourceField instanceof BelongsToMany) {
+    } else if (resourceField instanceof HASMANY || resourceField instanceof BELONGSTOMANY) {
       const TargetModel = ctx.db.getModel(resourceField.getTarget());
       const [model]: Model[] = await associated[getAccessor]({
         where: {
@@ -237,7 +243,7 @@ export async function update(ctx: Context, next: Next) {
         context: ctx,
       });
 
-      if (resourceField instanceof BelongsToMany) {
+      if (resourceField instanceof BELONGSTOMANY) {
         const throughName = resourceField.getThroughName();
         if (typeof values[throughName] === 'object') {
           const ThroughModel = resourceField.getThroughModel();
@@ -315,12 +321,12 @@ export async function destroy(ctx: Context, next: Next) {
     const {get: getAccessor, remove: removeAccessor, set: setAccessor} = resourceField.getAccessors();
     const TargetModel = ctx.db.getModel(resourceField.getTarget());
     const { where } = TargetModel.parseApiJson({ filter, context: ctx });
-    if (resourceField instanceof HasOne || resourceField instanceof BelongsTo) {
+    if (resourceField instanceof HASONE || resourceField instanceof BELONGSTO) {
       const model: Model = await associated[getAccessor](commonOptions);
       await associated[setAccessor](null, commonOptions);
       // @ts-ignore
       ctx.body = await model.destroy(commonOptions);
-    } else if (resourceField instanceof HasMany || resourceField instanceof BelongsToMany) {
+    } else if (resourceField instanceof HASMANY || resourceField instanceof BELONGSTOMANY) {
       const primaryKey = resourceKeyAttribute || resourceField.options.targetKey || TargetModel.primaryKeyAttribute;
       const models: Model[] = await associated[getAccessor]({
         where: resourceKey ? { [primaryKey]: resourceKey } : where,
@@ -371,11 +377,11 @@ export async function sort(ctx: Context, next: Next) {
   } = ctx.action.params;
 
   if (associated && resourceField) {
-    if (resourceField instanceof HasOne || resourceField instanceof BelongsTo) {
+    if (resourceField instanceof HASONE || resourceField instanceof BELONGSTO) {
       throw new Error(`the association (${resourceName} belongs to ${associatedName}) cannot be sorted`);
     }
     // TODO(feature)
-    if (resourceField instanceof BelongsToMany) {
+    if (resourceField instanceof BELONGSTOMANY) {
       throw new Error('sorting for belongs to many association has not been implemented');
     }
   }
@@ -406,7 +412,7 @@ export async function sort(ctx: Context, next: Next) {
   const transaction = await ctx.db.sequelize.transaction();
 
   const { where = {} } = Model.parseApiJson({ filter });
-  if (associated && resourceField instanceof HasMany) {
+  if (associated && resourceField instanceof HASMANY) {
     where[resourceField.options.foreignKey] = associatedKey;
   }
 
