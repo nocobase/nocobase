@@ -214,14 +214,15 @@ export class Table {
 
   public getModelOptions(): InitOptions {
     const { underscored = true } = this.modelOptions;
+    const hooks = _.get(this.getModel(), 'options.hooks') || this.options.hooks || {};
     return {
       underscored,
       createdAt: Utils.underscoredIf('createdAt', underscored),
       updatedAt: Utils.underscoredIf('updatedAt', underscored),
       indexes: Array.from(this.indexes.values()),
       // freezeTableName: true,
-      hooks: _.get(this.getModel(), 'options.hooks') || {},
       ...this.modelOptions,
+      hooks,
     };
   }
 
