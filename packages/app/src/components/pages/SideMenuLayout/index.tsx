@@ -2,6 +2,7 @@ import React from 'react';
 import { Layout, Menu, Breadcrumb } from 'antd';
 import { Link } from 'umi';
 import './style.less';
+import Icon from '@/components/icons';
 
 export function SideMenuLayout(props: any) {
   const { menu = [] } = props.page;
@@ -12,7 +13,7 @@ export function SideMenuLayout(props: any) {
         <Menu mode={'inline'}  defaultSelectedKeys={['2']}>
           {menu.map(item => (
             <Menu.Item key={item.path}>
-              <Link to={item.path}>{item.title}</Link>
+              <Link to={item.path}><Icon type={item.icon}/> {item.title}</Link>
             </Menu.Item>
           ))}
         </Menu>

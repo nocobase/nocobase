@@ -3,6 +3,7 @@ import { Layout, Menu, Dropdown, Avatar } from 'antd';
 import './style.less';
 import { history, Link, request, useModel } from 'umi';
 import { UserOutlined } from '@ant-design/icons';
+import Icon from '@/components/icons';
 
 const overlay = (
   <Menu>
@@ -28,7 +29,7 @@ export function TopMenuLayout(props: any) {
         <Menu style={{float: 'left'}} theme="dark" mode="horizontal" defaultSelectedKeys={['2']}>
           {menu.map(item => (
             <Menu.Item key={item.path}>
-              <Link to={item.path}>{item.title}</Link>
+              <Link to={item.path}><Icon type={item.icon}/>{item.title}</Link>
             </Menu.Item>
           ))}
         </Menu>
