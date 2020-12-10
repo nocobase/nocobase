@@ -9,12 +9,17 @@ class TestHookField extends Integer {
     super(options, context);
     const Model = context.sourceTable.getModel();
     Model.addHook('beforeCreate', (model) => {
-      model.set('name', 'beforeCreate123');
-      console.log('beforeCreate123');
+      const arr = model.get('arr') as any[];
+      arr.push(1);
+      model.set('arr', arr);
+      console.log('beforeCreate in field');
     });
     Model.addHook('afterCreate', (model) => {
       model.set('title', 'afterCreate123');
-      console.log('afterCreate123');
+      const arr = model.get('arr') as any[];
+      arr.push(2);
+      model.set('arr', arr);
+      console.log('afterCreate in field');
     });
   }
 }
@@ -37,23 +42,58 @@ describe('hooks', () => {
       name: 'testHook',
       fields: [
         {
-          type: 'string',
-          name: 'name',
+          type: 'json',
+          name: 'arr',
+          defaultValue: [],
         },
         {
           type: 'testHook',
           name: 'testHook',
-        },
-        {
-          type: 'string',
-          name: 'title',
         },
       ],
     });
     await db.sync();
     const TestHook = db.getModel('testHook');
     const test = await TestHook.create({});
-    expect(test.get('name')).toBe('beforeCreate123');
+    expect(test.get('arr')).toEqual([1,2]);
+  });
+
+  it('add hook in custom field', async () => {
+    db.table({
+      name: 'test1',
+      fields: [
+        {
+          type: 'testHook',
+          name: 'testHook',
+        },
+        {
+          type: 'json',
+          name: 'arr',
+          defaultValue: [],
+        },
+      ],
+      hooks: {
+        beforeCreate(model) {
+          model.set('name', 'beforeCreate1');
+          const arr = model.get('arr') as any[];
+          arr.push(3);
+          model.set('arr', arr);
+          console.log('beforeCreate in table');
+        },
+        afterCreate(model) {
+          model.set('name', 'afterCreate1');
+          const arr = model.get('arr') as any[];
+          arr.push(4);
+          model.set('arr', arr);
+          console.log('afterCreate in table');
+        },
+      },
+    });
+    await db.sync();
+    const Test1 = db.getModel('test1');
+    const test = await Test1.create({});
+    console.log(test.get('arr'));
+    expect(test.get('arr')).toEqual([3,1,4,2]);
   });
 
   it('add hook in custom field', async () => {
@@ -61,8 +101,9 @@ describe('hooks', () => {
       name: 'test2',
       fields: [
         {
-          type: 'string',
-          name: 'name',
+          type: 'json',
+          name: 'arr',
+          defaultValue: [],
         },
       ],
     });
@@ -78,7 +119,42 @@ describe('hooks', () => {
     await table.sync();
     const Test2 = db.getModel('test2');
     const test = await Test2.create({});
-    expect(test.get('name')).toBe('beforeCreate123');
-    expect(test.get('title')).toBe('afterCreate123');
+    expect(test.get('arr')).toEqual([1,2]);
+  });
+
+  it.only('add hook in custom field', async () => {
+    const table = db.table({
+      name: 'test3',
+      fields: [
+        {
+          type: 'json',
+          name: 'arr',
+          defaultValue: [],
+        },
+      ],
+    });
+    // 通过 table 新增
+    table.addField({
+      type: 'testHook',
+      name: 'testHook',
+    });
+    table.addField({
+      type: 'string',
+      name: 'title',
+    });
+    await table.sync();
+    const Test3 = db.getModel('test3');
+    Test3.beforeCreate((model) => {
+      const arr = model.get('arr') as any[];
+      arr.push(3);
+      model.set('arr', arr);
+    });
+    Test3.afterCreate((model) => {
+      const arr = model.get('arr') as any[];
+      arr.push(4);
+      model.set('arr', arr);
+    });
+    const test = await Test3.create({});
+    expect(test.get('arr')).toEqual([ 1, 3, 2, 4 ]);
   });
 });
