@@ -2,7 +2,13 @@ import {
   Model as SequelizeModel, Op, Sequelize, ProjectionAlias, Utils, SaveOptions,
 } from 'sequelize';
 import Database from './database';
-import { HasOne, HasMany, BelongsTo, BelongsToMany, getDataTypeKey } from './fields';
+import {
+  getDataTypeKey,
+  HASONE,
+  HASMANY,
+  BELONGSTO,
+  BELONGSTOMANY,
+} from './fields';
 import { toInclude } from './utils';
 
 export interface ApiJsonOptions {
@@ -269,7 +275,7 @@ export abstract class Model extends SequelizeModel {
       await this[accessors.set](data, opts);
     } else if (typeof data === 'object') {
       const Target = association.getTargetModel();
-      const targetAttribute = association instanceof BelongsTo 
+      const targetAttribute = association instanceof BELONGSTO 
         ? association.options.targetKey 
         : association.options.sourceKey;
       if (data[targetAttribute]) {
@@ -407,7 +413,7 @@ export abstract class Model extends SequelizeModel {
         }
       }
       
-      if (association instanceof BelongsToMany) {
+      if (association instanceof BELONGSTOMANY) {
         belongsToManyList.push({
           item,
           target
@@ -424,8 +430,8 @@ export abstract class Model extends SequelizeModel {
 
     // 后处理 belongsToMany 的更新内容
     if (belongsToManyList.length) {
-      const ThroughModel = (association as BelongsToMany).getThroughModel();
-      const throughName = (association as BelongsToMany).getThroughName();
+      const ThroughModel = (association as BELONGSTOMANY).getThroughModel();
+      const throughName = (association as BELONGSTOMANY).getThroughName();
 
       for (const { item, target } of belongsToManyList) {
         const throughValues = item[throughName];
@@ -453,11 +459,11 @@ export abstract class Model extends SequelizeModel {
     const table = this.database.getTable(this.constructor.name);
     const association = table.getAssociations().get(key);
     switch (true) {
-      case association instanceof BelongsTo:
-      case association instanceof HasOne:
+      case association instanceof BELONGSTO:
+      case association instanceof HASONE:
         return this.updateSingleAssociation(key, data, options);
-      case association instanceof HasMany:
-      case association instanceof BelongsToMany:
+      case association instanceof HASMANY:
+      case association instanceof BELONGSTOMANY:
         return this.updateMultipleAssociation(key, data, options);
     }
   }

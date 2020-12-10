@@ -2,7 +2,7 @@ import qs from 'qs';
 import compose from 'koa-compose';
 import { pathToRegexp } from 'path-to-regexp';
 import Resourcer, { getNameByParams, KoaMiddlewareOptions, parseRequest, ResourcerContext } from '@nocobase/resourcer';
-import Database, { BelongsTo, BelongsToMany, HasMany, HasOne } from '@nocobase/database';
+import Database, { BELONGSTO, BELONGSTOMANY, HASMANY, HASONE } from '@nocobase/database';
 
 interface MiddlewareOptions extends KoaMiddlewareOptions {
   resourcer?: Resourcer;
@@ -49,18 +49,18 @@ export function middleware(options: MiddlewareOptions = {}) {
         }
         if (database.isDefined(tableName)) {
           const table = database.getTable(tableName);
-          const field = table.getField(names[0]) as BelongsTo | HasMany | BelongsToMany | HasOne;
+          const field = table.getField(names[0]) as BELONGSTO | HASMANY | BELONGSTOMANY | HASONE;
           if (names.length == 0 || field) {
             let resourceType = 'single';
             let actions = {};
             if (field) {
-              if (field instanceof HasOne) {
+              if (field instanceof HASONE) {
                 resourceType = 'hasOne';
-              } else if (field instanceof HasMany) {
+              } else if (field instanceof HASMANY) {
                 resourceType = 'hasMany';
-              } else if (field instanceof BelongsTo) {
+              } else if (field instanceof BELONGSTO) {
                 resourceType = 'belongsTo';
-              } else if (field instanceof BelongsToMany) {
+              } else if (field instanceof BELONGSTOMANY) {
                 resourceType = 'belongsToMany';
               }
               if (field.options.actions) {

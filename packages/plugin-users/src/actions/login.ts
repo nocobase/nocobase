@@ -1,6 +1,6 @@
 import { actions } from '@nocobase/actions';
+import { PASSWORD } from '@nocobase/database';
 import cryptoRandomString from 'crypto-random-string';
-import { Password } from "@nocobase/database";
 
 export default async (ctx: actions.Context, next: actions.Next) => {
   const { values } = ctx.action.params;
@@ -14,7 +14,7 @@ export default async (ctx: actions.Context, next: actions.Next) => {
   if (!user) {
     ctx.throw(401, 'Unauthorized');
   }
-  if (!Password.verify(values.password, user.password)) {
+  if (!PASSWORD.verify(values.password, user.password)) {
     ctx.throw(401, 'Unauthorized');
   }
   if (!user.token) {

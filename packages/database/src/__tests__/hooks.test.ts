@@ -2,9 +2,9 @@ import { getDatabase } from './';
 import Database from '../database';
 import Table from '../table';
 import Model from '../model';
-import { FieldContext, Integer, registerField } from '../fields';
+import { FieldContext, INTEGER, registerField } from '../fields';
 
-class TestHookField extends Integer {
+class TestHookField extends INTEGER {
   constructor(options: any, context: FieldContext) {
     super(options, context);
     const Model = context.sourceTable.getModel();
@@ -156,5 +156,59 @@ describe('hooks', () => {
     });
     const test = await Test3.create({});
     expect(test.get('arr')).toEqual([ 1, 3, 2, 4 ]);
+  });
+
+  it.only('add hook in custom field', async () => {
+    const table = db.table({
+      name: 'test3',
+      fields: [
+        {
+          type: 'json',
+          name: 'arr',
+          defaultValue: [],
+        },
+      ],
+      hooks: {
+        beforeCreate(model) {
+          model.set('name', 'beforeCreate1');
+          const arr = model.get('arr') as any[];
+          arr.push(3);
+          model.set('arr', arr);
+          console.log('beforeCreate in table');
+        },
+        afterCreate(model) {
+          model.set('name', 'afterCreate1');
+          const arr = model.get('arr') as any[];
+          arr.push(4);
+          model.set('arr', arr);
+          console.log('afterCreate in table');
+        },
+      },
+    });
+    table.addField({
+      type: 'string',
+      name: 'title',
+    });
+    // await table.sync();
+    let Test3 = db.getModel('test3');
+    Test3.beforeCreate((model) => {
+      const arr = model.get('arr') as any[];
+      arr.push(5);
+      model.set('arr', arr);
+    });
+    Test3.afterCreate((model) => {
+      const arr = model.get('arr') as any[];
+      arr.push(6);
+      model.set('arr', arr);
+    });
+    // 通过 table 新增
+    table.addField({
+      type: 'testHook',
+      name: 'testHook',
+    });
+    await table.sync();
+    Test3 = db.getModel('test3');
+    const test = await Test3.create({});
+    expect(test.get('arr')).toEqual([ 3, 5, 1, 4, 6, 2 ]);
   });
 });
