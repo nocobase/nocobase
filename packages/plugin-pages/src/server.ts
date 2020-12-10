@@ -22,9 +22,9 @@ export default async function (options = {}) {
   const [Collection, Page] = database.getModels(['collections', 'pages']);
 
   async function createCollectionPage(model) {
-    if (!model.get('showInDataMenu')) {
-      return;
-    }
+    // if (!model.get('showInDataMenu')) {
+    //   return;
+    // }
     const parent = await Page.findOne({
       where: {
         path: '/collections',
@@ -48,7 +48,7 @@ export default async function (options = {}) {
     page.set({
       title: model.get('title'),
       icon: model.get('icon'),
-      showInMenu: model.get('showInDataMenu'),
+      showInMenu: !!model.get('showInDataMenu'),
     });
     page.save();
   }
