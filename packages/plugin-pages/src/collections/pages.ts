@@ -4,6 +4,7 @@ export default {
   name: 'pages',
   title: '页面配置',
   model: 'BaseModel',
+  internal: true,
   developerMode: true,
   fields: [
     {

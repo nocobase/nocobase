@@ -4,6 +4,7 @@ export default {
   name: 'users',
   title: '用户',
   developerMode: true,
+  internal: true,
   fields: [
     {
       interface: 'string',
@@ -55,14 +56,14 @@ export default {
       },
     },
     {
-      interface: 'password',
+      interface: 'string',
       type: 'string',
       name: 'token',
       title: 'Token',
       unique: true,
       hidden: true,
       component: {
-        type: 'hidden',
+        type: 'string',
       },
     },
   ],

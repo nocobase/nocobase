@@ -3,6 +3,7 @@ import { TableOptions } from '@nocobase/database';
 export default {
   name: 'actions',
   title: '操作配置',
+  internal: true,
   draggable: true,
   model: 'ActionModel',
   developerMode: true,
