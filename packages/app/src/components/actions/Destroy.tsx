@@ -1,16 +1,20 @@
 import React, { useRef } from 'react';
-import { Button } from 'antd';
+import { Button, Popconfirm } from 'antd';
 import ViewFactory from '@/components/views';
 
 export function Destroy(props) {
   console.log(props);
-  const { title, viewId } = props.schema;
+  const { onTrigger } = props;
+  const { title, viewId, isBulk = true } = props.schema;
   const drawerRef = useRef<any>();
   return (
     <>
-      <Button type={'primary'} onClick={() => {
-        
-      }}>{title}</Button>
+      <Popconfirm title="确认删除吗？" onConfirm={() => {
+          console.log('destroy', onTrigger);
+          onTrigger && onTrigger();
+        }}>
+        <Button type={'primary'}>{title}</Button>
+      </Popconfirm>
     </>
   )
 }

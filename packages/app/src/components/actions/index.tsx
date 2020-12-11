@@ -25,15 +25,23 @@ export function Action(props) {
   const { schema = {} } = props;
   // cnsole.log(schema);
   const { type } = schema;
-  const Action = getAction(type);
-  return Action && <Action {...props}/>;
+  const Component = getAction(type);
+  return Component && <Component {...props}/>;
 }
 
 export function Actions(props) {
-  const { style, schema, actions = [] } = props;
+  const { onTrigger = {}, style, schema, actions = [], ...restProps } = props;
+  console.log(onTrigger);
   return actions.length > 0 && (
     <Space style={style}>
-      {actions.map(action => <Action {...props} view={schema} schema={action}/>)}
+      {actions.map(action => (
+        <Action
+          {...restProps}
+          view={schema}
+          schema={action}
+          onTrigger={onTrigger[action.name]}
+        />
+      ))}
     </Space>
   );
 }

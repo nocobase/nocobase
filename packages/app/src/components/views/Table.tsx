@@ -87,6 +87,18 @@ export function Table(props: TableProps) {
         onFinish={() => {
           refresh();
         }}
+        onTrigger={{
+          async destroy() {
+            await api.resource(name).destroy({
+              associatedKey,
+              filter: {
+                [`${rowKey}.in`]: selectedRowKeys,
+              },
+            });
+            await refresh();
+            console.log('destroy.onTrigger', selectedRowKeys);
+          }
+        }}
       />
       <AntdTable 
         rowKey={rowKey}
