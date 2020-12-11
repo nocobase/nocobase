@@ -347,6 +347,7 @@ export async function destroy(ctx: Context, next: Next) {
       where: resourceKey ? { [primaryKey]: resourceKey } : where,
       // @ts-ignore hooks 里添加 context
       ...commonOptions,
+      individualHooks: true,
     });
     ctx.body = data;
   }
