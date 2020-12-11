@@ -30,18 +30,24 @@ export default {
       name: 'tags',
     },
     {
-      type: 'integer',
+      type: 'sort',
       name: 'sort'
+    },
+    {
+      type: 'sort',
+      name: 'sort_in_status',
+      scope: ['status']
+    },
+    {
+      type: 'sort',
+      name: 'sort_in_user',
+      scope: ['user']
     },
     {
       type: 'json',
       name: 'meta'
     }
   ],
-  hooks: {
-    beforeCreate(model, options) {
-    },
-  },
   scopes: {
     customTitle: (title, ctx) => {
       return {
@@ -49,7 +55,6 @@ export default {
           title: title,
         },
       }
-    },
-  },
-  sortable: true
+    }
+  }
 } as TableOptions;
