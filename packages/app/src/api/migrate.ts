@@ -49,7 +49,7 @@ const data = {
       title: '仪表盘',
       type: 'page',
       path: '/dashboard',
-      icon: 'dashboard',
+      icon: 'DashboardOutlined',
       template: 'page1',
       sort: 20,
     },
@@ -57,7 +57,7 @@ const data = {
       title: '数据',
       type: 'layout',
       path: '/collections',
-      icon: 'dashboard',
+      icon: 'DatabaseOutlined',
       template: 'SideMenuLayout',
       sort: 30,
       children: [
@@ -83,7 +83,7 @@ const data = {
       title: '用户',
       type: 'layout',
       path: '/users',
-      icon: 'dashboard',
+      icon: 'TeamOutlined',
       template: 'SideMenuLayout',
       sort: 70,
       children: [
@@ -91,7 +91,7 @@ const data = {
           title: '用户管理',
           type: 'collection',
           path: '/users/users',
-          icon: 'dashboard',
+          icon: 'UserOutlined',
           template: 'collection',
           collection: 'users',
           sort: 80,
@@ -102,7 +102,7 @@ const data = {
       title: '配置',
       type: 'layout',
       path: '/settings',
-      icon: 'dashboard',
+      icon: 'SettingOutlined',
       template: 'SideMenuLayout',
       sort: 90,
       children: [
@@ -111,7 +111,7 @@ const data = {
           type: 'collection',
           collection: 'pages',
           path: '/settings/pages',
-          icon: 'dashboard',
+          icon: 'MenuOutlined',
           sort: 100,
           developerMode: true,
         },
@@ -120,7 +120,7 @@ const data = {
           type: 'collection',
           collection: 'collections',
           path: '/settings/collections',
-          icon: 'dashboard',
+          icon: 'TableOutlined',
           sort: 110,
         },
       ]
@@ -174,7 +174,7 @@ const data = {
   });
 
   await database.getModel('users').create({
-    nickname: "admin",
+    nickname: "超级管理员",
     password: "admin",
     username: "admin",
     token: "38979f07e1fca68fb3d2",
