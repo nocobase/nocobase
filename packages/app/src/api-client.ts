@@ -1,3 +1,4 @@
+import { stringify } from 'querystring';
 import { request } from 'umi';
 
 interface ActionParams {
@@ -27,9 +28,11 @@ class ApiClient {
     const proxy: any = new Proxy({}, {
       get(target, method, receiver) {
         return (params: ActionParams = {}) => {
-          const { associatedKey, resourceKey, ...restParams } = params;
+          const { associatedKey, resourceKey, filter, ...restParams } = params;
           let url = `/${name}`;
-          let options: any = {};
+          let options: any = {
+            params: {},
+          };
           if (['list', 'get'].indexOf(method as string) !== -1) {
             options.method = 'get';
             options.params = restParams;
@@ -44,6 +47,9 @@ class ApiClient {
           // console.log(name, name.split('.'), associatedKey, name.split('.').join(`/${associatedKey}/`));
           if (resourceKey) {
             url += `/${resourceKey}`;
+          }
+          if (filter) {
+            options.params['filter'] = JSON.stringify(filter);
           }
           console.log({url, params});
           return request(url, options);
