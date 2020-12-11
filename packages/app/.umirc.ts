@@ -15,6 +15,13 @@ export default defineConfig({
       'pathRewrite': { '^/api' : '/api' },
     },
   },
+  locale: {
+    default: 'zh-CN',
+    // antd: false,
+    // title: false,
+    baseNavigator: false,
+    baseSeparator: '-',
+  },
   routes: [
     {
       exact: false,
