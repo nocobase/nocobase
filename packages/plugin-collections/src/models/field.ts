@@ -33,12 +33,6 @@ export class FieldModel extends BaseModel {
     this.set('name', generateFieldName());
   }
 
-  generateNameIfNull() {
-    if (!this.get('name')) {
-      this.generateName();
-    }
-  }
-
   setInterface(value) {
     const { options } = types[value];
     let args = [];
@@ -55,17 +49,17 @@ export class FieldModel extends BaseModel {
   }
 
   async getOptions(): Promise<FieldOptions> {
-    return {
-      ...this.get('options'),
-      type: this.get('type'),
-      name: this.get('name'),
-    };
+    return this.get();
   }
 
   async migrate(options: any = {}) {
     const collectionName = this.get('collection_name');
     if (!collectionName) {
       return false;
+    }
+    // 如果 database 未定义，load 出来
+    if (!this.database.isDefined(collectionName)) {
+      await this.database.getModel('collections').load({where: {name: collectionName}});
     }
     const table = this.database.getTable(collectionName);
     table.addField(await this.getOptions());
