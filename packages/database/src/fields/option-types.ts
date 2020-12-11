@@ -174,7 +174,7 @@ export interface BelongsToManyOptions extends Omit<SequelizeBelongsToManyOptions
   otherKey?: string;
 }
 
-export interface SortOptions extends Omit<IntegerOptions, 'type'> {
+export interface SortOptions extends NumberOptions {
   type: 'sort';
   /**
    * 排序限定范围

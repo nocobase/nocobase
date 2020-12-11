@@ -692,8 +692,8 @@ export class BELONGSTOMANY extends Relation {
   }
 }
 
-export class SORT extends INTEGER {
-  // @ts-ignore
+export class SORT extends NUMBER {
+
   public readonly options: Options.SortOptions;
 
   static async beforeCreateHook(this: SORT, model, options) {
@@ -756,5 +756,9 @@ export class SORT extends INTEGER {
     // TODO(feature): 可考虑策略模式，以在需要时对外提供接口
     Model.addHook('beforeCreate', SORT.beforeCreateHook.bind(this));
     Model.addHook('beforeBulkCreate', SORT.beforeBulkCreateHook.bind(this));
+  }
+
+  public getDataType(): Function {
+    return DataTypes.INTEGER;
   }
 }

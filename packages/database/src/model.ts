@@ -273,11 +273,9 @@ export abstract class Model extends SequelizeModel {
         return;
       }
       const value = this.getDataValue(dataKey);
-      // 暂时使用 != null 的比较
-      // 1. 数据库中没有 undefined，只有 null
-      // 2. 未传值时是 undefined
-      // 3. 数据库中的 null 通常也参与比较
-      where[dataKey] = value != null ? value : null;
+      if (typeof value !== 'undefined') {
+        where[dataKey] = value;
+      }
     });
     return where;
   }
