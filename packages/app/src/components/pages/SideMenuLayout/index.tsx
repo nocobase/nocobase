@@ -1,8 +1,8 @@
 import React from 'react';
-import { Layout, Menu, Breadcrumb } from 'antd';
+import { Layout, Breadcrumb } from 'antd';
 import { Link } from 'umi';
 import './style.less';
-import Icon from '@/components/icons';
+import Menu from '@/components/menu';
 
 export function SideMenuLayout(props: any) {
   const { menu = [] } = props.page;
@@ -10,13 +10,7 @@ export function SideMenuLayout(props: any) {
   return (
     <Layout style={{height: 'calc(100vh - 48px)'}}>
       <Layout.Sider className={'nb-sider'} theme={'light'}>
-        <Menu mode={'inline'}  defaultSelectedKeys={['2']}>
-          {menu.map(item => (
-            <Menu.Item key={item.path}>
-              <Link to={item.path}><Icon type={item.icon}/> {item.title}</Link>
-            </Menu.Item>
-          ))}
-        </Menu>
+        <Menu items={menu} mode={'inline'}/>
       </Layout.Sider>
       <Layout.Content>
         {props.children}
