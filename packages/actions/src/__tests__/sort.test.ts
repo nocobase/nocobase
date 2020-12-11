@@ -29,7 +29,9 @@ describe('get', () => {
   describe.only('sort value initialization', () => {
     it('initialization by bulkCreate', async () => {
       const Post = db.getModel('posts');
-      const posts = await Post.findAll();
+      const posts = await Post.findAll({
+        order: [['id', 'ASC']]
+      });
       expect(posts.map(({ id, sort, sort_in_status, sort_in_user }) => ({ id, sort, sort_in_status, sort_in_user }))).toEqual([
         { id: 1, sort: 1, sort_in_status: 1, sort_in_user: 1 },
         { id: 2, sort: 2, sort_in_status: 1, sort_in_user: 1 },
@@ -46,7 +48,9 @@ describe('get', () => {
 
     it('initialization by updateAssociations', async () => {
       const Comment = db.getModel('comments');
-      const comments = await Comment.findAll();
+      const comments = await Comment.findAll({
+        order: [['id', 'ASC']]
+      });
       expect(comments.map(({ id, sort, sort_in_status, sort_in_post }) => ({ id, sort, sort_in_status, sort_in_post }))).toEqual([
         { id: 1, sort: 1, sort_in_status: 1, sort_in_post: 1 },
         { id: 2, sort: 2, sort_in_status: 2, sort_in_post: 1 },

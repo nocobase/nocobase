@@ -259,6 +259,29 @@ export abstract class Model extends SequelizeModel {
     return data;
   }
 
+  getScopeWhere(scope: string[]) {
+    const Model = this.constructor as ModelCtor<Model>;
+    const table = this.database.getTable(this.constructor.name);
+    const associations = table.getAssociations();
+    const where = {};
+    scope.forEach(col => {
+      const association = associations.get(col);
+      const dataKey = association && association instanceof BELONGSTO
+        ? association.options.foreignKey
+        : col;
+      if (!Model.rawAttributes[dataKey]) {
+        return;
+      }
+      const value = this.getDataValue(dataKey);
+      // 暂时使用 != null 的比较
+      // 1. 数据库中没有 undefined，只有 null
+      // 2. 未传值时是 undefined
+      // 3. 数据库中的 null 通常也参与比较
+      where[dataKey] = value != null ? value : null;
+    });
+    return where;
+  }
+
   async updateSingleAssociation(key: string, data: any, options: SaveOptions<any> & { context?: any; } = {}) {
     const {
       fields,

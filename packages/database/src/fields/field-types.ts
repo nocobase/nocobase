@@ -9,13 +9,15 @@ import {
   BelongsToManyOptions,
   ThroughOptions,
 } from 'sequelize';
+import { template, get, toNumber } from 'lodash';
+import bcrypt from 'bcrypt';
+
 import * as Options from './option-types';
 import { getDataTypeKey } from '.';
 import Table from '../table';
 import Database from '../database';
 import Model, { ModelCtor } from '../model';
-import { template, isArray, map, get, toNumber } from 'lodash';
-import bcrypt from 'bcrypt';
+import { whereCompare } from '../utils';
 
 export interface IField {
 
@@ -695,19 +697,9 @@ export class SORT extends INTEGER {
 
   static async beforeCreateHook(this: SORT, model, options) {
     const { transaction } = options;
-    const table = this.context.sourceTable;
-    const Model = table.getModel();
+    const Model = model.constructor;
     const { name, scope = [], next = 'max' } = this.options;
-    const where = {};
-    const associations = table.getAssociations();
-    scope.forEach(col => {
-      const association = associations.get(col);
-      const dataKey = association && association instanceof BELONGSTO
-        ? association.options.foreignKey
-        : col;
-      const value = model.getDataValue(dataKey);
-      where[dataKey] = value != null ? value : null;
-    });
+    const where = model.getScopeWhere(scope);
     const extremum: number = await Model[next](name, { where, transaction }) || 0;
     model.set(name, extremum + (next === 'max' ? 1 : -1));
   }
@@ -726,29 +718,17 @@ export class SORT extends INTEGER {
       return;
     }
 
-    const associations = table.getAssociations();
     // 用于存放 where 条件与计算极值
-    const groups = new Map<Map<string, any>, number>();
+    const groups = new Map<{ [key: string]: any }, number>();
     await models.reduce((promise, model) => promise.then(async () => {
-      const where = {};
-      scope.forEach(col => {
-        const association = associations.get(col);
-        const dataKey = association && association instanceof BELONGSTO
-          ? association.options.foreignKey
-          : col;
-        const value = model.getDataValue(dataKey);
-        where[dataKey] = value != null ? value : null;
-      });
+      const where = model.getScopeWhere(scope);
 
-      const whereKeys = Object.keys(where);
       let extremum: number;
       // 以 map 作为 key
-      let combo: Map<string, any>;
+      let combo;
       // 查找与 where 值相等的组合
       for (combo of groups.keys()) {
-        if (whereKeys.length === combo.size
-          && whereKeys.every(key => where[key] === combo.get(key))
-        ) {
+        if (whereCompare(combo, where)) {
           // 如果找到的话则以之前储存的值作为基础极值
           extremum = groups.get(combo);
           break;
@@ -759,10 +739,7 @@ export class SORT extends INTEGER {
         // 则使用 where 条件查询极值
         extremum = await Model[next](name, { where, transaction }) || 0;
         // 且使用 where 条件创建组合
-        combo = new Map();
-        whereKeys.forEach(key => {
-          combo.set(key, where[key]);
-        });
+        combo = where;
       }
       const nextValue = extremum + (next === 'max' ? 1 : -1);
       // 设置数据行的排序值
@@ -774,9 +751,9 @@ export class SORT extends INTEGER {
 
   constructor(options: Options.SortOptions, context: FieldContext) {
     super(options, context);
-    const model = context.sourceTable.getModel();
+    const Model = context.sourceTable.getModel();
     // TODO(feature): 可考虑策略模式，以在需要时对外提供接口
-    model.addHook('beforeCreate', SORT.beforeCreateHook.bind(this));
-    model.addHook('beforeBulkCreate', SORT.beforeBulkCreateHook.bind(this));
+    Model.addHook('beforeCreate', SORT.beforeCreateHook.bind(this));
+    Model.addHook('beforeBulkCreate', SORT.beforeBulkCreateHook.bind(this));
   }
 }
