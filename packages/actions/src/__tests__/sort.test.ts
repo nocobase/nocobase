@@ -26,7 +26,7 @@ describe('get', () => {
   
   afterAll(() => db.close());
 
-  describe.only('sort value initialization', () => {
+  describe('sort value initialization', () => {
     it('initialization by bulkCreate', async () => {
       const Post = db.getModel('posts');
       const posts = await Post.findAll({
@@ -85,188 +85,165 @@ describe('get', () => {
   });
 
   describe('sort in whole table', () => {
-    it('init sort value', async () => {
-      const Post = db.getModel('posts');
-    });
-
-    it('move id=1 by offset=1', async () => {
-      const Post = db.getModel('posts');
+    it('move id=1 to position at id=2', async () => {
       await agent
         .post('/posts:sort/1')
         .send({
-          offset: 1,
+          field: 'sort',
+          targetId: 2,
         });
 
-      const post1 = await Post.findByPk(1);
-      expect(post1.get('sort')).toBe(1);
-
-      const post2 = await Post.findByPk(2);
-      expect(post2.get('sort')).toBe(0);
+      const Post = db.getModel('posts');
+      const posts = await Post.findAll({
+        attributes: ['id', 'sort'],
+        order: [['id', 'ASC']]
+      });
+      expect(posts.map(item => item.get())).toEqual([
+        { id: 1, sort: 2 },
+        { id: 2, sort: 1 },
+        { id: 3, sort: 3 },
+        { id: 4, sort: 4 },
+        { id: 5, sort: 5 },
+        { id: 6, sort: 6 },
+        { id: 7, sort: 7 },
+        { id: 8, sort: 8 },
+        { id: 9, sort: 9 },
+        { id: 10, sort: 10 }
+      ]);
     });
 
-    it('move id=1 by offset=9', async () => {
+    it('move id=2 to position at id=1', async () => {
+      await agent
+        .post('/posts:sort/2')
+        .send({
+          field: 'sort',
+          targetId: 1,
+        });
+
       const Post = db.getModel('posts');
+      const posts = await Post.findAll({
+        attributes: ['id', 'sort'],
+        order: [['id', 'ASC']]
+      });
+      expect(posts.map(item => item.get())).toEqual([
+        { id: 1, sort: 2 },
+        { id: 2, sort: 1 },
+        { id: 3, sort: 3 },
+        { id: 4, sort: 4 },
+        { id: 5, sort: 5 },
+        { id: 6, sort: 6 },
+        { id: 7, sort: 7 },
+        { id: 8, sort: 8 },
+        { id: 9, sort: 9 },
+        { id: 10, sort: 10 }
+      ]);
+    });
+
+    it('move id=1 to position at id=10', async () => {
       await agent
         .post('/posts:sort/1')
         .send({
-          offset: 9,
+          field: 'sort',
+          targetId: 10,
         });
 
-      const post1 = await Post.findByPk(1);
-      expect(post1.get('sort')).toBe(9);
-
-      const post2 = await Post.findByPk(2);
-      expect(post2.get('sort')).toBe(0);
-
-      const post10 = await Post.findByPk(10);
-      expect(post10.get('sort')).toBe(8);
-
-      const post11 = await Post.findByPk(11);
-      expect(post11.get('sort')).toBe(10);
-    });
-
-    it('move id=1 by offset=-1', async () => {
       const Post = db.getModel('posts');
-      await agent
-        .post('/posts:sort/1')
-        .send({
-          offset: -1,
-        });
-
-      const post1 = await Post.findByPk(1);
-      expect(post1.get('sort')).toBe(0);
-
-      const post2 = await Post.findByPk(2);
-      expect(post2.get('sort')).toBe(1);
-    });
-
-    it('move id=2 by offset=8', async () => {
-      const Post = db.getModel('posts');
-      await agent
-        .post('/posts:sort/2')
-        .send({
-          offset: 8,
-        });
-
-      const post2 = await Post.findByPk(2);
-      expect(post2.get('sort')).toBe(9);
-
-      const post10 = await Post.findByPk(10);
-      expect(post10.get('sort')).toBe(8);
-    });
-
-    it('move id=2 by offset=-1', async () => {
-      const Post = db.getModel('posts');
-      await agent
-        .post('/posts:sort/2')
-        .send({
-          offset: -1,
-        });
-
-      const post2 = await Post.findByPk(2);
-      expect(post2.get('sort')).toBe(0);
-
-      const post1 = await Post.findByPk(1);
-      expect(post1.get('sort')).toBe(1);
-    });
-
-    it('move id=2 by offset=Infinity', async () => {
-      const Post = db.getModel('posts');
-      await agent
-        .post('/posts:sort/2')
-        .send({
-          offset: 'Infinity',
-        });
-
-      const post1 = await Post.findByPk(1);
-      expect(post1.get('sort')).toBe(0);
-
-      const post2 = await Post.findByPk(2);
-      expect(post2.get('sort')).toBe(10);
-
-      const post10 = await Post.findByPk(10);
-      expect(post10.get('sort')).toBe(9);
-    });
-
-    it('move id=2 by offset=-Infinity', async () => {
-      const Post = db.getModel('posts');
-      await agent
-        .post('/posts:sort/2')
-        .send({
-          offset: '-Infinity',
-        });
-
-      const post1 = await Post.findByPk(1);
-      expect(post1.get('sort')).toBe(0);
-
-      const post2 = await Post.findByPk(2);
-      expect(post2.get('sort')).toBe(-1);
+      const posts = await Post.findAll({
+        attributes: ['id', 'sort'],
+        order: [['id', 'ASC']]
+      });
+      expect(posts.map(item => item.get())).toEqual([
+        { id: 1, sort: 10 },
+        { id: 2, sort: 1 },
+        { id: 3, sort: 2 },
+        { id: 4, sort: 3 },
+        { id: 5, sort: 4 },
+        { id: 6, sort: 5 },
+        { id: 7, sort: 6 },
+        { id: 8, sort: 7 },
+        { id: 9, sort: 8 },
+        { id: 10, sort: 9 }
+      ]);
     });
   });
 
   describe('sort in filtered scope', () => {
-    it('move id=1 by offset=3 in scope filter[status]=publish', async () => {
-      try {
-        await agent
-          .post('/posts:sort/1?filter[status]=publish')
-          .send({
-            offset: 3,
-          });
-      } catch (error) {
-        expect(error).toBeDefined();
-      }
+    it('move id=2 to position at id=8 (same scope value)', async () => {
+      await agent
+        .post('/posts:sort/2')
+        .send({
+          field: 'sort_in_status',
+          targetId: 8,
+        });
+
+      const Post = db.getModel('posts');
+      const posts = await Post.findAll({
+        where: {
+          status: 'publish'
+        },
+        attributes: ['id', 'sort_in_status'],
+        order: [['id', 'ASC']]
+      });
+      expect(posts.map(item => item.get())).toEqual([
+        { id: 2, sort_in_status: 4 },
+        { id: 4, sort_in_status: 1 },
+        { id: 6, sort_in_status: 2 },
+        { id: 8, sort_in_status: 3 },
+        { id: 10, sort_in_status: 5 }
+      ]);
     });
 
-    // 在 scope 中的排序无所谓值是否与其他不在 scope 中的重复。
-    it('move id=2 by offset=3 in scope filter[status]=publish', async () => {
-      const Post = db.getModel('posts');
+    it('move id=1 to position at id=8 (different scope value)', async () => {
       await agent
-        .post('/posts:sort/2?filter[status]=publish')
+        .post('/posts:sort/1')
         .send({
-          offset: 3,
-        });
-      
-      const post2 = await Post.findByPk(2);
-      expect(post2.get('sort')).toBe(7);
-    });
-
-    it('move id=2 by offset=Infinity in scope filter[status]=publish', async () => {
-      await agent
-        .post('/posts:sort/2?filter[status]=publish')
-        .send({
-          offset: 'Infinity',
+          field: 'sort_in_status',
+          targetId: 8,
         });
       
       const Post = db.getModel('posts');
-      const post2 = await Post.findByPk(2);
-      expect(post2.get('sort')).toBe(10);
+      const posts = await Post.findAll({
+        where: {
+          status: 'publish'
+        },
+        attributes: ['id', 'sort_in_status'],
+        order: [['id', 'ASC']]
+      });
+      expect(posts.map(item => item.get())).toEqual([
+        { id: 1, sort_in_status: 4 },
+        { id: 2, sort_in_status: 1 },
+        { id: 4, sort_in_status: 2 },
+        { id: 6, sort_in_status: 3 },
+        { id: 8, sort_in_status: 5 },
+        { id: 10, sort_in_status: 6 }
+      ]);
     });
   });
 
   describe('associations', () => {
     describe('hasMany', () => {
-      it('sort only 1 item in group will never change', async () => {
+      it('move id=1 to position at id=3 (different scope value)', async () => {
         await agent
-          .post('/posts/2/comments:sort/1')
+          .post('/users/1/posts:sort/1')
           .send({
-            offset: 1
+            field: 'sort_in_user',
+            targetId: 3,
           });
-        
-        const Comment = db.getModel('comments');
-        const comment1 = await Comment.findByPk(1);
-        expect(comment1.get('sort')).toBe(0);
-      });
 
-      it('/posts/5/comments:sort/7', async () => {
-        await agent
-          .post('/posts/5/comments:sort/7')
-          .send({
-            offset: 1
-          });
-        
-        const Comment = db.getModel('comments');
-        const comment7 = await Comment.findByPk(7);
-        expect(comment7.get('sort')).toBe(1);
+        const Post = db.getModel('posts');
+        const posts = await Post.findAll({
+          where: {
+            user_id: 3
+          },
+          attributes: ['id', 'sort_in_user'],
+          order: [['id', 'ASC']]
+        });
+
+        expect(posts.map(item => item.get())).toEqual([
+          { id: 1, sort_in_user: 1 },
+          { id: 3, sort_in_user: 2 },
+          { id: 10, sort_in_user: 3 },
+        ]);
       });
     });
   });

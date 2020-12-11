@@ -86,6 +86,11 @@ resourcer.define({
   actions: actions.associate,
 });
 resourcer.define({
+  type: 'hasMany',
+  name: 'users.posts',
+  actions: actions.associate,
+});
+resourcer.define({
   type: 'belongsTo',
   name: 'posts.user',
   actions: actions.associate,
