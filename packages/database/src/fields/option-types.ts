@@ -174,9 +174,23 @@ export interface BelongsToManyOptions extends Omit<SequelizeBelongsToManyOptions
   otherKey?: string;
 }
 
-export interface SortOptions extends IntegerOptions {
+export interface SortOptions extends Omit<IntegerOptions, 'type'> {
+  type: 'sort';
+  /**
+   * 排序限定范围
+   * 
+   * 在同表的限定范围内的字段值相等的数据行中排序
+   */
   scope?: string[];
-  next?: 'min' | 'max'
+  /**
+   * 新值创建策略
+   * 
+   * max: 使用最大值
+   * min: 使用最小值
+   * 
+   * Defaults to 'max'
+   */
+  next?: 'min' | 'max';
 }
 
 export type ColumnOptions = AbstractFieldOptions 

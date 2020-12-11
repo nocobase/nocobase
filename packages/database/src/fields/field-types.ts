@@ -683,7 +683,7 @@ export class BELONGSTOMANY extends Relation {
   }
 
   public getAssociationOptions(): BelongsToManyOptions {
-    const { name, ...restOptions }= this.options;
+    const { name, ...restOptions } = this.options;
     return {
       as: name,
       through: this.getThroughModel(),
@@ -693,6 +693,7 @@ export class BELONGSTOMANY extends Relation {
 }
 
 export class SORT extends INTEGER {
+  // @ts-ignore
   public readonly options: Options.SortOptions;
 
   static async beforeCreateHook(this: SORT, model, options) {
