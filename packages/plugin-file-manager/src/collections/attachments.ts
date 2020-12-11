@@ -3,6 +3,7 @@ import { TableOptions } from '@nocobase/database';
 export default {
   name: 'attachments',
   title: '文件管理器',
+  internal: true,
   fields: [
     {
       type: 'string',

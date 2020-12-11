@@ -3,6 +3,7 @@ import { TableOptions } from '@nocobase/database';
 export default {
   name: 'views',
   title: '视图配置',
+  internal: true,
   sortable: true,
   model: 'ViewModel',
   developerMode: true,

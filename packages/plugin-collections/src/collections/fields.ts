@@ -4,6 +4,7 @@ import { options } from '../interfaces';
 export default {
   name: 'fields',
   title: '字段配置',
+  internal: true,
   draggable: true,
   model: 'FieldModel',
   developerMode: true,

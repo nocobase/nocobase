@@ -3,6 +3,7 @@ import { TableOptions } from '@nocobase/database';
 export default {
   name: 'tabs',
   title: '标签配置',
+  internal: true,
   sortable: true,
   model: 'TabModel',
   developerMode: true,

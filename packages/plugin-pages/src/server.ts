@@ -22,9 +22,9 @@ export default async function (options = {}) {
   const [Collection, Page] = database.getModels(['collections', 'pages']);
 
   async function createCollectionPage(model) {
-    // if (!model.get('showInDataMenu')) {
-    //   return;
-    // }
+    if (model.get('internal')) {
+      return;
+    }
     const parent = await Page.findOne({
       where: {
         path: '/collections',

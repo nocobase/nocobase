@@ -3,6 +3,7 @@ import { TableOptions } from '@nocobase/database';
 export default {
   name: 'collections',
   title: '数据表配置',
+  internal: true,
   sortable: true,
   draggable: true,
   model: 'CollectionModel',
@@ -158,6 +159,17 @@ export default {
       defaultValue: {},
       component: {
         type: 'hidden',
+      },
+    },
+    {
+      interface: 'boolean',
+      type: 'boolean',
+      name: 'internal',
+      title: '系统内置',
+      defaultValue: false,
+      developerMode: true,
+      component: {
+        type: 'boolean',
       },
     },
     {
