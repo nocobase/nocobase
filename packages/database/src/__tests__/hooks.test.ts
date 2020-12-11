@@ -158,7 +158,7 @@ describe('hooks', () => {
     expect(test.get('arr')).toEqual([ 1, 3, 2, 4 ]);
   });
 
-  it.only('add hook in custom field', async () => {
+  it('add hook in custom field', async () => {
     const table = db.table({
       name: 'test3',
       fields: [

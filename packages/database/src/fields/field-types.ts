@@ -9,13 +9,15 @@ import {
   BelongsToManyOptions,
   ThroughOptions,
 } from 'sequelize';
+import { template, get, toNumber } from 'lodash';
+import bcrypt from 'bcrypt';
+
 import * as Options from './option-types';
 import { getDataTypeKey } from '.';
 import Table from '../table';
 import Database from '../database';
 import Model, { ModelCtor } from '../model';
-import { template, isArray, map, get, toNumber } from 'lodash';
-import bcrypt from 'bcrypt';
+import { whereCompare } from '../utils';
 
 export interface IField {
 
@@ -681,11 +683,82 @@ export class BELONGSTOMANY extends Relation {
   }
 
   public getAssociationOptions(): BelongsToManyOptions {
-    const { name, ...restOptions }= this.options;
+    const { name, ...restOptions } = this.options;
     return {
       as: name,
       through: this.getThroughModel(),
       ...restOptions,
     }
+  }
+}
+
+export class SORT extends NUMBER {
+
+  public readonly options: Options.SortOptions;
+
+  static async beforeCreateHook(this: SORT, model, options) {
+    const { transaction } = options;
+    const Model = model.constructor;
+    const { name, scope = [], next = 'max' } = this.options;
+    const where = model.getScopeWhere(scope);
+    const extremum: number = await Model[next](name, { where, transaction }) || 0;
+    model.set(name, extremum + (next === 'max' ? 1 : -1));
+  }
+
+  static async beforeBulkCreateHook(this: SORT, models, options) {
+    const { transaction } = options;
+    const table = this.context.sourceTable;
+    const Model = table.getModel();
+    const { name, scope = [], next = 'max' } = this.options;
+    // 如果未配置范围限定，则可以进行性能优化处理（常用情况）。
+    if (!scope.length) {
+      const extremum: number = await Model[next](name, { transaction }) || 0;
+      models.forEach((model, i: number) => {
+        model.setDataValue(name, extremum + (i + 1) * (next === 'max' ? 1 : -1));
+      });
+      return;
+    }
+
+    // 用于存放 where 条件与计算极值
+    const groups = new Map<{ [key: string]: any }, number>();
+    await models.reduce((promise, model) => promise.then(async () => {
+      const where = model.getScopeWhere(scope);
+
+      let extremum: number;
+      // 以 map 作为 key
+      let combo;
+      // 查找与 where 值相等的组合
+      for (combo of groups.keys()) {
+        if (whereCompare(combo, where)) {
+          // 如果找到的话则以之前储存的值作为基础极值
+          extremum = groups.get(combo);
+          break;
+        }
+      }
+      // 如未找到组合
+      if (typeof extremum === 'undefined') {
+        // 则使用 where 条件查询极值
+        extremum = await Model[next](name, { where, transaction }) || 0;
+        // 且使用 where 条件创建组合
+        combo = where;
+      }
+      const nextValue = extremum + (next === 'max' ? 1 : -1);
+      // 设置数据行的排序值
+      model.setDataValue(name, nextValue);
+      // 保存新的排序值为对应 where 组合的极值，以供下次计算
+      groups.set(combo, nextValue);
+    }), Promise.resolve());
+  }
+
+  constructor(options: Options.SortOptions, context: FieldContext) {
+    super(options, context);
+    const Model = context.sourceTable.getModel();
+    // TODO(feature): 可考虑策略模式，以在需要时对外提供接口
+    Model.addHook('beforeCreate', SORT.beforeCreateHook.bind(this));
+    Model.addHook('beforeBulkCreate', SORT.beforeBulkCreateHook.bind(this));
+  }
+
+  public getDataType(): Function {
+    return DataTypes.INTEGER;
   }
 }

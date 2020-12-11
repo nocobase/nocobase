@@ -367,7 +367,6 @@ describe('model', () => {
           }))
         });
         const updatedComments = await Comment.findAll();
-        console.log(updatedComments);
         const post1CommentsCount = await Comment.count({
           where: { post_id: post.id }
         });

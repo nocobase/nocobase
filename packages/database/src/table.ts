@@ -12,6 +12,7 @@ import {
   Relation,
   BELONGSTO,
   BELONGSTOMANY,
+  SORT
 } from './fields';
 import Database from './database';
 import { Model, ModelCtor } from './model';
@@ -126,6 +127,10 @@ export class Table {
   public isThroughTable: boolean = false;
 
   public relationTables = new Set<string>();
+
+  get sortable(): boolean {
+    return Array.from(this.fields.values()).some(field => field instanceof SORT);
+  }
 
   constructor(options: TableOptions, context: TabelContext) {
     const { database } = context;

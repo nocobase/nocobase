@@ -1,5 +1,5 @@
 import {
-  Model as SequelizeModel, Op, Sequelize, ProjectionAlias, Utils, SaveOptions,
+  Model as SequelizeModel, Op, Sequelize, ProjectionAlias, Utils, SaveOptions
 } from 'sequelize';
 import Database from './database';
 import {
@@ -259,6 +259,27 @@ export abstract class Model extends SequelizeModel {
     return data;
   }
 
+  getScopeWhere(scope: string[]) {
+    const Model = this.constructor as ModelCtor<Model>;
+    const table = this.database.getTable(this.constructor.name);
+    const associations = table.getAssociations();
+    const where = {};
+    scope.forEach(col => {
+      const association = associations.get(col);
+      const dataKey = association && association instanceof BELONGSTO
+        ? association.options.foreignKey
+        : col;
+      if (!Model.rawAttributes[dataKey]) {
+        return;
+      }
+      const value = this.getDataValue(dataKey);
+      if (typeof value !== 'undefined') {
+        where[dataKey] = value;
+      }
+    });
+    return where;
+  }
+
   async updateSingleAssociation(key: string, data: any, options: SaveOptions<any> & { context?: any; } = {}) {
     const {
       fields,
@@ -399,27 +420,29 @@ export abstract class Model extends SequelizeModel {
     for (const item of toUpsertObjects) {
       let target;
       if (typeof item[targetKey] === 'undefined') {
-        // TODO(optimize): 不确定 bulkCreate 的结果是否能保证顺序，能保证的话这里可以优化为批量处理
-        target = await Target.create(item, opts);
+        target = await this[accessors.create](item, opts);
       } else {
-        let created: boolean;
-        [target, created] = await Target.findOrCreate({
+        target = await Target.findOne({
+          ...opts,
           where: { [targetKey]: item[targetKey] },
-          defaults: item,
-          transaction
         });
-        if (!created) {
+        if (!target) {
+          target = await this[accessors.create](item, opts);
+        } else {
           await target.update(item, opts);
         }
       }
-      
+      // TODO(optimize): 此处添加的对象其实已经创建了关联，
+      // 但考虑到单条 create 的 hook 要求带上关联键，且后面的 set，
+      // 所以仍然交给 set 再调用关联一次。
+      toSetItems.add(target);
+
       if (association instanceof BELONGSTOMANY) {
         belongsToManyList.push({
           item,
           target
         });
       }
-      toSetItems.add(target);
 
       await target.updateAssociations(item, opts);
     }

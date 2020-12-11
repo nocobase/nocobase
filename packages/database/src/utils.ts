@@ -290,6 +290,10 @@ export function toInclude(options: any, context: ToIncludeContext = {}) {
   return data;
 }
 
+export function whereCompare(a: any, b: any): boolean {
+  return _.isEqual(a, b);
+}
+
 export function requireModule(module: any) {
   if (typeof module === 'string') {
     module = require(module);
