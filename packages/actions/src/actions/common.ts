@@ -432,10 +432,10 @@ export async function sort(ctx: Context, next: Next) {
   const targetScopeWhere = target.getScopeWhere(scope);
   const sameScope = whereCompare(sourceScopeWhere, targetScopeWhere);
 
-  let direction;
-  let group;
+  let increment;
+  const updateWhere = { ...targetScopeWhere };
   if (sameScope) {
-    direction = source[sortAttr] < target[sortAttr] ? {
+    const direction = source[sortAttr] < target[sortAttr] ? {
       sourceOp: Op.gt,
       targetOp: Op.lte,
       increment: -1
@@ -444,39 +444,27 @@ export async function sort(ctx: Context, next: Next) {
       targetOp: Op.gte,
       increment: 1
     };
-  
-    group = await Model.findAll({
-      where: {
-        ...targetScopeWhere,
-        [sortAttr]: {
-          [direction.sourceOp]: source[sortAttr],
-          [direction.targetOp]: target[sortAttr]
-        }
-      },
-      attributes: [primaryKeyAttribute, sortAttr],
-      transaction
+
+    increment = direction.increment;
+
+    Object.assign(updateWhere, {
+      [sortAttr]: {
+        [direction.sourceOp]: source[sortAttr],
+        [direction.targetOp]: target[sortAttr]
+      }
     });
   } else {
-    direction = {
-      increment: 1
-    };
-    group = await Model.findAll({
-      where: {
-        ...targetScopeWhere,
-        [sortAttr]: {
-          [Op.gte]: target[sortAttr]
-        }
+    increment = 1;
+    Object.assign(updateWhere, {
+      [sortAttr]: {
+        [Op.gte]: target[sortAttr]
       }
     });
   }
 
   await Model.increment(sortAttr, {
-    by: direction.increment,
-    where: {
-      [primaryKeyAttribute]: {
-        [Op.in]: group.map(item => item[primaryKeyAttribute])
-      }
-    },
+    by: increment,
+    where: updateWhere,
     transaction
   });
 
