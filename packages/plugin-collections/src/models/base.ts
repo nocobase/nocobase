@@ -78,7 +78,7 @@ export class BaseModel extends Model {
       // 不处理关系数据
       // @ts-ignore
       if (_.get(this.constructor.associations, key)) {
-        return this;
+        return super.set(key, value, options);
       }
       // 如果是 object 数据，merge 处理
       if (_.isPlainObject(value)) {
@@ -112,7 +112,7 @@ export class BaseModel extends Model {
     // 不处理关系数据
     // @ts-ignore
     if (_.get(this.constructor.associations, key)) {
-      return this;
+      return super.setDataValue(key, value);
     }
     if (_.isPlainObject(value)) {
       // @ts-ignore

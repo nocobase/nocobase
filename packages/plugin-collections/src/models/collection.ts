@@ -35,12 +35,6 @@ export class CollectionModel extends BaseModel {
     this.set('name', generateCollectionName());
   }
 
-  generateNameIfNull() {
-    if (!this.get('name')) {
-      this.generateName();
-    }
-  }
-
   /**
    * 通过 name 获取 collection
    *
@@ -109,9 +103,7 @@ export class CollectionModel extends BaseModel {
 
   async getOptions(): Promise<TableOptions> {
     return {
-      ...this.get('options'),
-      name: this.get('name'),
-      title: this.get('title'),
+      ...this.get(),
       fields: await this.getFieldsOptions(),
     };
   }
