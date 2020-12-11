@@ -1,3 +1,5 @@
+import { Utils, Op } from 'sequelize';
+import _ from 'lodash';
 import { Context, Next } from '.';
 import {
   Model, 
@@ -5,10 +7,9 @@ import {
   HASMANY,
   BELONGSTO,
   BELONGSTOMANY,
+  whereCompare
 } from '@nocobase/database';
 import { DEFAULT_PAGE, DEFAULT_PER_PAGE } from '@nocobase/resourcer';
-import { Utils, Op } from 'sequelize';
-import _ from 'lodash';
 import { filterByFields } from '../utils';
 
 /**
@@ -373,7 +374,6 @@ export async function sort(ctx: Context, next: Next) {
     associatedName,
     associatedKey,
     associated,
-    filter = {},
     values
   } = ctx.action.params;
 
@@ -390,114 +390,106 @@ export async function sort(ctx: Context, next: Next) {
   const Model = ctx.db.getModel(resourceName);
   const table = ctx.db.getTable(resourceName);
 
-  if (!values.offset) {
+  const { field, targetId } = values;
+  if (!values.field || typeof targetId === 'undefined') {
     return next();
   }
-  const [primaryField] = Model.primaryKeyAttributes;
-  const sortField = values.field || table.getOptions().sortField || 'sort';
-
-  // offset 的有效值为：整型 | 'Infinity' | '-Infinity'
-  const offset = Number(values.offset);
-  const sign = offset < 0 ? {
-    op: Op.lte,
-    order: 'DESC',
-    direction: 1,
-    extremum: 'min'
-  } : {
-    op: Op.gte,
-    order: 'ASC',
-    direction: -1,
-    extremum: 'max'
-  };
+  const sortField = table.getField(field);
+  if (!sortField) {
+    return next();
+  }
+  const { primaryKeyAttribute } = Model;
+  const { name: sortAttr, scope = [] } = sortField.options;
 
   const transaction = await ctx.db.sequelize.transaction();
 
-  const { where = {} } = Model.parseApiJson({ filter });
+  const where = {};
   if (associated && resourceField instanceof HASMANY) {
     where[resourceField.options.foreignKey] = associatedKey;
   }
 
   // 找到操作对象
-  const operand = await Model.findOne({
-    // 这里增加 where 条件是要求如果有 filter 条件，就应该在同条件的组中排序，不是同条件组的报错处理。
+  const source = await Model.findOne({
     where: {
       ...where,
-      [primaryField]: resourceKey
+      [primaryKeyAttribute]: resourceKey
+    },
+    transaction
+  });
+  if (!source) {
+    await transaction.rollback();
+    throw new Error(`resource(${resourceKey}) does not exist`);
+  }
+
+  const target = await Model.findByPk(targetId, { transaction });
+
+  if (!target) {
+    await transaction.rollback();
+    throw new Error(`resource(${targetId}) does not exist`);
+  }
+
+  const sourceScopeWhere = source.getScopeWhere(scope);
+  const targetScopeWhere = target.getScopeWhere(scope);
+  const sameScope = whereCompare(sourceScopeWhere, targetScopeWhere);
+
+  let direction;
+  let group;
+  if (sameScope) {
+    direction = source[sortAttr] < target[sortAttr] ? {
+      sourceOp: Op.gt,
+      targetOp: Op.lte,
+      increment: -1
+    } : {
+      sourceOp: Op.lt,
+      targetOp: Op.gte,
+      increment: 1
+    };
+  
+    group = await Model.findAll({
+      where: {
+        ...targetScopeWhere,
+        [sortAttr]: {
+          [direction.sourceOp]: source[sortAttr],
+          [direction.targetOp]: target[sortAttr]
+        }
+      },
+      attributes: [primaryKeyAttribute, sortAttr],
+      transaction
+    });
+  } else {
+    direction = {
+      increment: 1
+    };
+    group = await Model.findAll({
+      where: {
+        ...targetScopeWhere,
+        [sortAttr]: {
+          [Op.gte]: target[sortAttr]
+        }
+      }
+    });
+  }
+
+  await Model.increment(sortAttr, {
+    by: direction.increment,
+    where: {
+      [primaryKeyAttribute]: {
+        [Op.in]: group.map(item => item[primaryKeyAttribute])
+      }
     },
     transaction
   });
 
-  if (!operand) {
-    await transaction.rollback();
-    // TODO: 错误需要后面统一处理
-    throw new Error(`resource(${resourceKey}) with filter does not exist`);
-  }
-
-  let target;
-
-  // 如果是有限的变动值
-  if (Number.isFinite(offset)) {
-    const absChange = Math.abs(offset);
-    const group = await Model.findAll({
-      where: {
-        ...where,
-        [primaryField]: {
-          [Op.ne]: resourceKey
-        },
-        [sortField]: {
-          [sign.op]: operand[sortField]
-        }
-      },
-      limit: absChange,
-      // offset: 0,
-      attributes: [primaryField, sortField],
-      order: [
-        [sortField, sign.order]
-      ],
-      transaction
-    });
-
-    if (!group.length) {
-      // 如果变动范围内的元素数比范围小
-      // 说明全部数据不足一页
-      // target = group[0][priorityKey] - sign.direction;
-      // 没有元素无需变动
-      await transaction.commit();
-      ctx.body = operand;
-      return next();
-    }
-    
-    // 如果变动范围内都有元素（可能出现 limit 范围内元素不足的情况）
-    if (group.length === absChange) {
-      target = group[group.length - 1][sortField];
-
-      await Model.increment(sortField, {
-        by: sign.direction,
-        where: {
-          [primaryField]: {
-            [Op.in]: group.map(item => item[primaryField])
-          }
-        },
-        transaction
-      });
-    }
-  }
-  // 如果要求置顶或沉底(未在上一过程中计算出目标值)
-  if (typeof target === 'undefined') {
-    target = await Model[sign.extremum](sortField, {
-      where,
-      transaction
-    }) - sign.direction;
-  }
-  await operand.update({
-    [sortField]: target
+  await source.update({
+    [sortAttr]: target[sortAttr],
+    ...targetScopeWhere
   }, {
     transaction
   });
 
   await transaction.commit();
 
-  ctx.body = operand;
+  ctx.body = source;
 
   await next();
 }

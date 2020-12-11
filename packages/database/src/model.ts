@@ -259,7 +259,7 @@ export abstract class Model extends SequelizeModel {
     return data;
   }
 
-  getScopeWhere(scope: string[]) {
+  getScopeWhere(scope: string[] = []) {
     const Model = this.constructor as ModelCtor<Model>;
     const table = this.database.getTable(this.constructor.name);
     const associations = table.getAssociations();
