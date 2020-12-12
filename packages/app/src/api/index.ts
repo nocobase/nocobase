@@ -3,6 +3,7 @@ import dotenv from 'dotenv';
 import path from 'path';
 import actions from '../../../actions/src';
 import associated from '../../../actions/src/middlewares/associated';
+import { Op } from 'sequelize';
 
 const sync = {
   force: true,
@@ -37,8 +38,9 @@ const api = Api.create({
 api.resourcer.use(async (ctx, next) => {
   const { resourceName } = ctx.action.params;
   const table = ctx.db.getTable(resourceName);
+  // ctx.state.developerMode = {[Op.not]: null};
   ctx.state.developerMode = false;
-  if (table && table.hasField('developerMode')) {
+  if (table && table.hasField('developerMode') && ctx.state.developerMode === false) {
     ctx.action.setParam('filter.developerMode', ctx.state.developerMode);
   }
   await next();

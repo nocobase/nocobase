@@ -1,6 +1,4 @@
 import { Model, ModelCtor } from '@nocobase/database';
-import { ResourceOptions } from '@nocobase/resourcer';
-import { get } from 'lodash';
 
 export default async (ctx, next) => {
   const { resourceName, resourceKey } = ctx.action.params;
@@ -9,19 +7,18 @@ export default async (ctx, next) => {
     filter: {
       name: resourceName,
     },
-    // fields: {
-    //   // appends: ['tabs'],
-    // },
   }));
-  const views = await collection.getViews({
+  const defaultView = await collection.getViews({
     where: {
       default: true,
     },
+    limit: 1,
+    plain: true,
   });
-  collection.setDataValue('defaultViewId', get(views, [0, 'id']));
-  collection.setDataValue('defaultViewName', get(views, [0, 'name']));
+  collection.setDataValue('defaultViewName', defaultView.get('name'));
   const tabs = await collection.getTabs({
     where: {
+      enabled: true,
       developerMode: ctx.state.developerMode,
     },
     order: [['sort', 'asc']],
@@ -29,23 +26,19 @@ export default async (ctx, next) => {
   const tabItems = [];
   for (const tab of tabs) {
     const itemTab = {
-      ...tab.toJSON(),
-      ...tab.options,
+      ...tab.get(),
     };
+    if (itemTab.type === 'details' && !itemTab.viewName) {
+      itemTab.viewName = 'details';
+    }
     if (itemTab.type == 'association') {
-      const field = await Field.findOne({
+      itemTab.field = await collection.getFields({
         where: {
-          collection_name: itemTab.collection_name,
           name: itemTab.association,
         },
+        limit: 1,
+        plain: true,
       });
-      itemTab.field = field ? {
-        ...field.toJSON(),
-        ...field.options,
-      } : {};
-      itemTab.viewCollectionName = itemTab.association;
-    } else {
-      itemTab.viewCollectionName = itemTab.collection_name;
     }
     tabItems.push(itemTab);
   }
