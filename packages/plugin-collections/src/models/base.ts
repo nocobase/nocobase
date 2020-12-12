@@ -82,8 +82,12 @@ export class BaseModel extends Model {
       }
       // 如果是 object 数据，merge 处理
       if (_.isPlainObject(value)) {
-        // @ts-ignore
-        value = merge(this.get(key)||{}, value);
+        // TODO 需要改进 JSON 字段的内部处理逻辑，暂时这里跳过了特殊的 filter 字段
+        if (key !== 'filter') {
+          // console.log(key, value);
+          // @ts-ignore
+          value = merge(this.get(key)||{}, value);
+        }
       }
       const [column, ...path] = key.split('.');
       if (!options.raw) {

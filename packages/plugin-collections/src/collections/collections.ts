@@ -11,7 +11,7 @@ export default {
   fields: [
     {
       interface: 'sort',
-      type: 'integer',
+      type: 'sort',
       name: 'sort',
       title: '排序',
       component: {
@@ -295,6 +295,7 @@ export default {
       template: 'Table',
       actionNames: ['create', 'destroy'],
       default: true,
+      draggable: true,
     },
   ],
   tabs: [

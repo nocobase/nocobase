@@ -1,3 +1,4 @@
+import { values } from 'lodash';
 import { stringify } from 'querystring';
 import { request } from 'umi';
 
@@ -28,7 +29,7 @@ class ApiClient {
     const proxy: any = new Proxy({}, {
       get(target, method, receiver) {
         return (params: ActionParams = {}) => {
-          let { associatedKey, resourceKey, filter, sorter, sort = [], ...restParams } = params;
+          let { associatedKey, resourceKey, filter, sorter, sort = [], values, ...restParams } = params;
           let url = `/${name}`;
           sort = sort || [];
           let options: any = {
@@ -39,7 +40,7 @@ class ApiClient {
             options.params = restParams;
           } else {
             options.method = 'post';
-            options.data = restParams;
+            options.data = values;
           }
           if (associatedKey) {
             url = `/${name.split('.').join(`/${associatedKey}/`)}`;

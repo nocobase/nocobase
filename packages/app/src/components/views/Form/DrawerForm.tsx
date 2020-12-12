@@ -67,12 +67,12 @@ export const DrawerForm = forwardRef((props: any, ref) => {
             await api.resource(name).update({
               resourceKey,
               associatedKey,
-              ...values,
+              values,
             });
           } else {
             await api.resource(name).create({
               associatedKey,
-              ...values,
+              values,
             });
           }
           setVisible(false);

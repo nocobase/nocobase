@@ -30,6 +30,7 @@ export const components = ({data = {}, rowKey, mutate, onMoved}: Props) => {
           helperClass="row-dragging"
           onSortEnd={async ({ oldIndex, newIndex, ...restProps }) => {
             if (oldIndex !== newIndex) {
+              const targetIndex = get(data.list, [newIndex, rowKey]);
               const list = arrayMove([].concat(data.list), oldIndex, newIndex).filter(el => !!el);
               console.log({oldIndex, newIndex, list});
               mutate({
@@ -37,7 +38,7 @@ export const components = ({data = {}, rowKey, mutate, onMoved}: Props) => {
                 list,
               });
               const resourceKey = get(list, [newIndex, rowKey]);
-              await onMoved({resourceKey, offset: newIndex - oldIndex});
+              await onMoved({resourceKey, target: {[rowKey]: targetIndex}});
             }
           }}
           {...props}
