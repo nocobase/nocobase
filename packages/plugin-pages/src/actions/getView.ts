@@ -6,12 +6,12 @@ const transforms = {
   table: async (fields: Model[], context?: any) => {
     const arr = [];
     for (const field of fields) {
-      if (!get(field.component, 'showInTable')) {
+      if (!field.get('component.showInTable')) {
         continue;
       }
       arr.push({
-        ...field.toJSON(),
-        ...field.options,
+        ...field.get(),
+        sorter: field.get('sortable'),
         dataIndex: field.name,
       });
     }

@@ -21,16 +21,22 @@ export default async function (options = {}) {
 
   const [Collection, Page] = database.getModels(['collections', 'pages']);
 
-  async function createCollectionPage(model) {
+  async function createCollectionPage(model, options) {
+    // const { 
+    //   transaction = await database.sequelize.transaction(),
+    // } = options;
     if (model.get('internal')) {
       return;
     }
+    const transaction = await database.sequelize.transaction();
     const parent = await Page.findOne({
+      transaction,
       where: {
         path: '/collections',
       }
     });
     let page = await Page.findOne({
+      transaction,
       where: {
         collection: model.get('name'),
         path: `/collections/${model.get('name')}`,
@@ -43,6 +49,8 @@ export default async function (options = {}) {
         path: `/collections/${model.get('name')}`,
         sort: 100,
         parent_id: parent.id,
+      }, {
+        transaction,
       });
     }
     page.set({
@@ -50,9 +58,22 @@ export default async function (options = {}) {
       icon: model.get('icon'),
       showInMenu: !!model.get('showInDataMenu'),
     });
-    page.save();
+    await page.save({
+      transaction,
+    });
+    await transaction.commit();
   }
 
   Collection.addHook('afterCreate', createCollectionPage);
   Collection.addHook('afterUpdate', createCollectionPage);
+  Collection.addHook('afterDestroy', async (model, options) => {
+    const { transaction } = options;
+    console.log('afterDestroy', model);
+    await Page.destroy({
+      transaction,
+      where: {
+        path: `/collections/${model.get('name')}`,
+      },
+    });
+  });
 }

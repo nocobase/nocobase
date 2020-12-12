@@ -25,6 +25,7 @@ export default {
       type: 'string',
       name: 'title',
       title: '名称',
+      required: true,
       component: {
         type: 'string',
         className: 'drag-visible',
@@ -52,7 +53,7 @@ export default {
       title: '类型',
       dataSource: [
         { label: '详情数据', value: 'details' },
-        { label: '相关数据', value: 'association' },
+        { label: '相关数据', value: 'association', disabled: true },
         { label: '模块组合', value: 'module', disabled: true },
       ],
       component: {
@@ -60,6 +61,13 @@ export default {
         showInTable: true,
         showInDetail: true,
         showInForm: true,
+        "x-linkages": [
+          {
+            "type": "value:visible",
+            "target": "association",
+            "condition": "{{ $self.value === 'association' }}"
+          },
+        ],
       },
     },
     {
@@ -90,8 +98,8 @@ export default {
       interface: 'boolean',
       type: 'boolean',
       name: 'enabled',
-      title: '启动',
-      defaultValue: false,
+      title: '启用',
+      defaultValue: true,
       component: {
         type: 'checkbox',
         showInTable: true,

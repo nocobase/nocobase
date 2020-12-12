@@ -14,7 +14,7 @@ export default async (ctx, next) => {
     order: [['sort', 'asc']],
   });
   ctx.body = {
-    pageTitle: field ? model.get(field.get('name')) : model.get(M.primaryKeyAttribute),
+    pageTitle: field ? (model.get(field.get('name')) || `#${model.get(M.primaryKeyAttribute)} 无标题`) : model.get(M.primaryKeyAttribute),
     ...model.toJSON(),
   };
   await next();
