@@ -46,12 +46,16 @@ export function Table(props: TableProps) {
   //   associatedKey,
   // }));
   const name = associatedName ? `${associatedName}.${resourceName}` : resourceName;
-  const { data, loading, pagination, mutate, refresh } = useRequest((params = {}) => {
-    const { current, pageSize, ...restParams } = params;
+  const { data, loading, pagination, mutate, refresh, run, params } = useRequest((params = {}, ...args) => {
+    const { current, pageSize, sorter, filter, ...restParams } = params;
+    console.log('paramsparamsparamsparamsparams', params, args);
     return api.resource(name).list({
       associatedKey,
       page: paginated ? current : 1,
       perPage: paginated ? pageSize : -1,
+      sorter,
+      filter,
+      // ...args2,
     })
     .then(({data = [], meta = {}}) => {
       return {
@@ -88,6 +92,11 @@ export function Table(props: TableProps) {
           refresh();
         }}
         onTrigger={{
+          async filter(values) {
+            // @ts-ignore
+            run({...params[0], filter: values.filter});
+            console.log('filter', values);
+          },
           async destroy() {
             await api.resource(name).destroy({
               associatedKey,
@@ -104,6 +113,9 @@ export function Table(props: TableProps) {
         rowKey={rowKey}
         columns={fields2columns(fields)}
         dataSource={data?.list||(data as any)}
+        onChange={(pagination, filters, sorter, extra) => {
+          run({...params[0], sorter});
+        }}
         components={components({
           data, 
           mutate,

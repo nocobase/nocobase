@@ -28,8 +28,9 @@ class ApiClient {
     const proxy: any = new Proxy({}, {
       get(target, method, receiver) {
         return (params: ActionParams = {}) => {
-          const { associatedKey, resourceKey, filter, ...restParams } = params;
+          let { associatedKey, resourceKey, filter, sorter, sort = [], ...restParams } = params;
           let url = `/${name}`;
+          sort = sort || [];
           let options: any = {
             params: {},
           };
@@ -50,6 +51,21 @@ class ApiClient {
           }
           if (filter) {
             options.params['filter'] = JSON.stringify(filter);
+          }
+          if (sorter) {
+            const arr = Array.isArray(sorter) ? sorter : [sorter];
+            arr.forEach(({order, field}) => {
+              if (order === 'descend') {
+                sort.push(`-${field}`);
+              } else if (order === 'ascend') {
+                sort.push(field);
+              }
+            });
+          }
+          if (sort.length === 0) {
+            delete options.params['sort'];
+          } else {
+            options.params['sort'] = sort.join(',');
           }
           console.log({url, params});
           return request(url, options);
