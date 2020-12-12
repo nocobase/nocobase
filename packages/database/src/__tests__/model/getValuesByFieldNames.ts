@@ -3,7 +3,7 @@ import Database from '../../database';
 
 
 
-describe('getScopedValues', () => {
+describe('getValuesByFieldNames', () => {
   let db: Database;
 
   beforeEach(async () => {
@@ -25,14 +25,14 @@ describe('getScopedValues', () => {
   it('exist column', async () => {
     const Post = db.getModel('posts');
     const post = await Post.create({ status: 'published' });
-    const where = Post.getScopedValues(post, ['status']);
+    const where = post.getScopedValues(['status']);
     expect(where).toEqual({ status: 'published' });
   });
 
   it('non-exist column', async () => {
     const Post = db.getModel('posts');
     const post = await Post.create({});
-    const where = Post.getScopedValues(post, ['whatever']);
+    const where = post.getScopedValues(['whatever']);
     expect(where).toEqual({});
   });
 });
