@@ -261,6 +261,7 @@ export abstract class Model extends SequelizeModel {
 
   getValuesByFieldNames(scope = []) {
     const table = this.database.getTable(this.constructor.name);
+    const Model = table.getModel();
     const associations = table.getAssociations();
     const where = {};
     scope.forEach(col => {
@@ -268,7 +269,7 @@ export abstract class Model extends SequelizeModel {
       const dataKey = association && association instanceof BELONGSTO
         ? association.options.foreignKey
         : col;
-      if (!this.rawAttributes[dataKey]) {
+      if (!Model.rawAttributes[dataKey]) {
         return;
       }
       const value = this.getDataValue(dataKey);
