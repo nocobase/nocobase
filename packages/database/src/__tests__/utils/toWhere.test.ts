@@ -1,10 +1,40 @@
 import { Op } from "sequelize";
 import Database from "../../database";
-import Model, { ModelCtor } from '../../model';
 import { toWhere } from "../../utils";
 import { getDatabase } from "..";
 
 describe('utils.toWhere', () => {
+  let db: Database;
+  beforeAll(() => {
+    db = getDatabase();
+    db.table({
+      name: 'users',
+    });
+    db.table({
+      name: 'posts',
+      fields: [
+        {
+          type: 'string',
+          name: 'title'
+        },
+        {
+          type: 'belongsTo',
+          name: 'user',
+        }
+      ]
+    });
+    db.table({
+      name: 'categories',
+      fields: [
+        {
+          type: 'hasMany',
+          name: 'posts',
+        }
+      ],
+    });
+  });
+  afterAll(() => db.close());
+
   describe('single', () => {
     it('=', () => {
       const where = toWhere({
@@ -213,6 +243,18 @@ describe('utils.toWhere', () => {
       });
     });
 
+    it('logical and with condition operator in field', () => {
+      const Post = db.getModel('posts');
+      const data = toWhere({"and":[{"title.eq": '23'}]}, {
+        model: Post
+      });
+      expect(data).toEqual({
+        [Op.and]: [
+          { title: { [Op.eq]: '23' } }
+        ]
+      });
+    });
+
     // TODO: bug
     it.skip('field as "or"', () => {
       expect(toWhere({
@@ -233,33 +275,6 @@ describe('utils.toWhere', () => {
   });
 
   describe('association', () => {
-    let db: Database;
-    beforeAll(() => {
-      db = getDatabase();
-      db.table({
-        name: 'users',
-      });
-      db.table({
-        name: 'posts',
-        fields: [
-          {
-            type: 'belongsTo',
-            name: 'user',
-          }
-        ]
-      });
-      db.table({
-        name: 'categories',
-        fields: [
-          {
-            type: 'hasMany',
-            name: 'posts',
-          }
-        ],
-      });
-    });
-    afterAll(() => db.close());
-
     const toWhereExpect = (options: any) => {
       const Category = db.getModel('categories');
       const where = toWhere(options, {

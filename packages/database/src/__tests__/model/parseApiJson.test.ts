@@ -1,4 +1,4 @@
-import { literal } from 'sequelize';
+import { literal, Op } from 'sequelize';
 import { getDatabase } from '..';
 import Database from '../../database';
 import Model, { ModelCtor } from '../../model';
@@ -56,6 +56,10 @@ beforeAll(() => {
     name: 'foos',
     fields: [
       {
+        type: 'int',
+        name: 'f_g61p'
+      },
+      {
         type: 'hasMany',
         name: 'bars',
       },
@@ -98,6 +102,19 @@ describe('parseApiJson', () => {
         }
       });
       expect(data).toEqual({ where: { col1: 'co2' } });
+    });
+
+    it('filter with condition operator', () => {
+      const data = Foo.parseApiJson({
+        filter: {"and":[{"f_g61p.eq":23}]}
+      });
+      expect(data).toEqual({
+        where: {
+          [Op.and]: [
+            { f_g61p: { [Op.eq]: 23 } }
+          ]
+        }
+      });
     });
   
     it('fields', () => {
