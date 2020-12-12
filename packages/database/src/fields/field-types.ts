@@ -697,12 +697,13 @@ export class SORT extends NUMBER {
   public readonly options: Options.SortOptions;
 
   static async beforeCreateHook(this: SORT, model, options) {
-    const { transaction } = options;
     const Model = model.constructor;
-    const { name, scope = [], next = 'max' } = this.options;
-    const where = model.getScopeWhere(scope);
-    const extremum: number = await Model[next](name, { where, transaction }) || 0;
-    model.set(name, extremum + (next === 'max' ? 1 : -1));
+    const { name, scope = [] } = this.options;
+    const extremum: number = await Model.getNextSortValue(name, {
+      ...options,
+      where: Model.getScopedValues(model, scope)
+    });
+    model.set(name, extremum);
   }
 
   static async beforeBulkCreateHook(this: SORT, models, options) {
@@ -712,9 +713,9 @@ export class SORT extends NUMBER {
     const { name, scope = [], next = 'max' } = this.options;
     // 如果未配置范围限定，则可以进行性能优化处理（常用情况）。
     if (!scope.length) {
-      const extremum: number = await Model[next](name, { transaction }) || 0;
+      const extremum: number = await Model.getNextSortValue(name, { where: {}, transaction });
       models.forEach((model, i: number) => {
-        model.setDataValue(name, extremum + (i + 1) * (next === 'max' ? 1 : -1));
+        model.setDataValue(name, extremum + i * (next === 'max' ? 1 : -1));
       });
       return;
     }
@@ -722,7 +723,7 @@ export class SORT extends NUMBER {
     // 用于存放 where 条件与计算极值
     const groups = new Map<{ [key: string]: any }, number>();
     await models.reduce((promise, model) => promise.then(async () => {
-      const where = model.getScopeWhere(scope);
+      const where = Model.getScopedValues(model, scope);
 
       let extremum: number;
       // 以 map 作为 key
@@ -731,18 +732,18 @@ export class SORT extends NUMBER {
       for (combo of groups.keys()) {
         if (whereCompare(combo, where)) {
           // 如果找到的话则以之前储存的值作为基础极值
-          extremum = groups.get(combo);
+          extremum = groups.get(combo) + (next === 'max' ? 1 : -1);
           break;
         }
       }
       // 如未找到组合
       if (typeof extremum === 'undefined') {
         // 则使用 where 条件查询极值
-        extremum = await Model[next](name, { where, transaction }) || 0;
+        extremum = await Model.getNextSortValue(name, { where, transaction });
         // 且使用 where 条件创建组合
         combo = where;
       }
-      const nextValue = extremum + (next === 'max' ? 1 : -1);
+      const nextValue = extremum;
       // 设置数据行的排序值
       model.setDataValue(name, nextValue);
       // 保存新的排序值为对应 where 组合的极值，以供下次计算

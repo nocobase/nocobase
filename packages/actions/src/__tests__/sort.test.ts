@@ -90,7 +90,7 @@ describe('get', () => {
         .post('/posts:sort/1')
         .send({
           field: 'sort',
-          targetId: 2,
+          target: { id: 2 },
         });
 
       const Post = db.getModel('posts');
@@ -117,7 +117,7 @@ describe('get', () => {
         .post('/posts:sort/2')
         .send({
           field: 'sort',
-          targetId: 1,
+          target: { id: 1 },
         });
 
       const Post = db.getModel('posts');
@@ -144,7 +144,7 @@ describe('get', () => {
         .post('/posts:sort/1')
         .send({
           field: 'sort',
-          targetId: 10,
+          target: { id: 10 },
         });
 
       const Post = db.getModel('posts');
@@ -173,7 +173,7 @@ describe('get', () => {
         .post('/posts:sort/2')
         .send({
           field: 'sort_in_status',
-          targetId: 8,
+          target: { id: 8 },
         });
 
       const Post = db.getModel('posts');
@@ -198,7 +198,7 @@ describe('get', () => {
         .post('/posts:sort/1')
         .send({
           field: 'sort_in_status',
-          targetId: 8,
+          target: { id: 8 },
         });
       
       const Post = db.getModel('posts');
@@ -218,6 +218,59 @@ describe('get', () => {
         { id: 10, sort_in_status: 6 }
       ]);
     });
+
+    it('move id=1 to new empty list of scope', async () => {
+      await agent
+        .post('/posts:sort/1')
+        .send({
+          field: 'sort_in_status',
+          target: { status: 'archived' },
+        });
+
+      const Post = db.getModel('posts');
+      const posts = await Post.findAll({
+        attributes: ['id', 'sort_in_status'],
+        order: [['id', 'ASC']]
+      });
+      expect(posts.map(item => item.get())).toEqual([
+        { id: 1, sort_in_status: 1 },
+        { id: 2, sort_in_status: 1 },
+        { id: 3, sort_in_status: 2 },
+        { id: 4, sort_in_status: 2 },
+        { id: 5, sort_in_status: 3 },
+        { id: 6, sort_in_status: 3 },
+        { id: 7, sort_in_status: 4 },
+        { id: 8, sort_in_status: 4 },
+        { id: 9, sort_in_status: 5 },
+        { id: 10, sort_in_status: 5 }
+      ]);
+    });
+
+    it('move id=1 to scope without target primary key', async () => {
+      await agent
+        .post('/posts:sort/1')
+        .send({
+          field: 'sort_in_status',
+          target: { status: 'publish' },
+        });
+
+      const Post = db.getModel('posts');
+      const posts = await Post.findAll({
+        where: {
+          status: 'publish'
+        },
+        attributes: ['id', 'sort_in_status'],
+        order: [['id', 'ASC']]
+      });
+      expect(posts.map(item => item.get())).toEqual([
+        { id: 1, sort_in_status: 6 },
+        { id: 2, sort_in_status: 1 },
+        { id: 4, sort_in_status: 2 },
+        { id: 6, sort_in_status: 3 },
+        { id: 8, sort_in_status: 4 },
+        { id: 10, sort_in_status: 5 }
+      ]);
+    });
   });
 
   describe('associations', () => {
@@ -227,7 +280,7 @@ describe('get', () => {
           .post('/users/1/posts:sort/1')
           .send({
             field: 'sort_in_user',
-            targetId: 3,
+            target: { id: 3 },
           });
 
         const Post = db.getModel('posts');

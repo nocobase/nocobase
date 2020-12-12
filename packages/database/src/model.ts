@@ -259,9 +259,17 @@ export abstract class Model extends SequelizeModel {
     return data;
   }
 
-  getScopeWhere(scope: string[] = []) {
-    const Model = this.constructor as ModelCtor<Model>;
-    const table = this.database.getTable(this.constructor.name);
+  static async getNextSortValue(name: string, { where, transaction }) {
+    const table = this.database.getTable(this.name);
+    const Model = this;
+    const field = table.getField(name);
+    const { next = 'max' } = field.options;
+    const extremum: number = await Model[next](name, { where, transaction }) || 0;
+    return extremum + (next === 'max' ? 1 : -1);
+  }
+
+  static getScopedValues(model, scope = []) {
+    const table = this.database.getTable(this.name);
     const associations = table.getAssociations();
     const where = {};
     scope.forEach(col => {
@@ -269,10 +277,10 @@ export abstract class Model extends SequelizeModel {
       const dataKey = association && association instanceof BELONGSTO
         ? association.options.foreignKey
         : col;
-      if (!Model.rawAttributes[dataKey]) {
+      if (!this.rawAttributes[dataKey]) {
         return;
       }
-      const value = this.getDataValue(dataKey);
+      const value = model.getDataValue(dataKey);
       if (typeof value !== 'undefined') {
         where[dataKey] = value;
       }

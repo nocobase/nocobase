@@ -390,8 +390,8 @@ export async function sort(ctx: Context, next: Next) {
   const Model = ctx.db.getModel(resourceName);
   const table = ctx.db.getTable(resourceName);
 
-  const { field, targetId } = values;
-  if (!values.field || typeof targetId === 'undefined') {
+  const { field, target } = values;
+  if (!values.field || typeof target === 'undefined') {
     return next();
   }
   const sortField = table.getField(field);
@@ -420,60 +420,77 @@ export async function sort(ctx: Context, next: Next) {
     await transaction.rollback();
     throw new Error(`resource(${resourceKey}) does not exist`);
   }
+  const sourceScopeWhere = Model.getScopedValues(source, scope);
 
-  const target = await Model.findByPk(targetId, { transaction });
+  let targetScopeWhere: any;
+  let targetObject;
+  const { [primaryKeyAttribute]: targetId } = target;
+  if (targetId) {
+    targetObject = await Model.findByPk(targetId, { transaction });
 
-  if (!target) {
-    await transaction.rollback();
-    throw new Error(`resource(${targetId}) does not exist`);
+    if (!targetObject) {
+      await transaction.rollback();
+      throw new Error(`resource(${targetId}) does not exist`);
+    }
+
+    targetScopeWhere = Model.getScopedValues(targetObject, scope);
+  } else {
+    targetScopeWhere = { ...sourceScopeWhere, ...target };
   }
 
-  const sourceScopeWhere = source.getScopeWhere(scope);
-  const targetScopeWhere = target.getScopeWhere(scope);
   const sameScope = whereCompare(sourceScopeWhere, targetScopeWhere);
 
-  let increment;
-  const updateWhere = { ...targetScopeWhere };
-  if (sameScope) {
-    const direction = source[sortAttr] < target[sortAttr] ? {
-      sourceOp: Op.gt,
-      targetOp: Op.lte,
-      increment: -1
-    } : {
-      sourceOp: Op.lt,
-      targetOp: Op.gte,
-      increment: 1
-    };
+  const updates = { ...targetScopeWhere };
+  if (targetObject) {
+    let increment: number;
+    const updateWhere = { ...targetScopeWhere };
+    if (sameScope) {
+      const direction = source[sortAttr] < targetObject[sortAttr] ? {
+        sourceOp: Op.gt,
+        targetOp: Op.lte,
+        increment: -1
+      } : {
+        sourceOp: Op.lt,
+        targetOp: Op.gte,
+        increment: 1
+      };
 
-    increment = direction.increment;
+      increment = direction.increment;
 
-    Object.assign(updateWhere, {
-      [sortAttr]: {
-        [direction.sourceOp]: source[sortAttr],
-        [direction.targetOp]: target[sortAttr]
-      }
+      Object.assign(updateWhere, {
+        [sortAttr]: {
+          [direction.sourceOp]: source[sortAttr],
+          [direction.targetOp]: targetObject[sortAttr]
+        }
+      });
+    } else {
+      increment = 1;
+      Object.assign(updateWhere, {
+        [sortAttr]: {
+          [Op.gte]: targetObject[sortAttr]
+        }
+      });
+    }
+
+    await Model.increment(sortAttr, {
+      by: increment,
+      where: updateWhere,
+      transaction
+    });
+
+    Object.assign(updates, {
+      [sortAttr]: targetObject[sortAttr]
     });
   } else {
-    increment = 1;
-    Object.assign(updateWhere, {
-      [sortAttr]: {
-        [Op.gte]: target[sortAttr]
-      }
+    Object.assign(updates, {
+      [sortAttr]: await Model.getNextSortValue(sortAttr, {
+        where: targetScopeWhere,
+        transaction
+      })
     });
   }
 
-  await Model.increment(sortAttr, {
-    by: increment,
-    where: updateWhere,
-    transaction
-  });
-
-  await source.update({
-    [sortAttr]: target[sortAttr],
-    ...targetScopeWhere
-  }, {
-    transaction
-  });
+  await source.update(updates, { transaction });
 
   await transaction.commit();
 
