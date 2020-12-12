@@ -697,23 +697,20 @@ export class SORT extends NUMBER {
   public readonly options: Options.SortOptions;
 
   static async beforeCreateHook(this: SORT, model, options) {
-    const Model = model.constructor;
     const { name, scope = [] } = this.options;
-    const extremum: number = await Model.getNextSortValue(name, {
+    const extremum: number = await this.getNextValue({
       ...options,
-      where: Model.getScopedValues(model, scope)
+      where: model.getValuesByFieldNames(scope)
     });
     model.set(name, extremum);
   }
 
   static async beforeBulkCreateHook(this: SORT, models, options) {
     const { transaction } = options;
-    const table = this.context.sourceTable;
-    const Model = table.getModel();
     const { name, scope = [], next = 'max' } = this.options;
     // 如果未配置范围限定，则可以进行性能优化处理（常用情况）。
     if (!scope.length) {
-      const extremum: number = await Model.getNextSortValue(name, { where: {}, transaction });
+      const extremum: number = await this.getNextValue({ where: {}, transaction });
       models.forEach((model, i: number) => {
         model.setDataValue(name, extremum + i * (next === 'max' ? 1 : -1));
       });
@@ -723,7 +720,7 @@ export class SORT extends NUMBER {
     // 用于存放 where 条件与计算极值
     const groups = new Map<{ [key: string]: any }, number>();
     await models.reduce((promise, model) => promise.then(async () => {
-      const where = Model.getScopedValues(model, scope);
+      const where = model.getValuesByFieldNames(scope);
 
       let extremum: number;
       // 以 map 作为 key
@@ -739,7 +736,7 @@ export class SORT extends NUMBER {
       // 如未找到组合
       if (typeof extremum === 'undefined') {
         // 则使用 where 条件查询极值
-        extremum = await Model.getNextSortValue(name, { where, transaction });
+        extremum = await this.getNextValue({ where, transaction });
         // 且使用 where 条件创建组合
         combo = where;
       }
@@ -761,5 +758,13 @@ export class SORT extends NUMBER {
 
   public getDataType(): Function {
     return DataTypes.INTEGER;
+  }
+
+  public async getNextValue(this: SORT, { where, transaction }) {
+    const table = this.context.sourceTable;
+    const Model = table.getModel();
+    const { name, next = 'max' } = this.options;
+    const extremum: number = await Model[next](name, { where, transaction }) || 0;
+    return extremum + (next === 'max' ? 1 : -1);
   }
 }

@@ -259,17 +259,8 @@ export abstract class Model extends SequelizeModel {
     return data;
   }
 
-  static async getNextSortValue(name: string, { where, transaction }) {
-    const table = this.database.getTable(this.name);
-    const Model = this;
-    const field = table.getField(name);
-    const { next = 'max' } = field.options;
-    const extremum: number = await Model[next](name, { where, transaction }) || 0;
-    return extremum + (next === 'max' ? 1 : -1);
-  }
-
-  static getScopedValues(model, scope = []) {
-    const table = this.database.getTable(this.name);
+  getValuesByFieldNames(scope = []) {
+    const table = this.database.getTable(this.constructor.name);
     const associations = table.getAssociations();
     const where = {};
     scope.forEach(col => {
@@ -280,7 +271,7 @@ export abstract class Model extends SequelizeModel {
       if (!this.rawAttributes[dataKey]) {
         return;
       }
-      const value = model.getDataValue(dataKey);
+      const value = this.getDataValue(dataKey);
       if (typeof value !== 'undefined') {
         where[dataKey] = value;
       }

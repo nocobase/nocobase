@@ -420,7 +420,7 @@ export async function sort(ctx: Context, next: Next) {
     await transaction.rollback();
     throw new Error(`resource(${resourceKey}) does not exist`);
   }
-  const sourceScopeWhere = Model.getScopedValues(source, scope);
+  const sourceScopeWhere = source.getValuesByFieldNames(scope);
 
   let targetScopeWhere: any;
   let targetObject;
@@ -433,7 +433,7 @@ export async function sort(ctx: Context, next: Next) {
       throw new Error(`resource(${targetId}) does not exist`);
     }
 
-    targetScopeWhere = Model.getScopedValues(targetObject, scope);
+    targetScopeWhere = targetObject.getValuesByFieldNames(scope);
   } else {
     targetScopeWhere = { ...sourceScopeWhere, ...target };
   }
@@ -483,7 +483,7 @@ export async function sort(ctx: Context, next: Next) {
     });
   } else {
     Object.assign(updates, {
-      [sortAttr]: await Model.getNextSortValue(sortAttr, {
+      [sortAttr]: await sortField.getNextValue({
         where: targetScopeWhere,
         transaction
       })
