@@ -10,8 +10,9 @@ export default {
   fields: [
     {
       interface: 'sort',
-      type: 'integer',
+      type: 'sort',
       name: 'sort',
+      scope: ['collection'],
       title: '排序',
       component: {
         type: 'sort',
@@ -61,6 +62,25 @@ export default {
         type: 'radio',
         showInTable: true,
         showInDetail: true,
+        showInForm: true,
+        "x-linkages": [
+          {
+            "type": "value:visible",
+            "target": "filter",
+            "condition": "{{ $self.value !== 'form' }}"
+          },
+        ],
+      },
+    },
+    {
+      interface: 'json',
+      type: 'json',
+      name: 'filter',
+      title: '筛选数据',
+      developerMode: false,
+      mode: 'replace',
+      component: {
+        type: 'filter',
         showInForm: true,
       },
     },
@@ -234,13 +254,7 @@ export default {
       detailsViewName: 'details',
       updateViewName: 'form',
       paginated: false,
-    },
-    {
-      type: 'table',
-      name: 'table',
-      title: '列表',
-      template: 'Table',
-      actionNames: ['create', 'destroy'],
+      draggable: true,
     },
   ],
 } as TableOptions;

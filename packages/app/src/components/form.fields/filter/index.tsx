@@ -30,7 +30,7 @@ export function FilterGroup(props: any) {
         满足组内
         {' '}
         <Select style={{width: 80}} onChange={(value) => {
-          onChange({...dataSource, andor: value});
+          onChange({type: 'group', list, andor: value});
         }} defaultValue={'and'}>
           <Select.Option value={'and'}>全部</Select.Option>
           <Select.Option value={'or'}>任意</Select.Option>
@@ -283,6 +283,24 @@ function toFilter(values: any) {
   return filter;
 }
 
+function toValues(filter: any = {}) {
+  let values: any = {};
+  Object.keys(filter).forEach(key => {
+    const value = filter[key];
+    if (Array.isArray(value)) {
+      values['andor'] = key;
+      values['type'] = 'group';
+      values['list'] = value.map(v => toValues(v));
+    } else if (typeof value === 'object') {
+      values['type'] = 'item';
+      values['column'] = key;
+      values['op'] = Object.keys(value).shift();
+      values['value'] = Object.values(value).shift();
+    }
+  });
+  return values;
+}
+
 export const Filter = connect({
   getProps: mapStyledProps,
 })((props) => {
@@ -295,7 +313,9 @@ export const Filter = connect({
     ],
   };
   const { value, onChange, ...restProps } = props;
-  return <FilterGroup dataSource={dataSource} onChange={(values) => {
+  console.log('valuevaluevaluevaluevaluevalue', value);
+  return <FilterGroup dataSource={value ? toValues(value) : dataSource} onChange={(values) => {
+    console.log(values);
     onChange(toFilter(values));
   }} {...restProps}/>
 });

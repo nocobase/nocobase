@@ -10,8 +10,9 @@ export default {
   fields: [
     {
       interface: 'sort',
-      type: 'integer',
+      type: 'sort',
       name: 'sort',
+      scope: ['collection'],
       title: '排序',
       component: {
         type: 'sort',
@@ -51,6 +52,7 @@ export default {
       type: 'string',
       name: 'type',
       title: '类型',
+      required: true,
       dataSource: [
         { label: '详情数据', value: 'details' },
         { label: '相关数据', value: 'association', disabled: true },
@@ -189,13 +191,7 @@ export default {
       detailsViewName: 'details',
       updateViewName: 'form',
       paginated: false,
-    },
-    {
-      type: 'table',
-      name: 'table',
-      title: '列表',
-      template: 'Table',
-      actionNames: ['create', 'destroy'],
+      draggable: true,
     },
   ],
 } as TableOptions;

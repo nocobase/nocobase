@@ -25,17 +25,18 @@ export function SimpleTable(props: SimpleTableProps) {
     associatedName,
     associatedKey,
   } = props;
-  const { rowKey = 'id', fields = [], rowViewName, actions = [], paginated = true, defaultPageSize = 10 } = schema;
+  const { rowKey = 'id', fields = [], rowViewName, actions = [], paginated = true, defaultPerPage = 10 } = schema;
   const { sourceKey = 'id' } = activeTab.field||{};
   const drawerRef = useRef<any>();
   const name = associatedName ? `${associatedName}.${resourceName}` : resourceName;
   const { data, loading, pagination, mutate, refresh, params, run } = useRequest((params = {}) => {
-    const { current, pageSize, sorter, ...restParams } = params;
+    const { current, pageSize, sorter, filter, ...restParams } = params;
     return api.resource(name).list({
       associatedKey,
       page: paginated ? current : 1,
       perPage: paginated ? pageSize : -1,
       sorter,
+      filter,
     })
     .then(({data = [], meta = {}}) => {
       return {
@@ -47,7 +48,7 @@ export function SimpleTable(props: SimpleTableProps) {
     });
   }, {
     paginated,
-    defaultPageSize,
+    defaultPageSize: defaultPerPage,
   });
   console.log(schema, data);
   const [selectedRowKeys, setSelectedRowKeys] = useState([]);
@@ -110,15 +111,17 @@ export function SimpleTable(props: SimpleTableProps) {
           data, 
           mutate,
           rowKey,
-          onMoved: async ({resourceKey, offset}) => {
+          onMoved: async ({resourceKey, target}) => {
             await api.resource(name).sort({
               associatedKey,
               resourceKey,
-              field: 'sort',
-              offset,
+              values: {
+                field: 'sort',
+                target,
+              },
             });
             await refresh();
-            console.log({resourceKey, offset});
+            console.log({resourceKey, target});
           }
         })}
         onRow={(record) => ({

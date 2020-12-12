@@ -1,6 +1,6 @@
-import { ResourceOptions } from '@nocobase/resourcer';
 import { Model, ModelCtor } from '@nocobase/database';
 import { get, set } from 'lodash';
+import { Op } from 'sequelize';
 
 const transforms = {
   table: async (fields: Model[], context?: any) => {
@@ -18,6 +18,7 @@ const transforms = {
     return arr;
   },
   form: async (fields: Model[], ctx?: any) => {
+    const [Field] = ctx.db.getModels(['fields']) as ModelCtor<Model>[];
     const mode = get(ctx.action.params, ['values', 'mode'], ctx.action.params.mode);
     const schema = {};
     for (const field of fields) {
@@ -31,8 +32,25 @@ const transforms = {
         title: field.title||field.name,
         ...(field.component||{}),
       }
+      if (field.get('name') === 'filter' && field.get('collection_name') === 'views') {
+        const { values } = ctx.action.params;
+        const all = await Field.findAll({
+          where: {
+            collection_name: get(values, 'associatedKey'),
+            developerMode: ctx.state.developerMode,
+          },
+          order: [['sort', 'asc']],
+        });
+        set(prop, 'x-component-props.fields', all.filter(f => f.get('filterable')));
+      }
       if (type === 'select') {
         prop.type = 'string'
+      }
+      if (field.get('component.tooltip')) {
+        prop.description = field.get('component.tooltip');
+      }
+      if (field.get('required')) {
+        prop.required = true;
       }
       if (mode === 'update' && field.get('createOnly')) {
         set(prop, 'x-component-props.disabled', true);
@@ -43,6 +61,10 @@ const transforms = {
       const defaultValue = get(field.options, 'defaultValue');
       if (defaultValue) {
         prop.default = defaultValue;
+      }
+      if (interfaceType === 'boolean') {
+        set(prop, 'x-component-props.children', prop.title);
+        delete prop.title;
       }
       if (['radio', 'select', 'checkboxes'].includes(interfaceType)) {
         prop.enum = get(field.options, 'dataSource', []);
@@ -71,9 +93,9 @@ const transforms = {
       filter: {
         type: 'filter',
         'x-component-props': {
-          fields,
+          fields: fields.filter(field => field.get('filterable')),
         },
-      }
+      },
     }
     return properties;
   },
@@ -100,10 +122,16 @@ export default async (ctx, next) => {
       name: resourceName,
     },
   });
+  const where: any = {
+    developerMode: ctx.state.developerMode,
+  }
+  if (!view.get('draggable')) {
+    where.type = {
+      [Op.not]: 'sort',
+    };
+  }
   const fields = await collection.getFields({
-    where: {
-      developerMode: ctx.state.developerMode,
-    },
+    where,
     order: [
       ['sort', 'asc'],
     ]
@@ -128,7 +156,7 @@ export default async (ctx, next) => {
   if (view.get('updateViewName')) {
     view.setDataValue('rowViewName', view.get('updateViewName'));
   }
-  view.setDataValue('viewCollectionName', view.collection_name);
+  // view.setDataValue('viewCollectionName', view.collection_name);
   let title = collection.get('title');
   const mode = get(ctx.action.params, ['values', 'mode'], ctx.action.params.mode);
   if (mode === 'update') {
@@ -144,7 +172,7 @@ export default async (ctx, next) => {
     actions: actions.filter(action => actionNames.includes(action.name)).map(action => ({
       ...action.toJSON(),
       ...action.options,
-      viewCollectionName: action.collection_name,
+      // viewCollectionName: action.collection_name,
     })),
   };
   await next();

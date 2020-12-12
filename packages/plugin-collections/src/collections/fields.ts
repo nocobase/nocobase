@@ -11,8 +11,9 @@ export default {
   fields: [
     {
       interface: 'sort',
-      type: 'integer',
+      type: 'sort',
       name: 'sort',
+      scope: ['collection'],
       title: '排序',
       defaultValue: 1,
       component: {
@@ -27,6 +28,7 @@ export default {
       type: 'string',
       name: 'title',
       title: '字段名称',
+      required: true,
       component: {
         type: 'string',
         className: 'drag-visible',
@@ -42,6 +44,7 @@ export default {
       title: '标识',
       required: true,
       createOnly: true,
+      developerMode: true,
       component: {
         type: 'string',
         showInTable: true,
@@ -383,13 +386,7 @@ export default {
       detailsViewName: 'details',
       updateViewName: 'form',
       paginated: false,
-    },
-    {
-      type: 'table',
-      name: 'table',
-      title: '列表',
-      template: 'Table',
-      actionNames: ['create', 'destroy'],
+      draggable: true,
     },
   ],
 } as TableOptions;

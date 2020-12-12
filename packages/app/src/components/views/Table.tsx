@@ -41,7 +41,7 @@ export function Table(props: TableProps) {
     associatedName,
     associatedKey,
   } = props;
-  const { fields, defaultTabName, rowKey = 'id', actions = [], paginated = true, defaultPageSize = 10 } = schema;
+  const { fields, defaultTabName, rowKey = 'id', actions = [], paginated = true, defaultPerPage = 10 } = schema;
   // const { data, mutate } = useRequest(() => api.resource(name).list({
   //   associatedKey,
   // }));
@@ -67,7 +67,7 @@ export function Table(props: TableProps) {
     });
   }, {
     paginated,
-    defaultPageSize,
+    defaultPageSize: defaultPerPage,
   });
   const { sourceKey = 'id' } = activeTab.field||{};
   console.log(props);
@@ -120,15 +120,17 @@ export function Table(props: TableProps) {
           data, 
           mutate,
           rowKey,
-          onMoved: async ({resourceKey, offset}) => {
+          onMoved: async ({resourceKey, target}) => {
             await api.resource(name).sort({
               associatedKey,
               resourceKey,
-              field: 'sort',
-              offset,
+              values: {
+                field: 'sort',
+                target,
+              },
             });
             await refresh();
-            console.log({resourceKey, offset});
+            console.log({resourceKey, target});
           }
         })}
         onRow={(data) => ({
