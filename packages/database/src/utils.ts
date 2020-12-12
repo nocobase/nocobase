@@ -273,7 +273,7 @@ export function toInclude(options: any, context: ToIncludeContext = {}) {
     data.distinct = true;
   }
 
-  if (Object.keys(where).length > 0) {
+  if (Reflect.ownKeys(where).length > 0) {
     data.where = where;
   }
 
