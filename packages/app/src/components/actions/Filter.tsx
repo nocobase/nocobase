@@ -42,6 +42,7 @@ export function Filter(props) {
             <div className={'popover-button-mask'} onClick={() => setVisible(false)}></div>
             <ViewFactory 
               {...props}
+              setVisible={setVisible}
               viewName={'filter'}
               {...params}
             />

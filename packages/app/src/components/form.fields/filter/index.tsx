@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Button, Select, Input, Space, Form, InputNumber, DatePicker } from 'antd';
-import { ArrowUpOutlined, ArrowDownOutlined } from '@ant-design/icons';
+import { PlusCircleOutlined, CloseCircleOutlined } from '@ant-design/icons';
 import useDynamicList from './useDynamicList';
 import { connect } from '@formily/react-schema-renderer'
 import { mapStyledProps } from '../shared'
@@ -13,8 +13,19 @@ export function FilterGroup(props: any) {
       type: 'item',
     },
   ]);
+  let style: any = {
+    position: 'relative',
+  };
+  if (showDeleteButton) {
+    style = {
+      ...style,
+      marginBottom: 14, 
+      padding: 14,
+      border: '1px dashed #dedede',
+    }
+  }
   return (
-    <div style={{marginBottom: 14, padding: 14, border: '1px dashed #dedede'}}>
+    <div style={style}>
       <div style={{marginBottom: 14}}>
         满足组内
         {' '}
@@ -32,7 +43,7 @@ export function FilterGroup(props: any) {
           // console.log(item);
           const Component = item.type === 'group' ? FilterGroup : FilterItem;
           return (
-            <div style={{marginBottom: 14}}>
+            <div style={{marginBottom: 8}}>
               {<Component
                 fields={fields}
                 dataSource={item}
@@ -58,7 +69,7 @@ export function FilterGroup(props: any) {
       </div>
       <div>
         <Space>
-          <Button onClick={() => {
+          <Button style={{padding: 0}} type={'link'} onClick={() => {
             const data = {
               type: 'item'
             };
@@ -67,28 +78,33 @@ export function FilterGroup(props: any) {
             newList.push(data);
             onChange({...dataSource, list: newList});
           }}>
-            添加条件
+            <PlusCircleOutlined /> 添加条件
           </Button>
-          <Button onClick={() => {
-            const data = {
-              type: 'group',
-              list: [
-                {
-                  type: 'item',
-                },
-              ],
-            };
-            push(data);
-            const newList = [...list];
-            newList.push(data);
-            onChange({...dataSource, list: newList});
-          }}>
-            添加条件组
+          {' '}
+          <Button
+            style={{padding: 0}}
+            type={'link'}
+            onClick={() => {
+              const data = {
+                type: 'group',
+                list: [
+                  {
+                    type: 'item',
+                  },
+                ],
+              };
+              push(data);
+              const newList = [...list];
+              newList.push(data);
+              onChange({...dataSource, list: newList});
+            }}
+          >
+            <PlusCircleOutlined /> 添加条件组
           </Button>
-          {showDeleteButton && <Button onClick={(e) => {
+          {showDeleteButton && <Button style={{padding: 0, position: 'absolute', top: 0, right: 0, width: 32}} type={'link'} onClick={(e) => {
             onDelete && onDelete(e);
           }}>
-            删除组
+            <CloseCircleOutlined />
           </Button>}
         </Space>
       </div>
@@ -169,7 +185,9 @@ const op = {
   string: OP_MAP.string,
   textarea: OP_MAP.string,
   number: OP_MAP.number,
+  percent: OP_MAP.number,
   datetime: OP_MAP.datetime,
+  date: OP_MAP.datetime,
 };
 
 const StringInput = (props) => {
@@ -186,7 +204,7 @@ const controls = {
   textarea: StringInput,
   number: InputNumber,
   // datetime: DatePicker,
-  datetime: (props) => {
+  date: (props) => {
     const { value, onChange, ...restProps } = props;
     const m = moment(value, 'YYYY-MM-DD HH:mm:ss');
     return (
@@ -204,14 +222,15 @@ export function FilterItem(props: FilterItemProps) {
   useEffect(() => {
     const field = fields.find(field => field.name === dataSource.column);
     if (field) {
-      setType(field.interface);
+      setType(field.component.type);
     }
   }, [
     dataSource,
   ]);
+  console.log({type});
   const ValueControl = controls[type]||controls.string;
   return (
-    <Input.Group compact>
+    <Space>
       <Select value={dataSource.column}
         onChange={(value) => {
           const field = fields.find(field => field.name === value);
@@ -220,7 +239,8 @@ export function FilterItem(props: FilterItemProps) {
           }
           onChange({...dataSource, column: value});
         }}
-        style={{ width: '30%' }} placeholder={'选择字段'}>
+        style={{ width: 120 }} 
+        placeholder={'选择字段'}>
         {fields.map(field => (
           <Select.Option value={field.name}>{field.title}</Select.Option>
         ))}
@@ -236,14 +256,31 @@ export function FilterItem(props: FilterItemProps) {
       </Select>
       <ValueControl value={dataSource.value} onChange={(value) => {
         onChange({...dataSource, value: value});
-      }} style={{ width: '30%' }}/>
+      }} 
+      style={{ width: 180 }}
+      />
       {showDeleteButton && (
-        <Button onClick={(e) => {
+        <Button type={'link'} style={{padding: 0}} onClick={(e) => {
           onDelete && onDelete(e);
-        }}>删除</Button>
+        }}><CloseCircleOutlined /></Button>
       )}
-    </Input.Group>
+    </Space>
   );
+}
+
+function toFilter(values: any) {
+  let filter: any;
+  const { type, andor = 'and', list = [], column, op, value } = values;
+  if (type === 'group') {
+    filter = {
+      [andor]: list.map(value => toFilter(value)).filter(Boolean)
+    }
+  } else if (type === 'item' && column && op) {
+    filter = {
+      [`${column}`]: {[op]: value},
+    }
+  }
+  return filter;
 }
 
 export const Filter = connect({
@@ -257,7 +294,10 @@ export const Filter = connect({
       }
     ],
   };
-  return <FilterGroup dataSource={dataSource} {...props}/>
+  const { value, onChange, ...restProps } = props;
+  return <FilterGroup dataSource={dataSource} onChange={(values) => {
+    onChange(toFilter(values));
+  }} {...restProps}/>
 });
 
 export default Filter;

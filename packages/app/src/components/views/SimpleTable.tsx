@@ -4,7 +4,6 @@ import { Actions } from '@/components/actions';
 import ViewFactory from '@/components/views';
 import { useRequest } from 'umi';
 import api from '@/api-client';
-import get from 'lodash/get';
 import { components, fields2columns } from './SortableTable';
 
 export interface SimpleTableProps {
@@ -30,12 +29,13 @@ export function SimpleTable(props: SimpleTableProps) {
   const { sourceKey = 'id' } = activeTab.field||{};
   const drawerRef = useRef<any>();
   const name = associatedName ? `${associatedName}.${resourceName}` : resourceName;
-  const { data, loading, pagination, mutate, refresh } = useRequest((params = {}) => {
-    const { current, pageSize, ...restParams } = params;
+  const { data, loading, pagination, mutate, refresh, params, run } = useRequest((params = {}) => {
+    const { current, pageSize, sorter, ...restParams } = params;
     return api.resource(name).list({
       associatedKey,
       page: paginated ? current : 1,
       perPage: paginated ? pageSize : -1,
+      sorter,
     })
     .then(({data = [], meta = {}}) => {
       return {
@@ -72,6 +72,11 @@ export function SimpleTable(props: SimpleTableProps) {
           refresh();
         }}
         onTrigger={{
+          async filter(values) {
+            console.log('filter', values);
+            // @ts-ignore
+            run({...params[0], filter: values.filter});
+          },
           async destroy() {
             await api.resource(name).destroy({
               associatedKey,
@@ -81,7 +86,7 @@ export function SimpleTable(props: SimpleTableProps) {
             });
             await refresh();
             console.log('destroy.onTrigger', selectedRowKeys);
-          }
+          },
         }}
       />
       <ViewFactory
@@ -98,6 +103,9 @@ export function SimpleTable(props: SimpleTableProps) {
         loading={loading}
         columns={fields2columns(fields)}
         dataSource={data?.list||(data as any)}
+        onChange={(pagination, filters, sorter, extra) => {
+          run({...params[0], sorter});
+        }}
         components={components({
           data, 
           mutate,

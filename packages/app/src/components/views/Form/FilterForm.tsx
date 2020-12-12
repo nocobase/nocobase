@@ -1,5 +1,5 @@
 import React from 'react';
-import { Tooltip, Card } from 'antd';
+import { Tooltip, Button } from 'antd';
 import {
   SchemaForm,
   SchemaMarkupField as Field,
@@ -15,7 +15,8 @@ import {
 import { QuestionCircleOutlined } from '@ant-design/icons';
 
 export function FilterForm(props: any) {
-  const actions = createFormActions();
+  const actions = createAsyncFormActions();
+  const { setVisible, onTrigger } = props;
   const { title, fields: properties ={} } = props.schema||{};
   return (
       <SchemaForm 
@@ -23,6 +24,15 @@ export function FilterForm(props: any) {
         layout={'vertical'}
         initialValues={{}}
         actions={actions}
+        onReset={() => {
+          setVisible && setVisible(false);
+        }}
+        onSubmit={async (values) => {
+          if (onTrigger) {
+            await onTrigger(values);
+          }
+          setVisible && setVisible(false);
+        }}
         schema={{
           type: 'object',
           properties,
@@ -44,10 +54,7 @@ export function FilterForm(props: any) {
       >
         <FormButtonGroup>
           <Reset>取消</Reset>
-          <Submit onClick={async () => {
-            const { values = {} } = await actions.submit();
-            console.log(values);
-          }}>确定</Submit>
+          <Submit>确定</Submit>
         </FormButtonGroup>
       </SchemaForm>
   );
