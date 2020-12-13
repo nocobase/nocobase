@@ -95,14 +95,11 @@ export function getDataTypeKey(type: any): string {
  * @param context 
  */
 export function buildField(options: FieldOptions, context: Fields.FieldContext) {
-  let { type, required } = options;
+  let { type } = options;
   if (type instanceof ABSTRACT) {
     options = {...type.options, ...options};
   }
   type = getDataTypeKey(type);
-  if (type !== 'VIRTUAL' && required) {
-    options.allowNull = false;
-  }
   const Field = getField(type);
   return new Field({type, ...options}, context);
 }
