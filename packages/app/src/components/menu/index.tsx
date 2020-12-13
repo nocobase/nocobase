@@ -20,7 +20,7 @@ export default (props: any) => {
       defaultOpenKeys={paths.filter(path => pathcamp(location.pathname, path)).concat(location.pathname)}
       {...restProps}
     >
-      {items.map(item => (
+      {items.map(item => item.showInMenu && (
         <Menu.Item key={item.path}>
           <Link to={item.path}><Icon type={item.icon}/> {item.title}</Link>
         </Menu.Item>
