@@ -88,7 +88,7 @@ export default {
           {
             "type": "value:visible",
             "target": "timeFormat",
-            "condition": "{{ ['time', 'datetime', 'createdAt', 'updatedAt'].indexOf($self.value) !== -1 }}"
+            "condition": "{{ ['time'].indexOf($self.value) !== -1 }}"
           },
         ],
       },
@@ -100,6 +100,7 @@ export default {
       title: '可选项',
       component: {
         type: 'table',
+        default: [{}],
         // showInTable: true,
         // showInDetail: true,
         showInForm: true,
@@ -147,13 +148,13 @@ export default {
       type: 'virtual',
       name: 'precision',
       title: '精度',
-      defaultValue: 0,
+      defaultValue: 1,
       dataSource: [
-        {value: 0, label: '1'},
-        {value: 1, label: '1.0'},
-        {value: 2, label: '1.00'},
-        {value: 3, label: '1.000'},
-        {value: 4, label: '1.0000'},
+        {value: 1, label: '1'},
+        {value: 0.1, label: '1.0'},
+        {value: 0.01, label: '1.00'},
+        {value: 0.001, label: '1.000'},
+        {value: 0.0001, label: '1.0000'},
       ],
       component: {
         type: 'number',
@@ -165,9 +166,11 @@ export default {
       type: 'virtual',
       name: 'dateFormat',
       title: '日期格式',
-      defaultValue: 'YYYY-MM-DD',
+      defaultValue: 'YYYY/MM/DD',
       dataSource: [
-        {value: 'YYYY-MM-DD', label: 'YYYY-MM-DD'},
+        {value: 'YYYY/MM/DD', label: '年/月/日'},
+        {value: 'YYYY-MM-DD', label: '年-月-日'},
+        {value: 'DD/MM/YYYY', label: '日/月/年'},
       ],
       component: {
         type: 'string',
@@ -199,7 +202,8 @@ export default {
       title: '时间格式',
       defaultValue: 'HH:mm:ss',
       dataSource: [
-        { value: 'HH:mm:ss', label: 'HH:mm:ss' },
+        { value: 'HH:mm:ss', label: '24小时制' },
+        { value: 'hh:mm:ss a', label: '12小时制' },
       ],
       component: {
         type: 'string',

@@ -38,6 +38,7 @@ export const phone = {
     format: 'phone', // 验证的问题
     component: {
       type: 'string',
+      'x-rules': 'phone',
     },
   },
 };
@@ -51,6 +52,7 @@ export const email = {
     format: 'email',
     component: {
       type: 'string',
+      'x-rules': 'email',
     },
   },
 };
@@ -62,10 +64,10 @@ export const number = {
   title: '数字',
   options: {
     interface: 'number',
-    type: 'integer',
+    type: 'float',
     filterable: true,
     sortable: true,
-    precision: 0, // 需要考虑
+    precision: 1, // 需要考虑
     component: {
       type: 'number',
     },
@@ -80,19 +82,19 @@ export const percent = {
   title: '百分比',
   options: {
     interface: 'percent',
-    type: 'integer',
+    type: 'float',
     filterable: true,
     sortable: true,
-    precision: 0,
+    precision: 1,
     component: {
       type: 'percent',
-      suffix: '%',
     },
   },
 };
 
 export const wysiwyg = {
   title: '可视化编辑器',
+  disabled: true,
   options: {
     interface: 'wysiwyg',
     type: 'text',
@@ -107,6 +109,7 @@ export const wysiwyg = {
  */
 export const attachment = {
   title: '附件',
+  disabled: true,
   options: {
     interface: 'attachment',
     type: 'belongsToMany',
@@ -267,6 +270,7 @@ export const time = {
 // });
 export const subTable = {
   title: '子表格',
+  disabled: true,
   options: {
     interface: 'subTable',
     type: 'hasMany',
@@ -320,6 +324,7 @@ export const subTable = {
 
 export const linkTo = {
   title: '关联数据',
+  disabled: true,
   options: {
     interface: 'linkTo',
     multiple: true, // 可能影响 type
@@ -335,6 +340,7 @@ export const linkTo = {
 
 export const createdBy = {
   title: '创建者',
+  disabled: true,
   options: {
     interface: 'createdBy',
     type: 'belongsTo',
@@ -352,7 +358,7 @@ export const createdAt = {
     type: 'date',
     name: 'created_at',
     showTime: true,
-    dateFormat: 'YYYY-MM-DD',
+    dateFormat: 'YYYY/MM/DD',
     timeFormat: 'HH:mm:ss',
     required: true,
     filterable: true,
@@ -365,6 +371,7 @@ export const createdAt = {
 
 export const updatedBy = {
   title: '更新人',
+  disabled: true,
   options: {
     interface: 'updatedBy',
     type: 'belongsTo',
@@ -382,7 +389,7 @@ export const updatedAt = {
     type: 'date',
     name: 'updated_at',
     showTime: true,
-    dateFormat: 'YYYY-MM-DD',
+    dateFormat: 'YYYY/MM/DD',
     timeFormat: 'HH:mm:ss',
     required: true,
     filterable: true,
@@ -400,6 +407,7 @@ export const updatedAt = {
  */
 export const group = {
   title: '字段组',
+  disabled: true,
   options: {
     interface: 'group',
     // name: 'id',
@@ -465,7 +473,7 @@ export const json = {
     interface: 'json',
     type: 'json',
     dottie: true,
-    developerMode: true,
+    // developerMode: true,
     component: {
       type: 'hidden',
     },
