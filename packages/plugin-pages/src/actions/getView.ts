@@ -12,7 +12,7 @@ const transforms = {
       arr.push({
         ...field.get(),
         sorter: field.get('sortable'),
-        dataIndex: field.name,
+        dataIndex: field.name.split('.'),
       });
     }
     return arr;
@@ -71,6 +71,9 @@ const transforms = {
       if (interfaceType === 'boolean') {
         set(prop, 'x-component-props.children', prop.title);
         delete prop.title;
+      }
+      if (interfaceType === 'multipleSelect') {
+        set(prop, 'x-component-props.mode', 'multiple');
       }
       if (['radio', 'select', 'multipleSelect', 'checkboxes'].includes(interfaceType)) {
         prop.enum = get(field.options, 'dataSource', []);
@@ -158,6 +161,9 @@ export default async (ctx, next) => {
       },
     });
     view.setDataValue('defaultTabName', get(defaultTabs, [0, 'name']));
+  }
+  if (view.get('template') === 'SimpleTable') {
+    view.setDataValue('rowViewName', 'form');
   }
   if (view.get('updateViewName')) {
     view.setDataValue('rowViewName', view.get('updateViewName'));

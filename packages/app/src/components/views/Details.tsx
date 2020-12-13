@@ -4,6 +4,8 @@ import { Actions } from '@/components/actions';
 import api from '@/api-client';
 import { useRequest } from 'umi';
 import { Spin } from '@nocobase/client';
+import Field from './Field';
+import get from 'lodash/get';
 
 export function Details(props: any) {
   const {
@@ -38,7 +40,9 @@ export function Details(props: any) {
         <Descriptions bordered column={1}>
           {fields.map((field: any) => {
             return (
-              <Descriptions.Item label={field.title||field.name}>{JSON.stringify(data[field.name])}</Descriptions.Item>
+              <Descriptions.Item label={field.title||field.name}>
+                <Field schema={field} value={get(data, field.name)}/>
+              </Descriptions.Item>
             )
           })}
         </Descriptions>

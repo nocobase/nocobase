@@ -6,6 +6,7 @@ import arrayMove from 'array-move';
 import findIndex from 'lodash/findIndex';
 import get from 'lodash/get';
 import './style.less';
+import Field from '../Field';
 
 export const SortableItem = sortableElement(props => <tr {...props} />);
 export const SortableContainer = sortableContainer(props => <tbody {...props} />);
@@ -55,10 +56,7 @@ export const components = ({data = {}, rowKey, mutate, onMoved}: Props) => {
 
 export function fields2columns(fields) {
   const columns: any[] = fields.map(field => {
-    const type = get(field, 'component.type');
-    if (type === 'sort') {
-      field.render = () => <DragHandle/>;
-    }
+    field.render = (value) => field.interface === 'sort' ? <DragHandle/> : <Field schema={field} value={value}/>;
     return {
       ...field,
       ...(field.component||{}),
