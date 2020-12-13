@@ -1,6 +1,10 @@
 import _ from 'lodash';
 
 export function filterByFields(data: any, fields: any = {}): any {
+  if (data == null) {
+    return data;
+  }
+
   const {
     only = Array.isArray(fields) ? fields : null,
     except = []
