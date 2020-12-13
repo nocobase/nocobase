@@ -3,7 +3,7 @@ import { filterByFields } from '../utils';
 
 describe('utils', () => {
   describe('filterByFields', () => {
-    it('only fields', async () => {
+    it('only fields', () => {
       const values = filterByFields({
         title: 'title1',
         sort: 100,
@@ -14,7 +14,7 @@ describe('utils', () => {
       });
     });
 
-    it('except fields', async () => {
+    it('except fields', () => {
       const values = filterByFields({
         title: 'title1',
         sort: 100,
@@ -28,7 +28,7 @@ describe('utils', () => {
       });
     });
 
-    it('only and except fields', async () => {
+    it('only and except fields', () => {
       const values = filterByFields({
         title: 'title1',
         sort: 100,
@@ -42,7 +42,7 @@ describe('utils', () => {
       });
     });
 
-    it('only and except fields with array', async () => {
+    it('only and except fields with array', () => {
       const values = filterByFields({
         title: 'title1',
         comments: [
@@ -61,7 +61,7 @@ describe('utils', () => {
       });
     });
 
-    it('only and except fields with array', async () => {
+    it('only and except fields with array', () => {
       const values = filterByFields({
         title: 'title1',
         user: { name: 'aaa', profile: { email: 'email' } },
@@ -82,6 +82,27 @@ describe('utils', () => {
           { content: 'comment2' }
         ]
       });
+    });
+
+    it('empty values', () => {
+      const values = filterByFields({}, {
+        only: ['a']
+      });
+      expect(values).toEqual({});
+    });
+
+    it('null values', () => {
+      const values = filterByFields(null, {
+        only: ['a']
+      });
+      expect(values).toBe(null);
+    });
+
+    it('undefined values', () => {
+      const values = filterByFields(undefined, {
+        only: ['a']
+      });
+      expect(values).toBeUndefined();
     });
   });
 });
