@@ -52,6 +52,7 @@ const data = {
       icon: 'DashboardOutlined',
       template: 'page1',
       sort: 20,
+      showInMenu: true,
     },
     {
       title: '数据',
@@ -60,6 +61,7 @@ const data = {
       icon: 'DatabaseOutlined',
       template: 'SideMenuLayout',
       sort: 30,
+      showInMenu: true,
       children: [
         // {
         //   title: '页面3',
@@ -86,6 +88,7 @@ const data = {
       icon: 'TeamOutlined',
       template: 'SideMenuLayout',
       sort: 70,
+      showInMenu: true,
       children: [
         {
           title: '用户管理',
@@ -95,6 +98,7 @@ const data = {
           template: 'collection',
           collection: 'users',
           sort: 80,
+          showInMenu: true,
         },
       ]
     },
@@ -105,6 +109,7 @@ const data = {
       icon: 'SettingOutlined',
       template: 'SideMenuLayout',
       sort: 90,
+      showInMenu: true,
       children: [
         {
           title: '页面与菜单',
@@ -114,6 +119,7 @@ const data = {
           icon: 'MenuOutlined',
           sort: 100,
           developerMode: true,
+          showInMenu: true,
         },
         {
           title: '数据表配置',
@@ -122,6 +128,7 @@ const data = {
           path: '/settings/collections',
           icon: 'TableOutlined',
           sort: 110,
+          showInMenu: true,
         },
       ]
     },
