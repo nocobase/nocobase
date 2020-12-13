@@ -52,13 +52,13 @@ export default {
       },
     },
     {
-      interface: 'string',
+      interface: 'icon',
       type: 'virtual',
       name: 'icon',
       title: '图标',
       defaultValue: 'TableOutlined',
       component: {
-        type: 'string',
+        type: 'icon',
         showInTable: true,
         showInForm: true,
         showInDetail: true,

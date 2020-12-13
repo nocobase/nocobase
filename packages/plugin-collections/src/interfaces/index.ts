@@ -63,6 +63,7 @@ export const options = [
       types.sort,
       types.password,
       types.json,
+      types.icon,
     ],
   }
 ].map(({title, children}: any) => ({

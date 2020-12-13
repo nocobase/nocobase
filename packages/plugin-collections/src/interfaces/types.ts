@@ -472,10 +472,21 @@ export const json = {
   options: {
     interface: 'json',
     type: 'json',
-    dottie: true,
+    mode: 'replace',
     // developerMode: true,
     component: {
       type: 'hidden',
+    },
+  },
+};
+
+export const icon = {
+  title: '图标',
+  options: {
+    interface: 'icon',
+    type: 'string',
+    component: {
+      type: 'icon',
     },
   },
 };

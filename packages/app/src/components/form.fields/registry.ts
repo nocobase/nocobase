@@ -33,6 +33,7 @@ export const setup = () => {
     month: DatePicker.MonthPicker,
     week: DatePicker.WeekPicker,
     string: Input,
+    icon: Input,
     textarea: Input.TextArea,
     number: NumberPicker,
     percent: Percent,
