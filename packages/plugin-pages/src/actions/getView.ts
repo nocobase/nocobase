@@ -49,6 +49,12 @@ const transforms = {
       if (field.get('component.tooltip')) {
         prop.description = field.get('component.tooltip');
       }
+      // if (field.get('name') === 'dataSource') {
+      //   set(prop, 'items.properties.value.visible', false);
+      // }
+      if (['number', 'percent'].includes(interfaceType) && field.get('precision')) {
+        set(prop, 'x-component-props.step', field.get('precision'));
+      }
       if (field.get('required')) {
         prop.required = true;
       }
@@ -59,14 +65,14 @@ const transforms = {
         set(prop, 'x-component-props.showTime', field.get('showTime'));
       }
       const defaultValue = get(field.options, 'defaultValue');
-      if (defaultValue) {
+      if (typeof defaultValue !== 'undefined') {
         prop.default = defaultValue;
       }
       if (interfaceType === 'boolean') {
         set(prop, 'x-component-props.children', prop.title);
         delete prop.title;
       }
-      if (['radio', 'select', 'checkboxes'].includes(interfaceType)) {
+      if (['radio', 'select', 'multipleSelect', 'checkboxes'].includes(interfaceType)) {
         prop.enum = get(field.options, 'dataSource', []);
       }
       schema[field.name] = {

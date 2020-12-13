@@ -65,11 +65,12 @@ export const options = [
       types.json,
     ],
   }
-].map(({title, children}) => ({
+].map(({title, children}: any) => ({
   label: title,
   children: children.map(child => ({
     label: child.title,
     value: child.options.interface,
+    disabled: child.disabled,
   })),
 }));
 
