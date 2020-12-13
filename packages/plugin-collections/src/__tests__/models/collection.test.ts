@@ -13,7 +13,15 @@ describe('models.collection', () => {
 
   afterEach(() => app.database.close());
 
-  it('import', async () => {
+  it('import all tables', async () => {
+    const tables = app.database.getTables([]);
+    for (const table of tables) {
+      const Collection = app.database.getModel('collections');
+      await Collection.import(table.getOptions(), { migrate: false });
+    }
+  });
+
+  it('import examples', async () => {
     await app.database.getModel('collections').import({
       title: '示例',
       name: 'examples',

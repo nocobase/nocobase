@@ -11,6 +11,7 @@ function getTestKey() {
   const { id } = require.main;
   const key = id
     .replace(`${process.env.PWD}/packages`, '')
+    .replace(/src\/__tests__/g, '')
     .replace('.test.ts', '')
     .replace(/[^\w]/g, '_')
     .replace(/_+/g, '_');
