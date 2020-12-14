@@ -27,13 +27,27 @@ services:
     restart: always
     ports:
       - "${DB_MYSQL_PORT}:3306"
+    networks:
+      - node-network
   postgres:
     image: postgres:10
     restart: always
     ports:
       - "${DB_POSTGRES_PORT}:5432"
+    networks:
+      - node-network
     command: postgres -c wal_level=logical
     environment:
       POSTGRES_USER: ${DB_USER}
       POSTGRES_DB: ${DB_DATABASE}
       POSTGRES_PASSWORD: ${DB_PASSWORD}
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    command: [ "yarn", "start" ]
+    ports:
+      - "${APP_HTTP_PORT}:${APP_HTTP_PORT}"
+      - "${HTTP_PORT}:${HTTP_PORT}"
+    networks:
+      - node-network
