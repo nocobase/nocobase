@@ -11,6 +11,7 @@ import Resourcer from '@nocobase/resourcer';
 
 import associated from '../middlewares/associated';
 import actions from '..';
+import list1 from './actions/list1';
 import create1 from './actions/create1';
 import create2 from './actions/create2';
 import update1 from './actions/update1';
@@ -61,6 +62,7 @@ resourcer.define({
   name: 'posts',
   actions: {
     ...actions.common,
+    list1,
     create1,
     create2,
     update1,
