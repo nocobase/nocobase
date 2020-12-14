@@ -227,7 +227,10 @@ describe('koa middleware', () => {
         });
       expect(response.body).toEqual({
         sort: '-id',
-        filter: { col1: 'val1', col2: 'val2', col3: 'val3' },
+        filter: { and: [
+          { col1: 'val1', col2: 'val2' },
+          { col2: '&val2', col3: 'val3' }
+        ]},
         fields: { only: [ 'id' ], appends: [] },
         other: 'other1',
         actionName: 'list',

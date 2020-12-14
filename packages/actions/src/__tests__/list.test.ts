@@ -4,13 +4,17 @@ import { initDatabase, agent } from './index';
 
 describe('list', () => {
   let db;
-  let now: string;
-  let timestamps: { created_at: string; updated_at: string; };
+  let now: Date;
+  let nowString: string;
+  let timestamps: { created_at: Date; updated_at: Date; };
+  let timestampsStrings;
   
   beforeEach(async () => {
     db = await initDatabase();
-    now = (new Date()).toISOString();
+    now = new Date();
+    nowString = now.toISOString()
     timestamps = { created_at: now, updated_at: now };
+    timestampsStrings = { created_at: nowString, updated_at: nowString };
   });
   
   afterAll(() => db.close());
@@ -29,7 +33,7 @@ describe('list', () => {
       await Post.bulkCreate(Array(25).fill(null).map((_, index) => ({
         title: `title${index}`,
         status: index % 2 ? 'published' : 'draft',
-        published_at: index % 2 ? new Date(2020, 10, 30 - index, 0, 0, 0) : null,
+        published_at: index % 2 ? new Date(now.getFullYear(), now.getMonth(), now.getDate() - index, 0, 0, 0) : null,
         user_id: users[index % users.length].id,
         ...timestamps
       })));
@@ -122,6 +126,21 @@ describe('list', () => {
           expect(response.body.count).toBe(expected.length);
         });
       });
+
+      describe('merge params with action options', () => {
+        it('plain key-value filter', async () => {
+          const response = await agent.get('/posts:list1?filter[status]=draft');
+          expect(response.body.count).toBe(0);
+        });
+
+        it('date filter', async () => {
+          // const before1Days = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 1);
+          const before3Days = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 3);
+          const response = await agent.get(`/posts:list1?filter[published_at.gt]=${before3Days.toISOString()}`);
+          expect(response.body.count).toBe(1);
+          expect(response.body.rows[0].id).toBe(2);
+        });
+      })
     });
 
     describe('page', () => {
@@ -258,7 +277,7 @@ describe('list', () => {
       it('appends fields', async () => {
         const response = await agent.get('/posts?fields[only]=title&fields[appends]=user.name&filter[title]=title0');
         expect(response.body.rows[0].user.name).toEqual('a');
-        expect(response.body.rows).toEqual([{ title: 'title0', user: { id: 1, name: 'a', ...timestamps } }]);
+        expect(response.body.rows).toEqual([{ title: 'title0', user: { id: 1, name: 'a', ...timestampsStrings } }]);
       });
     });
   });
@@ -377,9 +396,6 @@ describe('list', () => {
         page: 2,
         per_page: 2
       });
-    });
-
-    
+    });    
   });
-
 });
