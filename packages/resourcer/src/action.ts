@@ -284,7 +284,9 @@ export class Action {
     //   optionsFilter = await optionsFilter(this.context);
     // }
     if (!_.isEmpty(optionsFilter) || !_.isEmpty(filter)) {
-      data.filter = _.merge(filter, _.cloneDeep(optionsFilter));
+      const filterOptions = [_.cloneDeep(optionsFilter), filter].filter(Boolean);
+      // TODO(feature): change 'and' to symbol
+      data.filter = filterOptions.length > 1 ? { and: filterOptions } : filterOptions[0];
     }
     // if (typeof optionsFields === 'function') {
     //   this.parameters = _.cloneDeep(data);
