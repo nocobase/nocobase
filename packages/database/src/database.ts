@@ -7,6 +7,7 @@ import glob from 'glob';
 import Table, { TableOptions } from './table';
 import { Model, ModelCtor } from './model';
 import { requireModule } from './utils';
+import _ from 'lodash';
 
 export interface SyncOptions extends SequelizeSyncOptions {
 
@@ -29,6 +30,8 @@ export interface ImportOptions {
   extensions?: string[];
 }
 
+export type HookType = 'beforeTableInit' | 'afterTableInit' | 'beforeAddField' | 'afterAddField';
+
 export default class Database {
 
   public readonly sequelize: Sequelize;
@@ -46,6 +49,8 @@ export default class Database {
   protected tables = new Map<string, Table>();
 
   protected options: Options;
+
+  protected hooks = {};
 
   constructor(options: Options) {
     this.options = options;
@@ -248,5 +253,32 @@ export default class Database {
    */
   public async close() {
     return this.sequelize.close();
+  }
+
+  /**
+   * 添加 hook
+   * 
+   * @param hookType 
+   * @param fn 
+   */
+  public addHook(hookType: HookType, fn: Function) {
+    const hooks = this.hooks[hookType] || [];
+    hooks.push(fn);
+    this.hooks[hookType] = hooks;
+  }
+
+  /**
+   * 运行 hook
+   *
+   * @param hookType 
+   * @param args 
+   */
+  public runHooks(hookType: HookType, ...args) {
+    const hooks = this.hooks[hookType] || [];
+    for (const hook of hooks) {
+      if (typeof hook === 'function') {
+        hook(...args);
+      }
+    }
   }
 }
