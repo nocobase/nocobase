@@ -87,6 +87,8 @@ export function SimpleTable(props: SimpleTableProps) {
               },
             });
             await refresh();
+            // @ts-ignore
+            window.routesReload && window.routesReload();
             console.log('destroy.onTrigger', selectedRowKeys);
           },
         }}

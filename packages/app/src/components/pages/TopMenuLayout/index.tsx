@@ -12,7 +12,7 @@ export function TopMenuLayout(props: any) {
     <Layout style={{ height: '100vh' }}>
       <Layout.Header style={{height: 48, lineHeight: '48px', padding: 0}} className="nb-header">
         <div className="logo" style={{width: 200, height: 20, float: 'left'}}><CodeOutlined /> NocoBase</div>
-        <Menu items={menu} className={'noco-top-menu'} style={{float: 'left'}} theme="dark" mode="horizontal">
+        <Menu hideChildren={true} items={menu} className={'noco-top-menu'} style={{float: 'left'}} theme="dark" mode="horizontal">
         </Menu>
         <AvatarDropdown/>
       </Layout.Header>

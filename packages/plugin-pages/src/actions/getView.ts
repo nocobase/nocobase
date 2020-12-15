@@ -153,7 +153,10 @@ export default async (ctx, next) => {
       ['sort', 'asc'],
     ]
   });
-  const actionNames = view.get('actionNames') || [];
+  let actionNames = view.get('actionNames') || [];
+  if (actionNames.length === 0) {
+    actionNames = ['filter', 'create', 'destroy'];
+  }
   if (view.get('type') === 'table') {
     const defaultTabs = await collection.getTabs({
       where: {

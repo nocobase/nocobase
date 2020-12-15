@@ -11,7 +11,7 @@ function pathcamp(path1: string, path2: string) {
 }
 
 export default (props: any) => {
-  const { items = [], ...restProps } = props;
+  const { items = [], hideChildren, ...restProps } = props;
   const location = useLocation();
   let paths = items.map(item => item.path);
   return (
@@ -20,11 +20,29 @@ export default (props: any) => {
       defaultOpenKeys={paths.filter(path => pathcamp(location.pathname, path)).concat(location.pathname)}
       {...restProps}
     >
-      {items.map(item => item.showInMenu && (
-        <Menu.Item key={item.path}>
-          <Link to={item.path}><Icon type={item.icon}/> {item.title}</Link>
-        </Menu.Item>
-      ))}
+      {items.map(item => {
+        if (!item.showInMenu) {
+          return null;
+        }
+        const { children = [] } = item;
+        const subItems = children.filter(child => child.showInMenu);
+        if (!hideChildren && subItems.length > 1) {
+          return (
+            <Menu.SubMenu key={`${item.path}`} title={<><Icon type={item.icon}/> {item.title}</>}>
+              {subItems.map((child: any) => (
+                <Menu.Item key={child.path}>
+                  <Link to={child.path}>{child.title}</Link>
+                </Menu.Item>
+              ))}
+            </Menu.SubMenu>
+          )
+        }
+        return (
+          <Menu.Item key={item.path}>
+            <Link to={item.path}><Icon type={item.icon}/> {item.title}</Link>
+          </Menu.Item>
+        )
+      })}
     </Menu>
   );
 };
