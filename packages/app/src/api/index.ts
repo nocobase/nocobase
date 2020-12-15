@@ -12,6 +12,8 @@ const sync = {
   },
 };
 
+console.log('process.env.NOCOBASE_ENV', process.env.NOCOBASE_ENV);
+
 dotenv.config();
 
 const api = Api.create({
@@ -35,13 +37,24 @@ const api = Api.create({
   },
 });
 
-api.resourcer.use(async (ctx, next) => {
+api.resourcer.use(async (ctx: actions.Context, next) => {
   const { resourceName } = ctx.action.params;
   const table = ctx.db.getTable(resourceName);
   // ctx.state.developerMode = {[Op.not]: null};
   ctx.state.developerMode = false;
   if (table && table.hasField('developerMode') && ctx.state.developerMode === false) {
     ctx.action.setParam('filter.developerMode', ctx.state.developerMode);
+  }
+  if (table) {
+    const except = [];
+    for (const [name, field] of table.getFields()) {
+      if (field.options.hidden) {
+        except.push(field.options.name);
+      }
+    }
+    if (except.length) {
+      ctx.action.setParam('fields.except', except);
+    }
   }
   await next();
 });
