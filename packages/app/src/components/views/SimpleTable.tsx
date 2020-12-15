@@ -25,7 +25,7 @@ export function SimpleTable(props: SimpleTableProps) {
     associatedName,
     associatedKey,
   } = props;
-  const { rowKey = 'id', fields = [], rowViewName, actions = [], paginated = true, defaultPerPage = 10 } = schema;
+  const { rowKey = 'id', name: viewName, fields = [], rowViewName, actions = [], paginated = true, defaultPerPage = 10 } = schema;
   const { sourceKey = 'id' } = activeTab.field||{};
   const drawerRef = useRef<any>();
   const name = associatedName ? `${associatedName}.${resourceName}` : resourceName;
@@ -37,6 +37,7 @@ export function SimpleTable(props: SimpleTableProps) {
       perPage: paginated ? pageSize : -1,
       sorter,
       filter,
+      viewName,
     })
     .then(({data = [], meta = {}}) => {
       return {
