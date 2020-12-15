@@ -58,6 +58,27 @@ api.resourcer.use(async (ctx: actions.Context, next) => {
   }
   await next();
 });
+
+api.resourcer.use(async (ctx: actions.Context, next) => {
+  const { resourceName, viewName, filter } = ctx.action.params;
+  // TODO: 需要补充默认视图的情况
+  let view: any;
+  if (viewName) {
+    view = await ctx.db.getModel('views').findOne({
+      where: {
+        collection_name: resourceName,
+        name: viewName,
+      }
+    });
+    const viewFilter = view.get('filter');
+    if (viewFilter) {
+      const args = [viewFilter, filter].filter(Boolean);
+      ctx.action.setParam('filter', {and: args});
+      console.log(ctx.action.params.filter);
+    }
+  }
+  await next();
+});
 api.resourcer.use(associated);
 api.resourcer.registerActionHandlers({...actions.common, ...actions.associate});
 

@@ -6,24 +6,6 @@ import { request, useRequest } from 'umi';
 import api from '@/api-client';
 import { components, fields2columns } from './SortableTable';
 
-const columns = [
-  {
-    title: '姓名',
-    dataIndex: 'name',
-    key: 'name',
-  },
-  {
-    title: '年龄',
-    dataIndex: 'age',
-    key: 'age',
-  },
-  {
-    title: '住址',
-    dataIndex: 'address',
-    key: 'address',
-  },
-];
-
 export interface TableProps {
   schema?: any;
   activeTab?: any;
@@ -41,7 +23,7 @@ export function Table(props: TableProps) {
     associatedName,
     associatedKey,
   } = props;
-  const { fields, defaultTabName, rowKey = 'id', actions = [], paginated = true, defaultPerPage = 10 } = schema;
+  const { name: viewName, fields, defaultTabName, rowKey = 'id', actions = [], paginated = true, defaultPerPage = 10 } = schema;
   // const { data, mutate } = useRequest(() => api.resource(name).list({
   //   associatedKey,
   // }));
@@ -55,6 +37,7 @@ export function Table(props: TableProps) {
       perPage: paginated ? pageSize : -1,
       sorter,
       filter,
+      viewName,
       // ...args2,
     })
     .then(({data = [], meta = {}}) => {
