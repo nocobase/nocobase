@@ -183,6 +183,15 @@ export default {
       },
     },
     {
+      interface: 'number',
+      type: 'integer',
+      name: 'viewId',
+      title: '视图ID',
+      component: {
+        type: 'number',
+      },
+    },
+    {
       interface: 'json',
       type: 'json',
       name: 'options',

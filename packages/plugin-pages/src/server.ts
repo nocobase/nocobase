@@ -19,7 +19,7 @@ export default async function (options = {}) {
   resourcer.registerActionHandler('getPageInfo', getPageInfo);
   resourcer.registerActionHandler('pages:getRoutes', getRoutes);
 
-  const [Collection, Page] = database.getModels(['collections', 'pages']);
+  const [Collection, Page, View] = database.getModels(['collections', 'pages', 'views']);
 
   async function createCollectionPage(model, options) {
     // const { 
@@ -73,6 +73,71 @@ export default async function (options = {}) {
       transaction,
       where: {
         path: `/collections/${model.get('name')}`,
+      },
+    });
+  });
+
+  async function syncViewCollectionPage(model, options) {
+    const transaction = await database.sequelize.transaction();
+    const parentPath = `/collections/${model.get('collection_name')}`;
+    const currentPath = `${parentPath}/views/${model.get('name')}`;
+    try {
+      const parent = await Page.findOne({
+        transaction,
+        where: {
+          path: parentPath,
+        },
+      });
+      if (!parent) {
+        await transaction.rollback();
+        return;
+      }
+      let page = await Page.findOne({
+        transaction,
+        where: {
+          collection: model.get('collection_name'),
+          path: currentPath,
+        },
+      });
+      if (!page) {
+        page = await Page.create({
+          type: 'collection',
+          collection: model.get('collection_name'),
+          path: currentPath,
+          sort: 100,
+          parent_id: parent.id,
+        }, {
+          transaction,
+        });
+      }
+      page.set({
+        title: model.get('title'),
+        viewName: model.get('name'),
+        viewId: model.get('id'),
+        // icon: model.get('icon'),
+        showInMenu: !!model.get('showInDataMenu'),
+      });
+      await page.save({
+        transaction,
+      });
+    } catch (error) {
+      await transaction.rollback();
+      console.error(error);
+    }
+    await transaction.commit();
+  }
+  View.addHook('beforeValidate', (model) => {
+    console.log('beforeValidate');
+    if (model.get('default')) {
+      model.set('showInDataMenu', true);
+    }
+  });
+  View.addHook('afterCreate', syncViewCollectionPage);
+  View.addHook('afterUpdate', syncViewCollectionPage);
+  View.addHook('afterDestroy', async (model, options) => {
+    await Page.destroy({
+      where: {
+        viewId: model.get('id'),
       },
     });
   });

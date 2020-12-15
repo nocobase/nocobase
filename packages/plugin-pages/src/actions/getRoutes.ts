@@ -10,10 +10,10 @@ function pages2routes(pages: Array<any>) {
     const route: any = {
       ...restProps,
     };
-    if (page.type === 'layout' && !page.redirect && children.length) {
+    // page.type === 'layout' && 
+    if (!page.redirect && children.length) {
       const items = children.sort((a, b) => a.order - b.order);
-      const segmentId = get(items, [0, 'segments', 0, 'id']);
-      route.redirect = segmentId ? `${items[0].path}/segments/${segmentId}` : items[0].path;
+      route.redirect = items[0].path;
     }
     if (page.type === 'layout' && children.length) {
       route.menu = children.map(child => ({
