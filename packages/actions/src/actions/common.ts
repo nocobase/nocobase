@@ -337,7 +337,8 @@ export async function destroy(ctx: Context, next: Next) {
       // @ts-ignore
       ctx.body = await TargetModel.destroy({
         where: { [primaryKey]: { [Op.in]: models.map(item => item[primaryKey]) } },
-        ...commonOptions
+        ...commonOptions,
+        individualHooks: true,
       });
     }
   } else {
