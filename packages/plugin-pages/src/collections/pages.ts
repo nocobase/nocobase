@@ -3,14 +3,15 @@ import { TableOptions } from '@nocobase/database';
 export default {
   name: 'pages',
   title: '页面配置',
-  model: 'BaseModel',
+  model: 'PageModel',
   internal: true,
   developerMode: true,
   fields: [
     {
       interface: 'sort',
-      type: 'integer',
+      type: 'sort',
       name: 'sort',
+      scope: ['parent_id'],
       title: '排序',
       component: {
         type: 'sort',
