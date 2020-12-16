@@ -17,7 +17,7 @@ import { getDataTypeKey } from '.';
 import Table from '../table';
 import Database from '../database';
 import Model, { ModelCtor } from '../model';
-import { whereCompare } from '../utils';
+import { whereCompare, isNumber } from '../utils';
 
 export interface IField {
 
@@ -714,6 +714,10 @@ export class SORT extends NUMBER {
 
   static async beforeCreateHook(this: SORT, model, options) {
     const { name, scope = [] } = this.options;
+    // 如果有值，跳过
+    if (isNumber(model.get(name))) {
+      return;
+    }
     const extremum: number = await this.getNextValue({
       ...options,
       where: model.getValuesByFieldNames(scope)
