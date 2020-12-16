@@ -90,6 +90,31 @@ export default {
             "target": "timeFormat",
             "condition": "{{ ['time'].indexOf($self.value) !== -1 }}"
           },
+          {
+            "type": "value:visible",
+            "target": "multiple",
+            "condition": "{{ ['linkTo'].indexOf($self.value) !== -1 }}"
+          },
+          {
+            "type": "value:visible",
+            "target": "target",
+            "condition": "{{ ['linkTo'].indexOf($self.value) !== -1 }}"
+          },
+          {
+            "type": "value:visible",
+            "target": "labelField",
+            "condition": "{{ ['linkTo'].indexOf($self.value) !== -1 }}"
+          },
+          {
+            "type": "value:visible",
+            "target": "createable",
+            "condition": "{{ ['linkTo'].indexOf($self.value) !== -1 }}"
+          },
+          {
+            "type": "value:visible",
+            "target": "fields",
+            "condition": "{{ ['subTable'].indexOf($self.value) !== -1 }}"
+          },
         ],
       },
     },
@@ -224,18 +249,79 @@ export default {
       },
     },
     {
-      interface: 'linkTo',
-      multiple: true,
-      type: 'hasMany',
-      name: 'children',
-      title: '子字段',
-      target: 'fields',
-      foreignKey: 'parent_id',
-      sourceKey: 'id',
+      interface: 'string',
+      type: 'string',
+      name: 'target',
+      title: '要关联的数据表',
       component: {
         type: 'drawerSelect',
+        showInDetail: true,
+        showInForm: true,
       },
     },
+    {
+      interface: 'string',
+      type: 'string',
+      name: 'labelField',
+      title: '要关联的字段',
+      component: {
+        type: 'drawerSelect',
+        showInDetail: true,
+        showInForm: true,
+      },
+    },
+    {
+      interface: 'boolean',
+      type: 'boolean',
+      name: 'multiple',
+      title: '允许添加多条记录',
+      component: {
+        type: 'checkbox',
+        showInDetail: true,
+        showInForm: true,
+        default: true,
+      },
+    },
+    {
+      interface: 'boolean',
+      type: 'boolean',
+      name: 'createable',
+      title: '允许直接在关联的数据表内新建数据',
+      component: {
+        type: 'checkbox',
+        showInDetail: true,
+        showInForm: true,
+      },
+    },
+    {
+      interface: 'subTable',
+      type: 'hasMany',
+      name: 'fields',
+      target: 'fields',
+      sourceKey: 'id',
+      foreignKey: 'parent_id',
+      title: '子表格字段',
+      component: {
+        type: 'fields',
+        default: [],
+        // showInTable: true,
+        // showInDetail: true,
+        showInForm: true,
+      },
+    },
+    // {
+    //   interface: 'linkTo',
+    //   multiple: true,
+    //   type: 'hasMany',
+    //   name: 'children',
+    //   title: '子字段',
+    //   target: 'fields',
+    //   foreignKey: 'parent_id',
+    //   sourceKey: 'id',
+    //   component: {
+    //     type: 'drawerSelect',
+    //   },
+    // },
     {
       interface: 'textarea',
       type: 'virtual',

@@ -270,7 +270,7 @@ export const time = {
 // });
 export const subTable = {
   title: '子表格',
-  disabled: true,
+  // disabled: true,
   options: {
     interface: 'subTable',
     type: 'hasMany',
@@ -324,14 +324,14 @@ export const subTable = {
 
 export const linkTo = {
   title: '关联数据',
-  disabled: true,
+  // disabled: true,
   options: {
     interface: 'linkTo',
     multiple: true, // 可能影响 type
     type: 'belongsToMany',
     // name,
     // target: '关联表', // 用户会输入
-    filterable: true,
+    filterable: false,
     component: {
       type: 'drawerSelect',
     },

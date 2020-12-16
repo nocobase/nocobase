@@ -26,6 +26,7 @@ export default {
       type: 'string',
       name: 'title',
       title: '视图名称',
+      required: true,
       component: {
         type: 'string',
         className: 'drag-visible',
@@ -51,9 +52,10 @@ export default {
       type: 'string',
       name: 'type',
       title: '视图类型',
+      required: true,
       dataSource: [
         { label: '表格', value: 'table' },
-        { label: '表单', value: 'form' },
+        // { label: '表单', value: 'form' },
         { label: '看板', value: 'kanban', disabled: true },
         { label: '日历', value: 'calendar', disabled: true },
         { label: '地图', value: 'map', disabled: true },
@@ -63,6 +65,7 @@ export default {
         showInTable: true,
         showInDetail: true,
         showInForm: true,
+        default: 'table',
         "x-linkages": [
           {
             "type": "value:visible",
@@ -79,6 +82,7 @@ export default {
       title: '筛选数据',
       developerMode: false,
       mode: 'replace',
+      defaultValue: {},
       component: {
         type: 'filter',
         showInForm: true,
@@ -89,13 +93,15 @@ export default {
       type: 'string',
       name: 'template',
       title: '模板',
+      required: true,
       dataSource: [
-        { label: '表单', value: 'DrawerForm' },
+        // { label: '表单', value: 'DrawerForm' },
         { label: '常规表格', value: 'Table' },
         { label: '简易表格', value: 'SimpleTable' },
       ],
       component: {
         type: 'string',
+        default: 'Table',
         showInTable: true,
         showInDetail: true,
         showInForm: true,
