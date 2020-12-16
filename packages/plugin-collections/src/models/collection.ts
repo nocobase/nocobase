@@ -129,21 +129,66 @@ export class CollectionModel extends BaseModel {
 
   static async import(data: TableOptions, options: SaveOptions = {}): Promise<CollectionModel> {
     data = _.cloneDeep(data);
-    const collection = await this.create({
-      ...data,
-    }, options);
-    const items: any = {};
+    // @ts-ignore
+    const { update } = options;
+    let collection;
+    if (data.name) {
+      collection = await this.findOne({
+        ...options,
+        where: {
+          name: data.name,
+        },
+      });
+    } else if (data.title) {
+      collection = await this.findOne({
+        ...options,
+        where: {
+          title: data.title,
+        },
+      });
+    }
+    if (collection && update) {
+      await collection.update(data, options);
+    }
+    if (!collection) {
+      collection = await this.create(data, options);
+    }
     const associations = ['fields', 'tabs', 'actions', 'views'];
     for (const key of associations) {
       if (!Array.isArray(data[key])) {
         continue;
       }
-      items[key] = data[key].map((item, sort) => ({
-        ...item,
-        sort,
-      }));
+      const Model = this.database.getModel(key);
+      for (const item of data[key]) {
+        let model;
+        if (item.name) {
+          model = await Model.findOne({
+            ...options,
+            where: {
+              collection_name: collection.name,
+              name: item.name,
+            },
+          });
+        } else if (item.title) {
+          model = await Model.findOne({
+            ...options,
+            where: {
+              collection_name: collection.name,
+              title: item.title,
+            },
+          });
+        }
+        if (model && update) {
+          await model.update(item, options);
+        }
+        if (!model) {
+          model = await Model.create({
+            ...item,
+            collection_name: collection.name,
+          }, options);
+        }
+      }
     }
-    await collection.updateAssociations(items, options);
     return collection;
   }
 }

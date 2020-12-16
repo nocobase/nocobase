@@ -5,10 +5,14 @@ import Database, { Model } from '@nocobase/database';
 import actions from '../../../actions/src';
 import associated from '../../../actions/src/middlewares/associated';
 
+console.log(process.argv);
+
+const clean = false;
+
 const sync = {
-  force: true,
+  force: clean,
   alter: {
-    drop: true,
+    drop: clean,
   },
 };
 
@@ -38,102 +42,120 @@ const api = Api.create({
 api.resourcer.use(associated);
 api.resourcer.registerActionHandlers({...actions.common, ...actions.associate});
 
-const data = {
-  title: '后台应用',
-  path: '/',
-  type: 'layout',
-  template: 'TopMenuLayout',
-  sort: 10,
-  children: [
-    {
-      title: '仪表盘',
-      type: 'page',
-      path: '/dashboard',
-      icon: 'DashboardOutlined',
-      template: 'page1',
-      sort: 20,
-      showInMenu: true,
-    },
-    {
-      title: '数据',
-      type: 'layout',
-      path: '/collections',
-      icon: 'DatabaseOutlined',
-      template: 'SideMenuLayout',
-      sort: 30,
-      showInMenu: true,
-      children: [
-        // {
-        //   title: '页面3',
-        //   type: 'page',
-        //   path: '/collections/page3',
-        //   icon: 'dashboard',
-        //   template: 'page3',
-        //   sort: 40,
-        // },
-        // {
-        //   title: '页面4',
-        //   type: 'page',
-        //   path: '/collections/page4',
-        //   icon: 'dashboard',
-        //   template: 'page4',
-        //   sort: 50,
-        // },
-      ]
-    },
-    {
-      title: '用户',
-      type: 'layout',
-      path: '/users',
-      icon: 'TeamOutlined',
-      template: 'SideMenuLayout',
-      sort: 70,
-      showInMenu: true,
-      children: [
-        {
-          title: '用户管理',
-          type: 'collection',
-          path: '/users/users',
-          icon: 'UserOutlined',
-          template: 'collection',
-          collection: 'users',
-          sort: 80,
-          showInMenu: true,
-        },
-      ]
-    },
-    {
-      title: '配置',
-      type: 'layout',
-      path: '/settings',
-      icon: 'SettingOutlined',
-      template: 'SideMenuLayout',
-      sort: 90,
-      showInMenu: true,
-      children: [
-        {
-          title: '页面与菜单',
-          type: 'collection',
-          collection: 'pages',
-          path: '/settings/pages',
-          icon: 'MenuOutlined',
-          sort: 100,
-          developerMode: true,
-          showInMenu: true,
-        },
-        {
-          title: '数据表配置',
-          type: 'collection',
-          collection: 'collections',
-          path: '/settings/collections',
-          icon: 'TableOutlined',
-          sort: 110,
-          showInMenu: true,
-        },
-      ]
-    },
-  ],
-};
+const data = [
+  {
+    title: '后台应用',
+    path: '/',
+    type: 'layout',
+    template: 'TopMenuLayout',
+    sort: 10,
+    children: [
+      {
+        title: '仪表盘',
+        type: 'page',
+        path: '/dashboard',
+        icon: 'DashboardOutlined',
+        template: 'page1',
+        sort: 20,
+        showInMenu: true,
+      },
+      {
+        title: '数据',
+        type: 'layout',
+        path: '/collections',
+        icon: 'DatabaseOutlined',
+        template: 'SideMenuLayout',
+        sort: 30,
+        showInMenu: true,
+        children: [
+          // {
+          //   title: '页面3',
+          //   type: 'page',
+          //   path: '/collections/page3',
+          //   icon: 'dashboard',
+          //   template: 'page3',
+          //   sort: 40,
+          // },
+          // {
+          //   title: '页面4',
+          //   type: 'page',
+          //   path: '/collections/page4',
+          //   icon: 'dashboard',
+          //   template: 'page4',
+          //   sort: 50,
+          // },
+        ]
+      },
+      {
+        title: '用户',
+        type: 'layout',
+        path: '/users',
+        icon: 'TeamOutlined',
+        template: 'SideMenuLayout',
+        sort: 70,
+        showInMenu: true,
+        children: [
+          {
+            title: '用户管理',
+            type: 'collection',
+            path: '/users/users',
+            icon: 'UserOutlined',
+            template: 'collection',
+            collection: 'users',
+            sort: 80,
+            showInMenu: true,
+          },
+        ]
+      },
+      {
+        title: '配置',
+        type: 'layout',
+        path: '/settings',
+        icon: 'SettingOutlined',
+        template: 'SideMenuLayout',
+        sort: 90,
+        showInMenu: true,
+        children: [
+          {
+            title: '页面与菜单',
+            type: 'collection',
+            collection: 'pages',
+            path: '/settings/pages',
+            icon: 'MenuOutlined',
+            sort: 100,
+            developerMode: true,
+            showInMenu: true,
+          },
+          {
+            title: '数据表配置',
+            type: 'collection',
+            collection: 'collections',
+            path: '/settings/collections',
+            icon: 'TableOutlined',
+            sort: 110,
+            showInMenu: true,
+          },
+        ]
+      },
+    ],
+  },
+  {
+    title: '登录页面',
+    path: '/login',
+    type: 'page',
+    inherit: false,
+    template: 'login',
+    order: 120,
+  },
+  {
+    title: '注册页面',
+    path: '/register',
+    type: 'page',
+    inherit: false,
+    template: 'register',
+    order: 130,
+  }
+];
 
 (async () => {
   await api
@@ -150,44 +172,23 @@ const data = {
   await database.sync({
     // tables: ['collections', 'fields', 'actions', 'views', 'tabs'],
   });
-
-  const Collection = database.getModel('collections');
+  const [Collection, Page, User] = database.getModels(['collections', 'pages', 'users']);
   const tables = database.getTables([]);
-
   for (let table of tables) {
-    await Collection.import(table.getOptions(), { migrate: false });
+    await Collection.import(table.getOptions(), { update: true, migrate: false });
   }
-
-  const Page = database.getModel('pages');
-  const page = await Page.create(data);
-  await page.updateAssociations(data);
-
-  await Page.create({
-    title: '登录页面',
-    path: '/login',
-    type: 'page',
-    inherit: false,
-    template: 'login',
-    order: 120,
+  await Page.import(data);
+  await User.findOrCreate({
+    where: {
+      username: "admin",
+    },
+    defaults: {
+      nickname: "超级管理员",
+      password: "admin",
+      username: "admin",
+      token: "38979f07e1fca68fb3d2",
+    },
   });
-
-  await Page.create({
-    title: '注册页面',
-    path: '/register',
-    type: 'page',
-    inherit: false,
-    template: 'register',
-    order: 130,
-  });
-
-  await database.getModel('users').create({
-    nickname: "超级管理员",
-    password: "admin",
-    username: "admin",
-    token: "38979f07e1fca68fb3d2",
-  });
-
   await database.getModel('collections').import(require('./collections/example').default);
-
   await database.close();
 })();
