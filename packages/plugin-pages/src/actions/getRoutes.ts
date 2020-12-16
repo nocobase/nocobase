@@ -12,7 +12,7 @@ function pages2routes(pages: Array<any>) {
     };
     // page.type === 'layout' && 
     if (!page.redirect && children.length) {
-      const items = children.sort((a, b) => a.order - b.order);
+      const items = children.sort((a, b) => a.sort - b.sort);
       route.redirect = items[0].path;
     }
     if (page.type === 'layout' && children.length) {
@@ -20,7 +20,7 @@ function pages2routes(pages: Array<any>) {
         ...child,
         title: child.title,
         path: child.path,
-        order: child.order,
+        sort: child.sort,
       }));
     }
     if (page.children) {
