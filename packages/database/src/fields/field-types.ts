@@ -372,6 +372,16 @@ export interface BelongsToManyAccessors {
 
 export abstract class Relation extends Field {
 
+  public targetTableInit() {
+    const { target, fields = [] } = this.options;
+    if (target && fields.length) {
+      this.context.database.table({
+        name: target,
+        fields,
+      });
+    }
+  }
+
   public getAssociationType() {
     if (this instanceof HASONE) {
       return 'hasOne';
@@ -476,6 +486,8 @@ export class HASONE extends HasOneOrMany {
     }
 
     super({target, ...options}, context);
+
+    this.targetTableInit();
   }
 
   public getAccessors(): HasOneAccessors {
@@ -503,6 +515,8 @@ export class HASMANY extends HasOneOrMany {
     }
 
     super({target, ...options}, context);
+
+    this.targetTableInit();
   }
 
   public getAssociationOptions(): HasManyOptions {
@@ -527,6 +541,7 @@ export class BELONGSTO extends Relation {
 
     super({target, ...options}, context);
 
+    this.targetTableInit();
     this.updateOptionsAfterTargetModelBeDefined();
   }
 
@@ -615,6 +630,7 @@ export class BELONGSTOMANY extends Relation {
       ...options,
     }, context);
 
+    this.targetTableInit();
     this.updateOptionsAfterTargetModelBeDefined();
 
     // through table 未特殊定义时，默认根据 through 信息配置 through table
