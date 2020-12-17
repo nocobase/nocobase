@@ -2,9 +2,15 @@ import { CreatedBy, UpdatedBy } from ".";
 
 export function setUserValue(this: CreatedBy | UpdatedBy, model, { context }) {
   const { foreignKey } = this.options;
-  // 已有数据
+  // 已有外键数据（只在创建时生效）
   if (model.getDataValue(foreignKey)) {
-    return;
+    if (model.isNewRecord) {
+      return;
+    }
+    const changed = model.changed();
+    if (Array.isArray(changed) && changed.find(key => key === foreignKey)) {
+      return;
+    }
   }
   if (!context) {
     return;
@@ -13,5 +19,5 @@ export function setUserValue(this: CreatedBy | UpdatedBy, model, { context }) {
   if (!currentUser) {
     return;
   }
-  model.setDataValue(foreignKey, currentUser.get(this.options.targetKey));
+  model.set(foreignKey, currentUser.get(this.options.targetKey));
 }

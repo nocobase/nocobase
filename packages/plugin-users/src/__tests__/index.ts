@@ -33,7 +33,7 @@ const config = {
       },
     },
   },
-  logging: false,
+  logging: process.env.DB_LOG_SQL === 'on',
   sync: {
     force: true,
     alter: {
