@@ -239,7 +239,10 @@ export default class Database {
       }
       for (const name of names) {
         // @ts-ignore
-        sequelize.modelManager.addModel(this.getModel(name));
+        const model = this.getModel(name);
+        if (model) {
+          sequelize.modelManager.addModel(model);
+        }
       }
       await sequelize.sync(restOptions);
       await sequelize.close();
