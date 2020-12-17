@@ -276,7 +276,7 @@ export const subTable = {
     type: 'hasMany',
     // fields: [],
     component: {
-      type: 'table',
+      type: 'subTable',
     },
   },
 };

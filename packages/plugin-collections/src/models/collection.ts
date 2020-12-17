@@ -131,7 +131,7 @@ export class CollectionModel extends BaseModel {
     data = _.cloneDeep(data);
     // @ts-ignore
     const { update } = options;
-    let collection;
+    let collection: CollectionModel;
     if (data.name) {
       collection = await this.findOne({
         ...options,
@@ -159,6 +159,7 @@ export class CollectionModel extends BaseModel {
         continue;
       }
       const Model = this.database.getModel(key);
+      const ids = [];
       for (const index in data[key]) {
         let model;
         const item = data[key][index];
@@ -189,6 +190,14 @@ export class CollectionModel extends BaseModel {
             collection_name: collection.name,
           }, options);
         }
+        if (model) {
+          ids.push(model.id);
+        }
+      }
+      if (collection.get('internal')) {
+        await collection.updateAssociations({
+          [key]: ids,
+        });
       }
     }
     return collection;

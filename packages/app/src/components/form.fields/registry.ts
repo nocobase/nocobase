@@ -16,6 +16,7 @@ import { Upload } from './upload'
 import { Filter } from './filter'
 import { DrawerSelect } from './drawer-select'
 import { DrawerField, Fields } from './drawer-field'
+import { SubTable } from './sub-table'
 
 export const setup = () => {
   registerFormFields({
@@ -49,5 +50,6 @@ export const setup = () => {
     drawerField: DrawerField,
     field: DrawerField,
     fields: Fields,
+    subTable: SubTable,
   })
 }

@@ -6,9 +6,9 @@ import associated from '../../../actions/src/middlewares/associated';
 import { Op } from 'sequelize';
 
 const sync = {
-  force: true,
+  force: false,
   alter: {
-    drop: true,
+    drop: false,
   },
 };
 
@@ -47,14 +47,22 @@ api.resourcer.use(async (ctx: actions.Context, next) => {
   }
   if (table) {
     const except = [];
+    const appends = [];
     for (const [name, field] of table.getFields()) {
       if (field.options.hidden) {
         except.push(field.options.name);
+      }
+      if (field.options.visible) {
+        appends.push(field.options.name);
       }
     }
     if (except.length) {
       ctx.action.setParam('fields.except', except);
     }
+    if (appends.length) {
+      ctx.action.setParam('fields.appends', appends);
+    }
+    // console.log('ctx.action.params.fields', except, appends, ctx.action.params.fields);
   }
   await next();
 });

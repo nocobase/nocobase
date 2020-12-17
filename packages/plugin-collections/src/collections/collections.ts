@@ -185,6 +185,11 @@ export default {
         list: {
           sort: 'sort',
         },
+        get: {
+          fields: {
+            appends: ['children'],
+          },
+        },
       },
       component: {
         type: 'drawerSelect',

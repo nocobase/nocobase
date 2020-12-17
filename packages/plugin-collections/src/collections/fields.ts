@@ -15,7 +15,6 @@ export default {
       name: 'sort',
       scope: ['collection'],
       title: '排序',
-      defaultValue: 1,
       component: {
         type: 'sort',
         className: 'drag-visible',
@@ -59,6 +58,7 @@ export default {
       title: '字段类型',
       dataSource: options,
       createOnly: true,
+      required: true,
       component: {
         type: 'select',
         showInTable: true,
@@ -112,7 +112,7 @@ export default {
           },
           {
             "type": "value:visible",
-            "target": "fields",
+            "target": "children",
             "condition": "{{ ['subTable'].indexOf($self.value) !== -1 }}"
           },
         ],
@@ -296,11 +296,12 @@ export default {
     {
       interface: 'subTable',
       type: 'hasMany',
-      name: 'fields',
+      name: 'children',
       target: 'fields',
       sourceKey: 'id',
       foreignKey: 'parent_id',
       title: '子表格字段',
+      // visible: true,
       component: {
         type: 'fields',
         default: [],
