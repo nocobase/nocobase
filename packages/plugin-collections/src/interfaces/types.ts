@@ -344,6 +344,7 @@ export const createdBy = {
   options: {
     interface: 'createdBy',
     type: 'belongsTo',
+    name: 'createdBy',
     filterable: true,
     component: {
       type: 'drawerSelect',
@@ -374,6 +375,7 @@ export const updatedBy = {
   disabled: true,
   options: {
     interface: 'updatedBy',
+    name: 'updatedBy',
     type: 'belongsTo',
     filterable: true,
     component: {
