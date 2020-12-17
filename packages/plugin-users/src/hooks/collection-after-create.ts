@@ -29,7 +29,7 @@ export default async function(model, options) {
   const fieldsToMake = { createdBy, updatedBy };
   const addedFields = Object.keys(fieldsToMake)
     .filter(type => Boolean(fieldsToMake[type]))
-    .map(type => table.addField(makeOptions(type, fieldsToMake[type]), true))
+    .map(type => table.addField(makeOptions(type, fieldsToMake[type])));
 
   if (addedFields.length) {
     await table.sync({
