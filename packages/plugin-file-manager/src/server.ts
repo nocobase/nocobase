@@ -4,8 +4,10 @@ import Resourcer from '@nocobase/resourcer';
 
 import * as fields from './fields';
 import { IStorage } from './storages';
-import uploadAction from './actions/upload';
-import uploadMiddleware from './middlewares/upload';
+import {
+  action as uploadAction,
+  middleware as uploadMiddleware,
+} from './actions/upload';
 
 export interface FileManagerOptions {
   storages: IStorage[]
