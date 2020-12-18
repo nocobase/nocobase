@@ -38,6 +38,27 @@ const api = Api.create({
 });
 
 api.resourcer.use(async (ctx: actions.Context, next) => {
+  const token = ctx.get('Authorization').replace(/^Bearer\s+/gi, '');
+  // console.log('user check', ctx.action.params.actionName);
+  // const { actionName } = ctx.action.params;
+  if (!token) {
+    return next();
+  }
+  const User = ctx.db.getModel('users');
+  const user = await User.findOne({
+    where: {
+      token,
+    },
+  });
+  if (!user) {
+    return next();
+  }
+  ctx.state.currentUser = user;
+  // console.log('ctx.state.currentUser', ctx.state.currentUser);
+  await next();
+});
+
+api.resourcer.use(async (ctx: actions.Context, next) => {
   const { resourceName } = ctx.action.params;
   const table = ctx.db.getTable(resourceName);
   // ctx.state.developerMode = {[Op.not]: null};
@@ -47,14 +68,22 @@ api.resourcer.use(async (ctx: actions.Context, next) => {
   }
   if (table) {
     const except = [];
+    const appends = [];
     for (const [name, field] of table.getFields()) {
       if (field.options.hidden) {
         except.push(field.options.name);
+      }
+      if (field.options.appends) {
+        appends.push(field.options.name);
       }
     }
     if (except.length) {
       ctx.action.setParam('fields.except', except);
     }
+    if (appends.length) {
+      ctx.action.setParam('fields.appends', appends);
+    }
+    console.log(ctx.action.params.fields);
   }
   await next();
 });
