@@ -117,6 +117,7 @@ export async function create(ctx: Context, next: Next) {
   } = ctx.action.params;
   const values = filterByFields(data, fields);
   const transaction = await ctx.db.sequelize.transaction();
+  const options = { transaction, context: ctx };
   let model: Model;
   if (associated && resourceField) {
     const AssociatedModel = ctx.db.getModel(associatedName);
@@ -125,15 +126,15 @@ export async function create(ctx: Context, next: Next) {
     }
     const { create } = resourceField.getAccessors();
     // @ts-ignore
-    model = await associated[create](values, { transaction, context: ctx });
-    await model.updateAssociations(values, { transaction, context: ctx });
+    model = await associated[create](values, options);
+    await model.updateAssociations(values, options);
     ctx.body = model;
   } else {
     const ResourceModel = ctx.db.getModel(resourceName);
     // @ts-ignore
-    model = await ResourceModel.create(values, { transaction, context: ctx });
+    model = await ResourceModel.create(values, options);
     // @ts-ignore
-    await model.updateAssociations(values, { transaction, context: ctx });
+    await model.updateAssociations(values, options);
     ctx.body = model;
   }
   await transaction.commit();
@@ -219,6 +220,7 @@ export async function update(ctx: Context, next: Next) {
   } = ctx.action.params;
   const values = filterByFields(data, fields);
   const transaction = await ctx.db.sequelize.transaction();
+  const options = { transaction, context: ctx };
   if (associated && resourceField) {
     const AssociatedModel = ctx.db.getModel(associatedName);
     if (!(associated instanceof AssociatedModel)) {
@@ -227,21 +229,20 @@ export async function update(ctx: Context, next: Next) {
     }
     const { get: getAccessor } = resourceField.getAccessors();
     if (resourceField instanceof HASONE || resourceField instanceof BELONGSTO) {
-      let model: Model = await associated[getAccessor]({ transaction, context: ctx });
+      let model: Model = await associated[getAccessor](options);
       if (model) {
         // @ts-ignore
-        await model.update(values, { transaction, context: ctx });
-        await model.updateAssociations(values, { transaction, context: ctx });
+        await model.update(values, options);
+        await model.updateAssociations(values, options);
         ctx.body = model;
       }
     } else if (resourceField instanceof HASMANY || resourceField instanceof BELONGSTOMANY) {
       const TargetModel = ctx.db.getModel(resourceField.getTarget());
       const [model]: Model[] = await associated[getAccessor]({
+        ...options,
         where: {
           [resourceKeyAttribute || resourceField.options.targetKey || TargetModel.primaryKeyAttribute]: resourceKey,
-        },
-        transaction,
-        context: ctx,
+        }
       });
 
       if (resourceField instanceof BELONGSTOMANY) {
@@ -257,32 +258,30 @@ export async function update(ctx: Context, next: Next) {
             },
             transaction
           });
-          await through.updateAssociations(throughValues, { transaction, context: ctx });
-          await through.update(throughValues, { transaction, context: ctx });
+          await through.updateAssociations(throughValues, options);
+          await through.update(throughValues, options);
           delete values[throughName];
         }
       }
       if (!_.isEmpty(values)) {
         // @ts-ignore
-        await model.update(values, { transaction, context: ctx });
-        await model.updateAssociations(values, { transaction, context: ctx });
+        await model.update(values, options);
+        await model.updateAssociations(values, options);
       }
       ctx.body = model;
     }
   } else {
     const Model = ctx.db.getModel(resourceName);
     const model = await Model.findOne({
+      ...options,
       where: {
         [resourceKeyAttribute || Model.primaryKeyAttribute]: resourceKey,
-      },
-      // @ts-ignore hooks 里添加 context
-      context: ctx,
-      transaction
+      }
     });
     // @ts-ignore
-    await model.update(values, { transaction, context: ctx });
+    await model.update(values, options);
     // @ts-ignore
-    await model.updateAssociations(values, { transaction, context: ctx });
+    await model.updateAssociations(values, options);
     ctx.body = model;
   }
   await transaction.commit();

@@ -20,24 +20,22 @@ export class Application extends Koa {
   }
 
   async plugins(plugins: any[]) {
-    for (const pluginOption of plugins) {
-      let plugin: Function;
-      let options = {};
-      if (Array.isArray(pluginOption)) {
-        plugin = pluginOption.shift();
-        options = pluginOption.shift()||{};
-        if (typeof plugin === 'function') {
-          plugin = plugin.bind(this);
-        } else if (typeof plugin === 'string') {
-          const libDir = __filename.endsWith('.ts') ? 'src' : 'lib';
-          plugin = require(`${plugin}/${libDir}/server`).default;
-          plugin = plugin.bind(this);
-        }
-      } else if (typeof pluginOption === 'function') {
-        plugin = pluginOption.bind(this);
+    for (const pluginOptions of plugins) {
+      if (Array.isArray(pluginOptions)) {
+        const [entry, options = {}] = pluginOptions;
+        await this.plugin(entry, options);
+      } else {
+        await this.plugin(pluginOptions);
       }
-      await plugin(options);
     }
+  }
+
+  async plugin(entry: string | Function, options: any = {}) {
+    const main = typeof entry === 'function'
+      ? entry
+      : require(`${entry}/${__filename.endsWith('.ts') ? 'src' : 'lib'}/server`).default;
+    
+    await main.call(this, options);
   }
 }
 
