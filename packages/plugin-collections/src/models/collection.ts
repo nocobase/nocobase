@@ -159,8 +159,9 @@ export class CollectionModel extends BaseModel {
         continue;
       }
       const Model = this.database.getModel(key);
-      for (const item of data[key]) {
+      for (const index in data[key]) {
         let model;
+        const item = data[key][index];
         if (item.name) {
           model = await Model.findOne({
             ...options,
@@ -179,11 +180,12 @@ export class CollectionModel extends BaseModel {
           });
         }
         if (model && update) {
-          await model.update(item, options);
+          await model.update({...item, sort: index+1}, options);
         }
         if (!model) {
           model = await Model.create({
             ...item,
+            sort: index+1,
             collection_name: collection.name,
           }, options);
         }

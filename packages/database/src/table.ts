@@ -238,12 +238,13 @@ export class Table {
    */
   public getRelatedTableNames(): Set<string> {
     const names = new Set<string>();
-    names.add(this.options.name);
+    this.options.name && names.add(this.options.name);
     for (const association of this.associations.values()) {
       const target = association.getTarget();
-      names.add(target);
+      target && names.add(target);
       if (association instanceof BELONGSTOMANY) {
-        names.add(association.getThroughName());
+        const throughName = association.getThroughName();
+        throughName && names.add(throughName);
       }
     }
     return names;

@@ -17,7 +17,7 @@ import { getDataTypeKey } from '.';
 import Table from '../table';
 import Database from '../database';
 import Model, { ModelCtor } from '../model';
-import { whereCompare } from '../utils';
+import { whereCompare, isNumber } from '../utils';
 
 export interface IField {
 
@@ -372,6 +372,16 @@ export interface BelongsToManyAccessors {
 
 export abstract class Relation extends Field {
 
+  public targetTableInit() {
+    const { target, fields = [] } = this.options;
+    if (target && fields.length) {
+      this.context.database.table({
+        name: target,
+        fields,
+      });
+    }
+  }
+
   public getAssociationType() {
     if (this instanceof HASONE) {
       return 'hasOne';
@@ -475,7 +485,9 @@ export class HASONE extends HasOneOrMany {
       target = Utils.pluralize(name);
     }
 
-    super({ target, ...options }, context);
+    super({target, ...options}, context);
+
+    this.targetTableInit();
   }
 
   public getAccessors(): HasOneAccessors {
@@ -503,6 +515,7 @@ export class HASMANY extends HasOneOrMany {
     }
 
     super({ target, ...options }, context);
+    this.targetTableInit();
   }
 
   public getAssociationOptions(): HasManyOptions {
@@ -527,6 +540,7 @@ export class BELONGSTO extends Relation {
 
     super({ target, ...options }, context);
 
+    this.targetTableInit();
     this.updateOptionsAfterTargetModelBeDefined();
   }
 
@@ -615,6 +629,7 @@ export class BELONGSTOMANY extends Relation {
       ...options,
     }, context);
 
+    this.targetTableInit();
     this.updateOptionsAfterTargetModelBeDefined();
 
     // through table 未特殊定义时，默认根据 through 信息配置 through table
@@ -698,6 +713,10 @@ export class SORT extends NUMBER {
 
   static async beforeCreateHook(this: SORT, model, options) {
     const { name, scope = [] } = this.options;
+    // 如果有值，跳过
+    if (isNumber(model.get(name))) {
+      return;
+    }
     const extremum: number = await this.getNextValue({
       ...options,
       where: model.getValuesByFieldNames(scope)
