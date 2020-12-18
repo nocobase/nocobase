@@ -340,12 +340,16 @@ export const linkTo = {
 
 export const createdBy = {
   title: '创建者',
-  disabled: true,
+  // disabled: true,
   options: {
     interface: 'createdBy',
-    type: 'belongsTo',
+    type: 'createdBy',
     name: 'createdBy',
     filterable: true,
+    target: 'users',
+    labelField: 'nickname',
+    foreignKey: 'created_by_id',
+    appends: true,
     component: {
       type: 'drawerSelect',
     },
@@ -372,12 +376,16 @@ export const createdAt = {
 
 export const updatedBy = {
   title: '更新人',
-  disabled: true,
+  // disabled: true,
   options: {
     interface: 'updatedBy',
     name: 'updatedBy',
-    type: 'belongsTo',
+    type: 'updatedBy',
     filterable: true,
+    target: 'users',
+    labelField: 'nickname',
+    foreignKey: 'created_by_id',
+    appends: true,
     component: {
       type: 'drawerSelect',
     },
