@@ -21,7 +21,7 @@ describe('user fields', () => {
   describe('', () => {
     it('', async () => {
       const response = await agent
-        .post('/api/attachments')
+        .post('/api/attachments:upload')
         .attach(FILE_FIELD_NAME, path.resolve(__dirname, './files/text.txt'));
       console.log(response.body);
     });

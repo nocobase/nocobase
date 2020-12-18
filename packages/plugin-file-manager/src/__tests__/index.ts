@@ -60,10 +60,11 @@ export async function getApp() {
   });
   app.resourcer.use(middlewares.associated);
   app.resourcer.registerActionHandlers({...actions.associate, ...actions.common});
-  await app.plugins([
-    [path.resolve(__dirname, '../../../plugin-collections')],
-    [plugin]
-  ]);
+  app.registerPlugins({
+    'collections': [path.resolve(__dirname, '../../../plugin-collections')],
+    'file-manager': [plugin]
+  });
+  await app.loadPlugins();
   await app.database.sync({
     force: true,
   });
