@@ -1,4 +1,4 @@
-function makeOptions(type: string, options: any) {
+export function makeOptions(type: string, options: any) {
   if (!options) {
     return;
   }
@@ -21,22 +21,30 @@ function makeOptions(type: string, options: any) {
   };
 }
 
-export default async function(model, options) {
-  const { database } = model;
-  const tableName = model.get('name') as string;
-  const table = database.getTable(tableName);
+export default async function(table) {
   const { createdBy, updatedBy } = table.getOptions();
   const fieldsToMake = { createdBy, updatedBy };
-  const addedFields = Object.keys(fieldsToMake)
+  Object.keys(fieldsToMake)
     .filter(type => Boolean(fieldsToMake[type]))
     .map(type => table.addField(makeOptions(type, fieldsToMake[type])));
-
-  if (addedFields.length) {
-    await table.sync({
-      force: false,
-      alter: {
-        drop: false,
-      }
-    });
-  }
 }
+
+// export default async function(model, options) {
+//   const { database } = model;
+//   const tableName = model.get('name') as string;
+//   const table = database.getTable(tableName);
+//   const { createdBy, updatedBy } = table.getOptions();
+//   const fieldsToMake = { createdBy, updatedBy };
+//   const addedFields = Object.keys(fieldsToMake)
+//     .filter(type => Boolean(fieldsToMake[type]))
+//     .map(type => table.addField(makeOptions(type, fieldsToMake[type])));
+
+//   if (addedFields.length) {
+//     await table.sync({
+//       force: false,
+//       alter: {
+//         drop: false,
+//       }
+//     });
+//   }
+// }

@@ -62,7 +62,7 @@ describe('user fields', () => {
     });
 
     // TODO(bug): 重复添加字段不能与 fields 表同步，应做到同步
-    it.only('add model and then add createdBy/updatedBy field', async () => {
+    it('add model and then add createdBy/updatedBy field', async () => {
       const Collection = db.getModel('collections');
       const collection = await Collection.import({
         name: 'posts',
