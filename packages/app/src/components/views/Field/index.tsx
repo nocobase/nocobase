@@ -3,6 +3,7 @@ import React, { useEffect, useState } from 'react';
 import moment from 'moment';
 import { Tag } from 'antd';
 import Icon from '@/components/icons';
+import get from 'lodash/get';
 
 const InterfaceTypes = new Map<string, any>();
 
@@ -111,6 +112,21 @@ export function DataSourceField(props: any) {
   )
 }
 
+export function RealtionField(props: any) {
+  const { schema: { labelField }, value } = props;
+  if (!value) {
+    return null;
+  }
+  const items = Array.isArray(value) ? value : [value];
+  return (
+    <>
+      {items.map(item => (
+        <span>{get(item, labelField)}</span>
+      ))}
+    </>
+  );
+}
+
 registerFieldComponents({
   string: StringField,
   textarea: TextareaField,
@@ -125,6 +141,8 @@ registerFieldComponents({
   createdAt: DateTimeField,
   updatedAt: DateTimeField,
   icon: IconField,
+  createdBy: RealtionField,
+  updatedBy: RealtionField,
 });
 
 export default function Field(props: any) {

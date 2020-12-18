@@ -1,11 +1,12 @@
+import path from 'path';
 import qs from 'qs';
-import plugin from '../server';
 import supertest from 'supertest';
 import bodyParser from 'koa-bodyparser';
 import { Dialect } from 'sequelize';
 import Database from '@nocobase/database';
 import { actions, middlewares } from '@nocobase/actions';
 import { Application, middleware } from '@nocobase/server';
+import plugin from '../server';
 
 function getTestKey() {
   const { id } = require.main;
@@ -32,7 +33,7 @@ const config = {
       },
     },
   },
-  logging: false,
+  logging: process.env.DB_LOG_SQL === 'on',
   sync: {
     force: true,
     alter: {
@@ -57,17 +58,12 @@ export async function getApp() {
   });
   app.resourcer.use(middlewares.associated);
   app.resourcer.registerActionHandlers({...actions.associate, ...actions.common});
-  app.registerPlugin('collections', [plugin]);
+  app.registerPlugin('collections', [path.resolve(__dirname, '../../../plugin-collections')]);
+  app.registerPlugin('users', [plugin]);
   await app.loadPlugins();
   await app.database.sync({
     force: true,
   });
-  // 表配置信息存到数据库里
-  // const tables = app.database.getTables([]);
-  // for (const table of tables) {
-  //   const Collection = app.database.getModel('collections');
-  //   await Collection.import(table.getOptions(), { hooks: false });
-  // }
   app.use(async (ctx, next) => {
     ctx.db = app.database;
     await next();
@@ -121,7 +117,6 @@ export function getAgent(app: Application): Agent {
             if (resourceKey) {
               url += `/${resourceKey}`;
             }
-            console.log(url);
             if (['list', 'get'].indexOf(method as string) !== -1) {
               return agent.get(`${url}?${qs.stringify(restParams)}`);
             } else {

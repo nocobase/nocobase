@@ -8,6 +8,8 @@ export default {
   draggable: true,
   model: 'CollectionModel',
   developerMode: true,
+  createdAt: 'createdTime',
+  updatedAt: 'updatedTime',
   fields: [
     {
       interface: 'sort',
@@ -145,9 +147,60 @@ export default {
     },
     {
       interface: 'boolean',
+      type: 'virtual',
+      name: 'createdAt',
+      title: '记录创建时间',
+      developerMode: true,
+      defaultValue: true,
+      component: {
+        type: 'checkbox',
+        default: true,
+        showInForm: true,
+      },
+    },
+    {
+      interface: 'boolean',
+      type: 'virtual',
+      name: 'updatedAt',
+      title: '记录修改时间',
+      developerMode: true,
+      defaultValue: true,
+      component: {
+        type: 'checkbox',
+        default: true,
+        showInForm: true,
+      },
+    },
+    {
+      interface: 'boolean',
+      type: 'virtual',
+      name: 'createdBy',
+      title: '记录创建人信息',
+      developerMode: true,
+      component: {
+        type: 'checkbox',
+        default: true,
+        showInForm: true,
+      },
+    },
+    {
+      interface: 'boolean',
+      type: 'virtual',
+      name: 'updatedBy',
+      title: '记录修改人信息',
+      developerMode: true,
+      component: {
+        type: 'checkbox',
+        default: true,
+        showInForm: true,
+      },
+    },
+    {
+      interface: 'boolean',
       type: 'boolean',
       name: 'developerMode',
       title: '开发者模式',
+      developerMode: true,
       defaultValue: false,
       component: {
         type: 'boolean',

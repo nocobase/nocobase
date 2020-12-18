@@ -38,6 +38,27 @@ const api = Api.create({
 });
 
 api.resourcer.use(async (ctx: actions.Context, next) => {
+  const token = ctx.get('Authorization').replace(/^Bearer\s+/gi, '');
+  // console.log('user check', ctx.action.params.actionName);
+  // const { actionName } = ctx.action.params;
+  if (!token) {
+    return next();
+  }
+  const User = ctx.db.getModel('users');
+  const user = await User.findOne({
+    where: {
+      token,
+    },
+  });
+  if (!user) {
+    return next();
+  }
+  ctx.state.currentUser = user;
+  // console.log('ctx.state.currentUser', ctx.state.currentUser);
+  await next();
+});
+
+api.resourcer.use(async (ctx: actions.Context, next) => {
   const { resourceName } = ctx.action.params;
   const table = ctx.db.getTable(resourceName);
   // ctx.state.developerMode = {[Op.not]: null};
@@ -52,7 +73,7 @@ api.resourcer.use(async (ctx: actions.Context, next) => {
       if (field.options.hidden) {
         except.push(field.options.name);
       }
-      if (field.options.visible) {
+      if (field.options.appends) {
         appends.push(field.options.name);
       }
     }
@@ -62,7 +83,7 @@ api.resourcer.use(async (ctx: actions.Context, next) => {
     if (appends.length) {
       ctx.action.setParam('fields.appends', appends);
     }
-    // console.log('ctx.action.params.fields', except, appends, ctx.action.params.fields);
+    console.log('ctx.action.params.fields', ctx.action.params.fields, except, appends);
   }
   await next();
 });
@@ -87,21 +108,16 @@ api.resourcer.use(async (ctx: actions.Context, next) => {
   }
   await next();
 });
+
 api.resourcer.use(associated);
 api.resourcer.registerActionHandlers({...actions.common, ...actions.associate});
 
+api.registerPlugin('plugin-collections', [path.resolve(__dirname, '../../../plugin-collections'), {}]);
+api.registerPlugin('plugin-pages', [path.resolve(__dirname, '../../../plugin-pages'), {}]);
+api.registerPlugin('plugin-users', [path.resolve(__dirname, '../../../plugin-users'), {}]);
+
 (async () => {
-  await api
-    .plugins([
-      [path.resolve(__dirname, '../../../plugin-collections'), {}],
-      [path.resolve(__dirname, '../../../plugin-pages'), {}],
-      [path.resolve(__dirname, '../../../plugin-users'), {}],
-      // [path.resolve(__dirname, '../../../plugin-permissions'), {}],
-      // [path.resolve(__dirname, '../../../plugin-file-manager'), {}],
-    ]);
-
-  // await api.database.getModel('collections').load();
-
+  await api.loadPlugins();
   api.listen(process.env.HTTP_PORT, () => {
     console.log(`http://localhost:${process.env.HTTP_PORT}/`);
   });

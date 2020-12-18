@@ -338,25 +338,13 @@ export const linkTo = {
   },
 };
 
-export const createdBy = {
-  title: '创建者',
-  disabled: true,
-  options: {
-    interface: 'createdBy',
-    type: 'belongsTo',
-    filterable: true,
-    component: {
-      type: 'drawerSelect',
-    },
-  },
-};
-
 export const createdAt = {
   title: '创建时间',
   options: {
     interface: 'createdAt',
     type: 'date',
-    name: 'created_at',
+    // name: 'created_at',
+    field: 'created_at',
     showTime: true,
     dateFormat: 'YYYY/MM/DD',
     timeFormat: 'HH:mm:ss',
@@ -369,33 +357,57 @@ export const createdAt = {
   },
 };
 
-export const updatedBy = {
-  title: '更新人',
-  disabled: true,
+export const updatedAt = {
+  title: '修改时间',
   options: {
-    interface: 'updatedBy',
-    type: 'belongsTo',
+    interface: 'updatedAt',
+    type: 'date',
+    // name: 'updated_at',
+    field: 'updated_at',
+    showTime: true,
+    dateFormat: 'YYYY/MM/DD',
+    timeFormat: 'HH:mm:ss',
+    required: true,
     filterable: true,
+    sortable: true,
+    component: {
+      type: 'date',
+    },
+  },
+};
+
+export const createdBy = {
+  title: '创建人',
+  // disabled: true,
+  options: {
+    interface: 'createdBy',
+    type: 'createdBy',
+    // name: 'createdBy',
+    filterable: true,
+    target: 'users',
+    labelField: 'nickname',
+    foreignKey: 'created_by_id',
+    appends: true,
     component: {
       type: 'drawerSelect',
     },
   },
 };
 
-export const updatedAt = {
-  title: '更新时间',
+export const updatedBy = {
+  title: '修改人',
+  // disabled: true,
   options: {
-    interface: 'updatedAt',
-    type: 'date',
-    name: 'updated_at',
-    showTime: true,
-    dateFormat: 'YYYY/MM/DD',
-    timeFormat: 'HH:mm:ss',
-    required: true,
+    interface: 'updatedBy',
+    // name: 'updatedBy',
+    type: 'updatedBy',
     filterable: true,
-    sortable: true,
+    target: 'users',
+    labelField: 'nickname',
+    foreignKey: 'created_by_id',
+    appends: true,
     component: {
-      type: 'date',
+      type: 'drawerSelect',
     },
   },
 };

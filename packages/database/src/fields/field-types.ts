@@ -430,7 +430,7 @@ export abstract class Relation extends Field {
     return {
       as: name,
       ...restOptions,
-    }
+    };
   }
 
   public getAssociationArguments() {
@@ -438,8 +438,8 @@ export abstract class Relation extends Field {
       target: this.getTarget(),
       type: this.getAssociationType(),
       options: this.getAssociationOptions(),
-    }
-  };
+    };
+  }
 }
 
 class HasOneOrMany extends Relation {
@@ -495,7 +495,7 @@ export class HASONE extends HasOneOrMany {
   }
 
   public getAssociationOptions(): HasOneOptions {
-    const { name, ...restOptions }= this.options;
+    const { name, ...restOptions } = this.options;
     return {
       as: name,
       ...restOptions,
@@ -514,17 +514,16 @@ export class HASMANY extends HasOneOrMany {
       target = name;
     }
 
-    super({target, ...options}, context);
-
+    super({ target, ...options }, context);
     this.targetTableInit();
   }
 
   public getAssociationOptions(): HasManyOptions {
-    const { name, ...restOptions }= this.options;
+    const { name, ...restOptions } = this.options;
     return {
       as: name,
       ...restOptions,
-    }
+    };
   }
 }
 
@@ -539,7 +538,7 @@ export class BELONGSTO extends Relation {
       target = Utils.pluralize(name);
     }
 
-    super({target, ...options}, context);
+    super({ target, ...options }, context);
 
     this.targetTableInit();
     this.updateOptionsAfterTargetModelBeDefined();
