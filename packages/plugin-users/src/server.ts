@@ -22,7 +22,16 @@ export default async function (options = {}) {
   });
 
   database.addHook('afterTableInit', (table) => {
-    const { createdBy, updatedBy } = table.getOptions();
+    let { createdBy, updatedBy, internal } = table.getOptions();
+    // 非内置表，默认创建 createdBy 和 updatedBy
+    if (!internal) {
+      if (typeof createdBy === 'undefined') {
+        createdBy = true;
+      }
+      if (typeof updatedBy === 'undefined') {
+        updatedBy = true;
+      }
+    }
     const fieldsToMake = { createdBy, updatedBy };
     Object.keys(fieldsToMake)
       .filter(type => Boolean(fieldsToMake[type]))
