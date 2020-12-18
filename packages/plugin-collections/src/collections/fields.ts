@@ -15,7 +15,6 @@ export default {
       name: 'sort',
       scope: ['collection'],
       title: '排序',
-      defaultValue: 1,
       component: {
         type: 'sort',
         className: 'drag-visible',
@@ -57,6 +56,7 @@ export default {
       type: 'string',
       name: 'interface',
       title: '字段类型',
+      required: true,
       dataSource: options,
       createOnly: true,
       component: {
@@ -89,6 +89,16 @@ export default {
             "type": "value:visible",
             "target": "timeFormat",
             "condition": "{{ ['time'].indexOf($self.value) !== -1 }}"
+          },
+          {
+            "type": "value:visible",
+            "target": "component.showInForm",
+            "condition": "{{ ['createdAt', 'updatedAt', 'createdBy', 'updatedBy'].indexOf($self.value) === -1 }}"
+          },
+          {
+            "type": "value:visible",
+            "target": "required",
+            "condition": "{{ ['createdAt', 'updatedAt', 'createdBy', 'updatedBy'].indexOf($self.value) === -1 }}"
           },
         ],
       },

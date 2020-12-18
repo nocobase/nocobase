@@ -32,6 +32,10 @@ const transforms = {
         title: field.title||field.name,
         ...(field.component||{}),
       }
+      if (field.get('name') === 'interface' && ctx.state.developerMode === false) {
+        const dataSource = field.get('dataSource').filter(item => item.key !== 'developerMode');
+        field.set('dataSource', dataSource);
+      }
       if (field.get('name') === 'filter' && field.get('collection_name') === 'views') {
         const { values } = ctx.action.params;
         const all = await Field.findAll({
@@ -76,7 +80,7 @@ const transforms = {
         set(prop, 'x-component-props.mode', 'multiple');
       }
       if (['radio', 'select', 'multipleSelect', 'checkboxes'].includes(interfaceType)) {
-        prop.enum = get(field.options, 'dataSource', []);
+        prop.enum = field.get('dataSource');
       }
       schema[field.name] = {
         ...prop,

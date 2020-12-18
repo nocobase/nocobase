@@ -6,6 +6,7 @@ export * as types from './types';
 
 export const options = [
   {
+    key: 'basic',
     title: '基本类型',
     children: [
       types.string,
@@ -17,6 +18,7 @@ export const options = [
     ],
   },
   {
+    key: 'media',
     title: '多媒体类型',
     children: [
       types.wysiwyg,
@@ -24,6 +26,7 @@ export const options = [
     ],
   },
   {
+    key: 'choices',
     title: '选择类型',
     children: [
       types.boolean,
@@ -34,6 +37,7 @@ export const options = [
     ],
   },
   {
+    key: 'datetime',
     title: '日期和时间',
     children: [
       types.datetime,
@@ -41,6 +45,7 @@ export const options = [
     ],
   },
   {
+    key: 'relation',
     title: '关系类型',
     children: [
       types.subTable,
@@ -48,15 +53,17 @@ export const options = [
     ],
   },
   {
+    key: 'systemInfo',
     title: '系统信息',
     children: [
       types.createdAt,
-      types.createdBy,
       types.updatedAt,
+      types.createdBy,
       types.updatedBy,
     ],
   },
   {
+    key: 'developerMode',
     title: '开发者模式',
     children: [
       types.primaryKey,
@@ -66,7 +73,8 @@ export const options = [
       types.icon,
     ],
   }
-].map(({title, children}: any) => ({
+].map(({key, title, children}: any) => ({
+  key,
   label: title,
   children: children.map(child => ({
     label: child.title,

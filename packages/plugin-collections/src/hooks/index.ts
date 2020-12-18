@@ -10,6 +10,7 @@ export default {
   collections: {
     beforeValidate: collectionsBeforeValidate,
     afterCreate: collectionsAfterCreate,
+    afterUpdate: collectionsAfterCreate,
   },
   fields: {
     beforeValidate: fieldsBeforeValidate,

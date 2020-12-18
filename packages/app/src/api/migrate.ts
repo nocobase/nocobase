@@ -7,7 +7,7 @@ import associated from '../../../actions/src/middlewares/associated';
 
 console.log(process.argv);
 
-const clean = false;
+const clean = true;
 
 const sync = {
   force: clean,
@@ -157,18 +157,13 @@ const data = [
   }
 ];
 
+api.registerPlugin('plugin-collections', [path.resolve(__dirname, '../../../plugin-collections'), {}]);
+api.registerPlugin('plugin-pages', [path.resolve(__dirname, '../../../plugin-pages'), {}]);
+api.registerPlugin('plugin-users', [path.resolve(__dirname, '../../../plugin-users'), {}]);
+
 (async () => {
-  await api
-    .plugins([
-      [path.resolve(__dirname, '../../../plugin-collections'), {}],
-      [path.resolve(__dirname, '../../../plugin-pages'), {}],
-      // [path.resolve(__dirname, '../../../plugin-permissions'), {}],
-      [path.resolve(__dirname, '../../../plugin-users'), {}],
-      // [path.resolve(__dirname, '../../../plugin-file-manager'), {}],
-    ]);
-
+  await api.loadPlugins();
   const database: Database = api.database;
-
   await database.sync({
     // tables: ['collections', 'fields', 'actions', 'views', 'tabs'],
   });

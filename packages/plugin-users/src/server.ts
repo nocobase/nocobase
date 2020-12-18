@@ -4,13 +4,12 @@ import Database, { registerFields } from '@nocobase/database';
 import Resourcer from '@nocobase/resourcer';
 
 import * as fields from './fields';
-import hooks from './hooks';
+// import hooks from './hooks';
 import login from './actions/login';
 import register from './actions/register';
 import logout from './actions/logout';
 import check from './actions/check';
-
-
+import { makeOptions } from './hooks/collection-after-create';
 
 export default async function (options = {}) {
   const database: Database = this.database;
@@ -22,7 +21,24 @@ export default async function (options = {}) {
     directory: path.resolve(__dirname, 'collections'),
   });
 
-  hooks.call(this);
+  database.addHook('afterTableInit', (table) => {
+    let { createdBy, updatedBy, internal } = table.getOptions();
+    // 非内置表，默认创建 createdBy 和 updatedBy
+    if (!internal) {
+      if (typeof createdBy === 'undefined') {
+        createdBy = true;
+      }
+      if (typeof updatedBy === 'undefined') {
+        updatedBy = true;
+      }
+    }
+    const fieldsToMake = { createdBy, updatedBy };
+    Object.keys(fieldsToMake)
+      .filter(type => Boolean(fieldsToMake[type]))
+      .map(type => table.addField(makeOptions(type, fieldsToMake[type])));
+  });
+
+  // hooks.call(this);
 
   resourcer.registerActionHandlers({
     'users:login': login,
