@@ -115,13 +115,16 @@ export function DataSourceField(props: any) {
 export function RealtionField(props: any) {
   const { schema: { labelField }, value } = props;
   if (!value) {
-    return;
+    return null;
   }
-  console.log(labelField, value);
   const items = Array.isArray(value) ? value : [value];
-  return items.map(item => (
-    <span>{get(item, labelField)}</span>
-  ));
+  return (
+    <>
+      {items.map(item => (
+        <span>{get(item, labelField)}</span>
+      ))}
+    </>
+  );
 }
 
 registerFieldComponents({
