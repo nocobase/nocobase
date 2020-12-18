@@ -4,6 +4,8 @@ import Resourcer from '@nocobase/resourcer';
 
 import * as fields from './fields';
 import { IStorage } from './storages';
+import uploadAction from './actions/upload';
+import uploadMiddleware from './middlewares/upload';
 
 export interface FileManagerOptions {
   storages: IStorage[]
@@ -19,7 +21,7 @@ export default async function (options: FileManagerOptions) {
     directory: path.resolve(__dirname, 'collections'),
   });
 
-  resourcer.import({
-    directory: path.resolve(__dirname, 'resources'),
-  });
+  // 暂时中间件只能通过 use 加进来
+  resourcer.use(uploadMiddleware);
+  resourcer.registerActionHandler('upload', uploadAction);
 }
