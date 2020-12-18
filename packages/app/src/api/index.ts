@@ -83,7 +83,7 @@ api.resourcer.use(async (ctx: actions.Context, next) => {
     if (appends.length) {
       ctx.action.setParam('fields.appends', appends);
     }
-    console.log(ctx.action.params.fields);
+    console.log('ctx.action.params.fields', ctx.action.params.fields, except, appends);
   }
   await next();
 });
@@ -108,21 +108,16 @@ api.resourcer.use(async (ctx: actions.Context, next) => {
   }
   await next();
 });
+
 api.resourcer.use(associated);
 api.resourcer.registerActionHandlers({...actions.common, ...actions.associate});
 
+api.registerPlugin('plugin-collections', [path.resolve(__dirname, '../../../plugin-collections'), {}]);
+api.registerPlugin('plugin-pages', [path.resolve(__dirname, '../../../plugin-pages'), {}]);
+api.registerPlugin('plugin-users', [path.resolve(__dirname, '../../../plugin-users'), {}]);
+
 (async () => {
-  await api
-    .plugins([
-      [path.resolve(__dirname, '../../../plugin-collections'), {}],
-      [path.resolve(__dirname, '../../../plugin-pages'), {}],
-      [path.resolve(__dirname, '../../../plugin-users'), {}],
-      // [path.resolve(__dirname, '../../../plugin-permissions'), {}],
-      // [path.resolve(__dirname, '../../../plugin-file-manager'), {}],
-    ]);
-
-  // await api.database.getModel('collections').load();
-
+  await api.loadPlugins();
   api.listen(process.env.HTTP_PORT, () => {
     console.log(`http://localhost:${process.env.HTTP_PORT}/`);
   });
