@@ -19,12 +19,22 @@ describe('user fields', () => {
   describe('model definition', () => {
     it('add model without createdBy/updatedBy field', async () => {
       const Collection = db.getModel('collections');
-      await Collection.create({ name: 'posts' });
+      await Collection.create({ name: 'posts', internal: true });
       const Post = db.getModel('posts');
 
       const post = await Post.create();
       expect(post.created_by_id).toBeUndefined();
       expect(post.updated_by_id).toBeUndefined();
+    });
+
+    it('add model without createdBy/updatedBy field', async () => {
+      const Collection = db.getModel('collections');
+      await Collection.create({ name: 'posts' });
+      const Post = db.getModel('posts');
+
+      const post = await Post.create();
+      expect(post.created_by_id).toBeDefined();
+      expect(post.updated_by_id).toBeDefined();
     });
 
     it('add model with named createdBy/updatedBy field', async () => {

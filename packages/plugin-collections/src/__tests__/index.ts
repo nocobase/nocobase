@@ -57,7 +57,8 @@ export async function getApp() {
   });
   app.resourcer.use(middlewares.associated);
   app.resourcer.registerActionHandlers({...actions.associate, ...actions.common});
-  await app.plugins([plugin]);
+  app.registerPlugin('collections', [plugin]);
+  await app.loadPlugins();
   await app.database.sync({
     force: true,
   });
