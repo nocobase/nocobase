@@ -3,8 +3,8 @@ import { TableOptions } from '@nocobase/database';
 export default {
   title: '示例',
   showInDataMenu: true,
-  createdBy: true,
-  updatedBy: true,
+  // createdBy: true,
+  // updatedBy: true,
   fields: [
     {
       interface: 'string',
