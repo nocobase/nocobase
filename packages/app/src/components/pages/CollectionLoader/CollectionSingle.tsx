@@ -5,6 +5,7 @@ import { getPathName, redirectTo } from './utils';
 import api from '@/api-client';
 import { useRequest } from 'umi';
 import { Spin } from '@nocobase/client';
+import { Helmet } from 'umi';
 
 export function CollectionSingle(props) {
   console.log(props);
@@ -26,6 +27,9 @@ export function CollectionSingle(props) {
   }
   return (
     <div>
+      <Helmet>
+        <title>{data.pageTitle}</title>
+      </Helmet>
       <PageHeader
         ghost={false}
         onBack={() => {

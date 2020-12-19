@@ -12,6 +12,7 @@ export default {
       name: 'username',
       title: '用户名',
       unique: true,
+      required: true,
       component: {
         type: 'string',
         showInTable: true,
@@ -24,6 +25,7 @@ export default {
       type: 'string',
       name: 'nickname',
       title: '昵称',
+      required: true,
       component: {
         type: 'string',
         showInTable: true,
@@ -49,6 +51,7 @@ export default {
       type: 'password',
       name: 'password',
       title: '密码',
+      required: true,
       hidden: true,
       component: {
         type: 'password',
@@ -62,9 +65,6 @@ export default {
       title: 'Token',
       unique: true,
       hidden: true,
-      component: {
-        type: 'string',
-      },
     },
   ],
   actions: [

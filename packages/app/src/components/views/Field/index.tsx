@@ -1,9 +1,10 @@
 
 import React, { useEffect, useState } from 'react';
 import moment from 'moment';
-import { Tag } from 'antd';
+import { Tag, Popover } from 'antd';
 import Icon from '@/components/icons';
 import get from 'lodash/get';
+import isEmpty from 'lodash/isEmpty';
 
 const InterfaceTypes = new Map<string, any>();
 
@@ -32,7 +33,20 @@ export function StringField(props: any) {
 }
 
 export function TextareaField(props: any) {
-  const { value } = props;
+  const { value, viewType } = props;
+  if (!value) {
+    return null;
+  }
+  if (viewType !== 'table') {
+    return value;
+  }
+  if (value.length > 20) {
+    return (
+      <Popover content={<div onClick={(e) => {
+        e.stopPropagation();
+      }} style={{maxWidth: 300}}>{value}</div>}>{value.substring(0, 15)}...</Popover>
+    );
+  }
   return (
     <>{value}</>
   );
@@ -52,8 +66,21 @@ export function NumberField(props: any) {
   );
 }
 
+export function isNumber(num) {
+  if (typeof num === 'number') {
+    return num - num === 0;
+  }
+  if (typeof num === 'string' && num.trim() !== '') {
+    return Number.isFinite ? Number.isFinite(+num) : isFinite(+num);
+  }
+  return false;
+};
+
 export function PercentField(props: any) {
   const { schema: { precision }, value } = props;
+  if (!isNumber(value)) {
+    return null;
+  }
   return (
     <>{value}%</>
   );
@@ -94,6 +121,9 @@ export function DataSourceField(props: any) {
   const { schema: { dataSource = [] }, value } = props;
   const items = toFlat(dataSource);
   console.log(items);
+  if (isEmpty(value)) {
+    return null;
+  }
   if (Array.isArray(value)) {
     return value.map(val => {
       const item = items.find(item => item.value === val);
