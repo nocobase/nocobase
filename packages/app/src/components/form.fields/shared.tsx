@@ -44,7 +44,7 @@ const createEnum = (enums: any) => {
 }
 
 export const Select: React.FC<SelectProps> = styled((props: SelectProps) => {
-  const { dataSource = [], onChange, ...others } = props
+  const { dataSource = [], onChange, value, ...others } = props
   const children = createEnum(dataSource).map(item => {
     const { label, value, children = [], ...others } = item
     if (children.length) {
@@ -78,6 +78,7 @@ export const Select: React.FC<SelectProps> = styled((props: SelectProps) => {
     <AntSelect
       className={props.className}
       {...others}
+      value={value === null ? undefined : value}
       onChange={(value: any, options: any) => {
         onChange(
           value,

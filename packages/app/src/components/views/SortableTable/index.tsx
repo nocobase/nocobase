@@ -56,7 +56,7 @@ export const components = ({data = {}, rowKey, mutate, onMoved}: Props) => {
 
 export function fields2columns(fields) {
   const columns: any[] = fields.map(field => {
-    field.render = (value) => field.interface === 'sort' ? <DragHandle/> : <Field schema={field} value={value}/>;
+    field.render = (value) => field.interface === 'sort' ? <DragHandle/> : <Field viewType={'table'} schema={field} value={value}/>;
     return {
       ...field,
       ...(field.component||{}),
