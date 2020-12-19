@@ -3,6 +3,7 @@ import ViewFactory from '@/components/views';
 import { PageHeader, Tabs, Button, Statistic, Descriptions } from 'antd';
 import { useRequest, request, Spin } from '@nocobase/client';
 import { getPathName } from './utils';
+import { Helmet } from 'umi';
 
 export function CollectionIndex(props) {
   const { lastPage } = props;
@@ -11,6 +12,9 @@ export function CollectionIndex(props) {
 
   return (
     <div>
+      <Helmet>
+        <title>{title}</title>
+      </Helmet>
       <PageHeader
         ghost={false}
         title={title}
