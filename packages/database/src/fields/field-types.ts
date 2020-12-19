@@ -65,7 +65,6 @@ export class Column extends Field {
     if (DataTypes[type]) {
       return DataTypes[type];
     }
-
     return DataTypes[(<typeof Column>this.constructor).name.toUpperCase()];
   }
 
@@ -330,6 +329,9 @@ export class JSON extends Column {
 }
 
 export class JSONB extends Column {
+}
+
+export class UUID extends Column {
 }
 
 export interface HasOneAccessors {
