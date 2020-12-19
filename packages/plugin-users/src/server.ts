@@ -47,7 +47,7 @@ export default async function (options = {}) {
     'users:check': check,
   });
 
-  resourcer.import({
-    directory: path.resolve(__dirname, 'resources'),
-  });
+  // resourcer.import({
+  //   directory: path.resolve(__dirname, 'resources'),
+  // });
 }
