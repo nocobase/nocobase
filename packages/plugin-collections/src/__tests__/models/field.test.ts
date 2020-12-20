@@ -85,23 +85,11 @@ describe('models.field', () => {
     });
     const Test = app.database.getModel('tests');
     const Sub = app.database.getModel('subs');
-    console.log(Test.associations);
-    console.log(Sub.rawAttributes);
+    // console.log(Test.associations);
+    // console.log(Sub.rawAttributes);
     const test = await Test.create({});
-    await test.updateAssociations({
-      subs: [
-        {
-          name: 'name1',
-          title: 'title1',
-        },
-      ],
-    });
-    await Sub.create({
-      name: 'name2',
-      title: 'title2',
-    });
-    const subs = await test.getSubs();
-    console.log(subs);
+    const sub = await test.createSub({name: 'name1', title: 'title1'});
+    expect(sub.toJSON()).toMatchObject({name: 'name1', title: 'title1'})
   });
 
   it('sub table field', async () => {
