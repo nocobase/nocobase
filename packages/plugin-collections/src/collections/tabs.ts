@@ -55,7 +55,7 @@ export default {
       required: true,
       dataSource: [
         { label: '详情数据', value: 'details' },
-        { label: '相关数据', value: 'association', disabled: true },
+        { label: '相关数据', value: 'association' },
         { label: '模块组合', value: 'module', disabled: true },
       ],
       component: {
@@ -78,7 +78,7 @@ export default {
       name: 'association',
       title: '相关数据表',
       component: {
-        type: 'string',
+        type: 'drawerSelect',
         showInDetail: true,
         showInForm: true,
       },

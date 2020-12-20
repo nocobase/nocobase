@@ -4,6 +4,8 @@ import { FieldOptions } from '@nocobase/database';
 import * as types from '../interfaces/types';
 import { merge } from '../utils';
 import { BuildOptions } from 'sequelize';
+import { SaveOptions, Utils } from 'sequelize';
+import { generateCollectionName } from './collection';
 
 export function generateFieldName(title?: string): string {
   return `f_${Math.random().toString(36).replace('0.', '').slice(-4).padStart(4, '0')}`;
@@ -23,10 +25,21 @@ export class FieldModel extends BaseModel {
       let args = [options, data];
       // @ts-ignore
       data = merge(...args);
+      if (['hasOne', 'hasMany', 'belongsTo', 'belongsToMany'].includes(data.type)) {
+        if (!data.name) {
+          data.name = generateFieldName();
+          data.target  = generateCollectionName();
+        }
+        if (!data.target) {
+          data.target = ['hasOne', 'belongsTo'].includes(data.type) ? Utils.pluralize(data.name) : data.name;
+        }
+      }
+      if (!data.name) {
+        data.name = generateFieldName();
+      }
     }
     // @ts-ignore
     super(data, options);
-    // console.log(data);
   }
 
   generateName() {

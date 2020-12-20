@@ -1,10 +1,11 @@
 
 import React, { useEffect, useState } from 'react';
 import moment from 'moment';
-import { Tag, Popover } from 'antd';
+import { Tag, Popover, Table } from 'antd';
 import Icon from '@/components/icons';
 import get from 'lodash/get';
 import isEmpty from 'lodash/isEmpty';
+import { fields2columns } from '../SortableTable';
 
 const InterfaceTypes = new Map<string, any>();
 
@@ -27,6 +28,12 @@ function getFieldComponent(type) {
 
 export function StringField(props: any) {
   const { value } = props;
+  if (!value) {
+    return null;
+  }
+  if (typeof value === 'object') {
+    return JSON.stringify(value);
+  }
   return (
     <>{value}</>
   );
@@ -157,6 +164,19 @@ export function RealtionField(props: any) {
   );
 }
 
+export function SubTableField(props: any) {
+  const { schema: { children }, value } = props;
+  console.log(value);
+  if (!Array.isArray(value)) {
+    return null;
+  }
+  return (
+    <div>
+      <Table columns={fields2columns(children)} dataSource={value} pagination={false}/>
+    </div>
+  );
+}
+
 registerFieldComponents({
   string: StringField,
   textarea: TextareaField,
@@ -173,6 +193,7 @@ registerFieldComponents({
   icon: IconField,
   createdBy: RealtionField,
   updatedBy: RealtionField,
+  subTable: SubTableField,
 });
 
 export default function Field(props: any) {

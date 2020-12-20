@@ -61,6 +61,100 @@ export default {
       },
     },
     {
+      interface: 'boolean',
+      title: '是/否',
+      component: {
+        showInTable: true,
+        showInDetail: true,
+        showInForm: true,
+      },
+    },
+    {
+      interface: 'select',
+      title: '下拉',
+      dataSource: [
+        {value: 'value1', label: '选项1'},
+        {value: 'value2', label: '选项2'},
+        {value: 'value3', label: '选项3'},
+      ],
+      component: {
+        showInTable: true,
+        showInDetail: true,
+        showInForm: true,
+      },
+    },
+    {
+      interface: 'multipleSelect',
+      title: '下拉多选',
+      dataSource: [
+        {value: 'value1', label: '选项1'},
+        {value: 'value2', label: '选项2'},
+        {value: 'value3', label: '选项3'},
+      ],
+      component: {
+        showInTable: true,
+        showInDetail: true,
+        showInForm: true,
+      },
+    },
+    {
+      interface: 'radio',
+      title: '单选框',
+      dataSource: [
+        {value: 'value1', label: '选项1'},
+        {value: 'value2', label: '选项2'},
+        {value: 'value3', label: '选项3'},
+      ],
+      component: {
+        showInTable: true,
+        showInDetail: true,
+        showInForm: true,
+      },
+    },
+    {
+      interface: 'checkboxes',
+      title: '多选框',
+      dataSource: [
+        {value: 'value1', label: '选项1'},
+        {value: 'value2', label: '选项2'},
+        {value: 'value3', label: '选项3'},
+      ],
+      component: {
+        showInTable: true,
+        showInDetail: true,
+        showInForm: true,
+      },
+    },
+    {
+      interface: 'subTable',
+      title: '子表格',
+      children: [
+        {
+          interface: 'string',
+          title: '标题',
+          component: {
+            showInTable: true,
+            showInDetail: true,
+            showInForm: true,
+          },
+        },
+        {
+          interface: 'textarea',
+          title: '内容',
+          component: {
+            showInTable: true,
+            showInDetail: true,
+            showInForm: true,
+          },
+        },
+      ],
+      component: {
+        // showInTable: true,
+        showInDetail: true,
+        showInForm: true,
+      },
+    },
+    {
       interface: 'datetime',
       title: '日期',
       component: {
@@ -76,6 +170,24 @@ export default {
         showInTable: true,
         showInDetail: true,
         showInForm: true,
+      },
+    },
+    {
+      interface: 'createdBy',
+      title: '创建人',
+      component: {
+        showInTable: true,
+        showInDetail: true,
+        // showInForm: true,
+      },
+    },
+    {
+      interface: 'updatedBy',
+      title: '更新人',
+      component: {
+        showInTable: true,
+        showInDetail: true,
+        // showInForm: true,
       },
     },
     {
