@@ -21,9 +21,10 @@ import { Spin } from '@nocobase/client';
 export default forwardRef((props: any, ref) => {
   console.log(props);
   const {
+    target,
     onFinish,
   } = props;
-  const { data: schema = {}, loading } = useRequest(() => api.resource('fields').getView({
+  const { data: schema = {}, loading } = useRequest(() => api.resource(target).getView({
     resourceKey: 'form'
   }));
   const [visible, setVisible] = useState(false);

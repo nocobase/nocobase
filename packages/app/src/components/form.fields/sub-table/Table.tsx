@@ -36,9 +36,9 @@ export default function Table(props: SimpleTableProps) {
     onChange: onTableChange,
   }
   const { rowKey = '__id', fields = [] } = props;
-  const { value = [], onChange } = props;
+  const { target = 'fields', value = [], onChange } = props;
 
-  const { data: schema = {}, loading } = useRequest(() => api.resource('fields').getView({
+  const { data: schema = {}, loading } = useRequest(() => api.resource(target).getView({
     resourceKey: 'simple'
   }));
 
@@ -65,7 +65,7 @@ export default function Table(props: SimpleTableProps) {
           </Popconfirm>
         </Space>
       </div>
-      <Form onFinish={(values, index: number) => {
+      <Form target={target} onFinish={(values, index: number) => {
         console.log(values);
         const newVaules = [...value];
         if (typeof index === 'undefined') {

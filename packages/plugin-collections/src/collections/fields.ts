@@ -117,6 +117,11 @@ export default {
           },
           {
             "type": "value:visible",
+            "target": "component.showInTable",
+            "condition": "{{ ['subTable'].indexOf($self.value) === -1 }}"
+          },
+          {
+            "type": "value:visible",
             "target": "component.showInForm",
             "condition": "{{ ['createdAt', 'updatedAt', 'createdBy', 'updatedBy'].indexOf($self.value) === -1 }}"
           },
@@ -183,7 +188,6 @@ export default {
       type: 'virtual',
       name: 'precision',
       title: '精度',
-      defaultValue: 1,
       dataSource: [
         {value: 1, label: '1'},
         {value: 0.1, label: '1.0'},
@@ -194,6 +198,7 @@ export default {
       component: {
         type: 'number',
         showInForm: true,
+        default: 1,
       },
     },
     {
@@ -201,7 +206,6 @@ export default {
       type: 'virtual',
       name: 'dateFormat',
       title: '日期格式',
-      defaultValue: 'YYYY/MM/DD',
       dataSource: [
         {value: 'YYYY/MM/DD', label: '年/月/日'},
         {value: 'YYYY-MM-DD', label: '年-月-日'},
@@ -210,6 +214,7 @@ export default {
       component: {
         type: 'string',
         showInForm: true,
+        default: 'YYYY/MM/DD',
       },
     },
     {
@@ -217,10 +222,10 @@ export default {
       type: 'virtual',
       name: 'showTime',
       title: '显示时间',
-      defaultValue: false,
       component: {
         type: 'boolean',
         showInForm: true,
+        default: false,
         "x-linkages": [
           {
             "type": "value:visible",
@@ -235,7 +240,6 @@ export default {
       type: 'virtual',
       name: 'timeFormat',
       title: '时间格式',
-      defaultValue: 'HH:mm:ss',
       dataSource: [
         { value: 'HH:mm:ss', label: '24小时制' },
         { value: 'hh:mm:ss a', label: '12小时制' },
@@ -243,6 +247,7 @@ export default {
       component: {
         type: 'string',
         showInForm: true,
+        default: 'HH:mm:ss',
       },
     },
     {
@@ -260,7 +265,7 @@ export default {
     },
     {
       interface: 'string',
-      type: 'string',
+      type: 'virtual',
       name: 'target',
       title: '要关联的数据表',
       component: {
@@ -271,7 +276,7 @@ export default {
     },
     {
       interface: 'string',
-      type: 'string',
+      type: 'virtual',
       name: 'labelField',
       title: '要关联的字段',
       component: {
@@ -282,7 +287,7 @@ export default {
     },
     {
       interface: 'boolean',
-      type: 'boolean',
+      type: 'virtual',
       name: 'multiple',
       title: '允许添加多条记录',
       component: {
@@ -294,7 +299,7 @@ export default {
     },
     {
       interface: 'boolean',
-      type: 'boolean',
+      type: 'virtual',
       name: 'createable',
       title: '允许直接在关联的数据表内新建数据',
       component: {
@@ -313,7 +318,7 @@ export default {
       title: '子表格字段',
       // visible: true,
       component: {
-        type: 'fields',
+        type: 'subTable',
         default: [],
         // showInTable: true,
         // showInDetail: true,

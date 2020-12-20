@@ -61,9 +61,9 @@ export class CollectionModel extends BaseModel {
     const associationTableNames = [];
     for (const [key, association] of table.getAssociations()) {
       // TODO：是否需要考虑重载的情况？（暂时是跳过处理）
-      if (!this.database.isDefined(association.options.target)) {
-        continue;
-      }
+      // if (!this.database.isDefined(association.options.target)) {
+      //   continue;
+      // }
       associationTableNames.push(association.options.target);
     }
     if (associationTableNames.length) {

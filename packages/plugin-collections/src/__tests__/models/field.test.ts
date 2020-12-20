@@ -50,4 +50,92 @@ describe('models.field', () => {
       {label: 'xx', value: 'xx'},
     ]);
   });
+
+  it.only('sub table field', async () => {
+    const [Collection, Field] = app.database.getModels(['collections', 'fields']);
+    const options = {
+      title: 'tests',
+      name: 'tests',
+      fields: [
+        {
+          interface: 'subTable',
+          title: '子表格',
+          name: 'subs',
+          children: [
+            {
+              interface: 'string',
+              title: '名称',
+              name: 'name',
+            },
+          ],
+        },
+      ],
+    };
+    const collection = await Collection.create(options);
+    await collection.updateAssociations(options);
+    const field = await Field.findOne({
+      where: {
+        title: '子表格',
+      },
+    });
+    await field.createChild({
+      interface: 'string',
+      title: '名称',
+      name: 'title',
+    });
+    const Test = app.database.getModel('tests');
+    const Sub = app.database.getModel('subs');
+    console.log(Test.associations);
+    console.log(Sub.rawAttributes);
+    const test = await Test.create({});
+    await test.updateAssociations({
+      subs: [
+        {
+          name: 'name1',
+          title: 'title1',
+        },
+      ],
+    });
+    await Sub.create({
+      name: 'name2',
+      title: 'title2',
+    });
+    const subs = await test.getSubs();
+    console.log(subs);
+  });
+
+  it('sub table field', async () => {
+    const [Collection, Field] = app.database.getModels(['collections', 'fields']);
+    // @ts-ignore
+    const options = {
+      title: 'tests',
+      name: 'tests',
+      fields: [
+        {
+          interface: 'subTable',
+          title: '子表格',
+          // name: 'subs',
+          children: [
+            {
+              interface: 'string',
+              title: '名称',
+              // name: 'name',
+            },
+          ],
+        },
+      ],
+    };
+    const collection = await Collection.create(options);
+    await collection.updateAssociations(options);
+    const field = await Field.findOne({
+      where: {
+        title: '子表格',
+      },
+    });
+    await field.createChild({
+      interface: 'string',
+      title: '名称',
+      name: 'title',
+    });
+  });
 });

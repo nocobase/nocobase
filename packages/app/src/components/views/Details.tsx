@@ -17,15 +17,16 @@ export function Details(props: any) {
     associatedKey,
     resourceKey,
   } = props;
+  const { actions = [], fields = [] } = props.schema;
   const { data = {}, loading, refresh } = useRequest(() => {
     const name = associatedName ? `${associatedName}.${resourceName}` : resourceName;
     return api.resource(name).get({
       resourceKey,
       associatedKey,
+      'fields[appends]': fields.filter(field => get(field, 'interface') === 'subTable').map(field => field.name).join(',')
     });
   });
   console.log(props);
-  const { actions = [], fields = [] } = props.schema;
   return (
     <Card bordered={false}>
       <Actions
@@ -40,7 +41,7 @@ export function Details(props: any) {
         <Descriptions bordered column={1}>
           {fields.map((field: any) => {
             return (
-              <Descriptions.Item labelStyle={{minWidth: 200}} label={field.title||field.name}>
+              <Descriptions.Item labelStyle={{minWidth: 200, maxWidth: 300, width: 300}} label={field.title||field.name}>
                 <Field viewType={'descriptions'} schema={field} value={get(data, field.name)}/>
               </Descriptions.Item>
             )
