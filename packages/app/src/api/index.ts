@@ -6,9 +6,9 @@ import associated from '../../../actions/src/middlewares/associated';
 import { Op } from 'sequelize';
 
 const sync = {
-  force: true,
+  force: false,
   alter: {
-    drop: true,
+    drop: false,
   },
 };
 
@@ -59,7 +59,7 @@ api.resourcer.use(async (ctx: actions.Context, next) => {
 });
 
 api.resourcer.use(async (ctx: actions.Context, next) => {
-  const { resourceName } = ctx.action.params;
+  const { resourceName, fields = {} } = ctx.action.params;
   const table = ctx.db.getTable(resourceName);
   // ctx.state.developerMode = {[Op.not]: null};
   ctx.state.developerMode = false;
@@ -67,8 +67,8 @@ api.resourcer.use(async (ctx: actions.Context, next) => {
     ctx.action.setParam('filter.developerMode', ctx.state.developerMode);
   }
   if (table) {
-    const except = [];
-    const appends = [];
+    const except = fields.except || [];
+    const appends = fields.appends || [];
     for (const [name, field] of table.getFields()) {
       if (field.options.hidden) {
         except.push(field.options.name);

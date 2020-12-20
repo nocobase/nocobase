@@ -14,6 +14,8 @@ import { Range } from './range'
 import { Rating } from './rating'
 import { Upload } from './upload'
 import { Filter } from './filter'
+import { DrawerSelect } from './drawer-select'
+import { SubTable } from './sub-table'
 
 export const setup = () => {
   registerFormFields({
@@ -43,5 +45,7 @@ export const setup = () => {
     rating: Rating,
     upload: Upload,
     filter: Filter,
+    drawerSelect: DrawerSelect,
+    subTable: SubTable,
   })
 }

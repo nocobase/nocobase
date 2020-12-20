@@ -173,17 +173,19 @@ api.registerPlugin('plugin-users', [path.resolve(__dirname, '../../../plugin-use
     await Collection.import(table.getOptions(), { update: true, migrate: false });
   }
   await Page.import(data);
-  await User.findOrCreate({
+  const user = await User.findOne({
     where: {
       username: "admin",
     },
-    defaults: {
+  });
+  if (!user) {
+    await User.create({
       nickname: "超级管理员",
       password: "admin",
       username: "admin",
       token: "38979f07e1fca68fb3d2",
-    },
-  });
+    });
+  }
   await database.getModel('collections').import(require('./collections/example').default);
   await database.close();
 })();

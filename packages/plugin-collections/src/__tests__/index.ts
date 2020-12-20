@@ -59,9 +59,7 @@ export async function getApp() {
   app.resourcer.registerActionHandlers({...actions.associate, ...actions.common});
   app.registerPlugin('collections', [plugin]);
   await app.loadPlugins();
-  await app.database.sync({
-    force: true,
-  });
+  await app.database.sync();
   // 表配置信息存到数据库里
   // const tables = app.database.getTables([]);
   // for (const table of tables) {

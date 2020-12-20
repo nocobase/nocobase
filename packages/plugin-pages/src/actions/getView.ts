@@ -79,6 +79,10 @@ const transforms = {
       if (interfaceType === 'multipleSelect') {
         set(prop, 'x-component-props.mode', 'multiple');
       }
+      if (interfaceType === 'subTable' && field.get('target')) {
+        set(prop, 'x-component-props.target', field.get('target'));
+        // resourceName
+      }
       if (['radio', 'select', 'multipleSelect', 'checkboxes'].includes(interfaceType)) {
         prop.enum = field.get('dataSource');
       }
@@ -94,9 +98,14 @@ const transforms = {
       if (!get(field.component, 'showInDetail')) {
         continue;
       }
+      const props = {};
+      if (field.get('interface') === 'subTable') {
+        const children = await field.getChildren();
+        props['children'] = children.map(child => ({...child.toJSON(), dataIndex: child.name.split('.')}))
+      }
       arr.push({
         ...field.toJSON(),
-        ...field.options,
+        ...props,
       });
     }
     return arr;
