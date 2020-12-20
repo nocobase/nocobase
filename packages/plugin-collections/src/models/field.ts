@@ -28,7 +28,9 @@ export class FieldModel extends BaseModel {
       if (['hasOne', 'hasMany', 'belongsTo', 'belongsToMany'].includes(data.type)) {
         if (!data.name) {
           data.name = generateFieldName();
-          data.target  = generateCollectionName();
+          if (!data.target) {
+            data.target  = generateCollectionName();
+          }
         }
         if (!data.target) {
           data.target = ['hasOne', 'belongsTo'].includes(data.type) ? Utils.pluralize(data.name) : data.name;
