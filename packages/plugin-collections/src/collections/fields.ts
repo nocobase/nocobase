@@ -100,11 +100,11 @@ export default {
             "target": "target",
             "condition": "{{ ['linkTo'].indexOf($self.value) !== -1 }}"
           },
-          {
-            "type": "value:visible",
-            "target": "labelField",
-            "condition": "{{ ['linkTo'].indexOf($self.value) !== -1 }}"
-          },
+          // {
+          //   "type": "value:visible",
+          //   "target": "labelField",
+          //   "condition": "{{ ['linkTo'].indexOf($self.value) !== -1 }}"
+          // },
           {
             "type": "value:visible",
             "target": "createable",
@@ -268,10 +268,34 @@ export default {
       type: 'virtual',
       name: 'target',
       title: '要关联的数据表',
+      required: true,
       component: {
-        type: 'drawerSelect',
+        type: 'remoteSelect',
         showInDetail: true,
         showInForm: true,
+        'x-component-props': {
+          mode: 'simple',
+          resourceName: 'collections',
+          labelField: 'title',
+          valueField: 'name',
+        },
+        "x-linkages": [
+          {
+            "type": "value:visible",
+            "target": "labelField",
+            "condition": "{{ !!$self.value }}"
+          },
+          {
+            type: "value:schema",
+            target: "labelField",
+            // condition: "{{ $self.value }}",
+            schema: {
+              "x-component-props": {
+                "associatedKey": "{{ $self.value }}"
+              },
+            },
+          },
+        ],
       },
     },
     {
@@ -279,8 +303,15 @@ export default {
       type: 'virtual',
       name: 'labelField',
       title: '要关联的字段',
+      required: true,
       component: {
-        type: 'drawerSelect',
+        type: 'remoteSelect',
+        'x-component-props': {
+          mode: 'simple',
+          resourceName: 'collections.fields',
+          labelField: 'title',
+          valueField: 'name',
+        },
         showInDetail: true,
         showInForm: true,
       },

@@ -14,7 +14,7 @@ import { Range } from './range'
 import { Rating } from './rating'
 import { Upload } from './upload'
 import { Filter } from './filter'
-import { DrawerSelect } from './drawer-select'
+import { RemoteSelect } from './remote-select'
 import { SubTable } from './sub-table'
 
 export const setup = () => {
@@ -45,7 +45,8 @@ export const setup = () => {
     rating: Rating,
     upload: Upload,
     filter: Filter,
-    drawerSelect: DrawerSelect,
+    remoteSelect: RemoteSelect,
+    drawerSelect: RemoteSelect,
     subTable: SubTable,
   })
 }
