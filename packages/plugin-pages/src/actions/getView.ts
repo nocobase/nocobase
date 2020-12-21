@@ -192,8 +192,24 @@ export default async (ctx, next) => {
   } else {
     title = `创建${title}`;
   }
+
+  const viewType = view.get('type');
   const actionDefaultParams:any = {};
-  const appends = fields.filter(field => get(field, 'interface') === 'subTable').map(field => field.name).join(',');
+  const appends = fields.filter(field => {
+    if (field.get('interface') !== 'subTable') {
+      return false;
+    }
+    if (viewType === 'table') {
+      return !!field.get('component.showInTable');
+    }
+    if (viewType === 'form') {
+      return !!field.get('component.showInForm');
+    }
+    if (viewType === 'details') {
+      return !!field.get('component.showInDetail');
+    }
+    return false;
+  }).map(field => field.name).join(',');
   actionDefaultParams['fields[appends]'] = appends;
   ctx.body = {
     ...view.get(),
