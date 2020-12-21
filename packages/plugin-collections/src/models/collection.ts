@@ -1,5 +1,6 @@
 import _ from 'lodash';
 import BaseModel from './base';
+import Field from './field';
 import { TableOptions } from '@nocobase/database';
 import { SaveOptions, Op } from 'sequelize';
 
@@ -159,8 +160,15 @@ export class CollectionModel extends BaseModel {
         continue;
       }
       const Model = this.database.getModel(key);
-      const ids = [];
+      let ids = [];
       for (const index in data[key]) {
+        if (key === 'fields') {
+          ids = await Field.import(data[key], {
+            ...options,
+            collectionName: collection.name,
+          });
+          continue;
+        }
         let model;
         const item = data[key][index];
         if (item.name) {

@@ -7,6 +7,11 @@ import { BuildOptions } from 'sequelize';
 import { SaveOptions, Utils } from 'sequelize';
 import { generateCollectionName } from './collection';
 
+interface FieldImportOptions extends SaveOptions {
+  parentId?: number;
+  collectionName?: string;
+}
+
 export function generateFieldName(title?: string): string {
   return `f_${Math.random().toString(36).replace('0.', '').slice(-4).padStart(4, '0')}`;
 }
@@ -84,6 +89,65 @@ export class FieldModel extends BaseModel {
         drop: false,
       }
     });
+  }
+
+  static async import(items: any, options: FieldImportOptions = {}): Promise<any> {
+    const { parentId, collectionName } = options;
+    if (!Array.isArray(items)) {
+      items = [items];
+    }
+    const ids = [];
+    for (const index in items) {
+      const item = items[index];
+      let model;
+      const where: any = {};
+      if (parentId) {
+        where.parent_id = parentId
+      } else {
+        where.collection_name = collectionName;
+      }
+      if (item.name) {
+        model = await this.findOne({
+          ...options,
+          where: {
+            ...where,
+            name: item.name,
+          },
+        });
+      }
+      if (!model && item.title) {
+        model = await this.findOne({
+          ...options,
+          where: {
+            ...where,
+            title: item.title,
+          },
+        });
+      }
+      if (!model) {
+        const tmp: any = {};
+        if (parentId) {
+          tmp.parent_id = parentId
+        } else {
+          tmp.collection_name = collectionName;
+        }
+        model = await this.create({
+          ...item,
+          ...tmp,
+        }, options);
+      }
+      if (Array.isArray(item.children)) {
+        const childrenIds = await this.import(item.children, {
+          ...options,
+          parentId: model.id,
+          collectionName,
+        });
+        await model.updateAssociations({
+          children: childrenIds,
+        }, options);
+      }
+    }
+    return ids;
   }
 }
 
