@@ -7,7 +7,11 @@
     "@koa/multer": "^3.0.0",
     "@nocobase/database": "^0.3.0-alpha.0",
     "@nocobase/resourcer": "^0.3.0-alpha.0",
-    "multer": "^1.4.2"
+    "@types/multer": "^1.4.5",
+    "mime-match": "^1.0.2",
+    "mkdirp": "^1.0.4",
+    "multer": "^1.4.2",
+    "uuid": "^8.3.2"
   },
   "devDependencies": {
     "@nocobase/actions": "^0.3.0-alpha.0",

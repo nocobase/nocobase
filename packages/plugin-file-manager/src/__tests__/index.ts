@@ -65,6 +65,9 @@ export async function getApp() {
     'file-manager': [plugin]
   });
   await app.loadPlugins();
+  app.database.import({
+    directory: path.resolve(__dirname, './tables')
+  });
   await app.database.sync({
     force: true,
   });

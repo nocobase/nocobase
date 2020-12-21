@@ -14,12 +14,17 @@ export default {
       comment: '类型标识，如 local/ali-oss 等',
       type: 'string',
       name: 'type',
-      defaultValue: 'local'
     },
     {
       comment: '配置项',
       type: 'jsonb',
       name: 'options',
+      defaultValue: {}
+    },
+    {
+      comment: '文件规则',
+      type: 'jsonb',
+      name: 'rules',
       defaultValue: {}
     },
     {
@@ -34,5 +39,16 @@ export default {
       name: 'baseUrl',
       defaultValue: ''
     },
+    // TODO(feature): 需要使用一个实现了可设置默认值的字段
+    {
+      comment: '默认引擎',
+      type: 'boolean',
+      name: 'default',
+      defaultValue: false
+    },
+    {
+      type: 'hasMany',
+      name: 'attachments'
+    }
   ]
 } as TableOptions;

@@ -12,7 +12,7 @@ export default {
       primaryKey: true
     },
     {
-      comment: '用户文件名',
+      comment: '用户文件名（不含扩展名）',
       type: 'string',
       name: 'name',
     },
@@ -26,11 +26,12 @@ export default {
       type: 'integer',
       name: 'size',
     },
-    {
-      comment: '文件类型（mimetype 前半段，通常用于预览）',
-      type: 'string',
-      name: 'type',
-    },
+    // TODO: 使用暂不明确，以后再考虑
+    // {
+    //   comment: '文件类型（mimetype 前半段，通常用于预览）',
+    //   type: 'string',
+    //   name: 'type',
+    // },
     {
       type: 'string',
       name: 'mimetype',
@@ -41,7 +42,7 @@ export default {
       name: 'storage',
     },
     {
-      comment: '相对路径',
+      comment: '相对路径（含“/”前缀）',
       type: 'string',
       name: 'path',
     },
@@ -49,11 +50,16 @@ export default {
       comment: '其他文件信息（如图片的宽高）',
       type: 'jsonb',
       name: 'meta',
+      defaultValue: {}
     },
     {
       comment: '网络访问地址',
-      type: 'url',
-      name: 'url'
+      type: 'virtual',
+      name: 'url',
+      get() {
+        const storage = this.getDataValue('storage') || {};
+        return `${storage.baseUrl}${this.getDataValue('path')}/${this.getDataValue('id')}${this.getDataValue('extname')}`;
+      }
     }
   ],
   actions: [
