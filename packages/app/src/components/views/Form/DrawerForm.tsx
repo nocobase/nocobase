@@ -12,7 +12,9 @@ import {
   registerFormFields,
   FormValidator,
   setValidationLanguage,
+  FormEffectHooks,
 } from '@formily/antd';
+import { merge } from '@formily/shared';
 import { QuestionCircleOutlined } from '@ant-design/icons';
 import { useRequest } from 'umi';
 import api from '@/api-client';
@@ -30,6 +32,7 @@ export const DrawerForm = forwardRef((props: any, ref) => {
     onFinish,
   } = props;
   console.log(associatedKey);
+  const { title, actionDefaultParams = {}, fields: properties ={} } = props.schema||{};
   const [resourceKey, setResourceKey] = useState(props.resourceKey);
   const [visible, setVisible] = useState(false);
   const name = associatedName ? `${associatedName}.${resourceName}` : resourceName;
@@ -38,6 +41,7 @@ export const DrawerForm = forwardRef((props: any, ref) => {
     return api.resource(name).get({
       resourceKey,
       associatedKey,
+      ...actionDefaultParams,
     });
   }, {
     manual: true,
@@ -47,7 +51,6 @@ export const DrawerForm = forwardRef((props: any, ref) => {
     getData: run,
   }));
   const actions = createFormActions();
-  const { title, fields: properties ={} } = props.schema||{};
   console.log({onFinish});
   return (
     <Drawer
