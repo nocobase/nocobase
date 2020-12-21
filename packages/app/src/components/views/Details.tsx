@@ -17,13 +17,13 @@ export function Details(props: any) {
     associatedKey,
     resourceKey,
   } = props;
-  const { actions = [], fields = [] } = props.schema;
+  const { actions = [], actionDefaultParams = {}, fields = [] } = props.schema;
   const { data = {}, loading, refresh } = useRequest(() => {
     const name = associatedName ? `${associatedName}.${resourceName}` : resourceName;
     return api.resource(name).get({
       resourceKey,
       associatedKey,
-      'fields[appends]': fields.filter(field => get(field, 'interface') === 'subTable').map(field => field.name).join(',')
+      ...actionDefaultParams,
     });
   });
   console.log(props);

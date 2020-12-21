@@ -23,7 +23,7 @@ export function Table(props: TableProps) {
     associatedName,
     associatedKey,
   } = props;
-  const { name: viewName, fields, defaultTabName, rowKey = 'id', actions = [], paginated = true, defaultPerPage = 10 } = schema;
+  const { name: viewName, fields, actionDefaultParams = {}, defaultTabName, rowKey = 'id', actions = [], paginated = true, defaultPerPage = 10 } = schema;
   // const { data, mutate } = useRequest(() => api.resource(name).list({
   //   associatedKey,
   // }));
@@ -38,6 +38,7 @@ export function Table(props: TableProps) {
       sorter,
       filter,
       viewName,
+      ...actionDefaultParams,
       // ...args2,
     })
     .then(({data = [], meta = {}}) => {

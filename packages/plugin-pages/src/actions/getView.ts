@@ -192,9 +192,13 @@ export default async (ctx, next) => {
   } else {
     title = `创建${title}`;
   }
+  const actionDefaultParams:any = {};
+  const appends = fields.filter(field => get(field, 'interface') === 'subTable').map(field => field.name).join(',');
+  actionDefaultParams['fields[appends]'] = appends;
   ctx.body = {
     ...view.get(),
     title,
+    actionDefaultParams,
     original: fields,
     fields: await (transforms[view.type]||transforms.table)(fields, ctx),
     actions: actions.filter(action => actionNames.includes(action.name)).map(action => ({
