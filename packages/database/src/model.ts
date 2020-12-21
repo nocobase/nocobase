@@ -511,6 +511,13 @@ export abstract class Model extends SequelizeModel {
       });
     }
 
+    await this.database.runHooks('afterUpdateAssociations', this, {
+      ...options,
+      transaction,
+    });
+    // @ts-ignore
+    // await this.sequelize.runHooks('afterUpdateAssociations', this, options);
+
     if (!options.transaction) {
       await transaction.commit();
     }
