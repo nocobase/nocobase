@@ -264,7 +264,7 @@ export default class Database {
    * @param hookType 
    * @param fn 
    */
-  public addHook(hookType: HookType, fn: Function) {
+  public addHook(hookType: HookType | string, fn: Function) {
     const hooks = this.hooks[hookType] || [];
     hooks.push(fn);
     this.hooks[hookType] = hooks;
@@ -276,11 +276,11 @@ export default class Database {
    * @param hookType 
    * @param args 
    */
-  public runHooks(hookType: HookType, ...args) {
+  public async runHooks(hookType: HookType | string, ...args) {
     const hooks = this.hooks[hookType] || [];
     for (const hook of hooks) {
       if (typeof hook === 'function') {
-        hook(...args);
+        await hook(...args);
       }
     }
   }
