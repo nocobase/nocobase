@@ -58,12 +58,12 @@ export default {
       },
     },
     {
-      interface: 'string',
+      interface: 'icon',
       type: 'string',
       name: 'icon',
       title: '图标',
       component: {
-        type: 'string',
+        type: 'icon',
         showInTable: true,
         showInForm: true,
         showInDetail: true,

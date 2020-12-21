@@ -58,7 +58,6 @@ export default {
       type: 'virtual',
       name: 'icon',
       title: '图标',
-      defaultValue: 'TableOutlined',
       component: {
         type: 'icon',
         showInTable: true,

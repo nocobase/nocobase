@@ -16,6 +16,7 @@ import { Upload } from './upload'
 import { Filter } from './filter'
 import { RemoteSelect } from './remote-select'
 import { SubTable } from './sub-table'
+import { Icon } from './icons'
 
 export const setup = () => {
   registerFormFields({
@@ -35,7 +36,7 @@ export const setup = () => {
     month: DatePicker.MonthPicker,
     week: DatePicker.WeekPicker,
     string: Input,
-    icon: Input,
+    icon: Icon,
     textarea: Input.TextArea,
     number: NumberPicker,
     percent: Percent,
