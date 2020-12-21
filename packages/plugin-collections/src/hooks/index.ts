@@ -5,6 +5,7 @@ import collectionsAfterUpdate from './collections-after-update';
 import fieldsBeforeValidate from './fields-before-validate';
 import fieldsAfterCreate from './fields-after-create';
 import fieldsAfterBulkUpdate from './fields-after-bulk-update';
+import fieldsAfterUpdate from './fields-after-update';
 
 import generateName from './generateName';
 
@@ -17,6 +18,7 @@ export default {
   fields: {
     beforeValidate: fieldsBeforeValidate,
     afterCreate: fieldsAfterCreate,
+    afterUpdate: fieldsAfterUpdate,
     afterBulkUpdate: fieldsAfterBulkUpdate,
   },
   actions: {
