@@ -91,7 +91,7 @@ function DrawerSelectComponent(props) {
             // console.log('valuevaluevaluevaluevaluevalue', {values, selectedKeys, selectedValue});
           }}
           // associatedKey={} 
-          associatedName={associatedName} 
+          // associatedName={associatedName} 
           viewName={'table'}
         />
       </Drawer>
