@@ -24,7 +24,8 @@ export async function associated(ctx: Context, next: Next) {
 
   switch (true) {
     case field instanceof BELONGSTO:
-      key = field.options.targetKey || Model.primaryKeyAttribute;
+      // 如：fields.collection，对应的 API 为 /fields/119/collection，此时 key 为 PK
+      key = Model.primaryKeyAttribute;
       break;
     case field instanceof HASONE:
     case field instanceof HASMANY:
