@@ -456,9 +456,11 @@ export abstract class Model extends SequelizeModel {
       const ThroughModel = (association as BELONGSTOMANY).getThroughModel();
       const throughName = (association as BELONGSTOMANY).getThroughName();
 
+
       for (const { item, target } of belongsToManyList) {
         const throughValues = item[throughName];
-        if (typeof throughValues === 'object') {
+        console.log({ThroughModel: ThroughModel.options, throughName, item, throughValues})
+        if (throughValues && typeof throughValues === 'object') {
           const { foreignKey, sourceKey, otherKey } = association.options;
           const through = await ThroughModel.findOne({
             where: {
@@ -468,7 +470,8 @@ export abstract class Model extends SequelizeModel {
             transaction
           });
           await through.update(throughValues, opts);
-          await through.updateAssociations(throughValues, opts);
+          // TODO：有 BUG，未知
+          // await through.updateAssociations(throughValues, opts);
         }
       }
     }
