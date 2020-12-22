@@ -1,11 +1,13 @@
 
 import React, { useEffect, useState } from 'react';
 import moment from 'moment';
-import { Tag, Popover, Table } from 'antd';
+import { Tag, Popover, Table, Drawer } from 'antd';
 import Icon from '@/components/icons';
 import get from 'lodash/get';
 import isEmpty from 'lodash/isEmpty';
 import { fields2columns } from '../SortableTable';
+import ViewFactory from '..';
+import './style.less';
 
 const InterfaceTypes = new Map<string, any>();
 
@@ -177,6 +179,50 @@ export function SubTableField(props: any) {
   );
 }
 
+export function LinkToField(props: any) {
+  const { schema, value } = props;
+  if (!value) {
+    return null;
+  }
+  const values = Array.isArray(value) ? value : [value];
+  return (
+    <div className={'link-to-field'}>
+      {values.map(item => <LinkToFieldLink data={item} schema={schema}/>)}
+    </div>
+  );
+}
+
+export function LinkToFieldLink(props) {
+  const { data, schema, schema: { title, labelField } } = props;
+  const [visible, setVisible] = useState(false);
+  // console.log(schema);
+  return (
+    <span className={'link-to-field-tag'}>
+      <a onClick={(e) => {
+        e.stopPropagation();
+        setVisible(true);
+      }}>{data[labelField]}</a>
+      <Drawer 
+        // @ts-ignore
+        onClick={(e) => {
+          e.stopPropagation();
+        }}
+        bodyStyle={{padding: 0}} 
+        width={'40%'}
+        title={`查看${title}详情`}
+        visible={visible}
+        onClose={() => setVisible(false)}
+      >
+        <ViewFactory
+          resourceName={schema.target}
+          viewName={'details'}
+          resourceKey={data.id}
+        />
+      </Drawer>
+    </span>
+  );
+}
+
 registerFieldComponents({
   string: StringField,
   textarea: TextareaField,
@@ -194,6 +240,7 @@ registerFieldComponents({
   createdBy: RealtionField,
   updatedBy: RealtionField,
   subTable: SubTableField,
+  linkTo: LinkToField,
 });
 
 export default function Field(props: any) {
