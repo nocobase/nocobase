@@ -77,9 +77,24 @@ export class FieldModel extends BaseModel {
     if (!collectionName) {
       return false;
     }
+    const Collection = this.database.getModel('collections');
+    if (this.get('interface') === 'linkTo') {
+      // afterCreate 时 target 表不知道为什么丢失了，需要重新加载
+      const target = this.get('target');
+      if (!this.database.isDefined(target)) {
+        await Collection.load({
+          ...options,
+          where: {
+            name: target,
+          }
+        });
+      }
+      // const table = this.getTable(target);
+      // console.log(model.get('target'), typeof table);
+    }
     // 如果 database 未定义，load 出来
     if (!this.database.isDefined(collectionName)) {
-      await this.database.getModel('collections').load({where: {name: collectionName}});
+      await Collection.load({where: {name: collectionName}});
     }
     const table = this.database.getTable(collectionName);
     table.addField(await this.getOptions());
