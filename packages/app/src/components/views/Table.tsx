@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Table as AntdTable, Card, Pagination } from 'antd';
 import { redirectTo } from '@/components/pages/CollectionLoader/utils';
 import { Actions } from '@/components/actions';
@@ -22,6 +22,9 @@ export function Table(props: TableProps) {
     resourceName,
     associatedName,
     associatedKey,
+    isFieldComponent,
+    onSelected,
+    selectedRowKeys: srk,
   } = props;
   const { name: viewName, fields, actionDefaultParams = {}, defaultTabName, rowKey = 'id', actions = [], paginated = true, defaultPerPage = 10 } = schema;
   // const { data, mutate } = useRequest(() => api.resource(name).list({
@@ -55,10 +58,15 @@ export function Table(props: TableProps) {
   });
   const { sourceKey = 'id' } = activeTab.field||{};
   console.log(props);
-  const [selectedRowKeys, setSelectedRowKeys] = useState([]);
-  const onChange = (selectedRowKeys: React.ReactText[]) => {
+  const [selectedRowKeys, setSelectedRowKeys] = useState(srk||[]);
+  const onChange = (selectedRowKeys: React.ReactText[], selectedRows: React.ReactText[]) => {
     setSelectedRowKeys(selectedRowKeys);
+    onSelected && onSelected(selectedRows);
   }
+  useEffect(() => {
+    setSelectedRowKeys(srk);
+  }, [srk]);
+  console.log(srk);
   const tableProps: any = {};
   if (actions.length) {
     tableProps.rowSelection = {
@@ -121,6 +129,9 @@ export function Table(props: TableProps) {
         })}
         onRow={(data) => ({
           onClick: () => {
+            if (isFieldComponent) {
+              return;
+            }
             redirectTo({
               ...props.match.params,
               [activeTab ? 'newItem' : 'lastItem']: {
