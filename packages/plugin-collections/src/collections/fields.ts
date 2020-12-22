@@ -269,6 +269,7 @@ export default {
       name: 'target',
       title: '要关联的数据表',
       required: true,
+      createOnly: true,
       component: {
         type: 'remoteSelect',
         showInDetail: true,
@@ -280,6 +281,14 @@ export default {
           valueField: 'name',
         },
         "x-linkages": [
+          {
+            type: "value:state",
+            target: "labelField",
+            condition: "{{ $self.inputed }}",
+            state:{
+              value: null,
+            }
+          },
           {
             "type": "value:visible",
             "target": "labelField",
@@ -438,8 +447,15 @@ export default {
       title: '所属数据表',
       target: 'collections',
       targetKey: 'name',
+      labelField: 'title',
       component: {
         type: 'drawerSelect',
+        // showInTable: true,
+        'x-component-props': {
+          resourceName: 'collections.fields',
+          labelField: 'title',
+          valueField: 'name',
+        },
       },
     },
     {
