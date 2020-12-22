@@ -8,7 +8,7 @@ export default {
     {
       comment: '标识名称，用于用户记忆',
       type: 'string',
-      name: 'name',
+      name: 'title',
     },
     {
       comment: '类型标识，如 local/ali-oss 等',

@@ -6,15 +6,14 @@ export default {
   internal: true,
   fields: [
     {
-      comment: '唯一 ID，系统文件名',
-      type: 'uuid',
-      name: 'id',
-      primaryKey: true
-    },
-    {
       comment: '用户文件名（不含扩展名）',
       type: 'string',
-      name: 'name',
+      name: 'title',
+    },
+    {
+      comment: '系统文件名（含扩展名）',
+      type: 'string',
+      name: 'filename'
     },
     {
       comment: '扩展名（含“.”）',
@@ -54,12 +53,9 @@ export default {
     },
     {
       comment: '网络访问地址',
-      type: 'virtual',
+      type: 'formula',
       name: 'url',
-      get() {
-        const storage = this.getDataValue('storage') || {};
-        return `${storage.baseUrl}${this.getDataValue('path')}/${this.getDataValue('id')}${this.getDataValue('extname')}`;
-      }
+      formula: '{{ storage.baseUrl }}{{ path }}/{{ filename }}'
     }
   ],
   actions: [

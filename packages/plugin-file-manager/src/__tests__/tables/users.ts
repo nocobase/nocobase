@@ -8,9 +8,27 @@ export default {
       name: 'name',
     },
     {
-      type: 'file',
+      type: 'belongsTo',
       name: 'avatar',
-      target: 'attachment'
+      target: 'attachments',
+      attachment: {
+        // storage 为配置的默认引擎
+        rules: {
+          size: 1024 * 10,
+          mimetype: ['image/png']
+        }
+      }
+    },
+    {
+      type: 'belongsToMany',
+      name: 'photos',
+      target: 'attachments',
+      attachment: {
+        rules: {
+          size: 1024 * 100,
+          mimetype: ['image/*']
+        }
+      }
     },
   ],
 } as TableOptions;
