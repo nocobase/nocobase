@@ -15,6 +15,7 @@ import { Rating } from './rating'
 import { Upload } from './upload'
 import { Filter } from './filter'
 import { RemoteSelect } from './remote-select'
+import { DrawerSelect } from './drawer-select'
 import { SubTable } from './sub-table'
 import { Icon } from './icons'
 
@@ -47,7 +48,7 @@ export const setup = () => {
     upload: Upload,
     filter: Filter,
     remoteSelect: RemoteSelect,
-    drawerSelect: RemoteSelect,
+    drawerSelect: DrawerSelect,
     subTable: SubTable,
   })
 }

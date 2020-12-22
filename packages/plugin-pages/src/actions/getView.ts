@@ -76,6 +76,12 @@ const transforms = {
         set(prop, 'x-component-props.children', prop.title);
         delete prop.title;
       }
+      if (interfaceType === 'linkTo') {
+        set(prop, 'x-component-props.associatedName', field.get('collection_name'));
+        set(prop, 'x-component-props.target', field.get('target'));
+        set(prop, 'x-component-props.multiple', field.get('multiple'));
+        set(prop, 'x-component-props.labelField', field.get('labelField'));
+      }
       if (interfaceType === 'multipleSelect') {
         set(prop, 'x-component-props.mode', 'multiple');
       }
@@ -178,6 +184,7 @@ export default async (ctx, next) => {
     });
     view.setDataValue('defaultTabName', get(defaultTabs, [0, 'name']));
   }
+  
   if (view.get('template') === 'SimpleTable') {
     view.setDataValue('rowViewName', 'form');
   }
@@ -196,7 +203,7 @@ export default async (ctx, next) => {
   const viewType = view.get('type');
   const actionDefaultParams:any = {};
   const appends = fields.filter(field => {
-    if (field.get('interface') !== 'subTable') {
+    if (!['subTable', 'linkTo'].includes(field.get('interface'))) {
       return false;
     }
     if (viewType === 'table') {

@@ -24,6 +24,9 @@ export function SimpleTable(props: SimpleTableProps) {
     resourceName,
     associatedName,
     associatedKey,
+    isFieldComponent,
+    onSelected,
+    selectedRowKeys: srk,
   } = props;
   const { rowKey = 'id', name: viewName, actionDefaultParams = {}, fields = [], rowViewName, actions = [], paginated = true, defaultPerPage = 10 } = schema;
   const { sourceKey = 'id' } = activeTab.field||{};
@@ -53,10 +56,14 @@ export function SimpleTable(props: SimpleTableProps) {
     defaultPageSize: defaultPerPage,
   });
   console.log(schema, data);
-  const [selectedRowKeys, setSelectedRowKeys] = useState([]);
-  const onChange = (selectedRowKeys: React.ReactText[]) => {
+  const [selectedRowKeys, setSelectedRowKeys] = useState(srk||[]);
+  const onChange = (selectedRowKeys: React.ReactText[], selectedRows: React.ReactText[]) => {
     setSelectedRowKeys(selectedRowKeys);
+    onSelected && onSelected(selectedRows);
   }
+  useEffect(() => {
+    setSelectedRowKeys(srk);
+  }, [srk]);
   const tableProps: any = {};
   if (actions.length) {
     tableProps.rowSelection = {
@@ -130,6 +137,9 @@ export function SimpleTable(props: SimpleTableProps) {
         })}
         onRow={(record) => ({
           onClick: () => {
+            if (isFieldComponent) {
+              return;
+            }
             drawerRef.current.setVisible(true);
             drawerRef.current.getData(record[rowKey]);
           }
