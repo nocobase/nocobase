@@ -412,6 +412,7 @@ export default {
         showInTable: true,
         showInDetail: true,
         showInForm: true,
+        default: true,
       },
     },
     {
@@ -425,6 +426,7 @@ export default {
         showInTable: true,
         showInDetail: true,
         showInForm: true,
+        default: true,
       },
     },
     {
@@ -438,6 +440,7 @@ export default {
         showInTable: true,
         showInDetail: true,
         showInForm: true,
+        default: true,
       },
     },
     {
