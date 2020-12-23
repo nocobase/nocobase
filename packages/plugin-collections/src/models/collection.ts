@@ -23,6 +23,7 @@ export function generateCollectionName(title?: string): string {
 export interface LoadOptions {
   reset?: boolean;
   where?: any;
+  skipExisting?: boolean;
   [key: string]: any;
 }
 
@@ -59,24 +60,25 @@ export class CollectionModel extends BaseModel {
     // table 是初始化和重新初始化
     const table = this.database.table({...prevOptions, ...options});
     // 如果关系表未加载，一起处理
-    const associationTableNames = [];
-    for (const [key, association] of table.getAssociations()) {
-      // TODO：是否需要考虑重载的情况？（暂时是跳过处理）
-      // if (!this.database.isDefined(association.options.target)) {
-      //   continue;
-      // }
-      associationTableNames.push(association.options.target);
-    }
-    if (associationTableNames.length) {
-      await CollectionModel.load({
-        ...opts,
-        where: {
-          name: {
-            [Op.in]: associationTableNames,
-          }
-        }
-      });
-    }
+    // const associationTableNames = [];
+    // for (const [key, association] of table.getAssociations()) {
+    //   // TODO：是否需要考虑重载的情况？（暂时是跳过处理）
+    //   if (!this.database.isDefined(association.options.target)) {
+    //     continue;
+    //   }
+    //   associationTableNames.push(association.options.target);
+    // }
+    // console.log({associationTableNames});
+    // if (associationTableNames.length) {
+    //   await CollectionModel.load({
+    //     ...opts,
+    //     where: {
+    //       name: {
+    //         [Op.in]: associationTableNames,
+    //       }
+    //     }
+    //   });
+    // }
     return table;
   }
 
@@ -115,12 +117,15 @@ export class CollectionModel extends BaseModel {
    * @param options 
    */
   static async load(options: LoadOptions = {}) {
-    const { reset = false, where = {}, transaction } = options;
+    const { skipExisting = false, reset = false, where = {}, transaction } = options;
     const collections = await this.findAll({
       transaction,
       where,
     });
     for (const collection of collections) {
+      if (skipExisting && this.database.isDefined(collection.get('name'))) {
+        continue;
+      }
       await collection.loadTableOptions({
         transaction,
         reset,

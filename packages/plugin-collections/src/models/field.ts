@@ -31,12 +31,34 @@ export class FieldModel extends BaseModel {
       // @ts-ignore
       data = merge(...args);
       if (['hasOne', 'hasMany', 'belongsTo', 'belongsToMany'].includes(data.type)) {
+        // 关系字段如果没有 name，相关参数都随机生成
         if (!data.name) {
           data.name = generateFieldName();
+          // 通用，关系表
           if (!data.target) {
             data.target  = generateCollectionName();
           }
+          // 通用，外键
+          if (!data.foreignKey) {
+            data.foreignKey = generateFieldName();
+          }
+          if (data.type !== 'belongsTo' && !data.sourceKey) {
+            data.sourceKey = 'id';
+          }
+          if (['belongsTo', 'belongsToMany'].includes(data.type) && !data.targetKey) {
+            data.targetKey = 'id';
+          }
+          // 多对多关联
+          if (data.type === 'belongsToMany') {
+            if (!data.through) {
+              data.through = generateCollectionName();
+            }
+            if (!data.otherKey) {
+              data.otherKey = generateFieldName();
+            }
+          }
         }
+        // 有 name，但是没有 target
         if (!data.target) {
           data.target = ['hasOne', 'belongsTo'].includes(data.type) ? Utils.pluralize(data.name) : data.name;
         }
@@ -77,24 +99,8 @@ export class FieldModel extends BaseModel {
     if (!collectionName) {
       return false;
     }
-    const Collection = this.database.getModel('collections');
-    if (this.get('interface') === 'linkTo') {
-      // afterCreate 时 target 表不知道为什么丢失了，需要重新加载
-      const target = this.get('target');
-      if (!this.database.isDefined(target)) {
-        await Collection.load({
-          ...options,
-          where: {
-            name: target,
-          }
-        });
-      }
-      // const table = this.getTable(target);
-      // console.log(model.get('target'), typeof table);
-    }
-    // 如果 database 未定义，load 出来
     if (!this.database.isDefined(collectionName)) {
-      await Collection.load({where: {name: collectionName}});
+      throw new Error(`${collectionName} is not defined`);
     }
     const table = this.database.getTable(collectionName);
     table.addField(await this.getOptions());

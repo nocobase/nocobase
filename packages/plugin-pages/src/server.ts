@@ -68,7 +68,7 @@ export default async function (options = {}) {
   Collection.addHook('afterUpdate', createCollectionPage);
   Collection.addHook('afterDestroy', async (model, options) => {
     const { transaction } = options;
-    console.log('afterDestroy', model);
+    // console.log('afterDestroy', model);
     await Page.destroy({
       transaction,
       where: {
@@ -127,7 +127,6 @@ export default async function (options = {}) {
     await transaction.commit();
   }
   View.addHook('beforeValidate', (model) => {
-    console.log('beforeValidate');
     if (model.get('default')) {
       model.set('showInDataMenu', true);
     }

@@ -5,7 +5,7 @@ export default async function (model: FieldModel, options: any = {}) {
   const Collection = model.database.getModel('collections');
   if (model.get('interface') === 'subTable') {
     const target = model.get('target');
-    if (target) {
+    if (target && !model.database.isDefined(target)) {
       await Collection.import({
         name: target,
         internal: true,
@@ -16,11 +16,4 @@ export default async function (model: FieldModel, options: any = {}) {
   if (migrate) {
     await model.migrate(options);
   }
-  // if (model.get('collection_name') && model.get('parent_id')) {
-  //   const parent = await model.getParent({
-  //     ...options,
-  //   });
-  //   const Collection = model.database.getModel('collections');
-  //   await Collection.load({...options, where: {name: parent.get('collection_name')}});
-  // }
 }
