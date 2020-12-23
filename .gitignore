@@ -10,3 +10,4 @@ packages/database/package-lock.json
 packages/resourcer/package-lock.json
 
 verdaccio
+uploads/

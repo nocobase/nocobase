@@ -5,8 +5,10 @@ import bodyParser from 'koa-bodyparser';
 import { Dialect } from 'sequelize';
 import Database from '@nocobase/database';
 import { actions, middlewares } from '@nocobase/actions';
-import { Application, middleware } from '@nocobase/server';
+import { Application } from '@nocobase/server';
+import middleware from '@nocobase/server/src/middleware'
 import plugin from '../server';
+import { FILE_FIELD_NAME } from '../constants';
 
 function getTestKey() {
   const { id } = require.main;
@@ -65,9 +67,14 @@ export async function getApp() {
     'file-manager': [plugin]
   });
   await app.loadPlugins();
-  await app.database.sync({
-    force: true,
+  app.database.import({
+    directory: path.resolve(__dirname, './tables')
   });
+  try {
+    await app.database.sync();
+  } catch (error) {
+    console.error(error);
+  }
   app.use(async (ctx, next) => {
     ctx.db = app.database;
     await next();
@@ -114,9 +121,9 @@ export function getAPI(app: Application) {
   return {
     resource(name: string): any {
       return new Proxy({}, {
-        get(target, method, receiver) {
+        get(target, method: string, receiver) {
           return (params: ActionParams = {}) => {
-            const { associatedKey, resourceKey, values = {}, ...restParams } = params;
+            const { associatedKey, resourceKey, values = {}, filePath, ...restParams } = params;
             let url = `/api/${name}`;
             if (associatedKey) {
               url = `/api/${name.split('.').join(`/${associatedKey}/`)}`;
@@ -125,10 +132,19 @@ export function getAPI(app: Application) {
             if (resourceKey) {
               url += `/${resourceKey}`;
             }
-            if (['list', 'get'].indexOf(method as string) !== -1) {
-              return agent.get(`${url}?${qs.stringify(restParams)}`);
-            } else {
-              return agent.post(`${url}?${qs.stringify(restParams)}`).send(values);
+
+            switch (method) {
+              case 'upload':
+                return agent.post(`${url}?${qs.stringify(restParams)}`)
+                  .attach(FILE_FIELD_NAME, path.resolve(__dirname, filePath))
+                  .field(values);
+
+              case 'list':
+              case 'get':
+                return agent.get(`${url}?${qs.stringify(restParams)}`);
+                
+              default:
+                return agent.post(`${url}?${qs.stringify(restParams)}`).send(values);
             }
           }
         }

@@ -160,6 +160,7 @@ const data = [
 api.registerPlugin('plugin-collections', [path.resolve(__dirname, '../../../plugin-collections'), {}]);
 api.registerPlugin('plugin-pages', [path.resolve(__dirname, '../../../plugin-pages'), {}]);
 api.registerPlugin('plugin-users', [path.resolve(__dirname, '../../../plugin-users'), {}]);
+api.registerPlugin('plugin-file-manager', [path.resolve(__dirname, '../../../plugin-file-manager'), {}]);
 
 (async () => {
   await api.loadPlugins();
@@ -186,6 +187,14 @@ api.registerPlugin('plugin-users', [path.resolve(__dirname, '../../../plugin-use
       token: "38979f07e1fca68fb3d2",
     });
   }
+  const Storage = database.getModel('storages');
+  await Storage.create({
+    title: '本地存储',
+    name: `local`,
+    type: 'local',
+    baseUrl: process.env.LOCAL_STORAGE_BASE_URL,
+    default: true
+  });
   await database.getModel('collections').import(require('./collections/example').default);
   await database.close();
 })();

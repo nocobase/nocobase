@@ -6,15 +6,14 @@ export default {
   internal: true,
   fields: [
     {
-      comment: '唯一 ID，系统文件名',
-      type: 'uuid',
-      name: 'id',
-      primaryKey: true
+      comment: '用户文件名（不含扩展名）',
+      type: 'string',
+      name: 'title',
     },
     {
-      comment: '用户文件名',
+      comment: '系统文件名（含扩展名）',
       type: 'string',
-      name: 'name',
+      name: 'filename'
     },
     {
       comment: '扩展名（含“.”）',
@@ -26,11 +25,12 @@ export default {
       type: 'integer',
       name: 'size',
     },
-    {
-      comment: '文件类型（mimetype 前半段，通常用于预览）',
-      type: 'string',
-      name: 'type',
-    },
+    // TODO: 使用暂不明确，以后再考虑
+    // {
+    //   comment: '文件类型（mimetype 前半段，通常用于预览）',
+    //   type: 'string',
+    //   name: 'type',
+    // },
     {
       type: 'string',
       name: 'mimetype',
@@ -41,7 +41,7 @@ export default {
       name: 'storage',
     },
     {
-      comment: '相对路径',
+      comment: '相对路径（含“/”前缀）',
       type: 'string',
       name: 'path',
     },
@@ -49,11 +49,13 @@ export default {
       comment: '其他文件信息（如图片的宽高）',
       type: 'jsonb',
       name: 'meta',
+      defaultValue: {}
     },
     {
       comment: '网络访问地址',
-      type: 'url',
-      name: 'url'
+      type: 'formula',
+      name: 'url',
+      formula: '{{ storage.baseUrl }}{{ path }}/{{ filename }}'
     }
   ],
   actions: [

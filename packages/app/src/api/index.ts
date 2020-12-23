@@ -115,6 +115,7 @@ api.resourcer.registerActionHandlers({...actions.common, ...actions.associate});
 api.registerPlugin('plugin-collections', [path.resolve(__dirname, '../../../plugin-collections'), {}]);
 api.registerPlugin('plugin-pages', [path.resolve(__dirname, '../../../plugin-pages'), {}]);
 api.registerPlugin('plugin-users', [path.resolve(__dirname, '../../../plugin-users'), {}]);
+api.registerPlugin('plugin-file-manager', [path.resolve(__dirname, '../../../plugin-file-manager'), {}]);
 
 (async () => {
   await api.loadPlugins();
