@@ -43,7 +43,7 @@ export function middleware(app) {
         url = new URL(baseUrl);
       } catch (e) {
         url = {
-          protocol: 'http',
+          protocol: 'http:',
           hostname: 'localhost',
           port: process.env.HTTP_PORT,
           pathname: baseUrl
@@ -52,6 +52,8 @@ export function middleware(app) {
 
       // 以下情况才认为当前进程所应该提供静态服务
       // 否则都忽略，交给其他 server 来提供（如 nginx/cdn 等）
+      // TODO(bug): https、端口 80 默认值和其他本地 ip/hostname 的情况未考虑
+      // TODO 实际应该用 NOCOBASE_ENV 来判断，或者抛给 env 处理
       if (url.protocol === 'http:'
         && url.hostname === 'localhost'
         && url.port === process.env.HTTP_PORT
