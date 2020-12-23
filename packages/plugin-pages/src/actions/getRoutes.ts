@@ -12,11 +12,15 @@ function pages2routes(pages: Array<any>) {
     };
     // page.type === 'layout' && 
     if (!page.redirect && children.length) {
-      const items = children.sort((a, b) => a.sort - b.sort);
-      route.redirect = items[0].path;
+      const items = children.filter(item => item.showInMenu).sort((a, b) => a.sort - b.sort);
+      const redirect = get(items, [0, 'path']);
+      if (redirect) {
+        route.redirect = redirect;
+      }
     }
     if (page.type === 'layout' && children.length) {
-      route.menu = children.map(child => ({
+      const items = children.filter(item => item.showInMenu).sort((a, b) => a.sort - b.sort);
+      route.menu = items.map(child => ({
         ...child,
         title: child.title,
         path: child.path,
