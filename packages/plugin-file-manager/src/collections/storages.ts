@@ -6,9 +6,17 @@ export default {
   internal: true,
   fields: [
     {
-      comment: '标识名称，用于用户记忆',
+      title: '存储引擎名称',
+      comment: '存储引擎名称',
       type: 'string',
       name: 'title',
+    },
+    {
+      title: '英文标识',
+      // comment: '英文标识，用于代码层面配置',
+      type: 'string',
+      name: 'name',
+      unique: true,
     },
     {
       comment: '类型标识，如 local/ali-oss 等',

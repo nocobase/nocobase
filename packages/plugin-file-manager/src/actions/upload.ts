@@ -94,9 +94,10 @@ export async function action(ctx: actions.Context, next: actions.Next) {
     path: storage.path,
     size: file.size,
     mimetype: file.mimetype,
+    // @ts-ignore
     meta: ctx.request.body
   }
-  
+
   const attachment = await ctx.db.sequelize.transaction(async transaction => {
     // TODO(optimize): 应使用关联 accessors 获取
     const result = await storage.createAttachment(data, { transaction });

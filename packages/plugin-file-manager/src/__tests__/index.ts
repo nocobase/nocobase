@@ -70,9 +70,11 @@ export async function getApp() {
   app.database.import({
     directory: path.resolve(__dirname, './tables')
   });
-  await app.database.sync({
-    force: true,
-  });
+  try {
+    await app.database.sync();
+  } catch (error) {
+    console.error(error);
+  }
   app.use(async (ctx, next) => {
     ctx.db = app.database;
     await next();

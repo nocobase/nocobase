@@ -4,8 +4,8 @@ import qs from 'qs';
 import { FILE_FIELD_NAME, STORAGE_TYPE_LOCAL } from '../constants';
 import { getApp, getAgent, getAPI } from '.';
 
-const DEFAULT_LOCAL_BASE_URL = `http://localhost:${process.env.HTTP_PORT}/uploads`;
-
+const DEFAULT_LOCAL_BASE_URL = process.env.LOCAL_STORAGE_BASE_URL || `http://localhost:${process.env.HTTP_PORT}/uploads`;
+jest.setTimeout(30000);
 describe('action', () => {
   let app;
   let agent;
@@ -27,9 +27,7 @@ describe('action', () => {
     });
   });
 
-  afterEach(async () => {
-    await db.close();
-  });
+  afterEach(() => db.close());
 
   describe('direct attachment', () => {
     it('upload file should be ok', async () => {
