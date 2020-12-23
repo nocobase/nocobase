@@ -109,14 +109,17 @@ export const wysiwyg = {
  */
 export const attachment = {
   title: '附件',
-  disabled: true,
+  // disabled: true,
   options: {
     interface: 'attachment',
     type: 'belongsToMany',
     filterable: true,
     target: 'attachments',
+    // storage: {
+    //   name: 'local',
+    // },
     component: {
-      type: 'fileManager',
+      type: 'upload',
     },
   },
 };

@@ -4,6 +4,7 @@ export default {
   name: 'attachments',
   title: '文件管理器',
   internal: true,
+  developerMode: true,
   fields: [
     {
       comment: '用户文件名（不含扩展名）',

@@ -203,7 +203,7 @@ export default async (ctx, next) => {
   const viewType = view.get('type');
   const actionDefaultParams:any = {};
   const appends = fields.filter(field => {
-    if (!['subTable', 'linkTo'].includes(field.get('interface'))) {
+    if (!['subTable', 'linkTo', 'attachment'].includes(field.get('interface'))) {
       return false;
     }
     if (viewType === 'table') {
