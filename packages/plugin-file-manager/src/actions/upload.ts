@@ -84,9 +84,7 @@ export async function action(ctx: actions.Context, next: actions.Next) {
   if (!file) {
     return ctx.throw(400, 'file validation failed');
   }
-  const { associatedName, associatedKey, resourceField, values } = ctx.action.params;
-  // @ts-ignore
-  console.log(values, ctx.request.body);
+  const { associatedName, associatedKey, resourceField } = ctx.action.params;
   const extname = path.extname(file.filename);
   const data = {
     title: file.originalname.replace(extname, ''),
@@ -96,8 +94,7 @@ export async function action(ctx: actions.Context, next: actions.Next) {
     path: storage.path,
     size: file.size,
     mimetype: file.mimetype,
-    // @ts-ignore
-    meta: values
+    meta: ctx.request.body
   }
   
   const attachment = await ctx.db.sequelize.transaction(async transaction => {

@@ -111,8 +111,6 @@ export function middleware(options: MiddlewareOptions = {}) {
         relatedKey: params.resourceKey,
         action: params.actionName,
       };
-      // 这里 body 里取不到值
-      console.log('ctx.request.body', ctx.request.body)
       if (pathToRegexp('/resourcer/{:associatedName.}?:resourceName{\\::actionName}').test(ctx.request.path)) {
         await ctx.action.mergeParams({
           ...query,
