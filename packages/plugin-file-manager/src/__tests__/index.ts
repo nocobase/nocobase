@@ -5,7 +5,8 @@ import bodyParser from 'koa-bodyparser';
 import { Dialect } from 'sequelize';
 import Database from '@nocobase/database';
 import { actions, middlewares } from '@nocobase/actions';
-import { Application, middleware } from '@nocobase/server';
+import { Application } from '@nocobase/server';
+import middleware from '@nocobase/server/src/middleware'
 import plugin from '../server';
 import { FILE_FIELD_NAME } from '../constants';
 
