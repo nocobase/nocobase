@@ -305,7 +305,7 @@ export default {
     {
       type: 'create',
       name: 'create',
-      title: '创建',
+      title: '新增',
       viewName: 'form',
     },
     {
