@@ -17,9 +17,21 @@ const otherPkgs = readdirSync(join(__dirname, 'packages')).filter(
   },
 );
 
+let pkgs = [];
+
+if (process.argv.length > 2) {
+  pkgs = process.argv;
+  pkgs.shift();
+  pkgs.shift();
+} else {
+  pkgs = [...headPkgs, ...otherPkgs, ...tailPkgs];
+}
+
+console.log(pkgs);
+
 export default {
   target: 'node',
   cjs: { type: 'babel', lazy: true },
   // disableTypeCheck: true,
-  pkgs: [...headPkgs, ...otherPkgs, ...tailPkgs],
+  pkgs,
 };

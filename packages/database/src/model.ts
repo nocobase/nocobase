@@ -459,7 +459,6 @@ export abstract class Model extends SequelizeModel {
 
       for (const { item, target } of belongsToManyList) {
         const throughValues = item[throughName];
-        console.log({ThroughModel: ThroughModel.options, throughName, item, throughValues})
         if (throughValues && typeof throughValues === 'object') {
           const { foreignKey, sourceKey, otherKey } = association.options;
           const through = await ThroughModel.findOne({
