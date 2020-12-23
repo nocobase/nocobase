@@ -3,9 +3,8 @@ import { Button } from 'antd';
 import ViewFactory from '@/components/views';
 
 export function Update(props) {
-  console.log(props);
   const { title, viewName, resourceName, collection_name } = props.schema;
-  const { activeTab = {}, item = {} } = props;
+  const { resourceKey, activeTab = {}, item = {} } = props;
   const { association  } = activeTab;
 
   const params = {};
@@ -16,9 +15,8 @@ export function Update(props) {
     params['associatedKey'] = item.itemId;
   } else {
     params['resourceName'] = collection_name;
-    params['resourceKey'] = item.itemId;
+    params['resourceKey'] = item.itemId || resourceKey;
   }
-
   const drawerRef = useRef<any>();
   return (
     <>
@@ -31,7 +29,7 @@ export function Update(props) {
       />
       <Button type={'primary'} onClick={() => {
         drawerRef.current.setVisible(true);
-        drawerRef.current.getData(item.itemId);
+        drawerRef.current.getData(item.itemId || resourceKey);
       }}>{title}</Button>
     </>
   )

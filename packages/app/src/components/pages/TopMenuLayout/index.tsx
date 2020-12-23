@@ -5,13 +5,14 @@ import { history, Link, request, useModel } from 'umi';
 import { UserOutlined, CodeOutlined } from '@ant-design/icons';
 import AvatarDropdown from '../AvatarDropdown';
 import Menu from '@/components/menu';
+import { ReactComponent as Logo } from './logo-white.svg';
 
 export function TopMenuLayout(props: any) {
   const { menu = [] } = props.page;
   return (
     <Layout style={{ height: '100vh' }}>
       <Layout.Header style={{height: 48, lineHeight: '48px', padding: 0}} className="nb-header">
-        <div className="logo" style={{width: 200, height: 20, float: 'left'}}><CodeOutlined /> NocoBase</div>
+        <div className="logo" style={{width: 200, height: 20, float: 'left'}}><Logo/></div>
         <Menu hideChildren={true} items={menu} className={'noco-top-menu'} style={{float: 'left'}} theme="dark" mode="horizontal">
         </Menu>
         <AvatarDropdown/>
