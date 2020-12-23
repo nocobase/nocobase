@@ -223,6 +223,26 @@ export function LinkToFieldLink(props) {
   );
 }
 
+export function AttachmentField(props: any) {
+  const { value, schema } = props;
+  if (!value) {
+    return null;
+  }
+  const values = Array.isArray(value) ? value : [value];
+  return (
+    <div className={'attachment-field'}>
+      {values.map(item => <AttachmentFieldItem data={item} schema={schema}/>)}
+    </div>
+  );
+}
+
+export function AttachmentFieldItem(props: any) {
+  const { title, url } = props.data || {};
+  return (
+    <a className={'attachment-field-item'} target={'_blank'} href={url}>{title}</a>
+  );
+}
+
 registerFieldComponents({
   string: StringField,
   textarea: TextareaField,
@@ -241,6 +261,7 @@ registerFieldComponents({
   updatedBy: RealtionField,
   subTable: SubTableField,
   linkTo: LinkToField,
+  attachment: AttachmentField,
 });
 
 export default function Field(props: any) {
