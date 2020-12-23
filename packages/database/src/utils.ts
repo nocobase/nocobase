@@ -99,15 +99,13 @@ export function toOrder(sort: string | string[], model: any): string[][] {
 }
 
 export function toInclude(options: any, context: ToIncludeContext = {}) {
-  function makeFields(key) {
+  function makeFields(key: string) {
     if (!Array.isArray(items[key])) {
       return;
     }
     items[key].forEach(field => {
       // 按点分隔转化为数组
-      const arr: Array<string> = Array.isArray(field) ? Utils.cloneDeep(field) : field.split('.');
-      // 当前列
-      const col = arr.shift();
+      const [col, ...arr]: string[] = Array.isArray(field) ? Utils.cloneDeep(field) : field.split('.');
       // 内嵌的情况
       if (arr.length > 0) {
         if (!children.has(col)) {
@@ -122,26 +120,33 @@ export function toInclude(options: any, context: ToIncludeContext = {}) {
         children.get(col).fields[key].push(arr);
         return;
       }
-      // 关系字段
-      if (associations[col]) {
-        const includeItem: any = {
-          association: col,
-        };
-        if (includeWhere[col]) {
-          includeItem.where = includeWhere[col];
+      if (key !== 'except') {
+        // 关系字段
+        if (associations[col]) {
+          const includeItem: any = {
+            association: col,
+          };
+          if (includeWhere[col]) {
+            includeItem.where = includeWhere[col];
+          }
+          include.set(col, includeItem);
+          return;
         }
-        include.set(col, includeItem);
-        return;
-      }
-      const matches: Array<any> = /(.+)_count$/.exec(col);
-      if (matches && associations[matches[1]]) {
-        attributes[key].push(model.withCountAttribute({
-          association: matches[1],
-          sourceAlias: sourceAlias
-        }));
+        // 计数字段
+        const matches: Array<any> = col.match(/(.+)_count$/);
+        if (matches && associations[matches[1]]) {
+          attributes[key].push(model.withCountAttribute({
+            association: matches[1],
+            sourceAlias: sourceAlias
+          }));
+          return;
+        }
       } else {
-        attributes[key].push(col);
+        if (!attributes.except) {
+          attributes.except = [];
+        }
       }
+      attributes[key].push(col);
     });
   }
 
@@ -178,31 +183,7 @@ export function toInclude(options: any, context: ToIncludeContext = {}) {
   
   makeFields('only');
   makeFields('appends');
-
-  if (Array.isArray(items.except) && items.except.length > 0) {
-    items.except.forEach(field => {
-      const arr: Array<string> = Array.isArray(field) ? Utils.cloneDeep(field) : field.split('.');
-      const col = arr.shift();
-      // 内嵌的情况
-      if (arr.length > 0) {
-        if (!children.has(col)) {
-          children.set(col, {
-            where: includeWhere[col],
-            fields: {
-              only: [],
-              except: [arr],
-              appends: [],
-            },
-          });
-        } else {
-          children.get(col).fields.except.push(arr);
-        }
-        return;
-      }
-      // 黑名单里只有字段
-      attributes.except.push(col);
-    });
-  }
+  makeFields('except');
 
   for (const whereKey in includeWhere) {
     if (children.has(whereKey)) {
@@ -238,13 +219,18 @@ export function toInclude(options: any, context: ToIncludeContext = {}) {
     if (result.scopes) {
       item.model = associations[key].target.scope(result.scopes);
     }
+    // 解决同时有关联和关联的子级关联时，关联的 attribute 被设置为空数组的问题
+    // ['user.profile.age', 'user.status', 'user', 'title', 'status']
+    if (include.has(key) && Array.isArray(item.attributes) && !item.attributes.length) {
+      delete item.attributes;
+    }
     include.set(key, item);
   }
 
   const data: any = {};
 
   // 存在黑名单时
-  if (attributes.except.length > 0) {
+  if (attributes.except.length) {
     data.attributes = {
       exclude: attributes.except,
     };
@@ -253,19 +239,17 @@ export function toInclude(options: any, context: ToIncludeContext = {}) {
     }
   }
   // 存在白名单时
-  else if (attributes.only.length > 0) {
+  else if (attributes.only.length) {
     data.attributes = [...attributes.only, ...attributes.appends];
   }
   // 只有附加字段时
-  else if (attributes.appends.length > 0) {
+  else if (attributes.appends.length) {
     data.attributes = {
       include: attributes.appends,
     };
   }
 
-  if (include.size > 0) {
-    // TODO(bug): 当遇到多层关联时，attributes 控制不正确
-    // ['user.profile.age', 'user.status', 'user', 'title', 'status']
+  if (include.size) {
     if (!data.attributes) {
       data.attributes = [];
     }
@@ -273,17 +257,17 @@ export function toInclude(options: any, context: ToIncludeContext = {}) {
     data.distinct = true;
   }
 
-  if (Reflect.ownKeys(where).length > 0) {
+  if (Reflect.ownKeys(where).length) {
     data.where = where;
   }
 
-  if (scopes.length > 0) {
+  if (scopes.length) {
     data.scopes = scopes;
   }
 
   const order = toOrder(options.sort, model);
 
-  if (order.length > 0) {
+  if (order.length) {
     data.order = order;
   }
 

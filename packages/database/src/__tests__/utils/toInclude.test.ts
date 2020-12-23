@@ -144,10 +144,28 @@ describe('toInclude', () => {
     });
   });
 
-  it.skip('nested association', () => {
-    // TODO，输出 bars 的所有字段
+  it('nested association', () => {
     toIncludeExpect({
       fields: ['col1', 'bars', 'bars.baz'],
+    }, true).toEqual({
+      attributes: [ 'col1' ],
+      include: [
+        {
+          association: 'bars',
+          include: [
+            {
+              association: 'baz',
+            }
+          ]
+        }
+      ],
+      distinct: true,
+    });
+  });
+
+  it('nested association', () => {
+    toIncludeExpect({
+      fields: ['col1', 'bars.baz', 'bars'],
     }, true).toEqual({
       attributes: [ 'col1' ],
       include: [

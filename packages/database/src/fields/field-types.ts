@@ -265,7 +265,6 @@ export class FORMULA extends VIRTUAL {
         const fields = sourceTable.getFields();
         const data: any = {};
         for (const [name, field] of fields) {
-          console.log(field.getType());
           if (['formula', 'virtual'].indexOf((field.getType() as string).toLowerCase()) === -1) {
             data[name] = this.getDataValue(name);
           }

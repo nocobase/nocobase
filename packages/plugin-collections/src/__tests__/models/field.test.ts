@@ -51,7 +51,7 @@ describe('models.field', () => {
     ]);
   });
 
-  it.only('sub table field', async () => {
+  it.skip('sub table field', async () => {
     const [Collection, Field] = app.database.getModels(['collections', 'fields']);
     const options = {
       title: 'tests',
