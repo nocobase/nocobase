@@ -197,27 +197,35 @@ export default async (ctx, next) => {
   if (mode === 'update') {
     title = `编辑${title}`;
   } else {
-    title = `创建${title}`;
+    title = `新增${title}`;
   }
-
   const viewType = view.get('type');
   const actionDefaultParams:any = {};
-  const appends = fields.filter(field => {
+  const appends = [];
+  for (const field of fields) {
     if (!['subTable', 'linkTo', 'attachment'].includes(field.get('interface'))) {
-      return false;
+      continue;
     }
-    if (viewType === 'table') {
-      return !!field.get('component.showInTable');
+    let showInKey;
+    switch (viewType) {
+      case 'table':
+        showInKey = 'showInTable';
+        break;
+      case 'form':
+        showInKey = 'showInForm';
+        break;
+      case 'details':
+        showInKey = 'showInDetail';
+        break;
     }
-    if (viewType === 'form') {
-      return !!field.get('component.showInForm');
+    if (showInKey && field.get(`component.${showInKey}`)) {
+      appends.push(field.name);
+      if (field.get('interface') === 'attachment') {
+        appends.push(`${field.name}.storage`);
+      }
     }
-    if (viewType === 'details') {
-      return !!field.get('component.showInDetail');
-    }
-    return false;
-  }).map(field => field.name).join(',');
-  actionDefaultParams['fields[appends]'] = appends;
+  }
+  actionDefaultParams['fields[appends]'] = appends.join(',');
   ctx.body = {
     ...view.get(),
     title,
