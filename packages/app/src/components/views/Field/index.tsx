@@ -8,6 +8,7 @@ import isEmpty from 'lodash/isEmpty';
 import { fields2columns } from '../SortableTable';
 import ViewFactory from '..';
 import './style.less';
+import { getImageByUrl } from '@/components/form.fields';
 
 const InterfaceTypes = new Map<string, any>();
 
@@ -238,8 +239,13 @@ export function AttachmentField(props: any) {
 
 export function AttachmentFieldItem(props: any) {
   const { title, url } = props.data || {};
+  const img = getImageByUrl(url, {
+    exclude: ['.png', '.jpg', '.jpeg', '.gif']
+  })
   return (
-    <a className={'attachment-field-item'} target={'_blank'} href={url}>{title}</a>
+    <a className={'attachment-field-item'} target={'_blank'} href={url}>
+      <img style={{marginRight: 5}} height={20} alt={title} title={title} src={img}/>
+    </a>
   );
 }
 
