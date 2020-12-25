@@ -36,18 +36,20 @@ export async function list(ctx: Context, next: Next) {
     resourceName,
     resourceField,
   } = ctx.action.params;
-  const Model = ctx.db.getModel(resourceName);
-  const options = Model.parseApiJson({
-    sort,
-    page,
-    perPage,
-    filter,
-    fields,
-    context: ctx,
-  });
   let data = {};
+  let options: any = {};
+  let Model;
   if (associated && resourceField) {
     const AssociatedModel = ctx.db.getModel(associatedName);
+    Model = ctx.db.getModel(resourceField.options.target);
+    options = Model.parseApiJson({
+      sort,
+      page,
+      perPage,
+      filter,
+      fields,
+      context: ctx,
+    });
     if (!(associated instanceof AssociatedModel)) {
       throw new Error(`${associatedName} associated model invalid`);
     }
@@ -77,6 +79,15 @@ export async function list(ctx: Context, next: Next) {
       count,
     };
   } else {
+    Model = ctx.db.getModel(resourceName);
+    options = Model.parseApiJson({
+      sort,
+      page,
+      perPage,
+      filter,
+      fields,
+      context: ctx,
+    });
     data = await Model.scope(options.scopes||[]).findAndCountAll({
       ...options,
       // @ts-ignore hooks 里添加 context
