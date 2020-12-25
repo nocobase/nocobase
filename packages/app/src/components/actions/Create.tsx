@@ -6,12 +6,13 @@ export function Create(props) {
   console.log(props);
   const { title, viewName, collection_name } = props.schema;
   const { activeTab = {}, item = {}, associatedName, associatedKey } = props;
-  const { association  } = activeTab;
+  const { associationField } = activeTab;
 
   const params = {};
 
-  if (association) {
-    params['resourceName'] = association;
+  if (associationField && associationField.target) {
+    params['resourceName'] = associationField.name;
+    params['resourceTarget'] = associationField.target;
     params['associatedName'] = associatedName;
     params['associatedKey'] = associatedKey;
   } else {

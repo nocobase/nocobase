@@ -5,13 +5,14 @@ import { useRequest, request, Spin } from '@nocobase/client';
 
 export function CollectionTabPane(props) {
   const { loading, pageInfo = {}, activeTab = {}, item = {} } = props;
-  const { viewName, association, collection_name, field = {} } = activeTab;
-  const { sourceKey = 'id' } = field;
+  const { viewName, associationField = {}, collection_name, field = {} } = activeTab;
+  const { name, target, sourceKey = 'id' } = associationField || {};
 
   const params = {};
 
-  if (association) {
-    params['resourceName'] = association;
+  if (target) {
+    params['resourceName'] = name;
+    params['resourceTarget'] = target;
     params['associatedName'] = collection_name;
     params['associatedKey'] = pageInfo[sourceKey] || item.itemId;
   } else {

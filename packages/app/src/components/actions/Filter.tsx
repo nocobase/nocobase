@@ -8,12 +8,13 @@ export function Filter(props) {
   const [visible, setVisible] = useState(false);
   const { title, viewName, collection_name } = props.schema;
   const { activeTab = {}, item = {}, associatedName, associatedKey } = props;
-  const { association  } = activeTab;
+  const { associationField } = activeTab;
 
   const params = {};
 
-  if (association) {
-    params['resourceName'] = association;
+  if (associationField && associationField.target) {
+    params['resourceName'] = associationField.target;
+    params['resourceTarget'] = associationField.target;
     params['associatedName'] = associatedName;
     params['associatedKey'] = associatedKey;
   } else {

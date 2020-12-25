@@ -36,7 +36,7 @@ export const DrawerForm = forwardRef((props: any, ref) => {
   const [resourceKey, setResourceKey] = useState(props.resourceKey);
   const [visible, setVisible] = useState(false);
   const name = associatedName ? `${associatedName}.${resourceName}` : resourceName;
-  const { data, run, loading } = useRequest((resourceKey) => {
+  const { data = {}, run, loading } = useRequest((resourceKey) => {
     setResourceKey(resourceKey);
     return api.resource(name).get({
       resourceKey,
@@ -89,7 +89,8 @@ export const DrawerForm = forwardRef((props: any, ref) => {
         <SchemaForm 
           colon={true}
           layout={'vertical'}
-          initialValues={data}
+          // 暂时先这么处理，如果有 associatedKey 注入表单里
+          initialValues={{associatedKey, ...data}}
           actions={actions}
           schema={{
             type: 'object',

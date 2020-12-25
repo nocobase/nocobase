@@ -5,12 +5,13 @@ import ViewFactory from '@/components/views';
 export function Update(props) {
   const { title, viewName, resourceName, collection_name } = props.schema;
   const { resourceKey, activeTab = {}, item = {} } = props;
-  const { association  } = activeTab;
+  const { associationField } = activeTab;
 
   const params = {};
 
-  if (association) {
-    params['resourceName'] = association;
+  if (associationField && associationField.target) {
+    params['resourceName'] = associationField.target;
+    params['resourceTarget'] = associationField.target;
     params['associatedName'] = resourceName;
     params['associatedKey'] = item.itemId;
   } else {

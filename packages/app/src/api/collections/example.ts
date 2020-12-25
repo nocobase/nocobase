@@ -2,6 +2,7 @@ import { TableOptions } from '@nocobase/database';
 
 export default {
   title: '示例',
+  name: 'examples',
   showInDataMenu: true,
   // createdBy: true,
   // updatedBy: true,
@@ -9,6 +10,7 @@ export default {
     {
       interface: 'string',
       title: '单行文本',
+      name: 'title',
       component: {
         showInTable: true,
         showInDetail: true,
@@ -157,6 +159,18 @@ export default {
     {
       interface: 'datetime',
       title: '日期',
+      component: {
+        showInTable: true,
+        showInDetail: true,
+        showInForm: true,
+      },
+    },
+    {
+      interface: 'linkTo',
+      type: 'belongsToMany',
+      title: '关联1',
+      target: 'examples',
+      labelField: 'title',
       component: {
         showInTable: true,
         showInDetail: true,

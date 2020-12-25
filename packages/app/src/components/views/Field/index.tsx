@@ -130,7 +130,7 @@ function toFlat(items = []): Array<any> {
 export function DataSourceField(props: any) {
   const { schema: { dataSource = [] }, value } = props;
   const items = toFlat(dataSource);
-  console.log(items);
+  // console.log(items);
   if (isEmpty(value)) {
     return null;
   }
@@ -243,7 +243,7 @@ export function AttachmentFieldItem(props: any) {
     exclude: ['.png', '.jpg', '.jpeg', '.gif']
   })
   return (
-    <a className={'attachment-field-item'} target={'_blank'} href={url}>
+    <a onClick={(e) => e.stopPropagation()} className={'attachment-field-item'} target={'_blank'} href={url}>
       <img style={{marginRight: 5}} height={20} alt={title} title={title} src={img}/>
     </a>
   );

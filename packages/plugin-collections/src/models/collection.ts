@@ -166,6 +166,7 @@ export class CollectionModel extends BaseModel {
       }
       const Model = this.database.getModel(key);
       let ids = [];
+      const View = this.database.getModel('views');
       for (const index in data[key]) {
         if (key === 'fields') {
           ids = await Field.import(data[key], {
@@ -204,6 +205,20 @@ export class CollectionModel extends BaseModel {
           }, options);
         }
         if (model) {
+          if (key === 'tabs') {
+            let associationField;
+            if (item.association) {
+              associationField = await Field.findOne({
+                where: {
+                  name: item.association,
+                  collection_name: collection.name,
+                },
+              });
+              await model.updateAssociations({
+                associationField: associationField.id,
+              });
+            }
+          }
           ids.push(model.id);
         }
       }
