@@ -16,13 +16,17 @@ export default async (ctx, next) => {
     plain: true,
   });
   collection.setDataValue('defaultViewName', defaultView.get('name'));
-  const tabs = await collection.getTabs({
-    where: {
+  const options = Tab.parseApiJson({
+    filter: {
       enabled: true,
       developerMode: ctx.state.developerMode,
     },
-    order: [['sort', 'asc']],
-  }) as Model[];
+    fields: {
+      appends: ['associationField'],
+    },
+    sort: ['sort'],
+  });
+  const tabs = await collection.getTabs(options) as Model[];
   const tabItems = [];
   for (const tab of tabs) {
     const itemTab = {
@@ -31,15 +35,15 @@ export default async (ctx, next) => {
     if (itemTab.type === 'details' && !itemTab.viewName) {
       itemTab.viewName = 'details';
     }
-    if (itemTab.type == 'association') {
-      itemTab.field = await collection.getFields({
-        where: {
-          name: itemTab.association,
-        },
-        limit: 1,
-        plain: true,
-      });
-    }
+    // if (itemTab.type == 'association') {
+    //   itemTab.field = await collection.getFields({
+    //     where: {
+    //       name: itemTab.association,
+    //     },
+    //     limit: 1,
+    //     plain: true,
+    //   });
+    // }
     tabItems.push(itemTab);
   }
   ctx.body = {

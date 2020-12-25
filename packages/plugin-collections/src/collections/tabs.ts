@@ -64,23 +64,114 @@ export default {
         showInDetail: true,
         showInForm: true,
         "x-linkages": [
+          // {
+          //   "type": "value:visible",
+          //   "target": "association",
+          //   "condition": "{{ $self.value === 'association' }}"
+          // },
           {
-            "type": "value:visible",
-            "target": "association",
-            "condition": "{{ $self.value === 'association' }}"
+            type: "value:visible",
+            target: "associationField",
+            condition: "{{ $self.value === 'association' }}"
+          },
+          // {
+          //   type: "value:schema",
+          //   target: "association",
+          //   condition: "{{ $self.value === 'association' }}",
+          //   schema: {
+          //     "x-component-props": {
+          //       "associatedKey": "{{ $form.values && $form.values.associatedKey }}"
+          //     },
+          //   },
+          // },
+          {
+            type: "value:schema",
+            target: "associationField",
+            condition: "{{ $self.value === 'association' }}",
+            schema: {
+              "x-component-props": {
+                associatedKey: "{{ $form.values && $form.values.associatedKey }}"
+              },
+            },
+          },
+        ],
+      },
+    },
+    // {
+    //   interface: 'string',
+    //   type: 'string',
+    //   name: 'association',
+    //   title: '相关数据',
+    //   component: {
+    //     type: 'remoteSelect',
+    //     showInDetail: true,
+    //     showInForm: true,
+    //     'x-component-props': {
+    //       resourceName: 'collections.fields',
+    //       labelField: 'title',
+    //       valueField: 'name',
+    //       filter: {
+    //         interface: 'linkTo',
+    //       },
+    //     },
+    //   },
+    // },
+    {
+      interface: 'linkTo',
+      type: 'belongsTo',
+      name: 'associationField',
+      target: 'fields',
+      title: '相关数据表',
+      labelField: 'title',
+      // valueField: 'name',
+      component: {
+        type: 'remoteSelect',
+        showInDetail: true,
+        showInForm: true,
+        'x-component-props': {
+          resourceName: 'collections.fields',
+          labelField: 'title',
+          // valueField: 'name',
+          objectValue: true,
+          filter: {
+            interface: 'linkTo',
+          },
+        },
+        "x-linkages": [
+          {
+            type: "value:visible",
+            target: "viewName",
+            condition: "{{ !!$self.value }}"
+          },
+          {
+            type: "value:schema",
+            target: "viewName",
+            condition: "{{ !!$self.value }}",
+            schema: {
+              "x-component-props": {
+                associatedKey: "{{ $self.value.target }}"
+              },
+            },
           },
         ],
       },
     },
     {
       interface: 'string',
-      type: 'virtual',
-      name: 'association',
-      title: '相关数据表',
+      type: 'string',
+      name: 'viewName',
+      title: '视图',
+      labelField: 'title',
+      // valueField: 'name',
       component: {
-        type: 'drawerSelect',
+        type: 'remoteSelect',
         showInDetail: true,
         showInForm: true,
+        'x-component-props': {
+          resourceName: 'collections.views',
+          labelField: 'title',
+          valueField: 'name',
+        },
       },
     },
     {

@@ -45,6 +45,7 @@ export default function ViewFactory(props: ViewProps) {
     associatedName,
     associatedKey,
     resourceName,
+    resourceTarget,
     viewName,
     mode,
     reference,
@@ -59,9 +60,9 @@ export default function ViewFactory(props: ViewProps) {
         mode
       },
     };
-    return api.resource(resourceName).getView(params);
+    return api.resource(resourceTarget||resourceName).getView(params);
   }, {
-    refreshDeps: [associatedName, resourceName, viewName],
+    refreshDeps: [associatedName, resourceTarget, resourceName, viewName],
   });
   if (loading) {
     return <Spin/>;

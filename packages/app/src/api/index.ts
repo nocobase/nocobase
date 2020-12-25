@@ -37,6 +37,9 @@ const api = Api.create({
   },
 });
 
+api.resourcer.use(associated);
+api.resourcer.registerActionHandlers({...actions.common, ...actions.associate});
+
 api.resourcer.use(async (ctx: actions.Context, next) => {
   const token = ctx.get('Authorization').replace(/^Bearer\s+/gi, '');
   // console.log('user check', ctx.action.params.actionName);
@@ -59,8 +62,8 @@ api.resourcer.use(async (ctx: actions.Context, next) => {
 });
 
 api.resourcer.use(async (ctx: actions.Context, next) => {
-  const { resourceName, fields = {} } = ctx.action.params;
-  const table = ctx.db.getTable(resourceName);
+  const { resourceField, resourceName, fields = {} } = ctx.action.params;
+  const table = ctx.db.getTable(resourceField ? resourceField.options.target : resourceName);
   // ctx.state.developerMode = {[Op.not]: null};
   ctx.state.developerMode = false;
   if (table && table.hasField('developerMode') && ctx.state.developerMode === false) {
@@ -89,13 +92,13 @@ api.resourcer.use(async (ctx: actions.Context, next) => {
 });
 
 api.resourcer.use(async (ctx: actions.Context, next) => {
-  const { resourceName, viewName, filter } = ctx.action.params;
+  const { resourceField, resourceName, viewName, filter } = ctx.action.params;
   // TODO: 需要补充默认视图的情况
   let view: any;
   if (viewName) {
     view = await ctx.db.getModel('views').findOne({
       where: {
-        collection_name: resourceName,
+        collection_name: resourceField ? resourceField.options.target : resourceName,
         name: viewName,
       }
     });
@@ -108,9 +111,6 @@ api.resourcer.use(async (ctx: actions.Context, next) => {
   }
   await next();
 });
-
-api.resourcer.use(associated);
-api.resourcer.registerActionHandlers({...actions.common, ...actions.associate});
 
 api.registerPlugin('plugin-collections', [path.resolve(__dirname, '../../../plugin-collections'), {}]);
 api.registerPlugin('plugin-pages', [path.resolve(__dirname, '../../../plugin-pages'), {}]);
