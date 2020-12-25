@@ -1,4 +1,4 @@
-import { Op } from 'sequelize';
+import { literal, Op } from 'sequelize';
 
 import { initDatabase, agent } from './index';
 
@@ -23,8 +23,8 @@ describe('list', () => {
     beforeEach(async () => {
       const User = db.getModel('users');
       await User.bulkCreate([
-        { name: 'a', ...timestamps },
-        { name: 'b', ...timestamps },
+        { name: 'a', ...timestamps, nicknames: ['aa', 'aaa'] },
+        { name: 'b', ...timestamps, nicknames: [] },
         { name: 'c', ...timestamps }
       ]);
       const users = await User.findAll();
@@ -140,7 +140,156 @@ describe('list', () => {
           expect(response.body.count).toBe(1);
           expect(response.body.rows[0].id).toBe(2);
         });
-      })
+      });
+
+      describe('custom ops', () => {
+        it('$null', async () => {
+          const Post = db.getModel('posts');
+          const expected = await Post.findAll({
+            where: {
+              published_at: null
+            }
+          });
+          const response = await agent.get('/posts?filter[published_at.$null]=');
+          expect(response.body.count).toBe(expected.length);
+        });
+
+        describe('anyOf', () => {
+          it('$anyOf for 1 element in definition', async () => {
+            const User = db.getModel('users');
+            const expected = await User.findOne({
+              where: {
+                nicknames: { [Op.contains]: 'aa' }
+              }
+            });
+            const response = await agent.get('/users?filter[nicknames.$anyOf][]=aa');
+            expect(response.body.count).toBe(1);
+            expect(response.body.rows[0].name).toBe(expected.name);
+          });
+  
+          it('$anyOf for all elements in definition', async () => {
+            const User = db.getModel('users');
+            const expected = await User.findOne({
+              where: {
+                nicknames: { [Op.or]: [
+                  { [Op.contains]: 'aaa' },
+                  { [Op.contains]: 'aa' }
+                ] }
+              }
+            });
+            const response = await agent.get('/users?filter[nicknames.$anyOf]=aaa,aa');
+            expect(response.body.count).toBe(1);
+            expect(response.body.rows[0].name).toBe(expected.name);
+          });
+  
+          it('$anyOf for some element not in definition', async () => {
+            const User = db.getModel('users');
+            const expected = await User.findOne({
+              where: {
+                nicknames: { [Op.or]: [{ [Op.contains]: ['aaa'] }, { [Op.contains]: ['a'] }] }
+              }
+            });
+            const response = await agent.get('/users?filter[nicknames.$anyOf]=aaa,a');
+            expect(response.body.count).toBe(1);
+            expect(response.body.rows[0].name).toBe(expected.name);
+          });
+  
+          it('$anyOf for no element', async () => {
+            const User = db.getModel('users');
+            const expected = await User.findAll();
+            const response = await agent.get('/users?filter={"nicknames.$anyOf":[]}');
+            expect(response.body.count).toBe(expected.length);
+          });
+        });
+
+        describe('$allOf', () => {
+          it('$allOf for no element', async () => {
+            const response = await agent.get('/users?filter={"nicknames.$allOf":[]}');
+            expect(response.body.count).toBe(3);
+          });
+
+          it('$allOf for different element', async () => {
+            const response = await agent.get('/users?filter[nicknames.$allOf]=a,aa');
+            expect(response.body.count).toBe(0);
+          });
+
+          it('$allOf for less element', async () => {
+            const response = await agent.get('/users?filter[nicknames.$allOf][]=aa&fields=name,nicknames');
+            expect(response.body.count).toBe(1);
+            expect(response.body.rows).toEqual([
+              { name: 'a', nicknames: ['aa', 'aaa'] }
+            ]);
+          });
+
+          it('$allOf for same element', async () => {
+            const response = await agent.get('/users?filter[nicknames.$allOf]=aa,aaa&fields=name,nicknames');
+            expect(response.body.count).toBe(1);
+            expect(response.body.rows).toEqual([
+              { name: 'a', nicknames: ['aa', 'aaa'] }
+            ]);
+          });
+
+          it('$allOf for more element', async () => {
+            const response = await agent.get('/users?filter[nicknames.$allOf]=a,aa,aaa');
+            expect(response.body.count).toBe(0);
+          });
+        });
+
+        // TODO(bug): 没找到合适的 sql 查询不包含任意值的结果
+        describe.skip('$notAnyOf', () => {
+          it('$notAnyOf for no element', async () => {
+            const response = await agent.get('/users?filter={"nicknames.$notAnyOf":[]}');
+            expect(response.body.count).toBe(3);
+          });
+
+          it('$notAnyOf for different element', async () => {
+            const response = await agent.get('/users?filter[nicknames.$notAnyOf]=a,aa');
+            expect(response.body.count).toBe(2);
+          });
+
+          it('$notAnyOf for less element', async () => {
+            const response = await agent.get('/users?filter[nicknames.$notAnyOf][]=aa&fields=name,nicknames');
+            expect(response.body.count).toBe(2);
+          });
+
+          it('$notAnyOf for same element', async () => {
+            const response = await agent.get('/users?filter[nicknames.$notAnyOf]=aa,aaa&fields=name,nicknames');
+            expect(response.body.count).toBe(2);
+          });
+
+          it('$notAnyOf for more element', async () => {
+            const response = await agent.get('/users?filter[nicknames.$notAnyOf]=a,aa,aaa');
+            expect(response.body.count).toBe(2);
+          });
+        });
+
+        describe.only('$match', () => {
+          it('$match for no element', async () => {
+            const response = await agent.get('/users?filter={"nicknames.$match":[]}');
+            expect(response.body.count).toBe(2);
+          });
+
+          it('$match for different element', async () => {
+            const response = await agent.get('/users?filter[nicknames.$match]=a,aa');
+            expect(response.body.count).toBe(0);
+          });
+
+          it('$match for less element', async () => {
+            const response = await agent.get('/users?filter[nicknames.$match][]=aa&fields=name,nicknames');
+            expect(response.body.count).toBe(0);
+          });
+
+          it('$match for same element', async () => {
+            const response = await agent.get('/users?filter[nicknames.$match]=aa,aaa&fields=name,nicknames');
+            expect(response.body.count).toBe(1);
+          });
+
+          it('$match for more element', async () => {
+            const response = await agent.get('/users?filter[nicknames.$match]=a,aa,aaa');
+            expect(response.body.count).toBe(0);
+          });
+        });
+      });
     });
 
     describe('page', () => {
@@ -349,8 +498,8 @@ describe('list', () => {
     // TODO(bug)
     it.skip('get posts of user with comments', async () => {
       const response = await agent
-        .get(`/users/1/posts?fields=comments.content,user.name&filter[comments.status]=draft&sort=-content&page=1&perPage=2`);
-      
+        .get(`/users/1/posts?fields=comments.content,user.name&filter[comments.status]=draft&sort=-comments.content&page=1&perPage=2`);
+
       expect(response.body).toEqual({
         count: 1,
         page: 1,
@@ -366,22 +515,55 @@ describe('list', () => {
         ]
       });
     });
+
+    it('count field in hasMany', async () => {
+      try {
+      const response = await agent
+        .get(`/users/1?fields=name,posts_count`);
+      console.log(response.body);
+      } catch (err) {
+        console.error(err);
+      }
+    });
+
+    it('count field in hasMany', async () => {
+      try {
+      const response = await agent
+        .get(`/users/1/posts?fields=title,comments_count`);
+      console.log(response.body);
+      } catch (err) {
+        console.error(err);
+      }
+    });
   });
 
   describe('belongsToMany', () => {
     beforeEach(async () => {
+      const Tag = db.getModel('tags');
+      const tags = await Tag.bulkCreate([
+        {name: 'tag1', status: 'published'},
+        {name: 'tag2', status: 'draft'},
+        {name: 'tag3', status: 'published'},
+        {name: 'tag4', status: 'draft'},
+        {name: 'tag5', status: 'published'},
+        {name: 'tag6', status: 'draft'},
+        {name: 'tag7', status: 'published'},
+        {name: 'tag8', status: 'published'},
+        {name: 'tag9', status: 'draft'},
+        {name: 'tag10', status: 'published'},
+      ]);
       const Post = db.getModel('posts');
-      const post = await Post.create();
-      await post.updateAssociations({
-        tags: [
-          {name: 'tag1', status: 'published'},
-          {name: 'tag2', status: 'draft'},
-          {name: 'tag3', status: 'published'},
-          {name: 'tag4', status: 'draft'},
-          {name: 'tag5', status: 'published'},
-          {name: 'tag6', status: 'draft'},
-          {name: 'tag7', status: 'published'},
-        ],
+      const [post1, post2] = await Post.bulkCreate([{}, {}]);
+      await post1.updateAssociations({
+        tags: [1,2,3,4,5,6,7]
+      });
+      await post2.updateAssociations({
+        tags: [2,5,8]
+      });
+      const User = db.getModel('users');
+      const user = await User.create();
+      await user.updateAssociations({
+        posts: [post1]
       });
     });
 
@@ -396,6 +578,13 @@ describe('list', () => {
         page: 2,
         per_page: 2
       });
-    });    
+    });
+
+    // TODO(bug): SQL 报错
+    it.skip('list2', async () => {
+      const response = await agent
+        .get(`/users/1/posts?fields=tags`);
+      console.log(response.body);
+    });
   });
 });

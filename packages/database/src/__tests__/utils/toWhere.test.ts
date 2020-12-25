@@ -140,6 +140,110 @@ describe('utils.toWhere', () => {
         id: { [Op.between]: ['2020-11-01T00:00:00.000Z', '2020-12-01T00:00:00.000Z'] }
       });
     });
+
+    it('Op.$null', () => {
+      expect(toWhere({
+        'id.$null': true
+      })).toEqual({
+        id: { [Op.is]: null }
+      });
+    });
+
+    it('Op.$null', () => {
+      expect(toWhere({
+        'id.$null': false
+      })).toEqual({
+        id: { [Op.is]: null }
+      });
+    });
+
+    it('Op.$null', () => {
+      expect(toWhere({
+        'id.$null': null
+      })).toEqual({
+        id: { [Op.is]: null }
+      });
+    });
+
+    it('Op.$notNull', () => {
+      expect(toWhere({
+        'id.$notNull': true
+      })).toEqual({
+        id: { [Op.not]: null }
+      });
+    });
+
+    it('Op.$notNull', () => {
+      expect(toWhere({
+        'id.$notNull': false
+      })).toEqual({
+        id: { [Op.not]: null }
+      });
+    });
+
+    it('Op.$notNull', () => {
+      expect(toWhere({
+        'id.$notNull': null
+      })).toEqual({
+        id: { [Op.not]: null }
+      });
+    });
+
+    it('Op.$includes', () => {
+      expect(toWhere({
+        'string.$includes': 'a'
+      })).toEqual({
+        string: { [Op.iLike]: '%a%' }
+      });
+    });
+
+    it('Op.$notIncludes', () => {
+      expect(toWhere({
+        'string.$notIncludes': 'a'
+      })).toEqual({
+        string: { [Op.notILike]: '%a%' }
+      });
+    });
+
+    it('Op.$startsWith', () => {
+      expect(toWhere({
+        'string.$startsWith': 'a'
+      })).toEqual({
+        string: { [Op.iLike]: 'a%' }
+      });
+    });
+
+    it('Op.$notStartsWith', () => {
+      expect(toWhere({
+        'string.$notStartsWith': 'a'
+      })).toEqual({
+        string: { [Op.notILike]: 'a%' }
+      });
+    });
+
+    it('Op.$endsWith', () => {
+      expect(toWhere({
+        'string.$endsWith': 'a'
+      })).toEqual({
+        string: { [Op.iLike]: '%a' }
+      });
+    });
+
+    it('Op.$notEndsWith', () => {
+      expect(toWhere({
+        'string.$notEndsWith': 'a'
+      })).toEqual({
+        string: { [Op.notILike]: '%a' }
+      });
+    });
+
+    it('Op.$anyOf', () => {
+      expect(toWhere({
+        'array.$anyOf': ['a', 'b']
+      })).toEqual({
+        array: { [Op.or]: [{ [Op.contains]: 'a' }, { [Op.contains]: 'b' }] }
+      });
+    });
   });
 
   describe('group by logical operator', () => {

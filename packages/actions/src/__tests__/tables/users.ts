@@ -9,8 +9,17 @@ export default {
       name: 'name',
     },
     {
-      type: 'hasone',
+      type: 'jsonb',
+      name: 'nicknames',
+      defaultValue: []
+    },
+    {
+      type: 'hasOne',
       name: 'profile',
     },
+    {
+      type: 'hasMany',
+      name: 'posts'
+    }
   ],
 } as TableOptions;

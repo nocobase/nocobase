@@ -1,15 +1,7 @@
-import { Op, Utils, Sequelize } from 'sequelize';
+import { Utils } from 'sequelize';
 import Model, { ModelCtor } from './model';
 import _ from 'lodash';
-
-const op = new Map();
-
-for (const key in Op) {
-  op.set(key, Op[key]);
-  const val = Utils.underscoredIf(key, true);
-  op.set(val, Op[key]);
-  op.set(val.replace(/_/g, ''), Op[key]);
-}
+import op from './op';
 
 interface ToWhereContext {
   model?: ModelCtor<Model> | Model | typeof Model;
@@ -52,7 +44,20 @@ export function toWhere(options: any, context: ToWhereContext = {}) {
     }
     else {
       // TODO: to fix same op key as field name
-      values[op.has(key) ? op.get(key) : key] = toWhere(items[key], context);
+      const opKey = op.get(key);
+      let k;
+      switch (typeof opKey) {
+        case 'function':
+          Object.assign(values, opKey(items[key]));
+          continue;
+        case 'undefined':
+          k = key;
+          break;
+        default:
+          k = opKey;
+          break;
+      }
+      values[k] = toWhere(items[key], context);
     }
   }
   return values;

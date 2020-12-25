@@ -20,9 +20,12 @@ import update2 from './actions/update2';
 function getTestKey() {
   const { id } = require.main;
   const key = id
-    .replace(__dirname, '')
+    .replace(`${process.env.PWD}/packages`, '')
+    .replace(/src\/__tests__/g, '')
     .replace('.test.ts', '')
-    .replace(/[^\w]/g, '_');
+    .replace(/[^\w]/g, '_')
+    .replace(/_+/g, '_')
+    .replace(/^_|_$/g, '');
   return key
 }
 
@@ -128,7 +131,7 @@ export async function initDatabase() {
     const options = requireModule(file);
     database.table(typeof options === 'function' ? options(database) : {
       ...options,
-      tableName: `${options.tableName}_${key}`
+      tableName: `${key}_${options.tableName}`
     });
   });
   await database.sync({
