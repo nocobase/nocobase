@@ -197,7 +197,9 @@ export function parseQuery(input: string): any {
   // 自带 query 处理的不太给力，需要用 qs 转一下
   const query = qs.parse(input, {
     // 原始 query string 中如果一个键连等号“=”都没有可以被认为是 null 类型
-    strictNullHandling: true
+    strictNullHandling: true,
+    // 逗号分隔转换为数组
+    comma: true
   });
   // filter 支持 json string
   if (typeof query.filter === 'string') {

@@ -1222,13 +1222,6 @@ describe('belongsToMany', () => {
     });
     expect(await post.countTags()).toBe(1);
   });
-  // TODO(question)
-  it.skip('update with primaryKey (defined targetKey)', async () => {
-    await post.updateAssociations({
-      tags: tag2.id,
-    });
-    expect(await post.countTags()).toBe(1);
-  });
   it('update with model', async () => {
     await post.updateAssociations({
       tags: [tag1, tag2],
