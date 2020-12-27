@@ -196,5 +196,7 @@ api.registerPlugin('plugin-file-manager', [path.resolve(__dirname, '../../../plu
     default: true
   });
   await database.getModel('collections').import(require('./collections/example').default);
+  await database.getModel('collections').import(require('./collections/authors').default);
+  await database.getModel('collections').import(require('./collections/books').default);
   await database.close();
 })();
