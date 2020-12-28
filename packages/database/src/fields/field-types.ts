@@ -788,3 +788,98 @@ export class SORT extends NUMBER {
     return extremum + (next === 'max' ? 1 : -1);
   }
 }
+
+export class AsDefault extends BOOLEAN {
+
+  public readonly options: Options.AsDefaultOptions;
+
+  static async beforeSaveHook(this: AsDefault, model, options) {
+    const { name, defaultValue = false, scope = [] } = this.options;
+    const { transaction } = options;
+    const value = model.get(name) || defaultValue;
+    model.set(name, value);
+    if (value) {
+      const where = model.getValuesByFieldNames(scope);
+      await this.setOthers({ where, transaction });
+    }
+  }
+
+  static async beforeBulkCreateHook(this: AsDefault, models, options) {
+    const { name, defaultValue = false, scope = [] } = this.options;
+    const { transaction } = options;
+
+    // 如果未配置范围限定，则可以进行性能优化处理（常用情况）。
+    if (!scope.length) {
+      await this.makeGroup(models, { transaction });
+      return;
+    }
+
+    const groups = new Map<{ [key: string]: any }, any[]>();
+    // 按 scope 先分组
+    models.forEach(model => {
+      const where = model.getValuesByFieldNames(scope);
+      // 以 map 作为 key
+      let combo;
+      let group;
+      // 查找与 where 值相等的组合
+      for (combo of groups.keys()) {
+        if (whereCompare(combo, where)) {
+          group = groups.get(combo);
+          break;
+        }
+      }
+      if (!group) {
+        group = [];
+        groups.set(where, group);
+      }
+      group.push(model);
+    });
+
+    for (const [where, group] of groups) {
+      await this.makeGroup(group, { where, transaction });
+    }
+  }
+
+  constructor({ type, ...options }: Options.AsDefaultOptions, context: FieldContext) {
+    super({ ...options, type: 'boolean' }, context);
+    const Model = context.sourceTable.getModel();
+    // TODO(feature): 可考虑策略模式，以在需要时对外提供接口
+    const beforeSaveHook = AsDefault.beforeSaveHook.bind(this);
+    Model.addHook('beforeCreate', beforeSaveHook);
+    Model.addHook('beforeUpdate', beforeSaveHook);
+    // Model.addHook('beforeUpsert', beforeSaveHook);
+    Model.addHook('beforeBulkCreate', AsDefault.beforeBulkCreateHook.bind(this));
+    // TODO(optimize): bulkUpdate 的 hooks 参数不一样，没有对象列表，考虑到很少用，暂时不实现
+    // Model.addHook('beforeBulkUpdate', beforeBulkCreateHook);
+  }
+
+  public getDataType() {
+    return DataTypes.BOOLEAN;
+  }
+
+  public async setOthers(this: AsDefault, { where = {}, transaction }) {
+    const { name } = this.options;
+    const table = this.context.sourceTable;
+    const Model = table.getModel();
+    // 防止 beforeBulkUpdate hook 死循环，因外层 bulkUpdate 并不禁用，正常更新无影响。
+    await Model.update({ [name]: false }, { where, transaction, hooks: false });
+  }
+
+  async makeGroup(this: AsDefault, models, { where = {}, transaction }) {
+    const { name, defaultValue = false } = this.options;
+    let lastTrue;
+    models.forEach(model => {
+      if (model.get(name)) {
+        lastTrue = model;
+      }
+      model.set(name, false);
+    });
+    if (lastTrue) {
+      lastTrue.set(name, true);
+    } else if (defaultValue) {
+      models[models.length - 1].set(name, true);
+    }
+
+    await this.setOthers({ where, transaction });
+  }
+}

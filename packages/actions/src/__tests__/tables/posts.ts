@@ -44,6 +44,26 @@ export default {
       scope: ['user']
     },
     {
+      type: 'asDefault',
+      name: 'pinned'
+    },
+    {
+      type: 'asDefault',
+      name: 'latest',
+      defaultValue: true
+    },
+    {
+      type: 'asDefault',
+      name: 'pinned_in_status',
+      scope: ['status']
+    },
+    {
+      type: 'asDefault',
+      name: 'pinned_in_user',
+      scope: ['user'],
+      defaultValue: true
+    },
+    {
       type: 'json',
       name: 'meta'
     }
