@@ -29,6 +29,7 @@ export function CollectionTabPane(props) {
       <ViewFactory
         {...props} 
         viewName={viewName}
+        isAssociationView={true}
         {...params}
       />
     </div>
