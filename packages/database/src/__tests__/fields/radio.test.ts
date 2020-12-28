@@ -1,29 +1,80 @@
-import { initDatabase, agent } from './index';
+import { getDatabase } from '..';
 
-describe('create', () => {
+describe('radio', () => {
   let db;
   
   beforeEach(async () => {
-    db = await initDatabase();
+    db = getDatabase();
+
+    db.table({
+      name: 'users',
+      fields: [
+        {
+          type: 'string',
+          name: 'name'
+        },
+        {
+          type: 'hasMany',
+          name: 'posts'
+        }
+      ]
+    });
+
+    db.table({
+      name: 'posts',
+      fields: [
+        {
+          type: 'string',
+          name: 'title',
+        },
+        {
+          type: 'belongsTo',
+          name: 'user',
+        },
+        {
+          type: 'string',
+          name: 'status',
+          defaultValue: 'published',
+        },
+        {
+          type: 'radio',
+          name: 'pinned'
+        },
+        {
+          type: 'radio',
+          name: 'latest',
+          defaultValue: true
+        },
+        {
+          type: 'radio',
+          name: 'pinned_in_status',
+          scope: ['status']
+        },
+        {
+          type: 'radio',
+          name: 'pinned_in_user',
+          scope: ['user'],
+          defaultValue: true
+        }
+      ]
+    });
+
+    await db.sync({ force: true });
   });
   
-  afterAll(() => db.close());
+  afterEach(() => db.close());
 
   describe('create', () => {
     it('undefined value as defaultValue', async () => {
-      const created1 = await agent
-        .post('/posts')
-        .send({ title: 'title1', pinned: true });
-      expect(created1.body.pinned).toBe(true);
-      expect(created1.body.latest).toBe(true);
-
-      const created2 = await agent
-        .post('/posts')
-        .send({ title: 'title2' });
-      expect(created2.body.pinned).toBe(false);
-      expect(created2.body.latest).toBe(true);
-
       const Post = db.getModel('posts');
+      const created1 = await Post.create({ title: 'title1', pinned: true });
+      expect(created1.pinned).toBe(true);
+      expect(created1.latest).toBe(true);
+
+      const created2 = await Post.create({ title: 'title2' });
+      expect(created2.pinned).toBe(false);
+      expect(created2.latest).toBe(true);
+
       const posts = await Post.findAll({ order: [['id', 'ASC']] });
 
       expect(posts.map(({ pinned, latest }) => ({ pinned, latest }))).toEqual([
@@ -33,17 +84,13 @@ describe('create', () => {
     });
 
     it('true value set', async () => {
-      const created1 = await agent
-        .post('/posts')
-        .send({ title: 'title1', pinned: true });
-      expect(created1.body.pinned).toBe(true);
-
-      const created2 = await agent
-        .post('/posts')
-        .send({ title: 'title2', pinned: true });
-      expect(created2.body.pinned).toBe(true);
-
       const Post = db.getModel('posts');
+      const created1 = await Post.create({ title: 'title1', pinned: true });
+      expect(created1.pinned).toBe(true);
+
+      const created2 = await Post.create({ title: 'title2', pinned: true });
+      expect(created2.pinned).toBe(true);
+
       const posts = await Post.findAll({ order: [['id', 'ASC']] });
 
       expect(posts.map(({ pinned }) => pinned)).toEqual([false, true]);
@@ -66,11 +113,11 @@ describe('create', () => {
 
     it('create with scopes', async () => {
       const User = db.getModel('users');
-      await User.bulkCreate([{}, {}]);
+      const users = await User.bulkCreate([{}, {}]);
       const Post = db.getModel('posts');
       const bulkCreated = await Post.bulkCreate([
-        { title: 'title1', status: 'publish', user_id: 1},
-        { title: 'title2', status: 'publish', user_id: 2, pinned_in_status: true },
+        { title: 'title1', status: 'published', user_id: 1},
+        { title: 'title2', status: 'published', user_id: 2, pinned_in_status: true },
         { title: 'title3', status: 'draft', user_id: 1, pinned_in_status: true },
       ]);
       expect(bulkCreated.map(({ pinned_in_status, pinned_in_user }) => ({ pinned_in_status, pinned_in_user }))).toEqual([
@@ -79,11 +126,9 @@ describe('create', () => {
         { pinned_in_status: true, pinned_in_user: true }
       ]);
 
-      const response = await agent
-        .post('/users/2/posts')
-        .send({ title: 'title4', status: 'draft', pinned_in_status: true });
-      expect(response.body.pinned_in_status).toBe(true);
-      expect(response.body.pinned_in_user).toBe(true);
+      const user1Post = await users[1].createPost({ title: 'title4', status: 'draft', pinned_in_status: true });
+      expect(user1Post.pinned_in_status).toBe(true);
+      expect(user1Post.pinned_in_user).toBe(true);
 
       const posts = await Post.findAll({ order: [['id', 'ASC']] });
       expect(posts.map(({ title, pinned_in_status, pinned_in_user }) => ({ title, pinned_in_status, pinned_in_user }))).toMatchObject([
@@ -103,14 +148,12 @@ describe('create', () => {
         { title: 'title2' }
       ]);
 
-      const response = await agent
-        .put('/posts/1')
-        .send({ pinned: false });
-      expect(response.body.pinned).toBe(false);
+      const created = await Post.create({ pinned: false });
+      expect(created.pinned).toBe(false);
 
-      const results = await Post.findAll({ order: [['title', 'ASC']] });
+      const posts = await Post.findAll({ order: [['title', 'ASC']] });
 
-      expect(results.map(({ pinned }) => pinned)).toEqual([false, false]);
+      expect(posts.map(({ pinned }) => pinned)).toEqual([true, false, false]);
     });
 
     it('update one to true makes others to false', async () => {
@@ -120,14 +163,12 @@ describe('create', () => {
         { title: 'title2' }
       ]);
 
-      const response = await agent
-        .put('/posts/2')
-        .send({ pinned: true });
-      expect(response.body.pinned).toBe(true);
+      const created = await Post.create({ pinned: true });
+      expect(created.pinned).toBe(true);
 
-      const results = await Post.findAll({ order: [['title', 'ASC']] });
+      const posts = await Post.findAll({ order: [['title', 'ASC']] });
 
-      expect(results.map(({ pinned }) => pinned)).toEqual([false, true]);
+      expect(posts.map(({ pinned }) => pinned)).toEqual([false, false, true]);
     });
   });
 });

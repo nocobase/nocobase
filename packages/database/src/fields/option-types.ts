@@ -193,8 +193,8 @@ export interface SortOptions extends NumberOptions {
   next?: 'min' | 'max';
 }
 
-export interface AsDefaultOptions extends Omit<BooleanOptions, 'type'> {
-  type: 'asDefault';
+export interface RadioOptions extends Omit<BooleanOptions, 'type'> {
+  type: 'radio';
   /**
    * 默认限定范围
    * 

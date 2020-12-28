@@ -789,11 +789,11 @@ export class SORT extends NUMBER {
   }
 }
 
-export class AsDefault extends BOOLEAN {
+export class Radio extends BOOLEAN {
 
-  public readonly options: Options.AsDefaultOptions;
+  public readonly options: Options.RadioOptions;
 
-  static async beforeSaveHook(this: AsDefault, model, options) {
+  static async beforeSaveHook(this: Radio, model, options) {
     const { name, defaultValue = false, scope = [] } = this.options;
     const { transaction } = options;
     const value = model.get(name) || defaultValue;
@@ -804,7 +804,7 @@ export class AsDefault extends BOOLEAN {
     }
   }
 
-  static async beforeBulkCreateHook(this: AsDefault, models, options) {
+  static async beforeBulkCreateHook(this: Radio, models, options) {
     const { name, defaultValue = false, scope = [] } = this.options;
     const { transaction } = options;
 
@@ -840,15 +840,15 @@ export class AsDefault extends BOOLEAN {
     }
   }
 
-  constructor({ type, ...options }: Options.AsDefaultOptions, context: FieldContext) {
+  constructor({ type, ...options }: Options.RadioOptions, context: FieldContext) {
     super({ ...options, type: 'boolean' }, context);
     const Model = context.sourceTable.getModel();
     // TODO(feature): 可考虑策略模式，以在需要时对外提供接口
-    const beforeSaveHook = AsDefault.beforeSaveHook.bind(this);
+    const beforeSaveHook = Radio.beforeSaveHook.bind(this);
     Model.addHook('beforeCreate', beforeSaveHook);
     Model.addHook('beforeUpdate', beforeSaveHook);
     // Model.addHook('beforeUpsert', beforeSaveHook);
-    Model.addHook('beforeBulkCreate', AsDefault.beforeBulkCreateHook.bind(this));
+    Model.addHook('beforeBulkCreate', Radio.beforeBulkCreateHook.bind(this));
     // TODO(optimize): bulkUpdate 的 hooks 参数不一样，没有对象列表，考虑到很少用，暂时不实现
     // Model.addHook('beforeBulkUpdate', beforeBulkCreateHook);
   }
@@ -857,7 +857,7 @@ export class AsDefault extends BOOLEAN {
     return DataTypes.BOOLEAN;
   }
 
-  public async setOthers(this: AsDefault, { where = {}, transaction }) {
+  public async setOthers(this: Radio, { where = {}, transaction }) {
     const { name } = this.options;
     const table = this.context.sourceTable;
     const Model = table.getModel();
@@ -865,7 +865,7 @@ export class AsDefault extends BOOLEAN {
     await Model.update({ [name]: false }, { where, transaction, hooks: false });
   }
 
-  async makeGroup(this: AsDefault, models, { where = {}, transaction }) {
+  async makeGroup(this: Radio, models, { where = {}, transaction }) {
     const { name, defaultValue = false } = this.options;
     let lastTrue;
     let lastNull;
