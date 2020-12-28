@@ -1,4 +1,5 @@
 import FieldModel from '../models/field';
+import { BELONGSTO, BELONGSTOMANY, HASMANY } from '@nocobase/database';
 
 export default async function (model: FieldModel, options: any = {}) {
   const { migrate = true } = options;
@@ -16,4 +17,5 @@ export default async function (model: FieldModel, options: any = {}) {
   if (migrate) {
     await model.migrate(options);
   }
+  await model.generatePairField(options);
 }

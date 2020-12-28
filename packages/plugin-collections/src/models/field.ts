@@ -6,6 +6,7 @@ import { merge } from '../utils';
 import { BuildOptions } from 'sequelize';
 import { SaveOptions, Utils } from 'sequelize';
 import { generateCollectionName } from './collection';
+import { BELONGSTO, BELONGSTOMANY, HASMANY } from '@nocobase/database';
 
 interface FieldImportOptions extends SaveOptions {
   parentId?: number;
@@ -34,6 +35,7 @@ export class FieldModel extends BaseModel {
         // 关系字段如果没有 name，相关参数都随机生成
         if (!data.name) {
           data.name = generateFieldName();
+          data.paired = true;
           // 通用，关系表
           if (!data.target) {
             data.target  = generateCollectionName();
@@ -73,6 +75,91 @@ export class FieldModel extends BaseModel {
 
   generateName() {
     this.set('name', generateFieldName());
+  }
+
+  async generatePairField(options) {
+    const {interface: control, paired, type, target, sourceKey, targetKey, foreignKey, otherKey, through, collection_name} = this.get();
+    if (control !== 'linkTo' || type !== 'belongsToMany' || !collection_name || !paired) {
+      return;
+    }
+    if (!this.database.isDefined(target)) {
+      return;
+    }
+    const targetTable = this.database.getTable(target);
+    const Field = FieldModel;
+    let labelField = 'id';
+    const targetField = await Field.findOne({
+      ...options,
+      where: {
+        type: 'string',
+        collection_name: target,
+      },
+      order: [['sort', 'asc']],
+    });
+    if (targetField) {
+      labelField = targetField.get('name');
+    }
+    const collection = await this.getCollection();
+    let targetOptions:any = {
+      ...types.linkTo.options,
+      interface: 'linkTo',
+      title: collection.get('title'),
+      collection_name: target,
+      options: {
+        paired: true,
+        target: collection_name,
+        labelField,
+      },
+      component: {
+        showInTable: true,
+        showInForm: true,
+        showInDetail: true,
+      },
+    };
+    // 暂时不处理 hasone
+    switch (type) {
+      case 'hasMany':
+        targetOptions.type = 'belongsTo';
+        targetOptions.options.targetKey = sourceKey;
+        targetOptions.options.foreignKey = foreignKey;
+        break;
+      case 'belongsTo':
+        targetOptions.type = 'hasMany';
+        targetOptions.options.sourceKey = targetKey;
+        targetOptions.options.foreignKey = foreignKey;
+        break;
+      case 'belongsToMany':
+        targetOptions.type = 'belongsToMany';
+        targetOptions.options.sourceKey = targetKey;
+        targetOptions.options.foreignKey = otherKey;
+        targetOptions.options.targetKey = sourceKey;
+        targetOptions.options.otherKey = foreignKey;
+        targetOptions.options.through = through;
+        break;
+    }
+    const associations = targetTable.getAssociations();
+    // console.log(associations);
+    for (const association of associations.values()) {
+      if (association instanceof BELONGSTOMANY) {
+        if (
+          association.options.foreignKey === otherKey 
+          && association.options.sourceKey === targetKey 
+          && association.options.otherKey === foreignKey 
+          && association.options.targetKey === sourceKey 
+          && association.options.through === through
+        ) {
+          return;
+        }
+      }
+      // if (association instanceof BELONGSTO) {
+      //   continue;
+      // }
+      // if (association instanceof HASMANY) {
+      //   continue;
+      // }
+    }
+    const f = await Field.create(targetOptions, options);
+    console.log({targetOptions}, f.get('options'));
   }
 
   setInterface(value) {

@@ -39,17 +39,17 @@ export default {
         showInForm: true,
       },
     },
-    {
-      interface: 'linkTo',
-      title: '书籍',
-      target: 'books',
-      labelField: 'name',
-      component: {
-        showInTable: true,
-        showInDetail: true,
-        showInForm: true,
-      },
-    },
+    // {
+    //   interface: 'linkTo',
+    //   title: '书籍',
+    //   target: 'books',
+    //   labelField: 'name',
+    //   component: {
+    //     showInTable: true,
+    //     showInDetail: true,
+    //     showInForm: true,
+    //   },
+    // },
     {
       interface: 'createdBy',
       title: '创建人',

@@ -5,4 +5,5 @@ export default async function (model: FieldModel, options: any = {}) {
   if (migrate) {
     await model.migrate(options);
   }
+  await model.generatePairField(options);
 }
