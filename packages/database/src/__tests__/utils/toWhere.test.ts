@@ -244,6 +244,15 @@ describe('utils.toWhere', () => {
         array: { [Op.or]: [{ [Op.contains]: 'a' }, { [Op.contains]: 'b' }] }
       });
     });
+
+    // TODO(bug)
+    it.skip('Op.$noneOf', () => {
+      expect(toWhere({
+        'array.$noneOf': ['a', 'b']
+      })).toEqual({
+        array: { [Op.not]: [{ [Op.contains]: 'a' }, { [Op.contains]: 'b' }] }
+      });
+    });
   });
 
   describe('group by logical operator', () => {

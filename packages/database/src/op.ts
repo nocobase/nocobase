@@ -46,9 +46,9 @@ op.set('$anyOf', (values: any[]) => ({
 }));
 // 包含组中所有值
 op.set('$allOf', (values: any[]) => ({ [Op.contains]: toArray(values) }));
-// TODO: 不包含组中任意值
-op.set('$notAnyOf', (values: any[]) => ({
-  [Op.or]: toArray(values).map(value => ({ [Op.contains]: value }))
+// TODO(bug): 不包含组中任意值
+op.set('$noneOf', (values: any[]) => ({
+  [Op.not]: toArray(values).map(value => ({ [Op.contains]: value }))
 }));
 // 与组中值匹配
 op.set('$match', (values: any[]) => {

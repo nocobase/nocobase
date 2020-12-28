@@ -28,6 +28,9 @@ describe('list', () => {
         { name: 'c', ...timestamps }
       ]);
       const users = await User.findAll();
+      users[0].updateSingleAssociation('profile', { city: '1101', interest: [1] });
+      users[1].updateSingleAssociation('profile', { city: '3710', interest: [1, 2] });
+      users[2].updateSingleAssociation('profile', { city: '5301', interest: [] });
 
       const Post = db.getModel('posts');
       await Post.bulkCreate(Array(25).fill(null).map((_, index) => ({
@@ -154,51 +157,65 @@ describe('list', () => {
           expect(response.body.count).toBe(expected.length);
         });
 
-        describe('anyOf', () => {
-          it('$anyOf for 1 element in definition', async () => {
-            const User = db.getModel('users');
-            const expected = await User.findOne({
-              where: {
-                nicknames: { [Op.contains]: 'aa' }
-              }
+        describe('$anyOf', () => {
+          describe('single', () => {
+            // TODO(question): 是否应该用 in/notIn 来处理单项？
+            // 或者单项存值也使用 JSON 类型也可以。
+            it.skip('$anyOf', async () => {
+              // const Profile = db.getModel('profiles');
+              // const profiles = await Profile.findAll();
+              const response = await agent.get('/profiles?filter[city.$anyOf]=Beijing,Weihai');
+              console.log(response.body);
+              // expect(response.body.count).toBe(2);
             });
-            const response = await agent.get('/users?filter[nicknames.$anyOf][]=aa');
-            expect(response.body.count).toBe(1);
-            expect(response.body.rows[0].name).toBe(expected.name);
           });
-  
-          it('$anyOf for all elements in definition', async () => {
-            const User = db.getModel('users');
-            const expected = await User.findOne({
-              where: {
-                nicknames: { [Op.or]: [
-                  { [Op.contains]: 'aaa' },
-                  { [Op.contains]: 'aa' }
-                ] }
-              }
+
+          describe('multiple', () => {
+            it('$anyOf for 1 element in definition', async () => {
+              const User = db.getModel('users');
+              const expected = await User.findOne({
+                where: {
+                  nicknames: { [Op.contains]: 'aa' }
+                }
+              });
+              const response = await agent.get('/users?filter[nicknames.$anyOf][]=aa');
+              expect(response.body.count).toBe(1);
+              expect(response.body.rows[0].name).toBe(expected.name);
             });
-            const response = await agent.get('/users?filter[nicknames.$anyOf]=aaa,aa');
-            expect(response.body.count).toBe(1);
-            expect(response.body.rows[0].name).toBe(expected.name);
-          });
   
-          it('$anyOf for some element not in definition', async () => {
-            const User = db.getModel('users');
-            const expected = await User.findOne({
-              where: {
-                nicknames: { [Op.or]: [{ [Op.contains]: ['aaa'] }, { [Op.contains]: ['a'] }] }
-              }
+            it('$anyOf for all elements in definition', async () => {
+              const User = db.getModel('users');
+              const expected = await User.findOne({
+                where: {
+                  nicknames: { [Op.or]: [
+                    { [Op.contains]: 'aaa' },
+                    { [Op.contains]: 'aa' }
+                  ] }
+                }
+              });
+              const response = await agent.get('/users?filter[nicknames.$anyOf]=aaa,aa');
+              expect(response.body.count).toBe(1);
+              expect(response.body.rows[0].name).toBe(expected.name);
             });
-            const response = await agent.get('/users?filter[nicknames.$anyOf]=aaa,a');
-            expect(response.body.count).toBe(1);
-            expect(response.body.rows[0].name).toBe(expected.name);
-          });
   
-          it('$anyOf for no element', async () => {
-            const User = db.getModel('users');
-            const expected = await User.findAll();
-            const response = await agent.get('/users?filter={"nicknames.$anyOf":[]}');
-            expect(response.body.count).toBe(expected.length);
+            it('$anyOf for some element not in definition', async () => {
+              const User = db.getModel('users');
+              const expected = await User.findOne({
+                where: {
+                  nicknames: { [Op.or]: [{ [Op.contains]: ['aaa'] }, { [Op.contains]: ['a'] }] }
+                }
+              });
+              const response = await agent.get('/users?filter[nicknames.$anyOf]=aaa,a');
+              expect(response.body.count).toBe(1);
+              expect(response.body.rows[0].name).toBe(expected.name);
+            });
+  
+            it('$anyOf for no element', async () => {
+              const User = db.getModel('users');
+              const expected = await User.findAll();
+              const response = await agent.get('/users?filter={"nicknames.$anyOf":[]}');
+              expect(response.body.count).toBe(expected.length);
+            });
           });
         });
 
@@ -235,35 +252,49 @@ describe('list', () => {
           });
         });
 
-        // TODO(bug): 没找到合适的 sql 查询不包含任意值的结果
-        describe.skip('$notAnyOf', () => {
-          it('$notAnyOf for no element', async () => {
-            const response = await agent.get('/users?filter={"nicknames.$notAnyOf":[]}');
+        // TODO(bug): 需要 toWhere 重构和操作符函数修改
+        describe.only('$noneOf', () => {
+          it('$noneOf for no element', async () => {
+            const response = await agent.get('/users?filter={"nicknames.$noneOf":[]}');
             expect(response.body.count).toBe(3);
           });
 
-          it('$notAnyOf for different element', async () => {
-            const response = await agent.get('/users?filter[nicknames.$notAnyOf]=a,aa');
+          it('$noneOf for different element', async () => {
+            const User = db.getModel('users');
+            const users = await User.findAll({
+              where: {
+                [Op.not]: {
+                  // 不使用 or 包装两个同一个 col 的条件会被转化成 and，与官方文档不符
+                  // WHERE NOT ("users"."nicknames" @> '"aa"' AND "users"."nicknames" @> '"a"')
+                  [Op.or]: [
+                    { nicknames: { [Op.contains]: 'aa' } },
+                    { nicknames: { [Op.contains]: 'a' } },
+                  ]
+                }
+              }
+            });
+            console.log(users);
+            // const response = await agent.get('/users?filter[nicknames.$noneOf]=a,aa');
+            // expect(response.body.count).toBe(2);
+          });
+
+          it('$noneOf for less element', async () => {
+            const response = await agent.get('/users?filter[nicknames.$noneOf][]=aa&fields=name,nicknames');
             expect(response.body.count).toBe(2);
           });
 
-          it('$notAnyOf for less element', async () => {
-            const response = await agent.get('/users?filter[nicknames.$notAnyOf][]=aa&fields=name,nicknames');
+          it('$noneOf for same element', async () => {
+            const response = await agent.get('/users?filter[nicknames.$noneOf]=aa,aaa&fields=name,nicknames');
             expect(response.body.count).toBe(2);
           });
 
-          it('$notAnyOf for same element', async () => {
-            const response = await agent.get('/users?filter[nicknames.$notAnyOf]=aa,aaa&fields=name,nicknames');
-            expect(response.body.count).toBe(2);
-          });
-
-          it('$notAnyOf for more element', async () => {
-            const response = await agent.get('/users?filter[nicknames.$notAnyOf]=a,aa,aaa');
+          it('$noneOf for more element', async () => {
+            const response = await agent.get('/users?filter[nicknames.$noneOf]=a,aa,aaa');
             expect(response.body.count).toBe(2);
           });
         });
 
-        describe.only('$match', () => {
+        describe('$match', () => {
           it('$match for no element', async () => {
             const response = await agent.get('/users?filter={"nicknames.$match":[]}');
             expect(response.body.count).toBe(2);

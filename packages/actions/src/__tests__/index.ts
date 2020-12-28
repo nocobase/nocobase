@@ -81,6 +81,10 @@ resourcer.define({
   actions: actions.common,
 });
 resourcer.define({
+  name: 'profiles',
+  actions: actions.common,
+});
+resourcer.define({
   type: 'hasOne',
   name: 'users.profile',
   actions: actions.associate,
