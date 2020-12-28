@@ -139,10 +139,11 @@ export default {
     },
     {
       interface: 'boolean',
-      type: 'boolean',
+      type: 'radio',
       name: 'default',
       title: '作为默认试图',
       defaultValue: false,
+      scope: ['collection'],
       component: {
         type: 'checkbox',
         showInTable: true,

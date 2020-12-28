@@ -20,11 +20,11 @@ import {
   JSON as Json,
   JSONB as Jsonb,
   PASSWORD as Password,
-} from '../fields';
+} from '../../fields';
 import { DataTypes } from 'sequelize';
 import { ABSTRACT } from 'sequelize/lib/data-types';
-import { getDatabase } from '.';
-import Database from '..';
+import { getDatabase } from '..';
+import Database from '../..';
 
 describe('field types', () => {
   const assertTypeInstanceOf = (expected, actual) => {
