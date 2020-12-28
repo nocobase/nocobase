@@ -185,7 +185,7 @@ export default async (ctx, next) => {
     view.setDataValue('defaultTabName', get(defaultTabs, [0, 'name']));
   }
   
-  if (view.get('template') === 'SimpleTable') {
+  if (view.get('type') === 'table') {
     view.setDataValue('rowViewName', 'form');
   }
   if (view.get('updateViewName')) {
