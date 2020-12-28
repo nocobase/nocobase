@@ -17,17 +17,17 @@ export default {
         showInForm: true,
       },
     },
-    {
-      interface: 'linkTo',
-      title: '作者',
-      target: 'authors',
-      labelField: 'name',
-      component: {
-        showInTable: true,
-        showInDetail: true,
-        showInForm: true,
-      },
-    },
+    // {
+    //   interface: 'linkTo',
+    //   title: '作者',
+    //   target: 'authors',
+    //   labelField: 'name',
+    //   component: {
+    //     showInTable: true,
+    //     showInDetail: true,
+    //     showInForm: true,
+    //   },
+    // },
     {
       interface: 'createdBy',
       title: '创建人',
