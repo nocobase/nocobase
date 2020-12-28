@@ -176,10 +176,11 @@ export default {
     },
     {
       interface: 'boolean',
-      type: 'boolean',
+      type: 'asDefault',
       name: 'default',
       title: '作为默认标签页',
       defaultValue: false,
+      scope: ['collection'],
       component: {
         type: 'checkbox',
         showInTable: true,
