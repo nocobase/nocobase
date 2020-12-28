@@ -46,9 +46,11 @@ export default function ViewFactory(props: ViewProps) {
     associatedKey,
     resourceName,
     resourceTarget,
+    resourceFieldName,
     viewName,
     mode,
     reference,
+    isAssociationView = false,
   } = props;
   console.log('propspropspropspropspropspropsprops', props);
   const { data = {}, loading } = useRequest(() => {
@@ -57,6 +59,7 @@ export default function ViewFactory(props: ViewProps) {
       values: {
         associatedKey: associatedKey,
         associatedName: associatedName,
+        resourceFieldName: resourceName,
         mode
       },
     };
@@ -67,7 +70,10 @@ export default function ViewFactory(props: ViewProps) {
   if (loading) {
     return <Spin/>;
   }
-  const { template } = data;
+  let { template } = data;
+  if (isAssociationView && template === 'Table') {
+    template = 'SimpleTable';
+  }
   const Template = getViewTemplate(template);
   return Template && <Template {...props} ref={reference} schema={data}/>;
 }

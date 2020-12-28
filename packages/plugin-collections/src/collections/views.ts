@@ -141,7 +141,7 @@ export default {
       interface: 'boolean',
       type: 'boolean',
       name: 'default',
-      title: '默认视图',
+      title: '作为默认试图',
       defaultValue: false,
       component: {
         type: 'checkbox',

@@ -331,6 +331,7 @@ export const linkTo = {
   options: {
     interface: 'linkTo',
     multiple: true, // 可能影响 type
+    paired: false,
     type: 'belongsToMany',
     // name,
     // target: '关联表', // 用户会输入

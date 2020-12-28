@@ -178,7 +178,7 @@ export default {
       interface: 'boolean',
       type: 'boolean',
       name: 'default',
-      title: '默认标签页',
+      title: '作为默认标签页',
       defaultValue: false,
       component: {
         type: 'checkbox',
