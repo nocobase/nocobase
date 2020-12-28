@@ -64,8 +64,7 @@ describe('create', () => {
       ]);
     });
 
-    // TODO(bug): assciation[createAccessor] 创建时，beforeCreate 的 model 中没有 associatedKey
-    it.skip('create in self column scope', async () => {
+    it('create with scopes', async () => {
       const User = db.getModel('users');
       await User.bulkCreate([{}, {}]);
       const Post = db.getModel('posts');

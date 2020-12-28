@@ -12,5 +12,9 @@ export default {
       type: 'hasone',
       name: 'profile',
     },
+    {
+      type: 'hasMany',
+      name: 'posts'
+    }
   ],
 } as TableOptions;
