@@ -868,16 +868,20 @@ export class AsDefault extends BOOLEAN {
   async makeGroup(this: AsDefault, models, { where = {}, transaction }) {
     const { name, defaultValue = false } = this.options;
     let lastTrue;
+    let lastNull;
     models.forEach(model => {
-      if (model.get(name)) {
+      const value = model.get(name);
+      if (value) {
         lastTrue = model;
+      } else if (value == null) {
+        lastNull = model;
       }
       model.set(name, false);
     });
     if (lastTrue) {
       lastTrue.set(name, true);
-    } else if (defaultValue) {
-      models[models.length - 1].set(name, true);
+    } else if (defaultValue && lastNull) {
+      lastNull.set(name, true);
     }
 
     await this.setOthers({ where, transaction });
