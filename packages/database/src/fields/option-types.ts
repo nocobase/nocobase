@@ -193,6 +193,16 @@ export interface SortOptions extends NumberOptions {
   next?: 'min' | 'max';
 }
 
+export interface RadioOptions extends Omit<BooleanOptions, 'type'> {
+  type: 'radio';
+  /**
+   * 默认限定范围
+   * 
+   * 在同表的限定范围内的字段值相等的数据行中设置默认
+   */
+  scope?: string[];
+}
+
 export type ColumnOptions = AbstractFieldOptions 
                           | BooleanOptions 
                           | NumberOptions 
