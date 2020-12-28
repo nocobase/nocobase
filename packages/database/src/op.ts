@@ -1,4 +1,4 @@
-import { Op, Utils } from 'sequelize';
+import { Op, Utils, Sequelize } from 'sequelize';
 
 function toArray(value: any): any[] {
   if (value == null) {
@@ -23,6 +23,20 @@ for (const key in Op) {
 op.set('$null', () => ({ [Op.is]: null }));
 op.set('$notNull', () => ({ [Op.not]: null }));
 
+op.set('$isTruly', () => ({
+  [Op.eq]: true,
+}));
+op.set('$isFalsy', () => ({
+  [Op.or]: [
+    {
+      [Op.eq]: false,
+    },
+    {
+      [Op.is]: null,
+    },
+  ],
+}));
+
 // 字符串
 
 // 包含：指对应字段的值包含某个子串
@@ -45,11 +59,19 @@ op.set('$anyOf', (values: any[]) => ({
   [Op.or]: toArray(values).map(value => ({ [Op.contains]: value }))
 }));
 // 包含组中所有值
-op.set('$allOf', (values: any[]) => ({ [Op.contains]: toArray(values) }));
+op.set('$allOf', (values: any) => ({ [Op.contains]: toArray(values) }));
 // TODO(bug): 不包含组中任意值
-op.set('$noneOf', (values: any[]) => ({
-  [Op.not]: toArray(values).map(value => ({ [Op.contains]: value }))
-}));
+op.set('$noneOf', (values: any[], options) => {
+  if (!values) {
+    return Sequelize.literal('');
+  }
+  values = Array.isArray(values) ? values : [values];
+  const { field, fieldPath } = options;
+  const column = fieldPath.split('.').map(name => `"${name}"`).join('.');
+  const sql = values.map(value => `(${column})::jsonb @> '${JSON.stringify(value)}'`).join(' OR ');
+  console.log(sql);
+  return Sequelize.literal(`not (${sql})`);
+});
 // 与组中值匹配
 op.set('$match', (values: any[]) => {
   const array = toArray(values);

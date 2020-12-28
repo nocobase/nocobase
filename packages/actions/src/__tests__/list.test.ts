@@ -253,7 +253,7 @@ describe('list', () => {
         });
 
         // TODO(bug): 需要 toWhere 重构和操作符函数修改
-        describe.only('$noneOf', () => {
+        describe.skip('$noneOf', () => {
           it('$noneOf for no element', async () => {
             const response = await agent.get('/users?filter={"nicknames.$noneOf":[]}');
             expect(response.body.count).toBe(3);
@@ -457,7 +457,8 @@ describe('list', () => {
       it('appends fields', async () => {
         const response = await agent.get('/posts?fields[only]=title&fields[appends]=user.name&filter[title]=title0');
         expect(response.body.rows[0].user.name).toEqual('a');
-        expect(response.body.rows).toEqual([{ title: 'title0', user: { id: 1, name: 'a', ...timestampsStrings } }]);
+        expect(response.body.rows).toEqual([{
+          title: 'title0', user: { id: 1, nicknames: ['aa', 'aaa'], name: 'a', ...timestampsStrings } }]);
       });
     });
   });

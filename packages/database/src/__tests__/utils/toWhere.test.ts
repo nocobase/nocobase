@@ -396,6 +396,37 @@ describe('utils.toWhere', () => {
       return expect(where);
     }
 
+    it('logical and other comparation', () => {
+      toWhereExpect({
+        or: [
+          { a: 1 },
+          { b: { gt: 2 } },
+          { and: [
+            {
+              'c.and': [
+                {gt: 3, lt: 6}
+              ],
+            },
+          ] },
+        ],
+      })
+      .toEqual({
+        [Op.or]: [
+          { a: 1 }, 
+          { b: { [Op.gt]: 2 } },
+          {[Op.and]: [
+            {
+              c: {
+                [Op.and]: [
+                  { [Op.gt]: 3, [Op.lt]: 6 }
+                ]
+              },
+            }
+          ]},
+        ],
+      });
+    });
+
     it('with included association where', () => {
       toWhereExpect({
         col1: 'val1',
@@ -408,6 +439,7 @@ describe('utils.toWhere', () => {
           },
           user: {
             col1: 12,
+            'col2.lt': 2,
           },
         },
         'posts.col3.ilike': 'aa',
@@ -426,7 +458,10 @@ describe('utils.toWhere', () => {
             },
             $__include: {
               user: {
-                col1: 12
+                col1: 12,
+                col2: {
+                  [Op.lt]: 2,
+                },
               },
             },
           },
