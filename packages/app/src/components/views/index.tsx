@@ -46,6 +46,7 @@ export default function ViewFactory(props: ViewProps) {
     associatedKey,
     resourceName,
     resourceTarget,
+    resourceFieldName,
     viewName,
     mode,
     reference,
@@ -58,6 +59,7 @@ export default function ViewFactory(props: ViewProps) {
       values: {
         associatedKey: associatedKey,
         associatedName: associatedName,
+        resourceFieldName: resourceName,
         mode
       },
     };

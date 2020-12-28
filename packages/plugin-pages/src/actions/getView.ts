@@ -1,4 +1,4 @@
-import { Model, ModelCtor } from '@nocobase/database';
+import { Model, ModelCtor, BELONGSTOMANY } from '@nocobase/database';
 import { get, set } from 'lodash';
 import { Op } from 'sequelize';
 
@@ -130,7 +130,7 @@ const transforms = {
 };
 
 export default async (ctx, next) => {
-  const { resourceName, resourceKey } = ctx.action.params;
+  const { resourceName, resourceKey, values = {} } = ctx.action.params;
   const [View, Collection, Field, Action] = ctx.db.getModels(['views', 'collections', 'fields', 'actions']) as ModelCtor<Model>[];
   let view = await View.findOne(View.parseApiJson({
     filter: {
@@ -141,6 +141,16 @@ export default async (ctx, next) => {
     //   appends: ['actions', 'fields'],
     // },
   }));
+  let throughName;
+  const {associatedName, resourceFieldName} = values;
+  if (associatedName) {
+    const table = ctx.db.getTable(associatedName);
+    const resourceField = table.getField(resourceFieldName);
+    if (resourceField instanceof BELONGSTOMANY) {
+      console.log({associatedName, resourceField});
+      throughName = resourceField.options.through;
+    }
+  }
   if (!view) {
     // 如果不存在 view，新建一个
     view = new View({type: resourceKey, template: 'FilterForm'});
@@ -158,12 +168,20 @@ export default async (ctx, next) => {
       [Op.not]: 'sort',
     };
   }
-  const fields = await collection.getFields({
+  let fields = await collection.getFields({
     where,
     order: [
       ['sort', 'asc'],
     ]
   });
+  fields = fields.filter(field => {
+    if (field.get('interface') === 'linkTo') {
+      if (throughName && throughName === field.get('through')) {
+        return false;
+      }
+    }
+    return true;
+  })
   const actions = await collection.getActions({
     where: {
       developerMode: ctx.state.developerMode,
@@ -202,6 +220,7 @@ export default async (ctx, next) => {
   const viewType = view.get('type');
   const actionDefaultParams:any = {};
   const appends = [];
+  
   for (const field of fields) {
     if (!['subTable', 'linkTo', 'attachment'].includes(field.get('interface'))) {
       continue;
