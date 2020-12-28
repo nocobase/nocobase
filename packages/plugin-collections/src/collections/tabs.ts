@@ -176,7 +176,7 @@ export default {
     },
     {
       interface: 'boolean',
-      type: 'asDefault',
+      type: 'radio',
       name: 'default',
       title: '作为默认标签页',
       defaultValue: false,
