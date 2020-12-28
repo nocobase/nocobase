@@ -259,19 +259,14 @@ export async function create(ctx: Context, next: Next) {
       throw new Error(`${associatedName} associated model invalid`);
     }
     const { create } = resourceField.getAccessors();
-    // @ts-ignore
     model = await associated[create](values, options);
-    await model.updateAssociations(values, options);
-    ctx.body = model;
   } else {
     const ResourceModel = ctx.db.getModel(resourceName);
-    // @ts-ignore
     model = await ResourceModel.create(values, options);
-    // @ts-ignore
-    await model.updateAssociations(values, options);
-    ctx.body = model;
   }
+  await model.updateAssociations(values, options);
   await transaction.commit();
+  ctx.body = model;
   await next();
 }
 

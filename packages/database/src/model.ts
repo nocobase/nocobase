@@ -248,6 +248,7 @@ export abstract class Model extends SequelizeModel {
       associations: this.associations,
       dialect: this.sequelize.getDialect(),
       ctx: context,
+      database: this.database,
     });
     if (page || perPage) {
       data.limit = perPage === -1 ? MAX_LIMIT : Math.min(perPage || DEFAULT_LIMIT, MAX_LIMIT);

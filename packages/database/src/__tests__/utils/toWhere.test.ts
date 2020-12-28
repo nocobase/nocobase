@@ -140,6 +140,119 @@ describe('utils.toWhere', () => {
         id: { [Op.between]: ['2020-11-01T00:00:00.000Z', '2020-12-01T00:00:00.000Z'] }
       });
     });
+
+    it('Op.$null', () => {
+      expect(toWhere({
+        'id.$null': true
+      })).toEqual({
+        id: { [Op.is]: null }
+      });
+    });
+
+    it('Op.$null', () => {
+      expect(toWhere({
+        'id.$null': false
+      })).toEqual({
+        id: { [Op.is]: null }
+      });
+    });
+
+    it('Op.$null', () => {
+      expect(toWhere({
+        'id.$null': null
+      })).toEqual({
+        id: { [Op.is]: null }
+      });
+    });
+
+    it('Op.$notNull', () => {
+      expect(toWhere({
+        'id.$notNull': true
+      })).toEqual({
+        id: { [Op.not]: null }
+      });
+    });
+
+    it('Op.$notNull', () => {
+      expect(toWhere({
+        'id.$notNull': false
+      })).toEqual({
+        id: { [Op.not]: null }
+      });
+    });
+
+    it('Op.$notNull', () => {
+      expect(toWhere({
+        'id.$notNull': null
+      })).toEqual({
+        id: { [Op.not]: null }
+      });
+    });
+
+    it('Op.$includes', () => {
+      expect(toWhere({
+        'string.$includes': 'a'
+      })).toEqual({
+        string: { [Op.iLike]: '%a%' }
+      });
+    });
+
+    it('Op.$notIncludes', () => {
+      expect(toWhere({
+        'string.$notIncludes': 'a'
+      })).toEqual({
+        string: { [Op.notILike]: '%a%' }
+      });
+    });
+
+    it('Op.$startsWith', () => {
+      expect(toWhere({
+        'string.$startsWith': 'a'
+      })).toEqual({
+        string: { [Op.iLike]: 'a%' }
+      });
+    });
+
+    it('Op.$notStartsWith', () => {
+      expect(toWhere({
+        'string.$notStartsWith': 'a'
+      })).toEqual({
+        string: { [Op.notILike]: 'a%' }
+      });
+    });
+
+    it('Op.$endsWith', () => {
+      expect(toWhere({
+        'string.$endsWith': 'a'
+      })).toEqual({
+        string: { [Op.iLike]: '%a' }
+      });
+    });
+
+    it('Op.$notEndsWith', () => {
+      expect(toWhere({
+        'string.$notEndsWith': 'a'
+      })).toEqual({
+        string: { [Op.notILike]: '%a' }
+      });
+    });
+
+    it('Op.$anyOf', () => {
+      expect(toWhere({
+        'array.$anyOf': ['a', 'b']
+      })).toEqual({
+        array: { [Op.or]: [{ [Op.contains]: 'a' }, { [Op.contains]: 'b' }] }
+      });
+    });
+
+    // TODO(bug)
+    it.skip('Op.$noneOf', () => {
+      expect(toWhere({
+        'array.$noneOf': ['a', 'b']
+      })).toEqual({
+        array: { [Op.not]: [{ [Op.contains]: 'a' }, { [Op.contains]: 'b' }] }
+      });
+    });
   });
 
   describe('group by logical operator', () => {
@@ -283,6 +396,37 @@ describe('utils.toWhere', () => {
       return expect(where);
     }
 
+    it('logical and other comparation', () => {
+      toWhereExpect({
+        or: [
+          { a: 1 },
+          { b: { gt: 2 } },
+          { and: [
+            {
+              'c.and': [
+                {gt: 3, lt: 6}
+              ],
+            },
+          ] },
+        ],
+      })
+      .toEqual({
+        [Op.or]: [
+          { a: 1 }, 
+          { b: { [Op.gt]: 2 } },
+          {[Op.and]: [
+            {
+              c: {
+                [Op.and]: [
+                  { [Op.gt]: 3, [Op.lt]: 6 }
+                ]
+              },
+            }
+          ]},
+        ],
+      });
+    });
+
     it('with included association where', () => {
       toWhereExpect({
         col1: 'val1',
@@ -295,6 +439,7 @@ describe('utils.toWhere', () => {
           },
           user: {
             col1: 12,
+            'col2.lt': 2,
           },
         },
         'posts.col3.ilike': 'aa',
@@ -313,7 +458,10 @@ describe('utils.toWhere', () => {
             },
             $__include: {
               user: {
-                col1: 12
+                col1: 12,
+                col2: {
+                  [Op.lt]: 2,
+                },
               },
             },
           },
