@@ -1,21 +1,16 @@
-import { Op, Utils, Sequelize } from 'sequelize';
+import { Utils, Sequelize, Op } from 'sequelize';
 import Model, { ModelCtor } from './model';
 import _ from 'lodash';
-
-const op = new Map();
-
-for (const key in Op) {
-  op.set(key, Op[key]);
-  const val = Utils.underscoredIf(key, true);
-  op.set(val, Op[key]);
-  op.set(val.replace(/_/g, ''), Op[key]);
-}
+import op from './op';
+import Database from './database';
 
 interface ToWhereContext {
   model?: ModelCtor<Model> | Model | typeof Model;
   associations?: any;
   dialect?: string;
+  database?: Database;
   ctx?: any;
+  prefix?: any;
 }
 
 export function toWhere(options: any, context: ToWhereContext = {}) {
@@ -25,18 +20,20 @@ export function toWhere(options: any, context: ToWhereContext = {}) {
   if (Array.isArray(options)) {
     return options.map((item) => toWhere(item, context));
   }
-  const { model, associations = {}, ctx, dialect } = context;
+  const { prefix, model, associations = {}, ctx, dialect } = context;
   const items = {};
   // 先处理「点号」的问题
   for (const key in options) {
     _.set(items, key, options[key]);
   }
-  const values = {};
+  let values = {};
   for (const key in items) {
+    const childPreifx = prefix ? `${prefix}.${key}` : key;
     if (associations[key]) {
       values['$__include'] = values['$__include'] || {}
       values['$__include'][key] = toWhere(items[key], {
         ...context,
+        prefix: childPreifx,
         model: associations[key].target,
         associations: associations[key].target.associations,
       });
@@ -52,7 +49,42 @@ export function toWhere(options: any, context: ToWhereContext = {}) {
     }
     else {
       // TODO: to fix same op key as field name
-      values[op.has(key) ? op.get(key) : key] = toWhere(items[key], context);
+      const opKey = op.get(key);
+      let k;
+      switch (typeof opKey) {
+        case 'function':
+          const name = model ? model.options.name.plural : '';
+          const result = opKey(items[key], { model, fieldPath: name ? `${name}.${prefix}` : prefix });
+          if (result.constructor.name === 'Literal') {
+            values['$__literals'] = values['$__literals'] || [];
+            values['$__literals'].push(result);
+          } else {
+            Object.assign(values, result);
+          }
+          // console.log(result.constructor.name === 'Literal');
+          continue;
+        case 'undefined':
+          k = key;
+          break;
+        default:
+          k = opKey;
+          break;
+      }
+      values[k] = toWhere(items[key], {
+        ...context,
+        prefix: op.has(key) ? prefix : childPreifx,
+      });
+    }
+  }
+  if (values['$__literals']) {
+    const $__literals = _.cloneDeep(values['$__literals']);
+    delete values['$__literals'];
+    console.log(Object.keys(values));
+    return {
+      [Op.and]: [
+        ...$__literals,
+        values,
+      ],
     }
   }
   return values;
@@ -63,6 +95,7 @@ interface ToIncludeContext {
   sourceAlias?: string;
   associations?: any;
   dialect?: string;
+  database?: Database;
   ctx?: any
 }
 
