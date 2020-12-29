@@ -157,14 +157,14 @@ const OP_MAP = {
   select: [
     {label: '等于', value: 'eq', selected: true},
     {label: '不等于', value: 'ne'},
-    {label: '包含', value: '$anyOf'},
-    {label: '不包含', value: '$noneOf'},
+    {label: '包含', value: 'in'},
+    {label: '不包含', value: 'notIn'},
     {label: '非空', value: '$notNull'},
     {label: '为空', value: '$null'},
   ],
   multipleSelect: [
-    {label: '等于', value: 'eq', selected: true},
-    {label: '不等于', value: 'ne'},
+    {label: '等于', value: '$match', selected: true},
+    {label: '不等于', value: '$notMatch'},
     {label: '包含', value: '$anyOf'},
     {label: '不包含', value: '$noneOf'},
     {label: '非空', value: '$notNull'},
@@ -217,8 +217,8 @@ const op = {
   checkbox: OP_MAP.boolean,
   boolean: OP_MAP.boolean,
   select: OP_MAP.select,
-  multipleSelect: OP_MAP.select,
-  checkboxes: OP_MAP.select,
+  multipleSelect: OP_MAP.multipleSelect,
+  checkboxes: OP_MAP.multipleSelect,
   radio: OP_MAP.select,
   upload: OP_MAP.file,
   attachment: OP_MAP.file,
@@ -237,7 +237,13 @@ const controls = {
   string: StringInput,
   textarea: StringInput,
   number: InputNumber,
-  percent: InputNumber,
+  percent: (props) => (
+    <InputNumber 
+      formatter={value => value ? `${value}%` : ''}
+      parser={value => value.replace('%', '')}
+      {...props}
+    />
+  ),
   boolean: BooleanControl,
   checkbox: BooleanControl,
   select: OptionControl,
@@ -302,13 +308,13 @@ export function FilterItem(props: FilterItemProps) {
     const field = fields.find(field => field.name === props.dataSource.column);
     if (field) {
       setField(field);
-      setType(field.component.type);
-      // console.log(dataSource);
+      let componentType = field.component.type;
+      if (field.component.type === 'select' && field.multiple) {
+        componentType = 'multipleSelect';
+      }
+      setType(componentType);
     }
     setDataSource({...props.dataSource});
-    // if (['boolean', 'checkbox'].indexOf(type) !== -1) {
-    //   onChange({...dataSource, op: undefined});
-    // }
   }, [
     props.dataSource, type,
   ]);
@@ -328,10 +334,12 @@ export function FilterItem(props: FilterItemProps) {
       <Select value={dataSource.column}
         onChange={(value) => {
           const field = fields.find(field => field.name === value);
-          if (field) {
-            setType(field.component.type);
+          let componentType = field.component.type;
+          if (field.component.type === 'select' && field.multiple) {
+            componentType = 'multipleSelect';
           }
-          onChange({...dataSource, column: value, op: get(op, [field.component.type, 0, 'value']), value: undefined});
+          setType(componentType);
+          onChange({...dataSource, column: value, op: get(op, [componentType, 0, 'value']), value: undefined});
         }}
         style={{ width: 120 }} 
         placeholder={'选择字段'}>
