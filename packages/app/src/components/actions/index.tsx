@@ -4,7 +4,8 @@ import Create from './Create';
 import Update from './Update';
 import Destroy from './Destroy';
 import Filter from './Filter';
-import { Space } from 'antd';
+// import { Space } from 'antd';
+import './style.less';
 
 const ACTIONS = new Map<string, any>();
 
@@ -33,16 +34,18 @@ export function Actions(props) {
   const { onTrigger = {}, style, schema, actions = [], ...restProps } = props;
   console.log(onTrigger);
   return actions.length > 0 && (
-    <Space style={style}>
+    <div className={'action-buttons'} style={style}>
       {actions.map(action => (
-        <Action
-          {...restProps}
-          view={schema}
-          schema={action}
-          onTrigger={onTrigger[action.name]}
-        />
+        <div className={`${action.name}-action-button action-button`}>
+          <Action
+            {...restProps}
+            view={schema}
+            schema={action}
+            onTrigger={onTrigger[action.name]}
+          />
+        </div>
       ))}
-    </Space>
+    </div>
   );
 }
 

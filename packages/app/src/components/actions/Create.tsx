@@ -1,6 +1,7 @@
 import React, { useRef } from 'react';
 import { Button } from 'antd';
 import ViewFactory from '@/components/views';
+import { PlusOutlined } from '@ant-design/icons';
 
 export function Create(props) {
   console.log(props);
@@ -31,7 +32,7 @@ export function Create(props) {
         viewName={viewName}
         {...params}
       />
-      <Button type={'primary'} onClick={() => {
+      <Button icon={<PlusOutlined />} type={'primary'} onClick={() => {
         drawerRef.current.setVisible(true);
       }}>{title}</Button>
     </>

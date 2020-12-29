@@ -303,6 +303,11 @@ export default {
       title: '查看',
     },
     {
+      type: 'destroy',
+      name: 'destroy',
+      title: '删除',
+    },
+    {
       type: 'create',
       name: 'create',
       title: '新增',
@@ -313,11 +318,6 @@ export default {
       name: 'update',
       title: '编辑',
       viewName: 'form',
-    },
-    {
-      type: 'destroy',
-      name: 'destroy',
-      title: '删除',
     },
   ],
   views: [
@@ -350,7 +350,7 @@ export default {
       name: 'table',
       title: '全部数据',
       template: 'Table',
-      actionNames: ['create', 'destroy'],
+      actionNames: ['destroy', 'create'],
       default: true,
       draggable: true,
     },

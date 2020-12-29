@@ -74,6 +74,11 @@ export default {
       title: '查看',
     },
     {
+      type: 'destroy',
+      name: 'destroy',
+      title: '删除',
+    },
+    {
       type: 'create',
       name: 'create',
       title: '新增',
@@ -84,11 +89,6 @@ export default {
       name: 'update',
       title: '编辑',
       viewName: 'form',
-    },
-    {
-      type: 'destroy',
-      name: 'destroy',
-      title: '删除',
     },
   ],
   views: [

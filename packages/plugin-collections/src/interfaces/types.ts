@@ -67,7 +67,7 @@ export const number = {
     type: 'float',
     filterable: true,
     sortable: true,
-    precision: 1, // 需要考虑
+    precision: 0, // 需要考虑
     component: {
       type: 'number',
     },
@@ -85,7 +85,7 @@ export const percent = {
     type: 'float',
     filterable: true,
     sortable: true,
-    precision: 1,
+    precision: 0,
     component: {
       type: 'percent',
     },
@@ -352,7 +352,7 @@ export const createdAt = {
     // name: 'created_at',
     field: 'created_at',
     showTime: true,
-    dateFormat: 'YYYY/MM/DD',
+    dateFormat: 'YYYY-MM-DD',
     timeFormat: 'HH:mm:ss',
     required: true,
     filterable: true,
@@ -371,7 +371,7 @@ export const updatedAt = {
     // name: 'updated_at',
     field: 'updated_at',
     showTime: true,
-    dateFormat: 'YYYY/MM/DD',
+    dateFormat: 'YYYY-MM-DD',
     timeFormat: 'HH:mm:ss',
     required: true,
     filterable: true,

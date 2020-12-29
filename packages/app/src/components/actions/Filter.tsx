@@ -1,6 +1,7 @@
 import React, { useRef, useState } from 'react';
 import { Button, Popover } from 'antd';
 import ViewFactory from '@/components/views';
+import { FilterOutlined } from '@ant-design/icons';
 
 export function Filter(props) {
   console.log(props);
@@ -25,7 +26,7 @@ export function Filter(props) {
   return (
     <>
       <Popover
-        title="设置筛选"
+        // title="设置筛选"
         trigger="click"
         visible={visible}
         placement={'bottomLeft'}
@@ -50,7 +51,7 @@ export function Filter(props) {
           </>
         )}
       >
-        <Button type={'primary'} onClick={() => {
+        <Button icon={<FilterOutlined />} onClick={() => {
           setVisible(true);
         }}>{title}</Button>
       </Popover>

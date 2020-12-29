@@ -70,9 +70,12 @@ export function BooleanField(props: any) {
 }
 
 export function NumberField(props: any) {
-  const { schema: { precision }, value } = props;
+  const { schema: { precision = 0 }, value } = props;
+  if (!isNumber(value)) {
+    return null;
+  }
   return (
-    <>{value}</>
+    <div className={'number-field'}>{new Intl.NumberFormat().format(value)}</div>
   );
 }
 
@@ -87,12 +90,12 @@ export function isNumber(num) {
 };
 
 export function PercentField(props: any) {
-  const { schema: { precision }, value } = props;
+  const { schema: { precision = 0 }, value } = props;
   if (!isNumber(value)) {
     return null;
   }
   return (
-    <>{value}%</>
+    <div className={'percent-field'}>{new Intl.NumberFormat().format(value)}%</div>
   );
 }
 
