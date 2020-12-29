@@ -7,6 +7,11 @@ function toArray(value: any): any[] {
   return Array.isArray(value) ? value : [value];
 }
 
+function stringToDate(value: string): Date {
+  const [y, m, d] = value.split(/[^\d]/).map(item => Number.parseInt(item, 10));
+  return new Date(y, m - 1, d);
+}
+
 const op = new Map<string, typeof Op | Function>();
 
 // Sequelize 内置
@@ -55,6 +60,36 @@ op.set('$notStartsWith', (value: string) => ({ [Op.notILike]: `${value}%` }));
 op.set('$endsWith', (value: string) => ({ [Op.iLike]: `%${value}` }));
 // 不以之结束
 op.set('$notEndsWith', (value: string) => ({ [Op.notILike]: `%${value}` }));
+
+// 仅日期
+
+// 在某日
+op.set('$dateOn', (value: string) => {
+  const start = stringToDate(value);
+  const end = new Date(start.getFullYear(), start.getMonth(), start.getDate() + 1);
+  return { [Op.and]: [{ [Op.gte]: start }, { [Op.lt]: end }] };
+});
+// 某日前
+op.set('$dateBefore', (value: string) => ({ [Op.lt]: stringToDate(value) }));
+// 某日后
+op.set('$dateAfter', (value: string) => {
+  const date = stringToDate(value);
+  return { [Op.gte]: new Date(date.getFullYear(), date.getMonth(), date.getDate() + 1) };
+});
+// 不早于（含当天）
+op.set('$dateNotBefore', (value: string) => ({ [Op.gte]: stringToDate(value) }));
+// 不晚于（含当天）
+op.set('$dateNotAfter', (value: string) => {
+  const date = stringToDate(value);
+  return { [Op.lt]: new Date(date.getFullYear(), date.getMonth(), date.getDate() + 1) };
+});
+// 在期间
+op.set('$dateBetween', ([from, to]: string[]) => {
+  const start = stringToDate(from);
+  const toDate = stringToDate(to);
+  const end = new Date(toDate.getFullYear(), toDate.getMonth(), toDate.getDate() + 1);
+  return { [Op.and]: [{ [Op.gte]: start }, { [Op.lt]: end }] };
+});
 
 // 多选（JSON）类型
 
