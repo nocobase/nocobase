@@ -219,6 +219,9 @@ export default async (ctx, next) => {
   }
   const viewType = view.get('type');
   const actionDefaultParams:any = {};
+  if (resourceName === 'collections') {
+    actionDefaultParams.sort = ['sort'];
+  }
   const appends = [];
   
   for (const field of fields) {
