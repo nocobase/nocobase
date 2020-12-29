@@ -312,7 +312,7 @@ export class ARRAY extends Column {
   public readonly options: Options.ArrayOptions;
 
   public getDataType() {
-    return DataTypes.JSON;
+    return DataTypes.JSONB;
   }
 
   public getAttributeOptions() {
@@ -325,6 +325,9 @@ export class ARRAY extends Column {
 }
 
 export class JSON extends Column {
+  public getDataType() {
+    return DataTypes.JSONB;
+  }
 }
 
 export class JSONB extends Column {

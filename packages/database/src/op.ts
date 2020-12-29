@@ -20,7 +20,11 @@ for (const key in Op) {
 // 通用
 
 // 是否为空：数据库意义的 null
-op.set('$null', () => ({ [Op.is]: null }));
+op.set('$null', (value, {fieldPath, database}) => {
+  // const field = database.getFieldByPath(fieldPath);
+  // console.log({field});
+  return { [Op.is]: null };
+});
 op.set('$notNull', () => ({ [Op.not]: null }));
 
 op.set('$isTruly', () => ({
@@ -55,9 +59,20 @@ op.set('$notEndsWith', (value: string) => ({ [Op.notILike]: `%${value}` }));
 // 多选（JSON）类型
 
 // 包含组中任意值（命名来源：`Array.prototype.some`）
-op.set('$anyOf', (values: any[]) => ({
-  [Op.or]: toArray(values).map(value => ({ [Op.contains]: value }))
-}));
+op.set('$anyOf', (values: any[], options) => {
+  if (!values) {
+    return Sequelize.literal('');
+  }
+  values = Array.isArray(values) ? values : [values];
+  if (values.length === 0) {
+    return Sequelize.literal('');
+  }
+  const { field, fieldPath } = options;
+  const column = fieldPath.split('.').map(name => `"${name}"`).join('.');
+  const sql = values.map(value => `(${column})::jsonb @> '${JSON.stringify(value)}'`).join(' OR ');
+  console.log(sql);
+  return Sequelize.literal(sql);
+});
 // 包含组中所有值
 op.set('$allOf', (values: any) => ({ [Op.contains]: toArray(values) }));
 // TODO(bug): 不包含组中任意值
@@ -66,6 +81,9 @@ op.set('$noneOf', (values: any[], options) => {
     return Sequelize.literal('');
   }
   values = Array.isArray(values) ? values : [values];
+  if (values.length === 0) {
+    return Sequelize.literal('');
+  }
   const { field, fieldPath } = options;
   const column = fieldPath.split('.').map(name => `"${name}"`).join('.');
   const sql = values.map(value => `(${column})::jsonb @> '${JSON.stringify(value)}'`).join(' OR ');
@@ -73,14 +91,26 @@ op.set('$noneOf', (values: any[], options) => {
   return Sequelize.literal(`not (${sql})`);
 });
 // 与组中值匹配
-op.set('$match', (values: any[]) => {
+op.set('$match', (values: any[], options) => {
   const array = toArray(values);
-  return {
-    [Op.contains]: array,
-    [Op.contained]: array
-  };
+  if (values.length === 0) {
+    return Sequelize.literal('');
+  }
+  const { field, fieldPath } = options;
+  const column = fieldPath.split('.').map(name => `"${name}"`).join('.');
+  const sql = `(${column})::jsonb @> '${JSON.stringify(array)}' AND (${column})::jsonb <@ '${JSON.stringify(array)}'`
+  return Sequelize.literal(sql);
 });
-
-
+op.set('$notMatch', (values: any[], options) => {
+  const array = toArray(values);
+  if (values.length === 0) {
+    return Sequelize.literal('');
+  }
+  const { field, fieldPath } = options;
+  const column = fieldPath.split('.').map(name => `"${name}"`).join('.');
+  const sql = `(${column})::jsonb @> '${JSON.stringify(array)}' AND (${column})::jsonb <@ '${JSON.stringify(array)}'`
+  return Sequelize.literal(`not (${sql})`);
+  // return Sequelize.literal(`(not (${sql})) AND ${column} IS NULL`);
+});
 
 export default op;

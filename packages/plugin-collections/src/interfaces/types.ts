@@ -157,6 +157,7 @@ export const multipleSelect = {
     type: 'json', // json 过滤
     filterable: true,
     dataSource: [],
+    defaultValue: [],
     multiple: true, // 需要重点考虑
     component: {
       type: 'select',
@@ -184,6 +185,7 @@ export const checkboxes = {
     type: 'json',
     filterable: true,
     dataSource: [],
+    defaultValue: [],
     component: {
       type: 'checkboxes',
     },
@@ -387,7 +389,7 @@ export const createdBy = {
     interface: 'createdBy',
     type: 'createdBy',
     // name: 'createdBy',
-    filterable: true,
+    // filterable: true,
     target: 'users',
     labelField: 'nickname',
     foreignKey: 'created_by_id',
@@ -405,7 +407,7 @@ export const updatedBy = {
     interface: 'updatedBy',
     // name: 'updatedBy',
     type: 'updatedBy',
-    filterable: true,
+    // filterable: true,
     target: 'users',
     labelField: 'nickname',
     foreignKey: 'created_by_id',

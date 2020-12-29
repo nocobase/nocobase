@@ -284,4 +284,9 @@ export default class Database {
       }
     }
   }
+
+  public getFieldByPath(fieldPath: string) {
+    const [tableName, fieldName] = fieldPath.split('.');
+    return this.getTable(tableName).getField(fieldName);
+  }
 }

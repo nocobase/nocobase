@@ -20,7 +20,7 @@ export function toWhere(options: any, context: ToWhereContext = {}) {
   if (Array.isArray(options)) {
     return options.map((item) => toWhere(item, context));
   }
-  const { prefix, model, associations = {}, ctx, dialect } = context;
+  const { prefix, model, associations = {}, ctx, dialect, database } = context;
   const items = {};
   // 先处理「点号」的问题
   for (const key in options) {
@@ -54,7 +54,11 @@ export function toWhere(options: any, context: ToWhereContext = {}) {
       switch (typeof opKey) {
         case 'function':
           const name = model ? model.options.name.plural : '';
-          const result = opKey(items[key], { model, fieldPath: name ? `${name}.${prefix}` : prefix });
+          const result = opKey(items[key], { 
+            model,
+            database,
+            fieldPath: name ? `${name}.${prefix}` : prefix,
+          });
           if (result.constructor.name === 'Literal') {
             values['$__literals'] = values['$__literals'] || [];
             values['$__literals'].push(result);
@@ -184,7 +188,7 @@ export function toInclude(options: any, context: ToIncludeContext = {}) {
   }
 
   const { fields = [], filter } = options;
-  const { model, sourceAlias, associations = {}, ctx, dialect } = context;
+  const { model, sourceAlias, associations = {}, ctx, database, dialect } = context;
 
   let where = options.where || {};
 
@@ -193,6 +197,7 @@ export function toInclude(options: any, context: ToIncludeContext = {}) {
       model,
       associations,
       ctx,
+      database,
     }) || {};
   }
 
