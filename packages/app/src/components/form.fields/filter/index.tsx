@@ -142,7 +142,7 @@ const OP_MAP = {
     {label: '大于等于', value: 'gte'},
     {label: '小于', value: 'lt'},
     {label: '小于等于', value: 'lte'},
-    {label: '介于', value: 'between'},
+    // {label: '介于', value: 'between'},
     {label: '非空', value: '$notNull'},
     {label: '为空', value: '$null'},
   ],
@@ -177,7 +177,7 @@ const OP_MAP = {
     {label: '大于等于', value: 'gte'},
     {label: '小于', value: 'lt'},
     {label: '小于等于', value: 'lte'},
-    {label: '介于', value: 'between'},
+    // {label: '介于', value: 'between'},
     {label: '非空', value: '$notNull'},
     {label: '为空', value: '$null'},
     // {label: '是今天', value: 'now'},
@@ -191,7 +191,7 @@ const OP_MAP = {
     {label: '大于等于', value: 'gte'},
     {label: '小于', value: 'lt'},
     {label: '小于等于', value: 'lte'},
-    {label: '介于', value: 'between'},
+    // {label: '介于', value: 'between'},
     {label: '非空', value: '$notNull'},
     {label: '为空', value: '$null'},
     // {label: '是今天', value: 'now'},
@@ -250,23 +250,35 @@ const controls = {
   radio: OptionControl,
   checkboxes: OptionControl,
   multipleSelect: OptionControl,
-  time: TimePicker,
+  time: TimeControl,
   date: DateControl,
 };
 
 function DateControl(props: any) {
-  const { value, onChange, ...restProps } = props;
-  const m = moment(value, 'YYYY-MM-DD HH:mm:ss');
+  const { field, value, onChange, ...restProps } = props;
+  let format = field.dateFormat;
+  if (field.showTime) {
+    format += ` ${field.timeFormat}`;
+  }
+  const m = moment(value, format);
   return (
-    <DatePicker value={m.isValid() ? m : null} onChange={(value) => {
-      onChange(value ? value.format('YYYY-MM-DD HH:mm:ss') : null)
-      console.log(value.format('YYYY-MM-DD HH:mm:ss'));
+    <DatePicker format={format} showTime={field.showTime} value={m.isValid() ? m : null} onChange={(value) => {
+      onChange(value ? value.format(field.showTime ? 'YYYY-MM-DD HH:mm:ss' : 'YYYY-MM-DD') : null)
     }}/>
   );
 }
 
 function TimeControl(props: any) {
-  return 
+  const { field, value, onChange, ...restProps } = props;
+  let format = field.timeFormat;
+  const m = moment(value, format);
+  return <TimePicker
+    value={m.isValid() ? m : null}
+    format={field.timeFormat}
+    onChange={(value) => {
+      onChange(value ? value.format('HH:mm:ss') : null)
+    }}
+  />
 }
 
 function OptionControl(props) {
@@ -347,7 +359,7 @@ export function FilterItem(props: FilterItemProps) {
           <Select.Option value={field.name}>{field.title}</Select.Option>
         ))}
       </Select>
-      <Select value={dataSource.op} style={{ minWidth: 100 }}
+      <Select value={dataSource.column ? dataSource.op : null} style={{ minWidth: 100 }}
         onChange={(value) => {
           onChange({...dataSource, op: value});
         }}
@@ -358,7 +370,7 @@ export function FilterItem(props: FilterItemProps) {
           <Select.Option value={option.value}>{option.label}</Select.Option>
         ))} */}
       </Select>
-      <ValueControl multiple={type === 'checkboxes' || !!field.multiple} op={dataSource.op} options={field.dataSource} value={dataSource.value} onChange={(value) => {
+      <ValueControl field={field} multiple={type === 'checkboxes' || !!field.multiple} op={dataSource.op} options={field.dataSource} value={dataSource.value} onChange={(value) => {
         onChange({...dataSource, value: value});
       }} 
       style={{ width: 180 }}
