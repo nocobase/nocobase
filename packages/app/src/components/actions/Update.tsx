@@ -1,6 +1,7 @@
 import React, { useRef } from 'react';
 import { Button } from 'antd';
 import ViewFactory from '@/components/views';
+import { EditOutlined } from '@ant-design/icons';
 
 export function Update(props) {
   const { title, viewName, resourceName, collection_name } = props.schema;
@@ -28,7 +29,7 @@ export function Update(props) {
         mode={'update'}
         {...params}
       />
-      <Button type={'primary'} onClick={() => {
+      <Button icon={<EditOutlined />} type={'primary'} onClick={() => {
         drawerRef.current.setVisible(true);
         drawerRef.current.getData(item.itemId || resourceKey);
       }}>{title}</Button>

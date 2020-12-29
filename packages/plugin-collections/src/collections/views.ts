@@ -218,6 +218,11 @@ export default {
       title: '查看',
     },
     {
+      type: 'destroy',
+      name: 'destroy',
+      title: '删除',
+    },
+    {
       type: 'create',
       name: 'create',
       title: '新增',
@@ -228,11 +233,6 @@ export default {
       name: 'update',
       title: '编辑',
       viewName: 'form',
-    },
-    {
-      type: 'destroy',
-      name: 'destroy',
-      title: '删除',
     },
   ],
   views: [
@@ -257,7 +257,7 @@ export default {
       title: '简易模式',
       template: 'SimpleTable',
       default: true,
-      actionNames: ['create', 'destroy'],
+      actionNames: ['destroy', 'create'],
       detailsViewName: 'details',
       updateViewName: 'form',
       paginated: false,

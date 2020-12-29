@@ -13,6 +13,11 @@ const defaultValues = {
       title: '查看',
     },
     {
+      type: 'destroy',
+      name: 'destroy',
+      title: '删除',
+    },
+    {
       type: 'create',
       name: 'create',
       title: '新增',
@@ -23,11 +28,6 @@ const defaultValues = {
       name: 'update',
       title: '编辑',
       viewName: 'form',
-    },
-    {
-      type: 'destroy',
-      name: 'destroy',
-      title: '删除',
     },
   ],
   views: [
@@ -60,7 +60,7 @@ const defaultValues = {
       name: 'table',
       title: '全部数据',
       template: 'Table',
-      actionNames: ['filter', 'create', 'destroy'],
+      actionNames: ['filter', 'destroy', 'create'],
       default: true,
     },
   ],

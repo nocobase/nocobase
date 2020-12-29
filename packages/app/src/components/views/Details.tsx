@@ -38,10 +38,10 @@ export function Details(props: any) {
         actions={actions}
       />
       {loading ? <Spin/> : (
-        <Descriptions bordered column={1}>
+        <Descriptions size={'middle'} bordered column={1}>
           {fields.map((field: any) => {
             return (
-              <Descriptions.Item labelStyle={{minWidth: 200, maxWidth: 300, width: 300}} label={field.title||field.name}>
+              <Descriptions.Item label={field.title||field.name}>
                 <Field viewType={'descriptions'} schema={field} value={get(data, field.name)}/>
               </Descriptions.Item>
             )

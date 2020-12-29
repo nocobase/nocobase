@@ -111,6 +111,7 @@ export function SimpleTable(props: SimpleTableProps) {
         }}
       />
       <AntdTable
+        size={'middle'}
         rowKey={rowKey}
         loading={loading}
         columns={fields2columns(fields)}
@@ -149,7 +150,7 @@ export function SimpleTable(props: SimpleTableProps) {
       />
       {paginated && (
         <div className={'table-pagination'}>
-          <Pagination {...pagination} showQuickJumper showSizeChanger size={'default'}/>
+          <Pagination {...pagination} showQuickJumper showSizeChanger size={'small'}/>
         </div>
       )}
     </Card>
