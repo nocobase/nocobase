@@ -54,6 +54,16 @@ describe('utils.toWhere', () => {
       expect(posts[0].created_at).toEqual(new Date(2020, 11,31));
     });
 
+    it('$dateNotOn', async () => {
+      const Post = db.getModel('posts');
+      const posts = await Post.findAll({
+        where: toWhere({
+          'created_at.$dateNotOn': '2020-12-31'
+        })
+      });
+      expect(posts.length).toBe(4);
+    });
+
     it('Op.$dateBefore', async () => {
       const Post = db.getModel('posts');
       const posts = await Post.findAll({
@@ -159,6 +169,26 @@ describe('utils.toWhere', () => {
       const posts = await Post.findAll({
         where: toWhere({
           'created_at.$dateBetween': ['2021-01-03', '2021-01-04']
+        })
+      });
+      expect(posts.length).toBe(0);
+    });
+
+    it('Op.$dateNotBetween', async () => {
+      const Post = db.getModel('posts');
+      const posts = await Post.findAll({
+        where: toWhere({
+          'created_at.$dateNotBetween': ['2020-12-28', '2020-12-29']
+        })
+      });
+      expect(posts.length).toBe(4);
+    });
+
+    it('Op.$dateNotBetween', async () => {
+      const Post = db.getModel('posts');
+      const posts = await Post.findAll({
+        where: toWhere({
+          'created_at.$dateNotBetween': ['2020-12-28', '2021-01-04']
         })
       });
       expect(posts.length).toBe(0);

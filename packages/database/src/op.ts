@@ -69,6 +69,12 @@ op.set('$dateOn', (value: string) => {
   const end = new Date(start.getFullYear(), start.getMonth(), start.getDate() + 1);
   return { [Op.and]: [{ [Op.gte]: start }, { [Op.lt]: end }] };
 });
+// 不在某日
+op.set('$dateNotOn', (value: string) => {
+  const start = stringToDate(value);
+  const end = new Date(start.getFullYear(), start.getMonth(), start.getDate() + 1);
+  return { [Op.or]: [{ [Op.lt]: start }, { [Op.gte]: end }] };
+});
 // 某日前
 op.set('$dateBefore', (value: string) => ({ [Op.lt]: stringToDate(value) }));
 // 某日后
@@ -89,6 +95,13 @@ op.set('$dateBetween', ([from, to]: string[]) => {
   const toDate = stringToDate(to);
   const end = new Date(toDate.getFullYear(), toDate.getMonth(), toDate.getDate() + 1);
   return { [Op.and]: [{ [Op.gte]: start }, { [Op.lt]: end }] };
+});
+// 不在期间
+op.set('$dateNotBetween', ([from, to]: string[]) => {
+  const start = stringToDate(from);
+  const toDate = stringToDate(to);
+  const end = new Date(toDate.getFullYear(), toDate.getMonth(), toDate.getDate() + 1);
+  return { [Op.or]: [{ [Op.lt]: start }, { [Op.gte]: end }] };
 });
 
 // 多选（JSON）类型
