@@ -40,6 +40,8 @@ export const components = ({data = {}, rowKey, mutate, onMoved}: Props) => {
               });
               const resourceKey = get(list, [newIndex, rowKey]);
               await onMoved({resourceKey, target: {[rowKey]: targetIndex}});
+              // @ts-ignore
+              window.routesReload && window.routesReload();
             }
           }}
           {...props}

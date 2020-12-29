@@ -24,7 +24,7 @@ export function CollectionLoader(props: any) {
     tabName: match[2],
   }));
   props.match.params['items'] = items;
-  console.log(props.match, path);
+  console.log('props.match', props.match, path);
   const { data = {}, error, loading, run } = useRequest(() => api.resource(collection).getCollection());
 
   if (loading) {

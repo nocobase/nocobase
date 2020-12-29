@@ -18,7 +18,7 @@ export default async function (options = {}) {
   resourcer.registerActionHandler('getView', getView);
   resourcer.registerActionHandler('getPageInfo', getPageInfo);
   resourcer.registerActionHandler('pages:getRoutes', getRoutes);
-
+/*
   const [Collection, Page, View] = database.getModels(['collections', 'pages', 'views']);
 
   async function createCollectionPage(model, options) {
@@ -61,6 +61,7 @@ export default async function (options = {}) {
     await page.save({
       transaction,
     });
+    await Page.collectionPagesResort({transaction});
     await transaction.commit();
   }
 
@@ -75,6 +76,7 @@ export default async function (options = {}) {
         path: `/collections/${model.get('name')}`,
       },
     });
+    await Page.collectionPagesResort({transaction});
   });
 
   async function syncViewCollectionPage(model, options) {
@@ -140,4 +142,5 @@ export default async function (options = {}) {
       },
     });
   });
+*/
 }
