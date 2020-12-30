@@ -9,7 +9,6 @@
   "dependencies": {
     "bcrypt": "^5.0.0",
     "glob": "^7.1.6",
-    "moment": "^2.29.1",
     "sequelize": "^6.3.3"
   },
   "devDependencies": {
