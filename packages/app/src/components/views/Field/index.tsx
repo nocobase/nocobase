@@ -9,6 +9,7 @@ import { fields2columns } from '../SortableTable';
 import ViewFactory from '..';
 import './style.less';
 import { getImageByUrl } from '@/components/form.fields';
+import { CheckOutlined, CloseOutlined } from '@ant-design/icons';
 
 const InterfaceTypes = new Map<string, any>();
 
@@ -65,7 +66,7 @@ export function TextareaField(props: any) {
 export function BooleanField(props: any) {
   const { value } = props;
   return (
-    <>{value ? '是' : '否'}</>
+    <>{value ? <CheckOutlined style={{color: '#52c41a'}}/> : <CloseOutlined style={{color: '#f5222d'}}/>}</>
   );
 }
 
