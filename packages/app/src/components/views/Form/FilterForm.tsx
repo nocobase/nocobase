@@ -52,7 +52,7 @@ export function FilterForm(props: any) {
           },
         }}
       >
-        <FormButtonGroup>
+        <FormButtonGroup align={'end'}>
           <Reset>取消</Reset>
           <Submit>确定</Submit>
         </FormButtonGroup>
