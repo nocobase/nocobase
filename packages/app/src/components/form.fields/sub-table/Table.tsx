@@ -77,6 +77,7 @@ export default function Table(props: SimpleTableProps) {
         console.log(newVaules);
       }} ref={drawerRef}/>
       <AntdTable
+        size={'middle'}
         rowKey={rowKey}
         // loading={loading}
         columns={fields2columns(schema.fields||[])}

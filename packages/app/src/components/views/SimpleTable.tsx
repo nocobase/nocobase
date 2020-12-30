@@ -31,6 +31,7 @@ export function SimpleTable(props: SimpleTableProps) {
   const { rowKey = 'id', name: viewName, actionDefaultParams = {}, fields = [], rowViewName, actions = [], paginated = true, defaultPerPage = 10 } = schema;
   const { sourceKey = 'id' } = activeTab.field||{};
   const drawerRef = useRef<any>();
+  const [filterCount, setFilterCount] = useState(0);
   const name = associatedName ? `${associatedName}.${resourceName}` : resourceName;
   const { data, loading, pagination, mutate, refresh, params, run } = useRequest((params = {}) => {
     const { current, pageSize, sorter, filter, ...restParams } = params;
@@ -78,12 +79,15 @@ export function SimpleTable(props: SimpleTableProps) {
         {...props}
         style={{ marginBottom: 14 }}
         actions={actions}
+        filterCount={filterCount}
         onFinish={() => {
           refresh();
         }}
         onTrigger={{
           async filter(values) {
             console.log('filter', values);
+            const items = values.filter.and || values.filter.or;
+            setFilterCount(Object.keys(items).length);
             // @ts-ignore
             run({...params[0], filter: values.filter});
           },
@@ -111,6 +115,7 @@ export function SimpleTable(props: SimpleTableProps) {
         }}
       />
       <AntdTable
+        size={'middle'}
         rowKey={rowKey}
         loading={loading}
         columns={fields2columns(fields)}
@@ -149,7 +154,7 @@ export function SimpleTable(props: SimpleTableProps) {
       />
       {paginated && (
         <div className={'table-pagination'}>
-          <Pagination {...pagination} showQuickJumper showSizeChanger size={'default'}/>
+          <Pagination {...pagination} showQuickJumper showSizeChanger size={'small'}/>
         </div>
       )}
     </Card>

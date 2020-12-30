@@ -62,7 +62,16 @@ export const DrawerForm = forwardRef((props: any, ref) => {
         setVisible(false);
       }}
       title={title}
-      footer={[
+      footer={(
+        <div
+          style={{
+            textAlign: 'right',
+          }}
+        >
+        <Button onClick={() => {
+          setVisible(false);
+        }}>取消</Button>
+        <span style={{display: 'inline-block', width: 8}}> </span>
         <Button type={'primary'} onClick={async () => {
           const { values = {} } = await actions.submit();
           console.log(values);
@@ -83,7 +92,8 @@ export const DrawerForm = forwardRef((props: any, ref) => {
           window.routesReload && window.routesReload();
           onFinish && onFinish(values);
         }}>提交</Button>
-      ]}
+        </div>
+      )}
     >
       {loading ? <Spin/> : (
         <SchemaForm 

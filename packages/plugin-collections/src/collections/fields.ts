@@ -189,16 +189,16 @@ export default {
       name: 'precision',
       title: '精度',
       dataSource: [
-        {value: 1, label: '1'},
-        {value: 0.1, label: '1.0'},
-        {value: 0.01, label: '1.00'},
-        {value: 0.001, label: '1.000'},
-        {value: 0.0001, label: '1.0000'},
+        {value: 0, label: '1'},
+        {value: 1, label: '1.0'},
+        {value: 2, label: '1.00'},
+        {value: 3, label: '1.000'},
+        {value: 4, label: '1.0000'},
       ],
       component: {
         type: 'number',
         showInForm: true,
-        default: 1,
+        default: 0,
       },
     },
     {
@@ -214,7 +214,7 @@ export default {
       component: {
         type: 'string',
         showInForm: true,
-        default: 'YYYY/MM/DD',
+        default: 'YYYY-MM-DD',
       },
     },
     {
@@ -499,6 +499,11 @@ export default {
       title: '查看',
     },
     {
+      type: 'destroy',
+      name: 'destroy',
+      title: '删除',
+    },
+    {
       type: 'create',
       name: 'create',
       title: '新增',
@@ -509,11 +514,6 @@ export default {
       name: 'update',
       title: '编辑',
       viewName: 'form',
-    },
-    {
-      type: 'destroy',
-      name: 'destroy',
-      title: '删除',
     },
   ],
   views: [
@@ -538,7 +538,7 @@ export default {
       title: '简易模式',
       template: 'SimpleTable',
       default: true,
-      actionNames: ['create', 'destroy'],
+      actionNames: ['destroy', 'create'],
       detailsViewName: 'details',
       updateViewName: 'form',
       paginated: false,

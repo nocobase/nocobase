@@ -1,13 +1,14 @@
 import React, { useRef, useState } from 'react';
 import { Button, Popover } from 'antd';
 import ViewFactory from '@/components/views';
+import { FilterOutlined } from '@ant-design/icons';
 
 export function Filter(props) {
   console.log(props);
   const drawerRef = useRef<any>();
   const [visible, setVisible] = useState(false);
   const { title, viewName, collection_name } = props.schema;
-  const { activeTab = {}, item = {}, associatedName, associatedKey } = props;
+  const { filterCount, activeTab = {}, item = {}, associatedName, associatedKey } = props;
   const { associationField } = activeTab;
 
   const params = {};
@@ -25,7 +26,7 @@ export function Filter(props) {
   return (
     <>
       <Popover
-        title="设置筛选"
+        // title="设置筛选"
         trigger="click"
         visible={visible}
         placement={'bottomLeft'}
@@ -50,9 +51,9 @@ export function Filter(props) {
           </>
         )}
       >
-        <Button type={'primary'} onClick={() => {
+        <Button icon={<FilterOutlined />} onClick={() => {
           setVisible(true);
-        }}>{title}</Button>
+        }}>{filterCount ? `${filterCount} 个${title}项` : title}</Button>
       </Popover>
     </>
   )

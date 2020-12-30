@@ -1,6 +1,7 @@
 import React, { useRef } from 'react';
 import { Button, Popconfirm } from 'antd';
 import ViewFactory from '@/components/views';
+import { DeleteOutlined } from '@ant-design/icons';
 
 export function Destroy(props) {
   console.log(props);
@@ -13,7 +14,7 @@ export function Destroy(props) {
           console.log('destroy', onTrigger);
           onTrigger && onTrigger();
         }}>
-        <Button type={'primary'}>{title}</Button>
+        <Button icon={<DeleteOutlined />} type={'ghost'} danger>{title}</Button>
       </Popconfirm>
     </>
   )

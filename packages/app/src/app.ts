@@ -1,3 +1,4 @@
+import './css_browser_selector';
 import { RequestConfig, request as umiRequest, history } from 'umi';
 
 export const request: RequestConfig = {
