@@ -142,13 +142,58 @@ export default {
         },
         {
           interface: 'textarea',
-          title: '内容',
+          title: '内容1',
           component: {
             showInTable: true,
             showInDetail: true,
             showInForm: true,
           },
         },
+        {
+          interface: 'textarea',
+          title: '内容2',
+          component: {
+            showInTable: true,
+            showInDetail: true,
+            showInForm: true,
+          },
+        },
+        {
+          interface: 'createdBy',
+          title: '创建人',
+          component: {
+            showInTable: true,
+            showInDetail: true,
+            // showInForm: true,
+          },
+        },
+        {
+          interface: 'updatedBy',
+          title: '更新人',
+          component: {
+            showInTable: true,
+            showInDetail: true,
+            // showInForm: true,
+          },
+        },
+        {
+          interface: 'createdAt',
+          title: '创建日期',
+          component: {
+            showInTable: true,
+            showInDetail: true,
+            // showInForm: true,
+          },
+        },
+        {
+          interface: 'updatedAt',
+          title: '更新日期',
+          component: {
+            showInTable: true,
+            showInDetail: true,
+            // showInForm: true,
+          },
+        }
       ],
       component: {
         // showInTable: true,
