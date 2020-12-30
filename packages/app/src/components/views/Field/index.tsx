@@ -178,8 +178,8 @@ export function SubTableField(props: any) {
     return null;
   }
   return (
-    <div>
-      <Table size={'middle'} columns={fields2columns(children)} dataSource={value} pagination={false}/>
+    <div className={'sub-table-field'}>
+      <Table size={'small'} columns={fields2columns(children)} dataSource={value} pagination={false}/>
     </div>
   );
 }
