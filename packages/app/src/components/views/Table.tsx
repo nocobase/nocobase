@@ -30,6 +30,7 @@ export function Table(props: TableProps) {
   // const { data, mutate } = useRequest(() => api.resource(name).list({
   //   associatedKey,
   // }));
+  const [filterCount, setFilterCount] = useState(0);
   const name = associatedName ? `${associatedName}.${resourceName}` : resourceName;
   const { data, loading, pagination, mutate, refresh, run, params } = useRequest((params = {}, ...args) => {
     const { current, pageSize, sorter, filter, ...restParams } = params;
@@ -78,6 +79,7 @@ export function Table(props: TableProps) {
     <Card bordered={false}>
       <Actions
         {...props}
+        filterCount={filterCount}
         style={{ marginBottom: 14 }}
         actions={actions}
         onFinish={() => {
@@ -85,6 +87,8 @@ export function Table(props: TableProps) {
         }}
         onTrigger={{
           async filter(values) {
+            const items = values.filter.and || values.filter.or;
+            setFilterCount(Object.keys(items).length);
             // @ts-ignore
             run({...params[0], filter: values.filter});
             console.log('filter', values);
