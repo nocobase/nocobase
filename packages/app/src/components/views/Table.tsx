@@ -5,6 +5,9 @@ import { Actions } from '@/components/actions';
 import { request, useRequest } from 'umi';
 import api from '@/api-client';
 import { components, fields2columns } from './SortableTable';
+import { LoadingOutlined } from '@ant-design/icons';
+
+export const icon = <LoadingOutlined style={{ fontSize: 36 }} spin />;
 
 export interface TableProps {
   schema?: any;
@@ -110,6 +113,12 @@ export function Table(props: TableProps) {
       <AntdTable 
         size={'middle'}
         rowKey={rowKey}
+        loading={{
+          spinning: loading,
+          size: 'large',
+          indicator: icon,
+          // className: 'spinning--absolute m32',
+        }}
         columns={fields2columns(fields)}
         dataSource={data?.list||(data as any)}
         onChange={(pagination, filters, sorter, extra) => {
