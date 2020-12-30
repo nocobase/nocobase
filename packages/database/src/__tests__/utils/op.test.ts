@@ -78,7 +78,7 @@ describe('utils.toWhere', () => {
       const Post = db.getModel('posts');
       const posts = await Post.findAll({
         where: toWhere({
-          'created_at.$dateBefore': '2021/1/2'
+          'created_at.$dateBefore': '2021-01-02'
         })
       });
       expect(posts.length).toBe(4);
@@ -88,7 +88,7 @@ describe('utils.toWhere', () => {
       const Post = db.getModel('posts');
       const posts = await Post.findAll({
         where: toWhere({
-          'created_at.$dateBefore': '2021/1/3'
+          'created_at.$dateBefore': '2021-01-03'
         })
       });
       expect(posts.length).toBe(5);
@@ -98,7 +98,7 @@ describe('utils.toWhere', () => {
       const Post = db.getModel('posts');
       const posts = await Post.findAll({
         where: toWhere({
-          'created_at.$dateAfter': '2021/1/3'
+          'created_at.$dateAfter': '2021-01-03'
         })
       });
       expect(posts.length).toBe(0);

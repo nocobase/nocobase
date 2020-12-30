@@ -1,4 +1,5 @@
 import { Op, Utils, Sequelize } from 'sequelize';
+import moment, { MomentInput } from 'moment';
 
 function toArray(value: any): any[] {
   if (value == null) {
@@ -8,8 +9,11 @@ function toArray(value: any): any[] {
 }
 
 function stringToDate(value: string): Date {
-  const [y, m, d] = value.split(/[^\d]/).map(item => Number.parseInt(item, 10));
-  return new Date(y, m - 1, d);
+  return moment(value).toDate();
+}
+
+function getNextDay(value: MomentInput): Date {
+  return moment(value).add(1, 'd').toDate();
 }
 
 const op = new Map<string, typeof Op | Function>();
@@ -64,45 +68,21 @@ op.set('$notEndsWith', (value: string) => ({ [Op.notILike]: `%${value}` }));
 // 仅日期
 
 // 在某日
-op.set('$dateOn', (value: string) => {
-  const start = stringToDate(value);
-  const end = new Date(start.getFullYear(), start.getMonth(), start.getDate() + 1);
-  return { [Op.and]: [{ [Op.gte]: start }, { [Op.lt]: end }] };
-});
+op.set('$dateOn', (value: string) => ({ [Op.and]: [{ [Op.gte]: stringToDate(value) }, { [Op.lt]: getNextDay(value) }] }));
 // 不在某日
-op.set('$dateNotOn', (value: string) => {
-  const start = stringToDate(value);
-  const end = new Date(start.getFullYear(), start.getMonth(), start.getDate() + 1);
-  return { [Op.or]: [{ [Op.lt]: start }, { [Op.gte]: end }] };
-});
+op.set('$dateNotOn', (value: string) => ({ [Op.or]: [{ [Op.lt]: stringToDate(value) }, { [Op.gte]: getNextDay(value) }] }));
 // 某日前
 op.set('$dateBefore', (value: string) => ({ [Op.lt]: stringToDate(value) }));
 // 某日后
-op.set('$dateAfter', (value: string) => {
-  const date = stringToDate(value);
-  return { [Op.gte]: new Date(date.getFullYear(), date.getMonth(), date.getDate() + 1) };
-});
+op.set('$dateAfter', (value: string) => ({ [Op.gte]: getNextDay(value) }));
 // 不早于（含当天）
 op.set('$dateNotBefore', (value: string) => ({ [Op.gte]: stringToDate(value) }));
 // 不晚于（含当天）
-op.set('$dateNotAfter', (value: string) => {
-  const date = stringToDate(value);
-  return { [Op.lt]: new Date(date.getFullYear(), date.getMonth(), date.getDate() + 1) };
-});
+op.set('$dateNotAfter', (value: string) => ({ [Op.lt]: getNextDay(value) }));
 // 在期间
-op.set('$dateBetween', ([from, to]: string[]) => {
-  const start = stringToDate(from);
-  const toDate = stringToDate(to);
-  const end = new Date(toDate.getFullYear(), toDate.getMonth(), toDate.getDate() + 1);
-  return { [Op.and]: [{ [Op.gte]: start }, { [Op.lt]: end }] };
-});
+op.set('$dateBetween', ([from, to]: string[]) => ({ [Op.and]: [{ [Op.gte]: stringToDate(from) }, { [Op.lt]: getNextDay(to) }] }));
 // 不在期间
-op.set('$dateNotBetween', ([from, to]: string[]) => {
-  const start = stringToDate(from);
-  const toDate = stringToDate(to);
-  const end = new Date(toDate.getFullYear(), toDate.getMonth(), toDate.getDate() + 1);
-  return { [Op.or]: [{ [Op.lt]: start }, { [Op.gte]: end }] };
-});
+op.set('$dateNotBetween', ([from, to]: string[]) => ({ [Op.or]: [{ [Op.lt]: stringToDate(from) }, { [Op.gte]: getNextDay(to) }] }));
 
 // 多选（JSON）类型
 
