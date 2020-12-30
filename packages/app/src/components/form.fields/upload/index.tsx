@@ -85,6 +85,16 @@ const testOpts = (ext, options) => {
   return true
 }
 
+export const testUrl = (url, options) => {
+  for (let i = 0; i < exts.length; i++) {
+    if (exts[i].ext.test(url) && testOpts(exts[i].ext, options)) {
+      return false;
+    }
+  }
+
+  return true;
+}
+
 export const getImageByUrl = (url, options) => {
   for (let i = 0; i < exts.length; i++) {
     if (exts[i].ext.test(url) && testOpts(exts[i].ext, options)) {

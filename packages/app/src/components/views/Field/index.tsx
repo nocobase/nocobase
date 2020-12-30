@@ -1,14 +1,14 @@
 
 import React, { useEffect, useState } from 'react';
 import moment from 'moment';
-import { Tag, Popover, Table, Drawer } from 'antd';
+import { Tag, Popover, Table, Drawer, Modal } from 'antd';
 import Icon from '@/components/icons';
 import get from 'lodash/get';
 import isEmpty from 'lodash/isEmpty';
 import { fields2columns } from '../SortableTable';
 import ViewFactory from '..';
 import './style.less';
-import { getImageByUrl } from '@/components/form.fields';
+import { getImageByUrl, testUrl } from '@/components/form.fields';
 import { CheckOutlined, CloseOutlined } from '@ant-design/icons';
 
 const InterfaceTypes = new Map<string, any>();
@@ -246,10 +246,38 @@ export function AttachmentFieldItem(props: any) {
   const img = getImageByUrl(url, {
     exclude: ['.png', '.jpg', '.jpeg', '.gif']
   })
+  const [visible, setVisible] = useState(false);
   return (
-    <a onClick={(e) => e.stopPropagation()} className={'attachment-field-item'} target={'_blank'} href={url}>
-      <img style={{marginRight: 5}} height={20} alt={title} title={title} src={img}/>
-    </a>
+    <>
+      <a onClick={(e) => {
+        e.stopPropagation();
+        if (testUrl(url, {
+          exclude: ['.png', '.jpg', '.jpeg', '.gif']
+        })) {
+          setVisible(true);
+          e.preventDefault();
+        }
+      }} className={'attachment-field-item'} target={'_blank'} href={url}>
+        <img style={{marginRight: 5}} height={20} alt={title} title={title} src={img}/>
+      </a>
+      <Modal
+          className={'attachment-modal'}
+          onCancel={(e) => {
+            e.stopPropagation();
+            setVisible(false);
+          }}
+          // @ts-ignore
+          onClick={(e) => {
+            e.stopPropagation();
+          }}
+          bodyStyle={{padding: 0}}
+          footer={null}
+          visible={visible}>
+          <img onClick={(e) => {
+            e.stopPropagation();
+          }} style={{height: 'auto', width: '100%'}} alt={title} title={title} src={url}/>
+        </Modal>
+    </>
   );
 }
 
