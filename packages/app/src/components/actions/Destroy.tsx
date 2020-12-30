@@ -14,7 +14,7 @@ export function Destroy(props) {
           console.log('destroy', onTrigger);
           onTrigger && onTrigger();
         }}>
-        <Button icon={<DeleteOutlined />} type={'primary'} danger>{title}</Button>
+        <Button icon={<DeleteOutlined />} type={'ghost'} danger>{title}</Button>
       </Popconfirm>
     </>
   )
