@@ -171,12 +171,12 @@ const OP_MAP = {
     {label: '为空', value: '$null'},
   ],
   datetime: [
-    {label: '等于', value: 'eq', selected: true},
-    {label: '不等于', value: 'neq'},
-    {label: '大于', value: 'gt'},
-    {label: '大于等于', value: 'gte'},
-    {label: '小于', value: 'lt'},
-    {label: '小于等于', value: 'lte'},
+    {label: '等于', value: '$dateOn', selected: true},
+    {label: '不等于', value: '$dateNotOn'},
+    {label: '早于', value: '$dateBefore'},
+    {label: '晚于', value: '$dateAfter'},
+    {label: '不早于', value: '$dateNotBefore'},
+    {label: '不晚于', value: '$dateNotAfter'},
     // {label: '介于', value: 'between'},
     {label: '非空', value: '$notNull'},
     {label: '为空', value: '$null'},
@@ -257,15 +257,20 @@ const controls = {
 function DateControl(props: any) {
   const { field, value, onChange, ...restProps } = props;
   let format = field.dateFormat;
-  if (field.showTime) {
-    format += ` ${field.timeFormat}`;
-  }
+  // if (field.showTime) {
+  //   format += ` ${field.timeFormat}`;
+  // }
   const m = moment(value, format);
   return (
-    <DatePicker format={format} showTime={field.showTime} value={m.isValid() ? m : null} onChange={(value) => {
-      onChange(value ? value.format(field.showTime ? 'YYYY-MM-DD HH:mm:ss' : 'YYYY-MM-DD') : null)
+    <DatePicker format={format} value={m.isValid() ? m : null} onChange={(value) => {
+      onChange(value ? value.format('YYYY-MM-DD') : null)
     }}/>
   );
+  // return (
+  //   <DatePicker format={format} showTime={field.showTime} value={m.isValid() ? m : null} onChange={(value) => {
+  //     onChange(value ? value.format(field.showTime ? 'YYYY-MM-DD HH:mm:ss' : 'YYYY-MM-DD') : null)
+  //   }}/>
+  // );
 }
 
 function TimeControl(props: any) {
