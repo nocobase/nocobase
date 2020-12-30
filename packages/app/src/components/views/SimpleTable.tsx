@@ -5,6 +5,9 @@ import ViewFactory from '@/components/views';
 import { useRequest } from 'umi';
 import api from '@/api-client';
 import { components, fields2columns } from './SortableTable';
+import { LoadingOutlined } from '@ant-design/icons';
+
+export const icon = <LoadingOutlined style={{ fontSize: 36 }} spin />;
 
 export interface SimpleTableProps {
   schema?: any;
@@ -117,7 +120,12 @@ export function SimpleTable(props: SimpleTableProps) {
       <AntdTable
         size={'middle'}
         rowKey={rowKey}
-        loading={loading}
+        loading={{
+          spinning: loading,
+          size: 'large',
+          indicator: icon,
+          // className: 'spinning--absolute',
+        }}
         columns={fields2columns(fields)}
         dataSource={data?.list||(data as any)}
         onChange={(pagination, filters, sorter, extra) => {
