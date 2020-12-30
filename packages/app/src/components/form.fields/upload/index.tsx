@@ -96,6 +96,12 @@ export const getImageByUrl = (url, options) => {
 }
 
 function toFileObject(item) {
+  console.log(item);
+  if (typeof item !== 'object') {
+    return {
+      id: item,
+    }
+  }
   if (item.id && item.uid && item.url) {
     return item;
   }
@@ -143,6 +149,7 @@ export const Upload = connect({
       <AntdUpload
         {...uploadProps}
         fileList={fileList}
+        multiple={true}
       >
         <Button><UploadOutlined /> 上传文件</Button>
       </AntdUpload>
