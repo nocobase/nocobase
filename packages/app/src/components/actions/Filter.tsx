@@ -8,7 +8,7 @@ export function Filter(props) {
   const drawerRef = useRef<any>();
   const [visible, setVisible] = useState(false);
   const { title, viewName, collection_name } = props.schema;
-  const { activeTab = {}, item = {}, associatedName, associatedKey } = props;
+  const { filterCount, activeTab = {}, item = {}, associatedName, associatedKey } = props;
   const { associationField } = activeTab;
 
   const params = {};
@@ -53,7 +53,7 @@ export function Filter(props) {
       >
         <Button icon={<FilterOutlined />} onClick={() => {
           setVisible(true);
-        }}>{title}</Button>
+        }}>{filterCount ? `${filterCount} 个${title}项` : title}</Button>
       </Popover>
     </>
   )
