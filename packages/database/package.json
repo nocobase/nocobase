@@ -4,8 +4,7 @@
   "description": "",
   "main": "./lib/index.js",
   "types": "./lib/index.d.ts",
-  "scripts": {
-  },
+  "scripts": {},
   "license": "MIT",
   "dependencies": {
     "bcrypt": "^5.0.0",
