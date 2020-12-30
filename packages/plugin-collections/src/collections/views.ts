@@ -141,7 +141,7 @@ export default {
       interface: 'boolean',
       type: 'radio',
       name: 'default',
-      title: '作为默认试图',
+      title: '作为默认视图',
       defaultValue: false,
       scope: ['collection'],
       component: {
