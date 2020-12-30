@@ -28,7 +28,7 @@ export default (props: any) => {
         const subItems = children.filter(child => child.showInMenu);
         if (!hideChildren && subItems.length > 1) {
           return (
-            <Menu.SubMenu key={`${item.path}`} title={<><Icon type={item.icon}/> {item.title}</>}>
+            <Menu.SubMenu key={`${item.path}`} icon={<Icon type={item.icon}/>} title={<>{item.title}</>}>
               {subItems.map((child: any) => (
                 <Menu.Item key={child.path}>
                   <Link to={child.path}>{child.title}</Link>
@@ -38,8 +38,8 @@ export default (props: any) => {
           )
         }
         return (
-          <Menu.Item key={item.path}>
-            <Link to={item.path}><Icon type={item.icon}/> {item.title}</Link>
+          <Menu.Item icon={<Icon type={item.icon}/>} key={item.path}>
+            <Link to={item.path}>{item.title}</Link>
           </Menu.Item>
         )
       })}
