@@ -1,4 +1,3 @@
-import crypto from 'crypto';
 import path from 'path';
 import { URL } from 'url';
 import mkdirp from 'mkdirp';
@@ -6,6 +5,7 @@ import multer from 'multer';
 import serve from 'koa-static';
 import mount from 'koa-mount';
 import { STORAGE_TYPE_LOCAL } from '../constants';
+import { getFilename } from '../utils';
 
 export function getDocumentRoot(storage): string {
   const { documentRoot = 'uploads' } = storage.options || {};
@@ -71,9 +71,5 @@ export default (storage) => multer.diskStorage({
       cb(null, destPath);
     }).catch(cb);
   },
-  filename: function (req, file, cb) {
-    crypto.randomBytes(16, (err, raw) => {
-      cb(err, err ? undefined : `${raw.toString('hex')}${path.extname(file.originalname)}`)
-    });
-  }
+  filename: getFilename
 });

@@ -188,11 +188,23 @@ api.registerPlugin('plugin-file-manager', [path.resolve(__dirname, '../../../plu
     });
   }
   const Storage = database.getModel('storages');
+  // await Storage.create({
+  //   title: '本地存储',
+  //   name: `local`,
+  //   type: 'local',
+  //   baseUrl: process.env.LOCAL_STORAGE_BASE_URL,
+  //   default: true
+  // });
   await Storage.create({
-    title: '本地存储',
-    name: `local`,
-    type: 'local',
-    baseUrl: process.env.LOCAL_STORAGE_BASE_URL,
+    name: `ali-oss`,
+    type: 'ali-oss',
+    baseUrl: process.env.STORAGE_BASE_URL,
+    options: {
+      region: process.env.ALIYUN_OSS_REGION,// 'oss-cn-beijing',
+      accessKeyId: process.env.ALIYUN_OSS_ACCESS_KEY_ID,// 'LTAI4GEGDJsdGantisvSaz47',
+      accessKeySecret: process.env.ALIYUN_OSS_ACCESS_KEY_SECRET,//'cDFaOUwigps7ohRmsfBFXGDxNm8uIq',
+      bucket: process.env.ALIYUN_OSS_BUCKET, //'nocobase'
+    },
     default: true
   });
   await database.getModel('collections').import(require('./collections/example').default);

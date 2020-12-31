@@ -258,7 +258,7 @@ export function AttachmentFieldItem(props: any) {
           e.preventDefault();
         }
       }} className={'attachment-field-item'} target={'_blank'} href={url}>
-        <img style={{marginRight: 5}} height={20} alt={title} title={title} src={img}/>
+        <img style={{marginRight: 5}} height={20} alt={title} title={title} src={`${img}?x-oss-process=style/thumbnail`}/>
       </a>
       <Modal
           className={'attachment-modal'}
