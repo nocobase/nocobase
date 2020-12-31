@@ -31,8 +31,8 @@ export default {
       },
     },
     {
-      interface: 'number',
-      title: '年龄',
+      interface: 'attachment',
+      title: '头像',
       component: {
         showInTable: true,
         showInDetail: true,

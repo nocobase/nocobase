@@ -17,6 +17,15 @@ export default {
         showInForm: true,
       },
     },
+    {
+      interface: 'attachment',
+      title: '封面',
+      component: {
+        showInTable: true,
+        showInDetail: true,
+        showInForm: true,
+      },
+    },
     // {
     //   interface: 'linkTo',
     //   title: '作者',
