@@ -107,7 +107,7 @@ export const getImageByUrl = (url, options) => {
 
 function toFileObject(item) {
   console.log(item);
-  if (typeof item !== 'object') {
+  if (typeof item === 'number') {
     return {
       id: item,
     }
@@ -118,6 +118,7 @@ function toFileObject(item) {
   if (item.response && item.response.data) {
     return toFileObject(item.response.data);
   }
+  // if (item.org)
   return {
     id: item.id,
     uid: `${item.id}`,
@@ -137,6 +138,39 @@ function toFileList(value: any) {
   return value.map(toFileObject);
 }
 
+function toValue(item) {
+  if (typeof item === 'number') {
+    return {
+      id: item,
+    }
+  }
+  if (item.id && item.uid && item.url) {
+    return item;
+  }
+  if (item.response && item.response.data) {
+    return toValue(item.response.data);
+  }
+  if (item.originFileObj) {
+    return item;
+  }
+  return {
+    id: item.id,
+    uid: `${item.id}`,
+    name: item.title,
+    url: item.url,
+  };
+}
+
+function toValues(fileList) {
+  if (!fileList) {
+    return [];
+  }
+  if (!Array.isArray(fileList) && typeof fileList === 'object') {
+    fileList = [fileList];
+  }
+  return fileList.map(toValue);
+}
+
 export const Upload = connect({
   getProps: mapStyledProps
 })((props) => {
@@ -145,13 +179,10 @@ export const Upload = connect({
   const uploadProps = {
     name: 'file',
     action: `${process.env.API}/attachments:upload`,
-    onChange({ file, fileList }) {
-      if (['done', 'removed'].indexOf(file.status) !== -1) {
-        const values = toFileList(fileList);
-        console.log(values);
-        setFileList(values);
-        onChange(values.map(item => item.id));
-      }
+    onChange({ fileList }) {
+      console.log(fileList);
+      setFileList((fileList));
+      onChange(toValues(fileList));
     },
   };
   return (
