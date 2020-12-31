@@ -91,26 +91,26 @@ api.resourcer.use(async (ctx: actions.Context, next) => {
   await next();
 });
 
-api.resourcer.use(async (ctx: actions.Context, next) => {
-  const { resourceField, resourceName, viewName, filter } = ctx.action.params;
-  // TODO: 需要补充默认视图的情况
-  let view: any;
-  if (viewName) {
-    view = await ctx.db.getModel('views').findOne({
-      where: {
-        collection_name: resourceField ? resourceField.options.target : resourceName,
-        name: viewName,
-      }
-    });
-    const viewFilter = view.get('filter');
-    if (viewFilter) {
-      const args = [viewFilter, filter].filter(Boolean);
-      ctx.action.setParam('filter', {and: args});
-      console.log(ctx.action.params.filter);
-    }
-  }
-  await next();
-});
+// api.resourcer.use(async (ctx: actions.Context, next) => {
+//   const { resourceField, resourceName, viewName, filter } = ctx.action.params;
+//   // TODO: 需要补充默认视图的情况
+//   let view: any;
+//   if (viewName) {
+//     view = await ctx.db.getModel('views').findOne({
+//       where: {
+//         collection_name: resourceField ? resourceField.options.target : resourceName,
+//         name: viewName,
+//       }
+//     });
+//     const viewFilter = view.get('filter');
+//     if (viewFilter) {
+//       const args = [viewFilter, filter].filter(Boolean);
+//       ctx.action.setParam('filter', {and: args});
+//       console.log(ctx.action.params.filter);
+//     }
+//   }
+//   await next();
+// });
 
 api.registerPlugin('plugin-collections', [path.resolve(__dirname, '../../../plugin-collections'), {}]);
 api.registerPlugin('plugin-pages', [path.resolve(__dirname, '../../../plugin-pages'), {}]);
@@ -119,6 +119,7 @@ api.registerPlugin('plugin-file-manager', [path.resolve(__dirname, '../../../plu
 
 (async () => {
   await api.loadPlugins();
+  await api.database.getModel('collections').load({skipExisting: true});
   api.listen(process.env.HTTP_PORT, () => {
     console.log(`http://localhost:${process.env.HTTP_PORT}/`);
   });

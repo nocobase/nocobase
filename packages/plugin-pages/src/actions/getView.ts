@@ -222,6 +222,9 @@ export default async (ctx, next) => {
   if (resourceName === 'collections') {
     actionDefaultParams.sort = ['sort'];
   }
+  if (view.filter) {
+    actionDefaultParams.filter = view.filter;
+  }
   const appends = [];
   
   for (const field of fields) {

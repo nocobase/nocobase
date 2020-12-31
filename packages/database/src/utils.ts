@@ -53,7 +53,7 @@ export function toWhere(options: any, context: ToWhereContext = {}) {
       let k;
       switch (typeof opKey) {
         case 'function':
-          const name = model ? model.options.name.plural : '';
+          const name = model ? model.name : '';
           const result = opKey(items[key], { 
             model,
             database,
