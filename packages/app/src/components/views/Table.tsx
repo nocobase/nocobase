@@ -34,6 +34,8 @@ export function Table(props: TableProps) {
   // const { data, mutate } = useRequest(() => api.resource(name).list({
   //   associatedKey,
   // }));
+  const { filter: defaultFilter = {} } = actionDefaultParams;
+
   const [filterCount, setFilterCount] = useState(0);
   const name = associatedName ? `${associatedName}.${resourceName}` : resourceName;
   const { data, loading, pagination, mutate, refresh, run, params } = useRequest((params = {}, ...args) => {
@@ -44,9 +46,15 @@ export function Table(props: TableProps) {
       page: paginated ? current : 1,
       perPage: paginated ? pageSize : -1,
       sorter,
-      filter,
+      // filter,
       viewName,
       ...actionDefaultParams,
+      filter: {
+        and: [
+          defaultFilter,
+          filter,
+        ].filter(obj => obj && Object.keys(obj).length)
+      }
       // ...args2,
     })
     .then(({data = [], meta = {}}) => {
