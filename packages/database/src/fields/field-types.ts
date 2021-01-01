@@ -811,9 +811,7 @@ export class Radio extends BOOLEAN {
   static async beforeUpdateHook(this: Radio, model, options) {
     const { name, scope = [] } = this.options;
     const { transaction, association } = options;
-    const value = model.get(name) || false;
-    model.set(name, value);
-    if (value && !association) {
+    if (model.changed(name) && model.get(name) && !association) {
       const where = model.getValuesByFieldNames(scope);
       const { primaryKeyAttribute } = model.constructor;
       where[primaryKeyAttribute] = { [Op.ne]: model.get(primaryKeyAttribute) }
@@ -822,7 +820,7 @@ export class Radio extends BOOLEAN {
   }
 
   static async beforeBulkCreateHook(this: Radio, models, options) {
-    const { name, defaultValue = false, scope = [] } = this.options;
+    const { scope = [] } = this.options;
     const { transaction } = options;
 
     // 如果未配置范围限定，则可以进行性能优化处理（常用情况）。
@@ -878,7 +876,14 @@ export class Radio extends BOOLEAN {
     const table = this.context.sourceTable;
     const Model = table.getModel();
     // 防止 beforeBulkUpdate hook 死循环，因外层 bulkUpdate 并不禁用，正常更新无影响。
-    await Model.update({ [name]: false }, { where, transaction, hooks: false });
+    await Model.update({ [name]: false }, {
+      where: {
+        ...where,
+        [name]: true
+      },
+      transaction,
+      hooks: false
+    });
   }
 
   async makeGroup(this: Radio, models, { where = {}, transaction }) {
