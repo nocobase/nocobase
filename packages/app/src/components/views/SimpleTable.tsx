@@ -32,6 +32,7 @@ export function SimpleTable(props: SimpleTableProps) {
     selectedRowKeys: srk,
   } = props;
   const { rowKey = 'id', name: viewName, actionDefaultParams = {}, fields = [], rowViewName, actions = [], paginated = true, defaultPerPage = 10 } = schema;
+  const { filter: defaultFilter = {} } = actionDefaultParams;
   const { sourceKey = 'id' } = activeTab.field||{};
   const drawerRef = useRef<any>();
   const [filterCount, setFilterCount] = useState(0);
@@ -43,9 +44,15 @@ export function SimpleTable(props: SimpleTableProps) {
       page: paginated ? current : 1,
       perPage: paginated ? pageSize : -1,
       sorter,
-      filter,
+      // filter,
       viewName,
       ...actionDefaultParams,
+      filter: {
+        and: [
+          defaultFilter,
+          filter,
+        ].filter(obj => obj && Object.keys(obj).length)
+      }
     })
     .then(({data = [], meta = {}}) => {
       return {
