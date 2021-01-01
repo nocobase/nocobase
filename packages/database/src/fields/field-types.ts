@@ -1,4 +1,5 @@
 import {
+  Op,
   Utils,
   DataType,
   DataTypes,
@@ -796,7 +797,7 @@ export class Radio extends BOOLEAN {
 
   public readonly options: Options.RadioOptions;
 
-  static async beforeSaveHook(this: Radio, model, options) {
+  static async beforeCreateHook(this: Radio, model, options) {
     const { name, defaultValue = false, scope = [] } = this.options;
     const { transaction } = options;
     const value = model.get(name) || defaultValue;
@@ -807,8 +808,19 @@ export class Radio extends BOOLEAN {
     }
   }
 
+  static async beforeUpdateHook(this: Radio, model, options) {
+    const { name, scope = [] } = this.options;
+    const { transaction, association } = options;
+    if (model.changed(name) && model.get(name) && !association) {
+      const where = model.getValuesByFieldNames(scope);
+      const { primaryKeyAttribute } = model.constructor;
+      where[primaryKeyAttribute] = { [Op.ne]: model.get(primaryKeyAttribute) }
+      await this.setOthers({ where, transaction });
+    }
+  }
+
   static async beforeBulkCreateHook(this: Radio, models, options) {
-    const { name, defaultValue = false, scope = [] } = this.options;
+    const { scope = [] } = this.options;
     const { transaction } = options;
 
     // 如果未配置范围限定，则可以进行性能优化处理（常用情况）。
@@ -847,9 +859,8 @@ export class Radio extends BOOLEAN {
     super({ ...options, type: 'boolean' }, context);
     const Model = context.sourceTable.getModel();
     // TODO(feature): 可考虑策略模式，以在需要时对外提供接口
-    const beforeSaveHook = Radio.beforeSaveHook.bind(this);
-    Model.addHook('beforeCreate', beforeSaveHook);
-    Model.addHook('beforeUpdate', beforeSaveHook);
+    Model.addHook('beforeCreate', Radio.beforeCreateHook.bind(this));
+    Model.addHook('beforeUpdate', Radio.beforeUpdateHook.bind(this));
     // Model.addHook('beforeUpsert', beforeSaveHook);
     Model.addHook('beforeBulkCreate', Radio.beforeBulkCreateHook.bind(this));
     // TODO(optimize): bulkUpdate 的 hooks 参数不一样，没有对象列表，考虑到很少用，暂时不实现
@@ -865,7 +876,14 @@ export class Radio extends BOOLEAN {
     const table = this.context.sourceTable;
     const Model = table.getModel();
     // 防止 beforeBulkUpdate hook 死循环，因外层 bulkUpdate 并不禁用，正常更新无影响。
-    await Model.update({ [name]: false }, { where, transaction, hooks: false });
+    await Model.update({ [name]: false }, {
+      where: {
+        ...where,
+        [name]: true
+      },
+      transaction,
+      hooks: false
+    });
   }
 
   async makeGroup(this: Radio, models, { where = {}, transaction }) {
