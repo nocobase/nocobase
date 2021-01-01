@@ -1,4 +1,5 @@
 import {
+  Op,
   Utils,
   DataType,
   DataTypes,
@@ -796,13 +797,26 @@ export class Radio extends BOOLEAN {
 
   public readonly options: Options.RadioOptions;
 
-  static async beforeSaveHook(this: Radio, model, options) {
+  static async beforeCreateHook(this: Radio, model, options) {
     const { name, defaultValue = false, scope = [] } = this.options;
     const { transaction } = options;
     const value = model.get(name) || defaultValue;
     model.set(name, value);
     if (value) {
       const where = model.getValuesByFieldNames(scope);
+      await this.setOthers({ where, transaction });
+    }
+  }
+
+  static async beforeUpdateHook(this: Radio, model, options) {
+    const { name, scope = [] } = this.options;
+    const { transaction, association } = options;
+    const value = model.get(name) || false;
+    model.set(name, value);
+    if (value && !association) {
+      const where = model.getValuesByFieldNames(scope);
+      const { primaryKeyAttribute } = model.constructor;
+      where[primaryKeyAttribute] = { [Op.ne]: model.get(primaryKeyAttribute) }
       await this.setOthers({ where, transaction });
     }
   }
@@ -847,9 +861,8 @@ export class Radio extends BOOLEAN {
     super({ ...options, type: 'boolean' }, context);
     const Model = context.sourceTable.getModel();
     // TODO(feature): 可考虑策略模式，以在需要时对外提供接口
-    const beforeSaveHook = Radio.beforeSaveHook.bind(this);
-    Model.addHook('beforeCreate', beforeSaveHook);
-    Model.addHook('beforeUpdate', beforeSaveHook);
+    Model.addHook('beforeCreate', Radio.beforeCreateHook.bind(this));
+    Model.addHook('beforeUpdate', Radio.beforeUpdateHook.bind(this));
     // Model.addHook('beforeUpsert', beforeSaveHook);
     Model.addHook('beforeBulkCreate', Radio.beforeBulkCreateHook.bind(this));
     // TODO(optimize): bulkUpdate 的 hooks 参数不一样，没有对象列表，考虑到很少用，暂时不实现

@@ -170,5 +170,27 @@ describe('radio', () => {
 
       expect(posts.map(({ pinned }) => pinned)).toEqual([false, false, true]);
     });
+
+    it('update other fields should not effect radio field', async () => {
+      const Post = db.getModel('posts');
+      await Post.bulkCreate([
+        { title: 'bug1' },
+        { title: 'bug2' },
+        { title: 'bug3' }
+      ]);
+  
+      const post = await Post.findByPk(2);
+  
+      await post.update({
+        pinned: true,
+      });
+  
+      await post.update({
+        status: 'draft'
+      });
+  
+      const posts = await Post.findAll({ order: [['id', 'ASC']] });
+      expect(posts.map(({ pinned }) => pinned)).toEqual([ false, true, false ]);
+    });
   });
 });
