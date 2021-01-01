@@ -62,14 +62,14 @@ api.resourcer.use(async (ctx: actions.Context, next) => {
 });
 
 api.resourcer.use(async (ctx: actions.Context, next) => {
-  const { resourceField, resourceName, fields = {} } = ctx.action.params;
+  const { actionName, resourceField, resourceName, fields = {} } = ctx.action.params;
   const table = ctx.db.getTable(resourceField ? resourceField.options.target : resourceName);
   // ctx.state.developerMode = {[Op.not]: null};
   ctx.state.developerMode = false;
   if (table && table.hasField('developerMode') && ctx.state.developerMode === false) {
     ctx.action.setParam('filter.developerMode', ctx.state.developerMode);
   }
-  if (table) {
+  if (table && ['get', 'list'].includes(actionName)) {
     const except = fields.except || [];
     const appends = fields.appends || [];
     for (const [name, field] of table.getFields()) {
