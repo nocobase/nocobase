@@ -27,6 +27,7 @@ export function Table(props: TableProps) {
     associatedKey,
     isFieldComponent,
     onSelected,
+    multiple,
     selectedRowKeys: srk,
   } = props;
   const { name: viewName, fields, actionDefaultParams = {}, defaultTabName, rowKey = 'id', actions = [], paginated = true, defaultPerPage = 10 } = schema;
@@ -74,6 +75,7 @@ export function Table(props: TableProps) {
   const tableProps: any = {};
   if (actions.length) {
     tableProps.rowSelection = {
+      type: multiple ? 'checkbox' : 'radio',
       selectedRowKeys,
       onChange,
     }

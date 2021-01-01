@@ -85,7 +85,8 @@ function DrawerSelectComponent(props) {
           isFieldComponent={true}
           selectedRowKeys={selectedRowKeys}
           onSelected={(values) => {
-            const [selectedKeys, selectedValue] = transform({value: values, multiple, labelField, valueField });
+            // 需要返回的是 array
+            const [selectedKeys, selectedValue] = transform({value: values, multiple: true, labelField, valueField });
             setSelectedRows(selectedValue);
             setSelectedRowKeys(selectedKeys);
             // console.log('valuevaluevaluevaluevaluevalue', {values, selectedKeys, selectedValue});
