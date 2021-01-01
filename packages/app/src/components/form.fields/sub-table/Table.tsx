@@ -50,12 +50,6 @@ export default function Table(props: SimpleTableProps) {
     <div>
       <div>
         <Space style={{marginBottom: 14, position: 'absolute', right: 0, top: -31}}>
-          <Button size={'small'} type={'primary'} onClick={() => {
-            drawerRef.current.setVisible(true);
-            drawerRef.current.setIndex(undefined);
-            drawerRef.current.setData({});
-            drawerRef.current.setTitle('新建子字段');
-          }}>新建</Button>
           <Popconfirm title="确认删除吗？" onConfirm={() => {
             console.log({selectedRowKeys})
             const newValues = value.filter(item => selectedRowKeys.indexOf(item.__id) === -1);
@@ -63,6 +57,12 @@ export default function Table(props: SimpleTableProps) {
           }}>
             <Button size={'small'} type={'ghost'} danger>删除</Button>
           </Popconfirm>
+          <Button size={'small'} type={'primary'} onClick={() => {
+            drawerRef.current.setVisible(true);
+            drawerRef.current.setIndex(undefined);
+            drawerRef.current.setData({});
+            drawerRef.current.setTitle('新增子字段');
+          }}>新增</Button>
         </Space>
       </div>
       <Form target={target} onFinish={(values, index: number) => {
