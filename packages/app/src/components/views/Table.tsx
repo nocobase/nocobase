@@ -27,7 +27,7 @@ export function Table(props: TableProps) {
     associatedKey,
     isFieldComponent,
     onSelected,
-    multiple,
+    multiple = true,
     selectedRowKeys: srk,
   } = props;
   const { name: viewName, fields, actionDefaultParams = {}, defaultTabName, rowKey = 'id', actions = [], paginated = true, defaultPerPage = 10 } = schema;

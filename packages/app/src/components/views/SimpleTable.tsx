@@ -29,6 +29,7 @@ export function SimpleTable(props: SimpleTableProps) {
     associatedKey,
     isFieldComponent,
     onSelected,
+    multiple = true,
     selectedRowKeys: srk,
   } = props;
   const { rowKey = 'id', name: viewName, actionDefaultParams = {}, fields = [], rowViewName, actions = [], paginated = true, defaultPerPage = 10 } = schema;
@@ -78,6 +79,7 @@ export function SimpleTable(props: SimpleTableProps) {
   const tableProps: any = {};
   if (actions.length) {
     tableProps.rowSelection = {
+      type: multiple ? 'checkbox' : 'radio',
       selectedRowKeys,
       onChange,
     }
