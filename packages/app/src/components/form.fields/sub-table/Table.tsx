@@ -49,19 +49,19 @@ export default function Table(props: SimpleTableProps) {
   return (
     <div>
       <div>
-        <Space style={{marginBottom: 14}}>
-          <Button type={'primary'} onClick={() => {
+        <Space style={{marginBottom: 14, position: 'absolute', right: 0, top: -31}}>
+          <Button size={'small'} type={'primary'} onClick={() => {
             drawerRef.current.setVisible(true);
             drawerRef.current.setIndex(undefined);
             drawerRef.current.setData({});
-            drawerRef.current.setTitle('创建子字段');
-          }}>创建</Button>
+            drawerRef.current.setTitle('新建子字段');
+          }}>新建</Button>
           <Popconfirm title="确认删除吗？" onConfirm={() => {
             console.log({selectedRowKeys})
             const newValues = value.filter(item => selectedRowKeys.indexOf(item.__id) === -1);
             onChange(newValues);
           }}>
-            <Button>删除</Button>
+            <Button size={'small'} type={'ghost'} danger>删除</Button>
           </Popconfirm>
         </Space>
       </div>
@@ -77,7 +77,7 @@ export default function Table(props: SimpleTableProps) {
         console.log(newVaules);
       }} ref={drawerRef}/>
       <AntdTable
-        size={'middle'}
+        size={'small'}
         rowKey={rowKey}
         // loading={loading}
         columns={fields2columns(schema.fields||[])}
