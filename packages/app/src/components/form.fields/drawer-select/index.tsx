@@ -41,6 +41,7 @@ function DrawerSelectComponent(props) {
         open={false}
         mode={multiple ? 'tags' : undefined}
         labelInValue
+        allowClear={true}
         value={options}
         notFoundContent={''}
         onChange={(data) => {
