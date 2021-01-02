@@ -31,12 +31,19 @@ function getFieldComponent(type) {
 }
 
 export function StringField(props: any) {
-  const { value } = props;
+  const { value, viewType } = props;
   if (!value) {
     return null;
   }
   if (typeof value === 'object') {
     return JSON.stringify(value);
+  }
+  if (viewType === 'table' && value.length > 20) {
+    return (
+      <Popover content={<div onClick={(e) => {
+        e.stopPropagation();
+      }} style={{maxWidth: 300}}>{value}</div>}>{value.substring(0, 15)}...</Popover>
+    );
   }
   return (
     <>{value}</>
