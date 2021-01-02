@@ -55,7 +55,7 @@ function DrawerSelectComponent(props) {
             onChange(data.value);
             setSelectedRowKeys([data.value]);
           } else {
-            onChange(data);
+            onChange(null);
             setSelectedRowKeys([]);
           }
         }}
