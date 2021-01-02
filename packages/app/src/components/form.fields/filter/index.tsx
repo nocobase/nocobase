@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { Button, Select, Input, Space, Form, InputNumber, DatePicker, TimePicker, Radio } from 'antd';
 import { PlusCircleOutlined, CloseCircleOutlined } from '@ant-design/icons';
 import useDynamicList from './useDynamicList';
@@ -225,9 +225,9 @@ const op = {
 };
 
 const StringInput = (props) => {
-  const { onChange, ...restProps } = props;
+  const {value, onChange, ...restProps } = props;
   return (
-    <Input {...restProps} onChange={(e) => {
+    <Input {...restProps} defaultValue={value} onChange={(e) => {
       onChange(e.target.value);
     }}/>
   );
@@ -375,10 +375,16 @@ export function FilterItem(props: FilterItemProps) {
           <Select.Option value={option.value}>{option.label}</Select.Option>
         ))} */}
       </Select>
-      <ValueControl field={field} multiple={type === 'checkboxes' || !!field.multiple} op={dataSource.op} options={field.dataSource} value={dataSource.value} onChange={(value) => {
-        onChange({...dataSource, value: value});
-      }} 
-      style={{ width: 180 }}
+      <ValueControl 
+        field={field} 
+        multiple={type === 'checkboxes' || !!field.multiple} 
+        op={dataSource.op} 
+        options={field.dataSource} 
+        value={dataSource.value} 
+        onChange={(value) => {
+          onChange({...dataSource, value: value});
+        }}
+        style={{ width: 180 }}
       />
       {showDeleteButton && (
         <Button className={'filter-remove-link filter-item'} type={'link'} style={{padding: 0}} onClick={(e) => {
