@@ -4,7 +4,9 @@ import { Dialect } from 'sequelize';
 function getTestKey() {
   const { id } = require.main;
   const key = id
-    .replace(process.env.PWD, '')
+    // .replace(process.env.PWD, '')
+    .replace(`${process.env.PWD}/packages`, '')
+    .replace(/src\/__tests__/g, '')
     .replace('.test.ts', '')
     .replace(/[^\w]/g, '_');
   return key
@@ -32,6 +34,9 @@ export function getDatabase() {
     ...config,
     sync: {
       force: true,
+      alter: {
+        drop: true,
+      }
     },
     hooks: {
       beforeDefine(columns, model) {

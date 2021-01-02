@@ -137,6 +137,10 @@ export const DEFAULT_OFFSET = 0;
 export const DEFAULT_LIMIT = 100;
 export const MAX_LIMIT = 500;
 
+export interface UpdateAssociationOptions extends SaveOptions {
+  context?: any;
+}
+
 /**
  * Model 相关
  * 
@@ -281,7 +285,7 @@ export abstract class Model extends SequelizeModel {
     return where;
   }
 
-  async updateSingleAssociation(key: string, data: any, options: SaveOptions<any> & { context?: any; } = {}) {
+  async updateSingleAssociation(key: string, data: any, options: UpdateAssociationOptions = {}) {
     const {
       fields,
       transaction = await this.sequelize.transaction(),
@@ -292,6 +296,11 @@ export abstract class Model extends SequelizeModel {
     const table = this.database.getTable(this.constructor.name);
     const association = table.getAssociations().get(key);
     const accessors = association.getAccessors();
+
+    if (data == null) {
+      await this[accessors.set](null, opts);
+      return;
+    }
 
     if (typeof data === 'number' || typeof data === 'string' || data instanceof SequelizeModel) {
       await this[accessors.set](data, opts);
@@ -323,11 +332,8 @@ export abstract class Model extends SequelizeModel {
     }
   }
 
-  async updateMultipleAssociation(associationName: string, data: any, options: SaveOptions<any> & { context?: any; } = {}) {
-    const items = Array.isArray(data) ? data : [data];
-    if (!items.length) {
-      return;
-    }
+  async updateMultipleAssociation(associationName: string, data: any, options: UpdateAssociationOptions = {}) {
+    const items = Array.isArray(data) ? data : data == null ? [] : [data];
 
     const {
       fields,
@@ -339,6 +345,12 @@ export abstract class Model extends SequelizeModel {
     const table = this.database.getTable(this.constructor.name);
     const association = table.getAssociations().get(associationName);
     const accessors = association.getAccessors();
+
+    if (!items.length) {
+      await this[accessors.set](null, opts);
+      return;
+    }
+
     const Target = association.getTargetModel();
     // 当前表关联 target 表的外键（大部分情况与 target 表主键相同，但可以设置为不同的，要考虑）
     const { targetKey = Target.primaryKeyAttribute } = association.options;
@@ -481,7 +493,7 @@ export abstract class Model extends SequelizeModel {
     }
   }
 
-  async updateAssociation(key: string, data: any, options: SaveOptions<any> & { context?: any; }) {
+  async updateAssociation(key: string, data: any, options: UpdateAssociationOptions = {}) {
     const table = this.database.getTable(this.constructor.name);
     const association = table.getAssociations().get(key);
     switch (true) {
@@ -497,15 +509,14 @@ export abstract class Model extends SequelizeModel {
   /**
    * 关联数据的更新
    * 
-   * TODO: 暂不支持除主键以外关联字段的更新
-   * 
    * @param data
    */
-  async updateAssociations(data: any, options: SaveOptions & { context?: any } = {}) {
+  async updateAssociations(data: any, options: UpdateAssociationOptions = {}) {
     const { transaction = await this.sequelize.transaction() } = options;
     const table = this.database.getTable(this.constructor.name);
     for (const key of table.getAssociations().keys()) {
-      if (!data[key]) {
+      // 如果 key 不存在才跳过
+      if (!Object.keys(data).includes(key)) {
         continue;
       }
       await this.updateAssociation(key, data[key], {
