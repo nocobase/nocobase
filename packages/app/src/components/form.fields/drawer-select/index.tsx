@@ -1,6 +1,6 @@
 import React, { useState } from 'react'
 import { connect } from '@formily/react-schema-renderer'
-import { Select, Drawer, Button } from 'antd'
+import { Select, Drawer, Button, Space } from 'antd'
 import {
   mapStyledProps,
   mapTextComponent,
@@ -31,7 +31,7 @@ function DrawerSelectComponent(props) {
   const { target, multiple, associatedName, labelField, valueField = 'id', value, onChange } = props;
   const [selectedKeys, selectedValue] = transform({value, multiple, labelField, valueField });
   const [visible, setVisible] = useState(false);
-  const [selectedRowKeys, setSelectedRowKeys] = useState(selectedKeys);
+  const [selectedRowKeys, setSelectedRowKeys] = useState(multiple ? selectedKeys : [selectedKeys]);
   const [selectedRows, setSelectedRows] = useState(selectedValue);
   const [options, setOptions] = useState(selectedValue);
   // console.log('valuevaluevaluevaluevaluevalue', value);
@@ -71,12 +71,22 @@ function DrawerSelectComponent(props) {
           setVisible(false);
         }}
         footer={[
-          <Button type={'primary'} onClick={() => {
-            setOptions(selectedRows);
-            // console.log('valuevaluevaluevaluevaluevalue', {selectedRowKeys});
-            onChange(multiple ? selectedRowKeys : selectedRowKeys.shift());
-            setVisible(false);
-          }}>确定</Button>
+          <div
+            style={{
+              textAlign: 'right',
+            }}
+          >
+            <Space>
+              <Button onClick={() => setVisible(false)}>取消</Button>
+              <Button type={'primary'} onClick={() => {
+                setOptions(selectedRows);
+                // console.log('valuevaluevaluevaluevaluevalue', {selectedRowKeys});
+                onChange(multiple ? selectedRowKeys : selectedRowKeys.shift());
+                setVisible(false);
+              }}>确定</Button>
+            </Space>
+          </div>
+          
         ]}
       >
         <ViewFactory
