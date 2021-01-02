@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useImperativeHandle, forwardRef, useRef } from 'react';
 import { Button, Drawer } from 'antd';
-import { Tooltip, Input } from 'antd';
+import { Tooltip, Input, Space } from 'antd';
 import {
   SchemaForm,
   SchemaMarkupField as Field,
@@ -53,13 +53,22 @@ export default forwardRef((props: any, ref) => {
         setVisible(false);
       }}
       title={title}
-      footer={[
-        <Button type={'primary'} onClick={async () => {
-          const { values = {} } = await actions.submit();
-          setVisible(false);
-          onFinish && onFinish(values, index);
-        }}>提交</Button>
-      ]}
+      footer={(
+        <div
+          style={{
+            textAlign: 'right',
+          }}
+        >
+          <Space>
+            <Button onClick={() => setVisible(false)}>取消</Button>
+            <Button type={'primary'} onClick={async () => {
+              const { values = {} } = await actions.submit();
+              setVisible(false);
+              onFinish && onFinish(values, index);
+            }}>提交</Button>
+          </Space>
+        </div>
+      )}
     >
       <SchemaForm 
         colon={true}
