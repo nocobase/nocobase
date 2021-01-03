@@ -387,7 +387,8 @@ export async function update(ctx: Context, next: Next) {
             },
             transaction
           });
-          await through.updateAssociations(throughValues, options);
+          // TODO: 中间表的 Model 有问题，关联数据更新有 BUG
+          // await through.updateAssociations(throughValues, options);
           await through.update(throughValues, options);
           delete values[throughName];
         }
