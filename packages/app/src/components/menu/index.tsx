@@ -2,6 +2,7 @@ import React from 'react';
 import { Layout, Menu, Breadcrumb } from 'antd';
 import { Link, useLocation } from 'umi';
 import Icon from '@/components/icons';
+import './style.less';
 
 function pathcamp(path1: string, path2: string) {
   if (path1 === path2) {
