@@ -42,7 +42,7 @@ export default async function getRoutes(ctx, next) {
   const Collection = database.getModel('collections');
   let pages = await Page.findAll(Page.parseApiJson({
     filter: {
-      'developerMode': ctx.state.developerMode,
+      developerMode: ctx.state.developerMode ? {'$isTruly': true} : {'$isFalsy': true},
     },
     sort: ['sort'],
   }));
@@ -52,7 +52,7 @@ export default async function getRoutes(ctx, next) {
     if (page.get('path') === '/collections') {
       const collections = await Collection.findAll(Collection.parseApiJson({
         filter: {
-          developerMode: ctx.state.developerMode,
+          developerMode: ctx.state.developerMode ? {'$isTruly': true} : {'$isFalsy': true},
           showInDataMenu: true,
         },
         sort: ['sort'],
