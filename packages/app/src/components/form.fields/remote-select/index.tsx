@@ -14,7 +14,7 @@ import api from '@/api-client';
 import { Spin } from '@nocobase/client'
 
 function RemoteSelectComponent(props) {
-  const { value, onChange, disabled, resourceName, associatedKey, filter, labelField, valueField = 'id', objectValue } = props;
+  const { value, onChange, disabled, resourceName, associatedKey, filter, labelField, valueField = 'id', objectValue, placeholder } = props;
   const { data = [], loading = true } = useRequest(() => {
     return api.resource(resourceName).list({
       associatedKey,
@@ -26,6 +26,7 @@ function RemoteSelectComponent(props) {
   return (
     <>
       <Select 
+        placeholder={placeholder}
         disabled={disabled} 
         notFoundContent={loading ? <Spin/> : undefined} 
         allowClear 

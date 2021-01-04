@@ -20,6 +20,8 @@ import { useRequest } from 'umi';
 import api from '@/api-client';
 import { Spin } from '@nocobase/client';
 
+const actions = createFormActions();
+
 export const DrawerForm = forwardRef((props: any, ref) => {
   console.log(props);
   const {
@@ -50,7 +52,7 @@ export const DrawerForm = forwardRef((props: any, ref) => {
     setVisible,
     getData: run,
   }));
-  const actions = createFormActions();
+  
   console.log({onFinish});
   return (
     <Drawer

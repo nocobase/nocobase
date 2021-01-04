@@ -159,7 +159,7 @@ export class FieldModel extends BaseModel {
       // }
     }
     const f = await Field.create(targetOptions, options);
-    console.log({targetOptions}, f.get('options'));
+    // console.log({targetOptions}, f.get('options'));
   }
 
   setInterface(value) {

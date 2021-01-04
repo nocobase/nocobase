@@ -86,7 +86,7 @@ api.resourcer.use(async (ctx: actions.Context, next) => {
     if (appends.length) {
       ctx.action.setParam('fields.appends', appends);
     }
-    console.log('ctx.action.params.fields', ctx.action.params.fields, except, appends);
+    // console.log('ctx.action.params.fields', ctx.action.params.fields, except, appends);
   }
   await next();
 });
