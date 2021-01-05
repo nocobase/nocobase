@@ -47,7 +47,6 @@ export class Application extends Koa {
   async loadPlugins() {
     for (const plugin of this.plugins.values()) {
       plugin.instance = await this.loadPlugin(plugin);
-      console.log(plugin.instance);
     }
   }
 

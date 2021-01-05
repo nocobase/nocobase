@@ -4,10 +4,6 @@
 export default function (options) {
   return async (ctx, next) => {
     const token = ctx.get('Authorization').replace(/^Bearer\s+/gi, '');
-    const { actionName } = ctx.action.params;
-    if (actionName !== 'check') {
-      return next();
-    }
     const User = ctx.db.getModel('users');
     const user = await User.findOne({
       where: {
