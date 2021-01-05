@@ -55,9 +55,9 @@ export default {
       required: true,
       dataSource: [
         { label: '表格', value: 'table' },
+        { label: '日历', value: 'calendar' },
         // { label: '表单', value: 'form' },
         { label: '看板', value: 'kanban', disabled: true },
-        { label: '日历', value: 'calendar', disabled: true },
         { label: '地图', value: 'map', disabled: true },
       ],
       component: {
@@ -72,7 +72,117 @@ export default {
             "target": "filter",
             "condition": "{{ $self.value !== 'form' }}"
           },
+          {
+            type: "value:schema",
+            target: "labelField",
+            "condition": "{{ $self.value === 'calendar' }}",
+            schema: {
+              "x-component-props": {
+                associatedKey: "{{ $form.values && $form.values.associatedKey }}"
+              },
+            },
+          },
+          {
+            type: "value:schema",
+            target: "starDateField",
+            "condition": "{{ $self.value === 'calendar' }}",
+            schema: {
+              "x-component-props": {
+                associatedKey: "{{ $form.values && $form.values.associatedKey }}"
+              },
+            },
+          },
+          {
+            type: "value:schema",
+            target: "endDateField",
+            "condition": "{{ $self.value === 'calendar' }}",
+            schema: {
+              "x-component-props": {
+                associatedKey: "{{ $form.values && $form.values.associatedKey }}"
+              },
+            },
+          },
+          {
+            "type": "value:visible",
+            "target": "labelField",
+            "condition": "{{ $self.value === 'calendar' }}",
+          },
+          {
+            "type": "value:visible",
+            "target": "starDateField",
+            "condition": "{{ $self.value === 'calendar' }}",
+          },
+          {
+            "type": "value:visible",
+            "target": "endDateField",
+            "condition": "{{ $self.value === 'calendar' }}",
+          },
         ],
+      },
+    },
+    {
+      interface: 'select',
+      type: 'virtual',
+      title: '标题字段',
+      name: 'labelField',
+      required: true,
+      component: {
+        type: 'remoteSelect',
+        showInDetail: true,
+        showInForm: true,
+        'x-component-props': {
+          mode: 'simple',
+          resourceName: 'collections.fields',
+          labelField: 'title',
+          valueField: 'name',
+          filter: {
+            type: 'string',
+          },
+        },
+      },
+    },
+    {
+      interface: 'select',
+      type: 'virtual',
+      title: '开始日期字段',
+      name: 'starDateField',
+      // required: true,
+      component: {
+        type: 'remoteSelect',
+        showInDetail: true,
+        showInForm: true,
+        'x-component-props': {
+          placeholder: '默认为创建时间字段',
+          mode: 'simple',
+          resourceName: 'collections.fields',
+          labelField: 'title',
+          valueField: 'name',
+          filter: {
+            type: 'date',
+          },
+        },
+      },
+    },
+    {
+      interface: 'select',
+      type: 'virtual',
+      title: '结束日期字段',
+      name: 'endDateField',
+      // required: true,
+      component: {
+        type: 'remoteSelect',
+        showInDetail: true,
+        showInForm: true,
+        'x-component-props': {
+          placeholder: '默认为创建时间字段',
+          mode: 'simple',
+          resourceName: 'collections.fields',
+          labelField: 'title',
+          valueField: 'name',
+          filter: {
+            type: 'date',
+          },
+        },
       },
     },
     {
@@ -89,18 +199,20 @@ export default {
       },
     },
     {
-      interface: 'select',
+      interface: 'radio',
       type: 'string',
       name: 'template',
-      title: '模板',
+      title: '查看和编辑模式',
       required: true,
       dataSource: [
         // { label: '表单', value: 'DrawerForm' },
-        { label: '常规表格', value: 'Table' },
-        { label: '简易表格', value: 'SimpleTable' },
+        { label: '常规模式', value: 'Table' },
+        { label: '快捷模式', value: 'SimpleTable' },
+        // { label: '日历模板', value: 'Calendar' },
       ],
       component: {
-        type: 'string',
+        tooltip: "{{ html('常规模式：点击数据进入查看界面，再次点击进入编辑界面<br/>快捷模式：点击数据直接打开编辑界面') }}",
+        type: 'radio',
         default: 'Table',
         showInTable: true,
         showInDetail: true,

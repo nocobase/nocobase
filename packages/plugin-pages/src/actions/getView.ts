@@ -38,13 +38,14 @@ const transforms = {
       }
       if (field.get('name') === 'filter' && field.get('collection_name') === 'views') {
         const { values } = ctx.action.params;
-        const all = await Field.findAll({
-          where: {
+        const options = Field.parseApiJson({
+          filter: {
             collection_name: get(values, 'associatedKey'),
-            developerMode: ctx.state.developerMode,
+            developerMode: ctx.state.developerMode ? {'$isTruly': true} : {'$isFalsy': true},
           },
-          order: [['sort', 'asc']],
+          sort: 'sort',
         });
+        const all = await Field.findAll(options);
         set(prop, 'x-component-props.fields', all.filter(f => f.get('filterable')));
       }
       if (type === 'select') {
@@ -160,20 +161,22 @@ export default async (ctx, next) => {
       name: resourceName,
     },
   });
-  const where: any = {
-    developerMode: ctx.state.developerMode,
+  // const where: any = {
+  //   developerMode: ctx.state.developerMode,
+  // }
+  const filter: any = {
+    developerMode: ctx.state.developerMode ? {'$isTruly': true} : {'$isFalsy': true},
   }
   if (!view.get('draggable')) {
-    where.type = {
-      [Op.not]: 'sort',
+    filter.type = {
+      not: 'sort',
     };
   }
-  let fields = await collection.getFields({
-    where,
-    order: [
-      ['sort', 'asc'],
-    ]
+  const fieldOptions = Field.parseApiJson({
+    filter,
+    sort: 'sort',
   });
+  let fields = await collection.getFields(fieldOptions);
   fields = fields.filter(field => {
     if (field.get('interface') === 'linkTo') {
       if (throughName && throughName === field.get('through')) {
@@ -182,18 +185,18 @@ export default async (ctx, next) => {
     }
     return true;
   })
-  const actions = await collection.getActions({
-    where: {
-      developerMode: ctx.state.developerMode,
+  const options = Action.parseApiJson({
+    filter: {
+      developerMode: ctx.state.developerMode ? {'$isTruly': true} : {'$isFalsy': true},
     },
-    order: [
-      ['sort', 'asc'],
-    ]
+    sort: 'sort',
   });
+  const actions = await collection.getActions(options);
   let actionNames = view.get('actionNames') || [];
   if (actionNames.length === 0) {
     actionNames = ['filter', 'create', 'destroy'];
   }
+
   if (view.get('type') === 'table') {
     const defaultTabs = await collection.getTabs({
       where: {
@@ -202,8 +205,12 @@ export default async (ctx, next) => {
     });
     view.setDataValue('defaultTabName', get(defaultTabs, [0, 'name']));
   }
-  
+
   if (view.get('type') === 'table') {
+    view.setDataValue('rowViewName', 'form');
+  }
+  if (view.get('type') === 'calendar') {
+    view.setDataValue('template', 'Calendar');
     view.setDataValue('rowViewName', 'form');
   }
   if (view.get('updateViewName')) {

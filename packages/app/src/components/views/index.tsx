@@ -10,6 +10,7 @@ import { Details } from './Details';
 import './style.less';
 import { Login } from './Form/Login';
 import { Register } from './Form/Register';
+import { Calendar } from './Calendar/index';
 
 const TEMPLATES = new Map<string, any>();
 
@@ -21,6 +22,7 @@ export function getViewTemplate(template: string) {
   return TEMPLATES.get(template);
 }
 
+registerView('Calendar', Calendar);
 registerView('FilterForm', FilterForm)
 registerView('DrawerForm', DrawerForm);
 registerView('PermissionForm', DrawerForm);
