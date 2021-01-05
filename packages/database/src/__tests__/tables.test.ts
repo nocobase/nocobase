@@ -48,7 +48,7 @@ describe('tables', () => {
       });
       expect(db.getModel('foos').name).toBe('foos');
       // hooked by beforeDefine in index.ts
-      expect(db.getModel('foos').getTableName()).toBe('_packages_database_src___tests___tables_foos');
+      expect(db.getModel('foos').getTableName()).toBe('_database__tables_foos');
     });
 
     it('should be custom when tableName is defined', async () => {
@@ -58,7 +58,7 @@ describe('tables', () => {
       });
       expect(db.getModel('bar').name).toBe('bar');
       // hooked by beforeDefine in index.ts
-      expect(db.getModel('bar').getTableName()).toBe('_packages_database_src___tests___tables_bar_v2');
+      expect(db.getModel('bar').getTableName()).toBe('_database__tables_bar_v2');
     });
 
     it('should be custom when timestamps is defined', async () => {

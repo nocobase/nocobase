@@ -18,6 +18,16 @@ npm run bootstrap
 cp .env.example .env
 ~~~
 
+### Build
+
+~~~shell
+# for all packages
+npm run build
+
+# for specific package
+npm run build <package_name_1> <package_name_2> ...
+~~~
+
 ### Test
 
 ~~~
