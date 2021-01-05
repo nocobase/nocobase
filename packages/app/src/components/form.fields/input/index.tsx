@@ -11,6 +11,6 @@ export const Input = connect<'TextArea'>({
 Input.TextArea = connect({
   getProps: mapStyledProps,
   getComponent: mapTextComponent
-})(acceptEnum((props) => <AntdInput.TextArea autoSize={{minRows: 2}} {...props}/>))
+})(acceptEnum((props) => <AntdInput.TextArea autoSize={{minRows: 2, maxRows: 12}} {...props}/>))
 
 export default Input
