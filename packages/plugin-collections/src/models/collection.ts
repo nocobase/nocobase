@@ -214,9 +214,12 @@ export class CollectionModel extends BaseModel {
                   collection_name: collection.name,
                 },
               });
-              await model.updateAssociations({
-                associationField: associationField.id,
-              });
+              // TODO: tabs 表还未创建，暂时先这么处理
+              if (associationField) {
+                await model.updateAssociations({
+                  associationField: associationField.id,
+                });
+              }
             }
           }
           ids.push(model.id);
