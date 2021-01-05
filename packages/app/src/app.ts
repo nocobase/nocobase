@@ -1,6 +1,14 @@
 import './css_browser_selector';
 import { RequestConfig, request as umiRequest, history } from 'umi';
 
+import { configResponsive } from 'ahooks';
+
+configResponsive({
+  small: 0,
+  middle: 800,
+  large: 1200,
+});
+
 export const request: RequestConfig = {
   prefix: process.env.API,
   errorConfig: {

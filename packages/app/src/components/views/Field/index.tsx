@@ -219,6 +219,7 @@ export function LinkToFieldLink(props) {
         onClick={(e) => {
           e.stopPropagation();
         }}
+        className={'noco-drawer'}
         bodyStyle={{padding: 0}} 
         width={'40%'}
         title={`查看${title}详情`}

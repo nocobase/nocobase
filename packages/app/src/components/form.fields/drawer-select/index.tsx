@@ -55,6 +55,7 @@ function DrawerSelectComponent(props) {
             onChange(data.value);
             setSelectedRowKeys([data.value]);
           } else {
+            console.log(data);
             onChange(null);
             setSelectedRowKeys([]);
           }
@@ -65,6 +66,7 @@ function DrawerSelectComponent(props) {
       ></Select>
       <Drawer 
         width={'40%'}
+        className={'noco-drawer'}
         title={'关联数据'}
         visible={visible}
         bodyStyle={{padding: 0}}

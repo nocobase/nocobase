@@ -48,6 +48,7 @@ export default forwardRef((props: any, ref) => {
       {...props}
       destroyOnClose
       visible={visible}
+      className={'noco-drawer'}
       width={'40%'}
       onClose={() => {
         setVisible(false);

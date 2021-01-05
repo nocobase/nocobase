@@ -1,4 +1,5 @@
 import { connect } from '@formily/react-schema-renderer'
+import React from 'react';
 import { Input as AntdInput } from 'antd'
 import { acceptEnum, mapStyledProps, mapTextComponent } from '../shared'
 
@@ -10,6 +11,6 @@ export const Input = connect<'TextArea'>({
 Input.TextArea = connect({
   getProps: mapStyledProps,
   getComponent: mapTextComponent
-})(acceptEnum(AntdInput.TextArea))
+})(acceptEnum((props) => <AntdInput.TextArea autoSize={{minRows: 2}} {...props}/>))
 
 export default Input

@@ -6,8 +6,17 @@ import { useRequest } from 'umi';
 import { Spin } from '@nocobase/client';
 import Field from './Field';
 import get from 'lodash/get';
-
+import { useSize } from 'ahooks';
+import { configResponsive, useResponsive } from 'ahooks';
+configResponsive({
+  small: 0,
+  middle: 800,
+  large: 1200,
+});
 export function Details(props: any) {
+  const dom = document.querySelector('body');
+  const responsive = useResponsive();
+
   const {
     activeTab = {},
     pageInfo = {},
@@ -26,6 +35,15 @@ export function Details(props: any) {
       ...actionDefaultParams,
     });
   });
+  let descriptionsProps: any = {
+    size: 'middle',
+    bordered: true,
+  }
+  if (responsive.small && !responsive.middle && !responsive.large) {
+    descriptionsProps = {
+      layout: 'vertical'
+    }
+  }
   console.log(props);
   return (
     <Card bordered={false}>
@@ -38,7 +56,12 @@ export function Details(props: any) {
         actions={actions}
       />
       {loading ? <Spin/> : (
-        <Descriptions size={'middle'} bordered column={1}>
+        <Descriptions 
+          // layout={'vertical'}
+          // size={'middle'}
+          // bordered 
+          {...descriptionsProps}
+          column={1}>
           {fields.map((field: any) => {
             return (
               <Descriptions.Item label={field.title||field.name}>
