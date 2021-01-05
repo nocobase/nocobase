@@ -5,7 +5,8 @@ import bodyParser from 'koa-bodyparser';
 import { Dialect } from 'sequelize';
 import Database from '@nocobase/database';
 import { actions, middlewares } from '@nocobase/actions';
-import { Application, middleware } from '@nocobase/server';
+import { Application } from '@nocobase/server';
+import middleware from '@nocobase/server/src/middleware';
 import plugin from '../server';
 
 function getTestKey() {
@@ -26,13 +27,6 @@ const config = {
   host: process.env.DB_HOST,
   port: Number.parseInt(process.env.DB_PORT, 10),
   dialect: process.env.DB_DIALECT as Dialect,
-  define: {
-    hooks: {
-      beforeCreate(model, options) {
-        
-      },
-    },
-  },
   logging: process.env.DB_LOG_SQL === 'on',
   sync: {
     force: true,
@@ -40,34 +34,45 @@ const config = {
       drop: true,
     },
   },
+  hooks: {
+    beforeDefine(columns, model) {
+      model.tableName = `${getTestKey()}_${model.tableName || model.name.plural}`;
+    }
+  },
+};
+
+export function getDatabase() {
+  return new Database(config);
 };
 
 export async function getApp() {
   const app = new Application({
-    database: {
-      ...config,
-      hooks: {
-        beforeDefine(columns, model) {
-          model.tableName = `${getTestKey()}_${model.tableName || model.name.plural}`;
-        }
-      },
-    },
+    database: config,
     resourcer: {
       prefix: '/api',
     },
   });
   app.resourcer.use(middlewares.associated);
   app.resourcer.registerActionHandlers({...actions.associate, ...actions.common});
-  app.registerPlugin('collections', [path.resolve(__dirname, '../../../plugin-collections')]);
-  app.registerPlugin('users', [plugin]);
+  app.registerPlugin({
+    collections: path.resolve(__dirname, '../../../plugin-collections'),
+    users: path.resolve(__dirname, '../../../plugin-users'),
+    permissions: plugin
+  });
   await app.loadPlugins();
-  await app.database.sync({
-    force: true,
+  const testTables = app.database.import({
+    directory: path.resolve(__dirname, './tables')
   });
-  app.use(async (ctx, next) => {
-    ctx.db = app.database;
-    await next();
-  });
+  try {
+    await app.database.sync();
+  }catch(err) {
+    console.error(err);
+  }
+
+  for (const table of testTables.values()) {
+    await app.database.getModel('collections').import(table.getOptions(), { update: true, migrate: false });
+  }
+  app.context.db = app.database;
   app.use(bodyParser());
   app.use(middleware({
     prefix: '/api',
@@ -101,14 +106,18 @@ export interface Agent {
   resource: (name: string) => Handler;
 }
 
-export function getAgent(app: Application): Agent {
-  const agent = supertest.agent(app.callback());
+export function getAgent(app: Application) {
+  return supertest.agent(app.callback());
+}
+
+export function getAPI(app: Application) {
+  const agent = getAgent(app);
   return {
     resource(name: string): any {
       return new Proxy({}, {
-        get(target, method, receiver) {
+        get(target, method: string, receiver) {
           return (params: ActionParams = {}) => {
-            const { associatedKey, resourceKey, values = {}, ...restParams } = params;
+            const { associatedKey, resourceKey, values = {}, filePath, ...restParams } = params;
             let url = `/api/${name}`;
             if (associatedKey) {
               url = `/api/${name.split('.').join(`/${associatedKey}/`)}`;
@@ -117,10 +126,14 @@ export function getAgent(app: Application): Agent {
             if (resourceKey) {
               url += `/${resourceKey}`;
             }
-            if (['list', 'get'].indexOf(method as string) !== -1) {
-              return agent.get(`${url}?${qs.stringify(restParams)}`);
-            } else {
-              return agent.post(`${url}?${qs.stringify(restParams)}`).send(values);
+
+            switch (method) {
+              case 'list':
+              case 'get':
+                return agent.get(`${url}?${qs.stringify(restParams)}`);
+                
+              default:
+                return agent.post(`${url}?${qs.stringify(restParams)}`).send(values);
             }
           }
         }
@@ -128,14 +141,3 @@ export function getAgent(app: Application): Agent {
     }
   };
 }
-
-export function getDatabase() {
-  return new Database({
-    ...config,
-    hooks: {
-      beforeDefine(columns, model) {
-        model.tableName = `${getTestKey()}_${model.tableName || model.name.plural}`;
-      }
-    }
-  });
-};

@@ -41,27 +41,6 @@ api.resourcer.use(associated);
 api.resourcer.registerActionHandlers({...actions.common, ...actions.associate});
 
 api.resourcer.use(async (ctx: actions.Context, next) => {
-  const token = ctx.get('Authorization').replace(/^Bearer\s+/gi, '');
-  // console.log('user check', ctx.action.params.actionName);
-  // const { actionName } = ctx.action.params;
-  if (!token) {
-    return next();
-  }
-  const User = ctx.db.getModel('users');
-  const user = await User.findOne({
-    where: {
-      token,
-    },
-  });
-  if (!user) {
-    return next();
-  }
-  ctx.state.currentUser = user;
-  // console.log('ctx.state.currentUser', ctx.state.currentUser);
-  await next();
-});
-
-api.resourcer.use(async (ctx: actions.Context, next) => {
   const { actionName, resourceField, resourceName, fields = {} } = ctx.action.params;
   const table = ctx.db.getTable(resourceField ? resourceField.options.target : resourceName);
   // ctx.state.developerMode = {[Op.not]: null};

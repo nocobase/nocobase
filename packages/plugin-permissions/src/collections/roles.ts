@@ -2,43 +2,39 @@ import { TableOptions } from '@nocobase/database';
 
 export default {
   name: 'roles',
-  title: '权限配置',
+  title: '角色',
   fields: [
     {
+      comment: '角色名称',
       type: 'string',
       name: 'title',
     },
     {
-      type: 'string',
-      name: 'name',
+      comment: '支持匿名用户',
+      type: 'boolean',
+      name: 'anonymous',
+      defaultValue: false
+    },
+    // TODO(feature): 用户组后续考虑
+    // TODO(feature): 用户表应通过插件配置关联，考虑到今后会有多账户系统的情况
+    {
+      comment: '关联的用户表',
+      type: 'belongsToMany',
+      name: 'users',
+      through: 'users_roles',
+      otherKey: { allowNull: true }
     },
     {
-      type: 'json',
-      name: 'options',
-    },
-  ],
-  actions: [
-    {
-      type: 'list',
-      name: 'list',
-      title: '查看',
+      comment: '包含的以数据表分组的权限集',
+      type: 'belongsToMany',
+      name: 'collections',
+      through: 'permissions',
+      targetKey: 'name'
     },
     {
-      type: 'create',
-      name: 'create',
-      title: '新增',
-      viewName: 'form',
-    },
-    {
-      type: 'update',
-      name: 'update',
-      title: '编辑',
-      viewName: 'form',
-    },
-    {
-      type: 'destroy',
-      name: 'destroy',
-      title: '删除',
+      comment: '权限集（方便访问）',
+      type: 'hasMany',
+      name: 'permissions'
     },
   ],
   views: [

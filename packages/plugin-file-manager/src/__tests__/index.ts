@@ -62,7 +62,7 @@ export async function getApp() {
   });
   app.resourcer.use(middlewares.associated);
   app.resourcer.registerActionHandlers({...actions.associate, ...actions.common});
-  app.registerPlugins({
+  app.registerPlugin({
     'collections': [path.resolve(__dirname, '../../../plugin-collections')],
     'file-manager': [plugin]
   });
