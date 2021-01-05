@@ -60,6 +60,7 @@ export const DrawerForm = forwardRef((props: any, ref) => {
       destroyOnClose
       visible={visible}
       width={'40%'}
+      className={'noco-drawer'}
       onClose={() => {
         setVisible(false);
       }}
