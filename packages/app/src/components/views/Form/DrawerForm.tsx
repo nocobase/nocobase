@@ -20,6 +20,8 @@ import { useRequest } from 'umi';
 import api from '@/api-client';
 import { Spin } from '@nocobase/client';
 
+const actions = createFormActions();
+
 export const DrawerForm = forwardRef((props: any, ref) => {
   console.log(props);
   const {
@@ -50,7 +52,7 @@ export const DrawerForm = forwardRef((props: any, ref) => {
     setVisible,
     getData: run,
   }));
-  const actions = createFormActions();
+  
   console.log({onFinish});
   return (
     <Drawer
@@ -58,6 +60,7 @@ export const DrawerForm = forwardRef((props: any, ref) => {
       destroyOnClose
       visible={visible}
       width={'40%'}
+      className={'noco-drawer'}
       onClose={() => {
         setVisible(false);
       }}
@@ -110,9 +113,12 @@ export const DrawerForm = forwardRef((props: any, ref) => {
             text(...args: any[]) {
               return React.createElement('span', {}, ...args)
             },
+            html(html: string) {
+              return <div dangerouslySetInnerHTML={{__html: html}}></div>
+            },
             tooltip(title: string, offset = 3) {
               return (
-                <Tooltip title={title}>
+                <Tooltip title={<div dangerouslySetInnerHTML={{__html: title}}></div>}>
                   <QuestionCircleOutlined
                     style={{ margin: '0 3px', cursor: 'default', marginLeft: offset }}
                   />

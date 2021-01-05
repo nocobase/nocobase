@@ -19,7 +19,7 @@ export default async (ctx, next) => {
   const options = Tab.parseApiJson({
     filter: {
       enabled: true,
-      developerMode: ctx.state.developerMode,
+      developerMode: ctx.state.developerMode ? {'$isTruly': true} : {'$isFalsy': true},
     },
     fields: {
       appends: ['associationField'],
