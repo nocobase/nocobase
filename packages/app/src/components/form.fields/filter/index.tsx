@@ -33,7 +33,7 @@ export function FilterGroup(props: any) {
         {' '}
         <Select style={{width: 80}} onChange={(value) => {
           onChange({type: 'group', list, andor: value});
-        }} defaultValue={dataSource.andor}>
+        }} defaultValue={dataSource.andor||'and'}>
           <Select.Option value={'and'}>全部</Select.Option>
           <Select.Option value={'or'}>任意</Select.Option>
         </Select>
