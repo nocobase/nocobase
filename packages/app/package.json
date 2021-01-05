@@ -44,6 +44,7 @@
     "react": "16.14.0",
     "react-big-calendar": "^0.30.0",
     "react-dom": "16.14.0",
+    "react-image-lightbox": "^5.1.1",
     "react-sortable-hoc": "^1.11.0",
     "styled-components": "^5.2.1",
     "umi": "^3.2.23",
