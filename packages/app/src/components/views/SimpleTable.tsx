@@ -144,6 +144,7 @@ export function SimpleTable(props: SimpleTableProps) {
           data, 
           mutate,
           rowKey,
+          isFieldComponent,
           onMoved: async ({resourceKey, target}) => {
             await api.resource(name).sort({
               associatedKey,
