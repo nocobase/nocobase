@@ -21,9 +21,10 @@ interface Props {
   mutate: any,
   rowKey: any, 
   onMoved: any,
+  isFieldComponent?: boolean;
 }
 
-export const components = ({data = {}, rowKey, mutate, onMoved}: Props) => {
+export const components = ({data = {}, rowKey, mutate, onMoved, isFieldComponent}: Props) => {
   return {
     body: {
       wrapper: props => (
@@ -51,7 +52,7 @@ export const components = ({data = {}, rowKey, mutate, onMoved}: Props) => {
       row: ({ className, style, ...restProps }) => {
         // function findIndex base on Table rowKey props and should always be a right array index
         const index = findIndex(data.list, (x: any) => x[rowKey] === restProps['data-row-key']);
-        return <SortableItem index={index} {...restProps} />;
+        return <SortableItem index={index} className={`${className}${isFieldComponent ? '': ' row-clickable'}`} style={style} {...restProps} />;
       },
     },
   };
