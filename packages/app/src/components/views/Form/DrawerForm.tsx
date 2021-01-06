@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useImperativeHandle, forwardRef, useRef } from 'react';
-import { Button, Drawer } from 'antd';
+import { Button, Drawer, Modal } from 'antd';
 import { Tooltip, Input } from 'antd';
 import {
   SchemaForm,
@@ -19,6 +19,7 @@ import { QuestionCircleOutlined } from '@ant-design/icons';
 import { useRequest } from 'umi';
 import api from '@/api-client';
 import { Spin } from '@nocobase/client';
+import isEqual from 'lodash/isEqual';
 
 const actions = createFormActions();
 
@@ -62,7 +63,18 @@ export const DrawerForm = forwardRef((props: any, ref) => {
       width={'40%'}
       className={'noco-drawer'}
       onClose={() => {
-        setVisible(false);
+        actions.getFormState(state => {
+          if (isEqual(state.initialValues, state.values)) {
+            setVisible(false);
+            return;
+          }
+          Modal.confirm({
+            title: '表单内容发生变化，确定不保存吗？',
+            onOk() {
+              setVisible(false);
+            }
+          });
+        });
       }}
       title={title}
       footer={(
