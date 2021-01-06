@@ -1,4 +1,4 @@
-import FieldModel from '../models/field';
+import FieldModel, { generateValueName } from '../models/field';
 import _ from 'lodash';
 
 export default async function (model: FieldModel, options) {
@@ -13,5 +13,15 @@ export default async function (model: FieldModel, options) {
     if (target) {
       model.set('collection_name', target);
     }
+  }
+
+  const dataSource = model.get('dataSource');
+  if (Array.isArray(dataSource)) {
+    model.set('dataSource', dataSource.map(item => {
+      if (!item.value) {
+        item.value = generateValueName();
+      }
+      return {...item};
+    }));
   }
 }

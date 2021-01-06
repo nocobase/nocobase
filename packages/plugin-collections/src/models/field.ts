@@ -13,6 +13,10 @@ interface FieldImportOptions extends SaveOptions {
   collectionName?: string;
 }
 
+export function generateValueName(title?: string): string {
+  return `${Math.random().toString(36).replace('0.', '').slice(-4).padStart(4, '0')}`;
+}
+
 export function generateFieldName(title?: string): string {
   return `f_${Math.random().toString(36).replace('0.', '').slice(-4).padStart(4, '0')}`;
 }

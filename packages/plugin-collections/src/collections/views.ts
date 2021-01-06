@@ -226,6 +226,7 @@ export default {
       title: '每页显示几行数据',
       defaultValue: 50,
       dataSource: [
+        {label: '10', value: 10},
         {label: '20', value: 20},
         {label: '50', value: 50},
         {label: '100', value: 100},

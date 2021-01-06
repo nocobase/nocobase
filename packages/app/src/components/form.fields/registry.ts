@@ -18,6 +18,7 @@ import { RemoteSelect } from './remote-select'
 import { DrawerSelect } from './drawer-select'
 import { SubTable } from './sub-table'
 import { Icon } from './icons'
+import { ColorSelect } from './color-select'
 
 export const setup = () => {
   registerFormFields({
@@ -49,6 +50,7 @@ export const setup = () => {
     filter: Filter,
     remoteSelect: RemoteSelect,
     drawerSelect: DrawerSelect,
+    colorSelect: ColorSelect,
     subTable: SubTable,
   })
 }

@@ -10,7 +10,7 @@ import { toArr, isFn, isArr, FormPath } from '@formily/shared'
 import { ArrayList, DragListView } from '@formily/react-shared-components'
 import { CircleButton } from '../circle-button'
 import { TextButton } from '../text-button'
-import { Table, Form } from 'antd'
+import { Table, Form, Button } from 'antd'
 import { FormItemShallowProvider } from '@formily/antd'
 import {
   PlusOutlined,
@@ -23,7 +23,7 @@ import styled from 'styled-components'
 const ArrayComponents = {
   CircleButton,
   TextButton,
-  AdditionIcon: () => <PlusOutlined style={{ fontSize: 20 }} />,
+  AdditionIcon: () => <><PlusOutlined/> 新增</>,
   RemoveIcon: () => <DeleteOutlined />,
   MoveDownIcon: () => <DownOutlined />,
   MoveUpIcon: () => <UpOutlined />
