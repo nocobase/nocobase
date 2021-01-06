@@ -7,6 +7,7 @@ import findIndex from 'lodash/findIndex';
 import get from 'lodash/get';
 import './style.less';
 import Field from '../Field';
+import cloneDeep from 'lodash/cloneDeep';
 
 export const SortableItem = sortableElement(props => <tr {...props} />);
 export const SortableContainer = sortableContainer(props => <tbody {...props} />);
@@ -57,8 +58,10 @@ export const components = ({data = {}, rowKey, mutate, onMoved}: Props) => {
 };
 
 export function fields2columns(fields) {
-  const columns: any[] = fields.map(field => {
+  const columns: any[] = fields.map(item => {
+    const field = cloneDeep(item);
     field.render = (value) => field.interface === 'sort' ? <DragHandle/> : <Field viewType={'table'} schema={field} value={value}/>;
+    field.className = `${field.className||''} noco-field-${field.interface}`;
     return {
       ...field,
       ...(field.component||{}),
