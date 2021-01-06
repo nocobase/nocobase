@@ -170,7 +170,7 @@ export function Table(props: TableProps) {
       />
       {paginated && (
         <div className={'table-pagination'}>
-          <Pagination {...pagination} showQuickJumper showSizeChanger size={'small'}/>
+          <Pagination {...pagination} showTotal={(total)=> `共 ${total} 条记录`} showQuickJumper showSizeChanger size={'small'}/>
         </div>
       )}
     </Card>
