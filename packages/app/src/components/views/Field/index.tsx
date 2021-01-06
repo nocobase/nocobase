@@ -11,8 +11,15 @@ import ViewFactory from '..';
 import './style.less';
 import { getImageByUrl, testUrl } from '@/components/form.fields';
 import { CheckOutlined, CloseOutlined } from '@ant-design/icons';
+import marked from 'marked';
 import Lightbox from 'react-image-lightbox';
 import 'react-image-lightbox/style.css';
+
+marked.setOptions({
+  gfm: true,
+  breaks: true,
+});
+
 const InterfaceTypes = new Map<string, any>();
 
 function registerFieldComponent(type, Component) {
@@ -58,13 +65,13 @@ export function TextareaField(props: any) {
     return null;
   }
   if (viewType !== 'table') {
-    return value;
+    return <div className={'textarea-field-content'} style={{maxWidth: 300}} dangerouslySetInnerHTML={{__html: marked(value)}}/>;
   }
   if (value.length > 20) {
     return (
-      <Popover content={<div onClick={(e) => {
-        e.stopPropagation();
-      }} style={{maxWidth: 300}}>{value}</div>}>{value.substring(0, 15)}...</Popover>
+      <Popover content={(
+        <div onClick={(e) => e.stopPropagation()} className={'textarea-field-content'} style={{maxWidth: 300}} dangerouslySetInnerHTML={{__html: marked(value)}}/>
+      )}>{value.substring(0, 15)}...</Popover>
     );
   }
   return (
