@@ -24,6 +24,7 @@ export const ColorSelect = connect({
     'blue': '拂晓蓝',
     'geekblue': '极客蓝',
     'purple': '酱紫',
+    'default': '默认'
   };
 
   return (
