@@ -18,6 +18,7 @@ import { QuestionCircleOutlined } from '@ant-design/icons';
 import { useRequest } from 'umi';
 import api from '@/api-client';
 import { Spin } from '@nocobase/client';
+import cleanDeep from 'clean-deep';
 
 const actions = createFormActions();
 
@@ -54,16 +55,29 @@ export default forwardRef((props: any, ref) => {
       width={'40%'}
       onClose={() => {
         actions.getFormState(state => {
-          if (isEqual(state.initialValues, state.values)) {
+          const values = cleanDeep(state.values);
+          const others = Object.keys(data).length ? cleanDeep({...data}) : cleanDeep(state.initialValues);
+          if (isEqual(values, others)) {
             setVisible(false);
             return;
           }
-          Modal.confirm({
-            title: '表单内容发生变化，确定不保存吗？',
-            onOk() {
-              setVisible(false);
+          for (const key in values) {
+            if (Object.prototype.hasOwnProperty.call(values, key)) {
+              const value = values[key];
+              const other = others[key];
+              if (!isEqual(value, other)) {
+                // console.log(value, other, values, others, state.initialValues);
+                Modal.confirm({
+                  title: '表单内容发生变化，确定不保存吗？',
+                  onOk() {
+                    setVisible(false);
+                  }
+                });
+                return;
+              }
             }
-          });
+          }
+          setVisible(false);
         });
       }}
       title={title}
