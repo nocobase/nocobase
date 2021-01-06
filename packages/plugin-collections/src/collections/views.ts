@@ -223,7 +223,7 @@ export default {
       interface: 'radio',
       type: 'virtual',
       name: 'defaultPerPage',
-      title: '每页显示几行数据',
+      title: '默认每页显示几行数据',
       defaultValue: 50,
       dataSource: [
         {label: '10', value: 10},

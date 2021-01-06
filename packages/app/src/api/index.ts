@@ -119,6 +119,26 @@ api.registerPlugin('plugin-file-manager', [path.resolve(__dirname, '../../../plu
 
 (async () => {
   await api.loadPlugins();
+
+  api.resourcer.use(async (ctx, next) => {
+    if (process.env.NOCOBASE_ENV !== 'demo') {
+      return next();
+    }
+    const currentUser = ctx.state.currentUser;
+    if (currentUser && currentUser.username === 'admin') {
+      return next();
+    }
+    const { actionName } = ctx.action.params;
+    if (['create', 'update', 'destroy'].includes(actionName)) {
+      ctx.body = {
+        data: {},
+        meta: {},
+      };
+      return;
+    }
+    await next();
+  });
+
   await api.database.getModel('collections').load({skipExisting: true});
   api.listen(process.env.HTTP_PORT, () => {
     console.log(`http://localhost:${process.env.HTTP_PORT}/`);
