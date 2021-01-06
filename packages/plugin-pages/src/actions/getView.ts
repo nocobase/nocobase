@@ -291,7 +291,7 @@ export default async (ctx, next) => {
       }
       if (field.get('interface') === 'subTable') {
         const children = await field.getChildren();
-        console.log(children);
+        // console.log(children);
         for (const child of children) {
           if (!['subTable', 'linkTo', 'attachment', 'updatedBy', 'createdBy'].includes(child.get('interface'))) {
             continue;
