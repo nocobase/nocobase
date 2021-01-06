@@ -151,7 +151,7 @@ export function DataSourceField(props: any) {
     return value.map(val => {
       const item = items.find(item => item.value === val);
       return (
-        <Tag>
+        <Tag color={item.color}>
           {item ? item.label : val}
         </Tag>
       )
@@ -159,7 +159,7 @@ export function DataSourceField(props: any) {
   }
   const item = items.find(item => item.value === value);
   return (
-    <Tag>
+    <Tag color={item.color}>
       {item ? item.label : value}
     </Tag>
   )

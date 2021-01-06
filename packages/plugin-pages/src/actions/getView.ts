@@ -54,9 +54,43 @@ const transforms = {
       if (field.get('component.tooltip')) {
         prop.description = field.get('component.tooltip');
       }
-      // if (field.get('name') === 'dataSource') {
-      //   set(prop, 'items.properties.value.visible', false);
-      // }
+      if (field.get('name') === 'dataSource') {
+        
+        set(prop, 'x-component-props.operationsWidth', 'auto');
+        set(prop, 'x-component-props.bordered', true);
+        set(prop, 'x-component-props.className', 'data-source-table');
+        const properties = {};
+        if (ctx.state.developerMode) {
+          Object.assign(properties, {
+            value: {
+              type: "string",
+              title: "值",
+              // required: true,
+              'x-component-props': {
+                bordered: false,
+              },
+            },
+          });
+        }
+        Object.assign(properties, {
+          label: {
+            type: "string",
+            title: "选项",
+            required: true,
+            'x-component-props': {
+              bordered: false,
+            },
+          },
+          color: {
+            type: "colorSelect",
+            title: "颜色",
+            'x-component-props': {
+              bordered: false,
+            },
+          },
+        });
+        set(prop, 'items.properties', properties);
+      }
       if (['number', 'percent'].includes(interfaceType) && field.get('precision')) {
         set(prop, 'x-component-props.step', field.get('precision'));
       }

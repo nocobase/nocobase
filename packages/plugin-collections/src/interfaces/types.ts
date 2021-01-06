@@ -113,7 +113,7 @@ export const attachment = {
   options: {
     interface: 'attachment',
     type: 'belongsToMany',
-    filterable: true,
+    filterable: false,
     target: 'attachments',
     // storage: {
     //   name: 'local',
