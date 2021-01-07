@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { Table as AntdTable, Card, Pagination } from 'antd';
 import { redirectTo } from '@/components/pages/CollectionLoader/utils';
 import { Actions } from '@/components/actions';
@@ -6,6 +6,7 @@ import { request, useRequest } from 'umi';
 import api from '@/api-client';
 import { components, fields2columns } from './SortableTable';
 import { LoadingOutlined } from '@ant-design/icons';
+import ViewFactory from '@/components/views';
 
 export const icon = <LoadingOutlined style={{ fontSize: 36 }} spin />;
 
@@ -30,7 +31,18 @@ export function Table(props: TableProps) {
     multiple = true,
     selectedRowKeys: srk,
   } = props;
-  const { name: viewName, fields, actionDefaultParams = {}, defaultTabName, rowKey = 'id', actions = [], paginated = true, defaultPerPage = 10 } = schema;
+  const { 
+    name: viewName,
+    mode = 'default',
+    rowViewName = 'form',
+    fields, 
+    actionDefaultParams = {},
+    defaultTabName,
+    rowKey = 'id',
+    actions = [],
+    paginated = true, 
+    defaultPerPage = 10,
+  } = schema;
   // const { data, mutate } = useRequest(() => api.resource(name).list({
   //   associatedKey,
   // }));
@@ -70,6 +82,7 @@ export function Table(props: TableProps) {
     defaultPageSize: defaultPerPage,
   });
   const { sourceKey = 'id' } = activeTab.field||{};
+  const drawerRef = useRef<any>();
   console.log(props);
   const [selectedRowKeys, setSelectedRowKeys] = useState(srk||[]);
   const onChange = (selectedRowKeys: React.ReactText[], selectedRows: React.ReactText[]) => {
@@ -120,6 +133,17 @@ export function Table(props: TableProps) {
           }
         }}
       />
+      {mode === 'simple' && (
+        <ViewFactory
+          {...props}
+          mode={'update'}
+          viewName={rowViewName}
+          reference={drawerRef}
+          onFinish={() => {
+            refresh();
+          }}
+        />
+      )}
       <AntdTable 
         size={'middle'}
         rowKey={rowKey}
@@ -157,13 +181,18 @@ export function Table(props: TableProps) {
             if (isFieldComponent) {
               return;
             }
-            redirectTo({
-              ...props.match.params,
-              [activeTab ? 'newItem' : 'lastItem']: {
-                itemId: data[rowKey]||data.id,
-                tabName: defaultTabName,
-              },
-            });
+            if (mode === 'simple') {
+              drawerRef.current.setVisible(true);
+              drawerRef.current.getData(data[rowKey]);
+            } else {
+              redirectTo({
+                ...props.match.params,
+                [activeTab ? 'newItem' : 'lastItem']: {
+                  itemId: data[rowKey]||data.id,
+                  tabName: defaultTabName,
+                },
+              });
+            }
           },
         })}
         pagination={false}

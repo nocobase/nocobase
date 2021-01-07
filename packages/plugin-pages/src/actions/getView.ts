@@ -230,15 +230,12 @@ export default async (ctx, next) => {
   if (actionNames.length === 0) {
     actionNames = ['filter', 'create', 'destroy'];
   }
-
-  if (view.get('type') === 'table') {
-    const defaultTabs = await collection.getTabs({
-      where: {
-        default: true,
-      },
-    });
-    view.setDataValue('defaultTabName', get(defaultTabs, [0, 'name']));
-  }
+  const defaultTabs = await collection.getTabs({
+    where: {
+      default: true,
+    },
+  });
+  view.setDataValue('defaultTabName', get(defaultTabs, [0, 'name']));
   if (view.get('type') === 'table') {
     view.setDataValue('rowViewName', 'form');
   }
@@ -268,7 +265,7 @@ export default async (ctx, next) => {
   const appends = [];
   
   for (const field of fields) {
-    if (!['subTable', 'linkTo', 'attachment'].includes(field.get('interface'))) {
+    if (!['subTable', 'linkTo', 'attachment', 'createdBy', 'updatedBy'].includes(field.get('interface'))) {
       continue;
     }
     let showInKey;

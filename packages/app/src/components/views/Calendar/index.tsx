@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Table as AntdTable, Card, Pagination } from 'antd';
 import { Actions } from '@/components/actions';
+import { redirectTo } from '@/components/pages/CollectionLoader/utils';
 import ViewFactory from '@/components/views';
 import { useRequest } from 'umi';
 import api from '@/api-client';
@@ -56,7 +57,7 @@ export function Calendar(props: CalendarProps) {
     multiple = true,
     selectedRowKeys: srk,
   } = props;
-  const { rowKey = 'id', labelField, startDateField, endDateField, name: viewName, actionDefaultParams = {}, fields = [], rowViewName, actions = [], paginated = true, defaultPerPage = 10 } = schema;
+  const { rowKey = 'id', mode, defaultTabName, labelField, startDateField, endDateField, name: viewName, actionDefaultParams = {}, fields = [], rowViewName, actions = [], paginated = true, defaultPerPage = 10 } = schema;
   const { filter: defaultFilter = {} } = actionDefaultParams;
   const { sourceKey = 'id' } = activeTab.field||{};
   const drawerRef = useRef<any>();
@@ -210,6 +211,19 @@ export function Calendar(props: CalendarProps) {
           setFormMode('update');
           drawerRef.current.setVisible(true);
           drawerRef.current.getData(event[rowKey]);
+
+          if (mode === 'simple') {
+            drawerRef.current.setVisible(true);
+            drawerRef.current.getData(event[rowKey]);
+          } else {
+            redirectTo({
+              ...props.match.params,
+              [activeTab ? 'newItem' : 'lastItem']: {
+                itemId: event[rowKey]||event.id,
+                tabName: defaultTabName,
+              },
+            });
+          }
           // drawerRef.current.
         }}
         onRangeChange={(range) => {

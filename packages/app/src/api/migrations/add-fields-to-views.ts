@@ -7,7 +7,7 @@ import Database from '@nocobase/database';
   await api.database.sync({
     tables: ['views'],
   });
-  const [Collection, Page, User] = database.getModels(['collections', 'pages', 'users']);
+  const [Collection, View, User] = database.getModels(['collections', 'views', 'users']);
   const table = database.getTable('views');
   const collection = await Collection.findByName('views');
   console.log(table.getOptions().fields);
@@ -16,4 +16,16 @@ import Database from '@nocobase/database';
   }, {
     migrate: false,
   });
+
+  const views = await View.findAll();
+  for (const view of views) {
+    if (!view.get('mode')) {
+      if (view.get('template') === 'SimpleTable') {
+        view.set('mode', 'simple');
+      } else {
+        view.set('mode', 'default');
+      }
+      await view.save();
+    }
+  }
 })();

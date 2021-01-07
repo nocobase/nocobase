@@ -28,7 +28,7 @@ registerView('DrawerForm', DrawerForm);
 registerView('PermissionForm', DrawerForm);
 registerView('Form', Form);
 registerView('Table', Table);
-registerView('SimpleTable', SimpleTable);
+registerView('SimpleTable', Table);
 registerView('Details', Details);
 registerView('Login', Login);
 registerView('Register', Register);
