@@ -18,6 +18,7 @@ export const Password = connect({
   return (
     <span className={className}>
       <Input.Password 
+        autoComplete={'off'}
         {...others}
         value={value}
         onChange={(e) => {

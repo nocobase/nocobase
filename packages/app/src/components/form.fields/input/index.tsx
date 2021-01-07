@@ -8,6 +8,7 @@ export const Input = connect<'TextArea'>({
   getComponent: mapTextComponent
 })(acceptEnum(({onChange, ...restProps}) => (
   <AntdInput
+    autoComplete={'off'}
     {...restProps}
     onChange={(e) => {
       // 文本字段，如果空要 null 处理
