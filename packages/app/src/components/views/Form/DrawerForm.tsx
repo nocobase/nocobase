@@ -23,6 +23,7 @@ import isEqual from 'lodash/isEqual';
 import isEmpty from 'lodash/isEmpty';
 import get from 'lodash/get';
 import cleanDeep from 'clean-deep';
+import scopes from './scopes';
 
 const actions = createFormActions();
 
@@ -137,23 +138,8 @@ export const DrawerForm = forwardRef((props: any, ref) => {
             type: 'object',
             properties,
           }}
-          expressionScope={{
-            text(...args: any[]) {
-              return React.createElement('span', {}, ...args)
-            },
-            html(html: string) {
-              return <div dangerouslySetInnerHTML={{__html: html}}></div>
-            },
-            tooltip(title: string, offset = 3) {
-              return (
-                <Tooltip title={<div dangerouslySetInnerHTML={{__html: title}}></div>}>
-                  <QuestionCircleOutlined
-                    style={{ margin: '0 3px', cursor: 'default', marginLeft: offset }}
-                  />
-                </Tooltip>
-              );
-            },
-          }}
+          autoComplete={'off'}
+          expressionScope={scopes}
         >
         </SchemaForm>
       )}
