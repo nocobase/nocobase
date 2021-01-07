@@ -103,7 +103,7 @@ export class FieldModel extends BaseModel {
     if (targetField) {
       labelField = targetField.get('name');
     }
-    const collection = await this.getCollection();
+    const collection = await this.getCollection(options);
     let targetOptions:any = {
       ...types.linkTo.options,
       interface: 'linkTo',
