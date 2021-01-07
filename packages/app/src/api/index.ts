@@ -71,21 +71,21 @@ api.resourcer.use(async (ctx: actions.Context, next) => {
   }
   if (table && ['get', 'list'].includes(actionName)) {
     const except = fields.except || [];
-    const appends = fields.appends || [];
+    // const appends = fields.appends || [];
     for (const [name, field] of table.getFields()) {
       if (field.options.hidden) {
         except.push(field.options.name);
       }
-      if (field.options.appends) {
-        appends.push(field.options.name);
-      }
+      // if (field.options.appends) {
+      //   appends.push(field.options.name);
+      // }
     }
     if (except.length) {
       ctx.action.setParam('fields.except', except);
     }
-    if (appends.length) {
-      ctx.action.setParam('fields.appends', appends);
-    }
+    // if (appends.length) {
+    //   ctx.action.setParam('fields.appends', appends);
+    // }
     // console.log('ctx.action.params.fields', ctx.action.params.fields, except, appends);
   }
   await next();
@@ -119,6 +119,10 @@ api.registerPlugin('plugin-file-manager', [path.resolve(__dirname, '../../../plu
 
 (async () => {
   await api.loadPlugins();
+
+  api.database.getModel('users').addHook('beforeUpdate', function (model) {
+    console.log('users.beforeUpdate', model.get(), model.changed('password' as any));
+  });
 
   api.resourcer.use(async (ctx, next) => {
     if (process.env.NOCOBASE_ENV !== 'demo') {
