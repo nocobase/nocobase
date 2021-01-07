@@ -658,7 +658,7 @@ describe('koa middleware', () => {
         actions: {
           list: {
             async middleware(ctx, next) {
-              ctx.action.setParam('filter.user_name', ctx.action.params.associatedKey);
+              ctx.action.mergeParams({ filter: { user_name: ctx.action.params.associatedKey } });
               await next();
             },
           },
@@ -680,7 +680,7 @@ describe('koa middleware', () => {
         actions: {
           list: {
             async middleware(ctx, next) {
-              ctx.action.setParam('fields.only[]', ctx.action.params.associatedKey);
+              ctx.action.mergeParams({ fields: { only: [ctx.action.params.associatedKey] } }, { fields: 'append' });
               await next();
             },
           },

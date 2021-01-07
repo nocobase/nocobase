@@ -1,9 +1,10 @@
-import _, { isArray } from 'lodash';
+import _ from 'lodash';
 import compose from 'koa-compose';
 import Resource from './resource';
 import { requireModule, mergeFields } from './utils';
 import { HandlerType } from './resourcer';
 import Middleware, { MiddlewareType } from './middleware';
+import { ActionParameterTypes, UnknownParameter } from './parameter';
 
 export type ActionType = string | HandlerType | ActionOptions;
 
@@ -196,10 +197,16 @@ export class Action {
     if (typeof options === 'function') {
       options = { handler: options };
     }
-    const { middleware, middlewares = [], handler } = options;
+    const {
+      middleware,
+      middlewares = [],
+      handler,
+      ...params
+    } = options;
     this.middlewares = Middleware.toInstanceArray(middleware || middlewares);
     this.handler = handler;
     this.options = options;
+    this.mergeParams(params, {});
   }
 
   get params(): ActionParams {
@@ -221,81 +228,25 @@ export class Action {
     this.context = context;
   }
 
-  setParam(key: string, value: any) {
-    if (/\[\]$/.test(key)) {
-      key = key.substr(0, key.length - 2);
-      let values = _.get(this.parameters, key);
-      if (_.isArray(values)) {
-        values.push(value);
-      } else {
-        values = [];
-        values.push(value);
+  async mergeParams(params, strategies = {}) {
+    let type;
+    this.options.parameterTypes.forEach(key => {
+      const strategy = strategies[key];
+      type = this.parameters.get(key);
+      if (!type) {
+        const Type = ActionParameterTypes.get(key);
+        // @ts-ignore
+        type = new Type(params);
+        this.parameters.set('_', type);
       }
-      value = values;
+      type.merge(params, strategy);
+    });
+    type = this.parameters.get('_');
+    if (!type) {
+      type = new UnknownParameter({ ...params, parameterTypes: this.options.parameterTypes });
+      this.parameters.set('_', type);
     }
-    _.set(this.parameters, key, value);
-  }
-
-  async mergeParams(params: ActionParams) {
-    const {
-      filter,
-      fields,
-      values,
-      page: paramPage,
-      perPage: paramPerPage,
-      per_page,
-      ...restPrams
-    } = params;
-    const {
-      filter: optionsFilter,
-      fields: optionsFields,
-      page = DEFAULT_PAGE,
-      perPage = DEFAULT_PER_PAGE,
-      maxPerPage = MAX_PER_PAGE
-    } = this.options;
-    const options = _.omit(this.options, [
-      'defaultValues',
-      'filter',
-      'fields',
-      'maxPerPage',
-      'page',
-      'perPage',
-      'handler',
-      'middlewares',
-      'middleware',
-    ]);
-    const data: ActionParams = {
-      ...options,
-      ...restPrams,
-    };
-    if (!_.isEmpty(this.options.defaultValues) || !_.isEmpty(values)) {
-      data.values = _.merge(_.cloneDeep(this.options.defaultValues), values);
-    }
-    // TODO: to be unified by style funciton
-    if (per_page || paramPerPage) {
-      data.perPage = per_page || paramPerPage;
-    }
-    if (paramPage || data.perPage) {
-      data.page = paramPage || page;
-      data.perPage = data.perPage == -1 ? maxPerPage : Math.min(data.perPage || perPage, maxPerPage);
-    }
-    // if (typeof optionsFilter === 'function') {
-    //   this.parameters = _.cloneDeep(data);
-    //   optionsFilter = await optionsFilter(this.context);
-    // }
-    if (!_.isEmpty(optionsFilter) || !_.isEmpty(filter)) {
-      const filterOptions = [_.cloneDeep(optionsFilter), filter].filter(Boolean);
-      // TODO(feature): change 'and' to symbol
-      data.filter = filterOptions.length > 1 ? { and: filterOptions } : filterOptions[0];
-    }
-    // if (typeof optionsFields === 'function') {
-    //   this.parameters = _.cloneDeep(data);
-    //   optionsFields = await optionsFields(this.context);
-    // }
-    if (!_.isEmpty(optionsFields) || !_.isEmpty(fields)) {
-      data.fields = mergeFields(optionsFields, fields);
-    }
-    this.parameters = _.cloneDeep(data);
+    this.parameters.get('_').merge(params, strategies['_']);
   }
 
   setResource(resource: Resource) {
