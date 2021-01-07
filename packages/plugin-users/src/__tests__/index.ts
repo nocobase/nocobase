@@ -61,9 +61,7 @@ export async function getApp() {
   app.registerPlugin('collections', [path.resolve(__dirname, '../../../plugin-collections')]);
   app.registerPlugin('file-manager', [plugin]);
   await app.loadPlugins();
-  await app.database.sync({
-    force: true,
-  });
+  await app.database.sync();
   app.use(async (ctx, next) => {
     ctx.db = app.database;
     await next();
