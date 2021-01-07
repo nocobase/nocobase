@@ -9,10 +9,10 @@ describe('user fields', () => {
     app = await getApp();
     agent = getAgent(app);
     db = app.database;
-    await db.sync({ force: true });
   });
 
   afterEach(async () => {
+    await db.sync();
     await db.close();
   });
 
@@ -282,6 +282,40 @@ describe('user fields', () => {
       // 重新查询
       const post2 = await Post.findByPk(post.id);
       expect(post2.updated_by_id).toBe(user1.id);
+    });
+
+    it('bulkUpdate', async () => {
+      const Collection = db.getModel('collections');
+      const postCollection = await Collection.create({ name: 'posts', createdBy: false, updatedBy: true });
+      await postCollection.updateAssociations({
+        fields: [
+          {
+            type: 'string',
+            name: 'title'
+          }
+        ]
+      });
+      const User = db.getModel('users');
+      const user1 = await User.create();
+      const user2 = await User.create();
+      const Post = db.getModel('posts');
+      let context = { state: { currentUser: user2 } };
+
+      await Post.bulkCreate([
+        { title: 'title1' },
+        { title: 'title2' },
+      ]);
+
+      await Post.update({ title: 'title3' }, {
+        where: { title: 'title1' },
+        context
+      });
+
+      const posts = await Post.findAll({ order: [['id', 'ASC']] });
+      expect(posts.map(({ title, updated_by_id }) => ({ title, updated_by_id }))).toEqual([
+        { title: 'title3', updated_by_id: 2 },
+        { title: 'title2', updated_by_id: null },
+      ]);
     });
   });
 });
