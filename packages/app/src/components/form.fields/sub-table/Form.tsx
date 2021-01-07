@@ -19,6 +19,7 @@ import { useRequest } from 'umi';
 import api from '@/api-client';
 import { Spin } from '@nocobase/client';
 import cleanDeep from 'clean-deep';
+import scopes from '@/components/views/Form/scopes';
 
 const actions = createFormActions();
 
@@ -107,20 +108,7 @@ export default forwardRef((props: any, ref) => {
           type: 'object',
           properties: fields,
         }}
-        expressionScope={{
-          text(...args: any[]) {
-            return React.createElement('span', {}, ...args)
-          },
-          tooltip(title: string, offset = 3) {
-            return (
-              <Tooltip title={title}>
-                <QuestionCircleOutlined
-                  style={{ margin: '0 3px', cursor: 'default', marginLeft: offset }}
-                />
-              </Tooltip>
-            );
-          },
-        }}
+        expressionScope={scopes}
       >
       </SchemaForm>
     </Drawer>

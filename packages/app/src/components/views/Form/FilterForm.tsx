@@ -13,6 +13,7 @@ import {
   setValidationLanguage,
 } from '@formily/antd';
 import { QuestionCircleOutlined } from '@ant-design/icons';
+import scopes from './scopes';
 
 export function FilterForm(props: any) {
   const actions = createAsyncFormActions();
@@ -37,20 +38,7 @@ export function FilterForm(props: any) {
           type: 'object',
           properties,
         }}
-        expressionScope={{
-          text(...args: any[]) {
-            return React.createElement('span', {}, ...args)
-          },
-          tooltip(title: string, offset = 3) {
-            return (
-              <Tooltip title={title}>
-                <QuestionCircleOutlined
-                  style={{ margin: '0 3px', cursor: 'default', marginLeft: offset }}
-                />
-              </Tooltip>
-            );
-          },
-        }}
+        expressionScope={scopes}
       >
         <FormButtonGroup align={'end'}>
           <Reset>取消</Reset>
