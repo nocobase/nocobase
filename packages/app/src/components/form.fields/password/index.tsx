@@ -13,11 +13,18 @@ export interface IPasswordProps extends PasswordProps {
 export const Password = connect({
   getProps: mapStyledProps
 })(styled((props: IPasswordProps) => {
-  const { value, className, checkStrength, ...others } = props
+  const { value, className, checkStrength, onChange, ...others } = props
 
   return (
     <span className={className}>
-      <Input.Password {...others} value={value} />
+      <Input.Password 
+        {...others}
+        value={value}
+        onChange={(e) => {
+          // 密码字段，如果没有设置不处理
+          onChange(e.target.value ? e : undefined);
+        }}
+      />
       {checkStrength && (
         <PasswordStrength value={String(value)}>
           {score => {
