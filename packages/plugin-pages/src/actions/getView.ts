@@ -52,7 +52,7 @@ const transforms = {
         prop.type = 'string'
       }
       if (field.get('component.tooltip')) {
-        prop.description = field.get('component.tooltip');
+        prop.description = `{{html('${field.get('component.tooltip')}')}}`;
       }
       if (field.get('name') === 'dataSource') {
         
@@ -182,7 +182,7 @@ export default async (ctx, next) => {
     const table = ctx.db.getTable(associatedName);
     const resourceField = table.getField(resourceFieldName);
     if (resourceField instanceof BELONGSTOMANY) {
-      console.log({associatedName, resourceField});
+      // console.log({associatedName, resourceField});
       throughName = resourceField.options.through;
     }
   }
@@ -239,7 +239,6 @@ export default async (ctx, next) => {
     });
     view.setDataValue('defaultTabName', get(defaultTabs, [0, 'name']));
   }
-
   if (view.get('type') === 'table') {
     view.setDataValue('rowViewName', 'form');
   }

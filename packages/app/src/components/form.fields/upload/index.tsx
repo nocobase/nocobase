@@ -9,6 +9,9 @@ import {
   InboxOutlined
 } from '@ant-design/icons'
 const { Dragger: UploadDragger } = AntdUpload
+import get from 'lodash/get';
+import findIndex from 'lodash/findIndex';
+import Lightbox from 'react-image-lightbox';
 
 const exts = [
   {
@@ -171,10 +174,19 @@ function toValues(fileList) {
   return fileList.map(toValue);
 }
 
+export function getImgUrls(value) {
+  const values = Array.isArray(value) ? value : [value];
+  return values.filter(item => testUrl(item.url, {
+    exclude: ['.png', '.jpg', '.jpeg', '.gif']
+  })).map(item => toValue(item));
+}
+
 export const Upload = connect({
   getProps: mapStyledProps
 })((props) => {
   const { value, onChange } = props;
+  const [visible, setVisible] = useState(false);
+  const [imgIndex, setImgIndex] = useState(0);
   const [fileList, setFileList] = useState(toFileList(value));
   const uploadProps = {
     name: 'file',
@@ -185,15 +197,53 @@ export const Upload = connect({
       onChange(toValues(fileList));
     },
   };
+  const images = getImgUrls(fileList);
+  // console.log(images);
   return (
     <div>
       <AntdUpload
+        listType={'picture-card'}
         {...uploadProps}
         fileList={fileList}
         multiple={true}
+        onPreview={(file) => {
+          const value = toValue(file)||{};
+          const index = findIndex(images, image => image.id === value.id);
+          if (index >= 0) {
+            setImgIndex(index);
+            setVisible(true);
+          } else {
+            window.location.href = value.url;
+          }
+        }}
+        // itemRender={(originNode, file, fileList) => {
+        //   console.log(file);
+        //   const value = toValue(file);
+        //   return (
+        //     <div>
+        //       <img style={{marginRight: 5}} height={20} src={`${value.url}?x-oss-process=style/thumbnail`}/>
+        //     </div>
+        //   );
+        // }}
+        // onRemove={(file) => {
+          
+        // }}
       >
-        <Button><UploadOutlined /> 上传文件</Button>
+        <PlusOutlined />
+        <div style={{marginTop: 5}}>上传</div>
       </AntdUpload>
+      {visible && <Lightbox
+        mainSrc={get(images, [imgIndex, 'url'])}
+        nextSrc={get(images, [imgIndex + 1, 'url'])}
+        prevSrc={get(images, [imgIndex - 1, 'url'])}
+        onCloseRequest={() => setVisible(false)}
+        onMovePrevRequest={() => {
+          setImgIndex((imgIndex + images.length - 1) % images.length);
+        }}
+        onMoveNextRequest={() => {
+          setImgIndex((imgIndex + 1) % images.length);
+        }}
+      />}
     </div>
   )
 });
