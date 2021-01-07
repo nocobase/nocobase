@@ -84,7 +84,7 @@ export default {
           },
           {
             type: "value:schema",
-            target: "starDateField",
+            target: "startDateField",
             "condition": "{{ $self.value === 'calendar' }}",
             schema: {
               "x-component-props": {
@@ -109,7 +109,7 @@ export default {
           },
           {
             "type": "value:visible",
-            "target": "starDateField",
+            "target": "startDateField",
             "condition": "{{ $self.value === 'calendar' }}",
           },
           {
@@ -145,7 +145,7 @@ export default {
       interface: 'select',
       type: 'virtual',
       title: '开始日期字段',
-      name: 'starDateField',
+      name: 'startDateField',
       // required: true,
       component: {
         type: 'remoteSelect',
