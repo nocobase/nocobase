@@ -13,6 +13,7 @@ export default {
       title: '用户名',
       unique: true,
       required: true,
+      createOnly: true,
       component: {
         type: 'string',
         showInTable: true,
@@ -51,7 +52,6 @@ export default {
       type: 'password',
       name: 'password',
       title: '密码',
-      required: true,
       hidden: true,
       component: {
         type: 'password',
