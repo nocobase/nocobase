@@ -20,6 +20,15 @@ marked.setOptions({
   breaks: true,
 });
 
+const renderer = new marked.Renderer();
+renderer.link = ( href, title, text ) => `<a target="_blank" href="${ href }" title="${ title||'' }">${ text }</a>`;
+
+function markdown(text: string) {
+  return marked(text, {
+    renderer,
+  });
+}
+
 const InterfaceTypes = new Map<string, any>();
 
 function registerFieldComponent(type, Component) {
@@ -65,12 +74,12 @@ export function TextareaField(props: any) {
     return null;
   }
   if (viewType !== 'table') {
-    return <div className={'textarea-field-content'} style={{maxWidth: 300}} dangerouslySetInnerHTML={{__html: marked(value)}}/>;
+    return <div className={'textarea-field-content'} style={{maxWidth: 300}} dangerouslySetInnerHTML={{__html: markdown(value)}}/>;
   }
   if (value.length > 20) {
     return (
       <Popover content={(
-        <div onClick={(e) => e.stopPropagation()} className={'textarea-field-content'} style={{maxWidth: 300}} dangerouslySetInnerHTML={{__html: marked(value)}}/>
+        <div onClick={(e) => e.stopPropagation()} className={'textarea-field-content'} style={{maxWidth: 300}} dangerouslySetInnerHTML={{__html: markdown(value)}}/>
       )}>{value.substring(0, 15)}...</Popover>
     );
   }
