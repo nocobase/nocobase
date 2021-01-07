@@ -12,6 +12,7 @@ describe('user fields', () => {
   });
 
   afterEach(async () => {
+    await db.sync();
     await db.close();
   });
 
@@ -30,7 +31,6 @@ describe('user fields', () => {
       const Collection = db.getModel('collections');
       await Collection.create({ name: 'posts' });
       const Post = db.getModel('posts');
-      await Post.truncate();
 
       const post = await Post.create();
       expect(post.created_by_id).toBeDefined();
@@ -41,7 +41,6 @@ describe('user fields', () => {
       const Collection = db.getModel('collections');
       await Collection.create({ name: 'posts', createdBy: 'author', updatedBy: 'editor' });
       const Post = db.getModel('posts');
-      await Post.truncate();
 
       const post = await Post.create();
       expect(post.author_id).toBeDefined();
@@ -56,7 +55,6 @@ describe('user fields', () => {
         updatedBy: { name: 'editor', target: 'users' }
       });
       const Post = db.getModel('posts');
-      await Post.truncate();
 
       const post = await Post.create();
       expect(post.author_id).toBeDefined();
@@ -67,7 +65,6 @@ describe('user fields', () => {
       const Collection = db.getModel('collections');
       await Collection.create({ name: 'posts', createdBy: true, updatedBy: true });
       const Post = db.getModel('posts');
-      await Post.truncate();
 
       const post = await Post.create();
       expect(post.created_by_id).toBeDefined();
@@ -121,7 +118,6 @@ describe('user fields', () => {
 
       const User = db.getModel('users');
       const Post = db.getModel('posts');
-      await Post.truncate();
 
       // 用户1 操作
       const user1 = await User.create();
@@ -193,7 +189,6 @@ describe('user fields', () => {
       const currentUser = await User.create();
       const user2 = await User.create();
       const Post = db.getModel('posts');
-      await Post.truncate();
 
       const postWithoutUser = await Post.create();
       expect(postWithoutUser.created_by_id).toBe(null);
@@ -216,7 +211,6 @@ describe('user fields', () => {
       const user1 = await User.create();
       const user2 = await User.create();
       const Post = db.getModel('posts');
-      await Post.truncate();
 
       const post = await Post.create({
         created_by_id: user1.id,
@@ -243,7 +237,6 @@ describe('user fields', () => {
       const User = db.getModel('users');
       const currentUser = await User.create();
       const Post = db.getModel('posts');
-      await Post.truncate();
 
       const post = await Post.create();
       expect(post.updated_by_id).toBe(null);
@@ -268,7 +261,6 @@ describe('user fields', () => {
       const user1 = await User.create();
       const user2 = await User.create();
       const Post = db.getModel('posts');
-      await Post.truncate();
       let context = { state: { currentUser: user2 } };
 
       const post = await Post.create({
@@ -307,7 +299,6 @@ describe('user fields', () => {
       const user1 = await User.create();
       const user2 = await User.create();
       const Post = db.getModel('posts');
-      await Post.truncate();
       let context = { state: { currentUser: user2 } };
 
       await Post.bulkCreate([
