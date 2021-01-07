@@ -67,7 +67,7 @@ api.resourcer.use(async (ctx: actions.Context, next) => {
   // ctx.state.developerMode = {[Op.not]: null};
   ctx.state.developerMode = false;
   if (table && table.hasField('developerMode') && ctx.state.developerMode === false) {
-    ctx.action.setParam('filter.developerMode', ctx.state.developerMode);
+    ctx.action.setParam('filter.developerMode.$isFalsy', true);
   }
   if (table && ['get', 'list'].includes(actionName)) {
     const except = fields.except || [];
