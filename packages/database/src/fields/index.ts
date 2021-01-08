@@ -99,8 +99,8 @@ export function buildField(options: FieldOptions, context: Fields.FieldContext) 
   if (type instanceof ABSTRACT) {
     options = {...type.options, ...options};
   }
-  type = getDataTypeKey(type);
-  const Field = getField(type);
+  const dataType = getDataTypeKey(type);
+  const Field = getField(dataType);
   return new Field({type, ...options}, context);
 }
 
