@@ -4,7 +4,7 @@ import Resource from './resource';
 import { requireModule, mergeFields } from './utils';
 import { HandlerType } from './resourcer';
 import Middleware, { MiddlewareType } from './middleware';
-import { ActionParameterTypes, UnknownParameter } from './parameter';
+import { ActionParameterTypes, ActionParameter, UnknownParameter } from './parameter';
 
 export type ActionType = string | HandlerType | ActionOptions;
 
@@ -42,9 +42,15 @@ export type ParamsCallback = (ctx: ActionContext) => ActionParams | Promise<Acti
 
 export interface ActionOptions {
   /**
+   * 使用的参数解析器的类型列表
+   * 如：`['filter', 'fields']`
+   */
+  parameterTypes?: string[];
+
+  /**
    * 默认数据
    */
-  defaultValues?: any;
+  values?: any;
   /**
    * 字段
    * 
@@ -186,7 +192,9 @@ export class Action {
 
   protected options: ActionOptions;
 
-  protected parameters: ActionParams = {};
+  protected parameterTypes: string[];
+
+  protected parameters: Map<string, ActionParameter | UnknownParameter> = new Map();
 
   protected context: ActionContext = {};
 
@@ -201,11 +209,13 @@ export class Action {
       middleware,
       middlewares = [],
       handler,
+      parameterTypes = [],
       ...params
     } = options;
     this.middlewares = Middleware.toInstanceArray(middleware || middlewares);
     this.handler = handler;
     this.options = options;
+    this.parameterTypes = parameterTypes;
     this.mergeParams(params, {});
   }
 
@@ -234,11 +244,14 @@ export class Action {
 
   async mergeParams(params, strategies = {}) {
     let type;
-    this.options.parameterTypes.forEach(key => {
+    this.parameterTypes.forEach(key => {
       const strategy = strategies[key];
       type = this.parameters.get(key);
       if (!type) {
         const Type = ActionParameterTypes.get(key);
+        if (!Type) {
+          throw new Error(`parameter type ${key} is unregistered`);
+        }
         // @ts-ignore
         type = new Type(params);
         this.parameters.set(key, type);
@@ -247,7 +260,7 @@ export class Action {
     });
     type = this.parameters.get('_');
     if (!type) {
-      type = new UnknownParameter({ ...params, parameterTypes: this.options.parameterTypes });
+      type = new UnknownParameter({ ...params, parameterTypes: this.parameterTypes });
       this.parameters.set('_', type);
     }
     type.merge(params, strategies['_']);

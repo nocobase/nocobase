@@ -1,10 +1,11 @@
 import qs from 'qs';
 import glob from 'glob';
 import compose from 'koa-compose';
-import Action, { ActionName } from './action';
+import Action, { ActionName, ActionOptions } from './action';
 import Resource, { ResourceOptions } from './resource';
 import { parseRequest, getNameByParams, ParsedParams, requireModule, parseQuery } from './utils';
 import { pathToRegexp } from 'path-to-regexp';
+import _ from 'lodash';
 
 export interface ResourcerContext {
   resourcer?: Resourcer;
@@ -97,7 +98,7 @@ export interface ExecuteOptions {
 export type HandlerType = (ctx: ResourcerContext, next: () => Promise<any>) => any;
 
 export interface Handlers {
-  [key: string]: HandlerType;
+  [key: string]: ActionOptions;
 }
 
 export interface ImportOptions {
@@ -184,7 +185,7 @@ export class Resourcer {
     }
   }
 
-  registerActionHandler(name: ActionName, handler: HandlerType) {
+  registerActionHandler(name: ActionName, handler: ActionOptions) {
     this.actionHandlers.set(name, handler);
   }
 
@@ -279,7 +280,7 @@ export class Resourcer {
           await ctx.action.mergeParams({
             ...query,
             ...params,
-            values: ctx.request.body,
+            ...(_.isEmpty(ctx.request.body) ? {} : { values: ctx.request.body }),
           });
         }
         return compose(ctx.action.getHandlers())(ctx, next);

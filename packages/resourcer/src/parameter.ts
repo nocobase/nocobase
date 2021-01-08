@@ -103,11 +103,11 @@ export class FieldsParameter extends ActionParameter {
     if (inputs.only) {
       // 前端提供 only，后端提供 only
       if (defaults.only) {
-        fields.only = defaults.only.filter(field => inputs.only.includes(field))
+        fields.only = defaults.only.filter(field => inputs.only.includes(field));
       }
       // 前端提供 only，后端提供 except，输出 only 排除 except
       else if (defaults.except) {
-        fields.only = inputs.only.filter(field => !defaults.except.includes(field))
+        fields.only = inputs.only.filter(field => !defaults.except.includes(field));
       }
       // 前端提供 only，后端没有提供 only 或 except
       else {
@@ -116,7 +116,7 @@ export class FieldsParameter extends ActionParameter {
     } else if (inputs.except) {
       // 前端提供 except，后端提供 only，只输出 only 里排除 except 的字段
       if (defaults.only) {
-        fields.only = defaults.only.filter(field => !inputs.except.includes(field))
+        fields.only = defaults.only.filter(field => !inputs.except.includes(field));
       }
       // 前端提供 except，后端提供 except 或不提供，合并 except
       else {
@@ -143,7 +143,9 @@ export class FieldsParameter extends ActionParameter {
     inputs = this.parse(inputs);
 
     ['only', 'except', 'appends'].forEach(key => {
-      fields[key] = _.uniq([...defaults[key], ...inputs[key]]);
+      if (defaults[key] && defaults[key].length || inputs[key] && inputs[key].length) {
+        fields[key] = _.uniq([...(defaults[key] || []), ...(inputs[key] || [])]);
+      }
     });
     return fields;
   }
@@ -156,6 +158,7 @@ export class FieldsParameter extends ActionParameter {
         this.params = {
           fields: FieldsParameter.intersect(this.params.fields, FieldsParameter.pick(params).fields)
         };
+        break;
       case 'append':
         this.params = {
           fields: FieldsParameter.append(this.params.fields, FieldsParameter.pick(params).fields)
@@ -175,7 +178,8 @@ export class FilterParameter extends ActionParameter {
   params = { filter: {} };
 
   merge(params, strategy: 'and' | 'or' = 'and') {
-    const { filter } = ActionParameter.pick(params);
+    const { filter } = FilterParameter.pick(params);
+    console.log(filter);
     if (!filter || _.isEmpty(filter)) {
       return;
     }
@@ -211,12 +215,12 @@ export class PageParameter extends ActionParameter {
   }
 
   merge(params) {
-    const data = ActionParameter.pick(params);
+    const data = PageParameter.pick(params);
     if (typeof params.per_page !== 'undefined') {
       data.perPage = params.per_page;
     }
 
-    if (data.perPage == -1) {
+    if (data.perPage == -1 || data.perPage > this.maxPerPage) {
       data.perPage = this.maxPerPage;
     }
 
@@ -229,13 +233,14 @@ export class PageParameter extends ActionParameter {
 export class PayloadParameter extends ActionParameter {
   static picking = { values: undefined };
 
-  merge(params, strategy: 'replace' | 'merge' | 'intersect' = 'replace') {
-    const data = ActionParameter.pick(params);
+  merge(params, strategy: 'replace' | 'merge' | 'intersect' = 'merge') {
+    const data = PayloadParameter.pick(params);
     switch (strategy) {
       case 'replace':
         this.params.values = data.values;
         break;
       case 'merge':
+        // console.log(this.params, data);
         _.merge(this.params, _.cloneDeep(data));
         break;
       default:
@@ -250,8 +255,8 @@ export class UnknownParameter {
   params: { [key: string]: any } = {};
   parameterTypes: string[];
 
-  constructor(options) {
-    this.parameterTypes = options.parameterTypes || [];
+  constructor({ parameterTypes = [], ...options}) {
+    this.parameterTypes = parameterTypes;
     this.merge(options);
   }
 
