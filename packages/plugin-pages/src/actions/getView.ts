@@ -141,7 +141,9 @@ const transforms = {
       }
       const props = {};
       if (field.get('interface') === 'subTable') {
-        const children = await field.getChildren();
+        const children = await field.getChildren({
+          order: [['sort', 'asc']],
+        });
         props['children'] = children.map(child => ({...child.toJSON(), dataIndex: child.name.split('.')}))
       }
       arr.push({
