@@ -1,5 +1,6 @@
 import {
   buildField,
+  getDataTypeKey,
   Column,
   BOOLEAN as Boolean,
   INTEGER as Integer,
@@ -45,7 +46,7 @@ describe('field types', () => {
       if (actual instanceof ABSTRACT) {
         expect(type).toBeInstanceOf(field.getDataType());
         // postgres 的 text 不限制长度，无需参数
-        if (db.sequelize.getDialect() !== 'postgres' || field.getType() !== 'TEXT') {
+        if (db.sequelize.getDialect() !== 'postgres' || getDataTypeKey(type) !== 'TEXT') {
           // 非严谨比较，undefined == null
           expect(type).toEqual(actual);
         }
