@@ -74,7 +74,7 @@ export function TextareaField(props: any) {
     return null;
   }
   if (viewType !== 'table') {
-    return <div className={'textarea-field-content'} style={{maxWidth: 300}} dangerouslySetInnerHTML={{__html: markdown(value)}}/>;
+    return <div className={'textarea-field-content'} dangerouslySetInnerHTML={{__html: markdown(value)}}/>;
   }
   if (value.length > 20) {
     return (
