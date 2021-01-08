@@ -42,12 +42,6 @@ export type ParamsCallback = (ctx: ActionContext) => ActionParams | Promise<Acti
 
 export interface ActionOptions {
   /**
-   * 使用的参数解析器的类型列表
-   * 如：`['filter', 'fields']`
-   */
-  parameterTypes?: string[];
-
-  /**
    * 默认数据
    */
   values?: any;
@@ -192,8 +186,6 @@ export class Action {
 
   protected options: ActionOptions;
 
-  protected parameterTypes: string[];
-
   protected parameters: Map<string, ActionParameter | UnknownParameter> = new Map();
 
   protected context: ActionContext = {};
@@ -209,13 +201,11 @@ export class Action {
       middleware,
       middlewares = [],
       handler,
-      parameterTypes = [],
       ...params
     } = options;
     this.middlewares = Middleware.toInstanceArray(middleware || middlewares);
     this.handler = handler;
     this.options = options;
-    this.parameterTypes = parameterTypes;
     this.mergeParams(params, {});
   }
 
@@ -243,8 +233,16 @@ export class Action {
   }
 
   async mergeParams(params, strategies = {}) {
+    const typeKeys = new Set<string>();
+    Object.keys(params).forEach(key => {
+      for (const typeKey of ActionParameterTypes.getAllKeys()) {
+        if (typeof params[key] !== 'undefined' && key in ActionParameterTypes.get(typeKey).picking) {
+          typeKeys.add(typeKey);
+        }
+      }
+    });
     let type;
-    this.parameterTypes.forEach(key => {
+    for (const key of typeKeys) {
       const strategy = strategies[key];
       type = this.parameters.get(key);
       if (!type) {
@@ -257,10 +255,10 @@ export class Action {
         this.parameters.set(key, type);
       }
       type.merge(params, strategy);
-    });
+    }
     type = this.parameters.get('_');
     if (!type) {
-      type = new UnknownParameter({ ...params, parameterTypes: this.parameterTypes });
+      type = new UnknownParameter(params);
       this.parameters.set('_', type);
     }
     type.merge(params, strategies['_']);

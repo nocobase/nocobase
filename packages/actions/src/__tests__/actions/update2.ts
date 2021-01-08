@@ -2,8 +2,9 @@ import { ActionOptions } from '@nocobase/resourcer';
 import { update } from '../../actions/common';
 
 export default {
-  ...update,
   fields: {
     only: ['title']
-  }
+  },
+
+  handler: update
 } as unknown as ActionOptions;

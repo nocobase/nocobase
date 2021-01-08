@@ -208,7 +208,6 @@ describe('koa middleware', () => {
         name: 'tests',
         actions: {
           list: {
-            parameterTypes: ['filter', 'fields'],
             filter: {
               col1: 'val1',
               col2: 'val2',
@@ -245,7 +244,6 @@ describe('koa middleware', () => {
         name: 'tests',
         actions: {
           create: {
-            parameterTypes: ['payload'],
             values: {
               col1: 'val1',
             },
@@ -266,7 +264,6 @@ describe('koa middleware', () => {
         name: 'tests',
         actions: {
           create: {
-            parameterTypes: ['payload'],
             values: {
               col1: 'val1',
             },
@@ -289,7 +286,6 @@ describe('koa middleware', () => {
         name: 'tests',
         actions: {
           update: {
-            parameterTypes: ['payload'],
             values: {
               col1: 'val1',
             },
@@ -523,9 +519,7 @@ describe('koa middleware', () => {
       resourcer.define({
         name: 'test1',
         actions: {
-          list: {
-            parameterTypes: ['fields'],
-          },
+          list: {},
         },
       });
       const response = await agent
@@ -544,7 +538,6 @@ describe('koa middleware', () => {
         name: 'test1',
         actions: {
           list: {
-            parameterTypes: ['fields'],
             fields: ['id'],
           },
         },
@@ -565,7 +558,6 @@ describe('koa middleware', () => {
         name: 'test1',
         actions: {
           list: {
-            parameterTypes: ['fields'],
             fields: {
               except: ['password'],
             },
@@ -588,7 +580,6 @@ describe('koa middleware', () => {
         name: 'test1',
         actions: {
           list: {
-            parameterTypes: ['fields'],
             fields: {
               except: ['password'],
               appends: ['col2'],
@@ -612,7 +603,6 @@ describe('koa middleware', () => {
         name: 'test1',
         actions: {
           list: {
-            parameterTypes: ['fields'],
             fields: {
               except: ['password'],
               appends: ['col2'],
@@ -636,9 +626,7 @@ describe('koa middleware', () => {
       resourcer.define({
         name: 'test1',
         actions: {
-          list: {
-            parameterTypes: ['fields'],
-          }
+          list: {}
         },
       });
       const response = await agent
@@ -655,9 +643,7 @@ describe('koa middleware', () => {
       resourcer.define({
         name: 'users.posts',
         actions: {
-          list: {
-            parameterTypes: ['fields'],
-          }
+          list: {}
         },
       });
       const response = await agent
@@ -677,7 +663,6 @@ describe('koa middleware', () => {
         name: 'users.posts',
         actions: {
           list: {
-            parameterTypes: ['filter'],
             async middleware(ctx, next) {
               ctx.action.mergeParams({ filter: { user_name: ctx.action.params.associatedKey } });
               await next();
@@ -700,7 +685,6 @@ describe('koa middleware', () => {
         name: 'users.posts',
         actions: {
           list: {
-            parameterTypes: ['fields'],
             async middleware(ctx, next) {
               ctx.action.mergeParams({ fields: { only: [ctx.action.params.associatedKey] } }, { fields: 'append' });
               await next();

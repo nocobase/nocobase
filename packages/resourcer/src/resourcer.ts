@@ -1,7 +1,7 @@
 import qs from 'qs';
 import glob from 'glob';
 import compose from 'koa-compose';
-import Action, { ActionName, ActionOptions } from './action';
+import Action, { ActionName } from './action';
 import Resource, { ResourceOptions } from './resource';
 import { parseRequest, getNameByParams, ParsedParams, requireModule, parseQuery } from './utils';
 import { pathToRegexp } from 'path-to-regexp';
@@ -98,7 +98,7 @@ export interface ExecuteOptions {
 export type HandlerType = (ctx: ResourcerContext, next: () => Promise<any>) => any;
 
 export interface Handlers {
-  [key: string]: ActionOptions;
+  [key: string]: HandlerType;
 }
 
 export interface ImportOptions {
@@ -185,7 +185,7 @@ export class Resourcer {
     }
   }
 
-  registerActionHandler(name: ActionName, handler: ActionOptions) {
+  registerActionHandler(name: ActionName, handler: HandlerType) {
     this.actionHandlers.set(name, handler);
   }
 

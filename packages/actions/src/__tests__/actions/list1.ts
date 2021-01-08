@@ -5,12 +5,13 @@ const now = new Date();
 const before7Days = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 7);
 
 export default {
-  ...list,
   filter: {
     status: 'published',
     published_at: {
       gte: before7Days.toISOString(),
       lt: now.toISOString()
     }
-  }
+  },
+
+  handler: list
 } as unknown as ActionOptions;

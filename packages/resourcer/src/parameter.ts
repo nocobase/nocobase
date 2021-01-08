@@ -12,6 +12,14 @@ export class ActionParameterTypes {
   static get(type: string): typeof ActionParameter {
     return types.get(type);
   }
+
+  static getAllKeys(): Iterable<string> {
+    return types.keys();
+  }
+
+  static getAllTypes(): Iterable<typeof ActionParameter> {
+    return types.values();
+  }
 }
 
 
@@ -179,7 +187,6 @@ export class FilterParameter extends ActionParameter {
 
   merge(params, strategy: 'and' | 'or' = 'and') {
     const { filter } = FilterParameter.pick(params);
-    console.log(filter);
     if (!filter || _.isEmpty(filter)) {
       return;
     }
@@ -196,13 +203,13 @@ export class FilterParameter extends ActionParameter {
 
 
 export class PageParameter extends ActionParameter {
-  static picking = { page: undefined, perPage: undefined };
+  static picking = { page: undefined, perPage: undefined, per_page: undefined };
 
   static DEFAULT_PAGE = 1;
   static DEFAULT_PER_PAGE = 20;
   static MAX_PER_PAGE = 100;
 
-  params = {};
+  params = { page: undefined, perPage: undefined };
 
   maxPerPage = PageParameter.MAX_PER_PAGE;
 
@@ -220,11 +227,12 @@ export class PageParameter extends ActionParameter {
       data.perPage = params.per_page;
     }
 
-    if (data.perPage == -1 || data.perPage > this.maxPerPage) {
-      data.perPage = this.maxPerPage;
+    if (data.page || data.perPage) {
+      data.page = data.page || this.params.page || PageParameter.DEFAULT_PAGE;	
+      data.perPage = data.perPage == -1 ? this.maxPerPage : Math.min(data.perPage || this.params.perPage || PageParameter.DEFAULT_PER_PAGE, this.maxPerPage);	
+      
+      Object.assign(this.params, data);
     }
-
-    Object.assign(this.params, data);
   }
 }
 
@@ -240,7 +248,6 @@ export class PayloadParameter extends ActionParameter {
         this.params.values = data.values;
         break;
       case 'merge':
-        // console.log(this.params, data);
         _.merge(this.params, _.cloneDeep(data));
         break;
       default:
@@ -253,10 +260,8 @@ export class PayloadParameter extends ActionParameter {
 
 export class UnknownParameter {
   params: { [key: string]: any } = {};
-  parameterTypes: string[];
 
-  constructor({ parameterTypes = [], ...options}) {
-    this.parameterTypes = parameterTypes;
+  constructor(options) {
     this.merge(options);
   }
 
@@ -266,9 +271,9 @@ export class UnknownParameter {
 
   merge(params, strategy: 'replace' | 'merge' | 'intersect' = 'merge') {
     const knownKeys = new Set<string>();
-    this.parameterTypes.forEach(key => {
-      Object.keys(types.get(key).picking).forEach(key => knownKeys.add(key));
-    });
+    for (const key of ActionParameterTypes.getAllKeys()) {
+      Object.keys(ActionParameterTypes.get(key).picking).forEach(key => knownKeys.add(key));
+    }
     const data = _.omit(params, Array.from(knownKeys));
 
     switch (strategy) {

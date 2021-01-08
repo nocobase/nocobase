@@ -2,7 +2,6 @@ import { ActionOptions } from '@nocobase/resourcer';
 import { create } from '../../actions/common';
 
 export default {
-  ...create,
   values: {
     meta: {
       location: 'Kunming'
@@ -11,5 +10,7 @@ export default {
 
   fields: {
     except: ['sort', 'user.profile', 'comments.status']
-  }
+  },
+
+  handler: create
 } as unknown as ActionOptions;
