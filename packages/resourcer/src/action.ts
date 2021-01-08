@@ -210,7 +210,11 @@ export class Action {
   }
 
   get params(): ActionParams {
-    return this.parameters;
+    const result = this.parameters.get('_').get();
+    for (const paramType of this.parameters.values()) {
+      Object.assign(result, paramType.get());
+    }
+    return result;
   }
 
   clone() {
@@ -237,7 +241,7 @@ export class Action {
         const Type = ActionParameterTypes.get(key);
         // @ts-ignore
         type = new Type(params);
-        this.parameters.set('_', type);
+        this.parameters.set(key, type);
       }
       type.merge(params, strategy);
     });
@@ -246,7 +250,7 @@ export class Action {
       type = new UnknownParameter({ ...params, parameterTypes: this.options.parameterTypes });
       this.parameters.set('_', type);
     }
-    this.parameters.get('_').merge(params, strategies['_']);
+    type.merge(params, strategies['_']);
   }
 
   setResource(resource: Resource) {
