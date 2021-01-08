@@ -171,7 +171,7 @@ function toValues(fileList) {
   if (!Array.isArray(fileList) && typeof fileList === 'object') {
     fileList = [fileList];
   }
-  return fileList.map(toValue);
+  return fileList.map(toValue).filter(item => item.id);
 }
 
 export function getImgUrls(value) {
@@ -213,7 +213,8 @@ export const Upload = connect({
             setImgIndex(index);
             setVisible(true);
           } else {
-            window.location.href = value.url;
+            window.open(value.url)
+            // window.location.href = value.url;
           }
         }}
         // itemRender={(originNode, file, fileList) => {
