@@ -3,7 +3,6 @@ import dotenv from 'dotenv';
 import path from 'path';
 import actions from '../../../actions/src';
 import associated from '../../../actions/src/middlewares/associated';
-import { Op } from 'sequelize';
 
 const sync = {
   force: false,
@@ -62,16 +61,16 @@ api.resourcer.use(async (ctx: actions.Context, next) => {
 });
 
 api.resourcer.use(async (ctx: actions.Context, next) => {
-  const { actionName, resourceField, resourceName, fields = {} } = ctx.action.params;
+  const { actionName, resourceField, resourceName } = ctx.action.params;
   const table = ctx.db.getTable(resourceField ? resourceField.options.target : resourceName);
   // ctx.state.developerMode = {[Op.not]: null};
   ctx.state.developerMode = false;
   if (table && table.hasField('developerMode') && ctx.state.developerMode === false) {
-    ctx.action.setParam('filter.developerMode', ctx.state.developerMode);
+    ctx.action.mergeParams({ filter: { developerMode: ctx.state.developerMode } }, { filter: 'and' });
   }
   if (table && ['get', 'list'].includes(actionName)) {
-    const except = fields.except || [];
-    const appends = fields.appends || [];
+    const except = [];
+    const appends = [];
     for (const [name, field] of table.getFields()) {
       if (field.options.hidden) {
         except.push(field.options.name);
@@ -80,12 +79,10 @@ api.resourcer.use(async (ctx: actions.Context, next) => {
         appends.push(field.options.name);
       }
     }
-    if (except.length) {
-      ctx.action.setParam('fields.except', except);
-    }
-    if (appends.length) {
-      ctx.action.setParam('fields.appends', appends);
-    }
+    ctx.action.mergeParams({ fields: {
+      except,
+      appends
+    } }, { fields: 'append' });
     console.log('ctx.action.params.fields', ctx.action.params.fields, except, appends);
   }
   await next();

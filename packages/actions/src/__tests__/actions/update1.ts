@@ -2,7 +2,7 @@ import { ActionOptions } from '@nocobase/resourcer';
 import { update } from '../../actions/common';
 
 export default {
-  defaultValues: {
+  values: {
     meta: {
       location: 'Kunming'
     }
@@ -13,4 +13,4 @@ export default {
   },
 
   handler: update
-} as ActionOptions;
+} as unknown as ActionOptions;

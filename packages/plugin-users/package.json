@@ -3,22 +3,13 @@
   "version": "0.3.0-alpha.0",
   "main": "lib/index.js",
   "license": "MIT",
-  "resolutions": {
-    "@types/react": "16.14.0"
-  },
-  "peerDependencies": {
-    "umi": "^3.2.23"
-  },
   "devDependencies": {
     "@nocobase/actions": "^0.3.0-alpha.0",
     "@nocobase/server": "^0.3.0-alpha.0",
-    "crypto-random-string": "^3.3.0",
-    "umi": "^3.2.23"
+    "crypto-random-string": "^3.3.0"
   },
   "dependencies": {
-    "@nocobase/client": "^0.3.0-alpha.0",
     "@nocobase/database": "^0.3.0-alpha.0",
-    "@nocobase/resourcer": "^0.3.0-alpha.0",
-    "@types/react": "16.14.0"
+    "@nocobase/resourcer": "^0.3.0-alpha.0"
   }
 }

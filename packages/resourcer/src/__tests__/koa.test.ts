@@ -1,16 +1,13 @@
 import Koa from 'koa';
-import Router from '@koa/router';
-import request from 'supertest';
-import http from 'http';
+import supertest from 'supertest';
 import Resourcer from '../resourcer';
-import qs from 'qs';
 import bodyParser from 'koa-bodyparser';
 
 describe('koa middleware', () => {
   it('shound work', async () => {
     const app = new Koa();
-
     const resourcer = new Resourcer();
+    const agent = supertest.agent(app.callback());
 
     resourcer.define({
       name: 'test',
@@ -39,14 +36,14 @@ describe('koa middleware', () => {
       }
     });
 
-    const response = await request(http.createServer(app.callback())).get('/api/test');
+    const response = await agent.get('/api/test');
     expect(response.body.arr).toEqual([5,3,4,6]);
   });
 
   it('shound work', async () => {
     const app = new Koa();
-
     const resourcer = new Resourcer();
+    const agent = supertest.agent(app.callback());
 
     resourcer.registerActionHandlers({
       async index(ctx, next) {
@@ -79,22 +76,23 @@ describe('koa middleware', () => {
       }
     });
 
-    const response = await request(http.createServer(app.callback())).get('/api/test');
+    const response = await agent.get('/api/test');
     expect(response.body.arr).toEqual([5,3,4,6]);
   });
 
   it('shound be 404', async () => {
     const app = new Koa();
     const resourcer = new Resourcer();
+    const agent = supertest.agent(app.callback());
     app.use(resourcer.middleware());
-    const response = await request(http.createServer(app.callback())).get('/test');
+    const response = await agent.get('/test');
     expect(response.status).toBe(404);
   });
 
   it('shound work', async () => {
     const app = new Koa();
-
     const resourcer = new Resourcer();
+    const agent = supertest.agent(app.callback());
 
     resourcer.define({
       name: 'test',
@@ -126,13 +124,14 @@ describe('koa middleware', () => {
       }
     });
 
-    const response = await request(http.createServer(app.callback())).get('/api/test');
+    const response = await agent.get('/api/test');
     expect(response.body.arr).toEqual([5,3,4,6]);
   });
 
   it('shound work', async () => {
     const app = new Koa();
     const resourcer = new Resourcer();
+    const agent = supertest.agent(app.callback());
 
     resourcer.define({
       name: 'tables.fields',
@@ -149,13 +148,14 @@ describe('koa middleware', () => {
 
     app.use(resourcer.middleware());
 
-    const response = await request(http.createServer(app.callback())).get('/tables/demos/fields');
+    const response = await agent.get('/tables/demos/fields');
     expect(response.body.arr).toEqual([3,4]);
   });
 
   it('shound work', async () => {
     const app = new Koa();
     const resourcer = new Resourcer();
+    const agent = supertest.agent(app.callback());
 
     resourcer.define({
       name: 'tables#fields',
@@ -174,13 +174,14 @@ describe('koa middleware', () => {
       nameRule: ({resourceName, associatedName}) => associatedName ? `${associatedName}#${resourceName}` : resourceName,
     }));
 
-    const response = await request(http.createServer(app.callback())).get('/tables/demos/fields');
+    const response = await agent.get('/tables/demos/fields');
     expect(response.body.arr).toEqual([3,4]);
   });
 
   describe('action options', () => {
-    let app: Koa;
     let resourcer: Resourcer;
+    let app: Koa;
+    let agent;
     beforeAll(() => {
       app = new Koa();
       resourcer = new Resourcer();
@@ -200,6 +201,7 @@ describe('koa middleware', () => {
       });
       app.use(bodyParser());
       app.use(resourcer.middleware());
+      agent = supertest.agent(app.callback());
     });
     it('options1', async () => {
       resourcer.define({
@@ -215,7 +217,7 @@ describe('koa middleware', () => {
           },
         },
       });
-      const response = await request(http.createServer(app.callback()))
+      const response = await agent
         .get('/tests')
         .query({
           filter: {
@@ -242,13 +244,13 @@ describe('koa middleware', () => {
         name: 'tests',
         actions: {
           create: {
-            defaultValues: {
+            values: {
               col1: 'val1',
             },
           },
         },
       });
-      const response = await request(http.createServer(app.callback()))
+      const response = await agent
         .post('/tests')
         .send({'aa': 'aa'});
       expect(response.body).toEqual({
@@ -262,13 +264,13 @@ describe('koa middleware', () => {
         name: 'tests',
         actions: {
           create: {
-            defaultValues: {
+            values: {
               col1: 'val1',
             },
           },
         },
       });
-      const response = await request(http.createServer(app.callback()))
+      const response = await agent
         .post('/resourcer/tests:create')
         .send({
           values: {'aa': 'aa'}
@@ -284,13 +286,13 @@ describe('koa middleware', () => {
         name: 'tests',
         actions: {
           update: {
-            defaultValues: {
+            values: {
               col1: 'val1',
             },
           },
         },
       });
-      const response = await request(http.createServer(app.callback()))
+      const response = await agent
         .post('/resourcer/tests:update')
         .send({
           resourceKey: 1,
@@ -311,7 +313,7 @@ describe('koa middleware', () => {
         });
       });
       it('get', async () => {
-        const response = await request(http.createServer(app.callback()))
+        const response = await agent
           .get('/users/1/settings');
         expect(response.body).toEqual({
           associatedName: 'users',
@@ -321,7 +323,7 @@ describe('koa middleware', () => {
         });
       });
       it('update', async () => {
-        const response = await request(http.createServer(app.callback()))
+        const response = await agent
           .post('/users/1/settings');
         expect(response.body).toEqual({
           associatedName: 'users',
@@ -331,7 +333,7 @@ describe('koa middleware', () => {
         });
       });
       it('destroy', async () => {
-        const response = await request(http.createServer(app.callback()))
+        const response = await agent
           .delete('/users/1/settings');
         expect(response.body).toEqual({
           associatedName: 'users',
@@ -349,7 +351,7 @@ describe('koa middleware', () => {
         });
       });
       it('list', async () => {
-        const response = await request(http.createServer(app.callback()))
+        const response = await agent
           .get('/users/1/posts');
         expect(response.body).toEqual({
           associatedName: 'users',
@@ -359,7 +361,7 @@ describe('koa middleware', () => {
         });
       });
       it('get', async () => {
-        const response = await request(http.createServer(app.callback()))
+        const response = await agent
           .get('/users/1/posts/1');
         expect(response.body).toEqual({
           associatedName: 'users',
@@ -370,7 +372,7 @@ describe('koa middleware', () => {
         });
       });
       it('create', async () => {
-        const response = await request(http.createServer(app.callback()))
+        const response = await agent
           .post('/users/1/posts');
         expect(response.body).toEqual({
           associatedName: 'users',
@@ -380,7 +382,7 @@ describe('koa middleware', () => {
         });
       });
       it('update', async () => {
-        const response = await request(http.createServer(app.callback()))
+        const response = await agent
           .put('/users/1/posts/1');
         expect(response.body).toEqual({
           associatedName: 'users',
@@ -391,7 +393,7 @@ describe('koa middleware', () => {
         });
       });
       it('destroy', async () => {
-        const response = await request(http.createServer(app.callback()))
+        const response = await agent
           .delete('/users/1/posts/1');
         expect(response.body).toEqual({
           associatedName: 'users',
@@ -410,7 +412,7 @@ describe('koa middleware', () => {
         });
       });
       it('get', async () => {
-        const response = await request(http.createServer(app.callback()))
+        const response = await agent
           .get('/posts/1/user');
         expect(response.body).toEqual({
           associatedName: 'posts',
@@ -420,7 +422,7 @@ describe('koa middleware', () => {
         });
       });
       it('set', async () => {
-        const response = await request(http.createServer(app.callback()))
+        const response = await agent
           .post('/posts/1/user/1');
         expect(response.body).toEqual({
           associatedName: 'posts',
@@ -431,7 +433,7 @@ describe('koa middleware', () => {
         });
       });
       it('remove', async () => {
-        const response = await request(http.createServer(app.callback()))
+        const response = await agent
           .delete('/posts/1/user');
         expect(response.body).toEqual({
           associatedName: 'posts',
@@ -449,7 +451,7 @@ describe('koa middleware', () => {
         });
       });
       it('list', async () => {
-        const response = await request(http.createServer(app.callback()))
+        const response = await agent
           .get('/posts/1/tags');
         expect(response.body).toEqual({
           associatedName: 'posts',
@@ -459,7 +461,7 @@ describe('koa middleware', () => {
         });
       });
       it('get', async () => {
-        const response = await request(http.createServer(app.callback()))
+        const response = await agent
           .get('/posts/1/tags/1');
         expect(response.body).toEqual({
           associatedName: 'posts',
@@ -470,7 +472,7 @@ describe('koa middleware', () => {
         });
       });
       it('set', async () => {
-        const response = await request(http.createServer(app.callback()))
+        const response = await agent
           .post('/posts/1/tags');
         expect(response.body).toEqual({
           associatedName: 'posts',
@@ -480,7 +482,7 @@ describe('koa middleware', () => {
         });
       });
       it('add', async () => {
-        const response = await request(http.createServer(app.callback()))
+        const response = await agent
           .post('/posts/1/tags/1');
         expect(response.body).toEqual({
           associatedName: 'posts',
@@ -491,7 +493,7 @@ describe('koa middleware', () => {
         });
       });
       it('update', async () => {
-        const response = await request(http.createServer(app.callback()))
+        const response = await agent
           .put('/posts/1/tags/1');
         expect(response.body).toEqual({
           associatedName: 'posts',
@@ -502,7 +504,7 @@ describe('koa middleware', () => {
         });
       });
       it('remove', async () => {
-        const response = await request(http.createServer(app.callback()))
+        const response = await agent
           .delete('/posts/1/tags/1');
         expect(response.body).toEqual({
           associatedName: 'posts',
@@ -520,7 +522,7 @@ describe('koa middleware', () => {
           list: {},
         },
       });
-      const response = await request(http.createServer(app.callback()))
+      const response = await agent
         .get('/test1')
         .query({
           fields: ['id', 'col1'],
@@ -540,7 +542,7 @@ describe('koa middleware', () => {
           },
         },
       });
-      const response = await request(http.createServer(app.callback()))
+      const response = await agent
         .get('/test1')
         .query({
           fields: ['id', 'col1'],
@@ -562,7 +564,7 @@ describe('koa middleware', () => {
           },
         },
       });
-      const response = await request(http.createServer(app.callback()))
+      const response = await agent
         .get('/test1')
         .query({
           fields: ['id', 'col1', 'password'],
@@ -585,7 +587,7 @@ describe('koa middleware', () => {
           },
         },
       });
-      const response = await request(http.createServer(app.callback()))
+      const response = await agent
         .get('/test1')
         .query({
           fields: ['id', 'col1', 'password', 'col2'],
@@ -608,7 +610,7 @@ describe('koa middleware', () => {
           },
         },
       });
-      const response = await request(http.createServer(app.callback()))
+      const response = await agent
         .get('/test1').query({
           fields: {
             appends: ['relation1'],
@@ -623,9 +625,11 @@ describe('koa middleware', () => {
     it('fields6', async () => {
       resourcer.define({
         name: 'test1',
-        list: {},
+        actions: {
+          list: {}
+        },
       });
-      const response = await request(http.createServer(app.callback()))
+      const response = await agent
         .get('/test1').query({
           'fields[appends]': 'rel1,rel2',
         });
@@ -638,9 +642,11 @@ describe('koa middleware', () => {
     it('fields7', async () => {
       resourcer.define({
         name: 'users.posts',
-        list: {},
+        actions: {
+          list: {}
+        },
       });
-      const response = await request(http.createServer(app.callback()))
+      const response = await agent
         .get('/users/name/posts').query({
           'fields[appends]': 'rel1,rel2',
         });
@@ -658,13 +664,13 @@ describe('koa middleware', () => {
         actions: {
           list: {
             async middleware(ctx, next) {
-              ctx.action.setParam('filter.user_name', ctx.action.params.associatedKey);
+              ctx.action.mergeParams({ filter: { user_name: ctx.action.params.associatedKey } });
               await next();
             },
           },
         }
       });
-      const response = await request(http.createServer(app.callback()))
+      const response = await agent
         .get('/users/name/posts');
       expect(response.body).toEqual({
         associatedName: 'users',
@@ -680,13 +686,13 @@ describe('koa middleware', () => {
         actions: {
           list: {
             async middleware(ctx, next) {
-              ctx.action.setParam('fields.only[]', ctx.action.params.associatedKey);
+              ctx.action.mergeParams({ fields: { only: [ctx.action.params.associatedKey] } }, { fields: 'append' });
               await next();
             },
           },
         }
       });
-      const response = await request(http.createServer(app.callback()))
+      const response = await agent
         .get('/users/name/posts');
       expect(response.body).toEqual({
         associatedName: 'users',

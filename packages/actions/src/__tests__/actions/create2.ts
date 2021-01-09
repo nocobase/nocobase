@@ -7,4 +7,4 @@ export default {
   },
 
   handler: create
-} as ActionOptions;
+} as unknown as ActionOptions;
