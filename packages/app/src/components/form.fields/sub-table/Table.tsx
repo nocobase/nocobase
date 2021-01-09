@@ -42,17 +42,26 @@ export default function Table(props: SimpleTableProps) {
     resourceKey: 'simple'
   }));
 
+  const [dataSource, setDataSource] = useState(value.map((item, index) => {
+    if (item.__id) {
+      return item;
+    };
+    return {...item, __id: generateIndex()};
+  }))
+
   if (loading) {
     return <Spin/>
   }
 
+  // console.log('dataSource', dataSource);
   return (
     <div>
       <div>
         <Space style={{marginBottom: 14, position: 'absolute', right: 0, top: -31}}>
           <Popconfirm title="确认删除吗？" onConfirm={() => {
             console.log({selectedRowKeys})
-            const newValues = value.filter(item => selectedRowKeys.indexOf(item.__id) === -1);
+            const newValues = dataSource.filter(item => selectedRowKeys.indexOf(item.__id) === -1);
+            setDataSource(newValues);
             onChange(newValues);
           }}>
             <Button size={'small'} type={'ghost'} danger>删除</Button>
@@ -67,32 +76,28 @@ export default function Table(props: SimpleTableProps) {
       </div>
       <Form target={target} onFinish={(values, index: number) => {
         console.log(values);
-        const newVaules = [...value];
+        const newVaules = [...dataSource];
         if (typeof index === 'undefined') {
           newVaules.push({...values, __id: generateIndex()})
         } else {
           newVaules[index] = values;
         }
+        setDataSource(newVaules);
         onChange(newVaules);
-        console.log(newVaules);
+        // console.log(newVaules);
       }} ref={drawerRef}/>
       <AntdTable
         size={'small'}
         rowKey={rowKey}
         // loading={loading}
         columns={fields2columns(schema.fields||[])}
-        dataSource={value}
+        dataSource={dataSource}
         onChange={(pagination, filters, sorter, extra) => {
           
         }}
         components={components({
           data: {
-            list: value.map((item, index) => {
-              if (item.__id) {
-                return item;
-              };
-              return {...item, __id: generateIndex()};
-            }),
+            list: dataSource,
           },
           mutate: (values) => {
             onChange(values.list);

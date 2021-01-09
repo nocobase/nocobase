@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useImperativeHandle, forwardRef, useRef } from 'react';
-import { Button, Drawer } from 'antd';
+import { Button, Drawer, Modal } from 'antd';
 import { Tooltip, Input } from 'antd';
 import {
   SchemaForm,
@@ -19,6 +19,11 @@ import { QuestionCircleOutlined } from '@ant-design/icons';
 import { useRequest } from 'umi';
 import api from '@/api-client';
 import { Spin } from '@nocobase/client';
+import isEqual from 'lodash/isEqual';
+import isEmpty from 'lodash/isEmpty';
+import get from 'lodash/get';
+import cleanDeep from 'clean-deep';
+import scopes from './scopes';
 
 const actions = createFormActions();
 
@@ -62,7 +67,31 @@ export const DrawerForm = forwardRef((props: any, ref) => {
       width={'40%'}
       className={'noco-drawer'}
       onClose={() => {
-        setVisible(false);
+        actions.getFormState(state => {
+          const values = cleanDeep(state.values);
+          const others = Object.keys(data).length ? cleanDeep({...data, associatedKey}) : cleanDeep(state.initialValues);
+          if (isEqual(values, others)) {
+            setVisible(false);
+            return;
+          }
+          for (const key in values) {
+            if (Object.prototype.hasOwnProperty.call(values, key)) {
+              const value = values[key];
+              const other = others[key];
+              if (!isEqual(value, other)) {
+                // console.log(value, other, values, others, state.initialValues);
+                Modal.confirm({
+                  title: '表单内容发生变化，确定不保存吗？',
+                  onOk() {
+                    setVisible(false);
+                  }
+                });
+                return;
+              }
+            }
+          }
+          setVisible(false);
+        });
       }}
       title={title}
       footer={(
@@ -109,23 +138,8 @@ export const DrawerForm = forwardRef((props: any, ref) => {
             type: 'object',
             properties,
           }}
-          expressionScope={{
-            text(...args: any[]) {
-              return React.createElement('span', {}, ...args)
-            },
-            html(html: string) {
-              return <div dangerouslySetInnerHTML={{__html: html}}></div>
-            },
-            tooltip(title: string, offset = 3) {
-              return (
-                <Tooltip title={<div dangerouslySetInnerHTML={{__html: title}}></div>}>
-                  <QuestionCircleOutlined
-                    style={{ margin: '0 3px', cursor: 'default', marginLeft: offset }}
-                  />
-                </Tooltip>
-              );
-            },
-          }}
+          autoComplete={'off'}
+          expressionScope={scopes}
         >
         </SchemaForm>
       )}

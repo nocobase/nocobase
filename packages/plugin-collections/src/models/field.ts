@@ -13,6 +13,10 @@ interface FieldImportOptions extends SaveOptions {
   collectionName?: string;
 }
 
+export function generateValueName(title?: string): string {
+  return `${Math.random().toString(36).replace('0.', '').slice(-4).padStart(4, '0')}`;
+}
+
 export function generateFieldName(title?: string): string {
   return `f_${Math.random().toString(36).replace('0.', '').slice(-4).padStart(4, '0')}`;
 }
@@ -99,7 +103,7 @@ export class FieldModel extends BaseModel {
     if (targetField) {
       labelField = targetField.get('name');
     }
-    const collection = await this.getCollection();
+    const collection = await this.getCollection(options);
     let targetOptions:any = {
       ...types.linkTo.options,
       interface: 'linkTo',

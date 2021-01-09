@@ -7,6 +7,7 @@ import findIndex from 'lodash/findIndex';
 import get from 'lodash/get';
 import './style.less';
 import Field from '../Field';
+import cloneDeep from 'lodash/cloneDeep';
 
 export const SortableItem = sortableElement(props => <tr {...props} />);
 export const SortableContainer = sortableContainer(props => <tbody {...props} />);
@@ -20,9 +21,10 @@ interface Props {
   mutate: any,
   rowKey: any, 
   onMoved: any,
+  isFieldComponent?: boolean;
 }
 
-export const components = ({data = {}, rowKey, mutate, onMoved}: Props) => {
+export const components = ({data = {}, rowKey, mutate, onMoved, isFieldComponent}: Props) => {
   return {
     body: {
       wrapper: props => (
@@ -50,15 +52,17 @@ export const components = ({data = {}, rowKey, mutate, onMoved}: Props) => {
       row: ({ className, style, ...restProps }) => {
         // function findIndex base on Table rowKey props and should always be a right array index
         const index = findIndex(data.list, (x: any) => x[rowKey] === restProps['data-row-key']);
-        return <SortableItem index={index} {...restProps} />;
+        return <SortableItem index={index} className={`${className}${isFieldComponent ? '': ' row-clickable'}`} style={style} {...restProps} />;
       },
     },
   };
 };
 
 export function fields2columns(fields) {
-  const columns: any[] = fields.map(field => {
+  const columns: any[] = fields.map(item => {
+    const field = cloneDeep(item);
     field.render = (value) => field.interface === 'sort' ? <DragHandle/> : <Field viewType={'table'} schema={field} value={value}/>;
+    field.className = `${field.className||''} noco-field-${field.interface}`;
     return {
       ...field,
       ...(field.component||{}),

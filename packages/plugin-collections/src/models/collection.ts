@@ -86,8 +86,21 @@ export class CollectionModel extends BaseModel {
    * 迁移
    */
   async migrate(options: MigrateOptions = {}) {
+    const { isNewRecord } = options;
     const table = await this.loadTableOptions(options);
-    return await table.sync({
+    // 如果不是新增数据，force 必须为 false
+    if (!isNewRecord) {
+      return await table.sync({
+        force: false,
+        alter: {
+          drop: false,
+        }
+      });
+    }
+    // TODO: 暂时加了个 collectionSync 解决 collection.create 的数据不清空问题
+    // @ts-ignore
+    const sync = this.sequelize.options.collectionSync;
+    return await table.sync(sync || {
       force: false,
       alter: {
         drop: false,
@@ -214,9 +227,12 @@ export class CollectionModel extends BaseModel {
                   collection_name: collection.name,
                 },
               });
-              await model.updateAssociations({
-                associationField: associationField.id,
-              });
+              // TODO: tabs 表还未创建，暂时先这么处理
+              if (associationField) {
+                await model.updateAssociations({
+                  associationField: associationField.id,
+                });
+              }
             }
           }
           ids.push(model.id);

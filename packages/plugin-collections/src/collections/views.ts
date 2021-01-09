@@ -84,7 +84,7 @@ export default {
           },
           {
             type: "value:schema",
-            target: "starDateField",
+            target: "startDateField",
             "condition": "{{ $self.value === 'calendar' }}",
             schema: {
               "x-component-props": {
@@ -109,7 +109,7 @@ export default {
           },
           {
             "type": "value:visible",
-            "target": "starDateField",
+            "target": "startDateField",
             "condition": "{{ $self.value === 'calendar' }}",
           },
           {
@@ -145,7 +145,7 @@ export default {
       interface: 'select',
       type: 'virtual',
       title: '开始日期字段',
-      name: 'starDateField',
+      name: 'startDateField',
       // required: true,
       component: {
         type: 'remoteSelect',
@@ -201,18 +201,37 @@ export default {
     {
       interface: 'radio',
       type: 'string',
-      name: 'template',
+      name: 'mode',
       title: '查看和编辑模式',
       required: true,
       dataSource: [
-        // { label: '表单', value: 'DrawerForm' },
-        { label: '常规模式', value: 'Table' },
-        { label: '快捷模式', value: 'SimpleTable' },
-        // { label: '日历模板', value: 'Calendar' },
+        { label: '常规模式', value: 'default' },
+        { label: '快捷模式', value: 'simple' },
       ],
       component: {
-        tooltip: "{{ html('常规模式：点击数据进入查看界面，再次点击进入编辑界面<br/>快捷模式：点击数据直接打开编辑界面') }}",
+        tooltip: "常规模式：点击数据进入查看界面，再次点击进入编辑界面<br/>快捷模式：点击数据直接打开编辑界面",
         type: 'radio',
+        default: 'default',
+        showInTable: true,
+        showInDetail: true,
+        showInForm: true,
+      },
+    },
+    {
+      interface: 'select',
+      type: 'string',
+      name: 'template',
+      title: '模板',
+      required: true,
+      developerMode: true,
+      dataSource: [
+        { label: '表单', value: 'DrawerForm' },
+        { label: '常规表格', value: 'Table' },
+        { label: '简易表格', value: 'SimpleTable' },
+        { label: '日历模板', value: 'Calendar' },
+      ],
+      component: {
+        type: 'select',
         default: 'Table',
         showInTable: true,
         showInDetail: true,
@@ -223,9 +242,10 @@ export default {
       interface: 'radio',
       type: 'virtual',
       name: 'defaultPerPage',
-      title: '每页显示几行数据',
+      title: '默认每页显示几行数据',
       defaultValue: 50,
       dataSource: [
+        {label: '10', value: 10},
         {label: '20', value: 20},
         {label: '50', value: 50},
         {label: '100', value: 100},

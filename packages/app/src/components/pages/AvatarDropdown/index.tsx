@@ -4,6 +4,7 @@ import './style.less';
 import { history, Link, request, useModel } from 'umi';
 import { ProfileOutlined, LogoutOutlined, UserOutlined, CodeOutlined } from '@ant-design/icons';
 import Icon from '@/components/icons';
+import { useResponsive } from 'ahooks';
 
 const overlay = (
   <Menu>
@@ -21,9 +22,11 @@ const overlay = (
 
 export default (props: any) => {
   const { initialState = {}, loading, error, refresh, setInitialState } = useModel('@@initialState');
+  const responsive = useResponsive();
+  const isMobile = responsive.small && !responsive.middle && !responsive.large;
   return (
     <div className={'avatar-dropdown-wrapper'}>
-      <Dropdown overlay={overlay} placement="bottomRight">
+      <Dropdown trigger={isMobile ? ['click'] : ['hover']} overlay={overlay} placement="bottomRight">
         <span style={{display: 'block'}} className="dropdown-link" onClick={e => e.preventDefault()}>
           <Avatar size={'small'} icon={<UserOutlined/>} style={{marginRight: 5}}/> {initialState.currentUser.nickname}
         </span>

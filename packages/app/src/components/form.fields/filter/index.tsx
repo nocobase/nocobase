@@ -33,7 +33,7 @@ export function FilterGroup(props: any) {
         {' '}
         <Select style={{width: 80}} onChange={(value) => {
           onChange({type: 'group', list, andor: value});
-        }} defaultValue={dataSource.andor}>
+        }} defaultValue={dataSource.andor||'and'}>
           <Select.Option value={'and'}>全部</Select.Option>
           <Select.Option value={'or'}>任意</Select.Option>
         </Select>
@@ -128,10 +128,10 @@ interface FilterItemProps {
 
 const OP_MAP = {
   string: [
-    {label: '等于', value: 'eq', selected: true},
-    {label: '不等于', value: 'ne'},
-    {label: '包含', value: '$includes'},
+    {label: '包含', value: '$includes', selected: true},
     {label: '不包含', value: '$notIncludes'},
+    {label: '等于', value: 'eq'},
+    {label: '不等于', value: 'ne'},
     {label: '非空', value: '$notNull'},
     {label: '为空', value: '$null'},
   ],

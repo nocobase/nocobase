@@ -52,11 +52,45 @@ const transforms = {
         prop.type = 'string'
       }
       if (field.get('component.tooltip')) {
-        prop.description = field.get('component.tooltip');
+        prop.description = `{{html('${field.get('component.tooltip')}')}}`;
       }
-      // if (field.get('name') === 'dataSource') {
-      //   set(prop, 'items.properties.value.visible', false);
-      // }
+      if (field.get('name') === 'dataSource') {
+        
+        set(prop, 'x-component-props.operationsWidth', 'auto');
+        set(prop, 'x-component-props.bordered', true);
+        set(prop, 'x-component-props.className', 'data-source-table');
+        const properties = {};
+        if (ctx.state.developerMode) {
+          Object.assign(properties, {
+            value: {
+              type: "string",
+              title: "值",
+              // required: true,
+              'x-component-props': {
+                bordered: false,
+              },
+            },
+          });
+        }
+        Object.assign(properties, {
+          label: {
+            type: "string",
+            title: "选项",
+            required: true,
+            'x-component-props': {
+              bordered: false,
+            },
+          },
+          color: {
+            type: "colorSelect",
+            title: "颜色",
+            'x-component-props': {
+              bordered: false,
+            },
+          },
+        });
+        set(prop, 'items.properties', properties);
+      }
       if (['number', 'percent'].includes(interfaceType) && field.get('precision')) {
         set(prop, 'x-component-props.step', field.get('precision'));
       }
@@ -107,7 +141,9 @@ const transforms = {
       }
       const props = {};
       if (field.get('interface') === 'subTable') {
-        const children = await field.getChildren();
+        const children = await field.getChildren({
+          order: [['sort', 'asc']],
+        });
         props['children'] = children.map(child => ({...child.toJSON(), dataIndex: child.name.split('.')}))
       }
       arr.push({
@@ -148,7 +184,7 @@ export default async (ctx, next) => {
     const table = ctx.db.getTable(associatedName);
     const resourceField = table.getField(resourceFieldName);
     if (resourceField instanceof BELONGSTOMANY) {
-      console.log({associatedName, resourceField});
+      // console.log({associatedName, resourceField});
       throughName = resourceField.options.through;
     }
   }
@@ -196,16 +232,12 @@ export default async (ctx, next) => {
   if (actionNames.length === 0) {
     actionNames = ['filter', 'create', 'destroy'];
   }
-
-  if (view.get('type') === 'table') {
-    const defaultTabs = await collection.getTabs({
-      where: {
-        default: true,
-      },
-    });
-    view.setDataValue('defaultTabName', get(defaultTabs, [0, 'name']));
-  }
-
+  const defaultTabs = await collection.getTabs({
+    where: {
+      default: true,
+    },
+  });
+  view.setDataValue('defaultTabName', get(defaultTabs, [0, 'name']));
   if (view.get('type') === 'table') {
     view.setDataValue('rowViewName', 'form');
   }
@@ -235,7 +267,7 @@ export default async (ctx, next) => {
   const appends = [];
   
   for (const field of fields) {
-    if (!['subTable', 'linkTo', 'attachment'].includes(field.get('interface'))) {
+    if (!['subTable', 'linkTo', 'attachment', 'createdBy', 'updatedBy'].includes(field.get('interface'))) {
       continue;
     }
     let showInKey;
@@ -257,7 +289,7 @@ export default async (ctx, next) => {
       }
       if (field.get('interface') === 'subTable') {
         const children = await field.getChildren();
-        console.log(children);
+        // console.log(children);
         for (const child of children) {
           if (!['subTable', 'linkTo', 'attachment', 'updatedBy', 'createdBy'].includes(child.get('interface'))) {
             continue;

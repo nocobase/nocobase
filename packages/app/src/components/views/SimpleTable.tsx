@@ -144,6 +144,7 @@ export function SimpleTable(props: SimpleTableProps) {
           data, 
           mutate,
           rowKey,
+          isFieldComponent,
           onMoved: async ({resourceKey, target}) => {
             await api.resource(name).sort({
               associatedKey,
@@ -171,7 +172,7 @@ export function SimpleTable(props: SimpleTableProps) {
       />
       {paginated && (
         <div className={'table-pagination'}>
-          <Pagination {...pagination} showQuickJumper showSizeChanger size={'small'}/>
+          <Pagination {...pagination} showTotal={(total)=> `共 ${total} 条记录`} showQuickJumper showSizeChanger size={'small'}/>
         </div>
       )}
     </Card>

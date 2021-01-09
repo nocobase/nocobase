@@ -5,7 +5,7 @@ import bodyParser from 'koa-bodyparser';
 import { Dialect } from 'sequelize';
 import Database from '@nocobase/database';
 import { actions, middlewares } from '@nocobase/actions';
-import { Application, middleware } from '@nocobase/server';
+import { Application, middleware } from '../../../server/src';
 import plugin from '../server';
 
 function getTestKey() {
@@ -61,16 +61,13 @@ export async function getApp() {
   app.registerPlugin('collections', [path.resolve(__dirname, '../../../plugin-collections')]);
   app.registerPlugin('users', [plugin]);
   await app.loadPlugins();
-  await app.database.sync({
-    force: true,
-  });
+  await app.database.sync();
   app.use(async (ctx, next) => {
     ctx.db = app.database;
     await next();
   });
   app.use(bodyParser());
   app.use(middleware({
-    prefix: '/api',
     resourcer: app.resourcer,
     database: app.database,
   }));

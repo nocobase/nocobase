@@ -5,11 +5,29 @@ import { Tag, Popover, Table, Drawer, Modal } from 'antd';
 import Icon from '@/components/icons';
 import get from 'lodash/get';
 import isEmpty from 'lodash/isEmpty';
+import findIndex from 'lodash/findIndex';
 import { fields2columns } from '../SortableTable';
 import ViewFactory from '..';
 import './style.less';
 import { getImageByUrl, testUrl } from '@/components/form.fields';
 import { CheckOutlined, CloseOutlined } from '@ant-design/icons';
+import marked from 'marked';
+import Lightbox from 'react-image-lightbox';
+import 'react-image-lightbox/style.css';
+
+marked.setOptions({
+  gfm: true,
+  breaks: true,
+});
+
+const renderer = new marked.Renderer();
+renderer.link = ( href, title, text ) => `<a target="_blank" href="${ href }" title="${ title||'' }">${ text }</a>`;
+
+function markdown(text: string) {
+  return marked(text, {
+    renderer,
+  });
+}
 
 const InterfaceTypes = new Map<string, any>();
 
@@ -56,13 +74,13 @@ export function TextareaField(props: any) {
     return null;
   }
   if (viewType !== 'table') {
-    return value;
+    return <div className={'textarea-field-content'} dangerouslySetInnerHTML={{__html: markdown(value)}}/>;
   }
   if (value.length > 20) {
     return (
-      <Popover content={<div onClick={(e) => {
-        e.stopPropagation();
-      }} style={{maxWidth: 300}}>{value}</div>}>{value.substring(0, 15)}...</Popover>
+      <Popover content={(
+        <div onClick={(e) => e.stopPropagation()} className={'textarea-field-content'} style={{maxWidth: 300}} dangerouslySetInnerHTML={{__html: markdown(value)}}/>
+      )}>{value.substring(0, 15)}...</Popover>
     );
   }
   return (
@@ -149,7 +167,7 @@ export function DataSourceField(props: any) {
     return value.map(val => {
       const item = items.find(item => item.value === val);
       return (
-        <Tag>
+        <Tag color={item.color}>
           {item ? item.label : val}
         </Tag>
       )
@@ -157,7 +175,7 @@ export function DataSourceField(props: any) {
   }
   const item = items.find(item => item.value === value);
   return (
-    <Tag>
+    <Tag color={item.color}>
       {item ? item.label : value}
     </Tag>
   )
@@ -236,15 +254,44 @@ export function LinkToFieldLink(props) {
   );
 }
 
+function getImgUrls(value) {
+  const values = Array.isArray(value) ? value : [value];
+  return values.filter(item => testUrl(item.url, {
+    exclude: ['.png', '.jpg', '.jpeg', '.gif']
+  })).map(item => item);
+}
+
 export function AttachmentField(props: any) {
   const { value, schema } = props;
+  const [imgIndex, setImgIndex] = useState(0);
+  const [visible, setVisible] = useState(false);
   if (!value) {
     return null;
   }
   const values = Array.isArray(value) ? value : [value];
+  const images = getImgUrls(values);
+  console.log(images);
   return (
-    <div className={'attachment-field'}>
-      {values.map(item => <AttachmentFieldItem data={item} schema={schema}/>)}
+    <div onClick={(e) => {
+      e.stopPropagation();
+    }} className={'attachment-field'}>
+      {values.map(item => <AttachmentFieldItem onClick={() => {
+        setVisible(true);
+        const index = findIndex(images, img => item.id === img.id);
+        setImgIndex(index);
+      }} data={item} schema={schema}/>)}
+      {visible && <Lightbox
+        mainSrc={get(images, [imgIndex, 'url'])}
+        nextSrc={get(images, [imgIndex + 1, 'url'])}
+        prevSrc={get(images, [imgIndex - 1, 'url'])}
+        onCloseRequest={() => setVisible(false)}
+        onMovePrevRequest={() => {
+          setImgIndex((imgIndex + images.length - 1) % images.length);
+        }}
+        onMoveNextRequest={() => {
+          setImgIndex((imgIndex + 1) % images.length);
+        }}
+      />}
     </div>
   );
 }
@@ -254,7 +301,7 @@ export function AttachmentFieldItem(props: any) {
   const img = getImageByUrl(url, {
     exclude: ['.png', '.jpg', '.jpeg', '.gif']
   })
-  const [visible, setVisible] = useState(false);
+  // const [visible, setVisible] = useState(false);
   return (
     <>
       <a onClick={(e) => {
@@ -262,13 +309,14 @@ export function AttachmentFieldItem(props: any) {
         if (testUrl(url, {
           exclude: ['.png', '.jpg', '.jpeg', '.gif']
         })) {
-          setVisible(true);
+          props.onClick && props.onClick();
+          // setVisible(true);
           e.preventDefault();
         }
       }} className={'attachment-field-item'} target={'_blank'} href={url}>
-        <img style={{marginRight: 5}} height={20} alt={title} title={title} src={`${img}?x-oss-process=style/thumbnail`}/>
+        <img height={20} alt={title} title={title} src={`${img}?x-oss-process=style/thumbnail`}/>
       </a>
-      <Modal
+      {/* <Modal
           className={'attachment-modal'}
           onCancel={(e) => {
             e.stopPropagation();
@@ -284,7 +332,7 @@ export function AttachmentFieldItem(props: any) {
           <img onClick={(e) => {
             e.stopPropagation();
           }} style={{height: 'auto', width: '100%'}} alt={title} title={title} src={url}/>
-        </Modal>
+        </Modal> */}
     </>
   );
 }

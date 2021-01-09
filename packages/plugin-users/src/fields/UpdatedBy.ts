@@ -13,10 +13,16 @@ export default class UpdatedBy extends BELONGSTO {
     });
   }
 
-  static beforeBulkUpdateHook(this: UpdatedBy, models, { context }) {
-    models.forEach(model => {
-      setUserValue.call(this, model, { context });
-    });
+  static beforeBulkUpdateHook(this: UpdatedBy, { attributes, fields, context }) {
+    if (!context) {
+      return;
+    }
+    const { currentUser } = context.state;
+    if (!currentUser) {
+      return;
+    }
+    fields.push(this.options.foreignKey);
+    attributes[this.options.foreignKey] = currentUser.get(this.options.targetKey);
   }
   
   constructor({ type, ...options }: UpdatedByOptions, context: FieldContext) {

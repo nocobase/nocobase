@@ -41,7 +41,10 @@ export class Field implements IField {
 
   constructor(options: any, context: FieldContext) {
     const { type } = options;
-    this.options = {...options, type: getDataTypeKey(type)};
+    this.options = {
+      ...options,
+      // type: getDataTypeKey(type)
+    };
     this.context = context;
   }
 
@@ -62,9 +65,9 @@ export class Column extends Field {
 
   public getDataType() {
     const { type } = this.options;
-
-    if (DataTypes[type]) {
-      return DataTypes[type];
+    const dataType = getDataTypeKey(type);
+    if (DataTypes[dataType]) {
+      return DataTypes[dataType];
     }
     return DataTypes[(<typeof Column>this.constructor).name.toUpperCase()];
   }
@@ -96,6 +99,8 @@ export class INTEGER extends NUMBER {
   public getDataType(): Function {
     const { type } = this.options;
 
+    const dataType = getDataTypeKey(type);
+
     return {
       INT: DataTypes.INTEGER,
       INTEGER: DataTypes.INTEGER,
@@ -107,7 +112,7 @@ export class INTEGER extends NUMBER {
       MEDIUMINTEGER: DataTypes.MEDIUMINT,
       BIGINT: DataTypes.BIGINT,
       BIGINTEGER: DataTypes.BIGINT,
-    }[type as string] || DataTypes.INTEGER;
+    }[dataType] || DataTypes.INTEGER;
   }
 
   public getAttributeOptions() {
@@ -302,7 +307,7 @@ export class PASSWORD extends STRING {
       ...restOptions,
       type: this.getDataTypeInstance({ length, binary }),
       set(this: Model, value: string) {
-        this.setDataValue(name, bcrypt.hashSync(value, 10));
+        value && this.setDataValue(name, bcrypt.hashSync(value, 10));
       },
     }
   }

@@ -18,7 +18,7 @@ export default async (ctx, next) => {
   const fields = await collection.getFields();
   const actions = await collection.getActions();
   const actionNames = view.options.actionNames||[];
-  console.log(view.options);
+  // console.log(view.options);
   if (view.type === 'table') {
     const defaultTabs = await collection.getTabs({
       where: {

@@ -623,7 +623,7 @@ describe('associations', () => {
         through: 'posts_tags',
         sourceKey: 'slug',
         foreignKey: 'post_slug',
-        type: 'BELONGSTOMANY',
+        type: 'belongsToMany',
         name: 'tags',
         targetKey: 'name',
         otherKey: 'tag_name'
@@ -634,7 +634,7 @@ describe('associations', () => {
         through: 'posts_tags',
         sourceKey: 'name',
         foreignKey: 'tag_name',
-        type: 'BELONGSTOMANY',
+        type: 'belongsToMany',
         name: 'posts',
         targetKey: 'slug',
         otherKey: 'post_slug'
