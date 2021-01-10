@@ -229,7 +229,7 @@ export default async (ctx, next) => {
   });
   const actions = await collection.getActions(options);
   let actionNames = view.get('actionNames') || [];
-  if (actionNames.length === 0) {
+  if (actionNames.length === 0 && resourceKey !== 'permissionTable') {
     actionNames = ['filter', 'create', 'destroy'];
   }
   const defaultTabs = await collection.getTabs({
@@ -301,17 +301,156 @@ export default async (ctx, next) => {
     }
   }
   actionDefaultParams['fields[appends]'] = appends.join(',');
-  ctx.body = {
-    ...view.get(),
-    title,
-    actionDefaultParams,
-    original: fields,
-    fields: await (transforms[view.type]||transforms.table)(fields, ctx),
-    actions: actions.filter(action => actionNames.includes(action.name)).map(action => ({
-      ...action.toJSON(),
-      ...action.options,
-      // viewCollectionName: action.collection_name,
-    })),
-  };
+  if (resourceFieldName === 'pages' && resourceKey === 'permissionTable') {
+    ctx.body = {
+      ...view.get(),
+      title,
+      actionDefaultParams,
+      original: fields,
+      disableRowClick: true,
+      fields: [
+        {
+          "title": "页面",
+          "name": "title",
+          "interface": "string",
+          "type": "string",
+          "parent_id": null,
+          "required": true,
+          "developerMode": false,
+          "component": {
+            "type": "string",
+            "className": "drag-visible",
+            "showInForm": true,
+            "showInTable": true,
+            "showInDetail": true
+          },
+          "dataIndex": ["title"]
+        },
+        {
+          "title": "访问权限",
+          "name": "accessable",
+          "interface": "boolean",
+          "type": "boolean",
+          "parent_id": null,
+          "required": true,
+          "editable": true,
+          "resource": 'roles.pages',
+          "developerMode": false,
+          "component": {
+            "type": "boolean",
+            "showInTable": true,
+          },
+          "dataIndex": ["accessable"]
+        }
+      ],
+    };
+  } else if (resourceFieldName === 'collections' && resourceKey === 'permissionTable') {
+    ctx.body = {
+      ...view.get(),
+      title,
+      actionDefaultParams,
+      original: fields,
+      rowKey: 'name',
+      fields: [
+        {
+          "title": "数据表名称",
+          "name": "title",
+          "interface": "string",
+          "type": "string",
+          "parent_id": null,
+          "required": true,
+          "developerMode": false,
+          "component": {
+            "type": "string",
+            "className": "drag-visible",
+            "showInForm": true,
+            "showInTable": true,
+            "showInDetail": true
+          },
+          "dataIndex": ["title"]
+        }
+      ],
+    };
+  } else if (resourceFieldName === 'collections' && resourceKey === 'permissionForm') {
+    ctx.body = {
+      ...view.get(),
+      title,
+      actionDefaultParams,
+      original: fields,
+      fields: {
+        actions: {
+          type: 'permissions.actions',
+          title: '数据操作权限',
+          'x-linkages': [
+            {
+              type: "value:schema",
+              target: "actions",
+              schema: {
+                "x-component-props": {
+                  resourceKey: "{{ $form.values && $form.values.resourceKey }}"
+                },
+              },
+            },
+          ],
+          'x-component-props': {
+            dataSource: [],
+          },
+        },
+        fields: {
+          type: 'permissions.fields',
+          title: '字段权限',
+          'x-linkages': [
+            {
+              type: "value:schema",
+              target: "fields",
+              schema: {
+                "x-component-props": {
+                  resourceKey: "{{ $form.values && $form.values.resourceKey }}"
+                },
+              },
+            },
+          ],
+          'x-component-props': {
+            dataSource: [],
+          }
+        },
+        tabs: {
+          type: 'permissions.tabs',
+          title: '标签页权限',
+          'x-linkages': [
+            {
+              type: "value:schema",
+              target: "tabs",
+              schema: {
+                "x-component-props": {
+                  resourceKey: "{{ $form.values && $form.values.resourceKey }}"
+                },
+              },
+            },
+          ],
+          'x-component-props': {
+            dataSource: [],
+          }
+        },
+        description: {
+          type: 'textarea',
+          title: '权限描述',
+        },
+      },
+    };
+  } else {
+    ctx.body = {
+      ...view.get(),
+      title,
+      actionDefaultParams,
+      original: fields,
+      fields: await (transforms[view.type]||transforms.table)(fields, ctx),
+      actions: actions.filter(action => actionNames.includes(action.name)).map(action => ({
+        ...action.toJSON(),
+        ...action.options,
+        // viewCollectionName: action.collection_name,
+      })),
+    };
+  }
   await next();
 };

@@ -65,7 +65,7 @@ export function Details(props: any) {
           {fields.map((field: any) => {
             return (
               <Descriptions.Item label={field.title||field.name}>
-                <Field viewType={'descriptions'} schema={field} value={get(data, field.name)}/>
+                <Field data={field} viewType={'descriptions'} schema={field} value={get(data, field.name)}/>
               </Descriptions.Item>
             )
           })}

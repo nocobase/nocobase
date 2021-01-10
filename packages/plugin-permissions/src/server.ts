@@ -3,6 +3,8 @@ import { Op, where } from 'sequelize';
 import { Application } from '@nocobase/server';
 import Database from '@nocobase/database';
 import Resourcer from '@nocobase/resourcer';
+import * as rolesCollectionsActions from './actions/roles.collections';
+import * as rolesPagesActions from './actions/roles.pages';
 
 // API
 // const permissions = ctx.app.getPluginInstance('permissions');
@@ -29,7 +31,15 @@ class Permissions {
       directory: path.resolve(__dirname, 'collections'),
     });
 
-    resourcer.use(this.middleware());
+    Object.keys(rolesCollectionsActions).forEach(actionName => {
+      resourcer.registerActionHandler(actionName, rolesCollectionsActions[actionName]);
+    });
+
+    Object.keys(rolesPagesActions).forEach(actionName => {
+      resourcer.registerActionHandler(actionName, rolesPagesActions[actionName]);
+    });
+
+    // resourcer.use(this.middleware());
   }
 
   middleware() {

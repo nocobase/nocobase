@@ -4,10 +4,11 @@ import path from 'path';
 import actions from '../../../actions/src';
 import associated from '../../../actions/src/middlewares/associated';
 
-const sync = {
-  force: false,
+// @ts-ignore
+const sync = global.sync || {
+  force: true,
   alter: {
-    drop: false,
+    drop: true,
   },
 };
 
@@ -39,58 +40,31 @@ const api = Api.create({
 api.resourcer.use(associated);
 api.resourcer.registerActionHandlers({...actions.common, ...actions.associate});
 
-api.resourcer.use(async (ctx: actions.Context, next) => {
-  const token = ctx.get('Authorization').replace(/^Bearer\s+/gi, '');
-  // console.log('user check', ctx.action.params.actionName);
-  // const { actionName } = ctx.action.params;
-  if (!token) {
-    return next();
-  }
-  const User = ctx.db.getModel('users');
-  const user = await User.findOne({
-    where: {
-      token,
-    },
-  });
-  if (!user) {
-    return next();
-  }
-  ctx.state.currentUser = user;
-  // console.log('ctx.state.currentUser', ctx.state.currentUser);
-  await next();
-});
-
-api.resourcer.use(async (ctx: actions.Context, next) => {
-  const { actionName, resourceField, resourceName } = ctx.action.params;
-  const table = ctx.db.getTable(resourceField ? resourceField.options.target : resourceName);
-  // ctx.state.developerMode = {[Op.not]: null};
-  ctx.state.developerMode = false;
-  if (table && table.hasField('developerMode') && ctx.state.developerMode === false) {
-    ctx.action.mergeParams({ filter: { developerMode: ctx.state.developerMode } }, { filter: 'and' });
-  }
-  if (table && ['get', 'list'].includes(actionName)) {
-    const except = [];
-    const appends = [];
-    for (const [name, field] of table.getFields()) {
-      if (field.options.hidden) {
-        except.push(field.options.name);
-      }
-      if (field.options.appends) {
-        appends.push(field.options.name);
-      }
-    }
-    ctx.action.mergeParams({ fields: {
-      except,
-      appends
-    } }, { fields: 'append' });
-    console.log('ctx.action.params.fields', ctx.action.params.fields, except, appends);
-  }
-  await next();
-});
+// api.resourcer.use(async (ctx: actions.Context, next) => {
+//   const token = ctx.get('Authorization').replace(/^Bearer\s+/gi, '');
+//   // console.log('user check', ctx.action.params.actionName);
+//   // const { actionName } = ctx.action.params;
+//   if (!token) {
+//     return next();
+//   }
+//   const User = ctx.db.getModel('users');
+//   const user = await User.findOne({
+//     where: {
+//       token,
+//     },
+//   });
+//   if (!user) {
+//     return next();
+//   }
+//   ctx.state.currentUser = user;
+//   // console.log('ctx.state.currentUser', ctx.state.currentUser);
+//   await next();
+// });
 
 api.registerPlugin('plugin-collections', [path.resolve(__dirname, '../../../plugin-collections'), {}]);
 api.registerPlugin('plugin-pages', [path.resolve(__dirname, '../../../plugin-pages'), {}]);
 api.registerPlugin('plugin-users', [path.resolve(__dirname, '../../../plugin-users'), {}]);
 api.registerPlugin('plugin-file-manager', [path.resolve(__dirname, '../../../plugin-file-manager'), {}]);
+api.registerPlugin('plugin-permissions', [path.resolve(__dirname, '../../../plugin-permissions'), {}]);
 
 export default api;
