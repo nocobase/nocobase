@@ -238,7 +238,7 @@ export class CollectionModel extends BaseModel {
           ids.push(model.id);
         }
       }
-      if (collection.get('internal')) {
+      if (ids.length && collection.get('internal')) {
         await collection.updateAssociations({
           [key]: ids,
         });
