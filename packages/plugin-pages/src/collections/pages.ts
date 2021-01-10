@@ -74,7 +74,7 @@ export default {
       type: 'string',
       name: 'type',
       title: '类型',
-      options: [
+      dataSource: [
         {
           label: '页面',
           value: 'page',
@@ -118,7 +118,7 @@ export default {
       type: 'string',
       name: 'template',
       title: '模板',
-      options: [
+      dataSource: [
         {
           label: '顶部菜单布局',
           value: 'TopMenuLayout',

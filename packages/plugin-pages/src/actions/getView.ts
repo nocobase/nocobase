@@ -38,10 +38,15 @@ const transforms = {
       }
       if (field.get('name') === 'filter' && field.get('collection_name') === 'views') {
         const { values } = ctx.action.params;
-        const options = Field.parseApiJson({
+        const options = Field.parseApiJson(ctx.state.developerMode ? {
           filter: {
             collection_name: get(values, 'associatedKey'),
-            developerMode: ctx.state.developerMode ? {'$isTruly': true} : {'$isFalsy': true},
+          },
+          sort: 'sort',
+        } : {
+          filter: {
+            collection_name: get(values, 'associatedKey'),
+            developerMode: {'$isFalsy': true},
           },
           sort: 'sort',
         });
@@ -200,8 +205,9 @@ export default async (ctx, next) => {
   // const where: any = {
   //   developerMode: ctx.state.developerMode,
   // }
-  const filter: any = {
-    developerMode: ctx.state.developerMode ? {'$isTruly': true} : {'$isFalsy': true},
+  const filter: any = {}
+  if (!ctx.state.developerMode) {
+    filter.developerMode = {'$isFalsy': true}
   }
   if (!view.get('draggable')) {
     filter.type = {
@@ -221,9 +227,12 @@ export default async (ctx, next) => {
     }
     return true;
   })
-  const options = Action.parseApiJson({
+  const options = Action.parseApiJson(ctx.state.developerMode ? {
+    filter: {},
+    sort: 'sort',
+  } : {
     filter: {
-      developerMode: ctx.state.developerMode ? {'$isTruly': true} : {'$isFalsy': true},
+      developerMode: {'$isFalsy': true},
     },
     sort: 'sort',
   });

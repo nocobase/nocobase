@@ -187,19 +187,19 @@ export function DataSourceField(props: any) {
   if (Array.isArray(value)) {
     return value.map(val => {
       const item = items.find(item => item.value === val);
-      return (
+      return item ? (
         <Tag color={item.color}>
           {item ? item.label : val}
         </Tag>
-      )
+      ) : <Tag>{val}</Tag>;
     });
   }
   const item = items.find(item => item.value === value);
-  return (
+  return item ? (
     <Tag color={item.color}>
       {item ? item.label : value}
     </Tag>
-  )
+  ) : <Tag>{value}</Tag>;
 }
 
 export function RealtionField(props: any) {
