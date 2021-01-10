@@ -9,7 +9,7 @@ import {
   BELONGSTOMANY,
   whereCompare
 } from '@nocobase/database';
-import { ActionOptions, DEFAULT_PAGE, DEFAULT_PER_PAGE } from '@nocobase/resourcer';
+import { DEFAULT_PAGE, DEFAULT_PER_PAGE } from '@nocobase/resourcer';
 import { filterByFields } from '../utils';
 
 async function hasManyGet(instances, options: any = {}) {

@@ -29,8 +29,7 @@ export default {
       comment: '关联的用户表',
       type: 'belongsToMany',
       name: 'users',
-      through: 'users_roles',
-      otherKey: { allowNull: true }
+      through: 'users_roles'
     },
     {
       interface: 'linkTo',

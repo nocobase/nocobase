@@ -2,6 +2,8 @@ import { TableOptions } from "@nocobase/database";
 
 export default {
   name: 'posts',
+  // 目前默认就带了
+  // createdBy: true,
   fields: [
     {
       type: 'string',
@@ -11,10 +13,6 @@ export default {
       type: 'string',
       name: 'status',
       defaultValue: 'draft',
-    },
-    {
-      type: 'belongsTo',
-      name: 'user',
     },
     {
       type: 'belongsTo',

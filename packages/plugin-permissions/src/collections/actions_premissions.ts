@@ -11,8 +11,9 @@ export default {
     },
     {
       comment: '操作范围',
-      type: 'jsonb',
-      name: 'scope'
+      type: 'belongsTo',
+      name: 'scope',
+      target: 'actions_scopes'
     },
     {
       type: 'belongsTo',
@@ -21,11 +22,13 @@ export default {
     {
       type: 'belongsToMany',
       name: 'fields',
-      through: 'fields_permissions'
+      through: 'fields_permissions',
+      foreignKey: 'action_id'
     },
     {
       type: 'hasMany',
       name: 'fields_permissions',
+      foreignKey: 'action_id'
     },
   ],
 } as TableOptions;

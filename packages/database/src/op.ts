@@ -141,4 +141,16 @@ op.set('$notMatch', (values: any[], options) => {
   // return Sequelize.literal(`(not (${sql})) AND ${column} IS NULL`);
 });
 
-export default op;
+export default class Operator {
+  public static get(key: string) {
+    return op.get(key);
+  }
+
+  public static has(key: string) {
+    return op.has(key);
+  }
+
+  public static register(key: string, fn: Function) {
+    op.set(key, fn);
+  }
+};

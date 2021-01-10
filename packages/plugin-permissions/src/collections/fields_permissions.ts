@@ -6,7 +6,8 @@ export default {
   fields: [
     {
       type: 'belongsTo',
-      name: 'actions_permission',
+      name: 'action',
+      target: 'actions_permissions',
     },
     {
       type: 'belongsTo',
