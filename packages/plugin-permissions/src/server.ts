@@ -32,11 +32,11 @@ class Permissions {
     });
 
     Object.keys(rolesCollectionsActions).forEach(actionName => {
-      resourcer.registerActionHandler(actionName, rolesCollectionsActions[actionName]);
+      resourcer.registerActionHandler(`roles.collections:${actionName}`, rolesCollectionsActions[actionName]);
     });
 
     Object.keys(rolesPagesActions).forEach(actionName => {
-      resourcer.registerActionHandler(actionName, rolesPagesActions[actionName]);
+      resourcer.registerActionHandler(`roles.pages:${actionName}`, rolesPagesActions[actionName]);
     });
 
     // resourcer.use(this.middleware());
