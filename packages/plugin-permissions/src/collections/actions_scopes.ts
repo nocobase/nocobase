@@ -3,6 +3,8 @@ import { TableOptions } from '@nocobase/database';
 export default {
   name: 'actions_scopes',
   title: '表操作范围',
+  developerMode: true,
+  internal: true,
   fields: [
     {
       comment: '范围名称',

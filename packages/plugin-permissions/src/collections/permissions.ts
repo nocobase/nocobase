@@ -3,6 +3,8 @@ import { TableOptions } from '@nocobase/database';
 export default {
   name: 'permissions',
   title: '权限集',
+  developerMode: true,
+  internal: true,
   fields: [
     // TODO(feature): 黑白名单控制
     // {
@@ -36,6 +38,15 @@ export default {
       comment: '允许的操作集',
       type: 'hasMany',
       name: 'actions_permissions',
+    },
+    {
+      type: 'belongsToMany',
+      name: 'fields',
+      through: 'fields_permissions',
+    },
+    {
+      type: 'hasMany',
+      name: 'fields_permissions'
     },
     // {
     //   comment: '允许的 views 列表',

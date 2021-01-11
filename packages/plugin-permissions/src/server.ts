@@ -23,6 +23,11 @@ class Permissions {
     return permissions.reduce((actions, permission) => actions.concat(permission.get('actions_permissions')), []);
   }
 
+  static getFieldPermissions(roles) {
+    const permissions = roles.reduce((permissions, role) => permissions.concat(role.get('permissions')), []);
+    return permissions.reduce((fields, permission) => fields.concat(permission.get('fields_permissions')), []);
+  }
+
   constructor(app: Application, options) {
     this.app = app;
     this.options = options;
@@ -60,11 +65,16 @@ class Permissions {
       });
     }
 
-    resourcer.use(this.middleware());
+    // resourcer.use(this.middleware());
   }
 
   middleware() {
     return async (ctx, next) => {
+      const {
+        resourceName,
+        actionName
+      } = ctx.action.params;
+
       const roles = await this.getRolesWithPermissions(ctx);
       const actionPermissions = Permissions.getActionPermissions(roles);
 
@@ -77,8 +87,12 @@ class Permissions {
         .map(item => item.scope.filter);
 
       const fields = new Set();
-      actionPermissions.forEach(action => {
-        action.get('fields').forEach(field => fields.add(field.get('name')))
+      const fieldPermissions = Permissions.getFieldPermissions(roles);
+      fieldPermissions.forEach(item => {
+        const actions = item.get('actions');
+        if (actions && actions.includes(`${resourceName}:${actionName}`)) {
+          fields.add(item.get('field').get('name'));
+        }
       });
 
       ctx.action.mergeParams({
@@ -127,11 +141,18 @@ class Permissions {
             {
               association: 'scope',
               attribute: ['filter']
-            },
-            {
-              association: 'fields'
             }
           ]
+        },
+        {
+          association: 'fields_permissions',
+          include: [
+            {
+              association: 'field',
+              attributes: ['name']
+            }
+          ],
+          separate: true,
         }
       ],
     };

@@ -3,6 +3,8 @@ import { TableOptions } from '@nocobase/database';
 export default {
   name: 'roles',
   title: '权限组配置',
+  developerMode: true,
+  internal: true,
   fields: [
     {
       interface: 'string',

@@ -1,10 +1,10 @@
 import _ from 'lodash';
 import compose from 'koa-compose';
 import Resource from './resource';
-import { requireModule, mergeFields } from './utils';
+import { requireModule } from './utils';
 import { HandlerType } from './resourcer';
 import Middleware, { MiddlewareType } from './middleware';
-import { ActionParameterTypes, ActionParameter, UnknownParameter } from './parameter';
+import { ActionParameterTypes, ActionParameter, UnknownParameter, PageParameter } from './parameter';
 
 export type ActionType = string | HandlerType | ActionOptions;
 
@@ -172,9 +172,9 @@ export interface ActionParams {
   [key: string]: any;
 }
 
-export const DEFAULT_PAGE = 1;
-export const DEFAULT_PER_PAGE = 20;
-export const MAX_PER_PAGE = 100;
+export const DEFAULT_PAGE = PageParameter.DEFAULT_PAGE;
+export const DEFAULT_PER_PAGE = PageParameter.DEFAULT_PER_PAGE;
+export const MAX_PER_PAGE = PageParameter.MAX_PER_PAGE;
 
 export class Action {
 

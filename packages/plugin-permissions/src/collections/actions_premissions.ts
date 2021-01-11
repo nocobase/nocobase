@@ -3,6 +3,8 @@ import { TableOptions } from '@nocobase/database';
 export default {
   name: 'actions_permissions',
   title: '表操作权限',
+  developerMode: true,
+  internal: true,
   fields: [
     {
       comment: '程序操作名称（"list", "create" 等）',
@@ -18,17 +20,6 @@ export default {
     {
       type: 'belongsTo',
       name: 'permission',
-    },
-    {
-      type: 'belongsToMany',
-      name: 'fields',
-      through: 'fields_permissions',
-      foreignKey: 'action_id'
-    },
-    {
-      type: 'hasMany',
-      name: 'fields_permissions',
-      foreignKey: 'action_id'
     },
   ],
 } as TableOptions;
