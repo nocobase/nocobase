@@ -6,6 +6,7 @@ import api from '@/api-client';
 import { useRequest } from 'umi';
 import { useDynamicList } from 'ahooks';
 import findIndex from 'lodash/findIndex';
+import get from 'lodash/get';
 
 export const Permissions = {} as {Actions: any, Fields: any, Tabs: any};
 
@@ -32,21 +33,27 @@ Permissions.Actions = connect({
     },
     {
       title: '允许操作',
-      dataIndex: ['accessable'],
-      render: (val, record) => <Checkbox defaultChecked={!!val} onChange={(e) => {
-        console.log(e.target.checked);
-        const values = [...value];
-        const index = findIndex(values, (item: any) => item.id === record.id);
-        if (index >= 0) {
-          values[index].accessable = e.target.checked;
-        } else {
-          values.push({
-            id: record.id,
-            accessable: e.target.checked,
-          });
-        }
-        onChange(values);
-      }}/>
+      dataIndex: ['name'],
+      render: (val, record) => {
+        const values = [...value||[]];
+        const index = findIndex(values, (item: any) => item && item.name === `${resourceKey}:${record.name}`);
+        console.log(values);
+        return (
+          <Checkbox defaultChecked={index >= 0} onChange={(e) => {
+            // const index = findIndex(values, (item: any) => item && item.name === `${resourceKey}:${record.name}`);
+            if (index >= 0) {
+              if (!e.target.checked) {
+                values.splice(index, 1);
+              }
+            } else {
+              values.push({
+                name: `${resourceKey}:${record.name}`,
+              });
+            }
+            onChange(values);
+          }}/>
+        )
+      }
     },
     {
       title: '可操作的数据范围',
@@ -59,7 +66,16 @@ Permissions.Actions = connect({
 Permissions.Fields = connect<'TextArea'>({
   getProps: mapStyledProps,
   getComponent: mapTextComponent
-})(({onChange, resourceKey, ...restProps}) => {
+})(({onChange, value = [], resourceKey, ...restProps}) => {
+
+  const actions = {};
+  value.forEach(item => {
+    actions[item.field_id] = item.actions;
+  });
+
+  // console.log(actions);
+
+  const [fields, setFields] = useState(value||[]);
 
   const { data = [], loading = true } = useRequest(() => {
     return api.resource('collections.fields').list({
@@ -70,27 +86,83 @@ Permissions.Fields = connect<'TextArea'>({
   });
   console.log({resourceKey, data});
 
-  return <Table size={'small'} pagination={false} dataSource={data} columns={[
+  const columns = [
     {
       title: '字段名称',
       dataIndex: ['title'],
+    }
+  ].concat([
+    {
+      title: '查看',
+      action: `${resourceKey}:list`,
     },
     {
-      title: <><Checkbox/> 查看</>,
-      dataIndex: ['list'],
-      render: () => <Checkbox/>
+      title: '编辑',
+      action: `${resourceKey}:update`,
     },
     {
-      title: <><Checkbox/> 编辑</>,
-      dataIndex: ['update'],
-      render: () => <Checkbox/>
+      title: '新增',
+      action: `${resourceKey}:create`,
     },
-    {
-      title: <><Checkbox/> 新建</>,
-      dataIndex: ['create'],
-      render: () => <Checkbox/>
-    },
-  ]} loading={loading}/>
+  ].map(({title, action}) => {
+    let checked = value.filter(({ actions = [] }) => actions.indexOf(action) !== -1).length === data.length;
+    return {
+      title: <><Checkbox checked={checked} onChange={(e) => {
+        const values = data.map(field => {
+          const items = actions[field.id] || [];
+          const index = items.indexOf(action);
+          if (index > -1) {
+            if (!e.target.checked) {
+              items.splice(index, 1);
+            }
+          } else {
+            if (e.target.checked) {
+              items.push(action);
+            }
+          }
+          return {
+            field_id: field.id,
+            actions: items,
+          }
+        });
+        // console.log(values);
+        setFields([...values]);
+        onChange([...values]);
+      }}/> {title}</>,
+      dataIndex: ['id'],
+      render: (val, record) => {
+        const items = actions[record.id]||[]
+        // console.log({items}, items.indexOf(action));
+        return (
+          <Checkbox checked={items.indexOf(action) !== -1} onChange={e => {
+            const values = [...value];
+            const index = findIndex(values, ({field_id, actions = []}) => {
+              return field_id === record.id;
+            });
+            if (e.target.checked && index === -1) {
+              values.push({
+                field_id: record.id,
+                actions: [action],
+              });
+            } else {
+              const items = values[index].actions || [];
+              const actionIndex = items.indexOf(action);
+              if (!e.target.checked && actionIndex > -1) {
+                items.splice(actionIndex, 1);
+                // values[index].actions = items;
+              } else if (e.target.checked && actionIndex === -1) {
+                items.push(action);
+              }
+            }
+            onChange(values);
+            setFields(values);
+          }}/>
+        )
+      }
+    }
+  }) as any)
+
+  return <Table size={'small'} loading={loading} pagination={false} dataSource={data} columns={columns}/>
 })
 
 Permissions.Tabs = connect<'TextArea'>({
@@ -105,7 +177,17 @@ Permissions.Tabs = connect<'TextArea'>({
   }, {
     refreshDeps: [resourceKey]
   });
-  console.log({resourceKey, data});
+
+  // const [checked, setChecked] = useState(false);
+
+  // console.log(checked);
+
+  // useEffect(() => {
+  //   setChecked(data.length === value.length);
+  //   console.log({resourceKey, data, value}, data.length === value.lengh);
+  // }, [
+  //   data,
+  // ]);
 
   return <Table size={'small'} pagination={false} dataSource={data} columns={[
     {
@@ -115,36 +197,24 @@ Permissions.Tabs = connect<'TextArea'>({
     {
       title: (
         <>
-          <Checkbox onChange={(e) => {
-            onChange(data.map(record => {
-              return {
-                id: record.id,
-                accessable: e.target.checked,
-              };
-            }));
-            mutate(data.map(record => {
-              record.accessable = e.target.checked;
-              return record;
-            }));
+          <Checkbox checked={data.length === value.length} onChange={(e) => {
+            onChange(e.target.checked ? data.map(record => record.id) : []);
           }}/> 查看
         </>
       ),
-      dataIndex: ['accessable'],
+      dataIndex: ['id'],
       render: (val, record) => {
+        const values = [...value];
         return (
-          <Checkbox checked={val} onChange={(e) => {
-            record.accessable = e.target.checked;
-            const values = [...value];
-            const index = findIndex(values, (item: any) => item.id === record.id);
-            if (index >= 0) {
-              values[index].accessable = e.target.checked;
+          <Checkbox checked={values.indexOf(record.id) !== -1} onChange={(e) => {
+            const index = values.indexOf(record.id);
+            if (index !== -1) {
+              if (!e.target.checked) {
+                values.splice(index, 1);
+              }
             } else {
-              values.push({
-                id: record.id,
-                accessable: e.target.checked,
-              });
+              values.push(record.id);
             }
-            console.log(values);
             onChange(values);
           }}/>
         )
