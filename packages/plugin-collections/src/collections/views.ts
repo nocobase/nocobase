@@ -388,6 +388,7 @@ export default {
       name: 'simple',
       title: '简易模式',
       template: 'SimpleTable',
+      mode: 'simple',
       default: true,
       actionNames: ['destroy', 'create'],
       detailsViewName: 'details',
