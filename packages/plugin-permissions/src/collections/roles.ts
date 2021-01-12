@@ -28,9 +28,12 @@ export default {
     // TODO(feature): 用户组后续考虑
     // TODO(feature): 用户表应通过插件配置关联，考虑到今后会有多账户系统的情况
     {
+      interface: 'linkTo',
+      title: '用户',
       comment: '关联的用户表',
       type: 'belongsToMany',
       name: 'users',
+      target: 'users',
       through: 'users_roles'
     },
     {
@@ -114,6 +117,13 @@ export default {
       title: '页面权限',
       association: 'pages',
       viewName: 'permissionTable',
+    },
+    {
+      type: 'association',
+      name: 'users',
+      title: '当前组用户',
+      association: 'users',
+      viewName: 'simple',
     },
   ],
 } as TableOptions;
