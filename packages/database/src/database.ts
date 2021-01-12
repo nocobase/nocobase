@@ -30,6 +30,9 @@ export interface ImportOptions {
   extensions?: string[];
 }
 
+export interface DatabaseOptions extends Options {
+}
+
 export type HookType = 'beforeTableInit' | 'afterTableInit' | 'beforeAddField' | 'afterAddField';
 
 export default class Database {
@@ -48,11 +51,11 @@ export default class Database {
 
   protected tables = new Map<string, Table>();
 
-  protected options: Options;
+  protected options: DatabaseOptions;
 
   protected hooks = {};
 
-  constructor(options: Options) {
+  constructor(options: DatabaseOptions) {
     this.options = options;
     this.sequelize = new Sequelize(options);
   }

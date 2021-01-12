@@ -1,10 +1,10 @@
 import Koa from 'koa';
-import Database from '@nocobase/database';
+import Database, { DatabaseOptions } from '@nocobase/database';
 import Resourcer from '@nocobase/resourcer';
 
 export interface ApplicationOptions {
-  database: any;
-  resourcer: any;
+  database: DatabaseOptions;
+  resourcer?: any;
 }
 
 export class Application extends Koa {
