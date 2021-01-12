@@ -10,11 +10,25 @@ export default {
       comment: '范围名称',
       type: 'string',
       name: 'title',
+      title: '名称',
+      component: {
+        type: 'filter',
+        showInTable: true,
+        showInForm: true,
+      },
     },
     {
-      comment: '操作范围',
+      interface: 'json',
       type: 'jsonb',
-      name: 'filter'
+      name: 'filter',
+      title: '条件',
+      developerMode: false,
+      mode: 'replace',
+      defaultValue: {},
+      component: {
+        type: 'filter',
+        showInForm: true,
+      },
     },
     {
       type: 'belongsTo',

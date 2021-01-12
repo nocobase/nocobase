@@ -7,6 +7,7 @@ import { useRequest } from 'umi';
 import { useDynamicList } from 'ahooks';
 import findIndex from 'lodash/findIndex';
 import get from 'lodash/get';
+import { Scope } from './Scope';
 
 export const Permissions = {} as {Actions: any, Fields: any, Tabs: any};
 
@@ -58,7 +59,9 @@ Permissions.Actions = connect({
     {
       title: '可操作的数据范围',
       dataIndex: ['scope'],
-      render: (value, record) => <Select size={'small'}/>
+      render: (value, record) => <Scope 
+        target={'actions_scopes'} multiple={false} labelField={'title'} valueField={'id'}
+      />
     },
   ]} loading={loading}/>
 })
