@@ -137,7 +137,7 @@ describe('tables', () => {
   });
 
   describe('#extend()', () => {
-    it('should be extend', async () => {
+    it('extend options', async () => {
       db.table({
         name: 'baz',
       });
@@ -151,7 +151,7 @@ describe('tables', () => {
       expect(db.getModel('baz').rawAttributes.created).toBeDefined();
       expect(db.getModel('baz').rawAttributes.updated).toBeDefined();
     });
-    it('should be extend', async () => {
+    it('extend fields', async () => {
       db.table({
         name: 'foos',
       });
@@ -186,6 +186,60 @@ describe('tables', () => {
       expect(db.getModel('baz').associations.foo).toBeDefined();
       // await db.sync({force: true});
       // await db.sequelize.close();
+    });
+
+    it('extend array options', async () => {
+      db.table({
+        name: 'baz',
+        actions: [
+          {
+            name: 'list',
+          }
+        ]
+      });
+      db.extend({
+        name: 'baz',
+        actions: [
+          {
+            name: 'get',
+          }
+        ]
+      });
+
+      expect(db.getTable('baz').getOptions()).toEqual({
+        name: 'baz',
+        actions: [ { name: 'get' } ]
+      });
+    });
+
+    it('extend with customMerge', async () => {
+      db.table({
+        name: 'baz',
+        actions: [
+          {
+            name: 'list',
+          }
+        ]
+      });
+      db.extend({
+        name: 'baz',
+        actions: [
+          {
+            name: 'get',
+          }
+        ]
+      }, {
+        customMerge: (key, options) => {
+          if (key !== 'actions') {
+            return;
+          }
+          return (source, target) => source.concat(target);
+        }
+      });
+      expect(db.getTable('baz').getOptions()).toEqual({
+        name: 'baz',
+        actions: [ { name: 'list' }, { name: 'get' } ]
+      });
     });
   });
 
