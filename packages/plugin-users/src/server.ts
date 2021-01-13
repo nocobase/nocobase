@@ -10,6 +10,7 @@ import register from './actions/register';
 import logout from './actions/logout';
 import check from './actions/check';
 import { makeOptions } from './hooks/collection-after-create';
+import * as middlewares from './middlewares';
 
 export default async function (options = {}) {
   const database: Database = this.database;
@@ -38,8 +39,6 @@ export default async function (options = {}) {
       .map(type => table.addField(makeOptions(type, fieldsToMake[type])));
   });
 
-  // hooks.call(this);
-
   resourcer.registerActionHandlers({
     'users:login': login,
     'users:register': register,
@@ -47,7 +46,5 @@ export default async function (options = {}) {
     'users:check': check,
   });
 
-  // resourcer.import({
-  //   directory: path.resolve(__dirname, 'resources'),
-  // });
+  resourcer.use(middlewares.parseToken(options));
 }

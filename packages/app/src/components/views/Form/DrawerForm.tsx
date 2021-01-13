@@ -69,7 +69,7 @@ export const DrawerForm = forwardRef((props: any, ref) => {
       onClose={() => {
         actions.getFormState(state => {
           const values = cleanDeep(state.values);
-          const others = Object.keys(data).length ? cleanDeep({...data, associatedKey}) : cleanDeep(state.initialValues);
+          const others = Object.keys(data).length ? cleanDeep({...data, associatedKey, resourceKey}) : cleanDeep(state.initialValues);
           if (isEqual(values, others)) {
             setVisible(false);
             return;
@@ -132,7 +132,7 @@ export const DrawerForm = forwardRef((props: any, ref) => {
           colon={true}
           layout={'vertical'}
           // 暂时先这么处理，如果有 associatedKey 注入表单里
-          initialValues={{associatedKey, ...data}}
+          initialValues={{associatedKey, resourceKey, ...data}}
           actions={actions}
           schema={{
             type: 'object',

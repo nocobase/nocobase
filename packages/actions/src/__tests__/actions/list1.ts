@@ -14,4 +14,4 @@ export default {
   },
 
   handler: list
-} as ActionOptions;
+} as unknown as ActionOptions;

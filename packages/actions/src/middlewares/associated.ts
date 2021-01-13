@@ -41,8 +41,7 @@ export async function associated(ctx: Context, next: Next) {
       }
     });
     if (model) {
-      ctx.action.setParam('associated', model);
-      ctx.action.setParam('resourceField', field);
+      ctx.action.mergeParams({ associated: model, resourceField: field });
     }
   }
 

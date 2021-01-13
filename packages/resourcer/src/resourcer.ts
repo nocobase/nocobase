@@ -5,6 +5,7 @@ import Action, { ActionName } from './action';
 import Resource, { ResourceOptions } from './resource';
 import { parseRequest, getNameByParams, ParsedParams, requireModule, parseQuery } from './utils';
 import { pathToRegexp } from 'path-to-regexp';
+import _ from 'lodash';
 
 export interface ResourcerContext {
   resourcer?: Resourcer;
@@ -279,7 +280,7 @@ export class Resourcer {
           await ctx.action.mergeParams({
             ...query,
             ...params,
-            values: ctx.request.body,
+            ...(_.isEmpty(ctx.request.body) ? {} : { values: ctx.request.body }),
           });
         }
         return compose(ctx.action.getHandlers())(ctx, next);

@@ -1,7 +1,7 @@
 
 import React, { useEffect, useState } from 'react';
 import moment from 'moment';
-import { Tag, Popover, Table, Drawer, Modal } from 'antd';
+import { Tag, Popover, Table, Drawer, Modal, Checkbox, message } from 'antd';
 import Icon from '@/components/icons';
 import get from 'lodash/get';
 import isEmpty from 'lodash/isEmpty';
@@ -14,6 +14,8 @@ import { CheckOutlined, CloseOutlined } from '@ant-design/icons';
 import marked from 'marked';
 import Lightbox from 'react-image-lightbox';
 import 'react-image-lightbox/style.css';
+import api from '@/api-client';
+import { useRequest } from 'umi';
 
 marked.setOptions({
   gfm: true,
@@ -87,9 +89,28 @@ export function TextareaField(props: any) {
     <>{value}</>
   );
 }
-
+// const { data = [], loading = true } = useRequest(() => {
+//   return api.resource('collections.actions').list({
+//     associatedKey: resourceKey,
+//   });
+// }, {
+//   refreshDeps: [resourceKey]
+// });
 export function BooleanField(props: any) {
-  const { value } = props;
+  const { data = {}, value, schema: { name, editable, resource } } = props;
+  if (editable) {
+    return <Checkbox defaultChecked={value} onChange={async (e) => {
+      await api.resource(resource).update({
+        associatedKey: data.id,
+        values: {
+          [name]: e.target.checked,
+        },
+      });
+      message.success('保存成功');
+      // console.log(props);
+    }}/>
+  }
+  console.log(props);
   return (
     <>{value ? <CheckOutlined style={{color: '#52c41a'}}/> : <CloseOutlined style={{color: '#f5222d'}}/>}</>
   );
@@ -166,19 +187,19 @@ export function DataSourceField(props: any) {
   if (Array.isArray(value)) {
     return value.map(val => {
       const item = items.find(item => item.value === val);
-      return (
+      return item ? (
         <Tag color={item.color}>
           {item ? item.label : val}
         </Tag>
-      )
+      ) : <Tag>{val}</Tag>;
     });
   }
   const item = items.find(item => item.value === value);
-  return (
+  return item ? (
     <Tag color={item.color}>
       {item ? item.label : value}
     </Tag>
-  )
+  ) : <Tag>{value}</Tag>;
 }
 
 export function RealtionField(props: any) {

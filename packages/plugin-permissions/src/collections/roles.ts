@@ -2,43 +2,59 @@ import { TableOptions } from '@nocobase/database';
 
 export default {
   name: 'roles',
-  title: '权限配置',
+  title: '权限组配置',
+  developerMode: true,
+  internal: true,
   fields: [
     {
+      interface: 'string',
+      title: '权限组名称',
+      comment: '角色名称',
       type: 'string',
       name: 'title',
+      component: {
+        showInTable: true,
+        showInForm: true,
+        showInDetail: true,
+      },
     },
     {
-      type: 'string',
-      name: 'name',
+      interface: 'boolean',
+      comment: '支持匿名用户',
+      type: 'boolean',
+      name: 'anonymous',
+      defaultValue: false
+    },
+    // TODO(feature): 用户组后续考虑
+    // TODO(feature): 用户表应通过插件配置关联，考虑到今后会有多账户系统的情况
+    {
+      interface: 'linkTo',
+      title: '用户',
+      comment: '关联的用户表',
+      type: 'belongsToMany',
+      name: 'users',
+      target: 'users',
+      through: 'users_roles'
     },
     {
-      type: 'json',
-      name: 'options',
-    },
-  ],
-  actions: [
-    {
-      type: 'list',
-      name: 'list',
-      title: '查看',
+      interface: 'linkTo',
+      title: '数据表',
+      comment: '包含的以数据表分组的权限集',
+      type: 'belongsToMany',
+      name: 'collections',
+      through: 'permissions',
+      targetKey: 'name'
     },
     {
-      type: 'create',
-      name: 'create',
-      title: '新增',
-      viewName: 'form',
+      interface: 'linkTo',
+      title: '页面',
+      type: 'belongsToMany',
+      name: 'pages',
     },
     {
-      type: 'update',
-      name: 'update',
-      title: '编辑',
-      viewName: 'form',
-    },
-    {
-      type: 'destroy',
-      name: 'destroy',
-      title: '删除',
+      comment: '权限集（方便访问）',
+      type: 'hasMany',
+      name: 'permissions'
     },
   ],
   views: [
@@ -49,12 +65,6 @@ export default {
       template: 'DrawerForm',
     },
     {
-      type: 'form',
-      name: 'permission_form',
-      title: '数据表配置',
-      template: 'PermissionForm',
-    },
-    {
       type: 'details',
       name: 'details',
       title: '详情',
@@ -62,22 +72,14 @@ export default {
       actionNames: ['update'],
     },
     {
-      type: 'simple',
+      type: 'table',
       name: 'simple',
       title: '简易模式',
+      mode: 'simple',
       template: 'SimpleTable',
       actionNames: ['create', 'destroy'],
       detailsViewName: 'details',
-      updateViewName: 'permission_form',
-    },
-    {
-      type: 'simple',
-      name: 'simple2',
-      title: '简易模式',
-      template: 'SimpleTable',
-      detailsViewName: 'details',
-      updateViewName: 'permission_form',
-      paginated: false,
+      updateViewName: 'form',
     },
     {
       type: 'table',
@@ -96,10 +98,31 @@ export default {
       viewName: 'details',
       default: true,
     },
+    // {
+    //   type: 'details',
+    //   name: 'collections',
+    //   title: '数据表权限',
+    //   viewName: 'simple',
+    // },
     {
-      type: 'details',
+      type: 'association',
       name: 'collections',
       title: '数据表权限',
+      association: 'collections',
+      viewName: 'permissionTable',
+    },
+    {
+      type: 'association',
+      name: 'pages',
+      title: '页面权限',
+      association: 'pages',
+      viewName: 'permissionTable',
+    },
+    {
+      type: 'association',
+      name: 'users',
+      title: '当前组用户',
+      association: 'users',
       viewName: 'simple',
     },
   ],

@@ -54,7 +54,8 @@ export function toWhere(options: any, context: ToWhereContext = {}) {
       switch (typeof opKey) {
         case 'function':
           const name = model ? model.name : '';
-          const result = opKey(items[key], { 
+          const result = opKey(items[key], {
+            ctx,
             model,
             database,
             fieldPath: name ? `${name}.${prefix}` : prefix,

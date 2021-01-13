@@ -1,46 +1,5 @@
-import Api from '../../../../server/src';
-import dotenv from 'dotenv';
-import path from 'path';
-import Database, { Model } from '@nocobase/database';
-import actions from '../../../../actions/src';
-import associated from '../../../../actions/src/middlewares/associated';
-
-console.log(process.argv);
-
-const clean = true;
-
-const sync = {
-  force: clean,
-  alter: {
-    drop: clean,
-  },
-};
-
-dotenv.config();
-
-const api = Api.create({
-  database: {
-    username: process.env.DB_USER,
-    password: process.env.DB_PASSWORD,
-    database: process.env.DB_DATABASE,
-    host: process.env.DB_HOST,
-    port: process.env.DB_PORT,
-    dialect: process.env.DB_DIALECT,
-    dialectOptions: {
-      charset: 'utf8mb4',
-      collate: 'utf8mb4_unicode_ci',
-    },
-    logging: false,
-    define: {},
-    sync,
-  },
-  resourcer: {
-    prefix: '/api',
-  },
-});
-
-api.resourcer.use(associated);
-api.resourcer.registerActionHandlers({...actions.common, ...actions.associate});
+import api from '../app';
+import Database from '@nocobase/database';
 
 const data = [
   {
@@ -135,6 +94,15 @@ const data = [
             sort: 110,
             showInMenu: true,
           },
+          {
+            title: '权限组配置',
+            type: 'collection',
+            collection: 'roles',
+            path: '/settings/roles',
+            icon: 'TableOutlined',
+            sort: 120,
+            showInMenu: true,
+          },
         ]
       },
     ],
@@ -157,11 +125,6 @@ const data = [
   }
 ];
 
-api.registerPlugin('plugin-collections', [path.resolve(__dirname, '../../../plugin-collections'), {}]);
-api.registerPlugin('plugin-pages', [path.resolve(__dirname, '../../../plugin-pages'), {}]);
-api.registerPlugin('plugin-users', [path.resolve(__dirname, '../../../plugin-users'), {}]);
-api.registerPlugin('plugin-file-manager', [path.resolve(__dirname, '../../../plugin-file-manager'), {}]);
-
 (async () => {
   await api.loadPlugins();
   const database: Database = api.database;
@@ -171,6 +134,7 @@ api.registerPlugin('plugin-file-manager', [path.resolve(__dirname, '../../../plu
   const [Collection, Page, User] = database.getModels(['collections', 'pages', 'users']);
   const tables = database.getTables([]);
   for (let table of tables) {
+    console.log(table.getName());
     await Collection.import(table.getOptions(), { update: true, migrate: false });
   }
   await Page.import(data);
@@ -195,18 +159,32 @@ api.registerPlugin('plugin-file-manager', [path.resolve(__dirname, '../../../plu
   //   baseUrl: process.env.LOCAL_STORAGE_BASE_URL,
   //   default: true
   // });
-  await Storage.create({
-    name: `ali-oss`,
-    type: 'ali-oss',
-    baseUrl: process.env.STORAGE_BASE_URL,
-    options: {
-      region: process.env.ALIYUN_OSS_REGION,// 'oss-cn-beijing',
-      accessKeyId: process.env.ALIYUN_OSS_ACCESS_KEY_ID,// 'LTAI4GEGDJsdGantisvSaz47',
-      accessKeySecret: process.env.ALIYUN_OSS_ACCESS_KEY_SECRET,//'cDFaOUwigps7ohRmsfBFXGDxNm8uIq',
-      bucket: process.env.ALIYUN_OSS_BUCKET, //'nocobase'
+  const storage = await Storage.findOne({
+    where: {
+      name: "ali-oss",
     },
-    default: true
   });
+  if (!storage) {
+    await Storage.create({
+      name: `ali-oss`,
+      type: 'ali-oss',
+      baseUrl: process.env.STORAGE_BASE_URL,
+      options: {
+        region: process.env.ALIYUN_OSS_REGION,// 'oss-cn-beijing',
+        accessKeyId: process.env.ALIYUN_OSS_ACCESS_KEY_ID,// 'LTAI4GEGDJsdGantisvSaz47',
+        accessKeySecret: process.env.ALIYUN_OSS_ACCESS_KEY_SECRET,//'cDFaOUwigps7ohRmsfBFXGDxNm8uIq',
+        bucket: process.env.ALIYUN_OSS_BUCKET, //'nocobase'
+      },
+      default: true
+    });
+  }
+  const Role = database.getModel('roles');
+  const roles = await Role.bulkCreate([
+    { title: '系统开发组' },
+    { title: '数据管理组' },
+    { title: '普通用户组' },
+    { title: '未登录用户组' },
+  ]);
   await database.getModel('collections').import(require('./collections/example').default);
   await database.getModel('collections').import(require('./collections/authors').default);
   await database.getModel('collections').import(require('./collections/books').default);
