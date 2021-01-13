@@ -17,9 +17,11 @@ export default async (ctx, next) => {
   });
   collection.setDataValue('defaultViewName', defaultView.get('name'));
   const options = Tab.parseApiJson({
-    filter: {
+    filter: ctx.state.developerMode ? {
       enabled: true,
-      developerMode: ctx.state.developerMode ? {'$isTruly': true} : {'$isFalsy': true},
+    } : {
+      enabled: true,
+      developerMode: {'$isFalsy': true},
     },
     fields: {
       appends: ['associationField'],

@@ -20,6 +20,8 @@ export function CollectionTabPane(props) {
     params['resourceKey'] = item.itemId;
   }
 
+  console.log({params});
+
   if (loading) {
     return <Spin/>;
   }

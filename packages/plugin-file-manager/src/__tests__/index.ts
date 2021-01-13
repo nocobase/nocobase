@@ -4,8 +4,8 @@ import supertest from 'supertest';
 import bodyParser from 'koa-bodyparser';
 import { Dialect } from 'sequelize';
 import Database from '@nocobase/database';
-import { actions, middlewares } from '@nocobase/actions';
-import { Application } from '@nocobase/server';
+import { actions, middlewares } from '@nocobase/actions/src';
+import { Application } from '@nocobase/server/src';
 import middleware from '@nocobase/server/src/middleware'
 import plugin from '../server';
 import { FILE_FIELD_NAME } from '../constants';
@@ -62,7 +62,7 @@ export async function getApp() {
   });
   app.resourcer.use(middlewares.associated);
   app.resourcer.registerActionHandlers({...actions.associate, ...actions.common});
-  app.registerPlugins({
+  app.registerPlugin({
     'collections': [path.resolve(__dirname, '../../../plugin-collections')],
     'file-manager': [plugin]
   });

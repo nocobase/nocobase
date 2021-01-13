@@ -40,9 +40,13 @@ export default async function getRoutes(ctx, next) {
   const database: Database = ctx.database;
   const Page = database.getModel('pages');
   const Collection = database.getModel('collections');
-  let pages = await Page.findAll(Page.parseApiJson({
+  let pages = await Page.findAll(Page.parseApiJson(ctx.state.developerMode ? {
     filter: {
-      developerMode: ctx.state.developerMode ? {'$isTruly': true} : {'$isFalsy': true},
+    },
+    sort: ['sort'],
+  } : {
+    filter: {
+      developerMode: {'$isFalsy': true},
     },
     sort: ['sort'],
   }));
@@ -50,9 +54,14 @@ export default async function getRoutes(ctx, next) {
   for (const page of pages) {
     items.push(page.toJSON());
     if (page.get('path') === '/collections') {
-      const collections = await Collection.findAll(Collection.parseApiJson({
+      const collections = await Collection.findAll(Collection.parseApiJson(ctx.state.developerMode ? {
         filter: {
-          developerMode: ctx.state.developerMode ? {'$isTruly': true} : {'$isFalsy': true},
+          showInDataMenu: true,
+        },
+        sort: ['sort'],
+      }: {
+        filter: {
+          developerMode: {'$isFalsy': true},
           showInDataMenu: true,
         },
         sort: ['sort'],

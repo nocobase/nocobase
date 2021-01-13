@@ -74,7 +74,7 @@ export default {
       type: 'string',
       name: 'type',
       title: '类型',
-      options: [
+      dataSource: [
         {
           label: '页面',
           value: 'page',
@@ -118,7 +118,7 @@ export default {
       type: 'string',
       name: 'template',
       title: '模板',
-      options: [
+      dataSource: [
         {
           label: '顶部菜单布局',
           value: 'TopMenuLayout',
@@ -241,11 +241,12 @@ export default {
       actionNames: ['update'],
     },
     {
-      type: 'simple',
+      type: 'table',
       name: 'simple',
       title: '简易模式',
       template: 'SimpleTable',
       default: true,
+      mode: 'simple',
       actionNames: ['create', 'destroy'],
       detailsViewName: 'details',
       updateViewName: 'form',
@@ -257,6 +258,16 @@ export default {
       title: '列表',
       template: 'Table',
       actionNames: ['create', 'destroy'],
+    },
+    {
+      type: 'table',
+      name: 'permissionTable',
+      title: '菜单权限',
+      template: 'Table',
+      mode: 'simple',
+      detailsViewName: 'details',
+      updateViewName: 'form',
+      paginated: false,
     },
   ],
 } as TableOptions;

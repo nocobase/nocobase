@@ -19,6 +19,7 @@ import { DrawerSelect } from './drawer-select'
 import { SubTable } from './sub-table'
 import { Icon } from './icons'
 import { ColorSelect } from './color-select'
+import { Permissions } from './permissions'
 
 export const setup = () => {
   registerFormFields({
@@ -52,5 +53,8 @@ export const setup = () => {
     drawerSelect: DrawerSelect,
     colorSelect: ColorSelect,
     subTable: SubTable,
+    'permissions.actions': Permissions.Actions,
+    'permissions.fields': Permissions.Fields,
+    'permissions.tabs': Permissions.Tabs,
   })
 }

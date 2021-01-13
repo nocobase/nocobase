@@ -42,6 +42,7 @@ export function Table(props: TableProps) {
     actions = [],
     paginated = true, 
     defaultPerPage = 10,
+    disableRowClick,
   } = schema;
   // const { data, mutate } = useRequest(() => api.resource(name).list({
   //   associatedKey,
@@ -162,7 +163,7 @@ export function Table(props: TableProps) {
           data, 
           mutate,
           rowKey,
-          isFieldComponent,
+          isFieldComponent: disableRowClick || isFieldComponent,
           onMoved: async ({resourceKey, target}) => {
             await api.resource(name).sort({
               associatedKey,
@@ -178,7 +179,7 @@ export function Table(props: TableProps) {
         })}
         onRow={(data) => ({
           onClick: () => {
-            if (isFieldComponent) {
+            if (disableRowClick || isFieldComponent) {
               return;
             }
             if (mode === 'simple') {
