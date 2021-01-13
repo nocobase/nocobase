@@ -17,6 +17,11 @@ import {
 import Database from './database';
 import { Model, ModelCtor } from './model';
 import _ from 'lodash';
+import merge from 'deepmerge';
+
+export interface MergeOptions extends merge.Options {
+
+}
 
 const registeredModels = new Map<string, any>();
 
@@ -136,20 +141,12 @@ export class Table {
     const { database } = context;
     database.runHooks('beforeTableInit', options);
     const {
-      name,
+      model,
       fields = [],
       indexes = [],
-      model,
-      ...restOptions
     } = options;
     this.options = options;
     this.database = database;
-    this.modelOptions = {
-      modelName: name,
-      tableName: name,
-      sequelize: database.sequelize,
-      ...restOptions,
-    };
     // 初始化的时候获取
     this.defaultModel = getRegisteredModel(model);
     this.modelAttributes = {};
@@ -204,7 +201,7 @@ export class Table {
   }
 
   public getTableName(): string {
-    return this.modelOptions.tableName;
+    return this.options.name;
   }
 
   public getOptions(): TableOptions {
@@ -220,15 +217,22 @@ export class Table {
   }
 
   public getModelOptions(): InitOptions {
-    const { underscored = true } = this.modelOptions;
+    const {
+      name,
+      underscored = true,
+      ...restOptions
+    } = this.options;
     const hooks = _.get(this.getModel(), 'options.hooks') || this.options.hooks || {};
     return {
       underscored,
+      modelName: name,
+      tableName: name,
+      sequelize: this.database.sequelize,
       createdAt: Utils.underscoredIf('createdAt', underscored),
       updatedAt: Utils.underscoredIf('updatedAt', underscored),
       indexes: Array.from(this.indexes.values()),
       // freezeTableName: true,
-      ...this.modelOptions,
+      ..._.omit(restOptions, ['model', 'fields', 'indexes']),
       hooks,
     };
   }
@@ -336,7 +340,8 @@ export class Table {
       };
     }
     // @ts-ignore
-    const index = Utils.nameIndex(options, this.modelOptions.tableName);
+    const index = Utils.nameIndex(options, this.options.name);
+    console.log(this.options, { index, options });
     this.indexes.set(index.name, {
       type: '',
       parser: null,
@@ -363,14 +368,21 @@ export class Table {
    * 
    * @param options 
    */
-  public extend(options: TableOptions) {
-    const { fields = [], indexes = [], ...restOptions } = options;
-    this.modelOptions = {
-      ...this.modelOptions,
-      ...restOptions as any,
-    };
-    // @ts-ignore
-    this.options = Utils.merge(this.options, restOptions);
+  public extend(options: TableOptions, mergeOptions: MergeOptions = {}) {
+    const {
+      fields = [],
+      indexes = [],
+      model,
+      ...restOptions
+    } = options;
+    if (model) {
+      this.defaultModel = getRegisteredModel(model);
+    }
+    const { arrayMerge = (target: any[], source: any[]) => source } = mergeOptions;
+    this.options = merge(this.options, restOptions, {
+      arrayMerge,
+      ...mergeOptions,
+    });
     for (const key in fields) {
       this.addField(fields[key], false);
     }

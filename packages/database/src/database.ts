@@ -4,7 +4,7 @@ import {
   SyncOptions as SequelizeSyncOptions,
 } from 'sequelize';
 import glob from 'glob';
-import Table, { TableOptions } from './table';
+import Table, { MergeOptions, TableOptions } from './table';
 import { Model, ModelCtor } from './model';
 import { requireModule } from './utils';
 import _ from 'lodash';
@@ -76,9 +76,8 @@ export default class Database {
     });
     const tables = new Map<string, Table>();
     files.forEach((file: string) => {
-      const options = requireModule(file);
-      const table = this.table(typeof options === 'function' ? options(this) : options);
-      tables.set(table.getName(), table);
+      const result = requireModule(file);
+      this.extend(typeof result === 'function' ? result(this) : result);
     });
     return tables;
   }
@@ -107,12 +106,12 @@ export default class Database {
    * 
    * @param options 
    */
-  public extend(options: TableOptions): Table {
+  public extend(options: TableOptions, mergeOptions?: MergeOptions): Table {
     const { name } = options;
     let table: Table;
     if (this.tables.has(name)) {
       table = this.tables.get(name);
-      table.extend(options);
+      table.extend(options, mergeOptions);
     } else {
       table = this.table(options);
       this.tables.set(name, table);
@@ -146,7 +145,7 @@ export default class Database {
    *
    * @param names 
    */
-  public getModels(names: string[]): Array<ModelCtor<Model>> {
+  public getModels(names: string[] = []): Array<ModelCtor<Model>> {
     if (names.length === 0) {
       return this.sequelize.models as any;
     }
@@ -171,7 +170,7 @@ export default class Database {
    *
    * @param names 
    */
-  public getTables(names: string[]): Array<Table> {
+  public getTables(names: string[] = []): Array<Table> {
     if (names.length === 0) {
       return [...this.tables.values()];
     }
