@@ -3,6 +3,7 @@ import { Op } from 'sequelize';
 import { Application } from '@nocobase/server';
 import Database, { Operator } from '@nocobase/database';
 import Resourcer from '@nocobase/resourcer';
+import * as collectionsRolesActions from './actions/collections.roles';
 import * as rolesCollectionsActions from './actions/roles.collections';
 import * as rolesPagesActions from './actions/roles.pages';
 
@@ -39,6 +40,10 @@ class Permissions {
       directory: path.resolve(__dirname, 'collections'),
     });
 
+    Object.keys(collectionsRolesActions).forEach(actionName => {
+      resourcer.registerActionHandler(`collections.roles:${actionName}`, collectionsRolesActions[actionName]);
+    });
+
     Object.keys(rolesCollectionsActions).forEach(actionName => {
       resourcer.registerActionHandler(`roles.collections:${actionName}`, rolesCollectionsActions[actionName]);
     });
@@ -46,16 +51,6 @@ class Permissions {
     Object.keys(rolesPagesActions).forEach(actionName => {
       resourcer.registerActionHandler(`roles.pages:${actionName}`, rolesPagesActions[actionName]);
     });
-
-    // TODO(optimize): 临时处理，相关逻辑还需要更严格
-    const usersTable = database.getTable('users');
-    if (!usersTable.hasField('roles')) {
-      usersTable.addField({
-        type: 'belongsToMany',
-        name: 'roles',
-        through: 'users_roles'
-      });
-    }
 
     // 针对“自己创建的” scope 添加特殊的操作符以生成查询条件
     if (!Operator.has('$currentUser')) {
