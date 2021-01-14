@@ -101,8 +101,11 @@ export function BooleanField(props: any) {
   if (editable) {
     return <Checkbox defaultChecked={value} onChange={async (e) => {
       await api.resource(resource).update({
-        associatedKey: data.id,
+        associatedKey: data.associatedKey,
+        resourceKey: data.id,
+        tableName: data.tableName||'pages',
         values: {
+          tableName: data.tableName||'pages',
           [name]: e.target.checked,
         },
       });

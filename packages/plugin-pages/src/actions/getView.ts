@@ -337,7 +337,7 @@ export default async (ctx, next) => {
         },
         {
           "title": "访问权限",
-          "name": "accessable",
+          "name": "accessible",
           "interface": "boolean",
           "type": "boolean",
           "parent_id": null,
@@ -349,7 +349,7 @@ export default async (ctx, next) => {
             "type": "boolean",
             "showInTable": true,
           },
-          "dataIndex": ["accessable"]
+          "dataIndex": ["accessible"]
         }
       ],
     };
