@@ -48,10 +48,6 @@ class Permissions {
       resourcer.registerActionHandler(`roles.collections:${actionName}`, rolesCollectionsActions[actionName]);
     });
 
-    Object.keys(rolesPagesActions).forEach(actionName => {
-      resourcer.registerActionHandler(`roles.pages:${actionName}`, rolesPagesActions[actionName]);
-    });
-
     // 针对“自己创建的” scope 添加特殊的操作符以生成查询条件
     if (!Operator.has('$currentUser')) {
       Operator.register('$currentUser', (value, { ctx }) => {
