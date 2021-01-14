@@ -184,7 +184,7 @@ export default async (ctx, next) => {
     // },
   }));
   let throughName;
-  const {associatedName, resourceFieldName} = values;
+  const { associatedName, resourceFieldName, associatedKey } = values;
   if (associatedName) {
     const table = ctx.db.getTable(associatedName);
     const resourceField = table.getField(resourceFieldName);
@@ -380,7 +380,11 @@ export default async (ctx, next) => {
         }
       ],
     };
-  } else if (resourceFieldName === 'collections' && resourceKey === 'permissionForm') {
+  } else if (
+      (resourceFieldName === 'collections' && resourceKey === 'permissionForm') 
+      ||
+      (resourceFieldName === 'roles' && resourceKey === 'permissionForm')
+    ) {
     ctx.body = {
       ...view.get(),
       title,
@@ -396,7 +400,7 @@ export default async (ctx, next) => {
               target: "actions",
               schema: {
                 "x-component-props": {
-                  resourceKey: "{{ $form.values && $form.values.resourceKey }}"
+                  resourceKey: resourceFieldName === 'roles' ? associatedKey : "{{ $form.values && $form.values.resourceKey }}"
                 },
               },
             },
@@ -414,7 +418,7 @@ export default async (ctx, next) => {
               target: "fields",
               schema: {
                 "x-component-props": {
-                  resourceKey: "{{ $form.values && $form.values.resourceKey }}"
+                  resourceKey: resourceFieldName === 'roles' ? associatedKey : "{{ $form.values && $form.values.resourceKey }}"
                 },
               },
             },
@@ -432,7 +436,7 @@ export default async (ctx, next) => {
               target: "tabs",
               schema: {
                 "x-component-props": {
-                  resourceKey: "{{ $form.values && $form.values.resourceKey }}"
+                  resourceKey: resourceFieldName === 'roles' ? associatedKey : "{{ $form.values && $form.values.resourceKey }}"
                 },
               },
             },

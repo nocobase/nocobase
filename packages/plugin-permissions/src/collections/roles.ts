@@ -89,6 +89,23 @@ export default {
       actionNames: ['create', 'destroy'],
       default: true,
     },
+    {
+      type: 'table',
+      name: 'permissionTable',
+      title: '权限设置表格',
+      mode: 'simple',
+      template: 'SimpleTable',
+      // actionNames: ['create', 'destroy'],
+      detailsViewName: 'details',
+      updateViewName: 'permissionForm',
+    },
+    {
+      type: 'form',
+      name: 'permissionForm',
+      title: '权限设置表单',
+      mode: 'simple',
+      template: 'DrawerForm',
+    },
   ],
   tabs: [
     {
