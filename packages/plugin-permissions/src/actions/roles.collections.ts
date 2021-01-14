@@ -24,16 +24,20 @@ export async function get(ctx: actions.Context, next: actions.Next) {
         separate: true,
         include: [
           {
-            association: 'scope',
-            attribute: ['filter']
-          },
+            association: 'scope'
+          }
         ]
       },
       {
         association: 'fields_permissions',
         separate: true,
+      },
+      {
+        association: 'tabs_permissions',
+        separate: true,
       }
     ],
+    distinct: true,
     limit: 1
   });
   
@@ -41,7 +45,7 @@ export async function get(ctx: actions.Context, next: actions.Next) {
     ? {
       actions: permission.actions || [],
       fields: permission.fields_permissions || [],
-      tabs: permission.tabs_permissions || [],
+      tabs: (permission.tabs_permissions || []).map(item => item.tab_id),
     }
     : {
       actions: [],
@@ -61,11 +65,14 @@ export async function update(ctx: actions.Context, next: actions.Next) {
     values
   } = ctx.action.params;
 
+  const transaction = await ctx.db.sequelize.transaction();
+
   // role.getPermissions
   let [permission] = await associated.getPermissions({
     where: {
       collection_name: resourceKey
-    }
+    },
+    transaction
   });
 
   if (!permission) {
@@ -73,10 +80,10 @@ export async function update(ctx: actions.Context, next: actions.Next) {
     permission = await associated.createPermission({
       collection_name: resourceKey,
       description: values.description
-    });
+    }, { transaction });
   } else {
     // 存在则更新描述
-    await permission.update({ description: values.description });
+    await permission.update({ description: values.description }, { transaction });
   }
 
   // 查找对应 collection 下所有“可用”的 actions
@@ -88,7 +95,8 @@ export async function update(ctx: actions.Context, next: actions.Next) {
         [Op.or]: [resourceKey, null]
       },
       ...(ctx.state.developerMode ? {} : { developerMode: false })
-    }
+    },
+    transaction
   });
 
   // 需要移除的 = 所有可用的 - 要添加的
@@ -107,45 +115,50 @@ export async function update(ctx: actions.Context, next: actions.Next) {
     where: {
       permission_id: permission.id,
       name: Array.from(toRemoveActionNames)
-    }
+    },
+    transaction
   });
   // 更新或创建
-  const existedActions = await permission.getActions();
+  const existedActions = await permission.getActions({ transaction });
   for (const actionItem of values.actions) {
     const action = existedActions.find(item => item.name === actionItem.name);
     if (action) {
-      await action.update(actionItem);
+      await action.update(actionItem, { transaction });
     } else {
-      await permission.createAction(actionItem);
+      await permission.createAction(actionItem, { transaction });
     }
   };
 
   const FieldModel = ctx.db.getModel('fields');
-  const availableFields = await FieldModel.findAll({
-    where: {
-      collection_name: resourceKey,
-      ...(ctx.state.developerMode ? {} : { developerMode: false })
-    }
-  });
-
-  const toRemoveFieldIds = [];
-  availableFields.forEach(field => {
-    if (!values.fields.find(item => item.field_id === field[FieldModel.primaryKeyAttribute])) {
-      toRemoveFieldIds.push(field[FieldModel.primaryKeyAttribute]);
-    }
-  });
-
-  await permission.removeFields(toRemoveFieldIds);
-
-  const existedFields = await permission.getFields_permissions();
+  const existedFields = await permission.getFields({ transaction });
+  const toRemoveFieldIds = existedFields.filter(field => (
+    !values.fields.find(({ field_id }) => field_id === field[FieldModel.primaryKeyAttribute])
+    && !(field.developerMode ^ ctx.state.developerMode)
+  ));
+  if (toRemoveFieldIds.length) {
+    await permission.removeFields(toRemoveFieldIds, { transaction });
+  }
   for (const fieldItem of values.fields) {
-    const field = existedFields.find(item => item.field_id === fieldItem.field_id);
+  const FieldModel = ctx.db.getModel('fields');
+    const field = existedFields.find(item => item[FieldModel.primaryKeyAttribute] === fieldItem.field_id);
     if (field) {
-      await field.update(fieldItem);
+      await field.update(fieldItem, { transaction });
     } else {
-      await permission.createFields_permission(fieldItem);
+      await permission.createFields_permission(fieldItem, { transaction });
     }
   }
+
+  const TabModel = ctx.db.getModel('tabs');
+  const existedTabs = await permission.getTabs({ transaction });
+  const toRemoveTabs = existedTabs.filter(tab => (
+    // 如果没找到
+    !values.tabs.find(id => tab[TabModel.primaryKeyAttribute] === id)
+      // 且开发者模式匹配
+      && !(tab.developerMode ^ ctx.state.developerMode)));
+  await permission.removeTabs(toRemoveTabs, { transaction });
+  await permission.addTabs(values.tabs, { transaction });
+
+  await transaction.commit();
 
   ctx.body = permission;
 
