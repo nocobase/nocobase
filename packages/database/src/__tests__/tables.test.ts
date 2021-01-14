@@ -2,6 +2,7 @@ import { getDatabase } from './';
 import Database from '../database';
 import Table from '../table';
 import Model from '../model';
+import path from 'path';
 
 let db: Database;
 
@@ -239,6 +240,24 @@ describe('tables', () => {
       expect(db.getTable('baz').getOptions()).toEqual({
         name: 'baz',
         actions: [ { name: 'list' }, { name: 'get' } ]
+      });
+    });
+  });
+
+  describe.only('#import()', () => {
+    it('import tables', () => {
+      const tables = db.import({
+        directory: path.resolve(__dirname, './tables'),
+      });
+      expect([...tables.keys()]).toEqual(['demos', 'examples', 'tests']);
+      expect(db.getTable('demos').getOptions()).toEqual({
+        name: 'demos', actions: [ { name: 'create' }, { name: 'list' } ]
+      });
+      expect(db.getTable('examples').getOptions()).toEqual({
+        name: 'examples', actions: [ { name: 'create' } ]
+      });
+      expect(db.getTable('tests').getOptions()).toEqual({
+        name: 'tests', actions: [ { name: 'list' } ]
       });
     });
   });
