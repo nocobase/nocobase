@@ -19,11 +19,16 @@ export default {
       },
     },
     {
-      interface: 'boolean',
-      comment: '支持匿名用户',
-      type: 'boolean',
-      name: 'anonymous',
-      defaultValue: false
+      interface: 'select',
+      comment: '角色类型',
+      type: 'integer',
+      name: 'type',
+      dataSource: [
+        { value: -1, label: '系统角色' },
+        { value: 0, label: '匿名角色' },
+        { value: 1, label: '自定义角色' },
+      ],
+      defaultValue: 1
     },
     // TODO(feature): 用户组后续考虑
     // TODO(feature): 用户表应通过插件配置关联，考虑到今后会有多账户系统的情况

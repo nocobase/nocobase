@@ -37,7 +37,8 @@ export default {
     {
       comment: '允许的操作集',
       type: 'hasMany',
-      name: 'actions_permissions',
+      name: 'actions',
+      target: 'actions_permissions'
     },
     {
       type: 'belongsToMany',

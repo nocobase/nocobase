@@ -21,7 +21,7 @@ class Permissions {
 
   static getActionPermissions(roles) {
     const permissions = roles.reduce((permissions, role) => permissions.concat(role.get('permissions')), []);
-    return permissions.reduce((actions, permission) => actions.concat(permission.get('actions_permissions')), []);
+    return permissions.reduce((actions, permission) => actions.concat(permission.get('actions')), []);
   }
 
   static getFieldPermissions(roles) {
@@ -71,6 +71,10 @@ class Permissions {
       } = ctx.action.params;
 
       const roles = await this.getRolesWithPermissions(ctx);
+      // 如果是系统管理员，则不进行其他验证或过滤
+      if (roles.some(role => role.type === -1)) {
+        return next();
+      }
       const actionPermissions = Permissions.getActionPermissions(roles);
 
       if (!actionPermissions.length) {
@@ -125,9 +129,9 @@ class Permissions {
       required: true,
       include: [
         {
-          association: 'actions_permissions',
+          association: 'actions',
           where: {
-            name: actionName
+            name: `${resourceName}:${actionName}`
           },
           required: true,
           // 对 hasMany 关系可以进行拆分查询，避免联表过多标识符超过 PG 的 64 字符限制
@@ -151,22 +155,39 @@ class Permissions {
         }
       ],
     };
+    
+    let userRoles = [];
+    // 获取登入用户的角色及权限
+    const currentUser = this.getCurrentUser(ctx);
+    if (currentUser) {
+      const adminRoles = await currentUser.getRoles({
+        where: {
+          type: -1
+        }
+      });
+      if (adminRoles.length) {
+        return adminRoles;
+      }
+
+      userRoles = await currentUser.getRoles({
+        where: {
+          type: 1
+        },
+        include: [
+          permissionInclusion
+        ]
+      });
+    }
+
     // 获取匿名用户的角色及权限
     const anonymousRoles = await Role.findAll({
       where: {
-        anonymous: true
+        type: 0
       },
       include: [
         permissionInclusion
       ]
     });
-    // 获取登入用户的角色及权限
-    const currentUser = this.getCurrentUser(ctx);
-    const userRoles = currentUser ? await currentUser.getRoles({
-      include: [
-        permissionInclusion
-      ]
-    }) : [];
 
     return [...anonymousRoles, ...userRoles];
   }
