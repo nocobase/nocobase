@@ -35,6 +35,19 @@ export interface DatabaseOptions extends Options {
 
 export type HookType = 'beforeTableInit' | 'afterTableInit' | 'beforeAddField' | 'afterAddField';
 
+export class Extend {
+  tableOptions: TableOptions;
+  mergeOptions: MergeOptions
+  constructor(tableOptions: TableOptions, mergeOptions?: MergeOptions) {
+    this.tableOptions = tableOptions;
+    this.mergeOptions = mergeOptions;
+  }
+}
+
+export function extend(tableOptions: TableOptions, mergeOptions: MergeOptions = {}) {
+  return new Extend(tableOptions, mergeOptions);
+}
+
 export default class Database {
 
   public readonly sequelize: Sequelize;
@@ -80,7 +93,13 @@ export default class Database {
     const tables = new Map<string, Table>();
     files.forEach((file: string) => {
       const result = requireModule(file);
-      this.extend(typeof result === 'function' ? result(this) : result);
+      if (result instanceof Extend) {
+        const table = this.extend(result.tableOptions, result.mergeOptions);
+        tables.set(table.getName(), table);
+      } else {
+        const table = this.extend(typeof result === 'function' ? result(this) : result);
+        tables.set(table.getName(), table);
+      }
     });
     return tables;
   }
