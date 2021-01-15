@@ -33,14 +33,4 @@ export default async function (this: Application, options = {}) {
       Model.addHook(hookKey, hooks[modelName][hookKey]);
     });
   });
-
-  let initialized = false;
-
-  this.use(async (ctx, next) => {
-    if (!initialized) {
-      await database.getModel('collections').load({skipExisting: true});
-      initialized = true;
-    }
-    await next();
-  });
 }
