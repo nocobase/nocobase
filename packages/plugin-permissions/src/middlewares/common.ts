@@ -90,7 +90,7 @@ async function getRolesWithPermissions(ctx) {
   return [...anonymousRoles, ...userRoles];
 }
 
-export default async function(ctx, next) {
+async function interceptor(ctx, next) {
   const {
     resourceName,
     actionName
@@ -128,4 +128,12 @@ export default async function(ctx, next) {
   });
 
   return next();
+}
+
+export default {
+  list: interceptor,
+  get: interceptor,
+  create: interceptor,
+  update: interceptor,
+  destroy: interceptor
 }

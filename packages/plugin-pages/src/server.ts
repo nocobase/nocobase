@@ -1,6 +1,7 @@
 import path from 'path';
 import Database from '@nocobase/database';
 import Resourcer from '@nocobase/resourcer';
+import { Permissions } from '@nocobase/plugin-permissions/src/server';
 import getCollection from './actions/getCollection';
 import getView from './actions/getView';
 import getRoutes from './actions/getRoutes';
@@ -24,6 +25,20 @@ export default async function (options = {}) {
     resourcer.registerActionHandler(`roles.pages:${actionName}`, rolesPagesActions[actionName]);
   });
 
+  // TODO(refactor): 当前是临时解法，需要后续考虑优化重构
+  this.on('pluginsLoaded', (plugins) => {
+    const permissions = plugins.find(plugin => plugin instanceof Permissions);
+    if (permissions) {
+      permissions.registerInterceptor('pages:getRoutes', function (ctx, next) {
+        // 相关权限判断自由定义
+        // 如需以统一方式拒绝该访问，可以调用下面的接口
+        if (false) {
+          this.reject(ctx); // or (no `this`): permissions.reject(ctx)
+        }
+        return next();
+      });
+    }
+  });
 /*
   const [Collection, Page, View] = database.getModels(['collections', 'pages', 'views']);
 

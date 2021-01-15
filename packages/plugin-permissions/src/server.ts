@@ -1,8 +1,7 @@
 import path from 'path';
 import { Op } from 'sequelize';
 import { Application } from '@nocobase/server';
-import Database, { Operator } from '@nocobase/database';
-import Resourcer from '@nocobase/resourcer';
+import { Operator } from '@nocobase/database';
 import * as collectionsRolesActions from './actions/collections.roles';
 import * as rolesCollectionsActions from './actions/roles.collections';
 import common from './middlewares/common';
@@ -13,7 +12,7 @@ import common from './middlewares/common';
 
 
 
-class Permissions {
+export class Permissions {
   readonly app: Application;
   readonly options: any;
 
@@ -23,12 +22,11 @@ class Permissions {
     this.app = app;
     this.options = options;
 
-    const database: Database = app.database;
-    const resourcer: Resourcer = app.resourcer;
+    const { database, resourcer } = app;
 
     // 常规 action 都统一处理
-    ['list', 'get', 'create', 'update', 'destroy'].forEach(action => {
-      this.registerInterceptor(action, common);
+    Object.keys(common).forEach(key => {
+      this.registerInterceptor(key, common[key]);
     });
 
     database.import({
