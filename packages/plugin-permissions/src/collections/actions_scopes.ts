@@ -12,7 +12,7 @@ export default {
       name: 'title',
       title: '名称',
       component: {
-        type: 'filter',
+        type: 'string',
         showInTable: true,
         showInForm: true,
       },
