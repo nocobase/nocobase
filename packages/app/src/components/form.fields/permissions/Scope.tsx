@@ -13,7 +13,7 @@ import ViewFactory from '@/components/views'
 function transform({value, multiple, labelField, valueField = 'id'}) {
   let selectedKeys = [];
   let selectedValue = [];
-  const values = Array.isArray(value) ? value : [];
+  const values = Array.isArray(value) ? value : [value].filter(Boolean);
   selectedKeys = values.map(item => item[valueField]);
   selectedValue = values.map(item => {
     return {
@@ -21,6 +21,7 @@ function transform({value, multiple, labelField, valueField = 'id'}) {
       label: item[labelField],
     }
   });
+  console.log({selectedKeys, selectedValue, values, labelField, valueField})
   if (!multiple) {
     return [selectedKeys.shift(), selectedValue.shift()];
   }
@@ -28,13 +29,13 @@ function transform({value, multiple, labelField, valueField = 'id'}) {
 }
 
 export function Scope(props) {
-  const { target, multiple, associatedName, labelField, valueField = 'id', value, onChange } = props;
+  const { resourceTarget, target, multiple, associatedName, associatedKey, labelField, valueField = 'id', value, onChange } = props;
   const [selectedKeys, selectedValue] = transform({value, multiple, labelField, valueField });
   const [visible, setVisible] = useState(false);
   const [selectedRowKeys, setSelectedRowKeys] = useState(multiple ? selectedKeys : [selectedKeys]);
   const [selectedRows, setSelectedRows] = useState(selectedValue);
   const [options, setOptions] = useState(selectedValue);
-  // console.log('valuevaluevaluevaluevaluevalue', value);
+  console.log('valuevaluevaluevaluevaluevalue', selectedValue, value);
   return (
     <>
       <Select
@@ -44,6 +45,7 @@ export function Scope(props) {
         labelInValue
         allowClear={true}
         value={options}
+        placeholder={'默认为全部数据'}
         notFoundContent={''}
         onChange={(data) => {
           setOptions(data);
@@ -95,7 +97,10 @@ export function Scope(props) {
       >
         <ViewFactory
           multiple={multiple}
+          associatedName={associatedName}
+          associatedKey={associatedKey}
           resourceName={target}
+          resourceTarget={resourceTarget}
           isFieldComponent={true}
           selectedRowKeys={selectedRowKeys}
           onSelected={(values) => {
