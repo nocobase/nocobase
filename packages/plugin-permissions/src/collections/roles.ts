@@ -1,4 +1,5 @@
 import { TableOptions } from '@nocobase/database';
+import { ROLE_TYPE_ROOT, ROLE_TYPE_USER, ROLE_TYPE_ANONYMOUS } from '../constants';
 
 export default {
   name: 'roles',
@@ -24,11 +25,11 @@ export default {
       type: 'integer',
       name: 'type',
       dataSource: [
-        { value: -1, label: '系统角色' },
-        { value: 0, label: '匿名角色' },
-        { value: 1, label: '自定义角色' },
+        { value: ROLE_TYPE_ROOT, label: '系统角色' },
+        { value: ROLE_TYPE_ANONYMOUS, label: '匿名角色' },
+        { value: ROLE_TYPE_USER, label: '自定义角色' },
       ],
-      defaultValue: 1
+      defaultValue: ROLE_TYPE_USER
     },
     // TODO(feature): 用户组后续考虑
     // TODO(feature): 用户表应通过插件配置关联，考虑到今后会有多账户系统的情况

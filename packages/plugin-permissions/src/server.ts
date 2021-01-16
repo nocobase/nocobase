@@ -4,6 +4,7 @@ import { Application } from '@nocobase/server';
 import { Operator } from '@nocobase/database';
 import * as collectionsRolesActions from './actions/collections.roles';
 import * as rolesCollectionsActions from './actions/roles.collections';
+import { ROLE_TYPE_ROOT, ROLE_TYPE_USER, ROLE_TYPE_ANONYMOUS } from './constants';
 
 // API
 // const permissions = ctx.app.getPluginInstance('permissions');
@@ -51,20 +52,25 @@ export class Permissions {
       });
     }
 
-    resourcer.use(this.middleware.bind(this));
+    resourcer.use(this.injection.bind(this));
+    resourcer.use(this.interceptor.bind(this));
   }
 
-  async middleware(ctx, next) {
-    const {
-      resourceName,
-      actionName
-    } = ctx.action.params;
-
+  async injection(ctx, next) {
     const permissions = this;
 
     ctx.can = (function(key: string, options = {}) {
       return permissions.can(key, { ...options, context: this });
     }).bind(ctx);
+
+    return next();
+  }
+
+  async interceptor(ctx, next) {
+    const {
+      resourceName,
+      actionName
+    } = ctx.action.params;
 
     const result = await this.can(`${resourceName}:${actionName}`, { context: ctx });
     if (result === false) {
@@ -110,7 +116,7 @@ export class Permissions {
       currentUser: this.getCurrentUser(context)
     });
 
-    if (roles.some(role => role.type === -1)) {
+    if (roles.some(role => role.type === ROLE_TYPE_ROOT)) {
       // 如果是系统管理员，则不进行其他验证或过滤
       return true;
     }
@@ -198,18 +204,18 @@ export class Permissions {
     let userRoles = [];
     // 获取登入用户的角色及权限
     if (currentUser) {
-      const adminRoles = await currentUser.getRoles({
+      const rootRoles = await currentUser.getRoles({
         where: {
-          type: -1
+          type: ROLE_TYPE_ROOT
         }
       });
-      if (adminRoles.length) {
-        return adminRoles;
+      if (rootRoles.length) {
+        return rootRoles;
       }
   
       userRoles = await currentUser.getRoles({
         where: {
-          type: 1
+          type: ROLE_TYPE_USER
         },
         include: [
           permissionInclusion
@@ -220,7 +226,7 @@ export class Permissions {
     // 获取匿名用户的角色及权限
     const anonymousRoles = await Role.findAll({
       where: {
-        type: 0
+        type: ROLE_TYPE_ANONYMOUS
       },
       include: [
         permissionInclusion
