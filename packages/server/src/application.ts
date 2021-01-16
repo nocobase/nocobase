@@ -50,8 +50,6 @@ export class Application extends Koa {
     for (const plugin of allPlugins) {
       plugin.instance = await this.loadPlugin(plugin);
     }
-
-    this.emit('pluginsLoaded', Array.from(allPlugins).map(({ instance }) => instance).filter(Boolean));
   }
 
   protected async loadPlugin({ entry, options = {} }: { entry: string | Function, options: any }) {

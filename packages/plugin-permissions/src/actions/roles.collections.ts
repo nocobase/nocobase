@@ -129,18 +129,30 @@ export async function update(ctx: actions.Context, next: actions.Next) {
     }
   };
 
-  const FieldModel = ctx.db.getModel('fields');
-  const existedFields = await permission.getFields({ transaction });
-  const toRemoveFieldIds = existedFields.filter(field => (
-    !values.fields.find(({ field_id }) => field_id === field[FieldModel.primaryKeyAttribute])
-    && !(field.developerMode ^ ctx.state.developerMode)
-  ));
-  if (toRemoveFieldIds.length) {
-    await permission.removeFields(toRemoveFieldIds, { transaction });
+  const fieldsValue = values.fields.filter(field => field.actions && field.actions.length);
+  const existedFields = await permission.getFields_permissions({
+    include: [
+      { association: 'field' }
+    ],
+    transaction
+  });
+  const toRemoveFields = [];
+  const fieldsLeft = [];
+  existedFields.forEach(field => {
+    if (
+      !fieldsValue.find(({ field_id }) => field_id === field.field_id)
+      && !(field.field.developerMode ^ ctx.state.developerMode)
+    ) {
+      toRemoveFields.push(field.field);
+    } else {
+      fieldsLeft.push(field);
+    }
+  });
+  if (toRemoveFields.length) {
+    await permission.removeFields(toRemoveFields, { transaction });
   }
-  for (const fieldItem of values.fields) {
-  const FieldModel = ctx.db.getModel('fields');
-    const field = existedFields.find(item => item[FieldModel.primaryKeyAttribute] === fieldItem.field_id);
+  for (const fieldItem of fieldsValue) {
+    const field = fieldsLeft.find(item => item.field_id === fieldItem.field_id);
     if (field) {
       await field.update(fieldItem, { transaction });
     } else {
