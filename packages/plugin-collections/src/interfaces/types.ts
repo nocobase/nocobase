@@ -410,7 +410,7 @@ export const updatedBy = {
     // filterable: true,
     target: 'users',
     labelField: 'nickname',
-    foreignKey: 'created_by_id',
+    foreignKey: 'updated_by_id',
     appends: true,
     component: {
       type: 'drawerSelect',
