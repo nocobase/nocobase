@@ -110,7 +110,7 @@ export function BooleanField(props: any) {
       // console.log(props);
     }}/>
   }
-  console.log(props);
+  // console.log(props);
   return (
     <>{value ? <CheckOutlined style={{color: '#52c41a'}}/> : <CloseOutlined style={{color: '#f5222d'}}/>}</>
   );

@@ -16,7 +16,7 @@ import { QuestionCircleOutlined } from '@ant-design/icons';
 import scopes from './scopes';
 
 export function FilterForm(props: any) {
-  const actions = createAsyncFormActions();
+  // const actions = createAsyncFormActions();
   const { setVisible, onTrigger } = props;
   const { title, fields: properties ={} } = props.schema||{};
   return (
@@ -24,7 +24,7 @@ export function FilterForm(props: any) {
         colon={true}
         layout={'vertical'}
         initialValues={{}}
-        actions={actions}
+        // actions={actions}
         onReset={() => {
           setVisible && setVisible(false);
         }}
