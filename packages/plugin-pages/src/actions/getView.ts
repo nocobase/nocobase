@@ -36,7 +36,7 @@ const transforms = {
         const dataSource = field.get('dataSource').filter(item => item.key !== 'developerMode');
         field.set('dataSource', dataSource);
       }
-      if (field.get('name') === 'filter' && field.get('collection_name') === 'views') {
+      if (field.get('component.type') === 'filter') {
         const { values } = ctx.action.params;
         const options = Field.parseApiJson(ctx.state.developerMode ? {
           filter: {

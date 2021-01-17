@@ -10,11 +10,11 @@ export default extend({
       target: 'actions_scopes',
       title: '数据范围',
       sourceKey: 'name',
-      // actions: {
-      //   list: {
-      //     sort: 'sort',
-      //   },
-      // },
+      actions: {
+        list: {
+          sort: 'id',
+        },
+      },
       component: {
         type: 'drawerSelect',
       },
