@@ -98,7 +98,8 @@ export class Permissions {
 
     ctx.action.mergeParams({
       filter: result.filter,
-      fields: result.fields.map(item => item.get('field').get('name'))
+      // TODO: 在 fields 改进之前，先注释掉
+      // fields: result.fields.map(item => item.get('field').get('name'))
     });
 
     return next();
