@@ -21,7 +21,7 @@ export default {
     },
     {
       interface: 'select',
-      comment: '角色类型',
+      title: '角色类型',
       type: 'integer',
       name: 'type',
       dataSource: [

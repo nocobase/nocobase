@@ -138,6 +138,12 @@ export default class AccessController {
     if (roles.some(role => role.type === ROLE_TYPE_ROOT)) {
       return true;
     }
+    // 只处理 actions 表里的权限，其余跳过
+    const getActionNames = await this.getActionNames();
+    if (!getActionNames.includes(this.actionName)) {
+      console.log(`skip ${this.resourceName}:${this.actionName}`);
+      return true;
+    }
     const permissions = AccessController.getPermissions(roles);
     const actionPermissions = AccessController.getActionPermissions(permissions);
 
@@ -260,6 +266,17 @@ export default class AccessController {
     return [...anonymousRoles, ...userRoles];
   }
 
+  async getActionNames() {
+    const { context, resourceName = null } = this;
+    const Action = context.db.getModel('actions');
+    const actions = await Action.findAll({
+      where: {
+        collection_name: { [Op.or]: [resourceName, null] }
+      }
+    });
+    return actions.map(action => action.name);
+  }
+
   async getRootPermissions(): Promise<CollectionPermissions> {
     const { context, resourceName = null } = this;
     const Action = context.db.getModel('actions');
@@ -285,7 +302,7 @@ export default class AccessController {
     });
 
     const actionsNames = actions.map(action => ({
-      name: `${resourceName}:${actions.name}`
+      name: `${resourceName}:${action.name}`
     }));
 
     return {
