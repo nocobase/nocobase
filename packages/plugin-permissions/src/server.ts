@@ -34,6 +34,35 @@ export class Permissions {
       resourcer.registerActionHandler(`roles.collections:${actionName}`, rolesCollectionsActions[actionName]);
     });
 
+    const defaultScopes = [
+      {
+        title: '全部数据',
+        filter: {},
+      },
+      {
+        title: '用户自己的数据',
+        filter: {
+          "created_by_id.$currentUser": true,
+        },
+      },
+    ];
+
+    const Scope = database.getModel('actions_scopes');
+
+    database.getModel('collections').addHook('afterCreate', async (model, options) => {
+      // TODO(bug): createScope 存不了 filter 参数
+      // for (const scope of defaultScopes) {
+      //    const s = await model.createScope(scope, options);
+      //    console.log(s.toJSON());
+      // }
+      try {
+        await Scope.bulkCreate(defaultScopes.map(scope => ({...scope, collection_name: model.get('name')})));
+      } catch (error) {
+        console.error(error);
+        throw error;
+      }
+    });
+
     // 针对“自己创建的” scope 添加特殊的操作符以生成查询条件
     if (!Operator.has('$currentUser')) {
       Operator.register('$currentUser', (value, { ctx }) => {
