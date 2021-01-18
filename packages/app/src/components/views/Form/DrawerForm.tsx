@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useImperativeHandle, forwardRef, useRef } from 'react';
+import React, { useState, useEffect, useImperativeHandle, forwardRef, useRef, createRef } from 'react';
 import { Button, Drawer, Modal } from 'antd';
 import { Tooltip, Input } from 'antd';
 import {
@@ -13,6 +13,8 @@ import {
   FormValidator,
   setValidationLanguage,
   FormEffectHooks,
+  FormSpy,
+  LifeCycleTypes,
 } from '@formily/antd';
 import { merge } from '@formily/shared';
 import { QuestionCircleOutlined } from '@ant-design/icons';
@@ -25,8 +27,6 @@ import get from 'lodash/get';
 import cleanDeep from 'clean-deep';
 import scopes from './scopes';
 
-const actions = createFormActions();
-
 export const DrawerForm = forwardRef((props: any, ref) => {
   console.log(props);
   const {
@@ -38,6 +38,9 @@ export const DrawerForm = forwardRef((props: any, ref) => {
     associatedKey,
     onFinish,
   } = props;
+  const [state, setState] = useState<any>({});
+  const [form, setForm] = useState<any>({});
+  const [changed, setChanged] = useState(false);
   console.log(associatedKey);
   const { title, actionDefaultParams = {}, fields: properties ={} } = props.schema||{};
   const [resourceKey, setResourceKey] = useState(props.resourceKey);
@@ -57,8 +60,7 @@ export const DrawerForm = forwardRef((props: any, ref) => {
     setVisible,
     getData: run,
   }));
-  
-  console.log({onFinish});
+
   return (
     <Drawer
       {...props}
@@ -67,31 +69,19 @@ export const DrawerForm = forwardRef((props: any, ref) => {
       width={'40%'}
       className={'noco-drawer'}
       onClose={() => {
-        actions.getFormState(state => {
-          const values = cleanDeep(state.values);
-          const others = Object.keys(data).length ? cleanDeep({...data, associatedKey, resourceKey}) : cleanDeep(state.initialValues);
-          if (isEqual(values, others)) {
-            setVisible(false);
-            return;
-          }
-          for (const key in values) {
-            if (Object.prototype.hasOwnProperty.call(values, key)) {
-              const value = values[key];
-              const other = others[key];
-              if (!isEqual(value, other)) {
-                // console.log(value, other, values, others, state.initialValues);
-                Modal.confirm({
-                  title: '表单内容发生变化，确定不保存吗？',
-                  onOk() {
-                    setVisible(false);
-                  }
-                });
-                return;
-              }
+        if (changed) {
+          Modal.confirm({
+            title: '表单内容发生变化，确定不保存吗？',
+            onOk() {
+              setChanged(false);
+              setVisible(false);
+              
             }
-          }
+          });
+        } else {
+          setChanged(false);
           setVisible(false);
-        });
+        }
       }}
       title={title}
       footer={(
@@ -102,27 +92,11 @@ export const DrawerForm = forwardRef((props: any, ref) => {
         >
         <Button onClick={() => {
           setVisible(false);
+          setChanged(false);
         }}>取消</Button>
         <span style={{display: 'inline-block', width: 8}}> </span>
-        <Button type={'primary'} onClick={async () => {
-          const { values = {} } = await actions.submit();
-          console.log(values);
-          if (resourceKey) {
-            await api.resource(name).update({
-              resourceKey,
-              associatedKey,
-              values,
-            });
-          } else {
-            await api.resource(name).create({
-              associatedKey,
-              values,
-            });
-          }
-          setVisible(false);
-          // @ts-ignore
-          window.routesReload && window.routesReload();
-          onFinish && onFinish(values);
+        <Button loading={state.submitting} type={'primary'} onClick={async () => {
+          await form.submit();
         }}>提交</Button>
         </div>
       )}
@@ -133,14 +107,67 @@ export const DrawerForm = forwardRef((props: any, ref) => {
           layout={'vertical'}
           // 暂时先这么处理，如果有 associatedKey 注入表单里
           initialValues={{associatedKey, resourceKey, ...data}}
-          actions={actions}
+          // actions={actions}
           schema={{
             type: 'object',
             properties,
           }}
           autoComplete={'off'}
           expressionScope={scopes}
+          onChange={(values) => {
+            setChanged(true);
+          }}
+          onSubmit={async (values) => {
+            console.log(values);
+            console.log('submitsubmitsubmit', values);
+            if (resourceKey) {
+              await api.resource(name).update({
+                resourceKey,
+                associatedKey,
+                values,
+              });
+            } else {
+              await api.resource(name).create({
+                associatedKey,
+                values,
+              });
+            }
+            setVisible(false);
+            setChanged(false);
+            // @ts-ignore
+            window.routesReload && window.routesReload();
+            onFinish && onFinish(values);
+          }}
         >
+          <FormSpy
+            selector={[
+              LifeCycleTypes.ON_FORM_MOUNT,
+              LifeCycleTypes.ON_FORM_SUBMIT_START,
+              LifeCycleTypes.ON_FORM_SUBMIT_END
+            ]}
+            reducer={(state, action) => {
+              switch (action.type) {
+                case LifeCycleTypes.ON_FORM_SUBMIT_START:
+                  return {
+                    ...state,
+                    submitting: true
+                  }
+                case LifeCycleTypes.ON_FORM_SUBMIT_END:
+                  return {
+                    ...state,
+                    submitting: false
+                  }
+                default:
+                  return state
+              }
+            }}
+          >
+            {({ state, form }) => {
+              setState(state)
+              setForm(form);
+              return <div/>
+            }}
+          </FormSpy>
         </SchemaForm>
       )}
     </Drawer>

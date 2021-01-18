@@ -1,12 +1,13 @@
 import { connect } from '@formily/react-schema-renderer'
 import React, { useEffect, useState } from 'react';
-import { Input as AntdInput, Table, Checkbox, Select } from 'antd'
+import { Input as AntdInput, Table, Checkbox, Select, Tag } from 'antd'
 import { acceptEnum, mapStyledProps, mapTextComponent } from '../shared'
 import api from '@/api-client';
 import { useRequest } from 'umi';
 import { useDynamicList } from 'ahooks';
 import findIndex from 'lodash/findIndex';
 import get from 'lodash/get';
+import set from 'lodash/set';
 import { Scope } from './Scope';
 
 export const Permissions = {} as {Actions: any, Fields: any, Tabs: any};
@@ -30,7 +31,10 @@ Permissions.Actions = connect({
     },
     {
       title: '类型',
-      dataIndex: ['onlyNew'],
+      dataIndex: ['type'],
+      render: (type) => {
+        return type === 'create' ? <Tag color={'green'}>对新数据操作</Tag> : <Tag color={'blue'}>对已有数据操作</Tag>;
+      }
     },
     {
       title: '允许操作',
@@ -59,9 +63,40 @@ Permissions.Actions = connect({
     {
       title: '可操作的数据范围',
       dataIndex: ['scope'],
-      render: (value, record) => <Scope 
-        target={'actions_scopes'} multiple={false} labelField={'title'} valueField={'id'}
-      />
+      render: (scope, record) => {
+        if (['filter', 'create'].indexOf(record.type) !== -1) {
+          return null;
+        }
+        const values = [...value||[]];
+        const index = findIndex(values, (item: any) => item && item.name === `${resourceKey}:${record.name}`);
+        return (
+          <Scope
+            resourceTarget={'actions_scopes'}
+            associatedName={'collections'}
+            associatedKey={resourceKey}
+            target={'scopes'} 
+            multiple={false}
+            labelField={'title'}
+            valueField={'id'}
+            value={get(values, [index, 'scope'])}
+            onChange={(data) => {
+              const values = [...value||[]];
+              const index = findIndex(values, (item: any) => item && item.name === `${resourceKey}:${record.name}`);
+              if (index === -1) {
+                values.push({
+                  name: `${resourceKey}:${record.name}`,
+                  scope: data,
+                });
+              } else {
+                set(values, [index, 'scope'], data);
+              }
+              console.log('valvalvalvalval', {values})
+              onChange(values);
+              console.log('valvalvalvalval', data);
+            }}
+          />
+        )
+      }
     },
   ]} loading={loading}/>
 })

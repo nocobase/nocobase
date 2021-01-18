@@ -6,6 +6,8 @@ import {
   SchemaForm,
   SchemaMarkupField as Field,
   createFormActions,
+  FormSpy,
+  LifeCycleTypes,
   createAsyncFormActions,
   Submit,
   Reset,
@@ -32,6 +34,9 @@ export default forwardRef((props: any, ref) => {
   const { data: schema = {}, loading } = useRequest(() => api.resource(target).getView({
     resourceKey: 'form'
   }));
+  const [state, setState] = useState<any>({});
+  const [form, setForm] = useState<any>({});
+  const [changed, setChanged] = useState(false);
   const [visible, setVisible] = useState(false);
   const [data, setData] = useState({});
   const [title, setTitle] = useState('创建子字段');
@@ -55,31 +60,18 @@ export default forwardRef((props: any, ref) => {
       className={'noco-drawer'}
       width={'40%'}
       onClose={() => {
-        actions.getFormState(state => {
-          const values = cleanDeep(state.values);
-          const others = Object.keys(data).length ? cleanDeep({...data}) : cleanDeep(state.initialValues);
-          if (isEqual(values, others)) {
-            setVisible(false);
-            return;
-          }
-          for (const key in values) {
-            if (Object.prototype.hasOwnProperty.call(values, key)) {
-              const value = values[key];
-              const other = others[key];
-              if (!isEqual(value, other)) {
-                // console.log(value, other, values, others, state.initialValues);
-                Modal.confirm({
-                  title: '表单内容发生变化，确定不保存吗？',
-                  onOk() {
-                    setVisible(false);
-                  }
-                });
-                return;
-              }
+        if (changed) {
+          Modal.confirm({
+            title: '表单内容发生变化，确定不保存吗？',
+            onOk() {
+              setChanged(false);
+              setVisible(false);
             }
-          }
+          });
+        } else {
+          setChanged(false);
           setVisible(false);
-        });
+        }
       }}
       title={title}
       footer={(
@@ -89,11 +81,15 @@ export default forwardRef((props: any, ref) => {
           }}
         >
           <Space>
-            <Button onClick={() => setVisible(false)}>取消</Button>
-            <Button type={'primary'} onClick={async () => {
-              const { values = {} } = await actions.submit();
+            <Button onClick={() => {
               setVisible(false);
-              onFinish && onFinish(values, index);
+              setChanged(false);
+            }}>取消</Button>
+            <Button type={'primary'} onClick={async () => {
+              await form.submit();
+              // const { values = {} } = await actions.submit();
+              // setVisible(false);
+              // onFinish && onFinish(values, index);
             }}>提交</Button>
           </Space>
         </div>
@@ -103,13 +99,50 @@ export default forwardRef((props: any, ref) => {
         colon={true}
         layout={'vertical'}
         initialValues={data}
-        actions={actions}
+        onChange={(values) => {
+          setChanged(true);
+        }}
+        onSubmit={async (values) => {
+          setVisible(false);
+          setChanged(false);
+          onFinish && onFinish(values, index);
+        }}
+        // actions={actions}
         schema={{
           type: 'object',
           properties: fields,
         }}
         expressionScope={scopes}
       >
+        <FormSpy
+          selector={[
+            LifeCycleTypes.ON_FORM_MOUNT,
+            LifeCycleTypes.ON_FORM_SUBMIT_START,
+            LifeCycleTypes.ON_FORM_SUBMIT_END
+          ]}
+          reducer={(state, action) => {
+            switch (action.type) {
+              case LifeCycleTypes.ON_FORM_SUBMIT_START:
+                return {
+                  ...state,
+                  submitting: true
+                }
+              case LifeCycleTypes.ON_FORM_SUBMIT_END:
+                return {
+                  ...state,
+                  submitting: false
+                }
+              default:
+                return state
+            }
+          }}
+        >
+          {({ state, form }) => {
+            setState(state)
+            setForm(form);
+            return <div/>
+          }}
+        </FormSpy>
       </SchemaForm>
     </Drawer>
   );

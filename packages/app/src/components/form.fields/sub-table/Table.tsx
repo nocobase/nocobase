@@ -101,7 +101,8 @@ export default function Table(props: SimpleTableProps) {
           },
           mutate: (values) => {
             onChange(values.list);
-            console.log(values);
+            setDataSource(values.list);
+            console.log('mutate', values);
           },
           rowKey,
           onMoved: async ({resourceKey, target}) => {

@@ -17,7 +17,8 @@ export function Create(props) {
     params['associatedName'] = associatedName;
     params['associatedKey'] = associatedKey;
   } else {
-    params['resourceName'] = collection_name;
+    params['resourceName'] = props.resourceName;
+    params['resourceTarget'] = collection_name;
     params['resourceKey'] = item.itemId;
   }
 
