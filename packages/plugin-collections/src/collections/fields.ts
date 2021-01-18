@@ -311,7 +311,7 @@ export default {
       interface: 'string',
       type: 'virtual',
       name: 'labelField',
-      title: '要关联的字段',
+      title: '要显示的字段',
       required: true,
       component: {
         type: 'remoteSelect',

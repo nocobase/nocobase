@@ -3,9 +3,9 @@ const args = process.argv;
 
 // @ts-ignore
 global.sync = {
-  force: true,
+  force: false,
   alter: {
-    drop: true,
+    drop: false,
   },
 };
 
