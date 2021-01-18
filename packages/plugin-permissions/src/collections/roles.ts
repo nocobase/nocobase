@@ -137,7 +137,7 @@ export default {
     {
       type: 'association',
       name: 'pages',
-      title: '页面权限',
+      title: '系统菜单权限',
       association: 'pages',
       viewName: 'permissionTable',
     },

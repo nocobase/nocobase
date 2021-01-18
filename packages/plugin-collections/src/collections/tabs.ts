@@ -162,6 +162,7 @@ export default {
       name: 'viewName',
       title: '视图',
       labelField: 'title',
+      required: true,
       // valueField: 'name',
       component: {
         type: 'remoteSelect',
