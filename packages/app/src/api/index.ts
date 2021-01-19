@@ -7,7 +7,7 @@ api.resourcer.use(async (ctx: actions.Context, next) => {
   // ctx.state.developerMode = {[Op.not]: null};
   ctx.state.developerMode = false;
   if (table && table.hasField('developerMode') && ctx.state.developerMode === false) {
-    ctx.action.mergeParams({ filter: { developerMode: ctx.state.developerMode } }, { filter: 'and' });
+    ctx.action.mergeParams({ filter: { "developerMode.$isFalsy": true } }, { filter: 'and' });
   }
   if (table && ['get', 'list'].includes(actionName)) {
     const except = [];
