@@ -3,8 +3,8 @@ import { TableOptions } from '@nocobase/database';
 export default {
   name: 'users',
   title: '用户',
-  developerMode: true,
-  internal: true,
+  // developerMode: true,
+  // internal: true,
   fields: [
     {
       interface: 'string',

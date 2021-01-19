@@ -54,7 +54,7 @@ export default class AccessController {
         }
   
         // 以 or 关心合并两个 scope 中的 filter
-        existedScope.set('filter', { [Op.or]: [existedScope.get('filter'), newScope.get('filter')] });
+        existedScope.set('filter', { 'or': [existedScope.get('filter'), newScope.get('filter')] });
       });
     });
 
@@ -93,7 +93,7 @@ export default class AccessController {
   static getTabPemissions(permissions) {
     const tabs = new Set();
     permissions.forEach(permission => {
-      permission.get('tabs_permissions').forEach(tab => tabs.add(tab.id));
+      permission.get('tabs_permissions').forEach(tabPermission => tabs.add(tabPermission.tab_id));
     });
 
     return Array.from(tabs);
@@ -125,6 +125,8 @@ export default class AccessController {
     }
 
     const permissions = AccessController.getPermissions(roles);
+
+    console.log({permissions})
     
     return {
       actions: AccessController.getActionPermissions(permissions),

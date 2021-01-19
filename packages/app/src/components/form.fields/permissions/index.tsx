@@ -85,10 +85,10 @@ Permissions.Actions = connect({
               if (index === -1) {
                 values.push({
                   name: `${resourceKey}:${record.name}`,
-                  scope: data,
+                  scope_id: data,
                 });
               } else {
-                set(values, [index, 'scope'], data);
+                set(values, [index, 'scope_id'], data);
               }
               console.log('valvalvalvalval', {values})
               onChange(values);
