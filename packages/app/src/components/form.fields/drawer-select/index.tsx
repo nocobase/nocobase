@@ -28,7 +28,7 @@ function transform({value, multiple, labelField, valueField = 'id'}) {
 }
 
 function DrawerSelectComponent(props) {
-  const { target, multiple, associatedName, labelField, valueField = 'id', value, onChange } = props;
+  const { disabled, target, multiple, associatedName, labelField, valueField = 'id', value, onChange } = props;
   const [selectedKeys, selectedValue] = transform({value, multiple, labelField, valueField });
   const [visible, setVisible] = useState(false);
   const [selectedRowKeys, setSelectedRowKeys] = useState(multiple ? selectedKeys : [selectedKeys]);
@@ -38,6 +38,7 @@ function DrawerSelectComponent(props) {
   return (
     <>
       <Select
+        disabled={disabled}
         open={false}
         mode={multiple ? 'tags' : undefined}
         labelInValue
@@ -61,7 +62,9 @@ function DrawerSelectComponent(props) {
           }
         }}
         onClick={() => {
-          setVisible(true);
+          if (!disabled) {
+            setVisible(true);
+          }
         }}
       ></Select>
       <Drawer 
