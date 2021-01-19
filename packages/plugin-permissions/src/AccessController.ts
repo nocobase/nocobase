@@ -4,6 +4,80 @@ import { ROLE_TYPE_ANONYMOUS, ROLE_TYPE_ROOT, ROLE_TYPE_USER } from './constants
 
 
 
+function getPermissions(roles) {
+  return roles.reduce((permissions, role) => permissions.concat(role.get('permissions')), []);
+}
+
+function getActionPermissions(permissions) {
+  const actionsMap = new Map<string, any>();
+
+  permissions.forEach(permission => {
+    permission.get('actions').forEach(action => {
+      // 如果没有同名 action
+      if (!actionsMap.has(action.name)) {
+        actionsMap.set(action.name, action);
+        return;
+      }
+
+      const existedScope = actionsMap.get(action.name).get('scope');
+      // 如果之前的同名 action 没有 scope 或 filter 为空
+      if (!existedScope || !existedScope.get('filter') || !Object.keys(existedScope.get('filter')).length) {
+        actionsMap.set(action.name, action);
+        return;
+      }
+
+      const newScope = action.get('scope');
+      // 如果新 action 没有 scope 或 filter 为空
+      if (!newScope || !newScope.get('filter') || !Object.keys(newScope.get('filter')).length) {
+        return;
+      }
+
+      // 以 or 关心合并两个 scope 中的 filter
+      existedScope.set('filter', { 'or': [existedScope.get('filter'), newScope.get('filter')] });
+    });
+  });
+
+  return Array.from(actionsMap.values());
+}
+
+function getFieldPermissions(permissions) {
+  const fieldsMap = new Map<string, any>();
+  permissions.forEach(permission => {
+    permission.get('fields_permissions').forEach(field => {
+      if (!fieldsMap.has(field.field_id)) {
+        fieldsMap.set(field.field_id, field);
+        return;
+      }
+
+      const existedActions = fieldsMap.get(field.field_id).get('actions');
+      if (!existedActions || !existedActions.length) {
+        fieldsMap.set(field.field_id, field);
+        return;
+      }
+
+      const newActions = field.get('actions');
+      if (!newActions || !newActions.length) {
+        return;
+      }
+
+      const actions = new Set(existedActions);
+      newActions.forEach(item => actions.add(item));
+      fieldsMap.get(field.field_id).set('actions', Array.from(actions));
+    });
+  });
+
+  return Array.from(fieldsMap.values());
+}
+
+function getTabPemissions(permissions) {
+  const tabs = new Set();
+  permissions.forEach(permission => {
+    permission.get('tabs_permissions').forEach(tabPermission => tabs.add(tabPermission.tab_id));
+  });
+
+  return Array.from(tabs);
+}
+
 export type CollectionPermissions = {
   actions: any[];
   fields: any[];
@@ -25,95 +99,22 @@ export type PermissionParams = true | null | {
 // ctx.can('collection').act('get').one(resourceKey)
 
 export default class AccessController {
-  static getPermissions(roles) {
-    return roles.reduce((permissions, role) => permissions.concat(role.get('permissions')), []);
-  }
-
-  static getActionPermissions(permissions) {
-    const actionsMap = new Map<string, any>();
-
-    permissions.forEach(permission => {
-      permission.get('actions').forEach(action => {
-        // 如果没有同名 action
-        if (!actionsMap.has(action.name)) {
-          actionsMap.set(action.name, action);
-          return;
-        }
-
-        const existedScope = actionsMap.get(action.name).get('scope');
-        // 如果之前的同名 action 没有 scope 或 filter 为空
-        if (!existedScope || !existedScope.get('filter') || !Object.keys(existedScope.get('filter')).length) {
-          actionsMap.set(action.name, action);
-          return;
-        }
-  
-        const newScope = action.get('scope');
-        // 如果新 action 没有 scope 或 filter 为空
-        if (!newScope || !newScope.get('filter') || !Object.keys(newScope.get('filter')).length) {
-          return;
-        }
-  
-        // 以 or 关心合并两个 scope 中的 filter
-        existedScope.set('filter', { 'or': [existedScope.get('filter'), newScope.get('filter')] });
-      });
-    });
-
-    return Array.from(actionsMap.values());
-  }
-  
-  static getFieldPermissions(permissions) {
-    const fieldsMap = new Map<string, any>();
-    permissions.forEach(permission => {
-      permission.get('fields_permissions').forEach(field => {
-        if (!fieldsMap.has(field.field.name)) {
-          fieldsMap.set(field.field.name, field);
-          return;
-        }
-  
-        const existedActions = fieldsMap.get(field.field.name).get('actions');
-        if (!existedActions || !existedActions.length) {
-          fieldsMap.set(field.field.name, field);
-          return;
-        }
-  
-        const newActions = field.get('actions');
-        if (!newActions || !newActions.length) {
-          return;
-        }
-  
-        const actions = new Set(existedActions);
-        newActions.forEach(item => actions.add(item));
-        fieldsMap.get(field.field.name).set('actions', Array.from(actions));
-      });
-    });
-
-    return Array.from(fieldsMap.values());
-  }
-
-  static getTabPemissions(permissions) {
-    const tabs = new Set();
-    permissions.forEach(permission => {
-      permission.get('tabs_permissions').forEach(tabPermission => tabs.add(tabPermission.tab_id));
-    });
-
-    return Array.from(tabs);
-  }
-
   context;
 
-  resourceName: string;
-  actionName: string;
+  resourceName: string | null = null;
+  actionName: string | null = null;
 
   constructor(ctx) {
     this.context = ctx;
   }
 
-  can = (resourceName) => {
+  can = (resourceName: string | null) => {
     this.resourceName = resourceName;
+    this.actionName = null;
     return this;
   };
 
-  act(name) {
+  act(name: string | null) {
     this.actionName = name;
     return this;
   }
@@ -124,14 +125,12 @@ export default class AccessController {
       return this.getRootPermissions();
     }
 
-    const permissions = AccessController.getPermissions(roles);
-
-    console.log({permissions})
+    const permissions = getPermissions(roles);
     
     return {
-      actions: AccessController.getActionPermissions(permissions),
-      fields: AccessController.getFieldPermissions(permissions),
-      tabs: AccessController.getTabPemissions(permissions)
+      actions: getActionPermissions(permissions),
+      fields: getFieldPermissions(permissions),
+      tabs: getTabPemissions(permissions)
     };
   }
 
@@ -146,8 +145,8 @@ export default class AccessController {
       console.log(`skip ${this.resourceName}:${this.actionName}`);
       return true;
     }
-    const permissions = AccessController.getPermissions(roles);
-    const actionPermissions = AccessController.getActionPermissions(permissions);
+    const permissions = getPermissions(roles);
+    const actionPermissions = getActionPermissions(permissions);
 
     if (!actionPermissions.length) {
       // 如果找不到可用的 action 记录
@@ -159,7 +158,7 @@ export default class AccessController {
       .filter(item => Boolean(item.scope) && Object.keys(item.scope.filter).length)
       .map(item => item.scope.filter);
 
-    const fields = AccessController.getFieldPermissions(permissions);
+    const fields = getFieldPermissions(permissions);
 
     return {
       filter: filters.length
@@ -181,7 +180,7 @@ export default class AccessController {
     const Collection = this.context.db.getModel(this.resourceName);
     const existed = await Collection.count({
       where: {
-        ...filter,
+        ...Collection.parseApiJson({ filter }).where,
         [Collection.primaryKeyAttribute]: resourceKey
       }
     });
@@ -192,7 +191,7 @@ export default class AccessController {
   async getRolesWithPermissions() {
     const { context, resourceName, actionName = null } = this;
     if (!resourceName) {
-      throw new Error('resource name must be set first by can(resourceName)');
+      throw new Error('resource name must be set first by `can(resourceName)`');
     }
     const Role = context.db.getModel('roles');
     const permissionInclusion = {
