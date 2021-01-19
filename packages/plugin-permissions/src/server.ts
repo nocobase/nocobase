@@ -83,11 +83,21 @@ export class Permissions {
 
   middleware = async (ctx, next) => {
     const {
+      associatedName,
+      resourceField,
       resourceName,
       actionName
     } = ctx.action.params;
 
-    const result = await ctx.can(resourceName).act(actionName).any();
+    let result = null;
+
+    // 关系数据的权限
+    if (associatedName && resourceField) {
+      result = await ctx.can(resourceField.options.target).act(actionName).any();
+    } else {
+      result = await ctx.can(resourceName).act(actionName).any();
+    }
+
     if (!result) {
       return this.reject(ctx);
     }
