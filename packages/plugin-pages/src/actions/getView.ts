@@ -9,6 +9,9 @@ const transforms = {
       if (!field.get('component.showInTable')) {
         continue;
       }
+      if (!context.listFields.includes(field.id)) {
+        continue;
+      }
       arr.push({
         ...field.get(),
         sorter: field.get('sortable'),
@@ -25,12 +28,22 @@ const transforms = {
       if (!field.get('component.showInForm')) {
         continue;
       }
+      if (!ctx.listFields.includes(field.id)) {
+        continue;
+      }
       const interfaceType = field.get('interface');
       const type = field.get('component.type') || 'string';
       const prop: any = {
         type,
         title: field.title||field.name,
         ...(field.component||{}),
+      }
+      if (ctx.formMode === 'update') {
+        if (!ctx.updateFields.includes(field.id)) {
+          set(prop, 'x-component-props.disabled', true);
+        }
+      } else if (!ctx.createFields.includes(field.id)) {
+        set(prop, 'x-component-props.disabled', true);
       }
       if (field.get('name') === 'interface' && ctx.state.developerMode === false) {
         const dataSource = field.get('dataSource').filter(item => item.key !== 'developerMode');
@@ -144,6 +157,9 @@ const transforms = {
       if (!get(field.component, 'showInDetail')) {
         continue;
       }
+      if (!context.listFields.includes(field.id)) {
+        continue;
+      }
       const props = {};
       if (field.get('interface') === 'subTable') {
         const children = await field.getChildren({
@@ -163,7 +179,7 @@ const transforms = {
       filter: {
         type: 'filter',
         'x-component-props': {
-          fields: fields.filter(field => field.get('filterable')),
+          fields: fields.filter(field => ctx.listFields.includes(field.id) && field.get('filterable')),
         },
       },
     }
@@ -184,7 +200,33 @@ export default async (ctx, next) => {
     // },
   }));
   let throughName;
-  const { associatedName, resourceFieldName, associatedKey } = values;
+  const { resourceKey: resourceKey2, associatedName, resourceFieldName, associatedKey } = values;
+  const permissions = await ctx.can(resourceName).permissions();
+  ctx.listFields = [];
+  ctx.createFields = [];
+  ctx.updateFields = [];
+  ctx.allowedActions = [];
+  for (const action of permissions.actions) {
+    ctx.allowedActions.push(action.name);
+  }
+  console.log(ctx.allowedActions);
+  for (const permissionField of permissions.fields) {
+    const pfc = permissionField.actions;
+    if (pfc.includes(`${resourceName}:list`)) {
+      ctx.listFields.push(permissionField.field_id);
+    }
+    if (pfc.includes(`${resourceName}:create`)) {
+      ctx.createFields.push(permissionField.field_id);
+    }
+    if (pfc.includes(`${resourceName}:update`)) {
+      ctx.updateFields.push(permissionField.field_id);
+    }
+  }
+  console.log({
+    listFields: ctx.listFields, 
+    createFields: ctx.createFields, 
+    updateFields: ctx.updateFields,
+  })
   if (associatedName) {
     const table = ctx.db.getTable(associatedName);
     const resourceField = table.getField(resourceFieldName);
@@ -260,6 +302,7 @@ export default async (ctx, next) => {
   // view.setDataValue('viewCollectionName', view.collection_name);
   let title = collection.get('title');
   const mode = get(ctx.action.params, ['values', 'mode'], ctx.action.params.mode);
+  ctx.formMode = mode;
   if (mode === 'update') {
     title = `编辑${title}`;
   } else {
@@ -337,7 +380,7 @@ export default async (ctx, next) => {
         },
         {
           "title": "访问权限",
-          "name": "accessable",
+          "name": "accessible",
           "interface": "boolean",
           "type": "boolean",
           "parent_id": null,
@@ -349,7 +392,7 @@ export default async (ctx, next) => {
             "type": "boolean",
             "showInTable": true,
           },
-          "dataIndex": ["accessable"]
+          "dataIndex": ["accessible"]
         }
       ],
     };
@@ -452,13 +495,22 @@ export default async (ctx, next) => {
       },
     };
   } else {
+    let allowedUpdate = false;
+    if (view.type === 'details' && await ctx.can(resourceName).act('update').one(resourceKey2)) {
+      allowedUpdate = true;
+    }
     ctx.body = {
       ...view.get(),
       title,
       actionDefaultParams,
       original: fields,
       fields: await (transforms[view.type]||transforms.table)(fields, ctx),
-      actions: actions.filter(action => actionNames.includes(action.name)).map(action => ({
+      actions: actions.filter(action => {
+        if (view.type === 'details' && action.name === 'update') {
+          return allowedUpdate;
+        }
+        return actionNames.includes(action.name) && ctx.allowedActions.includes(`${resourceName}:${action.name}`);
+      }).map(action => ({
         ...action.toJSON(),
         ...action.options,
         // viewCollectionName: action.collection_name,

@@ -20,6 +20,7 @@ export default {
     {
       type: 'belongsTo',
       name: 'permission',
+      onDelete: 'CASCADE'
     },
   ],
 } as TableOptions;
