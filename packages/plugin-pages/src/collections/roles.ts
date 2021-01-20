@@ -5,9 +5,13 @@ export default extend({
   fields: [
     {
       interface: 'linkTo',
-      type: 'hasMany',
-      name: 'routes_permissions',
+      type: 'belongsToMany',
+      name: 'pages',
       title: '可访问的页面',
+      through: 'routes_permissions',
+      foreignKey: 'role_id',
+      otherKey: 'routable_id',
+      morphType: 'routable', // 现在没有多态关联的设置，暂时先这么写了
     }
   ],
   tabs: [
@@ -19,4 +23,13 @@ export default extend({
       viewName: 'permissionTable',
     },
   ]
+}, {
+  customMerge(key) {
+    if (['tabs'].includes(key)) {
+      return (x = [], y = []) => {
+        const last = x.pop();
+        return x.concat(y).push(last);
+      };
+    }
+  }
 });

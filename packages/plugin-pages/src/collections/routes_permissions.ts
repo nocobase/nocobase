@@ -7,13 +7,19 @@ export default {
   internal: true,
   fields: [
     {
+      type: 'integer',
+      name: 'id',
+      primaryKey: true,
+      autoIncrement: true,
+    },
+    {
       type: 'string',
-      name: 'type',
+      name: 'routable_type',
       title: '关联的表', // 仅 pages 和 collections
     },
     {
       type: 'integer',
-      name: 'target_id',
+      name: 'routable_id',
       title: '关联的对象'
     },
     {

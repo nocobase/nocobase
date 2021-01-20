@@ -117,11 +117,11 @@ export async function update(ctx: actions.Context, next: actions.Next) {
 
   console.log(ctx.action.params, resourceKey);
   let [route] = await associated.getRoutes({
-    where: { type: tableName, target_id: resourceKey }
+    where: { routable_type: tableName, routable_id: resourceKey }
   });
   if (accessible) {
     if (!route) {
-      route = await associated.createRoute({ type: tableName, target_id: resourceKey });
+      route = await associated.createRoute({ routable_type: tableName, routable_id: resourceKey });
     }
     ctx.body = route;
   } else {
