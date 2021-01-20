@@ -5,9 +5,19 @@ import { Op } from 'sequelize';
 
 export async function list(ctx: actions.Context, next: actions.Next) {
   const database: Database = ctx.db;
-  const { associatedKey } = ctx.action.params;
+  const { associatedKey, associated } = ctx.action.params;
   const Page = database.getModel('pages');
   const Collection = database.getModel('collections');
+  // TODO(optimize): isRoot 的判断需要在内部完成，尽量不要交给调用者
+  const isRoot = ctx.ac.constructor.isRoot(associated);
+  const routesPermissionsMap = new Map();
+  if (!isRoot) {
+    const routesPermissions = await associated.getRoutes();
+
+    routesPermissions.forEach(permission => {
+      routesPermissionsMap.set(`${permission.routable_type}:${permission.routable_id}`, permission);
+    });
+  }
   let pages = await Page.findAll(Page.parseApiJson(ctx.state.developerMode ? {
     filter: {
       'parent_id.$notNull': true,
@@ -29,7 +39,7 @@ export async function list(ctx: actions.Context, next: actions.Next) {
       tableName: 'pages',
       parent_id: `page-${page.parent_id}`,
       associatedKey,
-      accessible: false, // TODO 对接权限
+      accessible: isRoot || routesPermissionsMap.has(`pages:${page.id}`), // TODO 对接权限
     });
     if (page.get('path') === '/collections') {
       const collections = await Collection.findAll(Collection.parseApiJson(ctx.state.developerMode ? {
@@ -52,7 +62,7 @@ export async function list(ctx: actions.Context, next: actions.Next) {
           tableName: 'collections',
           title: collection.get('title'),
           parent_id: `page-${page.id}`,
-          accessible: false, // TODO 对接权限
+          accessible: isRoot || routesPermissionsMap.has(`collections:${collection.id}`), // TODO 对接权限
         });
         const views = await collection.getViews({
           where: {
@@ -72,7 +82,7 @@ export async function list(ctx: actions.Context, next: actions.Next) {
               title: view.title,
               key: `view-${view.id}`,
               parent_id: `collection-${collection.id}`,
-              accessible: false, // TODO 对接权限
+              accessible: isRoot || routesPermissionsMap.has(`views:${view.id}`), // TODO 对接权限
             });
           }
         }
@@ -115,9 +125,10 @@ export async function update(ctx: actions.Context, next: actions.Next) {
     }
   } = ctx.action.params;
 
-  console.log(ctx.action.params, resourceKey);
+  console.log(ctx.action.params, { routable_type: tableName, routable_id: resourceKey });
   let [route] = await associated.getRoutes({
-    where: { routable_type: tableName, routable_id: resourceKey }
+    where: { routable_type: tableName, routable_id: resourceKey },
+    limit: 1
   });
   if (accessible) {
     if (!route) {

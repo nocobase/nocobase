@@ -201,7 +201,7 @@ export default async (ctx, next) => {
   }));
   let throughName;
   const { resourceKey: resourceKey2, associatedName, resourceFieldName, associatedKey } = values;
-  const permissions = await ctx.can(resourceName).permissions();
+  const permissions = await ctx.ac.can(resourceName).permissions();
   ctx.listFields = [];
   ctx.createFields = [];
   ctx.updateFields = [];
@@ -496,7 +496,7 @@ export default async (ctx, next) => {
     };
   } else {
     let allowedUpdate = false;
-    if (view.type === 'details' && await ctx.can(resourceName).act('update').one(resourceKey2)) {
+    if (view.type === 'details' && await ctx.ac.can(resourceName).act('update').one(resourceKey2)) {
       allowedUpdate = true;
     }
     ctx.body = {

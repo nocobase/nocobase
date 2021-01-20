@@ -99,6 +99,10 @@ export type PermissionParams = true | null | {
 // ctx.can('collection').act('get').one(resourceKey)
 
 export default class AccessController {
+  static isRoot(roles): boolean {
+    return (Array.isArray(roles) ? roles : [roles]).some(role => role.type === ROLE_TYPE_ROOT);
+  }
+
   context;
 
   resourceName: string | null = null;
@@ -188,12 +192,61 @@ export default class AccessController {
     return existed ? any : null;
   }
 
+  async isRoot(): Promise<boolean> {
+    const { context } = this;
+    const { currentUser } = context.state;
+    if (!currentUser) {
+      return false;
+    }
+
+    const rootRoles = await currentUser.countRoles({
+      where: {
+        type: ROLE_TYPE_ROOT
+      }
+    });
+    if (!rootRoles.length) {
+      return false;
+    }
+
+    return true;
+  }
+
+  async getRoles() {
+    const { context } = this;
+    let userRoles = [];
+    const { currentUser } = context.state;
+    if (currentUser) {
+      const rootRoles = await currentUser.getRoles({
+        where: {
+          type: ROLE_TYPE_ROOT
+        }
+      });
+      if (rootRoles.length) {
+        return rootRoles;
+      }
+
+      userRoles = await currentUser.getRoles({
+        where: {
+          type: ROLE_TYPE_USER
+        }
+      });
+    }
+
+    const Role = context.db.getModel('roles');
+    const anonymousRoles = await Role.findAll({
+      where: {
+        type: ROLE_TYPE_ANONYMOUS
+      }
+    });
+
+    return [...userRoles, ...anonymousRoles];
+  }
+
   async getRolesWithPermissions() {
     const { context, resourceName, actionName = null } = this;
     if (!resourceName) {
       throw new Error('resource name must be set first by `can(resourceName)`');
     }
-    const Role = context.db.getModel('roles');
     const permissionInclusion = {
       association: 'permissions',
       where: {
@@ -255,6 +308,7 @@ export default class AccessController {
     }
 
     // 获取匿名用户的角色及权限
+    const Role = context.db.getModel('roles');
     const anonymousRoles = await Role.findAll({
       where: {
         type: ROLE_TYPE_ANONYMOUS

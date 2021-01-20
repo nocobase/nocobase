@@ -76,7 +76,7 @@ export class Permissions {
   }
 
   injection = async (ctx, next) => {
-    ctx.can = new AccessController(ctx).can;
+    ctx.ac = new AccessController(ctx);
 
     return next();
   };
@@ -93,9 +93,9 @@ export class Permissions {
 
     // 关系数据的权限
     if (associatedName && resourceField) {
-      result = await ctx.can(resourceField.options.target).act(actionName).any();
+      result = await ctx.ac.can(resourceField.options.target).act(actionName).any();
     } else {
-      result = await ctx.can(resourceName).act(actionName).any();
+      result = await ctx.ac.can(resourceName).act(actionName).any();
     }
 
     if (!result) {
