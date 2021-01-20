@@ -29,7 +29,22 @@ export default {
         { value: ROLE_TYPE_ANONYMOUS, label: '匿名角色' },
         { value: ROLE_TYPE_USER, label: '自定义角色' },
       ],
-      defaultValue: ROLE_TYPE_USER
+      defaultValue: ROLE_TYPE_USER,
+      component: {
+        showInTable: true,
+        showInDetail: true,
+      }
+    },
+    {
+      interface: 'boolean',
+      title: '默认角色',
+      type: 'radio',
+      name: 'default',
+      component: {
+        showInTable: true,
+        showInForm: true,
+        showInDetail: true,
+      }
     },
     // TODO(feature): 用户组后续考虑
     // TODO(feature): 用户表应通过插件配置关联，考虑到今后会有多账户系统的情况
@@ -136,9 +151,9 @@ export default {
     },
     {
       type: 'association',
-      name: 'pages',
+      name: 'routes_permissions',
       title: '系统菜单权限',
-      association: 'pages',
+      association: 'routes_permissions',
       viewName: 'permissionTable',
     },
     {

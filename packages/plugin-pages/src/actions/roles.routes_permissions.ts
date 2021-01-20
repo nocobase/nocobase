@@ -106,6 +106,29 @@ export async function list(ctx: actions.Context, next: actions.Next) {
 }
 
 export async function update(ctx: actions.Context, next: actions.Next) {
-  ctx.body = {};
+  const {
+    associated,
+    resourceKey,
+    values: {
+      tableName,
+      accessible
+    }
+  } = ctx.action.params;
+
+  console.log(ctx.action.params, resourceKey);
+  let [route] = await associated.getRoutes({
+    where: { type: tableName, target_id: resourceKey }
+  });
+  if (accessible) {
+    if (!route) {
+      route = await associated.createRoute({ type: tableName, target_id: resourceKey });
+    }
+    ctx.body = route;
+  } else {
+    if (route) {
+      await route.destroy();
+    }
+  }
+
   await next();
 }

@@ -386,7 +386,7 @@ export default async (ctx, next) => {
           "parent_id": null,
           "required": true,
           "editable": true,
-          "resource": 'roles.pages',
+          "resource": 'roles.routes_permissions',
           "developerMode": false,
           "component": {
             "type": "boolean",
