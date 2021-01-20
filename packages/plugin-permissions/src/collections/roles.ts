@@ -67,12 +67,6 @@ export default {
       targetKey: 'name'
     },
     {
-      interface: 'linkTo',
-      title: '页面',
-      type: 'belongsToMany',
-      name: 'pages',
-    },
-    {
       comment: '权限集（方便访问）',
       type: 'hasMany',
       name: 'permissions'
@@ -147,13 +141,6 @@ export default {
       name: 'collections',
       title: '数据表权限',
       association: 'collections',
-      viewName: 'permissionTable',
-    },
-    {
-      type: 'association',
-      name: 'routes_permissions',
-      title: '系统菜单权限',
-      association: 'routes_permissions',
       viewName: 'permissionTable',
     },
     {

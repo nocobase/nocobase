@@ -5,7 +5,7 @@ import getCollection from './actions/getCollection';
 import getView from './actions/getView';
 import getRoutes from './actions/getRoutes';
 import getPageInfo from './actions/getPageInfo';
-import * as rolesRoutesPermissionsActions from './actions/roles.routes_permissions';
+import * as rolesPagesActions from './actions/roles.pages';
 
 export default async function (options = {}) {
   const database: Database = this.database;
@@ -20,8 +20,8 @@ export default async function (options = {}) {
   resourcer.registerActionHandler('getPageInfo', getPageInfo);
   resourcer.registerActionHandler('pages:getRoutes', getRoutes);
 
-  Object.keys(rolesRoutesPermissionsActions).forEach(actionName => {
-    resourcer.registerActionHandler(`roles.routes_permissions:${actionName}`, rolesRoutesPermissionsActions[actionName]);
+  Object.keys(rolesPagesActions).forEach(actionName => {
+    resourcer.registerActionHandler(`roles.pages:${actionName}`, rolesPagesActions[actionName]);
   });
 /*
   const [Collection, Page, View] = database.getModels(['collections', 'pages', 'views']);

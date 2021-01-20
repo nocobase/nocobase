@@ -9,5 +9,14 @@ export default extend({
       name: 'routes_permissions',
       title: '可访问的页面',
     }
+  ],
+  tabs: [
+    {
+      type: 'association',
+      name: 'pages',
+      title: '系统菜单权限',
+      association: 'pages',
+      viewName: 'permissionTable',
+    },
   ]
 });
