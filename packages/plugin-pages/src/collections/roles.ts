@@ -28,7 +28,9 @@ export default extend({
     if (['tabs'].includes(key)) {
       return (x = [], y = []) => {
         const last = x.pop();
-        return x.concat(y).push(last);
+        const tabs = x.concat(y);
+        tabs.push(last);
+        return tabs;
       };
     }
   }

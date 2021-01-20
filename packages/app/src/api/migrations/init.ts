@@ -1,3 +1,11 @@
+// @ts-ignore
+global.sync = {
+  force: true,
+  alter: {
+    drop: true,
+  },
+};
+
 import api from '../app';
 import Database from '@nocobase/database';
 
@@ -135,6 +143,9 @@ const data = [
   const tables = database.getTables([]);
   for (let table of tables) {
     console.log(table.getName());
+    if (table.getName() === 'roles') {
+      console.log('roles', table.getOptions())
+    }
     await Collection.import(table.getOptions(), { update: true, migrate: false });
   }
   await Page.import(data);
