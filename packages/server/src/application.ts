@@ -8,6 +8,7 @@ export interface ApplicationOptions {
 }
 
 export class Application extends Koa {
+  // static const EVENT_PLUGINS_LOADED = Symbol('pluginsLoaded');
 
   public readonly database: Database;
 
@@ -45,7 +46,8 @@ export class Application extends Koa {
   }
 
   async loadPlugins() {
-    for (const plugin of this.plugins.values()) {
+    const allPlugins = this.plugins.values();
+    for (const plugin of allPlugins) {
       plugin.instance = await this.loadPlugin(plugin);
     }
   }

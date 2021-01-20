@@ -8,6 +8,7 @@ import { actions, middlewares } from '@nocobase/actions';
 import { Application } from '@nocobase/server';
 import middleware from '@nocobase/server/src/middleware';
 import plugin from '../server';
+import seed from './seed';
 
 function getTestKey() {
   const { id } = require.main;
@@ -65,7 +66,7 @@ export async function getApp() {
   });
   try {
     await app.database.sync();
-  }catch(err) {
+  } catch(err) {
     console.error(err);
   }
 
@@ -74,6 +75,9 @@ export async function getApp() {
     // 创建和更新里面仍会再次创建 fields，导致创建相关的数据重复，数据库报错。
     await app.database.getModel('collections').import(table.getOptions(), { update: true, migrate: false });
   }
+
+  await seed(app.database);
+
   app.context.db = app.database;
   app.use(bodyParser());
   app.use(middleware({

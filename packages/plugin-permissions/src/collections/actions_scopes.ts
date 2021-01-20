@@ -33,7 +33,8 @@ export default {
     {
       type: 'belongsTo',
       name: 'collection',
-      targetKey: 'name'
+      targetKey: 'name',
+      onDelete: 'CASCADE'
     }
   ],
 } as TableOptions;

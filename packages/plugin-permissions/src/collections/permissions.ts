@@ -37,7 +37,8 @@ export default {
     {
       comment: '允许的操作集',
       type: 'hasMany',
-      name: 'actions_permissions',
+      name: 'actions',
+      target: 'actions_permissions'
     },
     {
       type: 'belongsToMany',
@@ -59,17 +60,17 @@ export default {
     //   type: 'hasMany',
     //   name: 'views_permissions',
     // },
-    // {
-    //   comment: '允许的 tabs 列表',
-    //   type: 'belongsToMany',
-    //   name: 'tabs',
-    //   through: 'tabs_permissions'
-    // },
-    // {
-    //   comment: '标签页集（方便访问）',
-    //   type: 'hasMany',
-    //   name: 'tabs_permissions',
-    // },
+    {
+      comment: '允许的 tabs 列表',
+      type: 'belongsToMany',
+      name: 'tabs',
+      through: 'tabs_permissions'
+    },
+    {
+      comment: '标签页集（方便访问）',
+      type: 'hasMany',
+      name: 'tabs_permissions',
+    },
   ],
   views: [
     {

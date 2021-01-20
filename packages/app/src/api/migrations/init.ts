@@ -138,13 +138,13 @@ const data = [
     await Collection.import(table.getOptions(), { update: true, migrate: false });
   }
   await Page.import(data);
-  const user = await User.findOne({
+  let user = await User.findOne({
     where: {
       username: "admin",
     },
   });
   if (!user) {
-    await User.create({
+    user = await User.create({
       nickname: "超级管理员",
       password: "admin",
       username: "admin",
@@ -180,11 +180,18 @@ const data = [
   }
   const Role = database.getModel('roles');
   const roles = await Role.bulkCreate([
-    { title: '系统开发组' },
-    { title: '数据管理组' },
-    { title: '普通用户组' },
-    { title: '未登录用户组' },
+    { title: '系统开发组', type: -1 },
+    { title: '匿名用户组', type: 0 },
   ]);
+  await roles[0].updateAssociations({
+    users: user
+  });
+
+  const Action = database.getModel('actions');
+  // 全局
+  await Action.bulkCreate([
+  ]);
+
   await database.getModel('collections').import(require('./collections/example').default);
   await database.getModel('collections').import(require('./collections/authors').default);
   await database.getModel('collections').import(require('./collections/books').default);

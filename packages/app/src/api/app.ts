@@ -28,7 +28,7 @@ const api = Api.create({
       charset: 'utf8mb4',
       collate: 'utf8mb4_unicode_ci',
     },
-    logging: false,
+    logging: process.env.DB_LOG_SQL === 'on' ? console.log : false,
     define: {},
     sync,
   },
