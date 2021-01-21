@@ -63,6 +63,19 @@ export class Permissions {
       }
     });
 
+    database.getModel('users').addHook('afterCreate', async(model, options) => {
+      const { transaction = await database.sequelize.transaction() } = options;
+      const Role = database.getModel('roles');
+      const defaultRole = await Role.findOne({ where: { default: true }, transaction });
+      if (defaultRole) {
+        // @ts-ignore
+        await model.addRole(defaultRole, { transaction });
+      }
+      if (!options.transaction) {
+        await transaction.commit();
+      }
+    });
+
     // 针对“自己创建的” scope 添加特殊的操作符以生成查询条件
     if (!Operator.has('$currentUser')) {
       Operator.register('$currentUser', (value, { ctx }) => {

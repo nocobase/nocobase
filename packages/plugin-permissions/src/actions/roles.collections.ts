@@ -13,47 +13,7 @@ export async function get(ctx: actions.Context, next: actions.Next) {
     associated
   } = ctx.action.params;
 
-  const [permission] = await associated.getPermissions({
-    where: {
-      collection_name: resourceKey
-    },
-    include: [
-      {
-        association: 'actions',
-        // 对 hasMany 关系可以进行拆分查询，避免联表过多标识符超过 PG 的 64 字符限制
-        separate: true,
-        include: [
-          {
-            association: 'scope'
-          }
-        ]
-      },
-      {
-        association: 'fields_permissions',
-        separate: true,
-      },
-      {
-        association: 'tabs_permissions',
-        separate: true,
-      }
-    ],
-    distinct: true,
-    limit: 1
-  });
-  
-  const result = permission
-    ? {
-      actions: permission.actions || [],
-      fields: permission.fields_permissions || [],
-      tabs: (permission.tabs_permissions || []).map(item => item.tab_id),
-    }
-    : {
-      actions: [],
-      fields: [],
-      tabs: []
-    };
-
-  ctx.body = result;
+  ctx.body = await ctx.ac.as(associated).can(resourceKey).permissions();
 
   await next();
 }

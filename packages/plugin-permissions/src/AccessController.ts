@@ -5,7 +5,7 @@ import { ROLE_TYPE_ANONYMOUS, ROLE_TYPE_ROOT, ROLE_TYPE_USER } from './constants
 
 
 function getPermissions(roles) {
-  return roles.reduce((permissions, role) => permissions.concat(role.get('permissions')), []);
+  return roles.reduce((permissions, role) => permissions.concat(role.permissions), []);
 }
 
 function getActionPermissions(permissions) {
@@ -97,14 +97,16 @@ export type PermissionParams = true | null | {
 // ctx.can('collection').act('update').any()
 // ctx.can('collection').act('update').one(resourceKey)
 // ctx.can('collection').act('get').one(resourceKey)
+// ctx.as(roles).can('collection').permissions()
 
-export default class AccessController {
+// TODO(optimize): 需要优化链式调用结构和上下文，以避免顺序或重置等问题
+export default class AccessController<T extends typeof AccessController = typeof AccessController> {
   static isRoot(roles): boolean {
     return (Array.isArray(roles) ? roles : [roles]).some(role => role.type === ROLE_TYPE_ROOT);
   }
 
   context;
-
+  roles;
   resourceName: string | null = null;
   actionName: string | null = null;
 
@@ -112,11 +114,21 @@ export default class AccessController {
     this.context = ctx;
   }
 
-  can = (resourceName: string | null) => {
+  /**
+   * 用于临时创建新的身份进行相关操作
+   * @param roles Array
+   */
+  as(roles) {
+    const instance = new (this.constructor as T)(this.context);
+    instance.roles = Array.isArray(roles) ? roles : [roles];
+    return instance;
+  }
+
+  can(resourceName: string | null) {
     this.resourceName = resourceName;
     this.actionName = null;
     return this;
-  };
+  }
 
   act(name: string | null) {
     this.actionName = name;
@@ -125,7 +137,7 @@ export default class AccessController {
 
   async permissions(): Promise<CollectionPermissions> {
     const roles = await this.getRolesWithPermissions();
-    if (roles.some(role => role.type === ROLE_TYPE_ROOT)) {
+    if ((this.constructor as T).isRoot(roles)) {
       return this.getRootPermissions();
     }
 
@@ -140,7 +152,7 @@ export default class AccessController {
 
   async any(): Promise<PermissionParams> {
     const roles = await this.getRolesWithPermissions();
-    if (roles.some(role => role.type === ROLE_TYPE_ROOT)) {
+    if ((this.constructor as T).isRoot(roles)) {
       return true;
     }
     // 只处理 actions 表里的权限，其余跳过
@@ -212,6 +224,9 @@ export default class AccessController {
   }
 
   async getRoles() {
+    if (this.roles) {
+      return this.roles;
+    }
     const { context } = this;
     let userRoles = [];
     const { currentUser } = context.state;
@@ -247,19 +262,20 @@ export default class AccessController {
     if (!resourceName) {
       throw new Error('resource name must be set first by `can(resourceName)`');
     }
-    const permissionInclusion = {
-      association: 'permissions',
+
+    const permissionOptions = {
       where: {
         collection_name: resourceName
       },
-      required: true,
       include: [
         {
           association: 'actions',
-          where: actionName ? {
-            name: `${resourceName}:${actionName}`
-          } : {},
-          required: true,
+          ...(actionName ? {
+            where: {
+              name: `${resourceName}:${actionName}`
+            },
+            required: true,
+          } : {}),
           // 对 hasMany 关系可以进行拆分查询，避免联表过多标识符超过 PG 的 64 字符限制
           separate: true,
           include: [
@@ -281,8 +297,24 @@ export default class AccessController {
           association: 'tabs_permissions',
           separate: true,
         }
-      ],
+      ]
     };
+    const permissionInclusion = {
+      ...permissionOptions,
+      association: 'permissions',
+      required: true
+    };
+
+    if (this.roles) {
+      if ((this.constructor as T).isRoot(this.roles)) {
+        return this.roles;
+      }
+      for (const role of this.roles) {
+        role.permissions = await role.getPermissions(permissionOptions);
+        role.set('permissions', role.permissions);
+      }
+      return this.roles;
+    }
     
     let userRoles = [];
     // 获取登入用户的角色及权限

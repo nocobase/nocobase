@@ -193,7 +193,7 @@ const data = [
   const roles = await Role.bulkCreate([
     { title: '系统开发组', type: -1 },
     { title: '匿名用户组', type: 0 },
-    { title: '普通用户组' },
+    { title: '普通用户组', default: true },
   ]);
   await roles[0].updateAssociations({
     users: user

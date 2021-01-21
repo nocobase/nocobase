@@ -209,7 +209,7 @@ export default async (ctx, next) => {
   for (const action of permissions.actions) {
     ctx.allowedActions.push(action.name);
   }
-  console.log(ctx.allowedActions);
+  // console.log(ctx.allowedActions);
   for (const permissionField of permissions.fields) {
     const pfc = permissionField.actions;
     if (pfc.includes(`${resourceName}:list`)) {
@@ -222,11 +222,11 @@ export default async (ctx, next) => {
       ctx.updateFields.push(permissionField.field_id);
     }
   }
-  console.log({
-    listFields: ctx.listFields, 
-    createFields: ctx.createFields, 
-    updateFields: ctx.updateFields,
-  })
+  // console.log({
+  //   listFields: ctx.listFields, 
+  //   createFields: ctx.createFields, 
+  //   updateFields: ctx.updateFields,
+  // })
   if (associatedName) {
     const table = ctx.db.getTable(associatedName);
     const resourceField = table.getField(resourceFieldName);
