@@ -420,6 +420,23 @@ export default async (ctx, next) => {
             "showInDetail": true
           },
           "dataIndex": ["title"]
+        },
+        {
+          "title": "描述",
+          "name": "permissions[0].description",
+          "interface": "string",
+          "type": "string",
+          "parent_id": null,
+          "required": true,
+          "developerMode": false,
+          "component": {
+            "type": "string",
+            "className": "drag-visible",
+            "showInForm": true,
+            "showInTable": true,
+            "showInDetail": true
+          },
+          "dataIndex": ["permissions", 0, 'description']
         }
       ],
     };
