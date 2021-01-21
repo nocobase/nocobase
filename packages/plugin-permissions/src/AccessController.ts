@@ -196,7 +196,7 @@ export default class AccessController<T extends typeof AccessController = typeof
     const Collection = this.context.db.getModel(this.resourceName);
     const existed = await Collection.count({
       where: {
-        ...Collection.parseApiJson({ filter }).where,
+        ...Collection.parseApiJson({ filter, context: this.context }).where,
         [Collection.primaryKeyAttribute]: resourceKey
       }
     });
