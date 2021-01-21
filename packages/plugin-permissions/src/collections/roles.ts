@@ -24,6 +24,7 @@ export default {
       title: '角色类型',
       type: 'integer',
       name: 'type',
+      developerMode: true,
       dataSource: [
         { value: ROLE_TYPE_ROOT, label: '系统角色' },
         { value: ROLE_TYPE_ANONYMOUS, label: '匿名角色' },
@@ -45,6 +46,17 @@ export default {
         showInForm: true,
         showInDetail: true,
       }
+    },
+    {
+      interface: 'textarea',
+      title: '描述',
+      type: 'text',
+      name: 'description',
+      component: {
+        showInTable: true,
+        showInForm: true,
+        showInDetail: true,
+      },
     },
     // TODO(feature): 用户组后续考虑
     // TODO(feature): 用户表应通过插件配置关联，考虑到今后会有多账户系统的情况
