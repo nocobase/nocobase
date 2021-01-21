@@ -2,9 +2,22 @@ import { Op } from 'sequelize';
 import { actions } from '@nocobase/actions';
 
 export async function list(ctx: actions.Context, next: actions.Next) {
+  const { associated } = ctx.action.params;
   // TODO: 暂时 action 中间件就这么写了
-  ctx.action.mergeParams({associated: null});
-  return actions.common.list(ctx, next);
+  ctx.action.mergeParams({
+    associated: null
+  });
+  await actions.common.list(ctx, async () => {
+    const permissions = await associated.getPermissions();
+    ctx.body.rows.forEach(item => {
+      const permission = permissions.find(p => p.collection_name === item.get('name'));
+      if (permission) {
+        // item.permissions = [permission]; // 不输出
+        item.set('permissions', [permission]); // 输出
+      }
+    });
+    next();
+  });
 }
 
 export async function get(ctx: actions.Context, next: actions.Next) {
