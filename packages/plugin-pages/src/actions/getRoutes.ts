@@ -40,6 +40,21 @@ export default async function getRoutes(ctx, next) {
   const database: Database = ctx.database;
   const Page = database.getModel('pages');
   const Collection = database.getModel('collections');
+  const RoutePermission = database.getModel('routes_permissions');
+  const roles = await ctx.ac.getRoles();
+  // TODO(optimize): isRoot 的判断需要在内部完成，尽量不要交给调用者
+  const isRoot = ctx.ac.constructor.isRoot(roles);
+  const routesPermissionsMap = new Map();
+  if (!isRoot) {
+    const routesPermissions = await RoutePermission.findAll({
+      where: {
+        role_id: roles.map(({ id }) => id)
+      }
+    });
+    routesPermissions.forEach(permission => {
+      routesPermissionsMap.set(`${permission.routable_type}:${permission.routable_id}`, permission);
+    });
+  }
   let pages = await Page.findAll(Page.parseApiJson(ctx.state.developerMode ? {
     filter: {
     },
@@ -52,6 +67,15 @@ export default async function getRoutes(ctx, next) {
   }));
   const items = [];
   for (const page of pages) {
+    if (!isRoot
+      && !routesPermissionsMap.has(`pages:${page.id}`)
+      // 以下路径先临时处理
+      && page.get('path') !== '/'
+      && page.get('path') !== '/register'
+      && page.get('path') !== '/login'
+    ) {
+      continue;
+    }
     items.push(page.toJSON());
     if (page.get('path') === '/collections') {
       const collections = await Collection.findAll(Collection.parseApiJson(ctx.state.developerMode ? {
@@ -67,6 +91,9 @@ export default async function getRoutes(ctx, next) {
         sort: ['sort'],
       }));
       for (const collection of collections) {
+        if (!isRoot && !routesPermissionsMap.has(`collections:${collection.id}`)) {
+          continue;
+        }
         const pageId = `collection-${collection.id}`;
         items.push({
           id: pageId,
@@ -90,6 +117,9 @@ export default async function getRoutes(ctx, next) {
         });
         if (views.length > 1) {
           for (const view of views) {
+            if (!isRoot && !routesPermissionsMap.has(`views:${view.id}`)) {
+              continue;
+            }
             items.push({
               id: `view-${view.get('id')}`,
               type: 'collection',
