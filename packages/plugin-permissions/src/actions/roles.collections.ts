@@ -1,5 +1,6 @@
 import { Op } from 'sequelize';
 import { actions } from '@nocobase/actions';
+import _ from 'lodash';
 
 export async function list(ctx: actions.Context, next: actions.Next) {
   const { associated } = ctx.action.params;
@@ -16,8 +17,8 @@ export async function list(ctx: actions.Context, next: actions.Next) {
         item.set('permissions', [permission]); // 输出
       }
     });
-    next();
   });
+  await next();
 }
 
 export async function get(ctx: actions.Context, next: actions.Next) {
@@ -26,7 +27,22 @@ export async function get(ctx: actions.Context, next: actions.Next) {
     associated
   } = ctx.action.params;
 
-  ctx.body = await ctx.ac.as(associated).can(resourceKey).permissions();
+  const permissions = await ctx.ac.as(associated).can(resourceKey).permissions();
+
+  const permission = await associated.getPermissions({
+    where: {
+      collection_name: resourceKey,
+    },
+    plain: true,
+    limit: 1,
+  });
+
+  console.log(permission);
+
+  ctx.body = {
+    ...permissions,
+    description: _.get(permission, 'description'),
+  };
 
   await next();
 }

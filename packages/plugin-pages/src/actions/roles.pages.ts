@@ -3,6 +3,69 @@ import Database from '@nocobase/database';
 import { flatToTree } from '../utils';
 import { Op } from 'sequelize';
 
+async function getRoutes(ctx) {
+  const database: Database = ctx.db;
+  const Page = database.getModel('pages');
+  const Collection = database.getModel('collections');
+  let pages = await Page.findAll(Page.parseApiJson(ctx.state.developerMode ? {
+    filter: {
+      'parent_id.$notNull': true,
+    },
+    sort: ['sort'],
+  } : {
+    filter: {
+      'parent_id.$notNull': true,
+      developerMode: {'$isFalsy': true},
+    },
+    sort: ['sort'],
+  }));
+  const items = [];
+  for (const page of pages) {
+    items.push({
+      routable_type: 'pages',
+      routable_id: page.id,
+    });
+    if (page.get('path') === '/collections') {
+      const collections = await Collection.findAll(Collection.parseApiJson(ctx.state.developerMode ? {
+        filter: {
+          showInDataMenu: true,
+        },
+        sort: ['sort'],
+      }: {
+        filter: {
+          developerMode: {'$isFalsy': true},
+          showInDataMenu: true,
+        },
+        sort: ['sort'],
+      }));
+      for (const collection of collections) {
+        items.push({
+          routable_type: 'collections',
+          routable_id: collection.id,
+        });
+        const views = await collection.getViews({
+          where: {
+            [Op.or]: [
+              { showInDataMenu: true },
+              { default: true }
+            ]
+          },
+          order: [['sort', 'asc']]
+        });
+        if (views.length > 1) {
+          for (const view of views) {
+            items.push({
+              routable_id: view.id,
+              routable_type: 'views',
+            });
+          }
+        }
+      }
+    }
+  }
+  return items;
+}
+
 export async function list(ctx: actions.Context, next: actions.Next) {
   const database: Database = ctx.db;
   const { associatedKey, associated } = ctx.action.params;
@@ -124,6 +187,22 @@ export async function update(ctx: actions.Context, next: actions.Next) {
       accessible
     }
   } = ctx.action.params;
+
+  if (!resourceKey) {
+    if (accessible === false) {
+      await associated.updateAssociations({
+        routes: [],
+      });
+    } else if (accessible === true) {
+      const routes = await getRoutes(ctx);
+      // console.log(routes);
+      await associated.updateAssociations({
+        routes,
+      });
+    }
+    ctx.body = {};
+    return next();
+  }
 
   console.log(ctx.action.params, { routable_type: tableName, routable_id: resourceKey });
   let [route] = await associated.getRoutes({
