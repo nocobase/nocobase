@@ -13,7 +13,7 @@ export default {
       through: 'users_roles',
       component: {
         type: 'drawerSelect',
-        // showInTable: true,
+        showInTable: true,
         showInForm: true,
         showInDetail: true,
         'x-component-props': {
