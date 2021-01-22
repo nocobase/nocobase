@@ -192,6 +192,15 @@ export default {
         type: 'number',
       },
     },
+    // {
+    //   type: 'belongsToMany',
+    //   name: 'roles',
+    //   through: 'routes_permissions',
+    //   foreignKey: 'routable_id',
+    //   otherKey: 'role_id',
+    //   morphType: 'routable',
+    //   constraints: false,
+    // },
     {
       interface: 'json',
       type: 'json',

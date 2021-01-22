@@ -21,7 +21,7 @@ export default {
     },
     {
       type: 'string',
-      name: 'desctiption',
+      name: 'description',
     },
     {
       comment: '关联的角色',

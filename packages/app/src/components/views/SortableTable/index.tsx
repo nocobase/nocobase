@@ -8,6 +8,8 @@ import get from 'lodash/get';
 import './style.less';
 import Field from '../Field';
 import cloneDeep from 'lodash/cloneDeep';
+import { Checkbox, message } from 'antd';
+import api from '@/api-client';
 
 export const SortableItem = sortableElement(props => <tr {...props} />);
 export const SortableContainer = sortableContainer(props => <tbody {...props} />);
@@ -58,11 +60,38 @@ export const components = ({data = {}, rowKey, mutate, onMoved, isFieldComponent
   };
 };
 
-export function fields2columns(fields) {
+export function fields2columns(fields, ctx: any = {}) {
   const columns: any[] = fields.map(item => {
     const field = cloneDeep(item);
     field.render = (value, record) => field.interface === 'sort' ? <DragHandle/> : <Field data={record} viewType={'table'} schema={field} value={value}/>;
     field.className = `${field.className||''} noco-field-${field.interface}`;
+    if (field.editable && field.interface === 'boolean') {
+      field.title = (
+        <span>
+          <Checkbox onChange={async (e) => {
+            try {
+              await api.resource(field.resource).update({
+                associatedKey: ctx.associatedKey,
+                // resourceKey: data.id,
+                // tableName: data.tableName||'pages',
+                values: {
+                  accessible: e.target.checked,
+                },
+              });
+              message.success('保存成功');
+              if (ctx.refresh) {
+                ctx.refresh();
+              }
+            } catch (error) {
+              message.error('保存失败');
+            }
+            
+          }}/>
+          {' '}
+          {field.title}
+        </span>
+      );
+    }
     return {
       ...field,
       ...(field.component||{}),

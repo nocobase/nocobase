@@ -1,10 +1,24 @@
 import { Op } from 'sequelize';
 import { actions } from '@nocobase/actions';
+import _ from 'lodash';
 
 export async function list(ctx: actions.Context, next: actions.Next) {
+  const { associated } = ctx.action.params;
   // TODO: 暂时 action 中间件就这么写了
-  ctx.action.mergeParams({associated: null});
-  return actions.common.list(ctx, next);
+  ctx.action.mergeParams({
+    associated: null
+  });
+  await actions.common.list(ctx, async () => {
+    const permissions = await associated.getPermissions();
+    ctx.body.rows.forEach(item => {
+      const permission = permissions.find(p => p.collection_name === item.get('name'));
+      if (permission) {
+        // item.permissions = [permission]; // 不输出
+        item.set('permissions', [permission]); // 输出
+      }
+    });
+  });
+  await next();
 }
 
 export async function get(ctx: actions.Context, next: actions.Next) {
@@ -13,47 +27,22 @@ export async function get(ctx: actions.Context, next: actions.Next) {
     associated
   } = ctx.action.params;
 
-  const [permission] = await associated.getPermissions({
-    where: {
-      collection_name: resourceKey
-    },
-    include: [
-      {
-        association: 'actions',
-        // 对 hasMany 关系可以进行拆分查询，避免联表过多标识符超过 PG 的 64 字符限制
-        separate: true,
-        include: [
-          {
-            association: 'scope'
-          }
-        ]
-      },
-      {
-        association: 'fields_permissions',
-        separate: true,
-      },
-      {
-        association: 'tabs_permissions',
-        separate: true,
-      }
-    ],
-    distinct: true,
-    limit: 1
-  });
-  
-  const result = permission
-    ? {
-      actions: permission.actions || [],
-      fields: permission.fields_permissions || [],
-      tabs: (permission.tabs_permissions || []).map(item => item.tab_id),
-    }
-    : {
-      actions: [],
-      fields: [],
-      tabs: []
-    };
+  const permissions = await ctx.ac.as(associated).can(resourceKey).permissions();
 
-  ctx.body = result;
+  const permission = await associated.getPermissions({
+    where: {
+      collection_name: resourceKey,
+    },
+    plain: true,
+    limit: 1,
+  });
+
+  console.log(permission);
+
+  ctx.body = {
+    ...permissions,
+    description: _.get(permission, 'description'),
+  };
 
   await next();
 }

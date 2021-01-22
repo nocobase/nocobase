@@ -18,7 +18,7 @@ export default async function (model: FieldModel, options) {
   const dataSource = model.get('dataSource');
   if (Array.isArray(dataSource)) {
     model.set('dataSource', dataSource.map(item => {
-      if (!item.value) {
+      if (item.value === null || typeof item.value === 'undefined') {
         item.value = generateValueName();
       }
       return {...item};
