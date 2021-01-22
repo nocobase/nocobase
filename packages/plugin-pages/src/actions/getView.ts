@@ -299,6 +299,13 @@ export default async (ctx, next) => {
   if (view.get('updateViewName')) {
     view.setDataValue('rowViewName', view.get('updateViewName'));
   }
+  if (!view.get('template')) {
+    if (view.get('type') === 'table') {
+      view.setDataValue('template', 'Table');
+    } else if (view.get('type') === 'calendar') {
+      view.setDataValue('template', 'Calendar');
+    }
+  }
   // view.setDataValue('viewCollectionName', view.collection_name);
   let title = collection.get('title');
   const mode = get(ctx.action.params, ['values', 'mode'], ctx.action.params.mode);
