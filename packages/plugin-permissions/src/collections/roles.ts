@@ -24,12 +24,39 @@ export default {
       title: '角色类型',
       type: 'integer',
       name: 'type',
+      developerMode: true,
       dataSource: [
         { value: ROLE_TYPE_ROOT, label: '系统角色' },
         { value: ROLE_TYPE_ANONYMOUS, label: '匿名角色' },
         { value: ROLE_TYPE_USER, label: '自定义角色' },
       ],
-      defaultValue: ROLE_TYPE_USER
+      defaultValue: ROLE_TYPE_USER,
+      component: {
+        showInTable: true,
+        showInDetail: true,
+      }
+    },
+    {
+      interface: 'boolean',
+      title: '默认角色',
+      type: 'radio',
+      name: 'default',
+      component: {
+        showInTable: true,
+        showInForm: true,
+        showInDetail: true,
+      }
+    },
+    {
+      interface: 'textarea',
+      title: '描述',
+      type: 'text',
+      name: 'description',
+      component: {
+        showInTable: true,
+        showInForm: true,
+        showInDetail: true,
+      },
     },
     // TODO(feature): 用户组后续考虑
     // TODO(feature): 用户表应通过插件配置关联，考虑到今后会有多账户系统的情况
@@ -50,12 +77,6 @@ export default {
       name: 'collections',
       through: 'permissions',
       targetKey: 'name'
-    },
-    {
-      interface: 'linkTo',
-      title: '页面',
-      type: 'belongsToMany',
-      name: 'pages',
     },
     {
       comment: '权限集（方便访问）',
@@ -132,13 +153,6 @@ export default {
       name: 'collections',
       title: '数据表权限',
       association: 'collections',
-      viewName: 'permissionTable',
-    },
-    {
-      type: 'association',
-      name: 'pages',
-      title: '系统菜单权限',
-      association: 'pages',
       viewName: 'permissionTable',
     },
     {

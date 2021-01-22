@@ -68,6 +68,8 @@ export default class Database {
 
   protected hooks = {};
 
+  protected extTableOptions = new Map<string, any>();
+
   constructor(options: DatabaseOptions) {
     this.options = options;
     this.sequelize = new Sequelize(options);
@@ -94,10 +96,21 @@ export default class Database {
     files.forEach((file: string) => {
       const result = requireModule(file);
       if (result instanceof Extend) {
-        const table = this.extend(result.tableOptions, result.mergeOptions);
-        tables.set(table.getName(), table);
+        // 如果还没初始化，extend 的先暂存起来，后续处理
+        if (!this.tables.has(result.tableOptions.name)) {
+          this.extTableOptions.set(result.tableOptions.name, result);
+        } else {
+          const table = this.extend(result.tableOptions, result.mergeOptions);
+          tables.set(table.getName(), table);
+        }
       } else {
-        const table = this.extend(typeof result === 'function' ? result(this) : result);
+        let table = this.extend(typeof result === 'function' ? result(this) : result);
+        // 如果有未处理的 extend 取回来合并
+        if (this.extTableOptions.has(table.getName())) {
+          const result = this.extTableOptions.get(table.getName());
+          table = this.extend(result.tableOptions, result.mergeOptions);
+          this.extTableOptions.delete(table.getName());
+        }
         tables.set(table.getName(), table);
       }
     });

@@ -201,7 +201,7 @@ export default async (ctx, next) => {
   }));
   let throughName;
   const { resourceKey: resourceKey2, associatedName, resourceFieldName, associatedKey } = values;
-  const permissions = await ctx.can(resourceName).permissions();
+  const permissions = await ctx.ac.can(resourceName).permissions();
   ctx.listFields = [];
   ctx.createFields = [];
   ctx.updateFields = [];
@@ -209,7 +209,7 @@ export default async (ctx, next) => {
   for (const action of permissions.actions) {
     ctx.allowedActions.push(action.name);
   }
-  console.log(ctx.allowedActions);
+  // console.log(ctx.allowedActions);
   for (const permissionField of permissions.fields) {
     const pfc = permissionField.actions;
     if (pfc.includes(`${resourceName}:list`)) {
@@ -222,11 +222,11 @@ export default async (ctx, next) => {
       ctx.updateFields.push(permissionField.field_id);
     }
   }
-  console.log({
-    listFields: ctx.listFields, 
-    createFields: ctx.createFields, 
-    updateFields: ctx.updateFields,
-  })
+  // console.log({
+  //   listFields: ctx.listFields, 
+  //   createFields: ctx.createFields, 
+  //   updateFields: ctx.updateFields,
+  // })
   if (associatedName) {
     const table = ctx.db.getTable(associatedName);
     const resourceField = table.getField(resourceFieldName);
@@ -420,6 +420,23 @@ export default async (ctx, next) => {
             "showInDetail": true
           },
           "dataIndex": ["title"]
+        },
+        {
+          "title": "描述",
+          "name": "permissions[0].description",
+          "interface": "string",
+          "type": "string",
+          "parent_id": null,
+          "required": true,
+          "developerMode": false,
+          "component": {
+            "type": "string",
+            "className": "drag-visible",
+            "showInForm": true,
+            "showInTable": true,
+            "showInDetail": true
+          },
+          "dataIndex": ["permissions", 0, 'description']
         }
       ],
     };
@@ -496,7 +513,7 @@ export default async (ctx, next) => {
     };
   } else {
     let allowedUpdate = false;
-    if (view.type === 'details' && await ctx.can(resourceName).act('update').one(resourceKey2)) {
+    if (view.type === 'details' && await ctx.ac.can(resourceName).act('update').one(resourceKey2)) {
       allowedUpdate = true;
     }
     ctx.body = {

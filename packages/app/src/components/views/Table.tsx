@@ -154,7 +154,7 @@ export function Table(props: TableProps) {
           indicator: icon,
           // className: 'spinning--absolute m32',
         }}
-        columns={fields2columns(fields)}
+        columns={fields2columns(fields, {associatedKey, refresh})}
         dataSource={data?.list||(data as any)}
         onChange={(pagination, filters, sorter, extra) => {
           run({...params[0], sorter});

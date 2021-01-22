@@ -27,6 +27,12 @@ export default extend({
       through: 'permissions',
       sourceKey: 'name'
     },
+    // {
+    //   type: 'hasMany',
+    //   name: 'permissions',
+    //   sourceKey: 'name',
+    //   foreignKey: 'collection_name'
+    // }
   ],
   views: [
     {
