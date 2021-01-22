@@ -151,6 +151,7 @@ export class Table {
     this.defaultModel = getRegisteredModel(model);
     this.modelAttributes = {};
     // 在 set fields 之前 model init 的原因是因为关系字段可能需要用到 model 的相关配置
+    // @ts-ignore
     this.addIndexes(indexes, 'modelOnly');
     // this.modelInit('modelOnly');
     this.setFields(fields);
@@ -330,15 +331,13 @@ export class Table {
   /**
    * 添加索引
    * 
-   * @param options 
+   * @param indexOptions 
    * @param reinitialize 
    */
-  public addIndex(options: string | ModelIndexesOptions, reinitialize: Reinitialize = true) {
-    if (typeof options === 'string') {
-      options = {
-        fields: [options],
-      };
-    }
+  public addIndex(indexOptions: string | ModelIndexesOptions, reinitialize: Reinitialize = true) {
+    const options = typeof indexOptions === 'string' ? {
+      fields: [indexOptions],
+    } : indexOptions;
     // @ts-ignore
     const index = Utils.nameIndex(options, this.options.name);
     console.log(this.options, { index, options });
@@ -386,6 +385,7 @@ export class Table {
     for (const key in fields) {
       this.addField(fields[key], false);
     }
+    // @ts-ignore
     this.addIndexes(indexes, false);
     this.modelInit(true);
   }

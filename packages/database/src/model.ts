@@ -228,7 +228,7 @@ export abstract class Model extends SequelizeModel {
       alias || Utils.underscoredIf(`${association}Count`, this.options.underscored),
     ].filter(Boolean);
 
-    return attribute as ProjectionAlias;
+    return attribute as unknown as ProjectionAlias;
   }
 
   /**
