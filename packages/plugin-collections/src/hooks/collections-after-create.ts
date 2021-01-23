@@ -73,23 +73,11 @@ const defaultValues = {
       default: true,
     },
   ],
-  scopes: [
-    {
-      title: '全部数据',
-      filter: {},
-    },
-    {
-      title: '用户自己的数据',
-      filter: {
-        "created_by_id.$currentUser": true,
-      },
-    },
-  ],
 };
 
 export default async function (model: CollectionModel, options: any = {}) {
   const { migrate = true } = options;
-  console.log({migrate})
+  console.log('plugin-collections hook', {migrate})
   if (migrate) {
     await model.migrate({...options, isNewRecord: true});
   }
