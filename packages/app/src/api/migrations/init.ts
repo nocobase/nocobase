@@ -111,6 +111,15 @@ const data = [
             sort: 120,
             showInMenu: true,
           },
+          {
+            title: '自动化配置',
+            type: 'collection',
+            collection: 'automations',
+            path: '/settings/automations',
+            icon: 'TableOutlined',
+            sort: 130,
+            showInMenu: true,
+          },
         ]
       },
     ],
