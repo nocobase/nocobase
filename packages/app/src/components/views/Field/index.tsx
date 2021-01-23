@@ -25,7 +25,7 @@ marked.setOptions({
 const renderer = new marked.Renderer();
 renderer.link = ( href, title, text ) => `<a target="_blank" href="${ href }" title="${ title||'' }">${ text }</a>`;
 
-function markdown(text: string) {
+export function markdown(text: string) {
   return marked(text, {
     renderer,
   });
