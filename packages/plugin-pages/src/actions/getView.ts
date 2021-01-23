@@ -1,6 +1,5 @@
 import { Model, ModelCtor, BELONGSTOMANY } from '@nocobase/database';
-import { get, set } from 'lodash';
-import { Op } from 'sequelize';
+import { get, set, isString } from 'lodash';
 
 const transforms = {
   table: async (fields: Model[], context?: any) => {
@@ -50,7 +49,7 @@ const transforms = {
         field.set('dataSource', dataSource);
       }
       const { values } = ctx.action.params;
-      if (field.get('component.type') === 'filter' && get(values, 'associatedKey')) {
+      if (field.get('component.type') === 'filter' && get(values, 'associatedKey') && isString(get(values, 'associatedKey'))) {
         const options = Field.parseApiJson(ctx.state.developerMode ? {
           filter: {
             collection_name: get(values, 'associatedKey'),
