@@ -23,10 +23,14 @@ export class PageModel extends BaseModel {
         },
       });
       if (!page) {
-        page = await this.create({
-          ...item,
-          parent_id: parentId,
-        }, options);
+        page = await this.create(
+          {
+            ...item,
+            parent_id: parentId,
+          },
+          // @ts-ignore
+          options
+        );
       }
       if (Array.isArray(item.children)) {
         await this.import(item.children, {

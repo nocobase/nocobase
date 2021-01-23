@@ -167,9 +167,11 @@ export class CollectionModel extends BaseModel {
       });
     }
     if (collection && update) {
+      // @ts-ignore
       await collection.update(data, options);
     }
     if (!collection) {
+      // @ts-ignore
       collection = await this.create(data, options);
     }
     const associations = ['fields', 'tabs', 'actions', 'views'];
@@ -211,11 +213,15 @@ export class CollectionModel extends BaseModel {
           await model.update({...item, sort: index+1}, options);
         }
         if (!model) {
-          model = await Model.create({
-            ...item,
-            sort: index+1,
-            collection_name: collection.name,
-          }, options);
+          model = await Model.create(
+            {
+              ...item,
+              sort: index+1,
+              collection_name: collection.name,
+            },
+            // @ts-ignore
+            options
+          );
         }
         if (model) {
           if (key === 'tabs') {

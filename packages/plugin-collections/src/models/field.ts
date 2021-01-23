@@ -1,12 +1,11 @@
 import _ from 'lodash';
 import BaseModel from './base';
-import { FieldOptions } from '@nocobase/database';
+import { FieldOptions, BELONGSTO, BELONGSTOMANY, HASMANY } from '@nocobase/database';
 import * as types from '../interfaces/types';
 import { merge } from '../utils';
 import { BuildOptions } from 'sequelize';
 import { SaveOptions, Utils } from 'sequelize';
 import { generateCollectionName } from './collection';
-import { BELONGSTO, BELONGSTOMANY, HASMANY } from '@nocobase/database';
 
 interface FieldImportOptions extends SaveOptions {
   parentId?: number;
@@ -243,10 +242,14 @@ export class FieldModel extends BaseModel {
         } else {
           tmp.collection_name = collectionName;
         }
-        model = await this.create({
-          ...item,
-          ...tmp,
-        }, options);
+        model = await this.create(
+          {
+            ...item,
+            ...tmp,
+          },
+          //@ts-ignore
+          options
+        );
       }
       if (Array.isArray(item.children)) {
         const childrenIds = await this.import(item.children, {
