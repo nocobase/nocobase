@@ -55,12 +55,12 @@ export class Permissions {
       //    const s = await model.createScope(scope, options);
       //    console.log(s.toJSON());
       // }
-      try {
-        await Scope.bulkCreate(defaultScopes.map(scope => ({...scope, collection_name: model.get('name')})));
-      } catch (error) {
-        console.error(error);
-        throw error;
-      }
+      // try {
+      //   await Scope.bulkCreate(defaultScopes.map(scope => ({...scope, collection_name: model.get('name')})));
+      // } catch (error) {
+      //   console.error(error);
+      //   throw error;
+      // }
     });
 
     database.getModel('users').addHook('afterCreate', async(model, options) => {
