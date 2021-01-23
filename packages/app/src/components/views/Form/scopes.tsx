@@ -1,13 +1,15 @@
 import React from 'react';
 import { Tooltip } from 'antd';
 import { QuestionCircleOutlined } from '@ant-design/icons';
+import { markdown } from '../Field';
 
 export default {
   text(...args: any[]) {
     return React.createElement('span', {}, ...args)
   },
   html(html: string) {
-    return <div dangerouslySetInnerHTML={{__html: html}}></div>
+    const text = decodeURIComponent(html);
+    return <div dangerouslySetInnerHTML={{__html: markdown(text)}}></div>
   },
   tooltip(title: string, offset = 3) {
     return (

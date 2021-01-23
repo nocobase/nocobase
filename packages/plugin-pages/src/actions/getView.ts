@@ -49,8 +49,8 @@ const transforms = {
         const dataSource = field.get('dataSource').filter(item => item.key !== 'developerMode');
         field.set('dataSource', dataSource);
       }
-      if (field.get('component.type') === 'filter') {
-        const { values } = ctx.action.params;
+      const { values } = ctx.action.params;
+      if (field.get('component.type') === 'filter' && get(values, 'associatedKey')) {
         const options = Field.parseApiJson(ctx.state.developerMode ? {
           filter: {
             collection_name: get(values, 'associatedKey'),
@@ -70,7 +70,7 @@ const transforms = {
         prop.type = 'string'
       }
       if (field.get('component.tooltip')) {
-        prop.description = `{{html('${field.get('component.tooltip')}')}}`;
+        prop.description = `{{html('${encodeURIComponent(field.get('component.tooltip'))}')}}`;
       }
       if (field.get('name') === 'dataSource') {
         
