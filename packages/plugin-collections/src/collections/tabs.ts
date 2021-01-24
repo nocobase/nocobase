@@ -74,6 +74,11 @@ export default {
             target: "associationField",
             condition: "{{ $self.value === 'association' }}"
           },
+          {
+            type: "value:visible",
+            target: "displayFields",
+            condition: "{{ $self.value === 'details' }}",
+          },
           // {
           //   type: "value:schema",
           //   target: "association",
@@ -84,6 +89,16 @@ export default {
           //     },
           //   },
           // },
+          {
+            type: "value:schema",
+            target: "displayFields",
+            condition: "{{ $self.value === 'details' }}",
+            schema: {
+              "x-component-props": {
+                associatedKey: "{{ $form.values && $form.values.associatedKey }}"
+              },
+            },
+          },
           {
             type: "value:schema",
             target: "associationField",
@@ -123,6 +138,7 @@ export default {
       target: 'fields',
       title: '相关数据表',
       labelField: 'title',
+      required: true,
       // valueField: 'name',
       component: {
         type: 'remoteSelect',
@@ -154,6 +170,43 @@ export default {
             },
           },
         ],
+      },
+    },
+    {
+      interface: 'json',
+      type: 'json',
+      name: 'displayFields',
+      title: '显示的字段',
+      labelField: 'title',
+      // valueField: 'name',
+      component: {
+        type: 'draggableTable',
+        showInDetail: true,
+        showInForm: true,
+        'x-component-props': {
+          resourceName: 'collections.fields',
+          labelField: 'title',
+          valueField: 'name',
+          showInDetail: true,
+          fields: [
+            // {
+            //   interface: 'sort',
+            //   name: 'sort',
+            //   title: '排序',
+            //   type: 'sort',
+            //   dataIndex: ['sort'],
+            //   className: 'drag-visible',
+            // },
+            {
+              interface: 'string',
+              name: 'title',
+              title: '字段名称',
+              type: 'string',
+              className: 'drag-visible',
+              dataIndex: ['title'],
+            }
+          ],
+        },
       },
     },
     {

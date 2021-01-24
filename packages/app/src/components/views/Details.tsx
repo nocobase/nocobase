@@ -16,6 +16,7 @@ configResponsive({
 export function Details(props: any) {
   const dom = document.querySelector('body');
   const responsive = useResponsive();
+  console.log('Details.props', props)
 
   const {
     activeTab = {},
@@ -45,6 +46,7 @@ export function Details(props: any) {
     }
   }
   console.log(props);
+  const { displayFields = [] } = activeTab;
   return (
     <Card bordered={false}>
       <Actions
@@ -63,6 +65,9 @@ export function Details(props: any) {
           {...descriptionsProps}
           column={1}>
           {fields.map((field: any) => {
+            if (Array.isArray(displayFields) && displayFields.length && displayFields.indexOf(field.id) === -1) {
+              return null;
+            }
             return (
               <Descriptions.Item label={field.title||field.name}>
                 <Field data={field} viewType={'descriptions'} schema={field} value={get(data, field.name)}/>
