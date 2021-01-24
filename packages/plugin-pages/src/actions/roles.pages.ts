@@ -6,6 +6,7 @@ import { Op } from 'sequelize';
 async function getRoutes(ctx) {
   const database: Database = ctx.db;
   const Page = database.getModel('pages');
+  const View = database.getModel('views');
   const Collection = database.getModel('collections');
   let pages = await Page.findAll(Page.parseApiJson(ctx.state.developerMode ? {
     filter: {
@@ -61,6 +62,29 @@ async function getRoutes(ctx) {
           }
         }
       }
+    } else if (page.get('path') === '/users/users') {
+      const userViews = await View.findAll(View.parseApiJson(ctx.state.developerMode ? {
+        filter: {
+          showInDataMenu: true,
+          collection_name: 'users',
+        },
+        sort: ['sort'],
+      }: {
+        filter: {
+          developerMode: {'$isFalsy': true},
+          showInDataMenu: true,
+          collection_name: 'users',
+        },
+        sort: ['sort'],
+      }));
+      if (userViews.length > 1) {
+        for (const view of userViews) {
+          items.push({
+            routable_id: view.id,
+            routable_type: 'views',
+          });
+        }
+      }
     }
   }
   return items;
@@ -70,6 +94,7 @@ export async function list(ctx: actions.Context, next: actions.Next) {
   const database: Database = ctx.db;
   const { associatedKey, associated } = ctx.action.params;
   const Page = database.getModel('pages');
+  const View = database.getModel('views');
   const Collection = database.getModel('collections');
   // TODO(optimize): isRoot 的判断需要在内部完成，尽量不要交给调用者
   const isRoot = ctx.ac.constructor.isRoot(associated);
@@ -148,6 +173,34 @@ export async function list(ctx: actions.Context, next: actions.Next) {
               accessible: isRoot || routesPermissionsMap.has(`views:${view.id}`), // TODO 对接权限
             });
           }
+        }
+      }
+    } else if (page.get('path') === '/users/users') {
+      const userViews = await View.findAll(View.parseApiJson(ctx.state.developerMode ? {
+        filter: {
+          showInDataMenu: true,
+          collection_name: 'users',
+        },
+        sort: ['sort'],
+      }: {
+        filter: {
+          collection_name: 'users',
+          developerMode: {'$isFalsy': true},
+          showInDataMenu: true,
+        },
+        sort: ['sort'],
+      }));
+      if (userViews.length > 1) {
+        for (const view of userViews) {
+          items.push({
+            associatedKey,
+            id: view.id,
+            tableName: 'views',
+            title: view.title,
+            key: `view-${view.id}`,
+            parent_id: `page-${page.id}`,
+            accessible: isRoot || routesPermissionsMap.has(`views:${view.id}`), // TODO 对接权限
+          });
         }
       }
     }

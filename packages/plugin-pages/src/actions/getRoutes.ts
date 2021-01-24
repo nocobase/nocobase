@@ -39,6 +39,7 @@ function pages2routes(pages: Array<any>) {
 export default async function getRoutes(ctx, next) {
   const database: Database = ctx.database;
   const Page = database.getModel('pages');
+  const View = database.getModel('views');
   const Collection = database.getModel('collections');
   const RoutePermission = database.getModel('routes_permissions');
   const roles = await ctx.ac.getRoles();
@@ -132,6 +133,39 @@ export default async function getRoutes(ctx, next) {
               sort: view.get('sort'),
             });
           }
+        }
+      }
+    } else if (page.get('path') === '/users/users') {
+      const userViews = await View.findAll(View.parseApiJson(ctx.state.developerMode ? {
+        filter: {
+          collection_name: 'users',
+          showInDataMenu: true,
+        },
+        sort: ['sort'],
+      }: {
+        filter: {
+          collection_name: 'users',
+          developerMode: {'$isFalsy': true},
+          showInDataMenu: true,
+        },
+        sort: ['sort'],
+      }));
+      if (userViews.length > 1) {
+        for (const view of userViews) {
+          if (!isRoot && !routesPermissionsMap.has(`views:${view.id}`)) {
+            continue;
+          }
+          items.push({
+            id: `view-${view.get('id')}`,
+            type: 'collection',
+            collection: 'users',
+            title: view.title,
+            viewName: view.name,
+            path: `${page.get('path')}/views/${view.name}`,
+            parent_id: page.id,
+            showInMenu: true,
+            sort: view.get('sort'),
+          });
         }
       }
     }
