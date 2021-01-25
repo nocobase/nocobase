@@ -35,18 +35,20 @@ export class Permissions {
     });
 
     database.getModel('collections').addHook('afterCreate', async (model: any, options) => {
-      console.log('plugin-permissions hook');
+      // console.log('plugin-permissions hook');
       await model.updateAssociations({
         scopes: [
           {
             title: '全部数据',
             filter: {},
+            locked: true
           },
           {
             title: '用户自己的数据',
             filter: {
               "created_by_id.$currentUser": true,
             },
+            locked: true
           },
         ]
       }, options);

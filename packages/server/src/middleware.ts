@@ -1,7 +1,6 @@
-import qs from 'qs';
 import compose from 'koa-compose';
 import { pathToRegexp } from 'path-to-regexp';
-import Resourcer, { getNameByParams, KoaMiddlewareOptions, parseRequest, parseQuery, ResourcerContext } from '@nocobase/resourcer';
+import Resourcer, { getNameByParams, KoaMiddlewareOptions, parseRequest, parseQuery, ResourcerContext, ResourceType } from '@nocobase/resourcer';
 import Database, { BELONGSTO, BELONGSTOMANY, HASMANY, HASONE } from '@nocobase/database';
 
 interface MiddlewareOptions extends KoaMiddlewareOptions {
@@ -36,22 +35,25 @@ export function middleware(options: MiddlewareOptions = {}) {
     }
     try {
       const resourceName = nameRule(params);
+      // 如果资源名称未被定义
       if (!resourcer.isDefined(resourceName)) {
-        const names = resourceName.split('.');
-        const tableName = names.shift();
+        const [tableName, fieldName] = resourceName.split('.');
         const Collection = database.getModel('collections');
+        // 检查资源对应的表名是否已经定义
         if (!database.isDefined(tableName) && Collection) {
+          // 未定义则尝试通过 collection 表来加载
           await Collection.load({
             where: {
               name: tableName,
             },
           });
         }
+        // 如果经过加载后是已经定义的表
         if (database.isDefined(tableName)) {
           const table = database.getTable(tableName);
-          const field = table.getField(names[0]) as BELONGSTO | HASMANY | BELONGSTOMANY | HASONE;
-          if (names.length == 0 || field) {
-            let resourceType = 'single';
+          const field = table.getField(fieldName) as BELONGSTO | HASMANY | BELONGSTOMANY | HASONE;
+          if (!fieldName || field) {
+            let resourceType: ResourceType = 'single';
             let actions = {};
             if (field) {
               if (field instanceof HASONE) {
@@ -66,9 +68,25 @@ export function middleware(options: MiddlewareOptions = {}) {
               if (field.options.actions) {
                 actions = field.options.actions;
               }
+            } else {
+              const collection = await Collection.findOne({
+                where: {
+                  name: tableName
+                },
+                include: [
+                  {
+                    association: 'actions',
+                  }
+                ]
+              });
+              if (collection && collection.actions && collection.actions.length) {
+                collection.actions.forEach(action => {
+                  actions[action.name] = action.options;
+                });
+              }
             }
             resourcer.define({
-              type: resourceType as any,
+              type: resourceType,
               name: resourceName,
               actions,
             });
