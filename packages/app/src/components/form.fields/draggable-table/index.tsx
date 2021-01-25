@@ -52,6 +52,7 @@ function DraggableTableComponent(props) {
   return (
     <>
       <Table
+        scroll={{y: 300}}
         size={'small'}
         dataSource={dataSource}
         rowKey={rowKey}
