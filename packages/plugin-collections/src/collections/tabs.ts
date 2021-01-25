@@ -79,6 +79,11 @@ export default {
             target: "displayFields",
             condition: "{{ $self.value === 'details' }}",
           },
+          {
+            type: "value:visible",
+            target: "displayFormFields",
+            condition: "{{ $self.value === 'details' }}",
+          },
           // {
           //   type: "value:schema",
           //   target: "association",
@@ -92,6 +97,16 @@ export default {
           {
             type: "value:schema",
             target: "displayFields",
+            condition: "{{ $self.value === 'details' }}",
+            schema: {
+              "x-component-props": {
+                associatedKey: "{{ $form.values && $form.values.associatedKey }}"
+              },
+            },
+          },
+          {
+            type: "value:schema",
+            target: "displayFormFields",
             condition: "{{ $self.value === 'details' }}",
             schema: {
               "x-component-props": {
@@ -176,7 +191,7 @@ export default {
       interface: 'json',
       type: 'json',
       name: 'displayFields',
-      title: '显示的字段',
+      title: '显示在详情中的字段',
       labelField: 'title',
       // valueField: 'name',
       component: {
@@ -187,7 +202,44 @@ export default {
           resourceName: 'collections.fields',
           labelField: 'title',
           valueField: 'name',
-          showInDetail: true,
+          mode: 'showInDetail',
+          fields: [
+            // {
+            //   interface: 'sort',
+            //   name: 'sort',
+            //   title: '排序',
+            //   type: 'sort',
+            //   dataIndex: ['sort'],
+            //   className: 'drag-visible',
+            // },
+            {
+              interface: 'string',
+              name: 'title',
+              title: '字段名称',
+              type: 'string',
+              className: 'drag-visible',
+              dataIndex: ['title'],
+            }
+          ],
+        },
+      },
+    },
+    {
+      interface: 'json',
+      type: 'json',
+      name: 'displayFormFields',
+      title: '当前标签页可编辑字段',
+      labelField: 'title',
+      // valueField: 'name',
+      component: {
+        type: 'draggableTable',
+        showInDetail: true,
+        showInForm: true,
+        'x-component-props': {
+          resourceName: 'collections.fields',
+          labelField: 'title',
+          valueField: 'name',
+          mode: 'showInForm',
           fields: [
             // {
             //   interface: 'sort',

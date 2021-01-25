@@ -16,11 +16,12 @@ import { Spin } from '@nocobase/client'
 import { fields2columns, components } from '@/components/views/SortableTable'
 
 function DraggableTableComponent(props) {
-  const { value, onChange, disabled, rowKey = 'id', fields = [], resourceName, associatedKey, filter, labelField, valueField = 'id', objectValue, placeholder } = props;
+  const { mode = 'showInDetail', value, onChange, disabled, rowKey = 'id', fields = [], resourceName, associatedKey, filter, labelField, valueField = 'id', objectValue, placeholder } = props;
   const { data = [], loading = true, mutate } = useRequest(() => {
     return api.resource(resourceName).list({
       associatedKey,
       filter,
+      perPage: -1,
     });
   }, {
     refreshDeps: [resourceName, associatedKey]
@@ -34,7 +35,9 @@ function DraggableTableComponent(props) {
     selectedRowKeys: Array.isArray(value) ? value : data.map(item => item[rowKey]),
     onChange: onTableChange,
   }
-  const dataSource = data.filter(item => get(item, ['component', 'showInDetail']));
+  const dataSource = data.filter(item => {
+    return get(item, ['component', mode])
+  });
   // const sortIds = get(value, 'sort')||[];
   // let values = [];
   // sortIds.forEach(id => {
