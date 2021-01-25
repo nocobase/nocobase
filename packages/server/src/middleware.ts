@@ -68,7 +68,7 @@ export function middleware(options: MiddlewareOptions = {}) {
               if (field.options.actions) {
                 actions = field.options.actions;
               }
-            } else {
+            } else if (Collection) {
               const collection = await Collection.findOne({
                 where: {
                   name: tableName

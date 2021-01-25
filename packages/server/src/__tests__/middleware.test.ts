@@ -1,5 +1,5 @@
 import Koa from 'koa';
-import request from 'supertest';
+import supertest from 'supertest';
 import http from 'http';
 import Resourcer from '@nocobase/resourcer';
 import Database from '@nocobase/database';
@@ -9,6 +9,7 @@ describe('middleware', () => {
   let app: Koa;
   let resourcer: Resourcer;
   let database: Database;
+  let agent;
 
   beforeAll(() => {
     app = new Koa();
@@ -39,6 +40,7 @@ describe('middleware', () => {
         collate: 'utf8mb4_unicode_ci',
       },
     });
+    agent = supertest.agent(app.callback());
     app.use(middleware({
       prefix: '/api',
       database,
@@ -49,7 +51,7 @@ describe('middleware', () => {
     database.table({
       name: 'tests',
     });
-    const response = await request(http.createServer(app.callback())).get('/api/tests');
+    const response = await agent.get('/api/tests');
     expect(response.body).toEqual([1,2]);
   });
   it('shound work', async () => {
@@ -71,9 +73,9 @@ describe('middleware', () => {
         },
       ],
     });
-    let response = await request(http.createServer(app.callback())).get('/api/foos/1/bars');
+    let response = await agent.get('/api/foos/1/bars');
     expect(response.body).toEqual([1,2]);
-    response = await request(http.createServer(app.callback())).get('/api/bars/1/foo');
+    response = await agent.get('/api/bars/1/foo');
     expect(response.body).toEqual([3,4]);
   });
   it('shound work', async () => {
@@ -95,9 +97,9 @@ describe('middleware', () => {
         },
       ],
     });
-    let response = await request(http.createServer(app.callback())).get('/api/foo2s/1/bar2s');
+    let response = await agent.get('/api/foo2s/1/bar2s');
     expect(response.body).toEqual([5,6]);
-    response = await request(http.createServer(app.callback())).get('/api/bar2s/1/foo2s');
+    response = await agent.get('/api/bar2s/1/foo2s');
     expect(response.body).toEqual([1,2]);
   });
 });
