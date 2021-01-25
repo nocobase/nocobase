@@ -42,7 +42,7 @@ export const DrawerForm = forwardRef((props: any, ref) => {
   const [form, setForm] = useState<any>({});
   const [changed, setChanged] = useState(false);
   console.log(associatedKey);
-  const { title, actionDefaultParams = {}, fields: properties ={} } = props.schema||{};
+  const { title, actionDefaultParams = {}, fields = {} } = props.schema||{};
   const [resourceKey, setResourceKey] = useState(props.resourceKey);
   const [visible, setVisible] = useState(false);
   const name = associatedName ? `${associatedName}.${resourceName}` : resourceName;
@@ -60,7 +60,17 @@ export const DrawerForm = forwardRef((props: any, ref) => {
     setVisible,
     getData: run,
   }));
-
+  const { displayFormFields = [] } = activeTab;
+  const properties: any ={};
+  for (const key in fields) {
+    if (Object.prototype.hasOwnProperty.call(fields, key)) {
+      const field = fields[key];
+      if (Array.isArray(displayFormFields) && displayFormFields.length && displayFormFields.indexOf(field.id) === -1) {
+        continue;
+      }
+      properties[key] = field;
+    }
+  }
   return (
     <Drawer
       {...props}

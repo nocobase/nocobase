@@ -145,6 +145,7 @@ const transforms = {
         prop.enum = field.get('dataSource');
       }
       schema[field.name] = {
+        id: field.id,
         ...prop,
       };
     }
