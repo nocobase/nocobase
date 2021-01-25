@@ -68,21 +68,10 @@ export function middleware(options: MiddlewareOptions = {}) {
               if (field.options.actions) {
                 actions = field.options.actions;
               }
-            } else if (Collection) {
-              const collection = await Collection.findOne({
-                where: {
-                  name: tableName
-                },
-                include: [
-                  {
-                    association: 'actions',
-                  }
-                ]
-              });
-              if (collection && collection.actions && collection.actions.length) {
-                collection.actions.forEach(action => {
-                  actions[action.name] = action.options;
-                });
+            } else {
+              const items = table.getOptions('actions')||[];
+              for (const item of (items as any[])) {
+                actions[item.name] = item;
               }
             }
             resourcer.define({
