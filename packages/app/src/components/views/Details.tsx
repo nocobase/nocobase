@@ -15,7 +15,7 @@ configResponsive({
   middle: 800,
   large: 1200,
 });
-function toGroups(fields: any[]) {
+function toGroups(fields: any[], { displayFields = [] }) {
   const groups = [];
   let group = {
     title: undefined,
@@ -23,6 +23,9 @@ function toGroups(fields: any[]) {
     children: [],
   };
   fields.forEach(field => {
+    if (Array.isArray(displayFields) && displayFields.length && displayFields.indexOf(field.id) === -1) {
+      return null;
+    }
     if (field.interface === 'description' && group.children.length) {
       groups.push(group);
       group = {
@@ -72,7 +75,7 @@ export function Details(props: any) {
     }
   }
   const { displayFields = [] } = activeTab;
-  const groups = toGroups(fields);
+  const groups = toGroups(fields, { displayFields });
   console.log({groups});
   return (
     <Card bordered={false}>
