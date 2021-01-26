@@ -55,10 +55,12 @@ export class CollectionModel extends BaseModel {
    */
   async loadTableOptions(opts: any = {}) {
     const options = await this.getOptions();
-    const prevTable = this.database.getTable(this.get('name'));
-    const prevOptions = prevTable ? prevTable.getOptions() : {};
+    // const prevTable = this.database.getTable(this.get('name'));
+    // const prevOptions = prevTable ? prevTable.getOptions() : {};
     // table 是初始化和重新初始化
-    const table = this.database.table({...prevOptions, ...options});
+    const table = this.database.extend(options);
+    // console.log({options, actions: table.getOptions()['actions']})
+
     // 如果关系表未加载，一起处理
     // const associationTableNames = [];
     // for (const [key, association] of table.getAssociations()) {
@@ -120,6 +122,7 @@ export class CollectionModel extends BaseModel {
   async getOptions(): Promise<TableOptions> {
     return {
       ...this.get(),
+      actions: await this.getActions(),
       fields: await this.getFieldsOptions(),
     };
   }

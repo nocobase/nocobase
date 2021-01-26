@@ -118,7 +118,7 @@ export default {
           {
             "type": "value:visible",
             "target": "component.showInTable",
-            "condition": "{{ ['subTable'].indexOf($self.value) === -1 }}"
+            "condition": "{{ ['subTable', 'description'].indexOf($self.value) === -1 }}"
           },
           {
             "type": "value:visible",

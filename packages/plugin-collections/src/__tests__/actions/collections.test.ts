@@ -1,7 +1,7 @@
 import { Agent, getAgent, getApp } from '..';
 import { Application } from '@nocobase/server';
 import { types } from '../../interfaces';
-jest.setTimeout(30000);
+
 describe('collection hooks', () => {
   let app: Application;
   let agent: Agent;

@@ -205,8 +205,12 @@ export class Table {
     return this.options.name;
   }
 
-  public getOptions(): TableOptions {
-    return this.options;
+  /**
+   * 
+   * @param key 获取数据表配置，也可以指定 key
+   */
+  public getOptions(key?: any): TableOptions {
+    return key ? _.get(this.options, key) : this.options;
   }
 
   public getModel(): ModelCtor<Model> {

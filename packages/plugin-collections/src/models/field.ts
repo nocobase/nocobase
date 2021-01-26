@@ -250,6 +250,9 @@ export class FieldModel extends BaseModel {
           //@ts-ignore
           options
         );
+      } else {
+        //@ts-ignore
+        await model.update(item, options);
       }
       if (Array.isArray(item.children)) {
         const childrenIds = await this.import(item.children, {

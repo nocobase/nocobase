@@ -151,9 +151,9 @@ const data = [
   const [Collection, Page, User] = database.getModels(['collections', 'pages', 'users']);
   const tables = database.getTables([]);
   for (let table of tables) {
-    console.log(table.getName());
+    // console.log(table.getName());
     if (table.getName() === 'roles') {
-      console.log('roles', table.getOptions())
+      // console.log('roles', table.getOptions())
     }
     await Collection.import(table.getOptions(), { update: true, migrate: false });
   }

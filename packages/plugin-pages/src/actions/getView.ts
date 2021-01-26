@@ -37,6 +37,10 @@ const transforms = {
         title: field.title||field.name,
         ...(field.component||{}),
       }
+      if (field.interface === 'description') {
+        field.title && set(prop, 'x-component-props.title', field.title);
+        field.get('component.tooltip') && set(prop, 'x-component-props.children', field.get('component.tooltip'));
+      }
       if (ctx.formMode === 'update') {
         if (!ctx.updateFields.includes(field.id)) {
           set(prop, 'x-component-props.disabled', true);
@@ -69,7 +73,7 @@ const transforms = {
         prop.type = 'string'
       }
       if (field.get('component.tooltip')) {
-        prop.description = `{{html('${encodeURIComponent(field.get('component.tooltip'))}')}}`;
+        // prop.description = `{{html('${encodeURIComponent(field.get('component.tooltip'))}')}}`;
       }
       if (field.get('name') === 'dataSource') {
         
@@ -145,6 +149,7 @@ const transforms = {
         prop.enum = field.get('dataSource');
       }
       schema[field.name] = {
+        id: field.id,
         ...prop,
       };
     }
@@ -189,6 +194,11 @@ const transforms = {
 export default async (ctx, next) => {
   const { resourceName, resourceKey, values = {} } = ctx.action.params;
   const [View, Collection, Field, Action] = ctx.db.getModels(['views', 'collections', 'fields', 'actions']) as ModelCtor<Model>[];
+  const collection = await Collection.findOne({
+    where: {
+      name: resourceName,
+    },
+  });
   let view = await View.findOne(View.parseApiJson({
     filter: {
       collection_name: resourceName,
@@ -200,7 +210,10 @@ export default async (ctx, next) => {
   }));
   let throughName;
   const { resourceKey: resourceKey2, associatedName, resourceFieldName, associatedKey } = values;
-  const permissions = await ctx.ac.can(resourceName).permissions();
+  // TODO: 暂时不处理 developerMode 和 internal 的情况
+  const permissions = (ctx.ac.isRoot() || collection.developerMode || collection.internal) 
+    ? await ctx.ac.getRootPermissions()
+    : await ctx.ac.can(resourceName).permissions();
   ctx.listFields = [];
   ctx.createFields = [];
   ctx.updateFields = [];
@@ -238,11 +251,7 @@ export default async (ctx, next) => {
     // 如果不存在 view，新建一个
     view = new View({type: resourceKey, template: 'FilterForm'});
   }
-  const collection = await Collection.findOne({
-    where: {
-      name: resourceName,
-    },
-  });
+  
   // const where: any = {
   //   developerMode: ctx.state.developerMode,
   // }
