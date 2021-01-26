@@ -72,6 +72,13 @@ export const options = [
       types.json,
       types.icon,
     ],
+  },
+  {
+    key: 'others',
+    title: '其他',
+    children: [
+      types.description,
+    ],
   }
 ].map(({key, title, children}: any) => ({
   key,
