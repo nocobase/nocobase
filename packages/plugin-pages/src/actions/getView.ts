@@ -37,6 +37,10 @@ const transforms = {
         title: field.title||field.name,
         ...(field.component||{}),
       }
+      if (field.interface === 'description') {
+        field.title && set(prop, 'x-component-props.title', field.title);
+        field.get('component.tooltip') && set(prop, 'x-component-props.children', field.get('component.tooltip'));
+      }
       if (ctx.formMode === 'update') {
         if (!ctx.updateFields.includes(field.id)) {
           set(prop, 'x-component-props.disabled', true);

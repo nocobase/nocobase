@@ -436,6 +436,18 @@ export const group = {
   },
 };
 
+export const description = {
+  title: '说明文字',
+  options: {
+    interface: 'description',
+    // name: 'id',
+    type: 'virtual',
+    component: {
+      type: 'description',
+    },
+  },
+}
+
 /**
  * 主键（暂缓）
  */
