@@ -14,6 +14,16 @@ export default extend({
         list: {
           sort: 'id',
         },
+        update: {
+          filter: {
+            locked: false
+          }
+        },
+        destroy: {
+          filter: {
+            locked: false
+          }
+        }
       },
       component: {
         type: 'drawerSelect',
