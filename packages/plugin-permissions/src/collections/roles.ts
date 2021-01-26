@@ -84,6 +84,39 @@ export default {
       name: 'permissions'
     },
   ],
+  actions: [
+    {
+      type: 'list',
+      name: 'list',
+      title: '查看',
+    },
+    // {
+    //   type: 'get',
+    //   name: 'get',
+    //   title: '详情',
+    // },
+    {
+      type: 'create',
+      name: 'create',
+      title: '新增',
+      viewName: 'form',
+    },
+    {
+      type: 'update',
+      name: 'update',
+      title: '编辑',
+      viewName: 'form',
+    },
+    {
+      type: 'destroy',
+      name: 'destroy',
+      title: '删除',
+      filter: {
+        type: ROLE_TYPE_USER,
+        default: false
+      }
+    },
+  ],
   views: [
     {
       type: 'form',

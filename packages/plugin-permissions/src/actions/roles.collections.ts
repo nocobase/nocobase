@@ -37,8 +37,6 @@ export async function get(ctx: actions.Context, next: actions.Next) {
     limit: 1,
   });
 
-  console.log(permission);
-
   ctx.body = {
     ...permissions,
     description: _.get(permission, 'description'),

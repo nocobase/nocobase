@@ -31,6 +31,16 @@ export default {
       },
     },
     {
+      interface: 'boolean',
+      type: 'boolean',
+      name: 'locked',
+      title: '锁定',
+      defaultValue: false,
+      component: {
+        showInTable: true,
+      }
+    },
+    {
       type: 'belongsTo',
       name: 'collection',
       targetKey: 'name',
