@@ -1,7 +1,7 @@
 import { Agent, getAgent, getApp } from '../';
 import { Application } from '@nocobase/server';
 import * as types from '../../interfaces/types';
-jest.setTimeout(30000);
+
 describe('models.collection', () => {
   let app: Application;
   let agent: Agent;
