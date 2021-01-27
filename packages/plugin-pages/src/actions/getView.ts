@@ -211,7 +211,7 @@ export default async (ctx, next) => {
   let throughName;
   const { resourceKey: resourceKey2, associatedName, resourceFieldName, associatedKey } = values;
   // TODO: 暂时不处理 developerMode 和 internal 的情况
-  const permissions = (ctx.ac.isRoot() || collection.developerMode || collection.internal) 
+  const permissions = (await ctx.ac.isRoot() || collection.developerMode || collection.internal) 
     ? await ctx.ac.getRootPermissions()
     : await ctx.ac.can(resourceName).permissions();
   ctx.listFields = [];
@@ -235,6 +235,7 @@ export default async (ctx, next) => {
     }
   }
   // console.log({
+  //   a: (await ctx.ac.isRoot() || collection.developerMode || collection.internal),
   //   listFields: ctx.listFields, 
   //   createFields: ctx.createFields, 
   //   updateFields: ctx.updateFields,
