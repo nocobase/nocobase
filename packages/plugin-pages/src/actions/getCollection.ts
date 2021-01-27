@@ -8,6 +8,9 @@ export default async (ctx, next) => {
       name: resourceName,
     },
   }));
+  const permissions = (await ctx.ac.isRoot() || collection.developerMode || collection.internal) 
+    ? await ctx.ac.getRootPermissions()
+    : await ctx.ac.can(resourceName).permissions();
   const defaultView = await collection.getViews({
     where: {
       default: true,
@@ -18,8 +21,10 @@ export default async (ctx, next) => {
   collection.setDataValue('defaultViewName', defaultView.get('name'));
   const options = Tab.parseApiJson({
     filter: ctx.state.developerMode ? {
+      'id.in': permissions.tabs,
       enabled: true,
     } : {
+      'id.in': permissions.tabs,
       enabled: true,
       developerMode: {'$isFalsy': true},
     },
