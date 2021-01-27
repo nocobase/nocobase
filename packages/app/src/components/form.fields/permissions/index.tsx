@@ -19,6 +19,7 @@ Permissions.Actions = connect({
   const { data = [], loading = true } = useRequest(() => {
     return api.resource('collections.actions').list({
       associatedKey: resourceKey,
+      perPage: -1,
     });
   }, {
     refreshDeps: [resourceKey]
@@ -118,6 +119,7 @@ Permissions.Fields = connect<'TextArea'>({
   const { data = [], loading = true } = useRequest(() => {
     return api.resource('collections.fields').list({
       associatedKey: resourceKey,
+      perPage: -1,
     });
   }, {
     refreshDeps: [resourceKey]
@@ -211,6 +213,7 @@ Permissions.Tabs = connect<'TextArea'>({
   const { data = [], loading = true, mutate } = useRequest(() => {
     return api.resource('collections.tabs').list({
       associatedKey: resourceKey,
+      perPage: -1,
     });
   }, {
     refreshDeps: [resourceKey]
