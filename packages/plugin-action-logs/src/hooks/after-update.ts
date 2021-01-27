@@ -21,7 +21,7 @@ export default async function(model, options) {
     type: actionName,
     collection_name: resourceName,
     index: model.get(model.constructor.primaryKeyAttribute),
-    created_at: model.get('created_at')
+    created_at: model.get('updated_at')
   }, {
     transaction
   });
@@ -36,13 +36,14 @@ export default async function(model, options) {
         field: field.options,
         after: {
           value: model.get(key)
+        },
+        before: {
+          value: model.previous(key)
         }
       });
     }
   });
-  // TODO(bug): state.currentUser 不是 belongsTo field 的 target 实例
-  // Sequelize 会另外创建一个 Model 的继承类，无法直传 instance
-  // await log.setUser(state.currentUser, { transaction });
+
   await log.updateAssociations({
     ...(state.currentUser ? { user: state.currentUser.id } : {}),
     changes

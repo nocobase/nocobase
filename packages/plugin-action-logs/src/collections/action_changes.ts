@@ -1,29 +1,29 @@
 import { TableOptions } from '@nocobase/database';
 
 export default {
-  name: 'changes',
+  name: 'action_changes',
   title: '变动值',
   developerMode: true,
   internal: true,
   createdBy: false,
   updatedBy: false,
+  createdAt: false,
+  updatedAt: false,
   fields: [
-    {
-      interface: 'linkTo',
-      type: 'belongsTo',
-      name: 'field',
-      labelField: 'title',
-      title: '字段',
-      component: {
-        showInTable: true,
-      },
-    },
     {
       interface: 'linkTo',
       type: 'belongsTo',
       name: 'log',
       target: 'action_logs',
       title: '所属操作'
+    },
+    {
+      type: 'jsonb',
+      name: 'field',
+      title: '字段信息',
+      component: {
+        showInTable: true,
+      },
     },
     {
       type: 'jsonb',

@@ -1,10 +1,10 @@
 import afterCreate from './after-create';
-import beforeUpdate from './before-update';
+import afterUpdate from './after-update';
+import afterDestroy from './after-destroy';
 
 export function addAll(Model) {
-  console.log(Model);
   Model.addHook('afterCreate', afterCreate);
   // Model.addHook('afterBulkCreate', hooks.afterBulkCreate);
-  Model.addHook('beforeUpdate', beforeUpdate);
-  // Model.addHook('beforeDestroy', beforeDestroy);
+  Model.addHook('afterUpdate', afterUpdate);
+  Model.addHook('afterDestroy', afterDestroy);
 }

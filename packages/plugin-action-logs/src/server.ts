@@ -11,7 +11,7 @@ export default async function() {
 
   // 为所有的表都加上日志的 hooks
   database.addHook('afterTableInit', function (table) {
-    if (['action_logs', 'changes'].includes(table.options.name)) {
+    if (['action_logs', 'action_changes'].includes(table.options.name)) {
       return;
     }
     const Model = database.getModel(table.options.name);

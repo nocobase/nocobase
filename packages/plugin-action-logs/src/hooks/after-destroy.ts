@@ -18,10 +18,11 @@ export default async function(model, options) {
   const ActionLog = db.getModel('action_logs');
   // 创建操作记录
   const log = await ActionLog.create({
+    // user_id: state.currentUser ? state.currentUser.id : null,
     type: actionName,
     collection_name: resourceName,
     index: model.get(model.constructor.primaryKeyAttribute),
-    created_at: model.get('created_at')
+    // created_at: model.get('created_at')
   }, {
     transaction
   });
@@ -29,20 +30,18 @@ export default async function(model, options) {
   const fields = db.getTable(model.constructor.name).getFields();
   const fieldsList = Array.from(fields.values());
   const changes = [];
-  model.changed().forEach((key: string) => {
+  Object.keys(model.get()).forEach((key: string) => {
     const field = fields.get(key) || fieldsList.find((item: Field) => item.options.field === key);
     if (field) {
       changes.push({
         field: field.options,
-        after: {
+        before: {
           value: model.get(key)
         }
       });
     }
   });
-  // TODO(bug): state.currentUser 不是 belongsTo field 的 target 实例
-  // Sequelize 会另外创建一个 Model 的继承类，无法直传 instance
-  // await log.setUser(state.currentUser, { transaction });
+
   await log.updateAssociations({
     ...(state.currentUser ? { user: state.currentUser.id } : {}),
     changes

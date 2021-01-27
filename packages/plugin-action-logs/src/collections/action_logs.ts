@@ -7,6 +7,7 @@ export default {
   internal: true,
   createdBy: false,
   updatedBy: false,
+  updatedAt: false,
   fields: [
     {
       interface: 'createdAt',
@@ -63,9 +64,18 @@ export default {
       },
     },
     {
+      type: 'integer',
+      name: 'index',
+      title: '对象索引',
+      component: {
+        showInTable: true,
+      },
+    },
+    {
       interface: 'subTable',
       type: 'hasMany',
       name: 'changes',
+      target: 'action_changes',
       title: '数据变动',
       component: {
         showInDetail: true,
