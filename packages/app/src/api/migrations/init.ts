@@ -75,6 +75,27 @@ const data = [
         ]
       },
       {
+        title: '日志',
+        type: 'layout',
+        path: '/logs',
+        icon: 'HistoryOutlined',
+        template: 'SideMenuLayout',
+        sort: 85,
+        showInMenu: true,
+        children: [
+          {
+            title: '操作记录',
+            type: 'collection',
+            path: '/logs/logs',
+            icon: 'HistoryOutlined',
+            template: 'collection',
+            collection: 'action_logs',
+            sort: 80,
+            showInMenu: true,
+          },
+        ]
+      },
+      {
         title: '配置',
         type: 'layout',
         path: '/settings',
