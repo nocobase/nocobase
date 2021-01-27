@@ -26,8 +26,10 @@ function toGroups(fields: any[], { displayFields = [] }) {
     if (Array.isArray(displayFields) && displayFields.length && displayFields.indexOf(field.id) === -1) {
       return null;
     }
-    if (field.interface === 'description' && group.children.length) {
-      groups.push(group);
+    if (field.interface === 'description') {
+      if (group.children.length) {
+        groups.push(group);
+      }
       group = {
         title: field.title,
         tooltip: get(field, 'component.tooltip'),
