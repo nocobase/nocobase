@@ -77,6 +77,9 @@ api.resourcer.use(async (ctx: actions.Context, next) => {
   });
 
   await api.database.getModel('collections').load({skipExisting: true});
+  await api.database.getModel('collections').load({where: {
+    name: 'users',
+  }});
   api.listen(process.env.HTTP_PORT, () => {
     console.log(`http://localhost:${process.env.HTTP_PORT}/`);
   });
