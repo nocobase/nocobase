@@ -12,7 +12,8 @@ export default {
     },
     {
       type: 'belongsTo',
-      name: 'field'
+      name: 'field',
+      onDelete: 'CASCADE',
     },
     {
       type: 'jsonb',
