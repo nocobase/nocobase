@@ -22,6 +22,7 @@ export default {
       name: 'field',
       title: '字段信息',
       component: {
+        type: 'logs.field',
         showInTable: true,
       },
     },
@@ -30,6 +31,7 @@ export default {
       name: 'before',
       title: '操作前',
       component: {
+        type: 'logs.fieldValue',
         showInTable: true,
       },
     },
@@ -38,6 +40,7 @@ export default {
       name: 'after',
       title: '操作后',
       component: {
+        type: 'logs.fieldValue',
         showInTable: true,
       },
     }
