@@ -87,6 +87,7 @@ export default {
       type: 'list',
       name: 'list',
       title: '查看',
+      sort: '-created_at'
     },
   ],
   views: [

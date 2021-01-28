@@ -35,9 +35,7 @@ export default async function(model, options) {
     if (field) {
       changes.push({
         field: field.options,
-        before: {
-          value: model.get(key)
-        }
+        before: model.get(key)
       });
     }
   });

@@ -370,9 +370,8 @@ function LogField(props) {
 
 function LogFieldValue(props) {
   const { value, schema, data } = props;
-  console.log({ value, schema, data });
   return (
-    <div>LogFieldValue</div>
+    <div>{value}</div>
   )
 }
 
