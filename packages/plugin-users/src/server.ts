@@ -18,10 +18,6 @@ export default async function (options = {}) {
 
   registerFields(fields);
 
-  database.import({
-    directory: path.resolve(__dirname, 'collections'),
-  });
-
   database.addHook('afterTableInit', (table) => {
     let { createdBy, updatedBy, internal } = table.getOptions();
     // 非内置表，默认创建 createdBy 和 updatedBy
@@ -37,6 +33,10 @@ export default async function (options = {}) {
     Object.keys(fieldsToMake)
       .filter(type => Boolean(fieldsToMake[type]))
       .map(type => table.addField(makeOptions(type, fieldsToMake[type])));
+  });
+
+  database.import({
+    directory: path.resolve(__dirname, 'collections'),
   });
 
   resourcer.registerActionHandlers({

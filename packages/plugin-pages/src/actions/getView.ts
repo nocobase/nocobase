@@ -157,6 +157,7 @@ const transforms = {
     return schema;
   },
   details: async (fields: Model[], context?: any) => {
+    const [Field] = context.db.getModels(['fields']) as ModelCtor<Model>[];
     const arr = [];
     for (const field of fields) {
       if (!get(field.component, 'showInDetail')) {
@@ -167,10 +168,17 @@ const transforms = {
       }
       const props = {};
       if (field.get('interface') === 'subTable') {
-        const children = await field.getChildren({
-          order: [['sort', 'asc']],
-        });
-        props['children'] = children.map(child => ({...child.toJSON(), dataIndex: child.name.split('.')}))
+        const children = await Field.findAll(Field.parseApiJson({
+          filter: {
+            collection_name: field.get('target'),
+          },
+          perPage: -1,
+          sort: ['sort'],
+        }));
+        // const children = await field.getChildren({
+        //   order: [['sort', 'asc']],
+        // });
+        props['children'] = children.filter(item => item.get('component.showInTable')).map(child => ({...child.toJSON(), dataIndex: child.name.split('.')}))
       }
       arr.push({
         ...field.toJSON(),

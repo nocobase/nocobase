@@ -35,7 +35,6 @@ export class Permissions {
     });
 
     database.getModel('collections').addHook('afterCreate', async (model: any, options) => {
-      // console.log('plugin-permissions hook');
       await model.updateAssociations({
         scopes: [
           {
