@@ -3,12 +3,15 @@ import { TableOptions } from '@nocobase/database';
 export default {
   name: 'automations',
   title: '自动化',
+  internal: true,
+  developerMode: true,
   fields: [
     {
       interface: 'string',
       type: 'string',
       name: 'title',
       title: '自动化名称',
+      required: true,
       component: {
         showInTable: true,
         showInDetail: true,
@@ -41,6 +44,8 @@ export default {
       interface: 'select',
       type: 'string',
       title: '触发方式',
+      name: 'type',
+      required: true,
       dataSource: [
         {
           label: '数据表事件',
@@ -77,17 +82,128 @@ export default {
         showInTable: true,
         showInDetail: true,
         showInForm: true,
+        "x-linkages": [
+          {
+            "type": "value:visible",
+            "target": "fields",
+            "condition": "{{ ['collections:afterUpdate', 'collections:afterCreateOrUpdate'].indexOf($self.value) !== -1 }}"
+          },
+          {
+            "type": "value:visible",
+            "target": "startDateField",
+            "condition": "{{ ['collections:schedule'].indexOf($self.value) !== -1 }}"
+          },
+          {
+            "type": "value:visible",
+            "target": "endDateField",
+            "condition": "{{ ['collections:schedule'].indexOf($self.value) !== -1 }}"
+          },
+          {
+            "type": "value:visible",
+            "target": "startTime",
+            "condition": "{{ ['schedule'].indexOf($self.value) !== -1 }}"
+          },
+          {
+            "type": "value:visible",
+            "target": "endTime",
+            "condition": "{{ ['schedule'].indexOf($self.value) !== -1 }}"
+          },
+          {
+            "type": "value:visible",
+            "target": "cron",
+            "condition": "{{ ['collections:schedule', 'schedule'].indexOf($self.value) !== -1 }}"
+          },
+          {
+            "type": "value:visible",
+            "target": "endMode",
+            "condition": "{{ ['collections:schedule', 'schedule'].indexOf($self.value) !== -1 }}"
+          },
+          {
+            "type": "value:visible",
+            "target": "collection",
+            "condition": "{{ $self.value && $self.value !== 'schedule' }}"
+          },
+          {
+            "type": "value:visible",
+            "target": "filter",
+            "condition": "{{ $self.value && $self.value !== 'schedule' }}"
+          },
+        ],
       },
     },
     {
       interface: 'linkTo',
       type: 'belongsTo',
       name: 'collection',
+      target: 'collections',
+      targetKey: 'name',
       title: '触发数据表',
+      labelField: 'title',
+      valueField: 'name',
+      required: true,
+      multiple: false,
       component: {
-        showInTable: true,
+        type: 'remoteSelect',
         showInDetail: true,
         showInForm: true,
+        'x-component-props': {
+          mode: 'multiple',
+          resourceName: 'collections',
+          labelField: 'title',
+          valueField: 'name',
+        },
+        "x-linkages": [
+          {
+            "type": "value:visible",
+            "target": "fields",
+            "condition": "{{ $self.value && ['collections:afterUpdate', 'collections:afterCreateOrUpdate'].indexOf($form.values.type) !== -1 }}"
+          },
+          {
+            "type": "value:visible",
+            "target": "startDateField",
+            "condition": "{{ $self.value && ['collections:schedule'].indexOf($form.values.type) !== -1 }}"
+          },
+          {
+            type: "value:schema",
+            target: "fields",
+            // condition: "{{ $self.value }}",
+            schema: {
+              "x-component-props": {
+                "associatedKey": "{{ typeof $self.value === 'string' ? $self.value : $form.values.collection_name }}"
+              },
+            },
+          },
+          {
+            type: "value:schema",
+            target: "startDateField",
+            // condition: "{{ $self.value }}",
+            schema: {
+              "x-component-props": {
+                "associatedKey": "{{ typeof $self.value === 'string' ? $self.value : $form.values.collection_name }}"
+              },
+            },
+          },
+          {
+            type: "value:schema",
+            target: "endDateField",
+            // condition: "{{ $self.value }}",
+            schema: {
+              "x-component-props": {
+                "associatedKey": "{{ typeof $self.value === 'string' ? $self.value : $form.values.collection_name }}"
+              },
+            },
+          },
+          {
+            type: "value:schema",
+            target: "filter",
+            // condition: "{{ $self.value }}",
+            schema: {
+              "x-component-props": {
+                "associatedKey": "{{ typeof $self.value === 'string' ? $self.value : $form.values.collection_name }}"
+              },
+            },
+          },
+        ],
       },
     },
     {
@@ -95,9 +211,19 @@ export default {
       type: 'json',
       name: 'fields',
       title: '发生变动的字段',
+      labelField: 'title',
+      valueField: 'name',
       component: {
+        type: 'remoteSelect',
         showInDetail: true,
         showInForm: true,
+        'x-component-props': {
+          mode: 'simple',
+          multiple: true,
+          resourceName: 'collections.fields',
+          labelField: 'title',
+          valueField: 'name',
+        },
       },
     },
     {
@@ -105,9 +231,19 @@ export default {
       type: 'string',
       name: 'startDateField',
       title: '开始日期字段',
+      labelField: 'title',
+      valueField: 'name',
+      required: true,
       component: {
+        type: 'remoteSelect',
         showInDetail: true,
         showInForm: true,
+        'x-component-props': {
+          mode: 'simple',
+          resourceName: 'collections.fields',
+          labelField: 'title',
+          valueField: 'name',
+        },
       },
     },
     {
@@ -116,6 +252,7 @@ export default {
       name: 'startTime',
       title: '开始时间',
       showTime: true,
+      required: true,
       component: {
         showInDetail: true,
         showInForm: true,
@@ -126,6 +263,7 @@ export default {
       type: 'string',
       name: 'cron',
       title: '重复周期',
+      required: true,
       dataSource: [
         {
           label: '不重复',
@@ -159,6 +297,7 @@ export default {
       component: {
         showInDetail: true,
         showInForm: true,
+        default: 'norepeat',
       },
     },
     {
@@ -166,15 +305,39 @@ export default {
       type: 'string',
       name: 'endMode',
       title: '结束方式',
+      required: true,
       dataSource: [
-        { label: '永不结束', value: '' },
-        { label: '指定重复次数', value: '' },
-        { label: '根据日期字段', value: '' },
-        { label: '自定义结束时间', value: '' },
+        { label: '永不结束', value: 'never' },
+        { label: '指定重复次数', value: 'repeatTime' },
+        { label: '根据日期字段', value: 'customField' },
+        { label: '自定义结束时间', value: 'customTime' },
       ],
       component: {
         showInDetail: true,
         showInForm: true,
+        default: 'never',
+        "x-linkages": [
+          {
+            "type": "value:visible",
+            "target": "endDateField",
+            "condition": "{{ $self.value === 'customField' }}"
+          },
+          {
+            "type": "value:visible",
+            "target": "endTime",
+            "condition": "{{ $self.value === 'customTime' }}"
+          },
+          {
+            type: "value:schema",
+            target: "endDateField",
+            condition: "{{ ($form.values.collection_name || $form.values.collection) && $self.value === 'customField' }}",
+            schema: {
+              "x-component-props": {
+                "associatedKey": "{{ $form.values.collection_name || $form.values.collection }}"
+              },
+            },
+          },
+        ],
       },
     },
     {
@@ -182,9 +345,19 @@ export default {
       type: 'string',
       name: 'endDateField',
       title: '结束日期字段',
+      required: true,
+      labelField: 'title',
+      valueField: 'name',
       component: {
+        type: 'remoteSelect',
         showInDetail: true,
         showInForm: true,
+        'x-component-props': {
+          mode: 'simple',
+          resourceName: 'collections.fields',
+          labelField: 'title',
+          valueField: 'name',
+        },
       },
     },
     {
@@ -193,6 +366,7 @@ export default {
       name: 'endTime',
       title: '结束时间',
       showTime: true,
+      required: true,
       component: {
         showInDetail: true,
         showInForm: true,

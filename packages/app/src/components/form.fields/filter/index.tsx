@@ -7,6 +7,8 @@ import { mapStyledProps } from '../shared'
 import get from 'lodash/get';
 import moment from 'moment';
 import './style.less';
+import api from '@/api-client';
+import { useRequest } from 'umi';
 
 export function FilterGroup(props: any) {
   const { showDeleteButton = true, fields = [], onDelete, onChange, onAdd, dataSource = {} } = props;
@@ -445,12 +447,25 @@ export const Filter = connect({
       }
     ],
   };
-  const { value, onChange, ...restProps } = props;
-  console.log('valuevaluevaluevaluevaluevalue', value);
+  const { value, onChange, associatedKey, filter = {}, fields = [], ...restProps } = props;
+
+  const { data = [], loading = true } = useRequest(() => {
+    return associatedKey ? api.resource(`collections.fields`).list({
+      associatedKey,
+      filter,
+    }) : Promise.resolve({
+      data: fields,
+    });
+  }, {
+    refreshDeps: [associatedKey]
+  });
+
+  console.log('valuevaluevaluevaluevaluevalue', data);
+
   return <FilterGroup showDeleteButton={false} dataSource={value ? toValues(value) : dataSource} onChange={(values) => {
     console.log(values);
     onChange(toFilter(values));
-  }} {...restProps}/>
+  }} {...restProps} fields={data}/>
 });
 
 export default Filter;

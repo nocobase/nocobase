@@ -3,6 +3,8 @@ import { TableOptions } from '@nocobase/database';
 export default {
   name: 'automations_jobs',
   title: '任务',
+  internal: true,
+  developerMode: true,
   fields: [
     {
       interface: 'string',
@@ -24,23 +26,53 @@ export default {
         { label: '新增数据', value: 'create' },
         { label: '更新数据', value: 'update' },
         { label: '删除数据', value: 'destroy' },
-        { label: '发送通知', value: 'message' },
+        { label: '发送通知', value: 'message', disabled: true },
       ],
       component: {
         showInTable: true,
         showInDetail: true,
         showInForm: true,
+        "x-linkages": [
+          {
+            "type": "value:visible",
+            "target": "filter",
+            "condition": "{{ ['update', 'destroy'].indexOf($self.value) !== -1 }}"
+          },
+        ],
       },
     },
     {
       interface: 'linkTo',
       type: 'belongsTo',
       name: 'collection',
+      target: 'collections',
+      targetKey: 'name',
       title: '操作数据表',
+      labelField: 'title',
+      valueField: 'name',
+      required: true,
+      multiple: false,
       component: {
-        showInTable: true,
+        type: 'remoteSelect',
         showInDetail: true,
         showInForm: true,
+        'x-component-props': {
+          resourceName: 'collections',
+          labelField: 'title',
+          valueField: 'name',
+        },
+        "x-linkages": [
+          {
+            type: "value:schema",
+            target: "filter",
+            // condition: "{{ $self.value }}",
+            schema: {
+              "x-component-props": {
+                "associatedKey": "{{ typeof $self.value === 'string' ? $self.value : $form.values.collection_name }}"
+              },
+            },
+          },
+        ],
       },
     },
     {
