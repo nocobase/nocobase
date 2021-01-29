@@ -8,6 +8,8 @@ import {
   SettingOutlined,
   TableOutlined,
   MenuOutlined,
+  HistoryOutlined,
+  NotificationOutlined,
 } from '@ant-design/icons';
 
 export const IconFont = createFromIconfontCN({
@@ -36,6 +38,7 @@ export function registerIcons(components) {
 }
 
 registerIcons({
+  HistoryOutlined,
   MenuOutlined,
   TableOutlined,
   SettingOutlined,
@@ -43,6 +46,7 @@ registerIcons({
   UserOutlined,
   DatabaseOutlined,
   DashboardOutlined,
+  NotificationOutlined,
 });
 
 interface IconProps {

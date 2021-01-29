@@ -75,10 +75,10 @@ const data = [
         ]
       },
       {
-        title: '日志',
+        title: '动态',
         type: 'layout',
-        path: '/logs',
-        icon: 'HistoryOutlined',
+        path: '/activity',
+        icon: 'NotificationOutlined',
         template: 'SideMenuLayout',
         sort: 85,
         showInMenu: true,
@@ -86,7 +86,7 @@ const data = [
           {
             title: '操作记录',
             type: 'collection',
-            path: '/logs/logs',
+            path: '/activity/logs',
             icon: 'HistoryOutlined',
             template: 'collection',
             collection: 'action_logs',
