@@ -20,7 +20,7 @@ export default async function(model, options) {
   const log = await ActionLog.create({
     // user_id: state.currentUser ? state.currentUser.id : null,
     type: actionName,
-    collection_name: resourceName,
+    collection_name: model.constructor.name,
     index: model.get(model.constructor.primaryKeyAttribute),
     // created_at: model.get('created_at')
   }, {

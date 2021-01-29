@@ -19,7 +19,7 @@ export default async function(model, options) {
   // 创建操作记录
   const log = await ActionLog.create({
     type: actionName,
-    collection_name: resourceName,
+    collection_name: model.constructor.name,
     index: model.get(model.constructor.primaryKeyAttribute),
     created_at: model.get('created_at')
   }, {
