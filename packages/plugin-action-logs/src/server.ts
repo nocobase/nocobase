@@ -42,6 +42,9 @@ export default async function() {
         target: 'action_logs',
         title: '数据动态',
         foreignKey: 'index',
+        scope: {
+          collection_name: model.get('name')
+        },
         constraints: false
       }, { transaction });
     }
