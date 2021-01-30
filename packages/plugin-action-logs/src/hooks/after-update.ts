@@ -20,38 +20,38 @@ export default async function(model, options) {
   const fields = db.getTable(model.constructor.name).getFields();
   const fieldsList = Array.from(fields.values());
   const changes = [];
+  const changed = model.changed();
+  if (changed) {
+    changed.forEach((key: string) => {
+      const field = fields.get(key) || fieldsList.find((item: Field) => item.options.field === key);
+      if (field && field.options.type !== 'formula') {
+        changes.push({
+          field: field.options,
+          after: model.get(key),
+          before: model.previous(key)
+        });
+      }
+    });
 
-  model.changed().forEach((key: string) => {
-    const field = fields.get(key) || fieldsList.find((item: Field) => item.options.field === key);
-    if (field && field.options.type !== 'formula') {
-      changes.push({
-        field: field.options,
-        after: model.get(key),
-        before: model.previous(key)
+    if (changes.length) {
+      // 创建操作记录
+      const log = await ActionLog.create({
+        type: actionName,
+        collection_name: model.constructor.name,
+        index: model.get(model.constructor.primaryKeyAttribute),
+        created_at: model.get('updated_at')
+      }, {
+        transaction
+      });
+    
+      await log.updateAssociations({
+        ...(state.currentUser ? { user: state.currentUser.id } : {}),
+        changes
+      }, {
+        transaction
       });
     }
-  });
-
-  if (changes.length === 0) {
-    return;
   }
-
-  // 创建操作记录
-  const log = await ActionLog.create({
-    type: actionName,
-    collection_name: model.constructor.name,
-    index: model.get(model.constructor.primaryKeyAttribute),
-    created_at: model.get('updated_at')
-  }, {
-    transaction
-  });
-
-  await log.updateAssociations({
-    ...(state.currentUser ? { user: state.currentUser.id } : {}),
-    changes
-  }, {
-    transaction
-  });
 
   if (!options.transaction) {
     await transaction.commit();

@@ -26,6 +26,11 @@ export default async function(model, options) {
   }, {
     transaction
   });
+  if (state.currentUser) {
+    await log.updateAssociations({ user: state.currentUser.id }, {
+      transaction
+    });
+  }
 
   const fields = db.getTable(model.constructor.name).getFields();
   const fieldsList = Array.from(fields.values());
@@ -41,7 +46,6 @@ export default async function(model, options) {
   });
 
   await log.updateAssociations({
-    ...(state.currentUser ? { user: state.currentUser.id } : {}),
     changes
   }, {
     transaction
