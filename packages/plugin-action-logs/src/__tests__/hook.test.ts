@@ -62,7 +62,6 @@ describe('hook', () => {
       const p1 = await Post.findByPk(1);
 
       const logs = await p1.getAction_logs();
-      console.log(logs);
       expect(logs.length).toBe(2);
     });
   });
