@@ -63,6 +63,7 @@ describe('hook', () => {
 
       const logs = await p1.getAction_logs();
       expect(logs.length).toBe(2);
+      expect(logs.map(item => item.collection_name)).toEqual(['posts', 'posts']);
     });
   });
 });
