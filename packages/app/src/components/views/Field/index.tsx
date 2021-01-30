@@ -361,6 +361,20 @@ export function AttachmentFieldItem(props: any) {
   );
 }
 
+function LogField(props) {
+  const { value = {} } = props;
+  return (
+    <div>{value.title||value.name}</div>
+  )
+}
+
+function LogFieldValue(props) {
+  const { value, schema, data } = props;
+  return (
+    <div>{value}</div>
+  )
+}
+
 registerFieldComponents({
   string: StringField,
   textarea: TextareaField,
@@ -380,10 +394,12 @@ registerFieldComponents({
   subTable: SubTableField,
   linkTo: LinkToField,
   attachment: AttachmentField,
+  'logs.field': LogField,
+  'logs.fieldValue': LogFieldValue,
 });
 
 export default function Field(props: any) {
   const { schema = {} } = props;
-  const Component = getFieldComponent(schema.interface);
+  const Component = getFieldComponent(schema.interface||get(schema, 'component.type'));
   return <Component {...props}/>;
 }
