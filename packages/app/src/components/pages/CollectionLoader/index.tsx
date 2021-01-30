@@ -3,8 +3,9 @@ import Breadcrumb from './Breadcrumb';
 import CollectionIndex from './CollectionIndex';
 import CollectionSingle from './CollectionSingle';
 import './style.less';
-import { useRequest, request, Spin } from '@nocobase/client';
+import { request, Spin } from '@nocobase/client';
 import api from '@/api-client';
+import { useRequest } from 'umi';
 
 export function CollectionLoader(props: any) {
   let { path, pagepath, collection } = props.match.params;
@@ -27,6 +28,14 @@ export function CollectionLoader(props: any) {
   console.log('props.match', props.match, path);
   const { data = {}, error, loading, run } = useRequest(() => api.resource(collection).getCollection());
 
+  // const { data: collections = [], loading } = useRequest(() => api.resource(collection).getCollections({
+  //   values: {
+  //     tabs: items,
+  //   },
+  // }), {
+  //   // refreshDeps: [items],
+  // });
+
   if (loading) {
     return <Spin/>;
   }
@@ -34,17 +43,17 @@ export function CollectionLoader(props: any) {
   return (
     <div className={'collection'}>
       <div className={'collection-index'}>
-        { items.length === 0 && <CollectionIndex collection={data.data||{}} {...props}/> }
+        { items.length === 0 && <CollectionIndex collection={data} {...props}/> }
       </div>
       {items.length > 0 && (
         <div className={'collection-item'}>
           {/* <Breadcrumb>
             {items.map(item => <Breadcrumb.Item/>)}
           </Breadcrumb> */}
-          {items.map(item => {
+          {items.map((item, index) => {
             return (
               <div className={'collection-single'}>
-                <CollectionSingle item={item} collection={data.data||{}} {...props}/>
+                <CollectionSingle itemIndex={index} item={item} {...props}/>
               </div>
             );
           })}
