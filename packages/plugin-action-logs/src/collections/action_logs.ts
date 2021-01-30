@@ -8,6 +8,7 @@ export default {
   createdBy: false,
   updatedBy: false,
   updatedAt: false,
+  logging: false,
   fields: [
     {
       interface: 'createdAt',
@@ -83,6 +84,11 @@ export default {
     }
   ],
   actions: [
+    {
+      type: 'filter',
+      name: 'filter',
+      title: '筛选'
+    },
     {
       type: 'list',
       name: 'list',
