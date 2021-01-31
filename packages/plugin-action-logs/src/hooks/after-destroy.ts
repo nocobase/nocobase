@@ -1,25 +1,17 @@
 import { Field } from '@nocobase/database';
+import { LOG_TYPE_DESTROY } from '../constants';
 
 export default async function(model, options) {
   if (!options.context) {
     return;
   }
   const { database: db } = model;
-  const { context, transaction = await db.sequelize.transaction() } = options;
-  const {
-    state,
-    action: {
-      params: {
-        actionName,
-        resourceName,
-      }
-    }
-  } = context;
+  const { context: { state }, transaction = await db.sequelize.transaction() } = options;
   const ActionLog = db.getModel('action_logs');
   // 创建操作记录
   const log = await ActionLog.create({
     // user_id: state.currentUser ? state.currentUser.id : null,
-    type: actionName,
+    type: LOG_TYPE_DESTROY,
     collection_name: model.constructor.name,
     index: model.get(model.constructor.primaryKeyAttribute),
     // created_at: model.get('created_at')
