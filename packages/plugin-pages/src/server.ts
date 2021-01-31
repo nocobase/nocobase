@@ -6,6 +6,7 @@ import getView from './actions/getView';
 import getRoutes from './actions/getRoutes';
 import getPageInfo from './actions/getPageInfo';
 import * as rolesPagesActions from './actions/roles.pages';
+import getCollections from './actions/getCollections';
 
 export default async function (options = {}) {
   const database: Database = this.database;
@@ -18,6 +19,7 @@ export default async function (options = {}) {
   resourcer.registerActionHandler('getCollection', getCollection);
   resourcer.registerActionHandler('getView', getView);
   resourcer.registerActionHandler('getPageInfo', getPageInfo);
+  resourcer.registerActionHandler('getCollections', getCollections);
   resourcer.registerActionHandler('pages:getRoutes', getRoutes);
 
   Object.keys(rolesPagesActions).forEach(actionName => {
