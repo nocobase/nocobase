@@ -28,7 +28,7 @@ export function CollectionSingle(props) {
 
   const collection = collections[props.itemIndex]||{};
 
-  const { tabs = [] } = collection;
+  const { tabs = [], pageInfo = {} } = collection;
   const activeTab = tabs.find(tab => tab.name == item.tabName)||{};
   console.log({tabs, activeTab, item});
 
@@ -39,7 +39,7 @@ export function CollectionSingle(props) {
   return (
     <div>
       <Helmet>
-        <title>{collection.pageTitle}</title>
+        <title>{pageInfo.pageTitle}</title>
       </Helmet>
       <PageHeader
         ghost={false}
@@ -49,7 +49,7 @@ export function CollectionSingle(props) {
             removeLastItem: true,
           });
         }}
-        title={collection.pageTitle}
+        title={pageInfo.pageTitle}
         // subTitle="This is a subtitle"
         extra={[
           // <Button key="3">Operation</Button>,
@@ -79,7 +79,7 @@ export function CollectionSingle(props) {
         }
       />
       <div className={'collection-content'}>
-        <CollectionTabPane {...props} collection={collection} loading={activing} activeTab={activeTab}/>
+        <CollectionTabPane {...props} pageInfo={pageInfo} collection={collection} loading={activing} activeTab={activeTab}/>
       </div>
     </div>
   );
