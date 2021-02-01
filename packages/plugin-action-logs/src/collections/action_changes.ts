@@ -9,6 +9,7 @@ export default {
   updatedBy: false,
   createdAt: false,
   updatedAt: false,
+  logging: false,
   fields: [
     {
       interface: 'linkTo',
@@ -43,6 +44,13 @@ export default {
         type: 'logs.fieldValue',
         showInTable: true,
       },
+    }
+  ],
+  actions: [
+    {
+      type: 'list',
+      name: 'list',
+      title: '查看'
     }
   ],
   views: [

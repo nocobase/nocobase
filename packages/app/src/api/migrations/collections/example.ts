@@ -4,6 +4,7 @@ export default {
   title: '示例',
   name: 'examples',
   showInDataMenu: true,
+  logging: false,
   // createdBy: true,
   // updatedBy: true,
   fields: [
