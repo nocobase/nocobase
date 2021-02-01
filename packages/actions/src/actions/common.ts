@@ -453,7 +453,8 @@ export async function destroy(ctx: Context, next: Next) {
     const { where } = TargetModel.parseApiJson({ filter, context: ctx });
     if (resourceField instanceof HASONE || resourceField instanceof BELONGSTO) {
       const model: Model = await associated[getAccessor](commonOptions);
-      await associated[setAccessor](null, commonOptions);
+      // TODO：不能程序上解除关系，直接通过 onDelete 触发，或者通过 afterDestroy 处理
+      // await associated[setAccessor](null, commonOptions);
       // @ts-ignore
       ctx.body = await model.destroy(commonOptions);
     } else if (resourceField instanceof HASMANY || resourceField instanceof BELONGSTOMANY) {
@@ -462,7 +463,8 @@ export async function destroy(ctx: Context, next: Next) {
         where: resourceKey ? { [primaryKey]: resourceKey } : where,
         ...commonOptions
       });
-      await associated[removeAccessor](models, commonOptions);
+      // TODO：不能程序上解除关系，直接通过 onDelete 触发，或者通过 afterDestroy 处理
+      // await associated[removeAccessor](models, commonOptions);
       // @ts-ignore
       ctx.body = await TargetModel.destroy({
         where: { [primaryKey]: { [Op.in]: models.map(item => item[primaryKey]) } },
