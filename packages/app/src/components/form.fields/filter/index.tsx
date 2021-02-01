@@ -465,7 +465,7 @@ export const Filter = connect({
   return <FilterGroup showDeleteButton={false} dataSource={value ? toValues(value) : dataSource} onChange={(values) => {
     console.log(values);
     onChange(toFilter(values));
-  }} {...restProps} fields={data}/>
+  }} {...restProps} fields={data.filter(item => item.filterable)}/>
 });
 
 export default Filter;
