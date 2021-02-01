@@ -1,7 +1,7 @@
 import { Model, ModelCtor } from '@nocobase/database';
 import _ from 'lodash';
 
-async function getPageTitle(ctx, {resourceName, resourceKey}) {
+async function getPageInfo(ctx, {resourceName, resourceKey}) {
   // const { resourceName, resourceKey } = ctx.action.params;
   const M = ctx.db.getModel(resourceName) as ModelCtor<Model>;
   const model = await M.findByPk(resourceKey);
@@ -13,7 +13,10 @@ async function getPageTitle(ctx, {resourceName, resourceKey}) {
     },
     order: [['sort', 'asc']],
   });
-  return field ? (model.get(field.get('name')) || `#${model.get(M.primaryKeyAttribute)} 无标题`) : model.get(M.primaryKeyAttribute);
+  return {
+    pageTitle: field ? (model.get(field.get('name')) || `#${model.get(M.primaryKeyAttribute)} 无标题`) : model.get(M.primaryKeyAttribute),
+    ...model.toJSON(),
+  };
 };
 
 
@@ -89,7 +92,7 @@ export default async (ctx, next) => {
 
   for (const item of items) {
     const lastCollection = ctx.body[ctx.body.length-1];
-    lastCollection.pageTitle = await getPageTitle(ctx, {resourceName: lastCollection.name, resourceKey: item.itemId});
+    lastCollection.pageInfo = await getPageInfo(ctx, {resourceName: lastCollection.name, resourceKey: item.itemId});
     const activeTab = _.find(lastCollection.tabs, tab => tab.name == item.tabName)||{};
     if (activeTab && activeTab.type === 'association') {
       // console.log(activeTab.associationField.target);
@@ -99,7 +102,7 @@ export default async (ctx, next) => {
   }
 
   const lastCollection = ctx.body[ctx.body.length-1];
-  lastCollection.pageTitle = await getPageTitle(ctx, {resourceName: lastCollection.name, resourceKey: lastItem.itemId});
+  lastCollection.pageInfo = await getPageInfo(ctx, {resourceName: lastCollection.name, resourceKey: lastItem.itemId});
 
   await next();
 }
