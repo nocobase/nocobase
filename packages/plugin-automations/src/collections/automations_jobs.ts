@@ -2,10 +2,16 @@ import { TableOptions } from '@nocobase/database';
 
 export default {
   name: 'automations_jobs',
+  model: 'AutomationJobModel',
   title: '任务',
   internal: true,
   developerMode: true,
   fields: [
+    {
+      interface: 'linkTo',
+      name: 'automation',
+      type: 'belongsTo',
+    },
     {
       interface: 'string',
       type: 'string',

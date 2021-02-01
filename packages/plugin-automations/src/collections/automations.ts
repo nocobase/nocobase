@@ -2,6 +2,7 @@ import { TableOptions } from '@nocobase/database';
 
 export default {
   name: 'automations',
+  model: 'AutomationModel',
   title: '自动化',
   internal: true,
   developerMode: true,
