@@ -6,5 +6,9 @@
   "dependencies": {
     "@nocobase/database": "^0.3.0-alpha.0",
     "@nocobase/resourcer": "^0.3.0-alpha.0"
+  },
+  "devDependencies": {
+    "@nocobase/server": "^0.3.0-alpha.0",
+    "@nocobase/actions": "^0.3.0-alpha.0"
   }
 }

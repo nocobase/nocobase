@@ -1,4 +1,5 @@
 import { TableOptions } from '@nocobase/database';
+import { LOG_TYPE_CREATE, LOG_TYPE_UPDATE, LOG_TYPE_DESTROY } from '../constants';
 
 export default {
   name: 'action_logs',
@@ -8,6 +9,7 @@ export default {
   createdBy: false,
   updatedBy: false,
   updatedAt: false,
+  logging: false,
   fields: [
     {
       interface: 'createdAt',
@@ -54,9 +56,9 @@ export default {
       title: '操作类型',
       filterable: true,
       dataSource: [
-        { value: 'create', label: '新增' },
-        { value: 'update', label: '更新' },
-        { value: 'destroy', label: '删除' },
+        { value: LOG_TYPE_CREATE, label: '新增' },
+        { value: LOG_TYPE_UPDATE, label: '更新' },
+        { value: LOG_TYPE_DESTROY, label: '删除' },
       ],
       component: {
         showInTable: true,
@@ -83,6 +85,11 @@ export default {
     }
   ],
   actions: [
+    {
+      type: 'filter',
+      name: 'filter',
+      title: '筛选'
+    },
     {
       type: 'list',
       name: 'list',

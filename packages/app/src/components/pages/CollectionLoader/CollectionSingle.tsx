@@ -8,27 +8,38 @@ import { Spin } from '@nocobase/client';
 import { Helmet } from 'umi';
 
 export function CollectionSingle(props) {
-  console.log(props);
+  // console.log(props);
   const { item = {} } = props;
-  const { tabs = [] } = props.collection;
-  const activeTab = tabs.find(tab => tab.name == item.tabName)||{};
-  console.log(activeTab);
-  const { data = {}, loading } = useRequest(() => activeTab && api.resource(activeTab.collection_name).getPageInfo({
-    resourceKey: item.itemId,
+  const { data: collections = [], loading: collectionLoading } = useRequest(() => api.resource(props.match.params['collection']).getCollections({
+    values: {
+      tabs: props.match.params['items']
+    }
   }));
 
+  // const { data = {}, loading } = useRequest(() => currentTab && api.resource(currentTab.collection_name).getPageInfo({
+  //   resourceKey: item.itemId,
+  // }));
+
   const [activing, setActiving] = useState(false);
+
+  if (collectionLoading) {
+    return <Spin/>;
+  }
+
+  const collection = collections[props.itemIndex]||{};
+
+  const { tabs = [], pageInfo = {} } = collection;
+  const activeTab = tabs.find(tab => tab.name == item.tabName)||{};
+  console.log({tabs, activeTab, item});
 
   if (!activeTab) {
     return null;
   }
-  if (loading) {
-    return <Spin/>;
-  }
+
   return (
     <div>
       <Helmet>
-        <title>{data.pageTitle}</title>
+        <title>{pageInfo.pageTitle}</title>
       </Helmet>
       <PageHeader
         ghost={false}
@@ -38,7 +49,7 @@ export function CollectionSingle(props) {
             removeLastItem: true,
           });
         }}
-        title={data.pageTitle}
+        title={pageInfo.pageTitle}
         // subTitle="This is a subtitle"
         extra={[
           // <Button key="3">Operation</Button>,
@@ -68,7 +79,7 @@ export function CollectionSingle(props) {
         }
       />
       <div className={'collection-content'}>
-        <CollectionTabPane  {...props} loading={activing} pageInfo={data} activeTab={activeTab}/>
+        <CollectionTabPane {...props} pageInfo={pageInfo} collection={collection} loading={activing} activeTab={activeTab}/>
       </div>
     </div>
   );
