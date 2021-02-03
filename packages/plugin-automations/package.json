@@ -8,6 +8,7 @@
     "@nocobase/database": "^0.3.0-alpha.0",
     "@nocobase/resourcer": "^0.3.0-alpha.0",
     "@nocobase/server": "^0.3.0-alpha.0",
+    "json-templates": "^4.1.0",
     "node-schedule": "^2.0.0"
   },
   "devDependencies": {

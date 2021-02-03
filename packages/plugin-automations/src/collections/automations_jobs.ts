@@ -11,6 +11,10 @@ export default {
       interface: 'linkTo',
       name: 'automation',
       type: 'belongsTo',
+      component: {
+        type: 'hidden',
+        showInForm: true,
+      },
     },
     {
       interface: 'string',
@@ -78,6 +82,16 @@ export default {
               },
             },
           },
+          {
+            type: "value:schema",
+            target: "values",
+            // condition: "{{ $self.value }}",
+            schema: {
+              "x-component-props": {
+                "associatedKey": "{{ typeof $self.value === 'string' ? $self.value : $form.values.collection_name }}"
+              },
+            },
+          },
         ],
       },
     },
@@ -89,6 +103,16 @@ export default {
       component: {
         type: 'filter',
         showInDetail: true,
+        showInForm: true,
+      },
+    },
+    {
+      interface: 'json',
+      type: 'json',
+      name: 'values',
+      title: '数据操作',
+      component: {
+        type: 'values',
         showInForm: true,
       },
     },

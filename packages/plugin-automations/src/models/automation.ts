@@ -35,26 +35,49 @@ export class AutomationModel extends Model {
   startJob(jobName: string, callback: any) {
     const collectionName = this.get('collection_name');
     const hookName = `automation-${this.id}-${jobName}`;
+    const filter = this.get('filter') || {};
+    const M = this.database.getModel(collectionName);
     switch (this.get('type')) {
       case 'collections:afterCreate':
-        const M1 = this.database.getModel(collectionName);
-        M1.addHook('afterCreate', hookName, async (model) => {
-          await callback(model);
+        M.addHook('afterCreate', hookName, async (model) => {
+          filter[M.primaryKeyAttribute] = model[M.primaryKeyAttribute]
+          const result = await M.findOne(M.parseApiJson({
+            filter,
+          }));
+          if (result) {
+            await callback(model);
+          }
         });
         break;
-      case 'collections:afterCreate':
-        const M2 = this.database.getModel(collectionName);
-        M2.addHook('afterUpdate', hookName, async (model) => {
-          await callback(model);
+      case 'collections:afterUpdate':
+        M.addHook('afterUpdate', hookName, async (model) => {
+          filter[M.primaryKeyAttribute] = model[M.primaryKeyAttribute]
+          const result = await M.findOne(M.parseApiJson({
+            filter,
+          }));
+          if (result) {
+            await callback(model);
+          }
         });
         break;
       case 'collections:afterCreateOrUpdate':
-        const M3 = this.database.getModel(collectionName);
-        M3.addHook('afterCreate', hookName, async (model) => {
-          await callback(model);
+        M.addHook('afterCreate', hookName, async (model) => {
+          filter[M.primaryKeyAttribute] = model[M.primaryKeyAttribute]
+          const result = M.findOne(M.parseApiJson({
+            filter,
+          }));
+          if (result) {
+            await callback(model);
+          }
         });
-        M3.addHook('afterUpdate', hookName, async (model) => {
-          await callback(model);
+        M.addHook('afterUpdate', hookName, async (model) => {
+          filter[M.primaryKeyAttribute] = model[M.primaryKeyAttribute]
+          const result = await M.findOne(M.parseApiJson({
+            filter,
+          }));
+          if (result) {
+            await callback(model);
+          }
         });
         break;
       case 'collections:schedule':
@@ -63,7 +86,13 @@ export class AutomationModel extends Model {
           rule: '*/5 * * * * *',
         }, () => {
           (async () => {
-            await callback();
+            // TODO: 需要优化大数据的处理
+            const result = await M.findAll(M.parseApiJson({
+              filter,
+            }));
+            if (result.length) {
+              await callback(result);
+            }
           })();
         });
         scheduleJobs.set(hookName, job1);

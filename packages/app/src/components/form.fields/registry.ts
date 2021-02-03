@@ -21,6 +21,7 @@ import { Icon } from './icons'
 import { ColorSelect } from './color-select'
 import { Permissions } from './permissions'
 import { DraggableTable } from './draggable-table'
+import { Values } from './values';
 
 export const setup = () => {
   registerFormFields({
@@ -55,6 +56,7 @@ export const setup = () => {
     colorSelect: ColorSelect,
     subTable: SubTable,
     draggableTable: DraggableTable,
+    values: Values,
     'permissions.actions': Permissions.Actions,
     'permissions.fields': Permissions.Fields,
     'permissions.tabs': Permissions.Tabs,
