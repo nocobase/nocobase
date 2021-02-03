@@ -48,6 +48,11 @@ export default {
             "target": "filter",
             "condition": "{{ ['update', 'destroy'].indexOf($self.value) !== -1 }}"
           },
+          {
+            "type": "value:visible",
+            "target": "values",
+            "condition": "{{ ['create', 'update'].indexOf($self.value) !== -1 }}"
+          },
         ],
       },
     },
@@ -78,7 +83,8 @@ export default {
             // condition: "{{ $self.value }}",
             schema: {
               "x-component-props": {
-                "associatedKey": "{{ typeof $self.value === 'string' ? $self.value : $form.values.collection_name }}"
+                "associatedKey": "{{ typeof $self.value === 'string' ? $self.value : $form.values.collection_name }}",
+                "sourceName": "{{ $form.values.automation ? $form.values.automation.collection_name : null }}"
               },
             },
           },
@@ -88,7 +94,8 @@ export default {
             // condition: "{{ $self.value }}",
             schema: {
               "x-component-props": {
-                "associatedKey": "{{ typeof $self.value === 'string' ? $self.value : $form.values.collection_name }}"
+                "associatedKey": "{{ typeof $self.value === 'string' ? $self.value : $form.values.collection_name }}",
+                "sourceName": "{{ $form.values.automation ? $form.values.automation.collection_name : null }}"
               },
             },
           },

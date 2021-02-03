@@ -11,7 +11,7 @@ import api from '@/api-client';
 import { useRequest } from 'umi';
 
 export function FilterGroup(props: any) {
-  const { showDeleteButton = true, fields = [], onDelete, onChange, onAdd, dataSource = {} } = props;
+  const { showDeleteButton = true, fields = [], sourceFields = [], onDelete, onChange, onAdd, dataSource = {} } = props;
   const { list, getKey, push, remove, replace } = useDynamicList<any>(dataSource.list || [
     {
       type: 'item',
@@ -50,6 +50,7 @@ export function FilterGroup(props: any) {
             <div style={{marginBottom: 8}}>
               {<Component
                 fields={fields}
+                sourceFields={sourceFields}
                 dataSource={item}
                 // showDeleteButton={list.length > 1}
                 onChange={(value) => {
@@ -319,10 +320,11 @@ function NullControl(props) {
 }
 
 export function FilterItem(props: FilterItemProps) {
-  const { index, fields = [], showDeleteButton = true, onDelete, onChange } = props;
+  const { index, fields = [], sourceFields = [], showDeleteButton = true, onDelete, onChange } = props;
   const [type, setType] = useState('string');
   const [field, setField] = useState<any>({});
   const [dataSource, setDataSource] = useState(props.dataSource||{});
+  const [valueType, setValueType] = useState('custom');
   useEffect(() => {
     const field = fields.find(field => field.name === props.dataSource.column);
     if (field) {
@@ -334,6 +336,9 @@ export function FilterItem(props: FilterItemProps) {
       setType(componentType);
     }
     setDataSource({...props.dataSource});
+    if (/^{{.+}}$/.test(props.dataSource.value)) {
+      setValueType('ref');
+    }
   }, [
     props.dataSource, type,
   ]);
@@ -347,7 +352,7 @@ export function FilterItem(props: FilterItemProps) {
   // let multiple = true;
   // if ()
   const opOptions = op[type]||op.string;
-  console.log({field, dataSource, type, ValueControl});
+  console.log({valueType});
   return (
     <Space>
       <Select value={dataSource.column}
@@ -358,6 +363,7 @@ export function FilterItem(props: FilterItemProps) {
             componentType = 'multipleSelect';
           }
           setType(componentType);
+          setValueType('custom');
           onChange({...dataSource, column: value, op: get(op, [componentType, 0, 'value']), value: undefined});
         }}
         style={{ width: 120 }} 
@@ -377,17 +383,43 @@ export function FilterItem(props: FilterItemProps) {
           <Select.Option value={option.value}>{option.label}</Select.Option>
         ))} */}
       </Select>
-      <ValueControl 
-        field={field} 
-        multiple={type === 'checkboxes' || !!field.multiple} 
-        op={dataSource.op} 
-        options={field.dataSource} 
-        value={dataSource.value} 
-        onChange={(value) => {
-          onChange({...dataSource, value: value});
-        }}
-        style={{ width: 180 }}
-      />
+      {sourceFields.length > 0 && (
+        <Select
+          style={{ minWidth: 100 }}
+          onChange={(value) => {
+            setDataSource({...dataSource, value: undefined})
+            onChange({...dataSource, value: undefined});
+            setValueType(value);
+          }}
+          defaultValue={valueType}>
+          <Select.Option value={'custom'}>自定义</Select.Option>
+          <Select.Option value={'ref'}>触发表字段</Select.Option>
+        </Select>
+      )}
+      {valueType !== 'ref' ? (
+        <ValueControl 
+          field={field} 
+          multiple={type === 'checkboxes' || !!field.multiple} 
+          op={dataSource.op} 
+          options={field.dataSource} 
+          value={dataSource.value} 
+          onChange={(value) => {
+            onChange({...dataSource, value: value});
+          }}
+          style={{ width: 180 }}
+        />
+      ) : (sourceFields.length > 0 ? (
+        <Select value={dataSource.value}
+          onChange={(value) => {
+            onChange({...dataSource, value: value});
+          }}
+          style={{ width: 120 }} 
+          placeholder={'选择字段'}>
+          {sourceFields.map(field => (
+            <Select.Option value={`{{ ${field.name} }}`}>{field.title}</Select.Option>
+          ))}
+        </Select>
+      ) : null)}
       {showDeleteButton && (
         <Button className={'filter-remove-link filter-item'} type={'link'} style={{padding: 0}} onClick={(e) => {
           onDelete && onDelete(e);
@@ -447,7 +479,7 @@ export const Filter = connect({
       }
     ],
   };
-  const { value, onChange, associatedKey, filter = {}, fields = [], ...restProps } = props;
+  const { value, onChange, associatedKey, filter = {}, sourceName, sourceFilter = {}, fields = [], ...restProps } = props;
 
   const { data = [], loading = true } = useRequest(() => {
     return associatedKey ? api.resource(`collections.fields`).list({
@@ -460,10 +492,23 @@ export const Filter = connect({
     refreshDeps: [associatedKey]
   });
 
+
+  const { data: sourceFields = [] } = useRequest(() => {
+    return sourceName ? api.resource(`collections.fields`).list({
+      associatedKey: sourceName,
+      filter: sourceFilter,
+    }) : Promise.resolve({
+      data: [],
+    });
+  }, {
+    refreshDeps: [sourceName]
+  });
+  console.log({sourceName, sourceFields});
+
   return <FilterGroup showDeleteButton={false} dataSource={value ? toValues(value) : dataSource} onChange={(values) => {
     console.log(values);
     onChange(toFilter(values));
-  }} {...restProps} fields={data.filter(item => item.filterable)}/>
+  }} {...restProps} sourceFields={sourceFields} fields={data.filter(item => item.filterable)}/>
 });
 
 export default Filter;

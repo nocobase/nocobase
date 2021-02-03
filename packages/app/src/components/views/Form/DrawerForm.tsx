@@ -28,7 +28,7 @@ import cleanDeep from 'clean-deep';
 import scopes from './scopes';
 
 export const DrawerForm = forwardRef((props: any, ref) => {
-  console.log(props);
+  console.log('DrawerForm', props);
   const {
     activeTab = {},
     pageInfo = {},
@@ -42,7 +42,7 @@ export const DrawerForm = forwardRef((props: any, ref) => {
   const [form, setForm] = useState<any>({});
   const [changed, setChanged] = useState(false);
   console.log(associatedKey);
-  const { title, actionDefaultParams = {}, fields = {} } = props.schema||{};
+  const { title, initialValues = {}, actionDefaultParams = {}, fields = {} } = props.schema||{};
   const [resourceKey, setResourceKey] = useState(props.resourceKey);
   const [visible, setVisible] = useState(false);
   const name = associatedName ? `${associatedName}.${resourceName}` : resourceName;
@@ -116,7 +116,7 @@ export const DrawerForm = forwardRef((props: any, ref) => {
           colon={true}
           layout={'vertical'}
           // 暂时先这么处理，如果有 associatedKey 注入表单里
-          initialValues={{associatedKey, resourceKey, ...data}}
+          initialValues={{associatedKey, resourceKey, ...initialValues, ...data}}
           // actions={actions}
           schema={{
             type: 'object',

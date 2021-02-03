@@ -11,7 +11,7 @@ import api from '@/api-client';
 import { useRequest } from 'umi';
 
 export function FilterGroup(props: any) {
-  const { fields = [], onDelete, onChange, onAdd, dataSource = [] } = props;
+  const { fields = [], sourceFields = [], onDelete, onChange, onAdd, dataSource = [] } = props;
   const { list, getKey, push, remove, replace } = useDynamicList<any>(dataSource);
   let style: any = {
     position: 'relative',
@@ -26,6 +26,7 @@ export function FilterGroup(props: any) {
             <div style={{marginBottom: 8}}>
               {<FilterItem
                 fields={fields}
+                sourceFields={sourceFields}
                 dataSource={item}
                 // showDeleteButton={list.length > 1}
                 onChange={(value) => {
@@ -267,7 +268,7 @@ function NullControl(props) {
 }
 
 export function FilterItem(props: FilterItemProps) {
-  const { index, fields = [], showDeleteButton = true, onDelete, onChange } = props;
+  const { index, fields = [], sourceFields = [], showDeleteButton = true, onDelete, onChange } = props;
   const [type, setType] = useState('string');
   const [field, setField] = useState<any>({});
   const [dataSource, setDataSource] = useState(props.dataSource||{});
@@ -297,8 +298,8 @@ export function FilterItem(props: FilterItemProps) {
           }}
           style={{ width: 120 }} 
           placeholder={'选择字段'}>
-          {fields.map(field => (
-            <Select.Option value={field.name}>{field.title}</Select.Option>
+          {sourceFields.map(field => (
+            <Select.Option value={`{{ ${field.name} }}`}>{field.title}</Select.Option>
           ))}
         </Select>
       )
@@ -366,7 +367,7 @@ export const Values = connect({
   getProps: mapStyledProps,
 })((props) => {
   
-  const { value = [], onChange, associatedKey, filter = {}, fields = [], ...restProps } = props;
+  const { value = [], onChange, associatedKey, sourceName, sourceFilter = {}, filter = {}, fields = [], ...restProps } = props;
 
   const { data = [], loading = true } = useRequest(() => {
     return associatedKey ? api.resource(`collections.fields`).list({
@@ -379,9 +380,20 @@ export const Values = connect({
     refreshDeps: [associatedKey]
   });
 
+  const { data: sourceFields = [] } = useRequest(() => {
+    return sourceName ? api.resource(`collections.fields`).list({
+      associatedKey: sourceName,
+      filter: sourceFilter,
+    }) : Promise.resolve({
+      data: [],
+    });
+  }, {
+    refreshDeps: [sourceName]
+  });
+
   return <FilterGroup dataSource={Array.isArray(value) ? value.filter(item => Object.keys(item).length) : []} onChange={(values) => {
     onChange(values.filter(item => Object.keys(item).length));
-  }} {...restProps} fields={data}/>
+  }} {...restProps} fields={data} sourceFields={sourceFields}/>
 });
 
 export default Values;
