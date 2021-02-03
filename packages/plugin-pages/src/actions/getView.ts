@@ -25,6 +25,9 @@ const transforms = {
     const mode = get(ctx.action.params, ['values', 'mode'], ctx.action.params.mode);
     const schema = {};
     for (const field of fields) {
+      if (field.get('component.type') === 'hidden') {
+        continue;
+      }
       if (!field.get('component.showInForm')) {
         continue;
       }

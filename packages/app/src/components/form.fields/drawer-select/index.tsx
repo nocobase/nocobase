@@ -28,7 +28,7 @@ function transform({value, multiple, labelField, valueField = 'id'}) {
 }
 
 function DrawerSelectComponent(props) {
-  const { disabled, target, multiple, associatedName, labelField, valueField = 'id', value, onChange } = props;
+  const { disabled, target, multiple, filter, associatedName, labelField, valueField = 'id', value, onChange } = props;
   const [selectedKeys, selectedValue] = transform({value, multiple, labelField, valueField });
   const [visible, setVisible] = useState(false);
   const [selectedRowKeys, setSelectedRowKeys] = useState(multiple ? selectedKeys : [selectedKeys]);
@@ -96,6 +96,7 @@ function DrawerSelectComponent(props) {
         ]}
       >
         <ViewFactory
+          defaultFilter={filter}
           multiple={multiple}
           resourceName={target}
           isFieldComponent={true}

@@ -460,8 +460,6 @@ export const Filter = connect({
     refreshDeps: [associatedKey]
   });
 
-  console.log('valuevaluevaluevaluevaluevalue', data);
-
   return <FilterGroup showDeleteButton={false} dataSource={value ? toValues(value) : dataSource} onChange={(values) => {
     console.log(values);
     onChange(toFilter(values));
