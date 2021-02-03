@@ -30,6 +30,7 @@ export function Table(props: TableProps) {
     onSelected,
     multiple = true,
     selectedRowKeys: srk,
+    defaultFilter = {},
   } = props;
   const { 
     name: viewName,
@@ -47,7 +48,7 @@ export function Table(props: TableProps) {
   // const { data, mutate } = useRequest(() => api.resource(name).list({
   //   associatedKey,
   // }));
-  const { filter: defaultFilter = {} } = actionDefaultParams;
+  const { filter: defaultActionFilter = {} } = actionDefaultParams;
 
   const [filterCount, setFilterCount] = useState(0);
   const name = associatedName ? `${associatedName}.${resourceName}` : resourceName;
@@ -65,6 +66,7 @@ export function Table(props: TableProps) {
       filter: {
         and: [
           defaultFilter,
+          defaultActionFilter,
           filter,
         ].filter(obj => obj && Object.keys(obj).length)
       }
