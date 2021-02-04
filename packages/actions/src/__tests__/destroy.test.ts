@@ -16,7 +16,7 @@ describe('destroy', () => {
       const response = await agent
         .delete(`/posts/${post.id}`);
       // console.log(response.body);
-      expect(response.body).toBe(post.id);
+      expect(response.body.count).toBe(1);
     });
   
     it('batch delete by filter', async () => {
