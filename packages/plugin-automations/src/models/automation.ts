@@ -16,7 +16,24 @@ export class AutomationModel extends Model {
     }
   }
 
+  isEnabled() {
+    if (!this.get('enabled')) {
+      return false;
+    }
+    const type = this.get('type');
+    if (!['collections:schedule', 'schedule'].includes(type)) {
+      return true;
+    }
+    if (this.get('cron') === 'none') {
+      return true;
+    }
+    return true;
+  }
+
   async startJobs() {
+    if (!this.get('enabled')) {
+      return false;
+    }
     const jobs = await this.getJobs();
     for (const job of jobs) {
       job.setDataValue('automation', this);
@@ -39,44 +56,61 @@ export class AutomationModel extends Model {
     const M = this.database.getModel(collectionName);
     switch (this.get('type')) {
       case 'collections:afterCreate':
-        M.addHook('afterCreate', hookName, async (model) => {
-          filter[M.primaryKeyAttribute] = model[M.primaryKeyAttribute]
-          const result = await M.findOne(M.parseApiJson({
+        M.addHook('afterCreate', hookName, async (model, options) => {
+          filter[M.primaryKeyAttribute] = model[M.primaryKeyAttribute];
+          const { where } = M.parseApiJson({
             filter,
-          }));
+          });
+          const result = await M.findOne({
+            ...options,
+            where,
+          });
+          console.log({M, filter, result});
           if (result) {
-            await callback(model);
+            await callback(model, options);
           }
         });
         break;
       case 'collections:afterUpdate':
-        M.addHook('afterUpdate', hookName, async (model) => {
-          filter[M.primaryKeyAttribute] = model[M.primaryKeyAttribute]
-          const result = await M.findOne(M.parseApiJson({
+        M.addHook('afterUpdate', hookName, async (model, options) => {
+          filter[M.primaryKeyAttribute] = model[M.primaryKeyAttribute];
+          const { where } = M.parseApiJson({
             filter,
-          }));
+          });
+          const result = await M.findOne({
+            ...options,
+            where,
+          });
           if (result) {
-            await callback(model);
+            await callback(model, options);
           }
         });
         break;
       case 'collections:afterCreateOrUpdate':
-        M.addHook('afterCreate', hookName, async (model) => {
-          filter[M.primaryKeyAttribute] = model[M.primaryKeyAttribute]
-          const result = M.findOne(M.parseApiJson({
+        M.addHook('afterCreate', hookName, async (model, options) => {
+          filter[M.primaryKeyAttribute] = model[M.primaryKeyAttribute];
+          const { where } = M.parseApiJson({
             filter,
-          }));
+          });
+          const result = await M.findOne({
+            ...options,
+            where,
+          });
           if (result) {
-            await callback(model);
+            await callback(model, options);
           }
         });
-        M.addHook('afterUpdate', hookName, async (model) => {
+        M.addHook('afterUpdate', hookName, async (model, options) => {
           filter[M.primaryKeyAttribute] = model[M.primaryKeyAttribute]
-          const result = await M.findOne(M.parseApiJson({
+          const { where } = M.parseApiJson({
             filter,
-          }));
+          });
+          const result = await M.findOne({
+            ...options,
+            where,
+          });
           if (result) {
-            await callback(model);
+            await callback(model, options);
           }
         });
         break;

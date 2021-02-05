@@ -47,6 +47,7 @@ export default {
       title: '触发方式',
       name: 'type',
       required: true,
+      createOnly: true,
       dataSource: [
         {
           label: '数据表事件',
@@ -91,34 +92,34 @@ export default {
           },
           {
             "type": "value:visible",
-            "target": "startDateField",
-            "condition": "{{ ['collections:schedule'].indexOf($self.value) !== -1 }}"
-          },
-          {
-            "type": "value:visible",
-            "target": "endDateField",
-            "condition": "{{ ['collections:schedule'].indexOf($self.value) !== -1 }}"
-          },
-          {
-            "type": "value:visible",
             "target": "startTime",
-            "condition": "{{ ['schedule'].indexOf($self.value) !== -1 }}"
+            "condition": "{{ ['schedule', 'collections:schedule'].indexOf($self.value) !== -1 }}"
           },
-          {
-            "type": "value:visible",
-            "target": "endTime",
-            "condition": "{{ ['schedule'].indexOf($self.value) !== -1 }}"
-          },
+          // {
+          //   "type": "value:visible",
+          //   "target": "endDateField",
+          //   "condition": "{{ ['collections:schedule'].indexOf($self.value) !== -1 }}"
+          // },
+          // {
+          //   "type": "value:visible",
+          //   "target": "startTime",
+          //   "condition": "{{ ['schedule'].indexOf($self.value) !== -1 }}"
+          // },
+          // {
+          //   "type": "value:visible",
+          //   "target": "endTime",
+          //   "condition": "{{ ['schedule'].indexOf($self.value) !== -1 }}"
+          // },
           {
             "type": "value:visible",
             "target": "cron",
             "condition": "{{ ['collections:schedule', 'schedule'].indexOf($self.value) !== -1 }}"
           },
-          {
-            "type": "value:visible",
-            "target": "endMode",
-            "condition": "{{ ['collections:schedule', 'schedule'].indexOf($self.value) !== -1 }}"
-          },
+          // {
+          //   "type": "value:visible",
+          //   "target": "endMode",
+          //   "condition": "{{ ['collections:schedule', 'schedule'].indexOf($self.value) !== -1 }}"
+          // },
           {
             "type": "value:visible",
             "target": "collection",
@@ -129,6 +130,77 @@ export default {
             "target": "filter",
             "condition": "{{ $self.value && $self.value !== 'schedule' }}"
           },
+          {
+            "type": "value:schema",
+            "target": "startTime",
+            "condition": "{{ $self.value === 'collections:schedule' }}",
+            schema: {
+              title: '开始日期字段',
+              'x-component-props': {
+                automationType: '{{ $self.value }}'
+              },
+            },
+          },
+          {
+            "type": "value:schema",
+            "target": "endMode",
+            "condition": "{{ ['collections:schedule', 'schedule'].indexOf($self.value) !== -1 }}",
+            schema: {
+              'x-component-props': {
+                automationType: '{{ $self.value }}'
+              },
+            },
+          },
+          {
+            "type": "value:schema",
+            "target": "endTime",
+            "condition": "{{ $self.value === 'collections:schedule' }}",
+            schema: {
+              title: '结束日期字段',
+              'x-component-props': {
+                automationType: '{{ $self.value }}'
+              },
+            },
+          },
+          {
+            "type": "value:schema",
+            "target": "startTime",
+            "condition": "{{ $self.value === 'schedule' }}",
+            schema: {
+              title: '开始时间',
+              'x-component-props': {
+                automationType: '{{ $self.value }}'
+              },
+            },
+          },
+          {
+            "type": "value:schema",
+            "target": "endTime",
+            "condition": "{{ $self.value === 'schedule' }}",
+            schema: {
+              title: '结束时间',
+              'x-component-props': {
+                automationType: '{{ $self.value }}'
+              },
+            },
+          },
+
+          // {
+          //   "type": "value:state",
+          //   "target": "cron",
+          //   "condition": "{{ ['collections:schedule', 'schedule'].indexOf($self.value) !== -1 }}",
+          //   state: {
+          //     value: 'none',
+          //   },
+          // },
+          // {
+          //   "type": "value:state",
+          //   "target": "endMode",
+          //   "condition": "{{ ['collections:schedule', 'schedule'].indexOf($self.value) !== -1 }}",
+          //   state: {
+          //     value: 'none',
+          //   },
+          // }
         ],
       },
     },
@@ -143,6 +215,7 @@ export default {
       valueField: 'name',
       required: true,
       multiple: false,
+      createOnly: true,
       component: {
         type: 'remoteSelect',
         showInDetail: true,
@@ -159,11 +232,11 @@ export default {
             "target": "fields",
             "condition": "{{ $self.value && ['collections:afterUpdate', 'collections:afterCreateOrUpdate'].indexOf($form.values.type) !== -1 }}"
           },
-          {
-            "type": "value:visible",
-            "target": "startDateField",
-            "condition": "{{ $self.value && ['collections:schedule'].indexOf($form.values.type) !== -1 }}"
-          },
+          // {
+          //   "type": "value:visible",
+          //   "target": "startTime",
+          //   "condition": "{{ $self.value && ['collections:schedule'].indexOf($form.values.type) !== -1 }}"
+          // },
           {
             type: "value:schema",
             target: "fields",
@@ -176,7 +249,7 @@ export default {
           },
           {
             type: "value:schema",
-            target: "startDateField",
+            target: "startTime",
             // condition: "{{ $self.value }}",
             schema: {
               "x-component-props": {
@@ -186,7 +259,7 @@ export default {
           },
           {
             type: "value:schema",
-            target: "endDateField",
+            target: "endTime",
             // condition: "{{ $self.value }}",
             schema: {
               "x-component-props": {
@@ -228,33 +301,14 @@ export default {
       },
     },
     {
-      interface: 'string',
-      type: 'string',
-      name: 'startDateField',
-      title: '开始日期字段',
-      labelField: 'title',
-      valueField: 'name',
-      required: true,
-      component: {
-        type: 'remoteSelect',
-        showInDetail: true,
-        showInForm: true,
-        'x-component-props': {
-          mode: 'simple',
-          resourceName: 'collections.fields',
-          labelField: 'title',
-          valueField: 'name',
-        },
-      },
-    },
-    {
-      interface: 'datetime',
-      type: 'date',
+      interface: 'json',
+      type: 'json',
       name: 'startTime',
       title: '开始时间',
       showTime: true,
       required: true,
       component: {
+        type: 'automations.datetime',
         showInDetail: true,
         showInForm: true,
       },
@@ -265,41 +319,88 @@ export default {
       name: 'cron',
       title: '重复周期',
       required: true,
-      dataSource: [
-        {
-          label: '不重复',
-          value: 'norepeat',
-        },
-        {
-          label: '每天',
-          value: 'everyday',
-        },
-        {
-          label: '每周',
-          value: 'everyweek',
-        },
-        {
-          label: '每月',
-          value: 'everymonth',
-        },
-        {
-          label: '每季度',
-          value: 'everyquarter',
-        },
-        {
-          label: '每年',
-          value: 'everyYear',
-        },
-        {
-          label: '自定义',
-          value: 'other',
-        },
-      ],
+      // dataSource: [
+      //   {
+      //     label: '不重复',
+      //     value: 'norepeat',
+      //   },
+      //   {
+      //     label: '每天',
+      //     value: 'everyday',
+      //   },
+      //   {
+      //     label: '每周',
+      //     value: 'everyweek',
+      //   },
+      //   {
+      //     label: '每月',
+      //     value: 'everymonth',
+      //   },
+      //   {
+      //     label: '每季度',
+      //     value: 'everyquarter',
+      //   },
+      //   {
+      //     label: '每年',
+      //     value: 'everyYear',
+      //   },
+      //   {
+      //     label: '自定义',
+      //     value: 'other',
+      //   },
+      // ],
       component: {
+        type: 'automations.cron',
         showInDetail: true,
         showInForm: true,
-        default: 'norepeat',
+        // default: 'none',
+        "x-linkages": [
+          {
+            "type": "value:visible",
+            "target": "endMode",
+            "condition": "{{ $self.value && $self.value !== 'none' }}"
+          },
+          // {
+          //   type: "value:schema",
+          //   target: "endMode",
+          //   condition: "{{ $form.values.type === 'schedule' && $self.value && $self.value !== 'norepeat' }}",
+          //   schema: {
+          //     enum: [
+          //       { label: '永不结束', value: 'never' },
+          //       { label: '指定重复次数', value: 'repeatTime' },
+          //       { label: '自定义结束时间', value: 'customTime' },
+          //     ]
+          //   },
+          // },
+          // {
+          //   type: "value:schema",
+          //   target: "endMode",
+          //   condition: "{{ $form.values.type === 'collections:schedule' && $self.value && $self.value !== 'norepeat' }}",
+          //   schema: {
+          //     enum: [
+          //       { label: '永不结束', value: 'never' },
+          //       { label: '指定重复次数', value: 'repeatTime' },
+          //       { label: '根据日期字段', value: 'customField' },
+          //     ]
+          //   },
+          // },
+          // {
+          //   "type": "value:visible",
+          //   "target": "endDateField",
+          //   "condition": "{{ $self.value && $self.value !== 'norepeat' }}"
+          // },
+          // {
+          //   "type": "value:visible",
+          //   "target": "endTime",
+          //   "condition": "{{ $self.value && $self.value !== 'norepeat' }}"
+          // },
+        ]
       },
+    },
+    {
+      type: 'integer',
+      name: 'times',
+      developerMode: true,
     },
     {
       interface: 'select',
@@ -307,30 +408,31 @@ export default {
       name: 'endMode',
       title: '结束方式',
       required: true,
-      dataSource: [
-        { label: '永不结束', value: 'never' },
-        { label: '指定重复次数', value: 'repeatTime' },
-        { label: '根据日期字段', value: 'customField' },
-        { label: '自定义结束时间', value: 'customTime' },
-      ],
+      // dataSource: [
+      //   { label: '永不结束', value: 'never' },
+      //   { label: '指定重复次数', value: 'repeatTime' },
+      //   { label: '根据日期字段', value: 'customField' },
+      //   { label: '自定义结束时间', value: 'customTime' },
+      // ],
       component: {
+        type: 'automations.endmode',
         showInDetail: true,
         showInForm: true,
-        default: 'never',
+        default: 'none',
         "x-linkages": [
           {
             "type": "value:visible",
-            "target": "endDateField",
-            "condition": "{{ $self.value === 'customField' }}"
-          },
-          {
-            "type": "value:visible",
             "target": "endTime",
-            "condition": "{{ $self.value === 'customTime' }}"
+            "condition": "{{ $self.value === 'byField' || $self.value === 'customTime' }}"
           },
+          // {
+          //   "type": "value:visible",
+          //   "target": "endTime",
+          //   "condition": "{{ $self.value === 'customTime' }}"
+          // },
           {
             type: "value:schema",
-            target: "endDateField",
+            target: "endTime",
             condition: "{{ ($form.values.collection_name || $form.values.collection) && $self.value === 'customField' }}",
             schema: {
               "x-component-props": {
@@ -341,34 +443,35 @@ export default {
         ],
       },
     },
+    // {
+    //   interface: 'string',
+    //   type: 'string',
+    //   name: 'endDateField',
+    //   title: '结束日期字段',
+    //   required: true,
+    //   labelField: 'title',
+    //   valueField: 'name',
+    //   component: {
+    //     type: 'remoteSelect',
+    //     showInDetail: true,
+    //     showInForm: true,
+    //     'x-component-props': {
+    //       mode: 'simple',
+    //       resourceName: 'collections.fields',
+    //       labelField: 'title',
+    //       valueField: 'name',
+    //     },
+    //   },
+    // },
     {
-      interface: 'string',
-      type: 'string',
-      name: 'endDateField',
-      title: '结束日期字段',
-      required: true,
-      labelField: 'title',
-      valueField: 'name',
-      component: {
-        type: 'remoteSelect',
-        showInDetail: true,
-        showInForm: true,
-        'x-component-props': {
-          mode: 'simple',
-          resourceName: 'collections.fields',
-          labelField: 'title',
-          valueField: 'name',
-        },
-      },
-    },
-    {
-      interface: 'datetime',
-      type: 'date',
+      interface: 'json',
+      type: 'json',
       name: 'endTime',
       title: '结束时间',
       showTime: true,
       required: true,
       component: {
+        type: 'automations.datetime',
         showInDetail: true,
         showInForm: true,
       },
