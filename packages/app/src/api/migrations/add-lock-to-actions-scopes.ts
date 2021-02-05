@@ -5,12 +5,12 @@ import Database from '@nocobase/database';
   await api.loadPlugins();
   const database: Database = api.database;
   await api.database.sync({
-    tables: ['actions_scopes'],
+    tables: ['scopes'],
   });
 
   const [Collection, User, Role] = database.getModels(['collections', 'users', 'roles']);
 
-  const tables = database.getTables(['actions_scopes']);
+  const tables = database.getTables(['scopes']);
 
   for (let table of tables) {
     console.log(table.getName());

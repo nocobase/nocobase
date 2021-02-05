@@ -38,7 +38,7 @@ import Database from '@nocobase/database';
     parent_id: parent.id,
   });
 
-  const Scope = database.getModel('actions_scopes');
+  const Scope = database.getModel('scopes');
 
   const collections = await Collection.findAll();
 

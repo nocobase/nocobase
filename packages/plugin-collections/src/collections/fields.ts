@@ -304,6 +304,20 @@ export default {
               },
             },
           },
+          {
+            type: 'value:visible',
+            target: 'scope',
+            condition: '{{ !!$self.value }}'
+          },
+          {
+            type: "value:schema",
+            target: "scope",
+            schema: {
+              "x-component-props": {
+                "associatedKey": "{{ $self.value }}"
+              },
+            },
+          },
         ],
       },
     },
@@ -336,6 +350,22 @@ export default {
         showInForm: true,
         default: true,
       },
+    },
+    {
+      name: 'scope',
+      interface: 'linkTo',
+      type: 'belongsTo',
+      target: 'scopes',
+      multiple: false,
+      title: '数据范围',
+      component: {
+        type: 'drawerSelect',
+        'x-component-props': {
+          resourceName: 'collections.scopes',
+        },
+        showInDetail: true,
+        showInForm: true,
+      }
     },
     {
       interface: 'boolean',

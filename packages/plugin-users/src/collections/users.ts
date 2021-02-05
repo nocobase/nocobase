@@ -66,6 +66,12 @@ export default {
       unique: true,
       hidden: true,
     },
+    {
+      name: 'groups',
+      interface: 'multipleSelect',
+      type: 'jsonb',
+      title: '用户组',
+    }
   ],
   actions: [
     {
