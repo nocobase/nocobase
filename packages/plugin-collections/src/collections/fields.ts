@@ -306,12 +306,12 @@ export default {
           },
           {
             type: 'value:visible',
-            target: 'scope',
+            target: 'component.x-component-props.filter',
             condition: '{{ !!$self.value }}'
           },
           {
             type: "value:schema",
-            target: "scope",
+            target: "component.x-component-props.filter",
             schema: {
               "x-component-props": {
                 "associatedKey": "{{ $self.value }}"
@@ -352,18 +352,15 @@ export default {
       },
     },
     {
-      name: 'scope',
-      interface: 'linkTo',
-      type: 'belongsTo',
-      target: 'scopes',
-      multiple: false,
+      name: 'component.x-component-props.filter',
+      interface: 'json',
+      type: 'virtual',
       title: '数据范围',
       component: {
-        type: 'drawerSelect',
+        type: 'filter',
         'x-component-props': {
-          resourceName: 'collections.scopes',
+          resourceName: 'collections.fields',
         },
-        showInDetail: true,
         showInForm: true,
       }
     },

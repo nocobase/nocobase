@@ -71,6 +71,13 @@ export default {
       interface: 'multipleSelect',
       type: 'jsonb',
       title: '用户组',
+      filterable: true,
+      dataSource: [],
+      component: {
+        showInForm: true,
+        showInDetail: true,
+        showInTable: true
+      }
     }
   ],
   actions: [
