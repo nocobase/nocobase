@@ -87,7 +87,7 @@ export default {
         "x-linkages": [
           {
             "type": "value:visible",
-            "target": "fields",
+            "target": "changed",
             "condition": "{{ ['collections:afterUpdate', 'collections:afterCreateOrUpdate'].indexOf($self.value) !== -1 }}"
           },
           {
@@ -229,7 +229,7 @@ export default {
         "x-linkages": [
           {
             "type": "value:visible",
-            "target": "fields",
+            "target": "changed",
             "condition": "{{ $self.value && ['collections:afterUpdate', 'collections:afterCreateOrUpdate'].indexOf($form.values.type) !== -1 }}"
           },
           // {
@@ -239,7 +239,7 @@ export default {
           // },
           {
             type: "value:schema",
-            target: "fields",
+            target: "changed",
             // condition: "{{ $self.value }}",
             schema: {
               "x-component-props": {
@@ -283,7 +283,7 @@ export default {
     {
       interface: 'multipleSelect',
       type: 'json',
-      name: 'fields',
+      name: 'changed',
       title: '发生变动的字段',
       labelField: 'title',
       valueField: 'name',
@@ -315,7 +315,7 @@ export default {
     },
     {
       interface: 'select',
-      type: 'string',
+      type: 'json',
       name: 'cron',
       title: '重复周期',
       required: true,

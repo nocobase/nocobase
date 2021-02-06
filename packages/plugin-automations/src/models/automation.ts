@@ -49,12 +49,40 @@ export class AutomationModel extends Model {
     }
   }
 
+  getRule() {
+    const { type, startTime = {}, endTime = {}, cron = 'none', endMode = 'none' } = this.get();
+    if (type !== 'schedule') {
+      return;
+    }
+    if (!startTime.value) {
+      return;
+    }
+    let options: any = { start: new Date(startTime.value) };
+    if (cron === 'none') {
+      return options.start;
+    }
+    if (endMode === 'none' && endTime.value) {
+      options.end = new Date(endTime.value);
+    }
+    if (typeof cron === 'object') {
+      Object.assign(options, cron);
+    } else if (typeof cron === 'string') {
+      const map = {
+        everysecond: '* * * * * *',
+      };
+      options.rule = map[cron] || cron;
+    }
+    return options;
+  }
+
   startJob(jobName: string, callback: any) {
     const collectionName = this.get('collection_name');
     const hookName = `automation-${this.id}-${jobName}`;
     const filter = this.get('filter') || {};
+    const changedFields = (this.get('changed') as any) || [];
     const M = this.database.getModel(collectionName);
-    switch (this.get('type')) {
+    const automationType = this.get('type');
+    switch (automationType) {
       case 'collections:afterCreate':
         M.addHook('afterCreate', hookName, async (model, options) => {
           filter[M.primaryKeyAttribute] = model[M.primaryKeyAttribute];
@@ -65,14 +93,25 @@ export class AutomationModel extends Model {
             ...options,
             where,
           });
-          console.log({M, filter, result});
+          // console.log({M, filter, result});
           if (result) {
-            await callback(model, options);
+            await callback(model, { ...options, automationType });
           }
         });
         break;
       case 'collections:afterUpdate':
         M.addHook('afterUpdate', hookName, async (model, options) => {
+          const changed = model.changed();
+          if (!changed) {
+            return;
+          }
+          if (changedFields.length) {
+            const arr = _.intersection(changed, changedFields);
+            console.log(arr);
+            if (arr.length === 0) {
+              return;
+            }
+          }
           filter[M.primaryKeyAttribute] = model[M.primaryKeyAttribute];
           const { where } = M.parseApiJson({
             filter,
@@ -82,7 +121,7 @@ export class AutomationModel extends Model {
             where,
           });
           if (result) {
-            await callback(model, options);
+            await callback(model, {...options, automationType});
           }
         });
         break;
@@ -97,10 +136,20 @@ export class AutomationModel extends Model {
             where,
           });
           if (result) {
-            await callback(model, options);
+            await callback(model, {...options, automationType});
           }
         });
         M.addHook('afterUpdate', hookName, async (model, options) => {
+          const changed = model.changed();
+          if (!changed) {
+            return;
+          }
+          if (changedFields.length) {
+            const arr = _.intersection(changed, changedFields);
+            if (arr.length === 0) {
+              return;
+            }
+          }
           filter[M.primaryKeyAttribute] = model[M.primaryKeyAttribute]
           const { where } = M.parseApiJson({
             filter,
@@ -110,37 +159,35 @@ export class AutomationModel extends Model {
             where,
           });
           if (result) {
-            await callback(model, options);
+            await callback(model, { ...options, automationType });
           }
         });
         break;
       case 'collections:schedule':
-        const job1 = schedule.scheduleJob({
-          start: '2021-02-01T10:27:00.006Z',
-          rule: '*/5 * * * * *',
-        }, () => {
-          (async () => {
-            // TODO: 需要优化大数据的处理
-            const result = await M.findAll(M.parseApiJson({
-              filter,
-            }));
-            if (result.length) {
-              await callback(result);
-            }
-          })();
-        });
-        scheduleJobs.set(hookName, job1);
+        // const job1 = schedule.scheduleJob({
+        //   start: '2021-02-01T10:27:00.006Z',
+        //   rule: '*/5 * * * * *',
+        // }, () => {
+        //   (async () => {
+        //     // TODO: 需要优化大数据的处理
+        //     const result = await M.findAll(M.parseApiJson({
+        //       filter,
+        //     }));
+        //     if (result.length) {
+        //       await callback(result, { automationType });
+        //     }
+        //   })();
+        // });
+        // scheduleJobs.set(hookName, job1);
         break;
       case 'schedule':
-        const job2= schedule.scheduleJob({
-          start: '2021-02-01T10:27:00.006Z',
-          rule: '*/5 * * * * *',
-        }, () => {
+        const rule = this.getRule();
+        console.log({rule});
+        schedule.scheduleJob(hookName, rule, (date) => {
           (async () => {
-            await callback();
+            await callback(date, { automationType });
           })();
         });
-        scheduleJobs.set(hookName, job2);
         break;
     }
   }
@@ -162,10 +209,10 @@ export class AutomationModel extends Model {
         M3.removeHook('afterCreate', hookName);
         M3.removeHook('afterUpdate', hookName);
         break;
-      case 'schedule':
       case 'collections:schedule':
-        const job = scheduleJobs.get(hookName);
-        job.cancel();
+        break;
+      case 'schedule':
+        schedule.cancelJob(hookName);
         break;
     }
   }

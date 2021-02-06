@@ -63,6 +63,6 @@ export const setup = () => {
     'permissions.tabs': Permissions.Tabs,
     'automations.datetime': Automations.DateTime,
     'automations.endmode': Automations.EndMode,
-    'automations.cron': Automations.Cron,
+    'automations.rule': Automations.Cron,
   });
 }
