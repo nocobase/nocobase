@@ -80,6 +80,7 @@ api.resourcer.use(async (ctx: actions.Context, next) => {
   await api.database.getModel('collections').load({where: {
     name: 'users',
   }});
+  await api.database.getModel('automations').load();
   api.listen(process.env.HTTP_PORT, () => {
     console.log(`http://localhost:${process.env.HTTP_PORT}/`);
   });

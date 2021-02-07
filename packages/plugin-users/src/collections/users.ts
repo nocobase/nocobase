@@ -65,6 +65,7 @@ export default {
       title: 'Token',
       unique: true,
       hidden: true,
+      filterable: false,
     },
   ],
   actions: [

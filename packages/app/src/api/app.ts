@@ -67,5 +67,6 @@ api.registerPlugin('plugin-pages', [path.resolve(__dirname, '../../../plugin-pag
 api.registerPlugin('plugin-users', [path.resolve(__dirname, '../../../plugin-users'), {}]);
 api.registerPlugin('plugin-file-manager', [path.resolve(__dirname, '../../../plugin-file-manager'), {}]);
 api.registerPlugin('plugin-permissions', [path.resolve(__dirname, '../../../plugin-permissions'), {}]);
+api.registerPlugin('plugin-automations', [path.resolve(__dirname, '../../../plugin-automations'), {}]);
 
 export default api;

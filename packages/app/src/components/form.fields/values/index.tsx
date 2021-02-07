@@ -11,44 +11,20 @@ import api from '@/api-client';
 import { useRequest } from 'umi';
 
 export function FilterGroup(props: any) {
-  const { showDeleteButton = true, fields = [], sourceFields = [], onDelete, onChange, onAdd, dataSource = {} } = props;
-  const { list, getKey, push, remove, replace } = useDynamicList<any>(dataSource.list || [
-    {
-      type: 'item',
-    },
-  ]);
+  const { fields = [], sourceFields = [], onDelete, onChange, onAdd, dataSource = [] } = props;
+  const { list, getKey, push, remove, replace } = useDynamicList<any>(dataSource);
   let style: any = {
     position: 'relative',
   };
-  if (showDeleteButton) {
-    style = {
-      ...style,
-      marginBottom: 14, 
-      padding: 14,
-      border: '1px dashed #dedede',
-    }
-  }
   return (
     <div style={style}>
-      <div style={{marginBottom: 14}}>
-        满足组内
-        {' '}
-        <Select style={{width: 80}} onChange={(value) => {
-          onChange({type: 'group', list, andor: value});
-        }} defaultValue={dataSource.andor||'and'}>
-          <Select.Option value={'and'}>全部</Select.Option>
-          <Select.Option value={'or'}>任意</Select.Option>
-        </Select>
-        {' '}
-        条件
-      </div>
       <div>
         {list.map((item, index) => {
           // console.log(item);
-          const Component = item.type === 'group' ? FilterGroup : FilterItem;
+          // const Component = item.type === 'group' ? FilterGroup : FilterItem;
           return (
             <div style={{marginBottom: 8}}>
-              {<Component
+              {<FilterItem
                 fields={fields}
                 sourceFields={sourceFields}
                 dataSource={item}
@@ -57,14 +33,14 @@ export function FilterGroup(props: any) {
                   replace(index, value);
                   const newList = [...list];
                   newList[index] = value;
-                  onChange({...dataSource, list: newList});
+                  onChange(newList);
                   // console.log(list, value, index);
                 }}
                 onDelete={() => {
                   remove(index);
                   const newList = [...list];
                   newList.splice(index, 1);
-                  onChange({...dataSource, list: newList});
+                  onChange(newList);
                   // console.log(list, index);
                 }}
               />}
@@ -75,42 +51,14 @@ export function FilterGroup(props: any) {
       <div>
         <Space>
           <Button style={{padding: 0}} type={'link'} onClick={() => {
-            const data = {
-              type: 'item'
-            };
+            const data = {};
             push(data);
             const newList = [...list];
             newList.push(data);
-            onChange({...dataSource, list: newList});
+            onChange(newList);
           }}>
-            <PlusCircleOutlined /> 添加条件
+            <PlusCircleOutlined /> 新增一个字段赋值
           </Button>
-          {' '}
-          <Button
-            style={{padding: 0}}
-            type={'link'}
-            onClick={() => {
-              const data = {
-                type: 'group',
-                list: [
-                  {
-                    type: 'item',
-                  },
-                ],
-              };
-              push(data);
-              const newList = [...list];
-              newList.push(data);
-              onChange({...dataSource, list: newList});
-            }}
-          >
-            <PlusCircleOutlined /> 添加条件组
-          </Button>
-          {showDeleteButton && <Button className={'filter-remove-link filter-group'} style={{padding: 0, position: 'absolute', top: 0, right: 0, width: 32}} type={'link'} onClick={(e) => {
-            onDelete && onDelete(e);
-          }}>
-            <CloseCircleOutlined />
-          </Button>}
         </Space>
       </div>
     </div>
@@ -324,7 +272,6 @@ export function FilterItem(props: FilterItemProps) {
   const [type, setType] = useState('string');
   const [field, setField] = useState<any>({});
   const [dataSource, setDataSource] = useState(props.dataSource||{});
-  const [valueType, setValueType] = useState('custom');
   useEffect(() => {
     const field = fields.find(field => field.name === props.dataSource.column);
     if (field) {
@@ -336,23 +283,37 @@ export function FilterItem(props: FilterItemProps) {
       setType(componentType);
     }
     setDataSource({...props.dataSource});
-    if (/^{{.+}}$/.test(props.dataSource.value)) {
-      setValueType('ref');
-    }
   }, [
     props.dataSource, type,
   ]);
   let ValueControl = controls[type]||controls.string;
-  if (['$null', '$notNull', '$isTruly', '$isFalsy'].indexOf(dataSource.op) !== -1) {
+  if (['truncate'].indexOf(dataSource.op) !== -1) {
     ValueControl = NullControl;
-  }
-  if (['boolean', 'checkbox'].indexOf(type) !== -1) {
-    ValueControl = NullControl;
+  } else if (dataSource.op === 'ref') {
+    ValueControl = () => {
+      return (
+        <Select value={dataSource.value}
+          onChange={(value) => {
+            onChange({...dataSource, value: value});
+          }}
+          style={{ width: 120 }} 
+          placeholder={'选择字段'}>
+          {sourceFields.map(field => (
+            <Select.Option value={field.name}>{field.title}</Select.Option>
+          ))}
+        </Select>
+      )
+    }
   }
   // let multiple = true;
   // if ()
-  const opOptions = op[type]||op.string;
-  console.log({valueType});
+  // const opOptions = op[type]||op.string;
+  const opOptions = [
+    {label: '自定义填写', value: 'eq', selected: true},
+    {label: '等于触发数据', value: 'ref'},
+    {label: '清空数据', value: 'truncate'},
+  ];
+  console.log({field, dataSource, type, ValueControl});
   return (
     <Space>
       <Select value={dataSource.column}
@@ -363,8 +324,7 @@ export function FilterItem(props: FilterItemProps) {
             componentType = 'multipleSelect';
           }
           setType(componentType);
-          setValueType('custom');
-          onChange({...dataSource, column: value, op: get(op, [componentType, 0, 'value']), value: undefined});
+          onChange({...dataSource, column: value, op: get(opOptions, [0, 'value']), value: undefined});
         }}
         style={{ width: 120 }} 
         placeholder={'选择字段'}>
@@ -372,9 +332,9 @@ export function FilterItem(props: FilterItemProps) {
           <Select.Option value={field.name}>{field.title}</Select.Option>
         ))}
       </Select>
-      <Select value={dataSource.column ? dataSource.op : null} style={{ minWidth: 100 }}
+      <Select value={dataSource.column ? dataSource.op : null} style={{ minWidth: 130 }}
         onChange={(value) => {
-          onChange({...dataSource, op: value});
+          onChange({...dataSource, op: value, value: undefined});
         }}
         defaultValue={get(opOptions, [0, 'value'])}
         options={opOptions}
@@ -383,43 +343,17 @@ export function FilterItem(props: FilterItemProps) {
           <Select.Option value={option.value}>{option.label}</Select.Option>
         ))} */}
       </Select>
-      {sourceFields.length > 0 && (
-        <Select
-          style={{ minWidth: 100 }}
-          onChange={(value) => {
-            setDataSource({...dataSource, value: undefined})
-            onChange({...dataSource, value: undefined});
-            setValueType(value);
-          }}
-          defaultValue={valueType}>
-          <Select.Option value={'custom'}>自定义</Select.Option>
-          <Select.Option value={'ref'}>触发表字段</Select.Option>
-        </Select>
-      )}
-      {valueType !== 'ref' ? (
-        <ValueControl 
-          field={field} 
-          multiple={type === 'checkboxes' || !!field.multiple} 
-          op={dataSource.op} 
-          options={field.dataSource} 
-          value={dataSource.value} 
-          onChange={(value) => {
-            onChange({...dataSource, value: value});
-          }}
-          style={{ width: 180 }}
-        />
-      ) : (sourceFields.length > 0 ? (
-        <Select value={dataSource.value}
-          onChange={(value) => {
-            onChange({...dataSource, value: value});
-          }}
-          style={{ width: 120 }} 
-          placeholder={'选择字段'}>
-          {sourceFields.map(field => (
-            <Select.Option value={`{{ ${field.name} }}`}>{field.title}</Select.Option>
-          ))}
-        </Select>
-      ) : null)}
+      <ValueControl 
+        field={field} 
+        multiple={type === 'checkboxes' || !!field.multiple} 
+        op={dataSource.op} 
+        options={field.dataSource} 
+        value={dataSource.value} 
+        onChange={(value) => {
+          onChange({...dataSource, value: value});
+        }}
+        style={{ width: 180 }}
+      />
       {showDeleteButton && (
         <Button className={'filter-remove-link filter-item'} type={'link'} style={{padding: 0}} onClick={(e) => {
           onDelete && onDelete(e);
@@ -429,57 +363,11 @@ export function FilterItem(props: FilterItemProps) {
   );
 }
 
-function toFilter(values: any) {
-  let filter: any;
-  let { type, andor = 'and', list = [], column, op, value } = values;
-  if (type === 'group') {
-    filter = {
-      [andor]: list.map(value => toFilter(value)).filter(Boolean)
-    }
-  } else if (type === 'item' && column && op) {
-    if (['id.$null', 'id.$notNull', '$null', '$notNull', '$isTruly', '$isFalsy'].indexOf(op) !== -1) {
-      value = true;
-    }
-    // if (op === 'id.gt') {
-    //   value = 0;
-    // }
-    filter = {
-      [`${column}`]: {[op]: value},
-    }
-  }
-  return filter;
-}
-
-function toValues(filter: any = {}) {
-  let values: any = {};
-  Object.keys(filter).forEach(key => {
-    const value = filter[key];
-    if (Array.isArray(value)) {
-      values['andor'] = key;
-      values['type'] = 'group';
-      values['list'] = value.map(v => toValues(v));
-    } else if (typeof value === 'object') {
-      values['type'] = 'item';
-      values['column'] = key;
-      values['op'] = Object.keys(value).shift();
-      values['value'] = Object.values(value).shift();
-    }
-  });
-  return values;
-}
-
-export const Filter = connect({
+export const Values = connect({
   getProps: mapStyledProps,
 })((props) => {
-  const dataSource = {
-    type: 'group',
-    list: [
-      {
-        type: 'item',
-      }
-    ],
-  };
-  const { value, onChange, associatedKey, filter = {}, sourceName, sourceFilter = {}, fields = [], ...restProps } = props;
+  
+  const { value = [], onChange, associatedKey, sourceName, sourceFilter = {}, filter = {}, fields = [], ...restProps } = props;
 
   const { data = [], loading = true } = useRequest(() => {
     return associatedKey ? api.resource(`collections.fields`).list({
@@ -492,7 +380,6 @@ export const Filter = connect({
     refreshDeps: [associatedKey]
   });
 
-
   const { data: sourceFields = [] } = useRequest(() => {
     return sourceName ? api.resource(`collections.fields`).list({
       associatedKey: sourceName,
@@ -503,12 +390,10 @@ export const Filter = connect({
   }, {
     refreshDeps: [sourceName]
   });
-  console.log({sourceName, sourceFields});
 
-  return <FilterGroup showDeleteButton={false} dataSource={value ? toValues(value) : dataSource} onChange={(values) => {
-    console.log(values);
-    onChange(toFilter(values));
-  }} {...restProps} sourceFields={sourceFields} fields={data.filter(item => item.filterable)}/>
+  return <FilterGroup dataSource={Array.isArray(value) ? value.filter(item => Object.keys(item).length) : []} onChange={(values) => {
+    onChange(values.filter(item => Object.keys(item).length));
+  }} {...restProps} fields={data} sourceFields={sourceFields}/>
 });
 
-export default Filter;
+export default Values;

@@ -14,7 +14,7 @@ import api from '@/api-client';
 import { Spin } from '@nocobase/client'
 
 function RemoteSelectComponent(props) {
-  const { value, onChange, disabled, resourceName, associatedKey, filter, labelField, valueField = 'id', objectValue, placeholder } = props;
+  const { value, onChange, disabled, resourceName, associatedKey, filter, labelField, valueField = 'id', objectValue, placeholder, multiple } = props;
   const { data = [], loading = true } = useRequest(() => {
     return api.resource(resourceName).list({
       associatedKey,
@@ -23,9 +23,14 @@ function RemoteSelectComponent(props) {
   }, {
     refreshDeps: [resourceName, associatedKey]
   });
+  const selectProps: any = {};
+  if (multiple) {
+    selectProps.mode = 'multiple'
+  }
   return (
     <>
       <Select 
+        {...selectProps}
         placeholder={placeholder}
         disabled={disabled} 
         notFoundContent={loading ? <Spin/> : undefined} 

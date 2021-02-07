@@ -349,6 +349,17 @@ export default async (ctx, next) => {
     actionDefaultParams.filter = view.filter;
   }
   const appends = [];
+
+  const others: any = {};
+
+  if (viewType === 'form') {
+    if (associatedName === 'automations' && resourceFieldName === 'jobs' && mode !== 'update') {
+      const Automation = ctx.db.getModel('automations');
+      others['initialValues'] = {
+        automation: await Automation.findByPk(associatedKey),
+      };
+    }
+  }
   
   for (const field of fields) {
     if (!['subTable', 'linkTo', 'attachment', 'createdBy', 'updatedBy'].includes(field.get('interface'))) {
@@ -550,6 +561,7 @@ export default async (ctx, next) => {
     }
     ctx.body = {
       ...view.get(),
+      ...others,
       title,
       actionDefaultParams,
       original: fields,

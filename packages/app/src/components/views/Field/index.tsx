@@ -371,7 +371,7 @@ function LogField(props) {
 function LogFieldValue(props) {
   const { value, schema, data } = props;
   return (
-    <div>{value}</div>
+    <div>{JSON.stringify(value)}</div>
   )
 }
 
