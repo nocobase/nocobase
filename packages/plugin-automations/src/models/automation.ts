@@ -54,14 +54,14 @@ export class AutomationModel extends Model {
     if (type !== 'schedule') {
       return;
     }
-    if (!startTime.value) {
+    if (!startTime || !startTime.value) {
       return;
     }
     let options: any = { start: new Date(startTime.value) };
-    if (cron === 'none') {
+    if (!cron || cron === 'none') {
       return options.start;
     }
-    if (endMode === 'none' && endTime.value) {
+    if ((!endMode || endMode === 'none') && endTime && endTime.value) {
       options.end = new Date(endTime.value);
     }
     if (typeof cron === 'object') {

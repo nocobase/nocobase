@@ -19,21 +19,26 @@ export default async function (options = {}) {
 
   const [Automation, AutomationJob] = database.getModels(['automations', 'automations_jobs']);
 
-  Automation.addHook('afterUpdate', async (model: any) => {
-    if (model.changed('enabled' as any)) {
-      model.get('enabled') ? model.startJobs() : model.cancelJobs();
-    }
+  Automation.addHook('afterCreate', async (model: AutomationModel) => {
+    model.get('enabled') && model.startJobs();
   });
 
-  Automation.addHook('beforeDestroy', async (model: any) => {
+  Automation.addHook('afterUpdate', async (model: AutomationModel) => {
+    if (!model.changed('enabled' as any)) {
+      return;
+    }
+    model.get('enabled') ? model.startJobs() : model.cancelJobs();
+  });
+
+  Automation.addHook('beforeDestroy', async (model: AutomationModel) => {
     await model.cancelJobs();
   });
 
-  AutomationJob.addHook('afterCreate', async (model: any) => {
+  AutomationJob.addHook('afterCreate', async (model: AutomationJobModel) => {
     await model.bootstrap();
   });
 
-  AutomationJob.addHook('beforeDestroy', async (model: any) => {
+  AutomationJob.addHook('beforeDestroy', async (model: AutomationJobModel) => {
     await model.cancel();
   });
 }

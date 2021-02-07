@@ -16,379 +16,473 @@ describe('automations', () => {
     app = await getApp();
     db = app.database;
     Automation = db.getModel('automations') as any;
-    Target = db.getModel('targets');
     Test = db.getModel('tests');
+    Target = db.getModel('targets');
   });
 
   afterEach(() => db.close());
 
-  it('collections:afterCreate', async () => {
-    const automation = await Automation.create({
-      title: 'a1',
-      enabled: true,
-      type: 'collections:afterCreate',
-      collection_name: 'tests',
-      filter: {},
-    });
-
-    let data = {}
-    const arr = [];
-
-    automation.startJob('test', async (model) => {
-      data = _.cloneDeep(model.get());
-      arr.push('afterCreate');
-    });
-
-    const test = await Test.create({
-      name1: 'n1',
-      name2: 'n2',
-    });
-
-    const t = _.cloneDeep(test.get());
-    expect(t).toEqual(data);
-
-    await test.update({
-      name1: 'n3',
-    });
-
-    expect(t).toEqual(data);
-    expect(arr.length).toBe(1);
-  });
-
-  it('collections:afterCreate - filter', async () => {
-    const automation = await Automation.create({
-      title: 'a1',
-      enabled: true,
-      type: 'collections:afterCreate',
-      collection_name: 'tests',
-      filter: {
+  describe('collections:afterCreate', () => {
+    it('collections:afterCreate', async () => {
+      const automation = await Automation.create({
+        title: 'a1',
+        enabled: true,
+        type: 'collections:afterCreate',
+        collection_name: 'tests',
+        filter: {},
+      }, {
+        hooks: false,
+      });
+  
+      let data = {}
+      const arr = [];
+  
+      automation.startJob('test', async (model) => {
+        data = _.cloneDeep(model.get());
+        arr.push('afterCreate');
+      });
+  
+      const test = await Test.create({
         name1: 'n1',
-      },
-    });
-
-    const arr = [];
-
-    automation.startJob('test', async (model) => {
-      arr.push('afterCreate');
-    });
-
-    await Test.create({
-      name1: 'n1',
-      name2: 'n2',
-    });
-    expect(arr.length).toBe(1);
-
-    await Test.create({
-      name1: 'n3',
-      name2: 'n4',
-    });
-    expect(arr.length).toBe(1);
-  });
-
-  it('collections:afterUpdate', async () => {
-    const automation = await Automation.create({
-      title: 'a1',
-      enabled: true,
-      type: 'collections:afterUpdate',
-      collection_name: 'tests',
-      filter: {},
-    });
-
-    const arr = [];
-
-    automation.startJob('test', async (model) => {
-      arr.push('afterUpdate');
-    });
-
-    const test = await Test.create({
-      name1: 'n1',
-      name2: 'n2',
-    });
-    expect(arr.length).toBe(0);
-
-    await test.update({
-      name1: 'n3',
-    });
-    expect(arr.length).toBe(1);
-  });
-
-  it('collections:afterUpdate - changed', async () => {
-    const automation = await Automation.create({
-      title: 'a1',
-      enabled: true,
-      type: 'collections:afterUpdate',
-      collection_name: 'tests',
-      filter: {},
-      changed: ['name2']
-    });
-
-    const arr = [];
-
-    automation.startJob('test', async (model) => {
-      arr.push('afterUpdate');
-    });
-
-    const test = await Test.create({
-      name1: 'n1',
-      name2: 'n2',
-    });
-    expect(arr.length).toBe(0);
-
-    await test.update({
-      name1: 'n3',
-    });
-    expect(arr.length).toBe(0);
-
-    await test.update({
-      name2: 'n4',
-    });
-    expect(arr.length).toBe(1);
-  });
-
-  it('collections:afterUpdate - filter/changed', async () => {
-    const automation = await Automation.create({
-      title: 'a1',
-      enabled: true,
-      type: 'collections:afterUpdate',
-      collection_name: 'tests',
-      filter: {
-        name1: 'n7',
-      },
-      changed: ['name2']
-    });
-
-    const arr = [];
-
-    automation.startJob('test', async (model) => {
-      arr.push('afterUpdate');
-    });
-
-    const test = await Test.create({
-      name1: 'n1',
-      name2: 'n2',
-    });
-    expect(arr.length).toBe(0);
-
-    await test.update({
-      name1: 'n3',
-    });
-    expect(arr.length).toBe(0);
-
-    await test.update({
-      name2: 'n4',
-    });
-    expect(arr.length).toBe(0);
-
-    await test.update({
-      name1: 'n5',
-      name2: 'n6',
-    });
-    expect(arr.length).toBe(0);
-
-    await test.update({
-      name1: 'n7',
-      name2: 'n8',
-    });
-    expect(arr.length).toBe(1);
-  });
-
-  it('collections:afterCreateOrUpdate', async () => {
-    const automation = await Automation.create({
-      title: 'a1',
-      enabled: true,
-      type: 'collections:afterCreateOrUpdate',
-      collection_name: 'tests',
-      filter: {},
-    });
-
-    const arr = [];
-
-    automation.startJob('test', async (model) => {
-      arr.push('afterUpdate');
-    });
-
-    const test = await Test.create({
-      name1: 'n1',
-      name2: 'n2',
-    });
-
-    expect(arr.length).toBe(1);
-
-    await test.update({
-      name1: 'n3',
-      name2: 'n4',
-    });
-
-    expect(arr.length).toBe(2);
-  });
-
-  it('collections:afterCreateOrUpdate - changed', async () => {
-    const automation = await Automation.create({
-      title: 'a1',
-      enabled: true,
-      type: 'collections:afterCreateOrUpdate',
-      collection_name: 'tests',
-      changed: ['name2'],
-      filter: {},
-    });
-
-    const arr = [];
-
-    automation.startJob('test', async (model) => {
-      arr.push('afterUpdate');
-    });
-
-    const test = await Test.create({
-      name1: 'n1',
-      name2: 'n2',
-    });
-    expect(arr.length).toBe(1);
-
-    await test.update({
-      name1: 'n3',
-    });
-    expect(arr.length).toBe(1);
-
-    await test.update({
-      name2: 'n4',
-    });
-    expect(arr.length).toBe(2);
-  });
-
-  it('collections:afterCreateOrUpdate - filter', async () => {
-    const automation = await Automation.create({
-      title: 'a1',
-      enabled: true,
-      type: 'collections:afterCreateOrUpdate',
-      collection_name: 'tests',
-      filter: {
-        name1: 'n7',
-      },
-    });
-
-    const arr = [];
-
-    automation.startJob('test', async (model) => {
-      arr.push('afterUpdate');
-    });
-
-    await Test.create({
-      name1: 'n1',
-    });
-    expect(arr.length).toBe(0);
-
-    const test = await Test.create({
-      name1: 'n7',
-    });
-    expect(arr.length).toBe(1);
-
-    await test.update({
-      name1: 'n3',
-    });
-    expect(arr.length).toBe(1);
-
-    await test.update({
-      name1: 'n7',
-    });
-    expect(arr.length).toBe(2);
-  });
-
-  it('collections:afterCreateOrUpdate - filter/changed', async () => {
-    const automation = await Automation.create({
-      title: 'a1',
-      enabled: true,
-      type: 'collections:afterCreateOrUpdate',
-      collection_name: 'tests',
-      filter: {
-        name1: 'n7',
-      },
-      changed: ['name2']
-    });
-
-    const arr = [];
-
-    automation.startJob('test', async (model) => {
-      arr.push('afterUpdate');
-    });
-
-    const test = await Test.create({
-      name1: 'n1',
-      name2: 'n2',
-    });
-    expect(arr.length).toBe(0);
-
-    await test.update({
-      name1: 'n3',
-    });
-    expect(arr.length).toBe(0);
-
-    await test.update({
-      name2: 'n4',
-    });
-    expect(arr.length).toBe(0);
-
-    await test.update({
-      name1: 'n7',
-    });
-    expect(arr.length).toBe(0);
-
-    await test.update({
-      name1: 'n5',
-      name2: 'n6',
-    });
-    expect(arr.length).toBe(0);
-
-    await test.update({
-      name1: 'n7',
-      name2: 'n8',
-    });
-    expect(arr.length).toBe(1);
-  });
-
-  it('schedule', async (done) => {
-    const automation = await Automation.create({
-      title: 'a1',
-      enabled: true,
-      type: 'schedule',
-      startTime: {
-        value: new Date(Date.now() + 100).toISOString(),
-      },
-      cron: 'none', // 不重复
-    });
-
-    const arr = [];
-
-    automation.startJob('test', async (model) => {
-      arr.push('schedule');
-    });
-
-    setTimeout(() => {
+        name2: 'n2',
+      });
+  
+      const t = _.cloneDeep(test.get());
+      expect(t).toEqual(data);
+  
+      await test.update({
+        name1: 'n3',
+      });
+  
+      expect(t).toEqual(data);
       expect(arr.length).toBe(1);
-      done();
-    }, 500);
+    });
+    it('collections:afterCreate - filter', async () => {
+      const automation = await Automation.create({
+        title: 'a1',
+        enabled: true,
+        type: 'collections:afterCreate',
+        collection_name: 'tests',
+        filter: {
+          name1: 'n1',
+        },
+      }, {
+        hooks: false,
+      });
+  
+      const arr = [];
+  
+      automation.startJob('test', async (model) => {
+        arr.push('afterCreate');
+      });
+  
+      await Test.create({
+        name1: 'n1',
+        name2: 'n2',
+      });
+      expect(arr.length).toBe(1);
+  
+      await Test.create({
+        name1: 'n3',
+        name2: 'n4',
+      });
+      expect(arr.length).toBe(1);
+    });
   });
 
-  it.only('schedule', async () => {
-    const automation = await Automation.create({
-      title: 'a1',
-      enabled: true,
-      type: 'schedule',
-      startTime: {
-        value: new Date(Date.now()).toISOString(),
-      },
-      cron: 'everysecond', // 不重复
+  describe('collections:afterUpdate', () => {
+    it('collections:afterUpdate', async () => {
+      const automation = await Automation.create({
+        title: 'a1',
+        enabled: true,
+        type: 'collections:afterUpdate',
+        collection_name: 'tests',
+        filter: {},
+      }, {
+        hooks: false,
+      });
+  
+      const arr = [];
+  
+      automation.startJob('test', async (model) => {
+        arr.push('afterUpdate');
+      });
+  
+      const test = await Test.create({
+        name1: 'n1',
+        name2: 'n2',
+      });
+      expect(arr.length).toBe(0);
+  
+      await test.update({
+        name1: 'n3',
+      });
+      expect(arr.length).toBe(1);
     });
-
-    const arr = [];
-
-    automation.startJob('test', async (date) => {
-      arr.push('schedule');
-      console.log('schedule', date, arr.length);
+    it('collections:afterUpdate - changed', async () => {
+      const automation = await Automation.create({
+        title: 'a1',
+        enabled: true,
+        type: 'collections:afterUpdate',
+        collection_name: 'tests',
+        filter: {},
+        changed: ['name2']
+      }, {
+        hooks: false,
+      });
+  
+      const arr = [];
+  
+      automation.startJob('test', async (model) => {
+        arr.push('afterUpdate');
+      });
+  
+      const test = await Test.create({
+        name1: 'n1',
+        name2: 'n2',
+      });
+      expect(arr.length).toBe(0);
+  
+      await test.update({
+        name1: 'n3',
+      });
+      expect(arr.length).toBe(0);
+  
+      await test.update({
+        name2: 'n4',
+      });
+      expect(arr.length).toBe(1);
     });
+    it('collections:afterUpdate - filter/changed', async () => {
+      const automation = await Automation.create({
+        title: 'a1',
+        enabled: true,
+        type: 'collections:afterUpdate',
+        collection_name: 'tests',
+        filter: {
+          name1: 'n7',
+        },
+        changed: ['name2']
+      }, {
+        hooks: false,
+      });
+  
+      const arr = [];
+  
+      automation.startJob('test', async (model) => {
+        arr.push('afterUpdate');
+      });
+  
+      const test = await Test.create({
+        name1: 'n1',
+        name2: 'n2',
+      });
+      expect(arr.length).toBe(0);
+  
+      await test.update({
+        name1: 'n3',
+      });
+      expect(arr.length).toBe(0);
+  
+      await test.update({
+        name2: 'n4',
+      });
+      expect(arr.length).toBe(0);
+  
+      await test.update({
+        name1: 'n5',
+        name2: 'n6',
+      });
+      expect(arr.length).toBe(0);
+  
+      await test.update({
+        name1: 'n7',
+        name2: 'n8',
+      });
+      expect(arr.length).toBe(1);
+    });
+  });
 
-    await new Promise((r) => setTimeout(r, 3000));
+  describe('collections:afterCreateOrUpdate', () => {
+    it('collections:afterCreateOrUpdate', async () => {
+      const automation = await Automation.create({
+        title: 'a1',
+        enabled: true,
+        type: 'collections:afterCreateOrUpdate',
+        collection_name: 'tests',
+        filter: {},
+      }, {
+        hooks: false,
+      });
+  
+      const arr = [];
+  
+      automation.startJob('test', async (model) => {
+        arr.push('afterUpdate');
+      });
+  
+      const test = await Test.create({
+        name1: 'n1',
+        name2: 'n2',
+      });
+  
+      expect(arr.length).toBe(1);
+  
+      await test.update({
+        name1: 'n3',
+        name2: 'n4',
+      });
+  
+      expect(arr.length).toBe(2);
+    });
+    it('collections:afterCreateOrUpdate - changed', async () => {
+      const automation = await Automation.create({
+        title: 'a1',
+        enabled: true,
+        type: 'collections:afterCreateOrUpdate',
+        collection_name: 'tests',
+        changed: ['name2'],
+        filter: {},
+      }, {
+        hooks: false,
+      });
+  
+      const arr = [];
+  
+      automation.startJob('test', async (model) => {
+        arr.push('afterUpdate');
+      });
+  
+      const test = await Test.create({
+        name1: 'n1',
+        name2: 'n2',
+      });
+      expect(arr.length).toBe(1);
+  
+      await test.update({
+        name1: 'n3',
+      });
+      expect(arr.length).toBe(1);
+  
+      await test.update({
+        name2: 'n4',
+      });
+      expect(arr.length).toBe(2);
+    });
+    it('collections:afterCreateOrUpdate - filter', async () => {
+      const automation = await Automation.create({
+        title: 'a1',
+        enabled: true,
+        type: 'collections:afterCreateOrUpdate',
+        collection_name: 'tests',
+        filter: {
+          name1: 'n7',
+        },
+      }, {
+        hooks: false,
+      });
+  
+      const arr = [];
+  
+      automation.startJob('test', async (model) => {
+        arr.push('afterUpdate');
+      });
+  
+      await Test.create({
+        name1: 'n1',
+      });
+      expect(arr.length).toBe(0);
+  
+      const test = await Test.create({
+        name1: 'n7',
+      });
+      expect(arr.length).toBe(1);
+  
+      await test.update({
+        name1: 'n3',
+      });
+      expect(arr.length).toBe(1);
+  
+      await test.update({
+        name1: 'n7',
+      });
+      expect(arr.length).toBe(2);
+    });
+    it('collections:afterCreateOrUpdate - filter/changed', async () => {
+      const automation = await Automation.create({
+        title: 'a1',
+        enabled: true,
+        type: 'collections:afterCreateOrUpdate',
+        collection_name: 'tests',
+        filter: {
+          name1: 'n7',
+        },
+        changed: ['name2']
+      }, {
+        hooks: false,
+      });
+  
+      const arr = [];
+  
+      automation.startJob('test', async (model) => {
+        arr.push('afterUpdate');
+      });
+  
+      const test = await Test.create({
+        name1: 'n1',
+        name2: 'n2',
+      });
+      expect(arr.length).toBe(0);
+  
+      await test.update({
+        name1: 'n3',
+      });
+      expect(arr.length).toBe(0);
+  
+      await test.update({
+        name2: 'n4',
+      });
+      expect(arr.length).toBe(0);
+  
+      await test.update({
+        name1: 'n7',
+      });
+      expect(arr.length).toBe(0);
+  
+      await test.update({
+        name1: 'n5',
+        name2: 'n6',
+      });
+      expect(arr.length).toBe(0);
+  
+      await test.update({
+        name1: 'n7',
+        name2: 'n8',
+      });
+      expect(arr.length).toBe(1);
+    });
+  });
 
-    expect(arr.length).toBe(3);
-    automation.cancelJob('test');
+  describe('schedule', () => {
+    it('schedule', async (done) => {
+      const automation = await Automation.create({
+        title: 'a1',
+        enabled: true,
+        type: 'schedule',
+        startTime: {
+          value: new Date(Date.now() + 100).toISOString(),
+        },
+        // cron: 'none', // 不重复
+      }, {
+        hooks: false,
+      });
+  
+      const arr = [];
+  
+      automation.startJob('test', async (model) => {
+        arr.push('schedule');
+      });
+  
+      setTimeout(() => {
+        expect(arr.length).toBe(1);
+        done();
+      }, 500);
+    });
+    it('schedule - cron', async () => {
+      const automation = await Automation.create({
+        title: 'a1',
+        enabled: true,
+        type: 'schedule',
+        startTime: {
+          value: new Date(Date.now()).toISOString(),
+        },
+        cron: '* * * * * *',
+      }, {
+        hooks: false,
+      });
+  
+      const arr = [];
+  
+      automation.startJob('test', async (date) => {
+        arr.push('schedule');
+        console.log('schedule', date, arr.length);
+      });
+  
+      await new Promise((r) => setTimeout(r, 3000));
+  
+      expect(arr.length).toBe(3);
+      automation.cancelJob('test');
+    });
+    it('schedule - endTime', async () => {
+      const automation = await Automation.create({
+        title: 'a1',
+        enabled: true,
+        type: 'schedule',
+        startTime: {
+          value: new Date(Date.now()).toISOString(),
+        },
+        endTime: {
+          value: new Date(Date.now()+2000).toISOString(),
+        },
+        cron: '* * * * * *',
+      }, {
+        hooks: false,
+      });
+  
+      const arr = [];
+  
+      automation.startJob('test', async (date) => {
+        arr.push('schedule');
+        console.log('schedule', date, arr.length);
+      });
+  
+      await new Promise((r) => setTimeout(r, 3000));
+  
+      expect(arr.length).toBe(2);
+      automation.cancelJob('test');
+    });
+  });
+
+  describe('jobs', () => {
+    it('create', async () => {
+      const automation = await Automation.create({
+        title: 'a1',
+        enabled: true,
+        type: 'collections:afterCreate',
+        collection_name: 'tests',
+      });
+      await automation.updateAssociations({
+        jobs: [
+          {
+            title: 'j1',
+            enabled: true,
+            type: 'create',
+            collection_name: 'targets',
+            values: [
+              {
+                column: 'col1',
+                op: 'eq',
+                value: 'n1'
+              },
+              {
+                column: 'col2',
+                op: 'eq',
+                value: '{{ name2 }}'
+              },
+            ],
+          }
+        ],
+      });
+      await Test.create({
+        name1: 'n11',
+        name2: 'n22',
+      });
+      await new Promise((r) => setTimeout(r, 1000));
+
+      const count = await Target.count({
+        where: { col1: 'n1', col2: 'n22' }
+      });
+      expect(count).toBe(1);
+    });
   });
 });
