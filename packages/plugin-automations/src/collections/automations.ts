@@ -314,41 +314,11 @@ export default {
       },
     },
     {
-      interface: 'select',
+      interface: 'json',
       type: 'json',
       name: 'cron',
       title: '重复周期',
       required: true,
-      // dataSource: [
-      //   {
-      //     label: '不重复',
-      //     value: 'norepeat',
-      //   },
-      //   {
-      //     label: '每天',
-      //     value: 'everyday',
-      //   },
-      //   {
-      //     label: '每周',
-      //     value: 'everyweek',
-      //   },
-      //   {
-      //     label: '每月',
-      //     value: 'everymonth',
-      //   },
-      //   {
-      //     label: '每季度',
-      //     value: 'everyquarter',
-      //   },
-      //   {
-      //     label: '每年',
-      //     value: 'everyYear',
-      //   },
-      //   {
-      //     label: '自定义',
-      //     value: 'other',
-      //   },
-      // ],
       component: {
         type: 'automations.cron',
         showInDetail: true,

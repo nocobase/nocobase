@@ -12,7 +12,7 @@ export class AutomationModel extends Model {
       }
     });
     for (const automation of automations) {
-      await automation.startJobs();
+      await automation.loadJobs();
     }
   }
 
@@ -30,7 +30,7 @@ export class AutomationModel extends Model {
     return true;
   }
 
-  async startJobs() {
+  async loadJobs() {
     if (!this.get('enabled')) {
       return false;
     }
@@ -61,7 +61,7 @@ export class AutomationModel extends Model {
     if (!cron || cron === 'none') {
       return options.start;
     }
-    if ((!endMode || endMode === 'none') && endTime && endTime.value) {
+    if (endMode === 'customTime' && endTime && endTime.value) {
       options.end = new Date(endTime.value);
     }
     if (typeof cron === 'object') {
@@ -164,21 +164,62 @@ export class AutomationModel extends Model {
         });
         break;
       case 'collections:schedule':
-        // const job1 = schedule.scheduleJob({
-        //   start: '2021-02-01T10:27:00.006Z',
-        //   rule: '*/5 * * * * *',
-        // }, () => {
-        //   (async () => {
-        //     // TODO: 需要优化大数据的处理
-        //     const result = await M.findAll(M.parseApiJson({
-        //       filter,
-        //     }));
-        //     if (result.length) {
-        //       await callback(result, { automationType });
-        //     }
-        //   })();
-        // });
-        // scheduleJobs.set(hookName, job1);
+        const { startTime = {}, endTime = {}, cron = 'none', endMode = 'none' } = this.get();
+        if (!startTime) {
+          break;
+        }
+        const startField = startTime.byField;
+        if (!startField) {
+          break;
+        }
+        const endField = endTime ? endTime.byField : null;
+        const { where = {} } = M.parseApiJson({
+          filter,
+        });
+        const scheduleJob = (item: any) => {
+          if (!item[startField]) {
+            return;
+          }
+          let rule: any = {};
+          if (!cron || cron === 'none') {
+            rule = new Date(item[startField]);
+          } else {
+            rule.start = new Date(item[startField]);
+            if (typeof cron === 'object') {
+              Object.assign(rule, cron);
+            } else if (typeof cron === 'string') {
+              const map = {
+                everysecond: '* * * * * *',
+              };
+              rule.rule = map[cron] || cron;
+            }
+            if (endMode === 'byField' && endField && item[endField]) {
+              rule.end = new Date(item[endField]);
+            }
+          }
+          console.log({rule});
+          schedule.scheduleJob(`${hookName}-${item.id}`, rule, (date) => {
+            (async () => {
+              await callback(date, { automationType });
+            })();
+          });
+        }
+        M.addHook('afterCreate', hookName, async (model) => {
+          scheduleJob(model);
+        });
+        M.addHook('afterUpdate', hookName, async (model) => {
+          schedule.cancelJob(`${hookName}-${model.get('id')}`);
+          scheduleJob(model);
+        });
+        M.addHook('afterDestroy', hookName, async (model) => {
+          schedule.cancelJob(`${hookName}-${model.get('id')}`);
+        });
+        // TODO: 待优化，每条数据都要绑定上 scheduleJob
+        M.findAll(where).then(items => {
+          for (const item of items) {
+            scheduleJob(item);
+          }
+        });
         break;
       case 'schedule':
         const rule = this.getRule();
@@ -192,24 +233,29 @@ export class AutomationModel extends Model {
     }
   }
 
-  cancelJob(jobName: string) {
+  async cancelJob(jobName: string) {
     const collectionName = this.get('collection_name');
     const hookName = `automation-${this.id}-${jobName}`;
+    const M = this.database.getModel(collectionName);
     switch (this.get('type')) {
       case 'collections:afterCreate':
-        const M1 = this.database.getModel(collectionName);
-        M1.removeHook('afterCreate', hookName);
+        M.removeHook('afterCreate', hookName);
         break;
       case 'collections:afterCreate':
-        const M2 = this.database.getModel(collectionName);
-        M2.removeHook('afterUpdate', hookName);
+        M.removeHook('afterUpdate', hookName);
         break;
       case 'collections:afterCreateOrUpdate':
-        const M3 = this.database.getModel(collectionName);
-        M3.removeHook('afterCreate', hookName);
-        M3.removeHook('afterUpdate', hookName);
+        M.removeHook('afterCreate', hookName);
+        M.removeHook('afterUpdate', hookName);
         break;
       case 'collections:schedule':
+        M.removeHook('afterCreate', hookName);
+        M.removeHook('afterUpdate', hookName);
+        M.removeHook('afterDestroy', hookName);
+        const items = await M.findAll();
+        for (const item of items) {
+          schedule.cancelJob(`${hookName}-${item.id}`);
+        }
         break;
       case 'schedule':
         schedule.cancelJob(hookName);

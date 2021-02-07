@@ -15,7 +15,7 @@ export class AutomationJobModel extends Model {
     });
   }
 
-  async process(result?: any, options?: any) {
+  toFilter(result) {
     let source = {};
     if (result && typeof result === 'object') {
       if (result.toJSON) {
@@ -24,34 +24,55 @@ export class AutomationJobModel extends Model {
         source = result;
       }
     }
+    return parse(this.get('filter')||{})(source);
+  }
+
+  toValues(result) {
+    let source = {};
+    if (result && typeof result === 'object') {
+      if (result.toJSON) {
+        source = result.toJSON();
+      } else {
+        source = result;
+      }
+    }
+    const data: any = {}
+    const values = (this.get('values')||[]) as any[];
+    for (const item of values) {
+      let value = item.value;
+      if (item.op === 'truncate') {
+        value = null;
+      } else if (item.op === 'ref') {
+        value = _.get(source, item.value);
+      }
+      _.set(data, item.column, value);
+    }
+    return data;
+  }
+
+  async process(result?: any, options?: any) {
     const jobType = this.get('type');
     const collectionName = this.get('collection_name');
     const M = this.database.getModel(collectionName);
-    let filter: any = parse(this.get('filter')||{})(source);
-    let values: any = parse(this.get('values')||[])(source);
-    const data = {};
-    for (const item of values) {
-      _.set(data, item.column, item.value);
-    }
+    let filter: any = this.toFilter(result);
+    let data: any = this.toValues(result);
     const { where = {} } = M.parseApiJson({ filter });
-    console.log({values, data, where})
-    if (['create'].includes(jobType)) {
-      await M.create(data);
-    }
-    else if (['update'].includes(jobType) && values) {
-      Object.keys(data).length && await M.update(data, {
-        where,
-      });
-    }
-    else if (['destroy'].includes(jobType)) {
-      await M.destroy(where ? {
-        where,
-      }: {});
+    console.log({data, where});
+    switch (jobType) {
+      case 'create':
+        await M.create(data);
+        break;
+      case 'update':
+        Object.keys(data).length && await M.update(data, { where });
+        break;
+      case 'destroy':
+        await M.destroy(where ? { where }: {});
+        break;
     }
   }
 
   async cancel() {
     const automation = this.getDataValue('automation') || await this.getAutomation();
-    automation.cancelJob(`job-${this.id}`);
+    await automation.cancelJob(`job-${this.id}`);
   }
 }

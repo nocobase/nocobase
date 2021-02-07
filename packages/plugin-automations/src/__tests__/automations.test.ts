@@ -363,8 +363,108 @@ describe('automations', () => {
     });
   });
 
+  describe('collections:schedule', () => {
+    it('collections:schedule', async () => {
+      const automation = await Automation.create({
+        title: 'a1',
+        enabled: true,
+        type: 'collections:schedule',
+        collection_name: 'tests',
+        startTime: {
+          byField: 'date1',
+        },
+        // cron: 'none', // 不重复
+      }, {
+        hooks: false,
+      });
+
+      const arr = [];
+
+      automation.startJob('test', async (model) => {
+        arr.push('schedule');
+      });
+
+      await Test.create({
+        date1: new Date(Date.now() + 200).toISOString(),
+      });
+
+      await new Promise((r) => setTimeout(r, 1000));
+
+      expect(arr.length).toBe(1);
+    });
+
+    it('collections:schedule - cron', async () => {
+      const automation = await Automation.create({
+        title: 'a1',
+        enabled: true,
+        type: 'collections:schedule',
+        collection_name: 'tests',
+        startTime: {
+          byField: 'date1',
+        },
+        cron: '* * * * * *',
+      }, {
+        hooks: false,
+      });
+
+      const arr = [];
+
+      automation.startJob('test', async (model) => {
+        arr.push('schedule');
+        console.log('schedule', new Date(), arr.length);
+      });
+
+      await Test.create({
+        date1: new Date(Date.now() + 1000).toISOString(),
+      });
+
+      await new Promise((r) => setTimeout(r, 3000));
+
+      expect(arr.length).toBe(2);
+
+      await automation.cancelJob('test');
+    });
+
+    it('collections:schedule - endField', async () => {
+      const automation = await Automation.create({
+        title: 'a1',
+        enabled: true,
+        type: 'collections:schedule',
+        collection_name: 'tests',
+        startTime: {
+          byField: 'date1',
+        },
+        endMode: 'byField',
+        endTime: {
+          byField: 'date2',
+        },
+        cron: '* * * * * *',
+      }, {
+        hooks: false,
+      });
+
+      const arr = [];
+
+      automation.startJob('test', async (model) => {
+        arr.push('schedule');
+        console.log('schedule', new Date(), arr.length);
+      });
+
+      await Test.create({
+        date1: new Date(Date.now() + 1000).toISOString(),
+        date2: new Date(Date.now() + 3000).toISOString(),
+      });
+
+      await new Promise((r) => setTimeout(r, 4000));
+
+      expect(arr.length).toBe(2);
+
+      await automation.cancelJob('test');
+    });
+  });
+
   describe('schedule', () => {
-    it('schedule', async (done) => {
+    it('schedule', async () => {
       const automation = await Automation.create({
         title: 'a1',
         enabled: true,
@@ -382,11 +482,8 @@ describe('automations', () => {
       automation.startJob('test', async (model) => {
         arr.push('schedule');
       });
-  
-      setTimeout(() => {
-        expect(arr.length).toBe(1);
-        done();
-      }, 500);
+      await new Promise((r) => setTimeout(r, 500));
+      expect(arr.length).toBe(1);
     });
     it('schedule - cron', async () => {
       const automation = await Automation.create({
@@ -411,7 +508,7 @@ describe('automations', () => {
       await new Promise((r) => setTimeout(r, 3000));
   
       expect(arr.length).toBe(3);
-      automation.cancelJob('test');
+      await automation.cancelJob('test');
     });
     it('schedule - endTime', async () => {
       const automation = await Automation.create({
@@ -421,6 +518,7 @@ describe('automations', () => {
         startTime: {
           value: new Date(Date.now()).toISOString(),
         },
+        endMode: 'customTime',
         endTime: {
           value: new Date(Date.now()+2000).toISOString(),
         },
@@ -439,7 +537,7 @@ describe('automations', () => {
       await new Promise((r) => setTimeout(r, 3000));
   
       expect(arr.length).toBe(2);
-      automation.cancelJob('test');
+      await automation.cancelJob('test');
     });
   });
 
@@ -466,8 +564,8 @@ describe('automations', () => {
               },
               {
                 column: 'col2',
-                op: 'eq',
-                value: '{{ name2 }}'
+                op: 'ref',
+                value: 'name2'
               },
             ],
           }

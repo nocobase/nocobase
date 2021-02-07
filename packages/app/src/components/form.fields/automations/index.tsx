@@ -159,7 +159,12 @@ export const DateTime = connect({
 
 const cronmap = {
   none: '不重复',
-  everyDay: '每天',
+  everysecond: '每秒',
+  everyminute: '每分钟',
+  everyhour: '每小时',
+  everyday: '每天',
+  everyweek: '每周',
+  everymonth: '每月',
   custom: '自定义',
 };
 
@@ -177,12 +182,17 @@ export const Cron = connect({
 
   const [unit, setUnit] = useState(match ? match[2] : 'days');
   const [num, setNum] = useState<any>(match ? parseInt(match[1]) : undefined);
-  const [cron, setCron] = useState(match ? 'custom' : cronmap[value])
+  const [cron, setCron] = useState(() => {
+    if (!value) {
+      return 'none';
+    }
+    return match ? 'custom' : cronmap[value];
+  })
 
   return (
     <div>
       <Input.Group compact>
-        <Select defaultValue={cron} onChange={(v) => {
+        <Select value={cron} onChange={(v) => {
           setCron(v);
           onChange(v);
         }}>
@@ -204,6 +214,9 @@ export const Cron = connect({
             setUnit(v);
             onChange(`every_${num}_${v}`);
           }} defaultValue={unit}>
+            <Select.Option value={'seconds'}>秒</Select.Option>
+            <Select.Option value={'minutes'}>分钟</Select.Option>
+            <Select.Option value={'hours'}>小时</Select.Option>
             <Select.Option value={'days'}>天</Select.Option>
             <Select.Option value={'weeks'}>周</Select.Option>
             <Select.Option value={'months'}>月</Select.Option>

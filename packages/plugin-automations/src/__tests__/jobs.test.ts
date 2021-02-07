@@ -65,7 +65,7 @@ describe('automations.jobs', () => {
           {
             column: 'name2',
             op: 'ref',
-            value: '{{col2}}'
+            value: 'col2'
           },
         ],
       }, {
@@ -90,19 +90,19 @@ describe('automations.jobs', () => {
         values: [
           {
             column: 'name1',
-            op: 'ref',
-            value: '{{col1}}'
+            op: 'truncate',
           },
           {
             column: 'name2',
             op: 'ref',
-            value: '{{col2}}'
+            value: 'col2'
           },
         ],
       }, {
         hooks: false,
       });
       await job.process({
+        col1: 'n1',
         col2: 'n2'
       });
       await expectCount({
@@ -146,6 +146,40 @@ describe('automations.jobs', () => {
       await expectCount({
         where: {
           name1: 'n111',
+        }
+      }, 2);
+    });
+
+    it('values', async () => {
+      const job = await Job.create({
+        title: 'j1',
+        enabled: true,
+        type: 'update',
+        collection_name: 'tests',
+        values: [
+          {
+            column: 'name1',
+            op: 'truncate',
+          },
+        ],
+      }, {
+        hooks: false,
+      });
+      await Test.bulkCreate([
+        {
+          name1: 'n1',
+        },
+        {
+          name1: 'n2',
+        },
+      ]);
+      await job.process();
+      await expectCount({
+        where: {}
+      }, 2);
+      await expectCount({
+        where: {
+          name1: null,
         }
       }, 2);
     });
@@ -198,8 +232,8 @@ describe('automations.jobs', () => {
         values: [
           {
             column: 'name2',
-            op: 'eq',
-            value: '{{name2}}'
+            op: 'ref',
+            value: 'name2'
           },
         ],
       }, {

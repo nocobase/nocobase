@@ -299,7 +299,7 @@ export function FilterItem(props: FilterItemProps) {
           style={{ width: 120 }} 
           placeholder={'选择字段'}>
           {sourceFields.map(field => (
-            <Select.Option value={`{{ ${field.name} }}`}>{field.title}</Select.Option>
+            <Select.Option value={field.name}>{field.title}</Select.Option>
           ))}
         </Select>
       )

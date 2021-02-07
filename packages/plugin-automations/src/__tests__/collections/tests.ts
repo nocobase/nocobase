@@ -10,6 +10,14 @@ export default {
     {
       type: 'string',
       name: 'name2',
+    },
+    {
+      type: 'date',
+      name: 'date1',
+    },
+    {
+      type: 'date',
+      name: 'date2',
     }
   ],
 } as TableOptions;
