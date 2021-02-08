@@ -442,6 +442,7 @@ export async function destroy(ctx: Context, next: Next) {
   } = ctx.action.params;
   const transaction = await ctx.db.sequelize.transaction();
   const commonOptions = { transaction, context: ctx };
+  let count;
   if (associated && resourceField) {
     const AssociatedModel = ctx.db.getModel(associatedName);
     if (!(associated instanceof AssociatedModel)) {
@@ -456,7 +457,7 @@ export async function destroy(ctx: Context, next: Next) {
       // TODO：不能程序上解除关系，直接通过 onDelete 触发，或者通过 afterDestroy 处理
       // await associated[setAccessor](null, commonOptions);
       // @ts-ignore
-      ctx.body = await model.destroy(commonOptions);
+      count = await model.destroy(commonOptions);
     } else if (resourceField instanceof HASMANY || resourceField instanceof BELONGSTOMANY) {
       const primaryKey = resourceKeyAttribute || resourceField.options.targetKey || TargetModel.primaryKeyAttribute;
       const models: Model[] = await associated[getAccessor]({
@@ -466,7 +467,7 @@ export async function destroy(ctx: Context, next: Next) {
       // TODO：不能程序上解除关系，直接通过 onDelete 触发，或者通过 afterDestroy 处理
       // await associated[removeAccessor](models, commonOptions);
       // @ts-ignore
-      ctx.body = await TargetModel.destroy({
+      count = await TargetModel.destroy({
         where: { [primaryKey]: { [Op.in]: models.map(item => item[primaryKey]) } },
         ...commonOptions,
         individualHooks: true,
@@ -476,14 +477,14 @@ export async function destroy(ctx: Context, next: Next) {
     const Model = ctx.db.getModel(resourceName);
     const { where } = Model.parseApiJson({ filter, context: ctx });
     const primaryKey = resourceKeyAttribute || Model.primaryKeyAttribute;
-    const data = await Model.destroy({
+    count = await Model.destroy({
       where: resourceKey ? { [primaryKey]: resourceKey } : where,
       // @ts-ignore hooks 里添加 context
       ...commonOptions,
       individualHooks: true,
     });
-    ctx.body = data;
   }
+  ctx.body = { count };
   await transaction.commit();
   await next();
 }

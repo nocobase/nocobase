@@ -274,6 +274,11 @@ export default {
         list: {
           sort: 'sort',
         },
+        destroy: {
+          filter: {
+            default: false
+          }
+        }
       },
       component: {
         type: 'drawerSelect',
@@ -290,6 +295,11 @@ export default {
         list: {
           sort: 'sort',
         },
+        destroy: {
+          filter: {
+            default: false
+          }
+        }
       },
       component: {
         type: 'drawerSelect',
