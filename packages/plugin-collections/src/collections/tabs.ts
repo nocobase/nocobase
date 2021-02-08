@@ -349,6 +349,9 @@ export default {
       type: 'destroy',
       name: 'destroy',
       title: '删除',
+      filter: {
+        default: false
+      }
     },
     {
       type: 'create',
