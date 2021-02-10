@@ -913,3 +913,15 @@ export class Radio extends BOOLEAN {
     await this.setOthers({ where, transaction });
   }
 }
+
+export class Cascader extends JSONB {
+  public readonly options: Options.CascaderOptions;
+
+  constructor({ type, ...options }: Options.RadioOptions, context: FieldContext) {
+    super({ ...options, type: 'jsonb' }, context);
+  }
+
+  // public getDataType() {
+  //   return DataTypes.JSONB;
+  // }
+}

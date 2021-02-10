@@ -152,6 +152,14 @@ const transforms = {
       if (['radio', 'select', 'multipleSelect', 'checkboxes'].includes(interfaceType)) {
         prop.enum = field.get('dataSource');
       }
+      if (interfaceType === 'chinaRegion') {
+        set(prop, 'x-component-props.target', field.get('target'));
+        set(prop, 'x-component-props.labelField', field.get('labelField'));
+        set(prop, 'x-component-props.valueField', field.get('valueField'));
+        set(prop, 'x-component-props.parentField', field.get('parentField'));
+        set(prop, 'x-component-props.scale', field.get('scale'));
+        set(prop, 'x-component-props.changeOnSelect', field.get('incompletely'));
+      }
       schema[field.name] = {
         id: field.id,
         ...prop,

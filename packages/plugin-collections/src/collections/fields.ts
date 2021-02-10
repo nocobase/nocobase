@@ -1,5 +1,5 @@
 import { TableOptions } from '@nocobase/database';
-import { options } from '../interfaces';
+import { types, getOptions } from '../interfaces';
 
 export default {
   name: 'fields',
@@ -57,7 +57,7 @@ export default {
       name: 'interface',
       title: '字段类型',
       required: true,
-      dataSource: options,
+      dataSource: getOptions(),
       createOnly: true,
       component: {
         type: 'select',
@@ -65,6 +65,17 @@ export default {
         showInDetail: true,
         showInForm: true,
         "x-linkages": [
+          // TODO(draft): 统一解决字段类型和配置参数联动的一种方式
+          // {
+          //   type: 'value:schema',
+          //   target: 'options',
+          //   schema: {
+          //     'x-component-props': {
+          //       fields: '{{ $self.values[1].fields || [] }}'
+          //     }
+          //   },
+          //   condition: '{{ !!$self.value }}'
+          // },
           {
             "type": "value:visible",
             "target": "precision",
@@ -130,9 +141,31 @@ export default {
             "target": "required",
             "condition": "{{ ['createdAt', 'updatedAt', 'createdBy', 'updatedBy'].indexOf($self.value) === -1 }}"
           },
+          {
+            "type": "value:visible",
+            "target": "scale",
+            "condition": "{{ ['chinaRegion'].includes($self.value) }}"
+          },
+          {
+            "type": "value:visible",
+            "target": "incompletely",
+            "condition": "{{ ['chinaRegion'].includes($self.value) }}"
+          },
         ],
       },
     },
+    // TODO(draft): 将 options 作为集合字段开放出来，可以动态的解决字段参数的配置表单联动问题
+    // {
+    //   interface: 'json',
+    //   type: 'json',
+    //   name: 'options',
+    //   title: '配置信息',
+    //   defaultValue: {},
+    //   component: {
+    //     type: 'subFields',
+    //     showInForm: true,
+    //   },
+    // },
     {
       interface: 'subTable',
       type: 'virtual',
@@ -249,6 +282,33 @@ export default {
         showInForm: true,
         default: 'HH:mm:ss',
       },
+    },
+    // TODO(refactor): 此部分类型相关的参数，后期应拆分出去
+    {
+      name: 'scale',
+      title: '可选粒度',
+      interface: 'radio',
+      type: 'virtual',
+      dataSource: [
+        { value: 1, label: '省' },
+        { value: 2, label: '市' },
+        { value: 3, label: '区/县' },
+        { value: 4, label: '乡镇/街道' },
+        { value: 5, label: '村/居委会' },
+      ],
+      component: {
+        showInForm: true,
+        default: 3
+      }
+    },
+    {
+      name: 'incompletely',
+      title: '可部分选择',
+      interface: 'boolean',
+      type: 'virtual',
+      component: {
+        showInForm: true,
+      }
     },
     {
       interface: 'linkTo',

@@ -1,0 +1,10 @@
+{
+  "name": "@nocobase/plugin-china-region",
+  "version": "0.3.0-alpha.0",
+  "main": "lib/index.js",
+  "license": "MIT",
+  "dependencies": {
+    "@nocobase/database": "^0.3.0-alpha.0",
+    "china-division": "2.3.1"
+  }
+}
