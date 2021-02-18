@@ -16,6 +16,11 @@ export default async function(db) {
     { title: '编辑' },
     { title: '管理员', type: ROLE_TYPE_ROOT },
   ]);
+
+  const Scope = db.getModel('scopes');
+  const scopePublished = await Scope.create({ collection_name: 'posts', filter: { status: 'published' } }, { logging: true });
+  // TODO(bug): 字段应使用 'created_by' 名称，通过程序映射成外键
+  const scopeCreatedBy = await Scope.create({ collection_name: 'posts', filter: { status: 'draft', 'created_by_id.$currentUser': true } });
   
   const Field = db.getModel('fields');
   const postTitleField = await Field.findOne({
@@ -45,7 +50,7 @@ export default async function(db) {
         actions: [
           {
             name: 'posts:list',
-            scope: { filter: { status: 'published' }, collection_name: 'posts' },
+            scope: scopePublished,
           }
         ],
         fields_permissions: [
@@ -73,12 +78,11 @@ export default async function(db) {
         actions: [
           {
             name: 'posts:list',
-            // TODO(bug): 字段应使用 'created_by' 名称，通过程序映射成外键
-            scope: { filter: { status: 'draft', 'created_by_id.$currentUser': true }, collection_name: 'posts' },
+            scope: scopeCreatedBy,
           },
           {
             name: 'posts:update',
-            scope: { filter: { status: 'draft', 'created_by_id.$currentUser': true }, collection_name: 'posts' },
+            scope: scopeCreatedBy,
           }
         ],
         fields: [

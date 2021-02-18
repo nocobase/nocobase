@@ -304,6 +304,20 @@ export default {
               },
             },
           },
+          {
+            type: 'value:visible',
+            target: 'component.x-component-props.filter',
+            condition: '{{ !!$self.value }}'
+          },
+          {
+            type: "value:schema",
+            target: "component.x-component-props.filter",
+            schema: {
+              "x-component-props": {
+                "associatedKey": "{{ $self.value }}"
+              },
+            },
+          },
         ],
       },
     },
@@ -336,6 +350,19 @@ export default {
         showInForm: true,
         default: true,
       },
+    },
+    {
+      name: 'component.x-component-props.filter',
+      interface: 'json',
+      type: 'virtual',
+      title: '数据范围',
+      component: {
+        type: 'filter',
+        'x-component-props': {
+          resourceName: 'collections.fields',
+        },
+        showInForm: true,
+      }
     },
     {
       interface: 'boolean',

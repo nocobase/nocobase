@@ -5,32 +5,6 @@ export default extend({
   fields: [
     {
       interface: 'linkTo',
-      type: 'hasMany',
-      name: 'scopes',
-      target: 'actions_scopes',
-      title: '数据范围',
-      sourceKey: 'name',
-      actions: {
-        list: {
-          sort: 'id',
-        },
-        update: {
-          filter: {
-            locked: false
-          }
-        },
-        destroy: {
-          filter: {
-            locked: false
-          }
-        }
-      },
-      component: {
-        type: 'drawerSelect',
-      },
-    },
-    {
-      interface: 'linkTo',
       title: '权限',
       type: 'belongsToMany',
       name: 'roles',

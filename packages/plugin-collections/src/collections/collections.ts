@@ -305,6 +305,32 @@ export default {
         type: 'drawerSelect',
       },
     },
+    {
+      interface: 'linkTo',
+      type: 'hasMany',
+      name: 'scopes',
+      target: 'scopes',
+      title: '数据范围',
+      sourceKey: 'name',
+      actions: {
+        list: {
+          sort: 'id',
+        },
+        update: {
+          filter: {
+            locked: false
+          }
+        },
+        destroy: {
+          filter: {
+            locked: false
+          }
+        }
+      },
+      component: {
+        type: 'drawerSelect',
+      },
+    },
   ],
   actions: [
     {

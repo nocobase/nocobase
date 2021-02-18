@@ -1,7 +1,7 @@
 import { TableOptions } from '@nocobase/database';
 
 export default {
-  name: 'actions_scopes',
+  name: 'scopes',
   title: '表操作范围',
   developerMode: true,
   internal: true,

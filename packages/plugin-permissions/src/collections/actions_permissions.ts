@@ -15,7 +15,7 @@ export default {
       comment: '操作范围',
       type: 'belongsTo',
       name: 'scope',
-      target: 'actions_scopes'
+      target: 'scopes'
     },
     {
       type: 'belongsTo',

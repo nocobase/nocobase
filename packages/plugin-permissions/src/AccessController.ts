@@ -32,7 +32,7 @@ function getActionPermissions(permissions) {
         return;
       }
 
-      // 以 or 关心合并两个 scope 中的 filter
+      // 以 or 关系合并两个 scope 中的 filter
       existedScope.set('filter', { 'or': [existedScope.get('filter'), newScope.get('filter')] });
     });
   });
