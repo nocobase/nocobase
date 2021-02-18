@@ -72,10 +72,10 @@ Permissions.Actions = connect({
         const index = findIndex(values, (item: any) => item && item.name === `${resourceKey}:${record.name}`);
         return (
           <Scope
-            resourceTarget={'actions_scopes'}
+            resourceTarget={'scopes'}
             associatedName={'collections'}
             associatedKey={resourceKey}
-            target={'scopes'} 
+            target={'scopes'}
             multiple={false}
             labelField={'title'}
             valueField={'id'}
