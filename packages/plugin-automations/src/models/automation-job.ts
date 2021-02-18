@@ -54,6 +54,9 @@ export class AutomationJobModel extends Model {
     const jobType = this.get('type');
     const collectionName = this.get('collection_name');
     const M = this.database.getModel(collectionName);
+    if (!collectionName || !M) {
+      return;
+    }
     let filter: any = this.toFilter(result);
     let data: any = this.toValues(result);
     const { where = {} } = M.parseApiJson({ filter });
