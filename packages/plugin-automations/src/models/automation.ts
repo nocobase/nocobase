@@ -82,6 +82,9 @@ export class AutomationModel extends Model {
     const changedFields = (this.get('changed') as any) || [];
     const M = this.database.getModel(collectionName);
     const automationType = this.get('type');
+    if (automationType !== 'schedule' || !collectionName || !M) {
+      return;
+    }
     switch (automationType) {
       case 'collections:afterCreate':
         M.addHook('afterCreate', hookName, async (model, options) => {
