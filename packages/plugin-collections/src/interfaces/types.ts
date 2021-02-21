@@ -572,8 +572,8 @@ export const icon = {
 };
 
 export const chinaRegion = {
-  title: '中国行政区选择',
-  group: 'others',
+  title: '中国行政区划',
+  group: 'choices',
   options: {
     interface: 'chinaRegion',
     type: 'belongsToMany',
