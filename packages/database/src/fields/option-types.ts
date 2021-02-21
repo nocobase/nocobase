@@ -203,12 +203,6 @@ export interface RadioOptions extends Omit<BooleanOptions, 'type'> {
   scope?: string[];
 }
 
-export interface CascaderOptions extends Omit<JsonOptions, 'type'> {
-  type: 'cascader';
-
-  target: string;
-}
-
 export type ColumnOptions = AbstractFieldOptions 
                           | BooleanOptions 
                           | NumberOptions 

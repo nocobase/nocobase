@@ -576,13 +576,14 @@ export const chinaRegion = {
   group: 'others',
   options: {
     interface: 'chinaRegion',
-    type: 'cascader',
+    type: 'belongsToMany',
     // 数据来源的数据表，与 dataSource 不同，需要从表数据加载后转化成 dataSource
     target: 'china_regions',
+    targetKey: 'code',
+    // 值字段
+    // valueField: 'code',
     // 名称字段
     labelField: 'name',
-    // 值字段
-    valueField: 'code',
     // TODO(refactor): 等 toWhere 重构完成后要改成 parent
     // 上级字段名
     parentField: 'parent_code',

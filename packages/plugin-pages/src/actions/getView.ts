@@ -155,7 +155,7 @@ const transforms = {
       if (interfaceType === 'chinaRegion') {
         set(prop, 'x-component-props.target', field.get('target'));
         set(prop, 'x-component-props.labelField', field.get('labelField'));
-        set(prop, 'x-component-props.valueField', field.get('valueField'));
+        set(prop, 'x-component-props.valueField', field.get('targetKey'));
         set(prop, 'x-component-props.parentField', field.get('parentField'));
         set(prop, 'x-component-props.scale', field.get('scale'));
         set(prop, 'x-component-props.changeOnSelect', field.get('incompletely'));
@@ -370,7 +370,7 @@ export default async (ctx, next) => {
   }
   
   for (const field of fields) {
-    if (!['subTable', 'linkTo', 'attachment', 'createdBy', 'updatedBy'].includes(field.get('interface'))) {
+    if (!['subTable', 'linkTo', 'attachment', 'createdBy', 'updatedBy', 'chinaRegion'].includes(field.get('interface'))) {
       continue;
     }
     let showInKey;

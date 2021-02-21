@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { connect } from '@formily/react-schema-renderer'
 import { Cascader as AntdCascader } from 'antd'
 import { useRequest } from 'umi';
@@ -12,7 +12,7 @@ import {
 function findTreeNode(tree, values, { value = 'value', children = 'children' }) {
   let node, i;
   for (node = tree, i = 0; node && values[i]; i++ ) {
-    node = node[children].find(item => item[value] === values[i]);
+    node = (node[children] || []).find(item => item[value] === values[i][value]);
   }
 
   return node;
@@ -41,20 +41,23 @@ export const Cascader = connect({
     children: 'children'
   };
   const [options, setOptions] = useState([]);
-  const { loading, run } = useRequest(async (v = [], selectedOptions) => {
-    onChange(v);
 
-    if (v.length >= scale) {
+  const { loading, run } = useRequest(async (selectedOptions = []) => {
+    if (scale !== -1 && selectedOptions.length >= scale) {
       return;
     }
 
-    const last = v[v.length - 1] || null;
+    const last = selectedOptions[selectedOptions.length - 1] || null;
     if (last) {
-      selectedOptions[v.length - 1].loading = true;
+      if (last.isLeaf) {
+        return;
+      }
+      last.loading = true;
     }
+
     return api.resource(target).list({
       filter: {
-        [parentField]: last
+        [parentField]: last && last[valueField]
       },
       perPage: -1,
       sort: ['sort']
@@ -65,29 +68,54 @@ export const Cascader = connect({
     //   perPage: -1
     // });
   }, {
-    onSuccess(result) {
+    manual: true,
+    onSuccess(result, [selectedOptions = []]) {
+      if (!result) {
+        return;
+      }
+
+      const data = result.map(item => ({
+        ...item,
+        isLeaf: scale !== -1 && item.level >= scale
+      }));
       // 找到已有值指向的 options 节点
-      if (value.length) {
-        const node = findTreeNode({ [fieldNames.children]: options }, value, fieldNames);
+      const root = { [fieldNames.children]: options };
+      const node = findTreeNode(root, selectedOptions, fieldNames);
 
-        if (node) {
-          node.children = result;
-          node.loading = false;
-        }
-
+      if (node && node !== root) {
+        node.children = data;
+        node.loading = false;
+        // use spread array to avoid popup to be collapsed
         setOptions([...options]);
       } else {
-        setOptions(result);
+        setOptions(data);
       }
     }
   });
+
+  // 根据 value 的值，按需预加载相应的数据
+  useEffect(() => {
+    if (value.length) {
+      value.reduce((promise, option, i) => promise.then(() => run(value.slice(0, i))), Promise.resolve());
+    } else {
+      run([]);
+    }
+  }, []);
 
   return (
     <AntdCascader
       disabled={disabled}
       options={options}
-      value={value}
-      onChange={run}
+      value={value.map(item => item[valueField])}
+      onChange={(v, selected) => {
+        if (scale !== -1 && v.length < scale) {
+          run(selected);
+        }
+        if (changeOnSelect || v.length >= scale) {
+          onChange(selected, selected);
+        }
+      }}
+      loadData={run}
       changeOnSelect={changeOnSelect}
       fieldNames={fieldNames}
     />
