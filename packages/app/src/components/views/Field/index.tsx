@@ -256,13 +256,13 @@ export function LinkToFieldLink(props) {
         e.stopPropagation();
         setVisible(true);
       }}>{data[labelField]}</a>
-      <Drawer 
+      <Drawer
         // @ts-ignore
         onClick={(e) => {
           e.stopPropagation();
         }}
         className={'noco-drawer'}
-        bodyStyle={{padding: 0}} 
+        bodyStyle={{padding: 0}}
         width={'40%'}
         title={`查看${title}详情`}
         visible={visible}
@@ -361,18 +361,32 @@ export function AttachmentFieldItem(props: any) {
   );
 }
 
-function LogField(props) {
+export function LogField(props) {
   const { value = {} } = props;
   return (
     <div>{value.title||value.name}</div>
   )
 }
 
-function LogFieldValue(props) {
+export function LogFieldValue(props) {
   const { value, schema, data } = props;
   return (
     <div>{JSON.stringify(value)}</div>
   )
+}
+
+export function ChinaRegion(props: any) {
+  const { schema, value } = props;
+  if (!value) {
+    return null;
+  }
+  const values = (Array.isArray(value) ? value : [value])
+    .sort((a, b) => a.level !== b.level ? a.level - b.level : a.sort - b.sort);
+  return (
+    <div className={'china-region-field'}>
+      {values.map(item => item.name).join('/')}
+    </div>
+  );
 }
 
 registerFieldComponents({
@@ -396,6 +410,7 @@ registerFieldComponents({
   attachment: AttachmentField,
   'logs.field': LogField,
   'logs.fieldValue': LogFieldValue,
+  chinaRegion: ChinaRegion,
 });
 
 export default function Field(props: any) {

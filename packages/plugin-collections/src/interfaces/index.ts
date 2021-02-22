@@ -4,90 +4,44 @@
 import * as types from './types';
 export * as types from './types';
 
-export const options = [
-  {
-    key: 'basic',
-    title: '基本类型',
-    children: [
-      types.string,
-      types.textarea,
-      types.phone,
-      types.email,
-      types.number,
-      types.percent,
-    ],
-  },
-  {
-    key: 'media',
-    title: '多媒体类型',
-    children: [
-      types.wysiwyg,
-      types.attachment,
-    ],
-  },
-  {
-    key: 'choices',
-    title: '选择类型',
-    children: [
-      types.boolean,
-      types.select,
-      types.multipleSelect,
-      types.radio,
-      types.checkboxes,
-    ],
-  },
-  {
-    key: 'datetime',
-    title: '日期和时间',
-    children: [
-      types.datetime,
-      types.time,
-    ],
-  },
-  {
-    key: 'relation',
-    title: '关系类型',
-    children: [
-      types.subTable,
-      types.linkTo,
-    ],
-  },
-  {
-    key: 'systemInfo',
-    title: '系统信息',
-    children: [
-      types.createdAt,
-      types.updatedAt,
-      types.createdBy,
-      types.updatedBy,
-    ],
-  },
-  {
-    key: 'developerMode',
-    title: '开发者模式',
-    children: [
-      types.primaryKey,
-      types.sort,
-      types.password,
-      types.json,
-      types.icon,
-    ],
-  },
-  {
-    key: 'others',
-    title: '其他',
-    children: [
-      types.description,
-    ],
-  }
-].map(({key, title, children}: any) => ({
-  key,
-  label: title,
-  children: children.map(child => ({
-    label: child.title,
-    value: child.options.interface,
-    disabled: child.disabled,
-  })),
-}));
+export const groupLabelMap = {
+  basic: '基本类型',
+  media: '多媒体类型',
+  choices: '选择类型',
+  datetime: '日期和时间',
+  relation: '关系类型',
+  systemInfo: '关系类型',
+  developerMode: '开发者模式',
+  others: '其他'
+};
 
-export default options;
+export function getOptions() {
+  return Object.keys(groupLabelMap).map(key => ({
+    key,
+    label: groupLabelMap[key],
+    children: Object.values(types)
+      .filter(type => type['group'] === key)
+      .map(type => ({
+        label: type.title,
+        value: type.options.interface,
+        // TODO(draft): 配置信息一并存到数据库方便字段配置时取出参与联动计算
+        // properties: type.properties,
+        disabled: type['disabled'],
+      }))
+  }));
+}
+
+export type interfaceType = {
+  title: string,
+  group?: string,
+  options: {
+    [key: string]: any
+  },
+  disabled?: boolean
+};
+
+// TODO(draft)
+// 目前仅在内存中注册，应用启动时需要解决扩展字段读取并注册到内存
+export function register(type: interfaceType) {
+  types[type.options.interface] = type;
+}
