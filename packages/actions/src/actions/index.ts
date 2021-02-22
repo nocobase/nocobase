@@ -4,7 +4,7 @@ import { Action } from '@nocobase/resourcer';
 
 export type Next = () => Promise<any>;
 
-export type Context = Koa.Context & {
+export interface Context extends Koa.Context {
   db: Database;
   action: Action;
 };
