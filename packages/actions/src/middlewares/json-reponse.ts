@@ -4,7 +4,7 @@ import { Action } from '@nocobase/resourcer';
 export async function jsonResponse(ctx: Context, next: Next) {
   await next();
   if (ctx.action instanceof Action) {
-    const { rows, ...meta } = ctx.body;
+    const { rows, ...meta } = ctx.body as any;
     if (rows) {
       ctx.body = {
         data: rows,
