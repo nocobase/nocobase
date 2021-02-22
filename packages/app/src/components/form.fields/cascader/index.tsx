@@ -111,8 +111,8 @@ export const Cascader = connect({
         if (maxLevel != null && v.length < maxLevel) {
           run(selected);
         }
-        if (changeOnSelect || v.length >= maxLevel) {
-          onChange(selected, selected);
+        if (changeOnSelect || !v.length || v.length >= maxLevel) {
+          onChange(selected);
         }
       }}
       loadData={run}
