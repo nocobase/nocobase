@@ -157,7 +157,7 @@ const transforms = {
         set(prop, 'x-component-props.labelField', field.get('labelField'));
         set(prop, 'x-component-props.valueField', field.get('targetKey'));
         set(prop, 'x-component-props.parentField', field.get('parentField'));
-        set(prop, 'x-component-props.scale', field.get('scale'));
+        set(prop, 'x-component-props.maxLevel', field.get('maxLevel'));
         set(prop, 'x-component-props.changeOnSelect', field.get('incompletely'));
       }
       schema[field.name] = {

@@ -590,7 +590,7 @@ export const chinaRegion = {
     // 深度限制，默认：-1（代表不控制，即如果是数据表，则无限加载）
     // limit: -1,
     // 可选层级，默认：-1（代表可选的最深层级）
-    scale: -1,
+    // maxLevel: null,
     // 是否可以不选择到最深一级
     // 'x-component-props': { changeOnSelect: true }
     incompletely: false,

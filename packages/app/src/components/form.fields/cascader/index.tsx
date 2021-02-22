@@ -28,7 +28,7 @@ export const Cascader = connect({
     labelField,
     valueField = 'id',
     parentField,
-    scale = -1,
+    maxLevel,
     changeOnSelect,
     value = [],
     onChange,
@@ -43,7 +43,7 @@ export const Cascader = connect({
   const [options, setOptions] = useState([]);
 
   const { loading, run } = useRequest(async (selectedOptions = []) => {
-    if (scale !== -1 && selectedOptions.length >= scale) {
+    if (maxLevel != null && selectedOptions.length >= maxLevel) {
       return;
     }
 
@@ -60,7 +60,7 @@ export const Cascader = connect({
         [parentField]: last && last[valueField]
       },
       perPage: -1,
-      sort: ['sort']
+      sort: [valueField]
     });
     // TODO(bug): 关联资源加载问题较多，暂时先用 filter 解决
     // return api.resource(`${target}.${target}`).list({
@@ -76,7 +76,7 @@ export const Cascader = connect({
 
       const data = result.map(item => ({
         ...item,
-        isLeaf: scale !== -1 && item.level >= scale
+        isLeaf: maxLevel != null && item.level >= maxLevel
       }));
       // 找到已有值指向的 options 节点
       const root = { [fieldNames.children]: options };
@@ -108,10 +108,10 @@ export const Cascader = connect({
       options={options}
       value={value.map(item => item[valueField])}
       onChange={(v, selected) => {
-        if (scale !== -1 && v.length < scale) {
+        if (maxLevel != null && v.length < maxLevel) {
           run(selected);
         }
-        if (changeOnSelect || v.length >= scale) {
+        if (changeOnSelect || v.length >= maxLevel) {
           onChange(selected, selected);
         }
       }}

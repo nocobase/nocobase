@@ -6,19 +6,6 @@ export default {
   internal: true,
   developerMode: true,
   fields: [
-    {
-      name: 'sort',
-      title: '排序',
-      interface: 'sort',
-      type: 'sort',
-      scope: ['parent_code'],
-      component: {
-        type: 'sort',
-        className: 'drag-visible',
-        width: 60,
-        showInTable: true,
-      },
-    },
     // 如使用代码作为 id 可能更节省，但由于代码数字最长为 12 字节，除非使用 bigint(64) 才够放置
     {
       name: 'code',

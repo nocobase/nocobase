@@ -143,7 +143,7 @@ export default {
           },
           {
             "type": "value:visible",
-            "target": "scale",
+            "target": "maxLevel",
             "condition": "{{ ['chinaRegion'].includes($self.value) }}"
           },
           {
@@ -285,7 +285,7 @@ export default {
     },
     // TODO(refactor): 此部分类型相关的参数，后期应拆分出去
     {
-      name: 'scale',
+      name: 'maxLevel',
       title: '可选层级',
       interface: 'radio',
       type: 'virtual',
@@ -294,7 +294,7 @@ export default {
         { value: 2, label: '市' },
         { value: 3, label: '区/县' },
         { value: 4, label: '乡镇/街道' },
-        // { value: 5, label: '村/居委会' },
+        { value: 5, label: '村/居委会' },
       ],
       component: {
         showInForm: true,
