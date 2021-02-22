@@ -42,7 +42,7 @@
     "clean-deep": "^3.4.0",
     "concurrently": "^5.3.0",
     "lint-staged": "^10.0.7",
-    "marked": "^1.2.7",
+    "marked": "^2.0.0",
     "nodemon": "^2.0.6",
     "prettier": "^1.19.1",
     "react": "16.14.0",
