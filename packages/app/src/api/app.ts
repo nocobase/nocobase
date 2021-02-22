@@ -68,5 +68,6 @@ api.registerPlugin('plugin-users', [path.resolve(__dirname, '../../../plugin-use
 api.registerPlugin('plugin-file-manager', [path.resolve(__dirname, '../../../plugin-file-manager'), {}]);
 api.registerPlugin('plugin-permissions', [path.resolve(__dirname, '../../../plugin-permissions'), {}]);
 api.registerPlugin('plugin-automations', [path.resolve(__dirname, '../../../plugin-automations'), {}]);
+api.registerPlugin('plugin-china-region', [path.resolve(__dirname, '../../../plugin-china-region'), {}]);
 
 export default api;

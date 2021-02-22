@@ -7,6 +7,7 @@
 // TODO: interface 的修改
 export const string = {
   title: '单行文本',
+  group: 'basic',
   options: {
     interface: 'string',
     type: 'string',
@@ -19,6 +20,7 @@ export const string = {
 
 export const textarea = {
   title: '多行文本',
+  group: 'basic',
   options: {
     interface: 'textarea',
     type: 'text',
@@ -31,6 +33,7 @@ export const textarea = {
 
 export const phone = {
   title: '手机号码',
+  group: 'basic',
   options: {
     interface: 'phone',
     type: 'string',
@@ -45,6 +48,7 @@ export const phone = {
 
 export const email = {
   title: '邮箱',
+  group: 'basic',
   options: {
     interface: 'email',
     type: 'string',
@@ -62,6 +66,7 @@ export const email = {
  */
 export const number = {
   title: '数字',
+  group: 'basic',
   options: {
     interface: 'number',
     type: 'float',
@@ -80,6 +85,7 @@ export const number = {
  */
 export const percent = {
   title: '百分比',
+  group: 'basic',
   options: {
     interface: 'percent',
     type: 'float',
@@ -94,6 +100,7 @@ export const percent = {
 
 export const wysiwyg = {
   title: '可视化编辑器',
+  group: 'media',
   disabled: true,
   options: {
     interface: 'wysiwyg',
@@ -109,6 +116,7 @@ export const wysiwyg = {
  */
 export const attachment = {
   title: '附件',
+  group: 'media',
   // disabled: true,
   options: {
     interface: 'attachment',
@@ -129,6 +137,7 @@ export const attachment = {
  */
 export const select = {
   title: '下拉选择（单选）',
+  group: 'choices',
   options: {
     interface: 'select',
     type: 'string',
@@ -152,6 +161,7 @@ export const select = {
  */
 export const multipleSelect = {
   title: '下拉选择（多选）',
+  group: 'choices',
   options: {
     interface: 'multipleSelect',
     type: 'json', // json 过滤
@@ -167,6 +177,7 @@ export const multipleSelect = {
 
 export const radio = {
   title: '单选框',
+  group: 'choices',
   options: {
     interface: 'radio',
     type: 'string',
@@ -180,6 +191,7 @@ export const radio = {
 
 export const checkboxes = {
   title: '多选框',
+  group: 'choices',
   options: {
     interface: 'checkboxes',
     type: 'json',
@@ -194,6 +206,7 @@ export const checkboxes = {
 
 export const boolean = {
   title: '是/否',
+  group: 'choices',
   options: {
     interface: 'boolean',
     type: 'boolean',
@@ -210,6 +223,7 @@ export const boolean = {
  */
 export const datetime = {
   title: '日期',
+  group: 'datetime',
   options: {
     interface: 'datetime',
     type: 'date',
@@ -222,10 +236,34 @@ export const datetime = {
       type: 'date',
     },
   },
+  // TODO(draft): 配置参数的一种描述方式
+  // properties: [
+  //   {
+  //     name: 'showTime',
+  //     title: '显示时间',
+  //     interface: 'boolean',
+  //     component: {
+  //       'x-linkages': [
+  //         {
+  //           type: 'value:visible',
+  //           target: 'timeFormat',
+  //           condition: '{{ $value }}'
+  //         }
+  //       ]
+  //     }
+  //   },
+  //   {
+  //     interface: 'string',
+  //     name: 'timeFormat',
+  //     title: '时间格式',
+  //     filterable: false
+  //   }
+  // ]
 };
 
 export const time = {
   title: '时间',
+  group: 'datetime',
   options: {
     interface: 'time',
     type: 'time',
@@ -275,6 +313,7 @@ export const time = {
 // });
 export const subTable = {
   title: '子表格',
+  group: 'relation',
   // disabled: true,
   options: {
     interface: 'subTable',
@@ -329,6 +368,7 @@ export const subTable = {
 
 export const linkTo = {
   title: '关联数据',
+  group: 'relation',
   // disabled: true,
   options: {
     interface: 'linkTo',
@@ -346,6 +386,7 @@ export const linkTo = {
 
 export const createdAt = {
   title: '创建时间',
+  group: 'systemInfo',
   options: {
     interface: 'createdAt',
     type: 'date',
@@ -365,6 +406,7 @@ export const createdAt = {
 
 export const updatedAt = {
   title: '修改时间',
+  group: 'systemInfo',
   options: {
     interface: 'updatedAt',
     type: 'date',
@@ -384,6 +426,7 @@ export const updatedAt = {
 
 export const createdBy = {
   title: '创建人',
+  group: 'systemInfo',
   // disabled: true,
   options: {
     interface: 'createdBy',
@@ -402,6 +445,7 @@ export const createdBy = {
 
 export const updatedBy = {
   title: '修改人',
+  group: 'systemInfo',
   // disabled: true,
   options: {
     interface: 'updatedBy',
@@ -438,6 +482,7 @@ export const group = {
 
 export const description = {
   title: '说明文字',
+  group: 'others',
   options: {
     interface: 'description',
     // name: 'id',
@@ -453,6 +498,7 @@ export const description = {
  */
 export const primaryKey = {
   title: '主键',
+  group: 'developerMode',
   options: {
     interface: 'primaryKey',
     name: 'id',
@@ -474,6 +520,7 @@ export const primaryKey = {
  */
 export const sort = {
   title: '排序',
+  group: 'developerMode',
   options: {
     interface: 'sort',
     type: 'integer',
@@ -487,6 +534,7 @@ export const sort = {
 
 export const password = {
   title: '密码',
+  group: 'developerMode',
   options: {
     interface: 'password',
     type: 'password',
@@ -499,6 +547,7 @@ export const password = {
 
 export const json = {
   title: 'JSON',
+  group: 'developerMode',
   options: {
     interface: 'json',
     type: 'json',
@@ -512,6 +561,7 @@ export const json = {
 
 export const icon = {
   title: '图标',
+  group: 'developerMode',
   options: {
     interface: 'icon',
     type: 'string',
@@ -519,4 +569,33 @@ export const icon = {
       type: 'icon',
     },
   },
+};
+
+export const chinaRegion = {
+  title: '中国行政区划',
+  group: 'choices',
+  options: {
+    interface: 'chinaRegion',
+    type: 'belongsToMany',
+    // 数据来源的数据表，与 dataSource 不同，需要从表数据加载后转化成 dataSource
+    target: 'china_regions',
+    targetKey: 'code',
+    // 值字段
+    // valueField: 'code',
+    // 名称字段
+    labelField: 'name',
+    // TODO(refactor): 等 toWhere 重构完成后要改成 parent
+    // 上级字段名
+    parentField: 'parent_code',
+    // 深度限制，默认：-1（代表不控制，即如果是数据表，则无限加载）
+    // limit: -1,
+    // 可选层级，默认：-1（代表可选的最深层级）
+    // maxLevel: null,
+    // 是否可以不选择到最深一级
+    // 'x-component-props': { changeOnSelect: true }
+    incompletely: false,
+    component: {
+      type: 'cascader',
+    }
+  }
 };

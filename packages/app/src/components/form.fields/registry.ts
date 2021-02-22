@@ -17,6 +17,7 @@ import { Filter } from './filter'
 import { RemoteSelect } from './remote-select'
 import { DrawerSelect } from './drawer-select'
 import { SubTable } from './sub-table'
+import { Cascader } from './cascader'
 import { Icon } from './icons'
 import { ColorSelect } from './color-select'
 import { Permissions } from './permissions'
@@ -29,6 +30,7 @@ export const setup = () => {
     time: TimePicker,
     timerange: TimePicker.RangePicker,
     transfer: Transfer,
+    cascader: Cascader,
     boolean: Checkbox,
     switch: Switch,
     checkbox: Checkbox,

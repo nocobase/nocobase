@@ -1,7 +1,6 @@
 import { Agent, getAgent, getApp } from '../';
 import { Application } from '@nocobase/server';
-import { options, types } from '../../interfaces';
-import { FieldModel } from '../../models';
+import { types } from '../../interfaces';
 
 describe('models.field', () => {
   let app: Application;

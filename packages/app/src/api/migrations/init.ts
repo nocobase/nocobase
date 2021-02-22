@@ -6,8 +6,9 @@ global.sync = {
   },
 };
 
-import api from '../app';
 import Database from '@nocobase/database';
+import { init as chinaRegionSeederInit } from '@nocobase/plugin-china-region/src/db/seeders';
+import api from '../app';
 
 const data = [
   {
@@ -233,6 +234,9 @@ const data = [
   // 全局
   await Action.bulkCreate([
   ]);
+
+  // 导入地域数据
+  await chinaRegionSeederInit(api);
 
   await database.getModel('collections').import(require('./collections/example').default);
   await database.getModel('collections').import(require('./collections/authors').default);
