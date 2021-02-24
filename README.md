@@ -4,21 +4,21 @@ NocoBase is an open source and free no-code development platform. Whether you ar
 
 Who is NocoBase for
 ----------
-- SMEs and organizations
+- **SMEs and organizations**
 	- Proficient in the business of their organization or industry
 	- Looking to build digital systems
-- IT service providers and outsourcing teams
+- **IT service providers and outsourcing teams**
 	- Provide digital upgrade for SMEs and organizations
 	- Have development capabilities
 
 When to use Nocobase
 ----------
-- SMEs and organizations build business platforms and management systems for themselves or for their industry
+- **SMEs and organizations build business platforms and management systems for themselves or for their industry**
 	- Want the price to be low enough or even free
 	- Can be flexibly customized without programming knowledge
 	- Need full control of source code and data
 	- Can freely distribute and sell as their own products
-- Service providers and outsourcing teams develop collaboration platforms and management systems for their clients
+- **Service providers and outsourcing teams develop collaboration platforms and management systems for their clients**
 	- Want to keep development costs as low as possible
 	- Need the most user-friendly secondary development experience
 	- Must be deployed privately as a standalone product for the client
@@ -26,17 +26,17 @@ When to use Nocobase
 
 Why choose NocoBase
 ----------
-- Open source and free
+- **Open source and free**
 	- Unrestricted commercial use under the MIT license
 	- Full code ownership, private deployment, private and secure data
 	- Free to expand and develop for actual needs
 	- Good ecological support
-- Strong no-code capability
+- **Strong no-code capability**
 	- More advanced codeless architecture, both flexible and easy to use, can make a powerful system even if you don't know programming
 	- Support tables, calendars, forms, details, statistical charts and other types of views freely combined into the page
 	- Unlimited hierarchical configuration of navigation menus, allowing flexible organization of pages
 	- Precise configuration of data manipulation rights, access rights to pages and menus
-- Developer-friendly
+- **Developer-friendly**
 	- Microkernel architecture, flexible and easy to extend, with a robust plug-in system
 	- Node.js-based, using mainstream frameworks and technologies, including Koa, Sequelize, React, Ant Design, etc.
 	- Progressive development, low start-up difficulty, friendly to newcomers
