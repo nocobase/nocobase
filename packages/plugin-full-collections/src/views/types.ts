@@ -6,22 +6,27 @@ export const form = {
   },
   properties: {
     fields: {
-      interface: 'json',
+      interface: 'subTable',
       title: '要显示的字段',
-      type: 'virtual',
-      component: {
-        type: 'string'
-      },
+      type: 'hasMany',
+      target: 'views_fields',
+      children: [
+        {
+          interface: 'string',
+          type: 'string',
+          name: 'name',
+          title: '字段',
+        },
+      ],
     },
   },
   linkages: {
     type: [
       {
-        type: "value:schema",
+        type: 'value:schema',
         target: "fields",
-        condition: "{{ $self.value === 'table' }}",
         schema: {
-          "x-component-props": {
+          'x-component-props': {
             associatedKey: "{{ $form.values && $form.values.associatedKey }}"
           },
         },
@@ -32,33 +37,46 @@ export const form = {
 
 export const detail = {
   title: '详情',
-  options: {},
+  options: {
+    // actions,
+    // fields,
+  },
   properties: {
     actions: {
-      interface: 'json',
+      interface: 'subTable',
       title: '可进行的操作',
-      type: 'virtual',
-      component: {
-        type: 'string'
-      },
+      type: 'hasMany',
+      children: [
+        {
+          interface: 'string',
+          type: 'string',
+          name: 'name',
+          title: '操作',
+        },
+      ],
     },
     fields: {
-      interface: 'json',
+      interface: 'subTable',
       title: '要显示的字段',
-      type: 'virtual',
-      component: {
-        type: 'string'
-      },
+      type: 'hasMany',
+      target: 'views_fields',
+      children: [
+        {
+          interface: 'string',
+          type: 'string',
+          name: 'name',
+          title: '字段',
+        },
+      ],
     },
   },
   linkages: {
     type: [
       {
-        type: "value:schema",
+        type: 'value:schema',
         target: "fields",
-        condition: "{{ $self.value === 'table' }}",
         schema: {
-          "x-component-props": {
+          'x-component-props': {
             associatedKey: "{{ $form.values && $form.values.associatedKey }}"
           },
         },
@@ -75,6 +93,10 @@ export const table = {
     filter: {},
     sort: {},
     openMode: 'default',
+    // actions,
+    // fields,
+    // pages,
+    // labelField,
   },
   properties: {
     // 数据配置
@@ -116,12 +138,18 @@ export const table = {
       },
     },
     fields: {
-      interface: 'json',
+      interface: 'subTable',
       title: '要显示的字段',
-      type: 'virtual',
-      component: {
-        type: 'string'
-      },
+      type: 'hasMany',
+      target: 'views_fields',
+      children: [
+        {
+          interface: 'string',
+          type: 'string',
+          name: 'name',
+          title: '字段',
+        },
+      ],
     },
     defaultPerPage: {
       interface: 'radio',
@@ -143,12 +171,17 @@ export const table = {
     },
     // 操作配置
     actions: {
-      interface: 'json',
+      interface: 'subTable',
       title: '可进行的操作',
-      type: 'virtual',
-      component: {
-        type: 'string'
-      },
+      type: 'hasMany',
+      children: [
+        {
+          interface: 'string',
+          type: 'string',
+          name: 'name',
+          title: '操作',
+        },
+      ],
     },
     // 详情配置
     openMode: {
@@ -177,51 +210,46 @@ export const table = {
   linkages: {
     type: [
       {
-        type: "value:schema",
+        type: 'value:schema',
         target: "filter",
-        condition: "{{ $self.value === 'table' }}",
         schema: {
-          "x-component-props": {
+          'x-component-props': {
             associatedKey: "{{ $form.values && $form.values.associatedKey }}"
           },
         },
       },
       {
-        type: "value:schema",
+        type: 'value:schema',
         target: "sort",
-        condition: "{{ $self.value === 'table' }}",
         schema: {
-          "x-component-props": {
+          'x-component-props': {
             associatedKey: "{{ $form.values && $form.values.associatedKey }}"
           },
         },
       },
       {
-        type: "value:schema",
+        type: 'value:schema',
         target: "labelField",
-        condition: "{{ $self.value === 'table' }}",
         schema: {
-          "x-component-props": {
+          'x-component-props': {
             associatedKey: "{{ $form.values && $form.values.associatedKey }}"
           },
         },
       },
       {
-        type: "value:schema",
+        type: 'value:schema',
         target: "fields",
-        condition: "{{ $self.value === 'table' }}",
         schema: {
-          "x-component-props": {
+          'x-component-props': {
             associatedKey: "{{ $form.values && $form.values.associatedKey }}"
           },
         },
       },
       {
-        type: "value:schema",
+        type: 'value:schema',
         target: "pages",
-        condition: "{{ $self.value === 'table' }}",
         schema: {
-          "x-component-props": {
+          'x-component-props': {
             associatedKey: "{{ $form.values && $form.values.associatedKey }}"
           },
         },
@@ -232,7 +260,14 @@ export const table = {
 
 export const calendar = {
   title: '日历',
-  options: {},
+  options: {
+    // filter,
+    // labelField,
+    // startDateField,
+    // endDateField,
+    // openMode,
+    // pages,
+  },
   properties: {
     // 数据配置
     filter: {
@@ -321,55 +356,96 @@ export const calendar = {
   linkages: {
     type: [
       {
-        type: "value:schema",
+        type: 'value:schema',
         target: "filter",
-        condition: "{{ $self.value === 'calendar' }}",
         schema: {
-          "x-component-props": {
+          'x-component-props': {
             associatedKey: "{{ $form.values && $form.values.associatedKey }}"
           },
         },
       },
       {
-        type: "value:schema",
+        type: 'value:schema',
         target: "labelField",
-        condition: "{{ $self.value === 'calendar' }}",
         schema: {
-          "x-component-props": {
+          'x-component-props': {
             associatedKey: "{{ $form.values && $form.values.associatedKey }}"
           },
         },
       },
       {
-        type: "value:schema",
+        type: 'value:schema',
         target: "startDateField",
-        condition: "{{ $self.value === 'calendar' }}",
         schema: {
-          "x-component-props": {
+          'x-component-props': {
             associatedKey: "{{ $form.values && $form.values.associatedKey }}"
           },
         },
       },
       {
-        type: "value:schema",
+        type: 'value:schema',
         target: "endDateField",
-        condition: "{{ $self.value === 'calendar' }}",
         schema: {
-          "x-component-props": {
+          'x-component-props': {
             associatedKey: "{{ $form.values && $form.values.associatedKey }}"
           },
         },
       },
       {
-        type: "value:schema",
+        type: 'value:schema',
         target: "pages",
-        condition: "{{ $self.value === 'calendar' }}",
         schema: {
-          "x-component-props": {
+          'x-component-props': {
             associatedKey: "{{ $form.values && $form.values.associatedKey }}"
           },
         },
       },
     ],
+  },
+};
+
+export const association = {
+  title: '相关数据视图',
+  options: {
+    // tableName,
+    // viewName,
+    // actions,
+  },
+  properties: {
+    tableName: {
+      interface: 'select',
+      type: 'virtual',
+      title: '相关数据',
+      required: true,
+      component: {
+        type: 'remoteSelect',
+        resourceName: 'collections.fields',
+        labelField: 'title',
+        valueField: 'name',
+      },
+    },
+    viewName: {
+      interface: 'select',
+      type: 'virtual',
+      title: '相关数据表的视图',
+      required: true,
+      component: {
+        type: 'remoteSelect',
+        resourceName: 'collections.views',
+        labelField: 'title',
+        valueField: 'name',
+      },
+    },
+    actions: {
+      interface: 'json',
+      title: '可进行的操作',
+      component: {
+        type: 'string'
+      },
+    },
+  },
+  linkages: {
+    tableName: [],
+    viewName: [],
   },
 };

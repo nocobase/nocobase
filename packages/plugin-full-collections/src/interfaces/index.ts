@@ -65,6 +65,7 @@ export function getInterfaceLinkages() {
     if (linkages.interface) {
       xlinkages = xlinkages.concat(linkages.interface.map(linkage => {
         if (properties[linkage.target]) {
+          linkage.condition = `{{ $self.value === '${key}' }}`;
           linkage.target = `x-${key}-props.${linkage.target}`;
         }
         return linkage;

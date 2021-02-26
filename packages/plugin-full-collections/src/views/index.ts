@@ -41,6 +41,7 @@ export function getViewTypeLinkages() {
     if (linkages.type) {
       xlinkages = xlinkages.concat(linkages.type.map(linkage => {
         if (properties[linkage.target]) {
+          linkage.condition = `{{ $self.value === '${key}' }}`;
           linkage.target = `x-${key}-props.${linkage.target}`;
         }
         return linkage;
@@ -52,10 +53,10 @@ export function getViewTypeLinkages() {
 
 export function getViewFields() {
   const fields = new Map();
-  fields.set('interface', {
+  fields.set('type', {
     interface: 'select',
     type: 'string',
-    name: 'interface',
+    name: 'type',
     title: '视图类型',
     required: true,
     dataSource: getOptions(),
