@@ -1,3 +1,64 @@
+const fields = {
+  interface: 'json',
+  title: '要显示的字段',
+  // target: 'views_fields',
+  fields: [
+    {
+      interface: 'string',
+      type: 'string',
+      name: 'name',
+      title: '字段',
+    },
+    {
+      interface: 'string',
+      type: 'string',
+      name: 'title',
+      title: '字段标题',
+    },
+  ],
+};
+
+const actions = {
+  interface: 'json',
+  title: '可进行的操作',
+  fields: [
+    {
+      interface: 'string',
+      type: 'string',
+      name: 'name',
+      title: '操作',
+    },
+  ],
+};
+
+const pages = {
+  interface: 'json',
+  title: '详情页要显示的单条数据子页面',
+  fields: [
+    {
+      interface: 'string',
+      type: 'string',
+      name: 'name',
+      title: '页面',
+    },
+  ],
+};
+
+const openMode = {
+  interface: 'radio',
+  // type: 'string',
+  title: '单条数据详情页的打开方式',
+  required: true,
+  dataSource: [
+    { label: '常规页面', value: 'default' },
+    { label: '快捷抽屉', value: 'simple' },
+  ],
+  component: {
+    type: 'radio',
+    default: 'default',
+  },
+};
+
 export const form = {
   // fields,
   title: '表单',
@@ -5,20 +66,7 @@ export const form = {
     // fields,
   },
   properties: {
-    fields: {
-      interface: 'subTable',
-      title: '要显示的字段',
-      type: 'hasMany',
-      target: 'views_fields',
-      children: [
-        {
-          interface: 'string',
-          type: 'string',
-          name: 'name',
-          title: '字段',
-        },
-      ],
-    },
+    fields,
   },
   linkages: {
     type: [
@@ -42,33 +90,8 @@ export const detail = {
     // fields,
   },
   properties: {
-    actions: {
-      interface: 'subTable',
-      title: '可进行的操作',
-      type: 'hasMany',
-      children: [
-        {
-          interface: 'string',
-          type: 'string',
-          name: 'name',
-          title: '操作',
-        },
-      ],
-    },
-    fields: {
-      interface: 'subTable',
-      title: '要显示的字段',
-      type: 'hasMany',
-      target: 'views_fields',
-      children: [
-        {
-          interface: 'string',
-          type: 'string',
-          name: 'name',
-          title: '字段',
-        },
-      ],
-    },
+    actions,
+    fields,
   },
   linkages: {
     type: [
@@ -137,20 +160,7 @@ export const table = {
         },
       },
     },
-    fields: {
-      interface: 'subTable',
-      title: '要显示的字段',
-      type: 'hasMany',
-      target: 'views_fields',
-      children: [
-        {
-          interface: 'string',
-          type: 'string',
-          name: 'name',
-          title: '字段',
-        },
-      ],
-    },
+    fields,
     defaultPerPage: {
       interface: 'radio',
       type: 'virtual',
@@ -170,42 +180,10 @@ export const table = {
       title: '支持拖拽数据排序',
     },
     // 操作配置
-    actions: {
-      interface: 'subTable',
-      title: '可进行的操作',
-      type: 'hasMany',
-      children: [
-        {
-          interface: 'string',
-          type: 'string',
-          name: 'name',
-          title: '操作',
-        },
-      ],
-    },
+    actions,
     // 详情配置
-    openMode: {
-      interface: 'radio',
-      type: 'string',
-      title: '单条数据详情页的打开方式',
-      required: true,
-      dataSource: [
-        { label: '常规页面', value: 'default' },
-        { label: '快捷抽屉', value: 'simple' },
-      ],
-      component: {
-        type: 'radio',
-        default: 'default',
-      },
-    },
-    pages: {
-      interface: 'json',
-      title: '详情页要显示的单条数据子页面',
-      type: 'virtual',
-      component: {
-        type: 'string'
-      },
-    },
+    openMode,
+    pages,
   },
   linkages: {
     type: [
@@ -330,28 +308,8 @@ export const calendar = {
       },
     },
     // 详情配置
-    openMode: {
-      interface: 'radio',
-      type: 'string',
-      title: '单条数据详情页的打开方式',
-      required: true,
-      dataSource: [
-        { label: '常规页面', value: 'default' },
-        { label: '快捷抽屉', value: 'simple' },
-      ],
-      component: {
-        type: 'radio',
-        default: 'default',
-      },
-    },
-    pages: {
-      interface: 'json',
-      title: '详情页要显示的单条数据子页面',
-      type: 'virtual',
-      component: {
-        type: 'string'
-      },
-    },
+    openMode,
+    pages,
   },
   linkages: {
     type: [
@@ -436,13 +394,7 @@ export const association = {
         valueField: 'name',
       },
     },
-    actions: {
-      interface: 'json',
-      title: '可进行的操作',
-      component: {
-        type: 'string'
-      },
-    },
+    actions,
   },
   linkages: {
     tableName: [],

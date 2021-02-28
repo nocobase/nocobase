@@ -73,7 +73,10 @@ export function getViewFields() {
         ...properties[name],
         name,
       };
-      if (!property.type || property.type === 'virtual') {
+      if (!property.type) {
+        property.type = 'virtual';
+      }
+      if (property.type === 'virtual') {
         property.name = `x-${key}-props.${name}`;
       }
       if (linkages[name]) {

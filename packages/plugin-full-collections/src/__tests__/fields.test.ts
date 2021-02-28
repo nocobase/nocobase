@@ -32,10 +32,10 @@ describe('fields', () => {
   }
 
   describe('basic', () => {
-    it('string', async () => {
-      await createField({
-        interface: 'string',
-      });
+    it.only('string', async () => {
+      // await createField({
+      //   interface: 'string',
+      // });
     });
     it('number', async () => {
       await createField({

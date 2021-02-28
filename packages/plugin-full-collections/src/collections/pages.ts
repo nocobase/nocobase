@@ -1,7 +1,7 @@
 import { TableOptions } from '@nocobase/database';
 
 export default {
-  name: 'menus',
+  name: 'pages',
   title: '页面配置',
   internal: true,
   // model: 'CollectionModel',
@@ -46,28 +46,28 @@ export default {
       name: 'dynamic',
       title: '单条数据子页面',
     },
-    {
-      interface: 'subTable',
-      type: 'hasMany',
-      name: 'views',
-      title: '视图',
-      target: 'pages_views',
-      children: [
-        {
-          interface: 'linkTo',
-          type: 'belongsToMany',
-          name: 'view',
-          title: '视图',
-          target: 'views',
-        },
-        {
-          interface: 'percent',
-          type: 'float',
-          name: 'width',
-          title: '宽度',
-        },
-      ],
-    },
+    // {
+    //   interface: 'subTable',
+    //   type: 'hasMany',
+    //   name: 'views',
+    //   title: '视图',
+    //   target: 'pages_views',
+    //   children: [
+    //     {
+    //       interface: 'linkTo',
+    //       type: 'belongsToMany',
+    //       name: 'view',
+    //       title: '视图',
+    //       target: 'views',
+    //     },
+    //     {
+    //       interface: 'percent',
+    //       type: 'float',
+    //       name: 'width',
+    //       title: '宽度',
+    //     },
+    //   ],
+    // },
     {
       interface: 'linkTo',
       type: 'belongsTo',

@@ -8,6 +8,8 @@ import fieldsBeforeValidate from './hooks/fields.beforeValidate';
 import fieldsAfterCreate from './hooks/fields.afterCreate';
 
 import { RANDOMSTRING } from './fields/randomString';
+import { interfaces } from './interfaces';
+import { merge } from './utils';
 
 export default async function (this: Application, options = {}) {
   const database = this.database;
@@ -16,6 +18,15 @@ export default async function (this: Application, options = {}) {
   registerModels(models);
   registerFields({
     RANDOMSTRING,
+  });
+
+  database.addHook('beforeAddField', (options: any) => {
+    const { interface: interfaceType } = options;
+    if (interfaceType && interfaces.has(interfaceType)) {
+      const defaults = interfaces.get(interfaceType).options;
+      Object.assign(options, merge(defaults, options))
+    }
+    // console.log({options});
   });
 
   database.import({

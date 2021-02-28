@@ -18,7 +18,7 @@ export default {
     },
     {
       interface: 'icon',
-      type: 'virtual',
+      type: 'string',
       name: 'icon',
       title: '图标',
       component: {
@@ -55,7 +55,7 @@ export default {
       name: 'page',
       title: '页面',
       target: 'pages',
-      targetKey: 'name',
+      // targetKey: 'name',
     },
     {
       interface: 'string',
