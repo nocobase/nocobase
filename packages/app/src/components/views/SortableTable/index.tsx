@@ -15,7 +15,7 @@ export const SortableItem = sortableElement(props => <tr {...props} />);
 export const SortableContainer = sortableContainer(props => <tbody {...props} />);
 
 export const DragHandle = sortableHandle(() => (
-  <MenuOutlined style={{ cursor: 'pointer', color: '#999' }} />
+  <MenuOutlined className="drag-handle" style={{ cursor: 'pointer', color: '#999' }} />
 ));
 
 interface Props {

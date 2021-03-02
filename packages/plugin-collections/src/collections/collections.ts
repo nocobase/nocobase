@@ -308,6 +308,50 @@ export default {
     {
       interface: 'linkTo',
       type: 'hasMany',
+      name: 'views_v2',
+      target: 'views_v2',
+      title: '视图',
+      sourceKey: 'name',
+      draggable: true,
+      // actions: {
+      //   list: {
+      //     sort: 'sort',
+      //   },
+      //   destroy: {
+      //     filter: {
+      //       default: false
+      //     }
+      //   }
+      // },
+      component: {
+        type: 'drawerSelect',
+      },
+    },
+    {
+      interface: 'linkTo',
+      type: 'hasMany',
+      name: 'pages_v2',
+      target: 'pages_v2',
+      title: '页面',
+      sourceKey: 'name',
+      draggable: true,
+      // actions: {
+      //   list: {
+      //     sort: 'sort',
+      //   },
+      //   destroy: {
+      //     filter: {
+      //       default: false
+      //     }
+      //   }
+      // },
+      component: {
+        type: 'drawerSelect',
+      },
+    },
+    {
+      interface: 'linkTo',
+      type: 'hasMany',
       name: 'scopes',
       target: 'scopes',
       title: '数据范围',
@@ -443,5 +487,98 @@ export default {
     //   association: 'roles',
     //   viewName: 'simple2',
     // },
+  ],
+  views_v2: [
+    {
+      type: 'table',
+      name: 'table',
+      title: '全部数据',
+      labelField: 'title',
+      actions: [
+        {
+          name: 'create',
+          type: 'create',
+          title: '新增',
+          viewName: 'form',
+        },
+        {
+          name: 'destroy',
+          type: 'destroy',
+          title: '删除',
+        },
+      ],
+      fields: ['sort', 'title'],
+      openMode: 'drawer', // window
+      pages: ['details', 'fields', 'views', 'pages'],
+      sort: ['sort'],
+    },
+    {
+      type: 'form',
+      name: 'form',
+      title: '表单',
+      fields: ['title'],
+    },
+    {
+      type: 'details',
+      name: 'details',
+      title: '详情',
+      fields: ['title'],
+      actions: [
+        {
+          name: 'update',
+          type: 'update',
+          title: '编辑',
+          viewName: 'form',
+        },
+      ],
+    },
+    {
+      type: 'association',
+      name: 'fields',
+      title: '字段',
+      targetViewName: 'table',
+      targetFieldName: 'fields',
+    },
+    {
+      type: 'association',
+      name: 'views',
+      title: '视图',
+      targetViewName: 'table',
+      targetFieldName: 'views_v2',
+    },
+    {
+      type: 'association',
+      name: 'pages',
+      title: '页面',
+      targetViewName: 'table',
+      targetFieldName: 'pages_v2',
+    },
+  ],
+  pages_v2: [
+    {
+      title: '数据表配置',
+      name: 'all',
+      views: ['table'],
+    },
+    {
+      title: '详情',
+      name: 'details',
+      views: ['details'],
+    },
+    {
+      title: '字段',
+      name: 'fields',
+      views: ['fields'],
+    },
+    {
+      title: '视图',
+      name: 'views',
+      views: ['views'],
+    },
+    {
+      title: '页面',
+      name: 'pages',
+      views: ['pages'],
+    },
   ],
 } as TableOptions;

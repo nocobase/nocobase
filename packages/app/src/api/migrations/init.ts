@@ -161,6 +161,14 @@ const data = [
     inherit: false,
     template: 'register',
     order: 130,
+  },
+  {
+    title: '后台',
+    path: '/admin',
+    type: 'page',
+    inherit: false,
+    template: 'AdminLoader',
+    order: 230,
   }
 ];
 

@@ -7,10 +7,24 @@ import getRoutes from './actions/getRoutes';
 import getPageInfo from './actions/getPageInfo';
 import * as rolesPagesActions from './actions/roles.pages';
 import getCollections from './actions/getCollections';
+import getTree from './actions/getTree';
+import pageGetInfo from './actions/getInfo';
+import viewGetInfo from './actions/views_v2:getInfo';
+import { RANDOMSTRING } from './fields/randomString';
+import { registerFields, registerModels } from '@nocobase/database';
+import { BaseModel } from './models/BaseModel'
 
 export default async function (options = {}) {
   const database: Database = this.database;
   const resourcer: Resourcer = this.resourcer;
+
+  registerFields({
+    RANDOMSTRING,
+  });
+
+  registerModels({
+    BaseModelV2: BaseModel,
+  });
 
   database.import({
     directory: path.resolve(__dirname, 'collections'),
@@ -21,9 +35,16 @@ export default async function (options = {}) {
   resourcer.registerActionHandler('getPageInfo', getPageInfo);
   resourcer.registerActionHandler('getCollections', getCollections);
   resourcer.registerActionHandler('pages:getRoutes', getRoutes);
+  resourcer.registerActionHandler('menus:getTree', getTree);
+  resourcer.registerActionHandler('pages_v2:getInfo', pageGetInfo);
+  resourcer.registerActionHandler('views_v2:getInfo', viewGetInfo);
 
   Object.keys(rolesPagesActions).forEach(actionName => {
     resourcer.registerActionHandler(`roles.pages:${actionName}`, rolesPagesActions[actionName]);
+  });
+
+  database.getModel('menus').addHook('beforeSave', async (model) => {
+    console.log(model.get('pageName'));
   });
 /*
   const [Collection, Page, View] = database.getModels(['collections', 'pages', 'views']);
