@@ -1,8 +1,9 @@
 import { ResourceOptions } from '@nocobase/resourcer';
 import { Model, ModelCtor } from '@nocobase/database';
+import actions from '@nocobase/actions';
 
-export default async (ctx, next) => {
-  const { resourceName, resourceKey } = ctx.action.params;
+export const getInfo = async (ctx: actions.Context, next) => {
+  const { resourceKey } = ctx.action.params;
   const View = ctx.db.getModel('views_v2') as ModelCtor<Model>;
   const Page = ctx.db.getModel('pages_v2') as ModelCtor<Model>;
   const Field = ctx.db.getModel('fields') as ModelCtor<Model>;
@@ -24,6 +25,10 @@ export default async (ctx, next) => {
       collection_name: collectionName,
     }
   });
+  if (!collectionName) {
+    collectionName = view.collection_name;
+  }
+  const Collection = ctx.db.getModel(collectionName) as ModelCtor<Model>;
   // const items = await view.getPages(Page.parseApiJson({
   //   sort: ['sort'],
   // }));
@@ -73,17 +78,30 @@ export default async (ctx, next) => {
     }),
   };
   if (data.type === 'association') {
-    // const targetFieldName = view.get('targetFieldName');
-    // const targetViewName = view.get('targetViewName');
     const field = await Field.findOne({
       where: {
         name: data.targetFieldName,
         collection_name: collectionName,
       }
     });
-    data.targetField = field;
-    data.targetViewName = `${field.get('target')}.${data.targetViewName}`;
+    const targetViewName = `${field.get('target')}.${data.targetViewName}`;
+    const resourceName = `${collectionName}.${data.targetFieldName}`;
+    ctx.action.mergeParams({
+      resourceKey: targetViewName,
+    });
+    await getInfo(ctx, async () => {});
+    ctx.body = {
+      ...(ctx.body as any),
+      targetField: field,
+      resourceName,
+    }
+    return next();
+  } else {
+    data.rowKey = Collection.primaryKeyAttribute;
+    data.resourceName = collectionName;
   }
   ctx.body = data;
   await next();
 };
+
+export default getInfo;

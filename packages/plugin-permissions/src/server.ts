@@ -4,6 +4,7 @@ import { Application } from '@nocobase/server';
 import { Operator } from '@nocobase/database';
 import * as collectionsRolesActions from './actions/collections.roles';
 import * as rolesCollectionsActions from './actions/roles.collections';
+import * as rolesPagesActions from './actions/roles.pages_v2';
 import AccessController from './AccessController';
 
 // API
@@ -32,6 +33,10 @@ export class Permissions {
 
     Object.keys(rolesCollectionsActions).forEach(actionName => {
       resourcer.registerActionHandler(`roles.collections:${actionName}`, rolesCollectionsActions[actionName]);
+    });
+
+    Object.keys(rolesPagesActions).forEach(actionName => {
+      resourcer.registerActionHandler(`roles.pages_v2:${actionName}`, rolesPagesActions[actionName]);
     });
 
     database.getModel('collections').addHook('afterCreate', async (model: any, options) => {

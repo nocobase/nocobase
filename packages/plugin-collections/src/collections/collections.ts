@@ -513,6 +513,17 @@ export default {
       sort: ['sort'],
     },
     {
+      type: 'table',
+      name: 'permissions_table',
+      title: '全部数据',
+      labelField: 'title',
+      actions: [],
+      fields: ['title'],
+      openMode: 'drawer', // window
+      pages: ['form'],
+      sort: ['id'],
+    },
+    {
       type: 'form',
       name: 'form',
       title: '表单',
@@ -564,6 +575,11 @@ export default {
       title: '详情',
       name: 'details',
       views: ['details'],
+    },
+    {
+      title: '表单',
+      name: 'form',
+      views: ['form'],
     },
     {
       title: '字段',

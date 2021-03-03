@@ -160,4 +160,56 @@ export default {
       default: true,
     },
   ],
+  views_v2: [
+    {
+      type: 'table',
+      name: 'table',
+      title: '全部数据',
+      labelField: 'title',
+      actions: [
+        {
+          name: 'create',
+          type: 'create',
+          title: '新增',
+          viewName: 'form',
+        },
+        {
+          name: 'destroy',
+          type: 'destroy',
+          title: '删除',
+        },
+      ],
+      fields: ['title'],
+      openMode: 'drawer', // window
+      pages: ['form'],
+      sort: ['id'],
+    },
+    {
+      type: 'details',
+      name: 'details',
+      title: '详情',
+      fields: ['title'],
+      actions: [
+        {
+          name: 'update',
+          type: 'update',
+          title: '编辑',
+          viewName: 'form',
+        },
+      ],
+    },
+    {
+      type: 'form',
+      name: 'form',
+      title: '表单',
+      fields: ['title'],
+    },
+  ],
+  pages_v2: [
+    {
+      title: '表单',
+      name: 'form',
+      views: ['form'],
+    },
+  ],
 } as TableOptions;

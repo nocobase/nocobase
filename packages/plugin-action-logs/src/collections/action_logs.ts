@@ -94,7 +94,7 @@ export default {
       type: 'list',
       name: 'list',
       title: '查看',
-      sort: '-created_at'
+      // sort: '-created_at'
     },
   ],
   views: [
@@ -110,6 +110,50 @@ export default {
       name: 'details',
       title: '详情',
       template: 'Details',
+    },
+  ],
+  views_v2: [
+    {
+      type: 'table',
+      name: 'table',
+      title: '全部数据',
+      labelField: 'nickname',
+      actions: [
+        {
+          name: 'create',
+          type: 'create',
+          title: '新增',
+          viewName: 'form',
+        },
+        {
+          name: 'destroy',
+          type: 'destroy',
+          title: '删除',
+        },
+      ],
+      fields: ['type'],
+      openMode: 'drawer', // window
+      pages: ['details'],
+      sort: ['id'],
+    },
+    {
+      type: 'details',
+      name: 'details',
+      title: '详情',
+      fields: ['type'],
+      actions: [],
+    },
+  ],
+  pages_v2: [
+    {
+      title: '操作日志',
+      name: 'all',
+      views: ['table'],
+    },
+    {
+      title: '详情',
+      name: 'details',
+      views: ['details'],
     },
   ],
 } as TableOptions;

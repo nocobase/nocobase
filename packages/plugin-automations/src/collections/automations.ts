@@ -507,4 +507,73 @@ export default {
       default: true,
     },
   ],
+  views_v2: [
+    {
+      type: 'table',
+      name: 'table',
+      title: '全部数据',
+      labelField: 'title',
+      actions: [
+        {
+          name: 'create',
+          type: 'create',
+          title: '新增',
+          viewName: 'form',
+        },
+        {
+          name: 'destroy',
+          type: 'destroy',
+          title: '删除',
+        },
+      ],
+      fields: ['title'],
+      openMode: 'drawer', // window
+      pages: ['details', 'jobs'],
+      sort: ['id'],
+    },
+    {
+      type: 'details',
+      name: 'details',
+      title: '详情',
+      fields: ['title'],
+      actions: [
+        {
+          name: 'update',
+          type: 'update',
+          title: '编辑',
+          viewName: 'form',
+        },
+      ],
+    },
+    {
+      type: 'form',
+      name: 'form',
+      title: '表单',
+      fields: ['title'],
+    },
+    {
+      type: 'association',
+      name: 'jobs',
+      title: '任务列表视图',
+      targetViewName: 'table',
+      targetFieldName: 'jobs',
+    },
+  ],
+  pages_v2: [
+    {
+      title: '自动化配置',
+      name: 'all',
+      views: ['table'],
+    },
+    {
+      title: '详情',
+      name: 'details',
+      views: ['details'],
+    },
+    {
+      title: '任务',
+      name: 'jobs',
+      views: ['jobs'],
+    },
+  ],
 } as TableOptions;

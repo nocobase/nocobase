@@ -1,5 +1,5 @@
-import React from 'react';
-import { Tooltip, Card } from 'antd';
+import React, { useState } from 'react';
+import { Tooltip, Card, Button } from 'antd';
 import {
   SchemaForm,
   SchemaMarkupField as Field,
@@ -11,8 +11,13 @@ import {
   registerFormFields,
   FormValidator,
   setValidationLanguage,
+  FormSpy,
+  LifeCycleTypes,
 } from '@formily/antd';
 import { QuestionCircleOutlined } from '@ant-design/icons';
+import api from '@/api-client';
+import { useRequest, useLocation } from 'umi';
+import Drawer from '@/components/pages/AdminLoader/Drawer';
 
 function fields2properties(fields = []) {
   const properties = {};
@@ -20,25 +25,47 @@ function fields2properties(fields = []) {
     properties[field.name] = {
       ...field.component,
       title: field.title,
+      required: field.required,
     };
   });
   return properties;
 }
+const actions = createFormActions();
 
 export function Form(props: any) {
-  const { schema = {} } = props;
-  const { fields = [] } = schema;
-  const actions = createFormActions();
+  const { onFinish, resolve, data: record = {}, resourceKey, schema = {} } = props;
+  console.log({ record });
+  const { resourceName, rowKey = 'id', fields = [] } = schema;
+
+  const resourceIndex = resourceKey || record[rowKey];
+
+  const { data = {}, loading, refresh } = useRequest(() => {
+    return resourceIndex ? api.resource(resourceName).get({
+      resourceKey: resourceIndex,
+      // associatedKey,
+    }) : Promise.resolve({data: {}});
+  });
 
   return (
     <SchemaForm 
       colon={true}
       layout={'vertical'}
-      initialValues={{}}
-      actions={actions}
+      initialValues={data}
+      // actions={actions}
       schema={{
         type: 'object',
         properties: fields2properties(fields),
+      }}
+      onSubmit={async (values) => {
+        resourceIndex 
+          ? await api.resource(resourceName).update({
+            resourceKey: resourceIndex,
+            values,
+          })
+          : await api.resource(resourceName).create({
+            values,
+          });
+        onFinish && onFinish(values);
       }}
       expressionScope={{
         text(...args: any[]) {
@@ -55,7 +82,7 @@ export function Form(props: any) {
         },
       }}
     >
-      <FormButtonGroup sticky>
+      <FormButtonGroup align={'bottom'} sticky>
         <Submit/>
       </FormButtonGroup>
     </SchemaForm>

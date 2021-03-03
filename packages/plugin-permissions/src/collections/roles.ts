@@ -79,6 +79,14 @@ export default {
       targetKey: 'name'
     },
     {
+      interface: 'linkTo',
+      title: '页面',
+      type: 'belongsToMany',
+      name: 'pages_v2',
+      target: 'pages_v2',
+      through: 'pages_v2_permissions',
+    },
+    {
       comment: '权限集（方便访问）',
       type: 'hasMany',
       name: 'permissions'
@@ -194,6 +202,92 @@ export default {
       title: '当前组用户',
       association: 'users',
       viewName: 'simple',
+    },
+  ],
+  views_v2: [
+    {
+      type: 'table',
+      name: 'table',
+      title: '全部数据',
+      labelField: 'title',
+      actions: [
+        {
+          name: 'create',
+          type: 'create',
+          title: '新增',
+          viewName: 'form',
+        },
+        {
+          name: 'destroy',
+          type: 'destroy',
+          title: '删除',
+        },
+      ],
+      fields: ['title'],
+      openMode: 'drawer', // window
+      pages: ['details', 'collections', 'pages'],
+      sort: ['id'],
+    },
+    {
+      type: 'details',
+      name: 'details',
+      title: '详情',
+      fields: ['title'],
+      actions: [
+        {
+          name: 'update',
+          type: 'update',
+          title: '编辑',
+          viewName: 'form',
+        },
+      ],
+    },
+    {
+      type: 'form',
+      name: 'form',
+      title: '表单',
+      fields: ['title'],
+    },
+    {
+      type: 'association',
+      name: 'collections',
+      title: '数据表权限视图',
+      targetViewName: 'permissions_table',
+      targetFieldName: 'collections',
+    },
+    {
+      type: 'association',
+      name: 'pages',
+      title: '页面权限视图',
+      targetViewName: 'permissions_table',
+      targetFieldName: 'pages_v2',
+    },
+  ],
+  pages_v2: [
+    {
+      title: '全部',
+      name: 'all',
+      views: ['table'],
+    },
+    {
+      title: '详情',
+      name: 'details',
+      views: ['details'],
+    },
+    {
+      title: '表单',
+      name: 'form',
+      views: ['form'],
+    },
+    {
+      title: '数据表权限',
+      name: 'collections',
+      views: ['collections'],
+    },
+    {
+      title: '页面权限',
+      name: 'pages',
+      views: ['pages'],
     },
   ],
 } as TableOptions;

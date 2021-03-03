@@ -154,6 +154,17 @@ export default {
       sort: ['id'],
     },
     {
+      type: 'table',
+      name: 'permissions_table',
+      title: '全部数据',
+      labelField: 'title',
+      actions: [],
+      fields: ['title'],
+      openMode: 'drawer', // window
+      pages: ['form'],
+      sort: ['id'],
+    },
+    {
       type: 'form',
       name: 'form',
       title: '表单',
@@ -164,6 +175,11 @@ export default {
     {
       title: '表格',
       name: 'all',
+      views: ['table'],
+    },
+    {
+      title: '独立页面',
+      name: 'pages',
       views: ['table'],
     },
     {

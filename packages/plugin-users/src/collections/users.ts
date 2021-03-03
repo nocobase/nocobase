@@ -141,4 +141,66 @@ export default {
       actionNames: ['create', 'destroy'],
     },
   ],
+  views_v2: [
+    {
+      type: 'table',
+      name: 'table',
+      title: '全部数据',
+      labelField: 'nickname',
+      actions: [
+        {
+          name: 'create',
+          type: 'create',
+          title: '新增',
+          viewName: 'form',
+        },
+        {
+          name: 'destroy',
+          type: 'destroy',
+          title: '删除',
+        },
+      ],
+      fields: ['username', 'nickname'],
+      openMode: 'drawer', // window
+      pages: ['form'],
+      sort: ['id'],
+    },
+    {
+      type: 'details',
+      name: 'details',
+      title: '详情',
+      fields: ['username', 'nickname'],
+      actions: [
+        {
+          name: 'update',
+          type: 'update',
+          title: '编辑',
+          viewName: 'form',
+        },
+      ],
+    },
+    {
+      type: 'form',
+      name: 'form',
+      title: '表单',
+      fields: ['username', 'nickname'],
+    },
+  ],
+  pages_v2: [
+    {
+      title: '用户管理',
+      name: 'all',
+      views: ['table'],
+    },
+    {
+      title: '详情',
+      name: 'details',
+      views: ['details'],
+    },
+    {
+      title: '表单',
+      name: 'form',
+      views: ['form'],
+    },
+  ],
 } as TableOptions;

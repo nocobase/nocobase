@@ -8,10 +8,20 @@ import Database from '@nocobase/database';
 
   const [Collection, Field, Page, Menu, View] = database.getModels(['collections', 'fields', 'pages_v2', 'menus', 'views_v2']);
   await Menu.truncate();
-  await View.truncate();
+  // await View.truncate();
   // await Page.truncate();
 
-  const tables = database.getTables(['collections', 'fields', 'menus', 'pages_v2', 'views_v2']);
+  const tables = database.getTables([
+    'collections', 
+    'fields', 
+    'menus', 
+    'pages_v2', 
+    'views_v2',
+    'automations',
+    'automations_jobs',
+    'users',
+    'roles',
+  ]);
 
   for (let table of tables) {
     console.log(table.getName());
@@ -25,19 +35,10 @@ import Database from '@nocobase/database';
       type: 'group',
       children: [
         {
-          title: '用户管理',
+          title: '欢迎光临',
           icon: 'DatabaseOutlined',
           type: 'page',
-        },
-        {
-          title: '示例12',
-          icon: 'DatabaseOutlined',
-          type: 'page',
-        },
-        {
-          title: '示例13',
-          icon: 'DatabaseOutlined',
-          type: 'page',
+          pageName: 'welcome'
         },
       ],
     },
@@ -47,19 +48,10 @@ import Database from '@nocobase/database';
       type: 'group',
       children: [
         {
-          title: '示例21',
+          title: '作者',
           icon: 'DatabaseOutlined',
           type: 'page',
-        },
-        {
-          title: '示例22',
-          icon: 'DatabaseOutlined',
-          type: 'page',
-        },
-        {
-          title: '示例23',
-          icon: 'DatabaseOutlined',
-          type: 'page',
+          pageName: 'authors.all',
         },
       ],
     },
@@ -69,11 +61,11 @@ import Database from '@nocobase/database';
       type: 'group',
       children: [
         {
-          title: '自定义连接',
+          title: '用户管理',
           icon: 'DatabaseOutlined',
-          type: 'link',
-          url: 'https://www.baidu.com',
-        }
+          type: 'page',
+          pageName: 'users.all',
+        },
       ],
     },
     {
@@ -82,11 +74,11 @@ import Database from '@nocobase/database';
       type: 'group',
       children: [
         {
-          title: '自定义连接',
+          title: '操作日志',
           icon: 'DatabaseOutlined',
-          type: 'link',
-          url: 'https://www.baidu.com',
-        }
+          type: 'page',
+          pageName: 'action_logs.all',
+        },
       ],
     },
     {
@@ -99,6 +91,30 @@ import Database from '@nocobase/database';
           icon: 'DatabaseOutlined',
           type: 'page',
           pageName: 'collections.all',
+        },
+        {
+          title: '菜单配置',
+          icon: 'MenuOutlined',
+          type: 'page',
+          pageName: 'menus.all',
+        },
+        {
+          title: '页面配置',
+          icon: 'MenuOutlined',
+          type: 'page',
+          pageName: 'pages_v2.pages',
+        },
+        {
+          title: '权限配置',
+          icon: 'MenuOutlined',
+          type: 'page',
+          pageName: 'roles.all',
+        },
+        {
+          title: '自动化配置',
+          icon: 'MenuOutlined',
+          type: 'page',
+          pageName: 'automations.all',
         },
       ],
     },

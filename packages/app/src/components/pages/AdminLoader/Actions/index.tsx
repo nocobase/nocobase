@@ -5,7 +5,7 @@ import Drawer from '@/components/pages/AdminLoader/Drawer';
 import View from '@/components/pages/AdminLoader/View';
 
 export function Create(props) {
-  const { schema = {} } = props;
+  const { onFinish, schema = {} } = props;
   const { title, viewName } = schema;
   return (
     <>
@@ -15,10 +15,13 @@ export function Create(props) {
             title: title,
             content: ({resolve}) => (
               <div>
-                <View viewName={viewName}/>
-                <Drawer.Footer>
-                  <Button onClick={resolve} type={'primary'}>确定</Button>
-                </Drawer.Footer>
+                <View
+                  viewName={viewName}
+                  onFinish={async (values) => {
+                    await resolve();
+                    onFinish && await onFinish(values);
+                  }}
+                />
               </div>
             ),
           });
@@ -31,7 +34,7 @@ export function Create(props) {
 }
 
 export function Update(props) {
-  const { schema = {} } = props;
+  const { onFinish, data, schema = {} } = props;
   const { title, viewName } = schema;
   return (
     <>
@@ -41,10 +44,14 @@ export function Update(props) {
             title: title,
             content: ({resolve}) => (
               <div>
-                <View viewName={viewName}/>
-                <Drawer.Footer>
-                  <Button onClick={resolve} type={'primary'}>确定</Button>
-                </Drawer.Footer>
+                <View
+                  data={data}
+                  viewName={viewName}
+                  onFinish={async (values) => {
+                    await resolve();
+                    onFinish && await onFinish(values);
+                  }}
+                />
               </div>
             ),
           });
@@ -81,13 +88,14 @@ export function Filter(props) {
 }
 
 export function Actions(props) {
-  const { actions = [], style, ...restProps } = props;
+  const { onTrigger = {}, actions = [], style, ...restProps } = props;
   return actions.length > 0 && (
     <div className={'action-buttons'} style={style}>
       {actions.map(action => (
         <div className={`${action.name}-action-button action-button`}>
           <Action
             {...restProps}
+            onFinish={onTrigger[action.name]}
             schema={action}
           />
         </div>

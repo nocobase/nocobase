@@ -158,4 +158,47 @@ export default {
       actionNames: ['create', 'destroy'],
     },
   ],
+  views_v2: [
+    {
+      type: 'table',
+      name: 'table',
+      title: '全部数据',
+      labelField: 'title',
+      actions: [
+        {
+          name: 'create',
+          type: 'create',
+          title: '新增',
+          viewName: 'form',
+        },
+        {
+          name: 'destroy',
+          type: 'destroy',
+          title: '删除',
+        },
+      ],
+      fields: ['title'],
+      openMode: 'drawer', // window
+      pages: ['form'],
+      sort: ['sort'],
+    },
+    {
+      type: 'form',
+      name: 'form',
+      title: '表单',
+      fields: ['title'],
+    },
+  ],
+  pages_v2: [
+    {
+      title: '菜单配置',
+      name: 'all',
+      views: ['table'],
+    },
+    {
+      title: '菜单表单',
+      name: 'form',
+      views: ['form'],
+    },
+  ],
 } as TableOptions;
