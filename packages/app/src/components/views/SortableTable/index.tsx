@@ -60,7 +60,7 @@ export const components = ({data = {}, rowKey, mutate, onMoved, isFieldComponent
   };
 };
 
-export function fields2columns(fields, ctx: any = {}) {
+export function fields2columns(fields = [], ctx: any = {}) {
   const columns: any[] = fields.map(item => {
     const field = cloneDeep(item);
     field.render = (value, record) => field.interface === 'sort' ? <DragHandle/> : <Field data={record} viewType={'table'} schema={field} value={value}/>;

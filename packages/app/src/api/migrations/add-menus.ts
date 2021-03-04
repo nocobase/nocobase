@@ -60,6 +60,12 @@ import Database from '@nocobase/database';
           type: 'page',
           pageName: 'authors.all',
         },
+        {
+          title: '申请表单',
+          icon: 'DatabaseOutlined',
+          type: 'page',
+          pageName: 'authors.form',
+        },
       ],
     },
     {

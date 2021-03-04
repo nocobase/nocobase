@@ -185,7 +185,7 @@ export function Table(props: any) {
   };
 
   return (
-    <Card bordered={false}>
+    <div>
       <Actions associatedKey={associatedKey} onTrigger={{
         async create(values) {
           refresh();
@@ -251,6 +251,6 @@ export function Table(props: any) {
           <Pagination {...pagination} showTotal={(total)=> `共 ${total} 条记录`} showQuickJumper showSizeChanger size={'small'}/>
         </div>
       )}
-    </Card>
+    </div>
   );
 }

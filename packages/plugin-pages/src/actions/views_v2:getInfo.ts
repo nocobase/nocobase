@@ -74,6 +74,18 @@ export const getInfo = async (ctx: actions.Context, next) => {
       },
     });
     if (model) {
+      const target = model.get('target');
+      if (target && model.get('interface') === 'subTable') {
+        const children = await Field.findAll({
+          where: {
+            collection_name: target,
+          },
+          order: [['sort', 'asc']],
+        });
+        if (children.length) {
+          model.setDataValue('children', children);
+        }
+      }
       model.setDataValue('dataIndex', model.name.split('.'));
       if (typeof field === 'object') {
         json = merge(model.toJSON(), field);

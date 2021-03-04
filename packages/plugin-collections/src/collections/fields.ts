@@ -673,6 +673,7 @@ export default {
         'incompletely',
         'target',
         'labelField',
+        'children',
         'multiple',
         'required',
       ],

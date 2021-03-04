@@ -101,7 +101,7 @@ export default {
       ],
       fields: ['name'],
       openMode: 'drawer', // window
-      pages: ['details'],
+      pages: ['details', 'form'],
       sort: ['id'],
     },
     {

@@ -1,5 +1,5 @@
 import React from 'react';
-import { PageHeader, Button } from 'antd';
+import { PageHeader, Card } from 'antd';
 import './style.less';
 import { Helmet } from 'umi';
 import { Spin } from '@nocobase/client';
@@ -45,7 +45,9 @@ export function Page(props: any) {
             viewName = `${data.collection_name}.${view.name}`;
           }
           return (
-            <View viewName={viewName}/>
+            <Card bordered={false}>
+              <View viewName={viewName}/>
+            </Card>
           );
         })}
       </div>

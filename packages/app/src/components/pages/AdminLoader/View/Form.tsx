@@ -19,6 +19,7 @@ import api from '@/api-client';
 import { useRequest, useLocation } from 'umi';
 import Drawer from '@/components/pages/AdminLoader/Drawer';
 import set from 'lodash/set';
+import { Spin } from '@nocobase/client';
 
 export function fields2properties(fields = []) {
   const properties = {};
@@ -36,6 +37,10 @@ export function fields2properties(fields = []) {
       delete data.title;
     }
     properties[field.name] = data;
+    if (field.interface === 'linkTo') {
+      set(data, 'x-component-props.target', field.target);
+      set(data, 'x-component-props.multiple', field.multiple);
+    }
     if (field.name === 'dataSource') {
       set(data, 'x-component-props.operationsWidth', 'auto');
       set(data, 'x-component-props.bordered', true);
@@ -81,6 +86,10 @@ export function Form(props: any) {
     }) : Promise.resolve({data: {}});
   });
 
+  if (loading) {
+    return <Spin/>;
+  }
+
   return (
     <SchemaForm 
       colon={true}
@@ -106,7 +115,7 @@ export function Form(props: any) {
             associatedKey,
             values,
           });
-        onFinish && onFinish(values);
+        onFinish && await onFinish(values);
       }}
       expressionScope={{
         text(...args: any[]) {
