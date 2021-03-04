@@ -120,18 +120,12 @@ export default {
       labelField: 'nickname',
       actions: [
         {
-          name: 'create',
-          type: 'create',
-          title: '新增',
-          viewName: 'form',
-        },
-        {
-          name: 'destroy',
-          type: 'destroy',
-          title: '删除',
+          name: 'filter',
+          type: 'filter',
+          title: '过滤',
         },
       ],
-      fields: ['type'],
+      fields: ['created_at', 'user', 'collection', 'type', 'index'],
       openMode: 'drawer', // window
       pages: ['details'],
       sort: ['id'],
@@ -140,7 +134,7 @@ export default {
       type: 'details',
       name: 'details',
       title: '详情',
-      fields: ['type'],
+      fields: ['created_at', 'user', 'collection', 'type', 'index', 'changes'],
       actions: [],
     },
   ],

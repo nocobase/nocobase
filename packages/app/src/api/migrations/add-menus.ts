@@ -25,6 +25,7 @@ import Database from '@nocobase/database';
     'views_v2',
     'automations',
     'automations_jobs',
+    'action_logs',
     'users',
     'roles',
   ]);
