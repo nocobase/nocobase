@@ -17,6 +17,7 @@ import { Form } from './Form';
 import { Table } from './Table';
 import { Association } from './Association';
 import { Details } from './Details';
+import { FilterForm } from './FilterForm';
 
 const VIEWS = new Map();
 
@@ -56,6 +57,7 @@ export function View(props: any) {
 
 registerView('table', Table);
 registerView('form', Form);
+registerView('filterForm', FilterForm);
 registerView('details', Details);
 registerView('association', Association);
 

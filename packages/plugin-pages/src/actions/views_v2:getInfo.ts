@@ -7,27 +7,30 @@ export const getInfo = async (ctx: actions.Context, next) => {
   const View = ctx.db.getModel('views_v2') as ModelCtor<Model>;
   const Page = ctx.db.getModel('pages_v2') as ModelCtor<Model>;
   const Field = ctx.db.getModel('fields') as ModelCtor<Model>;
-  let primaryKey: any;
-  let viewName: any;
-  let collectionName: any;
+  let primaryKey: string;
+  let viewName: string;
+  let collectionName: string;
+  let associatedName: string;
   if (resourceKey.includes('.')) {
-    const [ key1, key2 ] = resourceKey.split('.');
-    collectionName = key1;
-    viewName = key2;
-  } else {
-    primaryKey = resourceKey;
-  }
-  const view = await View.findOne({
-    where: primaryKey ? {
-      id: primaryKey,
-    } : {
-      name: viewName,
-      collection_name: collectionName,
+    const keys = resourceKey.split('.');
+    viewName = keys.pop();
+    const [key1, key2] = keys;
+    if (key2) {
+      const field = ctx.db.getTable(key1).getField(key2);
+      collectionName = field.options.target;
+      associatedName = key1;
+    } else {
+      collectionName = key1;
     }
-  });
-  if (!collectionName) {
-    collectionName = view.collection_name;
   }
+  console.log({viewName, collectionName, associatedName})
+  const view = await View.findOne({
+    where: {
+      name: viewName,
+      collection_name: collectionName
+    },
+  });
+  
   const Collection = ctx.db.getModel(collectionName) as ModelCtor<Model>;
   // const items = await view.getPages(Page.parseApiJson({
   //   sort: ['sort'],
@@ -84,21 +87,34 @@ export const getInfo = async (ctx: actions.Context, next) => {
         collection_name: collectionName,
       }
     });
+    console.log(field, data.targetFieldName, collectionName)
     const targetViewName = `${field.get('target')}.${data.targetViewName}`;
     const resourceName = `${collectionName}.${data.targetFieldName}`;
     ctx.action.mergeParams({
       resourceKey: targetViewName,
     });
     await getInfo(ctx, async () => {});
+    const body = ctx.body as any;
+    const actions = body.actions.map(action => {
+      if (action.viewName) {
+        action.viewName = `${collectionName}.${action.viewName}`;
+      }
+      return action;
+    });
     ctx.body = {
       ...(ctx.body as any),
       targetField: field,
       resourceName,
+      actions,
     }
     return next();
   } else {
     data.rowKey = Collection.primaryKeyAttribute;
-    data.resourceName = collectionName;
+    if (associatedName) {
+      data.resourceName = `${associatedName}.${collectionName}`;
+    } else {
+      data.resourceName = collectionName;
+    }
   }
   ctx.body = data;
   await next();

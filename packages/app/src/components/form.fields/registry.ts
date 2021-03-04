@@ -44,6 +44,7 @@ export const setup = () => {
     month: DatePicker.MonthPicker,
     week: DatePicker.WeekPicker,
     string: Input,
+    select: Input,
     icon: Icon,
     textarea: Input.TextArea,
     number: NumberPicker,

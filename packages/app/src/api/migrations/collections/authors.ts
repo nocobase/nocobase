@@ -39,17 +39,19 @@ export default {
         showInForm: true,
       },
     },
-    // {
-    //   interface: 'linkTo',
-    //   title: '书籍',
-    //   target: 'books',
-    //   labelField: 'name',
-    //   component: {
-    //     showInTable: true,
-    //     showInDetail: true,
-    //     showInForm: true,
-    //   },
-    // },
+    {
+      interface: 'linkTo',
+      type: 'belongsToMany',
+      title: '书籍',
+      name: 'books',
+      target: 'books',
+      labelField: 'name',
+      component: {
+        showInTable: true,
+        showInDetail: true,
+        showInForm: true,
+      },
+    },
     {
       interface: 'createdBy',
       title: '创建人',
@@ -114,7 +116,7 @@ export default {
       ],
       fields: ['name'],
       openMode: 'drawer', // window
-      pages: ['details'],
+      pages: ['details', 'books'],
       sort: ['id'],
     },
     {
@@ -137,6 +139,13 @@ export default {
       title: '表单',
       fields: ['name'],
     },
+    {
+      type: 'association',
+      name: 'books',
+      title: '书籍',
+      targetViewName: 'table',
+      targetFieldName: 'books',
+    },
   ],
   pages_v2: [
     {
@@ -153,6 +162,11 @@ export default {
       title: '表单',
       name: 'form',
       views: ['form'],
+    },
+    {
+      title: '书籍',
+      name: 'books',
+      views: ['books'],
     },
   ],
 };

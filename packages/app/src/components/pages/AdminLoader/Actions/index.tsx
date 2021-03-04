@@ -1,11 +1,11 @@
-import React from 'react';
-import { Button } from 'antd';
+import React, { useState } from 'react';
+import { Button, Popconfirm, Popover } from 'antd';
 import { FilterOutlined, PlusOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons';
 import Drawer from '@/components/pages/AdminLoader/Drawer';
 import View from '@/components/pages/AdminLoader/View';
 
 export function Create(props) {
-  const { onFinish, schema = {} } = props;
+  const { onFinish, schema = {}, associatedKey } = props;
   const { title, viewName } = schema;
   return (
     <>
@@ -16,6 +16,7 @@ export function Create(props) {
             content: ({resolve}) => (
               <div>
                 <View
+                  associatedKey={associatedKey}
                   viewName={viewName}
                   onFinish={async (values) => {
                     await resolve();
@@ -64,25 +65,83 @@ export function Update(props) {
 }
 
 export function Destroy(props) {
-  const { schema = {} } = props;
+  const { schema = {}, onFinish } = props;
   const { title } = schema;
   return (
-    <>
-      <Button 
-        icon={<DeleteOutlined />} 
-        type={'ghost'}
+    <Popconfirm title="确认删除吗？" onConfirm={async () => {
+      onFinish && await onFinish();
+    }}>
+      <Button
         danger
+        type={'ghost'}
+        icon={<DeleteOutlined />}
       >{ title }</Button>
-    </>
+    </Popconfirm>
   )
 }
 
 export function Filter(props) {
-  const { schema = {} } = props;
-  const { title } = schema;
+  const { filterCount = 0, schema = {}, onFinish } = props;
+  const { title, fields = [] } = schema;
+  const [visible, setVisible] = useState(false);
+
   return (
     <>
-      <Button icon={<FilterOutlined />}>{ title }</Button>
+      {visible && (
+        <div 
+          style={{
+            height: '100vh',
+            width: '100vw',
+            zIndex: 1000,
+            position: 'fixed',
+            background: 'rgba(0, 0, 0, 0)',
+            top: 0,
+            left: 0,
+          }}
+          onClick={() => setVisible(false)}
+        ></div>
+      )}
+      <Popover
+        // title="设置筛选"
+        trigger="click"
+        visible={visible}
+        defaultVisible={visible}
+        placement={'bottomLeft'}
+        destroyTooltipOnHide
+        onVisibleChange={(visible) => {
+          setVisible(visible);
+        }}
+        className={'filters-popover'}
+        style={{
+        }}
+        overlayStyle={{
+          minWidth: 500
+        }}
+        content={(
+          <>
+            <View onFinish={async (values) => {
+              onFinish && values && await onFinish(values);
+              setVisible(false);
+            }} schema={{
+              "type": "filterForm",
+              "fields": [{
+                "dataIndex": ["filter"],
+                "name": "filter",
+                "interface": "json",
+                "type": "json",
+                "component": {
+                  "type": "filter",
+                  'x-component-props': {
+                    fields,
+                  }
+                },
+              }],
+            }}/>
+          </>
+        )}
+      >
+        <Button icon={<FilterOutlined />} >{filterCount ? `${filterCount} 个${title}项` : title}</Button>
+      </Popover>
     </>
   )
 }
@@ -112,11 +171,6 @@ export function registerAction(type: string, Action: any) {
   ACTIONS.set(type, Action);
 }
 
-registerAction('update', Update);
-registerAction('create', Create);
-registerAction('destroy', Destroy);
-registerAction('filter', Filter);
-
 export function getAction(type: string) {
   return ACTIONS.get(type);
 }
@@ -128,3 +182,8 @@ export function Action(props) {
   const Component = getAction(type);
   return Component && <Component {...props}/>;
 }
+
+registerAction('update', Update);
+registerAction('create', Create);
+registerAction('destroy', Destroy);
+registerAction('filter', Filter);

@@ -18,22 +18,32 @@ import { QuestionCircleOutlined } from '@ant-design/icons';
 import api from '@/api-client';
 import { useRequest, useLocation } from 'umi';
 import Drawer from '@/components/pages/AdminLoader/Drawer';
+import set from 'lodash/set';
 
-function fields2properties(fields = []) {
+export function fields2properties(fields = []) {
   const properties = {};
   fields.forEach(field => {
-    properties[field.name] = {
+    const data = {
       ...field.component,
       title: field.title,
       required: field.required,
     };
+    if (field.dataSource) {
+      data.enum = field.dataSource;
+    }
+    if (field.interface === 'boolean') {
+      set(data, 'x-component-props.children', data.title);
+      delete data.title;
+    }
+    properties[field.name] = data;
   });
+  console.log({properties});
   return properties;
 }
 const actions = createFormActions();
 
 export function Form(props: any) {
-  const { onFinish, resolve, data: record = {}, resourceKey, schema = {} } = props;
+  const { onFinish, resolve, data: record = {}, associatedKey, resourceKey, schema = {} } = props;
   console.log({ record });
   const { resourceName, rowKey = 'id', fields = [] } = schema;
 
@@ -41,8 +51,8 @@ export function Form(props: any) {
 
   const { data = {}, loading, refresh } = useRequest(() => {
     return resourceIndex ? api.resource(resourceName).get({
+      associatedKey,
       resourceKey: resourceIndex,
-      // associatedKey,
     }) : Promise.resolve({data: {}});
   });
 
@@ -64,6 +74,7 @@ export function Form(props: any) {
           })
           : await api.resource(resourceName).create({
             values,
+            associatedKey,
           });
         onFinish && onFinish(values);
       }}

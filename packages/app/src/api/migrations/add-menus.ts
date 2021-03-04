@@ -4,9 +4,15 @@ import Database from '@nocobase/database';
 (async () => {
   await api.loadPlugins();
   const database: Database = api.database;
+
   await api.database.sync();
+  await api.database.getModel('collections').load({skipExisting: true});
 
   const [Collection, Field, Page, Menu, View] = database.getModels(['collections', 'fields', 'pages_v2', 'menus', 'views_v2']);
+
+  await Collection.import(require('./collections/authors').default);
+  await Collection.import(require('./collections/books').default);
+
   await Menu.truncate();
   // await View.truncate();
   // await Page.truncate();

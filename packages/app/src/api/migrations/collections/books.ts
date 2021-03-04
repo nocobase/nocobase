@@ -74,4 +74,72 @@ export default {
       },
     }
   ],
+  views_v2: [
+    {
+      type: 'table',
+      name: 'table',
+      title: '全部数据',
+      labelField: 'name',
+      actions: [
+        {
+          name: 'filter',
+          type: 'filter',
+          title: '过滤',
+          // viewName: 'form',
+        },
+        {
+          name: 'create',
+          type: 'create',
+          title: '新增',
+          viewName: 'form',
+        },
+        {
+          name: 'destroy',
+          type: 'destroy',
+          title: '删除',
+        },
+      ],
+      fields: ['name'],
+      openMode: 'drawer', // window
+      pages: ['details'],
+      sort: ['id'],
+    },
+    {
+      type: 'details',
+      name: 'details',
+      title: '详情',
+      fields: ['name'],
+      actions: [
+        {
+          name: 'update',
+          type: 'update',
+          title: '编辑',
+          viewName: 'form',
+        },
+      ],
+    },
+    {
+      type: 'form',
+      name: 'form',
+      title: '表单',
+      fields: ['name'],
+    },
+  ],
+  pages_v2: [
+    {
+      title: '全部数据',
+      name: 'all',
+      views: ['table'],
+    },
+    {
+      title: '详情',
+      name: 'details',
+      views: ['details'],
+    },
+    {
+      title: '表单',
+      name: 'form',
+      views: ['form'],
+    },
+  ],
 };

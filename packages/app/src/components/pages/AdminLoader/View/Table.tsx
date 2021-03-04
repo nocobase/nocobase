@@ -76,16 +76,31 @@ export function Table(props: any) {
     sort,
     resourceName,
     targetField = {},
+    filter: defaultFilter = {},
   } = schema;
 
   const associatedKey = props.associatedKey || record[targetField.sourceKey||'id'];
 
   const { data, loading, pagination, mutate, refresh, run, params } = useRequest((params = {}, ...args) => {
     const { current, pageSize, sorter, filter, ...restParams } = params;
+    console.log('paramsparamsparamsparamsparams', params, args);
     return api.resource(resourceName).list({
       associatedKey,
+      page: paginated ? current : 1,
+      perPage: paginated ? pageSize : -1,
+      sorter,
       sort,
-    }).then(({data = [], meta = {}}) => {
+      // filter,
+      // ...actionDefaultParams,
+      filter: {
+        and: [
+          defaultFilter,
+          filter,
+        ].filter(obj => obj && Object.keys(obj).length)
+      }
+      // ...args2,
+    })
+    .then(({data = [], meta = {}}) => {
       return {
         data: {
           list: data,
@@ -97,6 +112,24 @@ export function Table(props: any) {
     paginated,
     defaultPageSize: defaultPerPage,
   });
+
+  // const { data, loading, pagination, mutate, refresh, run, params } = useRequest((params = {}, ...args) => {
+  //   const { current, pageSize, sorter, filter, ...restParams } = params;
+  //   return api.resource(resourceName).list({
+  //     associatedKey,
+  //     sort,
+  //   }).then(({data = [], meta = {}}) => {
+  //     return {
+  //       data: {
+  //         list: data,
+  //         total: meta.count||data.length,
+  //       },
+  //     };
+  //   });
+  // }, {
+  //   paginated,
+  //   defaultPageSize: defaultPerPage,
+  // });
 
   const [selectedRowKeys, setSelectedRowKeys] = useState([]);
   const onChange = (selectedRowKeys: React.ReactText[], selectedRows: React.ReactText[]) => {
@@ -149,11 +182,25 @@ export function Table(props: any) {
 
   return (
     <Card bordered={false}>
-      <Actions onTrigger={{
+      <Actions associatedKey={associatedKey} onTrigger={{
         async create(values) {
           refresh();
         },
         async update(values) {
+          refresh();
+        },
+        async filter(values) {
+          refresh();
+        },
+        async destroy() {
+          if (selectedRowKeys.length) {
+            await api.resource(resourceName).destroy({
+              associatedKey,
+              filter: {
+                [`${rowKey}.in`]: selectedRowKeys,
+              },
+            });
+          }
           refresh();
         },
       }} actions={actions} style={{ marginBottom: 14 }}/>
@@ -169,6 +216,9 @@ export function Table(props: any) {
           size={'middle'} 
           columns={fields2columns(fields, {associatedKey, refresh})}
           pagination={false}
+          onChange={(pagination, filters, sorter, extra) => {
+            run({...params[0], sorter});
+          }}
           onRow={(data) => ({
             onClick: () => {
               Drawer.open({
