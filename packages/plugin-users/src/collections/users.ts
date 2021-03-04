@@ -160,7 +160,7 @@ export default {
           title: '删除',
         },
       ],
-      fields: ['username', 'nickname'],
+      fields: ['username', 'nickname', 'phone', 'roles'],
       openMode: 'drawer', // window
       pages: ['form'],
       sort: ['id'],
@@ -169,7 +169,7 @@ export default {
       type: 'details',
       name: 'details',
       title: '详情',
-      fields: ['username', 'nickname'],
+      fields: ['username', 'nickname', 'phone', 'roles'],
       actions: [
         {
           name: 'update',
@@ -183,7 +183,7 @@ export default {
       type: 'form',
       name: 'form',
       title: '表单',
-      fields: ['username', 'nickname'],
+      fields: ['username', 'nickname', 'phone', 'password', 'roles'],
     },
   ],
   pages_v2: [

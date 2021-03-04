@@ -526,7 +526,7 @@ export default {
           title: '删除',
         },
       ],
-      fields: ['title'],
+      fields: ['title', 'description', 'type', 'enabled'],
       openMode: 'drawer', // window
       pages: ['details', 'jobs'],
       sort: ['id'],
@@ -535,7 +535,7 @@ export default {
       type: 'details',
       name: 'details',
       title: '详情',
-      fields: ['title'],
+      fields: ['title', 'description', 'type', 'enabled'],
       actions: [
         {
           name: 'update',
@@ -549,7 +549,20 @@ export default {
       type: 'form',
       name: 'form',
       title: '表单',
-      fields: ['title'],
+      fields: [
+        'title',
+        'enabled',
+        'description',
+        'type',
+        'collection',
+        'changed',
+        'startTime',
+        'cron',
+        'times',
+        'endMode',
+        'endTime',
+        'filter',
+      ],
     },
     {
       type: 'association',

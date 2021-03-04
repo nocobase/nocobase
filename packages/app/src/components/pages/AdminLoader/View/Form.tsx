@@ -36,6 +36,30 @@ export function fields2properties(fields = []) {
       delete data.title;
     }
     properties[field.name] = data;
+    if (field.name === 'dataSource') {
+      set(data, 'x-component-props.operationsWidth', 'auto');
+      set(data, 'x-component-props.bordered', true);
+      set(data, 'x-component-props.className', 'data-source-table');
+      const property = {};
+      Object.assign(property, {
+        label: {
+          type: "string",
+          title: "选项",
+          required: true,
+          'x-component-props': {
+            bordered: false,
+          },
+        },
+        color: {
+          type: "colorSelect",
+          title: "颜色",
+          'x-component-props': {
+            bordered: false,
+          },
+        },
+      });
+      set(data, 'items.properties', property);
+    }
   });
   console.log({properties});
   return properties;
@@ -43,16 +67,17 @@ export function fields2properties(fields = []) {
 const actions = createFormActions();
 
 export function Form(props: any) {
-  const { onFinish, resolve, data: record = {}, associatedKey, resourceKey, schema = {} } = props;
+  const { onFinish, resolve, data: record = {}, associatedKey, schema = {} } = props;
   console.log({ record });
-  const { resourceName, rowKey = 'id', fields = [] } = schema;
+  const { resourceName, rowKey = 'id', fields = [], appends = [], associationField = {} } = schema;
 
-  const resourceIndex = resourceKey || record[rowKey];
+  const resourceKey = props.resourceKey || record[associationField.targetKey||rowKey];
 
   const { data = {}, loading, refresh } = useRequest(() => {
-    return resourceIndex ? api.resource(resourceName).get({
+    return resourceKey ? api.resource(resourceName).get({
       associatedKey,
-      resourceKey: resourceIndex,
+      resourceKey,
+      'fields[appends]': appends,
     }) : Promise.resolve({data: {}});
   });
 
@@ -60,21 +85,26 @@ export function Form(props: any) {
     <SchemaForm 
       colon={true}
       layout={'vertical'}
-      initialValues={data}
+      initialValues={{
+        ...data,
+        associatedKey,
+        resourceKey,
+      }}
       // actions={actions}
       schema={{
         type: 'object',
         properties: fields2properties(fields),
       }}
       onSubmit={async (values) => {
-        resourceIndex 
+        resourceKey 
           ? await api.resource(resourceName).update({
-            resourceKey: resourceIndex,
+            associatedKey,
+            resourceKey,
             values,
           })
           : await api.resource(resourceName).create({
-            values,
             associatedKey,
+            values,
           });
         onFinish && onFinish(values);
       }}

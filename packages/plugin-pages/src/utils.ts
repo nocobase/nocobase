@@ -1,3 +1,5 @@
+import deepmerge from 'deepmerge';
+
 export const flatToTree = (flatArray, options) => {
   options = {
     id: "id",
@@ -32,5 +34,13 @@ export const flatToTree = (flatArray, options) => {
 function treeData(pages: Array<any>) {
   return pages.map(data => {
     return {...data, children: data.children && data.children.length ? treeData(data.children) : undefined}
+  });
+}
+
+const overwriteMerge = (destinationArray, sourceArray, options) => sourceArray
+
+export function merge(obj1: any, obj2: any) {
+  return deepmerge(obj1, obj2, {
+    arrayMerge: overwriteMerge,
   });
 }

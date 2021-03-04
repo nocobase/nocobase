@@ -35,7 +35,7 @@ export function Create(props) {
 }
 
 export function Update(props) {
-  const { onFinish, data, schema = {} } = props;
+  const { onFinish, data, schema = {}, associatedKey } = props;
   const { title, viewName } = schema;
   return (
     <>
@@ -46,6 +46,7 @@ export function Update(props) {
             content: ({resolve}) => (
               <div>
                 <View
+                  associatedKey={associatedKey}
                   data={data}
                   viewName={viewName}
                   onFinish={async (values) => {

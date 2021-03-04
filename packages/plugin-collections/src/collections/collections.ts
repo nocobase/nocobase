@@ -520,8 +520,58 @@ export default {
       actions: [],
       fields: ['title'],
       openMode: 'drawer', // window
-      pages: ['form'],
+      pages: ['permissions_form'],
       sort: ['id'],
+    },
+    {
+      type: 'form',
+      name: 'permissions_form',
+      title: '表单',
+      fields: [
+        {
+          interface: 'json',
+          type: 'json',
+          title: '数据操作权限',
+          name: 'actions',
+          component: {
+            "type": "permissions.actions",
+            "title": "数据操作权限",
+            "x-linkages": [{
+              "type": "value:schema",
+              "target": "actions",
+              "schema": {
+                "x-component-props": {
+                  "resourceKey": "{{ $form.values && $form.values.resourceKey }}"
+                }
+              }
+            }],
+            "x-component-props": {
+              "dataSource": []
+            }
+          },
+        },
+        {
+          interface: 'json',
+          type: 'json',
+          title: '字段权限',
+          name: 'fields',
+          component: {
+            "type": "permissions.fields",
+            "x-linkages": [{
+              "type": "value:schema",
+              "target": "fields",
+              "schema": {
+                "x-component-props": {
+                  "resourceKey": "{{ $form.values && $form.values.resourceKey }}"
+                }
+              }
+            }],
+            "x-component-props": {
+              "dataSource": []
+            }
+          },
+        },
+      ],
     },
     {
       type: 'form',
@@ -580,6 +630,11 @@ export default {
       title: '表单',
       name: 'form',
       views: ['form'],
+    },
+    {
+      title: '权限配置表单',
+      name: 'permissions_form',
+      views: ['permissions_form'],
     },
     {
       title: '字段',

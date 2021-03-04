@@ -16,12 +16,16 @@ import Field from '@/components/views/Field';
 import { Form } from './Form';
 
 export function Details(props) {
-  const { data: record = {}, associatedKey, resourceKey, schema = {}, onDataChange } = props;
-  const { rowKey = 'id', resourceName, fields = [], actions = [] } = schema;
+  const { data: record = {}, schema = {}, onDataChange, associatedKey } = props;
+  const { rowKey = 'id', resourceName, fields = [], actions = [], appends = [], associationField = {} } = schema;
+
+  const resourceKey = props.resourceKey || record[associationField.targetKey||rowKey];
+
   const { data = {}, loading, refresh } = useRequest(() => {
     return api.resource(resourceName).get({
-      resourceKey: resourceKey || record[rowKey],
-      // associatedKey,
+      resourceKey,
+      associatedKey,
+      'fields[appends]': appends,
     });
   });
   if (loading) {
@@ -36,6 +40,7 @@ export function Details(props) {
             onDataChange(values);
           },
         }}
+        associatedKey={associatedKey}
         data={data}
         actions={actions}
         style={{ marginBottom: 14 }}

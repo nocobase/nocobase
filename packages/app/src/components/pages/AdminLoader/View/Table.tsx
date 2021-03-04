@@ -19,7 +19,7 @@ import { View } from './';
 export const icon = <LoadingOutlined style={{ fontSize: 36 }} spin />;
 
 export function PageTabs(props) {
-  const { onFinish, onDataChange, data, pages = [], resolve } = props;
+  const { associatedKey, resourceName, onFinish, onDataChange, data, pages = [], resolve } = props;
   if (!pages || pages.length === 0) {
     return null;
   }
@@ -44,12 +44,12 @@ export function PageTabs(props) {
       {views.map(view => {
         let viewName: string;
         if (typeof view === 'string') {
-          viewName = `${collection_name}.${view}`;
+          viewName = `${resourceName}.${view}`;
         } if (typeof view === 'object') {
-          viewName = `${collection_name}.${view.name}`;
+          viewName = `${resourceName}.${view.name}`;
         }
         return (
-          <View onFinish={onFinish} onDataChange={onDataChange} data={data} viewName={viewName}/>
+          <View associatedKey={associatedKey} onFinish={onFinish} onDataChange={onDataChange} data={data} viewName={viewName}/>
         );
       })}
     </div>
@@ -75,11 +75,14 @@ export function Table(props: any) {
     labelField = 'id',
     sort,
     resourceName,
-    targetField = {},
+    associationField = {},
+    appends = [],
     filter: defaultFilter = {},
   } = schema;
 
-  const associatedKey = props.associatedKey || record[targetField.sourceKey||'id'];
+
+  const associatedKey = props.associatedKey || record[associationField.sourceKey||'id'];
+  console.log({associatedKey, record, associationField})
 
   const { data, loading, pagination, mutate, refresh, run, params } = useRequest((params = {}, ...args) => {
     const { current, pageSize, sorter, filter, ...restParams } = params;
@@ -90,6 +93,7 @@ export function Table(props: any) {
       perPage: paginated ? pageSize : -1,
       sorter,
       sort,
+      'fields[appends]': appends,
       // filter,
       // ...actionDefaultParams,
       filter: {
@@ -228,7 +232,7 @@ export function Table(props: any) {
                 },
                 content: ({resolve}) => (
                   <div>
-                    <PageTabs onFinish={() => {
+                    <PageTabs associatedKey={associatedKey} resourceName={resourceName} onFinish={() => {
                       refresh();
                       resolve();
                     }} onDataChange={() => {

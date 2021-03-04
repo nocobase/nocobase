@@ -179,7 +179,7 @@ export default {
           title: '删除',
         },
       ],
-      fields: ['title'],
+      fields: ['title', 'type'],
       openMode: 'drawer', // window
       pages: ['form'],
       sort: ['id'],
@@ -188,7 +188,7 @@ export default {
       type: 'details',
       name: 'details',
       title: '详情',
-      fields: ['title'],
+      fields: ['title', 'type'],
       actions: [
         {
           name: 'update',
@@ -202,7 +202,13 @@ export default {
       type: 'form',
       name: 'form',
       title: '表单',
-      fields: ['title'],
+      fields: [
+        'title',
+        'type',
+        'collection',
+        'filter',
+        'values',
+      ],
     },
   ],
   pages_v2: [

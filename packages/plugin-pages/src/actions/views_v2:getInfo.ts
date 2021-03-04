@@ -1,6 +1,7 @@
 import { ResourceOptions } from '@nocobase/resourcer';
 import { Model, ModelCtor } from '@nocobase/database';
 import actions from '@nocobase/actions';
+import { merge } from '../utils';
 
 export const getInfo = async (ctx: actions.Context, next) => {
   const { resourceKey } = ctx.action.params;
@@ -11,14 +12,23 @@ export const getInfo = async (ctx: actions.Context, next) => {
   let viewName: string;
   let collectionName: string;
   let associatedName: string;
+  let resourceName: string;
+  let associationField: any;
   if (resourceKey.includes('.')) {
     const keys = resourceKey.split('.');
     viewName = keys.pop();
     const [key1, key2] = keys;
     if (key2) {
       const field = ctx.db.getTable(key1).getField(key2);
+      associationField = await Field.findOne({
+        where: {
+          collection_name: key1,
+          name: key2,
+        },
+      });
       collectionName = field.options.target;
       associatedName = key1;
+      resourceName = key2;
     } else {
       collectionName = key1;
     }
@@ -40,18 +50,47 @@ export const getInfo = async (ctx: actions.Context, next) => {
   //   const page = await Page.findByPk(item.page_id);
   //   pages.push(page);
   // }
-  const columns = await Field.findAll(Field.parseApiJson({
-    filter: {
-      collection_name: view.collection_name,
-      'name.in': view.get('fields')||[],
-    },
-    sort: ['sort'],
-  }));
+  // const columns = await Field.findAll(Field.parseApiJson({
+  //   filter: {
+  //     collection_name: view.collection_name,
+  //     'name.in': view.get('fields')||[],
+  //   },
+  //   sort: ['sort'],
+  // }));
+  const fields = [];
+  for (const field of view.get('fields') || []) {
+    let fieldName: any;
+    let json: any;
+    if (typeof field === 'string') {
+      fieldName = field;
+    } else if (typeof field === 'object') {
+      fieldName = field.name;
+      json = field;
+    }
+    const model = await Field.findOne({
+      where: {
+        collection_name: view.collection_name,
+        name: fieldName,
+      },
+    });
+    if (model) {
+      model.setDataValue('dataIndex', model.name.split('.'));
+      if (typeof field === 'object') {
+        json = merge(model.toJSON(), field);
+      } else {
+        json = model.toJSON();
+      }
+    }
+    console.log({field, json})
+    json && fields.push(json);
+  }
   const actions = [];
   if (view.get('actions')) {
+    const parts = resourceKey.split('.');
+    parts.pop();
     for (const action of view.get('actions')) {
       if (action.viewName) {
-        action.viewName = `${view.collection_name}.${action.viewName}`;
+        action.viewName = `${parts.join('.')}.${action.viewName}`;
       }
       actions.push({
         ...action,
@@ -68,18 +107,15 @@ export const getInfo = async (ctx: actions.Context, next) => {
     });
     pages.push(page);
   }
-  console.log({view,
-    'name.in': view.get('fields')||[],
-    columns, resourceKey, primaryKey, collectionName, viewName});
   const data: any = {
     ...view.toJSON(),
     pages,
     actions,
-    fields: columns.map(column => {
-      column.setDataValue('dataIndex', column.name.split('.'));
-      return column;
-    }),
+    fields,
   };
+  if (associationField) {
+    data.associationField = associationField;
+  }
   if (data.type === 'association') {
     const field = await Field.findOne({
       where: {
@@ -97,24 +133,29 @@ export const getInfo = async (ctx: actions.Context, next) => {
     const body = ctx.body as any;
     const actions = body.actions.map(action => {
       if (action.viewName) {
-        action.viewName = `${collectionName}.${action.viewName}`;
+        const names= action.viewName.split('.');
+        action.viewName = `${resourceName}.${names.pop()}`;
       }
       return action;
     });
     ctx.body = {
-      ...(ctx.body as any),
-      targetField: field,
+      ...body,
+      associationField: field,
       resourceName,
       actions,
+      rowKey: resourceKey === 'roles.collections' ? 'name' : body.rowKey,
     }
     return next();
   } else {
     data.rowKey = Collection.primaryKeyAttribute;
     if (associatedName) {
-      data.resourceName = `${associatedName}.${collectionName}`;
+      data.resourceName = `${associatedName}.${resourceName}`;
     } else {
       data.resourceName = collectionName;
     }
+    data.appends = data.fields.filter(field => {
+      return ['hasMany', 'hasOne', 'belongsToMany', 'belongsTo'].includes(field.type);
+    }).map(field => field.name);
   }
   ctx.body = data;
   await next();
