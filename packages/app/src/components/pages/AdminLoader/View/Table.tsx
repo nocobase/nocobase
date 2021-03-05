@@ -63,6 +63,8 @@ export function Table(props: any) {
     isFieldComponent,
     schema = {},
     data: record = {},
+    defaultFilter,
+    defaultSelectedRowKeys,
   } = props;
 
   const { 
@@ -77,7 +79,7 @@ export function Table(props: any) {
     resourceName,
     associationField = {},
     appends = [],
-    filter: defaultFilter = {},
+    filter: schemaFilter = {},
   } = schema;
 
 
@@ -99,6 +101,7 @@ export function Table(props: any) {
       filter: {
         and: [
           defaultFilter,
+          schemaFilter,
           filter,
         ].filter(obj => obj && Object.keys(obj).length)
       }
@@ -135,7 +138,7 @@ export function Table(props: any) {
   //   defaultPageSize: defaultPerPage,
   // });
 
-  const [selectedRowKeys, setSelectedRowKeys] = useState([]);
+  const [selectedRowKeys, setSelectedRowKeys] = useState(defaultSelectedRowKeys||[]);
   const onChange = (selectedRowKeys: React.ReactText[], selectedRows: React.ReactText[]) => {
     setSelectedRowKeys(selectedRowKeys);
     onSelected && onSelected(selectedRows);
@@ -194,7 +197,10 @@ export function Table(props: any) {
           refresh();
         },
         async filter(values) {
-          refresh();
+          const items = values.filter.and || values.filter.or;
+          // @ts-ignore
+          run({...params[0], filter: values.filter});
+          // refresh();
         },
         async destroy() {
           if (selectedRowKeys.length) {

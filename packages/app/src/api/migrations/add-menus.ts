@@ -10,12 +10,26 @@ import Database from '@nocobase/database';
 
   const [Collection, Field, Page, Menu, View] = database.getModels(['collections', 'fields', 'pages_v2', 'menus', 'views_v2']);
 
-  await Collection.import(require('./collections/authors').default);
-  await Collection.import(require('./collections/books').default);
+  // await Collection.import(require('./collections/authors').default, { update: true });
+  // await Collection.import(require('./collections/books').default, { update: true });
 
   await Menu.truncate();
   // await View.truncate();
   // await Page.truncate();
+
+  const collection = await Collection.findOne({
+    where: {
+      name: 'authors',
+    }
+  });
+
+  const authors = require('./collections/authors').default;
+
+  console.log(authors.views_v2);
+
+  await collection.updateAssociations({
+    views_v2: authors.views_v2,
+  });
 
   const tables = database.getTables([
     'collections', 
@@ -28,6 +42,7 @@ import Database from '@nocobase/database';
     'action_logs',
     'users',
     'roles',
+    'scopes',
   ]);
 
   for (let table of tables) {

@@ -1,6 +1,6 @@
 import React, { useState } from 'react'
 import { connect } from '@formily/react-schema-renderer'
-import { Select, Drawer, Button, Space } from 'antd'
+import { Select, Button, Space } from 'antd'
 import {
   mapStyledProps,
   mapTextComponent,
@@ -9,13 +9,15 @@ import {
   isArr
 } from '../shared'
 import ViewFactory from '@/components/views'
+import Drawer from '@/components/pages/AdminLoader/Drawer';
+import View from '@/components/pages/AdminLoader/View';
 
 function transform({value, multiple, labelField, valueField = 'id'}) {
   let selectedKeys = [];
   let selectedValue = [];
-  const values = Array.isArray(value) ? value : [];
-  selectedKeys = values.map(item => item[valueField]);
-  selectedValue = values.map(item => {
+  const values = Array.isArray(value) ? value : [value];
+  selectedKeys = values.filter(item => item).map(item => item[valueField]);
+  selectedValue = values.filter(item => item).map(item => {
     return {
       value: item[valueField],
       label: item[labelField],
@@ -27,14 +29,13 @@ function transform({value, multiple, labelField, valueField = 'id'}) {
   return [selectedKeys, selectedValue];
 }
 
-function DrawerSelectComponent(props) {
-  const { disabled, target, multiple, filter, resourceName, associatedKey, labelField, valueField = 'id', value, onChange } = props;
+export function DrawerSelectComponent(props) {
+  const { size, schema = {}, disabled, viewName, target, multiple, filter, resourceName, associatedKey, labelField, valueField = 'id', value, onChange } = props;
   const [selectedKeys, selectedValue] = transform({value, multiple, labelField, valueField });
-  const [visible, setVisible] = useState(false);
   const [selectedRowKeys, setSelectedRowKeys] = useState(multiple ? selectedKeys : [selectedKeys]);
   const [selectedRows, setSelectedRows] = useState(selectedValue);
   const [options, setOptions] = useState(selectedValue);
-  // console.log('valuevaluevaluevaluevaluevalue', value);
+  const { title = '' } = schema;
   return (
     <>
       <Select
@@ -42,6 +43,7 @@ function DrawerSelectComponent(props) {
         open={false}
         mode={multiple ? 'tags' : undefined}
         labelInValue
+        size={size}
         allowClear={true}
         value={options}
         notFoundContent={''}
@@ -63,11 +65,48 @@ function DrawerSelectComponent(props) {
         }}
         onClick={() => {
           if (!disabled) {
-            setVisible(true);
+            Drawer.open({
+              title: `选择要关联的${title}数据`,
+              content: ({resolve}) => {
+                console.log('valuevaluevaluevaluevaluevalue', selectedRowKeys, selectedRows, options);
+                const [rows, setRows] = useState(selectedRows);
+                const [rowKeys, setRowKeys] = useState(selectedRowKeys)
+                return (
+                  <>
+                    <View
+                      associatedKey={associatedKey}
+                      multiple={multiple}
+                      defaultFilter={filter}
+                      defaultSelectedRowKeys={selectedRowKeys}
+                      onSelected={(values) => {
+                        const [selectedKeys, selectedValue] = transform({value: values, multiple: true, labelField, valueField });
+                        setSelectedRows(selectedValue);
+                        setRows(selectedValue);
+                        setSelectedRowKeys(selectedKeys);
+                        setRowKeys(selectedKeys);
+                        console.log({ values, selectedValue, selectedKeys });
+                        console.log({selectedRows, selectedRowKeys});
+                      }}
+                      viewName={viewName || `${target}.table`}
+                    />
+                    <Drawer.Footer>
+                    <Button onClick={() => {
+                        setOptions(rows);
+                        // console.log('valuevaluevaluevaluevaluevalue', {selectedRowKeys});
+                        onChange(multiple ? rowKeys : rowKeys.shift());
+                        console.log({rows, rowKeys});
+                        resolve();
+                      }} type={'primary'}>确定</Button>
+                    </Drawer.Footer>
+                  </>
+                )
+              },
+            })
+            // setVisible(true);
           }
         }}
       ></Select>
-      <Drawer 
+      {/* <Drawer 
         width={'40%'}
         className={'noco-drawer'}
         title={'关联数据'}
@@ -114,7 +153,7 @@ function DrawerSelectComponent(props) {
           // associatedName={associatedName} 
           viewName={'table'}
         />
-      </Drawer>
+      </Drawer> */}
     </>
   );
 }

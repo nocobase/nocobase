@@ -19,6 +19,7 @@ import api from '@/api-client';
 import { useRequest, useLocation } from 'umi';
 import Drawer from '@/components/pages/AdminLoader/Drawer';
 import set from 'lodash/set';
+import cloneDeep from 'lodash/cloneDeep'
 import { Spin } from '@nocobase/client';
 
 export function fields2properties(fields = []) {
@@ -29,6 +30,7 @@ export function fields2properties(fields = []) {
       title: field.title,
       required: field.required,
     };
+    set(data, 'x-component-props.schema', cloneDeep(field));
     if (field.dataSource) {
       data.enum = field.dataSource;
     }

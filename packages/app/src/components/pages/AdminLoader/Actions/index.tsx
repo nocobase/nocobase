@@ -82,9 +82,12 @@ export function Destroy(props) {
 }
 
 export function Filter(props) {
-  const { filterCount = 0, schema = {}, onFinish } = props;
+  const { schema = {}, onFinish } = props;
   const { title, fields = [] } = schema;
   const [visible, setVisible] = useState(false);
+  const [data, setData] = useState({});
+  const [filterCount, setFilterCount] = useState(0);
+  console.log('Filter', { visible, data });
 
   return (
     <>
@@ -120,8 +123,13 @@ export function Filter(props) {
         }}
         content={(
           <>
-            <View onFinish={async (values) => {
-              onFinish && values && await onFinish(values);
+            <View data={data} onFinish={async (values) => {
+              if (values) {
+                const items = values.filter.and || values.filter.or;
+                setFilterCount(Object.keys(items).length);
+                setData(values);
+                onFinish && await onFinish(values);
+              }
               setVisible(false);
             }} schema={{
               "type": "filterForm",

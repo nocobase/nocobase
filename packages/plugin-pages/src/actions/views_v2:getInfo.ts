@@ -97,12 +97,32 @@ export const getInfo = async (ctx: actions.Context, next) => {
     json && fields.push(json);
   }
   const actions = [];
+  const toFields = async (values = []) => {
+    const fields = [];
+    for (const value of values) {
+      if (typeof value === 'string') {
+        const model = await Field.findOne({
+          where: {
+            collection_name: view.collection_name,
+            name: value,
+          },
+        });
+        if (model) {
+          fields.push(model);
+        }
+      }
+    }
+    return fields;
+  }
   if (view.get('actions')) {
     const parts = resourceKey.split('.');
     parts.pop();
     for (const action of view.get('actions')) {
       if (action.viewName) {
         action.viewName = `${parts.join('.')}.${action.viewName}`;
+      }
+      if (action.fields) {
+        action.fields = await toFields(action.fields);
       }
       actions.push({
         ...action,

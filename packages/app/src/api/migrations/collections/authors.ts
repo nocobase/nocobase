@@ -100,6 +100,9 @@ export default {
           name: 'filter',
           type: 'filter',
           title: '过滤',
+          fields: [
+            'name',
+          ],
           // viewName: 'form',
         },
         {
