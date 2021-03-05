@@ -129,19 +129,19 @@ export const getInfo = async (ctx: actions.Context, next) => {
       })
     }
   }
-  const pages = [];
-  for (const pageName of view.get('pages')||[]) {
+  const details = [];
+  for (const pageName of view.get('details')||[]) {
     const page = await Page.findOne({
       where: {
         collection_name: view.collection_name,
         name: pageName,
       }
     });
-    pages.push(page);
+    details.push(page);
   }
   const data: any = {
     ...view.toJSON(),
-    pages,
+    details,
     actions,
     fields,
   };
@@ -170,13 +170,14 @@ export const getInfo = async (ctx: actions.Context, next) => {
       }
       return action;
     });
-    ctx.body = {
+    const item = {
       ...body,
       associationField: field,
       resourceName,
       actions,
       rowKey: resourceKey === 'roles.collections' ? 'name' : body.rowKey,
     }
+    ctx.body = item;
     return next();
   } else {
     data.rowKey = Collection.primaryKeyAttribute;

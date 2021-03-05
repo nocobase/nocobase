@@ -162,12 +162,12 @@ export default {
       ],
       fields: ['username', 'nickname', 'phone', 'roles'],
       openMode: 'drawer', // window
-      pages: ['form'],
+      details: ['form'],
       sort: ['id'],
     },
     {
-      type: 'details',
-      name: 'details',
+      type: 'descriptions',
+      name: 'descriptions',
       title: '详情',
       fields: ['username', 'nickname', 'phone', 'roles'],
       actions: [
@@ -194,8 +194,8 @@ export default {
     },
     {
       title: '详情',
-      name: 'details',
-      views: ['details'],
+      name: 'descriptions',
+      views: ['descriptions'],
     },
     {
       title: '表单',

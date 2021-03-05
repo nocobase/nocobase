@@ -181,12 +181,12 @@ export default {
       ],
       fields: ['title', 'type'],
       openMode: 'drawer', // window
-      pages: ['form'],
+      details: ['form'],
       sort: ['id'],
     },
     {
-      type: 'details',
-      name: 'details',
+      type: 'descriptions',
+      name: 'descriptions',
       title: '详情',
       fields: ['title', 'type'],
       actions: [

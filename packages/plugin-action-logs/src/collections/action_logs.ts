@@ -127,12 +127,12 @@ export default {
       ],
       fields: ['created_at', 'user', 'collection', 'type', 'index'],
       openMode: 'drawer', // window
-      pages: ['details'],
+      details: ['descriptions'],
       sort: ['id'],
     },
     {
-      type: 'details',
-      name: 'details',
+      type: 'descriptions',
+      name: 'descriptions',
       title: '详情',
       fields: ['created_at', 'user', 'collection', 'type', 'index', 'changes'],
       actions: [],
@@ -146,8 +146,8 @@ export default {
     },
     {
       title: '详情',
-      name: 'details',
-      views: ['details'],
+      name: 'descriptions',
+      views: ['descriptions'],
     },
   ],
 } as TableOptions;

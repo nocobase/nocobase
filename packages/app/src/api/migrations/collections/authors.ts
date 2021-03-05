@@ -119,12 +119,12 @@ export default {
       ],
       fields: ['name'],
       openMode: 'drawer', // window
-      pages: ['details', 'books'],
+      details: ['descriptions', 'books'],
       sort: ['id'],
     },
     {
-      type: 'details',
-      name: 'details',
+      type: 'descriptions',
+      name: 'descriptions',
       title: '详情',
       fields: ['name'],
       actions: [
@@ -158,8 +158,8 @@ export default {
     },
     {
       title: '详情',
-      name: 'details',
-      views: ['details'],
+      name: 'descriptions',
+      views: ['descriptions'],
     },
     {
       title: '表单',

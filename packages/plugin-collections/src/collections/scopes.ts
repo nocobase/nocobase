@@ -68,7 +68,7 @@ export default {
       ],
       fields: ['title'],
       openMode: 'drawer', // window
-      pages: ['form'],
+      details: ['form'],
       sort: ['id'],
     },
     {

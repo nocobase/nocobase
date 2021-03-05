@@ -528,12 +528,12 @@ export default {
       ],
       fields: ['title', 'description', 'type', 'enabled'],
       openMode: 'drawer', // window
-      pages: ['details', 'jobs'],
+      details: ['descriptions', 'jobs'],
       sort: ['id'],
     },
     {
-      type: 'details',
-      name: 'details',
+      type: 'descriptions',
+      name: 'descriptions',
       title: '详情',
       fields: ['title', 'description', 'type', 'enabled'],
       actions: [
@@ -580,8 +580,8 @@ export default {
     },
     {
       title: '详情',
-      name: 'details',
-      views: ['details'],
+      name: 'descriptions',
+      views: ['descriptions'],
     },
     {
       title: '任务',

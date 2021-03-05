@@ -5,7 +5,7 @@ import { Spin } from '@nocobase/client';
 import { useRequest, useLocation } from 'umi';
 import api from '@/api-client';
 import { Actions } from '../Actions';
-import { Table as AntdTable, Card, Pagination, Button, Tabs, Descriptions, Tooltip } from 'antd';
+import { Table as AntdTable, Card, Pagination, Button, Tabs, Descriptions as AntdDescriptions, Tooltip } from 'antd';
 import { LoadingOutlined } from '@ant-design/icons';
 import { components, fields2columns } from '@/components/views/SortableTable';
 import ReactDragListView from 'react-drag-listview';
@@ -15,7 +15,7 @@ import Drawer from '@/components/pages/AdminLoader/Drawer';
 import Field from '@/components/views/Field';
 import { Form } from './Form';
 
-export function Details(props) {
+export function Descriptions(props) {
   const { data: record = {}, schema = {}, onDataChange, associatedKey } = props;
   const { rowKey = 'id', resourceName, fields = [], actions = [], appends = [], associationField = {} } = schema;
 
@@ -45,19 +45,19 @@ export function Details(props) {
         actions={actions}
         style={{ marginBottom: 14 }}
       />
-      <Descriptions 
+      <AntdDescriptions 
         // layout={'vertical'}
         size={'middle'}
         bordered 
         column={1}>
         {fields.map(field => {
           return (
-            <Descriptions.Item label={field.title||field.name}>
+            <AntdDescriptions.Item label={field.title||field.name}>
               <Field data={field} viewType={'descriptions'} schema={field} value={get(data, field.name)}/>
-            </Descriptions.Item>
+            </AntdDescriptions.Item>
           )
         })}
-      </Descriptions>
+      </AntdDescriptions>
     </div>
   );
 }

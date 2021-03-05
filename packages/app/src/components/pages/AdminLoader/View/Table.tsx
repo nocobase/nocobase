@@ -18,7 +18,7 @@ import { View } from './';
 
 export const icon = <LoadingOutlined style={{ fontSize: 36 }} spin />;
 
-export function PageTabs(props) {
+export function Details(props) {
   const { associatedKey, resourceName, onFinish, onDataChange, data, pages = [], resolve } = props;
   if (!pages || pages.length === 0) {
     return null;
@@ -70,7 +70,7 @@ export function Table(props: any) {
   const { 
     fields = [],
     actions = [],
-    pages = [],
+    details = [],
     paginated = true,
     defaultPerPage = 10,
     rowKey = 'id',
@@ -232,18 +232,26 @@ export function Table(props: any) {
           onRow={(data) => ({
             onClick: () => {
               Drawer.open({
-                title: pages.length > 1 ? undefined : data[labelField],
+                title: details.length > 1 ? undefined : data[labelField],
                 bodyStyle: {
                   // padding: 0,
                 },
                 content: ({resolve}) => (
                   <div>
-                    <PageTabs associatedKey={associatedKey} resourceName={resourceName} onFinish={() => {
-                      refresh();
-                      resolve();
-                    }} onDataChange={() => {
-                      refresh();
-                    }} data={data} resolve={resolve} pages={pages}></PageTabs>
+                    <Details 
+                      associatedKey={associatedKey} 
+                      resourceName={resourceName} 
+                      onFinish={() => {
+                        refresh();
+                        resolve();
+                      }}
+                      onDataChange={() => {
+                        refresh();
+                      }}
+                      data={data}
+                      resolve={resolve}
+                      pages={details}
+                    />
                   </div>
                 ),
               });

@@ -32,7 +32,7 @@ export default {
     {
       interface: 'json',
       type: 'virtual',
-      name: 'pages',
+      name: 'details',
       title: '子页面',
     },
     {
@@ -131,7 +131,7 @@ export default {
       ],
       fields: ['title'],
       openMode: 'drawer', // window
-      pages: ['form'],
+      details: ['form'],
       sort: ['id'],
     },
     {

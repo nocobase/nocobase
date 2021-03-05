@@ -654,7 +654,7 @@ export default {
       ],
       fields: ['sort', 'title', 'interface'],
       openMode: 'drawer', // window
-      pages: ['form'],
+      details: ['form'],
       sort: ['sort'],
     },
     {

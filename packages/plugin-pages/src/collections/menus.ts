@@ -23,6 +23,29 @@ export default {
       },
     },
     {
+      interface: 'linkTo',
+      multiple: false,
+      type: 'belongsTo',
+      name: 'parent',
+      title: '父级菜单',
+      target: 'menus',
+      foreignKey: 'parent_id',
+      targetKey: 'id',
+      labelField: 'title',
+      valueField: 'id',
+      component: {
+        type: 'drawerSelect',
+        'x-component-props': {
+          placeholder: '请选择菜单组',
+          labelField: 'title',
+          valueField: 'id',
+          filter: {
+            type: 'group',
+          },
+        },
+      },
+    },
+    {
       interface: 'string',
       type: 'string',
       name: 'title',
@@ -177,16 +200,16 @@ export default {
           title: '删除',
         },
       ],
-      fields: ['title'],
+      fields: ['sort', 'icon', 'title', 'type'],
       openMode: 'drawer', // window
-      pages: ['form'],
+      details: ['form'],
       sort: ['sort'],
     },
     {
       type: 'form',
       name: 'form',
       title: '表单',
-      fields: ['title'],
+      fields: ['type', 'parent', 'title', 'icon', 'url', 'pageName'],
     },
   ],
   pages_v2: [

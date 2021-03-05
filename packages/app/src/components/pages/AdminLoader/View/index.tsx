@@ -5,7 +5,7 @@ import { Spin } from '@nocobase/client';
 import { useRequest, useLocation } from 'umi';
 import api from '@/api-client';
 import { Actions } from '../Actions';
-import { Table as AntdTable, Card, Pagination, Button, Tabs, Descriptions, Tooltip } from 'antd';
+import { Table as AntdTable, Card, Pagination, Button, Tabs, Tooltip } from 'antd';
 import { LoadingOutlined } from '@ant-design/icons';
 import { components, fields2columns } from '@/components/views/SortableTable';
 import ReactDragListView from 'react-drag-listview';
@@ -16,7 +16,7 @@ import Field from '@/components/views/Field';
 import { Form } from './Form';
 import { Table } from './Table';
 import { Association } from './Association';
-import { Details } from './Details';
+import { Descriptions } from './Descriptions';
 import { FilterForm } from './FilterForm';
 
 const VIEWS = new Map();
@@ -58,7 +58,7 @@ export function View(props: any) {
 registerView('table', Table);
 registerView('form', Form);
 registerView('filterForm', FilterForm);
-registerView('details', Details);
+registerView('descriptions', Descriptions);
 registerView('association', Association);
 
 export default View;

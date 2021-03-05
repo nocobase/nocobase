@@ -58,9 +58,31 @@ export default {
       interface: 'linkTo',
       type: 'belongsTo',
       name: 'collection',
-      title: '所属数据表',
       target: 'collections',
       targetKey: 'name',
+      title: '所属数据表',
+      labelField: 'title',
+      valueField: 'name',
+      multiple: false,
+      component: {
+        type: 'remoteSelect',
+        showInDetail: true,
+        showInForm: true,
+        'x-component-props': {
+          resourceName: 'collections',
+          labelField: 'title',
+          valueField: 'name',
+        },
+      },
+    },
+    {
+      interface: 'json',
+      type: 'virtual',
+      name: 'views',
+      title: '显示在页面里的视图',
+      component: {
+        type: 'virtualTable',
+      },
     },
     {
       interface: 'json',
@@ -148,9 +170,9 @@ export default {
           title: '删除',
         },
       ],
-      fields: ['title'],
+      fields: ['title', 'collection'],
       openMode: 'drawer', // window
-      pages: ['form'],
+      details: ['form'],
       sort: ['id'],
     },
     {
@@ -161,14 +183,14 @@ export default {
       actions: [],
       fields: ['title'],
       openMode: 'drawer', // window
-      pages: ['form'],
+      details: ['form'],
       sort: ['id'],
     },
     {
       type: 'form',
       name: 'form',
       title: '表单',
-      fields: ['title'],
+      fields: ['title', 'collection', 'views'],
     },
   ],
   pages_v2: [

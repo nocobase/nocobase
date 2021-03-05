@@ -509,7 +509,7 @@ export default {
       ],
       fields: ['sort', 'title'],
       openMode: 'drawer', // window
-      pages: ['details', 'fields', 'views', 'pages'],
+      details: ['descriptions', 'fields', 'views', 'pages'],
       sort: ['sort'],
     },
     {
@@ -520,7 +520,7 @@ export default {
       actions: [],
       fields: ['title'],
       openMode: 'drawer', // window
-      pages: ['permissions_form'],
+      details: ['permissions_form'],
       sort: ['id'],
     },
     {
@@ -580,8 +580,8 @@ export default {
       fields: ['title'],
     },
     {
-      type: 'details',
-      name: 'details',
+      type: 'descriptions',
+      name: 'descriptions',
       title: '详情',
       fields: ['title'],
       actions: [
@@ -623,8 +623,8 @@ export default {
     },
     {
       title: '详情',
-      name: 'details',
-      views: ['details'],
+      name: 'descriptions',
+      views: ['descriptions'],
     },
     {
       title: '表单',

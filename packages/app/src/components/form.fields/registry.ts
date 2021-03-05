@@ -24,6 +24,7 @@ import { Permissions } from './permissions'
 import { DraggableTable } from './draggable-table'
 import { Values } from './values'
 import { Automations } from './automations'
+import { VirtualTable } from './virtual-table'
 
 export const setup = () => {
   registerFormFields({
@@ -67,5 +68,6 @@ export const setup = () => {
     'automations.datetime': Automations.DateTime,
     'automations.endmode': Automations.EndMode,
     'automations.cron': Automations.Cron,
+    'virtualTable': VirtualTable,
   });
 }
