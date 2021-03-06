@@ -1,6 +1,7 @@
 import api from '../app';
 import Database from '@nocobase/database';
 import views_v2 from '@nocobase/plugin-pages/src/collections/views_v2';
+import { Op } from 'sequelize';
 
 (async () => {
   await api.loadPlugins();
@@ -15,8 +16,20 @@ import views_v2 from '@nocobase/plugin-pages/src/collections/views_v2';
   // await Collection.import(require('./collections/books').default, { update: true });
 
   await Menu.truncate();
-  // await View.truncate();
-  // await Page.truncate();
+  await Page.destroy({
+    where: {
+      id: {
+        [Op.not]: null,
+      },
+    }
+  });
+  await View.destroy({
+    where: {
+      id: {
+        [Op.not]: null,
+      },
+    }
+  });
 
   const collection = await Collection.findOne({
     where: {
@@ -45,6 +58,7 @@ import views_v2 from '@nocobase/plugin-pages/src/collections/views_v2';
     'menus', 
     'pages_v2', 
     'views_v2',
+    'pages_views_v2',
     'automations',
     'automations_jobs',
     'action_logs',

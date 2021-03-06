@@ -177,6 +177,9 @@ export class CollectionModel extends BaseModel {
       // @ts-ignore
       collection = await this.create(data, options);
     }
+
+    await collection.updateAssociations(data, options);
+    return;
     const associations = ['fields', 'tabs', 'actions', 'views', 'pages_v2', 'views_v2'];
     for (const key of associations) {
       if (!Array.isArray(data[key])) {

@@ -32,6 +32,16 @@ export default {
       },
       developerMode: true,
     },
+    // {
+    //   interface: 'string',
+    //   type: 'string',
+    //   name: 'path',
+    //   title: '路径',
+    //   required: true,
+    //   unique: true,
+    //   createOnly: true,
+    //   developerMode: true,
+    // },
     {
       interface: 'radio',
       type: 'boolean',

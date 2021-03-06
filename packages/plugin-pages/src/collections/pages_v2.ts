@@ -18,6 +18,16 @@ export default {
     },
     {
       interface: 'string',
+      type: 'string',
+      name: 'path',
+      title: '路径',
+      required: true,
+      unique: true,
+      createOnly: true,
+      developerMode: true,
+    },
+    {
+      interface: 'string',
       type: 'randomString',
       name: 'name',
       title: '缩略名',
@@ -69,6 +79,28 @@ export default {
       title: '显示在页面里的视图',
       component: {
         type: 'virtualTable',
+      },
+    },
+    {
+      interface: 'subTable',
+      type: 'hasMany',
+      name: 'pages_views',
+      target:  'pages_views_v2',
+      // sourceKey: 'path',
+      title: '显示在页面里的视图(pages_views)',
+      component: {
+        type: 'subTable',
+        'x-linkages': [
+          {
+            type: 'value:schema',
+            target: 'pages_views',
+            schema: {
+              'x-component-props': {
+                associatedKey: "{{ $form.values && $form.values.id }}"
+              },
+            },
+          },
+        ],
       },
     },
     {
@@ -141,6 +173,30 @@ export default {
   views_v2: [
     {
       type: 'table',
+      name: 'all_pages',
+      title: '全部页面',
+      rowKey: 'path',
+      labelField: 'title',
+      fields: ['title', 'collection'],
+      detailsOpenMode: 'drawer', // window
+      details: ['form'],
+      sort: ['id'],
+      filter: {
+        type: 'static',
+      },
+      actions: [
+        {
+          name: 'filter',
+          type: 'filter',
+          title: '过滤',
+          fields: [
+            'title',
+          ],
+        }
+      ],
+    },
+    {
+      type: 'table',
       name: 'collection_pages',
       title: '数据表页面',
       labelField: 'title',
@@ -203,12 +259,13 @@ export default {
       type: 'form',
       name: 'form',
       title: '表单',
-      fields: ['title', 'views'],
+      fields: ['title', 'type', 'views', 'pages_views'],
     },
     {
       type: 'form',
       name:  'global_form',
-      fields: ['title', 'views'],
+      title:  '独立页面表单',
+      fields: ['title', 'views', 'pages_views'],
     },
   ],
   pages_v2: [
@@ -226,6 +283,11 @@ export default {
       title: '表单',
       name: 'form',
       views: ['form'],
+    },
+    {
+      title: '独立页面表单',
+      name: 'global_form',
+      views: ['global_form'],
     },
   ],
 } as TableOptions;

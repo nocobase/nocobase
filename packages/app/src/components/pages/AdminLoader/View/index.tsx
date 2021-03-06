@@ -18,6 +18,7 @@ import { Table } from './Table';
 import { Association } from './Association';
 import { Descriptions } from './Descriptions';
 import { FilterForm } from './FilterForm';
+import { SubTable } from './SubTable';
 
 const VIEWS = new Map();
 
@@ -46,7 +47,7 @@ export function View(props: any) {
     return <Spin/>
   }
 
-  const { type } = data;
+  const type = props.type || data.type;
 
   const Component = getView(type);
 
@@ -56,6 +57,7 @@ export function View(props: any) {
 };
 
 registerView('table', Table);
+registerView('subTable', SubTable);
 registerView('form', Form);
 registerView('filterForm', FilterForm);
 registerView('descriptions', Descriptions);

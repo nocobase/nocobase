@@ -180,7 +180,7 @@ export const getInfo = async (ctx: actions.Context, next) => {
     ctx.body = item;
     return next();
   } else {
-    data.rowKey = Collection.primaryKeyAttribute;
+    data.rowKey = data.rowKey || Collection.primaryKeyAttribute;
     if (associatedName) {
       data.resourceName = `${associatedName}.${resourceName}`;
     } else {

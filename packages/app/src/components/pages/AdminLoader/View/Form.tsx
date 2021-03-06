@@ -79,18 +79,18 @@ export function fields2properties(fields = []) {
 const actions = createFormActions();
 
 export function Form(props: any) {
-  const { onFinish, resolve, data: record = {}, associatedKey, schema = {} } = props;
-  console.log({ record, associatedKey });
+  const { noRequest = false, onFinish, resolve, data: record = {}, associatedKey, schema = {} } = props;
+  console.log({ noRequest, record, associatedKey });
   const { resourceName, rowKey = 'id', fields = [], appends = [], associationField = {} } = schema;
 
   const resourceKey = props.resourceKey || record[associationField.targetKey||rowKey];
 
   const { data = {}, loading, refresh } = useRequest(() => {
-    return resourceKey ? api.resource(resourceName).get({
+    return (!noRequest && resourceKey) ? api.resource(resourceName).get({
       associatedKey,
       resourceKey,
       'fields[appends]': appends,
-    }) : Promise.resolve({data: {}});
+    }) : Promise.resolve({data: record});
   });
 
   if (loading) {
@@ -106,22 +106,31 @@ export function Form(props: any) {
         associatedKey,
         resourceKey,
       }}
+      effects={($, { setFieldState }) => {
+        // $(LifeCycleTypes.ON_FORM_INIT).subscribe(() => {
+        //   setFieldState('*', state => {
+        //     set(state.props, 'x-component-props.associatedKey', associatedKey);
+        //   })
+        // })
+      }}
       // actions={actions}
       schema={{
         type: 'object',
         properties: fields2properties(fields),
       }}
       onSubmit={async (values) => {
-        resourceKey 
-          ? await api.resource(resourceName).update({
-            associatedKey,
-            resourceKey,
-            values,
-          })
-          : await api.resource(resourceName).create({
-            associatedKey,
-            values,
-          });
+        if (!noRequest) {
+          resourceKey 
+            ? await api.resource(resourceName).update({
+              associatedKey,
+              resourceKey,
+              values,
+            })
+            : await api.resource(resourceName).create({
+              associatedKey,
+              values,
+            });
+        }
         onFinish && await onFinish(values);
       }}
       expressionScope={{

@@ -35,13 +35,34 @@ const schema = {
         title: '排序',
         component: {},
       },
+      // {
+      //   interface: 'string',
+      //   type: 'string',
+      //   name: 'name',
+      //   title: '视图',
+      //   component: {
+      //     type: 'string',
+      //   },
+      // },
       {
-        interface: 'string',
+        interface: 'linkTo',
         type: 'string',
-        name: 'name',
+        name: 'view',
+        target: 'views_v2',
+        // foreignKey: 'pageName',
+        // targetKey: 'id',
         title: '视图',
+        labelField: 'title',
+        valueField: 'name',
+        multiple: false,
         component: {
-          type: 'string',
+          type: 'drawerSelect',
+          'x-component-props': {
+            viewName: 'views_v2.table',
+            resourceName: 'views_v2',
+            labelField: 'title',
+            valueField: 'name',
+          },
         },
       },
       {
@@ -61,13 +82,35 @@ const schema = {
   },
   form: {
     fields: [
+      // {
+      //   interface: 'string',
+      //   type: 'string',
+      //   name: 'name',
+      //   title: '视图',
+      //   component: {
+      //     type: 'string',
+      //   },
+      // },
       {
-        interface: 'string',
-        type: 'string',
-        name: 'name',
+        interface: 'linkTo',
+        type: 'belongsTo',
+        name: 'view',
+        target: 'views_v2',
+        // foreignKey: 'pageName',
+        // targetKey: 'id',
         title: '视图',
+        labelField: 'title',
+        valueField: 'name',
+        multiple: false,
         component: {
-          type: 'string',
+          type: 'drawerSelect',
+          'x-component-props': {
+            multiple: false,
+            viewName: 'views_v2.table',
+            resourceName: 'views_v2',
+            labelField: 'title',
+            valueField: 'name',
+          },
         },
       },
       {
@@ -92,7 +135,8 @@ export function generateIndex(): string {
 }
 
 export default function Table(props: SimpleTableProps) {
-  const { rowKey = '__index', value, onChange } = props;
+  console.log({props});
+  const { associatedKey, rowKey = '__index', value, onChange } = props;
   const [dataSource, setDataSource] = useState(() => {
     if (!Array.isArray(value)) {
       return [];

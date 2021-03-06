@@ -7,6 +7,7 @@ import getRoutes from './actions/getRoutes';
 import getPageInfo from './actions/getPageInfo';
 import * as rolesPagesActions from './actions/roles.pages';
 import getCollections from './actions/getCollections';
+import menusList from './actions/menus:list';
 import getTree from './actions/getTree';
 import pageGetInfo from './actions/getInfo';
 import viewGetInfo from './actions/views_v2:getInfo';
@@ -39,6 +40,8 @@ export default async function (options = {}) {
   resourcer.registerActionHandler('pages_v2:getInfo', pageGetInfo);
   resourcer.registerActionHandler('views_v2:getInfo', viewGetInfo);
 
+  resourcer.registerActionHandler('menus:list', menusList);
+
   Object.keys(rolesPagesActions).forEach(actionName => {
     resourcer.registerActionHandler(`roles.pages:${actionName}`, rolesPagesActions[actionName]);
   });
@@ -46,6 +49,22 @@ export default async function (options = {}) {
   database.getModel('menus').addHook('beforeSave', async (model) => {
     console.log(model.get('pageName'));
   });
+
+  database.getModel('pages_v2').addHook('beforeValidate', async (model) => {
+    const collectionName = model.get('collection_name');
+    const name = model.get('name');
+    if (!model.get('path')) {
+      model.set('path', `${collectionName||'global'}.${name}`);
+    }
+  });
+
+  // database.getModel('views_v2').addHook('beforeValidate', async (model) => {
+  //   const collectionName = model.get('collection_name');
+  //   const name = model.get('name');
+  //   if (!model.get('path')) {
+  //     model.set('path', `${collectionName||'global'}.${name}`);
+  //   }
+  // });
 /*
   const [Collection, Page, View] = database.getModels(['collections', 'pages', 'views']);
 

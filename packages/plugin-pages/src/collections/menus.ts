@@ -68,15 +68,15 @@ export default {
       title: '菜单类型',
       required: true,
       dataSource: [
-        { value: 'group', label: '菜单组' },
-        { value: 'link', label: '自定义链接' },
-        { value: 'page', label: '页面' },
+        { value: 'group', label: '菜单组', color: 'red' },
+        { value: 'link', label: '自定义链接', color: 'orange' },
+        { value: 'page', label: '页面', color: 'green' },
       ],
       component: {
         'x-linkages': [
           {
             "type": "value:visible",
-            "target": "pageName",
+            "target": "page",
             "condition": "{{ $self.value === 'page' }}"
           },
           {
@@ -92,6 +92,27 @@ export default {
       type: 'string',
       name: 'pageName',
       title: '页面',
+    },
+    {
+      interface: 'linkTo',
+      type: 'belongsTo',
+      name: 'page',
+      target: 'pages_v2',
+      foreignKey: 'pageName',
+      targetKey: 'path',
+      title: '页面',
+      labelField: 'title',
+      valueField: 'path',
+      multiple: false,
+      component: {
+        type: 'drawerSelect',
+        'x-component-props': {
+          viewName: 'pages_v2.all_pages',
+          resourceName: 'pages_v2',
+          labelField: 'title',
+          valueField: 'path',
+        },
+      },
     },
     {
       interface: 'string',
@@ -200,6 +221,8 @@ export default {
           title: '删除',
         },
       ],
+      expandable: {},
+      paginated: false,
       fields: ['sort', 'icon', 'title', 'type'],
       detailsOpenMode: 'drawer', // window
       details: ['form'],
@@ -209,7 +232,7 @@ export default {
       type: 'form',
       name: 'form',
       title: '表单',
-      fields: ['type', 'parent', 'title', 'icon', 'url', 'pageName'],
+      fields: ['type', 'parent', 'title', 'icon', 'url', 'page'],
     },
   ],
   pages_v2: [

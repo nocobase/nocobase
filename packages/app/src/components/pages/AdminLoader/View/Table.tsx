@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, createRef } from 'react';
 import './style.less';
 import { Helmet } from 'umi';
 import { Spin } from '@nocobase/client';
@@ -65,6 +65,7 @@ export function Table(props: any) {
     data: record = {},
     defaultFilter,
     defaultSelectedRowKeys,
+    noRequest = false,
   } = props;
 
   const { 
@@ -79,9 +80,9 @@ export function Table(props: any) {
     resourceName,
     associationField = {},
     appends = [],
+    expandable,
     filter: schemaFilter = {},
   } = schema;
-
 
   const associatedKey = props.associatedKey || record[associationField.sourceKey||'id'];
   console.log({associatedKey, record, associationField})
@@ -120,6 +121,48 @@ export function Table(props: any) {
     defaultPageSize: defaultPerPage,
   });
 
+  function getExpandedRowKeys(items: Array<any>) {
+    if (!Array.isArray(items))  {
+      return [];
+    }
+    console.log({items})
+    let rowKeys = [];
+    items.forEach(item => {
+      if (item.children && item.children.length) {
+        rowKeys.push(item[rowKey]);
+        rowKeys = rowKeys.concat(getExpandedRowKeys(item.children));
+      }
+    });
+    return rowKeys;
+  }
+
+  const [expandedRowKeys, setExpandedRowKeys] = useState(() => {
+    if (expandable) {
+      return getExpandedRowKeys(data?.list);
+    }
+    return [];
+  });
+
+  useEffect(() => {
+    setExpandedRowKeys(getExpandedRowKeys(data?.list));
+  }, [data]);
+
+  if (expandable) {
+    expandable.onExpand = (expanded, record)  => {
+      if (!expanded) {
+        const index = expandedRowKeys.indexOf(record[rowKey]);
+        if (index >= 0) {
+          expandedRowKeys.splice(index, 1);
+        }
+      } else {
+        expandedRowKeys.push(record[rowKey]);
+      }
+      setExpandedRowKeys(expandedRowKeys);
+    }
+    expandable.expandedRowKeys = expandedRowKeys;
+    console.log({expandable, data});
+  }
+
   // const { data, loading, pagination, mutate, refresh, run, params } = useRequest((params = {}, ...args) => {
   //   const { current, pageSize, sorter, filter, ...restParams } = params;
   //   return api.resource(resourceName).list({
@@ -149,7 +192,7 @@ export function Table(props: any) {
   // console.log(srk);
   const tableProps: any = {};
 
-  if (actions.length) {
+  if (actions.length || defaultSelectedRowKeys) {
     tableProps.rowSelection = {
       type: multiple ? 'checkbox' : 'radio',
       selectedRowKeys,
@@ -157,18 +200,22 @@ export function Table(props: any) {
     }
   }
 
+  const ref = createRef<HTMLDivElement>();
+
   const dragProps = {
     async onDragEnd(fromIndex, toIndex) {
       const list = data?.list||(data as any);
-      const resourceKey = get(list, [fromIndex, rowKey]);
-      const targetIndex = get(list, [toIndex, rowKey]);
-      const newList = arrayMove(list, fromIndex, toIndex);
+      const nodes = ref.current.querySelectorAll('.ant-table-row');
+      const resourceKey = nodes[fromIndex].getAttribute('data-row-key');
+      const targetIndex = nodes[toIndex].getAttribute('data-row-key');
+      
+      // const newList = arrayMove(list, fromIndex, toIndex);
       // const item = list.splice(fromIndex, 1)[0];
       // list.splice(toIndex, 0, item);
-      mutate({
-        ...data,
-        list: newList,
-      });
+      // mutate({
+      //   ...data,
+      //   list: newList,
+      // });
       await api.resource(resourceName).sort({
         associatedKey,
         resourceKey,
@@ -180,7 +227,18 @@ export function Table(props: any) {
         },
       });
       await refresh();
-      console.log({fromIndex, toIndex, newList});
+
+      // console.log(nodes[fromIndex].getAttribute('data-row-key'), nodes[toIndex])
+      console.log({
+        // ref: ref.current.querySelectorAll('.ant-table-row'),
+        // fromIndex, toIndex, newList,
+        values: {
+              field: 'sort',
+              target: {
+                [rowKey]: targetIndex,
+              },
+            },
+      });
     },
     handleSelector: ".drag-handle",
     ignoreSelector: "tr.ant-table-expanded-row",
@@ -188,7 +246,7 @@ export function Table(props: any) {
   };
 
   return (
-    <div>
+    <div ref={ref}>
       <Actions associatedKey={associatedKey} onTrigger={{
         async create(values) {
           refresh();
@@ -229,6 +287,7 @@ export function Table(props: any) {
           onChange={(pagination, filters, sorter, extra) => {
             run({...params[0], sorter});
           }}
+          expandable={expandable}
           onRow={(data) => ({
             onClick: () => {
               Drawer.open({

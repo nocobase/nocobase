@@ -71,6 +71,8 @@ export function DrawerSelectComponent(props) {
                 console.log('valuevaluevaluevaluevaluevalue', selectedRowKeys, selectedRows, options);
                 const [rows, setRows] = useState(selectedRows);
                 const [rowKeys, setRowKeys] = useState(selectedRowKeys)
+                const [selected, setSelected] = useState(Array.isArray(value) ? value : [value]);
+                console.log({selectedRowKeys});
                 return (
                   <>
                     <View
@@ -79,6 +81,7 @@ export function DrawerSelectComponent(props) {
                       defaultFilter={filter}
                       defaultSelectedRowKeys={selectedRowKeys}
                       onSelected={(values) => {
+                        setSelected(values);
                         const [selectedKeys, selectedValue] = transform({value: values, multiple: true, labelField, valueField });
                         setSelectedRows(selectedValue);
                         setRows(selectedValue);
@@ -93,8 +96,8 @@ export function DrawerSelectComponent(props) {
                     <Button onClick={() => {
                         setOptions(rows);
                         // console.log('valuevaluevaluevaluevaluevalue', {selectedRowKeys});
-                        onChange(multiple ? rowKeys : rowKeys.shift());
-                        console.log({rows, rowKeys});
+                        onChange(multiple ? selected : selected.shift());
+                        // console.log({rows, rowKeys});
                         resolve();
                       }} type={'primary'}>确定</Button>
                     </Drawer.Footer>

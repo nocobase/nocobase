@@ -5,7 +5,7 @@ import Drawer from '@/components/pages/AdminLoader/Drawer';
 import View from '@/components/pages/AdminLoader/View';
 
 export function Create(props) {
-  const { onFinish, schema = {}, associatedKey } = props;
+  const { onFinish, schema = {}, associatedKey, ...restProps } = props;
   const { title, viewName } = schema;
   return (
     <>
@@ -16,6 +16,7 @@ export function Create(props) {
             content: ({resolve}) => (
               <div>
                 <View
+                  {...restProps}
                   associatedKey={associatedKey}
                   viewName={viewName}
                   onFinish={async (values) => {
@@ -35,7 +36,7 @@ export function Create(props) {
 }
 
 export function Update(props) {
-  const { onFinish, data, schema = {}, associatedKey } = props;
+  const { onFinish, data, schema = {}, associatedKey, ...restProps } = props;
   const { title, viewName } = schema;
   return (
     <>
@@ -46,6 +47,7 @@ export function Update(props) {
             content: ({resolve}) => (
               <div>
                 <View
+                  {...restProps}
                   associatedKey={associatedKey}
                   data={data}
                   viewName={viewName}
