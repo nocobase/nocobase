@@ -7,6 +7,7 @@ import { Drawer } from 'antd'
 import { DrawerProps } from 'antd/lib/drawer'
 import { useContext } from 'react'
 import { ConfigProvider } from 'antd'
+import zhCN from 'antd/lib/locale/zh_CN';
 
 export const usePrefixCls = (
   tag?: string,
@@ -89,12 +90,14 @@ export function FormDrawer(title: any, content: any): IFormDrawer {
   }
   const render = (visible = true, resolve?: () => any, reject?: () => any) => {
     ReactDOM.render(
-      <Drawer {...drawer} visible={visible}>
-        {createElement(content, {
-          resolve,
-          reject,
-        })}
-      </Drawer>,
+      <ConfigProvider locale={zhCN}>
+        <Drawer {...drawer} visible={visible}>
+          {createElement(content, {
+            resolve,
+            reject,
+          })}
+        </Drawer>
+      </ConfigProvider>,
       env.root
     )
   }

@@ -49,12 +49,6 @@ export default {
       title: '单条数据子页面',
     },
     {
-      interface: 'json',
-      type: 'virtual',
-      name: 'views',
-      title: '视图',
-    },
-    {
       interface: 'linkTo',
       type: 'belongsTo',
       name: 'collection',

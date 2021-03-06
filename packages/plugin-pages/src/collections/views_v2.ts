@@ -1,4 +1,9 @@
 import { TableOptions } from '@nocobase/database';
+import { getViewFields } from '../views';
+
+const fields = getViewFields();
+
+// console.log(JSON.stringify(fields, null, 2));
 
 export default {
   name: 'views_v2',
@@ -30,18 +35,58 @@ export default {
       developerMode: true,
     },
     {
-      interface: 'json',
-      type: 'virtual',
-      name: 'details',
-      title: '子页面',
+      interface: 'boolean',
+      type: 'boolean',
+      name: 'isAssociation',
+      title: '作为相关数据视图',
     },
+    {
+      interface: 'select',
+      type: 'virtual',
+      title: '相关数据',
+      name: 'targetFieldName',
+      required: true,
+      component: {
+        type: 'remoteSelect',
+        resourceName: 'collections.fields',
+        labelField: 'title',
+        valueField: 'name',
+      },
+    },
+    {
+      interface: 'select',
+      type: 'virtual',
+      title: '相关数据表的视图',
+      name: 'targetViewName',
+      required: true,
+      component: {
+        type: 'remoteSelect',
+        resourceName: 'collections.views',
+        labelField: 'title',
+        valueField: 'name',
+      },
+    },
+    ...fields,
     {
       interface: 'linkTo',
       type: 'belongsTo',
       name: 'collection',
-      title: '所属数据表',
       target: 'collections',
       targetKey: 'name',
+      title: '所属数据表',
+      labelField: 'title',
+      valueField: 'name',
+      multiple: false,
+      component: {
+        type: 'remoteSelect',
+        showInDetail: true,
+        showInForm: true,
+        'x-component-props': {
+          resourceName: 'collections',
+          labelField: 'title',
+          valueField: 'name',
+        },
+      },
     },
     {
       interface: 'json',
@@ -129,7 +174,10 @@ export default {
           title: '删除',
         },
       ],
-      fields: ['title'],
+      fields: [
+        'title',
+        'type',
+      ],
       openMode: 'drawer', // window
       details: ['form'],
       sort: ['id'],
@@ -138,7 +186,13 @@ export default {
       type: 'form',
       name: 'form',
       title: '表单',
-      fields: ['title'],
+      fields: [
+        'title',
+        'isAssociation',
+        'targetFieldName',
+        'targetViewName',
+        ...fields.map(field => field.name),
+      ],
     },
   ],
   pages_v2: [

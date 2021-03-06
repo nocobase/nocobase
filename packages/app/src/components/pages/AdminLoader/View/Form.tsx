@@ -30,6 +30,8 @@ export function fields2properties(fields = []) {
       title: field.title,
       required: field.required,
     };
+    const linkages = field.linkages;
+    delete field.linkages;
     set(data, 'x-component-props.schema', cloneDeep(field));
     if (field.dataSource) {
       data.enum = field.dataSource;
@@ -67,6 +69,9 @@ export function fields2properties(fields = []) {
       });
       set(data, 'items.properties', property);
     }
+    if (linkages) {
+      data['x-linkages'] = linkages;
+    }
   });
   console.log({properties});
   return properties;
@@ -75,7 +80,7 @@ const actions = createFormActions();
 
 export function Form(props: any) {
   const { onFinish, resolve, data: record = {}, associatedKey, schema = {} } = props;
-  console.log({ record });
+  console.log({ record, associatedKey });
   const { resourceName, rowKey = 'id', fields = [], appends = [], associationField = {} } = schema;
 
   const resourceKey = props.resourceKey || record[associationField.targetKey||rowKey];

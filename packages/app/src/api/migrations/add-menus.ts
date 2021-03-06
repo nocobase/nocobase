@@ -1,5 +1,6 @@
 import api from '../app';
 import Database from '@nocobase/database';
+import views_v2 from '@nocobase/plugin-pages/src/collections/views_v2';
 
 (async () => {
   await api.loadPlugins();
@@ -19,17 +20,24 @@ import Database from '@nocobase/database';
 
   const collection = await Collection.findOne({
     where: {
-      name: 'authors',
+      name: 'views_v2',
     }
   });
 
-  const authors = require('./collections/authors').default;
-
-  console.log(authors.views_v2);
-
   await collection.updateAssociations({
-    views_v2: authors.views_v2,
+    fields: views_v2.fields,
+    views_v2: views_v2.views_v2,
   });
+
+  // const authors = require('./collections/authors').default;
+
+  console.log('views_v2.fields', views_v2.fields.map(field=>field.name));
+
+  // await collection.updateAssociations({
+  //   views_v2: authors.views_v2,
+  // });
+
+
 
   const tables = database.getTables([
     'collections', 
