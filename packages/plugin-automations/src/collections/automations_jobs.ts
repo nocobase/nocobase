@@ -180,7 +180,7 @@ export default {
         },
       ],
       fields: ['title', 'type'],
-      openMode: 'drawer', // window
+      detailsOpenMode: 'drawer', // window
       details: ['form'],
       sort: ['id'],
     },

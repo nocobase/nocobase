@@ -224,7 +224,7 @@ export default {
         },
       ],
       fields: ['title'],
-      openMode: 'drawer', // window
+      detailsOpenMode: 'drawer', // window
       details: ['descriptions', 'collections', 'pages'],
       sort: ['id'],
     },

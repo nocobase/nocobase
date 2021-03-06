@@ -3,8 +3,6 @@ import { getViewFields } from '../views';
 
 const fields = getViewFields();
 
-// console.log(JSON.stringify(fields, null, 2));
-
 export default {
   name: 'views_v2',
   title: '视图配置',
@@ -35,10 +33,31 @@ export default {
       developerMode: true,
     },
     {
-      interface: 'boolean',
+      interface: 'radio',
       type: 'boolean',
-      name: 'isAssociation',
-      title: '作为相关数据视图',
+      name: 'dataSourceType',
+      title: '数据来源',
+      dataSource: [
+        { label: '当前数据表', value: 'collection' },
+        { label: '相关数据表', value: 'association' },
+      ],
+      linkages: [
+        {
+          "type": "value:visible",
+          "target": "targetFieldName",
+          "condition": "{{ $self.value === 'association' }}"
+        },
+        {
+          "type": "value:visible",
+          "target": "targetViewName",
+          "condition": "{{ $self.value === 'association' }}"
+        },
+        {
+          "type": "value:visible",
+          "target": "type",
+          "condition": "{{ $self.value === 'collection' }}"
+        },
+      ],
     },
     {
       interface: 'select',
@@ -178,7 +197,7 @@ export default {
         'title',
         'type',
       ],
-      openMode: 'drawer', // window
+      detailsOpenMode: 'drawer', // window
       details: ['form'],
       sort: ['id'],
     },
@@ -188,7 +207,7 @@ export default {
       title: '表单',
       fields: [
         'title',
-        'isAssociation',
+        'dataSourceType',
         'targetFieldName',
         'targetViewName',
         ...fields.map(field => field.name),

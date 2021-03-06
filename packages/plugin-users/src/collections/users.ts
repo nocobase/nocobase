@@ -161,7 +161,7 @@ export default {
         },
       ],
       fields: ['username', 'nickname', 'phone', 'roles'],
-      openMode: 'drawer', // window
+      detailsOpenMode: 'drawer', // window
       details: ['form'],
       sort: ['id'],
     },

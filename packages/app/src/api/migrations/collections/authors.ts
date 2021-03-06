@@ -118,7 +118,7 @@ export default {
         },
       ],
       fields: ['name'],
-      openMode: 'drawer', // window
+      detailsOpenMode: 'drawer', // window
       details: ['descriptions', 'books'],
       sort: ['id'],
     },

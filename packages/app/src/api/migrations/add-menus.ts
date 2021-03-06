@@ -138,7 +138,7 @@ import views_v2 from '@nocobase/plugin-pages/src/collections/views_v2';
           title: '页面配置',
           icon: 'MenuOutlined',
           type: 'page',
-          pageName: 'pages_v2.pages',
+          pageName: 'pages_v2.globals',
         },
         {
           title: '权限配置',

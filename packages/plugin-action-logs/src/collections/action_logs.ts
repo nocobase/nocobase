@@ -126,7 +126,7 @@ export default {
         },
       ],
       fields: ['created_at', 'user', 'collection', 'type', 'index'],
-      openMode: 'drawer', // window
+      detailsOpenMode: 'drawer', // window
       details: ['descriptions'],
       sort: ['id'],
     },

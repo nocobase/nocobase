@@ -508,7 +508,7 @@ export default {
         },
       ],
       fields: ['sort', 'title'],
-      openMode: 'drawer', // window
+      detailsOpenMode: 'drawer', // window
       details: ['descriptions', 'fields', 'views', 'pages'],
       sort: ['sort'],
     },
@@ -519,7 +519,7 @@ export default {
       labelField: 'title',
       actions: [],
       fields: ['title'],
-      openMode: 'drawer', // window
+      detailsOpenMode: 'drawer', // window
       details: ['permissions_form'],
       sort: ['id'],
     },
@@ -611,7 +611,7 @@ export default {
       type: 'association',
       name: 'pages',
       title: '页面',
-      targetViewName: 'table',
+      targetViewName: 'collection_pages',
       targetFieldName: 'pages_v2',
     },
   ],

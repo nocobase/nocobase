@@ -103,7 +103,7 @@ export default {
         },
       ],
       fields: ['name'],
-      openMode: 'drawer', // window
+      detailsOpenMode: 'drawer', // window
       details: ['descriptions', 'form'],
       sort: ['id'],
     },

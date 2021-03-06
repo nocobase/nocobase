@@ -653,7 +653,7 @@ export default {
         },
       ],
       fields: ['sort', 'title', 'interface'],
-      openMode: 'drawer', // window
+      detailsOpenMode: 'drawer', // window
       details: ['form'],
       sort: ['sort'],
     },

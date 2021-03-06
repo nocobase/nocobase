@@ -527,7 +527,7 @@ export default {
         },
       ],
       fields: ['title', 'description', 'type', 'enabled'],
-      openMode: 'drawer', // window
+      detailsOpenMode: 'drawer', // window
       details: ['descriptions', 'jobs'],
       sort: ['id'],
     },

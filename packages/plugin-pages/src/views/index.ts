@@ -89,6 +89,5 @@ export function getViewFields() {
       fields.set(`x-${key}-props.${name}`, property);
     });
   }
-  console.log([...fields.values()].map(field => field.name));
   return [...fields.values()];
 }

@@ -201,7 +201,7 @@ export default {
         },
       ],
       fields: ['sort', 'icon', 'title', 'type'],
-      openMode: 'drawer', // window
+      detailsOpenMode: 'drawer', // window
       details: ['form'],
       sort: ['sort'],
     },

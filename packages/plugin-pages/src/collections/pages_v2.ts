@@ -35,18 +35,11 @@ export default {
       name: 'type',
       title: '类型',
       required: true,
-      defaultValue: 'default',
+      defaultValue: 'static',
       dataSource: [
-        { value: 'default', label: '页面' },
-        { value: 'collection', label: '数据集' },
+        { value: 'static', label: '多条数据页面' },
+        { value: 'dynamic', label: '单条数据子页面' },
       ],
-    },
-    {
-      interface: 'boolean',
-      type: 'boolean',
-      name: 'dynamic',
-      defaultValue: false,
-      title: '单条数据子页面',
     },
     {
       interface: 'linkTo',
@@ -148,8 +141,8 @@ export default {
   views_v2: [
     {
       type: 'table',
-      name: 'table',
-      title: '全部数据',
+      name: 'collection_pages',
+      title: '数据表页面',
       labelField: 'title',
       actions: [
         {
@@ -164,9 +157,35 @@ export default {
           title: '删除',
         },
       ],
-      fields: ['title', 'collection'],
-      openMode: 'drawer', // window
+      fields: ['title'],
+      detailsOpenMode: 'drawer', // window
       details: ['form'],
+      sort: ['id'],
+    },
+    {
+      type: 'table',
+      name: 'global_pages',
+      title: '独立页面',
+      labelField: 'title',
+      actions: [
+        {
+          name: 'create',
+          type: 'create',
+          title: '新增',
+          viewName: 'global_form',
+        },
+        {
+          name: 'destroy',
+          type: 'destroy',
+          title: '删除',
+        },
+      ],
+      filter: {
+        collection_name: null,
+      },
+      fields: ['title'],
+      detailsOpenMode: 'drawer', // window
+      details: ['global_form'],
       sort: ['id'],
     },
     {
@@ -176,7 +195,7 @@ export default {
       labelField: 'title',
       actions: [],
       fields: ['title'],
-      openMode: 'drawer', // window
+      detailsOpenMode: 'drawer', // window
       details: ['form'],
       sort: ['id'],
     },
@@ -184,19 +203,24 @@ export default {
       type: 'form',
       name: 'form',
       title: '表单',
-      fields: ['title', 'collection', 'views'],
+      fields: ['title', 'views'],
+    },
+    {
+      type: 'form',
+      name:  'global_form',
+      fields: ['title', 'views'],
     },
   ],
   pages_v2: [
     {
       title: '表格',
-      name: 'all',
-      views: ['table'],
+      name: 'collections',
+      views: ['collection_pages'],
     },
     {
       title: '独立页面',
-      name: 'pages',
-      views: ['table'],
+      name: 'globals',
+      views: ['global_pages'],
     },
     {
       title: '表单',
