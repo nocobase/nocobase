@@ -123,6 +123,16 @@ export default {
       defaultValue: {},
       developerMode: true,
     },
+    {
+      interface: 'boolean',
+      type: 'boolean',
+      name: 'developerMode',
+      title: '开发者模式',
+      defaultValue: false,
+      component: {
+        type: 'boolean',
+      },
+    },
   ],
   actions: [
     {
@@ -184,6 +194,7 @@ export default {
   ],
   views_v2: [
     {
+      developerMode: true,
       type: 'table',
       name: 'all_pages',
       title: '全部页面',
@@ -208,6 +219,7 @@ export default {
       ],
     },
     {
+      developerMode: true,
       type: 'table',
       name: 'collection_pages',
       title: '数据表页面',
@@ -231,6 +243,7 @@ export default {
       sort: ['id'],
     },
     {
+      developerMode: true,
       type: 'table',
       name: 'global_pages',
       title: '独立页面',
@@ -257,6 +270,7 @@ export default {
       sort: ['id'],
     },
     {
+      developerMode: true,
       type: 'table',
       name: 'permissions_table',
       title: '全部数据',
@@ -268,12 +282,14 @@ export default {
       sort: ['id'],
     },
     {
+      developerMode: true,
       type: 'form',
       name: 'form',
       title: '表单',
       fields: ['title', 'type', 'views', 'pages_views'],
     },
     {
+      developerMode: true,
       type: 'form',
       name:  'global_form',
       title:  '独立页面表单',
@@ -282,21 +298,25 @@ export default {
   ],
   pages_v2: [
     {
+      developerMode: true,
       title: '表格',
       name: 'collections',
       views: ['collection_pages'],
     },
     {
+      developerMode: true,
       title: '独立页面',
       name: 'globals',
       views: ['global_pages'],
     },
     {
+      developerMode: true,
       title: '表单',
       name: 'form',
       views: ['form'],
     },
     {
+      developerMode: true,
       title: '独立页面表单',
       name: 'global_form',
       views: ['global_form'],

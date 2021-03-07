@@ -114,6 +114,7 @@ export default {
   ],
   views_v2: [
     {
+      developerMode: true,
       type: 'table',
       name: 'table',
       title: '全部数据',
@@ -131,6 +132,7 @@ export default {
       sort: ['id'],
     },
     {
+      developerMode: true,
       type: 'descriptions',
       name: 'descriptions',
       title: '详情',
@@ -140,11 +142,13 @@ export default {
   ],
   pages_v2: [
     {
+      developerMode: true,
       title: '操作日志',
       name: 'all',
       views: ['table'],
     },
     {
+      developerMode: true,
       title: '详情',
       name: 'descriptions',
       views: ['descriptions'],

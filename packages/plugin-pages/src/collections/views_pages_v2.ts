@@ -21,6 +21,7 @@ export default {
   ],
   views_v2: [
     {
+      developerMode: true,
       type: 'table',
       name: 'table',
       title: '全部数据',
@@ -46,6 +47,7 @@ export default {
       sort: ['id'],
     },
     {
+      developerMode: true,
       type: 'form',
       name: 'form',
       title: '表单',
@@ -56,11 +58,13 @@ export default {
   ],
   pages_v2: [
     {
+      developerMode: true,
       title: '表格',
       name: 'all',
       views: ['table'],
     },
     {
+      developerMode: true,
       title: '表单',
       name: 'form',
       views: ['form'],

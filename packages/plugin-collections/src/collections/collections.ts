@@ -490,6 +490,7 @@ export default {
   ],
   views_v2: [
     {
+      developerMode: true,
       type: 'table',
       name: 'table',
       title: '全部数据',
@@ -513,6 +514,7 @@ export default {
       sort: ['sort'],
     },
     {
+      developerMode: true,
       type: 'table',
       name: 'permissions_table',
       title: '全部数据',
@@ -524,6 +526,7 @@ export default {
       sort: ['id'],
     },
     {
+      developerMode: true,
       type: 'form',
       name: 'permissions_form',
       title: '表单',
@@ -574,12 +577,14 @@ export default {
       ],
     },
     {
+      developerMode: true,
       type: 'form',
       name: 'form',
       title: '表单',
       fields: ['title'],
     },
     {
+      developerMode: true,
       type: 'descriptions',
       name: 'descriptions',
       title: '详情',
@@ -594,6 +599,7 @@ export default {
       ],
     },
     {
+      developerMode: true,
       type: 'association',
       name: 'fields',
       title: '字段',
@@ -601,6 +607,7 @@ export default {
       targetFieldName: 'fields',
     },
     {
+      developerMode: true,
       type: 'association',
       name: 'views',
       title: '视图',
@@ -608,6 +615,7 @@ export default {
       targetFieldName: 'views_v2',
     },
     {
+      developerMode: true,
       type: 'association',
       name: 'pages',
       title: '页面',
@@ -617,36 +625,43 @@ export default {
   ],
   pages_v2: [
     {
+      developerMode: true,
       title: '数据表配置',
       name: 'all',
       views: ['table'],
     },
     {
+      developerMode: true,
       title: '详情',
       name: 'descriptions',
       views: ['descriptions'],
     },
     {
+      developerMode: true,
       title: '表单',
       name: 'form',
       views: ['form'],
     },
     {
+      developerMode: true,
       title: '权限配置表单',
       name: 'permissions_form',
       views: ['permissions_form'],
     },
     {
+      developerMode: true,
       title: '字段',
       name: 'fields',
       views: ['fields'],
     },
     {
+      developerMode: true,
       title: '视图',
       name: 'views',
       views: ['views'],
     },
     {
+      developerMode: true,
       title: '页面',
       name: 'pages',
       views: ['pages'],

@@ -206,6 +206,7 @@ export default {
   ],
   views_v2: [
     {
+      developerMode: true,
       type: 'table',
       name: 'table',
       title: '全部数据',
@@ -229,6 +230,7 @@ export default {
       sort: ['id'],
     },
     {
+      developerMode: true,
       type: 'descriptions',
       name: 'descriptions',
       title: '详情',
@@ -243,12 +245,14 @@ export default {
       ],
     },
     {
+      developerMode: true,
       type: 'form',
       name: 'form',
       title: '表单',
       fields: ['title'],
     },
     {
+      developerMode: true,
       type: 'association',
       name: 'collections',
       title: '数据表权限视图',
@@ -256,6 +260,7 @@ export default {
       targetFieldName: 'collections',
     },
     {
+      developerMode: true,
       type: 'association',
       name: 'pages',
       title: '页面权限视图',
@@ -265,26 +270,31 @@ export default {
   ],
   pages_v2: [
     {
+      developerMode: true,
       title: '全部',
       name: 'all',
       views: ['table'],
     },
     {
+      developerMode: true,
       title: '详情',
       name: 'descriptions',
       views: ['descriptions'],
     },
     {
+      developerMode: true,
       title: '表单',
       name: 'form',
       views: ['form'],
     },
     {
+      developerMode: true,
       title: '数据表权限',
       name: 'collections',
       views: ['collections'],
     },
     {
+      developerMode: true,
       title: '页面权限',
       name: 'pages',
       views: ['pages'],
