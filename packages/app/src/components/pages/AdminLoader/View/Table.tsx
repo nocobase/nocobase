@@ -90,6 +90,13 @@ export function Table(props: any) {
   const associatedKey = props.associatedKey || record[associationField.sourceKey||'id'];
   console.log({associatedKey, record, associationField, __parent})
 
+  async function reloadMenu() {
+    if (resourceName !== 'menus') {
+      return;
+    }
+    (window as any).reloadMenu && await (window as any).reloadMenu();
+  }
+
   const { data, loading, pagination, mutate, refresh, run, params } = useRequest((params = {}, ...args) => {
     const { current, pageSize, sorter, filter, ...restParams } = params;
     console.log('paramsparamsparamsparamsparams', params, args);
@@ -233,6 +240,7 @@ export function Table(props: any) {
         },
       });
       await refresh();
+      await reloadMenu();
 
       // console.log(nodes[fromIndex].getAttribute('data-row-key'), nodes[toIndex])
       console.log({
@@ -256,9 +264,11 @@ export function Table(props: any) {
       <Actions __parent={__parent} associatedKey={associatedKey} onTrigger={{
         async create(values) {
           await refresh();
+          await reloadMenu();
         },
         async update(values) {
           await refresh();
+          await reloadMenu();
         },
         async filter(values) {
           const items = values.filter.and || values.filter.or;
@@ -276,6 +286,7 @@ export function Table(props: any) {
             });
           }
           refresh();
+          await reloadMenu();
         },
       }} actions={actions} style={{ marginBottom: 14 }}/>
       <ReactDragListView {...dragProps}>
@@ -314,12 +325,14 @@ export function Table(props: any) {
                       __parent={__parent}
                       associatedKey={associatedKey} 
                       resourceName={resourceName} 
-                      onFinish={() => {
-                        refresh();
+                      onFinish={async () => {
+                        await refresh();
                         resolve();
+                        await reloadMenu();
                       }}
-                      onDataChange={() => {
-                        refresh();
+                      onDataChange={async () => {
+                        await refresh();
+                        await reloadMenu();
                       }}
                       data={data}
                       resolve={resolve}

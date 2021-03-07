@@ -10,6 +10,9 @@ import { Spin } from '@nocobase/client';
 
 export function AdminLoader(props: any) {
   const { data = [], error, loading, run } = useRequest(() => api.resource('menus').getTree());
+  (window as any).reloadMenu = async () => {
+    await run();
+  };
   const { lastPage: { path } } = props;
   const location = useLocation();
   const match = pathToRegexp(`${path}/:path?`).exec(location.pathname);
