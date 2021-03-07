@@ -255,10 +255,10 @@ export function Table(props: any) {
     <div ref={ref}>
       <Actions __parent={__parent} associatedKey={associatedKey} onTrigger={{
         async create(values) {
-          refresh();
+          await refresh();
         },
         async update(values) {
-          refresh();
+          await refresh();
         },
         async filter(values) {
           const items = values.filter.and || values.filter.or;

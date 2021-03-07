@@ -22,6 +22,7 @@ export function Create(props) {
                   viewName={viewName}
                   onFinish={async (values) => {
                     await resolve();
+                    console.log('onFinish', values);
                     onFinish && await onFinish(values);
                   }}
                 />
@@ -164,10 +165,10 @@ export function Actions(props) {
   return actions.length > 0 && (
     <div className={'action-buttons'} style={style}>
       {actions.map(action => (
-        <div className={`${action.name}-action-button action-button`}>
+        <div className={`${action.type}-action-button action-button`}>
           <Action
             {...restProps}
-            onFinish={onTrigger[action.name]}
+            onFinish={onTrigger[action.type]}
             schema={action}
           />
         </div>
