@@ -15,12 +15,25 @@ export default {
       name: 'type',
       title: '操作类型',
       dataSource: [
+        { label: '过滤', value: 'filter' },
         { label: '新增', value: 'create' },
         { label: '编辑', value: 'update' },
         { label: '删除', value: 'destroy' },
       ],
       component: {
         type: 'radio',
+        'x-linkages': [
+          {
+            "type": "value:visible",
+            "target": "view",
+            "condition": "{{ $self.value === 'create' || $self.value === 'update' }}"
+          },
+          // {
+          //   "type": "value:visible",
+          //   "target": "fields",
+          //   "condition": "{{ $self.value === 'filter' }}"
+          // },
+        ],
       },
     },
     {
@@ -39,6 +52,26 @@ export default {
       title: '操作名称',
       component: {
         type: 'string',
+      },
+    },
+    {
+      interface: 'linkTo',
+      type: 'belongsTo',
+      name: 'view',
+      target: 'views_v2',
+      title: '视图',
+      labelField: 'title',
+      valueField: 'id',
+      multiple: false,
+      required: true,
+      component: {
+        type: 'drawerSelect',
+        'x-component-props': {
+          viewName: 'views_v2.table',
+          resourceName: 'views_v2',
+          labelField: 'title',
+          valueField: 'id',
+        },
       },
     },
   ],
@@ -78,6 +111,7 @@ export default {
       fields: [
         'type',
         'title',
+        'view'
       ],
     },
   ],

@@ -18,6 +18,25 @@ export default {
         type: 'string',
       },
     },
+    {
+      interface: 'linkTo',
+      type: 'belongsTo',
+      name: 'field',
+      target: 'fields',
+      title: '字段',
+      labelField: 'title',
+      valueField: 'id',
+      multiple: false,
+      component: {
+        type: 'drawerSelect',
+        'x-component-props': {
+          viewName: 'fields.table',
+          resourceName: 'fields',
+          labelField: 'title',
+          valueField: 'id',
+        },
+      },
+    },
   ],
   views_v2: [
     {
@@ -41,6 +60,7 @@ export default {
       ],
       fields: [
         'title',
+        'field',
       ],
       detailsOpenMode: 'drawer', // window
       details: ['form'],
@@ -53,6 +73,7 @@ export default {
       title: '表单',
       fields: [
         'title',
+        'field',
       ],
     },
   ],

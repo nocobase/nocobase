@@ -30,7 +30,7 @@ function transform({value, multiple, labelField, valueField = 'id'}) {
 }
 
 export function DrawerSelectComponent(props) {
-  const { size, schema = {}, disabled, viewName, target, multiple, filter, resourceName, associatedKey, labelField, valueField = 'id', value, onChange } = props;
+  const { __parent, size, schema = {}, disabled, viewName, target, multiple, filter, resourceName, associatedKey, labelField, valueField = 'id', value, onChange } = props;
   const [selectedKeys, selectedValue] = transform({value, multiple, labelField, valueField });
   const [selectedRowKeys, setSelectedRowKeys] = useState(multiple ? selectedKeys : [selectedKeys]);
   const [selectedRows, setSelectedRows] = useState(selectedValue);
@@ -76,6 +76,7 @@ export function DrawerSelectComponent(props) {
                 return (
                   <>
                     <View
+                      __parent={__parent}
                       associatedKey={associatedKey}
                       multiple={multiple}
                       defaultFilter={filter}

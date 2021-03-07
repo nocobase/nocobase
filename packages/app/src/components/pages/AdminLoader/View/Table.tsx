@@ -19,7 +19,7 @@ import { View } from './';
 export const icon = <LoadingOutlined style={{ fontSize: 36 }} spin />;
 
 export function Details(props) {
-  const { associatedKey, resourceName, onFinish, onDataChange, data, pages = [], resolve } = props;
+  const { __parent, associatedKey, resourceName, onFinish, onDataChange, data, pages = [], resolve } = props;
   if (!pages || pages.length === 0) {
     return null;
   }
@@ -28,18 +28,20 @@ export function Details(props) {
   return (
     <div className={'page-tabs'}>
       { pages.length > 1 && (
-        <Tabs activeKey={`${id}`} onChange={(pageId) => {
-          console.log(pageId);
-          const p = pages.find(page => page.id == pageId);
-          if (p) {
-            setPage(p);
-          }
-        }}>
-          {pages.map(page => (
-            <Tabs.TabPane tab={page.title} key={page.id}>
-            </Tabs.TabPane>
-          ))}
-        </Tabs>
+        <div className={'tabs-wrap'}>
+          <Tabs size={'small'} activeKey={`${id}`} onChange={(pageId) => {
+            console.log(pageId);
+            const p = pages.find(page => page.id == pageId);
+            if (p) {
+              setPage(p);
+            }
+          }}>
+            {pages.map(page => (
+              <Tabs.TabPane tab={page.title} key={page.id}>
+              </Tabs.TabPane>
+            ))}
+          </Tabs>
+        </div>
       ) }
       {views.map(view => {
         let viewName: string;
@@ -49,7 +51,7 @@ export function Details(props) {
           viewName = `${resourceName}.${view.name}`;
         }
         return (
-          <View associatedKey={associatedKey} onFinish={onFinish} onDataChange={onDataChange} data={data} viewName={viewName}/>
+          <View __parent={__parent} associatedKey={associatedKey} onFinish={onFinish} onDataChange={onDataChange} data={data} viewName={viewName}/>
         );
       })}
     </div>
@@ -66,6 +68,7 @@ export function Table(props: any) {
     defaultFilter,
     defaultSelectedRowKeys,
     noRequest = false,
+    __parent,
   } = props;
 
   const { 
@@ -85,7 +88,7 @@ export function Table(props: any) {
   } = schema;
 
   const associatedKey = props.associatedKey || record[associationField.sourceKey||'id'];
-  console.log({associatedKey, record, associationField})
+  console.log({associatedKey, record, associationField, __parent})
 
   const { data, loading, pagination, mutate, refresh, run, params } = useRequest((params = {}, ...args) => {
     const { current, pageSize, sorter, filter, ...restParams } = params;
@@ -104,6 +107,9 @@ export function Table(props: any) {
           defaultFilter,
           schemaFilter,
           filter,
+          __parent ? {
+            collection_name: __parent,
+          } : null,
         ].filter(obj => obj && Object.keys(obj).length)
       }
       // ...args2,
@@ -247,7 +253,7 @@ export function Table(props: any) {
 
   return (
     <div ref={ref}>
-      <Actions associatedKey={associatedKey} onTrigger={{
+      <Actions __parent={__parent} associatedKey={associatedKey} onTrigger={{
         async create(values) {
           refresh();
         },
@@ -291,13 +297,21 @@ export function Table(props: any) {
           onRow={(data) => ({
             onClick: () => {
               Drawer.open({
-                title: details.length > 1 ? undefined : data[labelField],
+                headerStyle: details.length > 1 ? {
+                  paddingBottom: 0,
+                  borderBottom: 0,
+                  // paddingTop: 16,
+                  // marginBottom: -4,
+                } : {},
+                // title: details.length > 1 ? undefined : data[labelField],
+                title: data[labelField],
                 bodyStyle: {
                   // padding: 0,
                 },
                 content: ({resolve}) => (
                   <div>
                     <Details 
+                      __parent={__parent}
                       associatedKey={associatedKey} 
                       resourceName={resourceName} 
                       onFinish={() => {

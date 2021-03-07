@@ -5,11 +5,12 @@ import Drawer from '@/components/pages/AdminLoader/Drawer';
 import View from '@/components/pages/AdminLoader/View';
 
 export function Create(props) {
-  const { onFinish, schema = {}, associatedKey, ...restProps } = props;
+  const { size, onFinish, schema = {}, associatedKey, ...restProps } = props;
   const { title, viewName } = schema;
   return (
     <>
       <Button 
+        size={size}
         onClick={() => {
           Drawer.open({
             title: title,
@@ -68,13 +69,14 @@ export function Update(props) {
 }
 
 export function Destroy(props) {
-  const { schema = {}, onFinish } = props;
+  const { size, schema = {}, onFinish } = props;
   const { title } = schema;
   return (
     <Popconfirm title="确认删除吗？" onConfirm={async () => {
       onFinish && await onFinish();
     }}>
       <Button
+        size={size}
         danger
         type={'ghost'}
         icon={<DeleteOutlined />}

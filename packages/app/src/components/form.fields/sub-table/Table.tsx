@@ -25,12 +25,12 @@ export function generateIndex(): string {
 }
 
 export default function Table(props: SimpleTableProps) {
-  const { schema = {}, associatedKey, value, onChange } = props;
-  console.log({associatedKey, schema})
+  const { schema = {}, associatedKey, value, onChange, __parent } = props;
+  console.log({associatedKey, schema, __parent})
   const { collection_name, name } = schema;
   return (
     <>
-      <View data={value} onChange={onChange} associatedKey={associatedKey} viewName={`${collection_name}.${name}.table`} type={'subTable'}/>
+      <View __parent={__parent} data={value} onChange={onChange} associatedKey={associatedKey} viewName={`${collection_name}.${name}.table`} type={'subTable'}/>
     </>
   )
 }

@@ -10,7 +10,6 @@ export default {
   updatedAt: false,
   fields: [
     {
-      developerMode: true,
       interface: 'linkTo',
       type: 'belongsTo',
       name: 'view',
@@ -30,7 +29,6 @@ export default {
       },
     },
     {
-      developerMode: true,
       interface: 'radio',
       type: 'string',
       name: 'width',

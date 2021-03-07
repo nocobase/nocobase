@@ -18,6 +18,25 @@ export default {
         type: 'string',
       },
     },
+    {
+      interface: 'linkTo',
+      type: 'belongsTo',
+      name: 'page',
+      target: 'pages_v2',
+      title: '关联的页面',
+      labelField: 'title',
+      valueField: 'id',
+      multiple: false,
+      component: {
+        type: 'drawerSelect',
+        'x-component-props': {
+          viewName: 'pages_v2.collection_pages',
+          resourceName: 'pages_v2',
+          labelField: 'title',
+          valueField: 'id',
+        },
+      },
+    },
   ],
   views_v2: [
     {
@@ -41,6 +60,7 @@ export default {
       ],
       fields: [
         'title',
+        'page',
       ],
       detailsOpenMode: 'drawer', // window
       details: ['form'],
@@ -53,6 +73,7 @@ export default {
       title: '表单',
       fields: [
         'title',
+        'page',
       ],
     },
   ],

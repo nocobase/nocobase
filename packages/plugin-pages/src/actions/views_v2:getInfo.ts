@@ -2,6 +2,7 @@ import { ResourceOptions } from '@nocobase/resourcer';
 import { Model, ModelCtor } from '@nocobase/database';
 import actions from '@nocobase/actions';
 import { merge } from '../utils';
+import _ from 'lodash';
 
 export const getInfo = async (ctx: actions.Context, next) => {
   const { resourceKey } = ctx.action.params;
@@ -42,7 +43,7 @@ export const getInfo = async (ctx: actions.Context, next) => {
       collection_name: collectionName
     },
   });
-  
+  let viewData = view.toJSON();
   const Collection = ctx.db.getModel(collectionName) as ModelCtor<Model>;
   // const items = await view.getPages(Page.parseApiJson({
   //   sort: ['sort'],
@@ -60,14 +61,21 @@ export const getInfo = async (ctx: actions.Context, next) => {
   //   sort: ['sort'],
   // }));
   const fields = [];
-  for (const field of view.get('fields') || []) {
+  for (const field of view.get(`x-${view.type}-props.fields`) || view.get('fields') || []) {
     let fieldName: any;
     let json: any;
     if (typeof field === 'string') {
       fieldName = field;
     } else if (typeof field === 'object') {
-      fieldName = field.name;
-      json = field;
+      console.log({field});
+      if (field.field) {
+        const { field: f, ...others } = field;
+        fieldName = f.name;
+        json = {...others};
+      } else if (field.name) {
+        fieldName = field.name;
+        json = field;
+      }
     }
     const model = await Field.findOne({
       where: {
@@ -90,7 +98,7 @@ export const getInfo = async (ctx: actions.Context, next) => {
       }
       model.setDataValue('dataIndex', model.name.split('.'));
       if (typeof field === 'object') {
-        json = merge(model.toJSON(), field);
+        json = merge(model.toJSON(), json);
       } else {
         json = model.toJSON();
       }
@@ -116,12 +124,15 @@ export const getInfo = async (ctx: actions.Context, next) => {
     }
     return fields;
   }
-  if (view.get('actions')) {
+  if (view.get(`x-${view.type}-props.actions`) || view.get('actions')) {
     const parts = resourceKey.split('.');
     parts.pop();
-    for (const action of view.get('actions')) {
+    for (const action of view.get(`x-${view.type}-props.actions`) || view.get('actions')) {
       if (action.viewName) {
         action.viewName = `${parts.join('.')}.${action.viewName}`;
+      }
+      if (action.view && action.view.name) {
+        action.viewName = `${parts.join('.')}.${action.view.name}`;
       }
       if (action.fields) {
         action.fields = await toFields(action.fields);
@@ -132,17 +143,49 @@ export const getInfo = async (ctx: actions.Context, next) => {
     }
   }
   const details = [];
-  for (const pageName of view.get('details')||[]) {
+  for (const item of view.get(`x-${view.type}-props.details`) || view.get('details') || []) {
+    let pageName: string;
+    let json: any = {};
+    if (typeof item === 'string') {
+      pageName = item;
+    } else if (typeof item === 'object') {
+      if (item.page) {
+        const { page: p, ...others } = item;
+        pageName = p.name;
+        json = others;
+      } else if (item.name) {
+        pageName = item.name;
+        json = item;
+      }
+    }
     const page = await Page.findOne({
       where: {
         collection_name: view.collection_name,
         name: pageName,
       }
     });
-    details.push(page);
+    let detail: any = merge(page.toJSON(), json);
+    const views = [];
+    for (const detailView of detail.views) {
+      if (typeof detailView === 'string') {
+        views.push({
+          name: detailView,
+          width: '100%',
+        });
+      } else if (typeof detailView === 'object') {
+        if (detailView.view) {
+          const { view: v, ...others } = detailView;
+          views.push(merge(v, others));
+        } else {
+          views.push(detailView);
+        }
+      }
+    }
+    detail.views = views;
+    details.push(detail);
   }
   const data: any = {
-    ...view.toJSON(),
+    ...viewData,
     details,
     actions,
     fields,
@@ -192,6 +235,18 @@ export const getInfo = async (ctx: actions.Context, next) => {
       return ['hasMany', 'hasOne', 'belongsToMany', 'belongsTo'].includes(field.type);
     }).map(field => field.name);
   }
+  delete data['resourceKey'];
+  delete data['associatedKey'];
+  for (const [key, value] of Object.entries(viewData[`x-${view.type}-props`]||{})) {
+    if (_.get(data, key) === null || _.get(data, key) === undefined) {
+      _.set(data, key, value);
+    }
+  }
+
+  if (_.isEmpty(data.sort)) {
+    data.sort = [];
+  }
+  
   ctx.body = data;
   await next();
 };

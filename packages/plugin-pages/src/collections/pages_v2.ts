@@ -86,6 +86,7 @@ export default {
             target: 'views',
             schema: {
               'x-component-props': {
+                __parent: '{{ $form.values && $form.values.associatedKey }}',
                 associatedKey: "{{ $form.values && $form.values.id }}"
               },
             },
@@ -93,28 +94,29 @@ export default {
         ],
       },
     },
-    {
-      interface: 'subTable',
-      type: 'hasMany',
-      name: 'pages_views',
-      target:  'pages_views_v2',
-      // sourceKey: 'path',
-      title: '显示在页面里的视图(pages_views)',
-      component: {
-        type: 'subTable',
-        'x-linkages': [
-          {
-            type: 'value:schema',
-            target: 'pages_views',
-            schema: {
-              'x-component-props': {
-                associatedKey: "{{ $form.values && $form.values.id }}"
-              },
-            },
-          },
-        ],
-      },
-    },
+    // {
+    //   interface: 'subTable',
+    //   type: 'hasMany',
+    //   name: 'pages_views',
+    //   target:  'pages_views_v2',
+    //   // sourceKey: 'path',
+    //   title: '显示在页面里的视图(pages_views)',
+    //   component: {
+    //     type: 'subTable',
+    //     'x-linkages': [
+    //       {
+    //         type: 'value:schema',
+    //         target: 'pages_views',
+    //         schema: {
+    //           'x-component-props': {
+    //             __parent: '{{ $form.values && $form.values.associatedKey }}',
+    //             associatedKey: "{{ $form.values && $form.values.id }}"
+    //           },
+    //         },
+    //       },
+    //     ],
+    //   },
+    // },
     {
       interface: 'json',
       type: 'json',

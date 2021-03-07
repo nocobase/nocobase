@@ -79,8 +79,8 @@ export function fields2properties(fields = []) {
 const actions = createFormActions();
 
 export function Form(props: any) {
-  const { noRequest = false, onFinish, resolve, data: record = {}, associatedKey, schema = {} } = props;
-  console.log({ noRequest, record, associatedKey });
+  const { __parent, noRequest = false, onFinish, resolve, data: record = {}, associatedKey, schema = {} } = props;
+  console.log({ noRequest, record, associatedKey, __parent });
   const { resourceName, rowKey = 'id', fields = [], appends = [], associationField = {} } = schema;
 
   const resourceKey = props.resourceKey || record[associationField.targetKey||rowKey];
@@ -107,11 +107,11 @@ export function Form(props: any) {
         resourceKey,
       }}
       effects={($, { setFieldState }) => {
-        // $(LifeCycleTypes.ON_FORM_INIT).subscribe(() => {
-        //   setFieldState('*', state => {
-        //     set(state.props, 'x-component-props.associatedKey', associatedKey);
-        //   })
-        // })
+        $(LifeCycleTypes.ON_FORM_INIT).subscribe(() => {
+          setFieldState('*', state => {
+            set(state.props, 'x-component-props.__parent', __parent);
+          })
+        })
       }}
       // actions={actions}
       schema={{
@@ -148,8 +148,8 @@ export function Form(props: any) {
         },
       }}
     >
-      <FormButtonGroup align={'bottom'} sticky>
-        <Submit/>
+      <FormButtonGroup className={'form-button-group'} align={'end'}>
+        <Submit>确定</Submit>
       </FormButtonGroup>
     </SchemaForm>
   );

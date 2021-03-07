@@ -1,5 +1,6 @@
 import { ResourceOptions } from '@nocobase/resourcer';
 import { Model, ModelCtor } from '@nocobase/database';
+import _ from 'lodash';
 
 export default async (ctx, next) => {
   const { resourceKey } = ctx.action.params;
@@ -13,6 +14,27 @@ export default async (ctx, next) => {
       path: resourceKey,
     },
   }));
-  ctx.body = page;
+  const body: any = {
+    ...page.toJSON(),
+  };
+  if (body.views) {
+    const views = [];
+    for (const item of body.views) {
+      let name: string;
+      if (typeof item === 'object') {
+        if (item.view) {
+          item.name = item.view.name;
+        }
+        views.push(item);
+      } else if (typeof item === 'string') {
+        views.push({
+          name: item,
+          width: '100%',
+        });
+      }
+    }
+    body.views = views;
+  }
+  ctx.body = body;
   await next();
 };

@@ -47,6 +47,7 @@ export default {
       type: 'string',
       name: 'dataSourceType',
       title: '数据来源',
+      defaultValue: 'collection',
       dataSource: [
         { label: '当前数据表', value: 'collection' },
         { label: '相关数据表', value: 'association' },
@@ -54,12 +55,7 @@ export default {
       linkages: [
         {
           "type": "value:visible",
-          "target": "targetFieldName",
-          "condition": "{{ $self.value === 'association' }}"
-        },
-        {
-          "type": "value:visible",
-          "target": "targetViewName",
+          "target": "targetField",
           "condition": "{{ $self.value === 'association' }}"
         },
         {
@@ -67,34 +63,103 @@ export default {
           "target": "type",
           "condition": "{{ $self.value === 'collection' }}"
         },
+        {
+          type: 'value:schema',
+          target: 'targetField',
+          "condition": "{{ $self.value === 'association' }}",
+          schema: {
+            'x-component-props': {
+              associatedKey: "{{ $form.values && $form.values.associatedKey }}"
+            },
+          },
+        },
+        {
+          type: 'value:schema',
+          target: '*',
+          schema: {
+            'x-component-props': {
+              __parent: '{{ $form.values && $form.values.associatedKey }}',
+            },
+          },
+        },
       ],
     },
     {
-      interface: 'select',
-      type: 'virtual',
+      interface: 'linkTo',
+      type: 'belongsTo',
       title: '相关数据',
-      name: 'targetFieldName',
+      name: 'targetField',
+      target: 'fields',
       required: true,
+      multiple: false,
       component: {
         type: 'remoteSelect',
-        resourceName: 'collections.fields',
-        labelField: 'title',
-        valueField: 'name',
+        'x-component-props': {
+          resourceName: 'collections.fields',
+          labelField: 'title',
+          valueField: 'id',
+          objectValue: true,
+          filter: {
+            interface: 'linkTo',
+          },
+          multiple: false,
+        },
+        'x-linkages': [
+          {
+            "type": "value:visible",
+            "target": "targetView",
+            "condition": "{{ !!$self.value }}"
+          },
+          {
+            type: 'value:schema',
+            target: 'targetView',
+            "condition": "{{ !!$self.value }}",
+            schema: {
+              'x-component-props': {
+                associatedKey: "{{ $self.value && $self.value.target }}"
+              },
+            },
+          },
+        ],
       },
     },
     {
-      interface: 'select',
-      type: 'virtual',
-      title: '相关数据表的视图',
-      name: 'targetViewName',
+      interface: 'linkTo',
+      type: 'belongsTo',
+      title: '相关数据表视图',
+      name: 'targetView',
+      target: 'views_v2',
       required: true,
+      multiple: false,
       component: {
         type: 'remoteSelect',
-        resourceName: 'collections.views',
-        labelField: 'title',
-        valueField: 'name',
+        'x-component-props': {
+          resourceName: 'collections.views_v2',
+          labelField: 'title',
+          valueField: 'id',
+          multiple: false,
+        },
       },
     },
+    // {
+    //   interface: 'select',
+    //   type: 'virtual',
+    //   title: '相关数据表的视图',
+    //   name: 'targetViewName',
+    //   required: true,
+    //   component: {
+    //     type: 'remoteSelect',
+    //     resourceName: 'collections.views',
+    //     labelField: 'title',
+    //     valueField: 'name',
+    //     'x-component-props': {
+    //       resourceName: 'collections.views',
+    //       labelField: 'title',
+    //       valueField: 'name',
+    //       multiple: false,
+    //     },
+    //   },
+    // },
     ...fields,
     {
       interface: 'linkTo',
@@ -107,7 +172,7 @@ export default {
       valueField: 'name',
       multiple: false,
       component: {
-        type: 'remoteSelect',
+        type: 'drawerSelect',
         showInDetail: true,
         showInForm: true,
         'x-component-props': {
@@ -217,6 +282,7 @@ export default {
       fields: [
         'title',
         'type',
+        'collection',
       ],
       detailsOpenMode: 'drawer', // window
       details: ['form'],
@@ -230,8 +296,8 @@ export default {
       fields: [
         'title',
         'dataSourceType',
-        'targetFieldName',
-        'targetViewName',
+        'targetField',
+        'targetView',
         ...fields.map(field => field.name),
       ],
     },

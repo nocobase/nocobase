@@ -42,9 +42,9 @@ export default async function getRoutes(ctx, next) {
   const View = database.getModel('views');
   const Collection = database.getModel('collections');
   const RoutePermission = database.getModel('routes_permissions');
-  const roles = await ctx.ac.getRoles();
+  const roles = ctx.ac ? await ctx.ac.getRoles() : [];
   // TODO(optimize): isRoot 的判断需要在内部完成，尽量不要交给调用者
-  const isRoot = ctx.ac.constructor.isRoot(roles);
+  const isRoot = ctx.ac ? ctx.ac.constructor.isRoot(roles) : true;
   const routesPermissionsMap = new Map();
   if (!isRoot) {
     const routesPermissions = await RoutePermission.findAll({

@@ -11,13 +11,14 @@ import { components, fields2columns } from '@/components/views/SortableTable';
 import ReactDragListView from 'react-drag-listview';
 import arrayMove from 'array-move';
 import get from 'lodash/get';
+import cloneDeep from 'lodash/cloneDeep';
 import Drawer from '@/components/pages/AdminLoader/Drawer';
 import Field from '@/components/views/Field';
 import { Form } from './Form';
 import { View } from './';
 
 export function Details(props) {
-  const { noRequest,  associatedKey, resourceName, onFinish, onDataChange, data, pages = [], resolve } = props;
+  const { __parent, noRequest,  associatedKey, resourceName, onFinish, onDataChange, data, pages = [], resolve } = props;
   if (!pages || pages.length === 0) {
     return null;
   }
@@ -47,7 +48,7 @@ export function Details(props) {
           viewName = `${resourceName}.${view.name}`;
         }
         return (
-          <View noRequest={noRequest} associatedKey={associatedKey} onFinish={onFinish} onDataChange={onDataChange} data={data} viewName={viewName}/>
+          <View __parent={__parent} noRequest={noRequest} associatedKey={associatedKey} onFinish={onFinish} onDataChange={onDataChange} data={data} viewName={viewName}/>
         );
       })}
     </div>
@@ -60,9 +61,11 @@ export function generateIndex(): string {
 
 export function SubTable(props: any) {
   const {
+    __parent,
     schema = {},
     associatedKey,
     onChange,
+    size = 'middle'
   } = props;
 
   const { 
@@ -81,10 +84,34 @@ export function SubTable(props: any) {
     filter: schemaFilter = {},
   } = schema;
 
+  const cloneFields = cloneDeep(fields) as any[];
+
+  cloneFields.unshift({
+    "dataIndex": [
+    "sort"
+    ],
+    "title": "排序",
+    "name": "sort",
+    "interface": "sort",
+    "type": "sort",
+    "required": true,
+    "developerMode": false,
+    "component": {
+      "type": "sort",
+      "showInTable": true,
+      "width": 60,
+      "className": "drag-visible"
+    },
+  });
+
   const { type } = associationField;
 
   const { data = [], loading, mutate, refresh, run, params } = useRequest((params = {}, ...args) => {
-    return type === 'virtual' ? Promise.resolve({data: props.data||[]}) : api.resource(resourceName).list({
+    return type === 'virtual' ? Promise.resolve({
+      data: (props.data||[]).map(item => {
+        return item;
+      })
+    }) : api.resource(resourceName).list({
       associatedKey,
       perPage: -1,
       'fields[appends]': appends,
@@ -115,7 +142,9 @@ export function SubTable(props: any) {
 
   const dragProps = {
     async onDragEnd(fromIndex, toIndex) {
-      
+      const data = arrayMove(dataSource, fromIndex, toIndex);
+      mutate(data);
+      onChange && await onChange(data);
     },
     handleSelector: ".drag-handle",
     ignoreSelector: "tr.ant-table-expanded-row",
@@ -140,7 +169,7 @@ export function SubTable(props: any) {
 
   return (
     <div>
-      <Actions associatedKey={associatedKey} noRequest={true} onTrigger={{
+      <Actions size={size} __parent={__parent} associatedKey={associatedKey} noRequest={true} onTrigger={{
         async create(values) {
           values[rowKey] = generateIndex();
           const data = [...dataSource];
@@ -154,13 +183,13 @@ export function SubTable(props: any) {
           mutate(data);
           onChange && await onChange(data);
         },
-      }} actions={actions} style={{ marginBottom: 14 }}/>
+      }} actions={actions} style={{ marginBottom: 14, marginTop: -31 }}/>
       <ReactDragListView {...dragProps}>
         <AntdTable
           rowKey={rowKey}
           dataSource={dataSource}
-          size={'middle'} 
-          columns={fields2columns(fields)}
+          size={size} 
+          columns={fields2columns(cloneFields)}
           pagination={false}
           onChange={(pagination, filters, sorter, extra) => {
             
@@ -176,6 +205,7 @@ export function SubTable(props: any) {
                 content: ({resolve}) => (
                   <div>
                     <Details 
+                      __parent={__parent}
                       associatedKey={associatedKey}
                       resourceName={resourceName} 
                       onFinish={async (values) => {

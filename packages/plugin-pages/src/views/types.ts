@@ -98,7 +98,7 @@ export const table = {
     defaultPerPage: 20,
     draggable: false,
     filter: {},
-    sort: {},
+    sort: [],
     detailsOpenMode: 'default',
     // actions,
     // fields,
@@ -122,7 +122,7 @@ export const table = {
       type: 'virtual',
       title: '默认排序',
       mode: 'replace',
-      defaultValue: {},
+      defaultValue: [],
       component: {
         type: 'string',
       },
