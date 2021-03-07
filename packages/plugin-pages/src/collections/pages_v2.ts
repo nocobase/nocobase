@@ -3,9 +3,9 @@ import { TableOptions } from '@nocobase/database';
 export default {
   name: 'pages_v2',
   title: '页面配置',
-  // internal: true,
+  internal: true,
   model: 'BaseModel',
-  developerMode: false,
+  developerMode: true,
   createdAt: false,
   updatedAt: false,
   fields: [
@@ -77,8 +77,20 @@ export default {
       type: 'virtual',
       name: 'views',
       title: '显示在页面里的视图',
+      target:  'pages_views_v2',
       component: {
-        type: 'virtualTable',
+        type: 'subTable',
+        'x-linkages': [
+          {
+            type: 'value:schema',
+            target: 'views',
+            schema: {
+              'x-component-props': {
+                associatedKey: "{{ $form.values && $form.values.id }}"
+              },
+            },
+          },
+        ],
       },
     },
     {

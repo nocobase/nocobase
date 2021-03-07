@@ -3,9 +3,9 @@ import { TableOptions } from '@nocobase/database';
 export default {
   name: 'menus',
   title: '菜单配置',
-  // internal: true,
+  internal: true,
   // model: 'CollectionModel',
-  developerMode: false,
+  developerMode: true,
   createdAt: false,
   updatedAt: false,
   fields: [

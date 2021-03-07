@@ -1,55 +1,30 @@
 const fields = {
   interface: 'json',
+  type: 'virtual',
   title: '要显示的字段',
-  // target: 'views_fields',
-  fields: [
-    {
-      interface: 'string',
-      type: 'string',
-      name: 'name',
-      title: '字段',
-    },
-    {
-      interface: 'string',
-      type: 'string',
-      name: 'title',
-      title: '字段标题',
-    },
-  ],
+  target:  'views_fields_v2',
   component: {
-    type: 'virtualTable',
+    type: 'subTable',
   },
 };
 
 const actions = {
   interface: 'json',
+  type: 'virtual',
   title: '可进行的操作',
-  fields: [
-    {
-      interface: 'string',
-      type: 'string',
-      name: 'name',
-      title: '操作',
-    },
-  ],
+  target:  'views_actions_v2',
   component: {
-    type: 'virtualTable',
+    type: 'subTable',
   },
 };
 
 const details = {
   interface: 'json',
+  type: 'virtual',
   title: '详情页要显示的单条数据子页面',
-  fields: [
-    {
-      interface: 'string',
-      type: 'string',
-      name: 'name',
-      title: '页面',
-    },
-  ],
+  target:  'views_pages_v2',
   component: {
-    type: 'virtualTable',
+    type: 'subTable',
   },
 };
 

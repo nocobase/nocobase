@@ -1,8 +1,8 @@
 import { TableOptions } from '@nocobase/database';
 
 export default {
-  name: 'pages_views_v2',
-  title: '页面视图',
+  name: 'views_pages_v2',
+  title: '视图子页面',
   internal: true,
   // model: 'BaseModelV2',
   developerMode: true,
@@ -10,37 +10,14 @@ export default {
   updatedAt: false,
   fields: [
     {
-      interface: 'linkTo',
-      type: 'belongsTo',
-      name: 'view',
-      target: 'views_v2',
-      title: '视图',
-      labelField: 'title',
-      valueField: 'id',
-      multiple: false,
+      interface: 'string',
+      type: 'string',
+      name: 'title',
+      title: '页面名称',
       component: {
-        type: 'drawerSelect',
-        'x-component-props': {
-          viewName: 'views_v2.table',
-          resourceName: 'views_v2',
-          labelField: 'title',
-          valueField: 'id',
-        },
+        type: 'string',
       },
     },
-    {
-      interface: 'radio',
-      type: 'string',
-      name: 'width',
-      title: '宽度',
-      dataSource: [
-        { label: '50%', value: '50%' },
-        { label: '100%', value: '100%' },
-      ],
-      component: {
-        type: 'radio',
-      },
-    }
   ],
   views_v2: [
     {
@@ -62,8 +39,7 @@ export default {
         },
       ],
       fields: [
-        'view',
-        'width'
+        'title',
       ],
       detailsOpenMode: 'drawer', // window
       details: ['form'],
@@ -74,8 +50,7 @@ export default {
       name: 'form',
       title: '表单',
       fields: [
-        'view',
-        'width'
+        'title',
       ],
     },
   ],

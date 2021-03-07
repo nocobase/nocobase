@@ -17,7 +17,9 @@ export const getInfo = async (ctx: actions.Context, next) => {
   if (resourceKey.includes('.')) {
     const keys = resourceKey.split('.');
     viewName = keys.pop();
-    const [key1, key2] = keys;
+    const key1 = keys.shift();
+    const key2 = keys.join('.');
+    // const [key1, key2] = keys;
     if (key2) {
       const field = ctx.db.getTable(key1).getField(key2);
       associationField = await Field.findOne({

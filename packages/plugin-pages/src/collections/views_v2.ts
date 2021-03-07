@@ -6,9 +6,9 @@ const fields = getViewFields();
 export default {
   name: 'views_v2',
   title: '视图配置',
-  // internal: true,
+  internal: true,
   model: 'BaseModelV2',
-  developerMode: false,
+  developerMode: true,
   createdAt: false,
   updatedAt: false,
   fields: [
@@ -44,7 +44,7 @@ export default {
     // },
     {
       interface: 'radio',
-      type: 'boolean',
+      type: 'string',
       name: 'dataSourceType',
       title: '数据来源',
       dataSource: [

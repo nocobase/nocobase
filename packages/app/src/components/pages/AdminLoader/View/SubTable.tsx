@@ -81,8 +81,10 @@ export function SubTable(props: any) {
     filter: schemaFilter = {},
   } = schema;
 
+  const { type } = associationField;
+
   const { data = [], loading, mutate, refresh, run, params } = useRequest((params = {}, ...args) => {
-    return api.resource(resourceName).list({
+    return type === 'virtual' ? Promise.resolve({data: props.data||[]}) : api.resource(resourceName).list({
       associatedKey,
       perPage: -1,
       'fields[appends]': appends,

@@ -65,6 +65,9 @@ import { Op } from 'sequelize';
     'users',
     'roles',
     'scopes',
+    'views_actions_v2',
+    'views_pages_v2',
+    'views_fields_v2',
   ]);
 
   for (let table of tables) {

@@ -1,8 +1,8 @@
 import { TableOptions } from '@nocobase/database';
 
 export default {
-  name: 'pages_views_v2',
-  title: '页面视图',
+  name: 'views_actions_v2',
+  title: '视图操作配置',
   internal: true,
   // model: 'BaseModelV2',
   developerMode: true,
@@ -10,37 +10,37 @@ export default {
   updatedAt: false,
   fields: [
     {
-      interface: 'linkTo',
-      type: 'belongsTo',
-      name: 'view',
-      target: 'views_v2',
-      title: '视图',
-      labelField: 'title',
-      valueField: 'id',
-      multiple: false,
-      component: {
-        type: 'drawerSelect',
-        'x-component-props': {
-          viewName: 'views_v2.table',
-          resourceName: 'views_v2',
-          labelField: 'title',
-          valueField: 'id',
-        },
-      },
-    },
-    {
       interface: 'radio',
       type: 'string',
-      name: 'width',
-      title: '宽度',
+      name: 'type',
+      title: '操作类型',
       dataSource: [
-        { label: '50%', value: '50%' },
-        { label: '100%', value: '100%' },
+        { label: '新增', value: 'create' },
+        { label: '编辑', value: 'update' },
+        { label: '删除', value: 'destroy' },
       ],
       component: {
         type: 'radio',
       },
-    }
+    },
+    {
+      interface: 'string',
+      type: 'string',
+      name: 'name',
+      title: '操作ID',
+      component: {
+        type: 'string',
+      },
+    },
+    {
+      interface: 'string',
+      type: 'string',
+      name: 'title',
+      title: '操作名称',
+      component: {
+        type: 'string',
+      },
+    },
   ],
   views_v2: [
     {
@@ -62,8 +62,8 @@ export default {
         },
       ],
       fields: [
-        'view',
-        'width'
+        'type',
+        'title',
       ],
       detailsOpenMode: 'drawer', // window
       details: ['form'],
@@ -74,8 +74,8 @@ export default {
       name: 'form',
       title: '表单',
       fields: [
-        'view',
-        'width'
+        'type',
+        'title',
       ],
     },
   ],

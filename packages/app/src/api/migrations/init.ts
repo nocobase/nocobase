@@ -244,10 +244,115 @@ const data = [
   ]);
 
   // 导入地域数据
-  await chinaRegionSeederInit(api);
+  // await chinaRegionSeederInit(api);
 
   await database.getModel('collections').import(require('./collections/example').default);
   await database.getModel('collections').import(require('./collections/authors').default);
   await database.getModel('collections').import(require('./collections/books').default);
+
+  const Menu = database.getModel('menus');
+
+  const menus = [
+    {
+      title: '仪表盘',
+      icon: 'DashboardOutlined',
+      type: 'group',
+      children: [
+        {
+          title: '欢迎光临',
+          icon: 'DatabaseOutlined',
+          type: 'page',
+          // pageName: 'welcome'
+        },
+      ],
+    },
+    {
+      title: '数据',
+      icon: 'DatabaseOutlined',
+      type: 'group',
+      children: [
+        {
+          title: '作者',
+          icon: 'DatabaseOutlined',
+          type: 'page',
+          pageName: 'authors.all',
+        },
+        {
+          title: '申请表单',
+          icon: 'DatabaseOutlined',
+          type: 'page',
+          pageName: 'authors.form',
+        },
+      ],
+    },
+    {
+      title: '用户',
+      icon: 'TeamOutlined',
+      type: 'group',
+      children: [
+        {
+          title: '用户管理',
+          icon: 'DatabaseOutlined',
+          type: 'page',
+          pageName: 'users.all',
+        },
+      ],
+    },
+    {
+      title: '动态',
+      icon: 'NotificationOutlined',
+      type: 'group',
+      children: [
+        {
+          title: '操作日志',
+          icon: 'DatabaseOutlined',
+          type: 'page',
+          pageName: 'action_logs.all',
+        },
+      ],
+    },
+    {
+      title: '配置',
+      icon: 'SettingOutlined',
+      type: 'group',
+      children: [
+        {
+          title: '数据表配置',
+          icon: 'DatabaseOutlined',
+          type: 'page',
+          pageName: 'collections.all',
+        },
+        {
+          title: '菜单配置',
+          icon: 'MenuOutlined',
+          type: 'page',
+          pageName: 'menus.all',
+        },
+        {
+          title: '页面配置',
+          icon: 'MenuOutlined',
+          type: 'page',
+          pageName: 'pages_v2.globals',
+        },
+        {
+          title: '权限配置',
+          icon: 'MenuOutlined',
+          type: 'page',
+          pageName: 'roles.all',
+        },
+        {
+          title: '自动化配置',
+          icon: 'MenuOutlined',
+          type: 'page',
+          pageName: 'automations.all',
+        },
+      ],
+    },
+  ];
+
+  for (const item of menus) {
+    const menu = await Menu.create(item);
+    await menu.updateAssociations(item);
+  }
   await database.close();
 })();
