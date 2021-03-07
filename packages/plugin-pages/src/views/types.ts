@@ -117,16 +117,16 @@ export const table = {
         type: 'filter',
       },
     },
-    sort: {
-      interface: 'json',
-      type: 'virtual',
-      title: '默认排序',
-      mode: 'replace',
-      defaultValue: [],
-      component: {
-        type: 'string',
-      },
-    },
+    // sort: {
+    //   interface: 'json',
+    //   type: 'virtual',
+    //   title: '默认排序',
+    //   mode: 'replace',
+    //   defaultValue: [],
+    //   component: {
+    //     type: 'string',
+    //   },
+    // },
     // 表格配置
     labelField: {
       interface: 'select',
