@@ -214,12 +214,4 @@ export default {
       ],
     },
   ],
-  pages_v2: [
-    {
-      developerMode: true,
-      title: '表单',
-      name: 'form',
-      views: ['form'],
-    },
-  ],
 } as TableOptions;

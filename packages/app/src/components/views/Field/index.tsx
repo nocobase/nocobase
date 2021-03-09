@@ -1,7 +1,7 @@
 
 import React, { useEffect, useState } from 'react';
 import moment from 'moment';
-import { Tag, Popover, Table, Drawer, Modal, Checkbox, message } from 'antd';
+import { Tag, Popover, Table, Modal, Checkbox, message } from 'antd';
 import Icon from '@/components/icons';
 import get from 'lodash/get';
 import isEmpty from 'lodash/isEmpty';
@@ -16,6 +16,8 @@ import Lightbox from 'react-image-lightbox';
 import 'react-image-lightbox/style.css';
 import api from '@/api-client';
 import { useRequest } from 'umi';
+import Drawer from '@/components/pages/AdminLoader/Drawer';
+import View from '@/components/pages/AdminLoader/View';
 
 marked.setOptions({
   gfm: true,
@@ -247,16 +249,26 @@ export function LinkToField(props: any) {
 }
 
 export function LinkToFieldLink(props) {
-  const { data, schema, schema: { title, labelField } } = props;
+  const { data, schema, schema: { title, labelField, viewName, name, target, collection_name } } = props;
   const [visible, setVisible] = useState(false);
-  // console.log(schema);
+  console.log({data});
   return (
     <span className={'link-to-field-tag'}>
       <a onClick={(e) => {
         e.stopPropagation();
-        setVisible(true);
+        // setVisible(true);
+        Drawer.open({
+          title: data[labelField],
+          content: () => {
+            return (
+              <div>
+                <View data={data} viewName={viewName || `${collection_name}.${name}.descriptions`}/>
+              </div>
+            );
+          }
+        });
       }}>{data[labelField]}</a>
-      <Drawer
+      {/* <Drawer
         // @ts-ignore
         onClick={(e) => {
           e.stopPropagation();
@@ -273,7 +285,7 @@ export function LinkToFieldLink(props) {
           viewName={'details'}
           resourceKey={data.id}
         />
-      </Drawer>
+      </Drawer> */}
     </span>
   );
 }

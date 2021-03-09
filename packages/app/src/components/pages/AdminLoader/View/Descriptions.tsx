@@ -16,10 +16,11 @@ import Field from '@/components/views/Field';
 import { Form } from './Form';
 
 export function Descriptions(props) {
-  const { data: record = {}, schema = {}, onDataChange, associatedKey } = props;
+  const { data: record = {}, schema = {}, onDataChange } = props;
   const { rowKey = 'id', resourceName, fields = [], actions = [], appends = [], associationField = {} } = schema;
 
   const resourceKey = props.resourceKey || record[associationField.targetKey||rowKey];
+  const associatedKey = props.associatedKey || record[associationField.sourceKey||'id'];
 
   const { data = {}, loading, refresh } = useRequest(() => {
     return api.resource(resourceName).get({

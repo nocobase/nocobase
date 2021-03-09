@@ -1,8 +1,8 @@
 import { TableOptions } from '@nocobase/database';
 
 export default {
-  name: 'views_pages_v2',
-  title: '视图子页面',
+  name: 'menus_views_v2',
+  title: '页面视图',
   internal: true,
   // model: 'BaseModelV2',
   developerMode: true,
@@ -10,33 +10,37 @@ export default {
   updatedAt: false,
   fields: [
     {
-      interface: 'string',
-      type: 'string',
-      name: 'title',
-      title: '页面名称',
-      component: {
-        type: 'string',
-      },
-    },
-    {
       interface: 'linkTo',
       type: 'belongsTo',
-      name: 'page',
-      target: 'pages_v2',
-      title: '关联的页面',
+      name: 'view',
+      target: 'views_v2',
+      title: '视图',
       labelField: 'title',
       valueField: 'id',
       multiple: false,
       component: {
         type: 'drawerSelect',
         'x-component-props': {
-          viewName: 'pages_v2.collection_pages',
-          resourceName: 'pages_v2',
+          viewName: 'views_v2.table',
+          resourceName: 'views_v2',
           labelField: 'title',
           valueField: 'id',
         },
       },
     },
+    {
+      interface: 'radio',
+      type: 'string',
+      name: 'width',
+      title: '宽度',
+      dataSource: [
+        { label: '50%', value: '50%' },
+        { label: '100%', value: '100%' },
+      ],
+      component: {
+        type: 'radio',
+      },
+    }
   ],
   views_v2: [
     {
@@ -59,8 +63,8 @@ export default {
         },
       ],
       fields: [
-        'title',
-        'page',
+        'view',
+        'width'
       ],
       detailsOpenMode: 'drawer', // window
       details: ['form'],
@@ -72,23 +76,9 @@ export default {
       name: 'form',
       title: '表单',
       fields: [
-        'title',
-        'page',
+        'view',
+        'width'
       ],
-    },
-  ],
-  pages_v2: [
-    {
-      developerMode: true,
-      title: '表格',
-      name: 'all',
-      views: ['table'],
-    },
-    {
-      developerMode: true,
-      title: '表单',
-      name: 'form',
-      views: ['form'],
     },
   ],
 } as TableOptions;

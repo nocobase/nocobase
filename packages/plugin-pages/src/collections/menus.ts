@@ -2,7 +2,7 @@ import { TableOptions } from '@nocobase/database';
 
 export default {
   name: 'menus',
-  title: '菜单配置',
+  title: '菜单和页面配置',
   internal: true,
   // model: 'CollectionModel',
   developerMode: true,
@@ -21,6 +21,19 @@ export default {
         width: 60,
         showInTable: true,
       },
+    },
+    {
+      interface: 'string',
+      type: 'randomString',
+      name: 'name',
+      title: '缩略名',
+      required: true,
+      createOnly: true,
+      randomString: {
+        length: 6,
+        characters: 'abcdefghijklmnopqrstuvwxyz0123456789',
+      },
+      developerMode: true,
     },
     {
       interface: 'linkTo',
@@ -69,14 +82,14 @@ export default {
       required: true,
       dataSource: [
         { value: 'group', label: '菜单组', color: 'red' },
-        { value: 'link', label: '自定义链接', color: 'orange' },
         { value: 'page', label: '页面', color: 'green' },
+        { value: 'link', label: '自定义链接', color: 'orange' },
       ],
       component: {
         'x-linkages': [
           {
             "type": "value:visible",
-            "target": "page",
+            "target": "views",
             "condition": "{{ $self.value === 'page' }}"
           },
           {
@@ -85,33 +98,6 @@ export default {
             "condition": "{{ $self.value === 'link' }}"
           },
         ],
-      },
-    },
-    {
-      interface: 'string',
-      type: 'string',
-      name: 'pageName',
-      title: '页面',
-    },
-    {
-      interface: 'linkTo',
-      type: 'belongsTo',
-      name: 'page',
-      target: 'pages_v2',
-      foreignKey: 'pageName',
-      targetKey: 'path',
-      title: '页面',
-      labelField: 'title',
-      valueField: 'path',
-      multiple: false,
-      component: {
-        type: 'drawerSelect',
-        'x-component-props': {
-          viewName: 'pages_v2.all_pages',
-          resourceName: 'pages_v2',
-          labelField: 'title',
-          valueField: 'path',
-        },
       },
     },
     {
@@ -128,6 +114,28 @@ export default {
       title: '开发者模式',
       developerMode: true,
       defaultValue: false,
+    },
+    {
+      interface: 'json',
+      type: 'json',
+      name: 'views',
+      title: '显示在页面里的视图',
+      target:  'menus_views_v2',
+      component: {
+        type: 'subTable',
+        'x-linkages': [
+          {
+            type: 'value:schema',
+            target: 'views',
+            schema: {
+              'x-component-props': {
+                __parent: '{{ $form.values && $form.values.associatedKey }}',
+                associatedKey: "{{ $form.values && $form.values.id }}"
+              },
+            },
+          },
+        ],
+      },
     },
     {
       interface: 'json',
@@ -232,9 +240,11 @@ export default {
           title: '删除',
         },
       ],
-      expandable: {},
+      expandable: {
+        expandIconColumnIndex: 3,
+      },
       paginated: false,
-      fields: ['sort', 'icon', 'title', 'type'],
+      fields: ['sort', 'title', 'icon', 'type'],
       detailsOpenMode: 'drawer', // window
       details: ['form'],
       sort: ['sort'],
@@ -244,21 +254,26 @@ export default {
       type: 'form',
       name: 'form',
       title: '表单',
-      fields: ['type', 'parent', 'title', 'icon', 'url', 'page'],
-    },
-  ],
-  pages_v2: [
-    {
-      developerMode: true,
-      title: '菜单配置',
-      name: 'all',
-      views: ['table'],
+      fields: ['type', 'parent', 'title', 'icon', 'url', 'views'],
     },
     {
       developerMode: true,
-      title: '菜单表单',
-      name: 'form',
-      views: ['form'],
+      type: 'table',
+      name: 'permissions_table',
+      title: '权限表格',
+      labelField: 'title',
+      actions: [],
+      fields: ['title'],
+      detailsOpenMode: 'drawer', // window
+      details: ['permissions_form'],
+      sort: ['id'],
+    },
+    {
+      developerMode: true,
+      type: 'form',
+      name: 'permissions_form',
+      title: '权限表单',
+      fields: ['type', 'title'],
     },
   ],
 } as TableOptions;

@@ -298,30 +298,4 @@ export default {
       fields: ['title', 'views', 'pages_views'],
     },
   ],
-  pages_v2: [
-    {
-      developerMode: true,
-      title: '表格',
-      name: 'collections',
-      views: ['collection_pages'],
-    },
-    {
-      developerMode: true,
-      title: '独立页面',
-      name: 'globals',
-      views: ['global_pages'],
-    },
-    {
-      developerMode: true,
-      title: '表单',
-      name: 'form',
-      views: ['form'],
-    },
-    {
-      developerMode: true,
-      title: '独立页面表单',
-      name: 'global_form',
-      views: ['global_form'],
-    },
-  ],
 } as TableOptions;

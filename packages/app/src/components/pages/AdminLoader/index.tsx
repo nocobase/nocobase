@@ -17,9 +17,12 @@ export function AdminLoader(props: any) {
   const location = useLocation();
   const match = pathToRegexp(`${path}/:path?`).exec(location.pathname);
   const pageName = match[1]||null;
-  const items = data.filter(item => item.children && item.children.length);
+  console.log({pageName})
+  const items = data
+    // .filter(item => item.type !== 'group' || (item.children && item.children.length))
+    ;
   const sideMenu = items.find(item => {
-    if (item.paths && item.paths.includes(location.pathname)) {
+    if (item.paths && item.paths.includes(pageName)) {
       return true;
     }
     return false;
@@ -31,9 +34,9 @@ export function AdminLoader(props: any) {
 
   return (
     <>
-      <TopMenuLayout {...props} menu={items}>
+      <TopMenuLayout currentPageName={pageName} {...props} menu={items}>
         {sideMenu ? (
-          <SideMenuLayout {...props} id={sideMenu.id} menu={sideMenu.children}>
+          <SideMenuLayout currentPageName={pageName} {...props} id={sideMenu.id} menu={sideMenu.children}>
             <Page pageName={pageName}></Page>
           </SideMenuLayout>
         ) : (

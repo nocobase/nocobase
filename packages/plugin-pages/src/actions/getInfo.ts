@@ -8,14 +8,14 @@ export default async (ctx, next) => {
   let pageName: any;
   let collectionName: any;
   console.log({resourceKey});
-  const Page = ctx.db.getModel('pages_v2') as ModelCtor<Model>;
-  const page = await Page.findOne(Page.parseApiJson({
-    filter: {
-      path: resourceKey,
-    },
-  }));
+  const Menu = ctx.db.getModel('menus') as ModelCtor<Model>;
+  const menu = await Menu.findOne({
+    where: {
+      name: resourceKey,
+    }
+  });
   const body: any = {
-    ...page.toJSON(),
+    ...menu.toJSON(),
   };
   if (body.views) {
     const views = [];
@@ -23,7 +23,7 @@ export default async (ctx, next) => {
       let name: string;
       if (typeof item === 'object') {
         if (item.view) {
-          item.name = item.view.name;
+          item.name = `${item.view.collection_name||'globals'}.${item.view.name}`;
         }
         views.push(item);
       } else if (typeof item === 'string') {

@@ -576,24 +576,4 @@ export default {
       targetFieldName: 'jobs',
     },
   ],
-  pages_v2: [
-    {
-      developerMode: true,
-      title: '自动化配置',
-      name: 'all',
-      views: ['table'],
-    },
-    {
-      developerMode: true,
-      title: '详情',
-      name: 'descriptions',
-      views: ['descriptions'],
-    },
-    {
-      developerMode: true,
-      title: '任务',
-      name: 'jobs',
-      views: ['jobs'],
-    },
-  ],
 } as TableOptions;

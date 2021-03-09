@@ -140,18 +140,4 @@ export default {
       actions: [],
     },
   ],
-  pages_v2: [
-    {
-      developerMode: true,
-      title: '操作日志',
-      name: 'all',
-      views: ['table'],
-    },
-    {
-      developerMode: true,
-      title: '详情',
-      name: 'descriptions',
-      views: ['descriptions'],
-    },
-  ],
 } as TableOptions;

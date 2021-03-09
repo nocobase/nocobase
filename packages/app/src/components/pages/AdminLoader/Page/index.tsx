@@ -10,7 +10,7 @@ import View from '../View';
 export function Page(props: any) {
   const { pageName, children, ...restProps } = props;
 
-  const { data = {}, loading, error } = useRequest(() => api.resource('pages_v2').getInfo({
+  const { data = {}, loading, error } = useRequest(() => api.resource('menus').getInfo({
     resourceKey: pageName,
   }), {
     refreshDeps: [pageName],
@@ -40,9 +40,9 @@ export function Page(props: any) {
         {views.map(view => {
           let viewName: string;
           if (typeof view === 'string') {
-            viewName = `${data.collection_name}.${view}`;
+            viewName = view;
           } if (typeof view === 'object') {
-            viewName = `${data.collection_name}.${view.name}`;
+            viewName = `${view.name}`;
           }
           return (
             <Card bordered={false}>

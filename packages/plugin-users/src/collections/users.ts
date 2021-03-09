@@ -189,24 +189,4 @@ export default {
       fields: ['username', 'nickname', 'phone', 'password', 'roles'],
     },
   ],
-  pages_v2: [
-    {
-      developerMode: true,
-      title: '用户管理',
-      name: 'all',
-      views: ['table'],
-    },
-    {
-      developerMode: true,
-      title: '详情',
-      name: 'descriptions',
-      views: ['descriptions'],
-    },
-    {
-      developerMode: true,
-      title: '表单',
-      name: 'form',
-      views: ['form'],
-    },
-  ],
 } as TableOptions;

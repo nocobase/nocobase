@@ -21,22 +21,22 @@ function Link(props: any) {
 }
 
 export default (props: any) => {
-  const { items = [], hideChildren, ...restProps } = props;
+  const { currentPageName, items = [], hideChildren, ...restProps } = props;
   const location = useLocation();
   let paths = items.map(item => item.path);
   if (items.length === 0) {
     return null;
   }
   const keys = items.filter(item => {
-    if (item.path && item.path === location.pathname) {
+    if (item.path && item.path === currentPageName) {
       return true;
     }
-    if (item.paths && item.paths.includes(location.pathname)) {
+    if (item.paths && item.paths.includes(currentPageName)) {
       return true;
     }
     return false;
   }).map(item => `${item.id}`);
-  console.log({items, keys});
+  console.log({currentPageName, items, keys});
   return (
     <Menu
       selectedKeys={keys}

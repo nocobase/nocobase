@@ -18,29 +18,25 @@ import { Form } from './Form';
 import { View } from './';
 
 export function Details(props) {
-  const { __parent, noRequest,  associatedKey, resourceName, onFinish, onDataChange, data, pages = [], resolve } = props;
-  if (!pages || pages.length === 0) {
+  const { __parent, noRequest,  associatedKey, resourceName, onFinish, onDataChange, data, items = [], resolve } = props;
+  if (!items || items.length === 0) {
     return null;
   }
-  const [page, setPage] = useState(pages[0]);
-  const { id, collection_name, views } = page;
+  const [currentTabIndex, setCurrentTabIndex] = useState('0');
   return (
     <div className={'page-tabs'}>
-      { pages.length > 1 && (
-        <Tabs activeKey={`${id}`} onChange={(pageId) => {
-          console.log(pageId);
-          const p = pages.find(page => page.id == pageId);
-          if (p) {
-            setPage(p);
-          }
-        }}>
-          {pages.map(page => (
-            <Tabs.TabPane tab={page.title} key={page.id}>
-            </Tabs.TabPane>
-          ))}
-        </Tabs>
+      { items.length > 1 && (
+        <div className={'tabs-wrap'}>
+          <Tabs size={'small'} activeKey={`${currentTabIndex}`} onChange={(activeKey) => {
+            setCurrentTabIndex(activeKey);
+          }}>
+            {items.map((page, index) => (
+              <Tabs.TabPane tab={page.title} key={`${index}`}/>
+            ))}
+          </Tabs>
+        </div>
       ) }
-      {views.map(view => {
+      {(get(items, [currentTabIndex, 'views'])||[]).map(view => {
         let viewName: string;
         if (typeof view === 'string') {
           viewName = `${resourceName}.${view}`;
@@ -107,8 +103,11 @@ export function SubTable(props: any) {
   const { type } = associationField;
 
   const { data = [], loading, mutate, refresh, run, params } = useRequest((params = {}, ...args) => {
-    return type === 'virtual' ? Promise.resolve({
+    return type === 'virtual' || type === 'json' ? Promise.resolve({
       data: (props.data||[]).map(item => {
+        if (!item[rowKey]) {
+          item[rowKey] = generateIndex();
+        }
         return item;
       })
     }) : api.resource(resourceName).list({
@@ -196,7 +195,8 @@ export function SubTable(props: any) {
           }}
           expandable={expandable}
           onRow={(data, index) => ({
-            onClick: () => {
+            onClick: (e) => {
+              console.log('e.target', e.target);
               Drawer.open({
                 title: details.length > 1 ? undefined : data[labelField],
                 bodyStyle: {
@@ -222,7 +222,7 @@ export function SubTable(props: any) {
                       noRequest={true}
                       data={data}
                       resolve={resolve}
-                      pages={details}
+                      items={details}
                     />
                   </div>
                 ),

@@ -1,51 +1,43 @@
 import { TableOptions } from '@nocobase/database';
 
 export default {
-  name: 'scopes',
-  title: '表操作范围',
-  developerMode: true,
+  name: 'views_details_v2',
+  title: '详情子视图',
   internal: true,
+  // model: 'BaseModelV2',
+  developerMode: true,
+  createdAt: false,
+  updatedAt: false,
   fields: [
     {
-      comment: '范围名称',
+      interface: 'string',
       type: 'string',
       name: 'title',
-      title: '名称',
+      title: '页面名称',
       component: {
         type: 'string',
-        showInTable: true,
-        showInForm: true,
       },
     },
     {
-      interface: 'json',
-      type: 'jsonb',
-      name: 'filter',
-      title: '条件',
-      developerMode: false,
-      mode: 'replace',
-      defaultValue: {},
-      component: {
-        type: 'filter',
-        showInForm: true,
-      },
-    },
-    {
-      interface: 'boolean',
-      type: 'boolean',
-      name: 'locked',
-      title: '锁定',
-      defaultValue: false,
-      component: {
-        showInTable: true,
-      }
-    },
-    {
+      interface: 'linkTo',
       type: 'belongsTo',
-      name: 'collection',
-      targetKey: 'name',
-      onDelete: 'CASCADE'
-    }
+      name: 'view',
+      target: 'views_v2',
+      title: '视图',
+      labelField: 'title',
+      valueField: 'id',
+      multiple: false,
+      required: true,
+      component: {
+        type: 'drawerSelect',
+        'x-component-props': {
+          viewName: 'views_v2.table',
+          resourceName: 'views_v2',
+          labelField: 'title',
+          valueField: 'id',
+        },
+      },
+    },
   ],
   views_v2: [
     {
@@ -67,7 +59,10 @@ export default {
           title: '删除',
         },
       ],
-      fields: ['title'],
+      fields: [
+        'title',
+        'page',
+      ],
       detailsOpenMode: 'drawer', // window
       details: ['form'],
       sort: ['id'],
@@ -79,7 +74,7 @@ export default {
       title: '表单',
       fields: [
         'title',
-        'filter',
+        'page',
       ],
     },
   ],

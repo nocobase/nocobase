@@ -35,8 +35,10 @@ export default async (ctx, next) => {
   }));
   const data = flatToTree(menus.map(item => {
     const json: any = item.toJSON();
-    if (item.pageName) {
-      json.path = `/admin/${item.pageName}`;
+    if (item.url) {
+      json.path = item.url;
+    } else {
+      json.path = item.name;
     }
     return json;
   }), {
@@ -47,7 +49,9 @@ export default async (ctx, next) => {
   const items = [];
   for (const item of data) {
     item.paths = toPaths(item);
-    item.path = item.paths[0] || '';
+    if (item.paths[0]) {
+      item.path = item.paths[0];
+    }
     items.push(item);
   }
   ctx.body = items;

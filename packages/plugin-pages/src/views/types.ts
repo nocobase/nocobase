@@ -22,7 +22,7 @@ const details = {
   interface: 'json',
   type: 'virtual',
   title: '详情页要显示的单条数据子页面',
-  target:  'views_pages_v2',
+  target:  'views_details_v2',
   component: {
     type: 'subTable',
   },
@@ -53,17 +53,7 @@ export const form = {
     fields,
   },
   linkages: {
-    type: [
-      {
-        type: 'value:schema',
-        target: "fields",
-        schema: {
-          'x-component-props': {
-            associatedKey: "{{ $form.values && $form.values.associatedKey }}"
-          },
-        },
-      },
-    ],
+    
   },
 };
 
@@ -78,17 +68,7 @@ export const descriptions = {
     fields,
   },
   linkages: {
-    type: [
-      {
-        type: 'value:schema',
-        target: "fields",
-        schema: {
-          'x-component-props': {
-            associatedKey: "{{ $form.values && $form.values.associatedKey }}"
-          },
-        },
-      },
-    ],
+    
   },
 };
 
@@ -170,53 +150,6 @@ export const table = {
     details,
   },
   linkages: {
-    type: [
-      {
-        type: 'value:schema',
-        target: "filter",
-        schema: {
-          'x-component-props': {
-            associatedKey: "{{ $form.values && $form.values.associatedKey }}"
-          },
-        },
-      },
-      {
-        type: 'value:schema',
-        target: "sort",
-        schema: {
-          'x-component-props': {
-            associatedKey: "{{ $form.values && $form.values.associatedKey }}"
-          },
-        },
-      },
-      {
-        type: 'value:schema',
-        target: "labelField",
-        schema: {
-          'x-component-props': {
-            associatedKey: "{{ $form.values && $form.values.associatedKey }}"
-          },
-        },
-      },
-      {
-        type: 'value:schema',
-        target: "fields",
-        schema: {
-          'x-component-props': {
-            associatedKey: "{{ $form.values && $form.values.associatedKey }}"
-          },
-        },
-      },
-      {
-        type: 'value:schema',
-        target: "pages",
-        schema: {
-          'x-component-props': {
-            associatedKey: "{{ $form.values && $form.values.associatedKey }}"
-          },
-        },
-      }
-    ],
   },
 };
 
@@ -296,52 +229,6 @@ export const calendar = {
     details,
   },
   linkages: {
-    type: [
-      {
-        type: 'value:schema',
-        target: "filter",
-        schema: {
-          'x-component-props': {
-            associatedKey: "{{ $form.values && $form.values.associatedKey }}"
-          },
-        },
-      },
-      {
-        type: 'value:schema',
-        target: "labelField",
-        schema: {
-          'x-component-props': {
-            associatedKey: "{{ $form.values && $form.values.associatedKey }}"
-          },
-        },
-      },
-      {
-        type: 'value:schema',
-        target: "startDateField",
-        schema: {
-          'x-component-props': {
-            associatedKey: "{{ $form.values && $form.values.associatedKey }}"
-          },
-        },
-      },
-      {
-        type: 'value:schema',
-        target: "endDateField",
-        schema: {
-          'x-component-props': {
-            associatedKey: "{{ $form.values && $form.values.associatedKey }}"
-          },
-        },
-      },
-      {
-        type: 'value:schema',
-        target: "pages",
-        schema: {
-          'x-component-props': {
-            associatedKey: "{{ $form.values && $form.values.associatedKey }}"
-          },
-        },
-      },
-    ],
+    
   },
 };

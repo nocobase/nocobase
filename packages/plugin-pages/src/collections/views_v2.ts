@@ -2,6 +2,7 @@ import { TableOptions } from '@nocobase/database';
 import { getViewFields } from '../views';
 
 const fields = getViewFields();
+const associatedKeyValue = "{{ $form.values && $form.values.collection && $form.values.collection.name }}";
 
 export default {
   name: 'views_v2',
@@ -65,20 +66,11 @@ export default {
         },
         {
           type: 'value:schema',
-          target: 'targetField',
-          "condition": "{{ $self.value === 'association' }}",
-          schema: {
-            'x-component-props': {
-              associatedKey: "{{ $form.values && $form.values.associatedKey }}"
-            },
-          },
-        },
-        {
-          type: 'value:schema',
           target: '*',
           schema: {
             'x-component-props': {
-              __parent: '{{ $form.values && $form.values.associatedKey }}',
+              associatedKey: associatedKeyValue,
+              __parent: associatedKeyValue,
             },
           },
         },
@@ -295,25 +287,12 @@ export default {
       title: '表单',
       fields: [
         'title',
+        'collection',
         'dataSourceType',
         'targetField',
         'targetView',
         ...fields.map(field => field.name),
       ],
-    },
-  ],
-  pages_v2: [
-    {
-      developerMode: true,
-      title: '表格',
-      name: 'all',
-      views: ['table'],
-    },
-    {
-      developerMode: true,
-      title: '表单',
-      name: 'form',
-      views: ['form'],
     },
   ],
 } as TableOptions;

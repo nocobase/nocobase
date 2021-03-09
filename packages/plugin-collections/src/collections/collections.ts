@@ -330,28 +330,6 @@ export default {
     {
       interface: 'linkTo',
       type: 'hasMany',
-      name: 'pages_v2',
-      target: 'pages_v2',
-      title: '页面',
-      sourceKey: 'name',
-      draggable: true,
-      // actions: {
-      //   list: {
-      //     sort: 'sort',
-      //   },
-      //   destroy: {
-      //     filter: {
-      //       default: false
-      //     }
-      //   }
-      // },
-      component: {
-        type: 'drawerSelect',
-      },
-    },
-    {
-      interface: 'linkTo',
-      type: 'hasMany',
       name: 'scopes',
       target: 'scopes',
       title: '数据范围',
@@ -510,14 +488,14 @@ export default {
       ],
       fields: ['sort', 'title'],
       detailsOpenMode: 'drawer', // window
-      details: ['descriptions', 'fields', 'views', 'pages'],
+      details: ['descriptions', 'fields', 'views'],
       sort: ['sort'],
     },
     {
       developerMode: true,
       type: 'table',
       name: 'permissions_table',
-      title: '全部数据',
+      title: '权限表格',
       labelField: 'title',
       actions: [],
       fields: ['title'],
@@ -529,7 +507,7 @@ export default {
       developerMode: true,
       type: 'form',
       name: 'permissions_form',
-      title: '表单',
+      title: '权限表单',
       fields: [
         {
           interface: 'json',
@@ -613,58 +591,6 @@ export default {
       title: '视图',
       targetViewName: 'table',
       targetFieldName: 'views_v2',
-    },
-    {
-      developerMode: true,
-      type: 'association',
-      name: 'pages',
-      title: '页面',
-      targetViewName: 'collection_pages',
-      targetFieldName: 'pages_v2',
-    },
-  ],
-  pages_v2: [
-    {
-      developerMode: true,
-      title: '数据表配置',
-      name: 'all',
-      views: ['table'],
-    },
-    {
-      developerMode: true,
-      title: '详情',
-      name: 'descriptions',
-      views: ['descriptions'],
-    },
-    {
-      developerMode: true,
-      title: '表单',
-      name: 'form',
-      views: ['form'],
-    },
-    {
-      developerMode: true,
-      title: '权限配置表单',
-      name: 'permissions_form',
-      views: ['permissions_form'],
-    },
-    {
-      developerMode: true,
-      title: '字段',
-      name: 'fields',
-      views: ['fields'],
-    },
-    {
-      developerMode: true,
-      title: '视图',
-      name: 'views',
-      views: ['views'],
-    },
-    {
-      developerMode: true,
-      title: '页面',
-      name: 'pages',
-      views: ['pages'],
     },
   ],
 } as TableOptions;

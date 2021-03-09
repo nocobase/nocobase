@@ -19,31 +19,25 @@ import { View } from './';
 export const icon = <LoadingOutlined style={{ fontSize: 36 }} spin />;
 
 export function Details(props) {
-  const { __parent, associatedKey, resourceName, onFinish, onDataChange, data, pages = [], resolve } = props;
-  if (!pages || pages.length === 0) {
+  const { __parent, associatedKey, resourceName, onFinish, onDataChange, data, items = [], resolve } = props;
+  if (!items || items.length === 0) {
     return null;
   }
-  const [page, setPage] = useState(pages[0]);
-  const { id, collection_name, views } = page;
+  const [currentTabIndex, setCurrentTabIndex] = useState('0');
   return (
     <div className={'page-tabs'}>
-      { pages.length > 1 && (
+      { items.length > 1 && (
         <div className={'tabs-wrap'}>
-          <Tabs size={'small'} activeKey={`${id}`} onChange={(pageId) => {
-            console.log(pageId);
-            const p = pages.find(page => page.id == pageId);
-            if (p) {
-              setPage(p);
-            }
+          <Tabs size={'small'} activeKey={`${currentTabIndex}`} onChange={(activeKey) => {
+            setCurrentTabIndex(activeKey);
           }}>
-            {pages.map(page => (
-              <Tabs.TabPane tab={page.title} key={page.id}>
-              </Tabs.TabPane>
+            {items.map((page, index) => (
+              <Tabs.TabPane tab={page.title} key={`${index}`}/>
             ))}
           </Tabs>
         </div>
       ) }
-      {views.map(view => {
+      {(get(items, [currentTabIndex, 'views'])||[]).map(view => {
         let viewName: string;
         if (typeof view === 'string') {
           viewName = `${resourceName}.${view}`;
@@ -161,6 +155,7 @@ export function Table(props: any) {
   }, [data]);
 
   if (expandable) {
+    // expandable.expandIconColumnIndex = 4;
     expandable.onExpand = (expanded, record)  => {
       if (!expanded) {
         const index = expandedRowKeys.indexOf(record[rowKey]);
@@ -306,7 +301,9 @@ export function Table(props: any) {
           }}
           expandable={expandable}
           onRow={(data) => ({
-            onClick: () => {
+            onClick: (e) => {
+              // @ts-ignore
+              // console.log('e.target', e.target.parentElement.className);
               Drawer.open({
                 headerStyle: details.length > 1 ? {
                   paddingBottom: 0,
@@ -336,7 +333,7 @@ export function Table(props: any) {
                       }}
                       data={data}
                       resolve={resolve}
-                      pages={details}
+                      items={details}
                     />
                   </div>
                 ),

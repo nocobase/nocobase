@@ -7,7 +7,6 @@ import _ from 'lodash';
 export const getInfo = async (ctx: actions.Context, next) => {
   const { resourceKey } = ctx.action.params;
   const View = ctx.db.getModel('views_v2') as ModelCtor<Model>;
-  const Page = ctx.db.getModel('pages_v2') as ModelCtor<Model>;
   const Field = ctx.db.getModel('fields') as ModelCtor<Model>;
   let primaryKey: string;
   let viewName: string;
@@ -45,21 +44,6 @@ export const getInfo = async (ctx: actions.Context, next) => {
   });
   let viewData = view.toJSON();
   const Collection = ctx.db.getModel(collectionName) as ModelCtor<Model>;
-  // const items = await view.getPages(Page.parseApiJson({
-  //   sort: ['sort'],
-  // }));
-  // const pages = [];
-  // for (const item of items) {
-  //   const page = await Page.findByPk(item.page_id);
-  //   pages.push(page);
-  // }
-  // const columns = await Field.findAll(Field.parseApiJson({
-  //   filter: {
-  //     collection_name: view.collection_name,
-  //     'name.in': view.get('fields')||[],
-  //   },
-  //   sort: ['sort'],
-  // }));
   const fields = [];
   for (const field of view.get(`x-${view.type}-props.fields`) || view.get('fields') || []) {
     let fieldName: any;
@@ -144,45 +128,37 @@ export const getInfo = async (ctx: actions.Context, next) => {
   }
   const details = [];
   for (const item of view.get(`x-${view.type}-props.details`) || view.get('details') || []) {
-    let pageName: string;
-    let json: any = {};
+    let vName: string;
     if (typeof item === 'string') {
-      pageName = item;
-    } else if (typeof item === 'object') {
-      if (item.page) {
-        const { page: p, ...others } = item;
-        pageName = p.name;
-        json = others;
-      } else if (item.name) {
-        pageName = item.name;
-        json = item;
-      }
-    }
-    const page = await Page.findOne({
-      where: {
-        collection_name: view.collection_name,
-        name: pageName,
-      }
-    });
-    let detail: any = merge(page.toJSON(), json);
-    const views = [];
-    for (const detailView of detail.views) {
-      if (typeof detailView === 'string') {
-        views.push({
-          name: detailView,
-          width: '100%',
-        });
-      } else if (typeof detailView === 'object') {
-        if (detailView.view) {
-          const { view: v, ...others } = detailView;
-          views.push(merge(v, others));
-        } else {
-          views.push(detailView);
+      vName = item;
+      const sView = await View.findOne({
+        where: {
+          collection_name: view.collection_name,
+          name: vName,
         }
+      });
+      sView && details.push({
+        title: sView.title,
+        views: [sView],
+      });
+    } else if (typeof item === 'object') {
+      if (item.views) {
+        // TODO 标签页多视图支持
+      } else if (item.view) {
+        const { view: v, ...others } = item;
+        vName = v.name;
+        const sView = await View.findOne({
+          where: {
+            collection_name: view.collection_name,
+            name: vName,
+          }
+        });
+        sView && details.push({
+          ...others,
+          views: [sView],
+        });
       }
     }
-    detail.views = views;
-    details.push(detail);
   }
   const data: any = {
     ...viewData,
