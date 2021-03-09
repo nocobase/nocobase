@@ -21,7 +21,7 @@ const actions = {
 const details = {
   interface: 'json',
   type: 'virtual',
-  title: '详情页要显示的单条数据子页面',
+  title: '详情标签页里要显示的视图',
   target:  'views_details_v2',
   component: {
     type: 'subTable',

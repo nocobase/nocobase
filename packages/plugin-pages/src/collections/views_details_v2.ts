@@ -13,7 +13,7 @@ export default {
       interface: 'string',
       type: 'string',
       name: 'title',
-      title: '页面名称',
+      title: '标签名称',
       component: {
         type: 'string',
       },
@@ -23,7 +23,7 @@ export default {
       type: 'belongsTo',
       name: 'view',
       target: 'views_v2',
-      title: '视图',
+      title: '当前标签页视图',
       labelField: 'title',
       valueField: 'id',
       multiple: false,
@@ -61,7 +61,7 @@ export default {
       ],
       fields: [
         'title',
-        'page',
+        'view',
       ],
       detailsOpenMode: 'drawer', // window
       details: ['form'],
@@ -74,7 +74,7 @@ export default {
       title: '表单',
       fields: [
         'title',
-        'page',
+        'view',
       ],
     },
   ],
