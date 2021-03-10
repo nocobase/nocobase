@@ -48,10 +48,21 @@ export default {
       labelField: 'title',
       actions: [
         {
-          name: 'create',
-          type: 'create',
+          name: 'add',
+          type: 'add',
           title: '新增',
-          viewName: 'form',
+          transform: {
+            'data': 'view',
+            'data.title': 'title',
+          },
+          viewName: 'views_v2.table',
+          filter: {
+            or: [
+              {'type': 'form'},
+              {'type': 'descriptions'},
+              {'data_source_type': 'association'},
+            ]
+          },
         },
         {
           name: 'destroy',

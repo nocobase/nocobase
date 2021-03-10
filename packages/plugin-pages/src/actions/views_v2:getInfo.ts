@@ -36,12 +36,21 @@ export const getInfo = async (ctx: actions.Context, next) => {
     }
   }
   console.log({viewName, collectionName, associatedName})
-  const view = await View.findOne({
+  let view = await View.findOne({
     where: {
       name: viewName,
       collection_name: collectionName
     },
   });
+  if (!view && viewName === 'descriptions') {
+    view = await View.findOne({
+      where: {
+        name: 'form',
+        collection_name: collectionName
+      },
+    });
+    view.type = 'descriptions';
+  }
   let viewData = view.toJSON();
   const Collection = ctx.db.getModel(collectionName) as ModelCtor<Model>;
   const fields = [];
@@ -113,7 +122,9 @@ export const getInfo = async (ctx: actions.Context, next) => {
     parts.pop();
     for (const action of view.get(`x-${view.type}-props.actions`) || view.get('actions')) {
       if (action.viewName) {
-        action.viewName = `${parts.join('.')}.${action.viewName}`;
+        if (!action.viewName.includes('.')) {
+          action.viewName = `${parts.join('.')}.${action.viewName}`;
+        }
       }
       if (action.view && action.view.name) {
         action.viewName = `${parts.join('.')}.${action.view.name}`;

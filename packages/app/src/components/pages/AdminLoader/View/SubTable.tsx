@@ -102,8 +102,10 @@ export function SubTable(props: any) {
 
   const { type } = associationField;
 
+  console.log({associatedKey});
+
   const { data = [], loading, mutate, refresh, run, params } = useRequest((params = {}, ...args) => {
-    return type === 'virtual' || type === 'json' ? Promise.resolve({
+    return !associatedKey || type === 'virtual' || type === 'json' ? Promise.resolve({
       data: (props.data||[]).map(item => {
         if (!item[rowKey]) {
           item[rowKey] = generateIndex();
@@ -177,6 +179,18 @@ export function SubTable(props: any) {
           onChange && await onChange(data);
           console.log('create', {...values});
         },
+        async add(items = []) {
+          const data = [...dataSource];
+          data.push(...items);
+          mutate(data.map(item => {
+            if (!item[rowKey]) {
+              item[rowKey] = generateIndex();
+            }
+            return item;
+          }));
+          onChange && await onChange(data);
+          console.log('add', {data});
+        },
         async destroy() {
           const data = dataSource.filter(item => !selectedRowKeys.includes(item[rowKey]));
           mutate(data);
@@ -196,7 +210,10 @@ export function SubTable(props: any) {
           expandable={expandable}
           onRow={(data, index) => ({
             onClick: (e) => {
-              console.log('e.target', e.target);
+              const className = (e.target as HTMLElement).className;
+              if (className.includes('ant-table-selection-column') || className.includes('ant-checkbox') || className.includes('ant-radio')) {
+                return;
+              }
               Drawer.open({
                 title: details.length > 1 ? undefined : data[labelField],
                 bodyStyle: {

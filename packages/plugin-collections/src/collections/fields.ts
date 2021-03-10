@@ -450,6 +450,17 @@ export default {
         // showInTable: true,
         // showInDetail: true,
         showInForm: true,
+        'x-linkages': [
+          {
+            type: 'value:schema',
+            target: 'children',
+            schema: {
+              'x-component-props': {
+                associatedKey: "{{ $form.values && $form.values.id }}"
+              },
+            },
+          },
+        ],
       },
     },
     // {

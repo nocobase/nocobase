@@ -248,9 +248,9 @@ const data = [
   // 导入地域数据
   // await chinaRegionSeederInit(api);
 
-  await database.getModel('collections').import(require('./collections/example').default);
-  await database.getModel('collections').import(require('./collections/authors').default);
-  await database.getModel('collections').import(require('./collections/books').default);
+  // await database.getModel('collections').import(require('./collections/example').default);
+  // await database.getModel('collections').import(require('./collections/authors').default);
+  // await database.getModel('collections').import(require('./collections/books').default);
 
   const Menu = database.getModel('menus');
 

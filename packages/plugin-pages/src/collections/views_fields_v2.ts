@@ -47,10 +47,14 @@ export default {
       labelField: 'title',
       actions: [
         {
-          name: 'create',
-          type: 'create',
+          name: 'add',
+          type: 'add',
           title: '新增',
-          viewName: 'form',
+          transform: {
+            'data': 'field',
+            'data.title': 'title',
+          },
+          viewName: 'fields.table',
         },
         {
           name: 'destroy',

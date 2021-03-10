@@ -261,6 +261,12 @@ export function Table(props: any) {
           await refresh();
           await reloadMenu();
         },
+        async add(values = []) {
+          await api.resource(resourceName).add({
+            associatedKey,
+            values,
+          });
+        },
         async update(values) {
           await refresh();
           await reloadMenu();
@@ -302,8 +308,10 @@ export function Table(props: any) {
           expandable={expandable}
           onRow={(data) => ({
             onClick: (e) => {
-              // @ts-ignore
-              // console.log('e.target', e.target.parentElement.className);
+              const className = (e.target as HTMLElement).className;
+              if (className.includes('ant-table-selection-column') || className.includes('ant-checkbox') || className.includes('ant-radio')) {
+                return;
+              }
               Drawer.open({
                 headerStyle: details.length > 1 ? {
                   paddingBottom: 0,

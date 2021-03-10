@@ -3,6 +3,8 @@ import { Button, Popconfirm, Popover } from 'antd';
 import { FilterOutlined, PlusOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons';
 import Drawer from '@/components/pages/AdminLoader/Drawer';
 import View from '@/components/pages/AdminLoader/View';
+import get from 'lodash/get';
+import set from 'lodash/set';
 
 export function Create(props) {
   const { size, onFinish, schema = {}, associatedKey, ...restProps } = props;
@@ -62,6 +64,58 @@ export function Update(props) {
             ),
           });
         }} 
+        icon={<PlusOutlined />} 
+        type={'primary'}
+      >{ title }</Button>
+    </>
+  )
+}
+
+export function Add(props) {
+  const { size, onFinish, schema = {}, associatedKey, ...restProps } = props;
+  const { filter, title, viewName, transform } = schema;
+  return (
+    <>
+      <Button 
+        size={size}
+        onClick={() => {
+          Drawer.open({
+            title: title,
+            content: ({resolve}) => {
+              const [selectedRows, setSelectedRows] = useState([]);
+              return (
+                <div>
+                  <View
+                    {...restProps}
+                    defaultFilter={filter}
+                    viewName={viewName}
+                    onSelected={(values) => {
+                      console.log(values);
+                      setSelectedRows(values.map( item => {
+                        if (!transform) {
+                          return;
+                        }
+                        const data = {};
+                        for (const [sourceKey, targetKey] of Object.entries<string>(transform)) {
+                          const value = get({ data: item }, sourceKey);
+                          set(data, targetKey, value);
+                        }
+                        return data;
+                      }));
+                    }}
+                  />
+                  <Drawer.Footer>
+                    <Button type={'primary'} onClick={async () => {
+                      console.log({schema, onFinish});
+                      onFinish && await onFinish(selectedRows);
+                      resolve();
+                    }}>确定</Button>
+                  </Drawer.Footer>
+                </div>
+              );
+            },
+          });
+        }}
         icon={<PlusOutlined />} 
         type={'primary'}
       >{ title }</Button>
@@ -197,6 +251,7 @@ export function Action(props) {
   return Component && <Component {...props}/>;
 }
 
+registerAction('add', Add);
 registerAction('update', Update);
 registerAction('create', Create);
 registerAction('destroy', Destroy);

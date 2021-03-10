@@ -29,6 +29,12 @@ export default {
       },
     },
     {
+      interface: 'string',
+      type: 'virtual',
+      name: 'view.collection.title',
+      title: '所属数据表',
+    },
+    {
       interface: 'radio',
       type: 'string',
       name: 'width',
@@ -51,10 +57,20 @@ export default {
       labelField: 'title',
       actions: [
         {
-          name: 'create',
-          type: 'create',
+          name: 'add',
+          type: 'add',
           title: '新增',
-          viewName: 'form',
+          transform: {
+            'data': 'view',
+            'data.title': 'title',
+          },
+          viewName: 'views_v2.table',
+          filter: {
+            and: [
+              {'type.ne': 'descriptions'},
+              {'data_source_type.ne': 'association'},
+            ]
+          },
         },
         {
           name: 'destroy',
@@ -64,6 +80,7 @@ export default {
       ],
       fields: [
         'view',
+        'view.collection.title',
         'width'
       ],
       detailsOpenMode: 'drawer', // window
@@ -74,6 +91,16 @@ export default {
       developerMode: true,
       type: 'form',
       name: 'form',
+      title: '表单',
+      fields: [
+        'view',
+        'width'
+      ],
+    },
+    {
+      developerMode: true,
+      type: 'descriptions',
+      name: 'descriptions',
       title: '表单',
       fields: [
         'view',

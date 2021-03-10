@@ -123,6 +123,9 @@ export default {
       target:  'menus_views_v2',
       component: {
         type: 'subTable',
+        'x-component-props': {
+          viewName: 'menus.views',
+        },
         'x-linkages': [
           {
             type: 'value:schema',
@@ -137,6 +140,43 @@ export default {
         ],
       },
     },
+    // {
+    //   interface: 'subTable',
+    //   type: 'hasMany',
+    //   name: 'menus_views',
+    //   title: '显示在页面里的视图',
+    //   target:  'menus_views_v2',
+    //   sourceKey: 'id',
+    //   foreignKey: 'menu_id',
+    //   component: {
+    //     type: 'subTable',
+    //     'x-component-props': {
+    //       viewName: 'menus.menus_views',
+    //       filter: {
+    //         or: [
+    //           {
+    //             'type.neq': 'descriptions',
+    //           },
+    //           {
+    //             'data_source_type.neq': 'association',
+    //           }
+    //         ],
+    //       },
+    //     },
+    //     'x-linkages': [
+    //       {
+    //         type: 'value:schema',
+    //         target: 'menus_views',
+    //         schema: {
+    //           'x-component-props': {
+    //             __parent: '{{ $form.values && $form.values.associatedKey }}',
+    //             associatedKey: "{{ $form.values && $form.values.id }}"
+    //           },
+    //         },
+    //       },
+    //     ],
+    //   },
+    // },
     {
       interface: 'json',
       type: 'json',
