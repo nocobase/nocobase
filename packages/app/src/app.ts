@@ -53,7 +53,12 @@ export async function getInitialState() {
         };
       }
 
+      const { data: systemSettings = {} } = await umiRequest('/system_settings:get?fields[appends]=logo,logo.storage', {
+        method: 'get',
+      });
+
       return {
+        systemSettings,
         currentUser: data,
       };
     } catch (error) {

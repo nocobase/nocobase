@@ -312,6 +312,14 @@ const data = [
       developerMode: true,
       children: [
         {
+          name: 'system_settings',
+          title: '系统配置',
+          icon: 'DatabaseOutlined',
+          type: 'page',
+          views: ['system_settings.descriptions'],
+          developerMode: true,
+        },
+        {
           name: 'collections',
           title: '数据表配置',
           icon: 'DatabaseOutlined',

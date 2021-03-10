@@ -184,7 +184,7 @@ export function getImgUrls(value) {
 export const Upload = connect({
   getProps: mapStyledProps
 })((props) => {
-  const { value, onChange } = props;
+  const { multiple = true, value, onChange } = props;
   const [visible, setVisible] = useState(false);
   const [imgIndex, setImgIndex] = useState(0);
   const [fileList, setFileList] = useState(toFileList(value));
@@ -194,7 +194,8 @@ export const Upload = connect({
     onChange({ fileList }) {
       console.log(fileList);
       setFileList((fileList));
-      onChange(toValues(fileList));
+      const list = toValues(fileList);
+      onChange(multiple ? list : (list.shift()||null));
     },
   };
   const images = getImgUrls(fileList);

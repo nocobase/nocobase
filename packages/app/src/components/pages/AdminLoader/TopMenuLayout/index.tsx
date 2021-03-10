@@ -7,6 +7,7 @@ import AvatarDropdown from '@/components/pages/AvatarDropdown';
 import Menu from '../menu';
 import { ReactComponent as Logo } from './logo-white.svg';
 import { useResponsive, useLocalStorageState } from 'ahooks';
+import get from 'lodash/get';
 
 export function TopMenuLayout(props: any) {
   const { currentPageName, menu = [] } = props;
@@ -15,10 +16,15 @@ export function TopMenuLayout(props: any) {
   const [visible, setVisible] = useLocalStorageState(`nocobase-nav-visible`, false);
   const responsive = useResponsive();
   const isMobile = responsive.small && !responsive.middle && !responsive.large;
+  const { initialState = {}, loading, error, refresh, setInitialState } = useModel('@@initialState');
+  const logoUrl = get(initialState, 'systemSettings.logo.url');
+  console.log({logoUrl});
   return (
     <Layout style={{ height: '100vh' }}>
       <Layout.Header style={{height: 48, lineHeight: '48px', padding: 0}} className="nb-header">
-        <div className="logo" style={{width: 200, height: 20, float: 'left'}}><Logo/></div>
+        <div className="logo" style={{width: 200, height: 24, float: 'left'}}>
+          {!logoUrl ? <Logo/> : <img src={logoUrl}/>}
+        </div>
         {!isMobile && <Menu currentPageName={currentPageName} hideChildren={true} items={menu} className={'noco-top-menu'} style={{float: 'left'}} theme="dark" mode="horizontal"/>}
         {!isMobile && <AvatarDropdown/>}
         {isMobile && <MenuOutlined onClick={() => {

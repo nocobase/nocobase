@@ -38,7 +38,7 @@ export function Descriptions(props) {
         onTrigger={{
           async update(values) {
             refresh();
-            onDataChange(values);
+            onDataChange && onDataChange(values);
           },
         }}
         associatedKey={associatedKey}

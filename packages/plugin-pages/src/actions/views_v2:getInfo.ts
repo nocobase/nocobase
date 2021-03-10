@@ -221,6 +221,12 @@ export const getInfo = async (ctx: actions.Context, next) => {
     data.appends = data.fields.filter(field => {
       return ['hasMany', 'hasOne', 'belongsToMany', 'belongsTo'].includes(field.type);
     }).map(field => field.name);
+
+    for (const field of data.fields) {
+      if (field.interface === 'attachment') {
+        data.appends.push(`${field.name}.storage`);
+      }
+    }
   }
   delete data['resourceKey'];
   delete data['associatedKey'];

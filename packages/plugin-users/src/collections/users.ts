@@ -5,6 +5,8 @@ export default {
   title: '用户',
   // developerMode: true,
   // internal: true,
+  createdBy: false,
+  updatedBy: false,
   fields: [
     {
       interface: 'string',
