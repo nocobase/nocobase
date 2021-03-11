@@ -56,13 +56,13 @@ export default (props: any) => {
       // const subItems = children.filter(child => child.showInMenu);
       if (!hideChildren && children.length) {
         return (
-          <Menu.SubMenu key={`${item.name}`} icon={<Icon type={item.icon}/>} title={<>{item.title}</>}>
+          <Menu.SubMenu key={`${item.name}`} icon={item.icon && <Icon type={item.icon}/>} title={<>{item.title}</>}>
             {renderChildren(children)}
           </Menu.SubMenu>
         )
       }
       return (
-        <Menu.Item icon={<Icon type={item.icon}/>} key={`${item.name}`}>
+        <Menu.Item icon={item.icon && <Icon type={item.icon}/>} key={`${item.name}`}>
           <Link to={item.path}>{item.title}</Link>
         </Menu.Item>
       )
