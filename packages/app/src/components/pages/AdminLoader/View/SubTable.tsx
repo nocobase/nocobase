@@ -12,13 +12,14 @@ import ReactDragListView from 'react-drag-listview';
 import arrayMove from 'array-move';
 import get from 'lodash/get';
 import cloneDeep from 'lodash/cloneDeep';
+import some from 'lodash/some';
 import Drawer from '@/components/pages/AdminLoader/Drawer';
 import Field from '@/components/views/Field';
 import { Form } from './Form';
 import { View } from './';
 
 export function Details(props) {
-  const { __parent, noRequest,  associatedKey, resourceName, onFinish, onDataChange, data, items = [], resolve } = props;
+  const { onReset, __parent, noRequest,  associatedKey, resourceName, onFinish, onDataChange, data, items = [], resolve } = props;
   if (!items || items.length === 0) {
     return null;
   }
@@ -44,7 +45,13 @@ export function Details(props) {
           viewName = `${resourceName}.${view.name}`;
         }
         return (
-          <View __parent={__parent} noRequest={noRequest} associatedKey={associatedKey} onFinish={onFinish} onDataChange={onDataChange} data={data} viewName={viewName}/>
+          <View 
+            onReset={onReset} 
+            __parent={__parent} 
+            noRequest={noRequest} 
+            associatedKey={associatedKey} 
+            onFinish={onFinish} 
+            onDataChange={onDataChange} data={data} viewName={viewName}/>
         );
       })}
     </div>
@@ -82,23 +89,40 @@ export function SubTable(props: any) {
 
   const cloneFields = cloneDeep(fields) as any[];
 
-  cloneFields.unshift({
-    "dataIndex": [
-    "sort"
-    ],
-    "title": "排序",
-    "name": "sort",
-    "interface": "sort",
-    "type": "sort",
-    "required": true,
-    "developerMode": false,
-    "component": {
+  let draggable = !!schema.draggable;
+
+  let sortField: string;
+
+  for (const field of cloneFields) {
+    if (field.type === 'sort') {
+      sortField = field.name;
+    }
+  }
+
+  if (draggable && !sortField) {
+    sortField = 'sort',
+    cloneFields.unshift({
+      "dataIndex": [
+      "sort"
+      ],
+      "title": "排序",
+      "name": "sort",
+      "interface": "sort",
       "type": "sort",
-      "showInTable": true,
-      "width": 60,
-      "className": "drag-visible"
-    },
-  });
+      "required": true,
+      "developerMode": false,
+      "component": {
+        "type": "sort",
+        "showInTable": true,
+        "width": 60,
+        "className": "drag-visible"
+      },
+    });
+  }
+
+  if (!sortField) {
+    sortField = 'sort';
+  }
 
   const { type } = associationField;
 
@@ -143,7 +167,10 @@ export function SubTable(props: any) {
 
   const dragProps = {
     async onDragEnd(fromIndex, toIndex) {
-      const data = arrayMove(dataSource, fromIndex, toIndex);
+      let data = arrayMove(dataSource, fromIndex, toIndex);
+      data = data.map((v: any, i) => {
+        return {...v, [sortField]: i};
+      });
       mutate(data);
       onChange && await onChange(data);
     },
@@ -173,26 +200,33 @@ export function SubTable(props: any) {
       <Actions size={size} __parent={__parent} associatedKey={associatedKey} noRequest={true} onTrigger={{
         async create(values) {
           values[rowKey] = generateIndex();
-          const data = [...dataSource];
+          let data = [...dataSource];
           data.push(values);
+          data = data.map((v: any, i) => {
+            return {...v, [sortField]: i};
+          });
           mutate(data);
           onChange && await onChange(data);
           console.log('create', {...values});
         },
         async add(items = []) {
-          const data = [...dataSource];
+          let data = [...dataSource];
           data.push(...items);
-          mutate(data.map(item => {
-            if (!item[rowKey]) {
-              item[rowKey] = generateIndex();
+          data = data.map((v: any, i) => {
+            if (!v[rowKey]) {
+              v[rowKey] = generateIndex();
             }
-            return item;
-          }));
+            return {...v, [sortField]: i};
+          });
+          mutate(data);
           onChange && await onChange(data);
           console.log('add', {data});
         },
         async destroy() {
-          const data = dataSource.filter(item => !selectedRowKeys.includes(item[rowKey]));
+          let data = dataSource.filter(item => !selectedRowKeys.includes(item[rowKey]));
+          data = data.map((v: any, i) => {
+            return {...v, [sortField]: i};
+          });
           mutate(data);
           onChange && await onChange(data);
         },
@@ -226,13 +260,17 @@ export function SubTable(props: any) {
                       associatedKey={associatedKey}
                       resourceName={resourceName} 
                       onFinish={async (values) => {
-                        const data = [...dataSource];
+                        let data = [...dataSource];
                         data[index] = values;
+                        data = data.map((v: any, i) => {
+                          return {...v, [sortField]: i};
+                        });
                         mutate(data);
                         onChange && await onChange(data);
                         console.log('details', values);
                         resolve();
                       }}
+                      onReset={resolve}
                       onDataChange={() => {
                         
                       }}

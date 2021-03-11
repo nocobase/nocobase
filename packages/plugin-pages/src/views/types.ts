@@ -37,6 +37,7 @@ const detailsOpenMode = {
     { label: '常规页面', value: 'default' },
     { label: '快捷抽屉', value: 'simple' },
   ],
+  defaultValue: 'default',
   component: {
     type: 'radio',
     default: 'default',
@@ -50,7 +51,10 @@ export const form = {
     // fields,
   },
   properties: {
-    fields,
+    fields: {
+      ...fields,
+      title: '显示在表单里的字段'
+    },
   },
   linkages: {
     
@@ -65,7 +69,10 @@ export const descriptions = {
   },
   properties: {
     actions,
-    fields,
+    fields: {
+      ...fields,
+      title: '显示在详情里的字段'
+    },
   },
   linkages: {
     
@@ -124,7 +131,10 @@ export const table = {
         },
       },
     },
-    fields,
+    fields: {
+      ...fields,
+      title: '显示在表格里的字段'
+    },
     defaultPerPage: {
       interface: 'radio',
       type: 'virtual',

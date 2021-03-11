@@ -1,12 +1,11 @@
 .action-buttons {
   display: flex;
-  justify-content: flex-end;
+  // justify-content: flex-end;
   min-height: 32px;
+  flex-direction: row-reverse;
+  align-items: flex-start;
   .action-button {
-    margin-right: 8px;
-    &:last-child {
-      margin-right: 0;
-    }
+    margin-left: 8px;
   }
   .filter-action-button {
     position: absolute;

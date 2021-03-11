@@ -231,8 +231,12 @@ export const Upload = connect({
           
         // }}
       >
-        <PlusOutlined />
-        <div style={{marginTop: 5}}>上传</div>
+        {multiple || fileList.length < 1 && (
+          <>
+            <PlusOutlined />
+            <div style={{marginTop: 5}}>上传</div>
+          </>
+        )}
       </AntdUpload>
       {visible && <Lightbox
         mainSrc={get(images, [imgIndex, 'url'])}

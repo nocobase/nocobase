@@ -94,13 +94,16 @@ export function DrawerSelectComponent(props) {
                       viewName={viewName || `${target}.table`}
                     />
                     <Drawer.Footer>
-                    <Button onClick={() => {
-                        setOptions(rows);
-                        // console.log('valuevaluevaluevaluevaluevalue', {selectedRowKeys});
-                        onChange(multiple ? selected : selected.shift());
-                        // console.log({rows, rowKeys});
-                        resolve();
-                      }} type={'primary'}>确定</Button>
+                      <Space>
+                        <Button onClick={resolve}>取消</Button>
+                        <Button onClick={() => {
+                          setOptions(rows);
+                          // console.log('valuevaluevaluevaluevaluevalue', {selectedRowKeys});
+                          onChange(multiple ? selected : selected.shift());
+                          // console.log({rows, rowKeys});
+                          resolve();
+                        }} type={'primary'}>确定</Button>
+                      </Space>
                     </Drawer.Footer>
                   </>
                 )
@@ -110,54 +113,6 @@ export function DrawerSelectComponent(props) {
           }
         }}
       ></Select>
-      {/* <Drawer 
-        width={'40%'}
-        className={'noco-drawer'}
-        title={'关联数据'}
-        visible={visible}
-        bodyStyle={{padding: 0}}
-        onClose={() => {
-          setVisible(false);
-        }}
-        footer={[
-          <div
-            style={{
-              textAlign: 'right',
-            }}
-          >
-            <Space>
-              <Button onClick={() => setVisible(false)}>取消</Button>
-              <Button type={'primary'} onClick={() => {
-                setOptions(selectedRows);
-                // console.log('valuevaluevaluevaluevaluevalue', {selectedRowKeys});
-                onChange(multiple ? selectedRowKeys : selectedRowKeys.shift());
-                setVisible(false);
-              }}>确定</Button>
-            </Space>
-          </div>
-          
-        ]}
-      >
-        <ViewFactory
-          defaultFilter={filter}
-          multiple={multiple}
-          resourceTarget={target}
-          resourceName={associatedKey ? resourceName : target}
-          associatedKey={associatedKey}
-          isFieldComponent={true}
-          selectedRowKeys={selectedRowKeys}
-          onSelected={(values) => {
-            // 需要返回的是 array
-            const [selectedKeys, selectedValue] = transform({value: values, multiple: true, labelField, valueField });
-            setSelectedRows(selectedValue);
-            setSelectedRowKeys(selectedKeys);
-            // console.log('valuevaluevaluevaluevaluevalue', {values, selectedKeys, selectedValue});
-          }}
-          // associatedKey={} 
-          // associatedName={associatedName} 
-          viewName={'table'}
-        />
-      </Drawer> */}
     </>
   );
 }

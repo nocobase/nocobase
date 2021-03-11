@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Button, Popconfirm, Popover } from 'antd';
+import { Space, Button, Popconfirm, Popover } from 'antd';
 import { FilterOutlined, PlusOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons';
 import Drawer from '@/components/pages/AdminLoader/Drawer';
 import View from '@/components/pages/AdminLoader/View';
@@ -22,6 +22,7 @@ export function Create(props) {
                   {...restProps}
                   associatedKey={associatedKey}
                   viewName={viewName}
+                  onReset={resolve}
                   onFinish={async (values) => {
                     await resolve();
                     console.log('onFinish', values);
@@ -55,6 +56,7 @@ export function Update(props) {
                   associatedKey={associatedKey}
                   data={data}
                   viewName={viewName}
+                  onReset={resolve}
                   onFinish={async (values) => {
                     await resolve();
                     onFinish && await onFinish(values);
@@ -73,6 +75,7 @@ export function Update(props) {
 
 export function Add(props) {
   const { size, onFinish, schema = {}, associatedKey, ...restProps } = props;
+  console.log({associatedKey}, 'add');
   const { filter, title, viewName, transform } = schema;
   return (
     <>
@@ -89,6 +92,7 @@ export function Add(props) {
                     {...restProps}
                     defaultFilter={filter}
                     viewName={viewName}
+                    associatedKey={associatedKey}
                     onSelected={(values) => {
                       console.log(values);
                       setSelectedRows(values.map( item => {
@@ -105,11 +109,14 @@ export function Add(props) {
                     }}
                   />
                   <Drawer.Footer>
-                    <Button type={'primary'} onClick={async () => {
-                      console.log({schema, onFinish});
-                      onFinish && await onFinish(selectedRows);
-                      resolve();
-                    }}>确定</Button>
+                    <Space>
+                      <Button onClick={resolve}>取消</Button>
+                      <Button type={'primary'} onClick={async () => {
+                        console.log({schema, onFinish});
+                        onFinish && await onFinish(selectedRows);
+                        resolve();
+                      }}>确定</Button>
+                    </Space>
                   </Drawer.Footer>
                 </div>
               );

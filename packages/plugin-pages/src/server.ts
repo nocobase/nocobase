@@ -33,7 +33,7 @@ export default async function (options = {}) {
 
   resourcer.use(async (ctx, next) => {
     const { actionName, resourceName, resourceKey } = ctx.action.params;
-    if (resourceName === 'system_settings' || actionName === 'get') {
+    if (resourceName === 'system_settings' && actionName === 'get') {
       const SystemSetting = database.getModel('system_settings');
       let model = await SystemSetting.findOne();
       if (!model) {

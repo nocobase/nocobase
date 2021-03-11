@@ -45,6 +45,7 @@ export default {
       name: 'table',
       title: '全部数据',
       labelField: 'title',
+      draggable: true,
       actions: [
         {
           name: 'add',
@@ -54,7 +55,7 @@ export default {
             'data': 'field',
             'data.title': 'title',
           },
-          viewName: 'fields.table',
+          viewName: 'collections.fields.table',
         },
         {
           name: 'destroy',

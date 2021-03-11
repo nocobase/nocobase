@@ -42,19 +42,94 @@ export const getInfo = async (ctx: actions.Context, next) => {
       collection_name: collectionName
     },
   });
-  if (!view && viewName === 'descriptions') {
-    view = await View.findOne({
-      where: {
-        name: 'form',
-        collection_name: collectionName
-      },
-    });
-    view.type = 'descriptions';
+  
+  const Collection = ctx.db.getModel('collections') as ModelCtor<Model>;
+  const M = ctx.db.getModel(collectionName) as ModelCtor<Model>;
+
+  // if (!view && viewName === 'descriptions') {
+  //   view = await View.findOne({
+  //     where: {
+  //       name: 'form',
+  //       collection_name: collectionName
+  //     },
+  //   });
+  //   view.type = 'descriptions';
+  // }
+  let viewData: any = view ? view.toJSON() : {};
+
+  if (view) {
+    viewData.fields = view.get(`x-${view.type}-props.fields`) || view.get('fields') || [];
+    viewData.actions = view.get(`x-${view.type}-props.actions`) || view.get('actions') || [];
+    viewData.details = view.get(`x-${view.type}-props.details`) || view.get('details') || [];
   }
-  let viewData = view.toJSON();
-  const Collection = ctx.db.getModel(collectionName) as ModelCtor<Model>;
+
+  if (!view) {
+    const collection = await Collection.findOne({
+      where: {
+        name: collectionName,
+      }
+    });
+    const fields = await collection.getFields({
+      order: [['sort', 'asc']],
+    });
+    if (viewName === 'table') {
+      viewData = {
+        collection_name: collectionName,
+        type: 'table',
+        name: 'table',
+        title: '全部数据',
+        actions: [
+          {
+            name: 'create',
+            type: 'create',
+            title: '新增',
+            viewName: 'form',
+          },
+          {
+            name: 'destroy',
+            type: 'destroy',
+            title: '删除',
+          },
+        ],
+        // labelField: 'title',
+        fields: fields.filter(field => {
+          return field.name !== 'action_logs';
+        }).map(field => field.name),
+        detailsOpenMode: 'drawer', // window
+        details: ['form'],
+        sort: ['id'],
+      };
+    } else if (viewName === 'form') {
+      viewData = {
+        collection_name: collectionName,
+        type: 'form',
+        name: 'form',
+        title: '表单',
+        // labelField: 'title',
+        fields: fields.filter(field => {
+          return field.name !== 'action_logs';
+        }).map(field => field.name),
+      };
+    } else if (viewName === 'descriptions') {
+      viewData = {
+        collection_name: collectionName,
+        type: 'descriptions',
+        name: 'descriptions',
+        title: '详情',
+        // labelField: 'title',
+        actions: [],
+        fields: fields.filter(field => {
+          return field.name !== 'action_logs';
+        }).map(field => field.name),
+      };
+    }
+  }
+
+  // ctx.body = {};
+  // return next();
+
   const fields = [];
-  for (const field of view.get(`x-${view.type}-props.fields`) || view.get('fields') || []) {
+  for (const field of viewData.fields||[]) {
     let fieldName: any;
     let json: any;
     if (typeof field === 'string') {
@@ -72,19 +147,20 @@ export const getInfo = async (ctx: actions.Context, next) => {
     }
     const model = await Field.findOne({
       where: {
-        collection_name: view.collection_name,
+        collection_name: viewData.collection_name,
         name: fieldName,
       },
     });
     if (model) {
       const target = model.get('target');
       if (target && model.get('interface') === 'subTable') {
-        const children = await Field.findAll({
-          where: {
+        const children = await Field.findAll(Field.parseApiJson({
+          filter: {
             collection_name: target,
+            'name.ne': 'action_logs',
           },
-          order: [['sort', 'asc']],
-        });
+          sort: 'sort',
+        }));
         if (children.length) {
           model.setDataValue('children', children);
         }
@@ -99,6 +175,7 @@ export const getInfo = async (ctx: actions.Context, next) => {
     console.log({field, json})
     json && fields.push(json);
   }
+  
   const actions = [];
   const toFields = async (values = []) => {
     const fields = [];
@@ -106,7 +183,7 @@ export const getInfo = async (ctx: actions.Context, next) => {
       if (typeof value === 'string') {
         const model = await Field.findOne({
           where: {
-            collection_name: view.collection_name,
+            collection_name: viewData.collection_name,
             name: value,
           },
         });
@@ -117,10 +194,10 @@ export const getInfo = async (ctx: actions.Context, next) => {
     }
     return fields;
   }
-  if (view.get(`x-${view.type}-props.actions`) || view.get('actions')) {
+  if (viewData.actions) {
     const parts = resourceKey.split('.');
     parts.pop();
-    for (const action of view.get(`x-${view.type}-props.actions`) || view.get('actions')) {
+    for (const action of viewData.actions || []) {
       if (action.viewName) {
         if (!action.viewName.includes('.')) {
           action.viewName = `${parts.join('.')}.${action.viewName}`;
@@ -138,13 +215,13 @@ export const getInfo = async (ctx: actions.Context, next) => {
     }
   }
   const details = [];
-  for (const item of view.get(`x-${view.type}-props.details`) || view.get('details') || []) {
+  for (const item of viewData.details || []) {
     let vName: string;
     if (typeof item === 'string') {
       vName = item;
       const sView = await View.findOne({
         where: {
-          collection_name: view.collection_name,
+          collection_name: viewData.collection_name,
           name: vName,
         }
       });
@@ -160,7 +237,7 @@ export const getInfo = async (ctx: actions.Context, next) => {
         vName = v.name;
         const sView = await View.findOne({
           where: {
-            collection_name: view.collection_name,
+            collection_name: viewData.collection_name,
             name: vName,
           }
         });
@@ -212,7 +289,7 @@ export const getInfo = async (ctx: actions.Context, next) => {
     ctx.body = item;
     return next();
   } else {
-    data.rowKey = data.rowKey || Collection.primaryKeyAttribute;
+    data.rowKey = data.rowKey || M.primaryKeyAttribute;
     if (associatedName) {
       data.resourceName = `${associatedName}.${resourceName}`;
     } else {
@@ -230,7 +307,7 @@ export const getInfo = async (ctx: actions.Context, next) => {
   }
   delete data['resourceKey'];
   delete data['associatedKey'];
-  for (const [key, value] of Object.entries(viewData[`x-${view.type}-props`]||{})) {
+  for (const [key, value] of Object.entries(viewData[`x-${viewData.type}-props`]||{})) {
     if (_.get(data, key) === null || _.get(data, key) === undefined) {
       _.set(data, key, value);
     }

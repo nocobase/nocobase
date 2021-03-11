@@ -72,6 +72,9 @@ export function fields2properties(fields = []) {
     if (linkages) {
       data['x-linkages'] = linkages;
     }
+    if (field.defaultValue !== null) {
+      data.default = field.defaultValue;
+    }
   });
   console.log({properties});
   return properties;
@@ -79,7 +82,7 @@ export function fields2properties(fields = []) {
 const actions = createFormActions();
 
 export function Form(props: any) {
-  const { __parent, noRequest = false, onFinish, resolve, data: record = {}, associatedKey, schema = {} } = props;
+  const { onReset, __parent, noRequest = false, onFinish, resolve, data: record = {}, associatedKey, schema = {} } = props;
   console.log({ noRequest, record, associatedKey, __parent });
   const { resourceName, rowKey = 'id', fields = [], appends = [], associationField = {} } = schema;
 
@@ -118,6 +121,9 @@ export function Form(props: any) {
         type: 'object',
         properties: fields2properties(fields),
       }}
+      onReset={async () => {
+        onReset && await onReset();
+      }}
       onSubmit={async (values) => {
         if (!noRequest) {
           resourceKey 
@@ -149,6 +155,7 @@ export function Form(props: any) {
       }}
     >
       <FormButtonGroup className={'form-button-group'} align={'end'}>
+        <Reset>取消</Reset>
         <Submit>确定</Submit>
       </FormButtonGroup>
     </SchemaForm>

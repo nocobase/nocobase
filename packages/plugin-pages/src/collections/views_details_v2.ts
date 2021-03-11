@@ -46,6 +46,7 @@ export default {
       name: 'table',
       title: '全部数据',
       labelField: 'title',
+      draggable: true,
       actions: [
         {
           name: 'add',
@@ -55,7 +56,7 @@ export default {
             'data': 'view',
             'data.title': 'title',
           },
-          viewName: 'views_v2.table',
+          viewName: 'collections.views_v2.table',
           filter: {
             or: [
               {'type': 'form'},

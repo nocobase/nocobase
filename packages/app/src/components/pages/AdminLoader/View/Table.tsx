@@ -19,7 +19,7 @@ import { View } from './';
 export const icon = <LoadingOutlined style={{ fontSize: 36 }} spin />;
 
 export function Details(props) {
-  const { __parent, associatedKey, resourceName, onFinish, onDataChange, data, items = [], resolve } = props;
+  const { __parent, associatedKey, resourceName, onFinish, onReset, onDataChange, data, items = [], resolve } = props;
   if (!items || items.length === 0) {
     return null;
   }
@@ -45,7 +45,7 @@ export function Details(props) {
           viewName = `${resourceName}.${view.name}`;
         }
         return (
-          <View __parent={__parent} associatedKey={associatedKey} onFinish={onFinish} onDataChange={onDataChange} data={data} viewName={viewName}/>
+          <View __parent={__parent} associatedKey={associatedKey} onReset={onReset} onFinish={onFinish} onDataChange={onDataChange} data={data} viewName={viewName}/>
         );
       })}
     </div>
@@ -108,9 +108,9 @@ export function Table(props: any) {
           defaultFilter,
           schemaFilter,
           filter,
-          __parent ? {
-            collection_name: __parent,
-          } : null,
+          // __parent ? {
+          //   collection_name: __parent,
+          // } : null,
         ].filter(obj => obj && Object.keys(obj).length)
       }
       // ...args2,
@@ -298,6 +298,13 @@ export function Table(props: any) {
             size: 'large',
             indicator: icon,
           }}
+          components={{
+            body: {
+              row: ({className, ...others}) => {
+                return <tr className={className ? `${className} row-clickable` : 'row-clickable'} {...others}/>
+              },
+            }
+          }}
           dataSource={data?.list||(data as any)}
           size={'middle'} 
           columns={fields2columns(fields, {associatedKey, refresh})}
@@ -335,6 +342,7 @@ export function Table(props: any) {
                         resolve();
                         await reloadMenu();
                       }}
+                      onReset={resolve}
                       onDataChange={async () => {
                         await refresh();
                         await reloadMenu();

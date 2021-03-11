@@ -68,6 +68,7 @@ export default {
       unique: true,
       hidden: true,
       filterable: false,
+      developerMode: true,
     },
   ],
   actions: [

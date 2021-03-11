@@ -64,16 +64,6 @@ export default {
           "target": "type",
           "condition": "{{ $self.value === 'collection' }}"
         },
-        {
-          type: 'value:schema',
-          target: '*',
-          schema: {
-            'x-component-props': {
-              associatedKey: associatedKeyValue,
-              __parent: associatedKeyValue,
-            },
-          },
-        },
       ],
     },
     {
@@ -172,6 +162,17 @@ export default {
           labelField: 'title',
           valueField: 'name',
         },
+        'x-linkages': [
+          {
+            type: 'value:schema',
+            target: '*',
+            schema: {
+              'x-component-props': {
+                associatedKey: associatedKeyValue,
+              },
+            },
+          },
+        ],
       },
     },
     {

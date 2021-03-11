@@ -82,6 +82,7 @@ export default {
       name: 'table',
       title: '全部数据',
       labelField: 'title',
+      draggable: true,
       actions: [
         {
           name: 'create',
