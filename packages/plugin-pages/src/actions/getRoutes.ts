@@ -44,7 +44,7 @@ export default async function getRoutes(ctx, next) {
   const RoutePermission = database.getModel('routes_permissions');
   const roles = ctx.ac ? await ctx.ac.getRoles() : [];
   // TODO(optimize): isRoot 的判断需要在内部完成，尽量不要交给调用者
-  const isRoot = ctx.ac ? ctx.ac.constructor.isRoot(roles) : true;
+  const isRoot = true; // ctx.ac ? ctx.ac.constructor.isRoot(roles) : true;
   const routesPermissionsMap = new Map();
   if (!isRoot) {
     const routesPermissions = await RoutePermission.findAll({
@@ -72,6 +72,7 @@ export default async function getRoutes(ctx, next) {
       && !routesPermissionsMap.has(`pages:${page.id}`)
       // 以下路径先临时处理
       && page.get('path') !== '/'
+      && page.get('path') !== '/admin'
       && page.get('path') !== '/register'
       && page.get('path') !== '/login'
     ) {

@@ -17,134 +17,15 @@ const data = [
     type: 'layout',
     template: 'TopMenuLayout',
     sort: 10,
-    children: [
-      {
-        title: '仪表盘',
-        type: 'page',
-        path: '/dashboard',
-        icon: 'DashboardOutlined',
-        template: 'page1',
-        sort: 20,
-        showInMenu: true,
-      },
-      {
-        title: '数据',
-        type: 'layout',
-        path: '/collections',
-        icon: 'DatabaseOutlined',
-        template: 'SideMenuLayout',
-        sort: 30,
-        showInMenu: true,
-        children: [
-          // {
-          //   title: '页面3',
-          //   type: 'page',
-          //   path: '/collections/page3',
-          //   icon: 'dashboard',
-          //   template: 'page3',
-          //   sort: 40,
-          // },
-          // {
-          //   title: '页面4',
-          //   type: 'page',
-          //   path: '/collections/page4',
-          //   icon: 'dashboard',
-          //   template: 'page4',
-          //   sort: 50,
-          // },
-        ]
-      },
-      {
-        title: '用户',
-        type: 'layout',
-        path: '/users',
-        icon: 'TeamOutlined',
-        template: 'SideMenuLayout',
-        sort: 70,
-        showInMenu: true,
-        children: [
-          {
-            title: '用户管理',
-            type: 'collection',
-            path: '/users/users',
-            icon: 'UserOutlined',
-            template: 'collection',
-            collection: 'users',
-            sort: 80,
-            showInMenu: true,
-          },
-        ]
-      },
-      {
-        title: '动态',
-        type: 'layout',
-        path: '/activity',
-        icon: 'NotificationOutlined',
-        template: 'SideMenuLayout',
-        sort: 85,
-        showInMenu: true,
-        children: [
-          {
-            title: '操作记录',
-            type: 'collection',
-            path: '/activity/logs',
-            icon: 'HistoryOutlined',
-            template: 'collection',
-            collection: 'action_logs',
-            sort: 80,
-            showInMenu: true,
-          },
-        ]
-      },
-      {
-        title: '配置',
-        type: 'layout',
-        path: '/settings',
-        icon: 'SettingOutlined',
-        template: 'SideMenuLayout',
-        sort: 90,
-        showInMenu: true,
-        children: [
-          {
-            title: '页面与菜单',
-            type: 'collection',
-            collection: 'pages',
-            path: '/settings/pages',
-            icon: 'MenuOutlined',
-            sort: 100,
-            developerMode: true,
-            showInMenu: true,
-          },
-          {
-            title: '数据表配置',
-            type: 'collection',
-            collection: 'collections',
-            path: '/settings/collections',
-            icon: 'TableOutlined',
-            sort: 110,
-            showInMenu: true,
-          },
-          {
-            title: '权限组配置',
-            type: 'collection',
-            collection: 'roles',
-            path: '/settings/roles',
-            icon: 'TableOutlined',
-            sort: 120,
-            showInMenu: true,
-          },
-          {
-            title: '自动化配置',
-            type: 'collection',
-            collection: 'automations',
-            path: '/settings/automations',
-            icon: 'TableOutlined',
-            sort: 130,
-            showInMenu: true,
-          },
-        ]
-      },
-    ],
+    redirect: '/admin',
+  },
+  {
+    title: '后台',
+    path: '/admin',
+    type: 'page',
+    inherit: false,
+    template: 'AdminLoader',
+    order: 230,
   },
   {
     title: '登录页面',
@@ -162,14 +43,6 @@ const data = [
     template: 'register',
     order: 130,
   },
-  {
-    title: '后台',
-    path: '/admin',
-    type: 'page',
-    inherit: false,
-    template: 'AdminLoader',
-    order: 230,
-  }
 ];
 
 (async () => {

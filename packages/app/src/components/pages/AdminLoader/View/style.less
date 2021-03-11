@@ -47,3 +47,21 @@
     margin-bottom: 0;
   }
 }
+
+.details-page {
+  background: #f0f2f5;
+  position: fixed;
+  top: 48px;
+  left: 200px;
+  width: calc(100% - 200px);
+  height: 100%;
+  overflow: auto;
+  transition: all 0.2s;
+}
+
+body.collapsed {
+  .details-page {
+    left: 0;
+    width: 100%;
+  }
+}

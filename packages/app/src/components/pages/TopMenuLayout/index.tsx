@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Layout, Dropdown, Avatar, Drawer } from 'antd';
 import './style.less';
-import { history, Link, request, useModel } from 'umi';
+import { history, Link, request, useModel, Redirect } from 'umi';
 import { UserOutlined, CodeOutlined, MenuOutlined } from '@ant-design/icons';
 import AvatarDropdown from '../AvatarDropdown';
 import Menu from '@/components/menu';
@@ -14,6 +14,7 @@ export function TopMenuLayout(props: any) {
   const [visible, setVisible] = useLocalStorageState(`nocobase-nav-visible`, false);
   const responsive = useResponsive();
   const isMobile = responsive.small && !responsive.middle && !responsive.large;
+  return <Redirect to={'/admin'}/>
   return (
     <Layout style={{ height: '100vh' }}>
       <Layout.Header style={{height: 48, lineHeight: '48px', padding: 0}} className="nb-header">

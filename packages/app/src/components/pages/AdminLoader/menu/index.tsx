@@ -17,7 +17,7 @@ function Link(props: any) {
   if (/^http/.test(to)) {
     return <a target={'_blank'} href={to}>{children}</a>
   }
-  return <UmiLink {...props}/>
+  return <UmiLink {...props} to={`/admin/${to}`}/>
 }
 
 export default (props: any) => {

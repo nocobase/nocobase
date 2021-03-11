@@ -34,10 +34,10 @@ const detailsOpenMode = {
   title: '单条数据详情页的打开方式',
   required: true,
   dataSource: [
-    { label: '常规页面', value: 'default' },
-    { label: '快捷抽屉', value: 'simple' },
+    { label: '常规页面', value: 'window' },
+    { label: '快捷抽屉', value: 'drawer' },
   ],
-  defaultValue: 'default',
+  defaultValue: 'drawer',
   component: {
     type: 'radio',
     default: 'default',
@@ -86,7 +86,7 @@ export const table = {
     draggable: false,
     filter: {},
     sort: [],
-    detailsOpenMode: 'default',
+    detailsOpenMode: 'drawer',
     // actions,
     // fields,
     // details,

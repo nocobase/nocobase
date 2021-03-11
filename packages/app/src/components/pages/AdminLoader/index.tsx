@@ -15,8 +15,9 @@ export function AdminLoader(props: any) {
   };
   const { lastPage: { path } } = props;
   const location = useLocation();
-  const match = pathToRegexp(`${path}/:path?`).exec(location.pathname);
+  const match = pathToRegexp(`${path}/:path?/:rowId?/:tabId?`).exec(location.pathname);
   const pageName = match[1]||null;
+  const currentRowId = match[2]||null;
   const items = data
     // .filter(item => item.type !== 'group' || (item.children && item.children.length))
     ;
@@ -37,7 +38,7 @@ export function AdminLoader(props: any) {
       <TopMenuLayout currentPageName={pageName} {...props} menu={items}>
         {sideMenu ? (
           <SideMenuLayout currentPageName={pageName} {...props} menuId={sideMenu.id} menu={sideMenu.children}>
-            <Page pageName={pageName}></Page>
+            <Page currentRowId={currentRowId} pageName={pageName}></Page>
           </SideMenuLayout>
         ) : (
           <Page pageName={pageName}></Page>

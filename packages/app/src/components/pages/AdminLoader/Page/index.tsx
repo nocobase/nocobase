@@ -10,7 +10,7 @@ import get from 'lodash/get';
 import { markdown } from '@/components/views/Field';
 
 export function Page(props: any) {
-  const { pageName, children, ...restProps } = props;
+  const { currentRowId, pageName, children, ...restProps } = props;
 
   const { data = {}, loading, error } = useRequest(() => api.resource('menus').getInfo({
     resourceKey: pageName,
@@ -58,7 +58,7 @@ export function Page(props: any) {
           return (
             <Col style={{marginBottom: 24}} span={span}>
               <Card bordered={false}>
-                <View onFinish={() => {
+                <View currentRowId={currentRowId} onFinish={() => {
                   if (view.returnType === 'message' && view.message) {
                     Modal.success({
                       title: '提交成功',

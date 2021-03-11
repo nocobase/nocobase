@@ -2,19 +2,21 @@ import React, { useState, useEffect, useRef, createRef } from 'react';
 import './style.less';
 import { Helmet } from 'umi';
 import { Spin } from '@nocobase/client';
-import { useRequest, useLocation } from 'umi';
+import { useRequest, useHistory } from 'umi';
 import api from '@/api-client';
 import { Actions } from '../Actions';
-import { Table as AntdTable, Card, Pagination, Button, Tabs, Descriptions, Tooltip } from 'antd';
+import { PageHeader, Table as AntdTable, Card, Pagination, Button, Tabs, Descriptions, Tooltip } from 'antd';
 import { LoadingOutlined } from '@ant-design/icons';
 import { components, fields2columns } from '@/components/views/SortableTable';
 import ReactDragListView from 'react-drag-listview';
 import arrayMove from 'array-move';
 import get from 'lodash/get';
+import find from 'lodash/find';
 import Drawer from '@/components/pages/AdminLoader/Drawer';
 import Field from '@/components/views/Field';
 import { Form } from './Form';
 import { View } from './';
+import pathToRegexp from 'path-to-regexp'
 
 export const icon = <LoadingOutlined style={{ fontSize: 36 }} spin />;
 
@@ -52,6 +54,51 @@ export function Details(props) {
   );
 }
 
+export function DetailsPage(props) {
+  const { currentRowId, title, __parent, associatedKey, resourceName, onFinish, onReset, onDataChange, data, items = [], resolve } = props;
+  if (!items || items.length === 0) {
+    return null;
+  }
+  const history = useHistory();
+  const paths = history.location.pathname.split('/');
+  const index = parseInt(paths[4]);
+  const [currentTabIndex, setCurrentTabIndex] = useState(items.length > index ? paths[4] : '0');
+  return (
+    <div>
+      <PageHeader
+        title={title}
+        ghost={false}
+        onBack={() => {
+          history.push(`/admin/${paths[2]}`);
+        }}
+        footer={<Tabs size={'small'} activeKey={`${currentTabIndex}`} onChange={(activeKey) => {
+          setCurrentTabIndex(activeKey);
+          history.push(`/admin/${paths[2]}/${currentRowId}/${activeKey}`);
+        }}>
+          {items.map((page, index) => (
+            <Tabs.TabPane tab={page.title} key={`${index}`}/>
+          ))}
+        </Tabs>}
+      />
+      <div style={{margin: 24}}>
+        <Card bordered={false}>
+          {(get(items, [currentTabIndex, 'views'])||[]).map(view => {
+            let viewName: string;
+            if (typeof view === 'string') {
+              viewName = `${resourceName}.${view}`;
+            } if (typeof view === 'object') {
+              viewName = `${resourceName}.${view.name}`;
+            }
+            return (
+              <View __parent={__parent} associatedKey={associatedKey} onReset={onReset} onFinish={onFinish} onDataChange={onDataChange} data={data} viewName={viewName}/>
+            );
+          })}
+        </Card>
+      </div>
+    </div>
+  );
+}
+
 export function Table(props: any) {
   const {
     onSelected,
@@ -63,7 +110,10 @@ export function Table(props: any) {
     defaultSelectedRowKeys,
     noRequest = false,
     __parent,
+    currentRowId,
   } = props;
+
+  const content = document.getElementById('content');
 
   const { 
     fields = [],
@@ -78,8 +128,11 @@ export function Table(props: any) {
     associationField = {},
     appends = [],
     expandable,
+    detailsOpenMode = 'drawer',
     filter: schemaFilter = {},
   } = schema;
+
+  const history = useHistory();
 
   const associatedKey = props.associatedKey || record[associationField.sourceKey||'id'];
   console.log({associatedKey, record, associationField, __parent})
@@ -128,6 +181,8 @@ export function Table(props: any) {
     defaultPageSize: defaultPerPage,
   });
 
+  const currentRow = find(data && data.list, item => item[rowKey] == currentRowId)
+  console.log({currentRow});
   function getExpandedRowKeys(items: Array<any>) {
     if (!Array.isArray(items))  {
       return [];
@@ -255,121 +310,150 @@ export function Table(props: any) {
   };
 
   return (
-    <div ref={ref}>
-      <Actions __parent={__parent} associatedKey={associatedKey} onTrigger={{
-        async create(values) {
-          await refresh();
-          await reloadMenu();
-        },
-        async add(values = []) {
-          await api.resource(resourceName).add({
-            associatedKey,
-            values,
-          });
-        },
-        async update(values) {
-          await refresh();
-          await reloadMenu();
-        },
-        async filter(values) {
-          const items = values.filter.and || values.filter.or;
-          // @ts-ignore
-          run({...params[0], filter: values.filter});
-          // refresh();
-        },
-        async destroy() {
-          if (selectedRowKeys.length) {
-            await api.resource(resourceName).destroy({
+    <div>
+      <div ref={ref}>
+        <Actions __parent={__parent} associatedKey={associatedKey} onTrigger={{
+          async create(values) {
+            await refresh();
+            await reloadMenu();
+          },
+          async add(values = []) {
+            await api.resource(resourceName).add({
               associatedKey,
-              filter: {
-                [`${rowKey}.in`]: selectedRowKeys,
-              },
+              values,
             });
-          }
-          refresh();
-          await reloadMenu();
-        },
-      }} actions={actions} style={{ marginBottom: 14 }}/>
-      <ReactDragListView {...dragProps}>
-        <AntdTable
-          rowKey={rowKey}
-          loading={{
-            spinning: loading,
-            size: 'large',
-            indicator: icon,
-          }}
-          components={{
-            body: {
-              row: ({className, ...others}) => {
-                return <tr className={className ? `${className} row-clickable` : 'row-clickable'} {...others}/>
-              },
-            }
-          }}
-          dataSource={data?.list||(data as any)}
-          size={'middle'} 
-          columns={fields2columns(fields, {associatedKey, refresh})}
-          pagination={false}
-          onChange={(pagination, filters, sorter, extra) => {
-            run({...params[0], sorter});
-          }}
-          expandable={expandable}
-          onRow={(data) => ({
-            onClick: (e) => {
-              const className = (e.target as HTMLElement).className;
-              console.log({className});
-              if (typeof className === 'string' && 
-                  (className.includes('ant-table-selection-column') 
-                    || className.includes('ant-checkbox') 
-                    || className.includes('ant-radio')
-                  )
-                ) {
-                return;
-              }
-              Drawer.open({
-                headerStyle: details.length > 1 ? {
-                  paddingBottom: 0,
-                  borderBottom: 0,
-                  // paddingTop: 16,
-                  // marginBottom: -4,
-                } : {},
-                // title: details.length > 1 ? undefined : data[labelField],
-                title: data[labelField],
-                bodyStyle: {
-                  // padding: 0,
+          },
+          async update(values) {
+            await refresh();
+            await reloadMenu();
+          },
+          async filter(values) {
+            const items = values.filter.and || values.filter.or;
+            // @ts-ignore
+            run({...params[0], filter: values.filter});
+            // refresh();
+          },
+          async destroy() {
+            if (selectedRowKeys.length) {
+              await api.resource(resourceName).destroy({
+                associatedKey,
+                filter: {
+                  [`${rowKey}.in`]: selectedRowKeys,
                 },
-                content: ({resolve}) => (
-                  <div>
-                    <Details 
-                      __parent={__parent}
-                      associatedKey={associatedKey} 
-                      resourceName={resourceName} 
-                      onFinish={async () => {
-                        await refresh();
-                        resolve();
-                        await reloadMenu();
-                      }}
-                      onReset={resolve}
-                      onDataChange={async () => {
-                        await refresh();
-                        await reloadMenu();
-                      }}
-                      data={data}
-                      resolve={resolve}
-                      items={details}
-                    />
-                  </div>
-                ),
               });
-            },
-          })}
-          {...tableProps}
+            }
+            refresh();
+            await reloadMenu();
+          },
+        }} actions={actions} style={{ marginBottom: 14 }}/>
+        <ReactDragListView {...dragProps}>
+          <AntdTable
+            rowKey={rowKey}
+            loading={{
+              spinning: loading,
+              size: 'large',
+              indicator: icon,
+            }}
+            components={{
+              body: {
+                row: ({className, ...others}) => {
+                  return <tr className={className ? `${className} row-clickable` : 'row-clickable'} {...others}/>
+                },
+              }
+            }}
+            dataSource={data?.list||(data as any)}
+            size={'middle'} 
+            columns={fields2columns(fields, {associatedKey, refresh})}
+            pagination={false}
+            onChange={(pagination, filters, sorter, extra) => {
+              run({...params[0], sorter});
+            }}
+            expandable={expandable}
+            onRow={(data) => ({
+              onClick: (e) => {
+                const className = (e.target as HTMLElement).className;
+                console.log({className});
+                if (typeof className === 'string' && 
+                    (className.includes('ant-table-selection-column') 
+                      || className.includes('ant-checkbox') 
+                      || className.includes('ant-radio')
+                    )
+                  ) {
+                  return;
+                }
+                if (detailsOpenMode === 'window') {
+                  const paths = history.location.pathname.split('/');
+                  history.push(`/admin/${paths[2]}/${data[rowKey]}/0`);
+                } else {
+                  Drawer.open({
+                    headerStyle: details.length > 1 ? {
+                      paddingBottom: 0,
+                      borderBottom: 0,
+                      // paddingTop: 16,
+                      // marginBottom: -4,
+                    } : {},
+                    // title: details.length > 1 ? undefined : data[labelField],
+                    title: data[labelField],
+                    bodyStyle: {
+                      // padding: 0,
+                    },
+                    content: ({resolve}) => (
+                      <div>
+                        <Details 
+                          __parent={__parent}
+                          associatedKey={associatedKey} 
+                          resourceName={resourceName} 
+                          onFinish={async () => {
+                            await refresh();
+                            resolve();
+                            await reloadMenu();
+                          }}
+                          onReset={resolve}
+                          onDataChange={async () => {
+                            await refresh();
+                            await reloadMenu();
+                          }}
+                          data={data}
+                          resolve={resolve}
+                          items={details}
+                        />
+                      </div>
+                    ),
+                  });
+                }
+              },
+            })}
+            {...tableProps}
+          />
+        </ReactDragListView>
+        {paginated && (
+          <div className={'table-pagination'}>
+            <Pagination {...pagination} showTotal={(total)=> `共 ${total} 条记录`} showQuickJumper showSizeChanger size={'small'}/>
+          </div>
+        )}
+      </div>
+      {currentRow && <div className={'details-page'}>
+        <DetailsPage
+          title={get(currentRow, labelField)}
+          __parent={__parent}
+          associatedKey={associatedKey} 
+          resourceName={resourceName} 
+          onFinish={async () => {
+            await refresh();
+            await reloadMenu();
+          }}
+          onReset={() => {
+
+          }}
+          onDataChange={async () => {
+            await refresh();
+            await reloadMenu();
+          }}
+          currentRowId={currentRowId}
+          data={currentRow}
+          items={details}
         />
-      </ReactDragListView>
-      {paginated && (
-        <div className={'table-pagination'}>
-          <Pagination {...pagination} showTotal={(total)=> `共 ${total} 条记录`} showQuickJumper showSizeChanger size={'small'}/>
-        </div>
-      )}
+      </div>}
     </div>
   );
 }

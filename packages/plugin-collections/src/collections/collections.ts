@@ -487,7 +487,7 @@ export default {
         },
       ],
       fields: ['sort', 'title'],
-      detailsOpenMode: 'drawer', // window
+      detailsOpenMode: 'window', // window
       details: ['descriptions', 'fields', 'views'],
       sort: ['sort'],
     },
