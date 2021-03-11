@@ -10,6 +10,15 @@ export default {
   updatedAt: false,
   fields: [
     {
+      interface: 'string',
+      type: 'string',
+      name: 'title',
+      title: '按钮名称',
+      component: {
+        type: 'string',
+      },
+    },
+    {
       interface: 'radio',
       type: 'string',
       name: 'type',
@@ -46,20 +55,11 @@ export default {
       },
     },
     {
-      interface: 'string',
-      type: 'string',
-      name: 'title',
-      title: '操作名称',
-      component: {
-        type: 'string',
-      },
-    },
-    {
       interface: 'linkTo',
       type: 'belongsTo',
       name: 'view',
       target: 'views_v2',
-      title: '视图',
+      title: '操作绑定的视图',
       labelField: 'title',
       valueField: 'id',
       multiple: false,
@@ -97,8 +97,8 @@ export default {
         },
       ],
       fields: [
-        'type',
         'title',
+        'type',
       ],
       detailsOpenMode: 'drawer', // window
       details: ['form'],
@@ -110,8 +110,8 @@ export default {
       name: 'form',
       title: '表单',
       fields: [
-        'type',
         'title',
+        'type',
         'view'
       ],
     },

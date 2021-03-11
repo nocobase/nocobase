@@ -578,7 +578,8 @@ export default {
     },
     {
       developerMode: true,
-      type: 'association',
+      type: 'table',
+      dataSourceType: 'association',
       name: 'fields',
       title: '字段',
       targetViewName: 'table',
@@ -586,7 +587,8 @@ export default {
     },
     {
       developerMode: true,
-      type: 'association',
+      type: 'table',
+      dataSourceType: 'association',
       name: 'views',
       title: '视图',
       targetViewName: 'table',

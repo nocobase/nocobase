@@ -118,7 +118,7 @@ export default {
       type: 'table',
       name: 'table',
       title: '全部数据',
-      labelField: 'nickname',
+      labelField: 'created_at',
       actions: [
         {
           name: 'filter',
@@ -127,6 +127,23 @@ export default {
         },
       ],
       fields: ['created_at', 'user', 'collection', 'type', 'index'],
+      detailsOpenMode: 'drawer', // window
+      details: ['descriptions'],
+      sort: ['id'],
+    },
+    {
+      type: 'table',
+      name: 'table2',
+      title: '表格视图',
+      labelField: 'created_at',
+      actions: [
+        {
+          name: 'filter',
+          type: 'filter',
+          title: '过滤',
+        },
+      ],
+      fields: ['created_at', 'user', 'type', 'index'],
       detailsOpenMode: 'drawer', // window
       details: ['descriptions'],
       sort: ['id'],

@@ -1,5 +1,5 @@
 import React from 'react';
-import { PageHeader, Card } from 'antd';
+import { PageHeader, Card, Row, Col } from 'antd';
 import './style.less';
 import { Helmet } from 'umi';
 import { Spin } from '@nocobase/client';
@@ -37,19 +37,29 @@ export function Page(props: any) {
         {...restProps}
       />
       <div className={'page-content'}>
+        <Row gutter={24}>
         {views.map(view => {
           let viewName: string;
+          let span = 24;
           if (typeof view === 'string') {
             viewName = view;
           } if (typeof view === 'object') {
             viewName = `${view.name}`;
+            if (view.width === '50%') {
+              span = 12;
+            } else if (view.width === '100%') {
+              span = 24;
+            }
           }
           return (
-            <Card bordered={false}>
-              <View viewName={viewName}/>
-            </Card>
+            <Col style={{marginBottom: 24}} span={span}>
+              <Card bordered={false}>
+                <View viewName={viewName}/>
+              </Card>
+            </Col>
           );
         })}
+        </Row>
       </div>
     </div>
   );

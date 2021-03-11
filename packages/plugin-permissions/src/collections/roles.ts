@@ -253,7 +253,8 @@ export default {
     },
     {
       developerMode: true,
-      type: 'association',
+      type: 'table',
+      dataSourceType: 'association',
       name: 'collections',
       title: '数据表权限',
       targetViewName: 'permissions_table',
@@ -261,7 +262,8 @@ export default {
     },
     {
       developerMode: true,
-      type: 'association',
+      type: 'table',
+      dataSourceType: 'association',
       name: 'pages',
       title: '页面权限',
       targetViewName: 'permissions_table',

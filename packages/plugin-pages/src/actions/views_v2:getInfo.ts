@@ -254,10 +254,18 @@ export const getInfo = async (ctx: actions.Context, next) => {
     actions,
     fields,
   };
+  if (data.target_field_id) {
+    const targetField = await Field.findByPk(data.target_field_id);
+    data.targetFieldName = targetField.name;
+  }
+  if (data.target_view_id) {
+    const targetView = await View.findByPk(data.target_view_id);
+    data.targetViewName = targetView.name;
+  }
   if (associationField) {
     data.associationField = associationField;
   }
-  if (data.type === 'association') {
+  if (data.dataSourceType === 'association') {
     const field = await Field.findOne({
       where: {
         name: data.targetFieldName,

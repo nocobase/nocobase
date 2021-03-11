@@ -11,7 +11,7 @@ const fields = {
 const actions = {
   interface: 'json',
   type: 'virtual',
-  title: '可进行的操作',
+  title: '操作按钮配置',
   target:  'views_actions_v2',
   component: {
     type: 'subTable',
@@ -97,7 +97,7 @@ export const table = {
     filter: {
       interface: 'json',
       type: 'virtual',
-      title: '筛选数据',
+      title: '只显示符合以下条件的数据',
       mode: 'replace',
       defaultValue: {},
       component: {
@@ -118,7 +118,7 @@ export const table = {
     labelField: {
       interface: 'select',
       type: 'virtual',
-      title: '标题字段',
+      title: '作为单条数据标题的字段',
       name: 'labelField',
       required: true,
       component: {
@@ -139,7 +139,7 @@ export const table = {
       interface: 'radio',
       type: 'virtual',
       name: 'defaultPerPage',
-      title: '默认每页显示几行数据',
+      title: '每页默认显示几条数据',
       defaultValue: 50,
       dataSource: [
         {label: '10', value: 10},
@@ -151,7 +151,7 @@ export const table = {
     draggable: {
       interface: 'boolean',
       type: 'virtual',
-      title: '支持拖拽数据排序',
+      title: '表格里支持拖拽数据排序',
     },
     // 操作配置
     actions,
@@ -178,7 +178,7 @@ export const calendar = {
     filter: {
       interface: 'json',
       type: 'virtual',
-      title: '筛选数据',
+      title: '只显示符合以下条件的数据',
       mode: 'replace',
       defaultValue: {},
       component: {
@@ -189,7 +189,7 @@ export const calendar = {
     labelField: {
       interface: 'select',
       type: 'virtual',
-      title: '标题字段',
+      title: '作为单条数据标题的字段',
       name: 'labelField',
       required: true,
       component: {

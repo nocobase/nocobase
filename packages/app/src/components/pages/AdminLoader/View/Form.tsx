@@ -21,6 +21,7 @@ import Drawer from '@/components/pages/AdminLoader/Drawer';
 import set from 'lodash/set';
 import cloneDeep from 'lodash/cloneDeep'
 import { Spin } from '@nocobase/client';
+import { markdown } from '@/components/views/Field';
 
 export function fields2properties(fields = []) {
   const properties = {};
@@ -74,6 +75,9 @@ export function fields2properties(fields = []) {
     }
     if (field.defaultValue !== null) {
       data.default = field.defaultValue;
+    }
+    if (field.tooltip) {
+      data.description = <div className={'markdown-content'} dangerouslySetInnerHTML={{__html: markdown(field.tooltip)}}></div>;
     }
   });
   console.log({properties});

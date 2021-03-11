@@ -37,6 +37,24 @@ export default {
         },
       },
     },
+    {
+      interface: 'textarea',
+      type: 'text',
+      name: 'tooltip',
+      title: '提示信息',
+      component: {
+        type: 'textarea',
+      },
+    },
+    {
+      interface: 'boolean',
+      type: 'boolean',
+      name: 'required',
+      title: '必填项',
+      component: {
+        type: 'checkbox',
+      },
+    },
   ],
   views_v2: [
     {
@@ -79,6 +97,8 @@ export default {
       fields: [
         'title',
         'field',
+        'tooltip',
+        'required',
       ],
     },
   ],

@@ -569,9 +569,10 @@ export default {
     },
     {
       developerMode: true,
-      type: 'association',
+      type: 'table',
+      dataSourceType: 'association',
       name: 'jobs',
-      title: '任务列表视图',
+      title: '任务',
       targetViewName: 'table',
       targetFieldName: 'jobs',
     },

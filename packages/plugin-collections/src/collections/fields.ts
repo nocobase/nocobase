@@ -688,7 +688,7 @@ export default {
         'labelField',
         'children',
         'multiple',
-        'required',
+        // 'required',
       ],
     },
   ],
