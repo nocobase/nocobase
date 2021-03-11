@@ -480,6 +480,31 @@ export const group = {
   },
 };
 
+export const status = {
+  title: '状态',
+  group: 'others',
+  options: {
+    interface: 'status',
+    name: 'status',
+    type: 'string',
+    filterable: true,
+    // index: true,
+    dataSource: [
+      {
+        label: '已发布',
+        value: 'publish',
+      },
+      {
+        label: '草稿',
+        value: 'draft',
+      }
+    ],
+    component: {
+      type: 'select',
+    },
+  },
+}
+
 export const description = {
   title: '说明文字',
   group: 'others',

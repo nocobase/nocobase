@@ -88,7 +88,7 @@ const actions = createFormActions();
 export function Form(props: any) {
   const { onReset, __parent, noRequest = false, onFinish, resolve, data: record = {}, associatedKey, schema = {} } = props;
   console.log({ noRequest, record, associatedKey, __parent });
-  const { resourceName, rowKey = 'id', fields = [], appends = [], associationField = {} } = schema;
+  const { statusable, resourceName, rowKey = 'id', fields = [], appends = [], associationField = {} } = schema;
 
   const resourceKey = props.resourceKey || record[associationField.targetKey||rowKey];
 
@@ -99,6 +99,8 @@ export function Form(props: any) {
       'fields[appends]': appends,
     }) : Promise.resolve({data: record});
   });
+
+  const [status, setStatus] = useState('publish');
 
   if (loading) {
     return <Spin/>;
@@ -129,16 +131,23 @@ export function Form(props: any) {
         onReset && await onReset();
       }}
       onSubmit={async (values) => {
+        console.log({status});
         if (!noRequest) {
           resourceKey 
             ? await api.resource(resourceName).update({
               associatedKey,
               resourceKey,
-              values,
+              values: {
+                ...values,
+                status,
+              },
             })
             : await api.resource(resourceName).create({
               associatedKey,
-              values,
+              values: {
+                ...values,
+                status,
+              },
             });
         }
         onFinish && await onFinish(values);
@@ -160,6 +169,11 @@ export function Form(props: any) {
     >
       <FormButtonGroup className={'form-button-group'} align={'end'}>
         <Reset>取消</Reset>
+        {statusable && (
+          <Submit type={'default'} onClick={() => {
+            setStatus('draft');
+          }}>草稿</Submit>
+        )}
         <Submit>确定</Submit>
       </FormButtonGroup>
     </SchemaForm>

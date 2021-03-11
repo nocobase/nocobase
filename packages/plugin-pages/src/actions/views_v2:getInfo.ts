@@ -42,6 +42,13 @@ export const getInfo = async (ctx: actions.Context, next) => {
       collection_name: collectionName
     },
   });
+
+  if (view && view.type === 'form') {
+    const statusable = !!ctx.db.getTable(view.collection_name).getField('status');
+    if (statusable) {
+      view.setDataValue('statusable', statusable);
+    }
+  }
   
   const Collection = ctx.db.getModel('collections') as ModelCtor<Model>;
   const M = ctx.db.getModel(collectionName) as ModelCtor<Model>;

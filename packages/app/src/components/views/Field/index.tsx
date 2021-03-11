@@ -406,6 +406,7 @@ registerFieldComponents({
   textarea: TextareaField,
   boolean: BooleanField,
   select: DataSourceField,
+  status: DataSourceField,
   multipleSelect: DataSourceField,
   radio: DataSourceField,
   checkboxes: DataSourceField,

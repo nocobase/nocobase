@@ -1,7 +1,7 @@
 import path from 'path';
 import { Application } from '@nocobase/server';
 import hooks from './hooks';
-import { registerModels } from '@nocobase/database';
+import { registerModels, Table } from '@nocobase/database';
 import * as models from './models';
 
 export default async function (this: Application, options = {}) {
@@ -32,5 +32,42 @@ export default async function (this: Application, options = {}) {
       // @ts-ignore
       Model.addHook(hookKey, hooks[modelName][hookKey]);
     });
+  });
+
+  const Collection = database.getModel('collections');
+  Collection.addHook('afterCreate', async (model: any, options) => {
+    if (model.get('developerMode')) {
+      return;
+    }
+
+    console.log("model.get('developerMode')", model.get('name'));
+
+    const { transaction = await model.sequelize.transaction() } = options;
+
+    await model.createField({
+      interface: 'status',
+      name: 'status',
+      type: 'string',
+      filterable: true,
+      title: '状态',
+      // index: true,
+      dataSource: [
+        {
+          label: '已发布',
+          value: 'publish',
+        },
+        {
+          label: '草稿',
+          value: 'draft',
+        }
+      ],
+      component: {
+        type: 'select',
+      },
+    }, { transaction });
+
+    if (!options.transaction) {
+      await transaction.commit();
+    }
   });
 }
