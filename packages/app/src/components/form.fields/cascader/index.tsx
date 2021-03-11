@@ -24,17 +24,40 @@ export const Cascader = connect({
 })(function (props) {
   const {
     disabled,
-    target,
-    labelField,
-    valueField = 'id',
-    parentField,
-    maxLevel,
-    changeOnSelect,
+    // target,
+    // labelField,
+    // valueField = 'id',
+    // parentField,
+    // maxLevel,
+    // changeOnSelect,
     value = [],
     onChange,
+    schema = {},
     // TODO(feature): 增加静态数据支持
     // dataSource: []
   } = props;
+  const { 
+    target,
+    targetKey: valueField,
+    // 值字段
+    // valueField: 'code',
+    // 名称字段
+    labelField,
+    // TODO(refactor): 等 toWhere 重构完成后要改成 parent
+    // 上级字段名
+    parentField,
+    maxLevel,
+    // valueField = 'id',
+    // 深度限制，默认：-1（代表不控制，即如果是数据表，则无限加载）
+    // limit: -1,
+    // 可选层级，默认：-1（代表可选的最深层级）
+    // maxLevel: null,
+    // 是否可以不选择到最深一级
+    // 'x-component-props': { changeOnSelect: true }
+    incompletely: changeOnSelect,
+
+  } = schema;
+
   const fieldNames = {
     label: labelField,
     value: valueField,
