@@ -19,6 +19,7 @@ import { Association } from './Association';
 import { Descriptions } from './Descriptions';
 import { FilterForm } from './FilterForm';
 import { SubTable } from './SubTable';
+import { Wysiwyg } from './Wysiwyg';
 
 const VIEWS = new Map();
 
@@ -62,5 +63,6 @@ registerView('form', Form);
 registerView('filterForm', FilterForm);
 registerView('descriptions', Descriptions);
 registerView('association', Association);
+registerView('wysiwyg', Wysiwyg);
 
 export default View;

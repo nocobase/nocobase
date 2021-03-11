@@ -23,7 +23,7 @@ export default async (ctx, next) => {
       let name: string;
       if (typeof item === 'object') {
         if (item.view) {
-          item.name = `${item.view.collection_name||'globals'}.${item.view.name}`;
+          item.name = item.view.collection_name ? `${item.view.collection_name}.${item.view.name}` : item.view.name;
         }
         views.push(item);
       } else if (typeof item === 'string') {

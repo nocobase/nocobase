@@ -26,6 +26,23 @@ export default {
           labelField: 'title',
           valueField: 'id',
         },
+        'x-linkages': [
+          {
+            "type": "value:visible",
+            "target": "returnType",
+            "condition": "{{ $self.value && $self.value.type === 'form' }}"
+          },
+          {
+            "type": "value:visible",
+            "target": "redirect",
+            "condition": "{{ $self.value && $self.value.type === 'form' }}"
+          },
+          {
+            "type": "value:visible",
+            "target": "message",
+            "condition": "{{ $self.value && $self.value.type === 'form' }}"
+          },
+        ],
       },
     },
     {
@@ -45,6 +62,59 @@ export default {
       ],
       component: {
         type: 'radio',
+      },
+    },
+    {
+      interface: 'radio',
+      type: 'string',
+      name: 'returnType',
+      title: '表单提交成功后',
+      dataSource: [
+        { label: '显示文字信息', value: 'message' },
+        { label: '跳转到页面', value: 'redirect' },
+      ],
+      component: {
+        type: 'radio',
+        'x-linkages': [
+          {
+            "type": "value:visible",
+            "target": "message",
+            "condition": "{{ $self.value === 'message' }}"
+          },
+          {
+            "type": "value:visible",
+            "target": "redirect",
+            "condition": "{{ $self.value === 'redirect' }}"
+          },
+        ],
+      },
+    },
+    {
+      interface: 'linkTo',
+      type: 'belongsTo',
+      name: 'redirect',
+      target: 'menus',
+      title: '跳转到页面',
+      labelField: 'title',
+      valueField: 'id',
+      multiple: false,
+      component: {
+        type: 'drawerSelect',
+        'x-component-props': {
+          viewName: 'menus.table',
+          resourceName: 'menus',
+          labelField: 'title',
+          valueField: 'id',
+        },
+      },
+    },
+    {
+      interface: 'wysiwyg',
+      type: 'json',
+      title: '显示文字信息',
+      name: 'message',
+      component: {
+        type: 'wysiwyg',
       },
     }
   ],
@@ -95,17 +165,30 @@ export default {
       title: '表单',
       fields: [
         'view',
-        'width'
+        'width',
+        'returnType',
+        'redirect',
+        'message',
       ],
     },
     {
       developerMode: true,
       type: 'descriptions',
       name: 'descriptions',
-      title: '表单',
+      title: '详情',
+      actions: [
+        {
+          name: 'update',
+          type: 'update',
+          title: '编辑',
+        },
+      ],
       fields: [
         'view',
-        'width'
+        'width',
+        'returnType',
+        'redirect',
+        'message',
       ],
     },
   ],

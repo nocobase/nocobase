@@ -49,12 +49,16 @@ export function getViewTypeLinkages() {
       }));
     }
   }
+  // xlinkages.push({
+  //   type: "value:visible",
+  //   target: 'collection',
+  //   condition: `{{ $self.value !== 'wysiwyg' }}`,
+  // });
   return xlinkages;
 }
 
-export function getViewFields() {
-  const fields = new Map();
-  fields.set('type', {
+export function getTypeFieldOptions() {
+  return {
     interface: 'select',
     type: 'string',
     name: 'type',
@@ -66,7 +70,11 @@ export function getViewFields() {
       type: 'select',
     },
     linkages: getViewTypeLinkages(),
-  });
+  };
+}
+
+export function getViewFields() {
+  const fields = new Map();
   for (const [key, item] of views) {
     const { properties = {}, linkages = {} } = _.cloneDeep(item);
     Object.keys(properties).forEach(name => {

@@ -242,3 +242,23 @@ export const calendar = {
     
   },
 };
+
+export const wysiwyg = {
+  title: '富文本',
+  options: {
+    // html,
+  },
+  properties: {
+    // 数据配置
+    html: {
+      interface: 'wysiwyg',
+      type: 'virtual',
+      title: '富文本内容',
+      component: {
+        type: 'wysiwyg',
+      },
+    },
+  },
+  linkages: {
+  },
+};

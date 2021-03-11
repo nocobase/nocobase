@@ -25,6 +25,7 @@ import { DraggableTable } from './draggable-table'
 import { Values } from './values'
 import { Automations } from './automations'
 import { VirtualTable } from './virtual-table'
+import { Wysiwyg } from './wysiwyg'
 
 export const setup = () => {
   registerFormFields({
@@ -62,6 +63,7 @@ export const setup = () => {
     subTable: SubTable,
     draggableTable: DraggableTable,
     values: Values,
+    wysiwyg: Wysiwyg,
     'permissions.actions': Permissions.Actions,
     'permissions.fields': Permissions.Fields,
     'permissions.tabs': Permissions.Tabs,

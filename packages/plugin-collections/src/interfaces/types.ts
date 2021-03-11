@@ -101,10 +101,9 @@ export const percent = {
 export const wysiwyg = {
   title: '可视化编辑器',
   group: 'media',
-  disabled: true,
   options: {
     interface: 'wysiwyg',
-    type: 'text',
+    type: 'json',
     component: {
       type: 'wysiwyg',
     },

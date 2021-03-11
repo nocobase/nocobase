@@ -1,5 +1,5 @@
 import { TableOptions } from '@nocobase/database';
-import { getViewFields } from '../views';
+import { getTypeFieldOptions, getViewFields } from '../views';
 
 const fields = getViewFields();
 const associatedKeyValue = "{{ $form.values && $form.values.collection && $form.values.collection.name }}";
@@ -20,6 +20,7 @@ export default {
       title: '视图名称',
       required: true,
     },
+    getTypeFieldOptions(),
     {
       interface: 'string',
       type: 'randomString',
@@ -288,6 +289,7 @@ export default {
       title: '表单',
       fields: [
         'title',
+        'type',
         'collection',
         'dataSourceType',
         'targetField',

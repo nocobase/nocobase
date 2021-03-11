@@ -26,21 +26,21 @@ export default async function({ database }) {
     parent_code: item.cityCode
   })));
 
-  // 乡级数据 2856 条
-  await Model.bulkCreate(streets.map(item => ({
-    code: item.code,
-    name: item.name,
-    level: 4,
-    parent_code: item.areaCode
-  })));
+  // // 乡级数据 2856 条
+  // await Model.bulkCreate(streets.map(item => ({
+  //   code: item.code,
+  //   name: item.name,
+  //   level: 4,
+  //   parent_code: item.areaCode
+  // })));
 
-  // 村级数据 658001 条
-  await Model.bulkCreate(villages.map(item => ({
-    code: item.code,
-    name: item.name,
-    level: 5,
-    parent_code: item.streetCode
-  })));
+  // // 村级数据 658001 条
+  // await Model.bulkCreate(villages.map(item => ({
+  //   code: item.code,
+  //   name: item.name,
+  //   level: 5,
+  //   parent_code: item.streetCode
+  // })));
 
   const count = await Model.count();
   console.log(`${count} rows of region data imported in ${(Date.now() - timer) / 1000}s`);

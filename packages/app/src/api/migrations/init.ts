@@ -198,6 +198,7 @@ const data = [
       nickname: "超级管理员",
       password: "admin",
       username: "admin",
+      email: 'dev@nocobase.com',
       token: "38979f07e1fca68fb3d2",
     });
   }
@@ -246,7 +247,7 @@ const data = [
   ]);
 
   // 导入地域数据
-  // await chinaRegionSeederInit(api);
+  await chinaRegionSeederInit(api);
 
   // await database.getModel('collections').import(require('./collections/example').default);
   // await database.getModel('collections').import(require('./collections/authors').default);

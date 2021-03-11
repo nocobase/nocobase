@@ -3,6 +3,7 @@ import { Model, ModelCtor } from '@nocobase/database';
 import actions from '@nocobase/actions';
 import { merge } from '../utils';
 import _ from 'lodash';
+import { getViewTypeLinkages } from '../views';
 
 export const getInfo = async (ctx: actions.Context, next) => {
   const { resourceKey } = ctx.action.params;
@@ -14,6 +15,23 @@ export const getInfo = async (ctx: actions.Context, next) => {
   let associatedName: string;
   let resourceName: string;
   let associationField: any;
+
+  if (!resourceKey.includes('.')) {
+    const view = await View.findOne({
+      where: {
+        name: resourceKey,
+      },
+    });
+    const viewData: any = view.toJSON();
+    for (const [key, value] of Object.entries(viewData[`x-${viewData.type}-props`]||{})) {
+      if (_.get(viewData, key) === null || _.get(viewData, key) === undefined) {
+        _.set(viewData, key, value);
+      }
+    }
+    ctx.body = viewData;
+    return next();
+  }
+
   if (resourceKey.includes('.')) {
     const keys = resourceKey.split('.');
     viewName = keys.pop();
@@ -112,6 +130,14 @@ export const getInfo = async (ctx: actions.Context, next) => {
         type: 'form',
         name: 'form',
         title: '表单',
+        actions: [
+          {
+            type: 'update',
+            name: 'update',
+            title: '编辑',
+            viewName: 'form',
+          }
+        ],
         // labelField: 'title',
         fields: fields.filter(field => {
           return field.name !== 'action_logs';
@@ -179,7 +205,13 @@ export const getInfo = async (ctx: actions.Context, next) => {
         json = model.toJSON();
       }
     }
+    if (!json.name) {
+      continue;
+    }
     console.log({field, json})
+    if (json.name === 'type' && json.collection_name === 'views_v2') {
+      json.linkages = getViewTypeLinkages();
+    }
     json && fields.push(json);
   }
   
