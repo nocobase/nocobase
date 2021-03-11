@@ -24,6 +24,21 @@ export default {
       },
     },
     {
+      interface: 'email',
+      type: 'string',
+      name: 'email',
+      title: '邮箱',
+      unique: true,
+      required: true,
+      createOnly: true,
+      component: {
+        type: 'string',
+        showInTable: true,
+        showInDetail: true,
+        showInForm: true,
+      },
+    },
+    {
       interface: 'string',
       type: 'string',
       name: 'nickname',
@@ -164,7 +179,7 @@ export default {
           title: '删除',
         },
       ],
-      fields: ['username', 'nickname', 'phone', 'roles'],
+      fields: ['email', 'nickname', 'phone', 'roles'],
       detailsOpenMode: 'drawer', // window
       details: ['form'],
       sort: ['id'],
@@ -174,7 +189,7 @@ export default {
       type: 'descriptions',
       name: 'descriptions',
       title: '详情',
-      fields: ['username', 'nickname', 'phone', 'roles'],
+      fields: ['email', 'nickname', 'phone', 'roles'],
       actions: [
         {
           name: 'update',
@@ -189,7 +204,7 @@ export default {
       type: 'form',
       name: 'form',
       title: '表单',
-      fields: ['username', 'nickname', 'phone', 'password', 'roles'],
+      fields: ['email', 'nickname', 'phone', 'password', 'roles'],
     },
   ],
 } as TableOptions;

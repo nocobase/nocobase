@@ -39,13 +39,13 @@ export function Login(props: any) {
       }} actions={actions} schema={{
         type: 'object',
         properties: {
-          username: {
+          email: {
             type: 'string',
             title: '',
             required: true,
             'x-component-props': {
               size: 'large',
-              placeholder: '用户名',
+              placeholder: '邮箱',
             }
           },
           password: {
