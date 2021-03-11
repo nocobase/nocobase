@@ -8,16 +8,16 @@ import { useLocalStorageState } from 'ahooks';
 import { useResponsive } from 'ahooks';
 
 export function SideMenuLayout(props: any) {
-  const { currentPageName, menu = [], id } = props;
+  const { currentPageName, menu = [], menuId } = props;
   const [visible, setVisible] = useState(false);
   // console.log(menu);
-  const [collapsed, setCollapsed] = useLocalStorageState(`nocobase-menu-collapsed-${id}`, false);
+  const [collapsed, setCollapsed] = useLocalStorageState(`nocobase-menu-collapsed-${menuId}`, false);
   const responsive = useResponsive();
   const isMobile = responsive.small && !responsive.middle && !responsive.large;
   return (
     <Layout style={{height: 'calc(100vh - 48px)'}}>
       {!isMobile && <Layout.Sider className={`nb-sider${collapsed ? ' collapsed' : ''}`} theme={'light'}>
-        <Menu currentPageName={currentPageName} items={menu} mode={'inline'}/>
+        <Menu menuId={menuId} currentPageName={currentPageName} items={menu} mode={'inline'}/>
         <div onClick={() => {
           setCollapsed(!collapsed);
           setVisible(true);
@@ -36,7 +36,7 @@ export function SideMenuLayout(props: any) {
           <Menu onSelect={() => {
             setCollapsed(false);
             setVisible(false);
-          }} items={menu} mode={'inline'}/>
+          }} currentPageName={currentPageName} menuId={menuId} items={menu} mode={'inline'}/>
         </Drawer>}
         {isMobile && <div onClick={() => {
           setCollapsed(!collapsed);

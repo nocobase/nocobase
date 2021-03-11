@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Layout, Menu, Breadcrumb } from 'antd';
 import { Link as UmiLink, useLocation } from 'umi';
 import Icon from '@/components/icons';
@@ -21,36 +21,60 @@ function Link(props: any) {
 }
 
 export default (props: any) => {
-  const { currentPageName, items = [], hideChildren, ...restProps } = props;
-  const location = useLocation();
-  let paths = items.map(item => item.path);
+  const { menuId, currentPageName, items = [], hideChildren, ...restProps } = props;
   if (items.length === 0) {
     return null;
   }
-  const keys = items.filter(item => {
-    if (item.path && item.path === currentPageName) {
-      return true;
-    }
-    if (item.paths && item.paths.includes(currentPageName)) {
-      return true;
-    }
-    return false;
-  }).map(item => `${item.id}`);
-  console.log({currentPageName, items, keys});
+  const toPaths = (data) => {
+    const paths = [];
+    data.forEach(item => {
+      if (item.path && item.path === currentPageName) {
+        paths.push(`${item.name}`);
+      }
+      if (item.paths && item.paths.includes(currentPageName)) {
+        paths.push(`${item.name}`);
+      }
+      paths.push(...toPaths(item.children||[]));
+    });
+    return paths;
+  }
+  const keys = toPaths(items);
+  console.log({menuId, currentPageName, items, keys});
+  const [loading, setLoading] = useState(true);
+  useEffect(() => {
+    setLoading(true);
+    setTimeout(() => {
+      setLoading(false);
+    });
+  }, [menuId]);
+  if (loading) {
+    return null;
+  }
   return (
     <Menu
-      selectedKeys={keys}
-      openKeys={keys}
+      defaultSelectedKeys={keys}
+      defaultOpenKeys={keys}
+      // selectedKeys={keys}
+      // openKeys={keys}
+      onOpenChange={(openKeys) => {
+        console.log({openKeys});
+      }}
+      onSelect={(info) => {
+        console.log({info});
+      }}
+      onDeselect={(info) => {
+        console.log({info});
+      }}
       {...restProps}
     >
       {items.map(item => {
         const { children = [] } = item;
-        const subItems = children.filter(child => child.showInMenu);
-        if (!hideChildren && subItems.length > 1) {
+        // const subItems = children.filter(child => child.showInMenu);
+        if (!hideChildren && children.length) {
           return (
-            <Menu.SubMenu key={`${item.id}`} icon={<Icon type={item.icon}/>} title={<>{item.title}</>}>
-              {subItems.map((child: any) => (
-                <Menu.Item key={`${child.id}`}>
+            <Menu.SubMenu key={`${item.name}`} icon={<Icon type={item.icon}/>} title={<>{item.title}</>}>
+              {children.map((child: any) => (
+                <Menu.Item key={`${child.name}`}>
                   <Link to={child.path}>{child.title}</Link>
                 </Menu.Item>
               ))}
@@ -58,7 +82,7 @@ export default (props: any) => {
           )
         }
         return (
-          <Menu.Item icon={<Icon type={item.icon}/>} key={`${item.id}`}>
+          <Menu.Item icon={<Icon type={item.icon}/>} key={`${item.name}`}>
             <Link to={item.path}>{item.title}</Link>
           </Menu.Item>
         )

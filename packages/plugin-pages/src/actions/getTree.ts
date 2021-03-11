@@ -14,11 +14,12 @@ function toPaths(item) {
   }
   let paths = [];
   for (const child of item.children) {
-    if (child.path) {
+    if (child.path && !child.children) {
       paths.push(child.path);
     }
     if (child.children) {
-      paths = paths.concat(toPaths(child));
+      child.paths = toPaths(child);
+      paths = paths.concat(child.paths);
     }
   }
   return paths;

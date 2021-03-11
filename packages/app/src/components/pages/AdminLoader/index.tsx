@@ -17,7 +17,6 @@ export function AdminLoader(props: any) {
   const location = useLocation();
   const match = pathToRegexp(`${path}/:path?`).exec(location.pathname);
   const pageName = match[1]||null;
-  console.log({pageName})
   const items = data
     // .filter(item => item.type !== 'group' || (item.children && item.children.length))
     ;
@@ -27,6 +26,7 @@ export function AdminLoader(props: any) {
     }
     return false;
   });
+  console.log({pageName, sideMenu})
 
   if (loading) {
     return <Spin/>
@@ -36,7 +36,7 @@ export function AdminLoader(props: any) {
     <>
       <TopMenuLayout currentPageName={pageName} {...props} menu={items}>
         {sideMenu ? (
-          <SideMenuLayout currentPageName={pageName} {...props} id={sideMenu.id} menu={sideMenu.children}>
+          <SideMenuLayout currentPageName={pageName} {...props} menuId={sideMenu.id} menu={sideMenu.children}>
             <Page pageName={pageName}></Page>
           </SideMenuLayout>
         ) : (
