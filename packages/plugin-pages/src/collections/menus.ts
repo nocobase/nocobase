@@ -303,7 +303,21 @@ export default {
       title: '权限表格',
       labelField: 'title',
       actions: [],
-      fields: ['title'],
+      fields: [
+        'title', 
+        {
+          interface: 'boolean',
+          name: 'accessible',
+          type: 'boolean',
+          title: '访问权限',
+          dataIndex: ['accessible'],
+          editable: true,
+          resourceName: 'roles.menus',
+          component: {
+            type: 'checkbox',
+          },
+        },
+      ],
       detailsOpenMode: 'drawer', // window
       details: ['permissions_form'],
       sort: ['id'],

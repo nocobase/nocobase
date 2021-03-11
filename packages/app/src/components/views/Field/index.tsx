@@ -99,17 +99,12 @@ export function TextareaField(props: any) {
 //   refreshDeps: [resourceKey]
 // });
 export function BooleanField(props: any) {
-  const { data = {}, value, schema: { name, editable, resource } } = props;
+  const { data = {}, value, schema: { name, editable, resourceName } } = props;
   if (editable) {
     return <Checkbox defaultChecked={value} onChange={async (e) => {
-      await api.resource(resource).update({
+      await api.resource(resourceName).toggle({
         associatedKey: data.associatedKey,
         resourceKey: data.id,
-        tableName: data.tableName||'pages',
-        values: {
-          tableName: data.tableName||'pages',
-          [name]: e.target.checked,
-        },
       });
       message.success('保存成功');
       // console.log(props);

@@ -245,7 +245,13 @@ export function SubTable(props: any) {
           onRow={(data, index) => ({
             onClick: (e) => {
               const className = (e.target as HTMLElement).className;
-              if (className.includes('ant-table-selection-column') || className.includes('ant-checkbox') || className.includes('ant-radio')) {
+              console.log({className});
+              if (typeof className === 'string' && 
+                  (className.includes('ant-table-selection-column') 
+                    || className.includes('ant-checkbox') 
+                    || className.includes('ant-radio')
+                  )
+                ) {
                 return;
               }
               Drawer.open({
