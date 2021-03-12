@@ -1,7 +1,7 @@
 import React from 'react';
 import api from '@/api-client';
-import { useRequest, useLocation } from 'umi';
-import get from 'lodash';
+import { useRequest, useLocation, useHistory, Redirect } from 'umi';
+import get from 'lodash/get';
 import { TopMenuLayout } from './TopMenuLayout';
 import { SideMenuLayout } from './SideMenuLayout';
 import Page from './Page';
@@ -17,6 +17,8 @@ export function AdminLoader(props: any) {
   const location = useLocation();
   const match = pathToRegexp(`${path}/:path?/:rowId?/:tabId?`).exec(location.pathname);
   const pageName = match[1]||null;
+  const history = useHistory();
+  
   const currentRowId = match[2]||null;
   const items = data
     // .filter(item => item.type !== 'group' || (item.children && item.children.length))
@@ -31,6 +33,10 @@ export function AdminLoader(props: any) {
 
   if (loading) {
     return <Spin/>
+  }
+
+  if (!pageName) {
+    return <Redirect to={`/admin/${get(items, [0, 'path'])}`}/>;
   }
 
   return (

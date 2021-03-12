@@ -224,7 +224,7 @@ export default {
           title: '删除',
         },
       ],
-      fields: ['title'],
+      fields: ['title', 'description', 'default'],
       detailsOpenMode: 'drawer', // window
       details: ['descriptions', 'collections', 'pages'],
       sort: ['id'],
@@ -234,7 +234,7 @@ export default {
       type: 'descriptions',
       name: 'descriptions',
       title: '详情',
-      fields: ['title'],
+      fields: ['title', 'description', 'default'],
       actions: [
         {
           name: 'update',
@@ -249,7 +249,7 @@ export default {
       type: 'form',
       name: 'form',
       title: '表单',
-      fields: ['title'],
+      fields: ['title', 'description', 'default'],
     },
     {
       developerMode: true,
