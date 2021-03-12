@@ -33,8 +33,10 @@ export default async (ctx, next) => {
   const isRoot = ctx.ac.constructor.isRoot(roles);
   const MenuPermission = ctx.db.getModel('menus_permissions');
   const menu_permissions = await MenuPermission.findAll({
-    menu_id: {
-      [Op.in]: roles.map(role => role.id),
+    where: {
+      role_id: {
+        [Op.in]: roles.map(role => role.id),
+      }
     }
   });
   const menuIds = menu_permissions.map(item => item.menu_id);
