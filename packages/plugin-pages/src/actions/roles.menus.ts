@@ -1,8 +1,9 @@
 import { Op } from 'sequelize';
 import { actions } from '@nocobase/actions';
 import _ from 'lodash';
+import { flatToTree } from  '../utils';
 
-export async function list(ctx: actions.Context, next: actions.Next) {
+export async function list(ctx: any, next: actions.Next) {
   const { associated, associatedKey } = ctx.action.params;
   // TODO: 暂时 action 中间件就这么写了
   ctx.action.mergeParams({
@@ -22,5 +23,10 @@ export async function list(ctx: actions.Context, next: actions.Next) {
     });
     row.setDataValue('accessible', !!mp);
   }
+  ctx.body.rows = flatToTree(rows.map(item => item.toJSON()), {
+    id: 'id',
+    parentId: 'parent_id',
+    children: 'children',
+  });
   await next();
 }

@@ -303,6 +303,7 @@ export default {
       title: '权限表格',
       labelField: 'title',
       actions: [],
+      expandable: {},
       fields: [
         'title', 
         {

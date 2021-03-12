@@ -14,6 +14,7 @@ import viewGetInfo from './actions/views_v2:getInfo';
 import { RANDOMSTRING } from './fields/randomString';
 import { registerFields, registerModels } from '@nocobase/database';
 import { BaseModel } from './models/BaseModel'
+import * as rolesMenusActions from './actions/roles.menus';
 
 export default async function (options = {}) {
   const database: Database = this.database;
@@ -74,6 +75,10 @@ export default async function (options = {}) {
 
   Object.keys(rolesPagesActions).forEach(actionName => {
     resourcer.registerActionHandler(`roles.pages:${actionName}`, rolesPagesActions[actionName]);
+  });
+
+  Object.keys(rolesMenusActions).forEach(actionName => {
+    resourcer.registerActionHandler(`roles.menus:${actionName}`, rolesMenusActions[actionName]);
   });
 
   database.getModel('menus').addHook('beforeSave', async (model) => {

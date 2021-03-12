@@ -1,19 +1,37 @@
 import { ResourceOptions } from '@nocobase/resourcer';
 import { Model, ModelCtor } from '@nocobase/database';
 import _ from 'lodash';
+import { Op } from 'sequelize';
 
 export default async (ctx, next) => {
   const { resourceKey } = ctx.action.params;
   let primaryKey: any;
   let pageName: any;
   let collectionName: any;
-  console.log({resourceKey});
+  const roles = ctx.ac ? await ctx.ac.getRoles() : [];
+  const isRoot = ctx.ac.constructor.isRoot(roles);
+  const MenuPermission = ctx.db.getModel('menus_permissions');
+  const menu_permissions = await MenuPermission.findAll({
+    menu_id: {
+      [Op.in]: roles.map(role => role.id),
+    }
+  });
+  const menuIds = menu_permissions.map(item => item.menu_id);
+  console.log({resourceKey, roles, menuIds});
   const Menu = ctx.db.getModel('menus') as ModelCtor<Model>;
   const menu = await Menu.findOne({
-    where: {
+    where: isRoot ? {
+      name: resourceKey,
+    } : {
+      id: {
+        [Op.in]: menuIds,
+      },
       name: resourceKey,
     }
   });
+  if (!menu) {
+    ctx.throw(404, 'Not Found');
+  }
   const body: any = {
     ...menu.toJSON(),
   };
