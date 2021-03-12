@@ -199,11 +199,11 @@ export const Upload = connect({
     },
   };
   const images = getImgUrls(fileList);
-  // console.log(images);
+  console.log({fileList});
   return (
     <div>
       <AntdUpload
-        listType={'picture-card'}
+        listType={'picture'}
         {...uploadProps}
         fileList={fileList}
         multiple={true}
@@ -231,10 +231,9 @@ export const Upload = connect({
           
         // }}
       >
-        {multiple || fileList.length < 1 && (
+        {(multiple || fileList.length < 1) && (
           <>
-            <PlusOutlined />
-            <div style={{marginTop: 5}}>上传</div>
+            <Button icon={<UploadOutlined />}>上传</Button>
           </>
         )}
       </AntdUpload>
