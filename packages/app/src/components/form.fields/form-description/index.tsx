@@ -6,12 +6,14 @@ import { markdown } from '@/components/views/Field'
 
 export const FormDescription = createVirtualBox(
   'description',
-  styled(({ children, className, ...props }) => {
+  styled(({ schema = {}, children, className, ...props }) => {
+    const { title, tooltip } = schema as any;
+    console.log({schema})
     return (
-      <Card size={'small'} headStyle={{padding: 0}} bodyStyle={{
+      <Card title={title} size={'small'} headStyle={{padding: 0}} bodyStyle={{
         padding: 0,
       }} className={className} {...props}>
-        {typeof children === 'string' && children && <div dangerouslySetInnerHTML={{__html: markdown(children)}}></div>}
+        {typeof tooltip === 'string' && tooltip && <div dangerouslySetInnerHTML={{__html: markdown(tooltip)}}></div>}
       </Card>
     )
   })`
