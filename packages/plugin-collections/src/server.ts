@@ -45,7 +45,7 @@ export default async function (this: Application, options = {}) {
     const { transaction = await model.sequelize.transaction() } = options;
 
     await model.createField({
-      interface: 'status',
+      interface: 'radio',
       name: 'status',
       type: 'string',
       filterable: true,
@@ -62,7 +62,7 @@ export default async function (this: Application, options = {}) {
         }
       ],
       component: {
-        type: 'select',
+        type: 'radio',
       },
     }, { transaction });
 

@@ -74,7 +74,7 @@ export function FormDrawer(title: any, content: any): IFormDrawer {
   env.root.className = 'env-root';
   const props = getDrawerProps(title)
   const drawer = {
-    width: '40%',
+    width: '50%',
     ...props,
     onClose: (e: any) => {
       props?.onClose?.(e)
