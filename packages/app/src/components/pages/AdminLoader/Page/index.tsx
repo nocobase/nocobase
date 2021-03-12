@@ -60,6 +60,9 @@ export function Page(props: any) {
               <Card bordered={false}>
                 <View 
                   currentRowId={currentRowId}
+                  onDraft={() => {
+                    message.success('草稿保存成功');
+                  }}
                   onFinish={() => {
                     if (view.returnType === 'message' && view.message) {
                       Modal.success({

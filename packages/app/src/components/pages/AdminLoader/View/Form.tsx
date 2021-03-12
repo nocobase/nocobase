@@ -225,7 +225,6 @@ export function Form(props: any) {
                           status: 'draft',
                         });
                         setSubmitting(false);
-                        message.success('草稿保存成功');
                       })();
                     });
                   }}
@@ -233,7 +232,7 @@ export function Form(props: any) {
                   htmlType={'button'}
                   loading={submitting}
                 >
-                  {'草稿'}
+                  {'保存草稿'}
                 </Button>
               )
             }}
