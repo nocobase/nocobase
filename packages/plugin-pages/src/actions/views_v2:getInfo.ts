@@ -53,7 +53,7 @@ export const getInfo = async (ctx: actions.Context, next) => {
       collectionName = key1;
     }
   }
-  console.log({viewName, collectionName, associatedName})
+  // console.log({viewName, collectionName, associatedName})
   let view = await View.findOne({
     where: {
       name: viewName,
@@ -168,7 +168,7 @@ export const getInfo = async (ctx: actions.Context, next) => {
     if (typeof field === 'string') {
       fieldName = field;
     } else if (typeof field === 'object') {
-      console.log({field});
+      // console.log({field});
       if (field.field) {
         const { field: f, ...others } = field;
         fieldName = f.name;
@@ -208,7 +208,7 @@ export const getInfo = async (ctx: actions.Context, next) => {
     if (!json.name) {
       continue;
     }
-    console.log({field, json})
+    // console.log({field, json})
     if (json.name === 'type' && json.collection_name === 'views_v2') {
       json.linkages = getViewTypeLinkages();
     }
@@ -311,7 +311,7 @@ export const getInfo = async (ctx: actions.Context, next) => {
         collection_name: collectionName,
       }
     });
-    console.log(field, data.targetFieldName, collectionName)
+    // console.log(field, data.targetFieldName, collectionName)
     const targetViewName = `${field.get('target')}.${data.targetViewName}`;
     const resourceName = `${collectionName}.${data.targetFieldName}`;
     ctx.action.mergeParams({

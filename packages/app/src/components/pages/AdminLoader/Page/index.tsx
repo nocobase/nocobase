@@ -58,17 +58,21 @@ export function Page(props: any) {
           return (
             <Col style={{marginBottom: 24}} span={span}>
               <Card bordered={false}>
-                <View currentRowId={currentRowId} onFinish={() => {
-                  if (view.returnType === 'message' && view.message) {
-                    Modal.success({
-                      title: '提交成功',
-                      content: markdown(view.message),
-                    });
-                  } else if (view.returnType === 'redirect') {
-                    const path = get(view, 'redirect.name');
-                    path && history.push(`${path}`);
-                  }
-                }} viewName={viewName}/>
+                <View 
+                  currentRowId={currentRowId}
+                  onFinish={() => {
+                    if (view.returnType === 'message' && view.message) {
+                      Modal.success({
+                        title: '提交成功',
+                        content: markdown(view.message),
+                      });
+                    } else if (view.returnType === 'redirect') {
+                      const path = get(view, 'redirect.name');
+                      path && history.push(`${path}`);
+                    }
+                  }} 
+                  viewName={viewName}
+                />
               </Card>
             </Col>
           );

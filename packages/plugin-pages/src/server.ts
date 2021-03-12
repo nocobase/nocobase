@@ -46,6 +46,21 @@ export default async function (options = {}) {
     await next();
   });
 
+  resourcer.use(async (ctx, next) => {
+    const { actionName, resourceName, values } = ctx.action.params;
+    if (resourceName === 'menus' && ['create', 'update'].includes(actionName)) {
+      if (values.parent) {
+        delete values.parent.children;
+        ctx.action.mergeParams({
+          values: {...values},
+        }, {
+          payload: 'replace',
+        });
+      }
+    }
+    await next();
+  });
+
   resourcer.registerActionHandler('getCollection', getCollection);
   resourcer.registerActionHandler('getView', getView);
   resourcer.registerActionHandler('getPageInfo', getPageInfo);

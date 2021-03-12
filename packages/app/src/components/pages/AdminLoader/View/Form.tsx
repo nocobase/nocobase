@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Tooltip, Card, Button } from 'antd';
+import { Tooltip, Card, Button, message } from 'antd';
 import {
   SchemaForm,
   SchemaMarkupField as Field,
@@ -86,7 +86,7 @@ export function fields2properties(fields = []) {
 const actions = createFormActions();
 
 export function Form(props: any) {
-  const { onReset, __parent, noRequest = false, onFinish, resolve, data: record = {}, associatedKey, schema = {} } = props;
+  const { onReset, __parent, noRequest = false, onFinish, onDraft, resolve, data: record = {}, associatedKey, schema = {} } = props;
   console.log({ noRequest, record, associatedKey, __parent });
   const { statusable, resourceName, rowKey = 'id', fields = [], appends = [], associationField = {} } = schema;
 
@@ -170,9 +170,74 @@ export function Form(props: any) {
       <FormButtonGroup className={'form-button-group'} align={'end'}>
         <Reset>取消</Reset>
         {statusable && (
-          <Submit type={'default'} onClick={() => {
-            setStatus('draft');
-          }}>草稿</Submit>
+          <FormSpy
+            selector={[
+              LifeCycleTypes.ON_FORM_MOUNT,
+              LifeCycleTypes.ON_FORM_SUBMIT_START,
+              LifeCycleTypes.ON_FORM_SUBMIT_END
+            ]}
+            reducer={(state, action) => {
+              switch (action.type) {
+                case LifeCycleTypes.ON_FORM_SUBMIT_START:
+                  return {
+                    ...state,
+                    submitting: true
+                  }
+                case LifeCycleTypes.ON_FORM_SUBMIT_END:
+                  return {
+                    ...state,
+                    submitting: false
+                  }
+                default:
+                  return state
+              }
+            }}
+          >
+            {({ state, form }) => {
+              const [submitting, setSubmitting] = useState(false);
+              return (
+                <Button
+                  onClick={e => {
+                    setSubmitting(true);
+                    form.getFormState(state => {
+                      (async () => {
+                        resourceKey 
+                        ? await api.resource(resourceName).update({
+                          associatedKey,
+                          resourceKey,
+                          values: {
+                            ...state.values,
+                            status: 'draft',
+                          },
+                        })
+                        : await api.resource(resourceName).create({
+                          associatedKey,
+                          values: {
+                            ...state.values,
+                            status: 'draft',
+                          },
+                        });
+                        await form.reset({
+                          validate: false,
+                        });
+                        onDraft && await onDraft({
+                          ...state.values,
+                          status: 'draft',
+                        });
+                        setSubmitting(false);
+                        message.success('草稿保存成功');
+                      })();
+                    });
+                  }}
+                  {...props}
+                  htmlType={'button'}
+                  loading={submitting}
+                >
+                  {'草稿'}
+                </Button>
+              )
+            }}
+          </FormSpy>
         )}
         <Submit>确定</Submit>
       </FormButtonGroup>
