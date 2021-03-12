@@ -23,6 +23,11 @@ export function Create(props) {
                   associatedKey={associatedKey}
                   viewName={viewName}
                   onReset={resolve}
+                  onDraft={async (values) => {
+                    await resolve();
+                    console.log('onFinish', values);
+                    onFinish && await onFinish(values);
+                  }}
                   onFinish={async (values) => {
                     await resolve();
                     console.log('onFinish', values);
@@ -57,6 +62,10 @@ export function Update(props) {
                   data={data}
                   viewName={viewName}
                   onReset={resolve}
+                  onDraft={async (values) => {
+                    await resolve();
+                    onFinish && await onFinish(values);
+                  }}
                   onFinish={async (values) => {
                     await resolve();
                     onFinish && await onFinish(values);

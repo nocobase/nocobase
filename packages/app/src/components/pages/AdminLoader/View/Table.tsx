@@ -408,6 +408,11 @@ export function Table(props: any) {
                             resolve();
                             await reloadMenu();
                           }}
+                          onDraft={async () => {
+                            await refresh();
+                            resolve();
+                            await reloadMenu();
+                          }}
                           onReset={resolve}
                           onDataChange={async () => {
                             await refresh();
