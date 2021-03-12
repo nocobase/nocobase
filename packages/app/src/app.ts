@@ -35,6 +35,9 @@ export const request: RequestConfig = {
 export async function getInitialState() {
   const { pathname, search } = location;
   console.log(location);
+  const { data: systemSettings = {} } = await umiRequest('/system_settings:get?fields[appends]=logo,logo.storage', {
+    method: 'get',
+  });
   let redirect = '';
   // if (href.includes('?')) {
     redirect = `?redirect=${pathname}${search}`;
@@ -49,13 +52,10 @@ export async function getInitialState() {
       if (!data.id) {
         history.push('/login' + redirect);
         return {
+          systemSettings,
           currentUser: {},
         };
       }
-
-      const { data: systemSettings = {} } = await umiRequest('/system_settings:get?fields[appends]=logo,logo.storage', {
-        method: 'get',
-      });
 
       return {
         systemSettings,
@@ -67,5 +67,8 @@ export async function getInitialState() {
     }
   }
 
-  return {};
+  return {
+    systemSettings,
+    currentUser: {},
+  };
 }

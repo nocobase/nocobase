@@ -20,9 +20,19 @@ export function Login(props: any) {
   const { initialState = {}, loading, error, refresh, setInitialState } = useModel('@@initialState');
   const { redirect } = props.location.query;
 
+  if (loading) {
+    return null;
+  }
+
+  const { systemSettings = {} } = initialState as any;
+
+  console.log({systemSettings});
+
+  const { title } = systemSettings || {};
+
   return (
     <div className={'users-form'}>
-      <h1>NocoBase</h1>
+      <h1>{title||'NocoBase'}</h1>
       <h2>登录</h2>
       <SchemaForm onSubmit={async (values) => {
         console.log(values);
@@ -32,7 +42,11 @@ export function Login(props: any) {
         });
         if (data.data && data.data.token) {
           localStorage.setItem('NOCOBASE_TOKEN',  data.data.token);
-          setInitialState({currentUser :data.data});
+          // @ts-ignore
+          setInitialState({
+            ...initialState,
+            currentUser: data.data,
+          });
           await (window as any).routesReload();
           history.push(redirect||'/');
         }

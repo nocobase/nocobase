@@ -67,7 +67,7 @@ export function Page(props: any) {
                     if (view.returnType === 'message' && view.message) {
                       Modal.success({
                         title: '提交成功',
-                        content: markdown(view.message),
+                        content: <div dangerouslySetInnerHTML={{__html: markdown(view.message)}}/>,
                       });
                     } else if (view.returnType === 'redirect') {
                       const path = get(view, 'redirect.name');

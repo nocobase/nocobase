@@ -44,10 +44,21 @@ const useLinkageValidateEffects = () => {
 
 export function Register(props: any) {
   const actions = createFormActions();
+  const { initialState = {}, loading, error, refresh, setInitialState } = useModel('@@initialState');
+
+  if (loading) {
+    return null;
+  }
+
+  const { systemSettings = {} } = initialState as any;
+
+  console.log({systemSettings});
+
+  const { title } = systemSettings || {};
 
   return (
     <div className={'users-form'}>
-      <h1>NocoBase</h1>
+      <h1>{title || 'NocoBase'}</h1>
       <h2>注册</h2>
       <SchemaForm 
       effects={() => {
@@ -113,7 +124,7 @@ export function Register(props: any) {
           },
         }
       }}>
-        <FormButtonGroup>
+        <FormButtonGroup align={'start'}>
           <Submit size={'large'}>注册</Submit>
           <Button size={'large'} onClick={() => {
             history.push('/login');
