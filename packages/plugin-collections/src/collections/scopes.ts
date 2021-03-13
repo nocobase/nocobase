@@ -28,6 +28,17 @@ export default {
       component: {
         type: 'filter',
         showInForm: true,
+        "x-linkages": [
+          {
+            type: "value:schema",
+            target: "filter",
+            schema: {
+              "x-component-props": {
+                associatedKey: "{{ $form.values && $form.values.associatedKey }}"
+              },
+            },
+          },
+        ],
       },
     },
     {

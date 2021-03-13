@@ -129,7 +129,7 @@ export default {
       fields: ['created_at', 'user', 'collection', 'type', 'index'],
       detailsOpenMode: 'drawer', // window
       details: ['descriptions'],
-      sort: ['id'],
+      sort: ['-created_at'],
     },
     {
       type: 'table',
@@ -146,7 +146,7 @@ export default {
       fields: ['created_at', 'user', 'type', 'index'],
       detailsOpenMode: 'drawer', // window
       details: ['descriptions'],
-      sort: ['id'],
+      sort: ['created_at'],
     },
     {
       developerMode: true,

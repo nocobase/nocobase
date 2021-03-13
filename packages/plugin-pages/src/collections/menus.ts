@@ -319,9 +319,9 @@ export default {
           },
         },
       ],
-      detailsOpenMode: 'drawer', // window
-      details: ['permissions_form'],
-      sort: ['id'],
+      // detailsOpenMode: 'drawer', // window
+      // details: ['permissions_form'],
+      sort: ['sort'],
     },
     {
       developerMode: true,

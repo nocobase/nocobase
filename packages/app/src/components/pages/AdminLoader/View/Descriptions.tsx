@@ -57,6 +57,8 @@ export function Descriptions(props) {
   const resourceKey = props.resourceKey || record[associationField.targetKey||rowKey];
   const associatedKey = props.associatedKey || record[associationField.sourceKey||'id'];
 
+  console.log({resourceKey, data: record, associatedKey, associationField})
+
   const { data = {}, loading, refresh } = useRequest(() => {
     return api.resource(resourceName).get({
       resourceKey,
@@ -102,7 +104,7 @@ export function Descriptions(props) {
           {group.children.map((field: any) => {
             return (
               <AntdDescriptions.Item label={field.title||field.name}>
-                <Field data={field} viewType={'descriptions'} schema={field} value={get(data, field.name)}/>
+                <Field data={data} viewType={'descriptions'} schema={field} value={get(data, field.name)}/>
               </AntdDescriptions.Item>
             )
           })}

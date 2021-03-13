@@ -51,7 +51,9 @@ export function Details(props) {
             noRequest={noRequest} 
             associatedKey={associatedKey} 
             onFinish={onFinish} 
-            onDataChange={onDataChange} data={data} viewName={viewName}/>
+            onDataChange={onDataChange} 
+            data={data} 
+            viewName={viewName}/>
         );
       })}
     </div>
@@ -126,8 +128,6 @@ export function SubTable(props: any) {
 
   const { type } = associationField;
 
-  console.log({associatedKey});
-
   const { data = [], loading, mutate, refresh, run, params } = useRequest((params = {}, ...args) => {
     return !associatedKey || type === 'virtual' || type === 'json' ? Promise.resolve({
       data: (props.data||[]).map(item => {
@@ -142,7 +142,6 @@ export function SubTable(props: any) {
       'fields[appends]': appends,
     })
     .then(({ data = [] }) => {
-      console.log('associatedKey', data);
       if (!Array.isArray(data)) {
         return {
           data: [],
@@ -193,8 +192,6 @@ export function SubTable(props: any) {
     }
   }
 
-  console.log({associatedKey, data, dataSource})
-
   return (
     <div>
       <Actions size={size} __parent={__parent} associatedKey={associatedKey} noRequest={true} onTrigger={{
@@ -207,7 +204,6 @@ export function SubTable(props: any) {
           });
           mutate(data);
           onChange && await onChange(data);
-          console.log('create', {...values});
         },
         async add(items = []) {
           let data = [...dataSource];
@@ -220,7 +216,6 @@ export function SubTable(props: any) {
           });
           mutate(data);
           onChange && await onChange(data);
-          console.log('add', {data});
         },
         async destroy() {
           let data = dataSource.filter(item => !selectedRowKeys.includes(item[rowKey]));
@@ -245,7 +240,6 @@ export function SubTable(props: any) {
           onRow={(data, index) => ({
             onClick: (e) => {
               const className = (e.target as HTMLElement).className;
-              console.log({className});
               if (typeof className === 'string' && 
                   (className.includes('ant-table-selection-column') 
                     || className.includes('ant-checkbox') 
@@ -262,7 +256,7 @@ export function SubTable(props: any) {
                 content: ({resolve}) => (
                   <div>
                     <Details 
-                      __parent={__parent}
+                      // __parent={__parent}
                       associatedKey={associatedKey}
                       resourceName={resourceName} 
                       onFinish={async (values) => {
@@ -273,7 +267,6 @@ export function SubTable(props: any) {
                         });
                         mutate(data);
                         onChange && await onChange(data);
-                        console.log('details', values);
                         resolve();
                       }}
                       onReset={resolve}

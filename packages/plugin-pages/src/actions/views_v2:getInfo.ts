@@ -264,10 +264,20 @@ export const getInfo = async (ctx: actions.Context, next) => {
           name: vName,
         }
       });
-      sView && details.push({
-        title: sView.title,
-        views: [sView],
-      });
+      if (sView) {
+        details.push({
+          title: sView.title,
+          views: [sView],
+        });
+      } else {
+        details.push({
+          title: '表单',
+          views: [{
+            name: item,
+            width: '50%',
+          }],
+        });
+      }
     } else if (typeof item === 'object') {
       if (item.views) {
         // TODO 标签页多视图支持

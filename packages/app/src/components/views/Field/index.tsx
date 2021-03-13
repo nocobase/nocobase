@@ -231,22 +231,22 @@ export function SubTableField(props: any) {
 }
 
 export function LinkToField(props: any) {
-  const { schema, value } = props;
+  const { data, schema, value } = props;
   if (!value) {
     return null;
   }
+  console.log({props});
   const values = Array.isArray(value) ? value : [value];
   return (
     <div className={'link-to-field'}>
-      {values.map(item => <LinkToFieldLink data={item} schema={schema}/>)}
+      {values.map(item => <LinkToFieldLink parent={data} data={item} schema={schema}/>)}
     </div>
   );
 }
 
 export function LinkToFieldLink(props) {
-  const { data, schema, schema: { title, labelField, viewName, name, target, collection_name } } = props;
+  const { parent, data, schema, schema: { title, labelField, viewName, name, target, collection_name } } = props;
   const [visible, setVisible] = useState(false);
-  console.log({data});
   return (
     <span className={'link-to-field-tag'}>
       <a onClick={(e) => {
@@ -255,9 +255,10 @@ export function LinkToFieldLink(props) {
         Drawer.open({
           title: data[labelField],
           content: () => {
+            console.log({parent, data, props, schema});
             return (
               <div>
-                <View data={data} viewName={viewName || `${collection_name}.${name}.descriptions`}/>
+                <View associatedKey={parent.id} data={data} viewName={viewName || `${collection_name}.${name}.descriptions`}/>
               </div>
             );
           }
