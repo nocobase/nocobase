@@ -68,7 +68,7 @@ export default {
     {
       type: 'integer',
       name: 'index',
-      title: '对象索引',
+      title: '数据ID',
       component: {
         showInTable: true,
       },

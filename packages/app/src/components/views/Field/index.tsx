@@ -245,8 +245,9 @@ export function LinkToField(props: any) {
 }
 
 export function LinkToFieldLink(props) {
-  const { parent, data, schema, schema: { title, labelField, viewName, name, target, collection_name } } = props;
+  const { parent, schema, schema: { title, labelField, viewName, name, target, collection_name } } = props;
   const [visible, setVisible] = useState(false);
+  const [data, setData] = useState(props.data||{});
   return (
     <span className={'link-to-field-tag'}>
       <a onClick={(e) => {
@@ -254,11 +255,15 @@ export function LinkToFieldLink(props) {
         // setVisible(true);
         Drawer.open({
           title: data[labelField],
-          content: () => {
+          content: ({resolve}) => {
             console.log({parent, data, props, schema});
             return (
               <div>
-                <View associatedKey={parent.id} data={data} viewName={viewName || `${collection_name}.${name}.descriptions`}/>
+                <View onFinish={(values) => {
+                  setData(values);
+                  resolve();
+                  console.log({data, values});
+                }} associatedKey={parent.id} data={data} viewName={viewName || `${collection_name}.${name}.descriptions`}/>
               </div>
             );
           }

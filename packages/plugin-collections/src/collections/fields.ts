@@ -649,7 +649,31 @@ export default {
       developerMode: true,
       type: 'table',
       name: 'table',
-      title: '全部数据',
+      title: '关联的字段',
+      labelField: 'title',
+      actions: [
+        {
+          name: 'create',
+          type: 'create',
+          title: '新增',
+          viewName: 'form',
+        },
+        {
+          name: 'destroy',
+          type: 'destroy',
+          title: '删除',
+        },
+      ],
+      fields: ['title', 'interface'],
+      detailsOpenMode: 'drawer', // window
+      details: ['form'],
+      sort: ['sort'],
+    },
+    {
+      developerMode: true,
+      type: 'table',
+      name: 'table2',
+      title: '表格',
       labelField: 'title',
       actions: [
         {

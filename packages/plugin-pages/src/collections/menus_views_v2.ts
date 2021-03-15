@@ -18,6 +18,7 @@ export default {
       labelField: 'title',
       valueField: 'id',
       multiple: false,
+      viewName: 'views_v2.form',
       component: {
         type: 'drawerSelect',
         'x-component-props': {

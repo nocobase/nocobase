@@ -41,7 +41,7 @@ export function Page(props: any) {
         {...restProps}
       />
       <div className={'page-content'}>
-        <Row gutter={24}>
+        <Row className={'nb-row'} gutter={24}>
         {views.map(view => {
           let viewName: string;
           let span = 24;

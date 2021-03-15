@@ -582,7 +582,7 @@ export default {
       dataSourceType: 'association',
       name: 'fields',
       title: '字段',
-      targetViewName: 'table',
+      targetViewName: 'table2',
       targetFieldName: 'fields',
     },
     {

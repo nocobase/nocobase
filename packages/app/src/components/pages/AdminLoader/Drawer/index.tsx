@@ -91,7 +91,7 @@ export function FormDrawer(title: any, content: any): IFormDrawer {
   const render = (visible = true, resolve?: () => any, reject?: () => any) => {
     ReactDOM.render(
       <ConfigProvider locale={zhCN}>
-        <Drawer {...drawer} visible={visible}>
+        <Drawer {...drawer} className={'nb-drawer'} visible={visible}>
           {createElement(content, {
             resolve,
             reject,
