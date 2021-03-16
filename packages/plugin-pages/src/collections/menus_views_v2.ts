@@ -43,6 +43,11 @@ export default {
             "target": "message",
             "condition": "{{ $self.value && $self.value.type === 'form' }}"
           },
+          {
+            "type": "value:visible",
+            "target": "draft.returnType",
+            "condition": "{{ $self.value && $self.value.type === 'form' }}"
+          },
         ],
       },
     },
@@ -117,6 +122,59 @@ export default {
       component: {
         type: 'wysiwyg',
       },
+    },
+    {
+      interface: 'radio',
+      type: 'virtual',
+      name: 'draft.returnType',
+      title: '草稿提交成功后',
+      dataSource: [
+        { label: '显示文字信息', value: 'message' },
+        { label: '跳转到页面', value: 'redirect' },
+      ],
+      component: {
+        type: 'radio',
+        'x-linkages': [
+          {
+            "type": "value:visible",
+            "target": "draft.message",
+            "condition": "{{ $self.value === 'message' }}"
+          },
+          {
+            "type": "value:visible",
+            "target": "draft.redirect",
+            "condition": "{{ $self.value === 'redirect' }}"
+          },
+        ],
+      },
+    },
+    {
+      interface: 'linkTo',
+      type: 'virtual',
+      name: 'draft.redirect',
+      target: 'menus',
+      title: '跳转到页面',
+      labelField: 'title',
+      valueField: 'id',
+      multiple: false,
+      component: {
+        type: 'drawerSelect',
+        'x-component-props': {
+          viewName: 'menus.table',
+          resourceName: 'menus',
+          labelField: 'title',
+          valueField: 'id',
+        },
+      },
+    },
+    {
+      interface: 'wysiwyg',
+      type: 'virtual',
+      title: '显示文字信息',
+      name: 'draft.message',
+      component: {
+        type: 'wysiwyg',
+      },
     }
   ],
   views_v2: [
@@ -170,6 +228,9 @@ export default {
         'returnType',
         'redirect',
         'message',
+        'draft.returnType',
+        'draft.redirect',
+        'draft.message',
       ],
     },
     {
