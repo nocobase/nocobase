@@ -79,6 +79,14 @@ export default {
       targetKey: 'name'
     },
     {
+      interface: 'linkTo',
+      title: '页面',
+      type: 'belongsToMany',
+      name: 'menus',
+      target: 'menus',
+      through: 'menus_permissions',
+    },
+    {
       comment: '权限集（方便访问）',
       type: 'hasMany',
       name: 'permissions'
@@ -194,6 +202,72 @@ export default {
       title: '当前组用户',
       association: 'users',
       viewName: 'simple',
+    },
+  ],
+  views_v2: [
+    {
+      developerMode: true,
+      type: 'table',
+      name: 'table',
+      title: '全部数据',
+      labelField: 'title',
+      actions: [
+        {
+          name: 'create',
+          type: 'create',
+          title: '新增',
+          viewName: 'form',
+        },
+        {
+          name: 'destroy',
+          type: 'destroy',
+          title: '删除',
+        },
+      ],
+      fields: ['title', 'description', 'default'],
+      detailsOpenMode: 'drawer', // window
+      details: ['descriptions', 'collections', 'pages'],
+      sort: ['id'],
+    },
+    {
+      developerMode: true,
+      type: 'descriptions',
+      name: 'descriptions',
+      title: '详情',
+      fields: ['title', 'description', 'default'],
+      actions: [
+        {
+          name: 'update',
+          type: 'update',
+          title: '编辑',
+          viewName: 'form',
+        },
+      ],
+    },
+    {
+      developerMode: true,
+      type: 'form',
+      name: 'form',
+      title: '表单',
+      fields: ['title', 'description', 'default'],
+    },
+    {
+      developerMode: true,
+      type: 'table',
+      dataSourceType: 'association',
+      name: 'collections',
+      title: '数据表权限',
+      targetViewName: 'permissions_table',
+      targetFieldName: 'collections',
+    },
+    {
+      developerMode: true,
+      type: 'table',
+      dataSourceType: 'association',
+      name: 'pages',
+      title: '页面权限',
+      targetViewName: 'permissions_table',
+      targetFieldName: 'menus',
     },
   ],
 } as TableOptions;

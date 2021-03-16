@@ -4,6 +4,7 @@ lib/
 .DS_Store
 package-lock.json
 yarn.lock
+!/yarn.lock
 yarn-error.log
 lerna-debug.log
 packages/database/package-lock.json

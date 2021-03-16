@@ -160,4 +160,58 @@ export default {
       default: true,
     },
   ],
+  views_v2: [
+    {
+      developerMode: true,
+      type: 'table',
+      name: 'table',
+      title: '全部数据',
+      labelField: 'title',
+      actions: [
+        {
+          name: 'create',
+          type: 'create',
+          title: '新增',
+          viewName: 'form',
+        },
+        {
+          name: 'destroy',
+          type: 'destroy',
+          title: '删除',
+        },
+      ],
+      fields: ['title', 'type'],
+      detailsOpenMode: 'drawer', // window
+      details: ['form'],
+      sort: ['id'],
+    },
+    {
+      developerMode: true,
+      type: 'descriptions',
+      name: 'descriptions',
+      title: '详情',
+      fields: ['title', 'type'],
+      actions: [
+        {
+          name: 'update',
+          type: 'update',
+          title: '编辑',
+          viewName: 'form',
+        },
+      ],
+    },
+    {
+      developerMode: true,
+      type: 'form',
+      name: 'form',
+      title: '表单',
+      fields: [
+        'title',
+        'type',
+        'collection',
+        'filter',
+        'values',
+      ],
+    },
+  ],
 } as TableOptions;

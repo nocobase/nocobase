@@ -480,7 +480,7 @@ export const Filter = connect({
     ],
   };
   const { value, onChange, associatedKey, filter = {}, sourceName, sourceFilter = {}, fields = [], ...restProps } = props;
-
+  console.log('filter', {associatedKey})
   const { data = [], loading = true } = useRequest(() => {
     return associatedKey ? api.resource(`collections.fields`).list({
       associatedKey,

@@ -17,134 +17,15 @@ const data = [
     type: 'layout',
     template: 'TopMenuLayout',
     sort: 10,
-    children: [
-      {
-        title: '仪表盘',
-        type: 'page',
-        path: '/dashboard',
-        icon: 'DashboardOutlined',
-        template: 'page1',
-        sort: 20,
-        showInMenu: true,
-      },
-      {
-        title: '数据',
-        type: 'layout',
-        path: '/collections',
-        icon: 'DatabaseOutlined',
-        template: 'SideMenuLayout',
-        sort: 30,
-        showInMenu: true,
-        children: [
-          // {
-          //   title: '页面3',
-          //   type: 'page',
-          //   path: '/collections/page3',
-          //   icon: 'dashboard',
-          //   template: 'page3',
-          //   sort: 40,
-          // },
-          // {
-          //   title: '页面4',
-          //   type: 'page',
-          //   path: '/collections/page4',
-          //   icon: 'dashboard',
-          //   template: 'page4',
-          //   sort: 50,
-          // },
-        ]
-      },
-      {
-        title: '用户',
-        type: 'layout',
-        path: '/users',
-        icon: 'TeamOutlined',
-        template: 'SideMenuLayout',
-        sort: 70,
-        showInMenu: true,
-        children: [
-          {
-            title: '用户管理',
-            type: 'collection',
-            path: '/users/users',
-            icon: 'UserOutlined',
-            template: 'collection',
-            collection: 'users',
-            sort: 80,
-            showInMenu: true,
-          },
-        ]
-      },
-      {
-        title: '动态',
-        type: 'layout',
-        path: '/activity',
-        icon: 'NotificationOutlined',
-        template: 'SideMenuLayout',
-        sort: 85,
-        showInMenu: true,
-        children: [
-          {
-            title: '操作记录',
-            type: 'collection',
-            path: '/activity/logs',
-            icon: 'HistoryOutlined',
-            template: 'collection',
-            collection: 'action_logs',
-            sort: 80,
-            showInMenu: true,
-          },
-        ]
-      },
-      {
-        title: '配置',
-        type: 'layout',
-        path: '/settings',
-        icon: 'SettingOutlined',
-        template: 'SideMenuLayout',
-        sort: 90,
-        showInMenu: true,
-        children: [
-          {
-            title: '页面与菜单',
-            type: 'collection',
-            collection: 'pages',
-            path: '/settings/pages',
-            icon: 'MenuOutlined',
-            sort: 100,
-            developerMode: true,
-            showInMenu: true,
-          },
-          {
-            title: '数据表配置',
-            type: 'collection',
-            collection: 'collections',
-            path: '/settings/collections',
-            icon: 'TableOutlined',
-            sort: 110,
-            showInMenu: true,
-          },
-          {
-            title: '权限组配置',
-            type: 'collection',
-            collection: 'roles',
-            path: '/settings/roles',
-            icon: 'TableOutlined',
-            sort: 120,
-            showInMenu: true,
-          },
-          {
-            title: '自动化配置',
-            type: 'collection',
-            collection: 'automations',
-            path: '/settings/automations',
-            icon: 'TableOutlined',
-            sort: 130,
-            showInMenu: true,
-          },
-        ]
-      },
-    ],
+    redirect: '/admin',
+  },
+  {
+    title: '后台',
+    path: '/admin',
+    type: 'page',
+    inherit: false,
+    template: 'AdminLoader',
+    order: 230,
   },
   {
     title: '登录页面',
@@ -161,7 +42,7 @@ const data = [
     inherit: false,
     template: 'register',
     order: 130,
-  }
+  },
 ];
 
 (async () => {
@@ -190,6 +71,7 @@ const data = [
       nickname: "超级管理员",
       password: "admin",
       username: "admin",
+      email: 'dev@nocobase.com',
       token: "38979f07e1fca68fb3d2",
     });
   }
@@ -221,14 +103,16 @@ const data = [
     });
   }
   const Role = database.getModel('roles');
-  const roles = await Role.bulkCreate([
-    { title: '系统开发组', type: -1 },
-    { title: '匿名用户组', type: 0 },
-    { title: '普通用户组', default: true },
-  ]);
-  await roles[0].updateAssociations({
-    users: user
-  });
+  if (Role) {
+    const roles = await Role.bulkCreate([
+      { title: '系统开发组', type: -1 },
+      // { title: '匿名用户组', type: 0 },
+      { title: '普通用户组', default: true },
+    ]);
+    await roles[0].updateAssociations({
+      users: user
+    });
+  }
 
   const Action = database.getModel('actions');
   // 全局
@@ -238,8 +122,116 @@ const data = [
   // 导入地域数据
   await chinaRegionSeederInit(api);
 
-  await database.getModel('collections').import(require('./collections/example').default);
-  await database.getModel('collections').import(require('./collections/authors').default);
-  await database.getModel('collections').import(require('./collections/books').default);
+  // await database.getModel('collections').import(require('./collections/example').default);
+  // await database.getModel('collections').import(require('./collections/authors').default);
+  // await database.getModel('collections').import(require('./collections/books').default);
+
+  const Menu = database.getModel('menus');
+
+  const menus = [
+    {
+      title: '仪表盘',
+      icon: 'DashboardOutlined',
+      type: 'group',
+      children: [
+        {
+          title: '欢迎光临',
+          icon: 'DatabaseOutlined',
+          type: 'page',
+          views: [],
+          name: 'welcome',
+        },
+      ],
+    },
+    {
+      title: '数据',
+      icon: 'DatabaseOutlined',
+      type: 'group',
+      children: [],
+    },
+    {
+      title: '用户',
+      icon: 'TeamOutlined',
+      type: 'group',
+      children: [
+        {
+          title: '用户管理',
+          icon: 'DatabaseOutlined',
+          type: 'page',
+          views: ['users.table'],
+          name: 'users',
+        },
+      ],
+    },
+    {
+      title: '动态',
+      icon: 'NotificationOutlined',
+      type: 'group',
+      developerMode: true,
+      children: [
+        {
+          title: '操作日志',
+          icon: 'DatabaseOutlined',
+          type: 'page',
+          views: ['action_logs.table'],
+          developerMode: true,
+          name: 'auditing',
+        },
+      ],
+    },
+    {
+      title: '配置',
+      icon: 'SettingOutlined',
+      type: 'group',
+      developerMode: true,
+      children: [
+        {
+          name: 'system_settings',
+          title: '系统配置',
+          icon: 'DatabaseOutlined',
+          type: 'page',
+          views: ['system_settings.descriptions'],
+          developerMode: true,
+        },
+        {
+          name: 'collections',
+          title: '数据表配置',
+          icon: 'DatabaseOutlined',
+          type: 'page',
+          views: ['collections.table'],
+          developerMode: true,
+        },
+        {
+          name: 'menus',
+          title: '菜单和页面配置',
+          icon: 'MenuOutlined',
+          type: 'page',
+          views: ['menus.table'],
+          developerMode: true,
+        },
+        {
+          name: 'permissions',
+          title: '权限配置',
+          icon: 'MenuOutlined',
+          type: 'page',
+          views: ['roles.table'],
+          developerMode: true,
+        },
+        {
+          name: 'automations',
+          title: '自动化配置',
+          icon: 'MenuOutlined',
+          type: 'page',
+          views: ['automations.table'],
+          developerMode: true,
+        },
+      ],
+    },
+  ];
+
+  for (const item of menus) {
+    const menu = await Menu.create(item);
+    await menu.updateAssociations(item);
+  }
   await database.close();
 })();

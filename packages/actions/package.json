@@ -1,6 +1,6 @@
 {
   "name": "@nocobase/actions",
-  "version": "0.3.0-alpha.0",
+  "version": "0.4.0-alpha.0",
   "description": "",
   "main": "./lib/index.js",
   "types": "./lib/index.d.ts",
@@ -8,8 +8,8 @@
   },
   "license": "MIT",
   "dependencies": {
-    "@nocobase/database": "^0.3.0-alpha.0",
-    "@nocobase/resourcer": "^0.3.0-alpha.0"
+    "@nocobase/database": "^0.4.0-alpha.0",
+    "@nocobase/resourcer": "^0.4.0-alpha.0"
   },
   "devDependencies": {
     "koa": "^2.13.0",

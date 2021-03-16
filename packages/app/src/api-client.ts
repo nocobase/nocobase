@@ -40,6 +40,7 @@ class ApiClient {
             options.params = restParams;
           } else {
             options.method = 'post';
+            options.params = restParams;
             options.data = values;
           }
           if (associatedKey) {

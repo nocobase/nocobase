@@ -39,17 +39,19 @@ export default {
         showInForm: true,
       },
     },
-    // {
-    //   interface: 'linkTo',
-    //   title: '书籍',
-    //   target: 'books',
-    //   labelField: 'name',
-    //   component: {
-    //     showInTable: true,
-    //     showInDetail: true,
-    //     showInForm: true,
-    //   },
-    // },
+    {
+      interface: 'linkTo',
+      type: 'belongsToMany',
+      title: '书籍',
+      name: 'books',
+      target: 'books',
+      labelField: 'name',
+      component: {
+        showInTable: true,
+        showInDetail: true,
+        showInForm: true,
+      },
+    },
     {
       interface: 'createdBy',
       title: '创建人',
@@ -86,5 +88,88 @@ export default {
         // showInForm: true,
       },
     }
+  ],
+  views_v2: [
+    {
+      type: 'table',
+      name: 'table',
+      title: '全部数据',
+      labelField: 'name',
+      actions: [
+        {
+          name: 'filter',
+          type: 'filter',
+          title: '过滤',
+          fields: [
+            'name',
+          ],
+          // viewName: 'form',
+        },
+        {
+          name: 'create',
+          type: 'create',
+          title: '新增',
+          viewName: 'form',
+        },
+        {
+          name: 'destroy',
+          type: 'destroy',
+          title: '删除',
+        },
+      ],
+      fields: ['name'],
+      detailsOpenMode: 'drawer', // window
+      details: ['descriptions', 'books'],
+      sort: ['id'],
+    },
+    {
+      type: 'descriptions',
+      name: 'descriptions',
+      title: '详情',
+      fields: ['name'],
+      actions: [
+        {
+          name: 'update',
+          type: 'update',
+          title: '编辑',
+          viewName: 'form',
+        },
+      ],
+    },
+    {
+      type: 'form',
+      name: 'form',
+      title: '表单',
+      fields: ['name'],
+    },
+    {
+      type: 'association',
+      name: 'books',
+      title: '书籍',
+      targetViewName: 'table',
+      targetFieldName: 'books',
+    },
+  ],
+  pages_v2: [
+    {
+      title: '全部数据',
+      name: 'all',
+      views: ['table'],
+    },
+    {
+      title: '详情',
+      name: 'descriptions',
+      views: ['descriptions'],
+    },
+    {
+      title: '表单',
+      name: 'form',
+      views: ['form'],
+    },
+    {
+      title: '书籍',
+      name: 'books',
+      views: ['books'],
+    },
   ],
 };

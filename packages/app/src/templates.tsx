@@ -12,4 +12,5 @@ export default {
   'page4': require('@/pages/page4').default,
   login: require('@/pages/login').default,
   register: require('@/pages/register').default,
+  AdminLoader: require('@/components/pages/AdminLoader').default,
 };

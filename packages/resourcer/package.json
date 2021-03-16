@@ -1,13 +1,13 @@
 {
   "name": "@nocobase/resourcer",
-  "version": "0.3.0-alpha.0",
+  "version": "0.4.0-alpha.0",
   "description": "",
   "main": "./lib/index.js",
   "types": "./lib/index.d.ts",
-  "scripts": {
-  },
+  "scripts": {},
   "license": "MIT",
   "dependencies": {
+    "deepmerge": "^4.2.2",
     "koa-compose": "^4.1.0",
     "lodash": "^4.17.19",
     "path-to-regexp": "^6.1.0",

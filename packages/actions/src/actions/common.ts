@@ -286,6 +286,7 @@ export async function get(ctx: Context, next: Next) {
     resourceKeyAttribute,
     fields = []
   } = ctx.action.params;
+  console.log({associated, resourceField})
   if (associated && resourceField) {
     const AssociatedModel = ctx.db.getModel(associatedName);
     if (!(associated instanceof AssociatedModel)) {
@@ -297,7 +298,16 @@ export async function get(ctx: Context, next: Next) {
       fields,
     });
     if (resourceField instanceof HASONE || resourceField instanceof BELONGSTO) {
-      const model: Model = await associated[getAccessor]({ ...options, context: ctx });
+      let model: Model = await associated[getAccessor]({ context: ctx });
+      if (model) {
+        model = await TargetModel.findOne({
+          ...options,
+          context: ctx,
+          where: {
+            [TargetModel.primaryKeyAttribute]: model[TargetModel.primaryKeyAttribute],
+          },
+        });
+      }
       ctx.body = model;
     } else if (resourceField instanceof HASMANY || resourceField instanceof BELONGSTOMANY) {
       const [model]: Model[] = await associated[getAccessor]({

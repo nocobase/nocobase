@@ -155,6 +155,10 @@ export default class AccessController<T extends typeof AccessController = typeof
     if ((this.constructor as T).isRoot(roles)) {
       return true;
     }
+    if (this.resourceName === 'china_regions' && this.actionName === 'list') {
+      console.log(`skip ${this.resourceName}:${this.actionName}`);
+      return true;
+    }
     // 只处理 actions 表里的权限，其余跳过
     const getActionNames = await this.getActionNames();
     if (!getActionNames.includes(this.actionName)) {

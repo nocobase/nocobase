@@ -15,6 +15,9 @@ export default (props: any) => {
   const { items = [], hideChildren, ...restProps } = props;
   const location = useLocation();
   let paths = items.map(item => item.path);
+  if (items.length === 0) {
+    return null;
+  }
   return (
     <Menu
       defaultSelectedKeys={paths.filter(path => pathcamp(location.pathname, path)).concat(location.pathname)}

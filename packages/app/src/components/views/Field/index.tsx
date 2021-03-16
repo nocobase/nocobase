@@ -1,7 +1,7 @@
 
 import React, { useEffect, useState } from 'react';
 import moment from 'moment';
-import { Tag, Popover, Table, Drawer, Modal, Checkbox, message } from 'antd';
+import { Tag, Popover, Table, Modal, Checkbox, message } from 'antd';
 import Icon from '@/components/icons';
 import get from 'lodash/get';
 import isEmpty from 'lodash/isEmpty';
@@ -16,6 +16,8 @@ import Lightbox from 'react-image-lightbox';
 import 'react-image-lightbox/style.css';
 import api from '@/api-client';
 import { useRequest } from 'umi';
+import Drawer from '@/components/pages/AdminLoader/Drawer';
+import View from '@/components/pages/AdminLoader/View';
 
 marked.setOptions({
   gfm: true,
@@ -97,17 +99,12 @@ export function TextareaField(props: any) {
 //   refreshDeps: [resourceKey]
 // });
 export function BooleanField(props: any) {
-  const { data = {}, value, schema: { name, editable, resource } } = props;
+  const { data = {}, value, schema: { name, editable, resourceName } } = props;
   if (editable) {
     return <Checkbox defaultChecked={value} onChange={async (e) => {
-      await api.resource(resource).update({
+      await api.resource(resourceName).toggle({
         associatedKey: data.associatedKey,
         resourceKey: data.id,
-        tableName: data.tableName||'pages',
-        values: {
-          tableName: data.tableName||'pages',
-          [name]: e.target.checked,
-        },
       });
       message.success('保存成功');
       // console.log(props);
@@ -234,29 +231,45 @@ export function SubTableField(props: any) {
 }
 
 export function LinkToField(props: any) {
-  const { schema, value } = props;
+  const { data, schema, value } = props;
   if (!value) {
     return null;
   }
+  console.log({props});
   const values = Array.isArray(value) ? value : [value];
   return (
     <div className={'link-to-field'}>
-      {values.map(item => <LinkToFieldLink data={item} schema={schema}/>)}
+      {values.map(item => <LinkToFieldLink parent={data} data={item} schema={schema}/>)}
     </div>
   );
 }
 
 export function LinkToFieldLink(props) {
-  const { data, schema, schema: { title, labelField } } = props;
+  const { parent, schema, schema: { title, labelField, viewName, name, target, collection_name } } = props;
   const [visible, setVisible] = useState(false);
-  // console.log(schema);
+  const [data, setData] = useState(props.data||{});
   return (
     <span className={'link-to-field-tag'}>
       <a onClick={(e) => {
         e.stopPropagation();
-        setVisible(true);
+        // setVisible(true);
+        Drawer.open({
+          title: data[labelField],
+          content: ({resolve}) => {
+            console.log({parent, data, props, schema});
+            return (
+              <div>
+                <View onFinish={(values) => {
+                  setData(values);
+                  resolve();
+                  console.log({data, values});
+                }} associatedKey={parent.id} data={data} viewName={viewName || `${collection_name}.${name}.descriptions`}/>
+              </div>
+            );
+          }
+        });
       }}>{data[labelField]}</a>
-      <Drawer
+      {/* <Drawer
         // @ts-ignore
         onClick={(e) => {
           e.stopPropagation();
@@ -273,7 +286,7 @@ export function LinkToFieldLink(props) {
           viewName={'details'}
           resourceKey={data.id}
         />
-      </Drawer>
+      </Drawer> */}
     </span>
   );
 }
@@ -394,6 +407,7 @@ registerFieldComponents({
   textarea: TextareaField,
   boolean: BooleanField,
   select: DataSourceField,
+  status: DataSourceField,
   multipleSelect: DataSourceField,
   radio: DataSourceField,
   checkboxes: DataSourceField,

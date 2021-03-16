@@ -308,6 +308,28 @@ export default {
     {
       interface: 'linkTo',
       type: 'hasMany',
+      name: 'views_v2',
+      target: 'views_v2',
+      title: '视图',
+      sourceKey: 'name',
+      draggable: true,
+      // actions: {
+      //   list: {
+      //     sort: 'sort',
+      //   },
+      //   destroy: {
+      //     filter: {
+      //       default: false
+      //     }
+      //   }
+      // },
+      component: {
+        type: 'drawerSelect',
+      },
+    },
+    {
+      interface: 'linkTo',
+      type: 'hasMany',
       name: 'scopes',
       target: 'scopes',
       title: '数据范围',
@@ -443,5 +465,134 @@ export default {
     //   association: 'roles',
     //   viewName: 'simple2',
     // },
+  ],
+  views_v2: [
+    {
+      developerMode: true,
+      type: 'table',
+      name: 'table',
+      title: '全部数据',
+      labelField: 'title',
+      actions: [
+        {
+          name: 'create',
+          type: 'create',
+          title: '新增',
+          viewName: 'form',
+        },
+        {
+          name: 'destroy',
+          type: 'destroy',
+          title: '删除',
+        },
+      ],
+      fields: ['sort', 'title'],
+      detailsOpenMode: 'window', // window
+      details: ['descriptions', 'fields', 'views'],
+      sort: ['sort'],
+    },
+    {
+      developerMode: true,
+      type: 'table',
+      name: 'permissions_table',
+      title: '权限表格',
+      labelField: 'title',
+      actions: [],
+      fields: ['title'],
+      detailsOpenMode: 'drawer', // window
+      details: ['permissions_form'],
+      sort: ['id'],
+    },
+    {
+      developerMode: true,
+      type: 'form',
+      name: 'permissions_form',
+      title: '权限表单',
+      fields: [
+        {
+          interface: 'json',
+          type: 'json',
+          title: '数据操作权限',
+          name: 'actions',
+          component: {
+            "type": "permissions.actions",
+            "title": "数据操作权限",
+            "x-linkages": [{
+              "type": "value:schema",
+              "target": "actions",
+              "schema": {
+                "x-component-props": {
+                  "resourceKey": "{{ $form.values && $form.values.resourceKey }}"
+                }
+              }
+            }],
+            "x-component-props": {
+              "dataSource": []
+            }
+          },
+        },
+        {
+          interface: 'json',
+          type: 'json',
+          title: '字段权限',
+          name: 'fields',
+          component: {
+            "type": "permissions.fields",
+            "x-linkages": [{
+              "type": "value:schema",
+              "target": "fields",
+              "schema": {
+                "x-component-props": {
+                  "resourceKey": "{{ $form.values && $form.values.resourceKey }}"
+                }
+              }
+            }],
+            "x-component-props": {
+              "dataSource": []
+            }
+          },
+        },
+      ],
+    },
+    {
+      developerMode: true,
+      type: 'form',
+      name: 'form',
+      title: '表单',
+      fields: ['title'],
+    },
+    {
+      developerMode: true,
+      type: 'descriptions',
+      name: 'descriptions',
+      title: '详情',
+      fields: ['title'],
+      actions: [
+        {
+          name: 'update',
+          type: 'update',
+          title: '编辑',
+          viewName: 'form',
+        },
+      ],
+    },
+    {
+      developerMode: true,
+      type: 'table',
+      dataSourceType: 'association',
+      name: 'fields',
+      title: '字段',
+      targetViewName: 'table2',
+      targetFieldName: 'fields',
+    },
+    {
+      developerMode: true,
+      type: 'table',
+      dataSourceType: 'association',
+      name: 'views',
+      title: '视图',
+      targetViewName: 'table',
+      targetFieldName: 'views_v2',
+    },
   ],
 } as TableOptions;

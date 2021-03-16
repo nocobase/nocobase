@@ -3,12 +3,12 @@ import { PASSWORD } from '@nocobase/database';
 import cryptoRandomString from 'crypto-random-string';
 
 export default async (ctx: actions.Context, next: actions.Next) => {
-  const { values } = ctx.action.params;
+  const { uniqueField = 'email', values } = ctx.action.params;
   // console.log(values);
   const User = ctx.db.getModel('users');
   const user = await User.findOne({
     where: {
-      username: values.username,
+      [uniqueField]: values[uniqueField],
     },
   });
   if (!user) {

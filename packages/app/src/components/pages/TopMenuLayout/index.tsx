@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Layout, Dropdown, Avatar, Drawer } from 'antd';
 import './style.less';
-import { history, Link, request, useModel } from 'umi';
+import { history, Link, request, useModel, Redirect } from 'umi';
 import { UserOutlined, CodeOutlined, MenuOutlined } from '@ant-design/icons';
 import AvatarDropdown from '../AvatarDropdown';
 import Menu from '@/components/menu';
@@ -14,10 +14,13 @@ export function TopMenuLayout(props: any) {
   const [visible, setVisible] = useLocalStorageState(`nocobase-nav-visible`, false);
   const responsive = useResponsive();
   const isMobile = responsive.small && !responsive.middle && !responsive.large;
+  return <Redirect to={'/admin'}/>
   return (
     <Layout style={{ height: '100vh' }}>
       <Layout.Header style={{height: 48, lineHeight: '48px', padding: 0}} className="nb-header">
-        <div className="logo" style={{width: 200, height: 20, float: 'left'}}><Logo/></div>
+        <div className="logo" style={{width: 200, height: 20, float: 'left'}}>
+          <Logo/>
+        </div>
         {!isMobile && <Menu hideChildren={true} items={menu} className={'noco-top-menu'} style={{float: 'left'}} theme="dark" mode="horizontal"/>}
         {!isMobile && <AvatarDropdown/>}
         {isMobile && <MenuOutlined onClick={() => {
