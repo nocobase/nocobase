@@ -3,7 +3,7 @@ import { PageHeader, Card, Row, Col, Modal, message } from 'antd';
 import './style.less';
 import { Helmet, useHistory } from 'umi';
 import { Spin } from '@nocobase/client';
-import { useRequest, useLocation } from 'umi';
+import { useRequest, useModel } from 'umi';
 import api from '@/api-client';
 import View from '../View';
 import get from 'lodash/get';
@@ -11,6 +11,8 @@ import { markdown } from '@/components/views/Field';
 
 export function Page(props: any) {
   const { currentRowId, pageName, children, ...restProps } = props;
+  const { initialState = {}, refresh, setInitialState } = useModel('@@initialState');
+  const siteTitle = get(initialState, 'systemSettings.title') || 'NocoBase';
 
   const { data = {}, loading, error } = useRequest(() => api.resource('menus').getInfo({
     resourceKey: pageName,
@@ -33,7 +35,7 @@ export function Page(props: any) {
   return (
     <div>
       <Helmet>
-        <title>{data.title}</title>
+        <title>{data.title} - {siteTitle}</title>
       </Helmet>
       <PageHeader
         title={data.title}
