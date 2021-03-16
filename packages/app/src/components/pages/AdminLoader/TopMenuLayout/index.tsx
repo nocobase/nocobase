@@ -22,7 +22,7 @@ export function TopMenuLayout(props: any) {
   return (
     <Layout style={{ height: '100vh' }}>
       <Layout.Header style={{height: 48, lineHeight: '48px', padding: 0}} className="nb-header">
-        <div className="logo" style={{width: 200, height: 24, float: 'left'}}>
+        <div className="logo" style={{width: 200, height: 48, float: 'left'}}>
           {!logoUrl ? <Logo/> : <img src={logoUrl}/>}
         </div>
         {!isMobile && <Menu currentPageName={currentPageName} hideChildren={true} items={menu} className={'noco-top-menu'} style={{float: 'left'}} theme="dark" mode="horizontal"/>}
