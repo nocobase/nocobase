@@ -28,6 +28,7 @@ export default {
       valueField: 'id',
       multiple: false,
       required: true,
+      viewName: 'views_v2.form',
       component: {
         type: 'drawerSelect',
         'x-component-props': {
