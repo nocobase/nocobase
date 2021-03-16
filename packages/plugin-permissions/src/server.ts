@@ -76,6 +76,19 @@ export class Permissions {
 
     resourcer.use(this.injection);
     resourcer.use(this.middleware);
+
+    resourcer.use(async (ctx, next) => {
+      const { resourceName } = ctx.action.params;
+      if (resourceName === 'action_logs' && !await ctx.ac.isRoot()) {
+        const collections = await ctx.ac.getCollections();
+        ctx.action.mergeParams({
+          filter: {
+            'collection_name.in': collections
+          },
+        });
+      }
+      await next();
+    });
   }
 
   injection = async (ctx, next) => {

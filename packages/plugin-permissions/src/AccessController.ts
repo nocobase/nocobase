@@ -155,6 +155,10 @@ export default class AccessController<T extends typeof AccessController = typeof
     if ((this.constructor as T).isRoot(roles)) {
       return true;
     }
+    if (this.resourceName === 'action_logs' && this.actionName === 'list') {
+      console.log(`skip ${this.resourceName}:${this.actionName}`);
+      return true;
+    }
     if (this.resourceName === 'china_regions' && this.actionName === 'list') {
       console.log(`skip ${this.resourceName}:${this.actionName}`);
       return true;
@@ -208,6 +212,22 @@ export default class AccessController<T extends typeof AccessController = typeof
     return existed ? any : null;
   }
 
+  async getCollections(): Promise<any> {
+    const [Collection, Permission] = this.context.db.getModels(['collections', 'permissions']);
+    const isRoot = await this.isRoot();
+    if (isRoot) {
+      const collections = await Collection.findAll();
+      return collections.map(collection => collection.name);
+    }
+    const roles = await this.getRoles();
+    const permissions = await Permission.findAll({
+      where: {
+        role_id: roles.map(role => role.id),
+      }
+    });
+    return permissions.map(permission => permission.collection_name);
+  }
+
   async isRoot(): Promise<boolean> {
     const { context } = this;
     const { currentUser } = context.state;
@@ -215,16 +235,13 @@ export default class AccessController<T extends typeof AccessController = typeof
       return false;
     }
 
-    const rootRoles = await currentUser.countRoles({
+    const count = await currentUser.countRoles({
       where: {
         type: ROLE_TYPE_ROOT
       }
     });
-    if (!rootRoles.length) {
-      return false;
-    }
 
-    return true;
+    return !!count;
   }
 
   async getRoles() {
