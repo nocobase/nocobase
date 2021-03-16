@@ -63,7 +63,19 @@ export function Page(props: any) {
                 <View 
                   currentRowId={currentRowId}
                   onDraft={() => {
-                    message.success('草稿保存成功');
+                    if (!view.draft) {
+                      message.success('草稿保存成功');
+                      return;
+                    }
+                    if (view.draft.returnType === 'message' && view.draft.message) {
+                      Modal.success({
+                        title: '草稿保存成功',
+                        content: <div dangerouslySetInnerHTML={{__html: markdown(view.draft.message)}}/>,
+                      });
+                    } else if (view.draft.returnType === 'redirect') {
+                      const path = get(view, 'draft.redirect.name');
+                      path && history.push(`${path}`);
+                    }
                   }}
                   onFinish={() => {
                     if (view.returnType === 'message' && view.message) {
