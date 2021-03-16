@@ -15,7 +15,7 @@ export const SortableItem = sortableElement(props => <tr {...props} />);
 export const SortableContainer = sortableContainer(props => <tbody {...props} />);
 
 export const DragHandle = sortableHandle(() => (
-  <MenuOutlined style={{ cursor: 'pointer', color: '#999' }} />
+  <MenuOutlined className="drag-handle" style={{ cursor: 'pointer', color: '#999' }} />
 ));
 
 interface Props {
@@ -60,9 +60,12 @@ export const components = ({data = {}, rowKey, mutate, onMoved, isFieldComponent
   };
 };
 
-export function fields2columns(fields, ctx: any = {}) {
+export function fields2columns(fields = [], ctx: any = {}) {
   const columns: any[] = fields.map(item => {
     const field = cloneDeep(item);
+    if (!field.dataIndex) {
+      field.dataIndex = field.name.split('.');
+    }
     field.render = (value, record) => field.interface === 'sort' ? <DragHandle/> : <Field data={record} viewType={'table'} schema={field} value={value}/>;
     field.className = `${field.className||''} noco-field-${field.interface}`;
     if (field.editable && field.interface === 'boolean') {

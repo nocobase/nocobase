@@ -7,13 +7,59 @@ import getRoutes from './actions/getRoutes';
 import getPageInfo from './actions/getPageInfo';
 import * as rolesPagesActions from './actions/roles.pages';
 import getCollections from './actions/getCollections';
+import menusList from './actions/menus:list';
+import getTree from './actions/getTree';
+import getInfo from './actions/getInfo';
+import viewGetInfo from './actions/views_v2:getInfo';
+import { RANDOMSTRING } from './fields/randomString';
+import { registerFields, registerModels } from '@nocobase/database';
+import { BaseModel } from './models/BaseModel'
+import * as rolesMenusActions from './actions/roles.menus';
 
 export default async function (options = {}) {
   const database: Database = this.database;
   const resourcer: Resourcer = this.resourcer;
 
+  registerFields({
+    RANDOMSTRING,
+  });
+
+  registerModels({
+    BaseModelV2: BaseModel,
+  });
+
   database.import({
     directory: path.resolve(__dirname, 'collections'),
+  });
+
+  resourcer.use(async (ctx, next) => {
+    const { actionName, resourceName, resourceKey } = ctx.action.params;
+    if (resourceName === 'system_settings' && actionName === 'get') {
+      const SystemSetting = database.getModel('system_settings');
+      let model = await SystemSetting.findOne();
+      if (!model) {
+        model = await SystemSetting.create();
+      }
+      ctx.action.mergeParams({
+        resourceKey: model.id,
+      });
+    }
+    await next();
+  });
+
+  resourcer.use(async (ctx, next) => {
+    const { actionName, resourceName, values } = ctx.action.params;
+    if (resourceName === 'menus' && ['create', 'update'].includes(actionName)) {
+      if (values.parent) {
+        delete values.parent.children;
+        ctx.action.mergeParams({
+          values: {...values},
+        }, {
+          payload: 'replace',
+        });
+      }
+    }
+    await next();
   });
 
   resourcer.registerActionHandler('getCollection', getCollection);
@@ -21,10 +67,39 @@ export default async function (options = {}) {
   resourcer.registerActionHandler('getPageInfo', getPageInfo);
   resourcer.registerActionHandler('getCollections', getCollections);
   resourcer.registerActionHandler('pages:getRoutes', getRoutes);
+  resourcer.registerActionHandler('menus:getTree', getTree);
+  resourcer.registerActionHandler('menus:getInfo', getInfo);
+  resourcer.registerActionHandler('views_v2:getInfo', viewGetInfo);
+
+  resourcer.registerActionHandler('menus:list', menusList);
 
   Object.keys(rolesPagesActions).forEach(actionName => {
     resourcer.registerActionHandler(`roles.pages:${actionName}`, rolesPagesActions[actionName]);
   });
+
+  Object.keys(rolesMenusActions).forEach(actionName => {
+    resourcer.registerActionHandler(`roles.menus:${actionName}`, rolesMenusActions[actionName]);
+  });
+
+  database.getModel('menus').addHook('beforeSave', async (model) => {
+    console.log(model.get('pageName'));
+  });
+
+  // database.getModel('pages_v2').addHook('beforeValidate', async (model) => {
+  //   const collectionName = model.get('collection_name');
+  //   const name = model.get('name');
+  //   if (!model.get('path')) {
+  //     model.set('path', `${collectionName||'global'}.${name}`);
+  //   }
+  // });
+
+  // database.getModel('views_v2').addHook('beforeValidate', async (model) => {
+  //   const collectionName = model.get('collection_name');
+  //   const name = model.get('name');
+  //   if (!model.get('path')) {
+  //     model.set('path', `${collectionName||'global'}.${name}`);
+  //   }
+  // });
 /*
   const [Collection, Page, View] = database.getModels(['collections', 'pages', 'views']);
 

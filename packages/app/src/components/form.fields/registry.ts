@@ -24,6 +24,8 @@ import { Permissions } from './permissions'
 import { DraggableTable } from './draggable-table'
 import { Values } from './values'
 import { Automations } from './automations'
+import { VirtualTable } from './virtual-table'
+import { Wysiwyg } from './wysiwyg'
 
 export const setup = () => {
   registerFormFields({
@@ -44,6 +46,7 @@ export const setup = () => {
     month: DatePicker.MonthPicker,
     week: DatePicker.WeekPicker,
     string: Input,
+    select: Input,
     icon: Icon,
     textarea: Input.TextArea,
     number: NumberPicker,
@@ -60,11 +63,13 @@ export const setup = () => {
     subTable: SubTable,
     draggableTable: DraggableTable,
     values: Values,
+    wysiwyg: Wysiwyg,
     'permissions.actions': Permissions.Actions,
     'permissions.fields': Permissions.Fields,
     'permissions.tabs': Permissions.Tabs,
     'automations.datetime': Automations.DateTime,
     'automations.endmode': Automations.EndMode,
     'automations.cron': Automations.Cron,
+    'virtualTable': VirtualTable,
   });
 }

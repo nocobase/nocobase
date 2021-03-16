@@ -68,7 +68,7 @@ export default {
     {
       type: 'integer',
       name: 'index',
-      title: '对象索引',
+      title: '数据ID',
       component: {
         showInTable: true,
       },
@@ -94,7 +94,7 @@ export default {
       type: 'list',
       name: 'list',
       title: '查看',
-      sort: '-created_at'
+      // sort: '-created_at'
     },
   ],
   views: [
@@ -110,6 +110,51 @@ export default {
       name: 'details',
       title: '详情',
       template: 'Details',
+    },
+  ],
+  views_v2: [
+    {
+      developerMode: true,
+      type: 'table',
+      name: 'table',
+      title: '全部数据',
+      labelField: 'created_at',
+      actions: [
+        {
+          name: 'filter',
+          type: 'filter',
+          title: '过滤',
+        },
+      ],
+      fields: ['created_at', 'user', 'collection', 'type', 'index'],
+      detailsOpenMode: 'drawer', // window
+      details: ['descriptions'],
+      sort: ['-created_at'],
+    },
+    {
+      type: 'table',
+      name: 'table2',
+      title: '表格视图',
+      labelField: 'created_at',
+      actions: [
+        {
+          name: 'filter',
+          type: 'filter',
+          title: '过滤',
+        },
+      ],
+      fields: ['created_at', 'user', 'type', 'index'],
+      detailsOpenMode: 'drawer', // window
+      details: ['descriptions'],
+      sort: ['created_at'],
+    },
+    {
+      developerMode: true,
+      type: 'descriptions',
+      name: 'descriptions',
+      title: '详情',
+      fields: ['created_at', 'user', 'collection', 'type', 'index', 'changes'],
+      actions: [],
     },
   ],
 } as TableOptions;

@@ -12,9 +12,26 @@ import {
 import { useRequest } from 'umi';
 import api from '@/api-client';
 import { Spin } from '@nocobase/client'
+import get from 'lodash/get';
 
 function RemoteSelectComponent(props) {
-  const { value, onChange, disabled, resourceName, associatedKey, filter, labelField, valueField = 'id', objectValue, placeholder, multiple } = props;
+  let { schema = {}, value, onChange, disabled, resourceName, associatedKey, filter, labelField, valueField, objectValue, placeholder, multiple } = props;
+  console.log({schema});
+  if (!resourceName) {
+    resourceName = get(schema, 'component.resourceName');
+  }
+  if (!filter) {
+    filter = get(schema, 'component.filter');
+  }
+  if (!labelField) {
+    labelField = get(schema, 'component.labelField');
+  }
+  if (!valueField) {
+    valueField = get(schema, 'component.valueField');
+  }
+  if (!valueField) {
+    valueField = 'id';
+  }
   const { data = [], loading = true } = useRequest(() => {
     return api.resource(resourceName).list({
       associatedKey,
@@ -27,6 +44,7 @@ function RemoteSelectComponent(props) {
   if (multiple) {
     selectProps.mode = 'multiple'
   }
+  console.log({ data, props, associatedKey })
   return (
     <>
       <Select 

@@ -9,6 +9,7 @@ import findIndex from 'lodash/findIndex';
 import get from 'lodash/get';
 import set from 'lodash/set';
 import { Scope } from './Scope';
+import { DrawerSelectComponent } from '../drawer-select';
 
 export const Permissions = {} as {Actions: any, Fields: any, Tabs: any};
 
@@ -70,11 +71,15 @@ Permissions.Actions = connect({
         }
         const values = [...value||[]];
         const index = findIndex(values, (item: any) => item && item.name === `${resourceKey}:${record.name}`);
+        console.log(values, index, `${resourceKey}:${record.name}`, get(values, [index, 'scope']));
         return (
-          <Scope
-            resourceTarget={'scopes'}
-            associatedName={'collections'}
+          <DrawerSelectComponent
+            schema={{
+              title: '选择可操作的数据范围',
+            }}
+            size={'small'}
             associatedKey={resourceKey}
+            viewName={'collections.scopes.table'}
             target={'scopes'}
             multiple={false}
             labelField={'title'}
@@ -86,16 +91,41 @@ Permissions.Actions = connect({
               if (index === -1) {
                 values.push({
                   name: `${resourceKey}:${record.name}`,
-                  scope_id: data,
+                  scope_id: data.id,
                 });
               } else {
-                set(values, [index, 'scope_id'], data);
+                set(values, [index, 'scope_id'], data.id);
               }
               console.log('valvalvalvalval', {values})
               onChange(values);
               console.log('valvalvalvalval', data);
             }}
           />
+          // <Scope
+          //   resourceTarget={'scopes'}
+          //   associatedName={'collections'}
+          //   associatedKey={resourceKey}
+          //   target={'scopes'}
+          //   multiple={false}
+          //   labelField={'title'}
+          //   valueField={'id'}
+          //   value={get(values, [index, 'scope'])}
+          //   onChange={(data) => {
+          //     const values = [...value||[]];
+          //     const index = findIndex(values, (item: any) => item && item.name === `${resourceKey}:${record.name}`);
+          //     if (index === -1) {
+          //       values.push({
+          //         name: `${resourceKey}:${record.name}`,
+          //         scope_id: data,
+          //       });
+          //     } else {
+          //       set(values, [index, 'scope_id'], data);
+          //     }
+          //     console.log('valvalvalvalval', {values})
+          //     onChange(values);
+          //     console.log('valvalvalvalval', data);
+          //   }}
+          // />
         )
       }
     },

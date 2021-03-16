@@ -28,6 +28,17 @@ export default {
       component: {
         type: 'filter',
         showInForm: true,
+        "x-linkages": [
+          {
+            type: "value:schema",
+            target: "filter",
+            schema: {
+              "x-component-props": {
+                associatedKey: "{{ $form.values && $form.values.associatedKey }}"
+              },
+            },
+          },
+        ],
       },
     },
     {
@@ -46,5 +57,41 @@ export default {
       targetKey: 'name',
       onDelete: 'CASCADE'
     }
+  ],
+  views_v2: [
+    {
+      developerMode: true,
+      type: 'table',
+      name: 'table',
+      title: '全部数据',
+      labelField: 'title',
+      actions: [
+        {
+          name: 'create',
+          type: 'create',
+          title: '新增',
+          viewName: 'form',
+        },
+        {
+          name: 'destroy',
+          type: 'destroy',
+          title: '删除',
+        },
+      ],
+      fields: ['title'],
+      detailsOpenMode: 'drawer', // window
+      details: ['form'],
+      sort: ['id'],
+    },
+    {
+      developerMode: true,
+      type: 'form',
+      name: 'form',
+      title: '表单',
+      fields: [
+        'title',
+        'filter',
+      ],
+    },
   ],
 } as TableOptions;

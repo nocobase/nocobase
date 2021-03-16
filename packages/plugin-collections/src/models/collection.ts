@@ -177,7 +177,10 @@ export class CollectionModel extends BaseModel {
       // @ts-ignore
       collection = await this.create(data, options);
     }
-    const associations = ['fields', 'tabs', 'actions', 'views'];
+
+    await collection.updateAssociations(data, options);
+    return;
+    const associations = ['fields', 'tabs', 'actions', 'views', 'pages_v2', 'views_v2'];
     for (const key of associations) {
       if (!Array.isArray(data[key])) {
         continue;
@@ -213,13 +216,15 @@ export class CollectionModel extends BaseModel {
           });
         }
         if (model && update) {
-          await model.update({...item, sort: index+1}, options);
+          await model.update({...item, 
+            // sort: index+1
+          }, options);
         }
         if (!model) {
           model = await Model.create(
             {
               ...item,
-              sort: index+1,
+              // sort: index+1,
               collection_name: collection.name,
             },
             // @ts-ignore

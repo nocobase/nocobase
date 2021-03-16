@@ -1,3 +1,20 @@
 .page-content {
   margin: 24px;
 }
+
+.popover-button-mask {
+  height: 100vh;
+  width: 100vw;
+  z-index: -1;
+  position: fixed;
+  background-color: rgba(0, 0, 0, 0.45);
+  top: 0px;
+  left: 0px;
+}
+
+@media only screen and (max-width: 800px) {
+  .page-content {
+    margin: 0px;
+    margin-top: 1px;
+  }
+}

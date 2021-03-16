@@ -5,12 +5,29 @@ export default {
   title: '用户',
   // developerMode: true,
   // internal: true,
+  createdBy: false,
+  updatedBy: false,
   fields: [
     {
       interface: 'string',
       type: 'string',
       name: 'username',
       title: '用户名',
+      unique: true,
+      required: true,
+      createOnly: true,
+      component: {
+        type: 'string',
+        showInTable: true,
+        showInDetail: true,
+        showInForm: true,
+      },
+    },
+    {
+      interface: 'email',
+      type: 'string',
+      name: 'email',
+      title: '邮箱',
       unique: true,
       required: true,
       createOnly: true,
@@ -66,6 +83,7 @@ export default {
       unique: true,
       hidden: true,
       filterable: false,
+      developerMode: true,
     },
   ],
   actions: [
@@ -139,6 +157,54 @@ export default {
       title: '列表',
       template: 'Table',
       actionNames: ['create', 'destroy'],
+    },
+  ],
+  views_v2: [
+    {
+      developerMode: true,
+      type: 'table',
+      name: 'table',
+      title: '全部数据',
+      labelField: 'nickname',
+      actions: [
+        {
+          name: 'create',
+          type: 'create',
+          title: '新增',
+          viewName: 'form',
+        },
+        {
+          name: 'destroy',
+          type: 'destroy',
+          title: '删除',
+        },
+      ],
+      fields: ['email', 'nickname', 'phone', 'roles'],
+      detailsOpenMode: 'drawer', // window
+      details: ['form'],
+      sort: ['id'],
+    },
+    {
+      developerMode: true,
+      type: 'descriptions',
+      name: 'descriptions',
+      title: '详情',
+      fields: ['email', 'nickname', 'phone', 'roles'],
+      actions: [
+        {
+          name: 'update',
+          type: 'update',
+          title: '编辑',
+          viewName: 'form',
+        },
+      ],
+    },
+    {
+      developerMode: true,
+      type: 'form',
+      name: 'form',
+      title: '表单',
+      fields: ['email', 'nickname', 'phone', 'password', 'roles'],
     },
   ],
 } as TableOptions;

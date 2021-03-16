@@ -450,6 +450,17 @@ export default {
         // showInTable: true,
         // showInDetail: true,
         showInForm: true,
+        'x-linkages': [
+          {
+            type: 'value:schema',
+            target: 'children',
+            schema: {
+              'x-component-props': {
+                associatedKey: "{{ $form.values && $form.values.id }}"
+              },
+            },
+          },
+        ],
       },
     },
     // {
@@ -631,6 +642,78 @@ export default {
       updateViewName: 'form',
       paginated: false,
       draggable: true,
+    },
+  ],
+  views_v2: [
+    {
+      developerMode: true,
+      type: 'table',
+      name: 'table',
+      title: '关联的字段',
+      labelField: 'title',
+      actions: [
+        {
+          name: 'create',
+          type: 'create',
+          title: '新增',
+          viewName: 'form',
+        },
+        {
+          name: 'destroy',
+          type: 'destroy',
+          title: '删除',
+        },
+      ],
+      fields: ['title', 'interface'],
+      detailsOpenMode: 'drawer', // window
+      details: ['form'],
+      sort: ['sort'],
+    },
+    {
+      developerMode: true,
+      type: 'table',
+      name: 'table2',
+      title: '表格',
+      labelField: 'title',
+      actions: [
+        {
+          name: 'create',
+          type: 'create',
+          title: '新增',
+          viewName: 'form',
+        },
+        {
+          name: 'destroy',
+          type: 'destroy',
+          title: '删除',
+        },
+      ],
+      fields: ['sort', 'title', 'interface'],
+      detailsOpenMode: 'drawer', // window
+      details: ['form'],
+      sort: ['sort'],
+    },
+    {
+      developerMode: true,
+      type: 'form',
+      name: 'form',
+      title: '表单',
+      fields: [
+        'title',
+        'interface',
+        'dataSource',
+        'precision',
+        'dateFormat',
+        'showTime',
+        'timeFormat',
+        'maxLevel',
+        'incompletely',
+        'target',
+        'labelField',
+        'children',
+        'multiple',
+        // 'required',
+      ],
     },
   ],
 } as TableOptions;

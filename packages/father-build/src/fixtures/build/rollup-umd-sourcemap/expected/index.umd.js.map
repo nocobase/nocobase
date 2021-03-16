@@ -1,1 +1,0 @@
-{"version":3,"file":"index.umd.js","sources":["../src/index.js"],"sourcesContent":["\nexport default function () {\n  return 'foo';\n}\n"],"names":[],"mappings":";;;;;;EACe,kBAAY;EACzB,SAAO,KAAP;EACD;;;;;;;;"}

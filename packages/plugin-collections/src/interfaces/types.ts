@@ -101,10 +101,9 @@ export const percent = {
 export const wysiwyg = {
   title: '可视化编辑器',
   group: 'media',
-  disabled: true,
   options: {
     interface: 'wysiwyg',
-    type: 'text',
+    type: 'json',
     component: {
       type: 'wysiwyg',
     },
@@ -479,6 +478,31 @@ export const group = {
     },
   },
 };
+
+export const status = {
+  title: '状态',
+  group: 'others',
+  options: {
+    interface: 'status',
+    name: 'status',
+    type: 'string',
+    filterable: true,
+    // index: true,
+    dataSource: [
+      {
+        label: '已发布',
+        value: 'publish',
+      },
+      {
+        label: '草稿',
+        value: 'draft',
+      }
+    ],
+    component: {
+      type: 'select',
+    },
+  },
+}
 
 export const description = {
   title: '说明文字',
