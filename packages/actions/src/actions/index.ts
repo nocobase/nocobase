@@ -7,6 +7,7 @@ export type Next = () => Promise<any>;
 export interface Context extends Koa.Context {
   db: Database;
   action: Action;
+  body: any;
 };
 
 export { default as common } from './common';

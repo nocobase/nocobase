@@ -10,7 +10,7 @@ export async function list(ctx: actions.Context, next: actions.Next) {
   });
   await actions.common.list(ctx, async () => {
     const permissions = await associated.getPermissions();
-    (ctx.body.rows as any).forEach(item => {
+    ctx.body.rows.forEach(item => {
       const permission = permissions.find(p => p.collection_name === item.get('name'));
       if (permission) {
         // item.permissions = [permission]; // 不输出
