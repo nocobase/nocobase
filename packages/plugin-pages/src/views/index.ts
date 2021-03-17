@@ -40,20 +40,9 @@ export function getViewTypeLinkages() {
       "condition": `{{ $self.value === '${key}' }}`,
     });
     if (linkages.type) {
-      xlinkages = xlinkages.concat(linkages.type.map(linkage => {
-        if (properties[linkage.target]) {
-          linkage.condition = `{{ $self.value === '${key}' }}`;
-          linkage.target = `x-${key}-props.${linkage.target}`;
-        }
-        return linkage;
-      }));
+      xlinkages.push(...linkages.type);
     }
   }
-  // xlinkages.push({
-  //   type: "value:visible",
-  //   target: 'collection',
-  //   condition: `{{ $self.value !== 'wysiwyg' }}`,
-  // });
   return xlinkages;
 }
 
