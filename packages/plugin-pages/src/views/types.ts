@@ -260,5 +260,22 @@ export const wysiwyg = {
     },
   },
   linkages: {
+    type: [
+      {
+        type: "value:visible",
+        target: 'collection',
+        condition: `{{ $self.value && $self.value !== 'wysiwyg' }}`,
+      },
+      {
+        type: "value:visible",
+        target: 'dataSourceType',
+        condition: `{{ $self.value && $self.value !== 'wysiwyg' }}`,
+      },
+      {
+        type: "value:visible",
+        target: 'targetField',
+        condition: `{{ $self.value && $self.value !== 'wysiwyg' }}`,
+      },
+    ],
   },
 };

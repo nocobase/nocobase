@@ -60,11 +60,11 @@ export default {
           "target": "targetField",
           "condition": "{{ $self.value === 'association' }}"
         },
-        {
-          "type": "value:visible",
-          "target": "type",
-          "condition": "{{ $self.value === 'collection' }}"
-        },
+        // {
+        //   "type": "value:visible",
+        //   "target": "type",
+        //   "condition": "{{ $self.value === 'collection' }}"
+        // },
       ],
     },
     {
