@@ -58,7 +58,7 @@ export class CollectionModel extends BaseModel {
     // const prevTable = this.database.getTable(this.get('name'));
     // const prevOptions = prevTable ? prevTable.getOptions() : {};
     // table 是初始化和重新初始化
-    const table = this.database.extend(options);
+    const table = this.database.table(options);
     // console.log({options, actions: table.getOptions()['actions']})
 
     // 如果关系表未加载，一起处理
@@ -124,6 +124,7 @@ export class CollectionModel extends BaseModel {
       ...this.get(),
       actions: await this.getActions(),
       fields: await this.getFieldsOptions(),
+      views_v2: await this.getViews_v2(),
     };
   }
 
@@ -161,15 +162,8 @@ export class CollectionModel extends BaseModel {
           name: data.name,
         },
       });
-    } else if (data.title) {
-      collection = await this.findOne({
-        ...options,
-        where: {
-          title: data.title,
-        },
-      });
     }
-    if (collection && update) {
+    if (collection) {
       // @ts-ignore
       await collection.update(data, options);
     }
@@ -178,19 +172,16 @@ export class CollectionModel extends BaseModel {
       collection = await this.create(data, options);
     }
 
-    await collection.updateAssociations(data, options);
-    return;
-    const associations = ['fields', 'tabs', 'actions', 'views', 'pages_v2', 'views_v2'];
+    const associations = ['fields', 'actions', 'views_v2'];
     for (const key of associations) {
       if (!Array.isArray(data[key])) {
         continue;
       }
       const Model = this.database.getModel(key);
       let ids = [];
-      const View = this.database.getModel('views');
       for (const index in data[key]) {
         if (key === 'fields') {
-          ids = await Field.import(data[key], {
+          ids = await Model.import(data[key], {
             ...options,
             collectionName: collection.name,
           });
@@ -206,16 +197,8 @@ export class CollectionModel extends BaseModel {
               name: item.name,
             },
           });
-        } else if (item.title) {
-          model = await Model.findOne({
-            ...options,
-            where: {
-              collection_name: collection.name,
-              title: item.title,
-            },
-          });
         }
-        if (model && update) {
+        if (model) {
           await model.update({...item, 
             // sort: index+1
           }, options);
@@ -232,23 +215,6 @@ export class CollectionModel extends BaseModel {
           );
         }
         if (model) {
-          if (key === 'tabs') {
-            let associationField;
-            if (item.association) {
-              associationField = await Field.findOne({
-                where: {
-                  name: item.association,
-                  collection_name: collection.name,
-                },
-              });
-              // TODO: tabs 表还未创建，暂时先这么处理
-              if (associationField) {
-                await model.updateAssociations({
-                  associationField: associationField.id,
-                });
-              }
-            }
-          }
           ids.push(model.id);
         }
       }
