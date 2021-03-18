@@ -310,7 +310,7 @@ export default {
           interface: 'boolean',
           name: 'accessible',
           type: 'boolean',
-          title: '访问权限',
+          title: '允许访问',
           dataIndex: ['accessible'],
           editable: true,
           resourceName: 'roles.menus',
