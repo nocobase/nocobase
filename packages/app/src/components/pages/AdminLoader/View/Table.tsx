@@ -357,7 +357,7 @@ export function Table(props: any) {
             components={{
               body: {
                 row: ({className, ...others}) => {
-                  if (!detailsOpenMode) {
+                  if (!detailsOpenMode || !details.length) {
                     return <tr className={className} {...others}/>
                   }
                   return <tr className={className ? `${className} row-clickable` : 'row-clickable'} {...others}/>
@@ -384,7 +384,7 @@ export function Table(props: any) {
                   ) {
                   return;
                 }
-                if (!detailsOpenMode) {
+                if (!detailsOpenMode || !details.length) {
                   return;
                 }
                 if (detailsOpenMode === 'window') {
