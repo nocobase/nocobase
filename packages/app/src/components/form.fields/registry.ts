@@ -24,7 +24,6 @@ import { Permissions } from './permissions'
 import { DraggableTable } from './draggable-table'
 import { Values } from './values'
 import { Automations } from './automations'
-import { VirtualTable } from './virtual-table'
 import { Wysiwyg } from './wysiwyg'
 
 export const setup = () => {
@@ -70,6 +69,5 @@ export const setup = () => {
     'automations.datetime': Automations.DateTime,
     'automations.endmode': Automations.EndMode,
     'automations.cron': Automations.Cron,
-    'virtualTable': VirtualTable,
   });
 }
