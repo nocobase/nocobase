@@ -8,7 +8,6 @@ import { useDynamicList } from 'ahooks';
 import findIndex from 'lodash/findIndex';
 import get from 'lodash/get';
 import set from 'lodash/set';
-import { Scope } from './Scope';
 import { DrawerSelectComponent } from '../drawer-select';
 
 export const Permissions = {} as {Actions: any, Fields: any, Tabs: any};
