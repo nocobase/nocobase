@@ -132,9 +132,84 @@ export default {
       sort: ['-created_at'],
     },
     {
+      developerMode: true,
+      type: 'table',
+      name: 'create',
+      title: '新增数据',
+      labelField: 'created_at',
+      actions: [
+        {
+          name: 'filter',
+          type: 'filter',
+          title: '过滤',
+        },
+      ],
+      fields: ['created_at', 'user', 'collection', 'type', 'index'],
+      detailsOpenMode: 'drawer', // window
+      details: ['descriptions'],
+      filter: {
+        and: [
+          {
+            type: 'create',
+          }
+        ],
+      },
+      sort: ['-created_at'],
+    },
+    {
+      developerMode: true,
+      type: 'table',
+      name: 'update',
+      title: '更新数据',
+      labelField: 'created_at',
+      actions: [
+        {
+          name: 'filter',
+          type: 'filter',
+          title: '过滤',
+        },
+      ],
+      fields: ['created_at', 'user', 'collection', 'type', 'index'],
+      detailsOpenMode: 'drawer', // window
+      details: ['descriptions'],
+      filter: {
+        and: [
+          {
+            type: 'update',
+          }
+        ],
+      },
+      sort: ['-created_at'],
+    },
+    {
+      developerMode: true,
+      type: 'table',
+      name: 'destroy',
+      title: '删除数据',
+      labelField: 'created_at',
+      actions: [
+        {
+          name: 'filter',
+          type: 'filter',
+          title: '过滤',
+        },
+      ],
+      fields: ['created_at', 'user', 'collection', 'type', 'index'],
+      detailsOpenMode: 'drawer', // window
+      details: ['descriptions'],
+      filter: {
+        and: [
+          {
+            type: 'destroy',
+          }
+        ],
+      },
+      sort: ['-created_at'],
+    },
+    {
       type: 'table',
       name: 'table2',
-      title: '表格视图',
+      title: '操作日志列表',
       labelField: 'created_at',
       actions: [
         {
