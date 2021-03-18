@@ -226,15 +226,6 @@ export class FieldModel extends BaseModel {
           },
         });
       }
-      if (!model && item.title) {
-        model = await this.findOne({
-          ...options,
-          where: {
-            ...where,
-            title: item.title,
-          },
-        });
-      }
       if (!model) {
         const tmp: any = {};
         if (parentId) {
