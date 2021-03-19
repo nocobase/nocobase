@@ -26,6 +26,7 @@ describe('models.collection', () => {
       title: '示例',
       name: 'examples',
       showInDataMenu: true,
+      statusable: false,
       fields: [
         {
           interface: 'string',

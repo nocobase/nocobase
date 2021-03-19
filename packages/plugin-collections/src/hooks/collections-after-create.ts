@@ -30,49 +30,6 @@ const defaultValues = {
       viewName: 'form',
     },
   ],
-  views: [
-    {
-      type: 'form',
-      name: 'form',
-      title: '表单',
-      template: 'DrawerForm',
-      developerMode: true,
-    },
-    {
-      type: 'details',
-      name: 'details',
-      title: '详情',
-      template: 'Details',
-      actionNames: ['update'],
-      developerMode: true,
-    },
-    // {
-    //   type: 'table',
-    //   name: 'simple',
-    //   title: '简易模式',
-    //   template: 'SimpleTable',
-    //   actionNames: ['create', 'destroy'],
-    //   detailsViewName: 'details',
-    //   updateViewName: 'form',
-    // },
-    {
-      type: 'table',
-      name: 'table',
-      title: '全部数据',
-      template: 'Table',
-      actionNames: ['filter', 'destroy', 'create'],
-      default: true,
-    },
-  ],
-  tabs: [
-    {
-      type: 'details',
-      name: 'details',
-      title: '详情',
-      viewName: 'details',
-      default: true,
-    },
-  ],
 };
 
 export default async function (model: CollectionModel, options: any = {}) {

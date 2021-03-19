@@ -15,10 +15,9 @@ describe('list', () => {
 
     const User = db.getModel('users');
     const users = await User.findAll({ order: [['id', 'ASC']] });
-
     userAgents = users.map(user => {
       const userAgent = getAgent(app);
-      userAgent.set('Authorization', `Bearer ${users[0].token}`);
+      userAgent.set('Authorization', `Bearer ${user.token}`);
       return userAgent;
     });
 

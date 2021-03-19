@@ -83,36 +83,4 @@ export default {
       title: '删除',
     },
   ],
-  views: [
-    {
-      type: 'form',
-      name: 'form',
-      title: '表单',
-      template: 'DrawerForm',
-    },
-    {
-      type: 'details',
-      name: 'details',
-      title: '详情',
-      template: 'Details',
-      actionNames: ['update'],
-    },
-    {
-      type: 'simple',
-      name: 'simple',
-      title: '简易模式',
-      template: 'SimpleTable',
-      actionNames: ['create', 'destroy'],
-      detailsViewName: 'details',
-      updateViewName: 'form',
-      default: true,
-    },
-    {
-      type: 'table',
-      name: 'table',
-      title: '列表',
-      template: 'Table',
-      actionNames: ['create', 'destroy'],
-    },
-  ],
 } as TableOptions;

@@ -144,9 +144,9 @@ export default async function(db) {
 
   const Post = db.getModel('posts');
   await Post.bulkCreate([
-    { title: 'title1', created_by_id: users[0].id },
-    { title: 'title2', created_by_id: users[0].id },
-    { title: 'title3', created_by_id: users[1].id },
-    { title: 'title4', created_by_id: users[3].id },
+    { title: 'title1', created_by_id: users[0].id, status: 'draft' },
+    { title: 'title2', created_by_id: users[0].id, status: 'draft' },
+    { title: 'title3', created_by_id: users[1].id, status: 'draft' },
+    { title: 'title4', created_by_id: users[3].id, status: 'draft' },
   ]);
 }

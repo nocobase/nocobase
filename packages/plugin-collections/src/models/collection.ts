@@ -120,12 +120,18 @@ export class CollectionModel extends BaseModel {
   }
 
   async getOptions(): Promise<TableOptions> {
-    return {
+    const options: any = {
       ...this.get(),
       actions: await this.getActions(),
       fields: await this.getFieldsOptions(),
-      views_v2: await this.getViews_v2(),
-    };
+    }
+    // @ts-ignore
+    // console.log(this.constructor.associations);
+    // @ts-ignore
+    if (this.constructor.hasAlias('views_v2')) {
+      options.views_v2 = await this.getViews_v2();
+    }
+    return options;
   }
 
   /**
@@ -178,6 +184,9 @@ export class CollectionModel extends BaseModel {
         continue;
       }
       const Model = this.database.getModel(key);
+      if (!Model) {
+        continue;
+      }
       let ids = [];
       for (const index in data[key]) {
         if (key === 'fields') {

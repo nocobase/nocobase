@@ -124,42 +124,6 @@ export default {
       },
     },
   ],
-  views: [
-    {
-      type: 'form',
-      name: 'form',
-      title: '表单',
-      template: 'DrawerForm',
-      developerMode: true,
-    },
-    {
-      type: 'details',
-      name: 'details',
-      title: '详情',
-      template: 'Details',
-      actionNames: ['update'],
-      developerMode: true,
-    },
-    {
-      type: 'table',
-      name: 'table',
-      title: '全部数据',
-      template: 'Table',
-      mode: 'simple',
-      actionNames: ['destroy', 'create'],
-      default: true,
-      draggable: true,
-    },
-  ],
-  tabs: [
-    {
-      type: 'details',
-      name: 'details',
-      title: '详情',
-      viewName: 'details',
-      default: true,
-    },
-  ],
   views_v2: [
     {
       developerMode: true,

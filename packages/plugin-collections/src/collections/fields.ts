@@ -614,36 +614,6 @@ export default {
       viewName: 'form',
     },
   ],
-  views: [
-    {
-      type: 'form',
-      name: 'form',
-      title: '表单',
-      template: 'DrawerForm',
-      developerMode: true,
-    },
-    {
-      type: 'details',
-      name: 'details',
-      title: '详情',
-      template: 'Details',
-      actionNames: ['update'],
-      developerMode: true,
-    },
-    {
-      type: 'table',
-      name: 'simple',
-      title: '简易模式',
-      template: 'Table',
-      mode: 'simple',
-      default: true,
-      actionNames: ['destroy', 'create'],
-      detailsViewName: 'details',
-      updateViewName: 'form',
-      paginated: false,
-      draggable: true,
-    },
-  ],
   views_v2: [
     {
       developerMode: true,

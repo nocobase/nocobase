@@ -97,21 +97,6 @@ export default {
       // sort: '-created_at'
     },
   ],
-  views: [
-    {
-      type: 'table',
-      name: 'table',
-      title: '列表',
-      template: 'Table',
-      default: true
-    },
-    {
-      type: 'details',
-      name: 'details',
-      title: '详情',
-      template: 'Details',
-    },
-  ],
   views_v2: [
     {
       developerMode: true,
