@@ -40,6 +40,10 @@ export default async function (this: Application, options = {}) {
       return;
     }
 
+    if (model.get('statusable') === false) {
+      return;
+    }
+
     console.log("model.get('developerMode')", model.get('name'));
 
     const { transaction = await model.sequelize.transaction() } = options;

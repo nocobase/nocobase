@@ -27,7 +27,7 @@ describe('fields', () => {
 
   afterEach(() => app.database.close());
 
-  async function createField(options: Options) {
+  async function createField(options: any) {
     return await collection.createField(options);
   }
 

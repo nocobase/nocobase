@@ -53,13 +53,4 @@ export default {
       title: '查看'
     }
   ],
-  views: [
-    {
-      type: 'table',
-      name: 'table',
-      title: '列表',
-      template: 'Table',
-      default: true,
-    },
-  ],
 } as TableOptions;

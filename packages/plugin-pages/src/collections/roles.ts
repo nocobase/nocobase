@@ -20,24 +20,4 @@ export default extend({
       constraints: false, // 多态关联建立外键约束会有问题
     }
   ],
-  tabs: [
-    {
-      type: 'association',
-      name: 'pages',
-      title: '系统菜单权限',
-      association: 'pages',
-      viewName: 'permissionTable',
-    },
-  ]
-}, {
-  customMerge(key) {
-    if (['tabs'].includes(key)) {
-      return (x = [], y = []) => {
-        const last = x.pop();
-        const tabs = x.concat(y);
-        tabs.push(last);
-        return tabs;
-      };
-    }
-  }
 });
