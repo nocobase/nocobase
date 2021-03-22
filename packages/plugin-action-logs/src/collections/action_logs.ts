@@ -56,9 +56,9 @@ export default {
       title: '操作类型',
       filterable: true,
       dataSource: [
-        { value: LOG_TYPE_CREATE, label: '新增' },
-        { value: LOG_TYPE_UPDATE, label: '更新' },
-        { value: LOG_TYPE_DESTROY, label: '删除' },
+        { value: LOG_TYPE_CREATE, label: '新增', color: 'blue' },
+        { value: LOG_TYPE_UPDATE, label: '更新', color: 'volcano' },
+        { value: LOG_TYPE_DESTROY, label: '删除', color: 'magenta' },
       ],
       component: {
         showInTable: true,
