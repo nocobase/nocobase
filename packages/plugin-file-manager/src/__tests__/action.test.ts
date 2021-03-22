@@ -4,7 +4,7 @@ import qs from 'qs';
 import { FILE_FIELD_NAME, STORAGE_TYPE_LOCAL } from '../constants';
 import { getApp, getAgent, getAPI } from '.';
 
-const DEFAULT_LOCAL_BASE_URL = process.env.LOCAL_STORAGE_BASE_URL || `http://localhost:${process.env.HTTP_PORT}/uploads`;
+const DEFAULT_LOCAL_BASE_URL = process.env.LOCAL_STORAGE_BASE_URL || `http://localhost:${process.env.API_PORT}/uploads`;
 
 describe('action', () => {
   let app;

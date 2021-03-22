@@ -45,7 +45,7 @@ export function middleware(app) {
         url = {
           protocol: 'http:',
           hostname: 'localhost',
-          port: process.env.HTTP_PORT,
+          port: process.env.API_PORT,
           pathname: baseUrl
         };
       }
