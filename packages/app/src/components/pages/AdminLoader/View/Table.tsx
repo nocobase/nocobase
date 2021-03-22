@@ -80,7 +80,7 @@ export function DetailsPage(props) {
           ))}
         </Tabs>}
       />
-      <div style={{margin: 24}}>
+      <div className={'page-content'}>
         <Card bordered={false}>
           {(get(items, [currentTabIndex, 'views'])||[]).map(view => {
             let viewName: string;
