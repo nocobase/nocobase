@@ -62,7 +62,7 @@ export default {
       interface: 'string',
       type: 'string',
       name: 'title',
-      title: '菜单名称',
+      title: '菜单/页面名称',
       required: true,
     },
     {
@@ -320,7 +320,7 @@ export default {
         },
       ],
       // detailsOpenMode: 'drawer', // window
-      // details: ['permissions_form'],
+      details: [],
       sort: ['sort'],
     },
     {

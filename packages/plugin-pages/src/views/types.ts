@@ -51,6 +51,14 @@ export const form = {
     // fields,
   },
   properties: {
+    info1: {
+      interface: 'description',
+      type: 'virtual',
+      title: '表单配置',
+      component: {
+        type: 'description',
+      },
+    },
     fields: {
       ...fields,
       title: '显示在表单里的字段'
@@ -68,11 +76,27 @@ export const descriptions = {
     // fields,
   },
   properties: {
-    actions,
+    info1: {
+      interface: 'description',
+      type: 'virtual',
+      title: '详情配置',
+      component: {
+        type: 'description',
+      },
+    },
     fields: {
       ...fields,
       title: '显示在详情里的字段'
     },
+    info2: {
+      interface: 'description',
+      type: 'virtual',
+      title: '操作按钮配置',
+      component: {
+        type: 'description',
+      },
+    },
+    actions,
   },
   linkages: {
     
@@ -93,27 +117,14 @@ export const table = {
     // labelField,
   },
   properties: {
-    // 数据配置
-    filter: {
-      interface: 'json',
+    info1: {
+      interface: 'description',
       type: 'virtual',
-      title: '只显示符合以下条件的数据',
-      mode: 'replace',
-      defaultValue: {},
+      title: '表格配置',
       component: {
-        type: 'filter',
+        type: 'description',
       },
     },
-    // sort: {
-    //   interface: 'json',
-    //   type: 'virtual',
-    //   title: '默认排序',
-    //   mode: 'replace',
-    //   defaultValue: [],
-    //   component: {
-    //     type: 'string',
-    //   },
-    // },
     // 表格配置
     labelField: {
       interface: 'select',
@@ -153,9 +164,51 @@ export const table = {
       type: 'virtual',
       title: '表格里支持拖拽数据排序',
     },
-    // 操作配置
+    info2: {
+      interface: 'description',
+      type: 'virtual',
+      title: '数据配置',
+      component: {
+        type: 'description',
+      },
+    },
+    filter: {
+      interface: 'json',
+      type: 'virtual',
+      title: '只显示符合以下条件的数据',
+      mode: 'replace',
+      defaultValue: {},
+      component: {
+        type: 'filter',
+      },
+    },
+    // sort: {
+    //   interface: 'json',
+    //   type: 'virtual',
+    //   title: '默认排序',
+    //   mode: 'replace',
+    //   defaultValue: [],
+    //   component: {
+    //     type: 'string',
+    //   },
+    // },
+    info3: {
+      interface: 'description',
+      type: 'virtual',
+      title: '操作按钮配置',
+      component: {
+        type: 'description',
+      },
+    },
     actions,
-    // 详情配置
+    info4: {
+      interface: 'description',
+      type: 'virtual',
+      title: '单条数据页面配置',
+      component: {
+        type: 'description',
+      },
+    },
     detailsOpenMode,
     details,
   },
@@ -174,15 +227,12 @@ export const calendar = {
     // details,
   },
   properties: {
-    // 数据配置
-    filter: {
-      interface: 'json',
+    info1: {
+      interface: 'description',
       type: 'virtual',
-      title: '只显示符合以下条件的数据',
-      mode: 'replace',
-      defaultValue: {},
+      title: '日历配置',
       component: {
-        type: 'filter',
+        type: 'description',
       },
     },
     // 日历配置
@@ -234,7 +284,32 @@ export const calendar = {
         },
       },
     },
-    // 详情配置
+    info2: {
+      interface: 'description',
+      type: 'virtual',
+      title: '数据配置',
+      component: {
+        type: 'description',
+      },
+    },
+    filter: {
+      interface: 'json',
+      type: 'virtual',
+      title: '只显示符合以下条件的数据',
+      mode: 'replace',
+      defaultValue: {},
+      component: {
+        type: 'filter',
+      },
+    },
+    info3: {
+      interface: 'description',
+      type: 'virtual',
+      title: '单条数据页面配置',
+      component: {
+        type: 'description',
+      },
+    },
     detailsOpenMode,
     details,
   },
