@@ -32,6 +32,13 @@ export const request: RequestConfig = {
   ],
 };
 
+const pathnames = [
+  '/login',
+  '/register',
+  '/lostpassword',
+  '/resetpassword',
+];
+
 export async function getInitialState() {
   const { pathname, search } = location;
   console.log(location);
@@ -43,7 +50,7 @@ export async function getInitialState() {
     redirect = `?redirect=${pathname}${search}`;
   // }
 
-  if (pathname !== '/login' && pathname !== '/register') {
+  if (!pathnames.includes(pathname)) {
     try {
       const { data = {} } = await umiRequest('/users:check', {
         method: 'post',

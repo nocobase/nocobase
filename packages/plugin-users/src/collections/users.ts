@@ -85,6 +85,16 @@ export default {
       filterable: false,
       developerMode: true,
     },
+    {
+      interface: 'string',
+      type: 'string',
+      name: 'reset_token',
+      title: 'Reset Token',
+      unique: true,
+      hidden: true,
+      filterable: false,
+      developerMode: true,
+    },
   ],
   actions: [
     {

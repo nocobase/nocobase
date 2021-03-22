@@ -1,5 +1,5 @@
 import React from 'react';
-import { Tooltip, Card, Button } from 'antd';
+import { Tooltip, Card, Button, message } from 'antd';
 import {
   SchemaForm,
   SchemaMarkupField as Field,
@@ -15,7 +15,7 @@ import {
 import { QuestionCircleOutlined } from '@ant-design/icons';
 import { Link, history, request, useModel, useLocation } from 'umi';
 
-export function Login(props: any) {
+export function LostPassword(props: any) {
   const actions = createFormActions();
   const { initialState = {}, loading, error, refresh, setInitialState } = useModel('@@initialState');
   const { redirect } = props.location.query;
@@ -33,23 +33,14 @@ export function Login(props: any) {
   return (
     <div className={'users-form'}>
       <h1>{title||'NocoBase'}</h1>
-      <h2>登录</h2>
+      <h2>忘记密码</h2>
       <SchemaForm onSubmit={async (values) => {
         console.log(values);
-        const { data = {} } = await request('/users:login', {
+        const { data = {} } = await request('/users:lostpassword', {
           method: 'post',
           data: values,
         });
-        if (data.data && data.data.token) {
-          localStorage.setItem('NOCOBASE_TOKEN',  data.data.token);
-          // @ts-ignore
-          setInitialState({
-            ...initialState,
-            currentUser: data.data,
-          });
-          await (window as any).routesReload();
-          history.push(redirect||'/');
-        }
+        message.success(`重置链接已发送至邮箱 ${values.email}，请注意查收！`)
       }} actions={actions} schema={{
         type: 'object',
         properties: {
@@ -62,28 +53,13 @@ export function Login(props: any) {
               placeholder: '邮箱',
             }
           },
-          password: {
-            type: 'password',
-            title: '',
-            required: true,
-            'x-component-props': {
-              size: 'large',
-              style: {
-                width: '100%',
-              },
-              placeholder: '密码',
-            },
-            "x-props": {
-              help: <Link to={'/lostpassword'}>忘记密码？</Link>
-            },
-          },
         }
       }}>
         <FormButtonGroup>
-          <Submit size={'large'}>登录</Submit>
+          <Submit size={'large'}>获取新密码</Submit>
           <Button size={'large'} onClick={() => {
-            history.push('/register');
-          }}>注册账户</Button>
+            history.push('/login');
+          }}>使用已有账号登录</Button>
         </FormButtonGroup>
       </SchemaForm>
     </div>
