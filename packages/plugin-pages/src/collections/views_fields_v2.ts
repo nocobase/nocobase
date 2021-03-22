@@ -69,7 +69,7 @@ export default {
         {
           name: 'add',
           type: 'add',
-          title: '新增',
+          title: '选择',
           transform: {
             'data': 'field',
             'data.title': 'title',
@@ -79,7 +79,7 @@ export default {
         {
           name: 'destroy',
           type: 'destroy',
-          title: '删除',
+          title: '移除',
         },
       ],
       fields: [
@@ -94,6 +94,50 @@ export default {
       developerMode: true,
       type: 'form',
       name: 'form',
+      title: '表单',
+      fields: [
+        'title',
+        'field',
+        'tooltip',
+      ],
+    },
+    {
+      developerMode: true,
+      type: 'table',
+      name: 'tableForForm',
+      title: '全部数据',
+      labelField: 'title',
+      draggable: true,
+      actions: [
+        {
+          name: 'add',
+          type: 'add',
+          title: '选择',
+          transform: {
+            'data': 'field',
+            'data.title': 'title',
+          },
+          viewName: 'collections.fields.table',
+        },
+        {
+          name: 'destroy',
+          type: 'destroy',
+          title: '移除',
+        },
+      ],
+      fields: [
+        'title',
+        'field',
+        'required',
+      ],
+      detailsOpenMode: 'drawer', // window
+      details: ['formForForm'],
+      sort: ['id'],
+    },
+    {
+      developerMode: true,
+      type: 'form',
+      name: 'formForForm',
       title: '表单',
       fields: [
         'title',

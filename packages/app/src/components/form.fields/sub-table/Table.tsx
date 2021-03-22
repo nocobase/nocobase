@@ -28,7 +28,7 @@ export default function Table(props: SimpleTableProps) {
   const { schema = {}, associatedKey, value, onChange, __parent } = props;
   console.log({props, associatedKey, schema, __parent})
   const { collection_name, name } = schema;
-  const viewName = `${collection_name}.${name}.table`;
+  const viewName = `${collection_name}.${name}.${schema.viewName||'table'}`;
   return (
     <>
       <View 

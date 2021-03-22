@@ -189,7 +189,7 @@ export default {
         {
           name: 'add',
           type: 'add',
-          title: '新增',
+          title: '选择',
           transform: {
             'data': 'view',
             'data.title': 'title',
@@ -205,7 +205,7 @@ export default {
         {
           name: 'destroy',
           type: 'destroy',
-          title: '删除',
+          title: '移除',
         },
       ],
       fields: [
