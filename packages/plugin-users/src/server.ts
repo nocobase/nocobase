@@ -5,10 +5,7 @@ import Resourcer from '@nocobase/resourcer';
 
 import * as fields from './fields';
 // import hooks from './hooks';
-import login from './actions/login';
-import register from './actions/register';
-import logout from './actions/logout';
-import check from './actions/check';
+import * as usersActions from './actions/users';
 import { makeOptions } from './hooks/collection-after-create';
 import * as middlewares from './middlewares';
 
@@ -39,12 +36,9 @@ export default async function (options = {}) {
     directory: path.resolve(__dirname, 'collections'),
   });
 
-  resourcer.registerActionHandlers({
-    'users:login': login,
-    'users:register': register,
-    'users:logout': logout,
-    'users:check': check,
-  });
+  for (const [key, action] of Object.entries(usersActions)) {
+    resourcer.registerActionHandler(`users:${key}`, action);
+  }
 
   resourcer.use(middlewares.parseToken(options));
 }

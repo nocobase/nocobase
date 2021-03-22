@@ -43,6 +43,22 @@ const data = [
     template: 'register',
     order: 130,
   },
+  {
+    title: '忘记密码',
+    path: '/lostpassword',
+    type: 'page',
+    inherit: false,
+    template: 'lostpassword',
+    order: 140,
+  },
+  {
+    title: '重置密码',
+    path: '/resetpassword',
+    type: 'page',
+    inherit: false,
+    template: 'resetpassword',
+    order: 150,
+  },
 ];
 
 (async () => {
@@ -92,7 +108,7 @@ const data = [
     await Storage.create({
       name: `ali-oss`,
       type: 'ali-oss',
-      baseUrl: process.env.STORAGE_BASE_URL,
+      baseUrl: process.env.ALIYUN_STORAGE_BASE_URL,
       options: {
         region: process.env.ALIYUN_OSS_REGION,// 'oss-cn-beijing',
         accessKeyId: process.env.ALIYUN_OSS_ACCESS_KEY_ID,// 'LTAI4GEGDJsdGantisvSaz47',
