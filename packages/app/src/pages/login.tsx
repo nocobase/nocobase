@@ -4,6 +4,7 @@ import { Page } from '@/components/pages';
 import ViewFactory from '@/components/views';
 import { Helmet, useModel } from 'umi';
 import get from 'lodash/get';
+import { Login } from '@/components/views/Form/Login';
 
 export default (props: any) => {
   const { initialState = {}, refresh, setInitialState } = useModel('@@initialState');
@@ -13,11 +14,7 @@ export default (props: any) => {
       <Helmet>
         <title>{siteTitle ? `登录 - ${siteTitle}` : '登录'}</title>
       </Helmet>
-      <ViewFactory 
-        {...props}
-        viewName={'login'}
-        resourceName={'users'}
-      />
+      <Login {...props}/>
     </div>
   );
 };
