@@ -81,7 +81,7 @@ api.resourcer.use(async (ctx: actions.Context, next) => {
     name: 'users',
   }});
   await api.database.getModel('automations').load();
-  api.listen(process.env.HTTP_PORT, () => {
-    console.log(`http://localhost:${process.env.HTTP_PORT}/`);
+  api.listen(process.env.API_PORT, () => {
+    console.log(`http://localhost:${process.env.API_PORT}/`);
   });
 })();
