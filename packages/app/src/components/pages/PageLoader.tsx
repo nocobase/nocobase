@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 // import { request } from 'umi';
 import { TemplateLoader } from './TemplateLoader';
 import { useRequest, request } from '@nocobase/client';
-import templates from '@/templates';
+import { templates } from '@/pages';
 import api from '@/api-client';
 
 export function PageLoader(props: any) {
