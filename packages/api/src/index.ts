@@ -1,5 +1,5 @@
 import api from './app';
-import actions from '../../../actions/src';
+import actions from '../../actions/src';
 
 api.resourcer.use(async (ctx: actions.Context, next) => {
   const { actionName, resourceField, resourceName, fields = {} } = ctx.action.params;

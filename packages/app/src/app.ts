@@ -45,10 +45,7 @@ export async function getInitialState() {
   const { data: systemSettings = {} } = await umiRequest('/system_settings:get?fields[appends]=logo,logo.storage', {
     method: 'get',
   });
-  let redirect = '';
-  // if (href.includes('?')) {
-    redirect = `?redirect=${pathname}${search}`;
-  // }
+  let redirect = `?redirect=${pathname}${search}`;
 
   if (!pathnames.includes(pathname)) {
     try {

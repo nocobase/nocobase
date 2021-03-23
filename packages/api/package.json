@@ -1,0 +1,22 @@
+{
+  "name": "@nocobase/api",
+  "version": "0.4.0-alpha.0",
+  "scripts": {
+    "start": "nodemon",
+    "db-migrate": "ts-node ./src/migrate.ts"
+  },
+  "dependencies": {
+    "@nocobase/actions": "^0.4.0-alpha.0",
+    "@nocobase/client": "^0.4.0-alpha.0",
+    "@nocobase/database": "^0.4.0-alpha.0",
+    "@nocobase/plugin-action-logs": "^0.4.0-alpha.0",
+    "@nocobase/plugin-china-region": "^0.4.0-alpha.0",
+    "@nocobase/plugin-collections": "^0.4.0-alpha.0",
+    "@nocobase/plugin-pages": "^0.4.0-alpha.0",
+    "@nocobase/server": "^0.4.0-alpha.0"
+  },
+  "devDependencies": {
+    "nodemon": "^2.0.6",
+    "typescript": "^3.9.6"
+  }
+}
