@@ -1,11 +1,8 @@
 {
   "name": "@nocobase/app",
   "version": "0.4.0-alpha.0",
-  "private": true,
   "scripts": {
     "start": "concurrently \"nodemon\" \"umi dev\"",
-    "start-api": "nodemon",
-    "db-migrate": "ts-node ./src/api/migrate.ts",
     "build": "umi build",
     "postinstall": "umi generate tmp",
     "prettier": "prettier --write '**/*.{js,jsx,tsx,ts,less,md,json}'",
@@ -26,13 +23,6 @@
   "dependencies": {
     "@ant-design/pro-layout": "^5.0.12",
     "@formily/antd-components": "^1.3.6",
-    "@nocobase/client": "^0.4.0-alpha.0",
-    "@nocobase/database": "^0.4.0-alpha.0",
-    "@nocobase/plugin-action-logs": "^0.4.0-alpha.0",
-    "@nocobase/plugin-china-region": "^0.4.0-alpha.0",
-    "@nocobase/plugin-collections": "^0.4.0-alpha.0",
-    "@nocobase/plugin-pages": "^0.4.0-alpha.0",
-    "@nocobase/server": "^0.4.0-alpha.0",
     "@types/react-big-calendar": "^0.24.8",
     "@umijs/preset-react": "1.x",
     "@umijs/test": "^3.2.23",

@@ -1,8 +1,8 @@
-import Api from '../../../server/src';
-import dotenv from 'dotenv';
 import path from 'path';
-import actions from '../../../actions/src';
-import associated from '../../../actions/src/middlewares/associated';
+import dotenv from 'dotenv';
+import Api from '../../server/src';
+import actions from '../../actions/src';
+import associated from '../../actions/src/middlewares/associated';
 
 // @ts-ignore
 const sync = global.sync || {
@@ -61,13 +61,13 @@ api.resourcer.registerActionHandlers({...actions.common, ...actions.associate});
 //   await next();
 // });
 
-api.registerPlugin('plugin-collections', [path.resolve(__dirname, '../../../plugin-collections'), {}]);
-api.registerPlugin('plugin-action-logs', [path.resolve(__dirname, '../../../plugin-action-logs'), {}]);
-api.registerPlugin('plugin-pages', [path.resolve(__dirname, '../../../plugin-pages'), {}]);
-api.registerPlugin('plugin-users', [path.resolve(__dirname, '../../../plugin-users'), {}]);
-api.registerPlugin('plugin-file-manager', [path.resolve(__dirname, '../../../plugin-file-manager'), {}]);
-api.registerPlugin('plugin-permissions', [path.resolve(__dirname, '../../../plugin-permissions'), {}]);
-api.registerPlugin('plugin-automations', [path.resolve(__dirname, '../../../plugin-automations'), {}]);
-api.registerPlugin('plugin-china-region', [path.resolve(__dirname, '../../../plugin-china-region'), {}]);
+api.registerPlugin('plugin-collections', [path.resolve(__dirname, '../../plugin-collections'), {}]);
+api.registerPlugin('plugin-action-logs', [path.resolve(__dirname, '../../plugin-action-logs'), {}]);
+api.registerPlugin('plugin-pages', [path.resolve(__dirname, '../../plugin-pages'), {}]);
+api.registerPlugin('plugin-users', [path.resolve(__dirname, '../../plugin-users'), {}]);
+api.registerPlugin('plugin-file-manager', [path.resolve(__dirname, '../../plugin-file-manager'), {}]);
+api.registerPlugin('plugin-permissions', [path.resolve(__dirname, '../../plugin-permissions'), {}]);
+api.registerPlugin('plugin-automations', [path.resolve(__dirname, '../../plugin-automations'), {}]);
+api.registerPlugin('plugin-china-region', [path.resolve(__dirname, '../../plugin-china-region'), {}]);
 
 export default api;
