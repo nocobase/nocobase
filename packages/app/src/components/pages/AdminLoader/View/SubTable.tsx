@@ -5,7 +5,7 @@ import { Spin } from '@nocobase/client';
 import { useRequest, useLocation } from 'umi';
 import api from '@/api-client';
 import { Actions } from '../Actions';
-import { Table as AntdTable, Card, Pagination, Button, Tabs, Descriptions, Tooltip } from 'antd';
+import { Modal, Table as AntdTable, Card, Pagination, Button, Tabs, Descriptions, Tooltip } from 'antd';
 import { LoadingOutlined } from '@ant-design/icons';
 import { components, fields2columns } from '@/components/views/SortableTable';
 import ReactDragListView from 'react-drag-listview';
@@ -19,7 +19,7 @@ import { Form } from './Form';
 import { View } from './';
 
 export function Details(props) {
-  const { onReset, __parent, noRequest,  associatedKey, resourceName, onFinish, onDataChange, data, items = [], resolve } = props;
+  const { onValueChange, onReset, __parent, noRequest,  associatedKey, resourceName, onFinish, onDataChange, data, items = [], resolve } = props;
   if (!items || items.length === 0) {
     return null;
   }
@@ -46,6 +46,7 @@ export function Details(props) {
         }
         return (
           <View 
+            onValueChange={onValueChange}
             onReset={onReset} 
             __parent={__parent} 
             noRequest={noRequest} 
@@ -127,7 +128,6 @@ export function SubTable(props: any) {
   }
 
   const { type } = associationField;
-
   const { data = [], loading, mutate, refresh, run, params } = useRequest((params = {}, ...args) => {
     return !associatedKey || type === 'virtual' || type === 'json' ? Promise.resolve({
       data: (props.data||[]).map(item => {
@@ -231,7 +231,7 @@ export function SubTable(props: any) {
           rowKey={rowKey}
           dataSource={dataSource}
           size={size} 
-          columns={fields2columns(cloneFields)}
+          columns={fields2columns(cloneFields, { mutate, dataSource, onChange })}
           pagination={false}
           onChange={(pagination, filters, sorter, extra) => {
             
@@ -253,7 +253,7 @@ export function SubTable(props: any) {
                 bodyStyle: {
                   // padding: 0,
                 },
-                content: ({resolve}) => (
+                content: ({resolve, closeWithConfirm}) => (
                   <div>
                     <Details 
                       // __parent={__parent}
@@ -272,6 +272,9 @@ export function SubTable(props: any) {
                       onReset={resolve}
                       onDataChange={() => {
                         
+                      }}
+                      onValueChange={() => {
+                        closeWithConfirm && closeWithConfirm(true);
                       }}
                       noRequest={true}
                       data={data}

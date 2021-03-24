@@ -5,7 +5,7 @@ import { Spin } from '@nocobase/client';
 import { useRequest, useHistory } from 'umi';
 import api from '@/api-client';
 import { Actions } from '../Actions';
-import { PageHeader, Table as AntdTable, Card, Pagination, Button, Tabs, Descriptions, Tooltip } from 'antd';
+import { Modal, PageHeader, Table as AntdTable, Card, Pagination, Button, Tabs, Descriptions, Tooltip } from 'antd';
 import { LoadingOutlined } from '@ant-design/icons';
 import { components, fields2columns } from '@/components/views/SortableTable';
 import ReactDragListView from 'react-drag-listview';
@@ -21,7 +21,7 @@ import pathToRegexp from 'path-to-regexp'
 export const icon = <LoadingOutlined style={{ fontSize: 36 }} spin />;
 
 export function Details(props) {
-  const { __parent, associatedKey, resourceName, onFinish, onReset, onDataChange, data, items = [], resolve } = props;
+  const { __parent, associatedKey, resourceName, onFinish, onReset, onDataChange, data, items = [], resolve, onValueChange } = props;
   if (!items || items.length === 0) {
     return null;
   }
@@ -47,7 +47,10 @@ export function Details(props) {
           viewName = `${resourceName}.${view.name}`;
         }
         return (
-          <View __parent={__parent} associatedKey={associatedKey} onReset={onReset} onFinish={onFinish} onDataChange={onDataChange} data={data} viewName={viewName}/>
+          <View 
+            onValueChange={onValueChange} 
+            __parent={__parent} 
+            associatedKey={associatedKey} onReset={onReset} onFinish={onFinish} onDataChange={onDataChange} data={data} viewName={viewName}/>
         );
       })}
     </div>
@@ -403,7 +406,7 @@ export function Table(props: any) {
                     bodyStyle: {
                       // padding: 0,
                     },
-                    content: ({resolve}) => (
+                    content: ({resolve, closeWithConfirm}) => (
                       <div>
                         <Details 
                           __parent={__parent}
@@ -413,6 +416,9 @@ export function Table(props: any) {
                             await refresh();
                             resolve();
                             await reloadMenu();
+                          }}
+                          onValueChange={() => {
+                            closeWithConfirm && closeWithConfirm(true);
                           }}
                           onDraft={async () => {
                             await refresh();

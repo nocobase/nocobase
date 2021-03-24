@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Space, Button, Popconfirm, Popover } from 'antd';
-import { FilterOutlined, PlusOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons';
+import { FilterOutlined, PlusOutlined, SelectOutlined, DeleteOutlined } from '@ant-design/icons';
 import Drawer from '@/components/pages/AdminLoader/Drawer';
 import View from '@/components/pages/AdminLoader/View';
 import get from 'lodash/get';
@@ -8,7 +8,7 @@ import set from 'lodash/set';
 
 export function Create(props) {
   const { size, onFinish, schema = {}, associatedKey, ...restProps } = props;
-  const { title, viewName } = schema;
+  const { title, viewName, transform } = schema;
   return (
     <>
       <Button 
@@ -16,19 +16,32 @@ export function Create(props) {
         onClick={() => {
           Drawer.open({
             title: title,
-            content: ({resolve}) => (
+            content: ({resolve, closeWithConfirm}) => (
               <div>
                 <View
                   {...restProps}
+                  onValueChange={() => {
+                    closeWithConfirm && closeWithConfirm(true);
+                  }}
                   associatedKey={associatedKey}
                   viewName={viewName}
                   onReset={resolve}
-                  onDraft={async (values) => {
+                  onDraft={async (item) => {
+                    const values = transform ? {} : item;
+                    for (const [sourceKey, targetKey] of Object.entries<string>(transform)) {
+                      const value = get({ data: item }, sourceKey);
+                      set(values, targetKey, value);
+                    }
                     await resolve();
                     console.log('onFinish', values);
                     onFinish && await onFinish(values);
                   }}
-                  onFinish={async (values) => {
+                  onFinish={async (item) => {
+                    const values = transform ? {} : item;
+                    for (const [sourceKey, targetKey] of Object.entries<string>(transform)) {
+                      const value = get({ data: item }, sourceKey);
+                      set(values, targetKey, value);
+                    }
                     await resolve();
                     console.log('onFinish', values);
                     onFinish && await onFinish(values);
@@ -54,7 +67,7 @@ export function Update(props) {
         onClick={() => {
           Drawer.open({
             title: title,
-            content: ({resolve}) => (
+            content: ({resolve, closeWithConfirm}) => (
               <div>
                 <View
                   {...restProps}
@@ -65,6 +78,9 @@ export function Update(props) {
                   onDraft={async (values) => {
                     await resolve();
                     onFinish && await onFinish(values);
+                  }}
+                  onValueChange={() => {
+                    closeWithConfirm && closeWithConfirm(true);
                   }}
                   onFinish={async (values) => {
                     await resolve();
@@ -85,7 +101,7 @@ export function Update(props) {
 export function Add(props) {
   const { size, onFinish, schema = {}, associatedKey, ...restProps } = props;
   console.log({associatedKey}, 'add');
-  const { filter, title, viewName, transform } = schema;
+  const { filter, title, viewName, transform, componentProps = {} } = schema;
   return (
     <>
       <Button 
@@ -132,8 +148,8 @@ export function Add(props) {
             },
           });
         }}
-        icon={<PlusOutlined />} 
-        type={'primary'}
+        icon={<SelectOutlined />} 
+        {...componentProps}
       >{ title }</Button>
     </>
   )
