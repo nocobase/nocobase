@@ -28,7 +28,7 @@ export function Create(props) {
                   onReset={resolve}
                   onDraft={async (item) => {
                     const values = transform ? {} : item;
-                    for (const [sourceKey, targetKey] of Object.entries<string>(transform)) {
+                    for (const [sourceKey, targetKey] of Object.entries<string>(transform || {})) {
                       const value = get({ data: item }, sourceKey);
                       set(values, targetKey, value);
                     }
@@ -38,7 +38,7 @@ export function Create(props) {
                   }}
                   onFinish={async (item) => {
                     const values = transform ? {} : item;
-                    for (const [sourceKey, targetKey] of Object.entries<string>(transform)) {
+                    for (const [sourceKey, targetKey] of Object.entries<string>(transform || {})) {
                       const value = get({ data: item }, sourceKey);
                       set(values, targetKey, value);
                     }
