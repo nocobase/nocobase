@@ -12,6 +12,7 @@ import './style.less';
 import { getImageByUrl, testUrl } from '@/components/form.fields';
 import { CheckOutlined, CloseOutlined } from '@ant-design/icons';
 import marked from 'marked';
+import set from 'lodash/set';
 import Lightbox from 'react-image-lightbox';
 import 'react-image-lightbox/style.css';
 import api from '@/api-client';
@@ -231,22 +232,22 @@ export function SubTableField(props: any) {
 }
 
 export function LinkToField(props: any) {
-  const { data, schema, value } = props;
+  const { ctx, data, schema, value } = props;
   if (!value) {
     return null;
   }
-  console.log({props});
+  // console.log({props});
   const values = Array.isArray(value) ? value : [value];
+  const isArr = Array.isArray(value);
   return (
     <div className={'link-to-field'}>
-      {values.map(item => <LinkToFieldLink parent={data} data={item} schema={schema}/>)}
+      {values.map((item, itemIndex) => <LinkToFieldLink isArr={isArr} itemIndex={itemIndex} ctx={ctx} parent={data} data={item} schema={schema}/>)}
     </div>
   );
 }
 
 export function LinkToFieldLink(props) {
-  const { parent, schema, schema: { title, labelField, viewName, name, target, collection_name } } = props;
-  const [visible, setVisible] = useState(false);
+  const { isArr, itemIndex, ctx, parent, schema, schema: { title, labelField, viewName, name, target, collection_name } } = props;
   const [data, setData] = useState(props.data||{});
   return (
     <span className={'link-to-field-tag'}>
@@ -255,14 +256,25 @@ export function LinkToFieldLink(props) {
         // setVisible(true);
         Drawer.open({
           title: data[labelField],
-          content: ({resolve}) => {
-            console.log({parent, data, props, schema});
+          content: ({resolve, closeWithConfirm}) => {
+            // console.log({ctx, parent, data, props, schema});
+            const { index, mutate, dataSource, onChange } = ctx;
             return (
               <div>
-                <View onFinish={(values) => {
+                <View 
+                  onValueChange={() => {
+                    closeWithConfirm && closeWithConfirm(true);
+                  }}
+                  noRequest={!!onChange} onFinish={(values) => {
+                  let items = [...dataSource];
+                  const parentData = {...parent};
+                  set(parentData, isArr ? [name, itemIndex] : [name], values);
+                  items[index] = parentData;
                   setData(values);
+                  mutate(items);
+                  onChange(items);
                   resolve();
-                  console.log({data, values});
+                  // console.log({values, parentData, data, items});
                 }} associatedKey={parent.id} data={data} viewName={viewName || `${collection_name}.${name}.descriptions`}/>
               </div>
             );

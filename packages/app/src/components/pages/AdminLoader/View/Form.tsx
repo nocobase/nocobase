@@ -23,7 +23,8 @@ import cloneDeep from 'lodash/cloneDeep'
 import { Spin } from '@nocobase/client';
 import { markdown } from '@/components/views/Field';
 
-export function fields2properties(fields = []) {
+export function fields2properties(fields = [], options: any = {}) {
+  const { mode } = options;
   const properties = {};
   fields.forEach(field => {
     const data = {
@@ -31,6 +32,9 @@ export function fields2properties(fields = []) {
       title: field.title,
       required: field.required,
     };
+    if (field.createOnly && mode !== 'create') {
+      set(data, 'x-component-props.disabled', true);
+    }
     const linkages = field.linkages;
     delete field.linkages;
     set(data, 'x-component-props.schema', cloneDeep(field));
@@ -80,13 +84,13 @@ export function fields2properties(fields = []) {
       data.description = <div className={'markdown-content'} dangerouslySetInnerHTML={{__html: markdown(field.tooltip)}}></div>;
     }
   });
-  console.log({properties});
+  console.log({properties, options});
   return properties;
 }
 const actions = createFormActions();
 
 export function Form(props: any) {
-  const { onReset, __parent, noRequest = false, onFinish, onDraft, resolve, data: record = {}, associatedKey, schema = {} } = props;
+  const { onValueChange, onReset, __parent, noRequest = false, onFinish, onDraft, resolve, data: record = {}, associatedKey, schema = {} } = props;
   console.log({ noRequest, record, associatedKey, __parent });
   const { statusable, resourceName, rowKey = 'id', fields = [], appends = [], associationField = {} } = schema;
 
@@ -125,10 +129,14 @@ export function Form(props: any) {
       // actions={actions}
       schema={{
         type: 'object',
-        properties: fields2properties(fields),
+        properties: fields2properties(fields, { mode: !!Object.keys(data).length ? null : 'create' }),
       }}
       onReset={async () => {
         onReset && await onReset();
+      }}
+      onChange={(values) => {
+        console.log('onValueChange')
+        onValueChange && onValueChange(values)
       }}
       onSubmit={async (values) => {
         console.log({status});

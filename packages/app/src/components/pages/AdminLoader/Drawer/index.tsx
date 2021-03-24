@@ -3,7 +3,7 @@ import ReactDOM, { createPortal } from 'react-dom'
 import { createForm } from '@formily/core'
 // import { FormProvider } from '@formily/react'
 import { isNum, isStr, isBool, isFn } from '@formily/shared'
-import { Drawer } from 'antd'
+import { Modal, Drawer } from 'antd'
 import { DrawerProps } from 'antd/lib/drawer'
 import { useContext } from 'react'
 import { ConfigProvider } from 'antd'
@@ -77,7 +77,7 @@ export function FormDrawer(title: any, content: any): IFormDrawer {
     width: '75%',
     ...props,
     onClose: (e: any) => {
-      props?.onClose?.(e)
+      props?.onClose?.(e);
       formDrawer.close()
     },
     afterVisibleChange: (visible: boolean) => {
@@ -88,25 +88,13 @@ export function FormDrawer(title: any, content: any): IFormDrawer {
       env.root = undefined
     },
   }
-  const render = (visible = true, resolve?: () => any, reject?: () => any) => {
-    ReactDOM.render(
-      <ConfigProvider locale={zhCN}>
-        <Drawer {...drawer} className={'nb-drawer'} visible={visible}>
-          {createElement(content, {
-            resolve,
-            reject,
-          })}
-        </Drawer>
-      </ConfigProvider>,
-      env.root
-    )
-  }
-  document.body.appendChild(env.root)
+
   const formDrawer = {
     open: (props: any) => {
       render(
         false,
         () => {
+          formDrawer.closeWithConfirm = false;
           formDrawer.close()
         },
         () => {
@@ -117,6 +105,7 @@ export function FormDrawer(title: any, content: any): IFormDrawer {
         render(
           true,
           () => {
+            formDrawer.closeWithConfirm = false;
             formDrawer.close()
           },
           () => {
@@ -127,14 +116,53 @@ export function FormDrawer(title: any, content: any): IFormDrawer {
     },
     close: () => {
       if (!env.root) return
-      const els = document.querySelectorAll('.env-root-push');
-      if (els.length) {
-        const last = els[els.length-1];
-        last.className = 'env-root';
+      if (formDrawer.closeWithConfirm) {
+        Modal.confirm({
+          title: '表单内容发生变化，确定不保存吗？',
+          okText: '确定',
+          cancelText: '取消',
+          onOk() {
+            formDrawer.closeWithConfirm = false;
+            const els = document.querySelectorAll('.env-root-push');
+            if (els.length) {
+              const last = els[els.length-1];
+              last.className = 'env-root';
+            }
+            render(false)
+          },
+        });
+      } else {
+        const els = document.querySelectorAll('.env-root-push');
+        if (els.length) {
+          const last = els[els.length-1];
+          last.className = 'env-root';
+        }
+        render(false)
       }
-      render(false)
     },
+    closeWithConfirm: false,
   }
+
+  const closeWithConfirm = (bool) => {
+    formDrawer.closeWithConfirm = bool;
+  }
+
+  const render = (visible = true, resolve?: () => any, reject?: () => any) => {
+    ReactDOM.render(
+      <ConfigProvider locale={zhCN}>
+        <Drawer {...drawer} className={'nb-drawer'} visible={visible}>
+          {createElement(content, {
+            resolve,
+            reject,
+            closeWithConfirm,
+          })}
+        </Drawer>
+      </ConfigProvider>,
+      env.root
+    )
+  }
+  document.body.appendChild(env.root)
+  
   return formDrawer
 }
 

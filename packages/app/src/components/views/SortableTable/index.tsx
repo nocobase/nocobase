@@ -66,7 +66,7 @@ export function fields2columns(fields = [], ctx: any = {}) {
     if (!field.dataIndex) {
       field.dataIndex = field.name.split('.');
     }
-    field.render = (value, record) => field.interface === 'sort' ? <DragHandle/> : <Field data={record} viewType={'table'} schema={field} value={value}/>;
+    field.render = (value, record, index) => field.interface === 'sort' ? <DragHandle/> : <Field ctx={{...ctx, index}} data={record} viewType={'table'} schema={field} value={value}/>;
     field.className = `${field.className||''} noco-field-${field.interface}`;
     if (field.editable && field.interface === 'boolean') {
       field.title = (
