@@ -75,6 +75,9 @@ export default {
             'data.title': 'title',
           },
           viewName: 'collections.fields.table',
+          componentProps: {
+            type: 'primary',
+          },
         },
         {
           name: 'destroy',
@@ -118,6 +121,9 @@ export default {
             'data.title': 'title',
           },
           viewName: 'collections.fields.table',
+          componentProps: {
+            type: 'primary',
+          },
         },
         {
           name: 'destroy',

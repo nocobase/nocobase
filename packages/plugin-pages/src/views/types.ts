@@ -61,6 +61,7 @@ export const form = {
     },
     fields: {
       ...fields,
+      viewName: 'tableForForm',
       title: '显示在表单里的字段'
     },
   },
@@ -346,11 +347,11 @@ export const wysiwyg = {
         target: 'dataSourceType',
         condition: `{{ $self.value && $self.value !== 'wysiwyg' }}`,
       },
-      {
-        type: "value:visible",
-        target: 'targetField',
-        condition: `{{ $self.value && $self.value !== 'wysiwyg' }}`,
-      },
+      // {
+      //   type: "value:visible",
+      //   target: 'targetField',
+      //   condition: `{{ $self.value && $self.value !== 'wysiwyg' }}`,
+      // },
     ],
   },
 };

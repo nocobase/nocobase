@@ -11,18 +11,18 @@ export default {
   createdAt: 'createdTime',
   updatedAt: 'updatedTime',
   fields: [
-    {
-      interface: 'sort',
-      type: 'sort',
-      name: 'sort',
-      title: '排序',
-      component: {
-        type: 'sort',
-        className: 'drag-visible',
-        width: 60,
-        showInTable: true,
-      },
-    },
+    // {
+    //   interface: 'sort',
+    //   type: 'sort',
+    //   name: 'sort',
+    //   title: '排序',
+    //   component: {
+    //     type: 'sort',
+    //     className: 'drag-visible',
+    //     width: 60,
+    //     showInTable: true,
+    //   },
+    // },
     {
       interface: 'string',
       type: 'string',
@@ -31,10 +31,6 @@ export default {
       required: true,
       component: {
         type: 'string',
-        className: 'drag-visible',
-        showInTable: true,
-        showInForm: true,
-        showInDetail: true,
       },
     },
     {
@@ -48,128 +44,43 @@ export default {
       developerMode: true,
       component: {
         type: 'string',
-        showInTable: true,
-        showInForm: true,
-        showInDetail: true,
       },
     },
     {
-      interface: 'icon',
-      type: 'virtual',
-      name: 'icon',
-      title: '图标',
+      interface: 'textarea',
+      type: 'text',
+      name: 'description',
+      title: '数据表描述',
       component: {
-        type: 'icon',
-        showInTable: true,
-        showInForm: true,
-        showInDetail: true,
+        type: 'textarea',
       },
     },
     // {
-    //   interface: 'radio',
+    //   interface: 'boolean',
     //   type: 'virtual',
-    //   name: 'defaultView',
-    //   title: '默认视图',
-    //   defaultValue: 'table',
-    //   dataSource: [
-    //     {label: '表格', value: 'table'},
-    //     {label: '看板', value: 'kanban', disabled: true},
-    //     {label: '日历', value: 'calendar', disabled: true},
-    //   ],
+    //   name: 'createdAt',
+    //   title: '记录创建时间',
+    //   developerMode: true,
+    //   defaultValue: true,
     //   component: {
-    //     type: 'radio',
-    //     showInTable: true,
+    //     type: 'checkbox',
+    //     default: true,
     //     showInForm: true,
-    //     showInDetail: true,
-    //   },
-    // },
-    // {
-    //   interface: 'radio',
-    //   type: 'virtual',
-    //   name: 'mode',
-    //   title: '表格模式',
-    //   defaultValue: 'default',
-    //   dataSource: [
-    //     {label: '常规模式', value: 'default'},
-    //     {label: '简易模式', value: 'simple'},
-    //   ],
-    //   component: {
-    //     type: 'radio',
-    //     tooltip: `
-    //       <p>常规模式：点击数据进入详情页进行各项查看和操作；<br/>简易模式：点击数据直接打开编辑表单</p>
-    //     `,
-    //     showInForm: true,
-    //     showInDetail: true,
-    //   },
-    // },
-    // {
-    //   interface: 'radio',
-    //   type: 'virtual',
-    //   name: 'defaultPerPage',
-    //   title: '每页显示几行数据',
-    //   defaultValue: 50,
-    //   dataSource: [
-    //     {label: '20', value: 20},
-    //     {label: '50', value: 50},
-    //     {label: '100', value: 100},
-    //   ],
-    //   component: {
-    //     type: 'radio',
-    //     showInForm: true,
-    //     showInDetail: true,
     //   },
     // },
     // {
     //   interface: 'boolean',
     //   type: 'virtual',
-    //   name: 'draggable',
-    //   title: '支持拖拽数据排序',
-    //   showInForm: true,
-    //   showInDetail: true,
+    //   name: 'updatedAt',
+    //   title: '记录修改时间',
+    //   developerMode: true,
+    //   defaultValue: true,
     //   component: {
     //     type: 'checkbox',
+    //     default: true,
     //     showInForm: true,
-    //     showInDetail: true,
     //   },
     // },
-    {
-      interface: 'boolean',
-      type: 'boolean',
-      name: 'showInDataMenu',
-      title: '显示在“数据”菜单里',
-      component: {
-        type: 'checkbox',
-        showInTable: true,
-        showInForm: true,
-        showInDetail: true,
-      },
-    },
-    {
-      interface: 'boolean',
-      type: 'virtual',
-      name: 'createdAt',
-      title: '记录创建时间',
-      developerMode: true,
-      defaultValue: true,
-      component: {
-        type: 'checkbox',
-        default: true,
-        showInForm: true,
-      },
-    },
-    {
-      interface: 'boolean',
-      type: 'virtual',
-      name: 'updatedAt',
-      title: '记录修改时间',
-      developerMode: true,
-      defaultValue: true,
-      component: {
-        type: 'checkbox',
-        default: true,
-        showInForm: true,
-      },
-    },
     {
       interface: 'boolean',
       type: 'virtual',
@@ -258,48 +169,6 @@ export default {
         list: {
           sort: 'sort',
         },
-      },
-      component: {
-        type: 'drawerSelect',
-      },
-    },
-    {
-      interface: 'linkTo',
-      type: 'hasMany',
-      name: 'tabs',
-      title: '标签页',
-      sourceKey: 'name',
-      draggable: true,
-      actions: {
-        list: {
-          sort: 'sort',
-        },
-        destroy: {
-          filter: {
-            default: false
-          }
-        }
-      },
-      component: {
-        type: 'drawerSelect',
-      },
-    },
-    {
-      interface: 'linkTo',
-      type: 'hasMany',
-      name: 'views',
-      title: '视图',
-      sourceKey: 'name',
-      draggable: true,
-      actions: {
-        list: {
-          sort: 'sort',
-        },
-        destroy: {
-          filter: {
-            default: false
-          }
-        }
       },
       component: {
         type: 'drawerSelect',
@@ -398,10 +267,32 @@ export default {
           title: '删除',
         },
       ],
-      fields: ['sort', 'title'],
+      fields: ['title', 'description'],
       detailsOpenMode: 'window', // window
       details: ['descriptions', 'fields', 'views'],
-      sort: ['sort'],
+      sort: ['id'],
+    },
+    {
+      developerMode: true,
+      type: 'form',
+      name: 'form',
+      title: '表单',
+      fields: ['title', 'description'],
+    },
+    {
+      developerMode: true,
+      type: 'descriptions',
+      name: 'descriptions',
+      title: '详情',
+      fields: ['title', 'description'],
+      actions: [
+        {
+          name: 'update',
+          type: 'update',
+          title: '编辑',
+          viewName: 'form',
+        },
+      ],
     },
     {
       developerMode: true,
@@ -463,28 +354,6 @@ export default {
               "dataSource": []
             }
           },
-        },
-      ],
-    },
-    {
-      developerMode: true,
-      type: 'form',
-      name: 'form',
-      title: '表单',
-      fields: ['title'],
-    },
-    {
-      developerMode: true,
-      type: 'descriptions',
-      name: 'descriptions',
-      title: '详情',
-      fields: ['title'],
-      actions: [
-        {
-          name: 'update',
-          type: 'update',
-          title: '编辑',
-          viewName: 'form',
         },
       ],
     },
