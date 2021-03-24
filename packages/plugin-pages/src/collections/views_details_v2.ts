@@ -50,6 +50,16 @@ export default {
       draggable: true,
       actions: [
         {
+          name: 'create',
+          type: 'create',
+          title: '新增',
+          transform: {
+            'data': 'view',
+            'data.title': 'title',
+          },
+          viewName: 'collections.views_v2.form',
+        },
+        {
           name: 'add',
           type: 'add',
           title: '选择',

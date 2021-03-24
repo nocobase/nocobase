@@ -15,6 +15,7 @@ import { RANDOMSTRING } from './fields/randomString';
 import { registerFields, registerModels } from '@nocobase/database';
 import { BaseModel } from './models/BaseModel'
 import * as rolesMenusActions from './actions/roles.menus';
+import _ from 'lodash';
 
 export default async function (options = {}) {
   const database: Database = this.database;
@@ -50,6 +51,7 @@ export default async function (options = {}) {
   resourcer.use(async (ctx, next) => {
     const { actionName, resourceName, values } = ctx.action.params;
     if (resourceName === 'menus' && ['create', 'update'].includes(actionName)) {
+      console.log({values});
       if (values.parent) {
         delete values.parent.children;
         ctx.action.mergeParams({
@@ -81,148 +83,113 @@ export default async function (options = {}) {
     resourcer.registerActionHandler(`roles.menus:${actionName}`, rolesMenusActions[actionName]);
   });
 
-  database.getModel('menus').addHook('beforeSave', async (model) => {
-    console.log(model.get('pageName'));
-  });
+  const createDetailsViews = async (model, options) => {
+    const data = model.get();
+    const View = database.getModel('views_v2');
+    const tableDetials = _.get(data, 'x-table-props.details') || [];
+    if (tableDetials.length) {
+      const details = [];
+      for (const item of tableDetials) {
+        if (item.view) {
+          if (!item.view.id) {
+            const view = await View.create(item.view);
+            await view.updateAssociations(item.view);
+            item.view.id = view.id;
+          } else {
+            const view = await View.findByPk(item.view.id);
+            await view.update(item.view);
+            await view.updateAssociations(item.view);
+          }
+          const view = await View.findOne(View.parseApiJson({
+            filter: {
+              id: item.view.id,
+            },
+            fields: {
+              appends: ['collection', 'targetField', 'targetView'],
+            },
+          }));
+          if (view) {
+            console.log({view});
+            item.view = view.toJSON();
+          }
+        }
+        details.push(item);
+      }
+      model.set('options.x-table-props.details', details);
+    }
+    const calendarDetials = _.get(data, 'x-calendar-props.details') || [];
+    if (calendarDetials.length) {
+      const details = [];
+      for (const item of calendarDetials) {
+        if (item.view) {
+          if (!item.view.id) {
+            const view = await View.create(item.view);
+            await view.updateAssociations(item.view);
+            item.view.id = view.id;
+          } else {
+            const view = await View.findByPk(item.view.id);
+            await view.update(item.view);
+            await view.updateAssociations(item.view);
+          }
+          const view = await View.findOne(View.parseApiJson({
+            filter: {
+              id: item.view.id,
+            },
+            fields: {
+              appends: ['collection', 'targetField', 'targetView'],
+            },
+          }));
+          if (view) {
+            console.log({view});
+            item.view = view.toJSON();
+          }
+        }
+        details.push(item);
+      }
+      model.set('options.x-calendar-props.details', details);
+    }
+  };
 
-  // database.getModel('pages_v2').addHook('beforeValidate', async (model) => {
-  //   const collectionName = model.get('collection_name');
-  //   const name = model.get('name');
-  //   if (!model.get('path')) {
-  //     model.set('path', `${collectionName||'global'}.${name}`);
-  //   }
-  // });
+  database.getModel('views_v2').addHook('beforeCreate', createDetailsViews);
+  database.getModel('views_v2').addHook('beforeUpdate', createDetailsViews);
 
-  // database.getModel('views_v2').addHook('beforeValidate', async (model) => {
-  //   const collectionName = model.get('collection_name');
-  //   const name = model.get('name');
-  //   if (!model.get('path')) {
-  //     model.set('path', `${collectionName||'global'}.${name}`);
-  //   }
-  // });
-/*
-  const [Collection, Page, View] = database.getModels(['collections', 'pages', 'views']);
-
-  async function createCollectionPage(model, options) {
-    // const { 
-    //   transaction = await database.sequelize.transaction(),
-    // } = options;
-    if (model.get('internal')) {
+  database.getModel('menus').addHook('beforeSave', async (model, options) => {
+    const { transaction } = options;
+    // console.log('beforeSave', model.get('views'));
+    const items = model.get('views');
+    if (!Array.isArray(items)) {
       return;
     }
-    const transaction = await database.sequelize.transaction();
-    const parent = await Page.findOne({
-      transaction,
-      where: {
-        path: '/collections',
+    const View = database.getModel('views_v2');
+    const views = [];
+    for (const item of items) {
+      if (item.view) {
+        if (!item.view.id) {
+          const view = await View.create(item.view);
+          await view.updateAssociations(item.view);
+          item.view.id = view.id;
+        } else {
+          const view = await View.findByPk(item.view.id);
+          await view.update(item.view);
+          await view.updateAssociations(item.view);
+        }
+        const view = await View.findOne(View.parseApiJson({
+          filter: {
+            id: item.view.id,
+          },
+          fields: {
+            appends: ['collection', 'targetField', 'targetView'],
+          },
+        }));
+        if (view) {
+          console.log({view});
+          item.view = view.toJSON();
+        }
       }
-    });
-    let page = await Page.findOne({
-      transaction,
-      where: {
-        collection: model.get('name'),
-        path: `/collections/${model.get('name')}`,
-      },
-    });
-    if (!page) {
-      page = await Page.create({
-        type: 'collection',
-        collection: model.get('name'),
-        path: `/collections/${model.get('name')}`,
-        sort: 100,
-        parent_id: parent.id,
-      }, {
-        transaction,
-      });
+      views.push(item);
     }
-    page.set({
-      title: model.get('title'),
-      icon: model.get('icon'),
-      showInMenu: !!model.get('showInDataMenu'),
-    });
-    await page.save({
-      transaction,
-    });
-    await Page.collectionPagesResort({transaction});
-    await transaction.commit();
-  }
-
-  Collection.addHook('afterCreate', createCollectionPage);
-  Collection.addHook('afterUpdate', createCollectionPage);
-  Collection.addHook('afterDestroy', async (model, options) => {
-    const { transaction } = options;
-    // console.log('afterDestroy', model);
-    await Page.destroy({
-      transaction,
-      where: {
-        path: `/collections/${model.get('name')}`,
-      },
-    });
-    await Page.collectionPagesResort({transaction});
+    model.set('views', views);
+    // @ts-ignore
+    model.changed('views', true);
   });
-
-  async function syncViewCollectionPage(model, options) {
-    const transaction = await database.sequelize.transaction();
-    const parentPath = `/collections/${model.get('collection_name')}`;
-    const currentPath = `${parentPath}/views/${model.get('name')}`;
-    try {
-      const parent = await Page.findOne({
-        transaction,
-        where: {
-          path: parentPath,
-        },
-      });
-      if (!parent) {
-        await transaction.rollback();
-        return;
-      }
-      let page = await Page.findOne({
-        transaction,
-        where: {
-          collection: model.get('collection_name'),
-          path: currentPath,
-        },
-      });
-      if (!page) {
-        page = await Page.create({
-          type: 'collection',
-          collection: model.get('collection_name'),
-          path: currentPath,
-          sort: 100,
-          parent_id: parent.id,
-        }, {
-          transaction,
-        });
-      }
-      page.set({
-        title: model.get('title'),
-        viewName: model.get('name'),
-        viewId: model.get('id'),
-        // icon: model.get('icon'),
-        showInMenu: !!model.get('showInDataMenu'),
-      });
-      await page.save({
-        transaction,
-      });
-    } catch (error) {
-      await transaction.rollback();
-      console.error(error);
-    }
-    await transaction.commit();
-  }
-  View.addHook('beforeValidate', (model) => {
-    if (model.get('default')) {
-      model.set('showInDataMenu', true);
-    }
-  });
-  View.addHook('afterCreate', syncViewCollectionPage);
-  View.addHook('afterUpdate', syncViewCollectionPage);
-  View.addHook('afterDestroy', async (model, options) => {
-    await Page.destroy({
-      where: {
-        viewId: model.get('id'),
-      },
-    });
-  });
-*/
 }
