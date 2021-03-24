@@ -122,6 +122,7 @@ export function Register(props: any) {
               placeholder: '确认密码',
             }
           },
+          ...(props.fields||{}),
         }
       }}>
         <FormButtonGroup align={'start'}>

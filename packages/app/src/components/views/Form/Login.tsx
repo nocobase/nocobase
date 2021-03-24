@@ -77,6 +77,7 @@ export function Login(props: any) {
               help: <Link to={'/lostpassword'}>忘记密码？</Link>
             },
           },
+          ...(props.fields||{}),
         }
       }}>
         <FormButtonGroup>
