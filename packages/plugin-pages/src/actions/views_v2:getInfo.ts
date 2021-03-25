@@ -383,6 +383,15 @@ export const getInfo = async (ctx: actions.Context, next) => {
     });
     data.groupField = groupField;
   }
+
+  data.actions = data.actions.map(action => {
+    if (action.type === 'filter') {
+      if (!action.fields) {
+        action.fields = data.fields.filter(({filterable}) => filterable);
+      }
+    }
+    return action;
+  });
   
   ctx.body = data;
   await next();
