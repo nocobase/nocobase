@@ -8,14 +8,14 @@ import set from 'lodash/set';
 
 export function Create(props) {
   const { size, onFinish, schema = {}, associatedKey, ...restProps } = props;
-  const { title, viewName, transform } = schema;
+  const { title, pageTitle, viewName, transform, componentProps = {} } = schema;
   return (
     <>
       <Button 
         size={size}
         onClick={() => {
           Drawer.open({
-            title: title,
+            title: pageTitle || title,
             content: ({resolve, closeWithConfirm}) => (
               <div>
                 <View
@@ -53,6 +53,7 @@ export function Create(props) {
         }} 
         icon={<PlusOutlined />} 
         type={'primary'}
+        {...componentProps}
       >{ title }</Button>
     </>
   )
@@ -157,9 +158,9 @@ export function Add(props) {
 
 export function Destroy(props) {
   const { size, schema = {}, onFinish } = props;
-  const { title } = schema;
+  const { title, componentProps = {} } = schema;
   return (
-    <Popconfirm title="确认删除吗？" onConfirm={async () => {
+    <Popconfirm title="确认删除吗？" onConfirm={async (e) => {
       onFinish && await onFinish();
     }}>
       <Button
@@ -167,6 +168,7 @@ export function Destroy(props) {
         danger
         type={'ghost'}
         icon={<DeleteOutlined />}
+        {...componentProps}
       >{ title }</Button>
     </Popconfirm>
   )

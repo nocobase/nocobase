@@ -21,6 +21,7 @@ import { FilterForm } from './FilterForm';
 import { SubTable } from './SubTable';
 import { Wysiwyg } from './Wysiwyg';
 import { Calendar } from './Calendar';
+import { Kanban } from './Kanban';
 
 const VIEWS = new Map();
 
@@ -66,5 +67,6 @@ registerView('descriptions', Descriptions);
 registerView('association', Association);
 registerView('wysiwyg', Wysiwyg);
 registerView('calendar', Calendar);
+registerView('kanban', Kanban);
 
 export default View;

@@ -86,72 +86,83 @@ export default async function (options = {}) {
   const createDetailsViews = async (model, options) => {
     const data = model.get();
     const View = database.getModel('views_v2');
-    const tableDetials = _.get(data, 'x-table-props.details') || [];
-    if (tableDetials.length) {
-      const details = [];
-      for (const item of tableDetials) {
-        if (item.view) {
-          if (!item.view.id) {
-            const view = await View.create(item.view);
-            await view.updateAssociations(item.view);
-            item.view.id = view.id;
-          } else {
-            const view = await View.findByPk(item.view.id);
-            await view.update(item.view);
-            await view.updateAssociations(item.view);
+    const types = ['table', 'calendar', 'kanban'];
+    for (const type of types) {
+      const items = _.get(data, `x-${type}-props.details`) || [];
+      if (items.length) {
+        const details = [];
+        for (const item of items) {
+          if (item.view) {
+            if (!item.view.id) {
+              const view = await View.create(item.view);
+              await view.updateAssociations(item.view);
+              item.view.id = view.id;
+            } else {
+              const view = await View.findByPk(item.view.id);
+              if (view) {
+                await view.update(item.view);
+                await view.updateAssociations(item.view);
+              }
+            }
+            const view = await View.findOne(View.parseApiJson({
+              filter: {
+                id: item.view.id,
+              },
+              fields: {
+                appends: ['collection', 'targetField', 'targetView'],
+              },
+            }));
+            if (view) {
+              console.log({view});
+              item.view = view.toJSON();
+            }
           }
-          const view = await View.findOne(View.parseApiJson({
-            filter: {
-              id: item.view.id,
-            },
-            fields: {
-              appends: ['collection', 'targetField', 'targetView'],
-            },
-          }));
-          if (view) {
-            console.log({view});
-            item.view = view.toJSON();
-          }
+          details.push(item);
         }
-        details.push(item);
+        model.set(`options.x-${type}-props.details`, details);
       }
-      model.set('options.x-table-props.details', details);
-    }
-    const calendarDetials = _.get(data, 'x-calendar-props.details') || [];
-    if (calendarDetials.length) {
-      const details = [];
-      for (const item of calendarDetials) {
-        if (item.view) {
-          if (!item.view.id) {
-            const view = await View.create(item.view);
-            await view.updateAssociations(item.view);
-            item.view.id = view.id;
-          } else {
-            const view = await View.findByPk(item.view.id);
-            await view.update(item.view);
-            await view.updateAssociations(item.view);
-          }
-          const view = await View.findOne(View.parseApiJson({
-            filter: {
-              id: item.view.id,
-            },
-            fields: {
-              appends: ['collection', 'targetField', 'targetView'],
-            },
-          }));
-          if (view) {
-            console.log({view});
-            item.view = view.toJSON();
-          }
-        }
-        details.push(item);
-      }
-      model.set('options.x-calendar-props.details', details);
     }
   };
 
   database.getModel('views_v2').addHook('beforeCreate', createDetailsViews);
   database.getModel('views_v2').addHook('beforeUpdate', createDetailsViews);
+
+  database.getModel('views_v2').addHook('beforeSave', async (model, options) => {
+    const data = model.get();
+    if (data.type !== 'kanban') {
+      return;
+    }
+    let groupField = _.get(data, `x-kanban-props.groupField`);
+    if (!groupField) {
+      return;
+    }
+    if (typeof groupField === 'object' && groupField.name) {
+      groupField = groupField.name;
+    }
+    const Field = database.getModel('fields');
+    let field = await Field.findOne({
+      where: {
+        name: `${groupField}_sort`,
+        collection_name: data.collection_name,
+      },
+    });
+    if (field) {
+      return;
+    }
+    await Field.create({
+      interface: 'sort',
+      type: 'sort',
+      name: `${groupField}_sort`,
+      // TODO: 不支持相关数据
+      collection_name: data.collection_name,
+      scope: [groupField],
+      title: '看板分组排序',
+      developerMode: true,
+      component: {
+        type: 'sort',
+      },
+    });
+  });
 
   database.getModel('menus').addHook('beforeSave', async (model, options) => {
     const { transaction } = options;

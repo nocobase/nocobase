@@ -21,7 +21,7 @@ import pathToRegexp from 'path-to-regexp'
 export const icon = <LoadingOutlined style={{ fontSize: 36 }} spin />;
 
 export function Details(props) {
-  const { __parent, associatedKey, resourceName, onFinish, onReset, onDataChange, data, items = [], resolve, onValueChange } = props;
+  const { __parent, associatedKey, resourceName, onFinish, onDraft, onReset, onDataChange, data, items = [], resolve, onValueChange } = props;
   if (!items || items.length === 0) {
     return null;
   }
@@ -48,6 +48,7 @@ export function Details(props) {
         }
         return (
           <View 
+            onDraft={onDraft}
             onValueChange={onValueChange} 
             __parent={__parent} 
             associatedKey={associatedKey} onReset={onReset} onFinish={onFinish} onDataChange={onDataChange} data={data} viewName={viewName}/>

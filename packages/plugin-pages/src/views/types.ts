@@ -306,6 +306,15 @@ export const calendar = {
     info3: {
       interface: 'description',
       type: 'virtual',
+      title: '操作按钮配置',
+      component: {
+        type: 'description',
+      },
+    },
+    actions,
+    info4: {
+      interface: 'description',
+      type: 'virtual',
       title: '单条数据页面配置',
       component: {
         type: 'description',
@@ -316,6 +325,95 @@ export const calendar = {
   },
   linkages: {
     
+  },
+};
+
+export const kanban = {
+  title: '看板',
+  options: {
+  },
+  properties: {
+    info1: {
+      interface: 'description',
+      type: 'virtual',
+      title: '看板配置',
+      component: {
+        type: 'description',
+      },
+    },
+    labelField: {
+      interface: 'select',
+      type: 'virtual',
+      title: '作为单条数据标题的字段',
+      name: 'labelField',
+      required: true,
+      component: {
+        type: 'remoteSelect',
+        resourceName: 'collections.fields',
+        labelField: 'title',
+        valueField: 'name',
+        filter: {
+          type: 'string',
+        },
+      },
+    },
+    groupField: {
+      interface: 'select',
+      type: 'virtual',
+      title: '看板分组字段',
+      name: 'groupField',
+      required: true,
+      component: {
+        type: 'remoteSelect',
+        resourceName: 'collections.fields',
+        labelField: 'title',
+        valueField: 'name',
+        filter: {
+          type: 'string',
+        },
+      },
+    },
+    fields: {
+      ...fields,
+      title: '显示在看板里的字段'
+    },
+    info2: {
+      interface: 'description',
+      type: 'virtual',
+      title: '数据配置',
+      component: {
+        type: 'description',
+      },
+    },
+    filter: {
+      interface: 'json',
+      type: 'virtual',
+      title: '只显示符合以下条件的数据',
+      mode: 'replace',
+      defaultValue: {},
+      component: {
+        type: 'filter',
+      },
+    },
+    info3: {
+      interface: 'description',
+      type: 'virtual',
+      title: '操作按钮配置',
+      component: {
+        type: 'description',
+      },
+    },
+    actions,
+    info4: {
+      interface: 'description',
+      type: 'virtual',
+      title: '单条数据页面配置',
+      component: {
+        type: 'description',
+      },
+    },
+    detailsOpenMode,
+    details,
   },
 };
 
