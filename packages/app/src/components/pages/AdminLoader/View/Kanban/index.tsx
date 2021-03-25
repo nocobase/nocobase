@@ -154,7 +154,7 @@ export function Kanban(props: any) {
                   // paddingTop: 16,
                   // marginBottom: -4,
                 } : {},
-                title: details.length > 1 ? undefined : data[labelField],
+                title: data[labelField],
                 content: ({resolve, closeWithConfirm}) => (
                   <div>
                     <Details 
