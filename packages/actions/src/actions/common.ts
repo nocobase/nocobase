@@ -533,7 +533,7 @@ export async function sort(ctx: Context, next: Next) {
   const Model = ctx.db.getModel(resourceName);
   const table = ctx.db.getTable(resourceName);
 
-  const { field, target } = values;
+  const { sticky, field, target } = values;
   if (!values.field || typeof target === 'undefined') {
     return next();
   }
@@ -559,6 +559,7 @@ export async function sort(ctx: Context, next: Next) {
     },
     transaction
   });
+
   if (!source) {
     await transaction.rollback();
     throw new Error(`resource(${resourceKey}) does not exist`);
@@ -627,6 +628,7 @@ export async function sort(ctx: Context, next: Next) {
   } else {
     Object.assign(updates, {
       [sortAttr]: await sortField.getNextValue({
+        next: sticky ? 'min' : 'max',
         where: targetScopeWhere,
         transaction
       })

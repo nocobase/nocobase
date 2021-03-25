@@ -789,10 +789,10 @@ export class SORT extends NUMBER {
     return DataTypes.INTEGER;
   }
 
-  public async getNextValue(this: SORT, { where, transaction }) {
+  public async getNextValue(this: SORT, { where, transaction, next: n = 'max' }) {
     const table = this.context.sourceTable;
     const Model = table.getModel();
-    const { name, next = 'max' } = this.options;
+    const { name, next = n } = this.options;
     const extremum: number = await Model[next](name, { where, transaction }) || 0;
     return extremum + (next === 'max' ? 1 : -1);
   }
