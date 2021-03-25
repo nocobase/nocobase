@@ -373,6 +373,16 @@ export const getInfo = async (ctx: actions.Context, next) => {
   if (_.isEmpty(data.sort)) {
     data.sort = [];
   }
+
+  if (data.type === 'kanban' && data.groupField) {
+    const groupField = await Field.findOne({
+      where: {
+        name: data.groupField,
+        collection_name: data.collection_name,
+      }
+    });
+    data.groupField = groupField;
+  }
   
   ctx.body = data;
   await next();

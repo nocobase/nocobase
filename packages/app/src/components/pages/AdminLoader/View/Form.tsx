@@ -90,7 +90,7 @@ export function fields2properties(fields = [], options: any = {}) {
 const actions = createFormActions();
 
 export function Form(props: any) {
-  const { onValueChange, onReset, __parent, noRequest = false, onFinish, onDraft, resolve, data: record = {}, associatedKey, schema = {} } = props;
+  const { initialValues = {}, onValueChange, onReset, __parent, noRequest = false, onFinish, onDraft, resolve, data: record = {}, associatedKey, schema = {} } = props;
   console.log({ noRequest, record, associatedKey, __parent });
   const { statusable, resourceName, rowKey = 'id', fields = [], appends = [], associationField = {} } = schema;
 
@@ -116,6 +116,7 @@ export function Form(props: any) {
       layout={'vertical'}
       initialValues={{
         ...data,
+        ...initialValues,
         associatedKey,
         resourceKey,
       }}

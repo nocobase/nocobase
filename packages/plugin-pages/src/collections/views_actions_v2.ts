@@ -24,7 +24,7 @@ export default {
       name: 'type',
       title: '操作类型',
       dataSource: [
-        { label: '过滤', value: 'filter' },
+        { label: '筛选', value: 'filter' },
         { label: '新增', value: 'create' },
         { label: '编辑', value: 'update' },
         { label: '删除', value: 'destroy' },
