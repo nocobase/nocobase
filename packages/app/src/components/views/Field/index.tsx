@@ -219,14 +219,23 @@ export function RealtionField(props: any) {
 }
 
 export function SubTableField(props: any) {
-  const { schema: { children }, value } = props;
-  console.log(value);
+  const { data, schema, schema: { name, children, collection_name }, value } = props;
   if (!Array.isArray(value)) {
     return null;
   }
+  const viewName = `${collection_name}.${name}.${schema.viewName||'table'}`;
+  console.log({value, viewName, schema});
   return (
     <div className={'sub-table-field'}>
-      <Table size={'small'} columns={fields2columns(children)} dataSource={value} pagination={false}/>
+      <View 
+        // __parent={__parent}
+        data={value}
+        // onChange={onChange}
+        associatedKey={data.id}
+        viewName={viewName}
+        type={'subTable'}
+      />
+      {/* <Table size={'small'} columns={fields2columns(children)} dataSource={value} pagination={false}/> */}
     </div>
   );
 }
@@ -247,8 +256,8 @@ export function LinkToField(props: any) {
 }
 
 export function LinkToFieldLink(props) {
-  const { isArr, itemIndex, ctx, parent, schema, schema: { title, labelField, viewName, name, target, collection_name } } = props;
-  const [data, setData] = useState(props.data||{});
+  const { data, isArr, itemIndex, ctx, parent, schema, schema: { title, labelField, viewName, name, target, collection_name } } = props;
+  // const [data, setData] = useState(props.data||{});
   return (
     <span className={'link-to-field-tag'}>
       <a onClick={(e) => {
@@ -270,7 +279,7 @@ export function LinkToFieldLink(props) {
                   const parentData = {...parent};
                   set(parentData, isArr ? [name, itemIndex] : [name], values);
                   items[index] = parentData;
-                  setData(values);
+                  // setData(values);
                   mutate(items);
                   onChange(items);
                   resolve();
