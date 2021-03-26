@@ -34,16 +34,6 @@ export default {
       },
       developerMode: true,
     },
-    // {
-    //   interface: 'string',
-    //   type: 'string',
-    //   name: 'path',
-    //   title: '路径',
-    //   required: true,
-    //   unique: true,
-    //   createOnly: true,
-    //   developerMode: true,
-    // },
     {
       interface: 'radio',
       type: 'string',
@@ -51,8 +41,8 @@ export default {
       title: '数据来源',
       defaultValue: 'collection',
       dataSource: [
-        { label: '当前数据表', value: 'collection' },
-        { label: '相关数据表', value: 'association' },
+        { label: '所属数据表', value: 'collection' },
+        { label: '所属数据表的相关数据', value: 'association' },
       ],
       linkages: [
         {

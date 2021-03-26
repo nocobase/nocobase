@@ -25,6 +25,7 @@ export function getOptions() {
       key: type,
       value: type,
       label: view.title,
+      disabled: !!view.disabled,
     });
   }
   return options;
