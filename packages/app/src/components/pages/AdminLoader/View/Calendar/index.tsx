@@ -10,6 +10,7 @@ import moment from 'moment';
 const localizer = momentLocalizer(moment) // or globalizeLocalizer
 import Drawer from '@/components/pages/AdminLoader/Drawer';
 import { Details, DetailsPage } from '../Table';
+import { Actions } from '../../Actions';
 
 export const icon = <LoadingOutlined style={{ fontSize: 36 }} spin />;
 
@@ -60,6 +61,7 @@ export function Calendar(props: CalendarProps) {
     endDateField,
     detailsOpenMode,
     details = [],
+    actions = [],
   } = schema;
 
   console.log({schema})
@@ -131,6 +133,22 @@ export function Calendar(props: CalendarProps) {
   console.log('events', data)
   return (
     <Card bordered={false}>
+      <Actions associatedKey={associatedKey} onTrigger={{
+          async create(values) {
+            await refresh();
+          },
+          async filter(values) {
+            const items = values.filter.and || values.filter.or;
+            // @ts-ignore
+            run({...params[0], filter: values.filter});
+            // refresh();
+          },
+        }} actions={actions} style={{ 
+          position: 'absolute',
+          left: '157px',
+          right: '168px',
+          marginBottom: 14 
+        }}/>
       <BigCalendar
         popup
         selectable
