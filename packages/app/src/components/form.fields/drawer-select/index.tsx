@@ -30,12 +30,14 @@ function transform({value, multiple, labelField, valueField = 'id'}) {
 }
 
 export function DrawerSelectComponent(props) {
-  const { __parent, size, schema = {}, disabled, viewName, target, multiple, filter, resourceName, associatedKey, labelField, valueField = 'id', value, onChange } = props;
+  const { __parent, size, schema = {}, disabled, viewName, target, multiple, filter, resourceName, associatedKey, valueField = 'id', value, onChange } = props;
+  const labelField = props.labelField || schema.labelField;
   const [selectedKeys, selectedValue] = transform({value, multiple, labelField, valueField });
   const [selectedRowKeys, setSelectedRowKeys] = useState(multiple ? selectedKeys : [selectedKeys]);
   const [selectedRows, setSelectedRows] = useState(selectedValue);
   const [options, setOptions] = useState(selectedValue);
   const { title = '' } = schema;
+  console.log({schema})
   return (
     <>
       <Select

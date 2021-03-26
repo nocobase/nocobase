@@ -76,8 +76,8 @@ export function SubTable(props: any) {
 
   const { 
     fields = [],
-    actions = [],
-    details = [],
+    actions: defaultActions = [],
+    details: defaultDetails  = [],
     paginated = true,
     defaultPerPage = 10,
     // rowKey = 'id',
@@ -89,6 +89,14 @@ export function SubTable(props: any) {
     expandable,
     filter: schemaFilter = {},
   } = schema;
+
+  let actions = defaultActions;
+  let details = defaultDetails;
+
+  if (!onChange) {
+    actions = [];
+    details = [];
+  }
 
   const cloneFields = cloneDeep(fields) as any[];
 
@@ -236,6 +244,16 @@ export function SubTable(props: any) {
           onChange={(pagination, filters, sorter, extra) => {
             
           }}
+          components={{
+            body: {
+              row: ({className, ...others}) => {
+                if (!details.length) {
+                  return <tr className={className} {...others}/>
+                }
+                return <tr className={className ? `${className} row-clickable` : 'row-clickable'} {...others}/>
+              },
+            }
+          }}
           expandable={expandable}
           onRow={(data, index) => ({
             onClick: (e) => {
@@ -246,6 +264,9 @@ export function SubTable(props: any) {
                     || className.includes('ant-radio')
                   )
                 ) {
+                return;
+              }
+              if (!details.length) {
                 return;
               }
               Drawer.open({
@@ -261,12 +282,14 @@ export function SubTable(props: any) {
                       resourceName={resourceName} 
                       onFinish={async (values) => {
                         let data = [...dataSource];
+                        console.log({values});
                         data[index] = values;
                         data = data.map((v: any, i) => {
                           return {...v, [sortField]: i};
                         });
                         mutate(data);
                         onChange && await onChange(data);
+                        console.log({values, data});
                         resolve();
                       }}
                       onReset={resolve}

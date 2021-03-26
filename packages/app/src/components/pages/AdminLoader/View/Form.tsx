@@ -121,10 +121,10 @@ export function Form(props: any) {
         associatedKey,
         resourceKey,
       }}
-      effects={($, { setFieldState }) => {
+      effects={($, { setFormState, setFieldState, getFieldState }) => {
         $(LifeCycleTypes.ON_FORM_INIT).subscribe(() => {
           setFieldState('*', state => {
-            set(state.props, 'x-component-props.__parent', __parent);
+            set(state.props, 'x-component-props.__index', resourceKey);
           })
         })
       }}
