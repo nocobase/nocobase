@@ -25,6 +25,7 @@ import { DraggableTable } from './draggable-table'
 import { Values } from './values'
 import { Automations } from './automations'
 import { Wysiwyg } from './wysiwyg'
+import { Markdown } from './markdown'
 
 export const setup = () => {
   registerFormFields({
@@ -63,6 +64,7 @@ export const setup = () => {
     draggableTable: DraggableTable,
     values: Values,
     wysiwyg: Wysiwyg,
+    markdown: Markdown,
     'permissions.actions': Permissions.Actions,
     'permissions.fields': Permissions.Fields,
     'permissions.tabs': Permissions.Tabs,
