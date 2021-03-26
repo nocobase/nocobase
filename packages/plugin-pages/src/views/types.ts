@@ -21,7 +21,7 @@ const actions = {
 const details = {
   interface: 'json',
   type: 'virtual',
-  title: '详情标签页里要显示的视图',
+  title: '单条数据页面的标签页和视图',
   target:  'views_details_v2',
   component: {
     type: 'subTable',
@@ -31,11 +31,25 @@ const details = {
 const detailsOpenMode = {
   interface: 'radio',
   // type: 'string',
-  title: '单条数据详情页的打开方式',
+  title: '单条数据页面的打开方式',
   required: true,
   dataSource: [
-    { label: '常规页面', value: 'window' },
-    { label: '快捷抽屉', value: 'drawer' },
+    {
+      label: '{{ markdown(\'<span>常规页面 <span style="color: #999;">点击数据进入独立的页面</i></span>\') }}',
+      value: 'window',
+      style: {
+        display:  'block',
+        lineHeight: '32px',
+      },
+    },
+    {
+      label: '{{ markdown(\'<span>快捷抽屉 <span style="color: #999;">点击数据不离开当前页面，在右侧抽屉里打开操作界面</i></span>\') }}',
+      value: 'drawer',
+      style: {
+        display:  'block',
+        lineHeight: '32px',
+      },
+    },
   ],
   defaultValue: 'drawer',
   component: {
@@ -257,7 +271,7 @@ export const calendar = {
       interface: 'select',
       type: 'virtual',
       title: '开始日期字段',
-      // required: true,
+      required: true,
       component: {
         type: 'remoteSelect',
         placeholder: '默认为创建时间字段',
@@ -445,11 +459,34 @@ export const wysiwyg = {
         target: 'dataSourceType',
         condition: `{{ $self.value && $self.value !== 'wysiwyg' }}`,
       },
-      // {
-      //   type: "value:visible",
-      //   target: 'targetField',
-      //   condition: `{{ $self.value && $self.value !== 'wysiwyg' }}`,
-      // },
     ],
   },
+};
+
+export const map = {
+  title: '地图',
+  disabled: true,
+  options: {},
+  properties: {},
+};
+
+export const chart = {
+  title: '图表',
+  disabled: true,
+  options: {},
+  properties: {},
+};
+
+export const report = {
+  title: '报表',
+  disabled: true,
+  options: {},
+  properties: {},
+};
+
+export const aggregate = {
+  title: '汇总指标',
+  disabled: true,
+  options: {},
+  properties: {},
 };
