@@ -33,6 +33,13 @@ export function fields2properties(fields = [], options: any = {}) {
       title: field.title,
       required: field.required,
     };
+    if (field.dateFormat) {
+      set(data, 'x-component-props.format', field.dateFormat);
+    }
+    if (field.showTime) {
+      set(data, 'x-component-props.showTime', true);
+      field.timeFormat && set(data, 'x-component-props.format', `${field.dateFormat} ${field.timeFormat}`);
+    }
     if (field.createOnly && mode !== 'create') {
       set(data, 'x-component-props.disabled', true);
     }
