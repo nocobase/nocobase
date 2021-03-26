@@ -16,6 +16,7 @@ import Field from '@/components/views/Field';
 import { Form } from './Form';
 import { configResponsive, useResponsive } from 'ahooks';
 import { InfoCircleOutlined } from '@ant-design/icons';
+import scopes from '@/components/views/Form/scopes';
 
 configResponsive({
   small: 0,
@@ -102,8 +103,11 @@ export function Descriptions(props) {
           title={group.title && <span>{group.title} {group.tooltip && <Tooltip title={group.tooltip}><InfoCircleOutlined /></Tooltip>}</span>}
           column={1}>
           {group.children.map((field: any) => {
+            const label = field.tooltip ? (
+              <><Tooltip title={field.tooltip}><InfoCircleOutlined /></Tooltip>&nbsp;{field.title||field.name}</>
+            ) : (field.title||field.name);
             return (
-              <AntdDescriptions.Item label={field.title||field.name}>
+              <AntdDescriptions.Item label={label}>
                 <Field data={data} viewType={'descriptions'} schema={field} value={get(data, field.name)}/>
               </AntdDescriptions.Item>
             )
