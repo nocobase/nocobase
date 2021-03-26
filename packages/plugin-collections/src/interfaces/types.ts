@@ -98,6 +98,19 @@ export const percent = {
   },
 };
 
+
+export const markdown = {
+  title: 'Markdown',
+  group: 'media',
+  options: {
+    interface: 'markdown',
+    type: 'json',
+    component: {
+      type: 'markdown',
+    },
+  },
+};
+
 export const wysiwyg = {
   title: '可视化编辑器',
   group: 'media',
