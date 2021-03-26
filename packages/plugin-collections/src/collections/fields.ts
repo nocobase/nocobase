@@ -443,6 +443,7 @@ export default {
       sourceKey: 'id',
       foreignKey: 'parent_id',
       title: '子表格字段',
+      viewName: 'table2',
       // visible: true,
       component: {
         type: 'subTable',
