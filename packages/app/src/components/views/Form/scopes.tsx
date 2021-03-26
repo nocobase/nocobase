@@ -11,6 +11,9 @@ export default {
     const text = decodeURIComponent(html);
     return <div dangerouslySetInnerHTML={{__html: markdown(text)}}></div>
   },
+  markdown(text: string) {
+    return <span dangerouslySetInnerHTML={{__html: markdown(text)}}></span>
+  },
   tooltip(title: string, offset = 3) {
     return (
       <Tooltip title={<div dangerouslySetInnerHTML={{__html: title}}></div>}>

@@ -22,6 +22,7 @@ import set from 'lodash/set';
 import cloneDeep from 'lodash/cloneDeep'
 import { Spin } from '@nocobase/client';
 import { markdown } from '@/components/views/Field';
+import scopes from '@/components/views/Form/scopes';
 
 export function fields2properties(fields = [], options: any = {}) {
   const { mode } = options;
@@ -161,20 +162,7 @@ export function Form(props: any) {
         }
         onFinish && await onFinish(values);
       }}
-      expressionScope={{
-        text(...args: any[]) {
-          return React.createElement('span', {}, ...args)
-        },
-        tooltip(title: string, offset = 3) {
-          return (
-            <Tooltip title={title}>
-              <QuestionCircleOutlined
-                style={{ margin: '0 3px', cursor: 'default', marginLeft: offset }}
-              />
-            </Tooltip>
-          );
-        },
-      }}
+      expressionScope={scopes}
     >
       <FormButtonGroup className={'form-button-group'} align={'end'}>
         <Reset>取消</Reset>
