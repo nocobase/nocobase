@@ -3,6 +3,7 @@ import dotenv from 'dotenv';
 import Api from '../../server/src';
 import actions from '../../actions/src';
 import associated from '../../actions/src/middlewares/associated';
+import { DatabaseOptions } from '@nocobase/database';
 
 // @ts-ignore
 const sync = global.sync || {
@@ -27,6 +28,12 @@ const api = Api.create({
     dialectOptions: {
       charset: 'utf8mb4',
       collate: 'utf8mb4_unicode_ci',
+    },
+    pool: {
+      max: 5,
+      min: 0,
+      acquire: 30000,
+      idle: 10000,
     },
     logging: process.env.DB_LOG_SQL === 'on' ? console.log : false,
     define: {},
