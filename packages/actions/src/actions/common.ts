@@ -16,6 +16,8 @@ async function hasManyGet(instances, options: any = {}) {
   const where = {};
 
   let Model = this.target;
+  Model = Model.database.getModel(Model.name);
+
   let instance;
   let values;
 
