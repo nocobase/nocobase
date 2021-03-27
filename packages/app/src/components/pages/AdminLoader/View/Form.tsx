@@ -33,6 +33,9 @@ export function fields2properties(fields = [], options: any = {}) {
       title: field.title,
       required: field.required,
     };
+    if (field.multiple) {
+      set(data, 'x-component-props.mode', 'multiple');
+    }
     if (field.dateFormat) {
       set(data, 'x-component-props.format', field.dateFormat);
     }

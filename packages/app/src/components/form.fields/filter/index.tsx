@@ -319,9 +319,22 @@ function NullControl(props) {
   return null;
 }
 
+function getComponentTypeByField(field) {
+  if (!field.component) {
+    return 'string';
+  }
+  let componentType = field.component.type;
+  if (field.component.type === 'select' && field.multiple) {
+    componentType = 'multipleSelect';
+  }
+  return componentType;
+}
+
 export function FilterItem(props: FilterItemProps) {
   const { index, fields = [], sourceFields = [], showDeleteButton = true, onDelete, onChange } = props;
-  const [type, setType] = useState('string');
+  const defaultField: any = fields.find(field => field.name === props.dataSource.column) || {};
+  const componentType = getComponentTypeByField(defaultField);
+  const [type, setType] = useState(defaultField.interface || 'string');
   const [field, setField] = useState<any>({});
   const [dataSource, setDataSource] = useState(props.dataSource||{});
   const [valueType, setValueType] = useState('custom');
@@ -342,17 +355,17 @@ export function FilterItem(props: FilterItemProps) {
   }, [
     props.dataSource, type,
   ]);
-  let ValueControl = controls[type]||controls.string;
+  let ValueControl = controls[componentType]||controls.string;
   if (['$null', '$notNull', '$isTruly', '$isFalsy'].indexOf(dataSource.op) !== -1) {
     ValueControl = NullControl;
   }
-  if (['boolean', 'checkbox'].indexOf(type) !== -1) {
+  if (['boolean', 'checkbox'].indexOf(componentType) !== -1) {
     ValueControl = NullControl;
   }
   // let multiple = true;
   // if ()
-  const opOptions = op[type]||op.string;
-  console.log({valueType});
+  const opOptions = op[defaultField.interface || 'string']||op.string;
+  console.log({componentType, defaultField, field, valueType, opOptions});
   return (
     <Space>
       <Select value={dataSource.column}
@@ -376,7 +389,7 @@ export function FilterItem(props: FilterItemProps) {
         onChange={(value) => {
           onChange({...dataSource, op: value});
         }}
-        defaultValue={get(opOptions, [0, 'value'])}
+        // value={get(opOptions, [0, 'value'])}
         options={opOptions}
       >
         {/* {(op[type]||op.string).map(option => (
@@ -398,10 +411,10 @@ export function FilterItem(props: FilterItemProps) {
       )}
       {valueType !== 'ref' ? (
         <ValueControl 
-          field={field} 
-          multiple={type === 'checkboxes' || !!field.multiple} 
+          field={defaultField} 
+          multiple={componentType === 'checkboxes' || !!defaultField.multiple} 
           op={dataSource.op} 
-          options={field.dataSource} 
+          options={defaultField.dataSource} 
           value={dataSource.value} 
           onChange={(value) => {
             onChange({...dataSource, value: value});
