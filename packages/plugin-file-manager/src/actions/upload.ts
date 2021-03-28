@@ -101,7 +101,7 @@ export async function action(ctx: actions.Context, next: actions.Next) {
   const attachment = await ctx.db.sequelize.transaction(async transaction => {
     // TODO(optimize): 应使用关联 accessors 获取
     const result = await storage.createAttachment(data, { transaction });
-    
+
     if (associatedKey && resourceField) {
       const Attachment = ctx.db.getModel('attachments');
       const SourceModel = ctx.db.getModel(associatedName);

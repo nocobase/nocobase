@@ -55,7 +55,7 @@ export class BaseModel extends Model {
     }
     const data = super.get();
     return {
-      ...(data[this.additionalAttribute]||{}),
+      ...(data[this.additionalAttribute] || {}),
       ..._.omit(data, [this.additionalAttribute]),
     };
   }
@@ -86,7 +86,7 @@ export class BaseModel extends Model {
         if (key !== 'filter') {
           // console.log(key, value);
           // @ts-ignore
-          value = merge(this.get(key)||{}, value);
+          value = merge(this.get(key) || {}, value);
         }
       }
       const [column, ...path] = key.split('.');
@@ -120,7 +120,7 @@ export class BaseModel extends Model {
     }
     if (_.isPlainObject(value)) {
       // @ts-ignore
-      value = Utils.merge(this.get(key)||{}, value);
+      value = Utils.merge(this.get(key) || {}, value);
     }
     const [column, ...path] = key.split('.');
     this.changed(column, true);
@@ -173,7 +173,7 @@ export class BaseModel2 extends Model {
       const data = super.get(key);
       return {
         ..._.omit(data, [this.additionalAttribute]),
-        ...(data[this.additionalAttribute]||{}),
+        ...(data[this.additionalAttribute] || {}),
       };
     }
     const [column, ...path] = key.split('.');

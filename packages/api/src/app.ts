@@ -45,7 +45,7 @@ const api = Api.create({
 });
 
 api.resourcer.use(associated);
-api.resourcer.registerActionHandlers({...actions.common, ...actions.associate});
+api.resourcer.registerActionHandlers({ ...actions.common, ...actions.associate });
 
 // api.resourcer.use(async (ctx: actions.Context, next) => {
 //   const token = ctx.get('Authorization').replace(/^Bearer\s+/gi, '');

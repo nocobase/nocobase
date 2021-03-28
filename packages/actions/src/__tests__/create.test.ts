@@ -2,11 +2,11 @@ import { initDatabase, agent } from './index';
 
 describe('create', () => {
   let db;
-  
+
   beforeEach(async () => {
     db = await initDatabase();
   });
-  
+
   afterAll(() => db.close());
 
   describe('single', () => {
@@ -49,11 +49,11 @@ describe('create', () => {
         });
       expect(response.body.sort).toBe(1);
       expect(response.body.user_id).toBe(1);
-      
+
       const postWithUser = await agent
         .get(`/posts/${response.body.id}?fields=user`);
       expect(postWithUser.body.user.id).toBe(1);
-      
+
       const user = await agent
         .get(`/users/${postWithUser.body.user.id}?fields=profile`);
       expect(user.body.profile).toBe(null);
@@ -96,7 +96,7 @@ describe('create', () => {
         });
       expect(response.body.post_id).toBe(post.id);
       expect(response.body.content).toBe('content1');
-      
+
       const comments = await agent
         .get('/comments?fields=id,content');
       expect(comments.body.count).toBe(1);

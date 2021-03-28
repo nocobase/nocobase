@@ -1,8 +1,8 @@
 import { getDatabase } from './';
 import {
   HASMANY as HasMany,
-  HASONE as HasOne, 
-  INTEGER as Integer, 
+  HASONE as HasOne,
+  INTEGER as Integer,
   BELONGSTO as BelongsTo,
   BELONGSTOMANY as BelongsToMany,
 } from '../fields';
@@ -573,7 +573,7 @@ describe('associations', () => {
           },
         ],
       });
-      
+
       // await db.sync({
       //   force: true,
       // });

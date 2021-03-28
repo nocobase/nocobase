@@ -1,6 +1,3 @@
-import { MegaLayout, FormMegaLayout } from '@formily/antd'
+import { MegaLayout, FormMegaLayout } from '@formily/antd';
 
-export {
-  MegaLayout,
-  FormMegaLayout,
-}
+export { MegaLayout, FormMegaLayout };

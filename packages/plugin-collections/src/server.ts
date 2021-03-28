@@ -14,12 +14,12 @@ export default async function (this: Application, options = {}) {
     directory: path.resolve(__dirname, 'collections'),
   });
 
-  database.addHook('afterUpdateAssociations', async function(model, options) {
+  database.addHook('afterUpdateAssociations', async function (model, options) {
     if (model instanceof models.FieldModel) {
       if (model.get('interface') === 'subTable') {
         const { migrate = true } = options;
         const Collection = model.database.getModel('collections');
-        await Collection.load({...options, where: {name: model.get('collection_name')}});
+        await Collection.load({ ...options, where: { name: model.get('collection_name') } });
         migrate && await model.migrate(options);
       }
     }

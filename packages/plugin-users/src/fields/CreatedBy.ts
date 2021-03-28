@@ -12,7 +12,7 @@ export default class CreatedBy extends BELONGSTO {
       setUserValue.call(this, model, { context });
     });
   }
-  
+
   constructor({ type, ...options }: CreatedByOptions, context: FieldContext) {
     super({ ...options, type: 'belongsTo' } as BelongsToOptions, context);
     const Model = context.sourceTable.getModel();

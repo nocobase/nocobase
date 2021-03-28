@@ -13,9 +13,7 @@ import {
 } from '@ant-design/icons';
 
 export const IconFont = createFromIconfontCN({
-  scriptUrl: [
-    '//at.alicdn.com/t/font_2261954_u9jzwc44ug.js',
-  ],
+  scriptUrl: ['//at.alicdn.com/t/font_2261954_u9jzwc44ug.js'],
 });
 
 export const icons = new Map<string, any>();
@@ -61,7 +59,7 @@ export function Icon(props: IconProps) {
     if (IconComponent === IconFont) {
       return <IconFont type={type} />;
     }
-    return <IconComponent {...restProps}/>;
+    return <IconComponent {...restProps} />;
   }
   return <IconFont type={type} />;
 }

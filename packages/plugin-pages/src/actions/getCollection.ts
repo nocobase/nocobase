@@ -8,7 +8,7 @@ export default async (ctx, next) => {
       name: resourceName,
     },
   }));
-  const permissions = (await ctx.ac.isRoot() || collection.developerMode || collection.internal) 
+  const permissions = (await ctx.ac.isRoot() || collection.developerMode || collection.internal)
     ? await ctx.ac.getRootPermissions()
     : await ctx.ac.can(resourceName).permissions();
   const defaultView = await collection.getViews({
@@ -26,7 +26,7 @@ export default async (ctx, next) => {
     } : {
       'id.in': permissions.tabs,
       enabled: true,
-      developerMode: {'$isFalsy': true},
+      developerMode: { '$isFalsy': true },
     },
     fields: {
       appends: ['associationField'],

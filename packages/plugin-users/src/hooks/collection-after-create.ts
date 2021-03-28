@@ -21,7 +21,7 @@ export function makeOptions(type: string, options: any) {
   };
 }
 
-export default async function(table) {
+export default async function (table) {
   const { createdBy, updatedBy } = table.getOptions();
   const fieldsToMake = { createdBy, updatedBy };
   Object.keys(fieldsToMake)

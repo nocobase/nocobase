@@ -137,7 +137,7 @@ describe('user fields', () => {
 
       // 换个用户
       const user2 = await User.create();
-      await postWithUser.update({title: 'title1'}, { context: { state: { currentUser: user2 } } });
+      await postWithUser.update({ title: 'title1' }, { context: { state: { currentUser: user2 } } });
 
       const post2 = await Post.findOne(Post.parseApiJson({
         filter: {
@@ -199,7 +199,7 @@ describe('user fields', () => {
       expect(postWithUser.updated_by_id).toBe(currentUser.id);
 
       // 更新数据 createdBy 数据不变
-      await postWithUser.update({title: 'title1'}, { context: { state: { currentUser: user2 } } });
+      await postWithUser.update({ title: 'title1' }, { context: { state: { currentUser: user2 } } });
       expect(postWithUser.created_by_id).toBe(currentUser.id);
       expect(postWithUser.updated_by_id).toBe(user2.id);
     });
@@ -278,7 +278,7 @@ describe('user fields', () => {
       context = { state: { currentUser: user1 } };
       await post.update({ title: 'title234' }, { context });
       expect(post.updated_by_id).toBe(user1.id);
-    
+
       // 重新查询
       const post2 = await Post.findByPk(post.id);
       expect(post2.updated_by_id).toBe(user1.id);

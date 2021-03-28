@@ -45,7 +45,7 @@ export function getRegisteredModel(key) {
   return key;
 }
 
-export interface TableOptions extends Omit<ModelOptions<Model>, 'name'|'modelName'> {
+export interface TableOptions extends Omit<ModelOptions<Model>, 'name' | 'modelName'> {
 
   /**
    * 唯一标识，与 ModelOptions 的 name 有区别
@@ -160,12 +160,12 @@ export class Table {
 
   public modelInit(reinitialize: Reinitialize = false) {
     if (reinitialize || !this.Model) {
-      this.Model = this.defaultModel || class extends Model {};
+      this.Model = this.defaultModel || class extends Model { };
       this.Model.database = this.database;
       // 关系的建立是在 model.init 之后，在配置中表字段（Column）和关系（Relation）都在 fields，
       // 所以需要单独提炼出 associations 字段，并在 Model.init 之后执行 Model.associate
       // @ts-ignore
-      this.Model.associate = (models: {[key: string]: ModelCtor<Model>}) => {
+      this.Model.associate = (models: { [key: string]: ModelCtor<Model> }) => {
         for (const [key, association] of this.associating) {
           const { type, target } = association.getAssociationArguments();
           if (this.database.isDefined(target)) {

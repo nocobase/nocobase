@@ -54,7 +54,7 @@ export async function getApp() {
     },
   });
   app.resourcer.use(middlewares.associated);
-  app.resourcer.registerActionHandlers({...actions.associate, ...actions.common});
+  app.resourcer.registerActionHandlers({ ...actions.associate, ...actions.common });
   app.registerPlugin({
     collections: path.resolve(__dirname, '../../../plugin-collections'),
     users: path.resolve(__dirname, '../../../plugin-users'),
@@ -66,7 +66,7 @@ export async function getApp() {
   });
   try {
     await app.database.sync();
-  } catch(err) {
+  } catch (err) {
     console.error(err);
   }
 
@@ -137,7 +137,7 @@ export function getAPI(app: Application) {
               case 'list':
               case 'get':
                 return agent.get(`${url}?${qs.stringify(restParams)}`);
-                
+
               default:
                 return agent.post(`${url}?${qs.stringify(restParams)}`).send(values);
             }

@@ -15,14 +15,14 @@ export class AliOssStorage {
   _handleFile(req, file, cb) {
     if (!this.client) {
       console.error('oss client undefined');
-      return cb({message: 'oss client undefined'});
+      return cb({ message: 'oss client undefined' });
     }
     this.getFilename(req, file, (err, filename) => {
       if (err) return cb(err)
       this.client.putStream(filename, file.stream).then(
         result => cb(null, {
           filename: result.name,
-          url     : result.url
+          url: result.url
         })
       ).catch(cb);
     });
@@ -31,7 +31,7 @@ export class AliOssStorage {
   _removeFile(req, file, cb) {
     if (!this.client) {
       console.error('oss client undefined');
-      return cb({message: 'oss client undefined'});
+      return cb({ message: 'oss client undefined' });
     }
     this.client.delete(file.filename).then(
       result => cb(null, result)
@@ -39,4 +39,4 @@ export class AliOssStorage {
   }
 }
 
-export default (storage) => new AliOssStorage({config: storage.options});
+export default (storage) => new AliOssStorage({ config: storage.options });

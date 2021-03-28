@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import moment from 'moment';
 import { Tag, Popover, Table, Modal, Checkbox, message } from 'antd';
@@ -26,7 +25,8 @@ marked.setOptions({
 });
 
 const renderer = new marked.Renderer();
-renderer.link = ( href, title, text ) => `<a target="_blank" href="${ href }" title="${ title||'' }">${ text }</a>`;
+renderer.link = (href, title, text) =>
+  `<a target="_blank" href="${href}" title="${title || ''}">${text}</a>`;
 
 export function markdown(text: string) {
   return marked(text, {
@@ -63,14 +63,23 @@ export function StringField(props: any) {
   }
   if (viewType === 'table' && value.length > 20) {
     return (
-      <Popover content={<div onClick={(e) => {
-        e.stopPropagation();
-      }} style={{maxWidth: 300}}>{value}</div>}>{value.substring(0, 15)}...</Popover>
+      <Popover
+        content={
+          <div
+            onClick={e => {
+              e.stopPropagation();
+            }}
+            style={{ maxWidth: 300 }}
+          >
+            {value}
+          </div>
+        }
+      >
+        {value.substring(0, 15)}...
+      </Popover>
     );
   }
-  return (
-    <>{value}</>
-  );
+  return <>{value}</>;
 }
 
 export function TextareaField(props: any) {
@@ -79,18 +88,30 @@ export function TextareaField(props: any) {
     return null;
   }
   if (viewType !== 'table') {
-    return <div className={'textarea-field-content'} dangerouslySetInnerHTML={{__html: markdown(value)}}/>;
+    return (
+      <div
+        className={'textarea-field-content'}
+        dangerouslySetInnerHTML={{ __html: markdown(value) }}
+      />
+    );
   }
   if (value.length > 20) {
     return (
-      <Popover content={(
-        <div onClick={(e) => e.stopPropagation()} className={'textarea-field-content'} style={{maxWidth: 300}} dangerouslySetInnerHTML={{__html: markdown(value)}}/>
-      )}>{value.substring(0, 15)}...</Popover>
+      <Popover
+        content={
+          <div
+            onClick={e => e.stopPropagation()}
+            className={'textarea-field-content'}
+            style={{ maxWidth: 300 }}
+            dangerouslySetInnerHTML={{ __html: markdown(value) }}
+          />
+        }
+      >
+        {value.substring(0, 15)}...
+      </Popover>
     );
   }
-  return (
-    <>{value}</>
-  );
+  return <>{value}</>;
 }
 // const { data = [], loading = true } = useRequest(() => {
 //   return api.resource('collections.actions').list({
@@ -100,30 +121,50 @@ export function TextareaField(props: any) {
 //   refreshDeps: [resourceKey]
 // });
 export function BooleanField(props: any) {
-  const { data = {}, value, schema: { name, editable, resourceName } } = props;
+  const {
+    data = {},
+    value,
+    schema: { name, editable, resourceName },
+  } = props;
   if (editable) {
-    return <Checkbox defaultChecked={value} onChange={async (e) => {
-      await api.resource(resourceName).toggle({
-        associatedKey: data.associatedKey,
-        resourceKey: data.id,
-      });
-      message.success('保存成功');
-      // console.log(props);
-    }}/>
+    return (
+      <Checkbox
+        defaultChecked={value}
+        onChange={async e => {
+          await api.resource(resourceName).toggle({
+            associatedKey: data.associatedKey,
+            resourceKey: data.id,
+          });
+          message.success('保存成功');
+          // console.log(props);
+        }}
+      />
+    );
   }
   // console.log(props);
   return (
-    <>{value ? <CheckOutlined style={{color: '#52c41a'}}/> : <CloseOutlined style={{color: '#f5222d'}}/>}</>
+    <>
+      {value ? (
+        <CheckOutlined style={{ color: '#52c41a' }} />
+      ) : (
+        <CloseOutlined style={{ color: '#f5222d' }} />
+      )}
+    </>
   );
 }
 
 export function NumberField(props: any) {
-  const { schema: { precision = 0 }, value } = props;
+  const {
+    schema: { precision = 0 },
+    value,
+  } = props;
   if (!isNumber(value)) {
     return null;
   }
   return (
-    <div className={'number-field'}>{new Intl.NumberFormat().format(value)}</div>
+    <div className={'number-field'}>
+      {new Intl.NumberFormat().format(value)}
+    </div>
   );
 }
 
@@ -135,20 +176,28 @@ export function isNumber(num) {
     return Number.isFinite ? Number.isFinite(+num) : isFinite(+num);
   }
   return false;
-};
+}
 
 export function PercentField(props: any) {
-  const { schema: { precision = 0 }, value } = props;
+  const {
+    schema: { precision = 0 },
+    value,
+  } = props;
   if (!isNumber(value)) {
     return null;
   }
   return (
-    <div className={'percent-field'}>{new Intl.NumberFormat().format(value)}%</div>
+    <div className={'percent-field'}>
+      {new Intl.NumberFormat().format(value)}%
+    </div>
   );
 }
 
 export function DateTimeField(props: any) {
-  const { schema: { dateFormat, showTime, timeFormat }, value } = props;
+  const {
+    schema: { dateFormat, showTime, timeFormat },
+    value,
+  } = props;
   const m = moment(value);
   if (!m.isValid()) {
     return null;
@@ -157,14 +206,12 @@ export function DateTimeField(props: any) {
   if (showTime) {
     format += ` ${timeFormat}`;
   }
-  return (
-    <>{m.format(`${format}`)}</>
-  );
+  return <>{m.format(`${format}`)}</>;
 }
 
 export function IconField(props) {
   const { value } = props;
-  return <Icon type={value}/>;
+  return <Icon type={value} />;
 }
 
 function toFlat(items = []): Array<any> {
@@ -179,7 +226,10 @@ function toFlat(items = []): Array<any> {
 }
 
 export function DataSourceField(props: any) {
-  const { schema: { dataSource = [] }, value } = props;
+  const {
+    schema: { dataSource = [] },
+    value,
+  } = props;
   const items = toFlat(dataSource);
   // console.log(items);
   if (isEmpty(value)) {
@@ -189,22 +239,25 @@ export function DataSourceField(props: any) {
     return value.map(val => {
       const item = items.find(item => item.value === val);
       return item ? (
-        <Tag color={item.color}>
-          {item ? item.label : val}
-        </Tag>
-      ) : <Tag>{val}</Tag>;
+        <Tag color={item.color}>{item ? item.label : val}</Tag>
+      ) : (
+        <Tag>{val}</Tag>
+      );
     });
   }
   const item = items.find(item => item.value === value);
   return item ? (
-    <Tag color={item.color}>
-      {item ? item.label : value}
-    </Tag>
-  ) : <Tag>{value}</Tag>;
+    <Tag color={item.color}>{item ? item.label : value}</Tag>
+  ) : (
+    <Tag>{value}</Tag>
+  );
 }
 
 export function RealtionField(props: any) {
-  const { schema: { labelField }, value } = props;
+  const {
+    schema: { labelField },
+    value,
+  } = props;
   if (!value) {
     return null;
   }
@@ -219,15 +272,20 @@ export function RealtionField(props: any) {
 }
 
 export function SubTableField(props: any) {
-  const { data, schema, schema: { name, children, collection_name }, value } = props;
+  const {
+    data,
+    schema,
+    schema: { name, children, collection_name },
+    value,
+  } = props;
   if (!Array.isArray(value)) {
     return null;
   }
-  const viewName = `${collection_name}.${name}.${schema.viewName||'table'}`;
-  console.log({value, viewName, schema});
+  const viewName = `${collection_name}.${name}.${schema.viewName || 'table'}`;
+  console.log({ value, viewName, schema });
   return (
     <div className={'sub-table-field'}>
-      <View 
+      <View
         // __parent={__parent}
         data={value}
         // onChange={onChange}
@@ -250,48 +308,80 @@ export function LinkToField(props: any) {
   const isArr = Array.isArray(value);
   return (
     <div className={'link-to-field'}>
-      {values.map((item, itemIndex) => <LinkToFieldLink isArr={isArr} itemIndex={itemIndex} ctx={ctx} parent={data} data={item} schema={schema}/>)}
+      {values.map((item, itemIndex) => (
+        <LinkToFieldLink
+          isArr={isArr}
+          itemIndex={itemIndex}
+          ctx={ctx}
+          parent={data}
+          data={item}
+          schema={schema}
+        />
+      ))}
     </div>
   );
 }
 
 export function LinkToFieldLink(props) {
-  const { data, isArr, itemIndex, ctx = {}, parent, schema, schema: { title, labelField, viewName, name, target, collection_name } } = props;
+  const {
+    data,
+    isArr,
+    itemIndex,
+    ctx = {},
+    parent,
+    schema,
+    schema: { title, labelField, viewName, name, target, collection_name },
+  } = props;
   // const [data, setData] = useState(props.data||{});
   return (
     <span className={'link-to-field-tag'}>
-      <a onClick={(e) => {
-        e.stopPropagation();
-        // setVisible(true);
-        Drawer.open({
-          title: data[labelField],
-          content: ({resolve, closeWithConfirm}) => {
-            const { index, mutate, dataSource, onChange } = ctx;
-            return (
-              <div>
-                <View 
-                  onValueChange={() => {
-                    closeWithConfirm && closeWithConfirm(true);
-                  }}
-                  noRequest={!!onChange} onFinish={(values) => {
-                    if (typeof index === 'undefined') {
-                      return;
+      <a
+        onClick={e => {
+          e.stopPropagation();
+          // setVisible(true);
+          Drawer.open({
+            title: data[labelField],
+            content: ({ resolve, closeWithConfirm }) => {
+              const { index, mutate, dataSource, onChange } = ctx;
+              return (
+                <div>
+                  <View
+                    onValueChange={() => {
+                      closeWithConfirm && closeWithConfirm(true);
+                    }}
+                    noRequest={!!onChange}
+                    onFinish={values => {
+                      if (typeof index === 'undefined') {
+                        return;
+                      }
+                      let items = [...dataSource];
+                      const parentData = { ...parent };
+                      set(
+                        parentData,
+                        isArr ? [name, itemIndex] : [name],
+                        values,
+                      );
+                      items[index] = parentData;
+                      // setData(values);
+                      mutate(items);
+                      onChange(items);
+                      resolve();
+                      // console.log({values, parentData, data, items});
+                    }}
+                    associatedKey={parent.id}
+                    data={data}
+                    viewName={
+                      viewName || `${collection_name}.${name}.descriptions`
                     }
-                  let items = [...dataSource];
-                  const parentData = {...parent};
-                  set(parentData, isArr ? [name, itemIndex] : [name], values);
-                  items[index] = parentData;
-                  // setData(values);
-                  mutate(items);
-                  onChange(items);
-                  resolve();
-                  // console.log({values, parentData, data, items});
-                }} associatedKey={parent.id} data={data} viewName={viewName || `${collection_name}.${name}.descriptions`}/>
-              </div>
-            );
-          }
-        });
-      }}>{data[labelField]}</a>
+                  />
+                </div>
+              );
+            },
+          });
+        }}
+      >
+        {data[labelField]}
+      </a>
       {/* <Drawer
         // @ts-ignore
         onClick={(e) => {
@@ -316,9 +406,13 @@ export function LinkToFieldLink(props) {
 
 function getImgUrls(value) {
   const values = Array.isArray(value) ? value : [value];
-  return values.filter(item => testUrl(item.url, {
-    exclude: ['.png', '.jpg', '.jpeg', '.gif']
-  })).map(item => item);
+  return values
+    .filter(item =>
+      testUrl(item.url, {
+        exclude: ['.png', '.jpg', '.jpeg', '.gif'],
+      }),
+    )
+    .map(item => item);
 }
 
 export function AttachmentField(props: any) {
@@ -332,26 +426,37 @@ export function AttachmentField(props: any) {
   const images = getImgUrls(values);
   console.log(images);
   return (
-    <div onClick={(e) => {
-      e.stopPropagation();
-    }} className={'attachment-field'}>
-      {values.map(item => <AttachmentFieldItem onClick={() => {
-        setVisible(true);
-        const index = findIndex(images, img => item.id === img.id);
-        setImgIndex(index);
-      }} data={item} schema={schema}/>)}
-      {visible && <Lightbox
-        mainSrc={get(images, [imgIndex, 'url'])}
-        nextSrc={get(images, [imgIndex + 1, 'url'])}
-        prevSrc={get(images, [imgIndex - 1, 'url'])}
-        onCloseRequest={() => setVisible(false)}
-        onMovePrevRequest={() => {
-          setImgIndex((imgIndex + images.length - 1) % images.length);
-        }}
-        onMoveNextRequest={() => {
-          setImgIndex((imgIndex + 1) % images.length);
-        }}
-      />}
+    <div
+      onClick={e => {
+        e.stopPropagation();
+      }}
+      className={'attachment-field'}
+    >
+      {values.map(item => (
+        <AttachmentFieldItem
+          onClick={() => {
+            setVisible(true);
+            const index = findIndex(images, img => item.id === img.id);
+            setImgIndex(index);
+          }}
+          data={item}
+          schema={schema}
+        />
+      ))}
+      {visible && (
+        <Lightbox
+          mainSrc={get(images, [imgIndex, 'url'])}
+          nextSrc={get(images, [imgIndex + 1, 'url'])}
+          prevSrc={get(images, [imgIndex - 1, 'url'])}
+          onCloseRequest={() => setVisible(false)}
+          onMovePrevRequest={() => {
+            setImgIndex((imgIndex + images.length - 1) % images.length);
+          }}
+          onMoveNextRequest={() => {
+            setImgIndex((imgIndex + 1) % images.length);
+          }}
+        />
+      )}
     </div>
   );
 }
@@ -359,22 +464,34 @@ export function AttachmentField(props: any) {
 export function AttachmentFieldItem(props: any) {
   const { title, url } = props.data || {};
   const img = getImageByUrl(url, {
-    exclude: ['.png', '.jpg', '.jpeg', '.gif']
-  })
+    exclude: ['.png', '.jpg', '.jpeg', '.gif'],
+  });
   // const [visible, setVisible] = useState(false);
   return (
     <>
-      <a onClick={(e) => {
-        e.stopPropagation();
-        if (testUrl(url, {
-          exclude: ['.png', '.jpg', '.jpeg', '.gif']
-        })) {
-          props.onClick && props.onClick();
-          // setVisible(true);
-          e.preventDefault();
-        }
-      }} className={'attachment-field-item'} target={'_blank'} href={url}>
-        <img height={20} alt={title} title={title} src={`${img}?x-oss-process=style/thumbnail`}/>
+      <a
+        onClick={e => {
+          e.stopPropagation();
+          if (
+            testUrl(url, {
+              exclude: ['.png', '.jpg', '.jpeg', '.gif'],
+            })
+          ) {
+            props.onClick && props.onClick();
+            // setVisible(true);
+            e.preventDefault();
+          }
+        }}
+        className={'attachment-field-item'}
+        target={'_blank'}
+        href={url}
+      >
+        <img
+          height={20}
+          alt={title}
+          title={title}
+          src={`${img}?x-oss-process=style/thumbnail`}
+        />
       </a>
       {/* <Modal
           className={'attachment-modal'}
@@ -399,23 +516,21 @@ export function AttachmentFieldItem(props: any) {
 
 export function LogField(props) {
   const { value = {} } = props;
-  return (
-    <div>{value.title||value.name}</div>
-  )
+  return <div>{value.title || value.name}</div>;
 }
 
 export function LogFieldValue(props) {
   const { value, data } = props;
   return (
-    <Field data={data} viewType={'table'} schema={data.field} value={value}/>
-  )
+    <Field data={data} viewType={'table'} schema={data.field} value={value} />
+  );
 }
 
 export function JsonField(props) {
   const { value } = props;
   if (typeof value === 'object') {
     return (
-      <pre style={{maxWidth: 300, maxHeight: 200}}>
+      <pre style={{ maxWidth: 300, maxHeight: 200 }}>
         {JSON.stringify(value, null, 2)}
       </pre>
     );
@@ -427,8 +542,9 @@ export function ChinaRegion(props: any) {
   if (!value) {
     return null;
   }
-  const values = (Array.isArray(value) ? value : [value])
-    .sort((a, b) => a.level !== b.level ? a.level - b.level : a.sort - b.sort);
+  const values = (Array.isArray(value) ? value : [value]).sort((a, b) =>
+    a.level !== b.level ? a.level - b.level : a.sort - b.sort,
+  );
   return (
     <div className={'china-region-field'}>
       {values.map(item => item.name).join('/')}
@@ -464,6 +580,8 @@ registerFieldComponents({
 
 export default function Field(props: any) {
   const { schema = {} } = props;
-  const Component = getFieldComponent(schema.interface||get(schema, 'component.type'));
-  return <Component {...props}/>;
+  const Component = getFieldComponent(
+    schema.interface || get(schema, 'component.type'),
+  );
+  return <Component {...props} />;
 }

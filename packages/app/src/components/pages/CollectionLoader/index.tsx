@@ -26,7 +26,9 @@ export function CollectionLoader(props: any) {
   }));
   props.match.params['items'] = items;
   console.log('props.match', props.match, path);
-  const { data = {}, error, loading, run } = useRequest(() => api.resource(collection).getCollection());
+  const { data = {}, error, loading, run } = useRequest(() =>
+    api.resource(collection).getCollection(),
+  );
 
   // const { data: collections = [], loading } = useRequest(() => api.resource(collection).getCollections({
   //   values: {
@@ -37,13 +39,13 @@ export function CollectionLoader(props: any) {
   // });
 
   if (loading) {
-    return <Spin/>;
+    return <Spin />;
   }
 
   return (
     <div className={'collection'}>
       <div className={'collection-index'}>
-        { items.length === 0 && <CollectionIndex collection={data} {...props}/> }
+        {items.length === 0 && <CollectionIndex collection={data} {...props} />}
       </div>
       {items.length > 0 && (
         <div className={'collection-item'}>
@@ -53,7 +55,7 @@ export function CollectionLoader(props: any) {
           {items.map((item, index) => {
             return (
               <div className={'collection-single'}>
-                <CollectionSingle itemIndex={index} item={item} {...props}/>
+                <CollectionSingle itemIndex={index} item={item} {...props} />
               </div>
             );
           })}

@@ -128,7 +128,7 @@ export class FieldsParameter extends ActionParameter {
       }
       // 前端提供 except，后端提供 except 或不提供，合并 except
       else {
-        fields.except = _.uniq([...inputs.except, ...(defaults.except||[])]);
+        fields.except = _.uniq([...inputs.except, ...(defaults.except || [])]);
       }
     }
     // 前端没提供 only 或 except
@@ -137,7 +137,7 @@ export class FieldsParameter extends ActionParameter {
     }
     // 如果前端提供了 appends
     if (!_.isEmpty(inputs.appends)) {
-      fields.appends = _.uniq([...inputs.appends, ...(defaults.appends||[])]);
+      fields.appends = _.uniq([...inputs.appends, ...(defaults.appends || [])]);
     }
     if (!fields.appends) {
       fields.appends = [];
@@ -228,9 +228,9 @@ export class PageParameter extends ActionParameter {
     }
 
     if (data.page || data.perPage) {
-      data.page = data.page || this.params.page || PageParameter.DEFAULT_PAGE;	
-      data.perPage = data.perPage == -1 ? this.maxPerPage : Math.min(data.perPage || this.params.perPage || PageParameter.DEFAULT_PER_PAGE, this.maxPerPage);	
-      
+      data.page = data.page || this.params.page || PageParameter.DEFAULT_PAGE;
+      data.perPage = data.perPage == -1 ? this.maxPerPage : Math.min(data.perPage || this.params.perPage || PageParameter.DEFAULT_PER_PAGE, this.maxPerPage);
+
       Object.assign(this.params, data);
     }
   }

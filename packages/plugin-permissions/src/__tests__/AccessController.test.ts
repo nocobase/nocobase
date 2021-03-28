@@ -55,7 +55,7 @@ describe('AccessController', () => {
           { status: 'draft', 'created_by_id.$currentUser': true }
         ]
       });
-      
+
       const permissionsResult = await ac.user.can('posts').permissions();
       expect(permissionsResult).toMatchObject({
         actions: [

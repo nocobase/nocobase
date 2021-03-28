@@ -23,7 +23,11 @@ function toGroups(fields: any[], { displayFields = [] }) {
     children: [],
   };
   fields.forEach(field => {
-    if (Array.isArray(displayFields) && displayFields.length && displayFields.indexOf(field.id) === -1) {
+    if (
+      Array.isArray(displayFields) &&
+      displayFields.length &&
+      displayFields.indexOf(field.id) === -1
+    ) {
       return null;
     }
     if (field.interface === 'description') {
@@ -47,7 +51,7 @@ function toGroups(fields: any[], { displayFields = [] }) {
 export function Details(props: any) {
   const dom = document.querySelector('body');
   const responsive = useResponsive();
-  console.log('Details.props', props)
+  console.log('Details.props', props);
 
   const {
     activeTab = {},
@@ -60,7 +64,9 @@ export function Details(props: any) {
   } = props;
   const { actions = [], actionDefaultParams = {}, fields = [] } = props.schema;
   const { data = {}, loading, refresh } = useRequest(() => {
-    const name = associatedName ? `${associatedName}.${resourceName}` : resourceName;
+    const name = associatedName
+      ? `${associatedName}.${resourceName}`
+      : resourceName;
     return api.resource(name).get({
       resourceKey,
       associatedKey,
@@ -70,15 +76,15 @@ export function Details(props: any) {
   let descriptionsProps: any = {
     size: 'middle',
     bordered: true,
-  }
+  };
   if (responsive.small && !responsive.middle && !responsive.large) {
     descriptionsProps = {
-      layout: 'vertical'
-    }
+      layout: 'vertical',
+    };
   }
   const { displayFields = [] } = activeTab;
   const groups = toGroups(fields, { displayFields });
-  console.log({groups});
+  console.log({ groups });
   return (
     <Card bordered={false}>
       <Actions
@@ -89,26 +95,51 @@ export function Details(props: any) {
         style={{ marginBottom: 14 }}
         actions={actions}
       />
-      {loading ? <Spin/> : groups.map(group => (
-        <Descriptions 
-          // layout={'vertical'}
-          // size={'middle'}
-          // bordered 
-          {...descriptionsProps}
-          title={group.title && <span>{group.title} {group.tooltip && <Tooltip title={group.tooltip}><InfoCircleOutlined /></Tooltip>}</span>}
-          column={1}>
-          {group.children.map((field: any) => {
-            if (Array.isArray(displayFields) && displayFields.length && displayFields.indexOf(field.id) === -1) {
-              return null;
+      {loading ? (
+        <Spin />
+      ) : (
+        groups.map(group => (
+          <Descriptions
+            // layout={'vertical'}
+            // size={'middle'}
+            // bordered
+            {...descriptionsProps}
+            title={
+              group.title && (
+                <span>
+                  {group.title}{' '}
+                  {group.tooltip && (
+                    <Tooltip title={group.tooltip}>
+                      <InfoCircleOutlined />
+                    </Tooltip>
+                  )}
+                </span>
+              )
             }
-            return (
-              <Descriptions.Item label={field.title||field.name}>
-                <Field data={field} viewType={'descriptions'} schema={field} value={get(data, field.name)}/>
-              </Descriptions.Item>
-            )
-          })}
-        </Descriptions>
-      ))}
+            column={1}
+          >
+            {group.children.map((field: any) => {
+              if (
+                Array.isArray(displayFields) &&
+                displayFields.length &&
+                displayFields.indexOf(field.id) === -1
+              ) {
+                return null;
+              }
+              return (
+                <Descriptions.Item label={field.title || field.name}>
+                  <Field
+                    data={field}
+                    viewType={'descriptions'}
+                    schema={field}
+                    value={get(data, field.name)}
+                  />
+                </Descriptions.Item>
+              );
+            })}
+          </Descriptions>
+        ))
+      )}
     </Card>
   );
 }

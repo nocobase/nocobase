@@ -1,1 +1,1 @@
-import 'antd/lib/row/style/index'
+import 'antd/lib/row/style/index';

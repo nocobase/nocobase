@@ -17,7 +17,7 @@ export default async (ctx, next) => {
   const collection = await view.getCollection();
   const fields = await collection.getFields();
   const actions = await collection.getActions();
-  const actionNames = view.options.actionNames||[];
+  const actionNames = view.options.actionNames || [];
   // console.log(view.options);
   if (view.type === 'table') {
     const defaultTabs = await collection.getTabs({
@@ -33,7 +33,7 @@ export default async (ctx, next) => {
   view.setDataValue('viewCollectionName', view.collection_name);
   ctx.body = {
     ...view.toJSON(),
-    ...(view.options||{}),
+    ...(view.options || {}),
     fields,
     actions: actions.filter(action => actionNames.includes(action.name)).map(action => ({
       ...action.toJSON(),

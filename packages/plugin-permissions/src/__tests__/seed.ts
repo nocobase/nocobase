@@ -1,6 +1,6 @@
 import { ROLE_TYPE_ANONYMOUS, ROLE_TYPE_ROOT, ROLE_TYPE_USER } from '../constants';
 
-export default async function(db) {
+export default async function (db) {
   const User = db.getModel('users');
   const users = await User.bulkCreate([
     { username: 'user1', token: 'token1' },
@@ -21,7 +21,7 @@ export default async function(db) {
   const scopePublished = await Scope.create({ collection_name: 'posts', filter: { status: 'published' } }, { logging: true });
   // TODO(bug): 字段应使用 'created_by' 名称，通过程序映射成外键
   const scopeCreatedBy = await Scope.create({ collection_name: 'posts', filter: { status: 'draft', 'created_by_id.$currentUser': true } });
-  
+
   const Field = db.getModel('fields');
   const postTitleField = await Field.findOne({
     where: {

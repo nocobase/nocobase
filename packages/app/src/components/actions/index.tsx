@@ -1,4 +1,3 @@
-
 import React from 'react';
 import Create from './Create';
 import Update from './Update';
@@ -27,25 +26,27 @@ export function Action(props) {
   // cnsole.log(schema);
   const { type } = schema;
   const Component = getAction(type);
-  return Component && <Component {...props}/>;
+  return Component && <Component {...props} />;
 }
 
 export function Actions(props) {
   const { onTrigger = {}, style, schema, actions = [], ...restProps } = props;
   console.log(onTrigger);
-  return actions.length > 0 && (
-    <div className={'action-buttons'} style={style}>
-      {actions.map(action => (
-        <div className={`${action.name}-action-button action-button`}>
-          <Action
-            {...restProps}
-            view={schema}
-            schema={action}
-            onTrigger={onTrigger[action.name]}
-          />
-        </div>
-      ))}
-    </div>
+  return (
+    actions.length > 0 && (
+      <div className={'action-buttons'} style={style}>
+        {actions.map(action => (
+          <div className={`${action.name}-action-button action-button`}>
+            <Action
+              {...restProps}
+              view={schema}
+              schema={action}
+              onTrigger={onTrigger[action.name]}
+            />
+          </div>
+        ))}
+      </div>
+    )
   );
 }
 

@@ -24,7 +24,7 @@ export class FieldModel extends BaseModel {
 
   constructor(values: any = {}, options: any = {}) {
     let data = {
-      ...(values.options||{}),
+      ...(values.options || {}),
       ...values,
       // ..._.omit(values, 'options'),
     };
@@ -41,7 +41,7 @@ export class FieldModel extends BaseModel {
           data.paired = true;
           // 通用，关系表
           if (!data.target) {
-            data.target  = generateCollectionName();
+            data.target = generateCollectionName();
           }
           // 通用，外键
           if (!data.foreignKey) {
@@ -81,7 +81,7 @@ export class FieldModel extends BaseModel {
   }
 
   async generatePairField(options) {
-    const {interface: control, paired, type, target, sourceKey, targetKey, foreignKey, otherKey, through, collection_name} = this.get();
+    const { interface: control, paired, type, target, sourceKey, targetKey, foreignKey, otherKey, through, collection_name } = this.get();
     if (control !== 'linkTo' || type !== 'belongsToMany' || !collection_name || !paired) {
       return;
     }
@@ -103,7 +103,7 @@ export class FieldModel extends BaseModel {
       labelField = targetField.get('name');
     }
     const collection = await this.getCollection(options);
-    let targetOptions:any = {
+    let targetOptions: any = {
       ...types.linkTo.options,
       interface: 'linkTo',
       title: collection.get('title'),
@@ -145,10 +145,10 @@ export class FieldModel extends BaseModel {
     for (const association of associations.values()) {
       if (association instanceof BELONGSTOMANY) {
         if (
-          association.options.foreignKey === otherKey 
-          && association.options.sourceKey === targetKey 
-          && association.options.otherKey === foreignKey 
-          && association.options.targetKey === sourceKey 
+          association.options.foreignKey === otherKey
+          && association.options.sourceKey === targetKey
+          && association.options.otherKey === foreignKey
+          && association.options.targetKey === sourceKey
           && association.options.through === through
         ) {
           return;

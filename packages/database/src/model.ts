@@ -189,7 +189,7 @@ export abstract class Model extends SequelizeModel {
 
     if (associator.associationType === 'HasMany') {
       where[foreignKey as string] = {
-        [Op.eq]: Sequelize.col(`${sourceAlias||this.name}.${sourceKey}`),
+        [Op.eq]: Sequelize.col(`${sourceAlias || this.name}.${sourceKey}`),
       };
     } else if (associator.associationType === 'BelongsToMany') {
       where[targetKey] = {
@@ -198,10 +198,10 @@ export abstract class Model extends SequelizeModel {
           attributes: [otherKey],
           where: {
             [foreignKey]: {
-              [Op.eq]: Sequelize.col(`${sourceAlias||this.name}.${sourceKey}`),
+              [Op.eq]: Sequelize.col(`${sourceAlias || this.name}.${sourceKey}`),
             },
             // @ts-ignore
-            ...(associator.through.scope||{}),
+            ...(associator.through.scope || {}),
           },
         })})`),
       };
@@ -221,7 +221,7 @@ export abstract class Model extends SequelizeModel {
           attributes: [[Sequelize.literal(countLiteral), 'count']],
           where: {
             // @ts-ignore
-            ...where, ...(associator.scope||{}),
+            ...where, ...(associator.scope || {}),
           },
         })})`
       ),
@@ -239,7 +239,7 @@ export abstract class Model extends SequelizeModel {
   static selectQuery(options = {}): string {
     // @ts-ignore
     return this.queryGenerator.selectQuery(
-      this.getTableName(), 
+      this.getTableName(),
       options,
       this,
     ).replace(/;$/, '');
@@ -247,7 +247,7 @@ export abstract class Model extends SequelizeModel {
 
   static parseApiJson(options: ApiJsonOptions) {
     const { fields, filter, sort, context, page, perPage } = options;
-    const data = toInclude({fields, filter, sort}, {
+    const data = toInclude({ fields, filter, sort }, {
       model: this,
       associations: this.associations,
       dialect: this.sequelize.getDialect(),
@@ -306,8 +306,8 @@ export abstract class Model extends SequelizeModel {
       await this[accessors.set](data, opts);
     } else if (typeof data === 'object') {
       const Target = association.getTargetModel();
-      const targetAttribute = association instanceof BELONGSTO 
-        ? association.options.targetKey 
+      const targetAttribute = association instanceof BELONGSTO
+        ? association.options.targetKey
         : association.options.sourceKey;
       if (data[targetAttribute]) {
         await this[accessors.set](data[targetAttribute], opts);

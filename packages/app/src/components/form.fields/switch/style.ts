@@ -1,1 +1,1 @@
-import 'antd/lib/switch/style/index'
+import 'antd/lib/switch/style/index';

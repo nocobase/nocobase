@@ -69,7 +69,7 @@ export function middleware(options: MiddlewareOptions = {}) {
                 actions = field.options.actions;
               }
             } else {
-              const items = table.getOptions('actions')||[];
+              const items = table.getOptions('actions') || [];
               for (const item of (items as any[])) {
                 actions[item.name] = item;
               }

@@ -43,7 +43,7 @@ export class FieldModel extends BaseModel {
 
     const table = this.database.getTable(collectionName);
     const fieldOptions = await this.getOptions();
-    console.log({fieldOptions});
+    console.log({ fieldOptions });
 
     table.addField(fieldOptions);
 

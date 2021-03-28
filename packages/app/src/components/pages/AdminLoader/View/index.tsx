@@ -5,7 +5,14 @@ import { Spin } from '@nocobase/client';
 import { useRequest, useLocation } from 'umi';
 import api from '@/api-client';
 import { Actions } from '../Actions';
-import { Table as AntdTable, Card, Pagination, Button, Tabs, Tooltip } from 'antd';
+import {
+  Table as AntdTable,
+  Card,
+  Pagination,
+  Button,
+  Tabs,
+  Tooltip,
+} from 'antd';
 import { LoadingOutlined } from '@ant-design/icons';
 import { components, fields2columns } from '@/components/views/SortableTable';
 import ReactDragListView from 'react-drag-listview';
@@ -38,26 +45,29 @@ export const icon = <LoadingOutlined style={{ fontSize: 36 }} spin />;
 export function View(props: any) {
   const { schema, viewName, children, ...restProps } = props;
 
-  const { data = {}, loading } = useRequest(() => {
-    return schema ? Promise.resolve({ data: schema }) : api.resource('views_v2').getInfo({
-      resourceKey: viewName,
-    });
-  }, {
-    refreshDeps: [viewName, schema],
-  });
+  const { data = {}, loading } = useRequest(
+    () => {
+      return schema
+        ? Promise.resolve({ data: schema })
+        : api.resource('views_v2').getInfo({
+            resourceKey: viewName,
+          });
+    },
+    {
+      refreshDeps: [viewName, schema],
+    },
+  );
 
   if (loading) {
-    return <Spin/>
+    return <Spin />;
   }
 
   const type = props.type || data.type;
 
   const Component = getView(type);
 
-  return (
-    <Component {...restProps} schema={data}/>
-  );
-};
+  return <Component {...restProps} schema={data} />;
+}
 
 registerView('table', Table);
 registerView('subTable', SubTable);

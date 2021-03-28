@@ -1,5 +1,5 @@
-import { FormSlot } from '@formily/react-schema-renderer'
+import { FormSlot } from '@formily/react-schema-renderer';
 
-export { FormSlot }
+export { FormSlot };
 
-export default FormSlot
+export default FormSlot;

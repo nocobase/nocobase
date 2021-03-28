@@ -77,7 +77,7 @@ export default {
       type: 'virtual',
       name: 'views',
       title: '显示在页面里的视图',
-      target:  'pages_views_v2',
+      target: 'pages_views_v2',
       component: {
         type: 'subTable',
         'x-linkages': [
@@ -259,8 +259,8 @@ export default {
     {
       developerMode: true,
       type: 'form',
-      name:  'global_form',
-      title:  '独立页面表单',
+      name: 'global_form',
+      title: '独立页面表单',
       fields: ['title', 'views', 'pages_views'],
     },
   ],

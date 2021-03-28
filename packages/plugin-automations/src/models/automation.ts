@@ -124,7 +124,7 @@ export class AutomationModel extends Model {
             where,
           });
           if (result) {
-            await callback(model, {...options, automationType});
+            await callback(model, { ...options, automationType });
           }
         });
         break;
@@ -139,7 +139,7 @@ export class AutomationModel extends Model {
             where,
           });
           if (result) {
-            await callback(model, {...options, automationType});
+            await callback(model, { ...options, automationType });
           }
         });
         M.addHook('afterUpdate', hookName, async (model, options) => {
@@ -200,7 +200,7 @@ export class AutomationModel extends Model {
               rule.end = new Date(item[endField]);
             }
           }
-          console.log({rule});
+          console.log({ rule });
           schedule.scheduleJob(`${hookName}-${item.id}`, rule, (date) => {
             (async () => {
               await callback(date, { automationType });
@@ -226,7 +226,7 @@ export class AutomationModel extends Model {
         break;
       case 'schedule':
         const rule = this.getRule();
-        console.log({rule});
+        console.log({ rule });
         schedule.scheduleJob(hookName, rule, (date) => {
           (async () => {
             await callback(date, { automationType });

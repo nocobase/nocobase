@@ -2,11 +2,11 @@ import { initDatabase, agent } from './index';
 
 describe('destroy', () => {
   let db;
-  
+
   beforeEach(async () => {
     db = await initDatabase();
   });
-  
+
   afterAll(() => db.close());
 
   describe('single', () => {
@@ -18,24 +18,24 @@ describe('destroy', () => {
       // console.log(response.body);
       expect(response.body.count).toBe(1);
     });
-  
+
     it('batch delete by filter', async () => {
       const Post = db.getModel('posts');
       const posts = await Post.bulkCreate([
-        { title: 'title1', status: 'published'},
-        { title: 'title2', status: 'draft'},
-        { title: 'title3', status: 'published'},
-        { title: 'title4', status: 'draft'},
+        { title: 'title1', status: 'published' },
+        { title: 'title2', status: 'draft' },
+        { title: 'title3', status: 'published' },
+        { title: 'title4', status: 'draft' },
       ]);
-  
+
       await agent
         .delete('/posts?filter[status]=draft');
-      
+
       const published = await Post.findAll();
       expect(published.length).toBe(2);
       expect(published.map(({ title, status }) => ({ title, status }))).toEqual([
-        { title: 'title1', status: 'published'},
-        { title: 'title3', status: 'published'}
+        { title: 'title1', status: 'published' },
+        { title: 'title3', status: 'published' }
       ]);
     });
   });
@@ -62,7 +62,7 @@ describe('destroy', () => {
       const post = await Post.create();
       await post.updateAssociations({
         comments: [
-          {content: 'content111222'},
+          { content: 'content111222' },
         ],
       });
       const [comment] = await post.getComments();
@@ -78,9 +78,9 @@ describe('destroy', () => {
       await post.updateAssociations({
         comments: [
           { content: 'content1', status: 'published' },
-          { content: 'content2', status: 'draft'},
+          { content: 'content2', status: 'draft' },
           { content: 'content3', status: 'published' },
-          { content: 'content4', status: 'draft'},
+          { content: 'content4', status: 'draft' },
         ],
       });
       await agent
@@ -96,7 +96,7 @@ describe('destroy', () => {
       const Post = db.getModel('posts');
       const post = await Post.create();
       await post.updateAssociations({
-        user: {name: 'name121234'},
+        user: { name: 'name121234' },
       });
       await agent.delete(`/posts/${post.id}/user:destroy`);
       const user = await post.getUser();
@@ -110,7 +110,7 @@ describe('destroy', () => {
       const post = await Post.create();
       await post.updateAssociations({
         tags: [
-          {name: 'tag112233'},
+          { name: 'tag112233' },
         ],
       });
       const [tag] = await post.getTags();
@@ -129,9 +129,9 @@ describe('destroy', () => {
       const post = await Post.create();
       await post.updateAssociations({
         tags: [
-          { name: 'tag1', status: 'enabled'},
+          { name: 'tag1', status: 'enabled' },
           { name: 'tag2', status: 'disabled' },
-          { name: 'tag3', status: 'enabled'},
+          { name: 'tag3', status: 'enabled' },
           { name: 'tag4', status: 'disabled' },
         ],
       });

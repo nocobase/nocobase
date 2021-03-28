@@ -18,18 +18,18 @@ import { fields2properties } from './Form';
 
 export function FilterForm(props: any) {
   const { data, onFinish } = props;
-  const { fields = [] } = props.schema||{};
+  const { fields = [] } = props.schema || {};
   return (
-    <SchemaForm 
+    <SchemaForm
       colon={true}
       layout={'vertical'}
       initialValues={data}
       // actions={actions}
       onReset={async () => {
         // setData({filter: {}});
-        onFinish && await onFinish(null);
+        onFinish && (await onFinish(null));
       }}
-      onSubmit={async (values) => {
+      onSubmit={async values => {
         if (onFinish) {
           await onFinish(values);
         }

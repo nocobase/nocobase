@@ -22,7 +22,7 @@ const config = {
   define: {
     hooks: {
       beforeCreate(model, options) {
-        
+
       },
     },
   },

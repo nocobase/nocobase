@@ -1,31 +1,31 @@
-import { registerFormFields } from '@formily/antd'
-import { TimePicker } from './time-picker'
-import { Transfer } from './transfer'
-import { Switch } from './switch'
-import { ArrayCards } from './array-cards'
-import { ArrayTable } from './array-table'
-import { Checkbox } from './checkbox'
-import { DatePicker } from './date-picker'
-import { Input } from './input'
-import { NumberPicker, Percent } from './number-picker'
-import { Password } from './password'
-import { Radio } from './radio'
-import { Range } from './range'
-import { Rating } from './rating'
-import { Upload } from './upload'
-import { Filter } from './filter'
-import { RemoteSelect } from './remote-select'
-import { DrawerSelect } from './drawer-select'
-import { SubTable } from './sub-table'
-import { Cascader } from './cascader'
-import { Icon } from './icons'
-import { ColorSelect } from './color-select'
-import { Permissions } from './permissions'
-import { DraggableTable } from './draggable-table'
-import { Values } from './values'
-import { Automations } from './automations'
-import { Wysiwyg } from './wysiwyg'
-import { Markdown } from './markdown'
+import { registerFormFields } from '@formily/antd';
+import { TimePicker } from './time-picker';
+import { Transfer } from './transfer';
+import { Switch } from './switch';
+import { ArrayCards } from './array-cards';
+import { ArrayTable } from './array-table';
+import { Checkbox } from './checkbox';
+import { DatePicker } from './date-picker';
+import { Input } from './input';
+import { NumberPicker, Percent } from './number-picker';
+import { Password } from './password';
+import { Radio } from './radio';
+import { Range } from './range';
+import { Rating } from './rating';
+import { Upload } from './upload';
+import { Filter } from './filter';
+import { RemoteSelect } from './remote-select';
+import { DrawerSelect } from './drawer-select';
+import { SubTable } from './sub-table';
+import { Cascader } from './cascader';
+import { Icon } from './icons';
+import { ColorSelect } from './color-select';
+import { Permissions } from './permissions';
+import { DraggableTable } from './draggable-table';
+import { Values } from './values';
+import { Automations } from './automations';
+import { Wysiwyg } from './wysiwyg';
+import { Markdown } from './markdown';
 
 export const setup = () => {
   registerFormFields({
@@ -72,4 +72,4 @@ export const setup = () => {
     'automations.endmode': Automations.EndMode,
     'automations.cron': Automations.Cron,
   });
-}
+};

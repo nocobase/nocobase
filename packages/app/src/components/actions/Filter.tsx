@@ -8,7 +8,13 @@ export function Filter(props) {
   const drawerRef = useRef<any>();
   const [visible, setVisible] = useState(false);
   const { title, viewName, collection_name } = props.schema;
-  const { filterCount, activeTab = {}, item = {}, associatedName, associatedKey } = props;
+  const {
+    filterCount,
+    activeTab = {},
+    item = {},
+    associatedName,
+    associatedKey,
+  } = props;
   const { associationField } = activeTab;
 
   const params = {};
@@ -30,33 +36,40 @@ export function Filter(props) {
         trigger="click"
         visible={visible}
         placement={'bottomLeft'}
-        onVisibleChange={(visible) => {
+        onVisibleChange={visible => {
           setVisible(visible);
         }}
         className={'filters-popover'}
-        style={{
-        }}
+        style={{}}
         overlayStyle={{
-          minWidth: 500
+          minWidth: 500,
         }}
-        content={(
+        content={
           <>
-            <div className={'popover-button-mask'} onClick={() => setVisible(false)}></div>
-            <ViewFactory 
+            <div
+              className={'popover-button-mask'}
+              onClick={() => setVisible(false)}
+            ></div>
+            <ViewFactory
               {...props}
               setVisible={setVisible}
               viewName={'filter'}
               {...params}
             />
           </>
-        )}
+        }
       >
-        <Button icon={<FilterOutlined />} onClick={() => {
-          setVisible(true);
-        }}>{filterCount ? `${filterCount} 个${title}项` : title}</Button>
+        <Button
+          icon={<FilterOutlined />}
+          onClick={() => {
+            setVisible(true);
+          }}
+        >
+          {filterCount ? `${filterCount} 个${title}项` : title}
+        </Button>
       </Popover>
     </>
-  )
+  );
 }
 
 export default Filter;

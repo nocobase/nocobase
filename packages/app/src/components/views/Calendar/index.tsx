@@ -6,12 +6,16 @@ import ViewFactory from '@/components/views';
 import { useRequest } from 'umi';
 import api from '@/api-client';
 import { components, fields2columns } from '../SortableTable';
-import { LoadingOutlined, LeftOutlined, RightOutlined } from '@ant-design/icons';
+import {
+  LoadingOutlined,
+  LeftOutlined,
+  RightOutlined,
+} from '@ant-design/icons';
 import './style.less';
-import { Calendar as BigCalendar, momentLocalizer } from 'react-big-calendar'
+import { Calendar as BigCalendar, momentLocalizer } from 'react-big-calendar';
 import * as dates from 'react-big-calendar/lib/utils/dates';
 import moment from 'moment';
-const localizer = momentLocalizer(moment) // or globalizeLocalizer
+const localizer = momentLocalizer(moment); // or globalizeLocalizer
 
 export const icon = <LoadingOutlined style={{ fontSize: 36 }} spin />;
 
@@ -38,8 +42,12 @@ function toEvents(data, options: any = {}) {
     id: item[idField],
     title: item[labelField],
     allDay: true,
-    start: moment(item[startDateField||'createdAt'] || item.created_at).toDate(),
-    end: moment(item[endDateField || startDateField || 'createdAt'] || item.created_at).toDate(),
+    start: moment(
+      item[startDateField || 'createdAt'] || item.created_at,
+    ).toDate(),
+    end: moment(
+      item[endDateField || startDateField || 'createdAt'] || item.created_at,
+    ).toDate(),
   }));
 }
 
@@ -57,47 +65,78 @@ export function Calendar(props: CalendarProps) {
     multiple = true,
     selectedRowKeys: srk,
   } = props;
-  const { rowKey = 'id', mode, defaultTabName, labelField, startDateField, endDateField, name: viewName, actionDefaultParams = {}, fields = [], rowViewName, actions = [], paginated = true, defaultPerPage = 10 } = schema;
+  const {
+    rowKey = 'id',
+    mode,
+    defaultTabName,
+    labelField,
+    startDateField,
+    endDateField,
+    name: viewName,
+    actionDefaultParams = {},
+    fields = [],
+    rowViewName,
+    actions = [],
+    paginated = true,
+    defaultPerPage = 10,
+  } = schema;
   const { filter: defaultFilter = {} } = actionDefaultParams;
-  const { sourceKey = 'id' } = activeTab.field||{};
+  const { sourceKey = 'id' } = activeTab.field || {};
   const drawerRef = useRef<any>();
   const [filterCount, setFilterCount] = useState(0);
-  const name = associatedName ? `${associatedName}.${resourceName}` : resourceName;
-  const { data, loading, pagination, mutate, refresh, params, run } = useRequest((params = {}) => {
-    const { current, pageSize, sorter, filter, ...restParams } = params;
-    return api.resource(name).list({
-      associatedKey,
-      // page: paginated ? current : 1,
-      perPage: -1,
-      sorter,
-      // filter,
-      viewName,
-      ...actionDefaultParams,
-      filter: {
-        and: [
-          defaultFilter,
-          filter,
-        ].filter(obj => obj && Object.keys(obj).length)
-      }
-    })
-    .then(({data = [], meta = {}}) => {
-      return {
-        data: {
-          list: data,
-          total: meta.count||data.length,
-        },
-      };
-    });
-  }, {
-    paginated,
-    defaultPageSize: defaultPerPage,
-  });
+  const name = associatedName
+    ? `${associatedName}.${resourceName}`
+    : resourceName;
+  const {
+    data,
+    loading,
+    pagination,
+    mutate,
+    refresh,
+    params,
+    run,
+  } = useRequest(
+    (params = {}) => {
+      const { current, pageSize, sorter, filter, ...restParams } = params;
+      return api
+        .resource(name)
+        .list({
+          associatedKey,
+          // page: paginated ? current : 1,
+          perPage: -1,
+          sorter,
+          // filter,
+          viewName,
+          ...actionDefaultParams,
+          filter: {
+            and: [defaultFilter, filter].filter(
+              obj => obj && Object.keys(obj).length,
+            ),
+          },
+        })
+        .then(({ data = [], meta = {} }) => {
+          return {
+            data: {
+              list: data,
+              total: meta.count || data.length,
+            },
+          };
+        });
+    },
+    {
+      paginated,
+      defaultPageSize: defaultPerPage,
+    },
+  );
   console.log(schema, data);
-  const [selectedRowKeys, setSelectedRowKeys] = useState(srk||[]);
-  const onChange = (selectedRowKeys: React.ReactText[], selectedRows: React.ReactText[]) => {
+  const [selectedRowKeys, setSelectedRowKeys] = useState(srk || []);
+  const onChange = (
+    selectedRowKeys: React.ReactText[],
+    selectedRows: React.ReactText[],
+  ) => {
     setSelectedRowKeys(selectedRowKeys);
     onSelected && onSelected(selectedRows);
-  }
+  };
   const [formMode, setFormMode] = useState('update');
   const [calendarView, setCalendarView] = useState('month');
   useEffect(() => {
@@ -109,7 +148,7 @@ export function Calendar(props: CalendarProps) {
       type: multiple ? 'checkbox' : 'radio',
       selectedRowKeys,
       onChange,
-    }
+    };
   }
 
   const events = toEvents(data?.list, {
@@ -121,8 +160,16 @@ export function Calendar(props: CalendarProps) {
 
   const messages = {
     allDay: '',
-    previous: <div><LeftOutlined /></div>,
-    next: <div><RightOutlined/></div>,
+    previous: (
+      <div>
+        <LeftOutlined />
+      </div>
+    ),
+    next: (
+      <div>
+        <RightOutlined />
+      </div>
+    ),
     today: '今天',
     month: '月',
     week: '周',
@@ -132,10 +179,10 @@ export function Calendar(props: CalendarProps) {
     time: '时间',
     event: '事件',
     noEventsInRange: '无',
-    showMore: (count) => `还有 ${count} 项`
-  }
+    showMore: count => `还有 ${count} 项`,
+  };
 
-  console.log('events', data)
+  console.log('events', data);
   return (
     <Card bordered={false}>
       {/* <Actions
@@ -190,20 +237,24 @@ export function Calendar(props: CalendarProps) {
             if (dates.eq(start, end, 'month')) {
               return local.format(start, 'Y年M月', culture);
             }
-            return `${local.format(start, 'Y年M月', culture)} - ${local.format(end, 'Y年M月', culture)}`;
-          }
+            return `${local.format(start, 'Y年M月', culture)} - ${local.format(
+              end,
+              'Y年M月',
+              culture,
+            )}`;
+          },
         }}
         events={events}
-        onSelectSlot={(slotInfo) => {
+        onSelectSlot={slotInfo => {
           // setFormMode('create');
           // drawerRef.current.setVisible(true);
           // console.log('onSelectSlot', slotInfo)
         }}
-        onView={(view) => {
+        onView={view => {
           setCalendarView(view);
-          console.log(view)
+          console.log(view);
         }}
-        onSelectEvent={(event) => {
+        onSelectEvent={event => {
           console.log(event);
           if (isFieldComponent) {
             return;
@@ -219,15 +270,15 @@ export function Calendar(props: CalendarProps) {
             redirectTo({
               ...props.match.params,
               [activeTab ? 'newItem' : 'lastItem']: {
-                itemId: event[rowKey]||event.id,
+                itemId: event[rowKey] || event.id,
                 tabName: defaultTabName,
               },
             });
           }
           // drawerRef.current.
         }}
-        onRangeChange={(range) => {
-          console.log({range})
+        onRangeChange={range => {
+          console.log({ range });
         }}
         views={['month', 'week', 'day']}
         // step={120}

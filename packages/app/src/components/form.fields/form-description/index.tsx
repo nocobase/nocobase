@@ -1,21 +1,30 @@
-import React from 'react'
-import { createVirtualBox } from '@formily/react-schema-renderer'
-import { Card } from 'antd'
-import styled from 'styled-components'
-import { markdown } from '@/components/views/Field'
+import React from 'react';
+import { createVirtualBox } from '@formily/react-schema-renderer';
+import { Card } from 'antd';
+import styled from 'styled-components';
+import { markdown } from '@/components/views/Field';
 
 export const FormDescription = createVirtualBox(
   'description',
   styled(({ schema = {}, children, className, ...props }) => {
     const { title, tooltip } = schema as any;
-    console.log({schema})
+    console.log({ schema });
     return (
-      <Card title={title} size={'small'} headStyle={{padding: 0}} bodyStyle={{
-        padding: 0,
-      }} className={className} {...props}>
-        {typeof tooltip === 'string' && tooltip && <div dangerouslySetInnerHTML={{__html: markdown(tooltip)}}></div>}
+      <Card
+        title={title}
+        size={'small'}
+        headStyle={{ padding: 0 }}
+        bodyStyle={{
+          padding: 0,
+        }}
+        className={className}
+        {...props}
+      >
+        {typeof tooltip === 'string' && tooltip && (
+          <div dangerouslySetInnerHTML={{ __html: markdown(tooltip) }}></div>
+        )}
       </Card>
-    )
+    );
   })`
     margin-bottom: 24px !important;
     &.ant-card {
@@ -35,7 +44,7 @@ export const FormDescription = createVirtualBox(
         margin-bottom: 0;
       }
     }
-  `
-)
+  `,
+);
 
-export default FormDescription
+export default FormDescription;

@@ -8,7 +8,7 @@ describe('list', () => {
   let nowString: string;
   let timestamps: { created_at: Date; updated_at: Date; };
   let timestampsStrings;
-  
+
   beforeEach(async () => {
     db = await initDatabase();
     now = new Date();
@@ -16,7 +16,7 @@ describe('list', () => {
     timestamps = { created_at: now, updated_at: now };
     timestampsStrings = { created_at: nowString, updated_at: nowString };
   });
-  
+
   afterAll(() => db.close());
 
   describe('common', () => {
@@ -49,7 +49,7 @@ describe('list', () => {
           const response = await agent.get('/posts?filter[status]=published');
           expect(response.body.count).toBe(await Post.count({ where: { status: 'published' } }));
         });
-      
+
         it('should be filtered by `title` equal to `title1`', async () => {
           const Post = db.getModel('posts');
           const response = await agent.get('/posts?filter[title]=title1');
@@ -182,22 +182,24 @@ describe('list', () => {
               expect(response.body.count).toBe(1);
               expect(response.body.rows[0].name).toBe(expected.name);
             });
-  
+
             it('$anyOf for all elements in definition', async () => {
               const User = db.getModel('users');
               const expected = await User.findOne({
                 where: {
-                  nicknames: { [Op.or]: [
-                    { [Op.contains]: 'aaa' },
-                    { [Op.contains]: 'aa' }
-                  ] }
+                  nicknames: {
+                    [Op.or]: [
+                      { [Op.contains]: 'aaa' },
+                      { [Op.contains]: 'aa' }
+                    ]
+                  }
                 }
               });
               const response = await agent.get('/users?filter[nicknames.$anyOf]=aaa,aa');
               expect(response.body.count).toBe(1);
               expect(response.body.rows[0].name).toBe(expected.name);
             });
-  
+
             it('$anyOf for some element not in definition', async () => {
               const User = db.getModel('users');
               const expected = await User.findOne({
@@ -209,7 +211,7 @@ describe('list', () => {
               expect(response.body.count).toBe(1);
               expect(response.body.rows[0].name).toBe(expected.name);
             });
-  
+
             it('$anyOf for no element', async () => {
               const User = db.getModel('users');
               const expected = await User.findAll();
@@ -334,27 +336,27 @@ describe('list', () => {
           rows: Array(20).fill(null).map((_, index) => ({ title: `title${index}` })),
         });
       });
-    
+
       it('page 1 by size(1) should be ok', async () => {
         const response = await agent.get('/posts?fields=title&page=1&perPage=1');
         expect(response.body).toEqual({
           count: 25,
           page: 1,
           per_page: 1,
-          rows: [ { title: 'title0' } ],
+          rows: [{ title: 'title0' }],
         });
       });
-    
+
       it('page 2 by size(1) should be ok', async () => {
         const response = await agent.get('/posts?fields=title&page=2&per_page=1');
         expect(response.body).toEqual({
           count: 25,
           page: 2,
           per_page: 1,
-          rows: [ { title: 'title1' } ],
+          rows: [{ title: 'title1' }],
         });
       });
-    
+
       it('page 1 by size(101) should be change to 100', async () => {
         const response = await agent.get('/posts?fields=title&page=1&per_page=101');
         expect(response.body).toEqual({
@@ -364,7 +366,7 @@ describe('list', () => {
           rows: Array(25).fill(null).map((_, index) => ({ title: `title${index}` })),
         });
       });
-    
+
       it('page 2 by size(101) should be change to 100 and result is empty', async () => {
         const response = await agent.get('/posts?fields=title&page=2&per_page=101');
         expect(response.body).toEqual({
@@ -374,7 +376,7 @@ describe('list', () => {
           rows: [],
         });
       });
-    
+
       it('default page by size(-1) should be change to 100 and result will be 25 items', async () => {
         const response = await agent.get('/posts?fields=title&per_page=-1');
         expect(response.body).toEqual({
@@ -384,7 +386,7 @@ describe('list', () => {
           rows: Array(25).fill(null).map((_, index) => ({ title: `title${index}` })),
         });
       });
-    
+
       it('page 2 by size(-1) should be change to 100 and result is empty', async () => {
         const response = await agent.get('/posts?fields=title&page=2&per_page=-1');
         expect(response.body).toEqual({
@@ -395,7 +397,7 @@ describe('list', () => {
         });
       });
     });
-  
+
     describe('fields', () => {
       it('custom field', async () => {
         const response = await agent.get('/posts?fields=title&filter[customTitle]=title0');
@@ -403,7 +405,7 @@ describe('list', () => {
           count: 1,
           page: 1,
           per_page: 20,
-          rows: [ { title: 'title0' } ]
+          rows: [{ title: 'title0' }]
         });
       });
 
@@ -459,7 +461,8 @@ describe('list', () => {
         const response = await agent.get('/posts?fields[only]=title&fields[appends]=user.name&filter[title]=title0');
         expect(response.body.rows[0].user.name).toEqual('a');
         expect(response.body.rows).toEqual([{
-          title: 'title0', user: { id: 1, nicknames: ['aa', 'aaa'], name: 'a', ...timestampsStrings } }]);
+          title: 'title0', user: { id: 1, nicknames: ['aa', 'aaa'], name: 'a', ...timestampsStrings }
+        }]);
       });
     });
   });
@@ -490,7 +493,7 @@ describe('list', () => {
       const response = await agent
         .get(`/posts/${post.id}/comments?page=2&perPage=2&sort=content&fields=content&filter[published]=1`);
       expect(response.body).toEqual({
-        rows: [ { content: 'content5' } ],
+        rows: [{ content: 'content5' }],
         count: 3,
         page: 2,
         per_page: 2
@@ -503,7 +506,7 @@ describe('list', () => {
       expect(response.body).toEqual({
         rows: [{
           title: null,
-          comments: [{ content: 'content4' }, { content: 'content2' }, { content: 'content0'}]
+          comments: [{ content: 'content4' }, { content: 'content2' }, { content: 'content0' }]
         }],
         count: 1,
         page: 1,
@@ -516,7 +519,7 @@ describe('list', () => {
       const post = await Post.findByPk(1);
       const response = await agent
         .get(`/posts/${post.id}/comments?fields=content,user.name&filter[status]=draft&sort=-content&page=1&perPage=2`);
-      
+
       expect(response.body).toEqual({
         count: 3,
         page: 1,
@@ -551,9 +554,9 @@ describe('list', () => {
 
     it('count field in hasMany', async () => {
       try {
-      const response = await agent
-        .get(`/users/1?fields=name,posts_count`);
-      console.log(response.body);
+        const response = await agent
+          .get(`/users/1?fields=name,posts_count`);
+        console.log(response.body);
       } catch (err) {
         console.error(err);
       }
@@ -561,9 +564,9 @@ describe('list', () => {
 
     it('count field in hasMany', async () => {
       try {
-      const response = await agent
-        .get(`/users/1/posts?fields=title,comments_count`);
-      console.log(response.body);
+        const response = await agent
+          .get(`/users/1/posts?fields=title,comments_count`);
+        console.log(response.body);
       } catch (err) {
         console.error(err);
       }
@@ -574,24 +577,24 @@ describe('list', () => {
     beforeEach(async () => {
       const Tag = db.getModel('tags');
       const tags = await Tag.bulkCreate([
-        {name: 'tag1', status: 'published'},
-        {name: 'tag2', status: 'draft'},
-        {name: 'tag3', status: 'published'},
-        {name: 'tag4', status: 'draft'},
-        {name: 'tag5', status: 'published'},
-        {name: 'tag6', status: 'draft'},
-        {name: 'tag7', status: 'published'},
-        {name: 'tag8', status: 'published'},
-        {name: 'tag9', status: 'draft'},
-        {name: 'tag10', status: 'published'},
+        { name: 'tag1', status: 'published' },
+        { name: 'tag2', status: 'draft' },
+        { name: 'tag3', status: 'published' },
+        { name: 'tag4', status: 'draft' },
+        { name: 'tag5', status: 'published' },
+        { name: 'tag6', status: 'draft' },
+        { name: 'tag7', status: 'published' },
+        { name: 'tag8', status: 'published' },
+        { name: 'tag9', status: 'draft' },
+        { name: 'tag10', status: 'published' },
       ]);
       const Post = db.getModel('posts');
       const [post1, post2] = await Post.bulkCreate([{}, {}]);
       await post1.updateAssociations({
-        tags: [1,2,3,4,5,6,7]
+        tags: [1, 2, 3, 4, 5, 6, 7]
       });
       await post2.updateAssociations({
-        tags: [2,5,8]
+        tags: [2, 5, 8]
       });
       const User = db.getModel('users');
       const user = await User.create();
@@ -606,7 +609,7 @@ describe('list', () => {
       const response = await agent
         .get(`/posts/${post.id}/tags?page=2&perPage=2&sort=-name&fields=name&filter[status]=published`);
       expect(response.body).toEqual({
-        rows: [ { name: 'tag3' }, { name: 'tag1' } ],
+        rows: [{ name: 'tag3' }, { name: 'tag1' }],
         count: 4,
         page: 2,
         per_page: 2

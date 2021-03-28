@@ -34,9 +34,9 @@ const defaultValues = {
 
 export default async function (model: CollectionModel, options: any = {}) {
   const { migrate = true } = options;
-  console.log('plugin-collections hook', {migrate})
+  console.log('plugin-collections hook', { migrate })
   if (migrate) {
-    await model.migrate({...options, isNewRecord: true});
+    await model.migrate({ ...options, isNewRecord: true });
   }
   await model.updateAssociations(defaultValues, options);
 }

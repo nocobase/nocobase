@@ -7,14 +7,16 @@ import get from 'lodash/get';
 import { ResetPassword } from '@/components/views/Form/ResetPassword';
 
 export default (props: any) => {
-  const { initialState = {}, refresh, setInitialState } = useModel('@@initialState');
+  const { initialState = {}, refresh, setInitialState } = useModel(
+    '@@initialState',
+  );
   const siteTitle = get(initialState, 'systemSettings.title');
   return (
     <div>
       <Helmet>
         <title>{siteTitle ? `重置密码 - ${siteTitle}` : '重置密码'}</title>
       </Helmet>
-      <ResetPassword {...props}/>
+      <ResetPassword {...props} />
     </div>
   );
 };

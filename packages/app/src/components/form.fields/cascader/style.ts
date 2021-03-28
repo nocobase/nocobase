@@ -1,1 +1,1 @@
-import 'antd/lib/cascader/style/index'
+import 'antd/lib/cascader/style/index';

@@ -16,15 +16,15 @@ describe('middleware', () => {
     resourcer = new Resourcer();
     resourcer.registerActionHandlers({
       list: async (ctx, next) => {
-        ctx.body = [1,2];
+        ctx.body = [1, 2];
         await next();
       },
       get: async (ctx, next) => {
-        ctx.body = [3,4];
+        ctx.body = [3, 4];
         await next();
       },
       'foo2s.bar2s:list': async (ctx, next) => {
-        ctx.body = [5,6];
+        ctx.body = [5, 6];
         await next();
       },
     });
@@ -52,7 +52,7 @@ describe('middleware', () => {
       name: 'tests',
     });
     const response = await agent.get('/api/tests');
-    expect(response.body).toEqual([1,2]);
+    expect(response.body).toEqual([1, 2]);
   });
   it('shound work', async () => {
     database.table({
@@ -74,9 +74,9 @@ describe('middleware', () => {
       ],
     });
     let response = await agent.get('/api/foos/1/bars');
-    expect(response.body).toEqual([1,2]);
+    expect(response.body).toEqual([1, 2]);
     response = await agent.get('/api/bars/1/foo');
-    expect(response.body).toEqual([3,4]);
+    expect(response.body).toEqual([3, 4]);
   });
   it('shound work', async () => {
     database.table({
@@ -98,8 +98,8 @@ describe('middleware', () => {
       ],
     });
     let response = await agent.get('/api/foo2s/1/bar2s');
-    expect(response.body).toEqual([5,6]);
+    expect(response.body).toEqual([5, 6]);
     response = await agent.get('/api/bar2s/1/foo2s');
-    expect(response.body).toEqual([1,2]);
+    expect(response.body).toEqual([1, 2]);
   });
 });

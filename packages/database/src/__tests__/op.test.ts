@@ -51,7 +51,7 @@ describe('op', () => {
             'arr.$anyOf': ['bb'],
           },
           {
-            'arr.$noneOf':  ['aa', 'cc'],
+            'arr.$noneOf': ['aa', 'cc'],
           },
         ],
       },

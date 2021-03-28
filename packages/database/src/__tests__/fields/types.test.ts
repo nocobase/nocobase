@@ -284,7 +284,7 @@ describe('field types', () => {
           }
         ],
       })
-      await db.sync({force: true});
+      await db.sync({ force: true });
     });
     afterEach(async () => {
       await db.close();
@@ -297,7 +297,7 @@ describe('field types', () => {
       expect(Password.verify('123456', pwd.password)).toBeTruthy();
     });
     it('formula', async () => {
-      const [ Formula ] = db.getModels(['formula_tests']);
+      const [Formula] = db.getModels(['formula_tests']);
       const formula = await Formula.create({
         title: 'title1',
         number1: 1,
@@ -307,7 +307,7 @@ describe('field types', () => {
       expect(formula.formula2).toBe('1title12');
     });
     it('formula', async () => {
-      const [ Formula ] = db.getModels(['formula_tests']);
+      const [Formula] = db.getModels(['formula_tests']);
       const formula = await Formula.create({
         meta: {
           key1: 'val1',

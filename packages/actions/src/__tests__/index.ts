@@ -40,7 +40,7 @@ const connection = {
     define: {
       hooks: {
         beforeCreate(model, options) {
-          
+
         },
       },
     },

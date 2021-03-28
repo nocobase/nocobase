@@ -1,1 +1,1 @@
-import 'antd/lib/checkbox/style/index'
+import 'antd/lib/checkbox/style/index';

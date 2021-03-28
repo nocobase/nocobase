@@ -222,11 +222,11 @@ export default {
       name: 'precision',
       title: '精度',
       dataSource: [
-        {value: 0, label: '1'},
-        {value: 1, label: '1.0'},
-        {value: 2, label: '1.00'},
-        {value: 3, label: '1.000'},
-        {value: 4, label: '1.0000'},
+        { value: 0, label: '1' },
+        { value: 1, label: '1.0' },
+        { value: 2, label: '1.00' },
+        { value: 3, label: '1.000' },
+        { value: 4, label: '1.0000' },
       ],
       component: {
         type: 'number',
@@ -240,9 +240,9 @@ export default {
       name: 'dateFormat',
       title: '日期格式',
       dataSource: [
-        {value: 'YYYY/MM/DD', label: '年/月/日'},
-        {value: 'YYYY-MM-DD', label: '年-月-日'},
-        {value: 'DD/MM/YYYY', label: '日/月/年'},
+        { value: 'YYYY/MM/DD', label: '年/月/日' },
+        { value: 'YYYY-MM-DD', label: '年-月-日' },
+        { value: 'DD/MM/YYYY', label: '日/月/年' },
       ],
       component: {
         type: 'string',
@@ -345,7 +345,7 @@ export default {
             type: "value:state",
             target: "labelField",
             condition: "{{ $self.inputed }}",
-            state:{
+            state: {
               value: null,
             }
           },

@@ -2,11 +2,11 @@ import { initDatabase, agent } from './index';
 
 describe('update', () => {
   let db;
-  
+
   beforeEach(async () => {
     db = await initDatabase();
   });
-  
+
   afterAll(() => db.close());
 
   describe('common', () => {
@@ -86,7 +86,7 @@ describe('update', () => {
 
       const result = await agent
         .get(`/posts/${post.id}`);
-      
+
       expect(result.body.title).toBe(null);
       expect(result.body.meta).toEqual({
         location: 'Kunming'
@@ -106,7 +106,7 @@ describe('update', () => {
 
       const result = await agent
         .get(`/posts/${post.id}`);
-      
+
       expect(result.body.title).toBe('title11112222');
       expect(result.body.meta).toBe(null);
     });
@@ -140,12 +140,12 @@ describe('update', () => {
     const post = await Post.create();
     await post.updateAssociations({
       comments: [
-        {content: 'content111222'},
+        { content: 'content111222' },
       ],
     });
     const [comment] = await post.getComments();
     const response = await agent
-      .put(`/posts/${post.id}/comments/${comment.id}`).send({content: 'content111222333'});
+      .put(`/posts/${post.id}/comments/${comment.id}`).send({ content: 'content111222333' });
     expect(response.body.post_id).toBe(post.id);
     expect(response.body.content).toBe('content111222333');
   });
@@ -154,10 +154,10 @@ describe('update', () => {
     const Post = db.getModel('posts');
     const post = await Post.create();
     await post.updateAssociations({
-      user: {name: 'name121234'},
+      user: { name: 'name121234' },
     });
     const response = await agent
-      .post(`/posts/${post.id}/user:update`).send({name: 'name1212345'});
+      .post(`/posts/${post.id}/user:update`).send({ name: 'name1212345' });
     expect(response.body.name).toEqual('name1212345');
   });
 
@@ -166,7 +166,7 @@ describe('update', () => {
     const post = await Post.create();
     await post.updateAssociations({
       tags: [
-        {name: 'tag112233'},
+        { name: 'tag112233' },
       ],
     });
     const [tag] = await post.getTags();

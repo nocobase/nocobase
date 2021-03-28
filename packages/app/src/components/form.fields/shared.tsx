@@ -1,47 +1,47 @@
-import React from 'react'
-import { mapTextComponent, mapStyledProps, normalizeCol } from '@formily/antd'
-import { Select as AntSelect } from 'antd'
-import { SelectProps as AntSelectProps } from 'antd/lib/select'
-import styled from 'styled-components'
-import { isArr, FormPath } from '@formily/shared'
-export * from '@formily/shared'
+import React from 'react';
+import { mapTextComponent, mapStyledProps, normalizeCol } from '@formily/antd';
+import { Select as AntSelect } from 'antd';
+import { SelectProps as AntSelectProps } from 'antd/lib/select';
+import styled from 'styled-components';
+import { isArr, FormPath } from '@formily/shared';
+export * from '@formily/shared';
 
 export const compose = (...args: any[]) => {
   return (payload: any, ...extra: any[]) => {
     return args.reduce((buf, fn) => {
-      return buf !== undefined ? fn(buf, ...extra) : fn(payload, ...extra)
-    }, payload)
-  }
-}
+      return buf !== undefined ? fn(buf, ...extra) : fn(payload, ...extra);
+    }, payload);
+  };
+};
 
 interface SelectOption {
-  label: React.ReactText
-  value: any
-  [key: string]: any
+  label: React.ReactText;
+  value: any;
+  [key: string]: any;
 }
 
 type SelectProps = AntSelectProps & {
-  dataSource?: SelectOption[]
-}
+  dataSource?: SelectOption[];
+};
 
 const createEnum = (enums: any) => {
   if (isArr(enums)) {
     return enums.map(item => {
       if (typeof item === 'object') {
         return {
-          ...item
-        }
+          ...item,
+        };
       } else {
         return {
           label: item,
-          value: item
-        }
+          value: item,
+        };
       }
-    })
+    });
   }
 
-  return []
-}
+  return [];
+};
 
 export const Select: React.FC<SelectProps> = styled((props: SelectProps) => {
   const { dataSource = [], onChange, value, ...others } = props;
@@ -50,7 +50,7 @@ export const Select: React.FC<SelectProps> = styled((props: SelectProps) => {
     if (children.length) {
       return (
         <AntSelect.OptGroup key={key} label={label}>
-          {children.map(({value, label, ...others}: any) => (
+          {children.map(({ value, label, ...others }: any) => (
             <AntSelect.Option
               key={value}
               {...others}
@@ -72,8 +72,8 @@ export const Select: React.FC<SelectProps> = styled((props: SelectProps) => {
       >
         {label}
       </AntSelect.Option>
-    )
-  })
+    );
+  });
   return (
     <AntSelect
       className={props.className}
@@ -85,59 +85,59 @@ export const Select: React.FC<SelectProps> = styled((props: SelectProps) => {
           isArr(options)
             ? options.map(item => ({
                 ...item,
-                props: undefined
+                props: undefined,
               }))
             : {
                 ...options,
-                props: undefined //干掉循环引用
-              }
-        )
+                props: undefined, //干掉循环引用
+              },
+        );
       }}
     >
       {children}
     </AntSelect>
-  )
+  );
 })`
   min-width: 100px;
   width: 100%;
-`
+`;
 export const acceptEnum = (component: React.JSXElementConstructor<any>) => {
   return ({ dataSource, ...others }) => {
     if (dataSource) {
-      return React.createElement(Select, { dataSource, ...others })
+      return React.createElement(Select, { dataSource, ...others });
     } else {
-      return React.createElement(component, others)
+      return React.createElement(component, others);
     }
-  }
-}
+  };
+};
 
 export const transformDataSourceKey = (component, dataSourceKey) => {
   return ({ dataSource, ...others }) => {
     return React.createElement(component, {
       [dataSourceKey]: dataSource,
-      ...others
-    })
-  }
-}
+      ...others,
+    });
+  };
+};
 
 export const createMatchUpdate = (name: string, path: string) => (
   targetName: string,
   targetPath: string,
-  callback: () => void
+  callback: () => void,
 ) => {
   if (targetName || targetPath) {
     if (targetName) {
       if (FormPath.parse(targetName).matchAliasGroup(name, path)) {
-        callback()
+        callback();
       }
     } else if (targetPath) {
       if (FormPath.parse(targetPath).matchAliasGroup(name, path)) {
-        callback()
+        callback();
       }
     }
   } else {
-    callback()
+    callback();
   }
-}
+};
 
-export { mapTextComponent, mapStyledProps, normalizeCol }
+export { mapTextComponent, mapStyledProps, normalizeCol };

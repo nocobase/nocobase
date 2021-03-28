@@ -55,7 +55,7 @@ describe('hooks', () => {
     await db.sync();
     const TestHook = db.getModel('testHook');
     const test = await TestHook.create({});
-    expect(test.get('arr')).toEqual([1,2]);
+    expect(test.get('arr')).toEqual([1, 2]);
   });
 
   it('add hook in custom field', async () => {
@@ -93,7 +93,7 @@ describe('hooks', () => {
     const Test1 = db.getModel('test1');
     const test = await Test1.create({});
     console.log(test.get('arr'));
-    expect(test.get('arr')).toEqual([3,1,4,2]);
+    expect(test.get('arr')).toEqual([3, 1, 4, 2]);
   });
 
   it('add hook in custom field', async () => {
@@ -119,7 +119,7 @@ describe('hooks', () => {
     await table.sync();
     const Test2 = db.getModel('test2');
     const test = await Test2.create({});
-    expect(test.get('arr')).toEqual([1,2]);
+    expect(test.get('arr')).toEqual([1, 2]);
   });
 
   it.only('add hook in custom field', async () => {
@@ -155,7 +155,7 @@ describe('hooks', () => {
       model.set('arr', arr);
     });
     const test = await Test3.create({});
-    expect(test.get('arr')).toEqual([ 1, 3, 2, 4 ]);
+    expect(test.get('arr')).toEqual([1, 3, 2, 4]);
   });
 
   it('add hook in custom field', async () => {
@@ -209,6 +209,6 @@ describe('hooks', () => {
     await table.sync();
     Test3 = db.getModel('test3');
     const test = await Test3.create({});
-    expect(test.get('arr')).toEqual([ 3, 5, 1, 4, 6, 2 ]);
+    expect(test.get('arr')).toEqual([3, 5, 1, 4, 6, 2]);
   });
 });

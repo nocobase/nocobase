@@ -1,1 +1,1 @@
-import 'antd/lib/input/style/index'
+import 'antd/lib/input/style/index';

@@ -3,7 +3,7 @@ import { Application } from '@nocobase/server';
 import Database, { ModelCtor, Model, FieldOptions } from '@nocobase/database';
 import { FieldModel } from '../models';
 
-type Options = {name?: string} & FieldOptions;
+type Options = { name?: string } & FieldOptions;
 
 describe('fields', () => {
   let app: Application;
@@ -17,8 +17,8 @@ describe('fields', () => {
     agent = getAgent(app);
     db = app.database;
     Collection = db.getModel('collections');
-    collection = await Collection.create({name: 'foos'});
-    await Collection.create({name: 'bars'});
+    collection = await Collection.create({ name: 'foos' });
+    await Collection.create({ name: 'bars' });
     const tables = db.getTables();
     for (const table of tables.values()) {
       await Collection.import(table.getOptions(), { migrate: false });

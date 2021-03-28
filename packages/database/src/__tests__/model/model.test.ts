@@ -254,7 +254,7 @@ describe('model', () => {
         expect(authorizedPost.user_id).toBe(user2.id);
       });
     });
-    
+
     describe('hasMany', () => {
       it('update with primary key', async () => {
         const [Post, Comment] = db.getModels(['posts', 'comments']);
@@ -267,20 +267,20 @@ describe('model', () => {
           where: { post_id: post.id },
           attributes: ['id']
         });
-        expect(postComments.map(item => item.id)).toEqual([1,2,3,4]);
+        expect(postComments.map(item => item.id)).toEqual([1, 2, 3, 4]);
       });
 
       it('update with new object', async () => {
         const [Post, Comment] = db.getModels(['posts', 'comments']);
         const post = await Post.create();
         await post.updateAssociations({
-          comments: [{},{},{},{}]
+          comments: [{}, {}, {}, {}]
         });
         const postCommentIds = await Comment.findAll({
           where: { post_id: post.id },
           attributes: ['id']
         });
-        expect(postCommentIds.map(item => item.id)).toEqual([1,2,3,4]);
+        expect(postCommentIds.map(item => item.id)).toEqual([1, 2, 3, 4]);
       });
 
       it('update with new model', async () => {
@@ -294,7 +294,7 @@ describe('model', () => {
           where: { post_id: post.id },
           attributes: ['id']
         });
-        expect(postCommentIds.map(item => item.id)).toEqual([1,2,3,4]);
+        expect(postCommentIds.map(item => item.id)).toEqual([1, 2, 3, 4]);
       });
 
       it('update with exist rows/primaryKeys', async () => {
@@ -314,7 +314,7 @@ describe('model', () => {
           where: { post_id: post.id },
           attributes: ['id']
         });
-        expect(postCommentIds.map(item => item.id)).toEqual([1,2,3,4]);
+        expect(postCommentIds.map(item => item.id)).toEqual([1, 2, 3, 4]);
       });
 
       it('update with exist objects', async () => {
@@ -401,7 +401,7 @@ describe('model', () => {
           where: { post_id: post.id },
           attributes: ['id']
         });
-        expect(postComments.map(({ id }) => id)).toEqual([1,3,5]);
+        expect(postComments.map(({ id }) => id)).toEqual([1, 3, 5]);
       });
     });
 
@@ -417,7 +417,7 @@ describe('model', () => {
           where: { post_id: post.id },
           attributes: ['tag_id']
         });
-        expect(tagged.map(item => item.tag_id)).toEqual([1,2,3,4]);
+        expect(tagged.map(item => item.tag_id)).toEqual([1, 2, 3, 4]);
       });
 
       it('update with exist rows/primaryKeys', async () => {
@@ -459,7 +459,7 @@ describe('model', () => {
           where: { post_id: post.id },
           attributes: ['tag_id']
         });
-        expect(tagged.map(({ tag_id }) => tag_id)).toEqual([1,3,5]);
+        expect(tagged.map(({ tag_id }) => tag_id)).toEqual([1, 3, 5]);
       });
 
       it('update other with exist rows/primaryKeys', async () => {
@@ -550,8 +550,8 @@ describe('model', () => {
         ],
       });
       try {
-      const comments = await post.getCurrent_user_comments();
-      // TODO: no expect
+        const comments = await post.getCurrent_user_comments();
+        // TODO: no expect
       } catch (error) {
         console.error(error);
       }
@@ -590,9 +590,9 @@ describe('model', () => {
       });
       await post.updateAssociations({
         tags: [
-          {name: 'tag1'},
-          {name: 'tag2'},
-          {name: 'tag3'},
+          { name: 'tag1' },
+          { name: 'tag2' },
+          { name: 'tag3' },
         ],
       });
       // where & include
@@ -607,9 +607,9 @@ describe('model', () => {
           },
         },
         fields: [
-          'title', 
-          'tags_count', 
-          'tags.name', 
+          'title',
+          'tags_count',
+          'tags.name',
           'user.name'
         ],
         sort: '-tags_count,tags.name,user.posts_count',
@@ -619,24 +619,24 @@ describe('model', () => {
       });
       console.log(options);
 
-      try{
-      // DatabaseError [SequelizeDatabaseError]: column tags.scopeName does not exist
-      // SELECT count("posts"."id") AS "count" FROM "post123456" AS "posts" INNER JOIN ( "posts_tags1234" AS "tags->posts_tags" INNER JOIN "tag1234" AS "tags" ON "tags"."id" = "tags->posts_tags"."tag_id") ON "posts"."id" = "tags->posts_tags"."post_id" AND "tags"."scopeName" = 'tag3' INNER JOIN "user1234" AS "user" ON "posts"."user_id" = "user"."id" AND "user"."name" = 'name112233' WHERE "posts"."title" = 'title112233';
-      const { rows, count } = await Post.findAndCountAll({
-        ...options,
-        // group: ['id'],
-        // limit: 20,
-        // offset: 20,
-      });
+      try {
+        // DatabaseError [SequelizeDatabaseError]: column tags.scopeName does not exist
+        // SELECT count("posts"."id") AS "count" FROM "post123456" AS "posts" INNER JOIN ( "posts_tags1234" AS "tags->posts_tags" INNER JOIN "tag1234" AS "tags" ON "tags"."id" = "tags->posts_tags"."tag_id") ON "posts"."id" = "tags->posts_tags"."post_id" AND "tags"."scopeName" = 'tag3' INNER JOIN "user1234" AS "user" ON "posts"."user_id" = "user"."id" AND "user"."name" = 'name112233' WHERE "posts"."title" = 'title112233';
+        const { rows, count } = await Post.findAndCountAll({
+          ...options,
+          // group: ['id'],
+          // limit: 20,
+          // offset: 20,
+        });
 
-      // console.log(JSON.stringify(rows[0].toJSON(), null, 2));
+        // console.log(JSON.stringify(rows[0].toJSON(), null, 2));
 
-      rows.forEach(row => {
-        // expect(row.toJSON()).toEqual({ title: 'title112233', 'tags_count': 3, user: { name: 'name112233', posts_count: 1 } });
-        expect(row.get('title')).toBe('title112233');
-        expect(row.user.get('name')).toBe('name112233');
-      });
-      } catch(error) {
+        rows.forEach(row => {
+          // expect(row.toJSON()).toEqual({ title: 'title112233', 'tags_count': 3, user: { name: 'name112233', posts_count: 1 } });
+          expect(row.get('title')).toBe('title112233');
+          expect(row.user.get('name')).toBe('name112233');
+        });
+      } catch (error) {
         console.error(error);
       }
 
@@ -905,7 +905,7 @@ describe('model', () => {
       });
       await table.updateAssociations({
         fields: [
-          {name: 'name'},
+          { name: 'name' },
         ]
       });
       const field = await Field.findOne({
@@ -925,7 +925,7 @@ describe('model', () => {
       });
       await row.updateAssociations({
         columns: [
-          {name: 'name'},
+          { name: 'name' },
         ]
       });
       const column = await Column.findOne({
@@ -943,7 +943,7 @@ describe('model', () => {
       const table = await Table.create({
         name: 'abcdef',
       });
-      const field = await Field.create({name: 'name123'});
+      const field = await Field.create({ name: 'name123' });
       await table.updateAssociations({
         fields: [
           {
@@ -1050,7 +1050,7 @@ describe('model', () => {
       const field = await Field.create({
         name: 'fieldName',
       });
-      await Table.create({name: 'demos'});
+      await Table.create({ name: 'demos' });
       await field.updateAssociations({
         table: 'demos',
       });
@@ -1209,11 +1209,11 @@ describe('belongsToMany', () => {
         },
       ],
     });
-    await db.sync({force: true});
-    const [ Post, Tag ] = db.getModels(['posts', 'tags']);
-    post = await Post.create({slug: 'post1'});
-    tag1 = await Tag.create({name: 'tag1'});
-    tag2 = await Tag.create({name: 'tag2'});
+    await db.sync({ force: true });
+    const [Post, Tag] = db.getModels(['posts', 'tags']);
+    post = await Post.create({ slug: 'post1' });
+    tag1 = await Tag.create({ name: 'tag1' });
+    tag2 = await Tag.create({ name: 'tag2' });
   });
 
   it('update with targetKey', async () => {

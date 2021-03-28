@@ -106,7 +106,7 @@ describe('parseApiJson', () => {
 
     it('filter with condition operator', () => {
       const data = Foo.parseApiJson({
-        filter: {"and":[{"f_g61p.eq":23}]}
+        filter: { "and": [{ "f_g61p.eq": 23 }] }
       });
       expect(data).toEqual({
         where: {
@@ -116,7 +116,7 @@ describe('parseApiJson', () => {
         }
       });
     });
-  
+
     it('fields', () => {
       const data = Foo.parseApiJson({
         fields: ['col1'],
@@ -129,9 +129,11 @@ describe('parseApiJson', () => {
         fields: {
           except: ['col']
         },
-      })).toEqual({ attributes: {
-        exclude: ['col']
-      }});
+      })).toEqual({
+        attributes: {
+          exclude: ['col']
+        }
+      });
     });
 
     it('fields.appends', () => {
@@ -139,9 +141,11 @@ describe('parseApiJson', () => {
         fields: {
           appends: ['col']
         },
-      })).toEqual({ attributes: {
-        include: ['col']
-      }});
+      })).toEqual({
+        attributes: {
+          include: ['col']
+        }
+      });
     });
 
     // TODO(bug): 当遇到多层关联时，attributes 控制不正确
@@ -162,7 +166,7 @@ describe('parseApiJson', () => {
         distinct: true
       });
     });
-  
+
     it('filter and fields', () => {
       const data = Foo.parseApiJson({
         fields: ['col1'],
@@ -292,7 +296,7 @@ describe('parseApiJson', () => {
         distinct: true,
       });
     });
-  
+
     it('filter and fields to fetch hasMany field', () => {
       const data = Foo.parseApiJson({
         fields: ['col1', 'bars.col1'],

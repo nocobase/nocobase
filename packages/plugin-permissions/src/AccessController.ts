@@ -142,7 +142,7 @@ export default class AccessController<T extends typeof AccessController = typeof
     }
 
     const permissions = getPermissions(roles);
-    
+
     return {
       actions: getActionPermissions(permissions),
       fields: getFieldPermissions(permissions),
@@ -177,7 +177,7 @@ export default class AccessController<T extends typeof AccessController = typeof
       // 则认为没有权限
       return null;
     }
-    
+
     const filters = actionPermissions
       .filter(item => Boolean(item.scope) && Object.keys(item.scope.filter).length)
       .map(item => item.scope.filter);
@@ -191,7 +191,7 @@ export default class AccessController<T extends typeof AccessController = typeof
       fields
     };
   }
-  
+
   async one(resourceKey): Promise<PermissionParams> {
     const any = await this.any();
 
@@ -336,7 +336,7 @@ export default class AccessController<T extends typeof AccessController = typeof
       }
       return this.roles;
     }
-    
+
     let userRoles = [];
     // 获取登入用户的角色及权限
     const { currentUser } = context.state;

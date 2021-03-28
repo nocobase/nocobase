@@ -2,11 +2,11 @@ import { initDatabase, agent } from './index';
 
 describe('set', () => {
   let db;
-  
+
   beforeEach(async () => {
     db = await initDatabase();
   });
-  
+
   afterAll(() => db.close());
 
   it('belongsTo1', async () => {
@@ -28,8 +28,8 @@ describe('set', () => {
   it.skip('belongsToMany1', async () => {
     const [Post, Tag] = db.getModels(['posts', 'tags']);
     let post = await Post.create();
-    let tag1 = await Tag.create({name: 'tag1'});
-    let tag2 = await Tag.create({name: 'tag2'});
+    let tag1 = await Tag.create({ name: 'tag1' });
+    let tag2 = await Tag.create({ name: 'tag2' });
     await agent.post(`/posts/${post.id}/tags:set/${tag1.id}`);
     // 单独跑 ok，和上面的 it 一起跑就无法获取到
     const tags = await post.getTags();

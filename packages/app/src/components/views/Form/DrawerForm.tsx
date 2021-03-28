@@ -1,4 +1,11 @@
-import React, { useState, useEffect, useImperativeHandle, forwardRef, useRef, createRef } from 'react';
+import React, {
+  useState,
+  useEffect,
+  useImperativeHandle,
+  forwardRef,
+  useRef,
+  createRef,
+} from 'react';
 import { Button, Drawer, Modal } from 'antd';
 import { Tooltip, Input } from 'antd';
 import {
@@ -42,30 +49,40 @@ export const DrawerForm = forwardRef((props: any, ref) => {
   const [form, setForm] = useState<any>({});
   const [changed, setChanged] = useState(false);
   console.log(associatedKey);
-  const { title, initialValues = {}, actionDefaultParams = {}, fields = {} } = props.schema||{};
+  const { title, initialValues = {}, actionDefaultParams = {}, fields = {} } =
+    props.schema || {};
   const [resourceKey, setResourceKey] = useState(props.resourceKey);
   const [visible, setVisible] = useState(false);
-  const name = associatedName ? `${associatedName}.${resourceName}` : resourceName;
-  const { data = {}, run, loading } = useRequest((resourceKey) => {
-    setResourceKey(resourceKey);
-    return api.resource(name).get({
-      resourceKey,
-      associatedKey,
-      ...actionDefaultParams,
-    });
-  }, {
-    manual: true,
-  });
+  const name = associatedName
+    ? `${associatedName}.${resourceName}`
+    : resourceName;
+  const { data = {}, run, loading } = useRequest(
+    resourceKey => {
+      setResourceKey(resourceKey);
+      return api.resource(name).get({
+        resourceKey,
+        associatedKey,
+        ...actionDefaultParams,
+      });
+    },
+    {
+      manual: true,
+    },
+  );
   useImperativeHandle(ref, () => ({
     setVisible,
     getData: run,
   }));
   const { displayFormFields = [] } = activeTab;
-  const properties: any ={};
+  const properties: any = {};
   for (const key in fields) {
     if (Object.prototype.hasOwnProperty.call(fields, key)) {
       const field = fields[key];
-      if (Array.isArray(displayFormFields) && displayFormFields.length && displayFormFields.indexOf(field.id) === -1) {
+      if (
+        Array.isArray(displayFormFields) &&
+        displayFormFields.length &&
+        displayFormFields.indexOf(field.id) === -1
+      ) {
         continue;
       }
       properties[key] = field;
@@ -85,8 +102,7 @@ export const DrawerForm = forwardRef((props: any, ref) => {
             onOk() {
               setChanged(false);
               setVisible(false);
-              
-            }
+            },
           });
         } else {
           setChanged(false);
@@ -94,29 +110,46 @@ export const DrawerForm = forwardRef((props: any, ref) => {
         }
       }}
       title={title}
-      footer={(
+      footer={
         <div
           style={{
             textAlign: 'right',
           }}
         >
-        <Button onClick={() => {
-          setVisible(false);
-          setChanged(false);
-        }}>取消</Button>
-        <span style={{display: 'inline-block', width: 8}}> </span>
-        <Button loading={state.submitting} type={'primary'} onClick={async () => {
-          await form.submit();
-        }}>提交</Button>
+          <Button
+            onClick={() => {
+              setVisible(false);
+              setChanged(false);
+            }}
+          >
+            取消
+          </Button>
+          <span style={{ display: 'inline-block', width: 8 }}> </span>
+          <Button
+            loading={state.submitting}
+            type={'primary'}
+            onClick={async () => {
+              await form.submit();
+            }}
+          >
+            提交
+          </Button>
         </div>
-      )}
+      }
     >
-      {loading ? <Spin/> : (
-        <SchemaForm 
+      {loading ? (
+        <Spin />
+      ) : (
+        <SchemaForm
           colon={true}
           layout={'vertical'}
           // 暂时先这么处理，如果有 associatedKey 注入表单里
-          initialValues={{associatedKey, resourceKey, ...initialValues, ...data}}
+          initialValues={{
+            associatedKey,
+            resourceKey,
+            ...initialValues,
+            ...data,
+          }}
           // actions={actions}
           schema={{
             type: 'object',
@@ -124,10 +157,10 @@ export const DrawerForm = forwardRef((props: any, ref) => {
           }}
           autoComplete={'off'}
           expressionScope={scopes}
-          onChange={(values) => {
+          onChange={values => {
             setChanged(true);
           }}
-          onSubmit={async (values) => {
+          onSubmit={async values => {
             console.log(values);
             console.log('submitsubmitsubmit', values);
             if (resourceKey) {
@@ -153,29 +186,29 @@ export const DrawerForm = forwardRef((props: any, ref) => {
             selector={[
               LifeCycleTypes.ON_FORM_MOUNT,
               LifeCycleTypes.ON_FORM_SUBMIT_START,
-              LifeCycleTypes.ON_FORM_SUBMIT_END
+              LifeCycleTypes.ON_FORM_SUBMIT_END,
             ]}
             reducer={(state, action) => {
               switch (action.type) {
                 case LifeCycleTypes.ON_FORM_SUBMIT_START:
                   return {
                     ...state,
-                    submitting: true
-                  }
+                    submitting: true,
+                  };
                 case LifeCycleTypes.ON_FORM_SUBMIT_END:
                   return {
                     ...state,
-                    submitting: false
-                  }
+                    submitting: false,
+                  };
                 default:
-                  return state
+                  return state;
               }
             }}
           >
             {({ state, form }) => {
-              setState(state)
+              setState(state);
               setForm(form);
-              return <div/>
+              return <div />;
             }}
           </FormSpy>
         </SchemaForm>

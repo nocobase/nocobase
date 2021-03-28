@@ -7,7 +7,9 @@ import api from '@/api-client';
 
 export function PageLoader(props: any) {
   const { path } = props.match.params;
-  const { data = {}, error, loading, run } = useRequest(() => api.resource('pages').getRoutes());
+  const { data = {}, error, loading, run } = useRequest(() =>
+    api.resource('pages').getRoutes(),
+  );
   const [first, setFirst] = useState(true);
   (window as any).routesReload = async () => {
     setFirst(false);
@@ -19,7 +21,7 @@ export function PageLoader(props: any) {
       {...props}
       templates={templates}
       loading={loading && first}
-      pages={data.data||{}}
+      pages={data.data || {}}
       pathname={`/${path}`}
     />
   );

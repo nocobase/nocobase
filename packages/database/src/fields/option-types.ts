@@ -44,11 +44,11 @@ export interface NumberOptions extends AbstractColumnOptions {
 }
 
 export interface IntegerOptions extends IntegerDataTypeOptions, NumberOptions {
-  type: 'int'       | 'integer'       | typeof DataTypes.INTEGER |
-        'tinyint'   | 'tinyInteger'   | typeof DataTypes.TINYINT |
-        'smallint'  | 'smallInteger'  | typeof DataTypes.SMALLINT |
-        'mediumint' | 'mediumInteger' | typeof DataTypes.MEDIUMINT |
-        'bigint'    | 'bigInteger'    | typeof DataTypes.BIGINT;
+  type: 'int' | 'integer' | typeof DataTypes.INTEGER |
+  'tinyint' | 'tinyInteger' | typeof DataTypes.TINYINT |
+  'smallint' | 'smallInteger' | typeof DataTypes.SMALLINT |
+  'mediumint' | 'mediumInteger' | typeof DataTypes.MEDIUMINT |
+  'bigint' | 'bigInteger' | typeof DataTypes.BIGINT;
 }
 
 export interface FloatOptions extends FloatDataTypeOptions, NumberOptions {
@@ -203,40 +203,40 @@ export interface RadioOptions extends Omit<BooleanOptions, 'type'> {
   scope?: string[];
 }
 
-export type ColumnOptions = AbstractFieldOptions 
-                          | BooleanOptions 
-                          | NumberOptions 
-                          | IntegerOptions 
-                          | FloatOptions
-                          | DoubleOptions
-                          | DecimalOptions
-                          | RealOptions
-                          | StringOptions
-                          | PasswordOptions
-                          | TextOptions
-                          | TimeOptions
-                          | DateOptions
-                          | DateOnlyOptions
-                          | ArrayOptions
-                          | JsonOptions
-                          | VirtualOptions
-                          | FormulaOptions
-                          | ReferenceOptions;
+export type ColumnOptions = AbstractFieldOptions
+  | BooleanOptions
+  | NumberOptions
+  | IntegerOptions
+  | FloatOptions
+  | DoubleOptions
+  | DecimalOptions
+  | RealOptions
+  | StringOptions
+  | PasswordOptions
+  | TextOptions
+  | TimeOptions
+  | DateOptions
+  | DateOnlyOptions
+  | ArrayOptions
+  | JsonOptions
+  | VirtualOptions
+  | FormulaOptions
+  | ReferenceOptions;
 
-export type ElementOptions = BooleanOptions 
-                          | IntegerOptions 
-                          | FloatOptions
-                          | DoubleOptions
-                          | DecimalOptions
-                          | RealOptions
-                          | StringOptions
-                          | TextOptions
-                          | TimeOptions
-                          | DateOptions
-                          | DateOnlyOptions
-                          | ArrayOptions
-                          | JsonOptions
-                          | VirtualOptions;
+export type ElementOptions = BooleanOptions
+  | IntegerOptions
+  | FloatOptions
+  | DoubleOptions
+  | DecimalOptions
+  | RealOptions
+  | StringOptions
+  | TextOptions
+  | TimeOptions
+  | DateOptions
+  | DateOnlyOptions
+  | ArrayOptions
+  | JsonOptions
+  | VirtualOptions;
 
 export type RelationOptions = HasOneOptions | HasManyOptions | BelongsToOptions | BelongsToManyOptions;
 

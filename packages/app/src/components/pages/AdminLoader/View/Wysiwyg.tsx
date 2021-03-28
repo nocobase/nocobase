@@ -5,7 +5,15 @@ import { Spin } from '@nocobase/client';
 import { useRequest, useLocation } from 'umi';
 import api from '@/api-client';
 import { Actions } from '../Actions';
-import { Table as AntdTable, Card, Pagination, Button, Tabs, Descriptions as AntdDescriptions, Tooltip } from 'antd';
+import {
+  Table as AntdTable,
+  Card,
+  Pagination,
+  Button,
+  Tabs,
+  Descriptions as AntdDescriptions,
+  Tooltip,
+} from 'antd';
 import { LoadingOutlined } from '@ant-design/icons';
 import { components, fields2columns } from '@/components/views/SortableTable';
 import ReactDragListView from 'react-drag-listview';
@@ -20,7 +28,5 @@ export function Wysiwyg(props) {
 
   const { html = '' } = schema;
 
-  return (
-    <div dangerouslySetInnerHTML={{__html: markdown(html)}}></div>
-  );
+  return <div dangerouslySetInnerHTML={{ __html: markdown(html) }}></div>;
 }

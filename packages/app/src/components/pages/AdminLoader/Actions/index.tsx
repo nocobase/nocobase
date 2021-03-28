@@ -1,6 +1,11 @@
 import React, { useState } from 'react';
 import { Space, Button, Popconfirm, Popover } from 'antd';
-import { FilterOutlined, PlusOutlined, SelectOutlined, DeleteOutlined } from '@ant-design/icons';
+import {
+  FilterOutlined,
+  PlusOutlined,
+  SelectOutlined,
+  DeleteOutlined,
+} from '@ant-design/icons';
 import Drawer from '@/components/pages/AdminLoader/Drawer';
 import View from '@/components/pages/AdminLoader/View';
 import get from 'lodash/get';
@@ -11,12 +16,12 @@ export function Create(props) {
   const { title, pageTitle, viewName, transform, componentProps = {} } = schema;
   return (
     <>
-      <Button 
+      <Button
         size={size}
         onClick={() => {
           Drawer.open({
             title: pageTitle || title,
-            content: ({resolve, closeWithConfirm}) => (
+            content: ({ resolve, closeWithConfirm }) => (
               <div>
                 <View
                   {...restProps}
@@ -26,37 +31,43 @@ export function Create(props) {
                   associatedKey={associatedKey}
                   viewName={viewName}
                   onReset={resolve}
-                  onDraft={async (item) => {
+                  onDraft={async item => {
                     const values = transform ? {} : item;
-                    for (const [sourceKey, targetKey] of Object.entries<string>(transform || {})) {
+                    for (const [sourceKey, targetKey] of Object.entries<string>(
+                      transform || {},
+                    )) {
                       const value = get({ data: item }, sourceKey);
                       set(values, targetKey, value);
                     }
                     await resolve();
                     console.log('onFinish', values);
-                    onFinish && await onFinish(values);
+                    onFinish && (await onFinish(values));
                   }}
-                  onFinish={async (item) => {
+                  onFinish={async item => {
                     const values = transform ? {} : item;
-                    for (const [sourceKey, targetKey] of Object.entries<string>(transform || {})) {
+                    for (const [sourceKey, targetKey] of Object.entries<string>(
+                      transform || {},
+                    )) {
                       const value = get({ data: item }, sourceKey);
                       set(values, targetKey, value);
                     }
                     await resolve();
                     console.log('onFinish', values);
-                    onFinish && await onFinish(values);
+                    onFinish && (await onFinish(values));
                   }}
                 />
               </div>
             ),
           });
-        }} 
-        icon={<PlusOutlined />} 
+        }}
+        icon={<PlusOutlined />}
         type={'primary'}
         {...componentProps}
-      >{ title }</Button>
+      >
+        {title}
+      </Button>
     </>
-  )
+  );
 }
 
 export function Update(props) {
@@ -64,11 +75,11 @@ export function Update(props) {
   const { title, viewName } = schema;
   return (
     <>
-      <Button 
+      <Button
         onClick={() => {
           Drawer.open({
             title: title,
-            content: ({resolve, closeWithConfirm}) => (
+            content: ({ resolve, closeWithConfirm }) => (
               <div>
                 <View
                   {...restProps}
@@ -76,41 +87,43 @@ export function Update(props) {
                   data={data}
                   viewName={viewName}
                   onReset={resolve}
-                  onDraft={async (values) => {
+                  onDraft={async values => {
                     await resolve();
-                    onFinish && await onFinish(values);
+                    onFinish && (await onFinish(values));
                   }}
                   onValueChange={() => {
                     closeWithConfirm && closeWithConfirm(true);
                   }}
-                  onFinish={async (values) => {
+                  onFinish={async values => {
                     await resolve();
-                    onFinish && await onFinish(values);
+                    onFinish && (await onFinish(values));
                   }}
                 />
               </div>
             ),
           });
-        }} 
-        icon={<PlusOutlined />} 
+        }}
+        icon={<PlusOutlined />}
         type={'primary'}
-      >{ title }</Button>
+      >
+        {title}
+      </Button>
     </>
-  )
+  );
 }
 
 export function Add(props) {
   const { size, onFinish, schema = {}, associatedKey, ...restProps } = props;
-  console.log({associatedKey}, 'add');
+  console.log({ associatedKey }, 'add');
   const { filter, title, viewName, transform, componentProps = {} } = schema;
   return (
     <>
-      <Button 
+      <Button
         size={size}
         onClick={() => {
           Drawer.open({
             title: title,
-            content: ({resolve}) => {
+            content: ({ resolve }) => {
               const [selectedRows, setSelectedRows] = useState([]);
               return (
                 <div>
@@ -119,29 +132,38 @@ export function Add(props) {
                     defaultFilter={filter}
                     viewName={viewName}
                     associatedKey={associatedKey}
-                    onSelected={(values) => {
+                    onSelected={values => {
                       console.log(values);
-                      setSelectedRows(values.map( item => {
-                        if (!transform) {
-                          return;
-                        }
-                        const data = {};
-                        for (const [sourceKey, targetKey] of Object.entries<string>(transform)) {
-                          const value = get({ data: item }, sourceKey);
-                          set(data, targetKey, value);
-                        }
-                        return data;
-                      }));
+                      setSelectedRows(
+                        values.map(item => {
+                          if (!transform) {
+                            return;
+                          }
+                          const data = {};
+                          for (const [sourceKey, targetKey] of Object.entries<
+                            string
+                          >(transform)) {
+                            const value = get({ data: item }, sourceKey);
+                            set(data, targetKey, value);
+                          }
+                          return data;
+                        }),
+                      );
                     }}
                   />
                   <Drawer.Footer>
                     <Space>
                       <Button onClick={resolve}>取消</Button>
-                      <Button type={'primary'} onClick={async () => {
-                        console.log({schema, onFinish});
-                        onFinish && await onFinish(selectedRows);
-                        resolve();
-                      }}>确定</Button>
+                      <Button
+                        type={'primary'}
+                        onClick={async () => {
+                          console.log({ schema, onFinish });
+                          onFinish && (await onFinish(selectedRows));
+                          resolve();
+                        }}
+                      >
+                        确定
+                      </Button>
                     </Space>
                   </Drawer.Footer>
                 </div>
@@ -149,29 +171,36 @@ export function Add(props) {
             },
           });
         }}
-        icon={<SelectOutlined />} 
+        icon={<SelectOutlined />}
         {...componentProps}
-      >{ title }</Button>
+      >
+        {title}
+      </Button>
     </>
-  )
+  );
 }
 
 export function Destroy(props) {
   const { size, schema = {}, onFinish } = props;
   const { title, componentProps = {} } = schema;
   return (
-    <Popconfirm title="确认删除吗？" onConfirm={async (e) => {
-      onFinish && await onFinish();
-    }}>
+    <Popconfirm
+      title="确认删除吗？"
+      onConfirm={async e => {
+        onFinish && (await onFinish());
+      }}
+    >
       <Button
         size={size}
         danger
         type={'ghost'}
         icon={<DeleteOutlined />}
         {...componentProps}
-      >{ title }</Button>
+      >
+        {title}
+      </Button>
     </Popconfirm>
-  )
+  );
 }
 
 export function Filter(props) {
@@ -185,7 +214,7 @@ export function Filter(props) {
   return (
     <>
       {visible && (
-        <div 
+        <div
           style={{
             height: '100vh',
             width: '100vw',
@@ -205,63 +234,72 @@ export function Filter(props) {
         defaultVisible={visible}
         placement={'bottomLeft'}
         destroyTooltipOnHide
-        onVisibleChange={(visible) => {
+        onVisibleChange={visible => {
           setVisible(visible);
         }}
         className={'filters-popover'}
-        style={{
-        }}
+        style={{}}
         overlayStyle={{
-          minWidth: 500
+          minWidth: 500,
         }}
-        content={(
+        content={
           <>
-            <View data={data} onFinish={async (values) => {
-              if (values) {
-                const items = values.filter.and || values.filter.or;
-                setFilterCount(Object.keys(items).length);
-                setData(values);
-                onFinish && await onFinish(values);
-              }
-              setVisible(false);
-            }} schema={{
-              "type": "filterForm",
-              "fields": [{
-                "dataIndex": ["filter"],
-                "name": "filter",
-                "interface": "json",
-                "type": "json",
-                "component": {
-                  "type": "filter",
-                  'x-component-props': {
-                    fields,
-                  }
-                },
-              }],
-            }}/>
+            <View
+              data={data}
+              onFinish={async values => {
+                if (values) {
+                  const items = values.filter.and || values.filter.or;
+                  setFilterCount(Object.keys(items).length);
+                  setData(values);
+                  onFinish && (await onFinish(values));
+                }
+                setVisible(false);
+              }}
+              schema={{
+                type: 'filterForm',
+                fields: [
+                  {
+                    dataIndex: ['filter'],
+                    name: 'filter',
+                    interface: 'json',
+                    type: 'json',
+                    component: {
+                      type: 'filter',
+                      'x-component-props': {
+                        fields,
+                      },
+                    },
+                  },
+                ],
+              }}
+            />
           </>
-        )}
+        }
       >
-        <Button icon={<FilterOutlined />} >{filterCount ? `${filterCount} 个${title}项` : title}</Button>
+        <Button icon={<FilterOutlined />}>
+          {filterCount ? `${filterCount} 个${title}项` : title}
+        </Button>
       </Popover>
     </>
-  )
+  );
 }
 
 export function Actions(props) {
   const { onTrigger = {}, actions = [], style, ...restProps } = props;
-  return actions.length > 0 && (
-    <div className={'action-buttons'} style={style}>
-      {actions.map(action => (
-        <div className={`${action.type}-action-button action-button`}>
-          <Action
-            {...restProps}
-            onFinish={onTrigger[action.type]}
-            schema={action}
-          />
-        </div>
-      ))}
-    </div>
+  return (
+    actions.length > 0 && (
+      <div className={'action-buttons'} style={style}>
+        {actions.map(action => (
+          <div className={`${action.type}-action-button action-button`}>
+            <Action
+              {...restProps}
+              onFinish={onTrigger[action.type]}
+              schema={action}
+            />
+          </div>
+        ))}
+      </div>
+    )
   );
 }
 
@@ -282,7 +320,7 @@ export function Action(props) {
   // cnsole.log(schema);
   const { type } = schema;
   const Component = getAction(type);
-  return Component && <Component {...props}/>;
+  return Component && <Component {...props} />;
 }
 
 registerAction('add', Add);

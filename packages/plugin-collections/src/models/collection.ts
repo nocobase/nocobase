@@ -208,7 +208,8 @@ export class CollectionModel extends BaseModel {
           });
         }
         if (model) {
-          await model.update({...item, 
+          await model.update({
+            ...item,
             // sort: index+1
           }, options);
         }

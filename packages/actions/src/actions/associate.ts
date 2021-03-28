@@ -24,8 +24,8 @@ export async function set(ctx: Context, next: Next) {
     resourceField,
     associatedName,
   } = ctx.action.params as {
-    associated: Model, 
-    associatedName: string, 
+    associated: Model,
+    associatedName: string,
     resourceField: Relation,
     values: any,
   };
@@ -64,8 +64,8 @@ export async function add(ctx: Context, next: Next) {
     resourceField,
     associatedName,
   } = ctx.action.params as {
-    associated: Model, 
-    associatedName: string, 
+    associated: Model,
+    associatedName: string,
     resourceField: Relation,
     values: any,
   };
@@ -106,8 +106,8 @@ export async function remove(ctx: Context, next: Next) {
     resourceField,
     associatedName,
   } = ctx.action.params as {
-    associated: Model, 
-    associatedName: string, 
+    associated: Model,
+    associatedName: string,
     resourceField: Relation,
     values: any,
   };
@@ -115,7 +115,7 @@ export async function remove(ctx: Context, next: Next) {
   if (!(associated instanceof AssociatedModel)) {
     throw new Error(`${associatedName} associated model invalid`);
   }
-  const {get: getAccessor, remove: removeAccessor, set: setAccessor} = resourceField.getAccessors();
+  const { get: getAccessor, remove: removeAccessor, set: setAccessor } = resourceField.getAccessors();
   const { resourceKey, resourceKeyAttribute, fields = [] } = ctx.action.params;
   const TargetModel = ctx.db.getModel(resourceField.getTarget());
   const options = TargetModel.parseApiJson({
@@ -132,7 +132,7 @@ export async function remove(ctx: Context, next: Next) {
       context: ctx,
     });
     await associated[removeAccessor](model);
-    ctx.body = {id: model.id};
+    ctx.body = { id: model.id };
   }
   await next();
 }
@@ -143,8 +143,8 @@ export async function toggle(ctx: Context, next: Next) {
     resourceField,
     associatedName,
   } = ctx.action.params as {
-    associated: Model, 
-    associatedName: string, 
+    associated: Model,
+    associatedName: string,
     resourceField: Relation,
     values: any,
   };
@@ -152,7 +152,7 @@ export async function toggle(ctx: Context, next: Next) {
   if (!(associated instanceof AssociatedModel)) {
     throw new Error(`${associatedName} associated model invalid`);
   }
-  const {get: getAccessor, remove: removeAccessor, set: setAccessor, add: addAccessor} = resourceField.getAccessors();
+  const { get: getAccessor, remove: removeAccessor, set: setAccessor, add: addAccessor } = resourceField.getAccessors();
   const { resourceKey, resourceKeyAttribute, fields = [] } = ctx.action.params;
   const TargetModel = ctx.db.getModel(resourceField.getTarget());
   const options = TargetModel.parseApiJson({

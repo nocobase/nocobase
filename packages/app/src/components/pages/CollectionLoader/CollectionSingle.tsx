@@ -10,11 +10,14 @@ import { Helmet } from 'umi';
 export function CollectionSingle(props) {
   // console.log(props);
   const { item = {} } = props;
-  const { data: collections = [], loading: collectionLoading } = useRequest(() => api.resource(props.match.params['collection']).getCollections({
-    values: {
-      tabs: props.match.params['items']
-    }
-  }));
+  const { data: collections = [], loading: collectionLoading } = useRequest(
+    () =>
+      api.resource(props.match.params['collection']).getCollections({
+        values: {
+          tabs: props.match.params['items'],
+        },
+      }),
+  );
 
   // const { data = {}, loading } = useRequest(() => currentTab && api.resource(currentTab.collection_name).getPageInfo({
   //   resourceKey: item.itemId,
@@ -23,14 +26,14 @@ export function CollectionSingle(props) {
   const [activing, setActiving] = useState(false);
 
   if (collectionLoading) {
-    return <Spin/>;
+    return <Spin />;
   }
 
-  const collection = collections[props.itemIndex]||{};
+  const collection = collections[props.itemIndex] || {};
 
   const { tabs = [], pageInfo = {} } = collection;
-  const activeTab = tabs.find(tab => tab.name == item.tabName)||{};
-  console.log({tabs, activeTab, item});
+  const activeTab = tabs.find(tab => tab.name == item.tabName) || {};
+  console.log({ tabs, activeTab, item });
 
   if (!activeTab) {
     return null;
@@ -51,17 +54,20 @@ export function CollectionSingle(props) {
         }}
         title={pageInfo.pageTitle}
         // subTitle="This is a subtitle"
-        extra={[
-          // <Button key="3">Operation</Button>,
-          // <Button key="2">Operation</Button>,
-          // <Button key="1" type="primary">
-          //   Primary
-          // </Button>,
-        ]}
+        extra={
+          [
+            // <Button key="3">Operation</Button>,
+            // <Button key="2">Operation</Button>,
+            // <Button key="1" type="primary">
+            //   Primary
+            // </Button>,
+          ]
+        }
         footer={
-          <Tabs size={'small'}
+          <Tabs
+            size={'small'}
             defaultActiveKey={`${activeTab.name}`}
-            onTabClick={(activeKey) => {
+            onTabClick={activeKey => {
               setActiving(true);
               redirectTo({
                 ...props.match.params,
@@ -71,15 +77,23 @@ export function CollectionSingle(props) {
               });
               setTimeout(() => {
                 setActiving(false);
-              }, 2)
+              }, 2);
             }}
           >
-            {tabs.map(tab => <Tabs.TabPane tab={tab.title} key={`${tab.name}`} />)}
+            {tabs.map(tab => (
+              <Tabs.TabPane tab={tab.title} key={`${tab.name}`} />
+            ))}
           </Tabs>
         }
       />
       <div className={'collection-content'}>
-        <CollectionTabPane {...props} pageInfo={pageInfo} collection={collection} loading={activing} activeTab={activeTab}/>
+        <CollectionTabPane
+          {...props}
+          pageInfo={pageInfo}
+          collection={collection}
+          loading={activing}
+          activeTab={activeTab}
+        />
       </div>
     </div>
   );

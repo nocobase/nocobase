@@ -11,7 +11,7 @@ export class AutomationJobModel extends Model {
       this.setDataValue('automation', automation);
     }
     automation.startJob(`job-${this.id}`, async (result: any, options: any = {}) => {
-      this.process(result, {...options});
+      this.process(result, { ...options });
     });
   }
 
@@ -24,7 +24,7 @@ export class AutomationJobModel extends Model {
         source = result;
       }
     }
-    return parse(this.get('filter')||{})(source);
+    return parse(this.get('filter') || {})(source);
   }
 
   toValues(result) {
@@ -37,7 +37,7 @@ export class AutomationJobModel extends Model {
       }
     }
     const data: any = {}
-    const values = (this.get('values')||[]) as any[];
+    const values = (this.get('values') || []) as any[];
     for (const item of values) {
       let value = item.value;
       if (item.op === 'truncate') {
@@ -60,7 +60,7 @@ export class AutomationJobModel extends Model {
     let filter: any = this.toFilter(result);
     let data: any = this.toValues(result);
     const { where = {} } = M.parseApiJson({ filter });
-    console.log({data, where});
+    console.log({ data, where });
     switch (jobType) {
       case 'create':
         await M.create(data);
@@ -69,7 +69,7 @@ export class AutomationJobModel extends Model {
         Object.keys(data).length && await M.update(data, { where });
         break;
       case 'destroy':
-        await M.destroy(where ? { where }: {});
+        await M.destroy(where ? { where } : {});
         break;
     }
   }

@@ -1,7 +1,7 @@
 import { Field } from '@nocobase/database';
 import { LOG_TYPE_DESTROY } from '../constants';
 
-export default async function(model, options) {
+export default async function (model, options) {
   if (!options.context) {
     return;
   }

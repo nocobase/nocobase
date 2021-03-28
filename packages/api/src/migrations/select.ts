@@ -3,7 +3,7 @@ import Database from '@nocobase/database';
 
 (async () => {
   await api.loadPlugins();
-  await api.database.getModel('collections').load({skipExisting: true});
+  await api.database.getModel('collections').load({ skipExisting: true });
   const database: Database = api.database;
   const [Field] = database.getModels(['fields']);
 

@@ -62,10 +62,10 @@ export function parseRequest(request: ParseRequest, options: ParseOptions = {}):
   if (matches) {
     const params = {};
     keys.forEach((obj, index) => {
-      if (matches[index+1] === undefined) {
+      if (matches[index + 1] === undefined) {
         return;
       }
-      params[obj.name] = matches[index+1];
+      params[obj.name] = matches[index + 1];
     });
     return params;
   }
@@ -144,7 +144,7 @@ export function parseRequest(request: ParseRequest, options: ParseOptions = {}):
 
   const params: ParsedParams = {};
 
-  let prefix = (options.prefix||'').trim();
+  let prefix = (options.prefix || '').trim();
 
   if (prefix && !prefix.startsWith('/')) {
     prefix = `/${prefix}`;
@@ -160,10 +160,10 @@ export function parseRequest(request: ParseRequest, options: ParseOptions = {}):
       continue;
     }
     keys.forEach((obj, index) => {
-      if (matches[index+1] === undefined) {
+      if (matches[index + 1] === undefined) {
         return;
       }
-      params[obj.name] = matches[index+1];
+      params[obj.name] = matches[index + 1];
     });
     params.actionName = _.get(defaults, [type, path, request.method.toLowerCase()]);
   }
@@ -270,7 +270,7 @@ export function mergeFields(defaults: any, inputs: any) {
     }
     // 前端提供 except，后端提供 except 或不提供，合并 except
     else {
-      fields.except = _.uniq([...inputs.except, ...(defaults.except||[])]);
+      fields.except = _.uniq([...inputs.except, ...(defaults.except || [])]);
     }
   }
   // 前端没提供 only 或 except
@@ -279,7 +279,7 @@ export function mergeFields(defaults: any, inputs: any) {
   }
   // 如果前端提供了 appends
   if (!_.isEmpty(inputs.appends)) {
-    fields.appends = _.uniq([...inputs.appends, ...(defaults.appends||[])]);
+    fields.appends = _.uniq([...inputs.appends, ...(defaults.appends || [])]);
   }
   if (!fields.appends) {
     fields.appends = [];

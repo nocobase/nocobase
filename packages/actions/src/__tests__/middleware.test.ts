@@ -5,7 +5,7 @@ import { initDatabase, agent, resourcer } from './index';
 
 describe('list', () => {
   let db;
-  
+
   beforeAll(async () => {
     resourcer.define({
       name: 'articles',
@@ -43,7 +43,7 @@ describe('list', () => {
       force: true,
     });
   });
-  
+
   afterAll(() => db.close());
 
   it('create', async () => {
@@ -58,7 +58,7 @@ describe('list', () => {
   it('list', async () => {
     const response = await agent.get('/articles?fields=title&page=1');
     expect(response.body).toEqual({
-      data: [ { title: 'title1' } ],
+      data: [{ title: 'title1' }],
       meta: { count: 1, page: 1, per_page: 20 }
     });
   });

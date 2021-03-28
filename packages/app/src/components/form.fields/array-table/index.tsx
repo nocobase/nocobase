@@ -1,33 +1,37 @@
-import React, { useContext } from 'react'
+import React, { useContext } from 'react';
 import {
   ISchemaFieldComponentProps,
   SchemaField,
   Schema,
   complieExpression,
-  FormExpressionScopeContext
-} from '@formily/react-schema-renderer'
-import { toArr, isFn, isArr, FormPath } from '@formily/shared'
-import { ArrayList, DragListView } from '@formily/react-shared-components'
-import { CircleButton } from '../circle-button'
-import { TextButton } from '../text-button'
-import { Table, Form, Button } from 'antd'
-import { FormItemShallowProvider } from '@formily/antd'
+  FormExpressionScopeContext,
+} from '@formily/react-schema-renderer';
+import { toArr, isFn, isArr, FormPath } from '@formily/shared';
+import { ArrayList, DragListView } from '@formily/react-shared-components';
+import { CircleButton } from '../circle-button';
+import { TextButton } from '../text-button';
+import { Table, Form, Button } from 'antd';
+import { FormItemShallowProvider } from '@formily/antd';
 import {
   PlusOutlined,
   DeleteOutlined,
   DownOutlined,
-  UpOutlined
-} from '@ant-design/icons'
-import styled from 'styled-components'
+  UpOutlined,
+} from '@ant-design/icons';
+import styled from 'styled-components';
 
 const ArrayComponents = {
   CircleButton,
   TextButton,
-  AdditionIcon: () => <><PlusOutlined/> 新增</>,
+  AdditionIcon: () => (
+    <>
+      <PlusOutlined /> 新增
+    </>
+  ),
   RemoveIcon: () => <DeleteOutlined />,
   MoveDownIcon: () => <DownOutlined />,
-  MoveUpIcon: () => <UpOutlined />
-}
+  MoveUpIcon: () => <UpOutlined />,
+};
 
 const DragHandler = styled.span`
   width: 7px;
@@ -38,12 +42,12 @@ const DragHandler = styled.span`
   border-bottom: 0;
   cursor: move;
   margin-bottom: 24px;
-`
+`;
 
 export const ArrayTable: any = styled(
   (props: ISchemaFieldComponentProps & { className: string }) => {
-    const expressionScope = useContext(FormExpressionScopeContext)
-    const { value, schema, className, editable, path, mutators } = props
+    const expressionScope = useContext(FormExpressionScopeContext);
+    const { value, schema, className, editable, path, mutators } = props;
     const {
       renderAddition,
       renderRemove,
@@ -55,31 +59,31 @@ export const ArrayTable: any = styled(
       operations,
       draggable,
       ...componentProps
-    } = schema.getExtendsComponentProps() || {}
+    } = schema.getExtendsComponentProps() || {};
     const schemaItems = Array.isArray(schema.items)
       ? schema.items[schema.items.length - 1]
-      : schema.items
+      : schema.items;
     const onAdd = () => {
       if (schemaItems) {
-        mutators.push(schemaItems.getEmptyValue())
+        mutators.push(schemaItems.getEmptyValue());
       }
-    }
+    };
     const onMove = (dragIndex, dropIndex) => {
-      mutators.move(dragIndex, dropIndex)
-    }
+      mutators.move(dragIndex, dropIndex);
+    };
     const renderColumns = (items: Schema) => {
       return items.mapProperties((props, key) => {
         const itemProps = {
           ...props.getExtendsItemProps(),
-          ...props.getExtendsProps()
-        }
+          ...props.getExtendsProps(),
+        };
         return {
           title: complieExpression(props.title, expressionScope),
           ...itemProps,
           key,
           dataIndex: key,
           render: (value: any, record: any, index: number) => {
-            const newPath = FormPath.parse(path).concat(index, key)
+            const newPath = FormPath.parse(path).concat(index, key);
             return (
               <FormItemShallowProvider
                 key={newPath.toString()}
@@ -89,19 +93,19 @@ export const ArrayTable: any = styled(
               >
                 <SchemaField path={newPath} schema={props} />
               </FormItemShallowProvider>
-            )
-          }
-        }
-      })
-    }
+            );
+          },
+        };
+      });
+    };
     // 兼容异步items schema传入
-    let columns = []
+    let columns = [];
     if (schema.items) {
       columns = isArr(schema.items)
         ? schema.items.reduce((buf, items) => {
-            return buf.concat(renderColumns(items))
+            return buf.concat(renderColumns(items));
           }, [])
-        : renderColumns(schema.items)
+        : renderColumns(schema.items);
     }
     if (editable && operations !== false) {
       columns.push({
@@ -130,32 +134,32 @@ export const ArrayTable: any = styled(
                   : renderExtraOperations}
               </div>
             </Form.Item>
-          )
-        }
-      })
+          );
+        },
+      });
     }
     if (draggable) {
       columns.unshift({
         width: 20,
         key: 'dragHandler',
         render: () => {
-          return <DragHandler className="drag-handler" />
-        }
-      })
+          return <DragHandler className="drag-handler" />;
+        },
+      });
     }
     const renderTable = () => {
       return (
         <Table
           {...componentProps}
           rowKey={record => {
-            return toArr(value).indexOf(record)
+            return toArr(value).indexOf(record);
           }}
           pagination={false}
           columns={columns}
           dataSource={toArr(value)}
         ></Table>
-      )
-    }
+      );
+    };
     return (
       <div className={className}>
         <ArrayList
@@ -169,7 +173,7 @@ export const ArrayTable: any = styled(
             renderRemove,
             renderMoveDown,
             renderMoveUp,
-            renderEmpty
+            renderEmpty,
           }}
         >
           {draggable ? (
@@ -191,13 +195,13 @@ export const ArrayTable: any = styled(
                     {children}
                   </div>
                 )
-              )
+              );
             }}
           </ArrayList.Addition>
         </ArrayList>
       </div>
-    )
-  }
+    );
+  },
 )`
   width: 100%;
   margin-bottom: 10px;
@@ -227,8 +231,8 @@ export const ArrayTable: any = styled(
       margin-right: 8px;
     }
   }
-`
+`;
 
-ArrayTable.isFieldComponent = true
+ArrayTable.isFieldComponent = true;
 
-export default ArrayTable
+export default ArrayTable;

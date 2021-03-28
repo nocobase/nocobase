@@ -29,7 +29,7 @@ const config = {
   define: {
     hooks: {
       beforeCreate(model, options) {
-        
+
       },
     },
   },
@@ -57,7 +57,7 @@ export async function getApp() {
     },
   });
   app.resourcer.use(middlewares.associated);
-  app.resourcer.registerActionHandlers({...actions.associate, ...actions.common});
+  app.resourcer.registerActionHandlers({ ...actions.associate, ...actions.common });
   app.registerPlugin('collections', [path.resolve(__dirname, '../../../plugin-collections')]);
   app.registerPlugin('users', [plugin]);
   await app.loadPlugins();
