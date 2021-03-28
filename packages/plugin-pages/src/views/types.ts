@@ -431,19 +431,19 @@ export const kanban = {
   },
 };
 
-export const wysiwyg = {
-  title: '富文本',
+export const markdown = {
+  title: 'Markdown',
   options: {
     // html,
   },
   properties: {
     // 数据配置
     html: {
-      interface: 'wysiwyg',
+      interface: 'markdown',
       type: 'virtual',
-      title: '富文本内容',
+      title: 'Markdown 内容',
       component: {
-        type: 'wysiwyg',
+        type: 'markdown',
       },
     },
   },
@@ -452,12 +452,12 @@ export const wysiwyg = {
       {
         type: "value:visible",
         target: 'collection',
-        condition: `{{ $self.value && $self.value !== 'wysiwyg' }}`,
+        condition: `{{ $self.value && $self.value !== 'markdown' }}`,
       },
       {
         type: "value:visible",
         target: 'dataSourceType',
-        condition: `{{ $self.value && $self.value !== 'wysiwyg' }}`,
+        condition: `{{ $self.value && $self.value !== 'markdown' }}`,
       },
     ],
   },
