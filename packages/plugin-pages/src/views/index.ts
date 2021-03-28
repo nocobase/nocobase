@@ -38,7 +38,7 @@ export function getViewTypeLinkages() {
     xlinkages.push({
       "type": "value:visible",
       "target": `x-${key}-props.*`,
-      "condition": `{{ $self.value === '${key}' }}`,
+      "condition": `{{ $self.value === '${key}' && $form.values.dataSourceType === 'collection' }}`,
     });
     if (linkages.type) {
       xlinkages.push(...linkages.type);
@@ -55,7 +55,7 @@ export function getTypeFieldOptions() {
     title: '视图类型',
     required: true,
     dataSource: getOptions(),
-    createOnly: true,
+    createOnly: false,
     component: {
       type: 'select',
     },

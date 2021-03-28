@@ -50,11 +50,13 @@ export default {
           "target": "targetField",
           "condition": "{{ $self.value === 'association' }}"
         },
-        // {
-        //   "type": "value:visible",
-        //   "target": "type",
-        //   "condition": "{{ $self.value === 'collection' }}"
-        // },
+        ...['form', 'descriptions', 'table', 'kanban', 'calendar'].map(type => {
+          return {
+            "type": "value:visible",
+            "target": `x-${type}-props.*`,
+            "condition": `{{ $form.values.type === '${type}' && $self.value === 'collection' }}`
+          }
+        }),
       ],
     },
     {

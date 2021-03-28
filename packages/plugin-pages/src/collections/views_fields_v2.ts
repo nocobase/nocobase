@@ -36,6 +36,19 @@ export default {
           labelField: 'title',
           valueField: 'id',
         },
+        "x-linkages": [
+          {
+            "type": "value:schema",
+            "target": "field",
+            "schema": {
+              "x-component-props": {
+                "filter": {
+                  "collection_name": "{{ $self.value && $self.value.collection_name }}"
+                }
+              }
+            }
+          }
+        ]
       },
     },
     {
