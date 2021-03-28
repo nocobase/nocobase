@@ -32,14 +32,14 @@ export default function Table(props: SimpleTableProps) {
   const { schema = {}, associatedKey, value, onChange, __index } = props;
   const { collection_name, name } = schema;
   const viewName = `${collection_name}.${name}.${schema.viewName || 'table'}`;
-  console.log({ props, associatedKey, schema, __index, viewName, schema });
+  console.log({ props, associatedKey, schema, __index, viewName });
   return (
     <>
       <View
         // __parent={__parent}
         data={value}
         onChange={onChange}
-        associatedKey={__index}
+        associatedKey={__index||associatedKey}
         viewName={viewName}
         type={'subTable'}
       />
