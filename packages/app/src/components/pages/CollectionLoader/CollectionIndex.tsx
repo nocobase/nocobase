@@ -19,13 +19,15 @@ export function CollectionIndex(props) {
         ghost={false}
         title={title}
         // subTitle="This is a subtitle"
-        extra={[
-          // <Button key="3">Operation</Button>,
-          // <Button key="2">Operation</Button>,
-          // <Button key="1" type="primary">
-          //   Primary
-          // </Button>,
-        ]}
+        extra={
+          [
+            // <Button key="3">Operation</Button>,
+            // <Button key="2">Operation</Button>,
+            // <Button key="1" type="primary">
+            //   Primary
+            // </Button>,
+          ]
+        }
         // footer={
         //   <Tabs size={'small'} defaultActiveKey="1">
         //     <Tabs.TabPane tab="已发布" key="1" />
@@ -36,7 +38,7 @@ export function CollectionIndex(props) {
       <div className={'collection-content'}>
         <ViewFactory
           {...props}
-          viewName={lastPage.viewName||viewName||defaultViewName}
+          viewName={lastPage.viewName || viewName || defaultViewName}
           resourceName={collection}
         />
       </div>

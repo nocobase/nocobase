@@ -20,8 +20,12 @@ export default (props: any) => {
   }
   return (
     <Menu
-      defaultSelectedKeys={paths.filter(path => pathcamp(location.pathname, path)).concat(location.pathname)}
-      defaultOpenKeys={paths.filter(path => pathcamp(location.pathname, path)).concat(location.pathname)}
+      defaultSelectedKeys={paths
+        .filter(path => pathcamp(location.pathname, path))
+        .concat(location.pathname)}
+      defaultOpenKeys={paths
+        .filter(path => pathcamp(location.pathname, path))
+        .concat(location.pathname)}
       {...restProps}
     >
       {items.map(item => {
@@ -32,20 +36,24 @@ export default (props: any) => {
         const subItems = children.filter(child => child.showInMenu);
         if (!hideChildren && subItems.length > 1) {
           return (
-            <Menu.SubMenu key={`${item.path}`} icon={<Icon type={item.icon}/>} title={<>{item.title}</>}>
+            <Menu.SubMenu
+              key={`${item.path}`}
+              icon={<Icon type={item.icon} />}
+              title={<>{item.title}</>}
+            >
               {subItems.map((child: any) => (
                 <Menu.Item key={child.path}>
                   <Link to={child.path}>{child.title}</Link>
                 </Menu.Item>
               ))}
             </Menu.SubMenu>
-          )
+          );
         }
         return (
-          <Menu.Item icon={<Icon type={item.icon}/>} key={item.path}>
+          <Menu.Item icon={<Icon type={item.icon} />} key={item.path}>
             <Link to={item.path}>{item.title}</Link>
           </Menu.Item>
-        )
+        );
       })}
     </Menu>
   );

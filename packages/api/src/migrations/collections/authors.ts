@@ -21,8 +21,8 @@ export default {
       interface: 'radio',
       title: '性别',
       dataSource: [
-        {value: 'male', label: '男性'},
-        {value: 'female', label: '女性'},
+        { value: 'male', label: '男性' },
+        { value: 'female', label: '女性' },
       ],
       component: {
         showInTable: true,

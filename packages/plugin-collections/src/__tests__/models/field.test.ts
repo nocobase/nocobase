@@ -34,7 +34,7 @@ describe('models.field', () => {
           interface: 'select',
           type: 'virtual',
           dataSource: [
-            {label: 'xx', value: 'xx'},
+            { label: 'xx', value: 'xx' },
           ],
           component: {
             type: 'string',
@@ -46,7 +46,7 @@ describe('models.field', () => {
     });
     const fields = await collection.getFields();
     expect(fields[0].get('dataSource')).toEqual([
-      {label: 'xx', value: 'xx'},
+      { label: 'xx', value: 'xx' },
     ]);
   });
 
@@ -87,8 +87,8 @@ describe('models.field', () => {
     // console.log(Test.associations);
     // console.log(Sub.rawAttributes);
     const test = await Test.create({});
-    const sub = await test.createSub({name: 'name1', title: 'title1'});
-    expect(sub.toJSON()).toMatchObject({name: 'name1', title: 'title1'})
+    const sub = await test.createSub({ name: 'name1', title: 'title1' });
+    expect(sub.toJSON()).toMatchObject({ name: 'name1', title: 'title1' })
   });
 
   it('sub table field', async () => {

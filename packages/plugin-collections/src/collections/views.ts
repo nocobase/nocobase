@@ -245,10 +245,10 @@ export default {
       title: '默认每页显示几行数据',
       defaultValue: 50,
       dataSource: [
-        {label: '10', value: 10},
-        {label: '20', value: 20},
-        {label: '50', value: 50},
-        {label: '100', value: 100},
+        { label: '10', value: 10 },
+        { label: '20', value: 20 },
+        { label: '50', value: 50 },
+        { label: '100', value: 100 },
       ],
       component: {
         type: 'radio',

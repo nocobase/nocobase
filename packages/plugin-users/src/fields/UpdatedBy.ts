@@ -24,7 +24,7 @@ export default class UpdatedBy extends BELONGSTO {
     fields.push(this.options.foreignKey);
     attributes[this.options.foreignKey] = currentUser.get(this.options.targetKey);
   }
-  
+
   constructor({ type, ...options }: UpdatedByOptions, context: FieldContext) {
     super({ ...options, type: 'belongsTo' } as BelongsToOptions, context);
     const Model = context.sourceTable.getModel();

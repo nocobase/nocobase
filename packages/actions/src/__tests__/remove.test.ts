@@ -2,11 +2,11 @@ import { initDatabase, agent } from './index';
 
 describe('remove', () => {
   let db;
-  
+
   beforeEach(async () => {
     db = await initDatabase();
   });
-  
+
   afterAll(() => db.close());
 
   it('hasOne1', async () => {
@@ -28,7 +28,7 @@ describe('remove', () => {
     const post = await Post.create();
     await post.updateAssociations({
       comments: [
-        {content: 'content111222'},
+        { content: 'content111222' },
       ],
     });
     let [comment] = await post.getComments();
@@ -42,7 +42,7 @@ describe('remove', () => {
     const Post = db.getModel('posts');
     let post = await Post.create();
     await post.updateAssociations({
-      user: {name: 'name121234'},
+      user: { name: 'name121234' },
     });
     await agent.post(`/posts/${post.id}/user:remove`);
     post = await Post.findOne({

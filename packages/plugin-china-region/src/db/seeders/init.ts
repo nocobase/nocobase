@@ -1,6 +1,6 @@
 import { provinces, cities, areas, streets, villages } from 'china-division';
 
-export default async function({ database }) {
+export default async function ({ database }) {
   const Model = database.getModel('china_regions');
   // TODO(feature): 可以考虑再加一级大区，编码规则应该是支持的
   // 华北、东北、华东、华南、西南、西北、华中

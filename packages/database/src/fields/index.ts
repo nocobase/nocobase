@@ -97,11 +97,11 @@ export function getDataTypeKey(type: any): string {
 export function buildField(options: FieldOptions, context: Fields.FieldContext) {
   let { type } = options;
   if (type instanceof ABSTRACT) {
-    options = {...type.options, ...options};
+    options = { ...type.options, ...options };
   }
   const dataType = getDataTypeKey(type);
   const Field = getField(dataType);
-  return new Field({type, ...options}, context);
+  return new Field({ type, ...options }, context);
 }
 
 registerFields({

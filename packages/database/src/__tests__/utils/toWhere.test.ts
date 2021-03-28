@@ -57,7 +57,7 @@ describe('utils.toWhere', () => {
         },
       });
     });
-  
+
     it('Op.ilike', () => {
       const where = toWhere({
         id: {
@@ -70,7 +70,7 @@ describe('utils.toWhere', () => {
         },
       });
     });
-  
+
     it('Op.ilike', () => {
       const where = toWhere({
         'id.ilike': 'val1',
@@ -81,7 +81,7 @@ describe('utils.toWhere', () => {
         },
       });
     });
-  
+
     it('Op.is null', () => {
       const where = toWhere({
         'id.is': null,
@@ -92,7 +92,7 @@ describe('utils.toWhere', () => {
         },
       });
     });
-  
+
     it('Op.in', () => {
       const where = toWhere({
         id: {
@@ -105,7 +105,7 @@ describe('utils.toWhere', () => {
         },
       });
     });
-  
+
     it('Op.in', () => {
       const where = toWhere({
         'id.in': [11, 12],
@@ -116,7 +116,7 @@ describe('utils.toWhere', () => {
         },
       });
     });
-    
+
     it('Op.lt', () => {
       expect(toWhere({
         'id.lt': 1
@@ -359,7 +359,7 @@ describe('utils.toWhere', () => {
 
     it('logical and with condition operator in field', () => {
       const Post = db.getModel('posts');
-      const data = toWhere({"and":[{"title.eq": '23'}]}, {
+      const data = toWhere({ "and": [{ "title.eq": '23' }] }, {
         model: Post
       });
       expect(data).toEqual({
@@ -402,30 +402,34 @@ describe('utils.toWhere', () => {
         or: [
           { a: 1 },
           { b: { gt: 2 } },
-          { and: [
-            {
-              'c.and': [
-                {gt: 3, lt: 6}
-              ],
-            },
-          ] },
+          {
+            and: [
+              {
+                'c.and': [
+                  { gt: 3, lt: 6 }
+                ],
+              },
+            ]
+          },
         ],
       })
-      .toEqual({
-        [Op.or]: [
-          { a: 1 }, 
-          { b: { [Op.gt]: 2 } },
-          {[Op.and]: [
+        .toEqual({
+          [Op.or]: [
+            { a: 1 },
+            { b: { [Op.gt]: 2 } },
             {
-              c: {
-                [Op.and]: [
-                  { [Op.gt]: 3, [Op.lt]: 6 }
-                ]
-              },
-            }
-          ]},
-        ],
-      });
+              [Op.and]: [
+                {
+                  c: {
+                    [Op.and]: [
+                      { [Op.gt]: 3, [Op.lt]: 6 }
+                    ]
+                  },
+                }
+              ]
+            },
+          ],
+        });
     });
 
     it('with included association where', () => {

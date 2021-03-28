@@ -30,7 +30,7 @@ describe('collection hooks', () => {
         title: 'tests',
       },
     });
-    
+
     const { name } = response.body;
     const table = app.database.getTable(name);
     expect(table).toBeDefined();

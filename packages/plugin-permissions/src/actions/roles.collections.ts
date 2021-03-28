@@ -152,8 +152,8 @@ export async function update(ctx: actions.Context, next: actions.Next) {
   const toRemoveTabs = existedTabs.filter(tab => (
     // 如果没找到
     !values.tabs.find(id => tab[TabModel.primaryKeyAttribute] === id)
-      // 且开发者模式匹配
-      && !(tab.developerMode ^ ctx.state.developerMode)));
+    // 且开发者模式匹配
+    && !(tab.developerMode ^ ctx.state.developerMode)));
   await permission.removeTabs(toRemoveTabs, { transaction });
   await permission.addTabs(values.tabs, { transaction });
 

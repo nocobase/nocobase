@@ -1,13 +1,13 @@
-import { connect } from '@formily/react-schema-renderer'
+import { connect } from '@formily/react-schema-renderer';
 import {
   Select as AntdSelect,
   mapStyledProps,
-  mapTextComponent
-} from '../shared'
+  mapTextComponent,
+} from '../shared';
 
 export const Select = connect({
   getProps: mapStyledProps,
   getComponent: mapTextComponent,
-})(AntdSelect)
+})(AntdSelect);
 
-export default Select
+export default Select;

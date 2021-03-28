@@ -5,7 +5,12 @@ import { useRequest, request, Spin } from '@nocobase/client';
 
 export function CollectionTabPane(props) {
   const { loading, pageInfo = {}, activeTab = {}, item = {} } = props;
-  const { viewName, associationField = {}, collection_name, field = {} } = activeTab;
+  const {
+    viewName,
+    associationField = {},
+    collection_name,
+    field = {},
+  } = activeTab;
   const { name, target, sourceKey = 'id' } = associationField || {};
 
   const params = {};
@@ -20,16 +25,16 @@ export function CollectionTabPane(props) {
     params['resourceKey'] = item.itemId;
   }
 
-  console.log({params});
+  console.log({ params });
 
   if (loading) {
-    return <Spin/>;
+    return <Spin />;
   }
 
   return (
     <div>
       <ViewFactory
-        {...props} 
+        {...props}
         viewName={viewName}
         isAssociationView={true}
         {...params}

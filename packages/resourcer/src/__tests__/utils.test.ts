@@ -49,7 +49,7 @@ describe('utils', () => {
 
     it('plain only and expect fields', () => {
       // input as "fields=title&fields[only]=content&fields[except]=status&fields[except]=created_at"
-      const result = parseFields([ 'title', { only: 'content' }, { except: ['status', 'created_at'] } ]);
+      const result = parseFields(['title', { only: 'content' }, { except: ['status', 'created_at'] }]);
       expect(result).toEqual({
         only: ['title', 'content'],
         except: ['status', 'created_at']
@@ -63,7 +63,7 @@ describe('utils', () => {
         expect(mergeFields({}, { only: ['col'] }))
           .toEqual({ appends: [], only: ['col'] });
       });
-  
+
       it('appends', async () => {
         expect(mergeFields({}, { only: ['col1'], appends: ['col2'] }))
           .toEqual({ only: ['col1'], appends: ['col2'] });

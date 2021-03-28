@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import api from '@/api-client';
 import { useRequest } from 'umi';
@@ -23,7 +22,7 @@ export function getViewTemplate(template: string) {
 }
 
 registerView('Calendar', Calendar);
-registerView('FilterForm', FilterForm)
+registerView('FilterForm', FilterForm);
 registerView('DrawerForm', DrawerForm);
 registerView('PermissionForm', DrawerForm);
 registerView('Form', Form);
@@ -56,28 +55,31 @@ export default function ViewFactory(props: ViewProps) {
     isAssociationView = false,
   } = props;
   console.log('propspropspropspropspropspropsprops', props);
-  const { data = {}, loading } = useRequest(() => {
-    const params = {
-      resourceKey: viewName,
-      values: {
-        resourceKey,
-        associatedKey: associatedKey,
-        associatedName: associatedName,
-        resourceFieldName: resourceName,
-        mode
-      },
-    };
-    return api.resource(resourceTarget||resourceName).getView(params);
-  }, {
-    refreshDeps: [associatedName, resourceTarget, resourceName, viewName],
-  });
+  const { data = {}, loading } = useRequest(
+    () => {
+      const params = {
+        resourceKey: viewName,
+        values: {
+          resourceKey,
+          associatedKey: associatedKey,
+          associatedName: associatedName,
+          resourceFieldName: resourceName,
+          mode,
+        },
+      };
+      return api.resource(resourceTarget || resourceName).getView(params);
+    },
+    {
+      refreshDeps: [associatedName, resourceTarget, resourceName, viewName],
+    },
+  );
   if (loading) {
-    return <Spin/>;
+    return <Spin />;
   }
   let { template } = data;
   if (isAssociationView && template === 'Table') {
     template = 'SimpleTable';
   }
   const Template = getViewTemplate(template);
-  return Template && <Template {...props} ref={reference} schema={data}/>;
+  return Template && <Template {...props} ref={reference} schema={data} />;
 }

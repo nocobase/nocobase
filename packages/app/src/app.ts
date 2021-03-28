@@ -12,7 +12,7 @@ configResponsive({
 export const request: RequestConfig = {
   prefix: process.env.API,
   errorConfig: {
-    adaptor: (resData) => {
+    adaptor: resData => {
       return {
         ...resData,
         success: true,
@@ -28,23 +28,21 @@ export const request: RequestConfig = {
         headers['Authorization'] = `Bearer ${token}`;
       }
       await next();
-    }
+    },
   ],
 };
 
-const pathnames = [
-  '/login',
-  '/register',
-  '/lostpassword',
-  '/resetpassword',
-];
+const pathnames = ['/login', '/register', '/lostpassword', '/resetpassword'];
 
 export async function getInitialState() {
   const { pathname, search } = location;
   console.log(location);
-  const { data: systemSettings = {} } = await umiRequest('/system_settings:get?fields[appends]=logo,logo.storage', {
-    method: 'get',
-  });
+  const { data: systemSettings = {} } = await umiRequest(
+    '/system_settings:get?fields[appends]=logo,logo.storage',
+    {
+      method: 'get',
+    },
+  );
   let redirect = `?redirect=${pathname}${search}`;
 
   if (!pathnames.includes(pathname)) {
@@ -66,7 +64,7 @@ export async function getInitialState() {
         currentUser: data,
       };
     } catch (error) {
-      console.log(error)
+      console.log(error);
       history.push('/login' + redirect);
     }
   }

@@ -20,7 +20,7 @@ export function middleware(app) {
   const storages = new Map<string, any>();
   const StorageModel = app.database.getModel('storages');
 
-  return app.use(async function(ctx, next) {
+  return app.use(async function (ctx, next) {
     const items = await StorageModel.findAll({
       where: {
         type: STORAGE_TYPE_LOCAL,

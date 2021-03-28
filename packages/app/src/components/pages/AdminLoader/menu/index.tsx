@@ -15,17 +15,27 @@ function pathcamp(path1: string, path2: string) {
 function Link(props: any) {
   const { to, children } = props;
   if (/^http/.test(to)) {
-    return <a target={'_blank'} href={to}>{children}</a>
+    return (
+      <a target={'_blank'} href={to}>
+        {children}
+      </a>
+    );
   }
-  return <UmiLink {...props} to={`/admin/${to}`}/>
+  return <UmiLink {...props} to={`/admin/${to}`} />;
 }
 
 export default (props: any) => {
-  const { menuId, currentPageName, items = [], hideChildren, ...restProps } = props;
+  const {
+    menuId,
+    currentPageName,
+    items = [],
+    hideChildren,
+    ...restProps
+  } = props;
   if (items.length === 0) {
     return null;
   }
-  const toPaths = (data) => {
+  const toPaths = data => {
     const paths = [];
     data.forEach(item => {
       if (item.path && item.path === currentPageName) {
@@ -34,12 +44,12 @@ export default (props: any) => {
       if (item.paths && item.paths.includes(currentPageName)) {
         paths.push(`${item.name}`);
       }
-      paths.push(...toPaths(item.children||[]));
+      paths.push(...toPaths(item.children || []));
     });
     return paths;
-  }
+  };
   const keys = toPaths(items);
-  console.log({menuId, currentPageName, items, keys});
+  console.log({ menuId, currentPageName, items, keys });
   const [loading, setLoading] = useState(true);
   useEffect(() => {
     setLoading(true);
@@ -50,38 +60,45 @@ export default (props: any) => {
   if (loading) {
     return null;
   }
-  const renderChildren = (items) => {
+  const renderChildren = items => {
     return items.map(item => {
       const { children = [] } = item;
       // const subItems = children.filter(child => child.showInMenu);
       if (!hideChildren && children.length) {
         return (
-          <Menu.SubMenu key={`${item.name}`} icon={item.icon && <Icon type={item.icon}/>} title={<>{item.title}</>}>
+          <Menu.SubMenu
+            key={`${item.name}`}
+            icon={item.icon && <Icon type={item.icon} />}
+            title={<>{item.title}</>}
+          >
             {renderChildren(children)}
           </Menu.SubMenu>
-        )
+        );
       }
       return (
-        <Menu.Item icon={item.icon && <Icon type={item.icon}/>} key={`${item.name}`}>
+        <Menu.Item
+          icon={item.icon && <Icon type={item.icon} />}
+          key={`${item.name}`}
+        >
           <Link to={item.path}>{item.title}</Link>
         </Menu.Item>
-      )
-    })
-  }
+      );
+    });
+  };
   return (
     <Menu
       defaultSelectedKeys={keys}
       defaultOpenKeys={keys}
       // selectedKeys={keys}
       // openKeys={keys}
-      onOpenChange={(openKeys) => {
-        console.log({openKeys});
+      onOpenChange={openKeys => {
+        console.log({ openKeys });
       }}
-      onSelect={(info) => {
-        console.log({info});
+      onSelect={info => {
+        console.log({ info });
       }}
-      onDeselect={(info) => {
-        console.log({info});
+      onDeselect={info => {
+        console.log({ info });
       }}
       {...restProps}
     >

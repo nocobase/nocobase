@@ -1,4 +1,10 @@
-import React, { useState, useEffect, useImperativeHandle, forwardRef, useRef } from 'react';
+import React, {
+  useState,
+  useEffect,
+  useImperativeHandle,
+  forwardRef,
+  useRef,
+} from 'react';
 import { Button, Drawer } from 'antd';
 import { Tooltip, Input, Space, Modal } from 'antd';
 import isEqual from 'lodash/isEqual';
@@ -27,13 +33,12 @@ const actions = createFormActions();
 
 export default forwardRef((props: any, ref) => {
   console.log(props);
-  const {
-    target,
-    onFinish,
-  } = props;
-  const { data: schema = {}, loading } = useRequest(() => api.resource(target).getView({
-    resourceKey: 'form'
-  }));
+  const { target, onFinish } = props;
+  const { data: schema = {}, loading } = useRequest(() =>
+    api.resource(target).getView({
+      resourceKey: 'form',
+    }),
+  );
   const [state, setState] = useState<any>({});
   const [form, setForm] = useState<any>({});
   const [changed, setChanged] = useState(false);
@@ -47,10 +52,10 @@ export default forwardRef((props: any, ref) => {
     setTitle,
     setIndex,
   }));
-  console.log({onFinish});
+  console.log({ onFinish });
   const { fields = {} } = schema;
   if (loading) {
-    return <Spin/>;
+    return <Spin />;
   }
   return (
     <Drawer
@@ -66,7 +71,7 @@ export default forwardRef((props: any, ref) => {
             onOk() {
               setChanged(false);
               setVisible(false);
-            }
+            },
           });
         } else {
           setChanged(false);
@@ -74,35 +79,44 @@ export default forwardRef((props: any, ref) => {
         }
       }}
       title={title}
-      footer={(
+      footer={
         <div
           style={{
             textAlign: 'right',
           }}
         >
           <Space>
-            <Button onClick={() => {
-              setVisible(false);
-              setChanged(false);
-            }}>取消</Button>
-            <Button type={'primary'} onClick={async () => {
-              await form.submit();
-              // const { values = {} } = await actions.submit();
-              // setVisible(false);
-              // onFinish && onFinish(values, index);
-            }}>提交</Button>
+            <Button
+              onClick={() => {
+                setVisible(false);
+                setChanged(false);
+              }}
+            >
+              取消
+            </Button>
+            <Button
+              type={'primary'}
+              onClick={async () => {
+                await form.submit();
+                // const { values = {} } = await actions.submit();
+                // setVisible(false);
+                // onFinish && onFinish(values, index);
+              }}
+            >
+              提交
+            </Button>
           </Space>
         </div>
-      )}
+      }
     >
-      <SchemaForm 
+      <SchemaForm
         colon={true}
         layout={'vertical'}
         initialValues={data}
-        onChange={(values) => {
+        onChange={values => {
           setChanged(true);
         }}
-        onSubmit={async (values) => {
+        onSubmit={async values => {
           setVisible(false);
           setChanged(false);
           onFinish && onFinish(values, index);
@@ -118,29 +132,29 @@ export default forwardRef((props: any, ref) => {
           selector={[
             LifeCycleTypes.ON_FORM_MOUNT,
             LifeCycleTypes.ON_FORM_SUBMIT_START,
-            LifeCycleTypes.ON_FORM_SUBMIT_END
+            LifeCycleTypes.ON_FORM_SUBMIT_END,
           ]}
           reducer={(state, action) => {
             switch (action.type) {
               case LifeCycleTypes.ON_FORM_SUBMIT_START:
                 return {
                   ...state,
-                  submitting: true
-                }
+                  submitting: true,
+                };
               case LifeCycleTypes.ON_FORM_SUBMIT_END:
                 return {
                   ...state,
-                  submitting: false
-                }
+                  submitting: false,
+                };
               default:
-                return state
+                return state;
             }
           }}
         >
           {({ state, form }) => {
-            setState(state)
+            setState(state);
             setForm(form);
-            return <div/>
+            return <div />;
           }}
         </FormSpy>
       </SchemaForm>

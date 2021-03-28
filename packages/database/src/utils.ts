@@ -202,8 +202,8 @@ export function toInclude(options: any, context: ToIncludeContext = {}) {
     }) || {};
   }
 
-  const includeWhere = Utils.cloneDeep(where.$__include||{});
-  const scopes = Utils.cloneDeep(where.$__scopes||[]);
+  const includeWhere = Utils.cloneDeep(where.$__include || {});
+  const scopes = Utils.cloneDeep(where.$__scopes || []);
 
   delete where.$__include;
   delete where.$__scopes;
@@ -219,7 +219,7 @@ export function toInclude(options: any, context: ToIncludeContext = {}) {
 
   const items = Array.isArray(fields) ? { only: fields } : fields;
   items.appends = items.appends || [];
-  
+
   makeFields('only');
   makeFields('appends');
   makeFields('except');

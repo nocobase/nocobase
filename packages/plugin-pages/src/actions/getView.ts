@@ -38,8 +38,8 @@ const transforms = {
       const type = field.get('component.type') || 'string';
       const prop: any = {
         type,
-        title: field.title||field.name,
-        ...(field.component||{}),
+        title: field.title || field.name,
+        ...(field.component || {}),
       }
       if (field.interface === 'description') {
         field.title && set(prop, 'x-component-props.title', field.title);
@@ -66,7 +66,7 @@ const transforms = {
         } : {
           filter: {
             collection_name: get(values, 'associatedKey'),
-            developerMode: {'$isFalsy': true},
+            developerMode: { '$isFalsy': true },
           },
           sort: 'sort',
         });
@@ -80,7 +80,7 @@ const transforms = {
         // prop.description = `{{html('${encodeURIComponent(field.get('component.tooltip'))}')}}`;
       }
       if (field.get('name') === 'dataSource') {
-        
+
         set(prop, 'x-component-props.operationsWidth', 'auto');
         set(prop, 'x-component-props.bordered', true);
         set(prop, 'x-component-props.className', 'data-source-table');
@@ -189,7 +189,7 @@ const transforms = {
         // const children = await field.getChildren({
         //   order: [['sort', 'asc']],
         // });
-        props['children'] = children.filter(item => item.get('component.showInTable')).map(child => ({...child.toJSON(), dataIndex: child.name.split('.')}))
+        props['children'] = children.filter(item => item.get('component.showInTable')).map(child => ({ ...child.toJSON(), dataIndex: child.name.split('.') }))
       }
       arr.push({
         ...field.toJSON(),
@@ -231,7 +231,7 @@ export default async (ctx, next) => {
   let throughName;
   const { resourceKey: resourceKey2, associatedName, resourceFieldName, associatedKey } = values;
   // TODO: 暂时不处理 developerMode 和 internal 的情况
-  const permissions = (await ctx.ac.isRoot() || collection.developerMode || collection.internal) 
+  const permissions = (await ctx.ac.isRoot() || collection.developerMode || collection.internal)
     ? await ctx.ac.getRootPermissions()
     : await ctx.ac.can(resourceName).permissions();
   ctx.listFields = [];
@@ -270,15 +270,15 @@ export default async (ctx, next) => {
   }
   if (!view) {
     // 如果不存在 view，新建一个
-    view = new View({type: resourceKey, template: 'FilterForm'});
+    view = new View({ type: resourceKey, template: 'FilterForm' });
   }
-  
+
   // const where: any = {
   //   developerMode: ctx.state.developerMode,
   // }
   const filter: any = {}
   if (!ctx.state.developerMode) {
-    filter.developerMode = {'$isFalsy': true}
+    filter.developerMode = { '$isFalsy': true }
   }
   if (!view.get('draggable')) {
     filter.type = {
@@ -303,7 +303,7 @@ export default async (ctx, next) => {
     sort: 'sort',
   } : {
     filter: {
-      developerMode: {'$isFalsy': true},
+      developerMode: { '$isFalsy': true },
     },
     sort: 'sort',
   });
@@ -314,7 +314,7 @@ export default async (ctx, next) => {
   }
   const defaultTabs = await collection.getTabs({
     where: {
-      id : {[Op.in]: permissions.tabs},
+      id: { [Op.in]: permissions.tabs },
     },
     order: [['sort', 'asc']],
   });
@@ -349,7 +349,7 @@ export default async (ctx, next) => {
     title = `新增${title}`;
   }
   const viewType = view.get('type');
-  const actionDefaultParams:any = {};
+  const actionDefaultParams: any = {};
   if (resourceName === 'collections') {
     actionDefaultParams.sort = ['sort'];
   }
@@ -368,7 +368,7 @@ export default async (ctx, next) => {
       };
     }
   }
-  
+
   for (const field of fields) {
     if (!['subTable', 'linkTo', 'attachment', 'createdBy', 'updatedBy', 'chinaRegion'].includes(field.get('interface'))) {
       continue;
@@ -492,10 +492,10 @@ export default async (ctx, next) => {
       ],
     };
   } else if (
-      (resourceFieldName === 'collections' && resourceKey === 'permissionForm') 
-      ||
-      (resourceFieldName === 'roles' && resourceKey === 'permissionForm')
-    ) {
+    (resourceFieldName === 'collections' && resourceKey === 'permissionForm')
+    ||
+    (resourceFieldName === 'roles' && resourceKey === 'permissionForm')
+  ) {
     ctx.body = {
       ...view.get(),
       title,
@@ -573,7 +573,7 @@ export default async (ctx, next) => {
       title,
       actionDefaultParams,
       original: fields,
-      fields: await (transforms[view.type]||transforms.table)(fields, ctx),
+      fields: await (transforms[view.type] || transforms.table)(fields, ctx),
       actions: actions.filter(action => {
         if (view.type === 'details' && action.name === 'update') {
           return allowedUpdate;

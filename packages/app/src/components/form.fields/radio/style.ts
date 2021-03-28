@@ -1,1 +1,1 @@
-import 'antd/lib/radio/style/index'
+import 'antd/lib/radio/style/index';

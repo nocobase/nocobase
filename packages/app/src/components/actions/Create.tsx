@@ -27,17 +27,23 @@ export function Create(props) {
   const drawerRef = useRef<any>();
   return (
     <>
-      <ViewFactory 
+      <ViewFactory
         {...props}
         reference={drawerRef}
         viewName={viewName}
         {...params}
       />
-      <Button icon={<PlusOutlined />} type={'primary'} onClick={() => {
-        drawerRef.current.setVisible(true);
-      }}>{title}</Button>
+      <Button
+        icon={<PlusOutlined />}
+        type={'primary'}
+        onClick={() => {
+          drawerRef.current.setVisible(true);
+        }}
+      >
+        {title}
+      </Button>
     </>
-  )
+  );
 }
 
 export default Create;

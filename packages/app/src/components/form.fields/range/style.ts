@@ -1,1 +1,1 @@
-import 'antd/lib/slider/style/index'
+import 'antd/lib/slider/style/index';

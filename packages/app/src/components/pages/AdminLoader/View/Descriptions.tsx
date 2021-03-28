@@ -5,7 +5,15 @@ import { Spin } from '@nocobase/client';
 import { useRequest, useLocation } from 'umi';
 import api from '@/api-client';
 import { Actions } from '../Actions';
-import { Table as AntdTable, Card, Pagination, Button, Tabs, Descriptions as AntdDescriptions, Tooltip } from 'antd';
+import {
+  Table as AntdTable,
+  Card,
+  Pagination,
+  Button,
+  Tabs,
+  Descriptions as AntdDescriptions,
+  Tooltip,
+} from 'antd';
 import { LoadingOutlined } from '@ant-design/icons';
 import { components, fields2columns } from '@/components/views/SortableTable';
 import ReactDragListView from 'react-drag-listview';
@@ -52,11 +60,20 @@ function toGroups(fields: any[]) {
 
 export function Descriptions(props) {
   const { data: record = {}, schema = {}, onDataChange } = props;
-  const { rowKey = 'id', resourceName, fields = [], actions = [], appends = [], associationField = {} } = schema;
+  const {
+    rowKey = 'id',
+    resourceName,
+    fields = [],
+    actions = [],
+    appends = [],
+    associationField = {},
+  } = schema;
   const responsive = useResponsive();
 
-  const resourceKey = props.resourceKey || record[associationField.targetKey||rowKey];
-  const associatedKey = props.associatedKey || record[associationField.sourceKey||'id'];
+  const resourceKey =
+    props.resourceKey || record[associationField.targetKey || rowKey];
+  const associatedKey =
+    props.associatedKey || record[associationField.sourceKey || 'id'];
 
   // console.log({resourceKey, data: record, associatedKey, associationField})
 
@@ -68,21 +85,21 @@ export function Descriptions(props) {
     });
   });
   if (loading) {
-    return <Spin/>;
+    return <Spin />;
   }
   let descriptionsProps: any = {
     size: 'middle',
     bordered: true,
-  }
+  };
   if (responsive.small && !responsive.middle && !responsive.large) {
     descriptionsProps = {
-      layout: 'vertical'
-    }
+      layout: 'vertical',
+    };
   }
   const groups = toGroups(fields);
   return (
     <div>
-      <Actions 
+      <Actions
         onTrigger={{
           async update(values) {
             refresh();
@@ -95,22 +112,46 @@ export function Descriptions(props) {
         style={{ marginBottom: 14 }}
       />
       {groups.map(group => (
-        <AntdDescriptions 
+        <AntdDescriptions
           // layout={'vertical'}
           // size={'middle'}
-          // bordered 
+          // bordered
           {...descriptionsProps}
-          title={group.title && <span>{group.title} {group.tooltip && <Tooltip title={group.tooltip}><InfoCircleOutlined /></Tooltip>}</span>}
-          column={1}>
+          title={
+            group.title && (
+              <span>
+                {group.title}{' '}
+                {group.tooltip && (
+                  <Tooltip title={group.tooltip}>
+                    <InfoCircleOutlined />
+                  </Tooltip>
+                )}
+              </span>
+            )
+          }
+          column={1}
+        >
           {group.children.map((field: any) => {
             const label = field.tooltip ? (
-              <>{field.title||field.name}&nbsp;<Tooltip title={field.tooltip}><InfoCircleOutlined /></Tooltip></>
-            ) : (field.title||field.name);
+              <>
+                {field.title || field.name}&nbsp;
+                <Tooltip title={field.tooltip}>
+                  <InfoCircleOutlined />
+                </Tooltip>
+              </>
+            ) : (
+              field.title || field.name
+            );
             return (
               <AntdDescriptions.Item label={label}>
-                <Field data={data} viewType={'descriptions'} schema={field} value={get(data, field.name)}/>
+                <Field
+                  data={data}
+                  viewType={'descriptions'}
+                  schema={field}
+                  value={get(data, field.name)}
+                />
               </AntdDescriptions.Item>
-            )
+            );
           })}
         </AntdDescriptions>
       ))}

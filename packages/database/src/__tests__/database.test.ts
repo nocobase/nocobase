@@ -69,7 +69,7 @@ describe('database.addHook()', () => {
   it('afterAddField', async () => {
     db.addHook('afterAddField', (field: Field, table: Table) => {
       if (field.options.name === 'name') {
-        const options = {...field.options, name: `${field.options.name}123`}
+        const options = { ...field.options, name: `${field.options.name}123` }
         table.addField(options);
       }
     });

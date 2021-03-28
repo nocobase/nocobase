@@ -2,11 +2,11 @@ import { initDatabase, agent } from './index';
 
 describe('get', () => {
   let db;
-  
+
   beforeEach(async () => {
     db = await initDatabase();
   });
-  
+
   afterAll(() => db.close());
 
   it('common1', async () => {
@@ -45,7 +45,7 @@ describe('get', () => {
     const post = await Post.create();
     await post.updateAssociations({
       comments: [
-        {content: 'content111222'},
+        { content: 'content111222' },
       ],
     });
     const [comment] = await post.getComments();
@@ -67,11 +67,11 @@ describe('get', () => {
     const Post = db.getModel('posts');
     const post = await Post.create();
     await post.updateAssociations({
-      user: {name: 'name121234'},
+      user: { name: 'name121234' },
     });
     const response = await agent
       .get(`/posts/${post.id}/user?fields=name`);
-    expect(response.body).toEqual({name: 'name121234'});
+    expect(response.body).toEqual({ name: 'name121234' });
   });
 
   it('belongsToMany', async () => {
@@ -79,7 +79,7 @@ describe('get', () => {
     const post = await Post.create();
     await post.updateAssociations({
       tags: [
-        {name: 'tag112233'},
+        { name: 'tag112233' },
       ],
     });
     const [tag] = await post.getTags();

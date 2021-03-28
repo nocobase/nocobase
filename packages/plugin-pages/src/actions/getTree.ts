@@ -28,7 +28,7 @@ function toPaths(item) {
 
 export default async (ctx, next) => {
   const { resourceName, resourceKey } = ctx.action.params;
-  const [ Menu ] = ctx.db.getModels(['menus']) as ModelCtor<Model>[];
+  const [Menu] = ctx.db.getModels(['menus']) as ModelCtor<Model>[];
   const roles = ctx.ac ? await ctx.ac.getRoles() : [];
   const isRoot = ctx.ac.constructor.isRoot(roles);
   const MenuPermission = ctx.db.getModel('menus_permissions');

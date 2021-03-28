@@ -29,7 +29,7 @@ function pages2routes(pages: Array<any>) {
       }));
     }
     if (page.children) {
-      routes = {...routes, ...pages2routes(page.children)};
+      routes = { ...routes, ...pages2routes(page.children) };
     }
     routes[page.path] = route;
   });
@@ -62,7 +62,7 @@ export default async function getRoutes(ctx, next) {
     sort: ['sort'],
   } : {
     filter: {
-      developerMode: {'$isFalsy': true},
+      developerMode: { '$isFalsy': true },
     },
     sort: ['sort'],
   }));
@@ -85,9 +85,9 @@ export default async function getRoutes(ctx, next) {
           showInDataMenu: true,
         },
         sort: ['sort'],
-      }: {
+      } : {
         filter: {
-          developerMode: {'$isFalsy': true},
+          developerMode: { '$isFalsy': true },
           showInDataMenu: true,
         },
         sort: ['sort'],
@@ -143,10 +143,10 @@ export default async function getRoutes(ctx, next) {
           showInDataMenu: true,
         },
         sort: ['sort'],
-      }: {
+      } : {
         filter: {
           collection_name: 'users',
-          developerMode: {'$isFalsy': true},
+          developerMode: { '$isFalsy': true },
           showInDataMenu: true,
         },
         sort: ['sort'],

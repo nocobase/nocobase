@@ -2,7 +2,7 @@ import { getDatabase } from '..';
 
 describe('radio', () => {
   let db;
-  
+
   beforeEach(async () => {
     db = getDatabase();
 
@@ -61,7 +61,7 @@ describe('radio', () => {
 
     await db.sync({ force: true });
   });
-  
+
   afterEach(() => db.close());
 
   describe('create', () => {
@@ -116,7 +116,7 @@ describe('radio', () => {
       const users = await User.bulkCreate([{}, {}]);
       const Post = db.getModel('posts');
       const bulkCreated = await Post.bulkCreate([
-        { title: 'title1', status: 'published', user_id: 1},
+        { title: 'title1', status: 'published', user_id: 1 },
         { title: 'title2', status: 'published', user_id: 2, pinned_in_status: true },
         { title: 'title3', status: 'draft', user_id: 1, pinned_in_status: true },
       ]);
@@ -178,19 +178,19 @@ describe('radio', () => {
         { title: 'bug2' },
         { title: 'bug3' }
       ]);
-  
+
       const post = await Post.findByPk(2);
-  
+
       await post.update({
         pinned: true,
       });
-  
+
       await post.update({
         status: 'draft'
       });
-  
+
       const posts = await Post.findAll({ order: [['id', 'ASC']] });
-      expect(posts.map(({ pinned }) => pinned)).toEqual([ false, true, false ]);
+      expect(posts.map(({ pinned }) => pinned)).toEqual([false, true, false]);
     });
   });
 });

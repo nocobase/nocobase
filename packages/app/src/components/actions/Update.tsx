@@ -22,19 +22,25 @@ export function Update(props) {
   const drawerRef = useRef<any>();
   return (
     <>
-      <ViewFactory 
+      <ViewFactory
         {...props}
         reference={drawerRef}
         viewName={viewName}
         mode={'update'}
         {...params}
       />
-      <Button icon={<EditOutlined />} type={'primary'} onClick={() => {
-        drawerRef.current.setVisible(true);
-        drawerRef.current.getData(item.itemId || resourceKey);
-      }}>{title}</Button>
+      <Button
+        icon={<EditOutlined />}
+        type={'primary'}
+        onClick={() => {
+          drawerRef.current.setVisible(true);
+          drawerRef.current.getData(item.itemId || resourceKey);
+        }}
+      >
+        {title}
+      </Button>
     </>
-  )
+  );
 }
 
 export default Update;

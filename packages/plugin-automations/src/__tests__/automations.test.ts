@@ -33,27 +33,27 @@ describe('automations', () => {
       }, {
         hooks: false,
       });
-  
+
       let data = {}
       const arr = [];
-  
+
       automation.startJob('test', async (model) => {
         data = _.cloneDeep(model.get());
         arr.push('afterCreate');
       });
-  
+
       const test = await Test.create({
         name1: 'n1',
         name2: 'n2',
       });
-  
+
       const t = _.cloneDeep(test.get());
       expect(t).toEqual(data);
-  
+
       await test.update({
         name1: 'n3',
       });
-  
+
       expect(t).toEqual(data);
       expect(arr.length).toBe(1);
     });
@@ -69,19 +69,19 @@ describe('automations', () => {
       }, {
         hooks: false,
       });
-  
+
       const arr = [];
-  
+
       automation.startJob('test', async (model) => {
         arr.push('afterCreate');
       });
-  
+
       await Test.create({
         name1: 'n1',
         name2: 'n2',
       });
       expect(arr.length).toBe(1);
-  
+
       await Test.create({
         name1: 'n3',
         name2: 'n4',
@@ -101,19 +101,19 @@ describe('automations', () => {
       }, {
         hooks: false,
       });
-  
+
       const arr = [];
-  
+
       automation.startJob('test', async (model) => {
         arr.push('afterUpdate');
       });
-  
+
       const test = await Test.create({
         name1: 'n1',
         name2: 'n2',
       });
       expect(arr.length).toBe(0);
-  
+
       await test.update({
         name1: 'n3',
       });
@@ -130,24 +130,24 @@ describe('automations', () => {
       }, {
         hooks: false,
       });
-  
+
       const arr = [];
-  
+
       automation.startJob('test', async (model) => {
         arr.push('afterUpdate');
       });
-  
+
       const test = await Test.create({
         name1: 'n1',
         name2: 'n2',
       });
       expect(arr.length).toBe(0);
-  
+
       await test.update({
         name1: 'n3',
       });
       expect(arr.length).toBe(0);
-  
+
       await test.update({
         name2: 'n4',
       });
@@ -166,35 +166,35 @@ describe('automations', () => {
       }, {
         hooks: false,
       });
-  
+
       const arr = [];
-  
+
       automation.startJob('test', async (model) => {
         arr.push('afterUpdate');
       });
-  
+
       const test = await Test.create({
         name1: 'n1',
         name2: 'n2',
       });
       expect(arr.length).toBe(0);
-  
+
       await test.update({
         name1: 'n3',
       });
       expect(arr.length).toBe(0);
-  
+
       await test.update({
         name2: 'n4',
       });
       expect(arr.length).toBe(0);
-  
+
       await test.update({
         name1: 'n5',
         name2: 'n6',
       });
       expect(arr.length).toBe(0);
-  
+
       await test.update({
         name1: 'n7',
         name2: 'n8',
@@ -214,25 +214,25 @@ describe('automations', () => {
       }, {
         hooks: false,
       });
-  
+
       const arr = [];
-  
+
       automation.startJob('test', async (model) => {
         arr.push('afterUpdate');
       });
-  
+
       const test = await Test.create({
         name1: 'n1',
         name2: 'n2',
       });
-  
+
       expect(arr.length).toBe(1);
-  
+
       await test.update({
         name1: 'n3',
         name2: 'n4',
       });
-  
+
       expect(arr.length).toBe(2);
     });
     it('collections:afterCreateOrUpdate - changed', async () => {
@@ -246,24 +246,24 @@ describe('automations', () => {
       }, {
         hooks: false,
       });
-  
+
       const arr = [];
-  
+
       automation.startJob('test', async (model) => {
         arr.push('afterUpdate');
       });
-  
+
       const test = await Test.create({
         name1: 'n1',
         name2: 'n2',
       });
       expect(arr.length).toBe(1);
-  
+
       await test.update({
         name1: 'n3',
       });
       expect(arr.length).toBe(1);
-  
+
       await test.update({
         name2: 'n4',
       });
@@ -281,28 +281,28 @@ describe('automations', () => {
       }, {
         hooks: false,
       });
-  
+
       const arr = [];
-  
+
       automation.startJob('test', async (model) => {
         arr.push('afterUpdate');
       });
-  
+
       await Test.create({
         name1: 'n1',
       });
       expect(arr.length).toBe(0);
-  
+
       const test = await Test.create({
         name1: 'n7',
       });
       expect(arr.length).toBe(1);
-  
+
       await test.update({
         name1: 'n3',
       });
       expect(arr.length).toBe(1);
-  
+
       await test.update({
         name1: 'n7',
       });
@@ -321,40 +321,40 @@ describe('automations', () => {
       }, {
         hooks: false,
       });
-  
+
       const arr = [];
-  
+
       automation.startJob('test', async (model) => {
         arr.push('afterUpdate');
       });
-  
+
       const test = await Test.create({
         name1: 'n1',
         name2: 'n2',
       });
       expect(arr.length).toBe(0);
-  
+
       await test.update({
         name1: 'n3',
       });
       expect(arr.length).toBe(0);
-  
+
       await test.update({
         name2: 'n4',
       });
       expect(arr.length).toBe(0);
-  
+
       await test.update({
         name1: 'n7',
       });
       expect(arr.length).toBe(0);
-  
+
       await test.update({
         name1: 'n5',
         name2: 'n6',
       });
       expect(arr.length).toBe(0);
-  
+
       await test.update({
         name1: 'n7',
         name2: 'n8',
@@ -476,9 +476,9 @@ describe('automations', () => {
       }, {
         hooks: false,
       });
-  
+
       const arr = [];
-  
+
       automation.startJob('test', async (model) => {
         arr.push('schedule');
       });
@@ -497,16 +497,16 @@ describe('automations', () => {
       }, {
         hooks: false,
       });
-  
+
       const arr = [];
-  
+
       automation.startJob('test', async (date) => {
         arr.push('schedule');
         console.log('schedule', date, arr.length);
       });
-  
+
       await new Promise((r) => setTimeout(r, 3000));
-  
+
       expect(arr.length).toBe(3);
       await automation.cancelJob('test');
     });
@@ -520,22 +520,22 @@ describe('automations', () => {
         },
         endMode: 'customTime',
         endTime: {
-          value: new Date(Date.now()+2000).toISOString(),
+          value: new Date(Date.now() + 2000).toISOString(),
         },
         cron: '* * * * * *',
       }, {
         hooks: false,
       });
-  
+
       const arr = [];
-  
+
       automation.startJob('test', async (date) => {
         arr.push('schedule');
         console.log('schedule', date, arr.length);
       });
-  
+
       await new Promise((r) => setTimeout(r, 3000));
-  
+
       expect(arr.length).toBe(2);
       await automation.cancelJob('test');
     });

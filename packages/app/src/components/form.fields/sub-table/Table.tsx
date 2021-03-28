@@ -21,17 +21,21 @@ export interface SimpleTableProps {
 }
 
 export function generateIndex(): string {
-  return `${Math.random().toString(36).replace('0.', '').slice(-4).padStart(4, '0')}`;
+  return `${Math.random()
+    .toString(36)
+    .replace('0.', '')
+    .slice(-4)
+    .padStart(4, '0')}`;
 }
 
 export default function Table(props: SimpleTableProps) {
   const { schema = {}, associatedKey, value, onChange, __index } = props;
   const { collection_name, name } = schema;
-  const viewName = `${collection_name}.${name}.${schema.viewName||'table'}`;
-  console.log({props, associatedKey, schema, __index, viewName, schema})
+  const viewName = `${collection_name}.${name}.${schema.viewName || 'table'}`;
+  console.log({ props, associatedKey, schema, __index, viewName, schema });
   return (
     <>
-      <View 
+      <View
         // __parent={__parent}
         data={value}
         onChange={onChange}
@@ -40,5 +44,5 @@ export default function Table(props: SimpleTableProps) {
         type={'subTable'}
       />
     </>
-  )
+  );
 }

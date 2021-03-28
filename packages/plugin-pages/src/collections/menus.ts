@@ -120,7 +120,7 @@ export default {
       type: 'json',
       name: 'views',
       title: '显示在页面里的视图',
-      target:  'menus_views_v2',
+      target: 'menus_views_v2',
       component: {
         type: 'subTable',
         'x-component-props': {
@@ -305,7 +305,7 @@ export default {
       actions: [],
       expandable: {},
       fields: [
-        'title', 
+        'title',
         {
           interface: 'boolean',
           name: 'accessible',

@@ -28,7 +28,7 @@ const config = {
   define: {
     hooks: {
       beforeCreate(model, options) {
-        
+
       },
     },
   },
@@ -56,7 +56,7 @@ export async function getApp() {
     },
   });
   app.resourcer.use(middlewares.associated);
-  app.resourcer.registerActionHandlers({...actions.associate, ...actions.common});
+  app.resourcer.registerActionHandlers({ ...actions.associate, ...actions.common });
   app.registerPlugin('full-collections', [plugin]);
   await app.loadPlugins();
   await app.database.sync();

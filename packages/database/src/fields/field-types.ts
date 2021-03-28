@@ -325,7 +325,7 @@ export class ARRAY extends Column {
     const { items, ...restOptions } = this.options;
     return {
       ...restOptions,
-      type: this.getDataTypeInstance({items}),
+      type: this.getDataTypeInstance({ items }),
     }
   }
 }
@@ -495,7 +495,7 @@ export class HASONE extends HasOneOrMany {
       target = Utils.pluralize(name);
     }
 
-    super({target, ...options}, context);
+    super({ target, ...options }, context);
 
     this.targetTableInit();
   }
@@ -585,7 +585,7 @@ export class BELONGSTO extends Relation {
   }
 
   public getAssociationOptions(): BelongsToOptions {
-    const { name, ...restOptions }= this.options;
+    const { name, ...restOptions } = this.options;
     return {
       as: name,
       ...restOptions,
@@ -610,9 +610,9 @@ export class BELONGSTOMANY extends Relation {
       through = Utils.underscoredIf(
         Utils.camelize(
           [SourceModel.name, target]
-          .map(name => name.toLowerCase())
-          .sort()
-          .join('_')
+            .map(name => name.toLowerCase())
+            .sort()
+            .join('_')
         ),
         SourceModel.options.underscored
       );
@@ -691,9 +691,9 @@ export class BELONGSTOMANY extends Relation {
     if (database.sequelize.isDefined(throughName)) {
       return database.getModel(throughName);
     }
-    
+
     // 如果不存在 Through Model，需要初始化一个，不能用 Sequelize.Model
-    class ThroughModel extends Model {}
+    class ThroughModel extends Model { }
 
     // TODO：需要对接 through 的其他参数
     ThroughModel.init({}, {

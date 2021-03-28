@@ -21,7 +21,7 @@ export default async function (model: FieldModel, options) {
       if (item.value === null || typeof item.value === 'undefined') {
         item.value = generateValueName();
       }
-      return {...item};
+      return { ...item };
     }));
   }
 }

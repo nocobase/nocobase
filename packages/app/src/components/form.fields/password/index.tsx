@@ -1,27 +1,27 @@
-import React, { useState } from 'react'
-import { connect } from '@formily/react-schema-renderer'
-import { Input } from 'antd'
-import { PasswordProps } from 'antd/lib/input'
-import { PasswordStrength } from '@formily/react-shared-components'
-import styled from 'styled-components'
-import { mapStyledProps } from '../shared'
+import React, { useState } from 'react';
+import { connect } from '@formily/react-schema-renderer';
+import { Input } from 'antd';
+import { PasswordProps } from 'antd/lib/input';
+import { PasswordStrength } from '@formily/react-shared-components';
+import styled from 'styled-components';
+import { mapStyledProps } from '../shared';
 
 export interface IPasswordProps extends PasswordProps {
-  checkStrength: boolean
+  checkStrength: boolean;
 }
 
 export const Password = connect({
-  getProps: mapStyledProps
+  getProps: mapStyledProps,
 })(styled((props: IPasswordProps) => {
-  const { value, className, checkStrength, onChange, ...others } = props
+  const { value, className, checkStrength, onChange, ...others } = props;
 
   return (
     <span className={className}>
-      <Input.Password 
+      <Input.Password
         autoComplete={'new-password'}
         {...others}
         value={value}
-        onChange={(e) => {
+        onChange={e => {
           // 密码字段，如果没有设置不处理
           onChange(e.target.value ? e : undefined);
         }}
@@ -38,16 +38,16 @@ export const Password = connect({
                 <div
                   className="password-strength-bar"
                   style={{
-                    clipPath: `polygon(0 0,${score}% 0,${score}% 100%,0 100%)`
+                    clipPath: `polygon(0 0,${score}% 0,${score}% 100%,0 100%)`,
                   }}
                 />
               </div>
-            )
+            );
           }}
         </PasswordStrength>
       )}
     </span>
-  )
+  );
 })`
   .password-strength-wrapper {
     background: #e0e0e0;
@@ -83,6 +83,6 @@ export const Password = connect({
       margin-top: 5px;
     }
   }
-`)
+`);
 
-export default Password
+export default Password;

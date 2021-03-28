@@ -70,9 +70,9 @@ export default {
           viewName: 'collections.views_v2.table',
           filter: {
             or: [
-              {'type': 'form'},
-              {'type': 'descriptions'},
-              {'data_source_type': 'association'},
+              { 'type': 'form' },
+              { 'type': 'descriptions' },
+              { 'data_source_type': 'association' },
             ]
           },
         },

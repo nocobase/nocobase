@@ -4,9 +4,9 @@ import Model from '../../model';
 
 describe('custom model', () => {
   it('custom model', async () => {
-    class BaseModel extends Model {};
+    class BaseModel extends Model { };
     const database = getDatabase();
-    registerModels({BaseModel});
+    registerModels({ BaseModel });
     database.table({
       name: 'tests',
       model: 'BaseModel',

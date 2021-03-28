@@ -1,6 +1,6 @@
 import { Model, ModelCtor } from '@nocobase/database';
 import { actions } from '@nocobase/actions';
-import { flatToTree } from  '../utils';
+import { flatToTree } from '../utils';
 
 export default async (ctx, next) => {
   await actions.common.list(ctx, async () => {

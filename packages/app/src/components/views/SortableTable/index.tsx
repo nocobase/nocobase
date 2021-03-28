@@ -1,6 +1,10 @@
 import React from 'react';
 // @ts-ignore
-import { sortableContainer, sortableElement, sortableHandle } from 'react-sortable-hoc';
+import {
+  sortableContainer,
+  sortableElement,
+  sortableHandle,
+} from 'react-sortable-hoc';
 import { MenuOutlined } from '@ant-design/icons';
 import arrayMove from 'array-move';
 import findIndex from 'lodash/findIndex';
@@ -12,21 +16,32 @@ import { Checkbox, message } from 'antd';
 import api from '@/api-client';
 
 export const SortableItem = sortableElement(props => <tr {...props} />);
-export const SortableContainer = sortableContainer(props => <tbody {...props} />);
+export const SortableContainer = sortableContainer(props => (
+  <tbody {...props} />
+));
 
 export const DragHandle = sortableHandle(() => (
-  <MenuOutlined className="drag-handle" style={{ cursor: 'pointer', color: '#999' }} />
+  <MenuOutlined
+    className="drag-handle"
+    style={{ cursor: 'pointer', color: '#999' }}
+  />
 ));
 
 interface Props {
-  data: any, 
-  mutate: any,
-  rowKey: any, 
-  onMoved: any,
+  data: any;
+  mutate: any;
+  rowKey: any;
+  onMoved: any;
   isFieldComponent?: boolean;
 }
 
-export const components = ({data = {}, rowKey, mutate, onMoved, isFieldComponent}: Props) => {
+export const components = ({
+  data = {},
+  rowKey,
+  mutate,
+  onMoved,
+  isFieldComponent,
+}: Props) => {
   return {
     body: {
       wrapper: props => (
@@ -36,14 +51,18 @@ export const components = ({data = {}, rowKey, mutate, onMoved, isFieldComponent
           onSortEnd={async ({ oldIndex, newIndex, ...restProps }) => {
             if (oldIndex !== newIndex) {
               const targetIndex = get(data.list, [newIndex, rowKey]);
-              const list = arrayMove([].concat(data.list), oldIndex, newIndex).filter(el => !!el);
-              console.log({oldIndex, newIndex, list});
+              const list = arrayMove(
+                [].concat(data.list),
+                oldIndex,
+                newIndex,
+              ).filter(el => !!el);
+              console.log({ oldIndex, newIndex, list });
               mutate({
                 ...data,
                 list,
               });
               const resourceKey = get(list, [newIndex, rowKey]);
-              await onMoved({resourceKey, target: {[rowKey]: targetIndex}});
+              await onMoved({ resourceKey, target: { [rowKey]: targetIndex } });
               // @ts-ignore
               window.routesReload && window.routesReload();
             }
@@ -53,8 +72,20 @@ export const components = ({data = {}, rowKey, mutate, onMoved, isFieldComponent
       ),
       row: ({ className, style, ...restProps }) => {
         // function findIndex base on Table rowKey props and should always be a right array index
-        const index = findIndex(data.list, (x: any) => x[rowKey] === restProps['data-row-key']);
-        return <SortableItem index={index} className={`${className}${isFieldComponent ? '': ' row-clickable'}`} style={style} {...restProps} />;
+        const index = findIndex(
+          data.list,
+          (x: any) => x[rowKey] === restProps['data-row-key'],
+        );
+        return (
+          <SortableItem
+            index={index}
+            className={`${className}${
+              isFieldComponent ? '' : ' row-clickable'
+            }`}
+            style={style}
+            {...restProps}
+          />
+        );
       },
     },
   };
@@ -66,39 +97,50 @@ export function fields2columns(fields = [], ctx: any = {}) {
     if (!field.dataIndex) {
       field.dataIndex = field.name.split('.');
     }
-    field.render = (value, record, index) => field.interface === 'sort' ? <DragHandle/> : <Field ctx={{...ctx, index}} data={record} viewType={'table'} schema={field} value={value}/>;
-    field.className = `${field.className||''} noco-field-${field.interface}`;
+    field.render = (value, record, index) =>
+      field.interface === 'sort' ? (
+        <DragHandle />
+      ) : (
+        <Field
+          ctx={{ ...ctx, index }}
+          data={record}
+          viewType={'table'}
+          schema={field}
+          value={value}
+        />
+      );
+    field.className = `${field.className || ''} noco-field-${field.interface}`;
     if (field.editable && field.interface === 'boolean') {
       field.title = (
         <span>
-          <Checkbox onChange={async (e) => {
-            try {
-              await api.resource(field.resource).update({
-                associatedKey: ctx.associatedKey,
-                // resourceKey: data.id,
-                // tableName: data.tableName||'pages',
-                values: {
-                  accessible: e.target.checked,
-                },
-              });
-              message.success('保存成功');
-              if (ctx.refresh) {
-                ctx.refresh();
+          <Checkbox
+            onChange={async e => {
+              try {
+                await api.resource(field.resource).update({
+                  associatedKey: ctx.associatedKey,
+                  // resourceKey: data.id,
+                  // tableName: data.tableName||'pages',
+                  values: {
+                    accessible: e.target.checked,
+                  },
+                });
+                message.success('保存成功');
+                if (ctx.refresh) {
+                  ctx.refresh();
+                }
+              } catch (error) {
+                message.error('保存失败');
               }
-            } catch (error) {
-              message.error('保存失败');
-            }
-            
-          }}/>
-          {' '}
+            }}
+          />{' '}
           {field.title}
         </span>
       );
     }
     return {
       ...field,
-      ...(field.component||{}),
-    }
+      ...(field.component || {}),
+    };
   });
   return columns;
 }

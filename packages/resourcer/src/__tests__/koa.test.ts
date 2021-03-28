@@ -37,7 +37,7 @@ describe('koa middleware', () => {
     });
 
     const response = await agent.get('/api/test');
-    expect(response.body.arr).toEqual([5,3,4,6]);
+    expect(response.body.arr).toEqual([5, 3, 4, 6]);
   });
 
   it('shound work', async () => {
@@ -77,7 +77,7 @@ describe('koa middleware', () => {
     });
 
     const response = await agent.get('/api/test');
-    expect(response.body.arr).toEqual([5,3,4,6]);
+    expect(response.body.arr).toEqual([5, 3, 4, 6]);
   });
 
   it('shound be 404', async () => {
@@ -125,7 +125,7 @@ describe('koa middleware', () => {
     });
 
     const response = await agent.get('/api/test');
-    expect(response.body.arr).toEqual([5,3,4,6]);
+    expect(response.body.arr).toEqual([5, 3, 4, 6]);
   });
 
   it('shound work', async () => {
@@ -149,7 +149,7 @@ describe('koa middleware', () => {
     app.use(resourcer.middleware());
 
     const response = await agent.get('/tables/demos/fields');
-    expect(response.body.arr).toEqual([3,4]);
+    expect(response.body.arr).toEqual([3, 4]);
   });
 
   it('shound work', async () => {
@@ -171,11 +171,11 @@ describe('koa middleware', () => {
     });
 
     app.use(resourcer.middleware({
-      nameRule: ({resourceName, associatedName}) => associatedName ? `${associatedName}#${resourceName}` : resourceName,
+      nameRule: ({ resourceName, associatedName }) => associatedName ? `${associatedName}#${resourceName}` : resourceName,
     }));
 
     const response = await agent.get('/tables/demos/fields');
-    expect(response.body.arr).toEqual([3,4]);
+    expect(response.body.arr).toEqual([3, 4]);
   });
 
   describe('action options', () => {
@@ -229,11 +229,13 @@ describe('koa middleware', () => {
         });
       expect(response.body).toEqual({
         sort: '-id',
-        filter: { and: [
-          { col1: 'val1', col2: 'val2' },
-          { col2: '&val2', col3: 'val3' }
-        ]},
-        fields: { only: [ 'id' ], appends: [] },
+        filter: {
+          and: [
+            { col1: 'val1', col2: 'val2' },
+            { col2: '&val2', col3: 'val3' }
+          ]
+        },
+        fields: { only: ['id'], appends: [] },
         other: 'other1',
         actionName: 'list',
         resourceName: 'tests'
@@ -252,7 +254,7 @@ describe('koa middleware', () => {
       });
       const response = await agent
         .post('/tests')
-        .send({'aa': 'aa'});
+        .send({ 'aa': 'aa' });
       expect(response.body).toEqual({
         actionName: 'create',
         resourceName: 'tests',
@@ -273,7 +275,7 @@ describe('koa middleware', () => {
       const response = await agent
         .post('/resourcer/tests:create')
         .send({
-          values: {'aa': 'aa'}
+          values: { 'aa': 'aa' }
         });
       expect(response.body).toEqual({
         actionName: 'create',
@@ -296,7 +298,7 @@ describe('koa middleware', () => {
         .post('/resourcer/tests:update')
         .send({
           resourceKey: 1,
-          values: {'aa': 'aa'}
+          values: { 'aa': 'aa' }
         });
       expect(response.body).toEqual({
         resourceKey: 1,
@@ -530,7 +532,7 @@ describe('koa middleware', () => {
       expect(response.body).toEqual({
         actionName: 'list',
         resourceName: 'test1',
-        fields: { only: [ 'id', 'col1' ], appends: [] }
+        fields: { only: ['id', 'col1'], appends: [] }
       });
     });
     it('fields2', async () => {
@@ -550,7 +552,7 @@ describe('koa middleware', () => {
       expect(response.body).toEqual({
         actionName: 'list',
         resourceName: 'test1',
-        fields: { only: [ 'id' ], appends: [] }
+        fields: { only: ['id'], appends: [] }
       });
     });
     it('fields3', async () => {
@@ -572,7 +574,7 @@ describe('koa middleware', () => {
       expect(response.body).toEqual({
         actionName: 'list',
         resourceName: 'test1',
-        fields: { only: [ 'id', 'col1' ], appends: [] }
+        fields: { only: ['id', 'col1'], appends: [] }
       });
     });
     it('fields4', async () => {
@@ -595,7 +597,7 @@ describe('koa middleware', () => {
       expect(response.body).toEqual({
         actionName: 'list',
         resourceName: 'test1',
-        fields: { only: [ 'id', 'col1', 'col2' ], appends: [] }
+        fields: { only: ['id', 'col1', 'col2'], appends: [] }
       });
     });
     it('fields5', async () => {
@@ -619,7 +621,7 @@ describe('koa middleware', () => {
       expect(response.body).toEqual({
         actionName: 'list',
         resourceName: 'test1',
-        fields: { except: [ 'password' ], appends: [ 'relation1', 'col2' ] }
+        fields: { except: ['password'], appends: ['relation1', 'col2'] }
       });
     });
     it('fields6', async () => {
@@ -636,7 +638,7 @@ describe('koa middleware', () => {
       expect(response.body).toEqual({
         actionName: 'list',
         resourceName: 'test1',
-        fields: { appends: [ 'rel1', 'rel2' ] }
+        fields: { appends: ['rel1', 'rel2'] }
       });
     });
     it('fields7', async () => {
@@ -655,7 +657,7 @@ describe('koa middleware', () => {
         associatedKey: 'name',
         resourceName: 'posts',
         actionName: 'list',
-        fields: { appends: [ 'rel1', 'rel2' ] }
+        fields: { appends: ['rel1', 'rel2'] }
       });
     });
     it('fields8', async () => {

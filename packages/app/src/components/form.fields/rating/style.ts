@@ -1,1 +1,1 @@
-import 'antd/lib/rate/style/index'
+import 'antd/lib/rate/style/index';

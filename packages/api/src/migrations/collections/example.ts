@@ -76,9 +76,9 @@ export default {
       interface: 'select',
       title: '下拉',
       dataSource: [
-        {value: 'value1', label: '选项1'},
-        {value: 'value2', label: '选项2'},
-        {value: 'value3', label: '选项3'},
+        { value: 'value1', label: '选项1' },
+        { value: 'value2', label: '选项2' },
+        { value: 'value3', label: '选项3' },
       ],
       component: {
         showInTable: true,
@@ -90,9 +90,9 @@ export default {
       interface: 'multipleSelect',
       title: '下拉多选',
       dataSource: [
-        {value: 'value1', label: '选项1'},
-        {value: 'value2', label: '选项2'},
-        {value: 'value3', label: '选项3'},
+        { value: 'value1', label: '选项1' },
+        { value: 'value2', label: '选项2' },
+        { value: 'value3', label: '选项3' },
       ],
       component: {
         showInTable: true,
@@ -104,9 +104,9 @@ export default {
       interface: 'radio',
       title: '单选框',
       dataSource: [
-        {value: 'value1', label: '选项1'},
-        {value: 'value2', label: '选项2'},
-        {value: 'value3', label: '选项3'},
+        { value: 'value1', label: '选项1' },
+        { value: 'value2', label: '选项2' },
+        { value: 'value3', label: '选项3' },
       ],
       component: {
         showInTable: true,
@@ -118,9 +118,9 @@ export default {
       interface: 'checkboxes',
       title: '多选框',
       dataSource: [
-        {value: 'value1', label: '选项1'},
-        {value: 'value2', label: '选项2'},
-        {value: 'value3', label: '选项3'},
+        { value: 'value1', label: '选项1' },
+        { value: 'value2', label: '选项2' },
+        { value: 'value3', label: '选项3' },
       ],
       component: {
         showInTable: true,

@@ -2,11 +2,11 @@ import { ActionName } from './action';
 import { requireModule } from './utils';
 import { HandlerType } from './resourcer';
 
-export type MiddlewareType = string | string[] | HandlerType | HandlerType[] 
+export type MiddlewareType = string | string[] | HandlerType | HandlerType[]
   | MiddlewareOptions | MiddlewareOptions[];
 
 export interface MiddlewareOptions {
-  
+
   /**
    * actions 白名单，默认有 list、get、create、update、delete
    */
@@ -69,7 +69,7 @@ export class Middleware {
         return new Middleware(middleware);
       }
       if (typeof middleware === 'function') {
-        return new Middleware({handler: middleware});
+        return new Middleware({ handler: middleware });
       }
     });
   }

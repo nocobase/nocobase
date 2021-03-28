@@ -64,7 +64,7 @@ describe('models.base', () => {
     TestModel = database.getModel('tests') as ModelCtor<BaseModel>;
     test = await TestModel.create({
       name: '123',
-      abc: {aa: 'aa'},
+      abc: { aa: 'aa' },
       'abc.bb': 'bb',
       component: {
         a: 'a',
@@ -73,7 +73,7 @@ describe('models.base', () => {
       options: {
         bcd: 'bbb',
       },
-      arr: [{a: 'a'}, {b: 'b'}],
+      arr: [{ a: 'a' }, { b: 'b' }],
     });
   });
 
@@ -86,7 +86,7 @@ describe('models.base', () => {
       bcd: 'bbb',
       name: '123',
       component: { a: 'a', b: 'b' },
-      arr: [{a: 'a'}, {b: 'b'}],
+      arr: [{ a: 'a' }, { b: 'b' }],
     });
   });
 
@@ -99,7 +99,7 @@ describe('models.base', () => {
       },
       bcd: 'bbb',
       xyz: "xyz1",
-      arr: [{a: 'a'}, {b: 'b'}],
+      arr: [{ a: 'a' }, { b: 'b' }],
     });
   });
 
@@ -115,7 +115,7 @@ describe('models.base', () => {
       bcd: 'bbb',
       name: '123',
       component: { a: 'a', b: 'b' },
-      arr: [{a: 'a'}, {b: 'b'}],
+      arr: [{ a: 'a' }, { b: 'b' }],
     });
     expect(test.get('component')).toEqual({ a: 'a', b: 'b', c: 'c' });
   });
@@ -129,7 +129,7 @@ describe('models.base', () => {
       name: '123',
       cccc: 'cccc',
       component: { a: 'a', b: 'b' },
-      arr: [{a: 'a'}, {b: 'b'}],
+      arr: [{ a: 'a' }, { b: 'b' }],
     });
   });
 
@@ -142,7 +142,7 @@ describe('models.base', () => {
       name: '123',
       dddd: 'dddd',
       component: { a: 'a', b: 'b' },
-      arr: [{a: 'a'}, {b: 'b'}],
+      arr: [{ a: 'a' }, { b: 'b' }],
     });
   });
 
@@ -156,7 +156,7 @@ describe('models.base', () => {
       bcd: 'bbb',
       name: '123',
       component: { a: 'a', b: 'b', c: 'c' },
-      arr: [{a: 'a'}, {b: 'b'}],
+      arr: [{ a: 'a' }, { b: 'b' }],
     });
     expect(test2.get('component')).toEqual({ a: 'a', b: 'b', c: 'c' });
   });
@@ -172,7 +172,7 @@ describe('models.base', () => {
       name: '123',
       name123: 'xxx',
       component: { a: 'a', b: 'b', d: 'd' },
-      arr: [{a: 'a'}, {b: 'b'}],
+      arr: [{ a: 'a' }, { b: 'b' }],
     });
   });
 
@@ -189,7 +189,7 @@ describe('models.base', () => {
       bcd: 'bbb',
       name: '123',
       component: { a: 'a', b: 'b' },
-      arr: [{a: 'a'}, {b: 'b'}],
+      arr: [{ a: 'a' }, { b: 'b' }],
       title: 'xxx',
       key2: 'val2', // key2 为 get 方法取的
       key1: '111val1111',
@@ -261,25 +261,25 @@ describe('models.base', () => {
     const t = await TestModel.create({
       component: {
         arr: [
-          {a: 'a', aa: 'aa'},
-          {b: 'b', bb: 'bb'},
-          {c: 'c', cc: 'cc'},
+          { a: 'a', aa: 'aa' },
+          { b: 'b', bb: 'bb' },
+          { c: 'c', cc: 'cc' },
         ],
       },
     });
     t.set({
       component: {
         arr: [
-          {a: 'aa'},
-          {b: 'bb'},
+          { a: 'aa' },
+          { b: 'bb' },
         ],
       }
     });
     await t.save();
     expect(t.get('component')).toEqual({
       arr: [
-        {a: 'aa'},
-        {b: 'bb'},
+        { a: 'aa' },
+        { b: 'bb' },
       ],
     });
   })

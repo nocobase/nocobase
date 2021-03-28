@@ -19,7 +19,7 @@ export function Form(props: any) {
 
   return (
     <Card bordered={false}>
-      <SchemaForm 
+      <SchemaForm
         colon={true}
         layout={'vertical'}
         initialValues={{}}
@@ -36,13 +36,17 @@ export function Form(props: any) {
         }}
         expressionScope={{
           text(...args: any[]) {
-            return React.createElement('span', {}, ...args)
+            return React.createElement('span', {}, ...args);
           },
           tooltip(title: string, offset = 3) {
             return (
               <Tooltip title={title}>
                 <QuestionCircleOutlined
-                  style={{ margin: '0 3px', cursor: 'default', marginLeft: offset }}
+                  style={{
+                    margin: '0 3px',
+                    cursor: 'default',
+                    marginLeft: offset,
+                  }}
                 />
               </Tooltip>
             );
@@ -50,7 +54,7 @@ export function Form(props: any) {
         }}
       >
         <FormButtonGroup sticky>
-          <Submit/>
+          <Submit />
         </FormButtonGroup>
       </SchemaForm>
     </Card>

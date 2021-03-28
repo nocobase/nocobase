@@ -71,20 +71,20 @@ describe('toInclude', () => {
   it('normal columns', () => {
     toIncludeExpect({
       fields: ['col1', 'col2'],
-    }).toEqual({ attributes: [ 'col1', 'col2' ] });
+    }).toEqual({ attributes: ['col1', 'col2'] });
   });
 
   it('association count attribute', () => {
     toIncludeExpect({
       fields: ['col1', 'bars_count'],
-    }).toEqual({ attributes: [ 'col1', Foo.withCountAttribute('bars') ] });
+    }).toEqual({ attributes: ['col1', Foo.withCountAttribute('bars')] });
   });
 
   it('association without attributes', () => {
     toIncludeExpect({
       fields: ['col1', 'bars'],
     }).toEqual({
-      attributes: [ 'col1' ],
+      attributes: ['col1'],
       include: [
         {
           association: 'bars',
@@ -98,11 +98,11 @@ describe('toInclude', () => {
     toIncludeExpect({
       fields: ['col1', 'bars.col1', 'bars.col2'],
     }).toEqual({
-      attributes: [ 'col1' ],
+      attributes: ['col1'],
       include: [
         {
           association: 'bars',
-          attributes: [ 'col1', 'col2' ],
+          attributes: ['col1', 'col2'],
         }
       ],
       distinct: true,
@@ -113,11 +113,11 @@ describe('toInclude', () => {
     toIncludeExpect({
       fields: ['col1', ['bars', 'col1'], ['bars', 'col2']],
     }).toEqual({
-      attributes: [ 'col1' ],
+      attributes: ['col1'],
       include: [
         {
           association: 'bars',
-          attributes: [ 'col1', 'col2' ],
+          attributes: ['col1', 'col2'],
         }
       ],
       distinct: true,
@@ -128,7 +128,7 @@ describe('toInclude', () => {
     toIncludeExpect({
       fields: ['col1', 'bars.baz'],
     }).toEqual({
-      attributes: [ 'col1' ],
+      attributes: ['col1'],
       include: [
         {
           association: 'bars',
@@ -148,7 +148,7 @@ describe('toInclude', () => {
     toIncludeExpect({
       fields: ['col1', 'bars', 'bars.baz'],
     }, true).toEqual({
-      attributes: [ 'col1' ],
+      attributes: ['col1'],
       include: [
         {
           association: 'bars',
@@ -167,7 +167,7 @@ describe('toInclude', () => {
     toIncludeExpect({
       fields: ['col1', 'bars.baz', 'bars'],
     }, true).toEqual({
-      attributes: [ 'col1' ],
+      attributes: ['col1'],
       include: [
         {
           association: 'bars',
@@ -186,7 +186,7 @@ describe('toInclude', () => {
     toIncludeExpect({
       fields: ['col1', 'bars.col1', 'bars.col2', 'bars.baz'],
     }).toEqual({
-      attributes: [ 'col1' ],
+      attributes: ['col1'],
       include: [
         {
           association: 'bars',
@@ -207,7 +207,7 @@ describe('toInclude', () => {
     toIncludeExpect({
       fields: ['col1', 'bars.col1', 'bars.col2', 'bars.baz.col1', 'bars.baz.col2'],
     }).toEqual({
-      attributes: [ 'col1' ],
+      attributes: ['col1'],
       include: [
         {
           association: 'bars',
@@ -417,7 +417,7 @@ describe('toInclude', () => {
         distinct: true,
       });
     });
-    
+
   });
 
 });

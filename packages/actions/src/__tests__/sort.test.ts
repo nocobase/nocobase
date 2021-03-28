@@ -2,7 +2,7 @@ import { initDatabase, agent } from './index';
 
 describe('get', () => {
   let db;
-  
+
   beforeEach(async () => {
     db = await initDatabase();
     const User = db.getModel('users');
@@ -23,7 +23,7 @@ describe('get', () => {
       }))
     })), Promise.resolve());
   });
-  
+
   afterAll(() => db.close());
 
   describe('sort value initialization', () => {
@@ -200,7 +200,7 @@ describe('get', () => {
           field: 'sort_in_status',
           target: { id: 8 },
         });
-      
+
       const Post = db.getModel('posts');
       const posts = await Post.findAll({
         where: {

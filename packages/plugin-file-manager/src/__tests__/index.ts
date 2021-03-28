@@ -31,7 +31,7 @@ const config = {
   define: {
     hooks: {
       beforeCreate(model, options) {
-        
+
       },
     },
   },
@@ -61,7 +61,7 @@ export async function getApp() {
     },
   });
   app.resourcer.use(middlewares.associated);
-  app.resourcer.registerActionHandlers({...actions.associate, ...actions.common});
+  app.resourcer.registerActionHandlers({ ...actions.associate, ...actions.common });
   app.registerPlugin({
     'collections': [path.resolve(__dirname, '../../../plugin-collections')],
     'file-manager': [plugin]
@@ -142,7 +142,7 @@ export function getAPI(app: Application) {
               case 'list':
               case 'get':
                 return agent.get(`${url}?${qs.stringify(restParams)}`);
-                
+
               default:
                 return agent.post(`${url}?${qs.stringify(restParams)}`).send(values);
             }

@@ -5,7 +5,15 @@ import { Spin } from '@nocobase/client';
 import { useRequest, useLocation } from 'umi';
 import api from '@/api-client';
 import { Actions } from '../Actions';
-import { Table as AntdTable, Card, Pagination, Button, Tabs, Descriptions, Tooltip } from 'antd';
+import {
+  Table as AntdTable,
+  Card,
+  Pagination,
+  Button,
+  Tabs,
+  Descriptions,
+  Tooltip,
+} from 'antd';
 import { LoadingOutlined } from '@ant-design/icons';
 import { components, fields2columns } from '@/components/views/SortableTable';
 import ReactDragListView from 'react-drag-listview';
@@ -21,7 +29,11 @@ export function Association(props) {
   const { targetViewName } = schema;
   return (
     <div>
-      <View {...restProps} associationSchema={schema} viewName={targetViewName}/>
+      <View
+        {...restProps}
+        associationSchema={schema}
+        viewName={targetViewName}
+      />
     </div>
   );
 }

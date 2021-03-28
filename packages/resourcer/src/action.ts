@@ -161,7 +161,7 @@ export interface ActionParams {
   /**
    * 从属关系的当前实例
    */
-  associated ?: any;
+  associated?: any;
   /**
    * 资源提供哪些行为或方法
    */
@@ -301,7 +301,7 @@ export class Action {
   }
 
   getHandlers() {
-    return [...this.resource.resourcer.getMiddlewares(),...this.getMiddlewareHandlers(), this.getHandler()].filter(Boolean);
+    return [...this.resource.resourcer.getMiddlewares(), ...this.getMiddlewareHandlers(), this.getHandler()].filter(Boolean);
   }
 
   async execute(context: any, next?: any) {

@@ -207,8 +207,8 @@ export default {
           viewName: 'views_v2.table',
           filter: {
             and: [
-              {'type.ne': 'descriptions'},
-              {'data_source_type.ne': 'association'},
+              { 'type.ne': 'descriptions' },
+              { 'data_source_type.ne': 'association' },
             ]
           },
         },

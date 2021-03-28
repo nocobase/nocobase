@@ -1,9 +1,9 @@
-import React, { useState } from "react";
+import React, { useState } from 'react';
 import { useRequest, useHistory } from 'umi';
 import api from '@/api-client';
 import { Descriptions, Popconfirm, Card, Button } from 'antd';
-import Board, { moveCard } from "@lourenci/react-kanban";
-import "@lourenci/react-kanban/dist/styles.css";
+import Board, { moveCard } from '@lourenci/react-kanban';
+import '@lourenci/react-kanban/dist/styles.css';
 import { PlusOutlined, CloseOutlined, RightOutlined } from '@ant-design/icons';
 import Drawer from '@/components/pages/AdminLoader/Drawer';
 import { Actions, Create, Destroy } from '../../Actions';
@@ -17,9 +17,9 @@ import './style.less';
 
 export function Kanban(props: any) {
   const { defaultFilter, associatedKey, schema = {} } = props;
-  const { 
-    filter: schemaFilter, 
-    sort, 
+  const {
+    filter: schemaFilter,
+    sort,
     appends,
     groupField = {},
     resourceName,
@@ -35,63 +35,68 @@ export function Kanban(props: any) {
     rowKey = 'id',
   } = schema;
   const { dataSource = [] } = groupField;
-  console.log({groupField, dataSource})
+  console.log({ groupField, dataSource });
 
   const paginated = false;
 
   const history = useHistory();
 
-  const { data, loading, mutate, refresh, run, params } = useRequest((params = {}, ...args) => {
-    const { current, pageSize, sorter, filter, ...restParams } = params;
-    console.log('paramsparamsparamsparamsparams', params, args);
-    return api.resource(resourceName).list({
-      associatedKey,
-      page: paginated ? current : 1,
-      perPage: paginated ? pageSize : -1,
-      sorter,
-      sort: [`${groupField.name}_sort`],
-      'fields[appends]': appends,
-      // filter,
-      // ...actionDefaultParams,
-      filter: {
-        and: [
-          defaultFilter,
-          schemaFilter,
-          filter,
-          // __parent ? {
-          //   collection_name: __parent,
-          // } : null,
-        ].filter(obj => obj && Object.keys(obj).length)
-      }
-      // ...args2,
-    })
-    .then(({data = [], meta = {}}) => {
-      return {
-        data: {
-          list: data,
-          total: meta.count||data.length,
-        },
-      };
-    });
-  }, {
-    paginated,
-  });
+  const { data, loading, mutate, refresh, run, params } = useRequest(
+    (params = {}, ...args) => {
+      const { current, pageSize, sorter, filter, ...restParams } = params;
+      console.log('paramsparamsparamsparamsparams', params, args);
+      return api
+        .resource(resourceName)
+        .list({
+          associatedKey,
+          page: paginated ? current : 1,
+          perPage: paginated ? pageSize : -1,
+          sorter,
+          sort: [`${groupField.name}_sort`],
+          'fields[appends]': appends,
+          // filter,
+          // ...actionDefaultParams,
+          filter: {
+            and: [
+              defaultFilter,
+              schemaFilter,
+              filter,
+              // __parent ? {
+              //   collection_name: __parent,
+              // } : null,
+            ].filter(obj => obj && Object.keys(obj).length),
+          },
+          // ...args2,
+        })
+        .then(({ data = [], meta = {} }) => {
+          return {
+            data: {
+              list: data,
+              total: meta.count || data.length,
+            },
+          };
+        });
+    },
+    {
+      paginated,
+    },
+  );
 
   if (loading) {
-    return <Spin/>;
+    return <Spin />;
   }
 
   const columns = dataSource.map(group => {
     return {
       id: group.value,
       title: group.label,
-      cards: filter(data?.list, (item) => {
+      cards: filter(data?.list, item => {
         return get(item, groupField.name) === group.value;
       }),
     };
   });
-  console.log({columns});
-  
+  console.log({ columns });
+
   const bodyStyle: any = {};
 
   if (fields.length === 0) {
@@ -118,18 +123,20 @@ export function Kanban(props: any) {
 
   return (
     <div className={'noco-kanban-view'}>
-      <Actions 
-        associatedKey={associatedKey} 
+      <Actions
+        associatedKey={associatedKey}
         style={{ marginBottom: 14 }}
-        actions={actions.filter(action => !['create', 'destroy'].includes(action.type))} 
+        actions={actions.filter(
+          action => !['create', 'destroy'].includes(action.type),
+        )}
         onTrigger={{
           async filter(values) {
             const items = values.filter.and || values.filter.or;
             // @ts-ignore
-            run({...params[0], filter: values.filter});
+            run({ ...params[0], filter: values.filter });
             // refresh();
           },
-        }} 
+        }}
       />
       <Board
         allowRemoveLane
@@ -138,8 +145,8 @@ export function Kanban(props: any) {
         disableColumnDrag
         disableCardDrag={disableCardDrag}
         onLaneRemove={console.log}
-        renderCard={(data, {dragging, removeCard}) => {
-          const openDetails = (e) => {
+        renderCard={(data, { dragging, removeCard }) => {
+          const openDetails = e => {
             if (!detailsOpenMode || !details.length) {
               return;
             }
@@ -148,18 +155,21 @@ export function Kanban(props: any) {
               history.push(`/admin/${paths[2]}/${data[rowKey]}/0`);
             } else {
               Drawer.open({
-                headerStyle: details.length > 1 ? {
-                  paddingBottom: 0,
-                  borderBottom: 0,
-                  // paddingTop: 16,
-                  // marginBottom: -4,
-                } : {},
+                headerStyle:
+                  details.length > 1
+                    ? {
+                        paddingBottom: 0,
+                        borderBottom: 0,
+                        // paddingTop: 16,
+                        // marginBottom: -4,
+                      }
+                    : {},
                 title: data[labelField],
-                content: ({resolve, closeWithConfirm}) => (
+                content: ({ resolve, closeWithConfirm }) => (
                   <div>
-                    <Details 
-                      associatedKey={associatedKey} 
-                      resourceName={resourceName} 
+                    <Details
+                      associatedKey={associatedKey}
+                      resourceName={resourceName}
                       onFinish={async () => {
                         await refresh();
                         resolve();
@@ -183,18 +193,19 @@ export function Kanban(props: any) {
                 ),
               });
             }
-          }
+          };
           return (
-            <Card 
+            <Card
               hoverable
-              size={'small'} 
-              style={{background: '#fff', minWidth: 250, maxWidth: 250, marginBottom: 12}} 
+              size={'small'}
+              style={{
+                background: '#fff',
+                minWidth: 250,
+                maxWidth: 250,
+                marginBottom: 12,
+              }}
               bordered={false}
-              title={(
-                <div onClick={openDetails}>
-                  {data[labelField]}
-                </div>
-              )}
+              title={<div onClick={openDetails}>{data[labelField]}</div>}
               bodyStyle={bodyStyle}
               extra={
                 allowRemoveCard && (
@@ -225,10 +236,15 @@ export function Kanban(props: any) {
                   <Descriptions column={1} size={'small'} layout={'vertical'}>
                     {fields.map((field: any) => {
                       return (
-                        <Descriptions.Item label={field.title||field.name}>
-                          <Field data={data} viewType={'descriptions'} schema={field} value={get(data, field.name)}/>
+                        <Descriptions.Item label={field.title || field.name}>
+                          <Field
+                            data={data}
+                            viewType={'descriptions'}
+                            schema={field}
+                            value={get(data, field.name)}
+                          />
                         </Descriptions.Item>
-                      )
+                      );
                     })}
                   </Descriptions>
                 )}
@@ -244,9 +260,15 @@ export function Kanban(props: any) {
               [groupField.name]: destination.toColumnId,
             },
           });
-          const destColumn = columns.find( column => column.id === destination.toColumnId);
-          const targetIndex = get(destColumn, ['cards', destination.toPosition+1, rowKey]);
-          console.log({targetIndex, card, destination})
+          const destColumn = columns.find(
+            column => column.id === destination.toColumnId,
+          );
+          const targetIndex = get(destColumn, [
+            'cards',
+            destination.toPosition + 1,
+            rowKey,
+          ]);
+          console.log({ targetIndex, card, destination });
           await api.resource(resourceName).sort({
             associatedKey,
             resourceKey: card[rowKey],
@@ -259,7 +281,7 @@ export function Kanban(props: any) {
             },
           });
         }}
-        initialBoard={{columns}}
+        initialBoard={{ columns }}
         // allowAddCard={{ on: "bottom" }}
         allowAddCard={false}
         // onNewCardConfirm={draftCard => ({
@@ -269,28 +291,33 @@ export function Kanban(props: any) {
         renderColumnHeader={({ title, id }, { addCard }) => {
           return (
             <>
-              <div className="react-kanban-column-header"><span>{ title }</span></div>
-              {allowAddCard && <Create
-                onFinish={(values: any) => {
-                  refresh();
-                }}
-                initialValues={{
-                  [groupField.name]: id,
-                }}
-                schema={merge(createAction, {
-                  title: null,
-                  pageTitle: '新增',
-                  componentProps: {
-                    type: 'text',
-                    block: true,
-                    className: 'noco-card-adder-button',
-                    style: {
-                      marginBottom: 10,
-                      border: 0,
-                      background: '#fff',
+              <div className="react-kanban-column-header">
+                <span>{title}</span>
+              </div>
+              {allowAddCard && (
+                <Create
+                  onFinish={(values: any) => {
+                    refresh();
+                  }}
+                  initialValues={{
+                    [groupField.name]: id,
+                  }}
+                  schema={merge(createAction, {
+                    title: null,
+                    pageTitle: '新增',
+                    componentProps: {
+                      type: 'text',
+                      block: true,
+                      className: 'noco-card-adder-button',
+                      style: {
+                        marginBottom: 10,
+                        border: 0,
+                        background: '#fff',
+                      },
                     },
-                  },
-                })}/>}
+                  })}
+                />
+              )}
             </>
           );
         }}

@@ -1,7 +1,7 @@
 import { Model, ModelCtor } from '@nocobase/database';
 import _ from 'lodash';
 
-async function getPageInfo(ctx, {resourceName, resourceKey}) {
+async function getPageInfo(ctx, { resourceName, resourceKey }) {
   // const { resourceName, resourceKey } = ctx.action.params;
   const M = ctx.db.getModel(resourceName) as ModelCtor<Model>;
   const model = await M.findByPk(resourceKey);
@@ -27,7 +27,7 @@ async function getCollection(ctx, resourceName) {
       name: resourceName,
     },
   }));
-  const permissions = (await ctx.ac.isRoot() || collection.developerMode || collection.internal) 
+  const permissions = (await ctx.ac.isRoot() || collection.developerMode || collection.internal)
     ? await ctx.ac.can(resourceName).getRootPermissions()
     : await ctx.ac.can(resourceName).permissions();
   const defaultView = await collection.getViews({
@@ -45,7 +45,7 @@ async function getCollection(ctx, resourceName) {
     } : {
       'id.in': permissions.tabs,
       enabled: true,
-      developerMode: {'$isFalsy': true},
+      developerMode: { '$isFalsy': true },
     },
     fields: {
       appends: ['associationField'],
@@ -91,9 +91,9 @@ export default async (ctx, next) => {
   const lastItem = items.pop();
 
   for (const item of items) {
-    const lastCollection = ctx.body[ctx.body.length-1];
-    lastCollection.pageInfo = await getPageInfo(ctx, {resourceName: lastCollection.name, resourceKey: item.itemId});
-    const activeTab = _.find(lastCollection.tabs, tab => tab.name == item.tabName)||{};
+    const lastCollection = ctx.body[ctx.body.length - 1];
+    lastCollection.pageInfo = await getPageInfo(ctx, { resourceName: lastCollection.name, resourceKey: item.itemId });
+    const activeTab = _.find(lastCollection.tabs, tab => tab.name == item.tabName) || {};
     if (activeTab && activeTab.type === 'association') {
       // console.log(activeTab.associationField.target);
       const nextCollection = await getCollection(ctx, activeTab.associationField.target);
@@ -101,8 +101,8 @@ export default async (ctx, next) => {
     }
   }
 
-  const lastCollection = ctx.body[ctx.body.length-1];
-  lastCollection.pageInfo = await getPageInfo(ctx, {resourceName: lastCollection.name, resourceKey: lastItem.itemId});
+  const lastCollection = ctx.body[ctx.body.length - 1];
+  lastCollection.pageInfo = await getPageInfo(ctx, { resourceName: lastCollection.name, resourceKey: lastItem.itemId });
 
   await next();
 }

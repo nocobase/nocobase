@@ -33,7 +33,7 @@ export const flatToTree = (flatArray, options) => {
 
 function treeData(pages: Array<any>) {
   return pages.map(data => {
-    return {...data, children: data.children && data.children.length ? treeData(data.children) : undefined}
+    return { ...data, children: data.children && data.children.length ? treeData(data.children) : undefined }
   });
 }
 

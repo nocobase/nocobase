@@ -32,16 +32,16 @@ export function Table(props: TableProps) {
     selectedRowKeys: srk,
     defaultFilter = {},
   } = props;
-  const { 
+  const {
     name: viewName,
     mode = 'default',
     rowViewName = 'form',
-    fields, 
+    fields,
     actionDefaultParams = {},
     defaultTabName,
     rowKey = 'id',
     actions = [],
-    paginated = true, 
+    paginated = true,
     defaultPerPage = 10,
     disableRowClick,
   } = schema;
@@ -51,47 +51,63 @@ export function Table(props: TableProps) {
   const { filter: defaultActionFilter = {} } = actionDefaultParams;
 
   const [filterCount, setFilterCount] = useState(0);
-  const name = associatedName ? `${associatedName}.${resourceName}` : resourceName;
-  const { data, loading, pagination, mutate, refresh, run, params } = useRequest((params = {}, ...args) => {
-    const { current, pageSize, sorter, filter, ...restParams } = params;
-    console.log('paramsparamsparamsparamsparams', params, args);
-    return api.resource(name).list({
-      associatedKey,
-      page: paginated ? current : 1,
-      perPage: paginated ? pageSize : -1,
-      sorter,
-      // filter,
-      viewName,
-      ...actionDefaultParams,
-      filter: {
-        and: [
-          defaultFilter,
-          defaultActionFilter,
-          filter,
-        ].filter(obj => obj && Object.keys(obj).length)
-      }
-      // ...args2,
-    })
-    .then(({data = [], meta = {}}) => {
-      return {
-        data: {
-          list: data,
-          total: meta.count||data.length,
-        },
-      };
-    });
-  }, {
-    paginated,
-    defaultPageSize: defaultPerPage,
-  });
-  const { sourceKey = 'id' } = activeTab.field||{};
+  const name = associatedName
+    ? `${associatedName}.${resourceName}`
+    : resourceName;
+  const {
+    data,
+    loading,
+    pagination,
+    mutate,
+    refresh,
+    run,
+    params,
+  } = useRequest(
+    (params = {}, ...args) => {
+      const { current, pageSize, sorter, filter, ...restParams } = params;
+      console.log('paramsparamsparamsparamsparams', params, args);
+      return api
+        .resource(name)
+        .list({
+          associatedKey,
+          page: paginated ? current : 1,
+          perPage: paginated ? pageSize : -1,
+          sorter,
+          // filter,
+          viewName,
+          ...actionDefaultParams,
+          filter: {
+            and: [defaultFilter, defaultActionFilter, filter].filter(
+              obj => obj && Object.keys(obj).length,
+            ),
+          },
+          // ...args2,
+        })
+        .then(({ data = [], meta = {} }) => {
+          return {
+            data: {
+              list: data,
+              total: meta.count || data.length,
+            },
+          };
+        });
+    },
+    {
+      paginated,
+      defaultPageSize: defaultPerPage,
+    },
+  );
+  const { sourceKey = 'id' } = activeTab.field || {};
   const drawerRef = useRef<any>();
   console.log(props);
-  const [selectedRowKeys, setSelectedRowKeys] = useState(srk||[]);
-  const onChange = (selectedRowKeys: React.ReactText[], selectedRows: React.ReactText[]) => {
+  const [selectedRowKeys, setSelectedRowKeys] = useState(srk || []);
+  const onChange = (
+    selectedRowKeys: React.ReactText[],
+    selectedRows: React.ReactText[],
+  ) => {
     setSelectedRowKeys(selectedRowKeys);
     onSelected && onSelected(selectedRows);
-  }
+  };
   useEffect(() => {
     setSelectedRowKeys(srk);
   }, [srk]);
@@ -102,7 +118,7 @@ export function Table(props: TableProps) {
       type: multiple ? 'checkbox' : 'radio',
       selectedRowKeys,
       onChange,
-    }
+    };
   }
   return (
     <Card bordered={false}>
@@ -119,7 +135,7 @@ export function Table(props: TableProps) {
             const items = values.filter.and || values.filter.or;
             setFilterCount(Object.keys(items).length);
             // @ts-ignore
-            run({...params[0], filter: values.filter});
+            run({ ...params[0], filter: values.filter });
             console.log('filter', values);
           },
           async destroy() {
@@ -133,7 +149,7 @@ export function Table(props: TableProps) {
             // @ts-ignore
             window.routesReload && window.routesReload();
             console.log('destroy.onTrigger', selectedRowKeys);
-          }
+          },
         }}
       />
       {mode === 'simple' && (
@@ -147,7 +163,7 @@ export function Table(props: TableProps) {
           }}
         />
       )}
-      <AntdTable 
+      <AntdTable
         size={'middle'}
         rowKey={rowKey}
         loading={{
@@ -156,17 +172,17 @@ export function Table(props: TableProps) {
           indicator: icon,
           // className: 'spinning--absolute m32',
         }}
-        columns={fields2columns(fields, {associatedKey, refresh})}
-        dataSource={data?.list||(data as any)}
+        columns={fields2columns(fields, { associatedKey, refresh })}
+        dataSource={data?.list || (data as any)}
         onChange={(pagination, filters, sorter, extra) => {
-          run({...params[0], sorter});
+          run({ ...params[0], sorter });
         }}
         components={components({
-          data, 
+          data,
           mutate,
           rowKey,
           isFieldComponent: disableRowClick || isFieldComponent,
-          onMoved: async ({resourceKey, target}) => {
+          onMoved: async ({ resourceKey, target }) => {
             await api.resource(name).sort({
               associatedKey,
               resourceKey,
@@ -176,10 +192,10 @@ export function Table(props: TableProps) {
               },
             });
             await refresh();
-            console.log({resourceKey, target});
-          }
+            console.log({ resourceKey, target });
+          },
         })}
-        onRow={(data) => ({
+        onRow={data => ({
           onClick: () => {
             if (disableRowClick || isFieldComponent) {
               return;
@@ -191,7 +207,7 @@ export function Table(props: TableProps) {
               redirectTo({
                 ...props.match.params,
                 [activeTab ? 'newItem' : 'lastItem']: {
-                  itemId: data[rowKey]||data.id,
+                  itemId: data[rowKey] || data.id,
                   tabName: defaultTabName,
                 },
               });
@@ -203,7 +219,13 @@ export function Table(props: TableProps) {
       />
       {paginated && (
         <div className={'table-pagination'}>
-          <Pagination {...pagination} showTotal={(total)=> `共 ${total} 条记录`} showQuickJumper showSizeChanger size={'small'}/>
+          <Pagination
+            {...pagination}
+            showTotal={total => `共 ${total} 条记录`}
+            showQuickJumper
+            showSizeChanger
+            size={'small'}
+          />
         </div>
       )}
     </Card>

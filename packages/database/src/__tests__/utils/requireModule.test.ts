@@ -11,7 +11,7 @@ describe('utils.requireModule', () => {
   });
 
   test('toBeInstanceOf Function', () => {
-    const r = requireModule(() => {});
+    const r = requireModule(() => { });
     expect(r).toBeInstanceOf(Function);
   });
 

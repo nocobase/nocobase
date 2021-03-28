@@ -16,7 +16,7 @@ async function getRoutes(ctx) {
   } : {
     filter: {
       'parent_id.$notNull': true,
-      developerMode: {'$isFalsy': true},
+      developerMode: { '$isFalsy': true },
     },
     sort: ['sort'],
   }));
@@ -32,9 +32,9 @@ async function getRoutes(ctx) {
           showInDataMenu: true,
         },
         sort: ['sort'],
-      }: {
+      } : {
         filter: {
-          developerMode: {'$isFalsy': true},
+          developerMode: { '$isFalsy': true },
           showInDataMenu: true,
         },
         sort: ['sort'],
@@ -69,9 +69,9 @@ async function getRoutes(ctx) {
           collection_name: 'users',
         },
         sort: ['sort'],
-      }: {
+      } : {
         filter: {
-          developerMode: {'$isFalsy': true},
+          developerMode: { '$isFalsy': true },
           showInDataMenu: true,
           collection_name: 'users',
         },
@@ -114,7 +114,7 @@ export async function list(ctx: actions.Context, next: actions.Next) {
   } : {
     filter: {
       'parent_id.$notNull': true,
-      developerMode: {'$isFalsy': true},
+      developerMode: { '$isFalsy': true },
     },
     sort: ['sort'],
   }));
@@ -135,9 +135,9 @@ export async function list(ctx: actions.Context, next: actions.Next) {
           showInDataMenu: true,
         },
         sort: ['sort'],
-      }: {
+      } : {
         filter: {
-          developerMode: {'$isFalsy': true},
+          developerMode: { '$isFalsy': true },
           showInDataMenu: true,
         },
         sort: ['sort'],
@@ -182,10 +182,10 @@ export async function list(ctx: actions.Context, next: actions.Next) {
           collection_name: 'users',
         },
         sort: ['sort'],
-      }: {
+      } : {
         filter: {
           collection_name: 'users',
-          developerMode: {'$isFalsy': true},
+          developerMode: { '$isFalsy': true },
           showInDataMenu: true,
         },
         sort: ['sort'],

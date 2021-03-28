@@ -97,8 +97,8 @@ describe('tables', () => {
       expect(db.getModel('baz').options.indexes).toStrictEqual(db.getTable('baz').getModelOptions().indexes);
       // @ts-ignore
       expect(db.getTable('baz').getModelOptions().indexes).toMatchObject([
-        { fields: [ 'col1' ], name: 'baz_col1', parser: null },
-        { fields: [ 'col2', 'col3' ], name: 'baz_col2_col3', parser: null }
+        { fields: ['col1'], name: 'baz_col1', parser: null },
+        { fields: ['col2', 'col3'], name: 'baz_col2_col3', parser: null }
       ]);
     });
 
@@ -131,8 +131,8 @@ describe('tables', () => {
       expect(db.getModel('baz2').options.indexes).toStrictEqual(db.getTable('baz2').getModelOptions().indexes);
       // @ts-ignore
       expect(db.getTable('baz2').getModelOptions().indexes).toMatchObject([
-        { fields: [ 'col1' ], name: 'baz2_col1', parser: null },
-        { fields: [ 'col2', 'col3' ], name: 'baz2_col2_col3', parser: null },
+        { fields: ['col1'], name: 'baz2_col1', parser: null },
+        { fields: ['col2', 'col3'], name: 'baz2_col2_col3', parser: null },
       ]);
     });
   });
@@ -209,7 +209,7 @@ describe('tables', () => {
 
       expect(db.getTable('baz').getOptions()).toEqual({
         name: 'baz',
-        actions: [ { name: 'get' } ]
+        actions: [{ name: 'get' }]
       });
     });
 
@@ -239,7 +239,7 @@ describe('tables', () => {
       });
       expect(db.getTable('baz').getOptions()).toEqual({
         name: 'baz',
-        actions: [ { name: 'list' }, { name: 'get' } ]
+        actions: [{ name: 'list' }, { name: 'get' }]
       });
     });
   });
@@ -251,13 +251,13 @@ describe('tables', () => {
       });
       expect([...tables.keys()]).toEqual(['demos', 'examples', 'tests']);
       expect(db.getTable('demos').getOptions()).toEqual({
-        name: 'demos', actions: [ { name: 'create' }, { name: 'list' } ]
+        name: 'demos', actions: [{ name: 'create' }, { name: 'list' }]
       });
       expect(db.getTable('examples').getOptions()).toEqual({
-        name: 'examples', actions: [ { name: 'create' } ]
+        name: 'examples', actions: [{ name: 'create' }]
       });
       expect(db.getTable('tests').getOptions()).toEqual({
-        name: 'tests', actions: [ { name: 'list' } ]
+        name: 'tests', actions: [{ name: 'list' }]
       });
     });
   });
@@ -289,7 +289,7 @@ describe('tables', () => {
           }
         ],
       });
-      db.table({name: 'foos'});
+      db.table({ name: 'foos' });
       expect(db.getModel('bars').associations.foo).toBeDefined();
     });
 

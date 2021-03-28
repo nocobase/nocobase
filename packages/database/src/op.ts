@@ -29,7 +29,7 @@ for (const key in Op) {
 // 通用
 
 // 是否为空：数据库意义的 null
-op.set('$null', (value, {fieldPath, database}) => {
+op.set('$null', (value, { fieldPath, database }) => {
   // const field = database.getFieldByPath(fieldPath);
   // console.log({field});
   return { [Op.is]: null };

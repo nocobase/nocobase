@@ -1,7 +1,7 @@
 import { Field } from '@nocobase/database';
 import { LOG_TYPE_UPDATE } from '../constants';
 
-export default async function(model, options) {
+export default async function (model, options) {
   if (!options.context) {
     return;
   }
@@ -35,7 +35,7 @@ export default async function(model, options) {
       }, {
         transaction
       });
-    
+
       await log.updateAssociations({
         ...(state.currentUser ? { user: state.currentUser.id } : {}),
         changes

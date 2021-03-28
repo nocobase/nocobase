@@ -1,35 +1,35 @@
-import React, { useRef, Fragment, useEffect } from 'react'
+import React, { useRef, Fragment, useEffect } from 'react';
 import {
   createControllerBox,
   ISchemaVirtualFieldComponentProps,
   createEffectHook,
   useFormEffects,
   useFieldState,
-  IVirtualBoxProps
-} from '@formily/react-schema-renderer'
-import { toArr } from '@formily/shared'
-import { Steps } from 'antd'
-import { createMatchUpdate } from '../shared'
-import { IFormStep } from '../types'
+  IVirtualBoxProps,
+} from '@formily/react-schema-renderer';
+import { toArr } from '@formily/shared';
+import { Steps } from 'antd';
+import { createMatchUpdate } from '../shared';
+import { IFormStep } from '../types';
 
 enum StateMap {
   ON_FORM_STEP_NEXT = 'onFormStepNext',
   ON_FORM_STEP_PREVIOUS = 'onFormStepPrevious',
   ON_FORM_STEP_GO_TO = 'onFormStepGoto',
   ON_FORM_STEP_CURRENT_CHANGE = 'onFormStepCurrentChange',
-  ON_FORM_STEP_DATA_SOURCE_CHANGED = 'onFormStepDataSourceChanged'
+  ON_FORM_STEP_DATA_SOURCE_CHANGED = 'onFormStepDataSourceChanged',
 }
 const EffectHooks = {
   onStepNext$: createEffectHook<void>(StateMap.ON_FORM_STEP_NEXT),
   onStepPrevious$: createEffectHook<void>(StateMap.ON_FORM_STEP_PREVIOUS),
   onStepGoto$: createEffectHook<void>(StateMap.ON_FORM_STEP_GO_TO),
   onStepCurrentChange$: createEffectHook<{
-    value: number
-    preValue: number
-  }>(StateMap.ON_FORM_STEP_CURRENT_CHANGE)
-}
+    value: number;
+    preValue: number;
+  }>(StateMap.ON_FORM_STEP_CURRENT_CHANGE),
+};
 
-type ExtendsProps = StateMap & typeof EffectHooks
+type ExtendsProps = StateMap & typeof EffectHooks;
 
 export const FormStep: React.FC<IVirtualBoxProps<IFormStep>> &
   ExtendsProps = createControllerBox<IFormStep>(
@@ -39,54 +39,54 @@ export const FormStep: React.FC<IVirtualBoxProps<IFormStep>> &
     schema,
     path,
     name,
-    children
+    children,
   }: ISchemaVirtualFieldComponentProps) => {
-    const { dataSource, ...stepProps } = schema.getExtendsComponentProps()
+    const { dataSource, ...stepProps } = schema.getExtendsComponentProps();
     const [{ current }, setFieldState] = useFieldState({
-      current: stepProps.current || 0
-    })
-    const ref = useRef(current)
-    const itemsRef = useRef([])
-    itemsRef.current = toArr(dataSource)
+      current: stepProps.current || 0,
+    });
+    const ref = useRef(current);
+    const itemsRef = useRef([]);
+    itemsRef.current = toArr(dataSource);
 
-    const matchUpdate = createMatchUpdate(name, path)
+    const matchUpdate = createMatchUpdate(name, path);
 
     const update = (cur: number) => {
       form.notify(StateMap.ON_FORM_STEP_CURRENT_CHANGE, {
         path,
         name,
         value: cur,
-        preValue: current
-      })
+        preValue: current,
+      });
       setFieldState({
-        current: cur
-      })
-    }
+        current: cur,
+      });
+    };
 
     useEffect(() => {
       form.notify(StateMap.ON_FORM_STEP_DATA_SOURCE_CHANGED, {
         path,
         name,
-        value: itemsRef.current
-      })
-    }, [itemsRef.current.length])
+        value: itemsRef.current,
+      });
+    }, [itemsRef.current.length]);
 
     useFormEffects(($, { setFieldState }) => {
       const updateFields = () => {
         itemsRef.current.forEach(({ name }, index) => {
           setFieldState(name, (state: any) => {
-            state.display = index === current
-          })
-        })
-      }
-      updateFields()
+            state.display = index === current;
+          });
+        });
+      };
+      updateFields();
       $(StateMap.ON_FORM_STEP_DATA_SOURCE_CHANGED).subscribe(
         ({ name, path }) => {
           matchUpdate(name, path, () => {
-            updateFields()
-          })
-        }
-      )
+            updateFields();
+          });
+        },
+      );
 
       $(StateMap.ON_FORM_STEP_CURRENT_CHANGE).subscribe(
         ({ value, name, path }: any = {}) => {
@@ -95,16 +95,16 @@ export const FormStep: React.FC<IVirtualBoxProps<IFormStep>> &
               itemsRef.current.forEach(({ name }, index) => {
                 if (!name)
                   throw new Error(
-                    'FormStep dataSource must include `name` property'
-                  )
+                    'FormStep dataSource must include `name` property',
+                  );
                 setFieldState(name, (state: any) => {
-                  state.display = index === value
-                })
-              })
-            })
-          })
-        }
-      )
+                  state.display = index === value;
+                });
+              });
+            });
+          });
+        },
+      );
 
       $(StateMap.ON_FORM_STEP_NEXT).subscribe(({ name, path }: any = {}) => {
         matchUpdate(name, path, () => {
@@ -113,45 +113,45 @@ export const FormStep: React.FC<IVirtualBoxProps<IFormStep>> &
               update(
                 ref.current + 1 > itemsRef.current.length - 1
                   ? ref.current
-                  : ref.current + 1
-              )
+                  : ref.current + 1,
+              );
             }
-          })
-        })
-      })
+          });
+        });
+      });
 
       $(StateMap.ON_FORM_STEP_PREVIOUS).subscribe(
         ({ name, path }: any = {}) => {
           matchUpdate(name, path, () => {
-            update(ref.current - 1 < 0 ? ref.current : ref.current - 1)
-          })
-        }
-      )
+            update(ref.current - 1 < 0 ? ref.current : ref.current - 1);
+          });
+        },
+      );
 
       $(StateMap.ON_FORM_STEP_GO_TO).subscribe(
         ({ name, path, value }: any = {}) => {
           matchUpdate(name, path, () => {
             if (!(value < 0 || value > itemsRef.current.length)) {
-              update(value)
+              update(value);
             }
-          })
-        }
-      )
-    })
-    ref.current = current
+          });
+        },
+      );
+    });
+    ref.current = current;
     return (
       <Fragment>
         <Steps {...stepProps} current={current}>
           {itemsRef.current.map((props, key) => {
-            return <Steps.Step {...props} key={key} />
+            return <Steps.Step {...props} key={key} />;
           })}
         </Steps>{' '}
         {children}
       </Fragment>
-    )
-  }
-) as any
+    );
+  },
+) as any;
 
-Object.assign(FormStep, StateMap, EffectHooks)
+Object.assign(FormStep, StateMap, EffectHooks);
 
-export default FormStep
+export default FormStep;

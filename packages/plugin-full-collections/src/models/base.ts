@@ -36,7 +36,7 @@ export class BaseModel extends Model {
       const data = super.get(key);
       return {
         ..._.omit(data, [this.additionalAttribute]),
-        ...(data[this.additionalAttribute]||{}),
+        ...(data[this.additionalAttribute] || {}),
       };
     }
     const [column, ...path] = key.split('.');

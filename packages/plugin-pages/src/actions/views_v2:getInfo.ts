@@ -23,7 +23,7 @@ export const getInfo = async (ctx: actions.Context, next) => {
       },
     });
     const viewData: any = view.toJSON();
-    for (const [key, value] of Object.entries(viewData[`x-${viewData.type}-props`]||{})) {
+    for (const [key, value] of Object.entries(viewData[`x-${viewData.type}-props`] || {})) {
       if (_.get(viewData, key) === null || _.get(viewData, key) === undefined) {
         _.set(viewData, key, value);
       }
@@ -67,7 +67,7 @@ export const getInfo = async (ctx: actions.Context, next) => {
       view.setDataValue('statusable', statusable);
     }
   }
-  
+
   const Collection = ctx.db.getModel('collections') as ModelCtor<Model>;
   const M = ctx.db.getModel(collectionName) as ModelCtor<Model>;
 
@@ -162,7 +162,7 @@ export const getInfo = async (ctx: actions.Context, next) => {
   // return next();
 
   const fields = [];
-  for (const field of viewData.fields||[]) {
+  for (const field of viewData.fields || []) {
     let fieldName: any;
     let json: any;
     if (typeof field === 'string') {
@@ -172,7 +172,7 @@ export const getInfo = async (ctx: actions.Context, next) => {
       if (field.field) {
         const { field: f, ...others } = field;
         fieldName = f.name;
-        json = {...others};
+        json = { ...others };
       } else if (field.name) {
         fieldName = field.name;
         json = field;
@@ -214,7 +214,7 @@ export const getInfo = async (ctx: actions.Context, next) => {
     }
     json && fields.push(json);
   }
-  
+
   const actions = [];
   const toFields = async (values = []) => {
     const fields = [];
@@ -327,11 +327,11 @@ export const getInfo = async (ctx: actions.Context, next) => {
     ctx.action.mergeParams({
       resourceKey: targetViewName,
     });
-    await getInfo(ctx, async () => {});
+    await getInfo(ctx, async () => { });
     const body = ctx.body as any;
     const actions = body.actions.map(action => {
       if (action.viewName) {
-        const names= action.viewName.split('.');
+        const names = action.viewName.split('.');
         action.viewName = `${resourceName}.${names.pop()}`;
       }
       return action;
@@ -364,7 +364,7 @@ export const getInfo = async (ctx: actions.Context, next) => {
   }
   delete data['resourceKey'];
   delete data['associatedKey'];
-  for (const [key, value] of Object.entries(viewData[`x-${viewData.type}-props`]||{})) {
+  for (const [key, value] of Object.entries(viewData[`x-${viewData.type}-props`] || {})) {
     if (_.get(data, key) === null || _.get(data, key) === undefined) {
       _.set(data, key, value);
     }
@@ -387,12 +387,12 @@ export const getInfo = async (ctx: actions.Context, next) => {
   data.actions = data.actions.map(action => {
     if (action.type === 'filter') {
       if (!action.fields) {
-        action.fields = data.fields.filter(({filterable}) => filterable);
+        action.fields = data.fields.filter(({ filterable }) => filterable);
       }
     }
     return action;
   });
-  
+
   ctx.body = data;
   await next();
 };

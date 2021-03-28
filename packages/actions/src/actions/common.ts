@@ -2,7 +2,7 @@ import { Utils, Op, Sequelize } from 'sequelize';
 import _ from 'lodash';
 import { Context, Next } from '.';
 import {
-  Model, 
+  Model,
   HASONE,
   HASMANY,
   BELONGSTO,
@@ -187,7 +187,7 @@ export async function list(ctx: Context, next: Next) {
     }
     // const getAccessor = resourceField.getAccessors().get;
     // const countAccessor = resourceField.getAccessors().count;
-    options.scope = options.scopes||[];
+    options.scope = options.scopes || [];
     const association = AssociatedModel.associations[resourceField.options.name];
     if (resourceField instanceof BELONGSTOMANY) {
       data = await belongsToManyGet.call(association, associated, {
@@ -213,7 +213,7 @@ export async function list(ctx: Context, next: Next) {
       fields,
       context: ctx,
     });
-    data = await Model.scope(options.scopes||[]).findAndCountAll({
+    data = await Model.scope(options.scopes || []).findAndCountAll({
       ...options,
       // @ts-ignore hooks 里添加 context
       context: ctx,
@@ -288,7 +288,7 @@ export async function get(ctx: Context, next: Next) {
     resourceKeyAttribute,
     fields = []
   } = ctx.action.params;
-  console.log({associated, resourceField})
+  console.log({ associated, resourceField })
   if (associated && resourceField) {
     const AssociatedModel = ctx.db.getModel(associatedName);
     if (!(associated instanceof AssociatedModel)) {
@@ -461,7 +461,7 @@ export async function destroy(ctx: Context, next: Next) {
       await transaction.rollback();
       throw new Error(`${associatedName} associated model invalid`);
     }
-    const {get: getAccessor, remove: removeAccessor, set: setAccessor} = resourceField.getAccessors();
+    const { get: getAccessor, remove: removeAccessor, set: setAccessor } = resourceField.getAccessors();
     const TargetModel = ctx.db.getModel(resourceField.getTarget());
     const { where } = TargetModel.parseApiJson({ filter, context: ctx });
     if (resourceField instanceof HASONE || resourceField instanceof BELONGSTO) {

@@ -31,7 +31,7 @@ describe('utils.toWhere', () => {
         }
       ]
     });
-    
+
     await db.sync({ force: true });
 
     const Post = db.getModel('posts');
@@ -51,7 +51,7 @@ describe('utils.toWhere', () => {
           'created_at.$dateOn': '2020-12-31'
         })
       });
-      expect(posts[0].created_at).toEqual(new Date(2020, 11,31));
+      expect(posts[0].created_at).toEqual(new Date(2020, 11, 31));
     });
 
     it('$dateNotOn', async () => {

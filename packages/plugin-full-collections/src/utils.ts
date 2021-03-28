@@ -13,7 +13,7 @@ export function merge(obj1: any, obj2: any) {
 export function generateRandomString(options: any = {}) {
   const { prefix = '' } = options;
   // @ts-ignore
-  return prefix+cryptoRandomString({
+  return prefix + cryptoRandomString({
     length: 6,
     characters: 'abcdefghijklmnopqrstuvwxyz0123456789',
     ...options,

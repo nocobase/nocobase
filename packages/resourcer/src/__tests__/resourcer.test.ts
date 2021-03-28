@@ -28,7 +28,7 @@ describe('resourcer', () => {
       action: 'list',
     }, context);
 
-    expect(context.arr).toStrictEqual([1,2]);
+    expect(context.arr).toStrictEqual([1, 2]);
     expect(context.resourcer).toBeInstanceOf(Resourcer);
     expect(context.action).toBeInstanceOf(Action);
     expect(context.action.getResource()).toBeInstanceOf(Resource);
@@ -64,7 +64,7 @@ describe('resourcer', () => {
       action: 'list',
     }, context);
 
-    expect(context.arr).toStrictEqual([1,2]);
+    expect(context.arr).toStrictEqual([1, 2]);
 
     context = {
       arr: [],
@@ -75,7 +75,7 @@ describe('resourcer', () => {
       action: 'test',
     }, context);
 
-    expect(context.arr).toStrictEqual([11,22]);
+    expect(context.arr).toStrictEqual([11, 22]);
   });
 
   it('registerActionHandlers()', async () => {
@@ -109,7 +109,7 @@ describe('resourcer', () => {
       action: 'list',
     }, context);
 
-    expect(context.arr).toStrictEqual([1,2]);
+    expect(context.arr).toStrictEqual([1, 2]);
 
     context = {
       arr: [],
@@ -120,19 +120,19 @@ describe('resourcer', () => {
       action: 'test',
     }, context);
 
-    expect(context.arr).toStrictEqual([11,22]);
+    expect(context.arr).toStrictEqual([11, 22]);
   });
 
   it('registerActionHandlers()', async () => {
     const resourcer = new Resourcer();
 
     resourcer.registerActionHandlers({
-      'test:list': async(ctx, next) => {
+      'test:list': async (ctx, next) => {
         ctx.arr.push(1);
         await next();
         ctx.arr.push(2);
       },
-      'list': async(ctx, next) => {
+      'list': async (ctx, next) => {
         ctx.arr.push(11);
         await next();
         ctx.arr.push(22);
@@ -156,7 +156,7 @@ describe('resourcer', () => {
       action: 'list',
     }, context);
 
-    expect(context.arr).toStrictEqual([1,2]);
+    expect(context.arr).toStrictEqual([1, 2]);
 
     context = {
       arr: [],
@@ -167,14 +167,14 @@ describe('resourcer', () => {
       action: 'list',
     }, context);
 
-    expect(context.arr).toStrictEqual([11,22]);
+    expect(context.arr).toStrictEqual([11, 22]);
   });
 
   it('registerActionHandlers()', async () => {
     const resourcer = new Resourcer();
 
     resourcer.registerActionHandlers({
-      'list': async(ctx, next) => {
+      'list': async (ctx, next) => {
         ctx.arr.push(11);
         await next();
         ctx.arr.push(22);
@@ -182,7 +182,7 @@ describe('resourcer', () => {
     });
 
     resourcer.registerActionHandlers({
-      'get': async(ctx, next) => {
+      'get': async (ctx, next) => {
         ctx.arr.push(33);
         await next();
         ctx.arr.push(44);
@@ -202,7 +202,7 @@ describe('resourcer', () => {
       action: 'list',
     }, context);
 
-    expect(context.arr).toStrictEqual([11,22]);
+    expect(context.arr).toStrictEqual([11, 22]);
 
     context = {
       arr: [],
@@ -213,7 +213,7 @@ describe('resourcer', () => {
       action: 'get',
     }, context);
 
-    expect(context.arr).toStrictEqual([33,44]);
+    expect(context.arr).toStrictEqual([33, 44]);
   });
 
   it('only', async () => {
@@ -246,7 +246,7 @@ describe('resourcer', () => {
       action: 'list',
     }, context);
 
-    expect(context.arr).toStrictEqual([1,2]);
+    expect(context.arr).toStrictEqual([1, 2]);
 
     context = {
       arr: [],
@@ -290,7 +290,7 @@ describe('resourcer', () => {
       action: 'list',
     }, context);
 
-    expect(context.arr).toStrictEqual([1,2]);
+    expect(context.arr).toStrictEqual([1, 2]);
 
     context = {
       arr: [],
@@ -339,7 +339,7 @@ describe('resourcer', () => {
       action: 'list',
     }, context);
 
-    expect(context.arr).toStrictEqual([1,2,3,4,5,6]);
+    expect(context.arr).toStrictEqual([1, 2, 3, 4, 5, 6]);
   });
 
   it('middlewares#global', async () => {
@@ -383,7 +383,7 @@ describe('resourcer', () => {
       action: 'list',
     }, context);
 
-    expect(context.arr).toStrictEqual([7,1,2,3,4,5,6,8]);
+    expect(context.arr).toStrictEqual([7, 1, 2, 3, 4, 5, 6, 8]);
   });
 
   it('middlewares#only', async () => {
@@ -432,7 +432,7 @@ describe('resourcer', () => {
       action: 'list',
     }, context);
 
-    expect(context.arr).toStrictEqual([1,3,4,6]);
+    expect(context.arr).toStrictEqual([1, 3, 4, 6]);
 
     context = {
       arr: [],
@@ -443,7 +443,7 @@ describe('resourcer', () => {
       action: 'create',
     }, context);
 
-    expect(context.arr).toStrictEqual([2,7,8,5]);
+    expect(context.arr).toStrictEqual([2, 7, 8, 5]);
   });
 
   it('middlewares#except', async () => {
@@ -492,7 +492,7 @@ describe('resourcer', () => {
       action: 'list',
     }, context);
 
-    expect(context.arr).toStrictEqual([1,3,4,6]);
+    expect(context.arr).toStrictEqual([1, 3, 4, 6]);
 
     context = {
       arr: [],
@@ -503,7 +503,7 @@ describe('resourcer', () => {
       action: 'create',
     }, context);
 
-    expect(context.arr).toStrictEqual([2,7,8,5]);
+    expect(context.arr).toStrictEqual([2, 7, 8, 5]);
   });
 
   it('shound work', async () => {
@@ -518,7 +518,7 @@ describe('resourcer', () => {
       resource: 'demo',
       action: 'list',
     }, context);
-    expect(context.arr).toEqual([ 1, 2 ]);
+    expect(context.arr).toEqual([1, 2]);
   });
 
   it('shound work', async () => {
@@ -566,7 +566,7 @@ describe('resourcer', () => {
       resource: 'test',
       action: 'list',
     }, context);
-    expect(context.arr).toEqual([ 5, 7, 1, 9, 3, 4, 10, 2, 8, 6 ]);
+    expect(context.arr).toEqual([5, 7, 1, 9, 3, 4, 10, 2, 8, 6]);
   });
 
   it('require module', async () => {
@@ -589,7 +589,7 @@ describe('resourcer', () => {
       action: 'list',
     }, context);
 
-    expect(context.arr).toEqual([ 1, 7, 8, 2 ]);
+    expect(context.arr).toEqual([1, 7, 8, 2]);
   });
 
   it('require module', async () => {
@@ -612,7 +612,7 @@ describe('resourcer', () => {
       action: 'list',
     }, context);
 
-    expect(context.arr).toEqual([ 2, 9, 10, 3 ]);
+    expect(context.arr).toEqual([2, 9, 10, 3]);
   });
 
   it('require module', async () => {
@@ -637,6 +637,6 @@ describe('resourcer', () => {
       action: 'list',
     }, context);
 
-    expect(context.arr).toEqual([ 2, 9, 10, 3 ]);
+    expect(context.arr).toEqual([2, 9, 10, 3]);
   });
 });

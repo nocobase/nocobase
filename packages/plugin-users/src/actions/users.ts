@@ -23,7 +23,7 @@ export async function login(ctx: actions.Context, next: actions.Next) {
     ctx.throw(401, 'Unauthorized');
   }
   if (!user.token) {
-    user.token = cryptoRandomString({length: 20});
+    user.token = cryptoRandomString({ length: 20 });
     await user.save();
   }
   ctx.body = {
@@ -58,7 +58,7 @@ export async function lostpassword(ctx: actions.Context, next: actions.Next) {
   if (!user) {
     ctx.throw(401, 'Unauthorized');
   }
-  user.reset_token = cryptoRandomString({length: 20});
+  user.reset_token = cryptoRandomString({ length: 20 });
   await user.save();
   ctx.body = user;
   await next();

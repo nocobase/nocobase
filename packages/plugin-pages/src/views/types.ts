@@ -2,7 +2,7 @@ const fields = {
   interface: 'json',
   type: 'virtual',
   title: '要显示的字段',
-  target:  'views_fields_v2',
+  target: 'views_fields_v2',
   component: {
     type: 'subTable',
   },
@@ -12,7 +12,7 @@ const actions = {
   interface: 'json',
   type: 'virtual',
   title: '操作按钮配置',
-  target:  'views_actions_v2',
+  target: 'views_actions_v2',
   component: {
     type: 'subTable',
   },
@@ -22,7 +22,7 @@ const details = {
   interface: 'json',
   type: 'virtual',
   title: '单条数据页面的标签页和视图',
-  target:  'views_details_v2',
+  target: 'views_details_v2',
   component: {
     type: 'subTable',
   },
@@ -38,7 +38,7 @@ const detailsOpenMode = {
       label: '{{ markdown(\'<span>常规页面 <span style="color: #999;">点击数据进入独立的页面</i></span>\') }}',
       value: 'window',
       style: {
-        display:  'block',
+        display: 'block',
         lineHeight: '32px',
       },
     },
@@ -46,7 +46,7 @@ const detailsOpenMode = {
       label: '{{ markdown(\'<span>快捷抽屉 <span style="color: #999;">点击数据不离开当前页面，在右侧抽屉里打开操作界面</i></span>\') }}',
       value: 'drawer',
       style: {
-        display:  'block',
+        display: 'block',
         lineHeight: '32px',
       },
     },
@@ -80,7 +80,7 @@ export const form = {
     },
   },
   linkages: {
-    
+
   },
 };
 
@@ -114,7 +114,7 @@ export const descriptions = {
     actions,
   },
   linkages: {
-    
+
   },
 };
 
@@ -168,10 +168,10 @@ export const table = {
       title: '每页默认显示几条数据',
       defaultValue: 50,
       dataSource: [
-        {label: '10', value: 10},
-        {label: '20', value: 20},
-        {label: '50', value: 50},
-        {label: '100', value: 100},
+        { label: '10', value: 10 },
+        { label: '20', value: 20 },
+        { label: '50', value: 50 },
+        { label: '100', value: 100 },
       ],
     },
     draggable: {
@@ -338,7 +338,7 @@ export const calendar = {
     details,
   },
   linkages: {
-    
+
   },
 };
 

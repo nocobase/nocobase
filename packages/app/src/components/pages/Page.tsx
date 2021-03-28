@@ -10,16 +10,10 @@ export function Page(props: any) {
       <Helmet>
         <title>{title}</title>
       </Helmet>
-      <PageHeader
-        title={title}
-        ghost={false}
-        {...restProps}
-      />
-      <div className={'page-content'}>
-        {children}
-      </div>
+      <PageHeader title={title} ghost={false} {...restProps} />
+      <div className={'page-content'}>{children}</div>
     </div>
   );
-};
+}
 
 export default Page;

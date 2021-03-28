@@ -10,14 +10,19 @@ export function Destroy(props) {
   const drawerRef = useRef<any>();
   return (
     <>
-      <Popconfirm title="确认删除吗？" onConfirm={() => {
+      <Popconfirm
+        title="确认删除吗？"
+        onConfirm={() => {
           console.log('destroy', onTrigger);
           onTrigger && onTrigger();
-        }}>
-        <Button icon={<DeleteOutlined />} type={'ghost'} danger>{title}</Button>
+        }}
+      >
+        <Button icon={<DeleteOutlined />} type={'ghost'} danger>
+          {title}
+        </Button>
       </Popconfirm>
     </>
-  )
+  );
 }
 
 export default Destroy;

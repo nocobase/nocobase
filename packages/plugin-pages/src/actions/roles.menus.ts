@@ -1,7 +1,7 @@
 import { Op } from 'sequelize';
 import { actions } from '@nocobase/actions';
 import _ from 'lodash';
-import { flatToTree } from  '../utils';
+import { flatToTree } from '../utils';
 
 export async function list(ctx: any, next: actions.Next) {
   const { associated, associatedKey } = ctx.action.params;
