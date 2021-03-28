@@ -64,6 +64,57 @@ export default async function (options = {}) {
     await next();
   });
 
+  resourcer.use(async (ctx, next) => {
+    await next();
+    const { actionName, resourceName } = ctx.action.params;
+    if (resourceName === 'menus' && actionName === 'get') {
+      const menu = ctx.body;
+      const items = menu.get('views') || [];
+      const View = database.getModel('views_v2');
+      for (const item of items) {
+        if (!(item.view && item.view.id)) {
+          continue;
+        }
+        const view = await View.findOne(View.parseApiJson({
+          filter: {
+            id: item.view.id,
+          },
+          fields: {
+            appends: ['collection', 'targetField', 'targetView'],
+          },
+        }));
+        if (!view) {
+          continue;
+        }
+        const details = view.get(`options.x-${view.type}-props.details`);
+        if (!Array.isArray(details)) {
+          item.view = view;
+          continue;
+        }
+        for (const detail of details) {
+          if (!(detail.view && detail.view.id)) {
+            continue;
+          }
+          const detailView = await View.findOne(View.parseApiJson({
+            filter: {
+              id: detail.view.id,
+            },
+            fields: {
+              appends: ['collection', 'targetField', 'targetView'],
+            },
+          }));
+          if (!detailView) {
+            continue;
+          }
+          detail.view = detailView;
+        }
+        view.set(`options.x-${view.type}-props.details`, details);
+        item.view = view;
+      }
+      menu.set('views', items);
+    }
+  });
+
   resourcer.registerActionHandler('getCollection', getCollection);
   resourcer.registerActionHandler('getView', getView);
   resourcer.registerActionHandler('getPageInfo', getPageInfo);
