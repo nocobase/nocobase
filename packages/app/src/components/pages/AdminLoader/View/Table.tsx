@@ -221,7 +221,7 @@ export function Table(props: any) {
     params,
   } = useRequest(
     (params = {}, ...args) => {
-      const { current, pageSize, sorter, filter, ...restParams } = params;
+      const { current, pageSize, sorter, filter, ...restParams } = params as any;
       console.log('paramsparamsparamsparamsparams', params, args);
       return api
         .resource(resourceName)
@@ -472,6 +472,7 @@ export function Table(props: any) {
             columns={fields2columns(fields, { associatedKey, refresh })}
             pagination={false}
             onChange={(pagination, filters, sorter, extra) => {
+              console.log({sorter});
               run({ ...params[0], sorter });
             }}
             expandable={expandable}

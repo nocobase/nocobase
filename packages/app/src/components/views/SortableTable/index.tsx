@@ -97,6 +97,9 @@ export function fields2columns(fields = [], ctx: any = {}) {
     if (!field.dataIndex) {
       field.dataIndex = field.name.split('.');
     }
+    if (['datetime', 'number'].includes(field.interface)) {
+      field.sorter = true;
+    }
     field.render = (value, record, index) =>
       field.interface === 'sort' ? (
         <DragHandle />
