@@ -58,7 +58,7 @@ export function Descriptions(props) {
   const resourceKey = props.resourceKey || record[associationField.targetKey||rowKey];
   const associatedKey = props.associatedKey || record[associationField.sourceKey||'id'];
 
-  console.log({resourceKey, data: record, associatedKey, associationField})
+  // console.log({resourceKey, data: record, associatedKey, associationField})
 
   const { data = {}, loading, refresh } = useRequest(() => {
     return api.resource(resourceName).get({
@@ -104,7 +104,7 @@ export function Descriptions(props) {
           column={1}>
           {group.children.map((field: any) => {
             const label = field.tooltip ? (
-              <><Tooltip title={field.tooltip}><InfoCircleOutlined /></Tooltip>&nbsp;{field.title||field.name}</>
+              <>{field.title||field.name}&nbsp;<Tooltip title={field.tooltip}><InfoCircleOutlined /></Tooltip></>
             ) : (field.title||field.name);
             return (
               <AntdDescriptions.Item label={label}>
