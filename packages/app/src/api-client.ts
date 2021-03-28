@@ -65,6 +65,7 @@ class ApiClient {
               options.params['filter'] = JSON.stringify(filter);
             }
             if (sorter) {
+              sort = [];
               const arr = Array.isArray(sorter) ? sorter : [sorter];
               arr.forEach(({ order, field }) => {
                 if (order === 'descend') {
