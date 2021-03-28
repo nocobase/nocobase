@@ -53,4 +53,15 @@ export default {
       title: '查看'
     }
   ],
+  views_v2: [
+    {
+      type: 'table',
+      name: 'table',
+      fields: [
+        'field',
+        'before',
+        'after',
+      ],
+    }
+  ],
 } as TableOptions;

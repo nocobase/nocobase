@@ -256,7 +256,7 @@ export function LinkToField(props: any) {
 }
 
 export function LinkToFieldLink(props) {
-  const { data, isArr, itemIndex, ctx, parent, schema, schema: { title, labelField, viewName, name, target, collection_name } } = props;
+  const { data, isArr, itemIndex, ctx = {}, parent, schema, schema: { title, labelField, viewName, name, target, collection_name } } = props;
   // const [data, setData] = useState(props.data||{});
   return (
     <span className={'link-to-field-tag'}>
@@ -266,7 +266,6 @@ export function LinkToFieldLink(props) {
         Drawer.open({
           title: data[labelField],
           content: ({resolve, closeWithConfirm}) => {
-            // console.log({ctx, parent, data, props, schema});
             const { index, mutate, dataSource, onChange } = ctx;
             return (
               <div>
@@ -275,6 +274,9 @@ export function LinkToFieldLink(props) {
                     closeWithConfirm && closeWithConfirm(true);
                   }}
                   noRequest={!!onChange} onFinish={(values) => {
+                    if (typeof index === 'undefined') {
+                      return;
+                    }
                   let items = [...dataSource];
                   const parentData = {...parent};
                   set(parentData, isArr ? [name, itemIndex] : [name], values);
@@ -403,10 +405,21 @@ export function LogField(props) {
 }
 
 export function LogFieldValue(props) {
-  const { value, schema, data } = props;
+  const { value, data } = props;
   return (
-    <div>{JSON.stringify(value)}</div>
+    <Field data={data} viewType={'table'} schema={data.field} value={value}/>
   )
+}
+
+export function JsonField(props) {
+  const { value } = props;
+  if (typeof value === 'object') {
+    return (
+      <pre style={{maxWidth: 300, maxHeight: 200}}>
+        {JSON.stringify(value, null, 2)}
+      </pre>
+    );
+  }
 }
 
 export function ChinaRegion(props: any) {
@@ -446,6 +459,7 @@ registerFieldComponents({
   'logs.field': LogField,
   'logs.fieldValue': LogFieldValue,
   chinaRegion: ChinaRegion,
+  json: JsonField,
 });
 
 export default function Field(props: any) {
