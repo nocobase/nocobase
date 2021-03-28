@@ -76,6 +76,7 @@ registerView('filterForm', FilterForm);
 registerView('descriptions', Descriptions);
 registerView('association', Association);
 registerView('wysiwyg', Wysiwyg);
+registerView('markdown', Wysiwyg);
 registerView('calendar', Calendar);
 registerView('kanban', Kanban);
 
