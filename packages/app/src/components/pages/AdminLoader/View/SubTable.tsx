@@ -99,11 +99,14 @@ export function generateIndex(): string {
 export function SubTable(props: any) {
   const {
     __parent,
+    __index,
     schema = {},
     associatedKey,
     onChange,
     size = 'middle',
   } = props;
+
+  console.log('subtable.associatedKey', associatedKey)
 
   const {
     fields = [],
@@ -167,7 +170,7 @@ export function SubTable(props: any) {
   const { type } = associationField;
   const { data = [], loading, mutate, refresh, run, params } = useRequest(
     (params = {}, ...args) => {
-      return !associatedKey || type === 'virtual' || type === 'json'
+      return !(associatedKey||__index) || type === 'virtual' || type === 'json'
         ? Promise.resolve({
             data: (props.data || []).map(item => {
               if (!item[rowKey]) {
@@ -179,7 +182,7 @@ export function SubTable(props: any) {
         : api
             .resource(resourceName)
             .list({
-              associatedKey,
+              associatedKey: __index||associatedKey,
               perPage: -1,
               'fields[appends]': appends,
             })
