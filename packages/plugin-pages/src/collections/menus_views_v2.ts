@@ -115,12 +115,12 @@ export default {
       },
     },
     {
-      interface: 'wysiwyg',
+      interface: 'markdown',
       type: 'json',
       title: '显示文字信息',
       name: 'message',
       component: {
-        type: 'wysiwyg',
+        type: 'markdown',
       },
     },
     {
@@ -168,12 +168,12 @@ export default {
       },
     },
     {
-      interface: 'wysiwyg',
+      interface: 'markdown',
       type: 'virtual',
       title: '显示文字信息',
       name: 'draft.message',
       component: {
-        type: 'wysiwyg',
+        type: 'markdown',
       },
     }
   ],
