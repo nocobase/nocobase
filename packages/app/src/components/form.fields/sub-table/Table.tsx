@@ -39,7 +39,8 @@ export default function Table(props: SimpleTableProps) {
         // __parent={__parent}
         data={value}
         onChange={onChange}
-        associatedKey={__index||associatedKey}
+        __index={__index}
+        associatedKey={associatedKey}
         viewName={viewName}
         type={'subTable'}
       />
