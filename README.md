@@ -52,6 +52,11 @@ Why choose NocoBase
 	- Progressive development, low start-up difficulty, friendly to newcomers
 	- No abduction, no strong dependencies, can be used in any combination or extensions, can be used in existing projects
 
+Architecture
+----------
+
+![](https://nocobase.oss-cn-beijing.aliyuncs.com/0ca81f8b33fb67871aae670899710d89.png)
+
 Development
 ----------
 
