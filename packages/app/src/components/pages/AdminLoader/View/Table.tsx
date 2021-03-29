@@ -491,7 +491,7 @@ export function Table(props: any) {
                 if (!detailsOpenMode || !details.length) {
                   return;
                 }
-                if (detailsOpenMode === 'window') {
+                if (!isFieldComponent && detailsOpenMode === 'window') {
                   const paths = history.location.pathname.split('/');
                   history.push(`/admin/${paths[2]}/${data[rowKey]}/0`);
                 } else {

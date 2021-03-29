@@ -69,7 +69,7 @@ export function View(props: any) {
   if (wrapper === 'card') {
     return (
       <Card className={`view-type-${type}`} bordered={false}>
-        <Component {...restProps} schema={data} />;
+        <Component {...restProps} schema={data} />
       </Card>
     )
   }
