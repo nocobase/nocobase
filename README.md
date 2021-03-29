@@ -55,7 +55,7 @@ Why choose NocoBase
 Architecture
 ----------
 
-![](https://nocobase.oss-cn-beijing.aliyuncs.com/0ca81f8b33fb67871aae670899710d89.png)
+![](https://nocobase.oss-cn-beijing.aliyuncs.com/0ca81f8b33fb67871aae670899710d89.png?v=123456)
 
 Development
 ----------
