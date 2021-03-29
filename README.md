@@ -1,9 +1,9 @@
 Note
 ----------
-NocoBase is still in early development and is for preview purposes only and is not suitable for use in a production environment.
+NocoBase is still in early development and is for preview purposes only and is not suitable for use in a production environment.  
 If you are interested in NocoBase, please join us to discuss and develop it together.
 
-https://www.nocobase.com/
+https://www.nocobase.com/  
 hello@nocobase.com
 
 What is NocoBase
