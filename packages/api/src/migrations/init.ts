@@ -110,10 +110,10 @@ const data = [
       type: 'ali-oss',
       baseUrl: process.env.ALIYUN_STORAGE_BASE_URL,
       options: {
-        region: process.env.ALIYUN_OSS_REGION,// 'oss-cn-beijing',
-        accessKeyId: process.env.ALIYUN_OSS_ACCESS_KEY_ID,// 'LTAI4GEGDJsdGantisvSaz47',
-        accessKeySecret: process.env.ALIYUN_OSS_ACCESS_KEY_SECRET,//'cDFaOUwigps7ohRmsfBFXGDxNm8uIq',
-        bucket: process.env.ALIYUN_OSS_BUCKET, //'nocobase'
+        region: process.env.ALIYUN_OSS_REGION,
+        accessKeyId: process.env.ALIYUN_OSS_ACCESS_KEY_ID,
+        accessKeySecret: process.env.ALIYUN_OSS_ACCESS_KEY_SECRET,
+        bucket: process.env.ALIYUN_OSS_BUCKET,
       },
       default: true
     });

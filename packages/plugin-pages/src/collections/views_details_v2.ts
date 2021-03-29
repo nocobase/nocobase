@@ -50,16 +50,6 @@ export default {
       draggable: true,
       actions: [
         {
-          name: 'create',
-          type: 'create',
-          title: '新增',
-          transform: {
-            'data': 'view',
-            'data.title': 'title',
-          },
-          viewName: 'collections.views_v2.form',
-        },
-        {
           name: 'add',
           type: 'add',
           title: '选择',
@@ -68,12 +58,28 @@ export default {
             'data.title': 'title',
           },
           viewName: 'collections.views_v2.table',
+          componentProps: {
+            type: 'primary',
+          },
           filter: {
             or: [
               { 'type': 'form' },
               { 'type': 'descriptions' },
               { 'data_source_type': 'association' },
             ]
+          },
+        },
+        {
+          name: 'create',
+          type: 'create',
+          title: '新增',
+          transform: {
+            'data': 'view',
+            'data.title': 'title',
+          },
+          viewName: 'collections.views_v2.form',
+          componentProps: {
+            type: 'default',
           },
         },
         {
