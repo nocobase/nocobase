@@ -400,7 +400,7 @@ export function FilterItem(props: FilterItemProps) {
   const defaultField: any =
     fields.find(field => field.name === props.dataSource.column) || {};
   const componentType = getComponentTypeByField(defaultField);
-  const [type, setType] = useState(defaultField.interface || 'string');
+  // const [type, setType] = useState(defaultField.interface || 'string');
   const [field, setField] = useState<any>({});
   const [dataSource, setDataSource] = useState(props.dataSource || {});
   const [valueType, setValueType] = useState('custom');
@@ -408,17 +408,14 @@ export function FilterItem(props: FilterItemProps) {
     const field = fields.find(field => field.name === props.dataSource.column);
     if (field) {
       setField(field);
-      let componentType = field.component.type;
-      if (field.component.type === 'select' && field.multiple) {
-        componentType = 'multipleSelect';
-      }
-      setType(componentType);
+      // let componentType = getComponentTypeByField(field);
+      // setType(componentType);
     }
     setDataSource({ ...props.dataSource });
     if (/^{{.+}}$/.test(props.dataSource.value)) {
       setValueType('ref');
     }
-  }, [props.dataSource, type]);
+  }, [props.dataSource]);
   let ValueControl = controls[componentType] || controls.string;
   if (
     ['$null', '$notNull', '$isTruly', '$isFalsy'].indexOf(dataSource.op) !== -1
@@ -430,7 +427,7 @@ export function FilterItem(props: FilterItemProps) {
   }
   // let multiple = true;
   // if ()
-  const opOptions = op[defaultField.interface || 'string'] || op.string;
+  const opOptions = op[componentType || 'string'] || op.string;
   console.log({ componentType, defaultField, field, valueType, opOptions });
   return (
     <Space>
@@ -438,11 +435,8 @@ export function FilterItem(props: FilterItemProps) {
         value={dataSource.column}
         onChange={value => {
           const field = fields.find(field => field.name === value);
-          let componentType = field.component.type;
-          if (field.component.type === 'select' && field.multiple) {
-            componentType = 'multipleSelect';
-          }
-          setType(componentType);
+          let componentType = getComponentTypeByField(field);
+          // setType(componentType);
           setValueType('custom');
           onChange({
             ...dataSource,
