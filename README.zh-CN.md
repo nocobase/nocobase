@@ -58,7 +58,7 @@ NocoBase 是一个开源免费的无代码开发平台。
 
 NocoBase 架构
 ----------
-![](https://nocobase.oss-cn-beijing.aliyuncs.com/0ca81f8b33fb67871aae670899710d89.png)
+![](https://nocobase.oss-cn-beijing.aliyuncs.com/4fde069587182dacbdb00b020d914404.jpg)
 
 - **微内核**  
 NocoBase 采用微内核架构，框架只保留核心的概念，具体各类功能都以插件的形式扩展。各个包可以拆出来单独或组合使用，可用于现有项目中，这也是渐进式框架的意义所在。除此之外，我们也非常注重与现有技术框架融合，做连接现有生态的桥梁，而不是闭门造车。
