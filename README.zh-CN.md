@@ -1,5 +1,8 @@
 [English](./README.md) | 简体中文
 
+![](https://nocobase.oss-cn-beijing.aliyuncs.com/b44a2146ad4c4b20e6f7fe52a0e8d04e.png)  
+  
+  
 说明
 ----------
 NocoBase 仍处于早期开发阶段，仅用于预览，不适合在生产环境中使用。相对稳定以及包含完善文档的公开测试版预计将于 2021 年第三季度发布。
@@ -12,7 +15,6 @@ NocoBase 是一个开源免费的无代码开发平台。
 无论是不懂编程的业务主管，还是精通编程的开发人员，都可以快速搭建各类定制化、私有部署的协作平台、管理系统。  
 
 [https://www.nocobase.com/](https://www.nocobase.com/)
-![](https://nocobase.oss-cn-beijing.aliyuncs.com/b44a2146ad4c4b20e6f7fe52a0e8d04e.png)
 
 哪些人适合使用 NocoBase
 ----------
