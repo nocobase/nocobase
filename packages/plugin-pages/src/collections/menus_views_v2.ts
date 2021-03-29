@@ -68,6 +68,26 @@ export default {
       ],
       component: {
         type: 'radio',
+        'x-linkages': [
+          {
+            "type": "value:visible",
+            "target": "float",
+            "condition": "{{ $self.value && $self.value === '50%' }}"
+          },
+        ]
+      },
+    },
+    {
+      interface: 'radio',
+      type: 'string',
+      name: 'float',
+      title: '位置',
+      dataSource: [
+        { label: '左边', value: 'left' },
+        { label: '右边', value: 'right' },
+      ],
+      component: {
+        type: 'radio',
       },
     },
     {
@@ -227,7 +247,8 @@ export default {
       fields: [
         'view',
         'view.collection.title',
-        'width'
+        'width',
+        'float'
       ],
       detailsOpenMode: 'drawer', // window
       details: ['form'],
@@ -241,6 +262,7 @@ export default {
       fields: [
         'view',
         'width',
+        'float',
         'returnType',
         'redirect',
         'message',
@@ -264,6 +286,7 @@ export default {
       fields: [
         'view',
         'width',
+        'float',
         'returnType',
         'redirect',
         'message',

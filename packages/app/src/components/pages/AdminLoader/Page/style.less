@@ -22,3 +22,45 @@
     }
   }
 }
+
+.noco-row {
+  margin: 0 -12px;
+  &::after {
+    content: ' ';
+    clear: both;
+    display: block;
+  }
+  .noco-col {
+    margin-left: 12px;
+    margin-right: 12px;
+    margin-bottom: 24px;
+    width: calc(50% - 24px);
+    float: left;
+  }
+  .noco-col-24 {
+    width: calc(100% - 24px);
+  }
+  .float-left {
+    float: left;
+    clear: left;
+  }
+  .float-right {
+    float: right;
+    clear: right;
+  }
+}
+
+@media only screen and (max-width: 800px) {
+  .page-content {
+    margin: 0;
+    margin-top: 1px;
+  }
+  .noco-row {
+    margin: 0;
+    .noco-col {
+      width: 100%;
+      margin: 0;
+      margin-bottom: 1px;
+    }
+  }
+}
