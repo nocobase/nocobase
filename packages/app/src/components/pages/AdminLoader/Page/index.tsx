@@ -64,53 +64,52 @@ export function Page(props: any) {
             }
             return (
               <Col style={{ marginBottom: 24 }} span={span}>
-                <Card bordered={false}>
-                  <View
-                    currentRowId={currentRowId}
-                    onDraft={() => {
-                      if (!view.draft) {
-                        message.success('草稿保存成功');
-                        return;
-                      }
-                      if (
-                        view.draft.returnType === 'message' &&
-                        view.draft.message
-                      ) {
-                        Modal.success({
-                          title: '草稿保存成功',
-                          content: (
-                            <div
-                              dangerouslySetInnerHTML={{
-                                __html: markdown(view.draft.message),
-                              }}
-                            />
-                          ),
-                        });
-                      } else if (view.draft.returnType === 'redirect') {
-                        const path = get(view, 'draft.redirect.name');
-                        path && history.push(`${path}`);
-                      }
-                    }}
-                    onFinish={() => {
-                      if (view.returnType === 'message' && view.message) {
-                        Modal.success({
-                          title: '提交成功',
-                          content: (
-                            <div
-                              dangerouslySetInnerHTML={{
-                                __html: markdown(view.message),
-                              }}
-                            />
-                          ),
-                        });
-                      } else if (view.returnType === 'redirect') {
-                        const path = get(view, 'redirect.name');
-                        path && history.push(`${path}`);
-                      }
-                    }}
-                    viewName={viewName}
-                  />
-                </Card>
+                <View
+                  wrapper={'card'}
+                  currentRowId={currentRowId}
+                  onDraft={() => {
+                    if (!view.draft) {
+                      message.success('草稿保存成功');
+                      return;
+                    }
+                    if (
+                      view.draft.returnType === 'message' &&
+                      view.draft.message
+                    ) {
+                      Modal.success({
+                        title: '草稿保存成功',
+                        content: (
+                          <div
+                            dangerouslySetInnerHTML={{
+                              __html: markdown(view.draft.message),
+                            }}
+                          />
+                        ),
+                      });
+                    } else if (view.draft.returnType === 'redirect') {
+                      const path = get(view, 'draft.redirect.name');
+                      path && history.push(`${path}`);
+                    }
+                  }}
+                  onFinish={() => {
+                    if (view.returnType === 'message' && view.message) {
+                      Modal.success({
+                        title: '提交成功',
+                        content: (
+                          <div
+                            dangerouslySetInnerHTML={{
+                              __html: markdown(view.message),
+                            }}
+                          />
+                        ),
+                      });
+                    } else if (view.returnType === 'redirect') {
+                      const path = get(view, 'redirect.name');
+                      path && history.push(`${path}`);
+                    }
+                  }}
+                  viewName={viewName}
+                />
               </Col>
             );
           })}

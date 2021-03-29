@@ -1,6 +1,6 @@
 .react-kanban-board {
   padding: 0;
-  margin: -24px -36px;
+  // margin: -24px -36px;
   background-color: #eff2f5;
   .react-kanban-column {
     background-color: #eff2f5;
@@ -19,7 +19,8 @@
 
 .noco-kanban-view {
   .action-buttons {
-    margin: -24px -24px 0 !important;
+    // margin: -24px -24px 0 !important
+    margin: 0 !important;
     background-color: #eff2f5;
     padding-bottom: 40px;
     .ant-btn {
@@ -27,7 +28,7 @@
     }
     .filter-action-button {
       margin-left: 0;
-      left: 0;
+      left: 12px;
     }
   }
   .action-buttons + .react-kanban-board {
@@ -38,5 +39,22 @@
   }
   .ant-descriptions-item {
     // padding-bottom: 4px;
+  }
+}
+
+
+.ant-card.view-type-kanban {
+  margin: 0 -12px;
+  background: none;
+  > .ant-card-body {
+    padding: 0;
+  }
+}
+@media only screen and (max-width: 800px) {
+  .ant-card.view-type-kanban {
+    margin: 0;
+    .action-buttons {
+      margin-top: 12px !important;
+    }
   }
 }

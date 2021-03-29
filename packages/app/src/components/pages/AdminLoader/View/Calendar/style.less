@@ -745,3 +745,25 @@ button.rbc-input::-moz-focus-inner {
   background-color: #74ad31;
   pointer-events: none;
 }
+
+@media only screen and (max-width: 800px) {
+  .view-type-calendar .action-buttons {
+    position: relative !important;
+    left: 0 !important;
+    .filter-action-button {
+      left: 0 !important;
+    }
+  }
+  .rbc-toolbar .rbc-toolbar-label {
+    position: absolute;
+    top: 28px;
+    left: 50%;
+    transform: translateX(-50%);
+  }
+  .rbc-toolbar {
+    justify-content: space-between !important;
+  }
+  .rbc-header {
+    padding: 4px !important;
+  }
+}
