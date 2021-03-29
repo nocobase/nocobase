@@ -108,6 +108,7 @@ export function DrawerSelectComponent(props) {
                 return (
                   <>
                     <View
+                      isFieldComponent={true}
                       __parent={__parent}
                       associatedKey={associatedKey}
                       multiple={multiple}
