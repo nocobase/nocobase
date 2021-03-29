@@ -294,7 +294,7 @@ describe('field types', () => {
       const pwd = await Pwd.create({
         password: '123456',
       });
-      expect(Password.verify('123456', pwd.password)).toBeTruthy();
+      expect(await Password.verify('123456', pwd.password)).toBeTruthy();
     });
     it('formula', async () => {
       const [Formula] = db.getModels(['formula_tests']);
