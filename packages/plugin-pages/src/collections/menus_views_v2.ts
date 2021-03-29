@@ -187,16 +187,6 @@ export default {
       draggable: true,
       actions: [
         {
-          name: 'create',
-          type: 'create',
-          title: '新增',
-          transform: {
-            'data': 'view',
-            'data.title': 'title',
-          },
-          viewName: 'views_v2.form',
-        },
-        {
           name: 'add',
           type: 'add',
           title: '选择',
@@ -205,12 +195,28 @@ export default {
             'data.title': 'title',
           },
           viewName: 'views_v2.table',
+          componentProps: {
+            type: 'primary',
+          },
           filter: {
             and: [
               { 'type.ne': 'descriptions' },
               { 'data_source_type.ne': 'association' },
             ]
           },
+        },
+        {
+          name: 'create',
+          type: 'create',
+          title: '新增',
+          transform: {
+            'data': 'view',
+            'data.title': 'title',
+          },
+          componentProps: {
+            type: 'default',
+          },
+          viewName: 'views_v2.form',
         },
         {
           name: 'destroy',
