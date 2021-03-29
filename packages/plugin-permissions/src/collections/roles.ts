@@ -38,7 +38,7 @@ export default {
     },
     {
       interface: 'boolean',
-      title: '默认角色',
+      title: '默认权限组',
       type: 'radio',
       name: 'default',
       component: {

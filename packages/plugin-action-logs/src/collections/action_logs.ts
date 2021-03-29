@@ -206,7 +206,7 @@ export default {
       fields: ['created_at', 'user', 'type', 'index'],
       detailsOpenMode: 'drawer', // window
       details: ['descriptions'],
-      sort: ['created_at'],
+      sort: ['-created_at'],
     },
     {
       developerMode: true,
