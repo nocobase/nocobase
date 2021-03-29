@@ -296,20 +296,29 @@ export class PASSWORD extends STRING {
     return DataTypes.STRING;
   }
 
-  public static verify(value: string, hash: string) {
-    return bcrypt.compareSync(value, hash);
+  constructor(options: Options.StringOptions, context: FieldContext) {
+    super(options, context);
+    const Model = context.sourceTable.getModel();
+    Model.addHook('beforeCreate', PASSWORD.hash.bind(this));
+    Model.addHook('beforeUpdate', PASSWORD.hash.bind(this));
   }
 
-  public getAttributeOptions() {
-    const { name, length, binary, ...restOptions } = this.options;
-    return {
-      name,
-      ...restOptions,
-      type: this.getDataTypeInstance({ length, binary }),
-      set(this: Model, value: string) {
-        value && this.setDataValue(name, bcrypt.hashSync(value, 10));
-      },
+  public static async hash(this: PASSWORD, model) {
+    const { name } = this.options;
+    if (!model.changed(name as any)) {
+      return;
     }
+    const value = model.get(name) as string;
+    if (value) {
+      const hash = await bcrypt.hash(value, 10);
+      model.set(name, hash);
+    } else {
+      model.set(name, null);
+    }
+  }
+
+  public static async verify(value: string, hash: string) {
+    return await bcrypt.compare(value, hash);
   }
 }
 

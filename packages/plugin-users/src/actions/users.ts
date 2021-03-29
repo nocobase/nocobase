@@ -25,7 +25,8 @@ export async function login(ctx: actions.Context, next: actions.Next) {
   if (!user) {
     ctx.throw(401, 'Unauthorized');
   }
-  if (!PASSWORD.verify(values.password, user.password)) {
+  const isValid = await PASSWORD.verify(values.password, user.password);
+  if (!isValid) {
     ctx.throw(401, 'Unauthorized');
   }
   if (!user.token) {

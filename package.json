@@ -17,6 +17,7 @@
   },
   "devDependencies": {
     "@koa/router": "^9.3.1",
+    "@types/bcrypt": "^3.0.0",
     "@types/jest": "^26.0.4",
     "@types/koa": "^2.11.6",
     "@types/koa-bodyparser": "^4.3.0",
