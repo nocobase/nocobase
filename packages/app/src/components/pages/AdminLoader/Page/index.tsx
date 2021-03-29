@@ -47,10 +47,11 @@ export function Page(props: any) {
       </Helmet>
       <PageHeader title={data.title} ghost={false} {...restProps} />
       <div className={'page-content'}>
-        <Row className={'nb-row'} gutter={24}>
+        <div className={'noco-row'}>
           {views.map(view => {
             let viewName: string;
             let span = 24;
+            let float = 'left';
             if (typeof view === 'string') {
               viewName = view;
             }
@@ -61,9 +62,12 @@ export function Page(props: any) {
               } else if (view.width === '100%') {
                 span = 24;
               }
+              if (view.float == 'right') {
+                float = 'right';
+              }
             }
             return (
-              <Col style={{ marginBottom: 24 }} span={span}>
+              <div className={`noco-col noco-col-${span} float-${float}`}>
                 <View
                   wrapper={'card'}
                   currentRowId={currentRowId}
@@ -110,10 +114,10 @@ export function Page(props: any) {
                   }}
                   viewName={viewName}
                 />
-              </Col>
+              </div>
             );
           })}
-        </Row>
+        </div>
       </div>
     </div>
   );
