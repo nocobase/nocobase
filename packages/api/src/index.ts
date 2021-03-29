@@ -66,7 +66,7 @@ api.resourcer.use(async (ctx: actions.Context, next) => {
       return next();
     }
     const { actionName } = ctx.action.params;
-    if (['create', 'update', 'destroy', 'sort'].includes(actionName)) {
+    if (['create', 'update', 'destroy', 'sort', 'upload'].includes(actionName)) {
       ctx.body = {
         data: {},
         meta: {},
