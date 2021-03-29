@@ -13,6 +13,7 @@ export default {
       type: 'belongsTo',
       component: {
         type: 'hidden',
+        hidden: true,
         showInForm: true,
       },
     },
@@ -175,6 +176,7 @@ export default {
         'collection',
         'filter',
         'values',
+        'automation',
       ],
     },
   ],
