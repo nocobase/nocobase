@@ -1,3 +1,5 @@
+English | [简体中文](./README.zh-CN.md)
+
 Note
 ----------
 NocoBase is still in early development and is for preview purposes only and is not suitable for use in a production environment.  
