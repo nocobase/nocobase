@@ -35,11 +35,19 @@ export function getViewTypeLinkages() {
   let xlinkages = [];
   for (const [key, item] of views) {
     const { linkages = {}, properties = {} } = _.cloneDeep(item);
-    xlinkages.push({
-      "type": "value:visible",
-      "target": `x-${key}-props.*`,
-      "condition": `{{ $self.value === '${key}' && $form.values.dataSourceType === 'collection' }}`,
-    });
+    if (key === 'markdown') {
+      xlinkages.push({
+        "type": "value:visible",
+        "target": `x-${key}-props.*`,
+        "condition": `{{ $self.value === '${key}' }}`,
+      });
+    } else {
+      xlinkages.push({
+        "type": "value:visible",
+        "target": `x-${key}-props.*`,
+        "condition": `{{ $self.value === '${key}' && $form.values.dataSourceType === 'collection' }}`,
+      });
+    }
     if (linkages.type) {
       xlinkages.push(...linkages.type);
     }
