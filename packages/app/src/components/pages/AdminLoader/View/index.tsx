@@ -43,7 +43,7 @@ export function getView(type) {
 export const icon = <LoadingOutlined style={{ fontSize: 36 }} spin />;
 
 export function View(props: any) {
-  const { schema, viewName, children, ...restProps } = props;
+  const { wrapper, schema, viewName, children, ...restProps } = props;
 
   const { data = {}, loading } = useRequest(
     () => {
@@ -65,6 +65,14 @@ export function View(props: any) {
   const type = props.type || data.type;
 
   const Component = getView(type);
+
+  if (wrapper === 'card') {
+    return (
+      <Card className={`view-type-${type}`} bordered={false}>
+        <Component {...restProps} schema={data} />;
+      </Card>
+    )
+  }
 
   return <Component {...restProps} schema={data} />;
 }

@@ -77,7 +77,7 @@ export function Calendar(props: CalendarProps) {
 
   const { data, loading, mutate, refresh, run, params } = useRequest(
     (params = {}, ...args) => {
-      const { current, pageSize, sorter, filter, ...restParams } = params;
+      const { current, pageSize, sorter, filter, ...restParams } = params as any;
       console.log('paramsparamsparamsparamsparams', params, args);
       return api
         .resource(resourceName)
@@ -149,7 +149,7 @@ export function Calendar(props: CalendarProps) {
 
   console.log('events', data);
   return (
-    <Card bordered={false}>
+    <div>
       <Actions
         associatedKey={associatedKey}
         onTrigger={{
@@ -267,6 +267,6 @@ export function Calendar(props: CalendarProps) {
         }}
         localizer={localizer}
       />
-    </Card>
+    </div>
   );
 }
