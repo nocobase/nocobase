@@ -3,8 +3,14 @@ import { PASSWORD } from '@nocobase/database';
 import cryptoRandomString from 'crypto-random-string';
 
 export async function check(ctx: actions.Context, next: actions.Next) {
-  ctx.body = ctx.state.currentUser;
-  await next();
+  if (ctx.state.currentUser) {
+    const user = ctx.state.currentUser.toJSON();
+    delete user.password;
+    ctx.body = user;
+    await next();
+  } else {
+    ctx.throw(401, 'Unauthorized');
+  }
 }
 
 export async function login(ctx: actions.Context, next: actions.Next) {
