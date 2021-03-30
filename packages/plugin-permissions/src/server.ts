@@ -109,6 +109,30 @@ export class Permissions {
 
     // 关系数据的权限
     if (associatedName && resourceField) {
+      if (resourceField.options.id && resourceField.options.interface === 'subTable') {
+        if (await ctx.ac.isRoot()) {
+          return next();
+        }
+        const permissions = await ctx.ac.getPermissions();
+        const FieldPermission = ctx.db.getModel('fields_permissions');
+        const fps = await FieldPermission.findAll({
+          where: {
+            field_id: resourceField.options.id,
+            permission_id: {
+              [Op.in]: permissions.map(p => p.id),
+            }
+          },
+        });
+        if (fps.length) {
+          for (const fp of fps) {
+            console.log('fp.actions', fp.actions);
+            if (Array.isArray(fp.actions) && fp.actions.includes(`${resourceField.options.collection_name}:${actionName}`)) {
+              return next();
+            }
+          }
+          return this.reject(ctx);
+        }
+      }
       result = await ctx.ac.can(resourceField.options.target).act(actionName).any();
     } else {
       result = await ctx.ac.can(resourceName).act(actionName).any();
