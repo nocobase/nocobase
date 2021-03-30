@@ -82,26 +82,34 @@ NocoBase 采用微内核架构，框架只保留核心的概念，具体各类�
    - 保存在文件里，多用于系统表配置或纯开发配置
    - 保存在数据表里，多用于业务表配置
 
-Development
+环境要求
 ----------
 
-Install Dependencies
+Node:
+
+- Node.js 12.x or 14.x
+
+Database:
+
+- PostgreSQL 10.x+
+- MySQL 5.7.x+
+
+安装 & 运行
+----------
 
 ~~~shell
-# Install dependencies for root project
-npm i
-
-# Install dependencies for sub packages via lerna
+git clone https://github.com/nocobase/nocobase.git
+cd nocobase
+cp .env.example .env # 配置数据库信息、APP 端口等
+npm install
 npm run bootstrap
+npm run build
+npm run db-migrate init
+npm start
 ~~~
 
-Set Environment Variables
-
-~~~shell
-cp .env.example .env
-~~~
-
-Build
+打包
+----------
 
 ~~~shell
 # for all packages
@@ -111,7 +119,8 @@ npm run build
 npm run build <package_name_1> <package_name_2> ...
 ~~~
 
-Test
+测试
+----------
 
 ~~~
 # For all packages
