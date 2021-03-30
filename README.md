@@ -57,26 +57,33 @@ Architecture
 
 ![](https://nocobase.oss-cn-beijing.aliyuncs.com/4fde069587182dacbdb00b020d914404.jpg)
 
-Development
+Requirements
 ----------
 
-Install Dependencies
+Node:
+
+- Node.js 12.x or 14.x
+
+Database:
+
+- PostgreSQL 10.x+
+- MySQL 5.7.x+
+
+Installation
+----------
 
 ~~~shell
-# Install dependencies for root project
-npm i
-
-# Install dependencies for sub packages via lerna
-npm run bootstrap
-~~~
-
-Set Environment Variables
-
-~~~shell
+# Set Environment Variables
 cp .env.example .env
+npm install
+npm run bootstrap
+npm run build
+npm run db-migrate init
+npm start
 ~~~
 
 Build
+----------
 
 ~~~shell
 # for all packages
@@ -87,6 +94,7 @@ npm run build <package_name_1> <package_name_2> ...
 ~~~
 
 Test
+----------
 
 ~~~
 # For all packages
