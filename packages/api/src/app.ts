@@ -15,7 +15,9 @@ const sync = global.sync || {
 
 console.log('process.env.NOCOBASE_ENV', process.env.NOCOBASE_ENV);
 
-dotenv.config();
+dotenv.config({
+  path: path.resolve(__dirname, '../../../.env'),
+});
 
 const api = Api.create({
   database: {

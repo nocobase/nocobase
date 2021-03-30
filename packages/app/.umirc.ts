@@ -1,4 +1,12 @@
 import { defineConfig } from 'umi';
+import dotenv from 'dotenv';
+import path from 'path';
+
+dotenv.config({
+  path: path.resolve(__dirname, '../../.env'),
+});
+
+console.log('process.env.API_PORT', process.env.API_PORT);
 
 export default defineConfig({
   title: false,
