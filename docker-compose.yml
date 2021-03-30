@@ -5,7 +5,6 @@ networks:
 services:
   verdaccio:
     image: verdaccio/verdaccio
-    container_name: "verdaccio"
     networks:
       - node-network
     environment:
@@ -41,13 +40,3 @@ services:
       POSTGRES_USER: ${DB_USER}
       POSTGRES_DB: ${DB_DATABASE}
       POSTGRES_PASSWORD: ${DB_PASSWORD}
-  app:
-    build:
-      context: .
-      dockerfile: Dockerfile
-    command: [ "yarn", "start" ]
-    ports:
-      - "${APP_HTTP_PORT}:${APP_HTTP_PORT}"
-      - "${HTTP_PORT}:${HTTP_PORT}"
-    networks:
-      - node-network
