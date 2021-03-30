@@ -212,6 +212,17 @@ export default class AccessController<T extends typeof AccessController = typeof
     return existed ? any : null;
   }
 
+  async getPermissions(): Promise<any> {
+    const [Collection, Permission] = this.context.db.getModels(['collections', 'permissions']);
+    const roles = await this.getRoles();
+    const permissions = await Permission.findAll({
+      where: {
+        role_id: roles.map(role => role.id),
+      }
+    });
+    return permissions;
+  }
+
   async getCollections(): Promise<any> {
     const [Collection, Permission] = this.context.db.getModels(['collections', 'permissions']);
     const isRoot = await this.isRoot();
