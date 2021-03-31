@@ -249,7 +249,7 @@ export function Filter(props) {
               onFinish={async values => {
                 if (values) {
                   const items = values.filter.and || values.filter.or;
-                  setFilterCount(Object.keys(items).length);
+                  setFilterCount(Array.isArray(items) ? items.length : 0);
                   setData(values);
                   onFinish && (await onFinish(values));
                 }
