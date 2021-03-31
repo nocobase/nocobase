@@ -310,6 +310,9 @@ export class PASSWORD extends STRING {
     }
     const value = model.get(name) as string;
     if (value) {
+      if (value.startsWith('$2b$10$') && value.length === 60) {
+        return;
+      }
       const hash = await bcrypt.hash(value, 10);
       model.set(name, hash);
     } else {
