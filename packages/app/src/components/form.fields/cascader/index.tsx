@@ -39,6 +39,7 @@ export const Cascader = connect({
     value = [],
     onChange,
     schema = {},
+    placeholder,
     // TODO(feature): 增加静态数据支持
     // dataSource: []
   } = props;
@@ -138,6 +139,7 @@ export const Cascader = connect({
 
   return (
     <AntdCascader
+      placeholder={placeholder}
       disabled={disabled}
       options={options}
       value={value.map(item => item[valueField])}
