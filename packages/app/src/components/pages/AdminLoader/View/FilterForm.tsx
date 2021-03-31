@@ -41,6 +41,13 @@ export function FilterForm(props: any) {
       expressionScope={scopes}
     >
       <FormButtonGroup align={'end'}>
+        <Button onClick={async () => {
+          if (onFinish) {
+            await onFinish({
+              filter: {},
+            });
+          }
+        }}>清空</Button>
         <Reset>取消</Reset>
         <Submit>确定</Submit>
       </FormButtonGroup>
