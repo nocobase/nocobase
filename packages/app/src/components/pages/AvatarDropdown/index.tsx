@@ -58,7 +58,7 @@ export default (props: any) => {
             icon={<UserOutlined />}
             style={{ marginRight: 5 }}
           />{' '}
-          {initialState.currentUser.nickname}
+          { initialState.currentUser.nickname || initialState.currentUser.email }
         </span>
       </Dropdown>
     </div>
