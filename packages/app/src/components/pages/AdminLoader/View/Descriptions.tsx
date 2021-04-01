@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useRef } from 'react';
 import './style.less';
 import { Helmet } from 'umi';
 import { Spin } from '@nocobase/client';
@@ -24,7 +24,6 @@ import Field from '@/components/views/Field';
 import { Form } from './Form';
 import { configResponsive, useResponsive } from 'ahooks';
 import { InfoCircleOutlined } from '@ant-design/icons';
-import scopes from '@/components/views/Form/scopes';
 
 configResponsive({
   small: 0,
@@ -84,6 +83,7 @@ export function Descriptions(props) {
       'fields[appends]': appends,
     });
   });
+  const contentRef = useRef();
   if (loading) {
     return <Spin />;
   }
@@ -97,6 +97,7 @@ export function Descriptions(props) {
     };
   }
   const groups = toGroups(fields);
+
   return (
     <div>
       <Actions
@@ -106,55 +107,58 @@ export function Descriptions(props) {
             onDataChange && onDataChange(values);
           },
         }}
+        contentRef={contentRef}
         associatedKey={associatedKey}
         data={data}
         actions={actions}
         style={{ marginBottom: 14 }}
       />
-      {groups.map(group => (
-        <AntdDescriptions
-          // layout={'vertical'}
-          // size={'middle'}
-          // bordered
-          {...descriptionsProps}
-          title={
-            group.title && (
-              <span>
-                {group.title}{' '}
-                {group.tooltip && (
-                  <Tooltip title={group.tooltip}>
+      <div ref={contentRef} className={'print-content'}>
+        {groups.map(group => (
+          <AntdDescriptions
+            // layout={'vertical'}
+            // size={'middle'}
+            // bordered
+            {...descriptionsProps}
+            title={
+              group.title && (
+                <span>
+                  {group.title}{' '}
+                  {group.tooltip && (
+                    <Tooltip title={group.tooltip}>
+                      <InfoCircleOutlined />
+                    </Tooltip>
+                  )}
+                </span>
+              )
+            }
+            column={1}
+          >
+            {group.children.map((field: any) => {
+              const label = field.tooltip ? (
+                <>
+                  {field.title || field.name}&nbsp;
+                  <Tooltip title={field.tooltip}>
                     <InfoCircleOutlined />
                   </Tooltip>
-                )}
-              </span>
-            )
-          }
-          column={1}
-        >
-          {group.children.map((field: any) => {
-            const label = field.tooltip ? (
-              <>
-                {field.title || field.name}&nbsp;
-                <Tooltip title={field.tooltip}>
-                  <InfoCircleOutlined />
-                </Tooltip>
-              </>
-            ) : (
-              field.title || field.name
-            );
-            return (
-              <AntdDescriptions.Item label={label}>
-                <Field
-                  data={data}
-                  viewType={'descriptions'}
-                  schema={field}
-                  value={get(data, field.name)}
-                />
-              </AntdDescriptions.Item>
-            );
-          })}
-        </AntdDescriptions>
-      ))}
+                </>
+              ) : (
+                field.title || field.name
+              );
+              return (
+                <AntdDescriptions.Item label={label}>
+                  <Field
+                    data={data}
+                    viewType={'descriptions'}
+                    schema={field}
+                    value={get(data, field.name)}
+                  />
+                </AntdDescriptions.Item>
+              );
+            })}
+          </AntdDescriptions>
+        ))}
+      </div>
     </div>
   );
 }
