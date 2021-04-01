@@ -23,10 +23,12 @@ button.rbc-input::-moz-focus-inner {
 
 .rbc-calendar {
   box-sizing: border-box;
-  // height: 75vh;
   display: flex;
   flex-direction: column;
   align-items: stretch;
+  &.view-month {
+    height: 75vh;
+  }
 }
 
 .rbc-calendar *,
