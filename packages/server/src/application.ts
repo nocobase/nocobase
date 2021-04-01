@@ -53,11 +53,14 @@ export class Application extends Koa {
   }
 
   protected async loadPlugin({ entry, options = {} }: { entry: string | Function, options: any }) {
-    const main = typeof entry === 'function'
-      ? entry
-      : require(`${entry}/${__filename.endsWith('.ts') ? 'src' : 'lib'}/server`).default;
-
-    return await main.call(this, options);
+    let main: any;
+    if (typeof entry === 'function') {
+      main = entry;
+    } else if (typeof entry === 'string') {
+      const pathname = `${entry}/${__filename.endsWith('.ts') ? 'src' : 'lib'}/server`;
+      main = require(pathname).default;
+    }
+    return main && await main.call(this, options);
   }
 }
 

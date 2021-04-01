@@ -1,9 +1,8 @@
 import path from 'path';
 import dotenv from 'dotenv';
-import Api from '../../server/src';
-import actions from '../../actions/src';
-import associated from '../../actions/src/middlewares/associated';
-import { DatabaseOptions } from '@nocobase/database';
+import Api from '@nocobase/server';
+import actions from '@nocobase/actions';
+import { middlewares } from '@nocobase/actions';
 
 // @ts-ignore
 const sync = global.sync || {
@@ -46,37 +45,22 @@ const api = Api.create({
   },
 });
 
-api.resourcer.use(associated);
+api.resourcer.use(middlewares.associated);
 api.resourcer.registerActionHandlers({ ...actions.common, ...actions.associate });
 
-// api.resourcer.use(async (ctx: actions.Context, next) => {
-//   const token = ctx.get('Authorization').replace(/^Bearer\s+/gi, '');
-//   // console.log('user check', ctx.action.params.actionName);
-//   // const { actionName } = ctx.action.params;
-//   if (!token) {
-//     return next();
-//   }
-//   const User = ctx.db.getModel('users');
-//   const user = await User.findOne({
-//     where: {
-//       token,
-//     },
-//   });
-//   if (!user) {
-//     return next();
-//   }
-//   ctx.state.currentUser = user;
-//   // console.log('ctx.state.currentUser', ctx.state.currentUser);
-//   await next();
-// });
+const plugins = [
+  '@nocobase/plugin-collections',
+  '@nocobase/plugin-action-logs',
+  '@nocobase/plugin-pages',
+  '@nocobase/plugin-users',
+  '@nocobase/plugin-file-manager',
+  '@nocobase/plugin-permissions',
+  '@nocobase/plugin-automations',
+  '@nocobase/plugin-china-region',
+];
 
-api.registerPlugin('plugin-collections', [path.resolve(__dirname, '../../plugin-collections'), {}]);
-api.registerPlugin('plugin-action-logs', [path.resolve(__dirname, '../../plugin-action-logs'), {}]);
-api.registerPlugin('plugin-pages', [path.resolve(__dirname, '../../plugin-pages'), {}]);
-api.registerPlugin('plugin-users', [path.resolve(__dirname, '../../plugin-users'), {}]);
-api.registerPlugin('plugin-file-manager', [path.resolve(__dirname, '../../plugin-file-manager'), {}]);
-api.registerPlugin('plugin-permissions', [path.resolve(__dirname, '../../plugin-permissions'), {}]);
-api.registerPlugin('plugin-automations', [path.resolve(__dirname, '../../plugin-automations'), {}]);
-api.registerPlugin('plugin-china-region', [path.resolve(__dirname, '../../plugin-china-region'), {}]);
+for (const plugin of plugins) {
+  api.registerPlugin(plugin, [require(`${plugin}/src/server`).default]);
+}
 
 export default api;

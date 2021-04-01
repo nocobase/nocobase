@@ -5,6 +5,7 @@ export default {
   title: '中国行政区划',
   internal: true,
   developerMode: true,
+  model: 'ChinaRegion',
   fields: [
     // 如使用代码作为 id 可能更节省，但由于代码数字最长为 12 字节，除非使用 bigint(64) 才够放置
     {

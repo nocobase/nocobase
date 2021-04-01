@@ -7,7 +7,6 @@ global.sync = {
 };
 
 import Database from '@nocobase/database';
-import { init as chinaRegionSeederInit } from '@nocobase/plugin-china-region/src/db/seeders';
 import api from '../app';
 
 const data = [
@@ -136,11 +135,8 @@ const data = [
   ]);
 
   // 导入地域数据
-  await chinaRegionSeederInit(api);
-
-  // await database.getModel('collections').import(require('./collections/example').default);
-  // await database.getModel('collections').import(require('./collections/authors').default);
-  // await database.getModel('collections').import(require('./collections/books').default);
+  const ChinaRegion = database.getModel('china_regions');
+  ChinaRegion && await ChinaRegion.importData();
 
   const Menu = database.getModel('menus');
 
@@ -180,13 +176,13 @@ const data = [
       ],
     },
     {
-      title: '动态',
+      title: '日志',
       icon: 'NotificationOutlined',
       type: 'group',
       developerMode: true,
       children: [
         {
-          title: '数据动态',
+          title: '操作记录',
           icon: 'DatabaseOutlined',
           type: 'group',
           developerMode: true,
@@ -230,11 +226,11 @@ const data = [
       developerMode: true,
       children: [
         {
-          name: 'system_settings',
-          title: '系统配置',
-          icon: 'DatabaseOutlined',
+          name: 'menus',
+          title: '菜单和页面配置',
+          icon: 'MenuOutlined',
           type: 'page',
-          views: ['system_settings.descriptions'],
+          views: ['menus.table'],
           developerMode: true,
         },
         {
@@ -243,14 +239,6 @@ const data = [
           icon: 'DatabaseOutlined',
           type: 'page',
           views: ['collections.table'],
-          developerMode: true,
-        },
-        {
-          name: 'menus',
-          title: '菜单和页面配置',
-          icon: 'MenuOutlined',
-          type: 'page',
-          views: ['menus.table'],
           developerMode: true,
         },
         {
@@ -267,6 +255,14 @@ const data = [
           icon: 'MenuOutlined',
           type: 'page',
           views: ['automations.table'],
+          developerMode: true,
+        },
+        {
+          name: 'system_settings',
+          title: '系统配置',
+          icon: 'DatabaseOutlined',
+          type: 'page',
+          views: ['system_settings.descriptions'],
           developerMode: true,
         },
       ],
