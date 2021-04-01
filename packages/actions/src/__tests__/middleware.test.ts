@@ -1,6 +1,6 @@
 import actions from '..';
 import { Context } from '../actions';
-import jsonReponse from '../middlewares/json-reponse';
+import { dataWrapping } from '../middlewares';
 import { initDatabase, agent, resourcer } from './index';
 
 describe('list', () => {
@@ -10,7 +10,7 @@ describe('list', () => {
     resourcer.define({
       name: 'articles',
       middlewares: [
-        jsonReponse,
+        dataWrapping,
       ],
       actions: actions.common,
     });

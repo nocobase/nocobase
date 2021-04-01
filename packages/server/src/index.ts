@@ -1,5 +1,4 @@
-import Resourcer, { Action } from '@nocobase/resourcer';
-import actions from '@nocobase/actions';
+import { actions, middlewares } from '@nocobase/actions';
 import Application from './application';
 import bodyParser from 'koa-bodyparser';
 import cors from '@koa/cors';
@@ -22,8 +21,7 @@ export default {
     app.use(bodyParser());
     app.use(cors());
 
-    // 这段代码处理的不完整
-    app.resourcer.registerActionHandlers(actions.common);
+    app.resourcer.registerActionHandlers({ ...actions.common, ...actions.associate });
 
     app.use(async (ctx, next) => {
       ctx.db = app.database;
@@ -31,25 +29,8 @@ export default {
       await next();
     });
 
-    app.use(async (ctx, next) => {
-      await next();
-      if (ctx.action instanceof Action) {
-        if (!ctx.body) {
-          ctx.body = {};
-        }
-        const { rows, ...meta } = ctx.body||{};
-        if (rows) {
-          ctx.body = {
-            data: rows,
-            meta,
-          };
-        } else {
-          ctx.body = {
-            data: ctx.body,
-          };
-        }
-      }
-    });
+    app.resourcer.use(middlewares.associated);
+    app.use(middlewares.dataWrapping);
 
     app.use(middleware({
       database: app.database,

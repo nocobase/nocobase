@@ -1,8 +1,8 @@
 import path from 'path';
 import dotenv from 'dotenv';
-import Api from '@nocobase/server';
-import actions from '@nocobase/actions';
-import { middlewares } from '@nocobase/actions';
+import Api from '@nocobase/server/src';
+import actions from '@nocobase/actions/src';
+import { middlewares } from '@nocobase/actions/src';
 
 // @ts-ignore
 const sync = global.sync || {
@@ -44,9 +44,6 @@ const api = Api.create({
     prefix: '/api',
   },
 });
-
-api.resourcer.use(middlewares.associated);
-api.resourcer.registerActionHandlers({ ...actions.common, ...actions.associate });
 
 const plugins = [
   '@nocobase/plugin-collections',
