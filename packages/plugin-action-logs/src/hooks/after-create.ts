@@ -33,7 +33,7 @@ export default async function (model, options) {
   if (changed) {
     changed.forEach((key: string) => {
       const field = fields.get(key) || fieldsList.find((item: Field) => item.options.field === key);
-      if (field) {
+      if (field && !field.options.hidden && field.options.type !== 'formula') {
         changes.push({
           field: field.options,
           after: model.get(key)
