@@ -194,6 +194,7 @@ export const Upload = connect({
   const [fileList, setFileList] = useState(toFileList(value));
   const uploadProps = {
     name: 'file',
+    headers: {},
     action: `${process.env.API}/attachments:upload`,
     onChange({ fileList }) {
       console.log(fileList);
@@ -202,6 +203,10 @@ export const Upload = connect({
       onChange(multiple ? list : list.shift() || null);
     },
   };
+  const token = localStorage.getItem('NOCOBASE_TOKEN');
+  if (token) {
+    uploadProps.headers['Authorization'] = `Bearer ${token}`;
+  }
   const images = getImgUrls(fileList);
   console.log({ fileList });
   return (
