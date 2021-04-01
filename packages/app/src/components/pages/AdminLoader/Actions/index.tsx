@@ -5,11 +5,17 @@ import {
   PlusOutlined,
   SelectOutlined,
   DeleteOutlined,
+  PrinterOutlined,
+  ExportOutlined,
 } from '@ant-design/icons';
 import Drawer from '@/components/pages/AdminLoader/Drawer';
 import View from '@/components/pages/AdminLoader/View';
 import get from 'lodash/get';
 import set from 'lodash/set';
+import ReactToPrint from 'react-to-print';
+import api from '@/api-client';
+
+const ACTIONS = new Map<string, any>();
 
 export function Create(props) {
   const { size, onFinish, schema = {}, associatedKey, ...restProps } = props;
@@ -284,28 +290,68 @@ export function Filter(props) {
   );
 }
 
+export function Print(props) {
+  const { schema = {}, contentRef } = props;
+  const { title, buttonProps = {} } = schema;
+  return (
+    <ReactToPrint
+      trigger={() => (
+        <Button {...buttonProps} icon={<PrinterOutlined />}>
+          {title}
+        </Button>
+      )}
+      content={() => contentRef.current}
+      pageStyle={`
+        @page {
+          margin: 1cm;
+        }
+        table { page-break-inside:auto }
+        tr { page-break-inside:avoid; page-break-after:auto }
+      `}
+      documentTitle={' '}
+    />
+  );
+}
+
+export function Export(props) {
+  const { schema = {}, onFinish } = props;
+  const { title, buttonProps = {} } = schema;
+  return (
+    <Button
+      {...buttonProps}
+      icon={<ExportOutlined />}
+      onClick={async () => {
+        onFinish && (await onFinish({ fields: [] }));
+      }}
+    >
+      {title}
+    </Button>
+  );
+}
+
 export function Actions(props) {
   const { onTrigger = {}, actions = [], style, ...restProps } = props;
   return (
     actions.length > 0 && (
       <div className={'action-buttons'} style={style}>
-        {actions.map(action => (
-          <div className={`${action.type}-action-button action-button`}>
-            <Action
-              {...restProps}
-              onFinish={onTrigger[action.type]}
-              schema={action}
-            />
-          </div>
-        ))}
+        {actions.map(
+          action =>
+            ACTIONS.has(action.type) && (
+              <div className={`${action.type}-action-button action-button`}>
+                <Action
+                  {...restProps}
+                  onFinish={onTrigger[action.type]}
+                  schema={action}
+                />
+              </div>
+            ),
+        )}
       </div>
     )
   );
 }
 
 export default Actions;
-
-const ACTIONS = new Map<string, any>();
 
 export function registerAction(type: string, Action: any) {
   ACTIONS.set(type, Action);
@@ -328,3 +374,5 @@ registerAction('update', Update);
 registerAction('create', Create);
 registerAction('destroy', Destroy);
 registerAction('filter', Filter);
+registerAction('print', Print);
+registerAction('export', Export);
