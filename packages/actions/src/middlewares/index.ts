@@ -1,2 +1,2 @@
 export * from './associated';
-export * from './json-reponse';
+export * from './data-wrapping';
