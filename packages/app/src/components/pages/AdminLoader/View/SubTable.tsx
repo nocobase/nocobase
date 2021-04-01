@@ -27,6 +27,8 @@ import Field from '@/components/views/Field';
 import { Form } from './Form';
 import { View } from './';
 
+export const icon = <LoadingOutlined style={{ fontSize: 36 }} spin />;
+
 export function Details(props) {
   const {
     onValueChange,
@@ -288,6 +290,11 @@ export function SubTable(props: any) {
       />
       <ReactDragListView {...dragProps}>
         <AntdTable
+          loading={{
+            spinning: loading,
+            size: 'large',
+            indicator: icon,
+          }}
           rowKey={rowKey}
           dataSource={dataSource}
           size={size}
