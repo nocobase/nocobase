@@ -64,15 +64,17 @@ Node:
 
 - Node.js 12.x or 14.x
 
-Database:
+Database(Choose any one):
 
-- PostgreSQL 10.x+
+- PostgreSQL 10.x+ (Recommend)
 - MySQL 5.7.x+
 
 Installation
 ----------
 
 ~~~shell
+# You can use docker to start the database
+docker-compose up -d postgres
 # Set Environment Variables
 cp .env.example .env
 npm install
