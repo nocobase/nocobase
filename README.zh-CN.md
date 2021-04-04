@@ -100,6 +100,7 @@ Database:
 ~~~shell
 git clone https://github.com/nocobase/nocobase.git
 cd nocobase
+docker-compose up -d postgres # 用 docker 启动数据库
 cp .env.example .env # 配置数据库信息、APP 端口等
 npm install
 npm run bootstrap
