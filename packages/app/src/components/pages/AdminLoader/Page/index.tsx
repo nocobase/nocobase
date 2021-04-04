@@ -67,7 +67,7 @@ export function Page(props: any) {
               }
             }
             return (
-              <div className={`noco-col noco-col-${span} float-${float}`}>
+              <div key={view.__index} className={`noco-col noco-col-${span} float-${float}`}>
                 <View
                   wrapper={'card'}
                   currentRowId={currentRowId}

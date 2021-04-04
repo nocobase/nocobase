@@ -236,7 +236,7 @@ export function Kanban(props: any) {
                   <Descriptions column={1} size={'small'} layout={'vertical'}>
                     {fields.map((field: any) => {
                       return (
-                        <Descriptions.Item label={field.title || field.name}>
+                        <Descriptions.Item key={field.id} label={field.title || field.name}>
                           <Field
                             data={data}
                             viewType={'descriptions'}
