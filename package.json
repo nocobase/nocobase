@@ -3,8 +3,8 @@
   "private": true,
   "scripts": {
     "start": "cd packages/app && npm start",
-    "start-server": "cd packages/api && nodemon",
-    "start-client": "cd packages/app && umi dev",
+    "start-server": "cd packages/api && npm start",
+    "start-client": "cd packages/app && npx umi dev",
     "bootstrap": "lerna bootstrap --no-ci",
     "build": "father-build",
     "clean": "lerna clean",
