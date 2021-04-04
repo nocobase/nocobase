@@ -172,10 +172,6 @@ export interface ActionParams {
   [key: string]: any;
 }
 
-export const DEFAULT_PAGE = PageParameter.DEFAULT_PAGE;
-export const DEFAULT_PER_PAGE = PageParameter.DEFAULT_PER_PAGE;
-export const MAX_PER_PAGE = PageParameter.MAX_PER_PAGE;
-
 export class Action {
 
   protected handler: any;

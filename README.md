@@ -48,9 +48,9 @@ Why choose NocoBase
 	- Precise configuration of data manipulation rights, access rights to pages and menus
 - **Developer-friendly**
 	- Microkernel architecture, flexible and easy to extend, with a robust plug-in system
-	- Node.js-based, using mainstream frameworks and technologies, including Koa, Sequelize, React, Ant Design, etc.
-	- Progressive development, low start-up difficulty, friendly to newcomers
-	- No abduction, no strong dependencies, can be used in any combination or extensions, can be used in existing projects
+	- Node.js-based, with popular frameworks and technologies, including Koa, Sequelize, React, Ant Design, etc.
+	- Progressive development, easy for getting-started, friendly to newcomers
+	- No binding, no strong dependencies, can be used in any combination or extensions, can be used in existing projects
 
 Architecture
 ----------

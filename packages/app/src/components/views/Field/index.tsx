@@ -424,7 +424,7 @@ export function AttachmentField(props: any) {
   }
   const values = Array.isArray(value) ? value : [value];
   const images = getImgUrls(values);
-  console.log(images);
+  // console.log(images);
   return (
     <div
       onClick={e => {
