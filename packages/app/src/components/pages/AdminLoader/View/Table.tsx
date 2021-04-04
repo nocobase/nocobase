@@ -220,9 +220,7 @@ export function Table(props: any) {
     run,
     params,
   } = useRequest(
-    (params = {}, ...args) => {
-      const { current, pageSize, sorter, filter, ...restParams } = params as any;
-      console.log('paramsparamsparamsparamsparams', params, args);
+    ({ current, pageSize, sorter, filter, ...restParams } = {}, ...args) => {
       return api
         .resource(resourceName)
         .list({
@@ -261,16 +259,60 @@ export function Table(props: any) {
     },
   );
 
+  const exportRequest = useRequest(({ sorter, filter } = {}) => {
+    return api
+      .resource(resourceName)
+      .export({
+        associatedKey,
+        perPage: -1,
+        sorter,
+        sort,
+        'fields[appends]': appends,
+        filter: {
+          and: [
+            defaultFilter,
+            schemaFilter,
+            filter,
+          ].filter(obj => obj && Object.keys(obj).length),
+        },
+      }, {
+        parseResponse: false,
+        responseType: 'blob'
+      })
+      .then(async response => {
+        const filename = response.headers.get('Content-Disposition').replace('attachment; filename=', '');
+        // ReadableStream
+        let res = new Response(response.body);
+        let blob = await res.blob();
+        let url = URL.createObjectURL(blob);
+        let a = document.createElement('a');
+        a.style.display = 'none';
+        a.href = url;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        URL.revokeObjectURL(url);
+        document.body.removeChild(a);
+        a = null;
+        blob = null;
+        url = null;
+        res = null;
+      });
+  }, {
+    manual: true,
+    paginated: false
+  });
+
   const currentRow = find(
     data && data.list,
     item => item[rowKey] == currentRowId,
   );
-  console.log({ currentRow });
+  // console.log({ currentRow });
   function getExpandedRowKeys(items: Array<any>) {
     if (!Array.isArray(items)) {
       return [];
     }
-    console.log({ items });
+    // console.log({ items });
     let rowKeys = [];
     items.forEach(item => {
       if (item.children && item.children.length) {
@@ -436,6 +478,9 @@ export function Table(props: any) {
               refresh();
               await reloadMenu();
             },
+            async export() {
+              exportRequest.run({ ...params[0] });
+            }
           }}
           actions={actions}
           style={{ marginBottom: 14 }}
