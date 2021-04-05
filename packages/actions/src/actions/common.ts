@@ -9,7 +9,7 @@ import {
   BELONGSTOMANY,
   whereCompare
 } from '@nocobase/database';
-import { DEFAULT_PAGE, DEFAULT_PER_PAGE } from '@nocobase/resourcer';
+import { PageParameter } from '@nocobase/resourcer';
 import { filterByFields } from '../utils';
 
 async function hasManyGet(instances, options: any = {}) {
@@ -158,8 +158,8 @@ async function belongsToManyGet(instance, options) {
  */
 export async function list(ctx: Context, next: Next) {
   const {
-    page = DEFAULT_PAGE,
-    perPage = DEFAULT_PER_PAGE,
+    page = PageParameter.DEFAULT_PAGE,
+    perPage = PageParameter.DEFAULT_PER_PAGE,
     sort = [],
     fields = [],
     filter = {},

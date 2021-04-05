@@ -337,7 +337,7 @@ export function Actions(props) {
         {actions.map(
           action =>
             ACTIONS.has(action.type) && (
-              <div className={`${action.type}-action-button action-button`}>
+              <div key={action.__index} className={`${action.type}-action-button action-button`}>
                 <Action
                   {...restProps}
                   onFinish={onTrigger[action.type]}
