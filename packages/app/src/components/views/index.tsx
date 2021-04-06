@@ -1,85 +1,90 @@
-import React, { useEffect, useState } from 'react';
-import api from '@/api-client';
-import { useRequest } from 'umi';
-import { Spin } from '@nocobase/client';
-import { SimpleTable } from './SimpleTable';
-import { Table } from './Table';
-import { Form, DrawerForm, FilterForm } from './Form/index';
-import { Details } from './Details';
+import React, { useState, useEffect } from 'react';
 import './style.less';
-import { Login } from './Form/Login';
-import { Register } from './Form/Register';
-import { Calendar } from './Calendar/index';
+import { Helmet } from 'umi';
+import { Spin } from '@/components/spin';
+import { useRequest, useLocation } from 'umi';
+import api from '@/api-client';
+import { Actions } from '@/components/actions';
+import {
+  Table as AntdTable,
+  Card,
+  Pagination,
+  Button,
+  Tabs,
+  Tooltip,
+} from 'antd';
+import { LoadingOutlined } from '@ant-design/icons';
+import { Form } from './Form';
+import { Table } from './Table';
+import { Association } from './Association';
+import { Descriptions } from './Descriptions';
+import { FilterForm } from './FilterForm';
+import { SubTable } from './SubTable';
+import { Wysiwyg } from './Wysiwyg';
+import { Calendar } from './Calendar';
+import { Kanban } from './Kanban';
+import { setValidationLanguage } from '@formily/antd';
+import { setup } from '@/components/fields';
 
-const TEMPLATES = new Map<string, any>();
+setup();
+setValidationLanguage('zh-CN');
 
-export function registerView(template: string, Template: any) {
-  TEMPLATES.set(template, Template);
+const VIEWS = new Map();
+
+export function registerView(type, view) {
+  VIEWS.set(type, view);
 }
 
-export function getViewTemplate(template: string) {
-  return TEMPLATES.get(template);
+export function getView(type) {
+  return VIEWS.get(type);
 }
 
-registerView('Calendar', Calendar);
-registerView('FilterForm', FilterForm);
-registerView('DrawerForm', DrawerForm);
-registerView('PermissionForm', DrawerForm);
-registerView('Form', Form);
-registerView('Table', Table);
-registerView('SimpleTable', Table);
-registerView('Details', Details);
-registerView('Login', Login);
-registerView('Register', Register);
+export const icon = <LoadingOutlined style={{ fontSize: 36 }} spin />;
 
-export interface ViewProps {
-  resourceName: string;
-  resourceKey?: string | number;
-  associatedName?: string;
-  associatedKey?: string | number;
-  viewName?: string;
-  [key: string]: any;
-}
+export function View(props: any) {
+  const { wrapper, schema, viewName, children, ...restProps } = props;
 
-export default function ViewFactory(props: ViewProps) {
-  const {
-    associatedName,
-    associatedKey,
-    resourceName,
-    resourceTarget,
-    resourceKey,
-    resourceFieldName,
-    viewName,
-    mode,
-    reference,
-    isAssociationView = false,
-  } = props;
-  console.log('propspropspropspropspropspropsprops', props);
   const { data = {}, loading } = useRequest(
     () => {
-      const params = {
-        resourceKey: viewName,
-        values: {
-          resourceKey,
-          associatedKey: associatedKey,
-          associatedName: associatedName,
-          resourceFieldName: resourceName,
-          mode,
-        },
-      };
-      return api.resource(resourceTarget || resourceName).getView(params);
+      return schema
+        ? Promise.resolve({ data: schema })
+        : api.resource('views_v2').getInfo({
+            resourceKey: viewName,
+          });
     },
     {
-      refreshDeps: [associatedName, resourceTarget, resourceName, viewName],
+      refreshDeps: [viewName, schema],
     },
   );
+
   if (loading) {
     return <Spin />;
   }
-  let { template } = data;
-  if (isAssociationView && template === 'Table') {
-    template = 'SimpleTable';
+
+  const type = props.type || data.type;
+
+  const Component = getView(type);
+
+  if (wrapper === 'card') {
+    return (
+      <Card className={`view-type-${type}`} bordered={false}>
+        <Component {...restProps} schema={data} />
+      </Card>
+    )
   }
-  const Template = getViewTemplate(template);
-  return Template && <Template {...props} ref={reference} schema={data} />;
+
+  return <Component {...restProps} schema={data} />;
 }
+
+registerView('table', Table);
+registerView('subTable', SubTable);
+registerView('form', Form);
+registerView('filterForm', FilterForm);
+registerView('descriptions', Descriptions);
+registerView('association', Association);
+registerView('wysiwyg', Wysiwyg);
+registerView('markdown', Wysiwyg);
+registerView('calendar', Calendar);
+registerView('kanban', Kanban);
+
+export default View;

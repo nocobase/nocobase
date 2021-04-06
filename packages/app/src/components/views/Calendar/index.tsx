@@ -1,11 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Table as AntdTable, Card, Pagination } from 'antd';
-import { Actions } from '@/components/actions';
-import { redirectTo } from '@/components/pages/CollectionLoader/utils';
-import ViewFactory from '@/components/views';
-import { useRequest } from 'umi';
+import { useRequest, useHistory } from 'umi';
 import api from '@/api-client';
-import { components, fields2columns } from '../SortableTable';
 import {
   LoadingOutlined,
   LeftOutlined,
@@ -16,6 +12,9 @@ import { Calendar as BigCalendar, momentLocalizer } from 'react-big-calendar';
 import * as dates from 'react-big-calendar/lib/utils/dates';
 import moment from 'moment';
 const localizer = momentLocalizer(moment); // or globalizeLocalizer
+import Drawer from '@/components/drawer';
+import { Details, DetailsPage } from '../Table';
+import { Actions } from '@/components/actions';
 
 export const icon = <LoadingOutlined style={{ fontSize: 36 }} spin />;
 
@@ -52,67 +51,56 @@ function toEvents(data, options: any = {}) {
 }
 
 export function Calendar(props: CalendarProps) {
-  console.log(props);
-  const {
-    activeTab = {},
-    pageInfo = {},
-    schema,
-    resourceName,
-    associatedName,
-    associatedKey,
-    isFieldComponent,
-    onSelected,
-    multiple = true,
-    selectedRowKeys: srk,
-  } = props;
+  const { schema = {}, associatedKey, defaultFilter } = props;
+
+  const paginated = false;
+
   const {
     rowKey = 'id',
-    mode,
-    defaultTabName,
+    filter: schemaFilter,
+    sort,
+    appends,
+    resourceName,
     labelField,
     startDateField,
     endDateField,
-    name: viewName,
-    actionDefaultParams = {},
-    fields = [],
-    rowViewName,
+    detailsOpenMode,
+    details = [],
     actions = [],
-    paginated = true,
-    defaultPerPage = 10,
   } = schema;
-  const { filter: defaultFilter = {} } = actionDefaultParams;
-  const { sourceKey = 'id' } = activeTab.field || {};
-  const drawerRef = useRef<any>();
-  const [filterCount, setFilterCount] = useState(0);
-  const name = associatedName
-    ? `${associatedName}.${resourceName}`
-    : resourceName;
-  const {
-    data,
-    loading,
-    pagination,
-    mutate,
-    refresh,
-    params,
-    run,
-  } = useRequest(
-    (params = {}) => {
-      const { current, pageSize, sorter, filter, ...restParams } = params;
+
+  console.log({ schema });
+
+  const [calendarView, setCalendarView] = useState('month');
+
+  const history = useHistory();
+
+  const { data, loading, mutate, refresh, run, params } = useRequest(
+    (params = {}, ...args) => {
+      const { current, pageSize, sorter, filter, ...restParams } = params as any;
+      console.log('paramsparamsparamsparamsparams', params, args);
       return api
-        .resource(name)
+        .resource(resourceName)
         .list({
           associatedKey,
-          // page: paginated ? current : 1,
-          perPage: -1,
+          page: paginated ? current : 1,
+          perPage: paginated ? pageSize : -1,
           sorter,
+          sort,
+          'fields[appends]': appends,
           // filter,
-          viewName,
-          ...actionDefaultParams,
+          // ...actionDefaultParams,
           filter: {
-            and: [defaultFilter, filter].filter(
-              obj => obj && Object.keys(obj).length,
-            ),
+            and: [
+              defaultFilter,
+              schemaFilter,
+              filter,
+              // __parent ? {
+              //   collection_name: __parent,
+              // } : null,
+            ].filter(obj => obj && Object.keys(obj).length),
           },
+          // ...args2,
         })
         .then(({ data = [], meta = {} }) => {
           return {
@@ -125,31 +113,8 @@ export function Calendar(props: CalendarProps) {
     },
     {
       paginated,
-      defaultPageSize: defaultPerPage,
     },
   );
-  console.log(schema, data);
-  const [selectedRowKeys, setSelectedRowKeys] = useState(srk || []);
-  const onChange = (
-    selectedRowKeys: React.ReactText[],
-    selectedRows: React.ReactText[],
-  ) => {
-    setSelectedRowKeys(selectedRowKeys);
-    onSelected && onSelected(selectedRows);
-  };
-  const [formMode, setFormMode] = useState('update');
-  const [calendarView, setCalendarView] = useState('month');
-  useEffect(() => {
-    setSelectedRowKeys(srk);
-  }, [srk]);
-  const tableProps: any = {};
-  if (actions.length) {
-    tableProps.rowSelection = {
-      type: multiple ? 'checkbox' : 'radio',
-      selectedRowKeys,
-      onChange,
-    };
-  }
 
   const events = toEvents(data?.list, {
     idField: rowKey,
@@ -184,44 +149,26 @@ export function Calendar(props: CalendarProps) {
 
   console.log('events', data);
   return (
-    <Card bordered={false}>
-      {/* <Actions
-        {...props}
-        style={{ marginBottom: 14 }}
-        actions={actions}
-        filterCount={filterCount}
-        onFinish={() => {
-          refresh();
-        }}
+    <div>
+      <Actions
+        associatedKey={associatedKey}
         onTrigger={{
-          async filter(values) {
-            console.log('filter', values);
-            const items = values.filter.and || values.filter.or;
-            setFilterCount(Object.keys(items).length);
-            // @ts-ignore
-            run({...params[0], filter: values.filter});
-          },
-          async destroy() {
-            await api.resource(name).destroy({
-              associatedKey,
-              filter: {
-                [`${rowKey}.in`]: selectedRowKeys,
-              },
-            });
+          async create(values) {
             await refresh();
+          },
+          async filter(values) {
+            const items = values.filter.and || values.filter.or;
             // @ts-ignore
-            window.routesReload && window.routesReload();
-            console.log('destroy.onTrigger', selectedRowKeys);
+            run({ ...params[0], filter: values.filter });
+            // refresh();
           },
         }}
-      /> */}
-      <ViewFactory
-        {...props}
-        mode={formMode}
-        viewName={rowViewName}
-        reference={drawerRef}
-        onFinish={() => {
-          refresh();
+        actions={actions}
+        style={{
+          position: 'absolute',
+          left: '157px',
+          right: '168px',
+          marginBottom: 14,
         }}
       />
       <BigCalendar
@@ -254,28 +201,58 @@ export function Calendar(props: CalendarProps) {
           setCalendarView(view);
           console.log(view);
         }}
-        onSelectEvent={event => {
-          console.log(event);
-          if (isFieldComponent) {
+        onSelectEvent={data => {
+          console.log({ data });
+          if (!detailsOpenMode || !details.length) {
             return;
           }
-          setFormMode('update');
-          drawerRef.current.setVisible(true);
-          drawerRef.current.getData(event[rowKey]);
-
-          if (mode === 'simple') {
-            drawerRef.current.setVisible(true);
-            drawerRef.current.getData(event[rowKey]);
+          if (detailsOpenMode === 'window') {
+            const paths = history.location.pathname.split('/');
+            history.push(`/admin/${paths[2]}/${data[rowKey]}/0`);
           } else {
-            redirectTo({
-              ...props.match.params,
-              [activeTab ? 'newItem' : 'lastItem']: {
-                itemId: event[rowKey] || event.id,
-                tabName: defaultTabName,
+            Drawer.open({
+              headerStyle:
+                details.length > 1
+                  ? {
+                      paddingBottom: 0,
+                      borderBottom: 0,
+                      // paddingTop: 16,
+                      // marginBottom: -4,
+                    }
+                  : {},
+              // title: details.length > 1 ? undefined : data[labelField],
+              title: data.title,
+              bodyStyle: {
+                // padding: 0,
               },
+              content: ({ resolve, closeWithConfirm }) => (
+                <div>
+                  <Details
+                    associatedKey={associatedKey}
+                    resourceName={resourceName}
+                    onFinish={async () => {
+                      await refresh();
+                      resolve();
+                    }}
+                    onValueChange={() => {
+                      closeWithConfirm && closeWithConfirm(true);
+                    }}
+                    onDraft={async () => {
+                      await refresh();
+                      resolve();
+                    }}
+                    onReset={resolve}
+                    onDataChange={async () => {
+                      await refresh();
+                    }}
+                    data={data}
+                    resolve={resolve}
+                    items={details}
+                  />
+                </div>
+              ),
             });
           }
-          // drawerRef.current.
         }}
         onRangeChange={range => {
           console.log({ range });
@@ -290,6 +267,6 @@ export function Calendar(props: CalendarProps) {
         }}
         localizer={localizer}
       />
-    </Card>
+    </div>
   );
 }

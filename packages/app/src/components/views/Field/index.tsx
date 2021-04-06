@@ -5,19 +5,17 @@ import Icon from '@/components/icons';
 import get from 'lodash/get';
 import isEmpty from 'lodash/isEmpty';
 import findIndex from 'lodash/findIndex';
-import { fields2columns } from '../SortableTable';
-import ViewFactory from '..';
-import './style.less';
-import { getImageByUrl, testUrl } from '@/components/form.fields';
+import { getImageByUrl, testUrl } from '@/components/fields';
 import { CheckOutlined, CloseOutlined } from '@ant-design/icons';
 import marked from 'marked';
 import set from 'lodash/set';
 import Lightbox from 'react-image-lightbox';
-import 'react-image-lightbox/style.css';
 import api from '@/api-client';
 import { useRequest } from 'umi';
-import Drawer from '@/components/pages/AdminLoader/Drawer';
-import View from '@/components/pages/AdminLoader/View';
+import Drawer from '@/components/drawer';
+import View from '@/components/views';
+import './style.less';
+import 'react-image-lightbox/style.css';
 
 marked.setOptions({
   gfm: true,
@@ -293,7 +291,6 @@ export function SubTableField(props: any) {
         viewName={viewName}
         type={'subTable'}
       />
-      {/* <Table size={'small'} columns={fields2columns(children)} dataSource={value} pagination={false}/> */}
     </div>
   );
 }
@@ -382,24 +379,6 @@ export function LinkToFieldLink(props) {
       >
         {data[labelField]}
       </a>
-      {/* <Drawer
-        // @ts-ignore
-        onClick={(e) => {
-          e.stopPropagation();
-        }}
-        className={'noco-drawer'}
-        bodyStyle={{padding: 0}}
-        width={'40%'}
-        title={`查看${title}详情`}
-        visible={visible}
-        onClose={() => setVisible(false)}
-      >
-        <ViewFactory
-          resourceName={schema.target}
-          viewName={'details'}
-          resourceKey={data.id}
-        />
-      </Drawer> */}
     </span>
   );
 }

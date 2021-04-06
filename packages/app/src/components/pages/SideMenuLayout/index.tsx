@@ -1,22 +1,23 @@
 import React, { useState } from 'react';
 import { Layout, Breadcrumb, Drawer } from 'antd';
 import { Link } from 'umi';
-import './style.less';
 import Menu from '@/components/menu';
 import { MenuUnfoldOutlined, MenuFoldOutlined } from '@ant-design/icons';
 import { useLocalStorageState } from 'ahooks';
 import { useResponsive } from 'ahooks';
+import './style.less';
 
 export function SideMenuLayout(props: any) {
-  const { menu = [], id } = props.page;
+  const { currentPageName, menu = [], menuId } = props;
   const [visible, setVisible] = useState(false);
   // console.log(menu);
   const [collapsed, setCollapsed] = useLocalStorageState(
-    `nocobase-menu-collapsed-${id}`,
+    `nocobase-menu-collapsed-${menuId}`,
     false,
   );
   const responsive = useResponsive();
   const isMobile = responsive.small && !responsive.middle && !responsive.large;
+  document.body.className = collapsed ? 'collapsed' : '';
   return (
     <Layout style={{ height: 'calc(100vh - 48px)' }}>
       {!isMobile && (
@@ -24,11 +25,17 @@ export function SideMenuLayout(props: any) {
           className={`nb-sider${collapsed ? ' collapsed' : ''}`}
           theme={'light'}
         >
-          <Menu items={menu} mode={'inline'} />
+          <Menu
+            menuId={menuId}
+            currentPageName={currentPageName}
+            items={menu}
+            mode={'inline'}
+          />
           <div
             onClick={() => {
               setCollapsed(!collapsed);
               setVisible(true);
+              document.body.className = collapsed ? 'collapsed' : '';
             }}
             className={'menu-toggle'}
           >
@@ -41,7 +48,7 @@ export function SideMenuLayout(props: any) {
           </div>
         </Layout.Sider>
       )}
-      <Layout.Content>
+      <Layout.Content id={'content'}>
         {props.children}
         {isMobile && (
           <Drawer
@@ -49,6 +56,7 @@ export function SideMenuLayout(props: any) {
             onClose={() => {
               setCollapsed(!collapsed);
               setVisible(false);
+              document.body.className = collapsed ? 'collapsed' : '';
             }}
             placement={'left'}
             closable={false}
@@ -58,7 +66,10 @@ export function SideMenuLayout(props: any) {
               onSelect={() => {
                 setCollapsed(false);
                 setVisible(false);
+                document.body.className = collapsed ? 'collapsed' : '';
               }}
+              currentPageName={currentPageName}
+              menuId={menuId}
               items={menu}
               mode={'inline'}
             />
@@ -69,6 +80,7 @@ export function SideMenuLayout(props: any) {
             onClick={() => {
               setCollapsed(!collapsed);
               setVisible(true);
+              document.body.className = collapsed ? 'collapsed' : '';
             }}
             className={'menu-toggle'}
           >

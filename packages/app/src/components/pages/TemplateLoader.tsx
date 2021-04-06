@@ -1,8 +1,8 @@
 import React from 'react';
 import { Redirect } from 'umi';
 import get from 'lodash/get';
-import { Spin } from '@nocobase/client';
-import { CollectionLoader } from './CollectionLoader';
+import { Spin } from '@/components/spin';
+// import { CollectionLoader } from './CollectionLoader';
 
 function getRoutes(path: string, pages: any) {
   const keys = path.split('/');
@@ -43,7 +43,9 @@ export function TemplateLoader(props: any) {
     //   ? CollectionLoader
     //   : require(`@/pages/${tmp}`).default;
     if (route.type === 'collection') {
-      Component = CollectionLoader;
+      Component = (props) => {
+        return <div {...props}></div>
+      };
       componentProps.match.params['collection'] = route.collection;
     } else {
       Component = templates[route.template];
