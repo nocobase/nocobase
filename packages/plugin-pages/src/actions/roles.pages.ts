@@ -257,7 +257,7 @@ export async function update(ctx: actions.Context, next: actions.Next) {
     return next();
   }
 
-  console.log(ctx.action.params, { routable_type: tableName, routable_id: resourceKey });
+  // console.log(ctx.action.params, { routable_type: tableName, routable_id: resourceKey });
   let [route] = await associated.getRoutes({
     where: { routable_type: tableName, routable_id: resourceKey },
     limit: 1

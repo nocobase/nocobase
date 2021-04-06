@@ -51,7 +51,6 @@ export default async function (options = {}) {
   resourcer.use(async (ctx, next) => {
     const { actionName, resourceName, values } = ctx.action.params;
     if (resourceName === 'menus' && ['create', 'update'].includes(actionName)) {
-      console.log({values});
       if (values.parent) {
         delete values.parent.children;
         ctx.action.mergeParams({

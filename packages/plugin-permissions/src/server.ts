@@ -125,7 +125,6 @@ export class Permissions {
         });
         if (fps.length) {
           for (const fp of fps) {
-            console.log('fp.actions', fp.actions);
             if (Array.isArray(fp.actions) && fp.actions.includes(`${resourceField.options.collection_name}:${actionName}`)) {
               return next();
             }
