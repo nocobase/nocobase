@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
-// import { request } from 'umi';
 import { TemplateLoader } from './TemplateLoader';
-import { useRequest, request } from '@nocobase/client';
+import { useRequest } from 'umi';
 import { templates } from '@/pages';
 import api from '@/api-client';
 
@@ -21,7 +20,7 @@ export function PageLoader(props: any) {
       {...props}
       templates={templates}
       loading={loading && first}
-      pages={data.data || {}}
+      pages={data || {}}
       pathname={`/${path}`}
     />
   );

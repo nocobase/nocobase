@@ -41,6 +41,7 @@ export default (props: any) => {
   } = useModel('@@initialState');
   const responsive = useResponsive();
   const isMobile = responsive.small && !responsive.middle && !responsive.large;
+  const { currentUser = {} } = initialState as any;
   return (
     <div className={'avatar-dropdown-wrapper'}>
       <Dropdown
@@ -58,7 +59,7 @@ export default (props: any) => {
             icon={<UserOutlined />}
             style={{ marginRight: 5 }}
           />{' '}
-          { initialState.currentUser.nickname || initialState.currentUser.email }
+          { currentUser.nickname || currentUser.email }
         </span>
       </Dropdown>
     </div>

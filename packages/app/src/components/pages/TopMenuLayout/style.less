@@ -4,7 +4,13 @@
   font-size: 18px;
   letter-spacing: 2px;
   font-weight: 300;
-  padding: 6px 25px 0 25px;
+  padding: 0 15px;
+  img {
+    height: 100%;
+  }
+  svg {
+    margin-top: 12px;
+  }
 }
 
 body {
@@ -16,4 +22,16 @@ body {
 .noco-top-menu.ant-menu.ant-menu-dark .ant-menu-item-selected,
 .noco-top-menu.ant-menu-submenu-popup.ant-menu-dark .ant-menu-item-selected {
   background-color: rgba(255, 255, 255, 0.1);
+}
+
+.ant-layout-content {
+  overflow: auto;
+}
+
+.ant-layout-header {
+  display: flex;
+}
+
+.ant-menu-dark.ant-menu-horizontal {
+  margin-right: 100px;
 }

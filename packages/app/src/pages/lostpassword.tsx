@@ -1,10 +1,7 @@
 import React from 'react';
-import { Link } from 'umi';
-import { Page } from '@/components/pages';
-import ViewFactory from '@/components/views';
 import { Helmet, useModel } from 'umi';
 import get from 'lodash/get';
-import { LostPassword } from '@/components/views/Form/LostPassword';
+import { LostPassword } from '@/components/views/LostPassword';
 
 export default (props: any) => {
   const { initialState = {}, refresh, setInitialState } = useModel(
