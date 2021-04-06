@@ -5,11 +5,9 @@
   "license": "MIT",
   "dependencies": {
     "@nocobase/actions": "^0.4.0-alpha.0",
-    "@nocobase/client": "^0.4.0-alpha.0",
     "@nocobase/database": "^0.4.0-alpha.0",
     "@nocobase/resourcer": "^0.4.0-alpha.0",
     "@nocobase/server": "^0.4.0-alpha.0",
-    "crypto-random-string": "^3.3.1",
-    "react": "16.14.0"
+    "crypto-random-string": "^3.3.1"
   }
 }
