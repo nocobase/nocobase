@@ -19,7 +19,6 @@ export default async (ctx, next) => {
     }
   });
   const menuIds = menu_permissions.map(item => item.menu_id);
-  console.log({ resourceKey, roles, menuIds });
   const Menu = ctx.db.getModel('menus') as ModelCtor<Model>;
   const menu = await Menu.findOne({
     where: isRoot ? {

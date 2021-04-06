@@ -397,7 +397,6 @@ export default async (ctx, next) => {
           if (!['subTable', 'linkTo', 'attachment', 'updatedBy', 'createdBy'].includes(child.get('interface'))) {
             continue;
           }
-          console.log(child.name);
           appends.push(`${field.name}.${child.name}`);
         }
       }
