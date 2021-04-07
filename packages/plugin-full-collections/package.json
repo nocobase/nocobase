@@ -1,18 +1,18 @@
 {
   "name": "@nocobase/plugin-full-collections",
-  "version": "0.4.0-alpha.4",
+  "version": "0.4.0-alpha.5",
   "main": "lib/index.js",
   "license": "MIT",
   "private": true,
   "dependencies": {
-    "@nocobase/server": "^0.4.0-alpha.4",
+    "@nocobase/server": "^0.4.0-alpha.5",
     "crypto-random-string": "^3.3.1",
     "deepmerge": "^4.2.2",
     "just-has": "^1.0.0"
   },
   "devDependencies": {
-    "@nocobase/actions": "^0.4.0-alpha.4",
-    "@nocobase/database": "^0.4.0-alpha.4",
-    "@nocobase/resourcer": "^0.4.0-alpha.4"
+    "@nocobase/actions": "^0.4.0-alpha.5",
+    "@nocobase/database": "^0.4.0-alpha.5",
+    "@nocobase/resourcer": "^0.4.0-alpha.5"
   }
 }
