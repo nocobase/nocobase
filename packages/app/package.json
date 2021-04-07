@@ -5,7 +5,7 @@
     "start": "concurrently \"cd ../../ && nodemon\" \"umi dev\"",
     "dev": "umi dev",
     "build": "umi build",
-    "postinstall": "umi generate tmp",
+    "postinstall": "node ./umi.js generate tmp",
     "prettier": "prettier --write '**/*.{js,jsx,tsx,ts,less,md,json}'",
     "test": "umi-test",
     "test:coverage": "umi-test --coverage"
