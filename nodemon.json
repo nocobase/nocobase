@@ -1,0 +1,6 @@
+{
+  "watch": ["packages/"],
+  "ignore": ["packages/app"],
+  "ext": "ts",
+  "exec": "ts-node ./packages/api/src/dev.ts"
+}

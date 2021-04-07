@@ -3,7 +3,7 @@
   "private": true,
   "scripts": {
     "start": "cd packages/app && npm start",
-    "start-server": "cd packages/api && npm start",
+    "start-server": "nodemon",
     "start-client": "cd packages/app && npx umi dev",
     "pm2-start": "npx pm2 start packages/api/lib/index.js",
     "build-app": "cd packages/app && npm run build",
@@ -15,7 +15,9 @@
     "lint": "eslint --ext .ts,.tsx,.js \"packages/*/src/**.@(ts|tsx|js)\" --fix",
     "test": "npm run lint && jest",
     "debug": "node --inspect-brk node_modules/.bin/jest --runInBand",
-    "release": "npm run build && lerna publish --yes --registry https://npm.pkg.github.com"
+    "version:alpha": "lerna version prerelease --preid alpha --force-publish=* --no-git-tag-version -m \"chore(versions): publish packages %s\"",
+    "release:force": "lerna publish from-package --yes",
+    "release": "lerna publish"
   },
   "devDependencies": {
     "@koa/router": "^9.3.1",

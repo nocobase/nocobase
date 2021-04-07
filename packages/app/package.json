@@ -20,7 +20,7 @@
       "prettier --parser=typescript --write"
     ]
   },
-  "dependencies": {
+  "devDependencies": {
     "@ant-design/pro-layout": "^5.0.12",
     "@formily/antd-components": "^1.3.6",
     "@lourenci/react-kanban": "^2.1.0",
