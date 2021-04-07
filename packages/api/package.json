@@ -5,6 +5,9 @@
   "types": "./lib/index.d.ts",
   "license": "MIT",
   "scripts": {},
+  "bin": {
+    "nocobase": "bin/nocobase.js"
+  },
   "dependencies": {
     "@nocobase/actions": "^0.4.0-alpha.2",
     "@nocobase/client": "^0.4.0-alpha.2",

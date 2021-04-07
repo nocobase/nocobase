@@ -23,9 +23,7 @@ import { middlewares } from '@nocobase/server';
     useStaticServer: !(process.env.APP_USE_STATIC_SERVER === 'false' || !process.env.APP_USE_STATIC_SERVER),
   }));
 
-  if (require.main === module) {
-    api.listen(process.env.API_PORT, () => {
-      console.log(`http://localhost:${process.env.API_PORT}/`);
-    });
-  }
+  api.listen(process.env.API_PORT, () => {
+    console.log(`http://localhost:${process.env.API_PORT}/`);
+  });
 })();
