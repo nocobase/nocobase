@@ -9,5 +9,6 @@
     "@nocobase/resourcer": "^0.4.0-alpha.1",
     "@nocobase/server": "^0.4.0-alpha.1",
     "crypto-random-string": "^3.3.1"
-  }
+  },
+  "gitHead": "f0b335ac30f29f25c95d7d137655fa64d8d67f1e"
 }
