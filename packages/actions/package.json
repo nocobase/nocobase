@@ -2,11 +2,11 @@
   "name": "@nocobase/actions",
   "version": "0.4.0-alpha.0",
   "description": "",
+  "license": "MIT",
   "main": "./lib/index.js",
   "types": "./lib/index.d.ts",
   "scripts": {
   },
-  "license": "MIT",
   "dependencies": {
     "@nocobase/database": "^0.4.0-alpha.0",
     "@nocobase/resourcer": "^0.4.0-alpha.0"

@@ -1,5 +1,3 @@
-import path from 'path';
-import dotenv from 'dotenv';
 import Api from '@nocobase/server';
 
 // @ts-ignore
@@ -11,11 +9,6 @@ const sync = global.sync || {
 };
 
 console.log('process.env.NOCOBASE_ENV', process.env.NOCOBASE_ENV);
-
-// TODO: env 需要换种方式加载
-dotenv.config({
-  path: path.resolve(__dirname, '../../../.env'),
-});
 
 const api = Api.create({
   database: {

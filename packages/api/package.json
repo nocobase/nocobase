@@ -1,7 +1,9 @@
 {
   "name": "@nocobase/api",
   "version": "0.4.0-alpha.0",
-  "main": "lib/index.js",
+  "main": "./lib/index.js",
+  "types": "./lib/index.d.ts",
+  "license": "MIT",
   "scripts": {
     "start": "nodemon",
     "db-migrate": "ts-node ./src/migrate.ts"
@@ -20,9 +22,5 @@
     "@nocobase/plugin-users": "^0.4.0-alpha.0",
     "@nocobase/server": "^0.4.0-alpha.0",
     "koa-static": "^5.0.0"
-  },
-  "devDependencies": {
-    "nodemon": "^2.0.6",
-    "typescript": "^3.9.6"
   }
 }
