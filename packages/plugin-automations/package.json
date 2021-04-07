@@ -1,17 +1,18 @@
 {
   "name": "@nocobase/plugin-automations",
-  "version": "0.4.0-alpha.0",
+  "version": "0.4.0-alpha.5",
   "main": "lib/index.js",
   "license": "MIT",
   "dependencies": {
-    "@nocobase/actions": "^0.4.0-alpha.0",
-    "@nocobase/database": "^0.4.0-alpha.0",
-    "@nocobase/resourcer": "^0.4.0-alpha.0",
-    "@nocobase/server": "^0.4.0-alpha.0",
+    "@nocobase/actions": "^0.4.0-alpha.5",
+    "@nocobase/database": "^0.4.0-alpha.5",
+    "@nocobase/resourcer": "^0.4.0-alpha.5",
+    "@nocobase/server": "^0.4.0-alpha.5",
     "json-templates": "^4.1.0",
     "node-schedule": "^2.0.0"
   },
   "devDependencies": {
     "@types/node-schedule": "^1.3.1"
-  }
+  },
+  "gitHead": "f0b335ac30f29f25c95d7d137655fa64d8d67f1e"
 }

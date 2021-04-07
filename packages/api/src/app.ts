@@ -1,22 +1,14 @@
-import path from 'path';
-import dotenv from 'dotenv';
-import Api from '@nocobase/server/src';
-import actions from '@nocobase/actions/src';
-import { middlewares } from '@nocobase/actions/src';
+import Api from '@nocobase/server';
 
 // @ts-ignore
 const sync = global.sync || {
-  force: true,
+  force: false,
   alter: {
-    drop: true,
+    drop: false,
   },
 };
 
 console.log('process.env.NOCOBASE_ENV', process.env.NOCOBASE_ENV);
-
-dotenv.config({
-  path: path.resolve(__dirname, '../../../.env'),
-});
 
 const api = Api.create({
   database: {
@@ -58,7 +50,7 @@ const plugins = [
 ];
 
 for (const plugin of plugins) {
-  api.registerPlugin(plugin, [require(`${plugin}/src/server`).default]);
+  api.registerPlugin(plugin, [require(`${plugin}/${__filename.endsWith('.ts') ? 'src' : 'lib'}/server`).default]);
 }
 
 export default api;

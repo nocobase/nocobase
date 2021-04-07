@@ -1,11 +1,12 @@
-import { actions, middlewares } from '@nocobase/actions';
+import { actions, middlewares as m } from '@nocobase/actions';
 import Application from './application';
 import bodyParser from 'koa-bodyparser';
 import cors from '@koa/cors';
-import middleware from './middleware';
+import { dbResourceRouter } from './middlewares';
 
 export * from './application';
 export * from './middleware';
+export * as middlewares from './middlewares';
 
 export default {
   /**
@@ -29,10 +30,10 @@ export default {
       await next();
     });
 
-    app.resourcer.use(middlewares.associated);
-    app.use(middlewares.dataWrapping);
+    app.resourcer.use(m.associated);
+    app.use(m.dataWrapping);
 
-    app.use(middleware({
+    app.use(dbResourceRouter({
       database: app.database,
       resourcer: app.resourcer,
       ...(options.resourcer||{}),

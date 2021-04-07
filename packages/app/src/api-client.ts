@@ -1,5 +1,3 @@
-import { values } from 'lodash';
-import { stringify } from 'querystring';
 import { request } from 'umi';
 
 interface ActionParams {
@@ -24,6 +22,7 @@ interface Resource {
   [name: string]: (params?: ActionParams, options?: any) => Promise<any>;
 }
 
+// TODO 待改进，提供一个封装度更完整的 SDK，request 可以自由替换
 class ApiClient {
   resource(name: string): Resource {
     const proxy: any = new Proxy(

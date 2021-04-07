@@ -1,10 +1,11 @@
 {
   "name": "@nocobase/app",
-  "version": "0.4.0-alpha.0",
+  "version": "0.4.0-alpha.5",
   "scripts": {
-    "start": "concurrently \"nodemon\" \"umi dev\"",
+    "start": "concurrently \"cd ../../ && nodemon\" \"umi dev\"",
+    "dev": "umi dev",
     "build": "umi build",
-    "postinstall": "umi generate tmp",
+    "postinstall": "node ./umi.js generate tmp",
     "prettier": "prettier --write '**/*.{js,jsx,tsx,ts,less,md,json}'",
     "test": "umi-test",
     "test:coverage": "umi-test --coverage"
@@ -20,11 +21,11 @@
       "prettier --parser=typescript --write"
     ]
   },
-  "dependencies": {
+  "devDependencies": {
     "@ant-design/pro-layout": "^5.0.12",
     "@formily/antd-components": "^1.3.6",
     "@lourenci/react-kanban": "^2.1.0",
-    "@nocobase/client": "^0.4.0-alpha.0",
+    "@nocobase/client": "^0.4.0-alpha.5",
     "@types/react-big-calendar": "^0.24.8",
     "@umijs/preset-react": "1.x",
     "@umijs/test": "^3.2.23",
@@ -47,5 +48,6 @@
     "styled-components": "^5.2.1",
     "umi": "^3.2.23",
     "yorkie": "^2.0.0"
-  }
+  },
+  "gitHead": "f0b335ac30f29f25c95d7d137655fa64d8d67f1e"
 }

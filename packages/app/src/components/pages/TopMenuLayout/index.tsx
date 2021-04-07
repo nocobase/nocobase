@@ -1,15 +1,17 @@
 import React, { useState } from 'react';
 import { Layout, Dropdown, Avatar, Drawer } from 'antd';
 import './style.less';
-import { history, Link, request, useModel, Redirect } from 'umi';
+import { history, Link, request, useModel } from 'umi';
 import { UserOutlined, CodeOutlined, MenuOutlined } from '@ant-design/icons';
-import AvatarDropdown from '../AvatarDropdown';
+import AvatarDropdown from '@/components/pages/AvatarDropdown';
 import Menu from '@/components/menu';
 import { ReactComponent as Logo } from './logo-white.svg';
 import { useResponsive, useLocalStorageState } from 'ahooks';
+import get from 'lodash/get';
 
 export function TopMenuLayout(props: any) {
-  const { menu = [] } = props.page;
+  const { currentPageName, menu = [] } = props;
+  console.log({ menu });
   // const [visible, setVisible] = useState(false);
   const [visible, setVisible] = useLocalStorageState(
     `nocobase-nav-visible`,
@@ -17,18 +19,27 @@ export function TopMenuLayout(props: any) {
   );
   const responsive = useResponsive();
   const isMobile = responsive.small && !responsive.middle && !responsive.large;
-  return <Redirect to={'/admin'} />;
+  const {
+    initialState = {},
+    loading,
+    error,
+    refresh,
+    setInitialState,
+  } = useModel('@@initialState');
+  const logoUrl = get(initialState, 'systemSettings.logo.url');
+  console.log({ logoUrl });
   return (
     <Layout style={{ height: '100vh' }}>
       <Layout.Header
         style={{ height: 48, lineHeight: '48px', padding: 0 }}
         className="nb-header"
       >
-        <div className="logo" style={{ width: 200, height: 20, float: 'left' }}>
-          <Logo />
+        <div className="logo" style={{ width: 200, height: 48, float: 'left' }}>
+          {!logoUrl ? <Logo /> : <img src={logoUrl} />}
         </div>
         {!isMobile && (
           <Menu
+            currentPageName={currentPageName}
             hideChildren={true}
             items={menu}
             className={'noco-top-menu'}
@@ -63,6 +74,7 @@ export function TopMenuLayout(props: any) {
             bodyStyle={{ background: '#001529', padding: 0 }}
           >
             <Menu
+              currentPageName={currentPageName}
               onSelect={() => {
                 setVisible(false);
               }}

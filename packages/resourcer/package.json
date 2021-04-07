@@ -1,11 +1,11 @@
 {
   "name": "@nocobase/resourcer",
-  "version": "0.4.0-alpha.0",
+  "version": "0.4.0-alpha.5",
   "description": "",
   "main": "./lib/index.js",
   "types": "./lib/index.d.ts",
-  "scripts": {},
   "license": "MIT",
+  "scripts": {},
   "dependencies": {
     "deepmerge": "^4.2.2",
     "koa-compose": "^4.1.0",
@@ -13,12 +13,10 @@
     "path-to-regexp": "^6.1.0",
     "qs": "^6.9.4"
   },
-  "devDependencies": {
-    "typescript": "^3.9.6"
-  },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/nocobase/nocobase.git",
     "directory": "packages/resourcer"
-  }
+  },
+  "gitHead": "f0b335ac30f29f25c95d7d137655fa64d8d67f1e"
 }

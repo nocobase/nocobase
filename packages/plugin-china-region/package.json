@@ -1,10 +1,11 @@
 {
   "name": "@nocobase/plugin-china-region",
-  "version": "0.4.0-alpha.0",
+  "version": "0.4.0-alpha.5",
   "main": "lib/index.js",
   "license": "MIT",
   "dependencies": {
-    "@nocobase/database": "^0.4.0-alpha.0",
+    "@nocobase/database": "^0.4.0-alpha.5",
     "china-division": "2.3.1"
-  }
+  },
+  "gitHead": "f0b335ac30f29f25c95d7d137655fa64d8d67f1e"
 }

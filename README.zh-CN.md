@@ -97,6 +97,25 @@ Database:
 安装 & 运行
 ----------
 
+仅作为无代码平台使用
+
+~~~shell
+# 创建项目目录
+mkdir my-nocobase-project && cd my-nocobase-project
+# 初始化 npm
+npm init
+# 安装 nocobase 包
+npm i @nocobase/api @nocobase/app
+# 复制并配置 env，不要忘了修改数据库信息
+cp -r node_modules/@nocobase/api/.env.example .env
+# 数据库初始化
+npx nocobase db-init
+# 启动应用
+npx nocobase start
+~~~
+
+想要参与项目开发
+
 ~~~shell
 git clone https://github.com/nocobase/nocobase.git
 cd nocobase

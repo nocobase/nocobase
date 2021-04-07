@@ -1,18 +1,7 @@
 {
 	"name": "@nocobase/client",
-	"version": "0.4.0-alpha.0",
+	"version": "0.4.0-alpha.5",
 	"main": "lib/index.js",
 	"license": "MIT",
-  "resolutions": {
-    "@types/react": "16.14.0"
-  },
-	"dependencies": {
-    "@ant-design/icons": "^4.2.2",
-    "@types/react": "16.14.0",
-		"ahooks": "^2.7.1",
-		"antd": "^4.7.3",
-		"react": "16.14.0",
-		"umi": "^3.2.24",
-		"umi-request": "^1.3.5"
-	}
+	"gitHead": "f0b335ac30f29f25c95d7d137655fa64d8d67f1e"
 }

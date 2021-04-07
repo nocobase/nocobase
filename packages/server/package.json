@@ -1,6 +1,6 @@
 {
   "name": "@nocobase/server",
-  "version": "0.4.0-alpha.0",
+  "version": "0.4.0-alpha.5",
   "main": "lib/index.js",
   "types": "./lib/index.d.ts",
   "license": "MIT",
@@ -8,17 +8,17 @@
   "dependencies": {
     "@koa/cors": "^3.1.0",
     "@koa/router": "^9.4.0",
-    "@nocobase/actions": "^0.4.0-alpha.0",
-    "@nocobase/database": "^0.4.0-alpha.0",
-    "@nocobase/resourcer": "^0.4.0-alpha.0",
-    "@types/koa": "^2.11.6",
+    "@nocobase/actions": "^0.4.0-alpha.5",
+    "@nocobase/database": "^0.4.0-alpha.5",
+    "@nocobase/resourcer": "^0.4.0-alpha.5",
     "dotenv": "^8.2.0",
     "koa": "^2.13.0",
     "koa-bodyparser": "^4.3.0",
+    "koa-static": "^5.0.0",
     "mockjs": "^1.1.0",
     "mysql2": "^2.1.0",
     "pg": "^8.3.3",
-    "pg-hstore": "^2.3.3",
-    "typescript": "^4.0.2"
-  }
+    "pg-hstore": "^2.3.3"
+  },
+  "gitHead": "f0b335ac30f29f25c95d7d137655fa64d8d67f1e"
 }

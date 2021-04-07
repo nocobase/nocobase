@@ -2,11 +2,11 @@ import React from 'react';
 import api from '@/api-client';
 import { useRequest, useLocation, useHistory, Redirect } from 'umi';
 import get from 'lodash/get';
-import { TopMenuLayout } from './TopMenuLayout';
-import { SideMenuLayout } from './SideMenuLayout';
-import Page from './Page';
+import { TopMenuLayout } from '@/components/pages/TopMenuLayout';
+import { SideMenuLayout } from '@/components/pages/SideMenuLayout';
+import Page from '@/components/pages/Page';
 import pathToRegexp from 'path-to-regexp';
-import { Spin } from '@nocobase/client';
+import { Spin } from '@/components/spin';
 
 export function AdminLoader(props: any) {
   const { data = [], error, loading, run } = useRequest(() =>

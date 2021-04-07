@@ -1,27 +1,28 @@
 {
   "name": "@nocobase/api",
-  "version": "0.4.0-alpha.0",
-  "scripts": {
-    "start": "nodemon",
-    "db-migrate": "ts-node ./src/migrate.ts"
+  "version": "0.4.0-alpha.5",
+  "main": "./lib/index.js",
+  "types": "./lib/index.d.ts",
+  "license": "MIT",
+  "scripts": {},
+  "bin": {
+    "nocobase": "bin/nocobase.js"
   },
   "dependencies": {
-    "@nocobase/actions": "^0.4.0-alpha.0",
-    "@nocobase/client": "^0.4.0-alpha.0",
-    "@nocobase/database": "^0.4.0-alpha.0",
-    "@nocobase/plugin-action-logs": "^0.4.0-alpha.0",
-    "@nocobase/plugin-automations": "^0.4.0-alpha.0",
-    "@nocobase/plugin-china-region": "^0.4.0-alpha.0",
-    "@nocobase/plugin-collections": "^0.4.0-alpha.0",
-    "@nocobase/plugin-export": "^0.4.0-alpha.0",
-    "@nocobase/plugin-file-manager": "^0.4.0-alpha.0",
-    "@nocobase/plugin-permissions": "^0.4.0-alpha.0",
-    "@nocobase/plugin-pages": "^0.4.0-alpha.0",
-    "@nocobase/plugin-users": "^0.4.0-alpha.0",
-    "@nocobase/server": "^0.4.0-alpha.0"
+    "@nocobase/actions": "^0.4.0-alpha.5",
+    "@nocobase/client": "^0.4.0-alpha.5",
+    "@nocobase/database": "^0.4.0-alpha.5",
+    "@nocobase/plugin-action-logs": "^0.4.0-alpha.5",
+    "@nocobase/plugin-automations": "^0.4.0-alpha.5",
+    "@nocobase/plugin-china-region": "^0.4.0-alpha.5",
+    "@nocobase/plugin-collections": "^0.4.0-alpha.5",
+    "@nocobase/plugin-export": "^0.4.0-alpha.5",
+    "@nocobase/plugin-file-manager": "^0.4.0-alpha.5",
+    "@nocobase/plugin-pages": "^0.4.0-alpha.5",
+    "@nocobase/plugin-permissions": "^0.4.0-alpha.5",
+    "@nocobase/plugin-users": "^0.4.0-alpha.5",
+    "@nocobase/server": "^0.4.0-alpha.5",
+    "koa-static": "^5.0.0"
   },
-  "devDependencies": {
-    "nodemon": "^2.0.6",
-    "typescript": "^3.9.6"
-  }
+  "gitHead": "f0b335ac30f29f25c95d7d137655fa64d8d67f1e"
 }

@@ -288,7 +288,6 @@ export async function get(ctx: Context, next: Next) {
     resourceKeyAttribute,
     fields = []
   } = ctx.action.params;
-  console.log({ associated, resourceField })
   if (associated && resourceField) {
     const AssociatedModel = ctx.db.getModel(associatedName);
     if (!(associated instanceof AssociatedModel)) {

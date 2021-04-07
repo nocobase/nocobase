@@ -8,14 +8,10 @@ services:
     networks:
       - node-network
     environment:
-      - VERDACCIO_PORT=${VERDACCIO_PORT}
+      VERDACCIO_PORT: ${VERDACCIO_PORT}
     restart: always
     ports:
-      - "${VERDACCIO_PORT}:4873"
-    # volumes:
-      # - "./verdaccio/storage:/verdaccio/storage"
-      # - "./verdaccio/config:/verdaccio/conf"
-      # - "./verdaccio/plugins:/verdaccio/plugins"
+      - "${VERDACCIO_PORT}:${VERDACCIO_PORT}"
   mysql:
     image: mysql:5.7
     environment:

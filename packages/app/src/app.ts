@@ -32,6 +32,7 @@ export const request: RequestConfig = {
   ],
 };
 
+// TODO：目前这块是写在代码里的，待改进
 const pathnames = ['/login', '/register', '/lostpassword', '/resetpassword'];
 
 export async function getInitialState() {

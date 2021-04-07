@@ -72,6 +72,25 @@ Database(Choose any one):
 Installation
 ----------
 
+Use only as a no-code platform
+
+~~~bash
+# Create project directory
+mkdir my-nocobase-project && cd my-nocobase-project
+# npm initialization
+npm init
+# Installing nocobase dependencies
+npm i @nocobase/api @nocobase/app
+# Copy and configure env, don't forget to change the database information
+cp -r node_modules/@nocobase/api/.env.example .env
+# Database initialization
+npx nocobase db-init
+# Start app
+npx nocobase start
+~~~
+
+Want to participate in the development
+
 ~~~shell
 # You can use docker to start the database
 docker-compose up -d postgres
