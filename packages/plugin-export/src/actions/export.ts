@@ -1,5 +1,6 @@
 import xlsx from 'node-xlsx';
 import { actions } from '@nocobase/actions';
+import getInterfaceRender from '../renders';
 
 async function _export(ctx: actions.Context, next: actions.Next) {
   await actions.common.list(ctx, async () => {
@@ -20,13 +21,17 @@ async function _export(ctx: actions.Context, next: actions.Next) {
       name: title,
       data: [
         fields.map(field => field.title),
-        ...body.rows.map(row => fields.map(field => row.get(field.name)))
+        ...body.rows.map(row => fields.map(field => {
+          const render = getInterfaceRender(field.interface);
+          return render(field, row);
+        }))
       ]
     }]);
 
     ctx.set({
       'Content-Type': 'application/octet-stream',
-      'Content-Disposition': `attachment; filename=${title}.xlsx`
+      // to avoid "invalid character" error in header (RFC)
+      'Content-Disposition': `attachment; filename=${encodeURI(title)}.xlsx`
     });
   });
   

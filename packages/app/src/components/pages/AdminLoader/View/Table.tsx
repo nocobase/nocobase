@@ -280,7 +280,8 @@ export function Table(props: any) {
         responseType: 'blob'
       })
       .then(async response => {
-        const filename = response.headers.get('Content-Disposition').replace('attachment; filename=', '');
+        // decodeURI() for encoded filename in server side
+        const filename = decodeURI(response.headers.get('Content-Disposition').replace('attachment; filename=', ''));
         // ReadableStream
         let res = new Response(response.body);
         let blob = await res.blob();
@@ -291,6 +292,7 @@ export function Table(props: any) {
         a.download = filename;
         document.body.appendChild(a);
         a.click();
+        // cleanup
         URL.revokeObjectURL(url);
         document.body.removeChild(a);
         a = null;
