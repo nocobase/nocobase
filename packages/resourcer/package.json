@@ -17,5 +17,6 @@
     "type": "git",
     "url": "git+https://github.com/nocobase/nocobase.git",
     "directory": "packages/resourcer"
-  }
+  },
+  "gitHead": "f0b335ac30f29f25c95d7d137655fa64d8d67f1e"
 }
