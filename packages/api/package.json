@@ -1,6 +1,6 @@
 {
   "name": "@nocobase/api",
-  "version": "0.4.0-alpha.0",
+  "version": "0.4.0-alpha.1",
   "main": "./lib/index.js",
   "types": "./lib/index.d.ts",
   "license": "MIT",
@@ -9,18 +9,18 @@
     "db-migrate": "ts-node ./src/migrate.ts"
   },
   "dependencies": {
-    "@nocobase/actions": "^0.4.0-alpha.0",
-    "@nocobase/client": "^0.4.0-alpha.0",
-    "@nocobase/database": "^0.4.0-alpha.0",
-    "@nocobase/plugin-action-logs": "^0.4.0-alpha.0",
-    "@nocobase/plugin-automations": "^0.4.0-alpha.0",
-    "@nocobase/plugin-china-region": "^0.4.0-alpha.0",
-    "@nocobase/plugin-collections": "^0.4.0-alpha.0",
-    "@nocobase/plugin-file-manager": "^0.4.0-alpha.0",
-    "@nocobase/plugin-pages": "^0.4.0-alpha.0",
-    "@nocobase/plugin-permissions": "^0.4.0-alpha.0",
-    "@nocobase/plugin-users": "^0.4.0-alpha.0",
-    "@nocobase/server": "^0.4.0-alpha.0",
+    "@nocobase/actions": "^0.4.0-alpha.1",
+    "@nocobase/client": "^0.4.0-alpha.1",
+    "@nocobase/database": "^0.4.0-alpha.1",
+    "@nocobase/plugin-action-logs": "^0.4.0-alpha.1",
+    "@nocobase/plugin-automations": "^0.4.0-alpha.1",
+    "@nocobase/plugin-china-region": "^0.4.0-alpha.1",
+    "@nocobase/plugin-collections": "^0.4.0-alpha.1",
+    "@nocobase/plugin-file-manager": "^0.4.0-alpha.1",
+    "@nocobase/plugin-pages": "^0.4.0-alpha.1",
+    "@nocobase/plugin-permissions": "^0.4.0-alpha.1",
+    "@nocobase/plugin-users": "^0.4.0-alpha.1",
+    "@nocobase/server": "^0.4.0-alpha.1",
     "koa-static": "^5.0.0"
   }
 }
