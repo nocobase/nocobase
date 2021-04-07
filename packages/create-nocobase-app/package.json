@@ -1,6 +1,6 @@
 {
   "name": "create-nocobase-app",
-  "version": "0.4.0-alpha.3",
+  "version": "0.4.0-alpha.4",
   "description": "create-nocobase-app",
   "main": "lib/index.js",
   "types": "lib/index.d.ts",
