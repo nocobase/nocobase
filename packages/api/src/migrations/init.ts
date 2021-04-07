@@ -76,47 +76,31 @@ const data = [
     await Collection.import(table.getOptions(), { update: true, migrate: false });
   }
   await Page.import(data);
-  let user = await User.findOne({
-    where: {
-      username: "admin",
-    },
+
+  const user = await User.create({
+    email: process.env.ADMIN_EMAIL,
+    password: process.env.ADMIN_PASSWORD,
   });
-  if (!user) {
-    user = await User.create({
-      nickname: "超级管理员",
-      password: "admin",
-      username: "admin",
-      email: 'dev@nocobase.com',
-      token: "38979f07e1fca68fb3d2",
-    });
-  }
   const Storage = database.getModel('storages');
-  // await Storage.create({
-  //   title: '本地存储',
-  //   name: `local`,
-  //   type: 'local',
-  //   baseUrl: process.env.LOCAL_STORAGE_BASE_URL,
-  //   default: true
-  // });
-  const storage = await Storage.findOne({
-    where: {
-      name: "ali-oss",
-    },
+  await Storage.create({
+    title: '本地存储',
+    name: `local`,
+    type: 'local',
+    baseUrl: process.env.LOCAL_STORAGE_BASE_URL,
+    default: process.env.STORAGE_TYPE === 'local',
   });
-  if (!storage) {
-    await Storage.create({
-      name: `ali-oss`,
-      type: 'ali-oss',
-      baseUrl: process.env.ALIYUN_STORAGE_BASE_URL,
-      options: {
-        region: process.env.ALIYUN_OSS_REGION,
-        accessKeyId: process.env.ALIYUN_OSS_ACCESS_KEY_ID,
-        accessKeySecret: process.env.ALIYUN_OSS_ACCESS_KEY_SECRET,
-        bucket: process.env.ALIYUN_OSS_BUCKET,
-      },
-      default: true
-    });
-  }
+  await Storage.create({
+    name: `ali-oss`,
+    type: 'ali-oss',
+    baseUrl: process.env.ALI_OSS_STORAGE_BASE_URL,
+    options: {
+      region: process.env.ALI_OSS_REGION,
+      accessKeyId: process.env.ALI_OSS_ACCESS_KEY_ID,
+      accessKeySecret: process.env.ALI_OSS_ACCESS_KEY_SECRET,
+      bucket: process.env.ALI_OSS_BUCKET,
+    },
+    default: process.env.STORAGE_TYPE === 'ali-oss',
+  });
   const Role = database.getModel('roles');
   if (Role) {
     const roles = await Role.bulkCreate([

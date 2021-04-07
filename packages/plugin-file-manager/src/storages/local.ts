@@ -54,7 +54,7 @@ export function middleware(app) {
       // 否则都忽略，交给其他 server 来提供（如 nginx/cdn 等）
       // TODO(bug): https、端口 80 默认值和其他本地 ip/hostname 的情况未考虑
       // TODO 实际应该用 NOCOBASE_ENV 来判断，或者抛给 env 处理
-      if (process.env.USE_STATIC_SERVER) {
+      if (process.env.LOCAL_STORAGE_USE_STATIC_SERVER) {
         const basePath = url.pathname.startsWith('/') ? url.pathname : `/${url.pathname}`;
         app.use(mount(basePath, serve(getDocumentRoot(storage))));
       }

@@ -2,7 +2,8 @@
   "name": "@nocobase/app",
   "version": "0.4.0-alpha.1",
   "scripts": {
-    "start": "concurrently \"nodemon\" \"umi dev\"",
+    "start": "concurrently \"cd ../../ && nodemon\" \"umi dev\"",
+    "dev": "umi dev",
     "build": "umi build",
     "postinstall": "umi generate tmp",
     "prettier": "prettier --write '**/*.{js,jsx,tsx,ts,less,md,json}'",

@@ -1,4 +1,3 @@
-
 // @ts-ignore
 const keys = process.argv;
 
