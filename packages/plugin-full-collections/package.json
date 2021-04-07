@@ -3,7 +3,7 @@
   "version": "0.4.0-alpha.0",
   "main": "lib/index.js",
   "license": "MIT",
-  "private": false,
+  "private": true,
   "dependencies": {
     "@nocobase/server": "^0.4.0-alpha.0",
     "crypto-random-string": "^3.3.1",
