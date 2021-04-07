@@ -1,3 +1,5 @@
+#!/usr/bin/env node
+
 const keys = process.argv;
 
 const key = keys.pop();
