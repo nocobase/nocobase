@@ -1,6 +1,6 @@
 {
-  "watch": ["packages/"],
+  "watch": ["packages/", ".env"],
   "ignore": ["packages/app"],
   "ext": "ts",
-  "exec": "ts-node ./packages/api/src/dev.ts"
+  "exec": "ts-node -r dotenv/config ./packages/api/src/index.ts"
 }

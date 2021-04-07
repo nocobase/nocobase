@@ -4,10 +4,7 @@
   "main": "./lib/index.js",
   "types": "./lib/index.d.ts",
   "license": "MIT",
-  "scripts": {
-    "start": "nodemon",
-    "db-migrate": "ts-node ./src/migrate.ts"
-  },
+  "scripts": {},
   "dependencies": {
     "@nocobase/actions": "^0.4.0-alpha.1",
     "@nocobase/client": "^0.4.0-alpha.1",

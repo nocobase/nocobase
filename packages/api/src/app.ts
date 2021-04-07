@@ -2,9 +2,9 @@ import Api from '@nocobase/server';
 
 // @ts-ignore
 const sync = global.sync || {
-  force: true,
+  force: false,
   alter: {
-    drop: true,
+    drop: false,
   },
 };
 
