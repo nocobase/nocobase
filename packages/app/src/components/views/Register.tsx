@@ -98,14 +98,14 @@ export function Register(props: any) {
                 placeholder: '邮箱',
               },
             },
-            nickname: {
-              type: 'string',
-              title: '',
-              'x-component-props': {
-                size: 'large',
-                placeholder: '昵称',
-              },
-            },
+            // nickname: {
+            //   type: 'string',
+            //   title: '',
+            //   'x-component-props': {
+            //     size: 'large',
+            //     placeholder: '昵称',
+            //   },
+            // },
             password: {
               type: 'password',
               title: '',
@@ -135,15 +135,14 @@ export function Register(props: any) {
         }}
       >
         <FormButtonGroup align={'start'}>
-          <Submit size={'large'}>注册</Submit>
-          <Button
-            size={'large'}
-            onClick={() => {
-              history.push('/login');
-            }}
-          >
-            使用已有账号登录
-          </Button>
+          <Submit block size={'large'}>注册</Submit>
+          <div style={{
+            marginTop: 12,
+            display: 'flex',
+            justifyContent: 'space-between',
+          }}>
+            <Link to={'/login'}>使用已有账号登录</Link>
+          </div>
         </FormButtonGroup>
       </SchemaForm>
     </div>
