@@ -84,7 +84,7 @@ export function Login(props: any) {
                 placeholder: '密码',
               },
               'x-props': {
-                help: <Link to={'/lostpassword'}>忘记密码？</Link>,
+                help: <Link style={{float: 'right', marginBottom: 12}} to={'/lostpassword'}>忘记密码？</Link>,
               },
             },
             ...(props.fields || {}),
@@ -92,15 +92,14 @@ export function Login(props: any) {
         }}
       >
         <FormButtonGroup>
-          <Submit size={'large'}>登录</Submit>
-          <Button
-            size={'large'}
-            onClick={() => {
-              history.push('/register');
-            }}
-          >
-            注册账户
-          </Button>
+          <Submit block size={'large'}>登录</Submit>
+          <div style={{
+            marginTop: 12,
+            display: 'flex',
+            justifyContent: 'space-between',
+          }}>
+            <Link to={'/register'}>注册账户</Link>
+          </div>
         </FormButtonGroup>
       </SchemaForm>
     </div>
