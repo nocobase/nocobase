@@ -13,6 +13,7 @@
     "node-xlsx": "^0.16.1"
   },
   "peerDependencies": {
-    "@nocobase/plugin-collections": "*"
+    "@nocobase/plugin-collections": "*",
+    "@nocobase/plugin-permissions": "*"
   }
 }

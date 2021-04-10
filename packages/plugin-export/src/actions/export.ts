@@ -2,7 +2,7 @@ import xlsx from 'node-xlsx';
 import { actions } from '@nocobase/actions';
 import getInterfaceRender from '../renders';
 
-async function _export(ctx: actions.Context, next: actions.Next) {
+async function _export(ctx, next) {
   await actions.common.list(ctx, async () => {
     const {
       db,
@@ -15,10 +15,17 @@ async function _export(ctx: actions.Context, next: actions.Next) {
     } = ctx;
 
     const table = db.getTable(resourceName);
-    const { title, fields } = table.getOptions();
+    const tableOptions = table.getOptions();
+
+    const fields = body.rows.length
+      ? Object.keys(body.rows[0].get())
+        .map(key => tableOptions.fields.find(({ name }) => name === key))
+        .filter(item => item && !item.developerMode)
+        .sort((a, b) => a.sort - b.sort)
+      : [];
 
     ctx.body = xlsx.build([{
-      name: title,
+      name: tableOptions.title,
       data: [
         fields.map(field => field.title),
         ...body.rows.map(row => fields.map(field => {
@@ -31,10 +38,10 @@ async function _export(ctx: actions.Context, next: actions.Next) {
     ctx.set({
       'Content-Type': 'application/octet-stream',
       // to avoid "invalid character" error in header (RFC)
-      'Content-Disposition': `attachment; filename=${encodeURI(title)}.xlsx`
+      'Content-Disposition': `attachment; filename=${encodeURI(tableOptions.title)}.xlsx`
     });
   });
-  
+
   await next();
 }
 
