@@ -1,5 +1,5 @@
 import React from 'react';
-import { Tooltip, Card, Button } from 'antd';
+import { Tooltip, Card, Button, message } from 'antd';
 import {
   SchemaForm,
   SchemaMarkupField as Field,
@@ -43,20 +43,25 @@ export function Login(props: any) {
       
       <SchemaForm
         onSubmit={async values => {
-          console.log(values);
-          const { data = {} } = await request('/users:login', {
-            method: 'post',
-            data: values,
-          });
-          if (data.data && data.data.token) {
-            localStorage.setItem('NOCOBASE_TOKEN', data.data.token);
-            // @ts-ignore
-            setInitialState({
-              ...initialState,
-              currentUser: data.data,
+          try {
+            const { data = {}, error } = await request('/users:login', {
+              method: 'post',
+              data: values,
             });
-            await (window as any).routesReload();
-            history.push(redirect || '/');
+            if (data.data && data.data.token) {
+              localStorage.setItem('NOCOBASE_TOKEN', data.data.token);
+              // @ts-ignore
+              setInitialState({
+                ...initialState,
+                currentUser: data.data,
+              });
+              await (window as any).routesReload();
+              history.push(redirect || '/');
+            }
+          } catch (error) {
+            if (typeof error.data === 'string') {
+              message.error(error.data);
+            }
           }
         }}
         actions={actions}
