@@ -16,6 +16,9 @@ export async function check(ctx: actions.Context, next: actions.Next) {
 export async function login(ctx: actions.Context, next: actions.Next) {
   const { uniqueField = 'email', values } = ctx.action.params;
   // console.log(values);
+  if (!values[uniqueField]) {
+    ctx.throw(401, '请填写邮箱账号');
+  }
   const User = ctx.db.getModel('users');
   const user = await User.findOne({
     where: {
@@ -23,11 +26,11 @@ export async function login(ctx: actions.Context, next: actions.Next) {
     },
   });
   if (!user) {
-    ctx.throw(401, 'Unauthorized');
+    ctx.throw(401, '邮箱账号未注册');
   }
   const isValid = await PASSWORD.verify(values.password, user.password);
   if (!isValid) {
-    ctx.throw(401, 'Unauthorized');
+    ctx.throw(401, '密码错误，请您重新输入');
   }
   if (!user.token) {
     user.token = cryptoRandomString({ length: 20 });
@@ -47,15 +50,27 @@ export async function logout(ctx: actions.Context, next: actions.Next) {
 export async function register(ctx: actions.Context, next: actions.Next) {
   const User = ctx.db.getModel('users');
   const { values } = ctx.action.params;
-  const user = await User.create(values);
-  ctx.body = {
-    data: user,
-  };
+  try {
+    const user = await User.create(values);
+    ctx.body = {
+      data: user,
+    };
+  } catch (error) {
+    if (error.errors) {
+      console.log(error.errors.map(data => data.message));
+      ctx.throw(401, error.errors.map(data => data.message).join(', '));
+    } else {
+      ctx.throw(401, '注册失败');
+    }
+  }
   await next();
 }
 
 export async function lostpassword(ctx: actions.Context, next: actions.Next) {
   const { values: { email } } = ctx.action.params;
+  if (!email) {
+    ctx.throw(401, '请填写邮箱账号');
+  }
   const User = ctx.db.getModel('users');
   const user = await User.findOne({
     where: {
@@ -63,7 +78,7 @@ export async function lostpassword(ctx: actions.Context, next: actions.Next) {
     },
   });
   if (!user) {
-    ctx.throw(401, 'Unauthorized');
+    ctx.throw(401, '邮箱账号未注册');
   }
   user.reset_token = cryptoRandomString({ length: 20 });
   await user.save();

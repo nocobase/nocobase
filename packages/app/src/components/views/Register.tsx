@@ -72,18 +72,24 @@ export function Register(props: any) {
         }}
         onSubmit={async values => {
           console.log(values);
-          const { data = {} } = await request('/users:register', {
-            method: 'post',
-            data: values,
-          });
-          await actions.reset({
-            validate: false,
-            forceClear: true,
-          });
-          message.success('注册成功，将跳转登录页');
-          setTimeout(() => {
-            history.push('/login');
-          }, 1000);
+          try {
+            const { data = {} } = await request('/users:register', {
+              method: 'post',
+              data: values,
+            });
+            await actions.reset({
+              validate: false,
+              forceClear: true,
+            });
+            message.success('注册成功，将跳转登录页');
+            setTimeout(() => {
+              history.push('/login');
+            }, 1000);
+          } catch (error) {
+            if (typeof error.data === 'string') {
+              message.error(error.data);
+            }
+          }
         }}
         actions={actions}
         schema={{
