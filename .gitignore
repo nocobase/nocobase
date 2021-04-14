@@ -13,3 +13,8 @@ packages/resourcer/package-lock.json
 
 verdaccio
 uploads/
+.umi
+.umi-production
+/dist
+/.vscode
+/.idea

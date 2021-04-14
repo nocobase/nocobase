@@ -5,6 +5,8 @@
     "start": "cd packages/app && npm start",
     "start-server": "nodemon",
     "start-client": "cd packages/app && npx umi dev",
+    "start-docs": "dumi dev",
+    "build-docs": "dumi build",
     "pm2-start": "npx pm2 start packages/api/lib/index.js",
     "build-app": "cd packages/app && npm run build",
     "bootstrap": "lerna bootstrap --no-ci",
@@ -54,6 +56,12 @@
     "supertest": "^4.0.2",
     "ts-jest": "^26.1.2",
     "ts-node": "^8.10.2",
-    "typescript": "^3.9.6"
+    "typescript": "^3.9.6",
+    "@umijs/plugin-antd": "^0.9.1",
+    "antd": "^4.15.0",
+    "dumi": "^1.0.12",
+    "lint-staged": "^10.0.7",
+    "prettier": "^1.19.1",
+    "yorkie": "^2.0.0"
   }
 }
