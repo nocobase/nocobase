@@ -9,5 +9,5 @@ title: '@nocobase/plugin-permissions'
 ## 安装
 
 ```bash
-yarn nocobase install permissions --activate
+yarn nocobase pull permissions --start
 ```

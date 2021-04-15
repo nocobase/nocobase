@@ -4,7 +4,7 @@ order: 2
 toc: menu
 ---
 
-# 插件命令行操作
+# 插件命令行操作 <Badge>未实现</Badge>
 
 ## pull - 拉取
 

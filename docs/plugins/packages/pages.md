@@ -9,5 +9,5 @@ title: '@nocobase/plugin-pages'
 ## 安装
 
 ```bash
-yarn nocobase install pages --activate
+yarn nocobase pull pages --start
 ```

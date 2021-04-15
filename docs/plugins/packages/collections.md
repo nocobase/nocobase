@@ -9,5 +9,5 @@ title: '@nocobase/plugin-collections'
 ## 安装
 
 ```bash
-yarn nocobase install collections --activate
+yarn nocobase pull collections --start
 ```

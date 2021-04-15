@@ -1,6 +1,6 @@
 ---
 title: '@nocobase/actions'
-order: 3
+order: 4
 # toc: menu
 ---
 

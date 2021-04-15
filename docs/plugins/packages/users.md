@@ -9,5 +9,5 @@ title: '@nocobase/plugin-users'
 ## 安装
 
 ```bash
-yarn nocobase install users --activate
+yarn nocobase pull users --start
 ```

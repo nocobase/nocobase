@@ -4,17 +4,18 @@ title: Fields - 字段
 
 # Fields
 
-## Types - 数据类型
+一个完整的字段由「数据类型」和「区块类型」两部分参数组合而成。同一个数据类型可能对应多种区块类型，同一个区块类型的数据值也可能是多种数据类型。因此提炼了字段的接口（Interface）作为唯一标识。
 
-详情点击查看[Field Types 章节](/cores/packages/database#field-types)
+字段的 Types 和 Blocks 就不赘述了，请查阅核心章节介绍
 
-## Blocks - 区块类型
+- [Field Types](/cores/packages/database#field-types)
+- [Field Blocks](/cores/packages/blocks#fields---字段)
 
-详情点击查看[Blocks - Fields 章节](/cores/packages/blocks#fields---字段)
+<Alert title="注意" type="warning">
+在 NocoBase 里，普通用户概念上的字段类型指的是 interface；field type 只表示数据类型 - data type；field block 是 ui 组件，同一个组件也可能表示多种字段类型（interface）。
+</Alert>
 
 ## Interfaces - 接口类型
-
-在 NocoBase 插件中，字段类型通常指的是字段的接口类型，一个字段「接口类型」通常由「数据类型」和「区块类型」组成，如：
 
 ```ts
 {

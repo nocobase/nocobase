@@ -9,5 +9,5 @@ title: '@nocobase/plugin-automations'
 ## 安装
 
 ```bash
-yarn nocobase install automations --activate
+yarn nocobase pull automations --start
 ```

@@ -12,5 +12,5 @@ group:
 ## 安装
 
 ```bash
-yarn nocobase install action-logs --activate
+yarn nocobase pull action-logs --start
 ```

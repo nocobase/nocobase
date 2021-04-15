@@ -87,7 +87,7 @@ import Resourcer from '@nocobase/resourcer';
 
 const resourcer = new Resourcer();
 
-resourcer.registerActionHandlers({
+resourcer.registerActions({
   async list(ctx, next) {
     ctx.arr.push(3);
     await next();
@@ -209,10 +209,60 @@ action.mergeParams({
 </Alert>
 
 ### resourcer.define
-### resourcer.execute
+
+配置资源
+
+用例：
+
+```ts
+resourcer.define({
+  name: 'posts',
+  middlewares: [
+    async (ctx, next) => {
+      await next();
+    },
+    {
+      only: [],
+      except: [],
+      handler: async (ctx, next) => {
+        await next();
+      },
+    },
+  ],
+  actions: {
+    async get(ctx, next) {
+      await next();
+    },
+    list: {
+      fields,
+      filter,
+      sort,
+      page,
+      perPage,
+      middlewares: [],
+      handler: async (ctx, next) => {
+        await next();
+      },
+    },
+  },
+});
+```
+
+### resourcer.execute <Badge>实验性</Badge>
+
+注入 context
+
 ### resourcer.import
+
+批量导入已配置的资源
+
 ### resourcer.isDefined
+
+判断资源是否已定义
+
 ### resourcer.koaRestApiMiddleware
+
+原 resourcer.middleware
 
 为 Koa 提供的类 REST API 中间件。提供了标准的 REST API 映射，Resource Action 与 Request Method 的对应关系如下：
 
@@ -400,16 +450,18 @@ POST /api/users:login
 </Alert>
 
 
-### resourcer.registerActionHandler(name: ActionName, handler: HandlerType)
+### resourcer.registerAction(name: ActionName, options: ActionOptions)
+
+原 resourcer.registerActionHandler
 
 - name：操作名称
-- handler：待执行函数
+- options：操作配置
 
-自定义 action handler，可用于注册全局的或某资源特有的 action。
+可用于注册全局的或某资源特有的 action。
 
 <Alert title="注意" type="warning">
 
-name 支持三种格式：
+与 resourcer.define 不同，registerAction 的 actionName 支持三种格式：
 
 - `<actionName>` 全局操作
 - `<resourceName>:<actionName>` 某资源特有操作
@@ -422,15 +474,25 @@ name 支持三种格式：
 示例
 
 ```ts
-resourcer.registerActionHandler('actionName', async (ctx, next) => {
+resourcer.registerAction('actionName', async (ctx, next) => {
   await next();
 });
 
-resourcer.registerActionHandler('resourceName:actionName', async (ctx, next) => {
+// 带配置
+resourcer.registerAction('actionName', {
+  filter,
+  fields,
+  middlewares: [],
+  handler: async (ctx, next) => {
+    await next();
+  },
+});
+
+resourcer.registerAction('resourceName:actionName', async (ctx, next) => {
   await next();
 });
 
-resourcer.registerActionHandler('associatedName.resourceName:actionName', async (ctx, next) => {
+resourcer.registerAction('associatedName.resourceName:actionName', async (ctx, next) => {
   await next();
 });
 ```
@@ -456,14 +518,16 @@ resourcer.use(async (ctx, next) => {
 });
 ```
 
-### resourcer.registerActionHandlers(handlers: {[key: string]: Handler})
+### resourcer.registerActions(actions) 
 
-批量注册 actions，用法同 [resourcer.registerActionHandler](#resourcerregisteractionhandlername-actionname-handler-handlertype)
+原 resourcer.registerActionHandlers
+
+批量注册 actions，用法同 [resourcer.registerAction](#resourcerregisterActionname-actionname-handler-handlertype)
 
 示例：
 
 ```ts
-resourcer.registerActionHandlers({
+resourcer.registerActions({
   async foo(ctx, next) {
     await next();
   },
@@ -473,11 +537,11 @@ resourcer.registerActionHandlers({
 });
 ```
 
-### resourcer.registerActionMiddlewareHander <Badge>未实现</Badge>
+### resourcer.registerActionMiddleware(actionName, handler) <Badge>未实现</Badge>
 
 为某操作（action）注册特有的 middleware
 
-### resourcer.registerResourceMiddlewareHander <Badge>未实现</Badge>
+### resourcer.registerResourceMiddleware(resourceName, options) <Badge>未实现</Badge>
 
 为某资源（resource）注册特有的 middleware
 
@@ -491,8 +555,8 @@ resourcer.registerActionHandlers({
 
 1. 首先，koa 层：`koa.use`
 2. 其次，resourcer 层：`resourcer.use`
-3. 再次，resource 层（每个资源独立）：`resourcer.registerActionMiddlewareHander`
-4. 最后，action 层：`resourcer.registerResourceMiddlewareHander`
+3. 再次，resource 层（每个资源独立）：`resourcer.registerActionMiddleware`
+4. 最后，action 层：`resourcer.registerResourceMiddleware`
 
 不过，每个层次的中间件执行顺序还依赖于编码顺序，如有需要再进行更细微的改进。
 

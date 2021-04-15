@@ -9,5 +9,5 @@ title: '@nocobase/plugin-file-manager'
 ## 安装
 
 ```bash
-yarn nocobase install file-manager --activate
+yarn nocobase pull file-manager --start
 ```

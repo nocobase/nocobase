@@ -7,16 +7,18 @@ group:
 
 # Actions - 操作方法
 
-resourcer 提供了 registerActionHandlers 用于自定义 action
-
-全局 action
-
-某 resource 特有
+与 resourcer.registerAction 用法一致
 
 ```ts
-export async function foo(ctx, next) {
-
+export async function get(ctx, next) {
+  await next();
 }
 
-export const bar = {}
+export const list = {
+  filter,
+  fields, // 初始化的参数
+  async handler(ctx, next) {
+    await next();
+  }
+}
 ```
