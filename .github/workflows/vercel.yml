@@ -1,20 +1,33 @@
 name: vercel
+
 on:
   push:
     branches:
       - docs
+
 jobs:
   deploy:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-18.04
     steps:
       - uses: actions/checkout@v2
-      - name: build
-        run: |
-          npm run install
-          npm run build-docs
-      - name: deploy
         env:
           BUILD_ID: ${{ github.sha }}
           VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
-        run: |
-          vercel --token=$VERCEL_TOKEN --confirm --prod --force --scope chenos
+
+      - name: Setup Node
+        uses: actions/setup-node@v2.1.2
+        with:
+          node-version: '12.x'
+
+      - name: Cache dependencies
+        uses: actions/cache@v2
+        with:
+          path: ~/.npm
+          key: ${{ runner.os }}-node-${{ hashFiles('**/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-node-
+
+      - run: npm install
+      - run: npm run build-docs
+      - run: npm i -g vercel
+      - run: vercel --token=$VERCEL_TOKEN --confirm --prod --force --scope chenos
