@@ -2,6 +2,7 @@ import { defineConfig } from 'dumi';
 
 export default defineConfig({
   title: ' ',
+  hash: true,
   mode: 'site',
   logo: 'https://www.nocobase.com/dist/images/logo.png',
   navs: {
