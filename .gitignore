@@ -18,3 +18,5 @@ uploads/
 /dist
 /.vscode
 /.idea
+
+.vercel

@@ -1,0 +1,20 @@
+name: vercel
+on:
+  push:
+    branches:
+      - docs
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: build
+        run: |
+          npm run install
+          npm run build-docs
+      - name: deploy
+        env:
+          BUILD_ID: ${{ github.sha }}
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+        run: |
+          vercel --token=$VERCEL_TOKEN --confirm --prod --force --scope chenos
