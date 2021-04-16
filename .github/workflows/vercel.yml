@@ -10,9 +10,6 @@ jobs:
     runs-on: ubuntu-18.04
     steps:
       - uses: actions/checkout@v2
-        env:
-          BUILD_ID: ${{ github.sha }}
-          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
 
       - name: Setup Node
         uses: actions/setup-node@v2.1.2
@@ -29,5 +26,13 @@ jobs:
 
       - run: npm install
       - run: npm run build-docs
-      - run: npm i -g vercel
-      - run: vercel --token=$VERCEL_TOKEN --confirm --prod --force --scope chenos
+
+      - name: Deploy
+        uses: amondnet/vercel-action@v19
+        with:
+          vercel-token: ${{ secrets.VERCEL_TOKEN }} # Required
+          github-token: ${{ secrets.GITHUB_TOKEN }} #Optional 
+          vercel-args: '--prod' #Optional
+          vercel-org-id: ${{ secrets.ORG_ID}}  #Required
+          vercel-project-id: ${{ secrets.PROJECT_ID}} #Required 
+          working-directory: ./dist
