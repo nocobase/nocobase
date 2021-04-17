@@ -1,13 +1,15 @@
 FROM node:12.20.0-stretch
 
 WORKDIR /app
-COPY . /app
+# COPY . /app
 RUN ls -a
 
 RUN npm config set registry https://registry.npm.taobao.org
-RUN npm install
-RUN npm run bootstrap
-RUN npm run build
+RUN yarn config set registry https://registry.npm.taobao.org
+
+# RUN npm install
+# RUN npm run bootstrap
+# RUN npm run build
 
 # # Install app dependencies
 # ENV NPM_CONFIG_LOGLEVEL warn
