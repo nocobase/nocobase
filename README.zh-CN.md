@@ -140,7 +140,7 @@ cp .env.example .env # 配置数据库信息、APP 端口等
 docker-compose run nocobase bash -c 'npm install && npm run bootstrap && npm run build && npm run db-migrate init'
 
 # 启动 nocobase 应用
-docker-compose up nocobase -d
+docker-compose up -d nocobase
 
 # 查看日志
 docker-compose logs nocobase

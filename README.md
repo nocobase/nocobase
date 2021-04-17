@@ -117,7 +117,7 @@ cp .env.example .env
 docker-compose run nocobase bash -c 'npm install && npm run bootstrap && npm run build && npm run db-migrate init'
 
 # Start nocobase
-docker-compose up nocobase -d
+docker-compose up -d nocobase
 
 # View log
 docker-compose logs nocobase
