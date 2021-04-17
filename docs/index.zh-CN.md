@@ -1,4 +1,5 @@
 ---
+title: NocoBase - An open source and free no-code development platform
 hero:
   title: NocoBase
   desc: An open source and free no-code development platform
@@ -15,5 +16,5 @@ features:
   - icon: https://gw.alipayobjects.com/zos/bmw-prod/d1ee0c6f-5aed-4a45-a507-339a4bfe076c/k7bjsocq_w144_h144.png
     title: 特性 3
     desc: Balabala
-footer: Open-source MIT Licensed | Copyright © 2021
+footer: Copyright © 2020-2021 NocoBase. All rights reserved.
 ---

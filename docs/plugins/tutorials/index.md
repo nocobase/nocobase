@@ -18,7 +18,7 @@ NocoBase 核心提供了丰富的 API 用于处理扩展，但是直接调用底
 NocoBase 插件之间是平行的，不存在直接的依赖关系，不过插件在加载时可能有优先级。
 </Alert>
 
-## 目录结构
+## 目录结构 <Badge>未实现</Badge>
 
 ```bash
 |- @nocobase/plugin-[name] 或 nocobase-plugin-[name]
@@ -40,7 +40,7 @@ NocoBase 插件之间是平行的，不存在直接的依赖关系，不过插�
 
 </Alert>
 
-## PluginManager
+## PluginManager <Badge>未实现</Badge>
 
 插件的几个状态
 
@@ -50,7 +50,7 @@ NocoBase 插件之间是平行的，不存在直接的依赖关系，不过插�
 - 重启
 - 删除
 
-### API
+### API <Badge>未实现</Badge>
 
 - `pluginManager.pull()`
 - `pluginManager.start()`
@@ -58,7 +58,7 @@ NocoBase 插件之间是平行的，不存在直接的依赖关系，不过插�
 - `pluginManager.restart()`
 - `pluginManager.remove()`
 
-### CLI
+### CLI <Badge>未实现</Badge>
 
 - `yarn nocobase pull <name>`
 - `yarn nocobase start <name>`

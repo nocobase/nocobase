@@ -20,6 +20,12 @@
     "release:force": "lerna publish from-package --yes",
     "release": "lerna publish"
   },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/nocobase/nocobase.git",
+    "branch": "master",
+    "platform": "github"
+  },
   "devDependencies": {
     "@koa/router": "^9.3.1",
     "@types/bcrypt": "^3.0.0",
