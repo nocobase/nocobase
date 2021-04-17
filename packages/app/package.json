@@ -45,7 +45,7 @@
     "react-image-lightbox": "^5.1.1",
     "react-sortable-hoc": "^1.11.0",
     "react-to-print": "^2.12.3",
-    "styled-components": "^5.2.1",
+    "styled-components": "^4.1.1",
     "umi": "^3.2.23",
     "yorkie": "^2.0.0"
   },
