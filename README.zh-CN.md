@@ -128,6 +128,24 @@ npm run db-migrate init
 npm start
 ~~~
 
+如果本地 node 有问题，可以使用 docker 提供的环境
+
+```shell
+git clone https://github.com/nocobase/nocobase.git
+cd nocobase
+docker-compose up -d postgres # 用 docker 启动数据库
+cp .env.example .env # 配置数据库信息、APP 端口等
+
+# 使用 docker 提供的 node 环境安装依赖与初始化
+docker-compose run nocobase bash -c 'npm install && npm run bootstrap && npm run build && npm run db-migrate init'
+
+# 启动 nocobase 应用
+docker-compose up nocobase -d
+
+# 查看日志
+docker-compose logs nocobase
+```
+
 打包
 ----------
 

@@ -103,6 +103,27 @@ npm run db-migrate init
 npm start
 ~~~
 
+Nodejs provided by docker
+
+```shell
+git clone https://github.com/nocobase/nocobase.git
+cd nocobase
+# You can use docker to start the database
+docker-compose up -d postgres
+# Set Environment Variables
+cp .env.example .env
+
+# Installing dependencies and initializing
+docker-compose run nocobase bash -c 'npm install && npm run bootstrap && npm run build && npm run db-migrate init'
+
+# Start nocobase
+docker-compose up nocobase -d
+
+# View log
+docker-compose logs nocobase
+```
+
+
 Build
 ----------
 
