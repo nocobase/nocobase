@@ -9,6 +9,7 @@ module.exports = {
     '**/?(*.)+(spec|test).[jt]s?(x)'
   ],
   modulePathIgnorePatterns: [
+    "<rootDir>/.dumi/",
     "<rootDir>/packages/father-build/"
   ],
 };

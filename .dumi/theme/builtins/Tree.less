@@ -1,0 +1,22 @@
+@import (reference) '~dumi-theme-default/src/style/variables.less';
+
+.__dumi-site-tree {
+  padding: 16px;
+  border: 1px solid @c-border;
+  border-radius: 2px;
+  background-color: @c-light-bg;
+
+  small {
+    padding-left: 24px;
+    font-size: 14px;
+    color: @c-secondary;
+
+    &::before {
+      content: '# ';
+    }
+  }
+
+  .ant-tree-switcher {
+    background: transparent;
+  }
+}
