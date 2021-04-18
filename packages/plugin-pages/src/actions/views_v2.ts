@@ -396,5 +396,3 @@ export const getInfo = async (ctx: actions.Context, next) => {
   ctx.body = data;
   await next();
 };
-
-export default getInfo;

@@ -7,10 +7,10 @@ import getRoutes from './actions/getRoutes';
 import getPageInfo from './actions/getPageInfo';
 import * as rolesPagesActions from './actions/roles.pages';
 import getCollections from './actions/getCollections';
-import menusList from './actions/menus:list';
+import { list as menusList } from './actions/menus';
 import getTree from './actions/getTree';
 import getInfo from './actions/getInfo';
-import viewGetInfo from './actions/views_v2:getInfo';
+import { getInfo as viewGetInfo } from './actions/views_v2';
 import { RANDOMSTRING } from './fields/randomString';
 import { registerFields, registerModels } from '@nocobase/database';
 import { BaseModel } from './models/BaseModel'
