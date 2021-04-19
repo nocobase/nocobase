@@ -552,6 +552,7 @@ registerModel('test', Test);
 
 db.table({
   name: 'tests',
+  model: 'test',
 });
 
 const Test = db.getModel('tests');
@@ -593,7 +594,7 @@ database.import({
 database.isDefined('foos'); // false
 ```
 
-### Operator.register <Badge>实验性</Badge>
+### Operator.register <Badge>实验性</Badge> <Badge>待完善</Badge>
 
 注册自定义 op
 
@@ -672,10 +673,9 @@ db.extend({
 });
 ```
 
-<Alert title="datatable.table 与 database.extend 区别？" type="warning">
-datatable.table 用于初始化，datatable.extend 用于处理扩展，需要存在 table 已存在。
+<Alert title="database.table 与 database.extend 区别？" type="warning">
+database.table 用于初始化，database.extend 用于处理扩展，需要 table 已存在。
 </Alert>
-
 
 ### database.isDefined
 
@@ -740,12 +740,12 @@ await db.sync({
 
 更多参数参考 [Sequelize.sync](https://github.com/sequelize/sequelize/blob/5b16b32259f0599a6af2d1eb625622da9054265e/types/lib/sequelize.d.ts#L45)
 
-<Alert title="datatable.sync、table.sync、sequelize.sync、Model.sync 区别？" type="warning">
+<Alert title="database.sync、table.sync、sequelize.sync、Model.sync 区别？" type="warning">
 
-- datatable.sync：所有已配置表同步，可以指定 tables 范围
+- database.sync：所有已配置表同步，可以指定 tables 范围
 - table.sync：当前表同步，如果有关系字段，关系表也会处理
 - sequelize.sync：所有 sequelize.models 同步
-- Model.sync 只处理某个 Model.attributes 同步
+- Model.sync 只处理某个 Model.attributes 同步，并不处理关系 Model 的情况
 
 </Alert>
 
@@ -802,7 +802,7 @@ const fields = table.getOptions('fields');
 
 ### table.addField
 
-新增字段（附加操作）
+新增字段（附加操作），字段的配置参考 [Field Types](#field-types)
 
 ```ts
 const table = db.table({
@@ -1020,7 +1020,7 @@ await post.updateAssociations({
 {
   id: 1,
   status: 'publish',
-  user: { // 关系数据，可能需要查询之后获取
+  user: { // 关系数据，可能需要异步获取
     id: 1,
     email: 'admin@example.com'
   },
