@@ -68,7 +68,7 @@ api.resource('users').login({
 });
 ```
 
-<Alert title="为什么不是 REST 或 GraphQL？" type="warning">
+<Alert title="为什么不是 REST 或 GraphQL？" type="info">
 
 Resourcer 是基于资源设计的，可以看做是 REST 的扩展（兼容的同时，但有些许不同），提供了类 REST 的 Resource Action API（[点此查看细节](#resourcerkoarestapimiddleware)），非常灵活，同时弥补了 REST 的一些缺陷。不用 GraphQL 的原因是因为还不够完善，尤其为了追求 GraphQL 需要写很多代码，并不适合作为常规 API 开放给大众。后续如果反应强烈会考虑适配 GraphQL，其他感兴趣的开发也可以自由发挥，来完善 GraphQL API。
 
@@ -260,7 +260,7 @@ resourcer.define({
 
 判断资源是否已定义
 
-### resourcer.koaRestApiMiddleware
+### resourcer.koaRestApiMiddleware <Badge>待完善</Badge>
 
 原 resourcer.middleware
 
@@ -445,12 +445,12 @@ POST /api/users:login
 
 <Alert title="注意" type="warning">
 
-在 Resource Action API 的设计理念里，即使类似 login、register、logout 等非标准的 REST API 也可以非常方便的扩展。大家可以更专注于 action 本身，而不必纠结于 request method 和 route 应该如何设计，也不需要考虑 routes 优先级等问题。
+在 Resource Action API 的设计理念里，即使类似 login、register、logout 等非标准的 REST API 也可以非常方便的扩展。大家可以更专注于 action 本身，而不必纠结于 request method 和 route 应该如何设计或派发，也不需要考虑 routes 优先级等问题。
 
 </Alert>
 
 
-### resourcer.registerAction(name: ActionName, options: ActionOptions)
+### resourcer.registerAction(name: ActionName, options: ActionOptions) <Badge>待完善</Badge>
 
 原 resourcer.registerActionHandler
 
@@ -518,7 +518,7 @@ resourcer.use(async (ctx, next) => {
 });
 ```
 
-### resourcer.registerActions(actions) 
+### resourcer.registerActions(actions) <Badge>待完善</Badge>
 
 原 resourcer.registerActionHandlers
 
@@ -549,6 +549,13 @@ resourcer.registerActions({
 
 注册 resourcer 全局 middleware
 
+```ts
+resourcer.use(async (ctx, next) => {
+  // code...
+  await next();
+})
+```
+
 <Alert title="为什么要提供不同的中间件注册方法？" type="warning">
 
 虽然大部分框架都提供了中间件，但是中间件的执行顺序（优先级）依赖于编码顺序，这种方式非常不利于插件化管理。因此，在 Resourcer 设计思想里，将中间件做了分层，不同层级的 middlewares 不依赖于编码顺序，而是如下顺序：
@@ -558,6 +565,6 @@ resourcer.registerActions({
 3. 再次，resource 层（每个资源独立）：`resourcer.registerActionMiddleware`
 4. 最后，action 层：`resourcer.registerResourceMiddleware`
 
-不过，每个层次的中间件执行顺序还依赖于编码顺序，如有需要再进行更细微的改进。
+不过，每层的中间件执行顺序还依赖于编码顺序，如有需要再进行更细微的改进。
 
 </Alert>
