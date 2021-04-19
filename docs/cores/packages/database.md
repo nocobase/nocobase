@@ -122,17 +122,21 @@ const post = await Post.create({
 
 长文本
 
-### json <Badge>待完善</Badge>
+### date
 
-JSON 是个特殊的数据类型，在不同数据库里有所不同，目前只兼容了 PostgreSQL 的一些情况。
+日期，包括时间
+
+### dateonly
+
+日期，不包括时间
 
 ### time
 
 时间
 
-### date
+### json <Badge>待完善</Badge>
 
-日期
+JSON 是个特殊的数据类型，在不同数据库里有所不同，目前只兼容了 PostgreSQL 的一些情况。
 
 ### virtual
 
@@ -499,7 +503,10 @@ await Pwd.verify('123456', user.password); // true
 
 ## API
 
-### registerField
+### registerField(type: string, field: Field)
+
+- type：字段类型，不区分大小写
+- field：字段类
 
 注册字段
 
@@ -512,16 +519,49 @@ await Pwd.verify('123456', user.password); // true
 获取已注册字段类
 
 <Alert title="注意" type="warning">
-虽然直接 import/require 已导出的字段类型也可以，但是更推荐用 getField 来处理。
+虽然直接通过 import/require 可以引用已导出的字段类型，但是更推荐用 getField 来处理，尤其在插件化的场景下。
 </Alert>
+
+```ts
+import CustomField from './CustomField';
+
+registerFields({ CustomField });
+
+// 以下三种写法最终效果一致，区别在于用 getField 只能获取已注册的字段类型
+import CustomField from './CustomField';
+const CustomField = require('./CustomField');
+// CustomField 只是 key，真实的类由 registerFields 控制
+const CustomField = getField('CustomField');
+```
 
 ### registerModel
 
-注册模型
+注册 Model
+
+```ts
+import { Model, registerModel } from '@nocobase/database';
+
+class Test extends Model {
+  // 在这个类里可以为 Test Model 扩展其他 API
+  static hello() {
+
+  }
+}
+
+registerModel('test', Test);
+
+db.table({
+  name: 'tests',
+});
+
+const Test = db.getModel('tests');
+// Test 可以调用 hello 方法了
+Test.hello();
+```
 
 ### registerModels
 
-批量注册模型，用法同 registerModel
+批量注册 Model，用法同 registerModel
 
 ### getRegisteredModel
 
@@ -529,7 +569,29 @@ await Pwd.verify('123456', user.password); // true
 
 ### extend <Badge>实验性</Badge>
 
-与 database.import 配合使用
+扩展配置的语法糖，需要与 database.import 配合使用，extend 的用法参考 [database.extend](#databaseextend)。 table 配置只有 extend 时，不处理。
+
+如某配置文件 `./path1/foos-extends.ts`
+
+```ts
+import { extend } from '@nocobase/database';
+
+export default extend({
+  name: 'foos',
+  fields: [],
+});
+```
+
+导入配置
+
+```ts
+database.import({
+  directory: '/path1',
+});
+
+// foos 只有 extend 配置文件，不导入处理
+database.isDefined('foos'); // false
+```
 
 ### Operator.register <Badge>实验性</Badge>
 
@@ -539,17 +601,81 @@ await Pwd.verify('123456', user.password); // true
 
 初始化实例
 
+```ts
+const db = new Database({
+  username,
+  password,
+  database,
+  host,
+  port,
+  dialect,
+  dialectOptions,
+  pool,
+  logging,
+  define,
+  sync,
+});
+```
+
+更多用法参考 [Sequelize.Options](https://github.com/sequelize/sequelize/blob/5b16b32259f0599a6af2d1eb625622da9054265e/types/lib/sequelize.d.ts#L180)
+
 ### database.import
+
+- directory：文件夹路径
+- extensions：扩展，默认 `['js', 'ts', 'json']`
 
 批量导入配置
 
+```ts
+database.import({
+  directory: '/path1/tables',
+  extensions: ['js', 'ts', 'json'],
+});
+```
+
 ### database.table
+
+- name：表名
+- fields：字段
+- model：绑定自定义的 Model
+
+更多参数查看 [TableOptions](https://github.com/nocobase/nocobase/blob/bbcd31016913b1297f258786df97b237d9fbd977/packages/database/src/table.ts#L48)（继承 [Sequelize.ModelOptions](https://github.com/sequelize/sequelize/blob/5b16b32259f0599a6af2d1eb625622da9054265e/types/lib/model.d.ts#L1361)）
 
 配置数据表
 
+用例：
+
+```ts
+database.table({
+  name: 'demos',
+  fields: [],
+});
+```
+
 ### database.extend
 
-配置扩展
+配置扩展。更多用法参考 [table.extend](#tableextend)
+
+```ts
+db.table({
+  name: 'foos',
+  fields: [
+    {type: 'string', name: 'name'},
+  ],
+});
+
+db.extend({
+  name: 'foos',
+  fields: [
+    {type: 'string', name: 'content'},
+  ],
+});
+```
+
+<Alert title="datatable.table 与 database.extend 区别？" type="warning">
+datatable.table 用于初始化，datatable.extend 用于处理扩展，需要存在 table 已存在。
+</Alert>
+
 
 ### database.isDefined
 
@@ -559,25 +685,77 @@ await Pwd.verify('123456', user.password); // true
 
 获取已定义的 Model
 
+```ts
+database.table({
+  name: 'posts',
+  fields: [
+    {type: 'string', name: 'title'},
+    {type: 'string', name: 'content'},
+  ],
+});
+
+const Post = database.getModel('posts');
+
+await Post.create({
+  title: 't1',
+  content: 'c1',
+})
+```
+
 ### database.getModels
 
 批量获取已定义的 Models
+
+```ts
+const [User, Post] = database.getModels(['users', 'posts']);
+```
 
 ### database.getTable
 
 获取已定义的 Table
 
+```ts
+const table = database.getTable('posts');
+```
+
 ### database.getTables
 
 批量获取已定义的 Tables
 
+```ts
+const [user, post] = database.getTables(['users', 'posts']);
+```
+
 ### database.sync
 
+- tables：与数据库结构同步的表
+
 数据表配置与数据库表结构同步
+
+```ts
+await db.sync({
+  tables: ['users', 'posts'],
+});
+```
+
+更多参数参考 [Sequelize.sync](https://github.com/sequelize/sequelize/blob/5b16b32259f0599a6af2d1eb625622da9054265e/types/lib/sequelize.d.ts#L45)
+
+<Alert title="datatable.sync、table.sync、sequelize.sync、Model.sync 区别？" type="warning">
+
+- datatable.sync：所有已配置表同步，可以指定 tables 范围
+- table.sync：当前表同步，如果有关系字段，关系表也会处理
+- sequelize.sync：所有 sequelize.models 同步
+- Model.sync 只处理某个 Model.attributes 同步
+
+</Alert>
 
 ### database.close
 
 关闭数据库连接
+
+```ts
+await database.close();
+```
 
 ### database.addHook  <Badge>待完善</Badge>
 
@@ -588,6 +766,15 @@ await Pwd.verify('123456', user.password); // true
 - beforeAddField
 - afterAddField
 
+<Alert title="注意" type="warning">
+
+目前这部分的 api 主要用于弥补数据表配置的事件，长远来看还需要继续完善的有：
+
+- 统一 hook 接口（Table 和 Model）
+- 钩子需要支持优先级（顺序）
+
+</Alert>
+
 ### database.runHooks  <Badge>待完善</Badge>
 
 运行当前钩子挂载的函数
@@ -595,6 +782,11 @@ await Pwd.verify('123456', user.password); // true
 ### table.getOptions
 
 获取数据表配置
+
+```ts
+const options = table.getOptions();
+const fields = table.getOptions('fields');
+```
 
 ### table.getModel
 
@@ -612,6 +804,15 @@ await Pwd.verify('123456', user.password); // true
 
 新增字段（附加操作）
 
+```ts
+const table = db.table({
+  name: 'foos',
+});
+
+table.addField({type: 'string', name: 'name'});
+table.addField({type: 'string', name: 'status'});
+```
+
 ### table.setFields
 
 批量新增字段（替换操作）
@@ -628,19 +829,52 @@ await Pwd.verify('123456', user.password); // true
 
 批量建立索引，同 table.addIndex
 
-### table.extend
+### table.extend(tableOptions: TableOptions, mergeOptions?: MergeOptions)
+
+- tableOptions：表配置
+- mergeOptions：自定义合并规则，非必填，参数参考 [deepmerge](https://www.npmjs.com/package/deepmerge#options)
 
 配置扩展
 
-### table.sync
+```ts
+table.extend({
+  // 与 table.table 一致
+}, {
+  // 自定义
+  arrayMerge,
+  customMerge,
+})
+```
+
+<Alert title="table.extend、database.extend、extend 区别？" type="warning">
+
+- table.extend：用于处理当前表扩展
+- database.extend：需要指定 tableName，其他用法同 table.extend
+- extend：Markup 函数，只用于标记哪些配置用于扩展，用于 database.import 的配置文件中，用法同 database.extend
+
+</Alert>
+
+### table.sync <Badge>待完善</Badge>
 
 当前表配置与数据库表结构同步
+
+更多参数参考 [Sequelize.sync](https://github.com/sequelize/sequelize/blob/5b16b32259f0599a6af2d1eb625622da9054265e/types/lib/sequelize.d.ts#L45)
+
+```ts
+await table.sync({})
+```
+
+<Alert title="注意">
+
+因为没有更细度的 field.sync 所以配置有更新时，直接执行 table.sync，如果 table 里存在关系字段，关系表也会执行 sync 可能导致执行时间超时，数据库连接断开。后续需要提供更细度的 field.sync 以减少不必要的性能消耗。
+
+</Alert>
 
 ### Model.database
 
 获取当前 database 实例
 
-### Model.parseApiJson
+### Model.parseApiJson <Badge>待完善</Badge>
 
 将 filter、fields、sort 等参数转换为 where、attributes、include、order 等
 
@@ -719,14 +953,100 @@ await Pwd.verify('123456', user.password); // true
 }
 ```
 
+#### page
+
+当前分页
+
+#### perPage
+
+每页多少条数据，当 `perPage=-1` 时，输出所有数据，最多不超过 500 条
+
+#### context
+
+注入上下文，目前主要用于处理 filter 的动态参数
+
 ### model.database
 
 获取当前 database 实例
 
-### model.updateAssociations
+### model.updateAssociations <Badge>待完善</Badge>
 
 更新关系数据
 
-### model.getValuesByFieldNames <Badge>实验性</Badge>
+```ts
+const user = User.create({});
+const post = Post.create({});
+await post.updateAssociations({
+  // 支持直接提供外键值，一般为 Model.primaryKeyAttribute
+  user: 1,
+  // 或者是 object 对象，如果数据不存在会直接创建
+  user: {
+    name: 'name1',
+  },
+  // 也可以是 model 对象
+  user,
+  // 如果是 hasMany 或 belongsToMany 关系，可以是上面三种写法，也可以是数组类型
+  categories: 1,
+  tags: [
+    1,
+    {name: 'tag2'}, // object
+    tag, // tag 对象
+  ],
+  comments: [
+    { content: '' },
+    comment, // comment model 对象
+  ]
+});
+```
+
+<Alert title="为什么需要 model.updateAssociations？">
+
+关系数据的新增或更新非常复杂，尤其在表单场景里非常受用。
+
+注意：还需要支持仅关联和可新增或更新关系数据两种情况。
+
+- 仅关联：只建立关系，不更新关系数据内容
+- 可新增或更新关系数据：建立关联的同时，更新关系数据内容
+
+</Alert>
+
+### model.getValuesByFieldNames <Badge>待完善</Badge>
 
 获取当前 model 在 scope 范围内的值
+
+如，某 model 的 dataValues 如下：
+
+```ts
+{
+  id: 1,
+  status: 'publish',
+  user: { // 关系数据，可能需要查询之后获取
+    id: 1,
+    email: 'admin@example.com'
+  },
+}
+```
+
+```ts
+await model.getValuesByFieldNames(['status', 'user.email']);
+
+// 理想化输出的结果为：
+{
+  status: 'publish',
+  'user.email': 'admin@example.com',
+}
+```
+
+可能用于与 filter 进行比较
+
+```ts
+compareFilterWithScope(
+  {
+    and: [{ status: 'publish' }]
+  },
+  {
+    status: 'publish',
+    'user.email': 'admin@example.com',
+  }
+); // => true
+```
