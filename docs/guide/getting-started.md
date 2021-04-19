@@ -38,7 +38,7 @@ toc: menu
 
 ## Npm & Yarn
 
-找个地方创建并进入新目录
+创建并进入新目录
 
 ```bash
 mkdir my-nocobase-project && cd my-nocobase-project
@@ -89,7 +89,7 @@ yarn nocobase start
   Docker 镜像暂未发布
 </Alert>
 
-为了更方便的安装与部署，NocoBase 也发布了 Docker 镜像 `nocobase/nocobase`，你可以找个地方创建并配置 `docker-compose.yml` 文件，样例如下：
+为了更方便的安装与部署，NocoBase 也发布了 Docker 镜像 `nocobase/nocobase`，创建并配置 `docker-compose.yml` 文件，样例如下：
 
 ```yaml
 version: "3"
