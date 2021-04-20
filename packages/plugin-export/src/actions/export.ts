@@ -1,6 +1,6 @@
 import xlsx from 'node-xlsx';
 import { actions } from '@nocobase/actions';
-import getInterfaceRender from '../renders';
+import render from '../renders';
 
 async function _export(ctx, next) {
   await actions.common.list(ctx, async () => {
@@ -24,15 +24,17 @@ async function _export(ctx, next) {
         .sort((a, b) => a.sort - b.sort)
       : [];
 
+    const { rows, ranges } = render({
+      fields,
+      data: body.rows
+    }, ctx);
+
     ctx.body = xlsx.build([{
       name: tableOptions.title,
-      data: [
-        fields.map(field => field.title),
-        ...body.rows.map(row => fields.map(field => {
-          const render = getInterfaceRender(field.interface);
-          return render(field, row);
-        }))
-      ]
+      data: rows,
+      options: {
+        '!merges': ranges
+      }
     }]);
 
     ctx.set({
