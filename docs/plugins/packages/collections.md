@@ -1,5 +1,6 @@
 ---
 title: '@nocobase/plugin-collections'
+order: 1
 ---
 
 # @nocobase/plugin-collections
