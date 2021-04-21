@@ -1,5 +1,6 @@
 ---
 title: '@nocobase/plugin-pages'
+order: 1
 ---
 
 # @nocobase/plugin-pages

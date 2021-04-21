@@ -1,5 +1,6 @@
 ---
 title: '@nocobase/plugin-action-logs'
+order: 5
 group: 
   order: 3
   title: 官方插件

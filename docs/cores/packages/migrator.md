@@ -4,7 +4,7 @@ order: 8
 # toc: menu
 ---
 
-# @nocobase/migrate <Badge>未实现</Badge>
+# @nocobase/migrator <Badge>未实现</Badge>
 
 NocoBase 的 Database 是基于 Sequelize，Sequelize 虽然提供了 sequelize-cli，包括 migrations 和 seeders 但是并不适用于 NocoBase。
 

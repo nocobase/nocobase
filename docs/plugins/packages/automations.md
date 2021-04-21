@@ -1,5 +1,6 @@
 ---
 title: '@nocobase/plugin-automations'
+order: 4
 ---
 
 # @nocobase/plugin-automations
