@@ -197,11 +197,14 @@ export const Upload = connect({
     onChange({ fileList, file, ...others }) {
       // console.log({fileList, file, others});
       if (accept && !attrAccept(file, accept)) {
-        message.error('不支持上传当前格式的文件');
+        message.error(`「${file.name}」不支持上传的文件格式`);
         return;
       }
-      setFileList(fileList);
-      const list = toValues(fileList);
+      const fList = fileList.filter(file => {
+        return attrAccept(file, accept);
+      });
+      setFileList(fList);
+      const list = toValues(fList);
       onChange(multiple ? list : list.shift() || null);
     },
   };
