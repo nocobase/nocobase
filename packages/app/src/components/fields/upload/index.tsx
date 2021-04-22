@@ -24,7 +24,7 @@ const exts = [
   },
   {
     ext: /\.jpe?g$/i,
-    icon: '//img.alicdn.com/tfs/TB1wrT5r9BYBeNjy0FeXXbnmFXa-200-200.png',
+    // icon: '//img.alicdn.com/tfs/TB1wrT5r9BYBeNjy0FeXXbnmFXa-200-200.png',
   },
   {
     ext: /\.pdf$/i,
@@ -32,7 +32,7 @@ const exts = [
   },
   {
     ext: /\.png$/i,
-    icon: '//img.alicdn.com/tfs/TB1BHT5r9BYBeNjy0FeXXbnmFXa-200-200.png',
+    // icon: '//img.alicdn.com/tfs/TB1BHT5r9BYBeNjy0FeXXbnmFXa-200-200.png',
   },
   {
     ext: /\.eps$/i,
@@ -44,11 +44,11 @@ const exts = [
   },
   {
     ext: /\.gif$/i,
-    icon: '//img.alicdn.com/tfs/TB1DTiGrVOWBuNjy0FiXXXFxVXa-200-200.png',
+    // icon: '//img.alicdn.com/tfs/TB1DTiGrVOWBuNjy0FiXXXFxVXa-200-200.png',
   },
   {
     ext: /\.svg$/i,
-    icon: '//img.alicdn.com/tfs/TB1uUm9rY9YBuNjy0FgXXcxcXXa-200-200.png',
+    // icon: '//img.alicdn.com/tfs/TB1uUm9rY9YBuNjy0FgXXcxcXXa-200-200.png',
   },
   {
     ext: /\.xlsx?$/i,
@@ -88,14 +88,13 @@ const testOpts = (ext, options) => {
   return true;
 };
 
-export const testUrl = (url, options) => {
+export const testUrl = (url, options = {}) => {
   for (let i = 0; i < exts.length; i++) {
     if (exts[i].ext.test(url) && testOpts(exts[i].ext, options)) {
-      return false;
+      return !exts[i].icon;
     }
   }
-
-  return true;
+  return false;
 };
 
 export const getImageByUrl = (url, options) => {
@@ -178,9 +177,7 @@ export function getImgUrls(value) {
   const values = Array.isArray(value) ? value : [value];
   return values
     .filter(item =>
-      testUrl(item.url, {
-        exclude: ['.png', '.jpg', '.jpeg', '.gif'],
-      }),
+      testUrl(item.url),
     )
     .map(item => toValue(item));
 }
