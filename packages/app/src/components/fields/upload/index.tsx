@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { connect } from '@formily/react-schema-renderer';
-import { Button, Upload as AntdUpload, Popconfirm } from 'antd';
+import { Button, Upload as AntdUpload, Popconfirm, message } from 'antd';
 import { toArr, isArr, isEqual, mapStyledProps } from '../shared';
 import {
   LoadingOutlined,
@@ -12,6 +12,7 @@ const { Dragger: UploadDragger } = AntdUpload;
 import get from 'lodash/get';
 import findIndex from 'lodash/findIndex';
 import Lightbox from 'react-image-lightbox';
+import attrAccept from 'attr-accept';
 
 const exts = [
   {
@@ -185,7 +186,7 @@ export function getImgUrls(value) {
 export const Upload = connect({
   getProps: mapStyledProps,
 })(props => {
-  const { multiple = true, value, onChange } = props;
+  const { accept, multiple = true, value, onChange } = props;
   const [visible, setVisible] = useState(false);
   const [imgIndex, setImgIndex] = useState(0);
   const [fileList, setFileList] = useState(toFileList(value));
@@ -193,8 +194,12 @@ export const Upload = connect({
     name: 'file',
     headers: {},
     action: `${process.env.API}/attachments:upload`,
-    onChange({ fileList }) {
-      console.log(fileList);
+    onChange({ fileList, file, ...others }) {
+      // console.log({fileList, file, others});
+      if (accept && !attrAccept(file, accept)) {
+        message.error('不支持上传当前格式的文件');
+        return;
+      }
       setFileList(fileList);
       const list = toValues(fileList);
       onChange(multiple ? list : list.shift() || null);
