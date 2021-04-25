@@ -87,7 +87,7 @@ export default (props: any) => {
   };
   return (
     <Menu
-      defaultSelectedKeys={keys}
+      selectedKeys={keys}
       defaultOpenKeys={keys}
       // selectedKeys={keys}
       // openKeys={keys}
