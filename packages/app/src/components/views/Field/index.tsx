@@ -446,11 +446,7 @@ export function AttachmentFieldItem(props: any) {
       <a
         onClick={e => {
           e.stopPropagation();
-          if (
-            testUrl(url, {
-              exclude: ['.png', '.jpg', '.jpeg', '.gif'],
-            })
-          ) {
+          if (testUrl(url)) {
             props.onClick && props.onClick();
             // setVisible(true);
             e.preventDefault();
