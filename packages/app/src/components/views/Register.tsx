@@ -64,7 +64,7 @@ export function Register(props: any) {
 
   return (
     <div className={'users-form'}>
-      <h1>{title || 'NocoBase'}</h1>
+      <h1>{title}</h1>
       <h2>注册</h2>
       <SchemaForm
         effects={() => {
