@@ -14,7 +14,7 @@ export function Page(props: any) {
   const { initialState = {}, refresh, setInitialState } = useModel(
     '@@initialState',
   );
-  const siteTitle = get(initialState, 'systemSettings.title') || 'NocoBase';
+  const siteTitle = get(initialState, 'systemSettings.title');
 
   const { data = {}, loading, error } = useRequest(
     () =>
