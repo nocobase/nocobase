@@ -114,6 +114,37 @@ export default async function (options = {}) {
     }
   });
 
+  resourcer.use(async (ctx, next) => {
+    await next();
+    const { actionName, resourceName } = ctx.action.params;
+    if (actionName === 'get' && resourceName === 'views_v2') {
+      // console.log('ctx.body', ctx.body)
+      const View = database.getModel('views_v2');
+      const view = ctx.body;
+      const details = view.get(`options.x-${view.type}-props.details`) || [];
+      for (const detail of details) {
+        if (!(detail.view && detail.view.id)) {
+          continue;
+        }
+        const detailView = await View.findOne(View.parseApiJson({
+          filter: {
+            id: detail.view.id,
+          },
+          fields: {
+            appends: ['collection', 'targetField', 'targetView'],
+          },
+        }));
+        if (!detailView) {
+          continue;
+        }
+        detail.view = detailView;
+      }
+      if (details.length) {
+        view.set(`options.x-${view.type}-props.details`, details);
+      }
+    }
+  });
+
   resourcer.registerActionHandler('getCollection', getCollection);
   resourcer.registerActionHandler('getView', getView);
   resourcer.registerActionHandler('getPageInfo', getPageInfo);
