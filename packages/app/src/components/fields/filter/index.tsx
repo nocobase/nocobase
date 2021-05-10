@@ -599,6 +599,7 @@ export const Filter = connect({
         ? api.resource(`collections.fields`).list({
             associatedKey,
             filter,
+            perPage: -1,
           })
         : Promise.resolve({
             data: fields,
@@ -615,6 +616,7 @@ export const Filter = connect({
         ? api.resource(`collections.fields`).list({
             associatedKey: sourceName,
             filter: sourceFilter,
+            perPage: -1,
           })
         : Promise.resolve({
             data: [],
