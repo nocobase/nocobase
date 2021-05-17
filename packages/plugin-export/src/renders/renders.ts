@@ -1,5 +1,12 @@
+import moment from 'moment';
+
 export function _(field, row) {
   return row.get(field.name);
+}
+
+export function datetime(field, row) {
+  const value = row.get(field.name);
+  return moment(value).format(field.showTime ? `${field.dateFormat} ${field.timeFormat}` : field.dateFormat);
 }
 
 export function percent(field, row) {
