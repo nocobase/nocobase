@@ -14,12 +14,12 @@ interface ActionParams {
 }
 
 interface Resource {
-  get: (params?: ActionParams) => Promise<any>;
-  list: (params?: ActionParams) => Promise<any>;
-  create: (params?: ActionParams) => Promise<any>;
-  update: (params?: ActionParams) => Promise<any>;
-  destroy: (params?: ActionParams) => Promise<any>;
-  [name: string]: (params?: ActionParams) => Promise<any>;
+  get: (params?: ActionParams, options?: any) => Promise<any>;
+  list: (params?: ActionParams, options?: any) => Promise<any>;
+  create: (params?: ActionParams, options?: any) => Promise<any>;
+  update: (params?: ActionParams, options?: any) => Promise<any>;
+  destroy: (params?: ActionParams, options?: any) => Promise<any>;
+  [name: string]: (params?: ActionParams, options?: any) => Promise<any>;
 }
 
 // TODO 待改进，提供一个封装度更完整的 SDK，request 可以自由替换
@@ -29,7 +29,7 @@ class ApiClient {
       {},
       {
         get(target, method, receiver) {
-          return (params: ActionParams = {}) => {
+          return (params: ActionParams = {}, options: any = {}) => {
             let {
               associatedKey,
               resourceKey,
@@ -41,15 +41,11 @@ class ApiClient {
             } = params;
             let url = `/${name}`;
             sort = sort || [];
-            let options: any = {
-              params: {},
-            };
-            if (['list', 'get'].indexOf(method as string) !== -1) {
+            options.params = restParams;
+            if (['list', 'get', 'export'].indexOf(method as string) !== -1) {
               options.method = 'get';
-              options.params = restParams;
             } else {
               options.method = 'post';
-              options.params = restParams;
               options.data = values;
             }
             if (associatedKey) {
