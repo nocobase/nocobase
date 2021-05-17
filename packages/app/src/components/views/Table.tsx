@@ -480,7 +480,12 @@ export function Table(props: any) {
               await reloadMenu();
             },
             async export() {
-              exportRequest.run({ ...params[0] });
+              exportRequest.run({
+                ...params[0], 
+                filter: selectedRowKeys.length ? {
+                  [`${rowKey}.in`]: selectedRowKeys,
+                } : {},
+              });
             }
           }}
           actions={actions}
