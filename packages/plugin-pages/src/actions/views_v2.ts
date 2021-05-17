@@ -62,7 +62,13 @@ export const getInfo = async (ctx: actions.Context, next) => {
   });
 
   if (view && view.type === 'form') {
-    const statusable = !!ctx.db.getTable(view.collection_name).getField('status');
+    const count = await Field.count({
+      where: {
+        name: 'status',
+        collection_name: view.collection_name,
+      }
+    });
+    const statusable = !!count;//!!ctx.db.getTable(view.collection_name).getField('status');
     if (statusable) {
       view.setDataValue('statusable', statusable);
     }
@@ -396,5 +402,3 @@ export const getInfo = async (ctx: actions.Context, next) => {
   ctx.body = data;
   await next();
 };
-
-export default getInfo;

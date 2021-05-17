@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { connect } from '@formily/react-schema-renderer';
-import { Button, Upload as AntdUpload, Popconfirm } from 'antd';
+import { Button, Upload as AntdUpload, Popconfirm, message } from 'antd';
 import { toArr, isArr, isEqual, mapStyledProps } from '../shared';
 import {
   LoadingOutlined,
@@ -12,6 +12,7 @@ const { Dragger: UploadDragger } = AntdUpload;
 import get from 'lodash/get';
 import findIndex from 'lodash/findIndex';
 import Lightbox from 'react-image-lightbox';
+import attrAccept from 'attr-accept';
 
 const exts = [
   {
@@ -24,7 +25,7 @@ const exts = [
   },
   {
     ext: /\.jpe?g$/i,
-    icon: '//img.alicdn.com/tfs/TB1wrT5r9BYBeNjy0FeXXbnmFXa-200-200.png',
+    // icon: '//img.alicdn.com/tfs/TB1wrT5r9BYBeNjy0FeXXbnmFXa-200-200.png',
   },
   {
     ext: /\.pdf$/i,
@@ -32,7 +33,7 @@ const exts = [
   },
   {
     ext: /\.png$/i,
-    icon: '//img.alicdn.com/tfs/TB1BHT5r9BYBeNjy0FeXXbnmFXa-200-200.png',
+    // icon: '//img.alicdn.com/tfs/TB1BHT5r9BYBeNjy0FeXXbnmFXa-200-200.png',
   },
   {
     ext: /\.eps$/i,
@@ -44,11 +45,11 @@ const exts = [
   },
   {
     ext: /\.gif$/i,
-    icon: '//img.alicdn.com/tfs/TB1DTiGrVOWBuNjy0FiXXXFxVXa-200-200.png',
+    // icon: '//img.alicdn.com/tfs/TB1DTiGrVOWBuNjy0FiXXXFxVXa-200-200.png',
   },
   {
     ext: /\.svg$/i,
-    icon: '//img.alicdn.com/tfs/TB1uUm9rY9YBuNjy0FgXXcxcXXa-200-200.png',
+    // icon: '//img.alicdn.com/tfs/TB1uUm9rY9YBuNjy0FgXXcxcXXa-200-200.png',
   },
   {
     ext: /\.xlsx?$/i,
@@ -88,14 +89,13 @@ const testOpts = (ext, options) => {
   return true;
 };
 
-export const testUrl = (url, options) => {
+export const testUrl = (url, options = {}) => {
   for (let i = 0; i < exts.length; i++) {
     if (exts[i].ext.test(url) && testOpts(exts[i].ext, options)) {
-      return false;
+      return !exts[i].icon;
     }
   }
-
-  return true;
+  return false;
 };
 
 export const getImageByUrl = (url, options) => {
@@ -178,9 +178,7 @@ export function getImgUrls(value) {
   const values = Array.isArray(value) ? value : [value];
   return values
     .filter(item =>
-      testUrl(item.url, {
-        exclude: ['.png', '.jpg', '.jpeg', '.gif'],
-      }),
+      testUrl(item.url),
     )
     .map(item => toValue(item));
 }
@@ -188,7 +186,7 @@ export function getImgUrls(value) {
 export const Upload = connect({
   getProps: mapStyledProps,
 })(props => {
-  const { multiple = true, value, onChange } = props;
+  const { accept, multiple = true, value, onChange } = props;
   const [visible, setVisible] = useState(false);
   const [imgIndex, setImgIndex] = useState(0);
   const [fileList, setFileList] = useState(toFileList(value));
@@ -196,10 +194,17 @@ export const Upload = connect({
     name: 'file',
     headers: {},
     action: `${process.env.API}/attachments:upload`,
-    onChange({ fileList }) {
-      console.log(fileList);
-      setFileList(fileList);
-      const list = toValues(fileList);
+    onChange({ fileList, file, ...others }) {
+      // console.log({fileList, file, others});
+      if (accept && !attrAccept(file, accept)) {
+        message.error(`「${file.name}」不支持上传的文件格式`);
+        return;
+      }
+      const fList = fileList.filter(file => {
+        return attrAccept(file, accept);
+      });
+      setFileList(fList);
+      const list = toValues(fList);
       onChange(multiple ? list : list.shift() || null);
     },
   };

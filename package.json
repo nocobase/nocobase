@@ -5,6 +5,8 @@
     "start": "cd packages/app && npm start",
     "start-server": "nodemon",
     "start-client": "cd packages/app && npx umi dev",
+    "start-docs": "dumi dev",
+    "build-docs": "dumi build",
     "pm2-start": "npx pm2 start packages/api/lib/index.js",
     "build-app": "cd packages/app && npm run build",
     "bootstrap": "lerna bootstrap --no-ci",
@@ -18,6 +20,12 @@
     "release:force": "lerna publish from-package --yes",
     "release": "lerna publish"
   },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/nocobase/nocobase.git",
+    "branch": "master",
+    "platform": "github"
+  },
   "devDependencies": {
     "@koa/router": "^9.3.1",
     "@types/bcrypt": "^3.0.0",
@@ -28,12 +36,16 @@
     "@types/koa__router": "^8.0.2",
     "@types/lodash": "^4.14.158",
     "@types/node": "^14.0.23",
-    "@types/react": "16.14.0",
+    "@types/react": "^17.0.3",
+    "@types/react-dom": "^17.0.3",
     "@types/supertest": "^2.0.10",
     "@typescript-eslint/eslint-plugin": "^3.6.1",
     "@typescript-eslint/parser": "^3.6.1",
+    "@umijs/plugin-antd": "^0.9.1",
+    "antd": "^4.15.0",
     "cross-env": "^7.0.2",
     "dotenv": "^8.2.0",
+    "dumi": "^1.0.12",
     "eslint": "^7.4.0",
     "eslint-plugin-import": "^2.22.0",
     "eslint-plugin-node": "^11.1.0",
@@ -44,16 +56,19 @@
     "koa": "^2.13.0",
     "koa-bodyparser": "^4.3.0",
     "lerna": "^3.22.0",
+    "lint-staged": "^10.0.7",
     "mysql2": "^2.1.0",
     "nodemon": "^2.0.4",
     "path-to-regexp": "^6.1.0",
     "pg": "^8.3.0",
     "pg-hstore": "^2.3.3",
     "pm2": "^4.5.6",
+    "prettier": "^1.19.1",
     "sequelize": "^6.3.4",
     "supertest": "^4.0.2",
     "ts-jest": "^26.1.2",
     "ts-node": "^8.10.2",
-    "typescript": "^3.9.6"
+    "typescript": "^3.9.6",
+    "yorkie": "^2.0.0"
   }
 }

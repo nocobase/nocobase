@@ -5,7 +5,6 @@ import { history, Link, request, useModel } from 'umi';
 import { UserOutlined, CodeOutlined, MenuOutlined } from '@ant-design/icons';
 import AvatarDropdown from '@/components/pages/AvatarDropdown';
 import Menu from '@/components/menu';
-import { ReactComponent as Logo } from './logo-white.svg';
 import { useResponsive, useLocalStorageState } from 'ahooks';
 import get from 'lodash/get';
 
@@ -35,7 +34,7 @@ export function TopMenuLayout(props: any) {
         className="nb-header"
       >
         <div className="logo" style={{ width: 200, height: 48, float: 'left' }}>
-          {!logoUrl ? <Logo /> : <img src={logoUrl} />}
+          {logoUrl && <img src={logoUrl} />}
         </div>
         {!isMobile && (
           <Menu

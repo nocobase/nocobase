@@ -1,0 +1,58 @@
+@import (reference) '../style/variables.less';
+
+.@{prefix}-code-block {
+  position: relative;
+  background-color: @c-light-bg;
+
+  & + &,
+  & + table {
+    margin-top: 16px;
+  }
+
+  > pre[class*='language-'] {
+    margin: 0;
+    background: transparent;
+
+    .token-line:not(:last-child) .plain:empty {
+      display: inline-block;
+      min-height: 1em;
+    }
+  }
+
+  &-copy-btn {
+    position: absolute;
+    top: 1.1em;
+    right: 1em;
+    display: inline-block;
+    width: 16px;
+    height: 16px;
+    border: 0;
+    outline: none;
+    cursor: pointer;
+    opacity: 0.6;
+    transition: opacity 0.2s, background 0.2s;
+
+    &:hover {
+      opacity: 0.8;
+    }
+
+    &:active {
+      opacity: 0.9;
+    }
+
+    &[data-status='ready'] {
+      background-position: -54px 0;
+    }
+
+    &[data-status='copied'] {
+      opacity: 1;
+      pointer-events: none;
+      background-position: -54px -16px;
+    }
+  }
+
+  &:not(:hover) &-copy-btn {
+    visibility: hidden;
+    opacity: 0;
+  }
+}

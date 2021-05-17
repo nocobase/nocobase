@@ -84,7 +84,7 @@ export type CollectionPermissions = {
   tabs: any[]
 };
 
-export type PermissionParams = true | null | {
+export type PermissionParams = boolean | {
   filter: any,
   fields: any[]
 };
@@ -175,7 +175,7 @@ export default class AccessController<T extends typeof AccessController = typeof
     if (!actionPermissions.length) {
       // 如果找不到可用的 action 记录
       // 则认为没有权限
-      return null;
+      return false;
     }
 
     const filters = actionPermissions
@@ -195,7 +195,7 @@ export default class AccessController<T extends typeof AccessController = typeof
   async one(resourceKey): Promise<PermissionParams> {
     const any = await this.any();
 
-    if (!any || any === true) {
+    if (typeof any === 'boolean') {
       return any;
     }
 
@@ -209,7 +209,7 @@ export default class AccessController<T extends typeof AccessController = typeof
       }
     });
 
-    return existed ? any : null;
+    return existed ? any : false;
   }
 
   async getPermissions(): Promise<any> {
@@ -338,12 +338,11 @@ export default class AccessController<T extends typeof AccessController = typeof
     };
 
     if (this.roles) {
-      if ((this.constructor as T).isRoot(this.roles)) {
-        return this.roles;
-      }
-      for (const role of this.roles) {
-        role.permissions = await role.getPermissions(permissionOptions);
-        role.set('permissions', role.permissions);
+      if (!(this.constructor as T).isRoot(this.roles)) {
+        for (const role of this.roles) {
+          role.permissions = await role.getPermissions(permissionOptions);
+          role.set('permissions', role.permissions);
+        }
       }
       return this.roles;
     }

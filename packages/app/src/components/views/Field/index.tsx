@@ -386,11 +386,7 @@ export function LinkToFieldLink(props) {
 function getImgUrls(value) {
   const values = Array.isArray(value) ? value : [value];
   return values
-    .filter(item =>
-      testUrl(item.url, {
-        exclude: ['.png', '.jpg', '.jpeg', '.gif'],
-      }),
-    )
+    .filter(item => testUrl(item.url))
     .map(item => item);
 }
 
@@ -403,7 +399,6 @@ export function AttachmentField(props: any) {
   }
   const values = Array.isArray(value) ? value : [value];
   const images = getImgUrls(values);
-  // console.log(images);
   return (
     <div
       onClick={e => {
@@ -443,7 +438,7 @@ export function AttachmentField(props: any) {
 export function AttachmentFieldItem(props: any) {
   const { title, url } = props.data || {};
   const img = getImageByUrl(url, {
-    exclude: ['.png', '.jpg', '.jpeg', '.gif'],
+    // exclude: ['.png', '.jpg', '.jpeg', '.gif'],
   });
   // const [visible, setVisible] = useState(false);
   return (
@@ -451,11 +446,7 @@ export function AttachmentFieldItem(props: any) {
       <a
         onClick={e => {
           e.stopPropagation();
-          if (
-            testUrl(url, {
-              exclude: ['.png', '.jpg', '.jpeg', '.gif'],
-            })
-          ) {
+          if (testUrl(url)) {
             props.onClick && props.onClick();
             // setVisible(true);
             e.preventDefault();

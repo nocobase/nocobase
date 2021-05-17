@@ -1,5 +1,5 @@
 import React from 'react';
-import { Tooltip, Card, Button } from 'antd';
+import { Tooltip, Card, Button, message } from 'antd';
 import {
   SchemaForm,
   SchemaMarkupField as Field,
@@ -38,25 +38,30 @@ export function Login(props: any) {
 
   return (
     <div className={'users-form'}>
-      <h1>{title || 'NocoBase'}</h1>
+      <h1>{title}</h1>
       <h2>登录</h2>
       
       <SchemaForm
         onSubmit={async values => {
-          console.log(values);
-          const { data = {} } = await request('/users:login', {
-            method: 'post',
-            data: values,
-          });
-          if (data.data && data.data.token) {
-            localStorage.setItem('NOCOBASE_TOKEN', data.data.token);
-            // @ts-ignore
-            setInitialState({
-              ...initialState,
-              currentUser: data.data,
+          try {
+            const { data = {}, error } = await request('/users:login', {
+              method: 'post',
+              data: values,
             });
-            await (window as any).routesReload();
-            history.push(redirect || '/');
+            if (data.data && data.data.token) {
+              localStorage.setItem('NOCOBASE_TOKEN', data.data.token);
+              // @ts-ignore
+              setInitialState({
+                ...initialState,
+                currentUser: data.data,
+              });
+              await (window as any).routesReload();
+              history.push(redirect || '/');
+            }
+          } catch (error) {
+            if (typeof error.data === 'string') {
+              message.error(error.data);
+            }
           }
         }}
         actions={actions}
@@ -84,7 +89,7 @@ export function Login(props: any) {
                 placeholder: '密码',
               },
               'x-props': {
-                help: <Link to={'/lostpassword'}>忘记密码？</Link>,
+                help: <Link style={{float: 'right', marginBottom: 12}} to={'/lostpassword'}>忘记密码？</Link>,
               },
             },
             ...(props.fields || {}),
@@ -92,15 +97,14 @@ export function Login(props: any) {
         }}
       >
         <FormButtonGroup>
-          <Submit size={'large'}>登录</Submit>
-          <Button
-            size={'large'}
-            onClick={() => {
-              history.push('/register');
-            }}
-          >
-            注册账户
-          </Button>
+          <Submit block size={'large'}>登录</Submit>
+          <div style={{
+            marginTop: 12,
+            display: 'flex',
+            justifyContent: 'space-between',
+          }}>
+            <Link to={'/register'}>注册账户</Link>
+          </div>
         </FormButtonGroup>
       </SchemaForm>
     </div>

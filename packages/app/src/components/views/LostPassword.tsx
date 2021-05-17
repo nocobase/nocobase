@@ -38,7 +38,7 @@ export function LostPassword(props: any) {
 
   return (
     <div className={'users-form'}>
-      <h1>{title || 'NocoBase'}</h1>
+      <h1>{title}</h1>
       <h2>忘记密码</h2>
       <SchemaForm
         onSubmit={async values => {
@@ -66,15 +66,14 @@ export function LostPassword(props: any) {
         }}
       >
         <FormButtonGroup>
-          <Submit size={'large'}>获取新密码</Submit>
-          <Button
-            size={'large'}
-            onClick={() => {
-              history.push('/login');
-            }}
-          >
-            使用已有账号登录
-          </Button>
+          <Submit block size={'large'}>获取新密码</Submit>
+          <div style={{
+            marginTop: 12,
+            display: 'flex',
+            justifyContent: 'space-between',
+          }}>
+            <Link to={'/login'}>使用已有账号登录</Link>
+          </div>
         </FormButtonGroup>
       </SchemaForm>
     </div>

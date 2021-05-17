@@ -4,7 +4,7 @@ import { Application } from '@nocobase/server';
 import { Operator } from '@nocobase/database';
 import * as collectionsRolesActions from './actions/collections.roles';
 import * as rolesCollectionsActions from './actions/roles.collections';
-import AccessController from './AccessController';
+import AccessController, { PermissionParams } from './AccessController';
 
 // API
 // const permissions = ctx.app.getPluginInstance('permissions');
@@ -105,7 +105,7 @@ export class Permissions {
       actionName
     } = ctx.action.params;
 
-    let result = null;
+    let result: PermissionParams = false;
 
     // 关系数据的权限
     if (associatedName && resourceField) {

@@ -7,10 +7,10 @@ import getRoutes from './actions/getRoutes';
 import getPageInfo from './actions/getPageInfo';
 import * as rolesPagesActions from './actions/roles.pages';
 import getCollections from './actions/getCollections';
-import menusList from './actions/menus:list';
+import { list as menusList } from './actions/menus';
 import getTree from './actions/getTree';
 import getInfo from './actions/getInfo';
-import viewGetInfo from './actions/views_v2:getInfo';
+import { getInfo as viewGetInfo } from './actions/views_v2';
 import { RANDOMSTRING } from './fields/randomString';
 import { registerFields, registerModels } from '@nocobase/database';
 import { BaseModel } from './models/BaseModel'
@@ -111,6 +111,37 @@ export default async function (options = {}) {
         item.view = view;
       }
       menu.set('views', items);
+    }
+  });
+
+  resourcer.use(async (ctx, next) => {
+    await next();
+    const { actionName, resourceName } = ctx.action.params;
+    if (actionName === 'get' && resourceName === 'views_v2') {
+      // console.log('ctx.body', ctx.body)
+      const View = database.getModel('views_v2');
+      const view = ctx.body;
+      const details = view.get(`options.x-${view.type}-props.details`) || [];
+      for (const detail of details) {
+        if (!(detail.view && detail.view.id)) {
+          continue;
+        }
+        const detailView = await View.findOne(View.parseApiJson({
+          filter: {
+            id: detail.view.id,
+          },
+          fields: {
+            appends: ['collection', 'targetField', 'targetView'],
+          },
+        }));
+        if (!detailView) {
+          continue;
+        }
+        detail.view = detailView;
+      }
+      if (details.length) {
+        view.set(`options.x-${view.type}-props.details`, details);
+      }
     }
   });
 
