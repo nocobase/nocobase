@@ -258,6 +258,52 @@ export function Table(props: any) {
     },
   );
 
+  const exportRequest = useRequest(({ sorter, filter } = {}) => {
+    return api
+      .resource(resourceName)
+      .export({
+        associatedKey,
+        perPage: -1,
+        sorter,
+        sort,
+        'fields[appends]': appends,
+        filter: {
+          and: [
+            defaultFilter,
+            schemaFilter,
+            filter,
+          ].filter(obj => obj && Object.keys(obj).length),
+        },
+      }, {
+        parseResponse: false,
+        responseType: 'blob'
+      })
+      .then(async response => {
+        // decodeURI() for encoded filename in server side
+        const filename = decodeURI(response.headers.get('Content-Disposition').replace('attachment; filename=', ''));
+        // ReadableStream
+        let res = new Response(response.body);
+        let blob = await res.blob();
+        let url = URL.createObjectURL(blob);
+        let a = document.createElement('a');
+        a.style.display = 'none';
+        a.href = url;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        // cleanup
+        URL.revokeObjectURL(url);
+        document.body.removeChild(a);
+        a = null;
+        blob = null;
+        url = null;
+        res = null;
+      });
+  }, {
+    manual: true,
+    paginated: false
+  });
+
   const currentRow = find(
     data && data.list,
     item => item[rowKey] == currentRowId,
@@ -433,6 +479,14 @@ export function Table(props: any) {
               refresh();
               await reloadMenu();
             },
+            async export() {
+              exportRequest.run({
+                ...params[0], 
+                filter: selectedRowKeys.length ? {
+                  [`${rowKey}.in`]: selectedRowKeys,
+                } : {},
+              });
+            }
           }}
           actions={actions}
           style={{ marginBottom: 14 }}

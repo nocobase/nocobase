@@ -16,6 +16,7 @@
     "@nocobase/plugin-automations": "^0.4.0-alpha.7",
     "@nocobase/plugin-china-region": "^0.4.0-alpha.7",
     "@nocobase/plugin-collections": "^0.4.0-alpha.7",
+    "@nocobase/plugin-export": "^0.4.0-alpha.7",
     "@nocobase/plugin-file-manager": "^0.4.0-alpha.7",
     "@nocobase/plugin-pages": "^0.4.0-alpha.7",
     "@nocobase/plugin-permissions": "^0.4.0-alpha.7",
