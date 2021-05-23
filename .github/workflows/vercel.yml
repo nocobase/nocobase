@@ -22,6 +22,7 @@ jobs:
             ${{ runner.os }}-node-
 
       - run: npm install
+      - run: npm run bootstrap
       - run: npm run build-docs
 
       - name: Deploy
