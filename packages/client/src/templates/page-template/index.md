@@ -11,3 +11,4 @@ group:
 
 # PageTemplate - 页面模板
 
+常规的页面模板，支持区块配置。

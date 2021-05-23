@@ -8,3 +8,7 @@ group:
   title: Templates
   path: /client/templates
 ---
+
+# AuthLayout - 登录布局
+
+内置的登录、注册页布局
