@@ -9,7 +9,7 @@
 
 # production
 /dist
-.env
+
 # misc
 .DS_Store
 
@@ -18,4 +18,3 @@
 /src/.umi-production
 /src/.umi-test
 /.env.local
-report.*.json

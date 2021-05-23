@@ -1,0 +1,17 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "jsx": "react",
+    "sourceMap": true,
+    "target": "ES6",
+    "paths": {
+      "@nocobase/*": [
+        "./packages/*/src"
+      ]
+    }
+  },
+  "exclude": [
+    "./packages/*/esm",
+    "./packages/*/lib"
+  ]
+}

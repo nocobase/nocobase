@@ -1,21 +1,18 @@
 {
   "compilerOptions": {
-    "lib": [ "es5", "es6" ],
-    "module": "commonjs",
-    "target": "es6",
+    "target": "esnext",
+    "module": "esnext",
     "moduleResolution": "node",
     "importHelpers": true,
-    "jsx": "react",
+    "jsx": "react-jsx",
     "esModuleInterop": true,
     "sourceMap": true,
     "baseUrl": "./",
-    "allowJs": true,
-    "strict": false,
+    "strict": true,
     "paths": {
       "@/*": ["src/*"],
       "@@/*": ["src/.umi/*"]
     },
-    "noImplicitAny": false,
     "allowSyntheticDefaultImports": true
   },
   "include": [
@@ -24,5 +21,16 @@
     "config/**/*",
     ".umirc.ts",
     "typings.d.ts"
+  ],
+  "exclude": [
+    "node_modules",
+    "lib",
+    "es",
+    "dist",
+    "typings",
+    "**/__test__",
+    "test",
+    "docs",
+    "tests"
   ]
 }

@@ -1,23 +1,23 @@
 {
   "compilerOptions": {
-    "jsx": "react",
-    "lib": [ "es5", "es6" ],
-    "module": "commonjs",
-    "target": "es6",
-    "allowJs": true,
-    "allowSyntheticDefaultImports": true,
-    "declaration": true,
-    "resolveJsonModule": true,
     "esModuleInterop": true,
+    "moduleResolution": "node",
+    "jsx": "react",
+    "module": "commonjs",
+    "target": "ES6",
+    "allowJs": false,
+    "noUnusedLocals": false,
+    "removeComments": true,
+    "preserveConstEnums": true,
     "sourceMap": true,
-    "removeComments": false,
-    "baseUrl": "./",
+    "declaration": true,
+    "experimentalDecorators": true,
+    "downlevelIteration": true,
+    "baseUrl": ".",
     "paths": {
+      "@nocobase/*": [
+        "./packages/*"
+      ]
     }
-  },
-  "exclude": [
-    "dotenv.js",
-    "jest.config.js",
-    "node_modules"
-  ]
+  }
 }

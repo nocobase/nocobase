@@ -1,12 +1,21 @@
-import PageLoader from '@/components/pages';
+import React, { useEffect } from 'react';
+import { Spin } from 'antd';
+import {
+  RouteSwitch,
+  useGlobalAction,
+  loadBlocks,
+  loadTemplates,
+  templates,
+} from '@nocobase/client';
 
-// TODO：这部分现在还是写在代码里的，待改进
-export const templates = {
-  AdminLoader: require('@/components/pages/AdminLoader').default,
-  login: require('@/pages/login').default,
-  register: require('@/pages/register').default,
-  lostpassword: require('@/pages/lostpassword').default,
-  resetpassword: require('@/pages/resetpassword').default,
-};
+loadBlocks();
+loadTemplates();
 
-export default PageLoader;
+export default function IndexPage() {
+  const { data, loading } = useGlobalAction('routes:getAccessible');
+  console.log({ data });
+  if (loading) {
+    return <Spin />;
+  }
+  return <RouteSwitch components={templates} routes={data} />;
+}

@@ -12,8 +12,7 @@
   },
   "devDependencies": {
     "koa": "^2.13.0",
-    "sequelize": "^6.3.4",
-    "typescript": "^3.9.6"
+    "sequelize": "^6.3.4"
   },
   "repository": {
     "type": "git",

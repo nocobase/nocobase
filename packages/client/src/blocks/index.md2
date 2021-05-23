@@ -1,0 +1,90 @@
+---
+title: Block
+nav:
+  title: 组件
+  path: /client
+group:
+  order: 2
+  title: Blocks
+  path: /client/blocks
+---
+
+# 区块
+
+## 示例
+
+```tsx
+import React from 'react';
+import { createBlock, GridBlock } from '@nocobase/client';
+
+function Hello({ name }) {
+  return <div>Hello {name}</div>;
+}
+
+const Block = createBlock({
+  components: {
+    Hello,
+    GridBlock,
+  },
+});
+
+const blocks = [
+  {
+    name: 'gb1', 
+    'x-component': 'Hello', 
+    'x-row': 0,
+    'x-column': 0,
+    'x-sort': 1,
+  },
+  {
+    name: 'gb2', 
+    'x-component': 'Hello', 
+    'x-row': 0,
+    'x-column': 0,
+    'x-sort': 2,
+  },
+  {
+    name: 'gb3', 
+    'x-component': 'Hello', 
+    'x-row': 0,
+    'x-column': 1,
+    'x-sort': 0,
+  },
+  {
+    name: 'gb4', 
+    'x-component': 'Hello', 
+    'x-row': 1,
+    'x-column': 0,
+    'x-sort': 0,
+  },
+  {
+    name: 'gb5', 
+    'x-component': 'Hello', 
+    'x-row': 2,
+    'x-column': 0,
+    'x-sort': 0,
+  },
+];
+
+export default () => {
+  return (
+    <div>
+      <Block x-component={'Hello'} name={'demo1'}/>
+      <Block x-component={'Hello'} name={'demo2'}/>
+      <Block x-component={'GridBlock'} blocks={blocks}/>
+    </div>
+  );
+};
+```
+
+## API
+
+### createBlock
+
+- components 区块组件
+
+创建区块
+
+### Block
+
+- x-component

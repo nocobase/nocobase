@@ -1,11 +1,11 @@
-# NocoBase Application
+# umi project
 
 ## Getting Started
 
 Install dependencies,
 
 ```bash
-$ yarn install
+$ yarn
 ```
 
 Start the dev server,
