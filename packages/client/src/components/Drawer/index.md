@@ -16,6 +16,9 @@ group:
 ### 基础抽屉
 
 ```tsx
+/**
+ * title: 基础抽屉
+ */
 import React from 'react';
 import { Button } from 'antd';
 import Drawer from './index.tsx';
@@ -41,6 +44,10 @@ export default () => (
 ### 多层抽屉
 
 ```tsx
+/**
+ * title: 多层抽屉
+ * desc: 有多少层就执行多少个 `Drawer.open(props)`
+ */
 import React from 'react';
 import { Button } from 'antd';
 import Drawer from './index.tsx';
@@ -75,7 +82,7 @@ export default () => (
 ```tsx
 /**
  * title: 关闭时提示
- * desc: 更多参数请参考 `Modal.confirm`
+ * desc: 通过 `closeWithConfirm(props)` 方法触发，更多参数请参考 `Modal.confirm`
  */
 import React from 'react';
 import { Button } from 'antd';
