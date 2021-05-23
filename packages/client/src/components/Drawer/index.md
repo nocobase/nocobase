@@ -11,7 +11,7 @@ group:
 
 # Drawer - 抽屉
 
-与 Ant Design
+通过 `Drawer.open(props)` 方法打开抽屉，无需预渲染，可在任意触发事件中使用，多层抽屉的实现也更为巧妙。
 
 ### 基础抽屉
 
@@ -67,5 +67,37 @@ export default () => (
       },
     });
   }}>Open drawer</Button>
+);
+```
+
+### 关闭时提示
+
+```tsx
+/**
+ * title: 关闭时提示
+ * desc: 更多参数请参考 `Modal.confirm`
+ */
+import React from 'react';
+import { Button } from 'antd';
+import Drawer from './index.tsx';
+
+export default () => (
+  <Button onClick={() => {
+    Drawer.open({
+      title: 'Basic Drawer',
+      content: ({ closeWithConfirm }) => {
+        closeWithConfirm({
+          title: '您确定关闭抽屉吗？'
+        });
+        return (
+          <div>
+            <p>Some contents...</p>
+            <p>Some contents...</p>
+            <p>Some contents...</p>
+          </div>
+        )
+      },
+    });
+  }}>Open Drawer</Button>
 );
 ```

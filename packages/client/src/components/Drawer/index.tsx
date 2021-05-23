@@ -84,7 +84,7 @@ export function Drawer(title: any, content: any): IDrawer {
     },
   };
 
-  const drawer = {
+  const drawer: any = {
     open: (props: any) => {
       render(
         false,
@@ -113,7 +113,7 @@ export function Drawer(title: any, content: any): IDrawer {
       if (!env.root) return;
       if (drawer.closeWithConfirm) {
         Modal.confirm({
-          title: '表单内容发生变化，确定不保存吗？',
+          title: drawer.closeWithConfirm === true ? '表单内容发生变化，确定不保存吗？' : drawer.closeWithConfirm.title,
           okText: '确定',
           cancelText: '取消',
           onOk() {
