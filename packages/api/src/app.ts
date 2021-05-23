@@ -46,7 +46,6 @@ const plugins = [
   '@nocobase/plugin-permissions',
   '@nocobase/plugin-automations',
   '@nocobase/plugin-china-region',
-  '@nocobase/plugin-export',
 ];
 
 for (const plugin of plugins) {

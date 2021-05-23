@@ -1,9 +1,6 @@
 name: vercel
 
-on:
-  push:
-    branches:
-      - master
+on: [push]
 
 jobs:
   deploy:

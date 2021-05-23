@@ -1,0 +1,41 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`pathname=/ 1`] = `
+<div>
+  <h1>
+    Home
+  </h1>
+  <div>
+    index
+  </div>
+</div>
+`;
+
+exports[`pathname=/blog/123 1`] = `
+<div>
+  <h1>
+    Blog
+  </h1>
+  <div>
+    Now showing post 
+    1234
+  </div>
+</div>
+`;
+
+exports[`pathname=/login 1`] = `
+<div>
+  <h1>
+    Home
+  </h1>
+  <div>
+    login
+  </div>
+</div>
+`;
+
+exports[`route component 1`] = `
+<div>
+  test
+</div>
+`;

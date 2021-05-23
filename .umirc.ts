@@ -3,8 +3,8 @@ import { defineConfig } from 'dumi';
 export default defineConfig({
   title: ' ',
   hash: true,
-  ssr: {},
-  exportStatic: {},
+  // ssr: {},
+  // exportStatic: {},
   mode: 'site',
   logo: 'https://www.nocobase.com/dist/images/logo.png',
   navs: {

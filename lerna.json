@@ -3,14 +3,13 @@
     "packages/*"
   ],
   "version": "independent",
+  "npmClient": "yarn",
+  "useWorkspaces": true,
+  "npmClientArgs": [
+    "--ignore-engines"
+  ],
   "command": {
-    "bootstrap": {
-      "npmClientArgs": [
-        "--no-package-lock"
-      ]
-    },
     "publish": {
-      "allowBranch": "master",
       "ignoreChanges": [
         "*.md"
       ]

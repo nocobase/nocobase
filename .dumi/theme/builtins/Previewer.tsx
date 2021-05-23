@@ -76,7 +76,7 @@ const Previewer: React.FC<IPreviewerProps> = oProps => {
   const isActive = history?.location.hash === `#${props.identifier}`;
   const isSingleFile = Object.keys(props.sources).length === 1;
   const openCSB = useCodeSandbox(props.hideActions?.includes('CSB') ? null : props);
-  const openRiddle = useRiddle(props.hideActions?.includes('RIDDLE') ? null : props);
+  // const openRiddle = useRiddle(props.hideActions?.includes('RIDDLE') ? null : props);
   const [execMotions, isMotionRunning] = useMotions(props.motions || [], demoRef.current);
   const [copyCode, copyStatus] = useCopy();
   const [currentFile, setCurrentFile] = useState('_');
@@ -158,14 +158,14 @@ const Previewer: React.FC<IPreviewerProps> = oProps => {
             onClick={openCSB}
           />
         )}
-        {openRiddle && (
+        {/* {openRiddle && (
           <button
             title="Open demo on Riddle"
             className="__dumi-default-icon"
             role="riddle"
             onClick={openRiddle}
           />
-        )}
+        )} */}
         {props.motions && (
           <button
             title="Execute motions"

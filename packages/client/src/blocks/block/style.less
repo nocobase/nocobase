@@ -1,0 +1,20 @@
+.block-list {
+  background: #f0f2f5;
+  padding: 0 24px 24px;
+}
+.block-item {
+  position: relative;
+  padding-top: 24px;
+  .block-item-actions {
+    display: none;
+    position: absolute;
+    top: 0;
+    right: 0;
+    z-index: 1;
+  }
+  &:hover {
+    .block-item-actions {
+      display: inline-block;
+    }
+  }
+}
