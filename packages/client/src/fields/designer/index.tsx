@@ -43,7 +43,6 @@ function DropRow() {
       const source = getSchema(content.paths);
       // console.log({ paths: content.paths, source });
       // schema.addProperty(source.name, source.toJSON());
-      // source.parent.removeProperty(source.name);
       // refresh();
 
       const rowName = `row_${uid()}`;
@@ -67,6 +66,7 @@ function DropRow() {
           },
         },
       });
+      source.parent.removeProperty(source.name);
       refresh();
     },
   });
@@ -109,7 +109,7 @@ function DropRowColumn() {
       });
       const len = Object.keys(schema.properties).length;
       const properties = schema.mapProperties((p) => p);
-
+      source.parent.removeProperty(source.name);
       // schema.setProperties(newProperties);
       // console.log(properties);
       refresh();
@@ -174,6 +174,7 @@ function DropColumn() {
 
       // schema.setProperties(newProperties);
       // console.log(properties);
+      source.parent.removeProperty(source.name);
       refresh();
 
       properties.forEach((p) => {
@@ -186,7 +187,6 @@ function DropColumn() {
 
       // console.log({ paths: content.paths, source });
       // schema.addProperty(source.name, source.toJSON());
-      // source.parent.removeProperty(source.name);
       // refresh();
     },
   });
