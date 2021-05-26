@@ -5,6 +5,7 @@ import { DrawerProps } from 'antd/lib/drawer';
 import { useContext } from 'react';
 import { ConfigProvider } from 'antd';
 import zhCN from 'antd/lib/locale/zh_CN';
+import { ModalFuncProps } from 'antd/lib/modal/Modal'
 import isNum from 'lodash/isNumber';
 import isBool from 'lodash/isBoolean';
 import isStr from 'lodash/isString';
@@ -89,7 +90,7 @@ export function Drawer(title: any, content: any): IDrawer {
       render(
         false,
         () => {
-          drawer.closeWithConfirm = false;
+          drawer.closeWithConfirm = null;
           drawer.close();
         },
         () => {
@@ -100,7 +101,7 @@ export function Drawer(title: any, content: any): IDrawer {
         render(
           true,
           () => {
-            drawer.closeWithConfirm = false;
+            drawer.closeWithConfirm = null;
             drawer.close();
           },
           () => {
@@ -113,11 +114,11 @@ export function Drawer(title: any, content: any): IDrawer {
       if (!env.root) return;
       if (drawer.closeWithConfirm) {
         Modal.confirm({
-          title: drawer.closeWithConfirm === true ? '表单内容发生变化，确定不保存吗？' : drawer.closeWithConfirm.title,
           okText: '确定',
           cancelText: '取消',
+          ...drawer.closeWithConfirm,
           onOk() {
-            drawer.closeWithConfirm = false;
+            drawer.closeWithConfirm = null;
             const els = document.querySelectorAll('.env-root-push');
             if (els.length) {
               const last = els[els.length - 1];
@@ -135,11 +136,11 @@ export function Drawer(title: any, content: any): IDrawer {
         render(false);
       }
     },
-    closeWithConfirm: false,
+    closeWithConfirm: null,
   };
 
-  const closeWithConfirm = (bool) => {
-    drawer.closeWithConfirm = bool;
+  const closeWithConfirm = (props) => {
+    drawer.closeWithConfirm = props;
   };
 
   const render = (visible = true, resolve?: () => any, reject?: () => any) => {
@@ -192,12 +193,12 @@ const DrawerFooter: React.FC = (props) => {
 
 interface ContentPorps {
   resolve?: () => any;
-  closeWithConfirm?: (bool: boolean) => any;
+  closeWithConfirm?: (props: ModalFuncProps) => any;
 }
 
 Drawer.open = (props: DrawerProps & { content: (contentPorps?: ContentPorps) => any }) => {
-  const { content, visible, ...rest } = props;
-  return Drawer(rest, content).open({ visible });
+  const { content, visible, ...others } = props;
+  return Drawer(others, content).open({ visible });
 };
 
 Drawer.Footer = DrawerFooter;
