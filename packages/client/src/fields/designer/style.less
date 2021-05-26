@@ -1,0 +1,57 @@
+.drop-column {
+  position: absolute;
+  top: 0;
+  left: -12px;
+  height: 100%;
+  width: 24px;
+  // border: 1px dashed rgb(232, 232, 232);
+  &.active {
+    background: #e6f7ff;
+  }
+  &.last {
+    left: auto;
+    right: -24px;
+  }
+}
+.drop-block {
+  height: 12px;
+  // background: #e6f7ff;
+  // pointer-events: none;
+  &.active {
+    background: #e6f7ff;
+  }
+}
+.ant-formily-item + .drop-block {
+  position: absolute;
+  bottom: 12px;
+  width: 100%;
+}
+
+.grid-block {
+  position: relative;
+  padding-bottom: 1px;
+  .grid-block-actions {
+    position: absolute;
+    top: 0;
+    right: 0;
+    z-index: 1;
+    // display: none;
+  }
+  &:hover {
+    .grid-block-actions {
+      display: inline-block;
+    }
+  }
+}
+
+.drop-row {
+  height: 12px;
+  // background: #e6f7ff;
+  position: absolute;
+  bottom: 0;
+  width: 100%;
+  &.active {
+    background: #e6f7ff;
+  }
+}
+
