@@ -11,3 +11,14 @@ group:
 
 # Designer - 字段设计器
 
+
+```tsx
+import React from 'react';
+import Designer from './'
+
+export default () => {
+  return (
+    <Designer/>
+  )
+}
+```
