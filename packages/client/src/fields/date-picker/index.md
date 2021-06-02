@@ -112,3 +112,17 @@ export default () => {
   );
 };
 ```
+
+## 参数说明
+
+### dateFormat
+
+日期格式
+
+### showTime
+
+是否显示时间
+
+### timeFormat
+
+时间格式

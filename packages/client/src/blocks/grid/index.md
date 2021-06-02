@@ -5,72 +5,56 @@ nav:
   path: /client
 group:
   order: 2
-  title: Blocks
+  title: Blocks 
   path: /client/blocks
 ---
 
 # Grid - 栅格
 
-## 示例
+基于行（Row）和列（Col）来定义区块（Block）的外部框架。
 
-```tsx
-import React from 'react';
-import { BlockContext, GridBlock } from '@nocobase/client';
-import './demo.less';
+## 代码演示
 
-function Hello({ name }) {
-  return <div>Hello {name}</div>;
-}
+### 基本用法
 
-const blocks = [
-  {
-    name: 'gb1', 
-    'x-component': 'Hello', 
-    'x-row': 0,
-    'x-column': 0,
-    'x-sort': 1,
-  },
-  {
-    name: 'gb2', 
-    'x-component': 'Hello', 
-    'x-row': 0,
-    'x-column': 0,
-    'x-sort': 2,
-  },
-  {
-    name: 'gb3', 
-    'x-component': 'Hello', 
-    'x-row': 0,
-    'x-column': 1,
-    'x-sort': 0,
-  },
-  {
-    name: 'gb4', 
-    'x-component': 'Hello', 
-    'x-row': 1,
-    'x-column': 0,
-    'x-sort': 0,
-  },
-  {
-    name: 'gb5', 
-    'x-component': 'Hello', 
-    'x-row': 2,
-    'x-column': 0,
-    'x-sort': 0,
-  },
-];
+<code src="./demos/demo2.tsx"/>
 
-export default () => {
-  return (
-    <BlockContext.Provider value={{
-      Hello,
-    }}>
-      <div id={'components-grid-demo'}>
-        <GridBlock
-          blocks={blocks}
-        />
-      </div>
-    </BlockContext.Provider >
-  )
+### 内嵌区块
+
+<code src="./demos/demo3.tsx"/>
+
+## API 说明
+
+### Grid
+
+只能在同一个 Grid 里拖拽布局
+
+### Grid.Row
+
+行
+
+### Grid.Column
+
+列
+
+### Grid.Block
+
+区块
+
+### BlockOptions
+
+```ts
+interface BlockOptions {
+  rowOrder: number;
+  columnOrder: number;
+  blockOrder: number;
 }
 ```
+
+- rowOrder：第几行
+- columnOrder：第几列
+- blockOrder：某单元格内部区块排序
+
+### blocks2properties
+
+原始 schema 需要至少 grid->row->col->block->custom 五层嵌套，写起来非常繁琐，`blocks2properties` 方法可以简化配置。

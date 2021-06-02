@@ -281,3 +281,14 @@ export default () => {
 ## 参数说明
 
 输入框组件暂时还没有特殊的参数，其他通用参数参考 [Field 章节](fields)。
+
+常用配置参数：
+
+- type
+- title
+- name
+- required
+- default
+- x-component-props.placeholder
+- x-decorator-props.description
+- x-validator

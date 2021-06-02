@@ -103,3 +103,15 @@ export default () => {
   );
 };
 ```
+
+## 参数说明
+
+### dataRequest vs dataSource
+
+- dataSource 静态选项，value 为 string 或 number。
+- dataRequest 动态选项，value 为 string 或者 number 时，需要异步获取 label；也可以是 object，无需异步获取数据。
+
+### 常用配置项
+
+- changeOnSelect：当此项为 true 时，点选每级菜单选项值都会发生变化
+- maxLevel：dataRequest 参数，省市区字段时可以用于配置最大选中级别

@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Layout, Menu, Button, Dropdown } from 'antd';
+import { Layout, Menu, Button, Dropdown, Modal } from 'antd';
 import {
   AppstoreOutlined,
   MenuOutlined,
@@ -132,7 +132,12 @@ export function AddNewAction(props) {
   );
 
   return (
-    <Dropdown overlay={menu}>{props.children || <PlusOutlined />}</Dropdown>
+    <Dropdown
+      trigger={['click']}
+      overlay={menu}
+    >
+      {props.children || <PlusOutlined />}
+    </Dropdown>
   );
 }
 
@@ -179,14 +184,26 @@ export function SettingAction(props) {
       <Menu.Item key="move">
         <ArrowRightOutlined /> 移动到
       </Menu.Item>
-      <Menu.Item onClick={() => remove()} key="delete">
+      <Menu.Item
+        onClick={() => {
+          Modal.confirm({
+            title: '确定菜单',
+            content: '确认删除此菜单项吗？',
+            onOk: remove,
+          });
+        }}
+        key="delete"
+      >
         <DeleteOutlined /> 删除菜单
       </Menu.Item>
     </Menu>
   );
 
   return (
-    <Dropdown overlay={menu}>
+    <Dropdown
+      trigger={['click']}
+      overlay={menu}
+    >
       <MenuOutlined />
     </Dropdown>
   );
