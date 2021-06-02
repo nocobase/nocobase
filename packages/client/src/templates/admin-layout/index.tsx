@@ -38,7 +38,7 @@ function Menu() {
     <ul>
       {data.map((item, index) => (
         <li key={index}>
-          <Link to={item.name}>{item.title}</Link>
+          <Link to={`/admin/${item.name}`}>{item.title}</Link>
         </li>
       ))}
     </ul>

@@ -2,6 +2,7 @@ import React, { useContext, useEffect, useState } from 'react';
 import { Spin } from 'antd';
 import { Helmet } from 'react-helmet';
 import { usePage, BlockContext } from '../../';
+import { useRequest } from 'ahooks';
 
 export function PageTemplate({ route }) {
   const { GridBlock } = useContext<any>(BlockContext);
@@ -9,11 +10,14 @@ export function PageTemplate({ route }) {
   useEffect(() => {
     setPreName(route.name);
   }, [route.name]);
-  const { data = {}, loading } = usePage(route.name);
+  const { data = {}, loading } = useRequest(`/api/routes:getPage?name=${route.name}`, {
+    // refreshDeps: [route.name],
+  });
+  console.log(data.title, { loading, preName, blocks: data.blocks });
   if (loading || preName !== route.name) {
     return <Spin />;
   }
-  console.log(data.title, { preName, blocks: data.blocks });
+  console.log(data.title, { loading, preName, blocks: data.blocks });
   return (
     <div>
       <Helmet>

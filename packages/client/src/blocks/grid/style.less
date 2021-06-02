@@ -1,0 +1,143 @@
+.drop-column {
+  position: absolute;
+  top: 0;
+  left: -12px;
+  height: calc(100% - 24px);
+  width: 24px;
+  // border: 1px dashed rgb(232, 232, 232);
+  &.active {
+    &::after {
+      content: '';
+      display: block;
+      width: 12px;
+      height: 100%;
+      position: absolute;
+      left: 5px;
+      background: #e6f7ff;
+    }
+  }
+  &.last {
+    left: auto;
+    right: -24px;
+  }
+}
+.drop-block {
+  height: 12px;
+  position: absolute;
+  bottom: -12px;
+  width: 100%;
+  left: 0;
+  // background: #e6f7ff;
+  // pointer-events: none;
+  &.active {
+    background: #e6f7ff;
+  }
+}
+// .ant-formily-item + .drop-block {
+//   position: absolute;
+//   bottom: 12px;
+//   width: 100%;
+// }
+.grid-row {
+  position: relative;
+
+  &.active {
+    &::after {
+      content: '';
+      display: block;
+      height: 12px;
+      position: absolute;
+      bottom: 5px;
+      width: 100%;
+      background: #e6f7ff;
+    }
+  }
+}
+
+.grid-block {
+  position: relative;
+  padding-bottom: 1px;
+  &.active {
+    &::after {
+      content: '';
+      display: block;
+      height: 12px;
+      position: absolute;
+      bottom: 5px;
+      width: 100%;
+      background: #e6f7ff;
+    }
+  }
+  
+  &.grid-block--Input {
+    margin-bottom: 0;
+    .drop-block {
+      bottom: 0;
+    }
+  }rgb(172, 172, 172)
+  .grid-block-actions {
+    position: absolute;
+    top: 5px;
+    right: 5px;
+    z-index: 2;
+    display: none;
+  }
+  > .action-bar {
+    position: absolute;
+    right: 10px;
+    top: 5px;
+    z-index: 2;
+    display: none;
+    &.active {
+      display: inline-block;
+    }
+  }
+  &:hover,
+  &.hover {
+    > .action-bar {
+      display: inline-block;
+    }
+  }
+}
+
+.grid-block .ant-card {
+  margin-bottom: 24px;
+}
+
+.drop-row {
+  height: 12px;
+  // background: #e6f7ff;
+  position: absolute;
+  bottom: 5px;
+  width: 100%;
+  // background: #e6f7ff;
+  &.active {
+    background: #e6f7ff;
+  }
+
+  &.first {
+    top: -17px;
+    z-index: 2;
+    bottom: auto;
+  }
+}
+
+.draggable {
+  cursor: move !important; /* fallback: no `url()` support or images disabled */
+  cursor: -webkit-grab !important; /* Chrome 1-21, Safari 4+ */
+  cursor:    -moz-grab !important; /* Firefox 1.5-26 */
+  cursor:         grab !important; /* W3C standards syntax, should come least */
+}
+
+.draggable:active {
+  cursor: -webkit-grabbing;
+  cursor:    -moz-grabbing;
+  cursor:         grabbing;
+}
+tr.drop-over-downward td {
+  border-bottom: 1px dashed #1890ff;
+}
+
+tr.drop-over-upward td {
+  border-top: 1px dashed #1890ff;
+}

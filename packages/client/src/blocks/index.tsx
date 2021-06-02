@@ -3,7 +3,6 @@ import React, { createContext, useContext } from 'react';
 export * from './form';
 export * from './descriptions';
 export * from './table';
-export * from './grid';
 
 export const BlockContext = createContext({});
 

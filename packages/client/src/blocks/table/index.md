@@ -11,6 +11,11 @@ group:
 
 # Table - 表格
 
-## 示例
+## 代码演示
+
+### 基本使用
 
 <code src="./demos/demo1.tsx"/>
+
+### 设计器模式
+

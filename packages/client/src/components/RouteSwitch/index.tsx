@@ -19,7 +19,6 @@ export function RouteSwitch(props: RouteSwitchProps) {
       <Switch>
         {routes.map((route, key) => {
           if (route.type === 'redirect') {
-            console.log(route);
             return (
               <Redirect
                 key={key}

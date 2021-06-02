@@ -19,7 +19,7 @@ export const Checkbox: ComposedCheckbox = connect(
       onInput: 'onChange',
     },
     (props, field) => {
-      console.log({ props, field });
+      // console.log({ props, field });
       return {
         ...props,
       };
