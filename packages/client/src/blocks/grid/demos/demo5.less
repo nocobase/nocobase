@@ -1,0 +1,16 @@
+.col-divider {
+  position: relative;
+  &:hover {
+    &::after {
+      content: '';
+      display: block;
+      position: absolute;
+      top: 0;
+      left: 50%;
+      transform: translateX(-50%);
+      height: 100%;
+      width: 12px;
+      background: #e6f7ff;
+    }
+  }
+}

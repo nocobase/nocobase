@@ -23,6 +23,14 @@ group:
 
 <code src="./demos/demo3.tsx"/>
 
+### useDrag & useDrop
+
+<code src="./demos/demo4.tsx"/>
+
+### useColResize
+
+<code src="./demos/demo5.tsx"/>
+
 ## API 说明
 
 ### Grid
@@ -58,3 +66,10 @@ interface BlockOptions {
 ### blocks2properties
 
 原始 schema 需要至少 grid->row->col->block->custom 五层嵌套，写起来非常繁琐，`blocks2properties` 方法可以简化配置。
+
+### useDrag
+
+### useDrop
+
+### useColResize
+
