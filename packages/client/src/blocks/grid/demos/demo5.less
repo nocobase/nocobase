@@ -1,6 +1,26 @@
 .col-divider {
   position: relative;
-  &:hover {
+  &:last-child {
+    &.resizable:hover {
+      cursor: auto;
+      &::after {
+        display: none;
+      }
+    }
+    &.resizable.hover {
+      &::after {
+        display: block !important;
+      }
+    }
+  }
+  &.resizable {
+    cursor: col-resize;
+  }
+  &.hover {
+    cursor: grab !important;
+  }
+  &.resizable:hover,
+  &.hover {
     &::after {
       content: '';
       display: block;
@@ -13,4 +33,81 @@
       background: #e6f7ff;
     }
   }
+}
+
+.row-divider {
+  position: relative;
+  &.hover {
+    &::after {
+      content: '';
+      display: block;
+      position: absolute;
+      left: 0;
+      top: 50%;
+      transform: translateY(-50%);
+      height: 12px;
+      width: 100%;
+      background: #e6f7ff;
+    }
+  }
+  &:last-child {
+    margin-bottom: -24px;
+  }
+}
+
+.row {
+  position: relative;
+  &.hover {
+    &::after {
+      content: '';
+      display: block;
+      position: absolute;
+      left: 24px;
+      bottom: -18px;
+      height: 12px;
+      right: 24px;
+      background: #e6f7ff;
+    }
+    &.top-half {
+      &::after {
+        top: -18px;
+        bottom: auto;
+      }
+    }
+  }
+}
+
+.block {
+  position: relative;
+  margin-bottom: 24px;
+  &:last-child {
+    margin-bottom: 0;
+  }
+  &.hover {
+    &::after {
+      content: '';
+      display: block;
+      position: absolute;
+      left: 0;
+      bottom: -18px;
+      height: 12px;
+      width: 100%;
+      background: #e6f7ff;
+    }
+    &.top-half {
+      &::after {
+        top: -18px;
+        bottom: auto;
+      }
+    }
+  }
+  > .action-bar {
+    position: absolute;
+    top: 5px;
+    right: 8px;
+  }
+}
+
+.draggable {
+  cursor: grab !important;
 }

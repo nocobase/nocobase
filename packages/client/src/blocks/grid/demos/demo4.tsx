@@ -1,12 +1,12 @@
 import React, { createContext, useContext, useEffect, useRef } from 'react';
-import { useDrag, useDrop, DragDropProvider } from '../';
+import { useDrag, useDrop, DragDropProvider, mergeRefs } from '../';
 import { Button, Space } from 'antd';
 
 function DropZone({ options, children }) {
   const { isOver, dropRef } = useDrop(options);
   return (
     <div
-      ref={dropRef}
+      ref={dropRef as any}
       style={{
         textAlign: 'center',
         lineHeight: '100px',
@@ -32,23 +32,7 @@ function Dragable() {
       // console.log('onDrag');
     },
   });
-  return (
-    <Button ref={mergeRefs<any>([dragRef, previewRef])}>拖拽1</Button>
-  );
-}
-
-function mergeRefs<T = any>(
-  refs: Array<React.MutableRefObject<T> | React.LegacyRef<T>>
-): React.RefCallback<T> {
-  return (value) => {
-    refs.forEach((ref) => {
-      if (typeof ref === "function") {
-        ref(value);
-      } else if (ref != null) {
-        (ref as React.MutableRefObject<T | null>).current = value;
-      }
-    });
-  };
+  return <Button ref={mergeRefs<any>([dragRef, previewRef])}>拖拽1</Button>;
 }
 
 function Dragable2() {
@@ -64,17 +48,15 @@ function Dragable2() {
       // console.log('onDrag');
     },
   });
-  return (
-    <Button ref={mergeRefs<any>([dragRef, previewRef])}>拖拽2</Button>
-  );
+  return <Button ref={mergeRefs<any>([dragRef, previewRef])}>拖拽2</Button>;
 }
 
 export default () => {
   return (
     <DragDropProvider>
-      <Space style={{marginBottom: 12}}>
-      <Dragable />
-      <Dragable2 />
+      <Space style={{ marginBottom: 12 }}>
+        <Dragable />
+        <Dragable2 />
       </Space>
       <DropZone
         options={{

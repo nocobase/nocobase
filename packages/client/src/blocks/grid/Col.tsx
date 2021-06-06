@@ -1,5 +1,7 @@
-import React, { useRef, useState } from 'react';
+import React, { cloneElement, useRef, useState } from 'react';
 import { useMouseEvents } from 'beautiful-react-hooks';
+import { mergeRefs, useDrop } from './DND';
+import classNames from 'classnames';
 
 export function useColResizer(options?: any) {
   const { onDragStart, onDrag, onDragEnd } = options || {};
@@ -12,9 +14,15 @@ export function useColResizer(options?: any) {
   const [initial, setInitial] = useState<any>(null);
 
   onMouseDown((event: React.MouseEvent) => {
-    setIsDragging(true);
+    if (event.button !== 0) {
+      return;
+    }
     const prev = dragRef.current.previousElementSibling as HTMLDivElement;
     const next = dragRef.current.nextElementSibling as HTMLDivElement;
+    if (!prev || !next) {
+      return;
+    }
+    setIsDragging(true);
     if (!initial) {
       setInitial({
         offset: event.clientX,
@@ -41,7 +49,7 @@ export function useColResizer(options?: any) {
     setInitial(null);
     // @ts-ignore
     event.data = { size };
-    onDragEnd(event);
+    onDragEnd && onDragEnd(event);
   });
 
   onMouseMove((event: React.MouseEvent) => {
@@ -57,31 +65,36 @@ export function useColResizer(options?: any) {
     // console.log('dragRef.current.nextSibling', prev.style.width);
   });
 
-  return { dragOffset, dragRef, columns };
+  return { isDragging, dragOffset, dragRef, columns };
 }
 
 export const Col: any = (props) => {
-  const { size, children } = props;
+  const { size, children, position = {}, isLast } = props;
   return (
-    <div
-      className={'col'}
-      style={{ width: `${size * 100}%` }}
-    >
-      {children}
-    </div>
+    <>
+      <div data-type={'col'} className={'col'} style={{ width: `${size * 100}%` }}>
+        {children}
+      </div>
+      <Col.Divider />
+    </>
   );
-}
+};
 
 Col.Divider = (props) => {
-  const { onDragEnd } = props;
-  const { dragRef } = useColResizer({ onDragEnd });
+  const { onDragEnd, resizable = true } = props;
+  const { isDragging, dragRef } = useColResizer({ onDragEnd });
+  const { isOver, dropRef } = useDrop({
+    accept: 'grid',
+    data: { },
+  });
   return (
     <div
-      className={'col-divider'}
-      style={{ width: '24px', cursor: 'col-resize' }}
-      ref={dragRef}
+      data-type={'col-divider'}
+      className={classNames('col-divider', { hover: isOver, resizable })}
+      style={{ width: '24px' }}
+      ref={mergeRefs(resizable ? [dropRef, dragRef] : [dropRef])}
     ></div>
   );
-}
+};
 
 export default Col;
