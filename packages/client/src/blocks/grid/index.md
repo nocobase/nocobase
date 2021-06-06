@@ -14,14 +14,14 @@ group:
 基于行（Row）和列（Col）来定义区块（Block）的外部框架。
 
 ## 代码演示
-
+<!-- 
 ### 基本用法
 
 <code src="./demos/demo2.tsx"/>
 
 ### 内嵌区块
 
-<code src="./demos/demo3.tsx"/>
+<code src="./demos/demo3.tsx"/> -->
 
 ### useDrag & useDrop
 
@@ -30,6 +30,10 @@ group:
 ### useColResize
 
 <code src="./demos/demo5.tsx"/>
+
+### Grid
+
+<code src="./demos/demo6.tsx"/>
 
 ## API 说明
 
@@ -67,7 +71,11 @@ interface BlockOptions {
 
 原始 schema 需要至少 grid->row->col->block->custom 五层嵌套，写起来非常繁琐，`blocks2properties` 方法可以简化配置。
 
-### useDrag
+### useDrag & useDrop
+
+拖拽 hooks
+
+原生态的 
 
 ### useDrop
 
