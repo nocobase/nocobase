@@ -26,7 +26,7 @@ export function SchemaFieldWithDesigner(props: { schema?: ISchema }) {
         <SchemaDesignerContext.Provider value={schema}>
           <SchemaField schema={schema} />
         </SchemaDesignerContext.Provider>
-        <pre>{JSON.stringify(schema.toJSON(), null, 2)}</pre>
+        {/* <pre>{JSON.stringify(schema.toJSON(), null, 2)}</pre> */}
       </SchemaRefreshContext.Provider>
     );
   }
