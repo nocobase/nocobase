@@ -1,0 +1,34 @@
+.designable-action {
+  position: absolute;
+  right: 16px;
+  display: none;
+  z-index: 10;
+}
+.ant-menu-dark.ant-menu-horizontal {
+  width: 100%;
+}
+.ant-menu-dark .ant-menu-item-active .designable-action {
+  background-color: #001529;
+  display: inline-block;
+}
+
+.ant-menu-dark .ant-menu-item-active:hover .designable-action,
+.ant-menu-dark .ant-menu-item-active.ant-menu-item-selected .designable-action {
+  background-color: #1890ff;
+  display: inline-block;
+}
+
+.ant-menu-light .ant-menu-submenu-active > .ant-menu-submenu-title .designable-action,
+.ant-menu-light .ant-menu-item-active .designable-action {
+  background-color: #fff;
+  display: inline-block;
+}
+
+.ant-menu-sub.ant-menu-inline .ant-menu-submenu-active > .ant-menu-submenu-title .designable-action,
+.ant-menu-sub.ant-menu-inline .ant-menu-item-active .designable-action {
+  background-color: #fafafa;
+}
+
+.ant-menu-light .ant-menu-item-selected .designable-action {
+  background-color: #e6f7ff !important;
+}

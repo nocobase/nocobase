@@ -1,6 +1,5 @@
 import React from 'react';
 import { Row, Col } from '../';
-import './demo5.less';
 
 export default () => {
   return (

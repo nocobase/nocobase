@@ -1,36 +1,8 @@
-import { Grid, Row, Col, Block, SchemaFieldWithDesigner } from '../';
-import './demo5.less';
-import { Card } from 'antd';
-import classNames from 'classnames';
-import React, { useMemo } from 'react';
-import {
-  FormProvider,
-  FormConsumer,
-  useField,
-  useFieldSchema,
-  ISchema,
-  Schema,
-} from '@formily/react';
-import { createForm } from '@formily/core';
+import React from 'react';
+import { SchemaBlock } from '../../';
+import { ISchema } from '@formily/json-schema';
 
-function Designer(props: { schema?: ISchema }) {
-  const form = useMemo(() => createForm({}), []);
-  const { schema } = props;
-  return (
-    <div>
-      <FormProvider form={form}>
-        <SchemaFieldWithDesigner schema={schema} />
-        {/* <FormConsumer>
-          {(form) => {
-            return <div>{JSON.stringify(form.values, null, 2)}</div>;
-          }}
-        </FormConsumer> */}
-      </FormProvider>
-    </div>
-  );
-}
-
-const schema = new Schema({
+const schema: ISchema = {
   type: 'object',
   properties: {
     grid: {
@@ -52,9 +24,17 @@ const schema = new Schema({
                 block11: {
                   type: 'void',
                   'x-component': 'Grid.Block',
-                  'x-component-props': {
-                    title: 'block11',
-                  },
+                  'x-content': (
+                    <div
+                      style={{
+                        padding: 24,
+                        textAlign: 'center',
+                        background: 'rgb(241, 241, 241)',
+                      }}
+                    >
+                      block11
+                    </div>
+                  ),
                 },
               },
             },
@@ -72,6 +52,17 @@ const schema = new Schema({
                   'x-component-props': {
                     title: 'block21',
                   },
+                  'x-content': (
+                    <div
+                      style={{
+                        padding: 24,
+                        textAlign: 'center',
+                        background: 'rgb(241, 241, 241)',
+                      }}
+                    >
+                      block21
+                    </div>
+                  ),
                 },
               },
             },
@@ -91,9 +82,17 @@ const schema = new Schema({
                 block211: {
                   type: 'void',
                   'x-component': 'Grid.Block',
-                  'x-component-props': {
-                    title: 'block211',
-                  },
+                  'x-content': (
+                    <div
+                      style={{
+                        padding: 24,
+                        textAlign: 'center',
+                        background: 'rgb(241, 241, 241)',
+                      }}
+                    >
+                      block211
+                    </div>
+                  ),
                 },
               },
             },
@@ -108,9 +107,17 @@ const schema = new Schema({
                 block221: {
                   type: 'void',
                   'x-component': 'Grid.Block',
-                  'x-component-props': {
-                    title: 'block221',
-                  },
+                  'x-content': (
+                    <div
+                      style={{
+                        padding: 24,
+                        textAlign: 'center',
+                        background: 'rgb(241, 241, 241)',
+                      }}
+                    >
+                      block221
+                    </div>
+                  ),
                 },
               },
             },
@@ -119,7 +126,7 @@ const schema = new Schema({
         row3: {
           type: 'void',
           'x-component': 'Grid.Row',
-          "x-component-props": {
+          'x-component-props': {
             isLast: true,
           },
           properties: {
@@ -134,9 +141,17 @@ const schema = new Schema({
                 block311: {
                   type: 'void',
                   'x-component': 'Grid.Block',
-                  'x-component-props': {
-                    title: 'block311',
-                  },
+                  'x-content': (
+                    <div
+                      style={{
+                        padding: 24,
+                        textAlign: 'center',
+                        background: 'rgb(241, 241, 241)',
+                      }}
+                    >
+                      block311
+                    </div>
+                  ),
                 },
               },
             },
@@ -145,64 +160,8 @@ const schema = new Schema({
       },
     },
   },
-})
+};
 
 export default () => {
-  return (
-    <Card>
-      <Designer
-        schema={schema}
-      />
-      {/* <Grid
-        onDrop={(e) => {
-          console.log('onDrop', e, e.data);
-        }}
-      >
-        <Row
-          onColResize={(e) => {
-            console.log(e.data);
-          }}
-        >
-          {[1, 2, 3].map((index) => (
-            <Col size={1 / 3}>
-              <Block>col {index}</Block>
-            </Col>
-          ))}
-        </Row>
-        <Row
-          onColResize={(e) => {
-            console.log(e.data);
-          }}
-        >
-          {[4, 5, 6].map((index) => (
-            <Col size={1 / 3}>
-              <Block>col {index}</Block>
-            </Col>
-          ))}
-        </Row>
-        <Row
-          onColResize={(e) => {
-            console.log(e.data);
-          }}
-        >
-          {[7, 8].map((index) => (
-            <Col size={1 / 3}>
-              <Block>col {index}</Block>
-            </Col>
-          ))}
-        </Row>
-        <Row
-          onColResize={(e) => {
-            console.log(e.data);
-          }}
-        >
-          {[9].map((index) => (
-            <Col size={1}>
-              <Block>col {index}</Block>
-            </Col>
-          ))}
-        </Row>
-      </Grid> */}
-    </Card>
-  );
+  return <SchemaBlock schema={schema} />;
 };
