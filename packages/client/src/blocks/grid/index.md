@@ -73,16 +73,7 @@ group:
 
 - 100%
 
-
 ## 代码演示
-<!-- 
-### 基本用法
-
-<code src="./demos/demo2.tsx"/>
-
-### 内嵌区块
-
-<code src="./demos/demo3.tsx"/> -->
 
 ### useDrag & useDrop
 

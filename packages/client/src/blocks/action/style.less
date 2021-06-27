@@ -1,0 +1,21 @@
+.designable {
+  display: inline-block;
+  position: relative;
+  &:hover {
+    .designable-bar {
+      display: block;
+    }
+  }
+  .designable-bar {
+    display: none;
+    background: #fff;
+    z-index: 2;
+    position: absolute;
+    right: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    &.active {
+      display: block;
+    }
+  }
+}

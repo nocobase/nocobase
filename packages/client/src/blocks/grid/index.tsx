@@ -7,31 +7,12 @@ import {
   useField,
 } from '@formily/react';
 import { uid } from '@formily/shared';
-import { SchemaField } from '../../fields';
-import set from 'lodash/set';
+import './style.less';
 
-export const SchemaDesignerContext = createContext<Schema>(new Schema({}));
-export const SchemaRefreshContext = createContext(null);
-
-export function SchemaFieldWithDesigner(props: { schema?: ISchema }) {
-  function Container(props) {
-    const { schema } = props;
-    const [, refresh] = useState(0);
-    return (
-      <SchemaRefreshContext.Provider
-        value={() => {
-          refresh(Math.random());
-        }}
-      >
-        <SchemaDesignerContext.Provider value={schema}>
-          <SchemaField schema={schema} />
-        </SchemaDesignerContext.Provider>
-        {/* <pre>{JSON.stringify(schema.toJSON(), null, 2)}</pre> */}
-      </SchemaRefreshContext.Provider>
-    );
-  }
-  return <Container schema={new Schema(props.schema)} />;
-}
+import {
+  DesignableSchemaContext,
+  RefreshDesignableSchemaContext,
+} from '../SchemaField';
 
 export function removeProperty(property: Schema) {
   property.parent.removeProperty(property.name);
@@ -71,8 +52,8 @@ export const getSchemaAddressSegments = (schema: Schema) => {
 };
 
 export function useSchemaQuery() {
-  const context = useContext(SchemaDesignerContext);
-  const refresh = useContext(SchemaRefreshContext);
+  const context = useContext(DesignableSchemaContext);
+  const refresh = useContext(RefreshDesignableSchemaContext);
   const fieldSchema = useFieldSchema();
   const field = useField();
   const form = useForm();
@@ -126,15 +107,15 @@ export function useSchemaQuery() {
       const name = names[index];
       const property = row.properties[name];
       const addProperty = isOver ? addPropertyAfter : addPropertyBefore;
-      const count = Object.keys(row.properties).length+1;
+      const count = Object.keys(row.properties).length + 1;
       return (data) => {
-        const other = 1-(1/count);
-        Object.keys(row.properties).forEach(name => {
+        const other = 1 - 1 / count;
+        Object.keys(row.properties).forEach((name) => {
           const prop = row.properties[name];
           const segments = getSchemaAddressSegments(prop);
-          form.setFieldState(segments.join('.'), state => {
+          form.setFieldState(segments.join('.'), (state) => {
             state.componentProps.size = other * state.componentProps.size;
-            console.log({state}, other * state.componentProps.size);
+            console.log({ state }, other * state.componentProps.size);
           });
         });
         addProperty(property, {
@@ -142,7 +123,7 @@ export function useSchemaQuery() {
           name: `c_${uid()}`,
           'x-component': 'Grid.Col',
           'x-component-props': {
-            size: 1/count,
+            size: 1 / count,
           },
           properties: {
             [data.name]: data,
@@ -177,18 +158,18 @@ export function useSchemaQuery() {
         removeProperty(schema.parent);
         const cols = [];
         let allSize = 0;
-        Object.keys(schema.parent.parent.properties).forEach(name => {
+        Object.keys(schema.parent.parent.properties).forEach((name) => {
           const prop = schema.parent.parent.properties[name];
           const segments = getSchemaAddressSegments(prop);
           cols.push(segments);
-          form.setFieldState(segments.join('.'), state => {
+          form.setFieldState(segments.join('.'), (state) => {
             allSize += state.componentProps.size;
           });
           return;
         });
         for (const segments of cols) {
-          form.setFieldState(segments.join('.'), state => {
-            state.componentProps.size = state.componentProps.size/allSize;
+          form.setFieldState(segments.join('.'), (state) => {
+            state.componentProps.size = state.componentProps.size / allSize;
           });
         }
       }
@@ -219,7 +200,7 @@ export function useSchemaQuery() {
               },
             },
           },
-        })
+        });
       } else {
         addProperty(schema, data);
       }
@@ -241,18 +222,18 @@ export function useSchemaQuery() {
         source.parent.parent.removeProperty(source.parent.name);
         const cols = [];
         let allSize = 0;
-        Object.keys(source.parent.parent.properties).forEach(name => {
+        Object.keys(source.parent.parent.properties).forEach((name) => {
           const prop = source.parent.parent.properties[name];
           const segments = getSchemaAddressSegments(prop);
           cols.push(segments);
-          form.setFieldState(segments.join('.'), state => {
+          form.setFieldState(segments.join('.'), (state) => {
             allSize += state.componentProps.size;
           });
           return;
         });
         for (const segments of cols) {
-          form.setFieldState(segments.join('.'), state => {
-            state.componentProps.size = state.componentProps.size/allSize;
+          form.setFieldState(segments.join('.'), (state) => {
+            state.componentProps.size = state.componentProps.size / allSize;
           });
         }
       } else {

@@ -1,46 +1,36 @@
-import React, { createContext, useContext } from 'react';
+import React, { useMemo } from 'react';
+import { createForm } from '@formily/core';
+import { FormProvider } from '@formily/react';
+import { DesignableSchemaField, SchemaField } from './SchemaField';
 
-export * from './form';
-export * from './descriptions';
-export * from './table';
+export * from './SchemaField';
 
-export const BlockContext = createContext({});
+export const SchemaBlock = ({ schema, onlyRenderProperties =  false, designable = true }) => {
+  const form = useMemo(() => createForm(), []);
 
-export interface BlockProps {
-  name: string;
-  blocks?: any;
-  'x-component'?: any;
-  [key: string]: any;
-}
+  let s = schema;
 
-export interface CreateBlockOptions {
-  components?: any;
-}
-
-export function createBlock(options: CreateBlockOptions) {
-  const { components } = options;
-  function Block(props: BlockProps) {
-    const { ['x-component']: component } = props;
-    const Component = component ? components[component] : null;
-    if (!Component) {
-      return null;
-    }
-    return (
-      <BlockContext.Provider value={components}>
-        <Component {...props}/>
-      </BlockContext.Provider>
-    )
+  if (onlyRenderProperties) {
+    s = {
+      type: 'object',
+      properties: schema.properties,
+    };
+  } else if (schema.name) {
+    s = {
+      type: 'object',
+      properties: {
+        [schema.name]: schema,
+      },
+    };
   }
-  return Block;
-}
 
-export function useBlock(props: any) {
-  const components = useContext(BlockContext);
-  const { 'x-component': component } = props;
-
-  const Component = component ? components[component] : null;
-
-  return {
-    Component,
-  }
-}
+  return (
+    <FormProvider form={form}>
+      {designable ? (
+        <DesignableSchemaField schema={s} />
+      ) : (
+        <SchemaField schema={s} />
+      )}
+    </FormProvider>
+  );
+};

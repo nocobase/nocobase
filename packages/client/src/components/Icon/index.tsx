@@ -1,17 +1,5 @@
 import React from 'react';
-import {
-  createFromIconfontCN,
-  UserOutlined,
-  TeamOutlined,
-  DatabaseOutlined,
-  DashboardOutlined,
-  SettingOutlined,
-  TableOutlined,
-  MenuOutlined,
-  HistoryOutlined,
-  NotificationOutlined,
-} from '@ant-design/icons';
-
+import { createFromIconfontCN } from '@ant-design/icons';
 import * as antIcons from '@ant-design/icons';
 
 export const IconFont = createFromIconfontCN({
@@ -32,27 +20,15 @@ export function hasIcon(type: string) {
 }
 
 export function registerIcons(components) {
-  Object.keys(components).forEach(type => {
+  Object.keys(components).forEach((type) => {
     registerIcon(type, components[type]);
   });
 }
 
-Object.keys(antIcons).forEach(name => {
+Object.keys(antIcons).forEach((name) => {
   if (name.endsWith('Outlined')) {
     registerIcon(name, antIcons[name]);
   }
-});
-
-registerIcons({
-  // HistoryOutlined,
-  // MenuOutlined,
-  // TableOutlined,
-  // SettingOutlined,
-  // TeamOutlined,
-  // UserOutlined,
-  // DatabaseOutlined,
-  // DashboardOutlined,
-  // NotificationOutlined,
 });
 
 interface IconProps {
