@@ -3,6 +3,7 @@ import React, {
   createContext,
   useContext,
   useEffect,
+  useRef,
   useState,
 } from 'react';
 import {
@@ -14,6 +15,7 @@ import {
   useFieldSchema,
   RecursionField,
   Schema,
+  SchemaOptionsContext,
 } from '@formily/react';
 import {
   Menu as AntdMenu,
@@ -49,19 +51,43 @@ import {
 } from '@ant-design/icons';
 import './style.less';
 import { Icon } from '../icon-picker';
-import {
-  useHistory,
-} from 'react-router-dom';
+import { useHistory } from 'react-router-dom';
+import cls from 'classnames';
 
 export type MenuType = React.FC<MenuProps & { hideSubMenu?: boolean }> & {
   Item?: React.FC<MenuItemProps>;
   SubMenu?: React.FC<SubMenuProps>;
   Divider?: React.FC<DividerProps>;
-  Designable?: React.FC<any>;
+  DesignableBar?: React.FC<any>;
   AddNew?: React.FC<any>;
   Link?: React.FC<MenuItemProps>;
   Url?: React.FC<MenuItemProps & { url: string }>;
 };
+
+function Blank() {
+  return null;
+}
+
+function useDesignableBar() {
+  const schema = useFieldSchema();
+
+  let s = schema;
+  let DesignableBarName;
+  while (s.parent) {
+    if (s.parent['x-component'] === 'Menu') {
+      DesignableBarName = s.parent['x-designable-bar'];
+      break;
+    }
+    s = s.parent;
+  }
+
+  const options = useContext(SchemaOptionsContext);
+  const DesignableBar = DesignableBarName ? get(options.components, DesignableBarName) : null;
+
+  return {
+    DesignableBar: DesignableBar || Blank,
+  };
+}
 
 export function removeProperty(property: Schema) {
   property.parent.removeProperty(property.name);
@@ -98,7 +124,7 @@ export function useSchemaQuery(segments?: any[]) {
   const getSchemaByPath = (path) => {
     let s: Schema = context;
     const names = [...path];
-    console.log('names', [...names], path, context)
+    console.log('names', [...names], path, context);
     // names.shift();
     while (s && names.length) {
       const name = names.shift();
@@ -247,260 +273,80 @@ const AddNewAction = () => {
 
 const SettingAction = () => {
   const field = useField();
+  const [visible, setVisible] = useState(false);
   const { schema, refresh, remove, insertBefore, insertAfter, appendChild } =
     useSchemaQuery();
-  const text = schema['x-component'] === 'Menu.SubMenu' ? '当前菜单组' : '当前菜单';
+  const text =
+    schema['x-component'] === 'Menu.SubMenu' ? '当前菜单组' : '当前菜单';
   return (
-    <div
-      onClick={(e) => {
-        e.stopPropagation();
-        e.preventDefault();
-      }}
-      className={'designable-action'}
-    >
-      <Dropdown
-        overlayStyle={{
-          minWidth: 150,
+    <div className={cls('designable-bar', { active: visible })}>
+      <div
+        onClick={(e) => {
+          e.stopPropagation();
+          e.preventDefault();
         }}
-        trigger={['click']}
-        overlay={
-          <AntdMenu>
-            <AntdMenu.Item
-              onClick={() => {
-                FormDialog('编辑菜单', () => {
-                  return (
-                    <FormLayout layout={'vertical'}>
-                      <SchemaField>
-                        <SchemaField.String
-                          name="title"
-                          required
-                          title="菜单名称"
-                          x-decorator="FormItem"
-                          x-component="Input"
-                        />
-                        <SchemaField.String
-                          name=".icon"
-                          title="图标"
-                          x-decorator="FormItem"
-                          x-component="IconPicker"
-                        />
-                      </SchemaField>
-                      {/* <FormDialog.Footer>
+        className={'designable-bar-actions'}
+      >
+        <Dropdown
+          overlayStyle={{
+            minWidth: 150,
+          }}
+          visible={visible}
+          onVisibleChange={(visible) => {
+            setVisible(visible);
+          }}
+          trigger={['click']}
+          overlay={
+            <AntdMenu>
+              <AntdMenu.Item
+                onClick={() => {
+                  FormDialog('编辑菜单', () => {
+                    return (
+                      <FormLayout layout={'vertical'}>
+                        <SchemaField>
+                          <SchemaField.String
+                            name="title"
+                            required
+                            title="菜单名称"
+                            x-decorator="FormItem"
+                            x-component="Input"
+                          />
+                          <SchemaField.String
+                            name=".icon"
+                            title="图标"
+                            x-decorator="FormItem"
+                            x-component="IconPicker"
+                          />
+                        </SchemaField>
+                        {/* <FormDialog.Footer>
                     <span style={{ marginLeft: 4 }}>扩展文案</span>
                   </FormDialog.Footer> */}
-                    </FormLayout>
-                  );
-                })
-                  .open({
-                    initialValues: {
-                      title: schema.title,
-                      icon: schema['x-component-props']?.['icon'],
-                    },
-                  })
-                  .then((data) => {
-                    schema.title = data.title;
-                    const componentProps = schema['x-component-props'] || {};
-                    componentProps['icon'] = data.icon;
-                    field.setTitle(data.title);
-                    field.setComponentProps(componentProps);
-                    refresh();
-                  });
-              }}
-            >
-              <EditOutlined /> 编辑菜单
-            </AntdMenu.Item>
-            <AntdMenu.Item>
-              <ArrowRightOutlined /> 移动到
-            </AntdMenu.Item>
-            <AntdMenu.Divider />
-            <AntdMenu.SubMenu icon={<ArrowUpOutlined />} title={`${text}前`}>
-              <AntdMenu.Item
-                onClick={() => {
-                  FormDialog(`新建菜单`, () => {
-                    return (
-                      <FormLayout layout={'vertical'}>
-                        <SchemaField>
-                          <SchemaField.String
-                            name="title"
-                            required
-                            title="名称"
-                            x-decorator="FormItem"
-                            x-component="Input"
-                          />
-                          <SchemaField.String
-                            name="icon"
-                            title="图标"
-                            x-decorator="FormItem"
-                            x-component="IconPicker"
-                          />
-                        </SchemaField>
                       </FormLayout>
                     );
                   })
-                    .open({})
+                    .open({
+                      initialValues: {
+                        title: schema.title,
+                        icon: schema['x-component-props']?.['icon'],
+                      },
+                    })
                     .then((data) => {
-                      insertBefore({
-                        name: `m_${uid()}`,
-                        type: 'void',
-                        title: data.title,
-                        'x-component': 'Menu.Item',
-                        'x-component-props': {
-                          icon: data.icon,
-                        },
-                      });
-                    });
-                }}
-                style={{ minWidth: 150 }}
-              >
-                <MenuOutlined /> 新建菜单
-              </AntdMenu.Item>
-              <AntdMenu.Item
-                onClick={() => {
-                  FormDialog(`新建菜单组`, () => {
-                    return (
-                      <FormLayout layout={'vertical'}>
-                        <SchemaField>
-                          <SchemaField.String
-                            name="title"
-                            required
-                            title="名称"
-                            x-decorator="FormItem"
-                            x-component="Input"
-                          />
-                          <SchemaField.String
-                            name="icon"
-                            title="图标"
-                            x-decorator="FormItem"
-                            x-component="IconPicker"
-                          />
-                        </SchemaField>
-                      </FormLayout>
-                    );
-                  })
-                    .open({})
-                    .then((data) => {
-                      insertBefore({
-                        name: `m_${uid()}`,
-                        type: 'void',
-                        title: data.title,
-                        'x-component': 'Menu.SubMenu',
-                        'x-component-props': {
-                          icon: data.icon,
-                        },
-                        properties: {
-                          [`m_${uid()}`]: {
-                            type: 'void',
-                            title: `菜单 ${uid()}`,
-                            'x-component': 'Menu.Item',
-                          },
-                        },
-                      });
+                      schema.title = data.title;
+                      const componentProps = schema['x-component-props'] || {};
+                      componentProps['icon'] = data.icon;
+                      field.setTitle(data.title);
+                      field.setComponentProps(componentProps);
+                      refresh();
                     });
                 }}
               >
-                <GroupOutlined /> 新建分组
+                <EditOutlined /> 编辑菜单
               </AntdMenu.Item>
               <AntdMenu.Item>
-                <LinkOutlined /> 添加链接
+                <ArrowRightOutlined /> 移动到
               </AntdMenu.Item>
-            </AntdMenu.SubMenu>
-            <AntdMenu.SubMenu icon={<ArrowDownOutlined />} title={`${text}后`}>
-              <AntdMenu.Item
-                onClick={() => {
-                  FormDialog(`新建菜单`, () => {
-                    return (
-                      <FormLayout layout={'vertical'}>
-                        <SchemaField>
-                          <SchemaField.String
-                            name="title"
-                            required
-                            title="名称"
-                            x-decorator="FormItem"
-                            x-component="Input"
-                          />
-                          <SchemaField.String
-                            name="icon"
-                            title="图标"
-                            x-decorator="FormItem"
-                            x-component="IconPicker"
-                          />
-                        </SchemaField>
-                      </FormLayout>
-                    );
-                  })
-                    .open({})
-                    .then((data) => {
-                      insertAfter(
-                        new Schema({
-                          name: `m_${uid()}`,
-                          type: 'void',
-                          title: data.title,
-                          'x-component': 'Menu.Item',
-                          'x-component-props': {
-                            icon: data.icon,
-                          },
-                        }),
-                      );
-                    });
-                }}
-                style={{ minWidth: 150 }}
-              >
-                <MenuOutlined /> 新建菜单
-              </AntdMenu.Item>
-              <AntdMenu.Item
-                onClick={() => {
-                  FormDialog(`新建菜单组`, () => {
-                    return (
-                      <FormLayout layout={'vertical'}>
-                        <SchemaField>
-                          <SchemaField.String
-                            name="title"
-                            required
-                            title="名称"
-                            x-decorator="FormItem"
-                            x-component="Input"
-                          />
-                          <SchemaField.String
-                            name="icon"
-                            title="图标"
-                            x-decorator="FormItem"
-                            x-component="IconPicker"
-                          />
-                        </SchemaField>
-                      </FormLayout>
-                    );
-                  })
-                    .open({})
-                    .then((data) => {
-                      insertAfter(
-                        new Schema({
-                          name: `m_${uid()}`,
-                          type: 'void',
-                          title: data.title,
-                          'x-component': 'Menu.SubMenu',
-                          'x-component-props': {
-                            icon: data.icon,
-                          },
-                          properties: {
-                            [`m_${uid()}`]: {
-                              type: 'void',
-                              title: `菜单 ${uid()}`,
-                              'x-component': 'Menu.Item',
-                            },
-                          },
-                        }),
-                      );
-                    });
-                }}
-              >
-                <GroupOutlined /> 新建分组
-              </AntdMenu.Item>
-              <AntdMenu.Item>
-                <LinkOutlined /> 添加链接
-              </AntdMenu.Item>
-            </AntdMenu.SubMenu>
-            {schema['x-component'] === 'Menu.SubMenu' ? (
-              <AntdMenu.SubMenu icon={<ArrowRightOutlined />} title={`${text}里`}>
+              <AntdMenu.Divider />
+              <AntdMenu.SubMenu icon={<ArrowUpOutlined />} title={`${text}前`}>
                 <AntdMenu.Item
                   onClick={() => {
                     FormDialog(`新建菜单`, () => {
@@ -526,7 +372,101 @@ const SettingAction = () => {
                     })
                       .open({})
                       .then((data) => {
-                        appendChild(
+                        insertBefore({
+                          name: `m_${uid()}`,
+                          type: 'void',
+                          title: data.title,
+                          'x-component': 'Menu.Item',
+                          'x-component-props': {
+                            icon: data.icon,
+                          },
+                        });
+                      });
+                  }}
+                  style={{ minWidth: 150 }}
+                >
+                  <MenuOutlined /> 新建菜单
+                </AntdMenu.Item>
+                <AntdMenu.Item
+                  onClick={() => {
+                    FormDialog(`新建菜单组`, () => {
+                      return (
+                        <FormLayout layout={'vertical'}>
+                          <SchemaField>
+                            <SchemaField.String
+                              name="title"
+                              required
+                              title="名称"
+                              x-decorator="FormItem"
+                              x-component="Input"
+                            />
+                            <SchemaField.String
+                              name="icon"
+                              title="图标"
+                              x-decorator="FormItem"
+                              x-component="IconPicker"
+                            />
+                          </SchemaField>
+                        </FormLayout>
+                      );
+                    })
+                      .open({})
+                      .then((data) => {
+                        insertBefore({
+                          name: `m_${uid()}`,
+                          type: 'void',
+                          title: data.title,
+                          'x-component': 'Menu.SubMenu',
+                          'x-component-props': {
+                            icon: data.icon,
+                          },
+                          properties: {
+                            [`m_${uid()}`]: {
+                              type: 'void',
+                              title: `菜单 ${uid()}`,
+                              'x-component': 'Menu.Item',
+                            },
+                          },
+                        });
+                      });
+                  }}
+                >
+                  <GroupOutlined /> 新建分组
+                </AntdMenu.Item>
+                <AntdMenu.Item>
+                  <LinkOutlined /> 添加链接
+                </AntdMenu.Item>
+              </AntdMenu.SubMenu>
+              <AntdMenu.SubMenu
+                icon={<ArrowDownOutlined />}
+                title={`${text}后`}
+              >
+                <AntdMenu.Item
+                  onClick={() => {
+                    FormDialog(`新建菜单`, () => {
+                      return (
+                        <FormLayout layout={'vertical'}>
+                          <SchemaField>
+                            <SchemaField.String
+                              name="title"
+                              required
+                              title="名称"
+                              x-decorator="FormItem"
+                              x-component="Input"
+                            />
+                            <SchemaField.String
+                              name="icon"
+                              title="图标"
+                              x-decorator="FormItem"
+                              x-component="IconPicker"
+                            />
+                          </SchemaField>
+                        </FormLayout>
+                      );
+                    })
+                      .open({})
+                      .then((data) => {
+                        insertAfter(
                           new Schema({
                             name: `m_${uid()}`,
                             type: 'void',
@@ -568,7 +508,7 @@ const SettingAction = () => {
                     })
                       .open({})
                       .then((data) => {
-                        appendChild(
+                        insertAfter(
                           new Schema({
                             name: `m_${uid()}`,
                             type: 'void',
@@ -595,24 +535,124 @@ const SettingAction = () => {
                   <LinkOutlined /> 添加链接
                 </AntdMenu.Item>
               </AntdMenu.SubMenu>
-            ) : null}
-            <AntdMenu.Divider />
-            <AntdMenu.Item
-              onClick={() => {
-                Modal.confirm({
-                  title: '删除菜单',
-                  content: '确认删除此菜单项吗？',
-                  onOk: remove,
-                });
-              }}
-            >
-              <DeleteOutlined /> 删除菜单
-            </AntdMenu.Item>
-          </AntdMenu>
-        }
-      >
-        <MenuOutlined />
-      </Dropdown>
+              {schema['x-component'] === 'Menu.SubMenu' ? (
+                <AntdMenu.SubMenu
+                  icon={<ArrowRightOutlined />}
+                  title={`${text}里`}
+                >
+                  <AntdMenu.Item
+                    onClick={() => {
+                      FormDialog(`新建菜单`, () => {
+                        return (
+                          <FormLayout layout={'vertical'}>
+                            <SchemaField>
+                              <SchemaField.String
+                                name="title"
+                                required
+                                title="名称"
+                                x-decorator="FormItem"
+                                x-component="Input"
+                              />
+                              <SchemaField.String
+                                name="icon"
+                                title="图标"
+                                x-decorator="FormItem"
+                                x-component="IconPicker"
+                              />
+                            </SchemaField>
+                          </FormLayout>
+                        );
+                      })
+                        .open({})
+                        .then((data) => {
+                          appendChild(
+                            new Schema({
+                              name: `m_${uid()}`,
+                              type: 'void',
+                              title: data.title,
+                              'x-component': 'Menu.Item',
+                              'x-component-props': {
+                                icon: data.icon,
+                              },
+                            }),
+                          );
+                        });
+                    }}
+                    style={{ minWidth: 150 }}
+                  >
+                    <MenuOutlined /> 新建菜单
+                  </AntdMenu.Item>
+                  <AntdMenu.Item
+                    onClick={() => {
+                      FormDialog(`新建菜单组`, () => {
+                        return (
+                          <FormLayout layout={'vertical'}>
+                            <SchemaField>
+                              <SchemaField.String
+                                name="title"
+                                required
+                                title="名称"
+                                x-decorator="FormItem"
+                                x-component="Input"
+                              />
+                              <SchemaField.String
+                                name="icon"
+                                title="图标"
+                                x-decorator="FormItem"
+                                x-component="IconPicker"
+                              />
+                            </SchemaField>
+                          </FormLayout>
+                        );
+                      })
+                        .open({})
+                        .then((data) => {
+                          appendChild(
+                            new Schema({
+                              name: `m_${uid()}`,
+                              type: 'void',
+                              title: data.title,
+                              'x-component': 'Menu.SubMenu',
+                              'x-component-props': {
+                                icon: data.icon,
+                              },
+                              properties: {
+                                [`m_${uid()}`]: {
+                                  type: 'void',
+                                  title: `菜单 ${uid()}`,
+                                  'x-component': 'Menu.Item',
+                                },
+                              },
+                            }),
+                          );
+                        });
+                    }}
+                  >
+                    <GroupOutlined /> 新建分组
+                  </AntdMenu.Item>
+                  <AntdMenu.Item>
+                    <LinkOutlined /> 添加链接
+                  </AntdMenu.Item>
+                </AntdMenu.SubMenu>
+              ) : null}
+              <AntdMenu.Divider />
+              <AntdMenu.Item
+                onClick={() => {
+                  Modal.confirm({
+                    title: '删除菜单',
+                    content: '确认删除此菜单项吗？',
+                    onOk: remove,
+                  });
+                }}
+              >
+                <DeleteOutlined /> 删除菜单
+              </AntdMenu.Item>
+            </AntdMenu>
+          }
+        >
+          <MenuOutlined />
+        </Dropdown>
+      </div>
     </div>
   );
 };
@@ -680,27 +720,424 @@ Menu.Link = observer((props) => {
 
 Menu.Item = observer((props) => {
   const field = useField();
+  const { DesignableBar } = useDesignableBar();
   const { schema, refresh } = useSchemaQuery();
   return (
     <AntdMenu.Item
       {...props}
+      onMouseEnter={(e) => {
+        const el = e.domEvent.target as HTMLElement;
+        console.log(
+          'onMouseEnter',
+          el.offsetTop,
+          el.offsetLeft,
+          el.clientWidth,
+          el.clientHeight,
+        );
+      }}
+      onMouseLeave={() => {
+        console.log('onMouseLeave');
+      }}
       schema={schema}
       // @ts-ignore
       eventKey={schema.name}
       key={schema.name}
       icon={props.icon ? <Icon type={props.icon as string} /> : undefined}
     >
-      {field.title} <SettingAction />
+      {field.title}
+      <DesignableBar />
     </AntdMenu.Item>
   );
 });
 
-// Menu
-Menu.Designable = (props) => {
-  return props.children;
+Menu.DesignableBar = (props) => {
+  const field = useField();
+  const [visible, setVisible] = useState(false);
+  const { schema, refresh, remove, insertBefore, insertAfter, appendChild } =
+    useSchemaQuery();
+  const text =
+    schema['x-component'] === 'Menu.SubMenu' ? '当前菜单组' : '当前菜单';
+  return (
+    <div className={cls('designable-bar', { active: visible })}>
+      <div
+        onClick={(e) => {
+          e.stopPropagation();
+          e.preventDefault();
+        }}
+        className={'designable-bar-actions'}
+      >
+        <Dropdown
+          overlayStyle={{
+            minWidth: 150,
+          }}
+          visible={visible}
+          onVisibleChange={(visible) => {
+            setVisible(visible);
+          }}
+          trigger={['click']}
+          overlay={
+            <AntdMenu>
+              <AntdMenu.Item
+                onClick={() => {
+                  FormDialog('编辑菜单', () => {
+                    return (
+                      <FormLayout layout={'vertical'}>
+                        <SchemaField>
+                          <SchemaField.String
+                            name="title"
+                            required
+                            title="菜单名称"
+                            x-decorator="FormItem"
+                            x-component="Input"
+                          />
+                          <SchemaField.String
+                            name=".icon"
+                            title="图标"
+                            x-decorator="FormItem"
+                            x-component="IconPicker"
+                          />
+                        </SchemaField>
+                        {/* <FormDialog.Footer>
+                    <span style={{ marginLeft: 4 }}>扩展文案</span>
+                  </FormDialog.Footer> */}
+                      </FormLayout>
+                    );
+                  })
+                    .open({
+                      initialValues: {
+                        title: schema.title,
+                        icon: schema['x-component-props']?.['icon'],
+                      },
+                    })
+                    .then((data) => {
+                      schema.title = data.title;
+                      const componentProps = schema['x-component-props'] || {};
+                      componentProps['icon'] = data.icon;
+                      field.setTitle(data.title);
+                      field.setComponentProps(componentProps);
+                      refresh();
+                    });
+                }}
+              >
+                <EditOutlined /> 编辑菜单
+              </AntdMenu.Item>
+              <AntdMenu.Item>
+                <ArrowRightOutlined /> 移动到
+              </AntdMenu.Item>
+              <AntdMenu.Divider />
+              <AntdMenu.SubMenu icon={<ArrowUpOutlined />} title={`${text}前`}>
+                <AntdMenu.Item
+                  onClick={() => {
+                    FormDialog(`新建菜单`, () => {
+                      return (
+                        <FormLayout layout={'vertical'}>
+                          <SchemaField>
+                            <SchemaField.String
+                              name="title"
+                              required
+                              title="名称"
+                              x-decorator="FormItem"
+                              x-component="Input"
+                            />
+                            <SchemaField.String
+                              name="icon"
+                              title="图标"
+                              x-decorator="FormItem"
+                              x-component="IconPicker"
+                            />
+                          </SchemaField>
+                        </FormLayout>
+                      );
+                    })
+                      .open({})
+                      .then((data) => {
+                        insertBefore({
+                          name: `m_${uid()}`,
+                          type: 'void',
+                          title: data.title,
+                          'x-component': 'Menu.Item',
+                          'x-component-props': {
+                            icon: data.icon,
+                          },
+                        });
+                      });
+                  }}
+                  style={{ minWidth: 150 }}
+                >
+                  <MenuOutlined /> 新建菜单
+                </AntdMenu.Item>
+                <AntdMenu.Item
+                  onClick={() => {
+                    FormDialog(`新建菜单组`, () => {
+                      return (
+                        <FormLayout layout={'vertical'}>
+                          <SchemaField>
+                            <SchemaField.String
+                              name="title"
+                              required
+                              title="名称"
+                              x-decorator="FormItem"
+                              x-component="Input"
+                            />
+                            <SchemaField.String
+                              name="icon"
+                              title="图标"
+                              x-decorator="FormItem"
+                              x-component="IconPicker"
+                            />
+                          </SchemaField>
+                        </FormLayout>
+                      );
+                    })
+                      .open({})
+                      .then((data) => {
+                        insertBefore({
+                          name: `m_${uid()}`,
+                          type: 'void',
+                          title: data.title,
+                          'x-component': 'Menu.SubMenu',
+                          'x-component-props': {
+                            icon: data.icon,
+                          },
+                          properties: {
+                            [`m_${uid()}`]: {
+                              type: 'void',
+                              title: `菜单 ${uid()}`,
+                              'x-component': 'Menu.Item',
+                            },
+                          },
+                        });
+                      });
+                  }}
+                >
+                  <GroupOutlined /> 新建分组
+                </AntdMenu.Item>
+                <AntdMenu.Item>
+                  <LinkOutlined /> 添加链接
+                </AntdMenu.Item>
+              </AntdMenu.SubMenu>
+              <AntdMenu.SubMenu
+                icon={<ArrowDownOutlined />}
+                title={`${text}后`}
+              >
+                <AntdMenu.Item
+                  onClick={() => {
+                    FormDialog(`新建菜单`, () => {
+                      return (
+                        <FormLayout layout={'vertical'}>
+                          <SchemaField>
+                            <SchemaField.String
+                              name="title"
+                              required
+                              title="名称"
+                              x-decorator="FormItem"
+                              x-component="Input"
+                            />
+                            <SchemaField.String
+                              name="icon"
+                              title="图标"
+                              x-decorator="FormItem"
+                              x-component="IconPicker"
+                            />
+                          </SchemaField>
+                        </FormLayout>
+                      );
+                    })
+                      .open({})
+                      .then((data) => {
+                        insertAfter(
+                          new Schema({
+                            name: `m_${uid()}`,
+                            type: 'void',
+                            title: data.title,
+                            'x-component': 'Menu.Item',
+                            'x-component-props': {
+                              icon: data.icon,
+                            },
+                          }),
+                        );
+                      });
+                  }}
+                  style={{ minWidth: 150 }}
+                >
+                  <MenuOutlined /> 新建菜单
+                </AntdMenu.Item>
+                <AntdMenu.Item
+                  onClick={() => {
+                    FormDialog(`新建菜单组`, () => {
+                      return (
+                        <FormLayout layout={'vertical'}>
+                          <SchemaField>
+                            <SchemaField.String
+                              name="title"
+                              required
+                              title="名称"
+                              x-decorator="FormItem"
+                              x-component="Input"
+                            />
+                            <SchemaField.String
+                              name="icon"
+                              title="图标"
+                              x-decorator="FormItem"
+                              x-component="IconPicker"
+                            />
+                          </SchemaField>
+                        </FormLayout>
+                      );
+                    })
+                      .open({})
+                      .then((data) => {
+                        insertAfter(
+                          new Schema({
+                            name: `m_${uid()}`,
+                            type: 'void',
+                            title: data.title,
+                            'x-component': 'Menu.SubMenu',
+                            'x-component-props': {
+                              icon: data.icon,
+                            },
+                            properties: {
+                              [`m_${uid()}`]: {
+                                type: 'void',
+                                title: `菜单 ${uid()}`,
+                                'x-component': 'Menu.Item',
+                              },
+                            },
+                          }),
+                        );
+                      });
+                  }}
+                >
+                  <GroupOutlined /> 新建分组
+                </AntdMenu.Item>
+                <AntdMenu.Item>
+                  <LinkOutlined /> 添加链接
+                </AntdMenu.Item>
+              </AntdMenu.SubMenu>
+              {schema['x-component'] === 'Menu.SubMenu' ? (
+                <AntdMenu.SubMenu
+                  icon={<ArrowRightOutlined />}
+                  title={`${text}里`}
+                >
+                  <AntdMenu.Item
+                    onClick={() => {
+                      FormDialog(`新建菜单`, () => {
+                        return (
+                          <FormLayout layout={'vertical'}>
+                            <SchemaField>
+                              <SchemaField.String
+                                name="title"
+                                required
+                                title="名称"
+                                x-decorator="FormItem"
+                                x-component="Input"
+                              />
+                              <SchemaField.String
+                                name="icon"
+                                title="图标"
+                                x-decorator="FormItem"
+                                x-component="IconPicker"
+                              />
+                            </SchemaField>
+                          </FormLayout>
+                        );
+                      })
+                        .open({})
+                        .then((data) => {
+                          appendChild(
+                            new Schema({
+                              name: `m_${uid()}`,
+                              type: 'void',
+                              title: data.title,
+                              'x-component': 'Menu.Item',
+                              'x-component-props': {
+                                icon: data.icon,
+                              },
+                            }),
+                          );
+                        });
+                    }}
+                    style={{ minWidth: 150 }}
+                  >
+                    <MenuOutlined /> 新建菜单
+                  </AntdMenu.Item>
+                  <AntdMenu.Item
+                    onClick={() => {
+                      FormDialog(`新建菜单组`, () => {
+                        return (
+                          <FormLayout layout={'vertical'}>
+                            <SchemaField>
+                              <SchemaField.String
+                                name="title"
+                                required
+                                title="名称"
+                                x-decorator="FormItem"
+                                x-component="Input"
+                              />
+                              <SchemaField.String
+                                name="icon"
+                                title="图标"
+                                x-decorator="FormItem"
+                                x-component="IconPicker"
+                              />
+                            </SchemaField>
+                          </FormLayout>
+                        );
+                      })
+                        .open({})
+                        .then((data) => {
+                          appendChild(
+                            new Schema({
+                              name: `m_${uid()}`,
+                              type: 'void',
+                              title: data.title,
+                              'x-component': 'Menu.SubMenu',
+                              'x-component-props': {
+                                icon: data.icon,
+                              },
+                              properties: {
+                                [`m_${uid()}`]: {
+                                  type: 'void',
+                                  title: `菜单 ${uid()}`,
+                                  'x-component': 'Menu.Item',
+                                },
+                              },
+                            }),
+                          );
+                        });
+                    }}
+                  >
+                    <GroupOutlined /> 新建分组
+                  </AntdMenu.Item>
+                  <AntdMenu.Item>
+                    <LinkOutlined /> 添加链接
+                  </AntdMenu.Item>
+                </AntdMenu.SubMenu>
+              ) : null}
+              <AntdMenu.Divider />
+              <AntdMenu.Item
+                onClick={() => {
+                  Modal.confirm({
+                    title: '删除菜单',
+                    content: '确认删除此菜单项吗？',
+                    onOk: remove,
+                  });
+                }}
+              >
+                <DeleteOutlined /> 删除菜单
+              </AntdMenu.Item>
+            </AntdMenu>
+          }
+        >
+          <MenuOutlined />
+        </Dropdown>
+      </div>
+    </div>
+  );
 };
 
 Menu.SubMenu = observer((props) => {
+  const { DesignableBar } = useDesignableBar();
   const schema = useFieldSchema();
   let s = schema;
   let hideSubMenu;
@@ -721,7 +1158,7 @@ Menu.SubMenu = observer((props) => {
       schema={schema}
       title={
         <>
-          {schema.title} <SettingAction />
+          {schema.title} <DesignableBar />
         </>
       }
       eventKey={schema.name}

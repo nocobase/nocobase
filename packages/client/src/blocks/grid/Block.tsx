@@ -1,4 +1,4 @@
-import React, { useState, useContext } from 'react';
+import React, { useState, useContext, createContext } from 'react';
 import { useDrag, mergeRefs, useDrop } from './DND';
 import classNames from 'classnames';
 import {
@@ -17,6 +17,7 @@ import {
   DeleteOutlined,
 } from '@ant-design/icons';
 import get from 'lodash/get';
+import { BlockContext } from '../SchemaField';
 
 export const Block = observer((props: any) => {
   const { children, title, DesignableBar } = props;
@@ -50,6 +51,8 @@ export const Block = observer((props: any) => {
   console.log({ DesignableBarComponent, DesignableBar });
 
   const { addBlock } = useSchemaQuery();
+
+  console.log({ children });
   return (
     <div
       data-type={'block'}
@@ -57,10 +60,12 @@ export const Block = observer((props: any) => {
       className={classNames('block', { 'top-half': onTopHalf, hover: isOver })}
       // style={{ textAlign: 'center', lineHeight: '60px', background: '#f1f1f1' }}
     >
-      {DesignableBarComponent && (
+      <BlockContext.Provider value={{ dragRef }}>
+        {children}
+      </BlockContext.Provider>
+      {/* {DesignableBarComponent && (
         <DefaultActionBar DesignableBarComponent={DesignableBarComponent} dragRef={dragRef} />
-      )}
-      {children}
+      )} */}
     </div>
   );
 });

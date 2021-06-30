@@ -127,8 +127,8 @@ export type ActionType = React.FC<ActionProps> & {
   DesignableBar?: React.FC<any>;
 };
 
-function Blank({ children }) {
-  return children;
+function Blank() {
+  return null;
 }
 
 function useDesignableBar() {
@@ -171,45 +171,44 @@ export const Action: ActionType = observer((props) => {
     );
   }
   return (
-    <DesignableBar>
-      <Button
-        {...others}
-        onClick={async () => {
-          if (!childSchema) {
-            return await run();
-          }
-          if (childSchema['x-component'] === 'Action.Drawer') {
-            Drawer.open({
-              title: childSchema.title,
-              ...(childSchema['x-component-props'] || {}),
-              content: () => {
-                return (
-                  <div>
-                    <SchemaBlock schema={childSchema} onlyRenderProperties />
-                  </div>
-                );
-              },
-            });
-          }
-          if (childSchema['x-component'] === 'Action.Container') {
-            const el = document.createElement('div');
-            const target = document.querySelector(
-              childSchema['x-component-props']?.['container'],
-            );
-            target.childNodes.forEach((child) => child.remove());
-            target.appendChild(el);
-            ReactDOM.render(
-              <div>
-                <SchemaBlock schema={childSchema} onlyRenderProperties />
-              </div>,
-              el,
-            );
-          }
-        }}
-      >
-        {field.title}
-      </Button>
-    </DesignableBar>
+    <Button
+      {...others}
+      onClick={async () => {
+        if (!childSchema) {
+          return await run();
+        }
+        if (childSchema['x-component'] === 'Action.Drawer') {
+          Drawer.open({
+            title: childSchema.title,
+            ...(childSchema['x-component-props'] || {}),
+            content: () => {
+              return (
+                <div>
+                  <SchemaBlock schema={childSchema} onlyRenderProperties />
+                </div>
+              );
+            },
+          });
+        }
+        if (childSchema['x-component'] === 'Action.Container') {
+          const el = document.createElement('div');
+          const target = document.querySelector(
+            childSchema['x-component-props']?.['container'],
+          );
+          target.childNodes.forEach((child) => child.remove());
+          target.appendChild(el);
+          ReactDOM.render(
+            <div>
+              <SchemaBlock schema={childSchema} onlyRenderProperties />
+            </div>,
+            el,
+          );
+        }
+      }}
+    >
+      {field.title}
+      <DesignableBar />
+    </Button>
   );
 });
 
@@ -228,17 +227,17 @@ Action.URL = observer((props) => {
   );
 });
 
-Action.DesignableBar = (props) => {
+Action.DesignableBar = () => {
   const field = useField();
   const { schema, refresh } = useSchemaQuery();
   const [visible, setVisible] = useState(false);
   return (
-    <div className={'designable'}>
+    <div className={classNames('designable-bar', { active: visible })}>
       <span
         onClick={(e) => {
           e.stopPropagation();
         }}
-        className={classNames('designable-bar', { active: visible })}
+        className={classNames('designable-bar-actions', { active: visible })}
       >
         <Dropdown
           trigger={['click']}
@@ -266,7 +265,6 @@ Action.DesignableBar = (props) => {
           <MenuOutlined />
         </Dropdown>
       </span>
-      {props.children}
     </div>
   );
 };

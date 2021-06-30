@@ -41,11 +41,19 @@ const schema = {
       interface: 'icon',
       type: 'string',
       title: `阅读模式`,
-      name: 'name2',
       'x-read-pretty': true,
       'x-decorator': 'FormItem',
       'x-component': 'ColorSelect',
-    }
+    },
+    designable: {
+      interface: 'icon',
+      type: 'string',
+      title: `配置模式`,
+      // 'x-read-pretty': true,
+      'x-decorator': 'FormItem',
+      'x-designable-bar': 'FormItem.DesignableBar',
+      'x-component': 'ColorSelect',
+    },
   }
 };
 
