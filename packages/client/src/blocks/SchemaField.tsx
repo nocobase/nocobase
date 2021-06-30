@@ -1,6 +1,6 @@
 import React, { createContext, useState } from 'react';
 import {
-  FormItem,
+  // FormItem,
   FormLayout,
   FormButtonGroup,
   Submit,
@@ -41,6 +41,9 @@ import { Table } from './table';
 import { Tabs } from './tabs';
 import { TimePicker } from './time-picker';
 import { Upload } from './upload';
+import { FormItem } from './form-item';
+
+export const BlockContext = createContext({ dragRef: null });
 
 const Div = (props) => <div {...props} />;
 
@@ -51,7 +54,6 @@ const scope = {
 };
 
 const components = {
-  
   Div,
   Space,
   Card,
@@ -87,13 +89,13 @@ const components = {
 };
 
 export function registerScope(scopes) {
-  Object.keys(scopes).forEach(key => {
+  Object.keys(scopes).forEach((key) => {
     scope[key] = scopes[key];
   });
 }
 
 export function registerComponents(values) {
-  Object.keys(values).forEach(key => {
+  Object.keys(values).forEach((key) => {
     components[key] = values[key];
   });
 }
@@ -122,6 +124,9 @@ export function DesignableProvider(props) {
     </RefreshDesignableSchemaContext.Provider>
   );
 }
+
+export const DesignableContext =
+  createContext<{ schema: Schema; refresh: any }>(null);
 
 export function DesignableSchemaField(props: { schema?: ISchema }) {
   return (

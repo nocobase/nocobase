@@ -189,11 +189,11 @@ function useMenuSchema({ schema, selectedKey }) {
 
     // const topMenuSchema = new Schema(cloneDeep(schema.toJSON()));
 
-    let selected = find(schema).shift() as Schema;
+    let selected = find(topMenuSchema).shift() as Schema;
 
     console.log({ topMenuSchema, selected, schema });
 
-    if (selected.properties) {
+    if (selected && selected.properties) {
       const findChild = (properties) => {
         const keys = Object.keys(properties || {});
         const firstKey = keys.shift();
@@ -419,8 +419,6 @@ function Content({ activeKey }) {
 
 export function AdminLayout({ route, children }: any) {
   const match = useRouteMatch<any>();
-
-  console.log('match.params', match.params);
 
   const { data = {}, loading } = useRequest(
     `/api/blocks:getSchema/${route.blockId}`,

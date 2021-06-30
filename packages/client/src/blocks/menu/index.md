@@ -30,7 +30,7 @@ const schema = {
     menu1: {
       type: 'void',
       'x-component': 'Menu',
-      // 'x-decorator': 'Menu.Designable',
+      'x-designable-bar': 'Menu.DesignableBar',
       'x-component-props': {
         mode: 'horizontal',
       },
@@ -124,7 +124,7 @@ const schema = {
 
 export default () => {
   return (
-    <SchemaBlock schema={schema} />
+    <div style={{width: 200}}><SchemaBlock schema={schema} /></div>
   );
 };
 ```

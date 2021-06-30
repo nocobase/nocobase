@@ -75,10 +75,6 @@ const row = (schema) => {
           [`gb_${uid()}`]: {
             type: 'void',
             'x-component': 'Grid.Block',
-            'x-component-props': {
-              DesignableBar: `${component}.DesignableBar`,
-            },
-            'x-designable-bar': `${component}.DesignableBar`,
             properties: {
               [`gbn_${uid()}`]: schema,
             },
@@ -394,6 +390,7 @@ AddNew.FormItem = observer((props) => {
       name: `f_${uid()}`,
       title: `字段${uid()}`,
       'x-decorator': 'FormItem',
+      'x-designable-bar': 'FormItem.DesignableBar',
       'x-component': 'Input',
     });
     console.log({ rowData });
