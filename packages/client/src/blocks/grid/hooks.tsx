@@ -99,6 +99,7 @@ export function useDrag(options?: any) {
     };
 
     const wrap = document.createElement('div');
+    wrap.className = 'drag-container';
     wrap.style.position = 'absolute';
     wrap.style.pointerEvents = 'none';
     wrap.style.opacity = '0.7';
@@ -324,4 +325,71 @@ export function useDrop(options) {
     isOver,
     dropRef,
   };
+}
+
+export function useColResizer(options?: any) {
+  const { onDragStart, onDrag, onDragEnd } = options || {};
+  const dragRef = useRef<HTMLDivElement>();
+  const [dragOffset, setDragOffset] = useState({ left: 0, top: 0 });
+  const { onMouseDown } = useMouseEvents(dragRef);
+  const { onMouseMove, onMouseUp } = useMouseEvents();
+  const [isDragging, setIsDragging] = useState(false);
+  const [columns, setColumns] = useState(options.columns || []);
+  const [initial, setInitial] = useState<any>(null);
+
+  onMouseDown((event: React.MouseEvent) => {
+    if (event.button !== 0) {
+      return;
+    }
+    const prev = dragRef.current.previousElementSibling as HTMLDivElement;
+    const next = dragRef.current.nextElementSibling as HTMLDivElement;
+    if (!prev || !next) {
+      return;
+    }
+    setIsDragging(true);
+    if (!initial) {
+      setInitial({
+        offset: event.clientX,
+        prevWidth: prev.style.width,
+        nextWidth: next.style.width,
+      });
+    }
+  });
+
+  onMouseUp((event: React.MouseEvent) => {
+    if (!isDragging) {
+      return;
+    }
+    const parent = dragRef.current.parentElement;
+    const els = parent.querySelectorAll(':scope > .nb-grid-col');
+    const size = [];
+    els.forEach((el: HTMLDivElement) => {
+      const w = (100 * el.clientWidth) / parent.clientWidth;
+      const w2 =
+        (100 * (el.clientWidth + 24 + 24 / els.length)) / parent.clientWidth;
+      size.push(w2);
+      el.style.width = `${w}%`;
+    });
+    console.log({ size });
+    setIsDragging(false);
+    setInitial(null);
+    // @ts-ignore
+    event.data = { size };
+    onDragEnd && onDragEnd(event);
+  });
+
+  onMouseMove((event: React.MouseEvent) => {
+    if (!isDragging) {
+      return;
+    }
+    const offset = event.clientX - initial.offset;
+    // dragRef.current.style.transform = `translateX(${event.clientX - initialOffset}px)`;
+    const prev = dragRef.current.previousElementSibling as HTMLDivElement;
+    const next = dragRef.current.nextElementSibling as HTMLDivElement;
+    prev.style.width = `calc(${initial.prevWidth} + ${offset}px)`;
+    next.style.width = `calc(${initial.nextWidth} - ${offset}px)`;
+    // console.log('dragRef.current.nextSibling', prev.style.width);
+  });
+
+  return { isDragging, dragOffset, dragRef, columns };
 }

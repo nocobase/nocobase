@@ -20,7 +20,7 @@ import React from 'react';
 import { Button } from 'antd'
 import { UploadOutlined, InboxOutlined } from '@ant-design/icons'
 import Upload from './';
-import { SchemaBlock, registerComponents } from '../';
+import { SchemaRenderer, registerComponents } from '../';
 
 const NormalUpload = (props) => {
   return (
@@ -69,7 +69,7 @@ const schema = {
 
 export default () => {
   return (
-    <SchemaBlock schema={schema} />
+    <SchemaRenderer schema={schema} />
   );
 };
 ```

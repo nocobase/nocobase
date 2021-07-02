@@ -47,13 +47,13 @@ export const BlockContext = createContext({ dragRef: null });
 
 const Div = (props) => <div {...props} />;
 
-const scope = {
+export const scope = {
   useLogin,
   useRegister,
   useSubmit,
 };
 
-const components = {
+export const components = {
   Div,
   Space,
   Card,

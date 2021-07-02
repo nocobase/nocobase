@@ -4,8 +4,10 @@ export default {
   type: 'void',
   name: `m_${uid()}`,
   'x-component': 'Menu',
-  'x-decorator': 'Menu.Designable',
+  'x-designable-bar': 'Menu.DesignableBar',
   'x-component-props': {
+    mode: 'mix',
+    theme: 'dark',
   },
   properties: {
     item2: {

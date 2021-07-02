@@ -20,7 +20,7 @@ group:
  * title: 日期选择器
  */
 import React from 'react';
-import { SchemaBlock } from '../';
+import { SchemaRenderer } from '../';
 
 const schema = {
   type: 'object',
@@ -51,7 +51,7 @@ const schema = {
 
 export default () => {
   return (
-    <SchemaBlock schema={schema} />
+    <SchemaRenderer schema={schema} />
   );
 };
 ```

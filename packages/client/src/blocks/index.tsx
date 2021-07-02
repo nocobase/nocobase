@@ -5,6 +5,8 @@ import { DesignableSchemaField, SchemaField } from './SchemaField';
 
 export * from './SchemaField';
 
+export { SchemaRenderer, useDesignable, registerComponents, registerScope } from './DesignableSchemaField';
+
 export const SchemaBlock = ({ schema, onlyRenderProperties =  false, designable = true }) => {
   const form = useMemo(() => createForm(), []);
 
