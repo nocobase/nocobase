@@ -1,252 +1,237 @@
-import React, { useContext, createContext, useState } from 'react';
+import React, {
+  FC,
+  CSSProperties,
+  useRef,
+  createContext,
+  useContext,
+  useEffect,
+} from 'react';
+// import { DndProvider, useDrag, useDragDropManager } from 'react-dnd';
+// import { HTML5Backend } from 'react-dnd-html5-backend';
+import { uid } from '@formily/shared';
 import {
-  Schema,
+  observer,
   ISchema,
+  FormProvider,
   useFieldSchema,
-  useForm,
+  RecursionField,
   useField,
 } from '@formily/react';
-import { uid } from '@formily/shared';
 import './style.less';
+import cls from 'classnames';
 
-import {
-  DesignableSchemaContext,
-  RefreshDesignableSchemaContext,
-} from '../SchemaField';
+import { useDesignable, useSchemaPath } from '../DesignableSchemaField';
+import { useColResizer } from './hooks';
+import { useDrag, useDrop, DragDropProvider, mergeRefs } from './hooks';
 
-export function removeProperty(property: Schema) {
-  property.parent.removeProperty(property.name);
-}
+export const GridContext = createContext({
+  ref: null,
+});
 
-export function addPropertyBefore(target, prop) {
-  Object.keys(target.parent.properties).forEach((name) => {
-    if (name === target.name) {
-      target.parent.addProperty(prop.name, prop);
-    }
-    const property = target.parent.properties[name];
-    property.parent.removeProperty(property.name);
-    target.parent.addProperty(property.name, property.toJSON());
+const ColumnSizeContext = createContext(null);
+
+export const GridBlockContext = createContext({
+  dragRef: null,
+});
+
+const RowDivider = ({ onDrop }) => {
+  const { isOver, dropRef } = useDrop({
+    accept: 'grid',
+    onDrop,
   });
-}
-
-export function addPropertyAfter(target, prop) {
-  Object.keys(target.parent.properties).forEach((name) => {
-    const property = target.parent.properties[name];
-    property.parent.removeProperty(property.name);
-    target.parent.addProperty(property.name, property.toJSON());
-    if (name === target.name) {
-      target.parent.addProperty(prop.name, prop);
-    }
-  });
-}
-
-export const getSchemaAddressSegments = (schema: Schema) => {
-  if (!schema) {
-    return [];
-  }
-  const segments = [schema.name];
-  if (schema.parent && schema.parent.name) {
-    segments.unshift(...getSchemaAddressSegments(schema.parent));
-  }
-  return segments;
+  return (
+    <div
+      ref={dropRef}
+      className={cls('nb-grid-row-divider', { hover: isOver })}
+    />
+  );
 };
 
-export function useSchemaQuery() {
-  const context = useContext(DesignableSchemaContext);
-  const refresh = useContext(RefreshDesignableSchemaContext);
-  const fieldSchema = useFieldSchema();
+const ColDivider = (props: any) => {
+  const { onDragEnd, resizable } = props;
+  const { isDragging, dragRef } = useColResizer({ onDragEnd });
+  const { isOver, dropRef } = useDrop({
+    accept: 'grid',
+    data: {},
+  });
+  return (
+    <div
+      data-type={'col-divider'}
+      ref={mergeRefs([dragRef, dropRef])}
+      style={{ width: 24 }}
+      className={cls('nb-grid-col-divider', {
+        resizable,
+        hover: isOver,
+        dragging: isDragging,
+      })}
+    ></div>
+  );
+};
+
+export const Grid: any = observer((props) => {
+  const schema = useFieldSchema();
+  const { insertBefore, insertAfter, remove } = useDesignable();
+  const ref = useRef();
+  return (
+    <DragDropProvider>
+      <GridContext.Provider value={{ ref }}>
+        <div ref={ref} className={'nb-grid'}>
+          <RowDivider
+            onDrop={(e) => {
+              const blockSchema = e.dragItem.schema;
+              const path = [...e.dragItem.path];
+                    path.pop();
+                    remove(path);
+              insertBefore({
+                type: 'void',
+                "x-component": 'Grid.Row',
+                properties: {
+                  [uid()]: {
+                    type: 'void',
+                    "x-component": 'Grid.Col',
+                    properties: {
+                      [blockSchema.name]: blockSchema,
+                    },
+                  },
+                },
+              });
+            }}
+          />
+          {schema.mapProperties((property) => {
+            return (
+              <>
+                <div style={{ display: 'flex' }} className={'nb-grid-row'}>
+                  <RecursionField name={property.name} schema={property} />
+                </div>
+                <RowDivider
+                  onDrop={(e) => {
+                    const blockSchema = e.dragItem.schema;
+                    const path = [...e.dragItem.path];
+                    path.pop();
+                    remove(path);
+                    insertAfter({
+                      type: 'void',
+                      "x-component": 'Grid.Row',
+                      properties: {
+                        [uid()]: {
+                          type: 'void',
+                          "x-component": 'Grid.Col',
+                          properties: {
+                            [blockSchema.name]: blockSchema,
+                          },
+                        },
+                      },
+                    });
+                  }}
+                />
+              </>
+            );
+          })}
+        </div>
+      </GridContext.Provider>
+    </DragDropProvider>
+  );
+});
+
+Grid.Row = observer((props) => {
   const field = useField();
-  const form = useForm();
+  const schema = useFieldSchema();
+  const { schema: designableSchema, refresh } = useDesignable();
+  const len = Object.keys(schema.properties || {}).length;
+  return (
+    <ColumnSizeContext.Provider value={len}>
+      {schema.mapProperties((property, key, index) => {
+        return (
+          <>
+            <ColDivider
+              resizable={index > 0}
+              onDragEnd={(e) => {
+                schema.mapProperties((s, key, index) => {
+                  field.query(`.${schema.name}.${key}`).take((f) => {
+                    f.componentProps['width'] = e.data.size[index];
+                  });
+                  s['x-component-props'] = s['x-component-props'] || {};
+                  s['x-component-props']['width'] = e.data.size[index];
+                  return s;
+                });
+                designableSchema.mapProperties((s, key, index) => {
+                  s['x-component-props'] = s['x-component-props'] || {};
+                  s['x-component-props']['width'] = e.data.size[index];
+                  return s;
+                });
 
-  const getSchemaByPath = (path) => {
-    let s: Schema = context;
-    const names = [...path];
-    while (names.length) {
-      s = s.properties[names.shift()];
-    }
-    return s;
-  };
+                refresh();
+                console.log('e.data', designableSchema);
+              }}
+            />
+            <RecursionField name={property.name} schema={property} />
+          </>
+        );
+      })}
+      <ColDivider />
+    </ColumnSizeContext.Provider>
+  );
+});
 
-  const schema = getSchemaByPath(field.address.segments);
+Grid.Col = observer((props) => {
+  const field = useField();
+  const width = field.componentProps['width'];
+  const size = useContext(ColumnSizeContext);
+  return (
+    <div
+      style={{ width: `calc(${width || 100 / size}% - 24px / ${size})` }}
+      className={'nb-grid-col'}
+    >
+      {props.children}
+    </div>
+  );
+});
 
-  const getPropertyByPosition = (position) => {
-    if (position.type === 'row-divider') {
-      const names = Object.keys(schema.properties);
-      const isOver = position.rowDividerIndex > names.length - 1;
-      const index = isOver ? names.length - 1 : position.rowDividerIndex;
-      const name = names[index];
-      const property = schema.properties[name];
-      const addProperty = isOver ? addPropertyAfter : addPropertyBefore;
-      return (data) => {
-        return addProperty(property, {
-          type: 'void',
-          name: `r_${uid()}`,
-          'x-component': 'Grid.Row',
-          properties: {
-            [`c_${uid()}`]: {
-              type: 'void',
-              'x-component': 'Grid.Col',
-              'x-component-props': {
-                size: 1,
-              },
-              properties: {
-                [data.name]: data,
-              },
-            },
-          },
-        });
-      };
-    }
-    const rowNames = Object.keys(schema.properties);
-    const rowName = rowNames[position.rowIndex];
-    const row = schema.properties[rowName];
-    if (position.type === 'col-divider') {
-      const names = Object.keys(row.properties);
-      const isOver = position.colDividerIndex > names.length - 1;
-      const index = isOver ? names.length - 1 : position.colDividerIndex;
-      const name = names[index];
-      const property = row.properties[name];
-      const addProperty = isOver ? addPropertyAfter : addPropertyBefore;
-      const count = Object.keys(row.properties).length + 1;
-      return (data) => {
-        const other = 1 - 1 / count;
-        Object.keys(row.properties).forEach((name) => {
-          const prop = row.properties[name];
-          const segments = getSchemaAddressSegments(prop);
-          form.setFieldState(segments.join('.'), (state) => {
-            state.componentProps.size = other * state.componentProps.size;
-            console.log({ state }, other * state.componentProps.size);
-          });
-        });
-        addProperty(property, {
-          type: 'void',
-          name: `c_${uid()}`,
-          'x-component': 'Grid.Col',
-          'x-component-props': {
-            size: 1 / count,
-          },
-          properties: {
-            [data.name]: data,
-          },
-        });
-      };
-    }
-    const colNames = Object.keys(row.properties);
-    const colName = colNames[position.colIndex];
-    const col = row.properties[colName];
-    if (position.type === 'block-divider') {
-      const names = Object.keys(col.properties);
-      const isOver = position.blockDividerIndex > names.length - 1;
-      const index = isOver ? names.length - 1 : position.blockDividerIndex;
-      const name = names[index];
-      const property = col.properties[name];
-      const addProperty = isOver ? addPropertyAfter : addPropertyBefore;
-      return (data) => {
-        return addProperty(property, data);
-      };
-    }
-  };
-
-  return {
-    schema,
-    fieldSchema,
-    refresh,
-    removeBlock: () => {
-      if (Object.keys(schema.parent.parent.properties).length === 1) {
-        removeProperty(schema.parent.parent);
-      } else if (Object.keys(schema.parent.properties).length === 1) {
-        removeProperty(schema.parent);
-        const cols = [];
-        let allSize = 0;
-        Object.keys(schema.parent.parent.properties).forEach((name) => {
-          const prop = schema.parent.parent.properties[name];
-          const segments = getSchemaAddressSegments(prop);
-          cols.push(segments);
-          form.setFieldState(segments.join('.'), (state) => {
-            allSize += state.componentProps.size;
-          });
-          return;
-        });
-        for (const segments of cols) {
-          form.setFieldState(segments.join('.'), (state) => {
-            state.componentProps.size = state.componentProps.size / allSize;
-          });
-        }
-      }
-      refresh();
+Grid.Block = observer((props) => {
+  const schema = useFieldSchema();
+  const ctx = useContext(GridContext);
+  const path = useSchemaPath();
+  const { isDragging, dragRef, previewRef } = useDrag({
+    type: 'grid',
+    onDragStart() {
+      console.log('onDragStart');
     },
-    addBlock: (data?: any, options?: any) => {
-      const { insertBefore = false } = options || {};
-      data = {
-        type: 'void',
-        name: `b_${uid()}`,
-        'x-component': 'Grid.Block',
-      };
-      const addProperty = insertBefore ? addPropertyBefore : addPropertyAfter;
-      if (Object.keys(schema.parent.parent.properties).length === 1) {
-        addProperty(schema.parent.parent, {
-          type: 'void',
-          name: `r_${uid()}`,
-          'x-component': 'Grid.Row',
-          properties: {
-            [`c_${uid()}`]: {
-              type: 'void',
-              'x-component': 'Grid.Col',
-              'x-component-props': {
-                size: 1,
-              },
-              properties: {
-                [data.name]: data,
-              },
-            },
-          },
-        });
-      } else {
-        addProperty(schema, data);
-      }
-      refresh();
+    onDragEnd(event) {
+      console.log('onDragEnd', event.data);
     },
-    moveTo: (path, position) => {
-      const source = getSchemaByPath(path);
-      const insert = getPropertyByPosition(position);
-      if (!insert) {
-        return;
-      }
-
-      // 只有一列时，删除当前行
-      if (Object.keys(source.parent.parent.properties).length === 1) {
-        source.parent.parent.parent.removeProperty(source.parent.parent.name);
-      }
-      // 某列只有一个区块时删除当前列
-      else if (Object.keys(source.parent.properties).length === 1) {
-        source.parent.parent.removeProperty(source.parent.name);
-        const cols = [];
-        let allSize = 0;
-        Object.keys(source.parent.parent.properties).forEach((name) => {
-          const prop = source.parent.parent.properties[name];
-          const segments = getSchemaAddressSegments(prop);
-          cols.push(segments);
-          form.setFieldState(segments.join('.'), (state) => {
-            allSize += state.componentProps.size;
-          });
-          return;
-        });
-        for (const segments of cols) {
-          form.setFieldState(segments.join('.'), (state) => {
-            state.componentProps.size = state.componentProps.size / allSize;
-          });
-        }
-      } else {
-        source.parent.removeProperty(source.name);
-      }
-      insert(source.toJSON());
-      refresh();
+    onDrag(event) {
+      // console.log('onDrag');
     },
-  };
-}
-
-export * from './DND';
-export * from './Row';
-export * from './Col';
-export * from './Grid';
-export * from './Block';
+    item: {
+      path,
+      schema: schema.toJSON(),
+    },
+  });
+  const { isOver, onTopHalf, dropRef } = useDrop({
+    accept: 'grid',
+    data: {},
+    canDrop: !isDragging,
+  });
+  useEffect(() => {
+    if (ctx.ref && ctx.ref.current) {
+      (ctx.ref.current as HTMLElement).className = isDragging
+        ? 'nb-grid dragging'
+        : 'nb-grid';
+    }
+    console.log('ctx.ref.current');
+  }, [isDragging]);
+  return (
+    <GridBlockContext.Provider value={{ dragRef }}>
+      <div
+        ref={mergeRefs([previewRef, dropRef])}
+        className={cls('nb-grid-block', {
+          'top-half': onTopHalf,
+          hover: isOver,
+          dragging: isDragging,
+        })}
+      >
+        {props.children}
+      </div>
+    </GridBlockContext.Provider>
+  );
+});

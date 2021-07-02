@@ -1,12 +1,13 @@
 import React, { useContext, useState } from 'react';
 import { connect, mapProps, mapReadPretty, SchemaOptionsContext, useField, useFieldSchema } from '@formily/react';
 import { FormItem as FormilyFormItem } from '@formily/antd';
-import { Dropdown, Menu } from 'antd';
+import { Dropdown, Menu, Space } from 'antd';
 import classNames from 'classnames';
-import { MenuOutlined } from '@ant-design/icons';
+import { MenuOutlined, DragOutlined } from '@ant-design/icons';
 import './style.less';
 import get from 'lodash/get';
-import { BlockContext } from '../SchemaField';
+import { GridBlockContext } from '../grid';
+import { uid } from '@formily/shared';
 
 function Blank() {
   return null;
@@ -24,11 +25,10 @@ function useDesignableBar() {
 
 export const FormItem: any = connect((props) => {
   const { DesignableBar } = useDesignableBar();
-  const { dragRef } = useContext(BlockContext);
   return (
     <div className={'designable-form-item'}>
       <FormilyFormItem {...props} />
-      {dragRef && <div ref={dragRef}>Drag</div>}
+      {/* {dragRef && <div ref={dragRef}>Drag</div>} */}
       <DesignableBar/>
     </div>
   );
@@ -37,6 +37,7 @@ export const FormItem: any = connect((props) => {
 FormItem.DesignableBar = () => {
   const field = useField();
   const [visible, setVisible] = useState(false);
+  const { dragRef } = useContext(GridBlockContext);
   return (
     <div className={classNames('designable-bar', { active: visible })}>
       <span
@@ -45,6 +46,8 @@ FormItem.DesignableBar = () => {
         }}
         className={classNames('designable-bar-actions', { active: visible })}
       >
+        <Space size={'small'}>
+        <DragOutlined ref={dragRef} />
         <Dropdown
           trigger={['click']}
           visible={visible}
@@ -55,6 +58,7 @@ FormItem.DesignableBar = () => {
             <Menu>
               <Menu.Item
                 onClick={(e) => {
+                  field.title = uid();
                   setVisible(false);
                 }}
               >
@@ -63,8 +67,9 @@ FormItem.DesignableBar = () => {
             </Menu>
           }
         >
-          <MenuOutlined />
+          <MenuOutlined/>
         </Dropdown>
+        </Space>
       </span>
     </div>
   );

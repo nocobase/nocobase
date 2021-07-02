@@ -22,7 +22,7 @@ group:
  * title: 横向菜单
  */
 import React from 'react';
-import { SchemaBlock } from '../';
+import { SchemaRenderer } from '../';
 
 const schema = {
   type: 'object',
@@ -33,6 +33,7 @@ const schema = {
       'x-designable-bar': 'Menu.DesignableBar',
       'x-component-props': {
         mode: 'horizontal',
+        theme: 'dark',
       },
       properties: {
         item1: {
@@ -47,24 +48,53 @@ const schema = {
         },
         item3: {
           type: 'void',
-          title: '菜单组',
+          title: '菜单组3',
           'x-component': 'Menu.SubMenu',
           properties: {
-            item4: {
+            item5: {
               type: 'void',
-              title: `子菜单1`,
+              title: `子菜单5`,
+              'x-component': 'Menu.SubMenu',
+              properties: {
+                item8: {
+                  type: 'void',
+                  title: `子菜单8`,
+                  'x-component': 'Menu.Item',
+                },
+                item9: {
+                  type: 'void',
+                  title: `子菜单9`,
+                  'x-component': 'Menu.Item',
+                },
+              },
+            },
+          }
+        },
+        item4: {
+          type: 'void',
+          title: '菜单组4',
+          'x-component': 'Menu.SubMenu',
+          properties: {
+            item6: {
+              type: 'void',
+              title: `子菜单6`,
+              'x-component': 'Menu.Item',
+            },
+            item7: {
+              type: 'void',
+              title: `子菜单7`,
               'x-component': 'Menu.Item',
             },
           }
         },
       },
-    }
-  }
-};
+    },
+  },
+}
 
 export default () => {
   return (
-    <SchemaBlock schema={schema} />
+    <SchemaRenderer schema={schema} />
   );
 };
 ```
@@ -76,7 +106,7 @@ export default () => {
  * title: 竖向菜单
  */
 import React from 'react';
-import { SchemaBlock } from '../';
+import { SchemaRenderer } from '../';
 
 const schema = {
   type: 'object',
@@ -90,23 +120,7 @@ const schema = {
         mode: 'inline',
       },
       properties: {
-        item3: {
-          type: 'void',
-          title: '菜单组',
-          'x-component': 'Menu.SubMenu',
-          properties: {
-            item4: {
-              type: 'void',
-              title: `子菜单1`,
-              'x-component': 'Menu.Item',
-            },
-            item5: {
-              type: 'void',
-              title: `子菜单2`,
-              'x-component': 'Menu.Item',
-            },
-          }
-        },
+        
         item1: {
           type: 'void',
           title: `菜单1`,
@@ -117,6 +131,40 @@ const schema = {
           title: `菜单2`,
           'x-component': 'Menu.Item',
         },
+        item3: {
+          type: 'void',
+          title: '菜单组3',
+          'x-component': 'Menu.SubMenu',
+          properties: {
+            item4: {
+              type: 'void',
+              title: `子菜单4`,
+              'x-component': 'Menu.Item',
+            },
+            item5: {
+              type: 'void',
+              title: `子菜单5`,
+              'x-component': 'Menu.Item',
+            },
+          }
+        },
+        item4: {
+          type: 'void',
+          title: '菜单组4',
+          'x-component': 'Menu.SubMenu',
+          properties: {
+            item6: {
+              type: 'void',
+              title: `子菜单6`,
+              'x-component': 'Menu.Item',
+            },
+            item7: {
+              type: 'void',
+              title: `子菜单7`,
+              'x-component': 'Menu.Item',
+            },
+          }
+        },
       },
     },
   },
@@ -124,7 +172,234 @@ const schema = {
 
 export default () => {
   return (
-    <div style={{width: 200}}><SchemaBlock schema={schema} /></div>
+    <div style={{width: 200}}><SchemaRenderer schema={schema} /></div>
   );
 };
+```
+
+### 混合菜单
+
+```tsx
+import React, { useRef, useState } from 'react';
+import { SchemaRenderer } from '../';
+import { MenuContainerContext } from './';
+import { Layout } from 'antd';
+
+export default () => {
+  const ref = useRef();
+
+  const [activeKey, setActiveKey] = useState('item3');
+
+  const schema = {
+    type: 'object',
+    properties: {
+      menu1: {
+        type: 'void',
+        'x-component': 'Menu',
+        'x-component-props': {
+          defaultSelectedKeys: [activeKey],
+          mode: 'mix',
+          theme: 'dark',
+          onSelect(info) {
+            setActiveKey(info.key);
+            console.log({ info })
+          },
+        },
+        properties: {
+          item1: {
+            type: 'void',
+            title: `菜单1`,
+            'x-component': 'Menu.Item',
+          },
+          item2: {
+            type: 'void',
+            title: `菜单2`,
+            'x-component': 'Menu.Item',
+          },
+          item3: {
+            type: 'void',
+            title: '菜单组3',
+            'x-component': 'Menu.SubMenu',
+            properties: {
+              item4: {
+                type: 'void',
+                title: `子菜单4`,
+                'x-component': 'Menu.Item',
+              },
+              item5: {
+                type: 'void',
+                title: `子菜单5`,
+                'x-component': 'Menu.SubMenu',
+                properties: {
+                  item8: {
+                    type: 'void',
+                    title: `子菜单8`,
+                    'x-component': 'Menu.Item',
+                  },
+                  item9: {
+                    type: 'void',
+                    title: `子菜单9`,
+                    'x-component': 'Menu.Item',
+                  },
+                },
+              },
+            }
+          },
+          item4: {
+            type: 'void',
+            title: '菜单组4',
+            'x-component': 'Menu.SubMenu',
+            properties: {
+              item6: {
+                type: 'void',
+                title: `子菜单6`,
+                'x-component': 'Menu.Item',
+              },
+              item7: {
+                type: 'void',
+                title: `子菜单7`,
+                'x-component': 'Menu.Item',
+              },
+            }
+          },
+        },
+      },
+    },
+  }
+
+  return (
+    <div>
+      <Layout>
+        <Layout.Header>
+          <MenuContainerContext.Provider value={{
+            sideMenuRef: ref,
+          }}>
+            <SchemaRenderer schema={schema} />
+          </MenuContainerContext.Provider>
+        </Layout.Header>
+        <Layout>
+          <Layout.Sider ref={ref} theme={'light'} width={200}>
+          </Layout.Sider>
+          <Layout.Content>
+            {activeKey}
+          </Layout.Content>
+        </Layout>
+      </Layout>
+    </div>
+  )
+}
+```
+
+### 设计器模式
+
+```tsx
+import React, { useRef, useState } from 'react';
+import { SchemaRenderer } from '../';
+import { MenuContainerContext } from './';
+import { Layout } from 'antd';
+
+export default () => {
+  const ref = useRef();
+
+  const [activeKey, setActiveKey] = useState('item3');
+
+  const schema = {
+    type: 'object',
+    properties: {
+      menu1: {
+        type: 'void',
+        'x-component': 'Menu',
+        'x-designable-bar': 'Menu.DesignableBar',
+        'x-component-props': {
+          defaultSelectedKeys: [activeKey],
+          mode: 'mix',
+          theme: 'dark',
+          onSelect(info) {
+            setActiveKey(info.key);
+            console.log({ info })
+          },
+        },
+        properties: {
+          item1: {
+            type: 'void',
+            title: `菜单1`,
+            'x-component': 'Menu.Item',
+          },
+          item2: {
+            type: 'void',
+            title: `菜单2`,
+            'x-component': 'Menu.Item',
+          },
+          item3: {
+            type: 'void',
+            title: '菜单组3',
+            'x-component': 'Menu.SubMenu',
+            properties: {
+              item34: {
+                type: 'void',
+                title: `子菜单4`,
+                'x-component': 'Menu.Item',
+              },
+              item5: {
+                type: 'void',
+                title: `子菜单5`,
+                'x-component': 'Menu.SubMenu',
+                properties: {
+                  item8: {
+                    type: 'void',
+                    title: `子菜单8`,
+                    'x-component': 'Menu.Item',
+                  },
+                  item9: {
+                    type: 'void',
+                    title: `子菜单9`,
+                    'x-component': 'Menu.Item',
+                  },
+                },
+              },
+            }
+          },
+          item4: {
+            type: 'void',
+            title: '菜单组4',
+            'x-component': 'Menu.SubMenu',
+            properties: {
+              item6: {
+                type: 'void',
+                title: `子菜单6`,
+                'x-component': 'Menu.Item',
+              },
+              item7: {
+                type: 'void',
+                title: `子菜单7`,
+                'x-component': 'Menu.Item',
+              },
+            }
+          },
+        },
+      },
+    },
+  }
+
+  return (
+    <div>
+      <Layout>
+        <Layout.Header>
+          <MenuContainerContext.Provider value={{
+            sideMenuRef: ref,
+          }}>
+            <SchemaRenderer schema={schema} />
+          </MenuContainerContext.Provider>
+        </Layout.Header>
+        <Layout>
+          <Layout.Sider ref={ref} theme={'light'} width={200}>
+          </Layout.Sider>
+          <Layout.Content>
+            {activeKey}
+          </Layout.Content>
+        </Layout>
+      </Layout>
+    </div>
+  )
+}
 ```

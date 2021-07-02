@@ -13,7 +13,7 @@ group:
 
 ```tsx
 import React from 'react';
-import { SchemaBlock } from '../';
+import { SchemaRenderer } from '../';
 
 const schema = {
   type: 'object',
@@ -71,6 +71,6 @@ const schema = {
 };
 
 export default () => {
-  return <SchemaBlock schema={schema} />
+  return <SchemaRenderer schema={schema} />
 }
 ```

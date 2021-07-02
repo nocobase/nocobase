@@ -1,12 +1,4 @@
-import React, { useContext, useState } from 'react';
-import {
-  Input,
-  FormItem,
-  FormButtonGroup,
-  Submit,
-  Password,
-} from '@formily/antd';
-import { createForm } from '@formily/core';
+import React, { createContext, useContext, useState } from 'react';
 import {
   useForm,
   FormProvider,
@@ -21,55 +13,15 @@ import {
 import { Button, Dropdown, Menu, Popover, Space } from 'antd';
 import { Link, useHistory, LinkProps } from 'react-router-dom';
 import Drawer from '../../components/Drawer';
-import { SchemaBlock } from '../';
+import { SchemaRenderer, useDesignable } from '../';
 import ReactDOM from 'react-dom';
 import get from 'lodash/get';
-import {
-  DesignableSchemaContext,
-  RefreshDesignableSchemaContext,
-} from '../SchemaField';
-import {
-  MenuOutlined,
-  GroupOutlined,
-  PlusOutlined,
-  LinkOutlined,
-  AppstoreAddOutlined,
-  EditOutlined,
-  DeleteOutlined,
-  ArrowRightOutlined,
-  SettingOutlined,
-  ArrowUpOutlined,
-  ArrowDownOutlined,
-  LoadingOutlined,
-} from '@ant-design/icons';
+import { MenuOutlined } from '@ant-design/icons';
 import classNames from 'classnames';
+import { useMount } from 'ahooks';
+import { uid } from '@formily/shared';
 
 import './style.less';
-
-export function useSchemaQuery(segments?: any[]) {
-  const context = useContext(DesignableSchemaContext);
-  const refresh = useContext(RefreshDesignableSchemaContext);
-  const fieldSchema = useFieldSchema();
-  const field = useField();
-
-  const getSchemaByPath = (path) => {
-    let s: Schema = context;
-    const names = [...path];
-    // names.shift();
-    while (s && names.length) {
-      const name = names.shift();
-      s = s.properties[name];
-    }
-    return s;
-  };
-
-  const schema = getSchemaByPath(segments || field.address.segments);
-
-  return {
-    refresh,
-    schema,
-  };
-}
 
 export function useDefaultAction() {
   return {
@@ -121,6 +73,8 @@ export type ActionType = React.FC<ActionProps> & {
   Link?: React.FC<LinkProps>;
   URL?: React.FC<any>;
   Page?: React.FC<any>;
+  Container?: React.FC<any>;
+  Popover?: React.FC<any>;
   Drawer?: React.FC<any>;
   Modal?: React.FC<any>;
   Dropdown?: React.FC<any>;
@@ -141,13 +95,40 @@ function useDesignableBar() {
   };
 }
 
+export const ActionContext = createContext({ containerRef: null });
+
 export const Action: ActionType = observer((props) => {
   const { useAction = useDefaultAction, ...others } = props;
+  const { containerRef } = useContext(ActionContext);
   const field = useField();
-  const { schema } = useSchemaQuery();
+  const schema = useFieldSchema();
   const { run } = useAction();
   const { DesignableBar } = useDesignableBar();
+
+  const renderContainer = () => {
+    let childSchema = null;
+    if (schema.properties) {
+      const key = Object.keys(schema.properties).shift();
+      const current = schema.properties[key];
+      childSchema = current;
+    }
+    if (childSchema && childSchema['x-component'] === 'Action.Container') {
+      containerRef &&
+        ReactDOM.render(
+          <div>
+            <SchemaRenderer schema={childSchema} onlyRenderProperties />
+          </div>,
+          containerRef.current,
+        );
+    }
+  };
+
+  useMount(() => {
+    renderContainer();
+  });
+
   let childSchema = null;
+
   if (schema.properties) {
     const key = Object.keys(schema.properties).shift();
     const current = schema.properties[key];
@@ -162,7 +143,7 @@ export const Action: ActionType = observer((props) => {
         {...childSchema['x-component-props']}
         content={
           <div>
-            <SchemaBlock schema={childSchema} onlyRenderProperties />
+            <SchemaRenderer schema={childSchema} onlyRenderProperties />
           </div>
         }
       >
@@ -170,6 +151,7 @@ export const Action: ActionType = observer((props) => {
       </Popover>
     );
   }
+
   return (
     <Button
       {...others}
@@ -184,25 +166,14 @@ export const Action: ActionType = observer((props) => {
             content: () => {
               return (
                 <div>
-                  <SchemaBlock schema={childSchema} onlyRenderProperties />
+                  <SchemaRenderer schema={childSchema} onlyRenderProperties />
                 </div>
               );
             },
           });
         }
         if (childSchema['x-component'] === 'Action.Container') {
-          const el = document.createElement('div');
-          const target = document.querySelector(
-            childSchema['x-component-props']?.['container'],
-          );
-          target.childNodes.forEach((child) => child.remove());
-          target.appendChild(el);
-          ReactDOM.render(
-            <div>
-              <SchemaBlock schema={childSchema} onlyRenderProperties />
-            </div>,
-            el,
-          );
+          renderContainer();
         }
       }}
     >
@@ -227,9 +198,26 @@ Action.URL = observer((props) => {
   );
 });
 
+Action.Container = ({ children }) => {
+  return children;
+};
+
+Action.Popover = ({ children }) => {
+  return children;
+};
+
+Action.Drawer = ({ children }) => {
+  return children;
+};
+
+Action.Modal = ({ children }) => {
+  return children;
+};
+
 Action.DesignableBar = () => {
   const field = useField();
-  const { schema, refresh } = useSchemaQuery();
+  const schema = useFieldSchema();
+  const { insertAfter } = useDesignable();
   const [visible, setVisible] = useState(false);
   return (
     <div className={classNames('designable-bar', { active: visible })}>
@@ -253,11 +241,20 @@ Action.DesignableBar = () => {
                   schema.title = '按钮文案被修改了';
                   field.setTitle('按钮文案被修改了');
                   schema.properties.drawer1.title = '抽屉标题文案被修改了';
-                  refresh();
                   setVisible(false);
                 }}
               >
                 点击修改按钮文案
+              </Menu.Item>
+              <Menu.Item
+                onClick={() => {
+                  insertAfter({
+                    name: uid(),
+                    'x-component': 'Input',
+                  });
+                }}
+              >
+                insertAfter
               </Menu.Item>
             </Menu>
           }
