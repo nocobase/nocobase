@@ -2,29 +2,34 @@ import React, { createContext, useContext, useEffect, useRef } from 'react';
 import { useState } from 'react';
 import { useMouseEvents, useWillUnmount } from 'beautiful-react-hooks';
 import { useField } from '@formily/react';
+import { useMount } from 'ahooks';
+import constate from 'constate';
 
-export const DragDropManagerContext = createContext<any>({
-  drag: null,
-  drops: {},
-  name: `${Math.random()}`,
-});
-
-export function DragDropProvider(props) {
-  const { gridRef, onDrop, children } = props;
-  return (
-    <DragDropManagerContext.Provider
-      value={{
-        drag: null,
-        drops: {},
-        onDrop,
-        gridRef,
-        name: `${Math.random()}`,
-      }}
-    >
-      {children}
-    </DragDropManagerContext.Provider>
-  );
+export function useDragDropManager() {
+  const [drag, setDrag] = useState(null);
+  const [drop, setDrop] = useState(null);
+  const [drops, setDrops] = useState({});
+  const addDrop = (dropId, data) =>
+    setDrops((prevDrops) => {
+      prevDrops[dropId] = data;
+      return prevDrops;
+    });
+  const getDrop = (dropId) => {
+    return drops[dropId];
+  };
+  return { drag, drop, drops, setDrag, addDrop, setDrop, getDrop };
 }
+
+const [DragDropManagerProvider, useDragDropManagerContext] =
+  constate(useDragDropManager);
+
+export { DragDropManagerProvider, useDragDropManagerContext };
+
+// export const DragDropManagerContext = createContext<any>({
+//   drag: null,
+//   drops: {},
+//   name: `${Math.random()}`,
+// });
 
 export function mergeRefs<T = any>(
   refs: Array<React.MutableRefObject<T> | React.LegacyRef<T>>,
@@ -52,7 +57,8 @@ export function useDrag(options?: any) {
     left: 0,
     top: 0,
   });
-  const dragDropManager = useContext(DragDropManagerContext);
+  const { setDrag, setDrop, getDrop } = useDragDropManagerContext();
+  // const dragDropManager = useContext(DragDropManagerContext);
   const field = useField();
   console.log(
     'init',
@@ -62,28 +68,26 @@ export function useDrag(options?: any) {
 
   useWillUnmount(() => {
     setIsDragging(false);
-    console.log(
-      'useWillUnmount',
-      { isDragging, previewElement },
-      dragDropManager.previewElement,
-      field ? field.address.segments : null,
-    );
     // @ts-ignore
     window.__previewElement && window.__previewElement.remove();
     // @ts-ignore
     window.__previewElement = undefined;
 
-    dragDropManager.drag = null;
+    setDrag(null);
+
+    // dragDropManager.drag = null;
     document.body.style.cursor = null;
     document.body.style.userSelect = null;
-  })
+  });
 
   onMouseDown((event: React.MouseEvent) => {
     if (event.button !== 0) {
       return;
     }
-    dragDropManager.drag = { type, item };
-    dragDropManager.drop = { type, item };
+    setDrop({ type, item });
+    setDrag({ type, item });
+    // dragDropManager.drag = { type, item };
+    // dragDropManager.drop = { type, item };
     setIsDragging(true);
 
     const postion = {
@@ -112,7 +116,10 @@ export function useDrag(options?: any) {
     setPreviewElement(wrap);
     // @ts-ignore
     window.__previewElement = wrap;
-    console.log('dragDropManager.previewElement', dragDropManager.previewElement)
+    // console.log(
+    //   'dragDropManager.previewElement',
+    //   dragDropManager.previewElement,
+    // );
     document.body.appendChild(wrap);
     const el = document.createElement('div');
     wrap.appendChild(el);
@@ -122,12 +129,12 @@ export function useDrag(options?: any) {
     document.body.style.userSelect = 'none';
     document.body.className = 'dragging';
 
-    console.log(
-      'onMouseDown',
-      { isDragging, previewElement },
-      dragDropManager.previewElement,
-      field ? field.address.segments : null,
-    );
+    // console.log(
+    //   'onMouseDown',
+    //   { isDragging, previewElement },
+    //   dragDropManager.previewElement,
+    //   field ? field.address.segments : null,
+    // );
     // console.log('onMouseDown', event);
   });
 
@@ -136,17 +143,18 @@ export function useDrag(options?: any) {
       return;
     }
 
-    console.log(
-      'onMouseUp',
-      { isDragging, previewElement },
-      field ? field.address.segments : null,
-    );
+    // console.log(
+    //   'onMouseUp',
+    //   { isDragging, previewElement },
+    //   field ? field.address.segments : null,
+    // );
 
     // @ts-ignore
     event.dragItem = item;
 
     setIsDragging(false);
-    dragDropManager.drag = null;
+    setDrag(null);
+    // dragDropManager.drag = null;
     previewElement.remove();
     setPreviewElement(undefined);
     document.body.style.cursor = null;
@@ -168,7 +176,8 @@ export function useDrag(options?: any) {
         continue;
       }
       const dropId = dropElement.getAttribute('data-drop-id');
-      const dropContext = dropId ? dragDropManager.drops[dropId] : null;
+
+      const dropContext = getDrop(dropId);
       if (dropContext && dropContext.accept === type) {
         if (
           !dropContext.shallow ||
@@ -188,12 +197,12 @@ export function useDrag(options?: any) {
     if (!isDragging || !previewElement) {
       return;
     }
-    console.log(
-      'onMouseMove',
-      { isDragging, previewElement },
-      dragDropManager.previewElement,
-      field ? field.address.segments : null,
-    );
+    // console.log(
+    //   'onMouseMove',
+    //   { isDragging, previewElement },
+    //   dragDropManager.previewElement,
+    //   field ? field.address.segments : null,
+    // );
     // console.log({previewElement})
 
     const offset = {
@@ -205,6 +214,7 @@ export function useDrag(options?: any) {
 
     if (type) {
       let dropElement = document.elementFromPoint(event.clientX, event.clientY);
+      console.log({ dropElement });
       const dropIds = [];
       while (dropElement) {
         if (!dropElement.getAttribute) {
@@ -212,8 +222,9 @@ export function useDrag(options?: any) {
           continue;
         }
         const dropId = dropElement.getAttribute('data-drop-id');
-        const dropContext = dropId ? dragDropManager.drops[dropId] : null;
+        const dropContext = getDrop(dropId);
         if (dropContext && dropContext.accept === type) {
+          console.log({ dropId });
           if (
             !dropContext.shallow ||
             (dropContext.shallow && dropIds.length === 0)
@@ -225,7 +236,7 @@ export function useDrag(options?: any) {
         }
         dropElement = dropElement.parentNode as HTMLElement;
       }
-      dragDropManager.drag = { type, dropIds };
+      setDrag({ type, dropIds });
     }
 
     onDrag && onDrag(event);
@@ -235,30 +246,44 @@ export function useDrag(options?: any) {
 }
 
 export function useDrop(options) {
-  const { accept, data, shallow, onDrop, onHover, canDrop = true } = options;
+  const {
+    uid: dropId,
+    accept,
+    data,
+    shallow,
+    onDrop,
+    onHover,
+    canDrop = true,
+  } = options;
   const dropRef = useRef<HTMLDivElement>();
   const { onMouseEnter, onMouseLeave, onMouseMove, onMouseUp } =
     useMouseEvents(dropRef);
   const [isOver, setIsOver] = useState(false);
   const [onTopHalf, setOnTopHalf] = useState(null);
-  const [dropId] = useState<string>(`d${Math.random()}`);
-  const dragDropManager = useContext(DragDropManagerContext);
+  // const dragDropManager = useContext(DragDropManagerContext);
+  const { drag, drop, addDrop, setDrop } = useDragDropManagerContext();
 
   useEffect(() => {
-    dragDropManager.drops[dropId] = {
+    addDrop(dropId, {
       accept,
       data,
       shallow,
-    };
+    });
+    // console.log('dragDropManager.drops', dragDropManager.drops);
+    // dragDropManager.drops[dropId] = {
+    //   accept,
+    //   data,
+    //   shallow,
+    // };
     dropRef.current.setAttribute('data-drop-id', dropId);
-  }, [accept, data, shallow]);
+  }, []);
 
   onMouseEnter((event) => {
     if (!canDrop) {
       return;
     }
     // console.log({ dragDropManager });
-    if (!dragDropManager.drag || dragDropManager.drag.type !== accept) {
+    if (!drag || drag.type !== accept) {
       return;
     }
     setIsOver(true);
@@ -268,13 +293,10 @@ export function useDrop(options) {
     if (!canDrop) {
       return;
     }
-    if (!dragDropManager.drag || dragDropManager.drag.type !== accept) {
+    if (!drag || drag.type !== accept) {
       return;
     }
-    if (
-      dragDropManager.drag.dropIds &&
-      dragDropManager.drag.dropIds.includes(dropId)
-    ) {
+    if (drag.dropIds && drag.dropIds.includes(dropId)) {
       const top = event.clientY - dropRef.current.getBoundingClientRect().top;
       const onTop = top < dropRef.current.clientHeight / 2;
       setOnTopHalf(onTop);
@@ -303,12 +325,12 @@ export function useDrop(options) {
       // @ts-ignore
       event.data = data;
       // @ts-ignore
-      event.dragItem = dragDropManager.drop.item;
+      event.dragItem = drop.item;
       // @ts-ignore
       event.dropElement = dropRef.current;
       onDrop && onDrop(event);
-      dragDropManager.onDrop && dragDropManager.onDrop(event);
-      dragDropManager.drop = null;
+      // dragDropManager.onDrop && dragDropManager.onDrop(event);
+      setDrop(null);
     }
     setIsOver(false);
   });
@@ -363,10 +385,12 @@ export function useColResizer(options?: any) {
     const parent = dragRef.current.parentElement;
     const els = parent.querySelectorAll(':scope > .nb-grid-col');
     const size = [];
+    const gap = dragRef.current.clientWidth;
+    console.log('parent.clientWidth', parent.clientWidth, dragRef.current.clientWidth );
     els.forEach((el: HTMLDivElement) => {
       const w = (100 * el.clientWidth) / parent.clientWidth;
       const w2 =
-        (100 * (el.clientWidth + 24 + 24 / els.length)) / parent.clientWidth;
+        (100 * (el.clientWidth + gap + gap / els.length)) / parent.clientWidth;
       size.push(w2);
       el.style.width = `${w}%`;
     });

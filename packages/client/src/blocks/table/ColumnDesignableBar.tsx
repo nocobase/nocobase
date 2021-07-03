@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import classNames from 'classnames';
 import { useField, observer, RecursionField, Schema } from '@formily/react';
 import { Dropdown, Menu } from 'antd';
-import { useSchemaQuery } from '../grid';
 import {
   MenuOutlined,
   ArrowUpOutlined,
@@ -11,18 +10,11 @@ import {
 } from '@ant-design/icons';
 
 export const ColumnDesignableBar = (props) => {
-  const { addBlock, removeBlock } = useSchemaQuery();
   const [active, setActive] = useState(false);
   return (
     <>
       <Menu.Item
         onClick={() => {
-          addBlock(
-            {},
-            {
-              insertBefore: true,
-            },
-          );
           setActive(false);
         }}
         icon={<ArrowUpOutlined />}
@@ -31,7 +23,6 @@ export const ColumnDesignableBar = (props) => {
       </Menu.Item>
       <Menu.Item
         onClick={() => {
-          addBlock();
           setActive(false);
         }}
         icon={<ArrowDownOutlined />}
@@ -41,7 +32,6 @@ export const ColumnDesignableBar = (props) => {
       <Menu.Divider />
       <Menu.Item
         onClick={() => {
-          removeBlock();
           setActive(false);
         }}
         icon={<DeleteOutlined />}
