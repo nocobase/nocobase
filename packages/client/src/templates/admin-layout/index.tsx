@@ -22,12 +22,8 @@ import {
   refreshGlobalAction,
   RouteComponentContext,
 } from '../../';
-import { SchemaBlock, SchemaRenderer } from '../../blocks';
+import { SchemaRenderer } from '../../blocks';
 import { useRequest } from 'ahooks';
-import cloneDeep from 'lodash/cloneDeep';
-import { Schema } from '@formily/react';
-import { DesignableContext } from '../../blocks/SchemaField';
-import { uid } from '@formily/shared';
 import {
   DatabaseOutlined,
   PlusOutlined,
@@ -154,7 +150,7 @@ function Database() {
         // bodyStyle={{ padding: 0 }}
         // footer={null}
       >
-        <SchemaBlock schema={schema} />
+        <SchemaRenderer schema={schema} />
       </Modal>
       <DatabaseOutlined
         onClick={() => setVisible(true)}

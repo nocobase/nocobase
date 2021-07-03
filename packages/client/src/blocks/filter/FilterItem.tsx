@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { getFieldComponent, SchemaField } from '../';
+import { SchemaField } from '../';
 import { createForm, onFieldChange, onFieldReact } from '@formily/core'
 import { FormProvider, FormConsumer } from '@formily/react'
 import { Field } from '@formily/core/esm/models/Field';
@@ -51,7 +51,7 @@ export const FilterItem = (props) => {
             } else {
               field.visible = true;
             }
-            field.setComponent(getFieldComponent(schema['x-component']));
+            // field.setComponent(getFieldComponent(schema['x-component']));
             // field.visible = opValue ? !opValue.noValue : true;
           });
         },

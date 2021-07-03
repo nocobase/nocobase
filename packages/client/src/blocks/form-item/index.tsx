@@ -8,6 +8,7 @@ import './style.less';
 import get from 'lodash/get';
 import { GridBlockContext } from '../grid';
 import { uid } from '@formily/shared';
+import { useDesignable } from '../DesignableSchemaField';
 
 function Blank() {
   return null;
@@ -36,6 +37,7 @@ export const FormItem: any = connect((props) => {
 
 FormItem.DesignableBar = () => {
   const field = useField();
+  const { schema, refresh } = useDesignable();
   const [visible, setVisible] = useState(false);
   const { dragRef } = useContext(GridBlockContext);
   return (
@@ -58,8 +60,11 @@ FormItem.DesignableBar = () => {
             <Menu>
               <Menu.Item
                 onClick={(e) => {
-                  field.title = uid();
+                  const title = uid();
+                  schema.title = title;
+                  field.title = title;
                   setVisible(false);
+                  refresh();
                 }}
               >
                 点击修改按钮文案

@@ -5,15 +5,15 @@ nav:
   path: /client
 group:
   order: 1
-  title: 区块 - Blocks
-  path: /client/blocks
+  title: Components - 组件
+  path: /client/components
 ---
 
 # Table - 表格
 
 ```tsx
 import React from 'react';
-import { SchemaBlock } from '../';
+import { SchemaRenderer } from '../';
 import { uid } from '@formily/shared';
 
 const schema = {
@@ -103,7 +103,7 @@ const schema = {
 
 export default () => {
   return (
-    <SchemaBlock schema={schema} />
+    <SchemaRenderer schema={schema} />
   );
 };
 ```

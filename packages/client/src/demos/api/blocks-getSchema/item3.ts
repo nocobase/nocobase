@@ -1,12 +1,13 @@
-export default {
+import { uid } from '@formily/shared';
+
+const schema = {
   type: 'void',
-  name: 'item3',
+  name: `form_${uid()}`,
   'x-decorator': 'Card',
   'x-component': 'Form',
   properties: {
     grid: {
       type: 'void',
-      title: 'aa',
       'x-component': 'Grid',
       properties: {
         row1: {
@@ -26,6 +27,7 @@ export default {
                   'x-component-props': {
                     title: 'block11',
                   },
+                  'x-designable-bar': 'FormItem.DesignableBar',
                   properties: {
                     field1: {
                       type: 'string',
@@ -52,6 +54,7 @@ export default {
                   'x-component-props': {
                     title: 'block21',
                   },
+                  'x-designable-bar': 'FormItem.DesignableBar',
                   properties: {
                     field2: {
                       type: 'string',
@@ -83,6 +86,7 @@ export default {
                   'x-component-props': {
                     title: 'block211',
                   },
+                  'x-designable-bar': 'FormItem.DesignableBar',
                   properties: {
                     field3: {
                       type: 'string',
@@ -109,6 +113,7 @@ export default {
                   'x-component-props': {
                     title: 'block221',
                   },
+                  'x-designable-bar': 'FormItem.DesignableBar',
                   properties: {
                     field4: {
                       type: 'string',
@@ -158,6 +163,31 @@ export default {
             },
           },
         },
+        [`gr_${uid()}`]: {
+          type: 'void',
+          'x-component': 'Grid.Row',
+          properties: {
+            [`gc_${uid()}`]: {
+              type: 'void',
+              'x-component': 'Grid.Col',
+              'x-component-props': {
+                size: 1,
+              },
+              properties: {
+                [`gb_${uid()}`]: {
+                  type: 'void',
+                  'x-component': 'Grid.Block',
+                  properties: {
+                    [`gbn_${uid()}`]: {
+                      type: 'void',
+                      'x-component': 'AddNew.FormItem',
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
       },
     },
     actions: {
@@ -193,4 +223,6 @@ export default {
       },
     },
   },
-}
+};
+
+export default schema;

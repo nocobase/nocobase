@@ -1,3 +1,4 @@
+import { ISchema } from '@formily/json-schema';
 import { uid } from '@formily/shared';
 
 export default {
@@ -5,6 +6,7 @@ export default {
   properties: {
     [`g_${uid()}`]: {
       type: 'void',
+      'x-decorator': 'Card',
       'x-component': 'Grid',
       properties: {
         [`gr_${uid()}`]: {
@@ -35,4 +37,4 @@ export default {
       },
     },
   },
-}
+} as ISchema;

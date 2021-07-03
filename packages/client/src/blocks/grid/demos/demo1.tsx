@@ -44,6 +44,19 @@ const schema: ISchema = {
                 },
               },
             },
+            [`block_${uid()}`]: {
+              type: 'void',
+              'x-component': 'Grid.Block',
+              properties: {
+                [uid()]: {
+                  type: 'string',
+                  title: uid(),
+                  'x-designable-bar': 'FormItem.DesignableBar',
+                  'x-decorator': 'FormItem',
+                  'x-component': 'Input',
+                },
+              },
+            },
           },
         },
         [`col_${uid()}`]: {

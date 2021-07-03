@@ -2,7 +2,7 @@ import React, { useContext, useEffect, useState } from 'react';
 import { Spin } from 'antd';
 import { Helmet } from 'react-helmet';
 import { useRequest } from 'ahooks';
-import { SchemaBlock } from '../../blocks';
+import { SchemaRenderer } from '../../blocks';
 
 export function DefaultPage({ route }) {
   const { data = {}, loading } = useRequest(
@@ -17,7 +17,7 @@ export function DefaultPage({ route }) {
   }
   return (
     <div>
-      <SchemaBlock schema={data} />
+      <SchemaRenderer schema={data} />
     </div>
   );
 }

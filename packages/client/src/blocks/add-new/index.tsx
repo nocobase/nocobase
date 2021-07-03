@@ -43,13 +43,53 @@ import {
   DownOutlined,
   DatabaseOutlined,
 } from '@ant-design/icons';
+import { useDesignable, useSchemaPath } from '../DesignableSchemaField';
+import { uid } from '@formily/shared';
 
 export const AddNew: any = observer((props) => {
+  const { schema, insertBefore } = useDesignable();
+  const path = useSchemaPath();
+  if (schema.parent['x-component'] === 'Grid.Block') {
+    path.pop(); // block
+    path.pop(); // col
+    path.pop(); // row
+  }
   return (
     <Dropdown
       overlay={
         <Menu>
-          <Menu.Item>新建 Markdown</Menu.Item>
+          <Menu.Item
+            onClick={() => {
+              insertBefore({
+                type: 'void',
+                name: uid(),
+                "x-component": 'Grid.Row',
+                properties: {
+                  [uid()]: {
+                    type: 'void',
+                    "x-component": 'Grid.Col',
+                    properties: {
+                      [uid()]: {
+                        type: 'void',
+                        "x-component": 'Grid.Block',
+                        properties: {
+                          [uid()]: {
+                            type: 'void',
+                            title: uid(),
+                            'x-designable-bar': 'FormItem.DesignableBar',
+                            "x-decorator": 'FormItem',
+                            'x-component': 'Markdown',
+                          }
+                        }
+                      },
+                    },
+                  },
+                },
+              }, [...path]);
+            }}
+          >
+            新建 Markdown
+          </Menu.Item>
         </Menu>
       }
     >
@@ -59,11 +99,49 @@ export const AddNew: any = observer((props) => {
 });
 
 AddNew.FormItem = observer((props) => {
+  const { schema, insertBefore } = useDesignable();
+  const path = useSchemaPath();
+  if (schema.parent['x-component'] === 'Grid.Block') {
+    path.pop(); // block
+    path.pop(); // col
+    path.pop(); // row
+  }
   return (
     <Dropdown
       overlay={
         <Menu>
-          <Menu.Item>字段 1</Menu.Item>
+          <Menu.Item
+            onClick={() => {
+              insertBefore({
+                type: 'void',
+                name: uid(),
+                "x-component": 'Grid.Row',
+                properties: {
+                  [uid()]: {
+                    type: 'void',
+                    "x-component": 'Grid.Col',
+                    properties: {
+                      [uid()]: {
+                        type: 'void',
+                        "x-component": 'Grid.Block',
+                        properties: {
+                          [uid()]: {
+                            type: 'void',
+                            title: uid(),
+                            'x-designable-bar': 'FormItem.DesignableBar',
+                            "x-decorator": 'FormItem',
+                            'x-component': 'Markdown',
+                          }
+                        }
+                      },
+                    },
+                  },
+                },
+              }, [...path]);
+            }}
+          >
+            字段 1
+          </Menu.Item>
         </Menu>
       }
     >

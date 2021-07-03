@@ -171,7 +171,7 @@ export function useDesignable(path?: any) {
   const currentSchema = findPropertyByPath(schema, schemaPath);
   console.log('useDesignable', { schema, schemaPath, currentSchema });
   return {
-    schema: currentSchema,
+    schema: (currentSchema || {} as any),
     refresh,
     prepend: (property: ISchema, targetPath?: any): Schema => {
       let target = currentSchema;
@@ -263,6 +263,7 @@ export function useDesignable(path?: any) {
           return;
         }
         s.parent.removeProperty(s.name);
+        console.log('s.parent.properties', s.name, s.parent.properties)
         if (Object.keys(s.parent.properties || {}).length === 0) {
           remove(s.parent);
         }
@@ -297,6 +298,7 @@ export function useSchemaPath() {
     path.unshift(parent.name);
     parent = parent.parent;
   }
+  console.log('useSchemaPath', path, schema);
   return [...path];
 }
 
@@ -335,7 +337,7 @@ const CodePreview = ({ schema }) => {
   return (
     <>
       <CodeOutlined onClick={() => setVisible(true)} />
-      <Modal width={'80%'} onCancel={() => setVisible(false)} visible={visible}>
+      <Modal width={'50%'} onCancel={() => setVisible(false)} visible={visible}>
         <Editor
           height="60vh"
           defaultLanguage="json"
@@ -346,6 +348,11 @@ const CodePreview = ({ schema }) => {
     </>
   );
 };
+
+export const SchemaField = createSchemaField({
+  scope,
+  components,
+});
 
 export const DesignableSchemaField = createDesignableSchemaField({
   scope,
