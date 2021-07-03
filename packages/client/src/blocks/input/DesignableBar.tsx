@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import classNames from 'classnames';
 import { useField, observer, RecursionField, Schema } from '@formily/react';
 import { Dropdown, Menu, Switch } from 'antd';
-import { useSchemaQuery } from '../grid';
 import {
   MenuOutlined,
   ArrowUpOutlined,
@@ -11,19 +10,12 @@ import {
 } from '@ant-design/icons';
 
 export const DesignableBar = (props) => {
-  const { schema, addBlock, removeBlock, refresh } = useSchemaQuery();
   const [active, setActive] = useState(false);
   const field = useField();
   return (
     <>
       <Menu.Item
         onClick={() => {
-          addBlock(
-            {},
-            {
-              insertBefore: true,
-            },
-          );
           setActive(false);
         }}
         icon={<ArrowUpOutlined />}
@@ -32,7 +24,6 @@ export const DesignableBar = (props) => {
       </Menu.Item>
       <Menu.Item
         onClick={() => {
-          addBlock();
           setActive(false);
         }}
         icon={<ArrowDownOutlined />}
@@ -43,12 +34,9 @@ export const DesignableBar = (props) => {
       <Menu.Item onClick={() => {}}>
         <Switch
           onChange={(checked) => {
-            const key = Object.keys(schema.properties).shift();
-            schema.properties[key].required = checked;
-            refresh();
-            field.query(key).take((target: Formily.Core.Models.Field) => {
-              target.required = checked;
-            });
+            // field.query(key).take((target: Formily.Core.Models.Field) => {
+            //   target.required = checked;
+            // });
           }}
           checkedChildren="必填"
           unCheckedChildren="非必填"
@@ -57,7 +45,6 @@ export const DesignableBar = (props) => {
       <Menu.Divider />
       <Menu.Item
         onClick={() => {
-          removeBlock();
           setActive(false);
         }}
         icon={<DeleteOutlined />}

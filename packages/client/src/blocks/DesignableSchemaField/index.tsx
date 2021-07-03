@@ -20,7 +20,7 @@ import { observable } from '@formily/reactive';
 import { uid, clone } from '@formily/shared';
 import { ArrayCollapse, ArrayTable, FormLayout } from '@formily/antd';
 
-import { Space, Card } from 'antd';
+import { Space, Card, Modal } from 'antd';
 import { Action, useLogin, useRegister, useSubmit } from '../action';
 import { AddNew } from '../add-new';
 import { Cascader } from '../cascader';
@@ -45,6 +45,9 @@ import { Tabs } from '../tabs';
 import { TimePicker } from '../time-picker';
 import { Upload } from '../upload';
 import { FormItem } from '../form-item';
+
+import { CodeOutlined } from '@ant-design/icons';
+import Editor from '@monaco-editor/react';
 
 export const BlockContext = createContext({ dragRef: null });
 
@@ -170,6 +173,30 @@ export function useDesignable(path?: any) {
   return {
     schema: currentSchema,
     refresh,
+    prepend: (property: ISchema, targetPath?: any): Schema => {
+      let target = currentSchema;
+      if (targetPath) {
+        target = findPropertyByPath(schema, targetPath);
+      }
+      if (!target) {
+        console.error('target schema does not exist.');
+        return;
+      }
+      if (!property.name) {
+        property.name = uid();
+      }
+      const properties = {};
+      properties[property.name] = property;
+      Object.keys(target.properties).forEach((name, index) => {
+        const current = target.properties[name];
+        current.parent.removeProperty(current.name);
+        properties[current.name] = current.toJSON();
+      });
+      console.log({ properties }, target.properties)
+      target.setProperties(properties);
+      refresh();
+      return target.properties[property.name];
+    },
     appendChild: (property: ISchema, targetPath?: any): Schema => {
       let target = currentSchema;
       if (targetPath) {
@@ -221,6 +248,27 @@ export function useDesignable(path?: any) {
       addPropertyBefore(target, property);
       refresh();
       return target.parent.properties[property.name];
+    },
+    deepRemove(targetPath?: any) {
+      let target = currentSchema;
+      if (targetPath) {
+        target = findPropertyByPath(schema, targetPath);
+      }
+      if (!target) {
+        console.error('target schema does not exist.');
+        return;
+      }
+      const remove = (s: Schema) => {
+        if (!s.parent) {
+          return;
+        }
+        s.parent.removeProperty(s.name);
+        if (Object.keys(s.parent.properties || {}).length === 0) {
+          remove(s.parent);
+        }
+      };
+      remove(target);
+      refresh();
     },
     remove(targetPath?: any) {
       let target = currentSchema;
@@ -274,11 +322,29 @@ export const createDesignableSchemaField = (options) => {
         }}
       >
         <SchemaField schema={schema} />
+        <CodePreview schema={schema} />
       </DesignableContext.Provider>
     );
   };
 
   return DesignableSchemaField;
+};
+
+const CodePreview = ({ schema }) => {
+  const [visible, setVisible] = useState(false);
+  return (
+    <>
+      <CodeOutlined onClick={() => setVisible(true)} />
+      <Modal width={'80%'} onCancel={() => setVisible(false)} visible={visible}>
+        <Editor
+          height="60vh"
+          defaultLanguage="json"
+          value={JSON.stringify(schema.toJSON(), null, 2)}
+        />
+        {/* <pre>{JSON.stringify(schema.toJSON(), null, 2)}</pre> */}
+      </Modal>
+    </>
+  );
 };
 
 export const DesignableSchemaField = createDesignableSchemaField({

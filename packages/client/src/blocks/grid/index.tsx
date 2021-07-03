@@ -5,6 +5,7 @@ import React, {
   createContext,
   useContext,
   useEffect,
+  useState,
 } from 'react';
 // import { DndProvider, useDrag, useDragDropManager } from 'react-dnd';
 // import { HTML5Backend } from 'react-dnd-html5-backend';
@@ -21,11 +22,12 @@ import './style.less';
 import cls from 'classnames';
 
 import { useDesignable, useSchemaPath } from '../DesignableSchemaField';
-import { useColResizer } from './hooks';
-import { useDrag, useDrop, DragDropProvider, mergeRefs } from './hooks';
+import { DragDropManagerProvider, useColResizer } from './hooks';
+import { useDrag, useDrop, mergeRefs } from './hooks';
 
 export const GridContext = createContext({
   ref: null,
+  gridName: null,
 });
 
 const ColumnSizeContext = createContext(null);
@@ -34,9 +36,12 @@ export const GridBlockContext = createContext({
   dragRef: null,
 });
 
-const RowDivider = ({ onDrop }) => {
+const RowDivider = ({ name, onDrop }) => {
+  const { gridName } = useContext(GridContext);
   const { isOver, dropRef } = useDrop({
-    accept: 'grid',
+    uid: `row_divider_${name}`,
+    accept: gridName,
+    shallow: true,
     onDrop,
   });
   return (
@@ -48,11 +53,14 @@ const RowDivider = ({ onDrop }) => {
 };
 
 const ColDivider = (props: any) => {
-  const { onDragEnd, resizable } = props;
+  const { name, onDragEnd, resizable, onDrop } = props;
+  const { gridName } = useContext(GridContext);
   const { isDragging, dragRef } = useColResizer({ onDragEnd });
   const { isOver, dropRef } = useDrop({
-    accept: 'grid',
-    data: {},
+    uid: `col_divider_${name}`,
+    accept: gridName,
+    shallow: true,
+    onDrop,
   });
   return (
     <div
@@ -69,59 +77,72 @@ const ColDivider = (props: any) => {
 };
 
 export const Grid: any = observer((props) => {
-  const schema = useFieldSchema();
-  const { insertBefore, insertAfter, remove } = useDesignable();
   const ref = useRef();
+  const schema = useFieldSchema();
+  const gridPath = useSchemaPath();
+  const {
+    schema: designableSchema,
+    insertAfter,
+    prepend,
+    deepRemove,
+  } = useDesignable();
   return (
-    <DragDropProvider>
-      <GridContext.Provider value={{ ref }}>
+    <DragDropManagerProvider>
+      <GridContext.Provider value={{ ref, gridName: schema.name }}>
         <div ref={ref} className={'nb-grid'}>
           <RowDivider
+            key={`${schema.name}_0`}
+            name={`${schema.name}_0`}
             onDrop={(e) => {
               const blockSchema = e.dragItem.schema;
               const path = [...e.dragItem.path];
-                    path.pop();
-                    remove(path);
-              insertBefore({
+              path.pop();
+              prepend({
                 type: 'void',
-                "x-component": 'Grid.Row',
+                'x-component': 'Grid.Row',
                 properties: {
                   [uid()]: {
                     type: 'void',
-                    "x-component": 'Grid.Col',
+                    'x-component': 'Grid.Col',
                     properties: {
                       [blockSchema.name]: blockSchema,
                     },
                   },
                 },
               });
+              deepRemove(path);
             }}
           />
-          {schema.mapProperties((property) => {
+          {schema.mapProperties((property, key, index) => {
             return (
               <>
                 <div style={{ display: 'flex' }} className={'nb-grid-row'}>
                   <RecursionField name={property.name} schema={property} />
                 </div>
                 <RowDivider
+                  key={`${schema.name}_${index + 1}`}
+                  name={`${schema.name}_${index + 1}`}
                   onDrop={(e) => {
                     const blockSchema = e.dragItem.schema;
                     const path = [...e.dragItem.path];
                     path.pop();
-                    remove(path);
-                    insertAfter({
-                      type: 'void',
-                      "x-component": 'Grid.Row',
-                      properties: {
-                        [uid()]: {
-                          type: 'void',
-                          "x-component": 'Grid.Col',
-                          properties: {
-                            [blockSchema.name]: blockSchema,
+                    insertAfter(
+                      {
+                        type: 'void',
+                        'x-component': 'Grid.Row',
+                        properties: {
+                          [uid()]: {
+                            type: 'void',
+                            'x-component': 'Grid.Col',
+                            properties: {
+                              [blockSchema.name]: blockSchema,
+                            },
                           },
                         },
                       },
-                    });
+                      [...gridPath, key],
+                    );
+                    deepRemove(path);
                   }}
                 />
               </>
@@ -129,46 +150,86 @@ export const Grid: any = observer((props) => {
           })}
         </div>
       </GridContext.Provider>
-    </DragDropProvider>
+    </DragDropManagerProvider>
   );
 });
 
 Grid.Row = observer((props) => {
   const field = useField();
   const schema = useFieldSchema();
-  const { schema: designableSchema, refresh } = useDesignable();
-  const len = Object.keys(schema.properties || {}).length;
+  const rowPath = useSchemaPath();
+  const {
+    schema: designableSchema,
+    refresh,
+    insertAfter,
+    appendChild,
+    prepend,
+    remove,
+    deepRemove,
+  } = useDesignable();
+  const len = Object.keys(designableSchema.properties || {}).length;
+  console.log({ len });
   return (
     <ColumnSizeContext.Provider value={len}>
+      <ColDivider
+        name={`${schema.name}_0`}
+        onDrop={(e) => {
+          const blockSchema = e.dragItem.schema;
+          prepend({
+            type: 'void',
+            'x-component': 'Grid.Col',
+            properties: {
+              [blockSchema.name]: blockSchema,
+            },
+          });
+          const path = [...e.dragItem.path];
+          path.pop();
+          deepRemove(path);
+        }}
+      />
       {schema.mapProperties((property, key, index) => {
         return (
           <>
+            <RecursionField name={property.name} schema={property} />
             <ColDivider
-              resizable={index > 0}
+              name={`${schema.name}_${index + 1}`}
+              resizable={index < len - 1}
+              onDrop={(e) => {
+                const blockSchema = e.dragItem.schema;
+                insertAfter(
+                  {
+                    type: 'void',
+                    'x-component': 'Grid.Col',
+                    properties: {
+                      [blockSchema.name]: blockSchema,
+                    },
+                  },
+                  [...rowPath, key],
+                );
+                const path = [...e.dragItem.path];
+                path.pop();
+                deepRemove(path);
+              }}
               onDragEnd={(e) => {
-                schema.mapProperties((s, key, index) => {
-                  field.query(`.${schema.name}.${key}`).take((f) => {
-                    f.componentProps['width'] = e.data.size[index];
-                  });
-                  s['x-component-props'] = s['x-component-props'] || {};
-                  s['x-component-props']['width'] = e.data.size[index];
-                  return s;
-                });
                 designableSchema.mapProperties((s, key, index) => {
                   s['x-component-props'] = s['x-component-props'] || {};
                   s['x-component-props']['width'] = e.data.size[index];
                   return s;
                 });
-
-                refresh();
-                console.log('e.data', designableSchema);
+                schema.mapProperties((s, key, index) => {
+                  s['x-component-props'] = s['x-component-props'] || {};
+                  s['x-component-props']['width'] = e.data.size[index];
+                  field.query(`.${schema.name}.${key}`).take((f) => {
+                    f.componentProps['width'] = e.data.size[index];
+                  });
+                  return s;
+                });
+                // refresh();
               }}
             />
-            <RecursionField name={property.name} schema={property} />
           </>
         );
       })}
-      <ColDivider />
     </ColumnSizeContext.Provider>
   );
 });
@@ -179,7 +240,7 @@ Grid.Col = observer((props) => {
   const size = useContext(ColumnSizeContext);
   return (
     <div
-      style={{ width: `calc(${width || 100 / size}% - 24px / ${size})` }}
+      style={{ width: `calc(${width || 100 / size}% - 24px - 24px / ${size})` }}
       className={'nb-grid-col'}
     >
       {props.children}
@@ -192,7 +253,7 @@ Grid.Block = observer((props) => {
   const ctx = useContext(GridContext);
   const path = useSchemaPath();
   const { isDragging, dragRef, previewRef } = useDrag({
-    type: 'grid',
+    type: ctx.gridName,
     onDragStart() {
       console.log('onDragStart');
     },
@@ -208,7 +269,8 @@ Grid.Block = observer((props) => {
     },
   });
   const { isOver, onTopHalf, dropRef } = useDrop({
-    accept: 'grid',
+    uid: schema.name,
+    accept: ctx.gridName,
     data: {},
     canDrop: !isDragging,
   });

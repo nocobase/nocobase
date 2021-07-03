@@ -9,6 +9,9 @@
   .nb-grid-col-divider {
     &.resizable {
       cursor: col-resize;
+      &:hover {
+        background: #e6f7ff;
+      }
     }
   }
 }
@@ -16,11 +19,6 @@
 .nb-grid.dragging {
   position: relative;
   .nb-grid-col-divider {
-    // background-color: #ddd;
-    // opacity: 0.5;
-    &.resizable {
-      cursor: col-resize;
-    }
     &.hover {
       background: #e6f7ff;
     }
@@ -38,7 +36,7 @@
     }
   }
   .designable-bar {
-    display: none;
+    display: none !important;
   }
   .nb-grid-block {
     position: relative;

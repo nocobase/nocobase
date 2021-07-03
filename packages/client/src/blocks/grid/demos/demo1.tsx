@@ -13,82 +13,205 @@ import { FormItem } from '../../form-item';
 import { createDesignableSchemaField } from '../../DesignableSchemaField';
 import { createForm } from '@formily/core';
 import { Grid } from '../';
+import { Card } from 'antd';
 
 const schema: ISchema = {
-  type: 'object',
+  type: 'void',
+  name: uid(),
+  'x-component': 'Grid',
   properties: {
-    [uid()]: {
+    [`row_${uid()}`]: {
       type: 'void',
-      'x-component': 'Grid',
+      'x-component': 'Grid.Row',
       properties: {
-        [`row_${uid()}`]: {
+        [`col_${uid()}`]: {
           type: 'void',
-          'x-component': 'Grid.Row',
+          'x-component': 'Grid.Col',
+          'x-component-props': {
+            width: 30,
+          },
           properties: {
-            [`col_${uid()}`]: {
+            [`block_${uid()}`]: {
               type: 'void',
-              'x-component': 'Grid.Col',
-              "x-component-props": {
-                width: 30,
-              },
+              'x-component': 'Grid.Block',
               properties: {
-                [`block_${uid()}`]: {
-                  type: 'void',
-                  'x-component': 'Grid.Block',
-                  properties: {
-                    [uid()]: {
-                      type: 'string',
-                      title: uid(),
-                      'x-designable-bar': 'FormItem.DesignableBar',
-                      'x-decorator': 'FormItem',
-                      'x-component': 'Input',
-                    },
-                  },
-                },
-              },
-            },
-            [`col_${uid()}`]: {
-              type: 'void',
-              'x-component': 'Grid.Col',
-              "x-component-props": {
-                width: 70,
-              },
-              properties: {
-                [`block_${uid()}`]: {
-                  type: 'void',
-                  'x-component': 'Grid.Block',
-                  properties: {
-                    [uid()]: {
-                      type: 'string',
-                      title: uid(),
-                      'x-designable-bar': 'FormItem.DesignableBar',
-                      'x-decorator': 'FormItem',
-                      'x-component': 'Input',
-                    },
-                  },
+                [uid()]: {
+                  type: 'string',
+                  title: uid(),
+                  'x-designable-bar': 'FormItem.DesignableBar',
+                  'x-decorator': 'FormItem',
+                  'x-component': 'Input',
                 },
               },
             },
           },
         },
-        [`row_${uid()}`]: {
+        [`col_${uid()}`]: {
           type: 'void',
-          'x-component': 'Grid.Row',
+          'x-component': 'Grid.Col',
+          'x-component-props': {
+            width: 70,
+          },
           properties: {
-            [`col_${uid()}`]: {
+            [`block_${uid()}`]: {
               type: 'void',
-              'x-component': 'Grid.Col',
+              'x-component': 'Grid.Block',
               properties: {
-                [`block_${uid()}`]: {
+                [uid()]: {
+                  type: 'string',
+                  title: uid(),
+                  'x-designable-bar': 'FormItem.DesignableBar',
+                  'x-decorator': 'FormItem',
+                  'x-component': 'Input',
+                },
+              },
+            },
+          },
+        },
+      },
+    },
+    [`row_${uid()}`]: {
+      type: 'void',
+      'x-component': 'Grid.Row',
+      properties: {
+        [`col_${uid()}`]: {
+          type: 'void',
+          'x-component': 'Grid.Col',
+          properties: {
+            [`block_${uid()}`]: {
+              type: 'void',
+              'x-component': 'Grid.Block',
+              properties: {
+                [uid()]: {
+                  type: 'string',
+                  title: uid(),
+                  'x-designable-bar': 'FormItem.DesignableBar',
+                  'x-decorator': 'FormItem',
+                  'x-component': 'Input',
+                },
+              },
+            },
+          },
+        },
+      },
+    },
+    [`row_${uid()}`]: {
+      type: 'void',
+      'x-component': 'Grid.Row',
+      properties: {
+        [`col_${uid()}`]: {
+          type: 'void',
+          'x-component': 'Grid.Col',
+          properties: {
+            [`block_${uid()}`]: {
+              type: 'void',
+              'x-component': 'Grid.Block',
+              properties: {
+                [uid()]: {
                   type: 'void',
-                  'x-component': 'Grid.Block',
+                  name: uid(),
+                  'x-decorator': 'Card',
+                  'x-component': 'Grid',
                   properties: {
-                    [uid()]: {
-                      type: 'string',
-                      title: uid(),
-                      'x-designable-bar': 'FormItem.DesignableBar',
-                      'x-decorator': 'FormItem',
-                      'x-component': 'Input',
+                    [`row_${uid()}`]: {
+                      type: 'void',
+                      'x-component': 'Grid.Row',
+                      properties: {
+                        [`col_${uid()}`]: {
+                          type: 'void',
+                          'x-component': 'Grid.Col',
+                          'x-component-props': {
+                            width: 30,
+                          },
+                          properties: {
+                            [`block_${uid()}`]: {
+                              type: 'void',
+                              'x-component': 'Grid.Block',
+                              properties: {
+                                [uid()]: {
+                                  type: 'string',
+                                  title: uid(),
+                                  'x-designable-bar': 'FormItem.DesignableBar',
+                                  'x-decorator': 'FormItem',
+                                  'x-component': 'Input',
+                                },
+                              },
+                            },
+                          },
+                        },
+                        [`col_${uid()}`]: {
+                          type: 'void',
+                          'x-component': 'Grid.Col',
+                          'x-component-props': {
+                            width: 70,
+                          },
+                          properties: {
+                            [`block_${uid()}`]: {
+                              type: 'void',
+                              'x-component': 'Grid.Block',
+                              properties: {
+                                [uid()]: {
+                                  type: 'string',
+                                  title: uid(),
+                                  'x-designable-bar': 'FormItem.DesignableBar',
+                                  'x-decorator': 'FormItem',
+                                  'x-component': 'Input',
+                                },
+                              },
+                            },
+                          },
+                        },
+                      },
+                    },
+                    [`row_${uid()}`]: {
+                      type: 'void',
+                      'x-component': 'Grid.Row',
+                      properties: {
+                        [`col_${uid()}`]: {
+                          type: 'void',
+                          'x-component': 'Grid.Col',
+                          properties: {
+                            [`block_${uid()}`]: {
+                              type: 'void',
+                              'x-component': 'Grid.Block',
+                              properties: {
+                                [uid()]: {
+                                  type: 'string',
+                                  title: uid(),
+                                  'x-designable-bar': 'FormItem.DesignableBar',
+                                  'x-decorator': 'FormItem',
+                                  'x-component': 'Input',
+                                },
+                              },
+                            },
+                          },
+                        },
+                      },
+                    },
+                    [`row_${uid()}`]: {
+                      type: 'void',
+                      'x-component': 'Grid.Row',
+                      properties: {
+                        [`col_${uid()}`]: {
+                          type: 'void',
+                          'x-component': 'Grid.Col',
+                          properties: {
+                            [`block_${uid()}`]: {
+                              type: 'void',
+                              'x-component': 'Grid.Block',
+                              properties: {
+                                [uid()]: {
+                                  type: 'string',
+                                  title: uid(),
+                                  'x-designable-bar': 'FormItem.DesignableBar',
+                                  'x-decorator': 'FormItem',
+                                  'x-component': 'Input',
+                                },
+                              },
+                            },
+                          },
+                        },
+                      },
                     },
                   },
                 },
@@ -106,6 +229,7 @@ const DesignableSchemaField = createDesignableSchemaField({
     Grid,
     Input,
     FormItem,
+    Card,
   },
 });
 
@@ -114,7 +238,12 @@ const form = createForm();
 export default () => {
   return (
     <FormProvider form={form}>
-      <DesignableSchemaField schema={schema} />
+      <DesignableSchemaField schema={{
+        type: 'object',
+        properties: {
+          [schema.name]: schema,
+        }
+      }} />
     </FormProvider>
   );
 };
