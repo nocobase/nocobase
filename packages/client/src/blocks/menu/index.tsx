@@ -50,7 +50,7 @@ import { useHistory } from 'react-router-dom';
 import cls from 'classnames';
 import ReactDOM from 'react-dom';
 import { useMount } from 'ahooks';
-import { useDesignable, SchemaRenderer, SchemaBlock } from '../';
+import { useDesignable, SchemaRenderer } from '../';
 import { Router } from "react-router";
 
 import { useLifecycle } from 'beautiful-react-hooks';
@@ -130,9 +130,11 @@ export const Menu: MenuType = observer((props) => {
               if (name.endsWith('-add-new')) {
                 return;
               }
+              console.log('diff', name)
               const current = diff.properties[name];
               selected.addProperty(current.name, current.toJSON());
             });
+            console.log({selected })
             refresh();
           }}
           schema={{

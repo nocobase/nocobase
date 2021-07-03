@@ -6,7 +6,7 @@ nav:
 group:
   order: 2
   title: Blocks 
-  path: /client/blocks
+  path: /client/components
 ---
 
 # Grid - 栅格

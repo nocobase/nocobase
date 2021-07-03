@@ -5,8 +5,8 @@ nav:
   path: /client
 group:
   order: 1
-  title: 区块 - Blocks
-  path: /client/blocks
+  title: Components - 组件
+  path: /client/components
 ---
 
 # Input - 输入框
@@ -22,7 +22,7 @@ group:
  * title: 单行文本
  */
 import React from 'react';
-import { SchemaBlock } from '../';
+import { SchemaRenderer } from '../';
 
 const schema = {
   type: 'object',
@@ -54,7 +54,7 @@ const schema = {
 
 export default () => {
   return (
-    <SchemaBlock schema={schema} />
+    <SchemaRenderer schema={schema} />
   );
 };
 ```
@@ -67,7 +67,7 @@ export default () => {
  * desc: 用于多行输入，使用 `Input.TextArea` 组件，`ellipsis=true` 时超出隐藏
  */
 import React from 'react';
-import { SchemaBlock } from '../';
+import { SchemaRenderer } from '../';
 
 const schema = {
   type: 'object',
@@ -112,7 +112,7 @@ const schema = {
 
 export default () => {
   return (
-    <SchemaBlock schema={schema} />
+    <SchemaRenderer schema={schema} />
   );
 };
 ```
@@ -125,7 +125,7 @@ export default () => {
  * desc: 加上邮箱验证 `x-validator=email`
  */
 import React from 'react';
-import { SchemaBlock } from '../';
+import { SchemaRenderer } from '../';
 
 const schema = {
   type: 'object',
@@ -160,7 +160,7 @@ const schema = {
 
 export default () => {
   return (
-    <SchemaBlock schema={schema} />
+    <SchemaRenderer schema={schema} />
   );
 };
 ```
@@ -173,7 +173,7 @@ export default () => {
  * desc: 加上手机号验证 `x-validator=phone`
  */
 import React from 'react';
-import { SchemaBlock } from '../';
+import { SchemaRenderer } from '../';
 
 const schema = {
   type: 'object',
@@ -208,7 +208,7 @@ const schema = {
 
 export default () => {
   return (
-    <SchemaBlock schema={schema} />
+    <SchemaRenderer schema={schema} />
   );
 };
 ```
@@ -221,7 +221,7 @@ export default () => {
  * desc: 加上 URL 验证 `x-validator=url`
  */
 import React from 'react';
-import { SchemaBlock } from '../';
+import { SchemaRenderer } from '../';
 
 const schema = {
   type: 'object',
@@ -254,7 +254,7 @@ const schema = {
 
 export default () => {
   return (
-    <SchemaBlock schema={schema} />
+    <SchemaRenderer schema={schema} />
   );
 };
 ```

@@ -96,7 +96,6 @@ export const Grid: any = observer((props) => {
             onDrop={(e) => {
               const blockSchema = e.dragItem.schema;
               const path = [...e.dragItem.path];
-              path.pop();
               prepend({
                 type: 'void',
                 'x-component': 'Grid.Row',
@@ -125,7 +124,6 @@ export const Grid: any = observer((props) => {
                   onDrop={(e) => {
                     const blockSchema = e.dragItem.schema;
                     const path = [...e.dragItem.path];
-                    path.pop();
                     insertAfter(
                       {
                         type: 'void',
@@ -168,7 +166,7 @@ Grid.Row = observer((props) => {
     deepRemove,
   } = useDesignable();
   const len = Object.keys(designableSchema.properties || {}).length;
-  console.log({ len });
+  console.log({ len, schema, designableSchema });
   return (
     <ColumnSizeContext.Provider value={len}>
       <ColDivider
@@ -183,7 +181,6 @@ Grid.Row = observer((props) => {
             },
           });
           const path = [...e.dragItem.path];
-          path.pop();
           deepRemove(path);
         }}
       />
@@ -207,7 +204,6 @@ Grid.Row = observer((props) => {
                   [...rowPath, key],
                 );
                 const path = [...e.dragItem.path];
-                path.pop();
                 deepRemove(path);
               }}
               onDragEnd={(e) => {

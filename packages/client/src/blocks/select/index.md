@@ -5,8 +5,8 @@ nav:
   path: /client
 group:
   order: 1
-  title: 区块 - Blocks
-  path: /client/blocks
+  title: Components - 组件
+  path: /client/components
 ---
 
 # Select - 选择器
@@ -15,7 +15,7 @@ group:
 
 ```tsx
 import React from 'react';
-import { SchemaBlock } from '../';
+import { SchemaRenderer } from '../';
 
 const options = [
   {
@@ -65,7 +65,7 @@ const schema = {
 
 export default () => {
   return (
-    <SchemaBlock schema={schema}/>
+    <SchemaRenderer schema={schema}/>
   );
 };
 ```
@@ -74,7 +74,7 @@ export default () => {
 
 ```tsx
 import React from 'react';
-import { SchemaBlock } from '../';
+import { SchemaRenderer } from '../';
 
 const options = [
   {
@@ -129,7 +129,7 @@ const schema = {
 
 export default () => {
   return (
-    <SchemaBlock schema={schema} />
+    <SchemaRenderer schema={schema} />
   );
 };
 ```
@@ -138,7 +138,7 @@ export default () => {
 
 ```tsx
 import React from 'react';
-import { SchemaBlock } from '../';
+import { SchemaRenderer } from '../';
 
 const dataSource = [
   {
@@ -195,7 +195,7 @@ const schema = {
 
 export default () => {
   return (
-    <SchemaBlock schema={schema}/>
+    <SchemaRenderer schema={schema}/>
   );
 };
 ```
@@ -204,7 +204,7 @@ export default () => {
 
 ```tsx
 import React from 'react';
-import { SchemaBlock } from '../';
+import { SchemaRenderer } from '../';
 
 const dataSource = [
   {
@@ -267,7 +267,7 @@ const schema = {
 
 export default () => {
   return (
-    <SchemaBlock schema={schema} />
+    <SchemaRenderer schema={schema} />
   );
 };
 ```

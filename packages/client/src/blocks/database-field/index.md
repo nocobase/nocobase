@@ -5,8 +5,8 @@ nav:
   path: /client
 group:
   order: 1
-  title: 区块 - Blocks
-  path: /client/blocks
+  title: Components - 组件
+  path: /client/components
 ---
 
 # DatabaseField - 数据表字段

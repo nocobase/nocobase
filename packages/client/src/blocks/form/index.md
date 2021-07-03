@@ -5,8 +5,8 @@ nav:
   path: /client
 group:
   order: 1
-  title: 区块 - Blocks
-  path: /client/blocks
+  title: Components - 组件
+  path: /client/components
 ---
 
 # Form - 表单
@@ -17,7 +17,7 @@ group:
 
 ```tsx
 import React from 'react';
-import { SchemaBlock } from '../';
+import { SchemaRenderer } from '../';
 
 const schema = {
   type: 'object',
@@ -47,7 +47,7 @@ const schema = {
 
 export default () => {
   return (
-    <SchemaBlock schema={schema} />
+    <SchemaRenderer schema={schema} />
   );
 };
 ```
@@ -56,7 +56,7 @@ export default () => {
 
 ```tsx
 import React from 'react';
-import { SchemaBlock } from '../';
+import { SchemaRenderer } from '../';
 
 const schema = {
   type: 'void',
@@ -257,7 +257,7 @@ const schema = {
 
 export default () => {
   return (
-    <SchemaBlock schema={schema} />
+    <SchemaRenderer schema={schema} />
   );
 };
 ```
@@ -266,7 +266,7 @@ export default () => {
 
 ```tsx
 import React from 'react';
-import { SchemaBlock } from '../';
+import { SchemaRenderer } from '../';
 import { uid } from '@formily/shared';
 
 const schema = {
@@ -302,6 +302,7 @@ const schema = {
                       type: 'string',
                       required: true,
                       title: '字段1',
+                      'x-designable-bar': 'FormItem.DesignableBar',
                       'x-decorator': 'FormItem',
                       'x-component': 'Input',
                     },
@@ -329,6 +330,7 @@ const schema = {
                       type: 'string',
                       required: true,
                       title: '字段2',
+                      'x-designable-bar': 'FormItem.DesignableBar',
                       'x-decorator': 'FormItem',
                       'x-component': 'Input',
                     },
@@ -361,6 +363,7 @@ const schema = {
                       type: 'string',
                       required: true,
                       title: '字段3',
+                      'x-designable-bar': 'FormItem.DesignableBar',
                       'x-decorator': 'FormItem',
                       'x-component': 'Input',
                     },
@@ -388,6 +391,7 @@ const schema = {
                       type: 'string',
                       required: true,
                       title: '字段4',
+                      'x-designable-bar': 'FormItem.DesignableBar',
                       'x-decorator': 'FormItem',
                       'x-component': 'Input',
                     },
@@ -423,6 +427,7 @@ const schema = {
                       type: 'string',
                       required: true,
                       title: '字段5',
+                      'x-designable-bar': 'FormItem.DesignableBar',
                       'x-decorator': 'FormItem',
                       'x-component': 'Input',
                     },
@@ -496,7 +501,7 @@ const schema = {
 
 export default () => {
   return (
-    <SchemaBlock schema={schema} />
+    <SchemaRenderer schema={schema} />
   );
 };
 ```

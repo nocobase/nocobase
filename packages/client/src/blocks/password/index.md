@@ -5,8 +5,8 @@ nav:
   path: /client
 group:
   order: 1
-  title: 区块 - Blocks
-  path: /client/blocks
+  title: Components - 组件
+  path: /client/components
 ---
 
 # Password - 密码
@@ -17,7 +17,7 @@ group:
 
 ```tsx
 import React from 'react';
-import { SchemaBlock } from '../';
+import { SchemaRenderer } from '../';
 
 const schema = {
   type: 'object',
@@ -48,7 +48,7 @@ const schema = {
 
 export default () => {
   return (
-    <SchemaBlock schema={schema} />
+    <SchemaRenderer schema={schema} />
   );
 };
 ```

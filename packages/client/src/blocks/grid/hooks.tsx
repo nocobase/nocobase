@@ -57,14 +57,7 @@ export function useDrag(options?: any) {
     left: 0,
     top: 0,
   });
-  const { setDrag, setDrop, getDrop } = useDragDropManagerContext();
-  // const dragDropManager = useContext(DragDropManagerContext);
-  const field = useField();
-  console.log(
-    'init',
-    { isDragging, previewElement },
-    field ? field.address.segments : null,
-  );
+  const { drag, setDrag, setDrop, getDrop } = useDragDropManagerContext();
 
   useWillUnmount(() => {
     setIsDragging(false);
@@ -74,8 +67,9 @@ export function useDrag(options?: any) {
     window.__previewElement = undefined;
 
     setDrag(null);
+    setDrop(null);
 
-    // dragDropManager.drag = null;
+    document.body.classList.remove('dragging');
     document.body.style.cursor = null;
     document.body.style.userSelect = null;
   });
@@ -86,8 +80,6 @@ export function useDrag(options?: any) {
     }
     setDrop({ type, item });
     setDrag({ type, item });
-    // dragDropManager.drag = { type, item };
-    // dragDropManager.drop = { type, item };
     setIsDragging(true);
 
     const postion = {
@@ -127,7 +119,7 @@ export function useDrag(options?: any) {
     onDragStart && onDragStart(event);
     document.body.style.cursor = 'grab';
     document.body.style.userSelect = 'none';
-    document.body.className = 'dragging';
+    document.body.classList.add('dragging');
 
     // console.log(
     //   'onMouseDown',
@@ -157,6 +149,7 @@ export function useDrag(options?: any) {
     // dragDropManager.drag = null;
     previewElement.remove();
     setPreviewElement(undefined);
+    document.body.classList.remove('dragging');
     document.body.style.cursor = null;
     document.body.style.userSelect = null;
     // @ts-ignore
@@ -197,6 +190,8 @@ export function useDrag(options?: any) {
     if (!isDragging || !previewElement) {
       return;
     }
+
+    console.log('drag', drag.dropIds);
     // console.log(
     //   'onMouseMove',
     //   { isDragging, previewElement },
@@ -214,7 +209,6 @@ export function useDrag(options?: any) {
 
     if (type) {
       let dropElement = document.elementFromPoint(event.clientX, event.clientY);
-      console.log({ dropElement });
       const dropIds = [];
       while (dropElement) {
         if (!dropElement.getAttribute) {
@@ -224,7 +218,6 @@ export function useDrag(options?: any) {
         const dropId = dropElement.getAttribute('data-drop-id');
         const dropContext = getDrop(dropId);
         if (dropContext && dropContext.accept === type) {
-          console.log({ dropId });
           if (
             !dropContext.shallow ||
             (dropContext.shallow && dropIds.length === 0)
@@ -276,7 +269,7 @@ export function useDrop(options) {
     //   shallow,
     // };
     dropRef.current.setAttribute('data-drop-id', dropId);
-  }, []);
+  }, [dropId]);
 
   onMouseEnter((event) => {
     if (!canDrop) {
@@ -296,6 +289,7 @@ export function useDrop(options) {
     if (!drag || drag.type !== accept) {
       return;
     }
+    console.log('drag.dropIds', drag.dropIds, dropId)
     if (drag.dropIds && drag.dropIds.includes(dropId)) {
       const top = event.clientY - dropRef.current.getBoundingClientRect().top;
       const onTop = top < dropRef.current.clientHeight / 2;

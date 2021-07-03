@@ -5,14 +5,33 @@
   margin: 0px -24px;
 }
 
-.nb-grid {
-  .nb-grid-col-divider {
-    &.resizable {
-      cursor: col-resize;
-      &:hover {
-        background: #e6f7ff;
+// .nb-grid {
+//   .nb-grid-col-divider {
+//     &.resizable {
+//       cursor: col-resize;
+//       &:hover {
+//         background: #e6f7ff;
+//       }
+//     }
+//   }
+// }
+
+body:not(.dragging) {
+  .nb-grid {
+    .nb-grid-col-divider {
+      &.resizable {
+        cursor: col-resize;
+        &:hover {
+          background: #e6f7ff;
+        }
       }
     }
+  }
+}
+
+body.dragging {
+  .designable-bar {
+    display: none !important;
   }
 }
 
@@ -34,9 +53,6 @@
     &.hover {
       background: #e6f7ff;
     }
-  }
-  .designable-bar {
-    display: none !important;
   }
   .nb-grid-block {
     position: relative;
