@@ -1,11 +1,16 @@
 import React, { createContext, useContext, useEffect, useRef } from 'react';
 import { useState } from 'react';
 import { useMouseEvents, useWillUnmount } from 'beautiful-react-hooks';
-import { useField } from '@formily/react';
+import { useField, useFieldSchema } from '@formily/react';
 import { useMount } from 'ahooks';
 import constate from 'constate';
+import { useSchemaPath } from '../../blocks';
 
-export function useDragDropManager() {
+export const DraggableBlockContext = createContext({
+  dragRef: null,
+});
+
+export function useDragDropManager({ uid }) {
   const [drag, setDrag] = useState(null);
   const [drop, setDrop] = useState(null);
   const [drops, setDrops] = useState({});
@@ -17,19 +22,18 @@ export function useDragDropManager() {
   const getDrop = (dropId) => {
     return drops[dropId];
   };
-  return { drag, drop, drops, setDrag, addDrop, setDrop, getDrop };
+  return { uid, drag, drop, drops, setDrag, addDrop, setDrop, getDrop };
 }
 
 const [DragDropManagerProvider, useDragDropManagerContext] =
   constate(useDragDropManager);
 
-export { DragDropManagerProvider, useDragDropManagerContext };
+export function useDragDropUID() {
+  const { uid } = useDragDropManagerContext();
+  return uid;
+}
 
-// export const DragDropManagerContext = createContext<any>({
-//   drag: null,
-//   drops: {},
-//   name: `${Math.random()}`,
-// });
+export { DragDropManagerProvider, useDragDropManagerContext };
 
 export function mergeRefs<T = any>(
   refs: Array<React.MutableRefObject<T> | React.LegacyRef<T>>,
@@ -289,7 +293,7 @@ export function useDrop(options) {
     if (!drag || drag.type !== accept) {
       return;
     }
-    console.log('drag.dropIds', drag.dropIds, dropId)
+    console.log('drag.dropIds', drag.dropIds, dropId);
     if (drag.dropIds && drag.dropIds.includes(dropId)) {
       const top = event.clientY - dropRef.current.getBoundingClientRect().top;
       const onTop = top < dropRef.current.clientHeight / 2;
@@ -380,7 +384,11 @@ export function useColResizer(options?: any) {
     const els = parent.querySelectorAll(':scope > .nb-grid-col');
     const size = [];
     const gap = dragRef.current.clientWidth;
-    console.log('parent.clientWidth', parent.clientWidth, dragRef.current.clientWidth );
+    console.log(
+      'parent.clientWidth',
+      parent.clientWidth,
+      dragRef.current.clientWidth,
+    );
     els.forEach((el: HTMLDivElement) => {
       const w = (100 * el.clientWidth) / parent.clientWidth;
       const w2 =
@@ -410,4 +418,41 @@ export function useColResizer(options?: any) {
   });
 
   return { isDragging, dragOffset, dragRef, columns };
+}
+
+export function useBlockDragAndDrop() {
+  const schema = useFieldSchema();
+  const uid = useDragDropUID();
+  const path = useSchemaPath();
+  const { isDragging, dragRef, previewRef } = useDrag({
+    type: uid,
+    onDragStart() {
+      console.log('onDragStart');
+    },
+    onDragEnd(event) {
+      console.log('onDragEnd', event.data);
+    },
+    onDrag(event) {
+      // console.log('onDrag');
+    },
+    item: {
+      path,
+      schema: schema.toJSON(),
+    },
+  });
+  const { isOver, onTopHalf, dropRef } = useDrop({
+    uid: schema.name,
+    accept: uid,
+    data: {},
+    canDrop: !isDragging,
+  });
+
+  return {
+    isDragging,
+    dragRef,
+    previewRef,
+    isOver,
+    onTopHalf,
+    dropRef,
+  };
 }

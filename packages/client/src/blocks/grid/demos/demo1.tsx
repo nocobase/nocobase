@@ -8,12 +8,7 @@ import {
   RecursionField,
   useField,
 } from '@formily/react';
-import { Input } from '../../input';
-import { FormItem } from '../../form-item';
-import { createDesignableSchemaField } from '../../DesignableSchemaField';
-import { createForm } from '@formily/core';
-import { Grid } from '../';
-import { Card } from 'antd';
+import { SchemaRenderer } from '../../';
 
 const schema: ISchema = {
   type: 'void',
@@ -31,31 +26,19 @@ const schema: ISchema = {
             width: 30,
           },
           properties: {
-            [`block_${uid()}`]: {
-              type: 'void',
-              'x-component': 'Grid.Block',
-              properties: {
-                [uid()]: {
-                  type: 'string',
-                  title: uid(),
-                  'x-designable-bar': 'FormItem.DesignableBar',
-                  'x-decorator': 'FormItem',
-                  'x-component': 'Input',
-                },
-              },
+            [uid()]: {
+              type: 'string',
+              title: uid(),
+              'x-designable-bar': 'FormItem.DesignableBar',
+              'x-decorator': 'FormItem',
+              'x-component': 'Input',
             },
-            [`block_${uid()}`]: {
-              type: 'void',
-              'x-component': 'Grid.Block',
-              properties: {
-                [uid()]: {
-                  type: 'string',
-                  title: uid(),
-                  'x-designable-bar': 'FormItem.DesignableBar',
-                  'x-decorator': 'FormItem',
-                  'x-component': 'Input',
-                },
-              },
+            [uid()]: {
+              type: 'string',
+              title: uid(),
+              'x-designable-bar': 'FormItem.DesignableBar',
+              'x-decorator': 'FormItem',
+              'x-component': 'Input',
             },
           },
         },
@@ -66,18 +49,12 @@ const schema: ISchema = {
             width: 70,
           },
           properties: {
-            [`block_${uid()}`]: {
-              type: 'void',
-              'x-component': 'Grid.Block',
-              properties: {
-                [uid()]: {
-                  type: 'string',
-                  title: uid(),
-                  'x-designable-bar': 'FormItem.DesignableBar',
-                  'x-decorator': 'FormItem',
-                  'x-component': 'Input',
-                },
-              },
+            [uid()]: {
+              type: 'string',
+              title: uid(),
+              'x-designable-bar': 'FormItem.DesignableBar',
+              'x-decorator': 'FormItem',
+              'x-component': 'Input',
             },
           },
         },
@@ -91,18 +68,12 @@ const schema: ISchema = {
           type: 'void',
           'x-component': 'Grid.Col',
           properties: {
-            [`block_${uid()}`]: {
-              type: 'void',
-              'x-component': 'Grid.Block',
-              properties: {
-                [uid()]: {
-                  type: 'string',
-                  title: uid(),
-                  'x-designable-bar': 'FormItem.DesignableBar',
-                  'x-decorator': 'FormItem',
-                  'x-component': 'Input',
-                },
-              },
+            [uid()]: {
+              type: 'string',
+              title: uid(),
+              'x-designable-bar': 'FormItem.DesignableBar',
+              'x-decorator': 'FormItem',
+              'x-component': 'Input',
             },
           },
         },
@@ -116,14 +87,15 @@ const schema: ISchema = {
           type: 'void',
           'x-component': 'Grid.Col',
           properties: {
-            [`block_${uid()}`]: {
+            [uid()]: {
               type: 'void',
-              'x-component': 'Grid.Block',
+              name: uid(),
+              'x-decorator': 'FormItem',
+              'x-designable-bar': 'FormItem.DesignableBar',
+              'x-component': 'Card',
               properties: {
                 [uid()]: {
                   type: 'void',
-                  name: uid(),
-                  'x-decorator': 'Card',
                   'x-component': 'Grid',
                   properties: {
                     [`row_${uid()}`]: {
@@ -137,18 +109,12 @@ const schema: ISchema = {
                             width: 30,
                           },
                           properties: {
-                            [`block_${uid()}`]: {
-                              type: 'void',
-                              'x-component': 'Grid.Block',
-                              properties: {
-                                [uid()]: {
-                                  type: 'string',
-                                  title: uid(),
-                                  'x-designable-bar': 'FormItem.DesignableBar',
-                                  'x-decorator': 'FormItem',
-                                  'x-component': 'Input',
-                                },
-                              },
+                            [uid()]: {
+                              type: 'string',
+                              title: uid(),
+                              'x-designable-bar': 'FormItem.DesignableBar',
+                              'x-decorator': 'FormItem',
+                              'x-component': 'Input',
                             },
                           },
                         },
@@ -159,18 +125,12 @@ const schema: ISchema = {
                             width: 70,
                           },
                           properties: {
-                            [`block_${uid()}`]: {
-                              type: 'void',
-                              'x-component': 'Grid.Block',
-                              properties: {
-                                [uid()]: {
-                                  type: 'string',
-                                  title: uid(),
-                                  'x-designable-bar': 'FormItem.DesignableBar',
-                                  'x-decorator': 'FormItem',
-                                  'x-component': 'Input',
-                                },
-                              },
+                            [uid()]: {
+                              type: 'string',
+                              title: uid(),
+                              'x-designable-bar': 'FormItem.DesignableBar',
+                              'x-decorator': 'FormItem',
+                              'x-component': 'Input',
                             },
                           },
                         },
@@ -184,18 +144,12 @@ const schema: ISchema = {
                           type: 'void',
                           'x-component': 'Grid.Col',
                           properties: {
-                            [`block_${uid()}`]: {
-                              type: 'void',
-                              'x-component': 'Grid.Block',
-                              properties: {
-                                [uid()]: {
-                                  type: 'string',
-                                  title: uid(),
-                                  'x-designable-bar': 'FormItem.DesignableBar',
-                                  'x-decorator': 'FormItem',
-                                  'x-component': 'Input',
-                                },
-                              },
+                            [uid()]: {
+                              type: 'string',
+                              title: uid(),
+                              'x-designable-bar': 'FormItem.DesignableBar',
+                              'x-decorator': 'FormItem',
+                              'x-component': 'Input',
                             },
                           },
                         },
@@ -209,18 +163,12 @@ const schema: ISchema = {
                           type: 'void',
                           'x-component': 'Grid.Col',
                           properties: {
-                            [`block_${uid()}`]: {
-                              type: 'void',
-                              'x-component': 'Grid.Block',
-                              properties: {
-                                [uid()]: {
-                                  type: 'string',
-                                  title: uid(),
-                                  'x-designable-bar': 'FormItem.DesignableBar',
-                                  'x-decorator': 'FormItem',
-                                  'x-component': 'Input',
-                                },
-                              },
+                            [uid()]: {
+                              type: 'string',
+                              title: uid(),
+                              'x-designable-bar': 'FormItem.DesignableBar',
+                              'x-decorator': 'FormItem',
+                              'x-component': 'Input',
                             },
                           },
                         },
@@ -237,26 +185,8 @@ const schema: ISchema = {
   },
 };
 
-const DesignableSchemaField = createDesignableSchemaField({
-  components: {
-    Grid,
-    Input,
-    FormItem,
-    Card,
-  },
-});
-
-const form = createForm();
-
 export default () => {
   return (
-    <FormProvider form={form}>
-      <DesignableSchemaField schema={{
-        type: 'object',
-        properties: {
-          [schema.name]: schema,
-        }
-      }} />
-    </FormProvider>
+    <SchemaRenderer schema={schema} />
   );
 };

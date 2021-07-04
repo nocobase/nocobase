@@ -20,7 +20,7 @@ import { observable } from '@formily/reactive';
 import { uid, clone } from '@formily/shared';
 import { ArrayCollapse, ArrayTable, FormLayout } from '@formily/antd';
 
-import { Space, Card, Modal } from 'antd';
+import { Space, Card, Modal, Spin } from 'antd';
 import { Action, useLogin, useRegister, useSubmit } from '../action';
 import { AddNew } from '../add-new';
 import { Cascader } from '../cascader';
@@ -45,6 +45,8 @@ import { Tabs } from '../tabs';
 import { TimePicker } from '../time-picker';
 import { Upload } from '../upload';
 import { FormItem } from '../form-item';
+import { BlockItem } from '../block-item';
+import { DragAndDrop } from '../drag-and-drop';
 
 import { CodeOutlined } from '@ant-design/icons';
 import Editor from '@monaco-editor/react';
@@ -60,13 +62,17 @@ export const scope = {
 };
 
 export const components = {
+  Card,
   Div,
   Space,
-  Card,
 
   ArrayCollapse,
   ArrayTable,
   FormLayout,
+
+  DragAndDrop,
+
+  BlockItem,
   FormItem,
 
   Action,
@@ -171,7 +177,7 @@ export function useDesignable(path?: any) {
   const currentSchema = findPropertyByPath(schema, schemaPath);
   console.log('useDesignable', { schema, schemaPath, currentSchema });
   return {
-    schema: (currentSchema || {} as any),
+    schema: currentSchema || ({} as Schema),
     refresh,
     prepend: (property: ISchema, targetPath?: any): Schema => {
       let target = currentSchema;
@@ -192,7 +198,7 @@ export function useDesignable(path?: any) {
         current.parent.removeProperty(current.name);
         properties[current.name] = current.toJSON();
       });
-      console.log({ properties }, target.properties)
+      console.log({ properties }, target.properties);
       target.setProperties(properties);
       refresh();
       return target.properties[property.name];
@@ -263,7 +269,6 @@ export function useDesignable(path?: any) {
           return;
         }
         s.parent.removeProperty(s.name);
-        console.log('s.parent.properties', s.name, s.parent.properties)
         if (Object.keys(s.parent.properties || {}).length === 0) {
           remove(s.parent);
         }
@@ -337,7 +342,12 @@ const CodePreview = ({ schema }) => {
   return (
     <>
       <CodeOutlined onClick={() => setVisible(true)} />
-      <Modal width={'50%'} onCancel={() => setVisible(false)} visible={visible}>
+      <Modal
+        width={'50%'}
+        onOk={() => setVisible(false)}
+        onCancel={() => setVisible(false)}
+        visible={visible}
+      >
         <Editor
           height="60vh"
           defaultLanguage="json"
