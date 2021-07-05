@@ -1,35 +1,27 @@
 import { uid } from '@formily/shared';
 
 const schema = {
-  type: 'void',
-  name: `form_${uid()}`,
-  'x-decorator': 'Card',
-  'x-component': 'Form',
+  type: 'object',
   properties: {
-    grid: {
+    [uid()]: {
       type: 'void',
-      'x-component': 'Grid',
+      'x-component': 'Form',
       properties: {
-        row1: {
+        [uid()]: {
           type: 'void',
-          'x-component': 'Grid.Row',
+          'x-decorator': 'Card',
+          'x-component': 'Grid',
           properties: {
-            col1: {
+            [uid()]: {
               type: 'void',
-              'x-component': 'Grid.Col',
-              'x-component-props': {
-                size: 1 / 2,
-              },
+              'x-component': 'Grid.Row',
               properties: {
-                block11: {
+                [uid()]: {
                   type: 'void',
-                  'x-component': 'Grid.Block',
-                  'x-component-props': {
-                    title: 'block11',
-                  },
-                  'x-designable-bar': 'FormItem.DesignableBar',
+                  'x-component': 'Grid.Col',
+
                   properties: {
-                    field1: {
+                    [uid()]: {
                       type: 'string',
                       required: true,
                       title: '字段1',
@@ -38,25 +30,11 @@ const schema = {
                     },
                   },
                 },
-              },
-            },
-            col2: {
-              type: 'void',
-              'x-component': 'Grid.Col',
-              'x-component-props': {
-                size: 1 / 2,
-                isLast: true,
-              },
-              properties: {
-                block21: {
+                [uid()]: {
                   type: 'void',
-                  'x-component': 'Grid.Block',
-                  'x-component-props': {
-                    title: 'block21',
-                  },
-                  'x-designable-bar': 'FormItem.DesignableBar',
+                  'x-component': 'Grid.Col',
                   properties: {
-                    field2: {
+                    [uid()]: {
                       type: 'string',
                       required: true,
                       title: '字段2',
@@ -67,28 +45,16 @@ const schema = {
                 },
               },
             },
-          },
-        },
-        row2: {
-          type: 'void',
-          'x-component': 'Grid.Row',
-          properties: {
-            col21: {
+            [uid()]: {
               type: 'void',
-              'x-component': 'Grid.Col',
-              'x-component-props': {
-                size: 1 / 3,
-              },
+              'x-component': 'Grid.Row',
               properties: {
-                block211: {
+                [uid()]: {
                   type: 'void',
-                  'x-component': 'Grid.Block',
-                  'x-component-props': {
-                    title: 'block211',
-                  },
-                  'x-designable-bar': 'FormItem.DesignableBar',
+                  'x-component': 'Grid.Col',
                   properties: {
-                    field3: {
+
+                    [uid()]: {
                       type: 'string',
                       required: true,
                       title: '字段3',
@@ -97,25 +63,11 @@ const schema = {
                     },
                   },
                 },
-              },
-            },
-            col22: {
-              type: 'void',
-              'x-component': 'Grid.Col',
-              'x-component-props': {
-                size: 2 / 3,
-                isLast: true,
-              },
-              properties: {
-                block221: {
+                [uid()]: {
                   type: 'void',
-                  'x-component': 'Grid.Block',
-                  'x-component-props': {
-                    title: 'block221',
-                  },
-                  'x-designable-bar': 'FormItem.DesignableBar',
+                  'x-component': 'Grid.Col',
                   properties: {
-                    field4: {
+                    [uid()]: {
                       type: 'string',
                       required: true,
                       title: '字段4',
@@ -126,31 +78,15 @@ const schema = {
                 },
               },
             },
-          },
-        },
-        row3: {
-          type: 'void',
-          'x-component': 'Grid.Row',
-          "x-component-props": {
-            isLast: true,
-          },
-          properties: {
-            col31: {
+            [uid()]: {
               type: 'void',
-              'x-component': 'Grid.Col',
-              'x-component-props': {
-                size: 1,
-                isLast: true,
-              },
+              'x-component': 'Grid.Row',
               properties: {
-                block311: {
+                [uid()]: {
                   type: 'void',
-                  'x-component': 'Grid.Block',
-                  'x-component-props': {
-                    title: 'block311',
-                  },
+                  'x-component': 'Grid.Col',
                   properties: {
-                    field5: {
+                    [uid()]: {
                       type: 'string',
                       required: true,
                       title: '字段5',
@@ -163,62 +99,37 @@ const schema = {
             },
           },
         },
-        [`gr_${uid()}`]: {
+        actions: {
           type: 'void',
-          'x-component': 'Grid.Row',
+          // 'x-decorator': 'Div',
+          'x-component': 'Space',
           properties: {
-            [`gc_${uid()}`]: {
+            submit: {
               type: 'void',
-              'x-component': 'Grid.Col',
+              'x-component': 'Action',
               'x-component-props': {
-                size: 1,
-              },
-              properties: {
-                [`gb_${uid()}`]: {
-                  type: 'void',
-                  'x-component': 'Grid.Block',
-                  properties: {
-                    [`gbn_${uid()}`]: {
-                      type: 'void',
-                      'x-component': 'AddNew.FormItem',
-                    },
-                  },
+                // block: true,
+                type: 'primary',
+                useAction: '{{ useLogin }}',
+                style: {
+                  // width: '100%',
                 },
               },
+              title: '提交',
+            },
+            reset: {
+              type: 'void',
+              'x-component': 'Action',
+              'x-component-props': {
+                // block: true,
+                useAction: '{{ useLogin }}',
+                style: {
+                  // width: '100%',
+                },
+              },
+              title: '重置',
             },
           },
-        },
-      },
-    },
-    actions: {
-      type: 'void',
-      // 'x-decorator': 'Div',
-      'x-component': 'Space',
-      properties: {
-        submit: {
-          type: 'void',
-          'x-component': 'Action',
-          'x-component-props': {
-            // block: true,
-            type: 'primary',
-            useAction: '{{ useLogin }}',
-            style: {
-              // width: '100%',
-            },
-          },
-          title: '提交',
-        },
-        reset: {
-          type: 'void',
-          'x-component': 'Action',
-          'x-component-props': {
-            // block: true,
-            useAction: '{{ useLogin }}',
-            style: {
-              // width: '100%',
-            },
-          },
-          title: '重置',
         },
       },
     },

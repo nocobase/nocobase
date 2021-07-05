@@ -13,6 +13,52 @@ group:
 
 ```tsx
 import React from 'react';
+import { createForm } from '@formily/core';
+import { SchemaRenderer } from '../';
+import { observer, connect, useField } from '@formily/react';
+
+const schema = {
+  type: 'object',
+  properties: {
+    array: {
+      type: 'array',
+      'x-component': 'DatabaseField',
+      default: [
+        {
+          id: 1,
+          interface: 'string',
+          type: 'string',
+          name: 'title',
+        },
+        {
+          id: 2,
+          type: 'text',
+          interface: 'textarea',
+          name: 'content',
+        },
+      ],
+    },
+    // input: {
+    //   type: 'string',
+    //   'x-component': 'Input',
+    // },
+  },
+};
+
+const form = createForm();
+
+export default observer(() => {
+  return (
+    <div>
+      {JSON.stringify(form.values, null, 2)}
+      <SchemaRenderer form={form} schema={schema} />
+    </div>
+  )
+})
+```
+
+```tsx
+import React from 'react';
 import { SchemaRenderer } from '../';
 
 const schema = {
@@ -21,7 +67,7 @@ const schema = {
     array: {
       type: 'array',
       // title: '数据表字段',
-      'x-component': 'DatabaseField.ArrayCollapse',
+      'x-component': 'ArrayCollapse',
       'x-component-props': {
         accordion: true,
       },
@@ -29,14 +75,14 @@ const schema = {
       'x-decorator': 'FormItem',
       items: {
         type: 'object',
-        'x-component': 'DatabaseField.ArrayCollapse.CollapsePanel',
+        'x-component': 'ArrayCollapse.CollapsePanel',
         'x-component-props': {
           header: '字段',
         },
         properties: {
           index: {
             type: 'void',
-            'x-component': 'DatabaseField.ArrayCollapse.Index',
+            'x-component': 'ArrayCollapse.Index',
           },
           input: {
             type: 'string',
@@ -47,15 +93,15 @@ const schema = {
           },
           remove: {
             type: 'void',
-            'x-component': 'DatabaseField.ArrayCollapse.Remove',
+            'x-component': 'ArrayCollapse.Remove',
           },
           moveUp: {
             type: 'void',
-            'x-component': 'DatabaseField.ArrayCollapse.MoveUp',
+            'x-component': 'ArrayCollapse.MoveUp',
           },
           moveDown: {
             type: 'void',
-            'x-component': 'DatabaseField.ArrayCollapse.MoveDown',
+            'x-component': 'ArrayCollapse.MoveDown',
           },
         },
       },
@@ -63,7 +109,7 @@ const schema = {
         addition: {
           type: 'void',
           title: '添加字段',
-          'x-component': 'DatabaseField.ArrayCollapse.Addition',
+          'x-component': 'ArrayCollapse.Addition',
         },
       },
     },

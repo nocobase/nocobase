@@ -82,7 +82,9 @@ const isGridBlock = (schema: Schema) => {
   return true;
 };
 
-export const AddNew: any = observer((props: any) => {
+export const AddNew = () => null;
+
+AddNew.BlockItem = observer((props: any) => {
   const { ghost, defaultAction } = props;
   const { schema, insertBefore, insertAfter } = useDesignable();
   const path = useSchemaPath();
