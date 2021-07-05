@@ -139,7 +139,7 @@ BlockItem.DesignableBar = () => {
         className={classNames('designable-bar-actions', { active: visible })}
       >
         <Space size={'small'}>
-          <AddNew defaultAction={'insertAfter'} ghost />
+          <AddNew.BlockItem defaultAction={'insertAfter'} ghost />
           {dragRef && <DragOutlined ref={dragRef} />}
           <Dropdown
             trigger={['click']}

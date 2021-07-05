@@ -20,30 +20,26 @@ import React from 'react';
 import { SchemaRenderer } from '../';
 
 const schema = {
+  name: 'form',
   type: 'object',
+  'x-component': 'Form',
   properties: {
-    form: {
-      type: 'object',
-      'x-component': 'Form',
-      properties: {
-        username: {
-          type: 'string',
-          title: '用户名',
-          required: true,
-          'x-decorator': 'FormItem',
-          'x-component': 'Input',
-        },
-        password: {
-          type: 'string',
-          title: '密码',
-          required: true,
-          'x-decorator': 'FormItem',
-          'x-component': 'Password',
-        },
-      }
-    }
-  },
-}
+    username: {
+      type: 'string',
+      title: '用户名',
+      required: true,
+      'x-decorator': 'FormItem',
+      'x-component': 'Input',
+    },
+    password: {
+      type: 'string',
+      title: '密码',
+      required: true,
+      'x-decorator': 'FormItem',
+      'x-component': 'Password',
+    },
+  }
+};
 
 export default () => {
   return (
