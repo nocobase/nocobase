@@ -29,7 +29,7 @@ group:
 import React from 'react';
 import { SchemaRenderer, registerScope } from '../';
 
-function useCustomAction() {
+function useAction() {
   return {
     run() {
       alert('这是自定义的操作逻辑');
@@ -37,17 +37,13 @@ function useCustomAction() {
   }
 }
 
-registerScope({
-  useCustomAction,
-});
-
 const schema = {
   type: 'void',
   name: 'action1',
   title: '按钮',
   'x-component': 'Action',
   'x-component-props': {
-    useAction: '{{ useCustomAction }}'
+    useAction,
   },
 };
 
@@ -188,6 +184,17 @@ export default () => {
 ```tsx
 import React from 'react';
 import { SchemaRenderer } from '../';
+import { useVisibleContext } from './';
+
+function useAction() {
+  const { visible, setVisible } = useVisibleContext();
+  return {
+    async run() {
+      console.log({ visible })
+      setVisible(false);
+    }
+  }
+}
 
 const schema = {
   type: 'void',
@@ -201,86 +208,19 @@ const schema = {
       'x-component': 'Action.Modal',
       'x-component-props': {},
       properties: {
-      },
-    },
-  },
-};
-
-export default () => {
-  return <SchemaRenderer schema={schema} />
-}
-```
-
-## Action.Container - 指定容器内打开
-
-```tsx
-import React, { useRef } from 'react';
-import { SchemaRenderer } from '../';
-import { ActionContext } from './';
-
-const schema = {
-  type: 'void',
-  name: 'action1',
-  title: '按钮',
-  'x-component': 'Action',
-  properties: {
-    container1: {
-      type: 'void',
-      title: '页面标题',
-      'x-component': 'Action.Container',
-      properties: {
-        input: {
-          type: 'string',
-          title: '字段',
-          'x-designable-bar': 'FormItem.DesignableBar',
-          'x-decorator': 'FormItem',
-          'x-component': 'Input',
-        }
-      },
-    },
-  },
-};
-
-export default () => {
-  const ref = useRef();
-  console.log('containerRef2222', ref)
-  return (
-    <div>
-      <ActionContext.Provider value={{
-        containerRef: ref,
-      }}>
-        <SchemaRenderer schema={schema} />
-      </ActionContext.Provider>
-      <div style={{padding: '8px 0'}}>目标容器：</div>
-      <div ref={ref} id={'container'} style={{ border: '1px dashed #ebedf1', background: '#fafafa', padding: 24 }}/>
-    </div>
-  )
-}
-```
-
-## Action.DesignableBar - 按钮配置操作栏
-
-```tsx
-import React from 'react';
-import { SchemaRenderer } from '../';
-
-const schema = {
-  type: 'void',
-  name: 'action1',
-  title: '按钮',
-  'x-component': 'Action',
-  'x-designable-bar': 'Action.DesignableBar',
-  properties: {
-    drawer1: {
-      type: 'void',
-      title: '抽屉标题',
-      'x-component': 'Action.Drawer',
-      'x-component-props': {},
-      properties: {
         input: {
           type: 'string',
           'x-decorator': 'FormItem',
           'x-component': 'Input',
+        },
+        close: {
+          type: 'void',
+          name: 'action1',
+          title: '关闭',
+          'x-component': 'Action',
+          'x-component-props': {
+            useAction,
+          },
         },
         action2: {
           type: 'void',
@@ -291,7 +231,7 @@ const schema = {
             drawer1: {
               type: 'void',
               title: '二级抽屉标题',
-              'x-component': 'Action.Drawer',
+              'x-component': 'Action.Modal',
               'x-component-props': {},
               properties: {
                 input: {
@@ -309,5 +249,47 @@ const schema = {
 
 export default () => {
   return <SchemaRenderer schema={schema} />
+}
+```
+
+## Action.Container - 指定容器内打开
+
+```tsx
+import React, { useRef } from 'react';
+import { SchemaRenderer } from '../';
+import { ActionContext } from './';
+
+export default () => {
+  const containerRef = useRef();
+  const schema = {
+    type: 'void',
+    name: 'action1',
+    title: '按钮',
+    'x-component': 'Action',
+    'x-component-props': {
+      containerRef
+    },
+    properties: {
+      container1: {
+        type: 'void',
+        title: '页面标题',
+        'x-component': 'Action.Container',
+        properties: {
+          input: {
+            type: 'string',
+            title: '字段',
+            'x-designable-bar': 'FormItem.DesignableBar',
+            'x-decorator': 'FormItem',
+            'x-component': 'Input',
+          }
+        },
+      },
+    },
+  };
+  return (
+    <div>
+      <SchemaRenderer schema={schema} />
+    </div>
+  )
 }
 ```

@@ -16,6 +16,7 @@ import React from 'react';
 import { createForm } from '@formily/core';
 import { SchemaRenderer } from '../';
 import { observer, connect, useField } from '@formily/react';
+import Editor from '@monaco-editor/react';
 
 const schema = {
   type: 'object',
@@ -50,73 +51,13 @@ const form = createForm();
 export default observer(() => {
   return (
     <div>
-      {JSON.stringify(form.values, null, 2)}
       <SchemaRenderer form={form} schema={schema} />
+      <Editor
+        height="200px"
+        defaultLanguage="json"
+        value={JSON.stringify(form.values, null, 2)}
+      />
     </div>
   )
 })
-```
-
-```tsx
-import React from 'react';
-import { SchemaRenderer } from '../';
-
-const schema = {
-  type: 'object',
-  properties: {
-    array: {
-      type: 'array',
-      // title: '数据表字段',
-      'x-component': 'ArrayCollapse',
-      'x-component-props': {
-        accordion: true,
-      },
-      // maxItems: 3,
-      'x-decorator': 'FormItem',
-      items: {
-        type: 'object',
-        'x-component': 'ArrayCollapse.CollapsePanel',
-        'x-component-props': {
-          header: '字段',
-        },
-        properties: {
-          index: {
-            type: 'void',
-            'x-component': 'ArrayCollapse.Index',
-          },
-          input: {
-            type: 'string',
-            'x-decorator': 'FormItem',
-            title: 'Input',
-            required: true,
-            'x-component': 'Input',
-          },
-          remove: {
-            type: 'void',
-            'x-component': 'ArrayCollapse.Remove',
-          },
-          moveUp: {
-            type: 'void',
-            'x-component': 'ArrayCollapse.MoveUp',
-          },
-          moveDown: {
-            type: 'void',
-            'x-component': 'ArrayCollapse.MoveDown',
-          },
-        },
-      },
-      properties: {
-        addition: {
-          type: 'void',
-          title: '添加字段',
-          'x-component': 'ArrayCollapse.Addition',
-        },
-      },
-    },
-  }
-};
-
-export default () => {
-  return <SchemaRenderer schema={schema} />
-}
 ```

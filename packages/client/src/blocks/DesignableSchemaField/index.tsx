@@ -40,7 +40,7 @@ import { Menu } from '../menu';
 import { Password } from '../password';
 import { Radio } from '../radio';
 import { Select } from '../select';
-import { Table } from '../table';
+import { Table, useTableCreateAction, useTableDestroyAction } from '../table';
 import { Tabs } from '../tabs';
 import { TimePicker } from '../time-picker';
 import { Upload } from '../upload';
@@ -59,6 +59,8 @@ export const scope = {
   useLogin,
   useRegister,
   useSubmit,
+  useTableCreateAction,
+  useTableDestroyAction,
 };
 
 export const components = {
