@@ -10,9 +10,8 @@ import {
   Schema,
   useField,
 } from '@formily/react';
-import { Button, Dropdown, Menu, Popover, Space } from 'antd';
+import { Button, Dropdown, Menu, Popover, Space, Drawer, Modal } from 'antd';
 import { Link, useHistory, LinkProps } from 'react-router-dom';
-import Drawer from '../../components/Drawer';
 import { SchemaRenderer, useDesignable } from '../';
 import ReactDOM from 'react-dom';
 import get from 'lodash/get';
@@ -22,6 +21,7 @@ import { useMount } from 'ahooks';
 import { uid } from '@formily/shared';
 
 import './style.less';
+import constate from 'constate';
 
 export function useDefaultAction() {
   return {
@@ -95,92 +95,81 @@ function useDesignableBar() {
   };
 }
 
-export const ActionContext = createContext({ containerRef: null });
+const [VisibleProvider, useVisibleContext] = constate(
+  (props: any = {}) => {
+    const { initialVisible = false, containerRef = null } = props;
+    const [visible, setVisible] = useState(initialVisible);
 
-export const Action: ActionType = observer((props) => {
+    return { containerRef, visible, setVisible };
+  },
+);
+
+export { VisibleProvider, useVisibleContext };
+
+const BaseAction = observer((props: any) => {
   const { useAction = useDefaultAction, ...others } = props;
-  const { containerRef } = useContext(ActionContext);
   const field = useField();
-  const schema = useFieldSchema();
   const { run } = useAction();
   const { DesignableBar } = useDesignableBar();
+  const { setVisible } = useVisibleContext();
+  const schema = useFieldSchema();
 
-  const renderContainer = () => {
-    let childSchema = null;
-    if (schema.properties) {
-      const key = Object.keys(schema.properties).shift();
-      const current = schema.properties[key];
-      childSchema = current;
-    }
-    if (childSchema && childSchema['x-component'] === 'Action.Container') {
-      containerRef &&
-        ReactDOM.render(
-          <div>
-            <SchemaRenderer schema={childSchema} onlyRenderProperties />
-          </div>,
-          containerRef.current,
-        );
-    }
-  };
-
-  useMount(() => {
-    renderContainer();
-  });
-
-  let childSchema = null;
-
-  if (schema.properties) {
-    const key = Object.keys(schema.properties).shift();
-    const current = schema.properties[key];
-    childSchema = current;
-  }
-  console.log({ schema });
-  if (childSchema && childSchema['x-component'] === 'Action.Popover') {
-    return (
-      <Popover
-        trigger={['click']}
-        title={childSchema.title}
-        {...childSchema['x-component-props']}
-        content={
-          <div>
-            <SchemaRenderer schema={childSchema} onlyRenderProperties />
-          </div>
-        }
-      >
-        <Button {...others}>{field.title}</Button>
-      </Popover>
-    );
-  }
-
-  return (
+  const renderButton = () => (
     <Button
       {...others}
       onClick={async () => {
-        if (!childSchema) {
-          return await run();
-        }
-        if (childSchema['x-component'] === 'Action.Drawer') {
-          Drawer.open({
-            title: childSchema.title,
-            ...(childSchema['x-component-props'] || {}),
-            content: () => {
-              return (
-                <div>
-                  <SchemaRenderer schema={childSchema} onlyRenderProperties />
-                </div>
-              );
-            },
-          });
-        }
-        if (childSchema['x-component'] === 'Action.Container') {
-          renderContainer();
-        }
+        setVisible && setVisible(true);
+        await run();
       }}
     >
       {field.title}
       <DesignableBar />
     </Button>
   );
+
+  const popover = schema.reduceProperties((items, current) => {
+    if (current['x-component'] === 'Action.Popover') {
+      return current;
+    }
+    return null;
+  }, null);
+
+  if (popover) {
+    return (
+      <RecursionField
+        schema={
+          new Schema({
+            type: 'object',
+            properties: {
+              [popover.name]: {
+                ...popover.toJSON(),
+                'x-button': renderButton(),
+              },
+            },
+          })
+        }
+      />
+    );
+  }
+
+  return (
+    <>
+      {renderButton()}
+      {props.children}
+    </>
+  );
+});
+
+export const Action: ActionType = observer((props: any) => {
+  const schema = useFieldSchema();
+  if (schema.properties) {
+    return (
+      <VisibleProvider containerRef={props.containerRef}>
+        <BaseAction {...props} />
+      </VisibleProvider>
+    );
+  }
+  return <BaseAction {...props} />;
 });
 
 Action.Link = observer((props) => {
@@ -198,21 +187,51 @@ Action.URL = observer((props) => {
   );
 });
 
-Action.Container = ({ children }) => {
-  return children;
-};
+Action.Container = observer((props) => {
+  const { visible, setVisible } = useVisibleContext();
+  return visible && <div>{props.children}</div>;
+});
 
-Action.Popover = ({ children }) => {
-  return children;
-};
+Action.Popover = observer((props) => {
+  const schema = useFieldSchema();
+  return (
+    <Popover {...props} content={props.children}>
+      {schema['x-button']}
+    </Popover>
+  );
+});
 
-Action.Drawer = ({ children }) => {
-  return children;
-};
+Action.Drawer = observer((props) => {
+  const field = useField();
+  const { visible, setVisible } = useVisibleContext();
+  return (
+    <Drawer
+      title={field.title}
+      width={'50%'}
+      {...props}
+      visible={visible}
+      onClose={() => setVisible(false)}
+    >
+      {props.children}
+    </Drawer>
+  );
+});
 
-Action.Modal = ({ children }) => {
-  return children;
-};
+Action.Modal = observer((props) => {
+  const field = useField();
+  const { visible, setVisible } = useVisibleContext();
+  return (
+    <Modal
+      title={field.title}
+      width={'50%'}
+      {...props}
+      visible={visible}
+      onCancel={() => setVisible(false)}
+    >
+      {props.children}
+    </Modal>
+  );
+});
 
 Action.DesignableBar = () => {
   const field = useField();

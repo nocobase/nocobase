@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { createContext, useContext, useState } from 'react';
 import {
   useFieldSchema,
   Schema,
@@ -6,13 +6,18 @@ import {
   RecursionField,
   useField,
 } from '@formily/react';
-import { Table as AntdTable } from 'antd';
+import { Button, Pagination, Space, Table as AntdTable } from 'antd';
 import { DesignableBar } from './DesignableBar';
 import { ColumnDesignableBar } from './ColumnDesignableBar';
+import { uid } from '@formily/shared';
+import useRequest from '@ahooksjs/use-request';
+import constate from 'constate';
+import { SchemaRenderer } from '../';
+import { useVisibleContext } from '../action';
 
-function useTableColumns(props) {
+function useTableColumns(props?: any) {
   const schema = useFieldSchema();
-  const { dataSource } = props;
+  const { dataSource } = props || {};
 
   function findColumns(schema: Schema): Schema[] {
     return schema.reduceProperties((columns, current) => {
@@ -29,14 +34,14 @@ function useTableColumns(props) {
       title: item.title,
       dataIndex: item.name,
       ...columnProps,
-      render(value, record) {
-        console.log({ item });
-        const index = dataSource.indexOf(record);
+      render(value, record, index) {
+        // console.log({ item });
+        // const index = dataSource.indexOf(record);
         item.mapProperties((s) => {
           s['title'] = undefined;
           s['x-read-pretty'] = true;
           return s;
-        })
+        });
         return (
           <RecursionField schema={item} name={index} onlyRenderProperties />
         );
@@ -74,35 +79,200 @@ function useTableActionBars() {
   return findActionBars(schema);
 }
 
-function useTableDetails() {
-  const schema = useFieldSchema();
-
-  function findDetails(schema: Schema) {
-    return schema.reduceProperties((items, current) => {
-      if (current['x-component'] === 'Table.Details') {
-        return [...items, current];
-      }
-      return [...items, ...findDetails(current)];
-    }, []);
-  }
-
-  return findDetails(schema);
+function useTable() {
+  const field = useField<Formily.Core.Models.ArrayField>();
+  const [selectedRowKeys, setSelectedRowKeys] = useState([]);
+  const response = useRequest<any>(
+    () => {
+      return new Promise((resolve) => {
+        console.log('useRequest');
+        setTimeout(() => {
+          resolve([
+            { key: uid(), field1: uid(), field2: uid() },
+            { key: uid(), field1: uid(), field2: uid() },
+          ]);
+        }, 500);
+      });
+    },
+    {
+      onSuccess(data) {
+        field.setValue(data);
+      },
+    },
+  );
+  return {
+    selectedRowKeys,
+    setSelectedRowKeys,
+    mutate: response.mutate,
+    response,
+    async create() {
+      response.refresh()
+    },
+    async update() {
+      response.refresh()
+    },
+    async destroy() {
+      response.refresh()
+    },
+  } as any;
 }
 
-export const Table: any = observer((props) => {
+const [TableContextProvider, useTableContext] = constate(useTable);
+
+export function useTableCreateAction() {
+  const { visible, setVisible } = useVisibleContext()
+  const { create } = useTableContext();
+  return {
+    run: async () => {
+      setVisible(false);
+      await create();
+      console.log({ visible })
+    },
+  }
+}
+
+export function useTableDestroyAction() {
+  // const { setVisible } = useVisibleContext()
+  const { destroy } = useTableContext();
+  return {
+    run: async () => {
+      // setVisible(false);
+      await destroy();
+    },
+  }
+}
+
+const ArrayTable = (props) => {
   const field = useField<Formily.Core.Models.ArrayField>();
-  const dataSource = field.value;
-  const columns = useTableColumns({ dataSource });
+  // const dataSource = Array.isArray(field.value) ? field.value.slice() : [];
+  const columns = useTableColumns();
   const actionBars = useTableActionBars();
-  const details = useTableDetails();
-  console.log({ columns, actionBars, details });
+  const {
+    selectedRowKeys,
+    setSelectedRowKeys,
+    response = {},
+    create,
+  } = useTableContext();
+  console.log({ response });
+  const { data = [], loading, mutate } = response as any;
   return (
-    <>
-      <AntdTable columns={columns} dataSource={dataSource} />
-    </>
+    <div>
+      {actionBars.top.map((actionBarSchema) => {
+        return (
+          <RecursionField
+            onlyRenderProperties
+            schema={
+              new Schema({
+                type: 'object',
+                properties: {
+                  [actionBarSchema.name]: actionBarSchema,
+                },
+              })
+            }
+          />
+        );
+      })}
+      <Button
+        onClick={() => {
+          create();
+          // field.unshift({ key: uid(), field1: uid(), field2: uid() });
+          // const dataSource = Array.isArray(field.value)
+          //   ? field.value.slice()
+          //   : [];
+          // mutate(dataSource);
+          // response.refresh();
+          // console.log({ selectedRowKeys })
+        }}
+      >
+        新增
+      </Button>
+      <AntdTable
+        rowKey={'key'}
+        loading={loading}
+        pagination={false}
+        columns={columns}
+        dataSource={data}
+        rowSelection={{
+          type: 'checkbox',
+          selectedRowKeys,
+          onChange: (keys) => {
+            setSelectedRowKeys(keys);
+          },
+        }}
+      />
+      {actionBars.bottom.map((actionBarSchema) => {
+        return (
+          <RecursionField
+            onlyRenderProperties
+            schema={
+              new Schema({
+                type: 'object',
+                properties: {
+                  [actionBarSchema.name]: actionBarSchema,
+                },
+              })
+            }
+          />
+        );
+      })}
+    </div>
+  );
+};
+
+export const Table: any = observer((props) => {
+  return (
+    <TableContextProvider>
+      <ArrayTable {...props} />
+    </TableContextProvider>
   );
 });
 
 Table.Column = () => null;
-Table.Column.DesignableBar = ColumnDesignableBar;
-Table.DesignableBar = DesignableBar;
+
+Table.ActionBar = observer((props) => {
+  return (
+    <div className={'action-bar'}>
+      <Space>{props.children}</Space>
+    </div>
+  );
+});
+
+Table.Pagination = observer((props) => {
+  const { response } = useTableContext();
+  return (
+    <Pagination
+      {...props}
+      onChange={(page, pageSize) => {
+        response.refresh();
+        // console.log('useRequest', { page, pageSize });
+      }}
+    />
+  );
+});
+
+Table.View = observer(() => {
+  const schema = useFieldSchema();
+  console.log('Table.View', schema);
+  return (
+    <SchemaRenderer
+      schema={{
+        type: 'object',
+        properties: {
+          [schema.name]: {
+            ...schema.toJSON(),
+            type: 'array',
+            'x-component': 'Table.Field',
+          },
+        },
+      }}
+    />
+  );
+});
+
+Table.Field = observer((props) => {
+  return (
+    <TableContextProvider>
+      <ArrayTable {...props} />
+    </TableContextProvider>
+  );
+});
