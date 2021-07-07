@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState } from 'react';
+import React, { createContext, useContext, useEffect, useState } from 'react';
 import {
   useForm,
   FormProvider,
@@ -95,14 +95,12 @@ function useDesignableBar() {
   };
 }
 
-const [VisibleProvider, useVisibleContext] = constate(
-  (props: any = {}) => {
-    const { initialVisible = false, containerRef = null } = props;
-    const [visible, setVisible] = useState(initialVisible);
+const [VisibleProvider, useVisibleContext] = constate((props: any = {}) => {
+  const { initialVisible = false, containerRef = null } = props;
+  const [visible, setVisible] = useState(initialVisible);
 
-    return { containerRef, visible, setVisible };
-  },
-);
+  return { containerRef, visible, setVisible };
+});
 
 export { VisibleProvider, useVisibleContext };
 
@@ -113,11 +111,17 @@ const BaseAction = observer((props: any) => {
   const { DesignableBar } = useDesignableBar();
   const { setVisible } = useVisibleContext();
   const schema = useFieldSchema();
+  useEffect(() => {
+    field.componentProps.setVisible = setVisible;
+  }, []);
+
+  console.log('BaseAction', { field, schema }, field.title)
 
   const renderButton = () => (
     <Button
       {...others}
-      onClick={async () => {
+      onClick={async (e) => {
+        e.stopPropagation();
         setVisible && setVisible(true);
         await run();
       }}
@@ -164,7 +168,7 @@ export const Action: ActionType = observer((props: any) => {
   const schema = useFieldSchema();
   if (schema.properties) {
     return (
-      <VisibleProvider containerRef={props.containerRef}>
+      <VisibleProvider initialVisible={props.initialVisible} containerRef={props.containerRef}>
         <BaseAction {...props} />
       </VisibleProvider>
     );
@@ -193,9 +197,17 @@ Action.Container = observer((props) => {
 });
 
 Action.Popover = observer((props) => {
+  const { visible, setVisible } = useVisibleContext();
   const schema = useFieldSchema();
   return (
-    <Popover {...props} content={props.children}>
+    <Popover
+      visible={visible}
+      onVisibleChange={(visible) => {
+        setVisible(visible);
+      }}
+      {...props}
+      content={props.children}
+    >
       {schema['x-button']}
     </Popover>
   );
@@ -206,11 +218,17 @@ Action.Drawer = observer((props) => {
   const { visible, setVisible } = useVisibleContext();
   return (
     <Drawer
+      onClick={e => {
+        e.stopPropagation();
+      }}
       title={field.title}
       width={'50%'}
       {...props}
       visible={visible}
-      onClose={() => setVisible(false)}
+      onClose={(e) => {
+        e.stopPropagation();
+        setVisible(false)
+      }}
     >
       {props.children}
     </Drawer>

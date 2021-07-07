@@ -1,6 +1,11 @@
 import React, { useContext, useMemo, useRef, useState } from 'react';
 import { createForm } from '@formily/core';
-import { SchemaOptionsContext, Schema, useFieldSchema } from '@formily/react';
+import {
+  SchemaOptionsContext,
+  Schema,
+  useFieldSchema,
+  observer,
+} from '@formily/react';
 import { SchemaRenderer, useDesignable } from '../DesignableSchemaField';
 import get from 'lodash/get';
 import { Dropdown, Menu } from 'antd';
@@ -14,6 +19,7 @@ import { useMouseEvents } from 'beautiful-react-hooks';
 import cls from 'classnames';
 
 import './style.less';
+import { clone } from '@formily/shared';
 
 function Blank() {
   return null;
@@ -29,7 +35,20 @@ function useDesignableBar() {
   };
 }
 
-export const Form = (props) => {
+function useDefaultValues() {
+  return {};
+}
+
+export const Form: any = observer((props: any) => {
+  const { useValues = useDefaultValues } = props;
+  const values = useValues();
+  const form = useMemo(() => {
+    console.log('Form.useMemo', values);
+    return createForm({
+      values,
+      // values: clone(values),
+    });
+  }, [values]);
   const schema = useFieldSchema();
   const { schema: designableSchema, refresh } = useDesignable();
   const { DesignableBar } = useDesignableBar();
@@ -44,9 +63,7 @@ export const Form = (props) => {
     setActive(false);
   });
 
-  onMouseMove((e: React.MouseEvent) => {
-    
-  });
+  onMouseMove((e: React.MouseEvent) => {});
   return (
     <div ref={ref} className={'nb-form'}>
       <SchemaRenderer
@@ -54,13 +71,14 @@ export const Form = (props) => {
           designableSchema.properties = subSchema.properties;
           refresh();
         }}
+        form={form}
         schema={schema.toJSON()}
         onlyRenderProperties
       />
-      <DesignableBar active={active}/>
+      <DesignableBar active={active} />
     </div>
   );
-};
+});
 
 Form.DesignableBar = (props) => {
   const { active } = props;
