@@ -2,7 +2,7 @@ import React, { useContext, useEffect, useState } from 'react';
 import { Spin } from 'antd';
 import { Helmet } from 'react-helmet';
 import { useRequest } from 'ahooks';
-import { SchemaRenderer } from '../../blocks';
+import { SchemaRenderer } from '../../schemas';
 
 export function DefaultPage({ route }) {
   const { data = {}, loading } = useRequest(

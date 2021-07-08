@@ -4,7 +4,7 @@ import { useMouseEvents, useWillUnmount } from 'beautiful-react-hooks';
 import { useField, useFieldSchema } from '@formily/react';
 import { useMount } from 'ahooks';
 import constate from 'constate';
-import { useSchemaPath } from '../../blocks';
+import { useSchemaPath } from '../../schemas';
 
 export const DraggableBlockContext = createContext({
   dragRef: null,

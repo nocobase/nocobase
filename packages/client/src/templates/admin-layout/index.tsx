@@ -22,7 +22,7 @@ import {
   refreshGlobalAction,
   RouteComponentContext,
 } from '../../';
-import { SchemaRenderer } from '../../blocks';
+import { SchemaRenderer } from '../../schemas';
 import { useRequest } from 'ahooks';
 import {
   DatabaseOutlined,
@@ -32,7 +32,7 @@ import {
 import { Tabs } from 'antd';
 import '@formily/antd/esm/array-collapse/style';
 import './style.less';
-import { MenuContainerContext } from '../../blocks/menu';
+import { MenuContainerContext } from '../../schemas/menu';
 
 function LogoutButton() {
   const history = useHistory();
