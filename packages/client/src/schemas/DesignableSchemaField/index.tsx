@@ -16,6 +16,7 @@ import {
   useField,
   useFieldSchema,
   useForm,
+  SchemaOptionsContext,
 } from '@formily/react';
 import { observable } from '@formily/reactive';
 import { uid, clone } from '@formily/shared';
@@ -58,6 +59,7 @@ import { DragAndDrop } from '../drag-and-drop';
 
 import { CodeOutlined } from '@ant-design/icons';
 import Editor from '@monaco-editor/react';
+import { get } from 'lodash';
 
 export const BlockContext = createContext({ dragRef: null });
 
@@ -187,10 +189,13 @@ export function addPropertyAfter(target: Schema, data: ISchema) {
 export function useDesignable(path?: any) {
   const { schema, refresh } = useContext(DesignableContext);
   const schemaPath = path || useSchemaPath();
-  const currentSchema = findPropertyByPath(schema, schemaPath);
+  const currentSchema = findPropertyByPath(schema, schemaPath) || ({} as Schema);
   console.log('useDesignable', { schema, schemaPath, currentSchema });
+  const options = useContext(SchemaOptionsContext);
+  const DesignableBar = get(options.components, currentSchema['x-designable-bar']) || (() => null);
   return {
-    schema: currentSchema || ({} as Schema),
+    DesignableBar,
+    schema: currentSchema,
     refresh,
     prepend: (property: ISchema, targetPath?: any): Schema => {
       let target = currentSchema;
