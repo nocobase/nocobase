@@ -1,7 +1,7 @@
 export default {
   type: 'object',
   properties: {
-    input: {
+    email: {
       type: 'string',
       required: true,
       'x-decorator': 'FormItem',
@@ -13,7 +13,7 @@ export default {
         },
       },
     },
-    textarea: {
+    password: {
       type: 'string',
       required: true,
       'x-decorator': 'FormItem',
@@ -27,7 +27,6 @@ export default {
     },
     actions: {
       type: 'void',
-      // 'x-decorator': 'Div',
       'x-component': 'Div',
       properties: {
         submit: {

@@ -161,33 +161,36 @@ function Database() {
 }
 
 function LayoutWithMenu({ schema }) {
+  const match = useRouteMatch<any>();
   const location = useLocation();
-  const ref = useRef();
-  const [activeKey, setActiveKey] = useState('item3');
-  schema['x-component-props']['defaultSelectedKeys'] = [activeKey];
-  schema['x-component-props']['onSelect'] = (info) => {
-    console.log('LayoutWithMenu', schema)
+  const sideMenuRef = useRef();
+  const [activeKey, setActiveKey] = useState(match.params.name);
+  const onSelect = (info) => {
+    console.log('LayoutWithMenu', schema);
     setActiveKey(info.key);
-  }
+  };
+  console.log({ match });
   return (
     <Layout>
-        <Layout.Header>
-          <MenuContainerContext.Provider value={{
-            sideMenuRef: ref,
-          }}>
-            <SchemaRenderer schema={schema} />
-          </MenuContainerContext.Provider>
-        </Layout.Header>
-        <Layout>
-          <Layout.Sider ref={ref} theme={'light'} width={200}>
-          </Layout.Sider>
-          <Layout.Content>
-            {location.pathname}
-            <Content activeKey={activeKey}/>
-          </Layout.Content>
-        </Layout>
+      <Layout.Header>
+        <SchemaRenderer
+          schema={schema}
+          scope={{ sideMenuRef, onSelect, selectedKeys: [activeKey].filter(Boolean) }}
+        />
+      </Layout.Header>
+      <Layout>
+        <Layout.Sider
+          ref={sideMenuRef}
+          theme={'light'}
+          width={200}
+        ></Layout.Sider>
+        <Layout.Content>
+          {location.pathname}
+          <Content activeKey={activeKey} />
+        </Layout.Content>
       </Layout>
-  )
+    </Layout>
+  );
 }
 
 function Content({ activeKey }) {
@@ -207,7 +210,6 @@ function Content({ activeKey }) {
 }
 
 export function AdminLayout({ route, children }: any) {
-  const match = useRouteMatch<any>();
 
   const { data = {}, loading } = useRequest(
     `/api/blocks:getSchema/${route.blockId}`,
@@ -220,9 +222,7 @@ export function AdminLayout({ route, children }: any) {
     return <Spin />;
   }
 
-  return (
-    <LayoutWithMenu schema={data}/>
-  );
+  return <LayoutWithMenu schema={data} />;
 }
 
 export default AdminLayout;

@@ -35,10 +35,12 @@
     left: 0;
     bottom: 0;
     border: 2px solid #1890ff;
+    pointer-events: none;
     &.active {
       display: block;
     }
     .designable-bar-actions {
+      pointer-events: auto;
       position: absolute;
       right: 0;
       line-height: 1rem;
@@ -59,5 +61,17 @@
     left: -20px;
     right: -20px;
     border: 2px solid #1890ff;
+  }
+}
+
+.ant-menu-title-content {
+  .ant-btn {
+    background: none;
+    border: 0;
+    border-radius: 0;
+    color: inherit;
+    padding: 0 20px;
+    height: 100%;
+    margin: 0 -20px;
   }
 }

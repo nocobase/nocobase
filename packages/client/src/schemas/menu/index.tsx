@@ -51,10 +51,10 @@ import cls from 'classnames';
 import ReactDOM from 'react-dom';
 import { useMount } from 'ahooks';
 import { useDesignable, SchemaRenderer } from '..';
-import { Router } from "react-router";
+import { Router } from 'react-router';
 
 import { useLifecycle } from 'beautiful-react-hooks';
-import { useDefaultAction } from '../action';
+import { Action, useDefaultAction } from '../action';
 
 export type MenuType = React.FC<MenuProps & { hideSubMenu?: boolean }> & {
   Item?: React.FC<MenuItemProps>;
@@ -63,6 +63,7 @@ export type MenuType = React.FC<MenuProps & { hideSubMenu?: boolean }> & {
   DesignableBar?: React.FC<any>;
   AddNew?: React.FC<any>;
   Link?: React.FC<MenuItemProps>;
+  Action?: React.FC<MenuItemProps>;
   Url?: React.FC<MenuItemProps & { url: string }>;
 };
 
@@ -92,9 +93,9 @@ function useDesignableBar() {
   };
 }
 
-export const Menu: MenuType = observer((props) => {
-  const { onSelect, mode, defaultSelectedKeys, ...others } = props;
-  const { sideMenuRef } = useContext(MenuContainerContext);
+export const Menu: MenuType = observer((props: any) => {
+  const { sideMenuRef, onSelect, mode, defaultSelectedKeys, ...others } = props;
+  let defaultSelectedKey = defaultSelectedKeys ? defaultSelectedKeys[0] : null;
   const schema = useFieldSchema();
   const { schema: designableSchema, refresh } = useDesignable();
   const designableBar = schema['x-designable-bar'];
@@ -109,33 +110,41 @@ export const Menu: MenuType = observer((props) => {
     if (!sideMenuRef || !sideMenuRef.current) {
       return;
     }
-    const properties = schema.properties[selectedKey].properties;
-    console.log({ selectedKey, properties });
-    sideMenuRef.current.style.display = properties ? 'block' : 'none';
+    const subSchema = schema.properties[selectedKey];
+    if (!subSchema) {
+      sideMenuRef.current.style.display = 'none';
+      ReactDOM.render(null, sideMenuRef.current);
+      return;
+    }
+    if (subSchema['x-component'] !== 'Menu.SubMenu') {
+      sideMenuRef.current.style.display = 'none';
+      return;
+    }
+    const properties = subSchema.properties || {};
+    sideMenuRef.current.style.display = 'block';
     const newProps = {};
     Object.keys(properties || {}).forEach((name) => {
       newProps[name] = properties[name].toJSON();
     });
     ReactDOM.render(
-      properties ? (
-        <Router history={history}>
+      <Router history={history}>
         <SchemaRenderer
           key={`${Math.random()}`}
           onRefresh={(subSchema: Schema) => {
             const selected = designableSchema.properties[selectedKey];
             const diff = subSchema.properties[`${schema.name}.${selectedKey}`];
-            Object.keys(selected.properties).forEach((name) => {
+            Object.keys(selected.properties || {}).forEach((name) => {
               selected.properties[name].parent.removeProperty(name);
             });
             Object.keys(diff.properties).forEach((name) => {
               if (name.endsWith('-add-new')) {
                 return;
               }
-              console.log('diff', name)
+              console.log('diff', name);
               const current = diff.properties[name];
               selected.addProperty(current.name, current.toJSON());
             });
-            console.log({selected })
+            console.log({ selected });
             refresh();
           }}
           schema={{
@@ -155,15 +164,13 @@ export const Menu: MenuType = observer((props) => {
               },
             },
           }}
-        /></Router>
-      ) : null,
+        />
+      </Router>,
       sideMenuRef.current,
     );
   };
   useMount(() => {
-    const defaultSelectedKey = defaultSelectedKeys
-      ? defaultSelectedKeys[0]
-      : null;
+    console.log({ defaultSelectedKey }, schema.properties);
     renderSideMenu(defaultSelectedKey);
   });
   return (
@@ -197,13 +204,16 @@ const AddNewAction = () => {
       trigger={['click']}
       overlay={
         <AntdMenu>
-          <AntdMenu.Item onClick={() => {
-            insertBefore({
-              type: 'void',
-              title: uid(),
-              "x-component": 'Menu.Item',
-            })
-          }} style={{ minWidth: 150 }}>
+          <AntdMenu.Item
+            onClick={() => {
+              insertBefore({
+                type: 'void',
+                title: uid(),
+                'x-component': 'Menu.Item',
+              });
+            }}
+            style={{ minWidth: 150 }}
+          >
             <MenuOutlined /> 新建菜单
           </AntdMenu.Item>
           <AntdMenu.Item>
@@ -298,6 +308,25 @@ Menu.Item = observer((props: any) => {
   );
 });
 
+Menu.Action = observer((props: any) => {
+  const { icon, ...others } = props;
+  const schema = useFieldSchema();
+  const { DesignableBar } = useDesignableBar();
+  return (
+    <Action
+      // @ts-ignore
+      eventKey={schema.name}
+      key={schema.name}
+      icon={icon ? <Icon type={icon as string} /> : undefined}
+      ButtonComponent={AntdMenu.Item}
+      {...others}
+    />
+    // <Action {...others}/>
+    // <DesignableBar />
+    // </AntdMenu.Item>
+  );
+});
+
 Menu.SubMenu = observer((props) => {
   const { DesignableBar } = useDesignableBar();
   const schema = useFieldSchema();
@@ -372,11 +401,13 @@ Menu.DesignableBar = (props) => {
                   const title = uid();
                   field.title = title;
                   field.componentProps['icon'] = 'DeleteOutlined';
-                  schema['x-component-props'] = schema['x-component-props'] || {};
+                  schema['x-component-props'] =
+                    schema['x-component-props'] || {};
                   schema['x-component-props']['icon'] = 'DeleteOutlined';
                   schema.title = title;
                   fieldSchema.title = title;
-                  fieldSchema['x-component-props'] = fieldSchema['x-component-props'] || {};
+                  fieldSchema['x-component-props'] =
+                    fieldSchema['x-component-props'] || {};
                   fieldSchema['x-component-props']['icon'] = 'DeleteOutlined';
                   refresh();
                 }}
@@ -396,6 +427,9 @@ Menu.DesignableBar = (props) => {
               >
                 <DeleteOutlined /> 删除菜单
               </AntdMenu.Item>
+              <AntdMenu.Item>
+                <ModalButton />
+              </AntdMenu.Item>
             </AntdMenu>
           }
         >
@@ -405,5 +439,28 @@ Menu.DesignableBar = (props) => {
     </div>
   );
 };
+
+function ModalButton() {
+  const [visible, setVisible] = useState(false);
+  return (
+    <>
+      <div
+        onClick={() => {
+          setVisible(true);
+        }}
+      >
+        按钮
+      </div>
+      <Modal
+        visible={visible}
+        onCancel={() => {
+          setVisible(false);
+        }}
+      >
+        aaa
+      </Modal>
+    </>
+  );
+}
 
 export default Menu;
