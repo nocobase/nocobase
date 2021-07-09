@@ -17,7 +17,7 @@ group:
 - 弹出层操作，弹出层可以是 Action.Drawer、Action.Modal、Action.Popover
 - 指定容器内打开： Action.Container
 - 下拉菜单：Action.Dropdown，用于收纳多种操作
-- 跳转操作：Action.Link、Action.URL 和 Action.Route
+- 跳转操作：Action.Link、Action.URL
 
 Action.Drawer、Action.Modal、Action.Popover 和 Action.Container 需要和 Action 搭配使用
 

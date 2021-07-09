@@ -28,14 +28,20 @@ const schema = {
         {
           id: 1,
           interface: 'string',
-          type: 'string',
+          dataType: 'string',
           name: 'title',
+          ui: {
+            title: '标题',
+          },
         },
         {
           id: 2,
-          type: 'text',
+          dataType: 'text',
           interface: 'textarea',
           name: 'content',
+          ui: {
+            title: '内容',
+          },
         },
       ],
     },

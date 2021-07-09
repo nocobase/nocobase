@@ -27,23 +27,9 @@ import {
 } from '../../components/drag-and-drop';
 import cls from 'classnames';
 
-function Blank() {
-  return null;
-}
-
-function useDesignableBar() {
-  const schema = useFieldSchema();
-  const options = useContext(SchemaOptionsContext);
-  const DesignableBar = get(options.components, schema['x-designable-bar']);
-
-  return {
-    DesignableBar: DesignableBar || Blank,
-  };
-}
-
 const DraggableBlock = (props) => {
   const { children, ...others } = props;
-  const { DesignableBar } = useDesignableBar();
+  const { DesignableBar } = useDesignable();
   const { isDragging, dragRef, previewRef, isOver, onTopHalf, dropRef } =
     useBlockDragAndDrop();
   const schema = useFieldSchema();
@@ -102,9 +88,22 @@ const DraggableBlock = (props) => {
 };
 
 const Block = (props) => {
+  const { DesignableBar } = useDesignable();
+  const [active, setActive] = useState(false);
   return (
-    <div className={cls('nb-grid-block', 'designable-form-item')}>
+    <div
+      onMouseEnter={(e) => {
+        setActive(true);
+        console.log('e.onMouseEnter', new Date().toString());
+      }}
+      onMouseLeave={(e) => {
+        setActive(false);
+        console.log('e.onMouseLeave', new Date().toString());
+      }}
+      className={cls('nb-grid-block', 'designable-form-item', { active })}
+    >
       {props.children}
+      <DesignableBar />
     </div>
   );
 };
