@@ -106,12 +106,18 @@ const [VisibleProvider, useVisibleContext] = constate((props: any = {}) => {
 export { VisibleProvider, useVisibleContext };
 
 const BaseAction = observer((props: any) => {
-  const { useAction = useDefaultAction, ...others } = props;
+  const {
+    ButtonComponent = Button,
+    className,
+    useAction = useDefaultAction,
+    ...others
+  } = props;
   const field = useField();
   const { run } = useAction();
   const { DesignableBar } = useDesignableBar();
   const { setVisible } = useVisibleContext();
-  const schema = useFieldSchema();
+  // const schema = useFieldSchema();
+  const { schema } = useDesignable();
   useEffect(() => {
     field.componentProps.setVisible = setVisible;
   }, []);
@@ -119,17 +125,18 @@ const BaseAction = observer((props: any) => {
   console.log('BaseAction', { field, schema }, field.title);
 
   const renderButton = () => (
-    <Button
+    <ButtonComponent
       {...others}
+      className={classNames(className, `name-${schema.name}`)}
       onClick={async (e) => {
-        e.stopPropagation();
+        e.stopPropagation && e.stopPropagation();
         setVisible && setVisible(true);
         await run();
       }}
     >
-      {field.title}
+      {schema.title}
       <DesignableBar />
-    </Button>
+    </ButtonComponent>
   );
 
   const popover = schema.reduceProperties((items, current) => {
@@ -268,6 +275,7 @@ Action.Dropdown = observer((props) => {
   // const { visible, setVisible } = useVisibleContext();
   const schema = useFieldSchema();
   return (
+    <>
     <Popover
       // visible={visible}
       // onVisibleChange={(visible) => {
@@ -281,13 +289,16 @@ Action.Dropdown = observer((props) => {
     >
       <Button>{schema.title}</Button>
     </Popover>
+    {/* popover 的按钮初始化时并未渲染，暂时先这么处理 */}
+    <div style={{display: 'none'}}>{props.children}</div>
+    </>
   );
 });
 
 Action.DesignableBar = () => {
   const field = useField();
-  const schema = useFieldSchema();
-  const { insertAfter } = useDesignable();
+  // const schema = useFieldSchema();
+  const { schema, insertAfter } = useDesignable();
   const [visible, setVisible] = useState(false);
   return (
     <div className={classNames('designable-bar', { active: visible })}>

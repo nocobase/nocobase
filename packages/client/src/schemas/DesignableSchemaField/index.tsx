@@ -15,6 +15,7 @@ import {
   FormProvider,
   useField,
   useFieldSchema,
+  useForm,
 } from '@formily/react';
 import { observable } from '@formily/reactive';
 import { uid, clone } from '@formily/shared';
@@ -304,8 +305,7 @@ export function useDesignable(path?: any) {
   };
 }
 
-export function useSchemaPath() {
-  const schema = useFieldSchema();
+export function getSchemaPath(schema: Schema) {
   const path = [schema.name];
   let parent = schema.parent;
   while (parent) {
@@ -315,7 +315,13 @@ export function useSchemaPath() {
     path.unshift(parent.name);
     parent = parent.parent;
   }
-  console.log('useSchemaPath', path, schema);
+  console.log('getSchemaPath', path, schema);
+  return [...path];
+}
+
+export function useSchemaPath() {
+  const schema = useFieldSchema();
+  const path = getSchemaPath(schema);
   return [...path];
 }
 
@@ -325,6 +331,7 @@ export const createDesignableSchemaField = (options) => {
   const SchemaField = createSchemaField(options);
 
   const DesignableSchemaField = (props) => {
+
     const schema = useMemo(() => new Schema(props.schema), [props.schema]);
     const [, refresh] = useState(0);
     if (props.designable === false) {
@@ -340,8 +347,9 @@ export const createDesignableSchemaField = (options) => {
           },
         }}
       >
-        <SchemaField schema={schema} />
+        <SchemaField scope={props.scope} components={props.components} schema={schema} />
         <CodePreview schema={schema} />
+        <FormValues />
       </DesignableContext.Provider>
     );
   };
@@ -349,11 +357,34 @@ export const createDesignableSchemaField = (options) => {
   return DesignableSchemaField;
 };
 
-const CodePreview = ({ schema }) => {
+const FormValues = () => {
+  const form = useForm();
   const [visible, setVisible] = useState(false);
   return (
     <>
       <CodeOutlined onClick={() => setVisible(true)} />
+      <Modal
+        width={'50%'}
+        onOk={() => setVisible(false)}
+        onCancel={() => setVisible(false)}
+        visible={visible}
+      >
+        <Editor
+          height="60vh"
+          defaultLanguage="json"
+          value={JSON.stringify(form.values, null, 2)}
+        />
+        {/* <pre>{JSON.stringify(schema.toJSON(), null, 2)}</pre> */}
+      </Modal>
+    </>
+  );
+};
+
+const CodePreview = ({ schema }) => {
+  const [visible, setVisible] = useState(false);
+  return (
+    <>
+      <CodeOutlined style={{position: 'relative', zIndex: 100}} onClick={() => setVisible(true)} />
       <Modal
         width={'50%'}
         onOk={() => setVisible(false)}
@@ -387,6 +418,8 @@ export interface SchemaRendererProps {
   designable?: boolean;
   onRefresh?: any;
   onlyRenderProperties?: boolean;
+  scope?: any;
+  components?: any;
 }
 
 export const SchemaRenderer = (props: SchemaRendererProps) => {
@@ -415,6 +448,8 @@ export const SchemaRenderer = (props: SchemaRendererProps) => {
   return (
     <FormProvider form={form}>
       <DesignableSchemaField
+        scope={props.scope}
+        components={props.components}
         onRefresh={props.onRefresh}
         designable={props.designable}
         schema={schema}

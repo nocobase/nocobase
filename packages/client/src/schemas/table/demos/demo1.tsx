@@ -14,7 +14,7 @@ function useAction() {
 }
 
 const schema = {
-  name: `t_${uid()}`,
+  name: `table_${uid()}`,
   type: 'array',
   'x-component': 'Table',
   // default: [
@@ -36,7 +36,7 @@ const schema = {
     // isRemoteDataSource: true,
   },
   properties: {
-    [`a_${uid()}`]: {
+    [`action_bar_${uid()}`]: {
       type: 'void',
       'x-component': 'Table.ActionBar',
       properties: {
@@ -132,22 +132,22 @@ const schema = {
         },
       },
     },
-    [`a_${uid()}`]: {
-      type: 'void',
-      'x-component': 'Table.ActionBar',
-      'x-component-props': {
-        align: 'bottom',
-      },
-      properties: {
-        pagination: {
-          type: 'void',
-          'x-component': 'Table.Pagination',
-          'x-component-props': {
-            defaultPageSize: 5,
-          },
-        },
-      },
-    },
+    // [`a_${uid()}`]: {
+    //   type: 'void',
+    //   'x-component': 'Table.ActionBar',
+    //   'x-component-props': {
+    //     align: 'bottom',
+    //   },
+    //   properties: {
+    //     pagination: {
+    //       type: 'void',
+    //       'x-component': 'Table.Pagination',
+    //       'x-component-props': {
+    //         defaultPageSize: 5,
+    //       },
+    //     },
+    //   },
+    // },
     [`a_${uid()}`]: {
       type: 'void',
       'x-component': 'Table.ActionBar',
@@ -163,7 +163,7 @@ const schema = {
         },
       },
     },
-    [`c_${uid()}`]: {
+    [`column_${uid()}`]: {
       type: 'void',
       title: '排序',
       'x-component': 'Table.Column',
@@ -174,7 +174,7 @@ const schema = {
         },
       },
     },
-    [`c_${uid()}`]: {
+    [`column_${uid()}`]: {
       type: 'void',
       title: '序号',
       'x-component': 'Table.Column',
@@ -185,7 +185,7 @@ const schema = {
         },
       },
     },
-    [`c_${uid()}`]: {
+    [`column_${uid()}`]: {
       type: 'void',
       title: '字段1',
       'x-component': 'Table.Column',
@@ -197,7 +197,7 @@ const schema = {
         field1: {
           type: 'string',
           required: true,
-          // 'x-read-pretty': true,
+          'x-read-pretty': true,
           'x-decorator-props': {
             feedbackLayout: 'popover',
           },
@@ -206,16 +206,17 @@ const schema = {
         },
       },
     },
-    [`c_${uid()}`]: {
+    [`column_${uid()}`]: {
       type: 'void',
       title: '字段2',
       'x-component': 'Table.Column',
+      'x-designable-bar': 'Table.Column.DesignableBar',
       properties: {
         field2: {
           type: 'string',
           // title: '字段2',
           required: true,
-          // 'x-read-pretty': true,
+          'x-read-pretty': true,
           'x-decorator-props': {
             feedbackLayout: 'popover',
           },
@@ -224,18 +225,18 @@ const schema = {
         },
       },
     },
-    [`col_${uid()}`]: {
+    [`column_${uid()}`]: {
       type: 'void',
       title: '操作',
       'x-component': 'Table.Column',
       properties: {
-        action1: {
+        [uid()]: {
           type: 'void',
           name: 'action1',
           title: '查看',
+          
           'x-component': 'Action',
-          'x-default-action': true,
-          'x-designable-bar': 'Action.DesignableBar',
+          'x-designable-bar': 'Table.Action.DesignableBar',
           properties: {
             drawer1: {
               type: 'void',
@@ -285,13 +286,12 @@ const schema = {
             },
           },
         },
-        action2: {
+        [uid()]: {
           type: 'void',
           name: 'action1',
           title: '修改',
           'x-component': 'Action',
-          'x-default-action': true,
-          'x-designable-bar': 'Action.DesignableBar',
+          'x-designable-bar': 'Table.Action.DesignableBar',
           properties: {
             drawer1: {
               type: 'void',
@@ -333,7 +333,7 @@ const schema = {
             },
           },
         },
-        action3: {
+        [uid()]: {
           type: 'void',
           title: '删除',
           'x-component': 'Action',
@@ -341,12 +341,12 @@ const schema = {
             useAction: '{{ useTableDestroyAction }}',
           },
         },
-        action4: {
+        [uid()]: {
           type: 'void',
           title: '...',
           'x-component': 'Action.Dropdown',
           properties: {
-            action5: {
+            [uid()]: {
               type: 'void',
               title: '操作 1',
               'x-component': 'Action',
@@ -355,21 +355,22 @@ const schema = {
                 disabled: true,
               },
             },
-            action4: {
+            [uid()]: {
               type: 'void',
               title: '操作 2',
               'x-component': 'Action',
+              'x-default-action': true,
               'x-component-props': {
                 useAction,
               },
             },
-            action1: {
+            [uid()]: {
               type: 'void',
               name: 'action1',
               title: '查看',
               'x-component': 'Action',
               // 'x-default-action': true,
-              'x-designable-bar': 'Action.DesignableBar',
+              'x-designable-bar': 'Table.Action.DesignableBar',
               properties: {
                 drawer1: {
                   type: 'void',
@@ -419,13 +420,12 @@ const schema = {
                 },
               },
             },
-            action2: {
+            [uid()]: {
               type: 'void',
               name: 'action1',
               title: '修改',
               'x-component': 'Action',
-              'x-default-action': true,
-              'x-designable-bar': 'Action.DesignableBar',
+              'x-designable-bar': 'Table.Action.DesignableBar',
               properties: {
                 drawer1: {
                   type: 'void',
@@ -467,7 +467,7 @@ const schema = {
                 },
               },
             },
-            action3: {
+            [uid()]: {
               type: 'void',
               title: '删除',
               'x-component': 'Action',
@@ -482,17 +482,14 @@ const schema = {
   },
 };
 
-const form = createForm();
+const form = createForm({
+  // designable: true,
+});
 
 export default observer(() => {
   return (
     <div>
       <SchemaRenderer form={form} schema={schema} />
-      {/* <Editor
-        height="200px"
-        defaultLanguage="json"
-        value={JSON.stringify(form.values, null, 2)}
-      /> */}
     </div>
   );
 });

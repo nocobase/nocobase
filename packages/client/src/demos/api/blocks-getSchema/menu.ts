@@ -2,15 +2,18 @@ import { uid } from '@formily/shared';
 
 export default {
   type: 'void',
-  name: `m_${uid()}`,
+  name: `menu_${uid()}`,
   'x-component': 'Menu',
   'x-designable-bar': 'Menu.DesignableBar',
   'x-component-props': {
     mode: 'mix',
     theme: 'dark',
+    defaultSelectedKeys: '{{ selectedKeys }}',
+    sideMenuRef: '{{ sideMenuRef }}',
+    onSelect: '{{ onSelect }}',
   },
   properties: {
-    item2: {
+    [uid()]: {
       type: 'void',
       title: `菜单2`,
       'x-component': 'Menu.Link',
@@ -18,7 +21,7 @@ export default {
         icon: 'MailOutlined',
       },
     },
-    item22: {
+    [uid()]: {
       type: 'void',
       title: `菜单22`,
       'x-component': 'Menu.Link',
@@ -27,15 +30,23 @@ export default {
         // url: 'https://www.google.com',
       },
     },
-    item3: {
+    [uid()]: {
       type: 'void',
-      title: '菜单组',
+      title: '菜单组1',
+      'x-component': 'Menu.SubMenu',
+      'x-component-props': {
+        icon: 'SettingOutlined',
+      },
+    },
+    [uid()]: {
+      type: 'void',
+      title: '菜单组2',
       'x-component': 'Menu.SubMenu',
       'x-component-props': {
         icon: 'SettingOutlined',
       },
       properties: {
-        item6: {
+        [uid()]: {
           type: 'void',
           title: '菜单6',
           'x-component': 'Menu.SubMenu',
@@ -43,55 +54,48 @@ export default {
             icon: 'AppstoreOutlined',
           },
           properties: {
-            item9: {
+            [uid()]: {
               type: 'void',
               title: '菜单9',
               'x-component': 'Menu.SubMenu',
               properties: {
-                item10: {
+                [uid()]: {
                   type: 'void',
                   title: `子菜单10`,
                   'x-component': 'Menu.Link',
-                  // properties: {
-                  //   action1: {
-                  //     type: 'void',
-                  //     title: '页面标题2',
-                  //     'x-component': 'Action.Page',
-                  //   },
-                  // },
                 },
-                item11: {
+                [uid()]: {
                   type: 'void',
                   title: `子菜单11`,
                   'x-component': 'Menu.Link',
                 },
               }
             },
-            item7: {
+            [uid()]: {
               type: 'void',
               title: `子菜单7`,
               'x-component': 'Menu.Link',
             },
-            item8: {
+            [uid()]: {
               type: 'void',
               title: `子菜单8`,
               'x-component': 'Menu.Link',
             },
           }
         },
-        item4: {
+        [uid()]: {
           type: 'void',
           title: `子菜单1`,
           'x-component': 'Menu.Link',
         },
-        item5: {
+        [uid()]: {
           type: 'void',
           title: `子菜单2`,
           'x-component': 'Menu.Link',
         },
       }
     },
-    item1: {
+    [uid()]: {
       type: 'void',
       title: `菜单1`,
       'x-component': 'Menu.Link',

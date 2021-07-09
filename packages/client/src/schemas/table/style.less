@@ -1,0 +1,61 @@
+.nb-table-column {
+  &:hover {
+    > .designable-bar {
+      display: block;
+    }
+  }
+  > .designable-bar {
+    display: none;
+    position: absolute;
+    top: 0;
+    right: 0;
+    left: 0;
+    bottom: 0;
+    border-radius: 0;
+    border: 2px solid #1890ff;
+    &.active {
+      display: block;
+    }
+    .designable-bar-actions {
+      position: absolute;
+      right: 0;
+      line-height: 1rem;
+      background-color: #1890ff;
+      color: #fff;
+      z-index: 10;
+      padding: 0 3px;
+      .anticon {
+        font-size: 10px;
+      }
+    }
+  }
+}
+
+.ant-popover.nb-action-group {
+  z-index: 1000;
+  padding-top: 0;
+  .ant-popover-arrow {
+    display: none;
+  }
+  .ant-popover-inner-content {
+    padding: 4px 0;
+    .ant-btn {
+      display: block;
+      min-width: 100px;
+      width: 100%;
+      border: 0;
+      border-radius: 0;
+      text-align: left;
+      padding: 5px 12px;
+      color: #000;
+      &:hover {
+        background-color: #f5f5f5;
+      }
+      &[disabled] {
+        color: #00000040;
+        background-color:#fff;
+        cursor:not-allowed;
+      }
+    }
+  }
+}

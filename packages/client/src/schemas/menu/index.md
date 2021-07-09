@@ -186,9 +186,14 @@ import { MenuContainerContext } from './';
 import { Layout } from 'antd';
 
 export default () => {
-  const ref = useRef();
+  const sideMenuRef = useRef();
 
   const [activeKey, setActiveKey] = useState('item3');
+
+  const onSelect = (info) => {
+    setActiveKey(info.key);
+    console.log({ info })
+  }
 
   const schema = {
     type: 'object',
@@ -197,13 +202,11 @@ export default () => {
         type: 'void',
         'x-component': 'Menu',
         'x-component-props': {
+          sideMenuRef: '{{ sideMenuRef }}',
           defaultSelectedKeys: [activeKey],
           mode: 'mix',
           theme: 'dark',
-          onSelect(info) {
-            setActiveKey(info.key);
-            console.log({ info })
-          },
+          onSelect: '{{ onSelect }}',
         },
         properties: {
           item1: {
@@ -271,14 +274,13 @@ export default () => {
     <div>
       <Layout>
         <Layout.Header>
-          <MenuContainerContext.Provider value={{
-            sideMenuRef: ref,
-          }}>
-            <SchemaRenderer schema={schema} />
-          </MenuContainerContext.Provider>
+          <SchemaRenderer 
+            schema={schema}
+            scope={{ onSelect, sideMenuRef }}
+          />
         </Layout.Header>
         <Layout>
-          <Layout.Sider ref={ref} theme={'light'} width={200}>
+          <Layout.Sider ref={sideMenuRef} theme={'light'} width={200}>
           </Layout.Sider>
           <Layout.Content>
             {activeKey}
@@ -299,9 +301,14 @@ import { MenuContainerContext } from './';
 import { Layout } from 'antd';
 
 export default () => {
-  const ref = useRef();
+  const sideMenuRef = useRef();
 
   const [activeKey, setActiveKey] = useState('item3');
+
+  const onSelect = (info) => {
+    setActiveKey(info.key);
+    console.log({ info })
+  }
 
   const schema = {
     type: 'object',
@@ -314,10 +321,8 @@ export default () => {
           defaultSelectedKeys: [activeKey],
           mode: 'mix',
           theme: 'dark',
-          onSelect(info) {
-            setActiveKey(info.key);
-            console.log({ info })
-          },
+          sideMenuRef: '{{ sideMenuRef }}',
+          onSelect: '{{ onSelect }}',
         },
         properties: {
           item1: {
@@ -385,14 +390,17 @@ export default () => {
     <div>
       <Layout>
         <Layout.Header>
-          <MenuContainerContext.Provider value={{
-            sideMenuRef: ref,
-          }}>
-            <SchemaRenderer schema={schema} />
-          </MenuContainerContext.Provider>
+          <SchemaRenderer
+            schema={schema}
+            scope={{ onSelect, sideMenuRef }}
+          />
         </Layout.Header>
         <Layout>
-          <Layout.Sider ref={ref} theme={'light'} width={200}>
+          <Layout.Sider 
+            ref={sideMenuRef}
+            theme={'light'}
+            width={200}
+          >
           </Layout.Sider>
           <Layout.Content>
             {activeKey}
@@ -402,4 +410,83 @@ export default () => {
     </div>
   )
 }
+```
+
+### Menu.Action
+
+
+```tsx
+/**
+ * title: 横向菜单
+ */
+import React from 'react';
+import { SchemaRenderer } from '../';
+
+const schema = {
+  type: 'object',
+  properties: {
+    menu1: {
+      type: 'void',
+      'x-component': 'Menu',
+      'x-designable-bar': 'Menu.DesignableBar',
+      'x-component-props': {
+        mode: 'horizontal',
+        theme: 'dark',
+      },
+      properties: {
+        item1: {
+          type: 'void',
+          title: `菜单1`,
+          'x-component': 'Menu.Item',
+        },
+        item2: {
+          type: 'void',
+          title: `菜单1`,
+          'x-component': 'Menu.Action',
+          properties: {
+            drawer1: {
+              type: 'void',
+              title: '抽屉标题',
+              'x-component': 'Action.Drawer',
+              'x-component-props': {},
+              properties: {
+                input: {
+                  type: 'string',
+                  'x-decorator': 'FormItem',
+                  'x-component': 'Input',
+                },
+                action2: {
+                  type: 'void',
+                  title: '打开二级抽屉',
+                  // 'x-decorator': 'FormItem',
+                  'x-component': 'Action',
+                  properties: {
+                    drawer1: {
+                      type: 'void',
+                      title: '二级抽屉标题',
+                      'x-component': 'Action.Drawer',
+                      'x-component-props': {},
+                      properties: {
+                        input: {
+                          type: 'string',
+                          'x-component': 'Input',
+                        },
+                      },
+                    },
+                  },
+                }
+              },
+            },
+          },
+        },
+      },
+    },
+  },
+}
+
+export default () => {
+  return (
+    <SchemaRenderer schema={schema} />
+  );
+};
 ```

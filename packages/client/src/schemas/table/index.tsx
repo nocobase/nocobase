@@ -8,6 +8,7 @@ import {
   useForm,
   FormProvider,
   createSchemaField,
+  SchemaOptionsContext,
 } from '@formily/react';
 import {
   Button,
@@ -16,24 +17,32 @@ import {
   Space,
   Spin,
   Table as AntdTable,
+  Dropdown,
+  Menu,
 } from 'antd';
-import { findIndex } from 'lodash';
+import { findIndex, get } from 'lodash';
 import constate from 'constate';
 import useRequest from '@ahooksjs/use-request';
 import { BaseResult } from '@ahooksjs/use-request/lib/types';
 import { uid, clone } from '@formily/shared';
 import { MenuOutlined } from '@ant-design/icons';
 import { useVisibleContext } from '../action';
-import { SortableHandle, SortableContainer, SortableElement } from 'react-sortable-hoc'
+import {
+  SortableHandle,
+  SortableContainer,
+  SortableElement,
+} from 'react-sortable-hoc';
 import cls from 'classnames';
+import { getSchemaPath, useDesignable, useSchemaPath } from '../DesignableSchemaField';
+import './style.less';
 
 interface TableRowProps {
   index: number;
   data: any;
 }
 
-const SortableRow = SortableElement((props: any) => <tr {...props} />)
-const SortableBody = SortableContainer((props: any) => <tbody {...props} />)
+const SortableRow = SortableElement((props: any) => <tr {...props} />);
+const SortableBody = SortableContainer((props: any) => <tbody {...props} />);
 
 const TableRowContext = createContext<TableRowProps>(null);
 
@@ -105,7 +114,8 @@ function useTableActionBars() {
 }
 
 function useTableColumns(props?: any) {
-  const schema = useFieldSchema();
+  const { schema } = useDesignable();
+  // const schema = useFieldSchema();
   const { dataSource } = props || {};
 
   function findColumns(schema: Schema): Schema[] {
@@ -120,7 +130,7 @@ function useTableColumns(props?: any) {
   return findColumns(schema).map((item) => {
     const columnProps = item['x-component-props'] || {};
     return {
-      title: item.title,
+      title: <RecursionField name={item.name} schema={item} onlyRenderSelf />,
       dataIndex: item.name,
       ...columnProps,
       render(value, record, recordIndex) {
@@ -282,23 +292,22 @@ const TableContainer = observer((props) => {
     useTableContext();
   const rowKey = field.componentProps.rowKey || 'id';
   const defaultAction = useDefaultAction();
-  console.log({ defaultAction });
   const dataSource = Array.isArray(field.value) ? field.value.slice() : [];
   const columns = useTableColumns({ dataSource });
-  const ref = useRef<HTMLDivElement>()
+  const ref = useRef<HTMLDivElement>();
   const addTdStyles = (node: HTMLElement) => {
-    const helper = document.body.querySelector(`.nb-table-sort-helper`)
+    const helper = document.body.querySelector(`.nb-table-sort-helper`);
     if (helper) {
-      const tds = node.querySelectorAll('td')
+      const tds = node.querySelectorAll('td');
       requestAnimationFrame(() => {
         helper.querySelectorAll('td').forEach((td, index) => {
           if (tds[index]) {
-            td.style.width = getComputedStyle(tds[index]).width
+            td.style.width = getComputedStyle(tds[index]).width;
           }
-        })
-      })
+        });
+      });
     }
-  }
+  };
   return (
     <div ref={ref} className={'nb-table'}>
       {actionBars.top.map((actionBarSchema) => {
@@ -339,10 +348,10 @@ const TableContainer = observer((props) => {
                 // disableAutoscroll
                 helperClass={`nb-table-sort-helper`}
                 helperContainer={() => {
-                  return ref.current?.querySelector('tbody')
+                  return ref.current?.querySelector('tbody');
                 }}
                 onSortStart={({ node }) => {
-                  addTdStyles(node)
+                  addTdStyles(node);
                 }}
                 onSortEnd={({ oldIndex, newIndex }) => {
                   field.move(oldIndex, newIndex);
@@ -352,13 +361,11 @@ const TableContainer = observer((props) => {
               />
             ),
             row: (props: any) => {
-              const index = findIndex(field.value, item => item[rowKey] === props['data-row-key']);
-              return (
-                <SortableRow
-                  index={index}
-                  {...props}
-                />
-              )
+              const index = findIndex(
+                field.value,
+                (item) => item[rowKey] === props['data-row-key'],
+              );
+              return <SortableRow index={index} {...props} />;
             },
           },
         }}
@@ -366,20 +373,17 @@ const TableContainer = observer((props) => {
           const index = dataSource.indexOf(data);
           return {
             onClick(e) {
-              console.log('onRow', (e.target as HTMLElement), (e.target as HTMLElement).classList.contains('ant-table-cell'));
-              if (!(e.target as HTMLElement).classList.contains('ant-table-cell')) {
-                return;
-              }
               if (!defaultAction) {
                 return;
               }
-              // console.log('defaultAction');
-              field
-                .query(`.${schema.name}.${index}.${defaultAction.name}`)
-                .take((f) => {
-                  const setVisible = f.componentProps.setVisible;
-                  setVisible && setVisible(true);
-                });
+              const el = (e.target as HTMLElement);
+              if (
+                !el.classList.contains('ant-table-cell')
+              ) {
+                return;
+              }
+              const btn = el.parentElement.querySelector<HTMLElement>(`.name-${defaultAction.name}`);
+              btn && btn.click();
             },
           };
         }}
@@ -411,7 +415,99 @@ export const Table: any = observer((props) => {
   );
 });
 
-Table.Column = () => null;
+function Blank() {
+  return null;
+}
+
+function useDesignableBar() {
+  const schema = useFieldSchema();
+  const options = useContext(SchemaOptionsContext);
+  const DesignableBar = get(options.components, schema['x-designable-bar']);
+
+  return {
+    DesignableBar: DesignableBar || Blank,
+  };
+}
+
+Table.Column = observer((props) => {
+  const schema = useFieldSchema();
+  const field = useField();
+  console.log('Table.Column', schema, field.title);
+  const { DesignableBar } = useDesignableBar();
+  return (
+    <div className={'nb-table-column'}>
+      {field.title}
+      <DesignableBar />
+    </div>
+  );
+});
+
+Table.Column.DesignableBar = () => {
+  const field = useField();
+  // const fieldSchema = useFieldSchema();
+  const { schema, remove, refresh, insertAfter } = useDesignable();
+  const [visible, setVisible] = useState(false);
+  console.log('Table.Column.DesignableBar', { schema });
+  return (
+    <div className={cls('designable-bar', { active: visible })}>
+      <span
+        onClick={(e) => {
+          e.stopPropagation();
+        }}
+        className={cls('designable-bar-actions', { active: visible })}
+      >
+        <Dropdown
+          trigger={['click']}
+          visible={visible}
+          onVisibleChange={(visible) => {
+            setVisible(visible);
+          }}
+          overlay={
+            <Menu>
+              <Menu.Item onClick={(e) => {
+                const title = uid();
+                field.title = title;
+                schema.title = title;
+                setVisible(false);
+              }}>点击修改按钮文案</Menu.Item>
+              <Menu.Item onClick={() => {
+                remove();
+                console.log('Table.Column.DesignableBar', { schema });
+              }}>删除列</Menu.Item>
+              <Menu.Item onClick={() => {
+                const name = uid();
+                insertAfter({
+                  name: `column_${name}`,
+                  type: 'void',
+                  title: `字段 ${name}`,
+                  'x-component': 'Table.Column',
+                  'x-component-props': {
+                    // title: 'z1',
+                  },
+                  'x-designable-bar': 'Table.Column.DesignableBar',
+                  properties: {
+                    [name]: {
+                      type: 'string',
+                      required: true,
+                      // 'x-read-pretty': true,
+                      'x-decorator-props': {
+                        feedbackLayout: 'popover',
+                      },
+                      'x-decorator': 'FormItem',
+                      'x-component': 'Input',
+                    },
+                  },
+                })
+              }}>插入列</Menu.Item>
+            </Menu>
+          }
+        >
+          <MenuOutlined />
+        </Dropdown>
+      </span>
+    </div>
+  );
+};
 
 Table.ActionBar = observer((props) => {
   return (
@@ -447,17 +543,20 @@ const SortHandle = SortableHandle((props: any) => {
       className={cls(`nb-table-sort-handle`, props.className)}
       style={{ ...props.style }}
     />
-  )
-}) as any
+  );
+}) as any;
 
 Table.SortHandle = observer((props) => {
   const field = useField<Formily.Core.Models.Field>();
   console.log('SortHandle', field.value);
-  return <SortHandle {...props}/>;
+  return <SortHandle {...props} />;
 });
 
 Table.Index = observer((props) => {
   const index = useTableIndex();
+  const schema = useFieldSchema();
+  const field = useField<Formily.Core.Models.Field>();
+  const path = useSchemaPath();
   return <div>#{index + 1}</div>;
 });
 
@@ -484,3 +583,41 @@ Table.Addition = observer((props: any) => {
     </Button>
   );
 });
+
+Table.Action = () => null;
+
+Table.Action.DesignableBar = () => {
+  const field = useField();
+  const path = useSchemaPath();
+  const { schema, remove, refresh, insertAfter } = useDesignable();
+  const [visible, setVisible] = useState(false);
+  console.log('Table.Action.DesignableBar', path, field.address.entire, { schema, field });
+  return (
+    <div className={cls('designable-bar', { active: visible })}>
+      <span
+        onClick={(e) => {
+          e.stopPropagation();
+        }}
+        className={cls('designable-bar-actions', { active: visible })}
+      >
+        <Dropdown
+          trigger={['click']}
+          visible={visible}
+          onVisibleChange={(visible) => {
+            setVisible(visible);
+          }}
+          overlay={
+            <Menu>
+              <Menu.Item onClick={(e) => {
+                schema.title = uid();
+                refresh();
+              }}>点击修改按钮文案</Menu.Item>
+            </Menu>
+          }
+        >
+          <MenuOutlined />
+        </Dropdown>
+      </span>
+    </div>
+  );
+};

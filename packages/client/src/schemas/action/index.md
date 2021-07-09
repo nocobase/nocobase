@@ -13,11 +13,13 @@ group:
 
 操作有三类：
 
-- 常规操作
-- 弹出层操作，弹出层有 Drawer、Modal、Popover
-- 指定容器内操作 Container
-- 下拉菜单，用于收纳多种操作
-- 跳转操作
+- 常规操作：Action
+- 弹出层操作，弹出层可以是 Action.Drawer、Action.Modal、Action.Popover
+- 指定容器内打开： Action.Container
+- 下拉菜单：Action.Dropdown，用于收纳多种操作
+- 跳转操作：Action.Link、Action.URL 和 Action.Route
+
+Action.Drawer、Action.Modal、Action.Popover 和 Action.Container 需要和 Action 搭配使用
 
 ## Action - 常规操作
 
