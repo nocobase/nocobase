@@ -11,7 +11,10 @@ group:
 
 # Select - 选择器
 
-## 基本用法
+
+## Select
+
+### 单选
 
 ```tsx
 import React from 'react';
@@ -70,7 +73,7 @@ export default () => {
 };
 ```
 
-## 多选
+### 多选
 
 ```tsx
 import React from 'react';
@@ -134,7 +137,7 @@ export default () => {
 };
 ```
 
-## 分组
+### 分组
 
 ```tsx
 import React from 'react';
@@ -200,7 +203,11 @@ export default () => {
 };
 ```
 
-## 值为对象
+## Select.Object
+
+选项值为 Object 类型
+
+### 单选
 
 ```tsx
 import React from 'react';
@@ -233,12 +240,14 @@ const schema = {
       'x-component': 'Select.Object',
       'x-component-props': {
         placeholder: 'please enter',
-        labelField: 'title',
-        valueField: 'id',
-        labelInValue: true,
+        // mode: 'tags',
+        fieldNames: {
+          label: 'title',
+          value: 'id',
+        },
       },
       'x-reactions': {
-        target: 'name2',
+        target: 'read',
         fulfill: {
           state: {
             value: '{{$self.value}}',
@@ -250,16 +259,17 @@ const schema = {
       interface: 'select',
       type: 'string',
       title: `阅读模式`,
-      required: true,
       enum: dataSource,
       'x-read-pretty': true,
       'x-decorator': 'FormItem',
       'x-component': 'Select.Object',
       'x-component-props': {
         placeholder: 'please enter',
-        labelField: 'title',
-        valueField: 'id',
-        labelInValue: true,
+        // mode: 'tags',
+        fieldNames: {
+          label: 'title',
+          value: 'id',
+        },
       },
     }
   }
@@ -271,3 +281,281 @@ export default () => {
   );
 };
 ```
+
+### 多选
+
+```tsx
+import React from 'react';
+import { SchemaRenderer } from '../';
+
+const dataSource = [
+  {
+    id: 1,
+    title: '标题1',
+  },
+  {
+    id: 2,
+    title: '标题2',
+  },
+  {
+    id: 3,
+    title: '标题3',
+  },
+];
+
+const schema = {
+  type: 'object',
+  properties: {
+    input: {
+      interface: 'select',
+      type: 'string',
+      title: `编辑模式`,
+      enum: dataSource,
+      'x-decorator': 'FormItem',
+      'x-component': 'Select.Object',
+      'x-component-props': {
+        placeholder: 'please enter',
+        mode: 'tags',
+        fieldNames: {
+          label: 'title',
+          value: 'id',
+        },
+      },
+      'x-reactions': {
+        target: 'read',
+        fulfill: {
+          state: {
+            value: '{{$self.value}}',
+          },
+        },
+      },
+    },
+    read: {
+      interface: 'select',
+      type: 'string',
+      title: `阅读模式`,
+      enum: dataSource,
+      'x-read-pretty': true,
+      'x-decorator': 'FormItem',
+      'x-component': 'Select.Object',
+      'x-component-props': {
+        placeholder: 'please enter',
+        mode: 'tags',
+        fieldNames: {
+          label: 'title',
+          value: 'id',
+        },
+      },
+    }
+  }
+};
+
+export default () => {
+  return (
+    <SchemaRenderer schema={schema} />
+  );
+};
+```
+
+## Select.Drawer
+
+```tsx
+import React from 'react';
+import { SchemaRenderer } from '../';
+import { useSelect } from './';
+
+console.log({ useSelect })
+
+const dataSource = [
+  {
+    id: 1,
+    title: '标题1',
+  },
+  {
+    id: 2,
+    title: '标题2',
+  },
+  {
+    id: 3,
+    title: '标题3',
+  },
+];
+
+function useValues() {
+  return {
+    table: dataSource,
+  }
+}
+
+const schema = {
+  type: 'object',
+  properties: {
+    input: {
+      interface: 'select',
+      type: 'string',
+      title: `编辑模式`,
+      enum: dataSource,
+      default: [
+        {
+          id: 1,
+          title: '标题1',
+        },
+        {
+          id: 2,
+          title: '标题2',
+        },
+      ],
+      'x-decorator': 'FormItem',
+      'x-component': 'Select.Drawer',
+      'x-component-props': {
+        placeholder: 'please enter',
+        mode: 'tags',
+        fieldNames: {
+          label: 'title',
+          value: 'id',
+        },
+      },
+      'x-reactions': {
+        target: 'read',
+        fulfill: {
+          state: {
+            value: '{{$self.value}}',
+          },
+        },
+      },
+      properties: {
+        options: {
+          type: 'void',
+          'x-component': 'Select.Options',
+          properties: {
+            form: {
+              type: 'void',
+              'x-component': 'Form',
+              'x-component-props': {
+                useValues: '{{ useValues }}',
+              },
+              properties: {
+                table: {
+                  type: 'array',
+                  'x-component': 'Table',
+                  properties: {
+                    actionbar: {
+                      type: 'void',
+                      'x-component': 'Table.ActionBar',
+                      'x-component-props': {
+                        align: 'bottom',
+                      },
+                      properties: {
+                        action: {
+                          type: 'void',
+                          'x-component': 'Action',
+                          'x-component-props': {
+                            useAction: '{{ useSelect }}',
+                          },
+                          title: '确定',
+                        },
+                      },
+                    },
+                    column1: {
+                      type: 'void',
+                      title: '标题',
+                      'x-component': 'Table.Column',
+                      'x-component-props': {
+                        // title: 'z1',
+                      },
+                      // 'x-designable-bar': 'Table.Column.DesignableBar',
+                      properties: {
+                        title: {
+                          type: 'string',
+                          required: true,
+                          'x-read-pretty': true,
+                          'x-decorator-props': {
+                            feedbackLayout: 'popover',
+                          },
+                          'x-decorator': 'FormItem',
+                          'x-component': 'Input',
+                        },
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+    },
+    read: {
+      interface: 'select',
+      type: 'string',
+      title: `阅读模式`,
+      enum: dataSource,
+      default: [
+        {
+          id: 1,
+          title: '标题1',
+        },
+        {
+          id: 2,
+          title: '标题2',
+        },
+      ],
+      'x-read-pretty': true,
+      'x-decorator': 'FormItem',
+      'x-component': 'Select.Drawer',
+      'x-component-props': {
+        placeholder: 'please enter',
+        mode: 'tags',
+        fieldNames: {
+          label: 'title',
+          value: 'id',
+        },
+      },
+      properties: {
+        option: {
+          type: 'void',
+          'x-component': 'Select.OptionTag',
+          properties: {
+            form: {
+              type: 'void',
+              'x-component': 'Form',
+              properties: {
+                input: {
+                  type: 'string',
+                  'x-component': 'Input',
+                },
+              },
+            },
+          },
+        },
+      },
+    }
+  }
+};
+
+export default () => {
+  return (
+    <SchemaRenderer scope={{ useSelect, useValues }} schema={schema} />
+  );
+};
+```
+
+<!-- 
+<Select />
+<Select.Object />
+<Select.Drawer>
+  <Select.Options>
+    <Table />
+    <Action />
+  <Select.Options>
+  <Select.ItemDetails>
+    <Form/>
+  </Select.ItemDetails>
+<Select.Drawer>
+
+<Action />
+
+<Action>
+  <Drawer />
+</Action>
+ -->

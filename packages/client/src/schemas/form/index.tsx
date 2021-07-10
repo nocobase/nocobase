@@ -5,6 +5,7 @@ import {
   Schema,
   useFieldSchema,
   observer,
+  SchemaExpressionScopeContext,
 } from '@formily/react';
 import { SchemaRenderer, useDesignable } from '../DesignableSchemaField';
 import get from 'lodash/get';
@@ -40,6 +41,8 @@ function useDefaultValues() {
 }
 
 export const Form: any = observer((props: any) => {
+  const scope = useContext(SchemaExpressionScopeContext);
+
   const { useValues = useDefaultValues } = props;
   const values = useValues();
   const form = useMemo(() => {
@@ -67,6 +70,8 @@ export const Form: any = observer((props: any) => {
   return (
     <div ref={ref} className={'nb-form'}>
       <SchemaRenderer
+        scope={scope}
+        // components={options.components}
         onRefresh={(subSchema: Schema) => {
           designableSchema.properties = subSchema.properties;
           refresh();
