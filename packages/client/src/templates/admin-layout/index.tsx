@@ -195,7 +195,7 @@ function LayoutWithMenu({ schema }) {
 
 function Content({ activeKey }) {
   const { data = {}, loading } = useRequest(
-    `/api/blocks:getSchema/${activeKey}`,
+    `/api/ui-schemas:getTree/${activeKey}?filter[parentId]=${activeKey}`,
     {
       refreshDeps: [activeKey],
       formatResult: (result) => result?.data,
@@ -212,12 +212,13 @@ function Content({ activeKey }) {
 export function AdminLayout({ route, children }: any) {
 
   const { data = {}, loading } = useRequest(
-    `/api/blocks:getSchema/${route.blockId}`,
+    `/api/ui-schemas:getTree/${route.schemaName}`,
     {
       refreshDeps: [route],
       formatResult: (result) => result?.data,
     },
   );
+
   if (loading) {
     return <Spin />;
   }

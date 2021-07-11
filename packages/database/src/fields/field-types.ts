@@ -18,7 +18,7 @@ import { getDataTypeKey } from '.';
 import Table from '../table';
 import Database from '../database';
 import Model, { ModelCtor } from '../model';
-import { whereCompare, isNumber } from '../utils';
+import { whereCompare, isNumber, uid } from '../utils';
 
 export interface IField {
 
@@ -344,7 +344,7 @@ export class ARRAY extends Column {
 
 export class JSON extends Column {
   public getDataType() {
-    return DataTypes.JSONB;
+    return DataTypes.JSON;
   }
 }
 
@@ -352,6 +352,33 @@ export class JSONB extends Column {
 }
 
 export class UUID extends Column {
+  public getDataType() {
+    return DataTypes.UUID;
+  }
+}
+
+export class UID extends Column {
+
+  constructor(options: Options.StringOptions, context: FieldContext) {
+    super(options, context);
+    const { name, prefix = '' } = options;
+    const Model = context.sourceTable.getModel();
+    Model.addHook('beforeCreate', (model) => {
+      if (!model.get(name)) {
+        model.set(name, `${prefix}${uid()}`);
+      }
+    });
+  }
+
+  public getDataType() {
+    return DataTypes.STRING;
+  }
+}
+
+export class UUIDV4 extends Column {
+  public getDataType() {
+    return DataTypes.UUIDV4;
+  }
 }
 
 export interface HasOneAccessors {

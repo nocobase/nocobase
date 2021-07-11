@@ -39,13 +39,15 @@ const api = Api.create({
 
 const plugins = [
   '@nocobase/plugin-collections',
-  '@nocobase/plugin-action-logs',
-  '@nocobase/plugin-pages',
-  '@nocobase/plugin-users',
-  '@nocobase/plugin-file-manager',
-  '@nocobase/plugin-permissions',
-  '@nocobase/plugin-automations',
-  '@nocobase/plugin-china-region',
+  '@nocobase/plugin-routes',
+  '@nocobase/plugin-ui-schema',
+  // '@nocobase/plugin-action-logs',
+  // '@nocobase/plugin-pages',
+  // '@nocobase/plugin-users',
+  // '@nocobase/plugin-file-manager',
+  // '@nocobase/plugin-permissions',
+  // '@nocobase/plugin-automations',
+  // '@nocobase/plugin-china-region',
 ];
 
 for (const plugin of plugins) {

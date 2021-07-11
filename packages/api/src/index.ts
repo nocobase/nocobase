@@ -12,12 +12,6 @@ import { middlewares } from '@nocobase/server';
     }));
   }
 
-  await api.database.getModel('collections').load({skipExisting: true});
-  await api.database.getModel('collections').load({where: {
-    name: 'users',
-  }});
-  await api.database.getModel('automations').load();
-
   api.use(middlewares.appDistServe({
     root: process.env.APP_DIST,
     useStaticServer: !(process.env.APP_USE_STATIC_SERVER === 'false' || !process.env.APP_USE_STATIC_SERVER),

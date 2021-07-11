@@ -310,17 +310,22 @@ export abstract class Model extends SequelizeModel {
         ? association.options.targetKey
         : association.options.sourceKey;
       if (data[targetAttribute]) {
-        await this[accessors.set](data[targetAttribute], opts);
-        if (Object.keys(data).length > 1) {
+        if (Object.keys(data).length > 0) {
           const target = await Target.findOne({
             where: {
               [targetAttribute]: data[targetAttribute],
             },
             transaction
           });
-          await target.update(data, opts);
-          // @ts-ignore
-          await target.updateAssociations(data, opts);
+          if (target) {
+            await this[accessors.set](data[targetAttribute], opts);
+            await target.update(data, opts);
+            // @ts-ignore
+            await target.updateAssociations(data, opts);
+          } else {
+            const t = await this[accessors.create](data, opts);
+            await t.updateAssociations(data, opts);
+          }
         }
       } else {
         const t = await this[accessors.create](data, opts);
@@ -513,8 +518,8 @@ export abstract class Model extends SequelizeModel {
    */
   async updateAssociations(data: any, options: UpdateAssociationOptions = {}) {
     const { transaction = await this.sequelize.transaction() } = options;
-    const table = this.database.getTable(this.constructor.name);
-    for (const key of table.getAssociations().keys()) {
+    // @ts-ignore 判断 Model.associations 更准确
+    for (const key of Object.keys(this.constructor.associations)) {
       // 如果 key 不存在才跳过
       if (!Object.keys(data).includes(key)) {
         continue;
