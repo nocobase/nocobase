@@ -3,6 +3,13 @@ networks:
   nocobase:
     driver: bridge
 services:
+  adminer:
+    image: adminer
+    restart: always
+    networks:
+      - nocobase
+    ports:
+      - ${ADMINER_PORT}:8080
   verdaccio:
     image: verdaccio/verdaccio
     networks:

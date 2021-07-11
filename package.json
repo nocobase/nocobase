@@ -12,6 +12,7 @@
     "build2": "lerna run build",
     "build": "npm run build-father-build && node packages/father-build/bin/father-build.js",
     "build-father-build": "cd packages/father-build && npm run build",
+    "db-migrate": "ts-node -r dotenv/config ./packages/api/src/migrate.ts",
     "lint": "eslint --ext .ts,.tsx,.js \"packages/*/src/**.@(ts|tsx|js)\" --fix",
     "test": "npm run lint && jest"
   },

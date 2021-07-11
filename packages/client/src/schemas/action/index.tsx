@@ -212,6 +212,7 @@ Action.Popover = observer((props) => {
   const schema = useFieldSchema();
   return (
     <Popover
+      placement={'bottom'}
       visible={visible}
       onVisibleChange={(visible) => {
         setVisible(visible);

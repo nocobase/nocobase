@@ -6,7 +6,7 @@ import { SchemaRenderer } from '../../schemas';
 
 export function DefaultPage({ route }) {
   const { data = {}, loading } = useRequest(
-    `/api/blocks:getSchema/${route.blockId}`,
+    `/api/ui-schemas:getTree/${route.schemaName}`,
     {
       refreshDeps: [route],
       formatResult: (result) => result?.data,
