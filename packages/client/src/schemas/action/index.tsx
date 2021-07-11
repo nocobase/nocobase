@@ -116,13 +116,13 @@ const BaseAction = observer((props: any) => {
   const { run } = useAction();
   const { DesignableBar } = useDesignableBar();
   const { setVisible } = useVisibleContext();
-  // const schema = useFieldSchema();
+  const fieldSchema = useFieldSchema();
   const { schema } = useDesignable();
   useEffect(() => {
     field.componentProps.setVisible = setVisible;
   }, []);
 
-  console.log('BaseAction', { field, schema }, field.title);
+  console.log('BaseAction', { field, schema, fieldSchema }, field.title);
 
   const renderButton = () => (
     <ButtonComponent

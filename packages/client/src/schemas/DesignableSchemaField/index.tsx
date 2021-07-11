@@ -30,7 +30,6 @@ import { Checkbox } from '../checkbox';
 import { ColorSelect } from '../color-select';
 import { DatabaseField } from '../database-field';
 import { DatePicker } from '../date-picker';
-import { DrawerSelect } from '../drawer-select';
 import { Filter } from '../filter';
 import { Form } from '../form';
 import { Grid } from '../grid';
@@ -97,7 +96,6 @@ export const components = {
   ColorSelect,
   DatabaseField,
   DatePicker,
-  DrawerSelect,
   Filter,
   Form,
   Grid,

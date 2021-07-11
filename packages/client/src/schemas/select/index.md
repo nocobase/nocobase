@@ -362,7 +362,7 @@ export default () => {
 ```tsx
 import React from 'react';
 import { SchemaRenderer } from '../';
-import { useSelect } from './';
+import { useSelect, useOptionTagValues } from './';
 
 console.log({ useSelect })
 
@@ -519,9 +519,15 @@ const schema = {
             form: {
               type: 'void',
               'x-component': 'Form',
+              'x-component-props': {
+                useValues: '{{ useOptionTagValues }}',
+              },
               properties: {
-                input: {
+                title: {
                   type: 'string',
+                  title: '标题',
+                  'x-read-pretty': true,
+                  'x-decorator': 'FormItem',
                   'x-component': 'Input',
                 },
               },
@@ -535,7 +541,7 @@ const schema = {
 
 export default () => {
   return (
-    <SchemaRenderer scope={{ useSelect, useValues }} schema={schema} />
+    <SchemaRenderer scope={{ useSelect, useValues, useOptionTagValues }} schema={schema} />
   );
 };
 ```
