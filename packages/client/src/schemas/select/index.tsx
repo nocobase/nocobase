@@ -17,7 +17,7 @@ import { useState } from 'react';
 import { useDesignable } from '../DesignableSchemaField';
 import { createContext } from 'react';
 import { useContext } from 'react';
-import { useTableContext } from '../table';
+import { SelectedRowKeysContext, useTableContext } from '../table';
 
 export const Select: any = connect(
   (props) => {
@@ -128,8 +128,9 @@ Select.Object = connect(
         {...others}
         value={optionValue}
         onChange={(selectValue: any) => {
-          if (!selectValue) {
+          if (!isValid(selectValue)) {
             onChange(null);
+            return;
           }
           if (isArr(selectValue)) {
             const selectValues = selectValue.map((s) => s.value);
@@ -273,6 +274,10 @@ Select.Drawer = connect(
       }
     };
 
+    const selectedKeys = toArr(optionValue).map(item => item.value);
+
+    console.log({ selectedKeys })
+
     return (
       <>
         <AntdSelect
@@ -300,23 +305,26 @@ Select.Drawer = connect(
           width={'50%'}
           visible={visible}
           onClose={() => setVisible(false)}
+          destroyOnClose
         >
-          <SelectContext.Provider
-            value={{
-              onChange(selectValue) {
-                onFieldChange(selectValue);
-                setVisible(false);
-              },
-            }}
-          >
-            <RecursionField
-              onlyRenderProperties
-              schema={schema}
-              filterProperties={(s) => {
-                return s['x-component'] === 'Select.Options';
+          <SelectedRowKeysContext.Provider value={selectedKeys}>
+            <SelectContext.Provider
+              value={{
+                onChange(selectValue) {
+                  onFieldChange(selectValue);
+                  setVisible(false);
+                },
               }}
-            />
-          </SelectContext.Provider>
+            >
+              <RecursionField
+                onlyRenderProperties
+                schema={schema}
+                filterProperties={(s) => {
+                  return s['x-component'] === 'Select.Options';
+                }}
+              />
+            </SelectContext.Provider>
+          </SelectedRowKeysContext.Provider>
         </Drawer>
       </>
     );
@@ -384,6 +392,11 @@ export function useSelect() {
       onChange && onChange(selectedRowKeys);
     },
   };
+}
+
+export function useOptionTagValues() {
+  const { data } = useContext(OptionTagContext);
+  return data;
 }
 
 Select.OptionTag = observer((props) => {

@@ -240,7 +240,9 @@ export function useTableUpdateAction() {
 const [TableContextProvider, useTableContext] = constate(() => {
   const field = useField<Formily.Core.Models.ArrayField>();
   const schema = useFieldSchema();
-  const [selectedRowKeys, setSelectedRowKeys] = useState([]);
+  const defaultSelectedRowKeys = useContext(SelectedRowKeysContext);
+  const [selectedRowKeys, setSelectedRowKeys] = useState(defaultSelectedRowKeys || []);
+  console.log({ defaultSelectedRowKeys })
   const pagination = usePaginationProps();
   const response = useRequest<{
     list: any[];
@@ -283,6 +285,8 @@ const [TableContextProvider, useTableContext] = constate(() => {
 });
 
 export { TableContextProvider, useTableContext };
+
+export const SelectedRowKeysContext = createContext([]);
 
 const TableContainer = observer((props) => {
   const field = useField<Formily.Core.Models.ArrayField>();
