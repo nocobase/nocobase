@@ -11,6 +11,15 @@ group:
 
 # Checkbox - 多选框
 
+## 组件节点树
+
+<pre lang="tsx">
+// 勾选
+<Checkbox/>
+// 多选框
+<Checkbox.Group/>
+</pre>
+
 ## 代码演示
 
 ### 勾选

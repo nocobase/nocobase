@@ -9,6 +9,23 @@ group:
   path: /client/schemas
 ---
 
+# Filter - 筛选器
+
+## 组件节点树
+
+<pre lang="tsx">
+<Filter>
+  <Filter.Column title={'字段1'} operations={[]}>
+    <Input/>
+  </Filter.Column>
+  <Filter.Column title={'字段2'}>
+    <Input/>
+  </Filter.Column>
+</Filter>
+</pre>
+
+## 代码演示
+
 <!-- <Filter>
   <Filter.Column title={'字段1'} operations={[]}>
     <Input/>

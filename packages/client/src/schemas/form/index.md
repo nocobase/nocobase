@@ -11,6 +11,16 @@ group:
 
 # Form - 表单
 
+## 组件节点树
+
+<pre lang="tsx">
+<Form>
+  <Input/>
+  <Select/>
+  // 添加其他节点
+</Form>
+</pre>
+
 ## 代码演示
 
 ### 常规表单

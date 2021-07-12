@@ -11,6 +11,14 @@ group:
 
 # IconPicker - 图标选择器
 
+## 节点树
+
+<pre lang="tsx">
+<IconPicker/>
+</pre>
+
+## 代码演示
+
 ```tsx
 /**
  * title: 图标

@@ -11,12 +11,29 @@ group:
 
 # AddNew - 新增
 
-包括两部分
+## 组件节点树
 
-- AddNew.BlockItem 新增区块项
-- AddNew.FormItem 新增表单项
+<pre lang="tsx">
+// 简单场景，只支持上下拖拽布局
+<DragAndDrop>
+  // 常规区块
+  <AddNew.BlockItem/>
+  // 或表单控件
+  <AddNew.BlockItem/>
+</DragAndDrop>
 
-支持常规布局也支持 Grid 布局
+// 栅格布局，支持行列等复杂的拖拽操作
+<Grid>
+  <Grid.Row>
+    <Grid.Col>
+      // 常规区块
+      <AddNew.BlockItem/>
+      // 或表单控件
+      <AddNew.BlockItem/>
+    </Grid.Col>
+  </Grid.Row>
+</Grid>
+</pre>
 
 ## 代码演示
 
