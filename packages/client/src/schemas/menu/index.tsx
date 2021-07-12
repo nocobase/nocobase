@@ -52,8 +52,6 @@ import ReactDOM from 'react-dom';
 import { useMount } from 'ahooks';
 import { useDesignable, SchemaRenderer } from '..';
 import { Router } from 'react-router';
-
-import { useLifecycle } from 'beautiful-react-hooks';
 import { Action, useDefaultAction } from '../action';
 
 export type MenuType = React.FC<MenuProps & { hideSubMenu?: boolean }> & {
@@ -67,30 +65,18 @@ export type MenuType = React.FC<MenuProps & { hideSubMenu?: boolean }> & {
   Url?: React.FC<MenuItemProps & { url: string }>;
 };
 
-export const MenuContainerContext = createContext({
-  sideMenuRef: null,
-});
-
 export const MenuContext = createContext({
   mode: null,
   designableBar: null,
 });
 
-function Blank() {
-  return null;
-}
-
 function useDesignableBar() {
   const { designableBar } = useContext(MenuContext);
-
   const options = useContext(SchemaOptionsContext);
   const DesignableBar = designableBar
     ? get(options.components, designableBar)
     : null;
-
-  return {
-    DesignableBar: DesignableBar || Blank,
-  };
+  return DesignableBar || (() => null);
 }
 
 export const Menu: MenuType = observer((props: any) => {
@@ -103,7 +89,6 @@ export const Menu: MenuType = observer((props: any) => {
     ...others
   } = props;
   let defaultSelectedKey = defaultSelectedKeys ? defaultSelectedKeys[0] : null;
-  // const schema = useFieldSchema();
   const { schema, schema: designableSchema, refresh } = useDesignable();
   const designableBar = schema['x-designable-bar'];
   const history = useHistory();
@@ -183,7 +168,7 @@ export const Menu: MenuType = observer((props: any) => {
     renderSideMenu(defaultSelectedKey);
   });
   const isEmpty = !Object.keys(designableSchema.properties || {}).length;
-  console.log({ designableSchema })
+  console.log({ designableSchema });
   return (
     <MenuContext.Provider
       value={{
@@ -235,9 +220,7 @@ export const Menu: MenuType = observer((props: any) => {
 });
 
 const AddNewAction = () => {
-  const fieldSchema = useFieldSchema();
   const { schema, insertBefore } = useDesignable();
-  console.log('AddNewAction', schema, fieldSchema);
   return (
     <Dropdown
       overlayStyle={{
@@ -254,13 +237,22 @@ const AddNewAction = () => {
                 key: uid(),
                 'x-component': 'Menu.Item',
               });
-              console.log('s.s.s.s.s.s', s)
+              console.log('s.s.s.s.s.s', s);
             }}
             style={{ minWidth: 150 }}
           >
             <MenuOutlined /> 新建菜单
           </AntdMenu.Item>
-          <AntdMenu.Item>
+          <AntdMenu.Item
+            onClick={() => {
+              const s = insertBefore({
+                type: 'void',
+                key: uid(),
+                title: uid(),
+                'x-component': 'Menu.SubMenu',
+              });
+            }}
+          >
             <GroupOutlined /> 新建分组
           </AntdMenu.Item>
           <AntdMenu.Item>
@@ -286,9 +278,8 @@ Menu.AddNew = observer((props) => {
 });
 
 Menu.Url = observer((props) => {
-  const field = useField();
-  const schema = useFieldSchema();
-  const { DesignableBar } = useDesignableBar();
+  const DesignableBar = useDesignableBar();
+  const { schema } = useDesignable();
   return (
     <AntdMenu.Item
       {...props}
@@ -300,7 +291,7 @@ Menu.Url = observer((props) => {
       }}
       icon={props.icon ? <Icon type={props.icon as string} /> : undefined}
     >
-      {field.title}
+      {schema.title}
       <DesignableBar />
     </AntdMenu.Item>
   );
@@ -308,9 +299,8 @@ Menu.Url = observer((props) => {
 
 Menu.Link = observer((props) => {
   const history = useHistory();
-  const field = useField();
-  const schema = useFieldSchema();
-  const { DesignableBar } = useDesignableBar();
+  const DesignableBar = useDesignableBar();
+  const { schema } = useDesignable();
   return (
     <AntdMenu.Item
       {...props}
@@ -322,7 +312,7 @@ Menu.Link = observer((props) => {
       }}
       icon={props.icon ? <Icon type={props.icon as string} /> : undefined}
     >
-      {field.title}
+      {schema.title}
       <DesignableBar />
     </AntdMenu.Item>
   );
@@ -331,9 +321,8 @@ Menu.Link = observer((props) => {
 Menu.Item = observer((props: any) => {
   const { useAction = useDefaultAction, ...others } = props;
   const { run } = useAction();
-  const field = useField();
-  const schema = useFieldSchema();
-  const { DesignableBar } = useDesignableBar();
+  const DesignableBar = useDesignableBar();
+  const { schema } = useDesignable();
   return (
     <AntdMenu.Item
       {...others}
@@ -346,7 +335,7 @@ Menu.Item = observer((props: any) => {
       key={schema.name}
       icon={props.icon ? <Icon type={props.icon as string} /> : undefined}
     >
-      {field.title}
+      {schema.title}
       <DesignableBar />
     </AntdMenu.Item>
   );
@@ -354,8 +343,8 @@ Menu.Item = observer((props: any) => {
 
 Menu.Action = observer((props: any) => {
   const { icon, ...others } = props;
-  const schema = useFieldSchema();
-  const { DesignableBar } = useDesignableBar();
+  // const DesignableBar = useDesignableBar();
+  const { schema } = useDesignable();
   return (
     <Action
       // @ts-ignore
@@ -365,15 +354,12 @@ Menu.Action = observer((props: any) => {
       ButtonComponent={AntdMenu.Item}
       {...others}
     />
-    // <Action {...others}/>
-    // <DesignableBar />
-    // </AntdMenu.Item>
   );
 });
 
 Menu.SubMenu = observer((props) => {
-  const { DesignableBar } = useDesignableBar();
-  const schema = useFieldSchema();
+  const DesignableBar = useDesignableBar();
+  const { schema } = useDesignable();
   const { mode } = useContext(MenuContext);
   return mode === 'mix' ? (
     <Menu.Item {...props} />
@@ -411,15 +397,10 @@ Menu.SubMenu = observer((props) => {
 
 Menu.Divider = observer(AntdMenu.Divider);
 
-function useDesigner() {
-  const field = useField();
-}
-
 Menu.DesignableBar = (props) => {
   const field = useField();
-  const fieldSchema = useFieldSchema();
   const [visible, setVisible] = useState(false);
-  const { schema, remove, refresh, insertAfter } = useDesignable();
+  const { schema, remove, refresh, insertAfter, appendChild } = useDesignable();
   return (
     <div className={cls('designable-bar', { active: visible })}>
       <div
@@ -443,29 +424,52 @@ Menu.DesignableBar = (props) => {
               <AntdMenu.Item
                 onClick={() => {
                   const title = uid();
-                  field.title = title;
                   field.componentProps['icon'] = 'DeleteOutlined';
                   schema['x-component-props'] =
                     schema['x-component-props'] || {};
                   schema['x-component-props']['icon'] = 'DeleteOutlined';
                   schema.title = title;
-                  fieldSchema.title = title;
-                  fieldSchema['x-component-props'] =
-                    fieldSchema['x-component-props'] || {};
-                  fieldSchema['x-component-props']['icon'] = 'DeleteOutlined';
                   refresh();
                 }}
               >
                 修改标题
               </AntdMenu.Item>
-              <AntdMenu.Item onClick={() => {
-                const s = insertAfter({
-                  type: 'void',
-                  key: uid(),
-                  title: uid(),
-                  'x-component': 'Menu.SubMenu',
-                });
-              }}>插入</AntdMenu.Item>
+              <AntdMenu.Item
+                onClick={() => {
+                  const s = insertAfter({
+                    type: 'void',
+                    key: uid(),
+                    title: uid(),
+                    'x-component': 'Menu.SubMenu',
+                  });
+                }}
+              >
+                新建分组
+              </AntdMenu.Item>
+              <AntdMenu.Item
+                onClick={() => {
+                  const s = insertAfter({
+                    type: 'void',
+                    key: uid(),
+                    title: uid(),
+                    'x-component': 'Menu.Item',
+                  });
+                }}
+              >
+                新建菜单
+              </AntdMenu.Item>
+              <AntdMenu.Item
+                onClick={() => {
+                  const s = appendChild({
+                    type: 'void',
+                    key: uid(),
+                    title: uid(),
+                    'x-component': 'Menu.Item',
+                  });
+                }}
+              >
+                在菜单组里新增
+              </AntdMenu.Item>
               <AntdMenu.Item
                 onClick={() => {
                   Modal.confirm({

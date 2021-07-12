@@ -11,6 +11,19 @@ group:
 
 # Tabs - 标签页
 
+## 组件节点树
+
+<pre lang="tsx">
+<Tabs>
+  <Tabs.TabPane title={'标签 1'}>
+    // 添加其他节点
+  </Tabs.TabPane>
+  <Tabs.TabPane title={'标签 2'}>
+    // 添加其他节点
+  </Tabs.TabPane>
+</Tabs>
+</pre>
+
 ## 代码演示
 
 ### 基本使用

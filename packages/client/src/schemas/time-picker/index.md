@@ -11,6 +11,12 @@ group:
 
 # TimePicker - 时间选择器
 
+## 节点树
+
+<pre lang="tsx">
+<TimePicker/>
+</pre>
+
 ## 代码演示
 
 ### 日期选择器

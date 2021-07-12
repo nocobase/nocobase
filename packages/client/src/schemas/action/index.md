@@ -11,6 +11,62 @@ group:
 
 # Action - 操作
 
+
+## 组件节点树
+
+<pre lang="tsx">
+////////// 单节点 //////////
+
+// 常规按钮操作
+<Action/>
+// 内链
+<Action.Link/>
+// 外链
+<Action.URL/>
+
+////////// 弹出层相关操作 //////////
+
+// 对话框
+<Action title={'按钮标题'}>
+  <Action.Modal title={'对话框标题'}>
+    // 添加其他节点
+  </Action.Modal>
+</Action>
+
+// 抽屉
+<Action title={'按钮标题'}>
+  <Action.Drawer title={'抽屉标题'}>
+    // 添加其他节点
+  </Action.Drawer>
+</Action>
+
+// 气泡
+<Action title={'按钮标题'}>
+  <Action.Popover title={'气泡标题'}>
+    // 添加其他节点
+  </Action.Popover>
+</Action>
+
+// 指定容器
+<Action title={'按钮标题'}>
+  <Action.Container>
+    // 添加其他节点
+  </Action.Container>
+</Action>
+
+////////// 操作分组 //////////
+
+// 下拉操作
+<Action.Dropdown>
+  <Action/>
+  <Action title={'按钮标题'}>
+    <Action.Modal title={'对话框标题'}>
+      // 添加其他节点
+    </Action.Modal>
+  </Action>
+</Action.Dropdown>
+</pre>
+
 操作有三类：
 
 - 常规操作：Action

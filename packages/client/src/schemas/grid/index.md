@@ -13,6 +13,21 @@ group:
 
 基于行（Row）和列（Col）来定义区块（Block）的外部框架。
 
+## 组件节点树
+
+<pre lang="tsx">
+<Grid>
+  <Grid.Row>
+    <Grid.Col>
+      // 添加其他节点
+    </Grid.Col>
+    <Grid.Col>
+      // 添加其他节点
+    </Grid.Col>
+  </Grid.Row>
+</Grid>
+</pre>
+
 ## 列宽说明
 
 最大支持四列，如果要支持越多列，需要处理的比例也越多。

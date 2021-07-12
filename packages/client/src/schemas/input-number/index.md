@@ -11,6 +11,14 @@ group:
 
 # InputNumber - 数字框
 
+## 节点树
+
+<pre lang="tsx">
+<InputNumber/>
+</pre>
+
+## 代码演示
+
 ### 数字框
 
 ```tsx

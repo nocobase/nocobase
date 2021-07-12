@@ -13,6 +13,36 @@ group:
 
 需要 antd v4.16+ 支持，在此之前的 Menu.Item 不支持 Fragment 包裹。
 
+## 组件树
+
+<pre lang="tsx">
+<Menu>
+  // 菜单分组
+  <Menu.ItemGroup>
+    <Menu.Item/>
+  </Menu.ItemGroup>
+  // 子菜单
+  <Menu.SubMenu>
+    <Menu.Item/>
+  </Menu.SubMenu>
+  // 菜单项
+  <Menu.Item/>
+  // 分割线
+  <Menu.Divider/>
+
+  // 其他一些基于 Menu.Item 的延伸
+
+  // 外链
+  <Menu.URL/>
+  // 内链
+  <Menu.Link/>
+  // 操作，用法与 Action 相同
+  <Menu.Action/>
+  // 新增菜单项
+  <Menu.AddNew/>
+</Menu>
+</pre>
+
 ## 代码演示
 
 ### 横向菜单

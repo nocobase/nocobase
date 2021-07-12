@@ -11,6 +11,16 @@ group:
 
 # ColorSelect - 颜色选择器
 
+## 组件节点树
+
+<pre lang="tsx">
+<ColorSelect/>
+</pre>
+
+## 代码演示
+
+### 颜色选择器
+
 ```tsx
 /**
  * title: 颜色选择器

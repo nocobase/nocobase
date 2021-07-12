@@ -11,6 +11,31 @@ group:
 
 # Select - 选择器
 
+## 节点树
+
+<pre lang="tsx">
+// 常规选择器
+<Select/>
+// 选项值为对象类型
+<Select.Object>
+// 抽屉选择器
+<Select.Drawer>
+  // 可选项
+  <Select.Options>
+    <Form>
+      <Table>
+        <Action/>
+      </Table>
+    </Form>
+  </Select.Options>
+  // 选中项详情
+  <Select.OptionTag>
+    <Form>
+      // 添加其他节点
+    </Form>
+  </Select.OptionTag>
+</Select.Drawer>
+</pre>
 
 ## Select
 

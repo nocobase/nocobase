@@ -11,6 +11,14 @@ group:
 
 # DatabaseField - 数据表字段
 
+## 组件节点树
+
+<pre lang="tsx">
+<DatabaseField/>
+</pre>
+
+## 代码演示
+
 ```tsx
 import React from 'react';
 import { createForm } from '@formily/core';

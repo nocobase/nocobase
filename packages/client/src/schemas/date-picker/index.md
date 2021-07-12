@@ -11,6 +11,12 @@ group:
 
 # DatePicker - 日期选择器
 
+## 组件节点树
+
+<pre lang="tsx">
+<DatePicker/>
+</pre>
+
 ## 代码演示
 
 ### 日期选择器
