@@ -15,20 +15,20 @@ describe('routes', () => {
 
   afterEach(() => app.database.close());
 
-  it.only('create route', async () => {
-    const Route = db.getModel('routes');
-    const item = {
-      path: '/admin/:name(.+)?',
-      component: 'AdminLayout',
-      title: `后台`,
-      uiSchema: {
-        name: 'menu',
-      },
-    };
-    console.log(Route.associations);
-    const route = await Route.create(item);
-    await route.updateAssociations(item);
-  });
+  // it.only('create route', async () => {
+  //   const Route = db.getModel('routes');
+  //   const item = {
+  //     path: '/admin/:name(.+)?',
+  //     component: 'AdminLayout',
+  //     title: `后台`,
+  //     uiSchema: {
+  //       name: 'menu',
+  //     },
+  //   };
+  //   console.log(Route.associations);
+  //   const route = await Route.create(item);
+  //   await route.updateAssociations(item);
+  // });
 
   it('create route', async () => {
     const Route = db.getModel('routes');

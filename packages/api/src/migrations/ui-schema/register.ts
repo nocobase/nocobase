@@ -1,6 +1,5 @@
 export const register = {
   key: '46qlxqam3xk',
-  name: '46qlxqam3xk',
   type: 'object',
   properties: {
     username: {

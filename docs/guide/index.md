@@ -13,7 +13,7 @@ NocoBase 是一个开源免费的无代码、低代码开发平台。 无论是�
 
 ## 架构
 
-<img src="./nocobase.png" style="max-width: 800px;"/>
+<img src="https://nocobase.oss-cn-beijing.aliyuncs.com/60ffd9aff98871c643569219c2873749.png" style="max-width: 800px;width:100%"/>
 
 ### 微内核
 
@@ -41,11 +41,3 @@ NocoBase 采用微内核架构，框架只保留核心的概念，具体各类�
 - 直接写在代码里，多用于处理动态配置
 - 保存在文件里，多用于系统表配置或纯开发配置
 - 保存在数据表里，多用于业务表配置
-
-## 核心点在哪里？
-
-NocoBase 本质上是对数据的信息化处理，包括三点核心：
-
-- 数据的存储 —— 结构和关系
-- 数据的行为 —— 方法和事件
-- 数据的形态 —— 页面和区块

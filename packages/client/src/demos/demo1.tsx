@@ -1,43 +1,51 @@
-import React, { useEffect } from 'react';
+import { useRequest } from 'ahooks';
 import { Spin } from 'antd';
+import React, { useMemo } from 'react';
 import {
-  RouteSwitch,
-  useGlobalAction,
-  AdminLayout,
-  AuthLayout,
-  DefaultPage,
-} from '@nocobase/client';
-import {
-  Link,
-  useHistory,
-  useLocation,
-  useRouteMatch,
   MemoryRouter as Router,
 } from 'react-router-dom';
-import { UseRequestProvider } from 'ahooks';
-import { request } from './api';
-
-const templates = {
+import {
+  createRouteSwitch,
+  RouteRedirectProps,
   AdminLayout,
   AuthLayout,
-  DefaultPage,
-};
+  RouteSchemaRenderer,
+} from '../';
+import { UseRequestProvider } from 'ahooks';
+import { extend } from 'umi-request';
 
-function App() {
-  const { data, loading } = useGlobalAction('routes:getAccessible');
+const request = extend({
+  prefix: 'http://localhost:23003/api/',
+  timeout: 1000,
+});
+
+const RouteSwitch = createRouteSwitch({
+  components: {
+    AdminLayout,
+    AuthLayout,
+    RouteSchemaRenderer,
+  },
+});
+
+const App = () => {
+  const { data, loading } = useRequest('routes:getAccessible', {
+    formatResult: (result) => result?.data,
+  });
+
   if (loading) {
-    return <Spin />;
+    return <Spin/>
   }
+
   return (
     <div>
       <Router initialEntries={['/login']}>
-        <RouteSwitch components={templates} routes={data} />
+        <RouteSwitch routes={data} />
       </Router>
     </div>
   );
-}
+};
 
-export default function IndexPage() {
+export default () => {
   return (
     <UseRequestProvider
       value={{

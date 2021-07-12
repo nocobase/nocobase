@@ -412,6 +412,68 @@ export default () => {
 }
 ```
 
+### 设计器模式 - 菜单项为空时
+
+```tsx
+import React, { useRef, useState } from 'react';
+import { SchemaRenderer } from '../';
+import { MenuContainerContext } from './';
+import { Layout } from 'antd';
+
+export default () => {
+  const sideMenuRef = useRef();
+
+  const [activeKey, setActiveKey] = useState('item3');
+
+  const onSelect = (info) => {
+    setActiveKey(info.key);
+    console.log({ info })
+  }
+
+  const schema = {
+    type: 'object',
+    properties: {
+      menu1: {
+        type: 'void',
+        'x-component': 'Menu',
+        'x-designable-bar': 'Menu.DesignableBar',
+        'x-component-props': {
+          defaultSelectedKeys: [activeKey],
+          mode: 'mix',
+          theme: 'dark',
+          sideMenuRef: '{{ sideMenuRef }}',
+          onSelect: '{{ onSelect }}',
+        },
+      },
+    },
+  }
+
+  return (
+    <div>
+      <Layout>
+        <Layout.Header>
+          <SchemaRenderer
+            schema={schema}
+            scope={{ onSelect, sideMenuRef }}
+          />
+        </Layout.Header>
+        <Layout>
+          <Layout.Sider 
+            ref={sideMenuRef}
+            theme={'light'}
+            width={200}
+          >
+          </Layout.Sider>
+          <Layout.Content>
+            {activeKey}
+          </Layout.Content>
+        </Layout>
+      </Layout>
+    </div>
+  )
+}
+```
+
 ### Menu.Action
 
 

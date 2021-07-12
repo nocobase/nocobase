@@ -1,12 +1,4 @@
-import Mock from 'mockjs';
-
 export default [
-  {
-    type: 'redirect',
-    from: '/admin',
-    to: '/admin/item2',
-    exact: true,
-  },
   {
     type: 'redirect',
     from: '/',
@@ -14,28 +6,30 @@ export default [
     exact: true,
   },
   {
+    type: 'route',
     path: '/admin/:name(.+)?',
     component: 'AdminLayout',
-    title: `后台 - ${Mock.mock('@string')}`,
-    schemaName: 'menu',
+    title: `后台`,
+    uiSchemaKey: 'qqzzjakwkwl',
   },
   {
+    type: 'route',
     component: 'AuthLayout',
-    routes: [
+    children: [
       {
-        name: 'login',
+        type: 'route',
         path: '/login',
-        component: 'DefaultPage',
-        title: `登录 - ${Mock.mock('@string')}`,
-        schemaName: 'login',
+        component: 'RouteSchemaRenderer',
+        title: `登录`,
+        uiSchemaKey: 'dtf9j0b8p9u',
       },
       {
-        name: 'register',
+        type: 'route',
         path: '/register',
-        component: 'DefaultPage',
-        title: `注册 - ${Mock.mock('@string')}`,
-        schemaName: 'register',
+        component: 'RouteSchemaRenderer',
+        title: `注册`,
+        uiSchemaKey: '46qlxqam3xk',
       },
     ],
   },
-]
+];

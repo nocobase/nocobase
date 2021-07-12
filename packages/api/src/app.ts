@@ -39,7 +39,7 @@ const api = Api.create({
 
 const plugins = [
   '@nocobase/plugin-collections',
-  '@nocobase/plugin-routes',
+  '@nocobase/plugin-ui-router',
   '@nocobase/plugin-ui-schema',
   // '@nocobase/plugin-action-logs',
   // '@nocobase/plugin-pages',
