@@ -7,6 +7,7 @@
   "scripts": {
     "bootstrap": "lerna bootstrap",
     "clean": "lerna clean",
+    "start-server": "nodemon",
     "start-docs": "dumi dev",
     "build-docs": "dumi build",
     "build2": "lerna run build",
@@ -44,6 +45,7 @@
     "koa-bodyparser": "^4.3.0",
     "lerna": "^3.22.0",
     "mockjs": "^1.1.0",
+    "nodemon": "^2.0.12",
     "pg": "^8.6.0",
     "pg-hstore": "^2.3.3",
     "prettier": "^2.3.0",

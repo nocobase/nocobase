@@ -1,5 +1,5 @@
 {
-  "name": "@nocobase/plugin-routes",
+  "name": "@nocobase/plugin-ui-router",
   "version": "0.4.0-alpha.7",
   "main": "lib/index.js",
   "license": "MIT",
@@ -7,7 +7,8 @@
     "@nocobase/database": "^0.4.0-alpha.7",
     "@nocobase/resourcer": "^0.4.0-alpha.7",
     "@nocobase/server": "^0.4.0-alpha.7",
-    "deepmerge": "^4.2.2"
+    "deepmerge": "^4.2.2",
+    "flat-to-nested": "^1.1.1"
   },
   "devDependencies": {
     "@nocobase/actions": "^0.4.0-alpha.7"

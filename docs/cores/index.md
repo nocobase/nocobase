@@ -11,25 +11,92 @@ nav:
 
 NocoBase 核心主要围绕三点：
 
-- 数据的存储 —— 结构和关系
-- 数据的行为 —— 操作和事件
-- 数据的形态 —— 页面和区块
+- 数据的结构
+- 数据的行为
+- 数据的形态
 
-由此构建了
+由此抽象了三类配置协议
 
-- @nocobase/database：提供灵活且强大的数据库构造器
-- @nocobase/resourcer：为数据提供资源操作方法
-- @nocobase/blocks：为数据提供的 UI 模块
+- Collection：用于描述数据的结构和关系
+- Resourcer：用于描述数据资源和操作方法
+- UI Schema：用于描述用户界面（组件树结构）
 
-更近一步
+## Collection
 
-- @nocobase/database 和 @nocobase/resourcer 组装成了 @nocobase/server，也就是最核心的 NocoBase
-- @nocobase/blocks 是前端最重要部分，提供了现代化的 Block-styled Editor/Renderer
+基于 Sequelize ModelOptions
 
-<img style="width:700px;" src="./nocobase-core.png"/>
+```ts
+{
+  name: 'posts',
+  fields: [
+    {type: 'string', name: 'title'},
+    {type: 'text', name: 'content'},
+  ],
+}
+```
 
-## 数据的存储 —— 结构和关系
+## Resourcer
 
-## 数据的行为 —— 操作和事件
+基于资源（resource）和操作方法（action）设计，将 REST 和 RPC 思想融合起来
 
-## 数据的形态 —— 页面和区块
+```ts
+{
+  name: 'posts',
+  actions: {
+    list: {
+      filter: {}, // 过滤
+      fields: [], // 输出哪些字段
+      sort: '-created_at', // 排序
+      page: 1,
+      perPage: 20,
+      // ...
+    },
+    get: {
+      filter: {},
+      fields: [],
+      // ...
+    },
+    create: {
+      fields: [],
+      values: {},
+      // ...
+    },
+    update: {
+      fields: [],
+      values: {},
+      // ...
+    },
+    destroy: {
+      filter: {},
+      // ...
+    },
+  },
+}
+```
+
+## UI Schema
+
+基于 Formily Schema 2.0
+
+```ts
+{
+  type: 'object',
+  // 'x-component': 'Form',
+  properties: {
+    title: {
+      type: 'string',
+      title: '标题',
+      'x-component': 'Input',
+    },
+    content: {
+      type: 'string',
+      title: '标题',
+      'x-component': 'Input.TextArea',
+    },
+  },
+}
+```
+
+更进一步，构建了整个 NocoBase 架构：
+
+<img src="https://nocobase.oss-cn-beijing.aliyuncs.com/60ffd9aff98871c643569219c2873749.png" style="max-width: 800px;width:100%"/>

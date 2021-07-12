@@ -94,20 +94,28 @@ function useDesignableBar() {
 }
 
 export const Menu: MenuType = observer((props: any) => {
-  const { sideMenuRef, onSelect, mode, defaultSelectedKeys, ...others } = props;
+  const {
+    children,
+    sideMenuRef,
+    onSelect,
+    mode,
+    defaultSelectedKeys,
+    ...others
+  } = props;
   let defaultSelectedKey = defaultSelectedKeys ? defaultSelectedKeys[0] : null;
-  const schema = useFieldSchema();
-  const { schema: designableSchema, refresh } = useDesignable();
+  // const schema = useFieldSchema();
+  const { schema, schema: designableSchema, refresh } = useDesignable();
   const designableBar = schema['x-designable-bar'];
   const history = useHistory();
   const renderSideMenu = (selectedKey) => {
-    if (!selectedKey) {
-      return;
-    }
     if ((mode as any) !== 'mix') {
       return;
     }
     if (!sideMenuRef || !sideMenuRef.current) {
+      return;
+    }
+    if (!selectedKey || !schema.properties) {
+      sideMenuRef.current.style.display = 'none';
       return;
     }
     const subSchema = schema.properties[selectedKey];
@@ -160,6 +168,7 @@ export const Menu: MenuType = observer((props: any) => {
               ...newProps,
               [`${uid()}-add-new`]: {
                 type: 'void',
+                parentKey: subSchema['key'],
                 'x-component': 'Menu.AddNew',
               },
             },
@@ -173,6 +182,8 @@ export const Menu: MenuType = observer((props: any) => {
     console.log({ defaultSelectedKey }, schema.properties);
     renderSideMenu(defaultSelectedKey);
   });
+  const isEmpty = !Object.keys(designableSchema.properties || {}).length;
+  console.log({ designableSchema })
   return (
     <MenuContext.Provider
       value={{
@@ -189,13 +200,44 @@ export const Menu: MenuType = observer((props: any) => {
           onSelect && onSelect(info);
         }}
         mode={(mode as any) === 'mix' ? 'horizontal' : mode}
-      />
+      >
+        {!isEmpty ? (
+          <RecursionField schema={schema} onlyRenderProperties />
+        ) : (
+          <SchemaRenderer
+            onRefresh={(subSchema: Schema) => {
+              Object.keys(subSchema.properties).forEach((name) => {
+                if (name === 'add-new') {
+                  return;
+                }
+                designableSchema.addProperty(
+                  name,
+                  subSchema.properties[name].toJSON(),
+                );
+              });
+              refresh();
+            }}
+            schema={{
+              type: 'object',
+              properties: {
+                'add-new': {
+                  parentKey: schema['key'],
+                  type: 'void',
+                  'x-component': 'Menu.AddNew',
+                },
+              },
+            }}
+          />
+        )}
+      </AntdMenu>
     </MenuContext.Provider>
   );
 });
 
 const AddNewAction = () => {
-  const { insertBefore } = useDesignable();
+  const fieldSchema = useFieldSchema();
+  const { schema, insertBefore } = useDesignable();
+  console.log('AddNewAction', schema, fieldSchema);
   return (
     <Dropdown
       overlayStyle={{
@@ -206,11 +248,13 @@ const AddNewAction = () => {
         <AntdMenu>
           <AntdMenu.Item
             onClick={() => {
-              insertBefore({
+              const s = insertBefore({
                 type: 'void',
                 title: uid(),
+                key: uid(),
                 'x-component': 'Menu.Item',
               });
+              console.log('s.s.s.s.s.s', s)
             }}
             style={{ minWidth: 150 }}
           >
@@ -375,7 +419,7 @@ Menu.DesignableBar = (props) => {
   const field = useField();
   const fieldSchema = useFieldSchema();
   const [visible, setVisible] = useState(false);
-  const { schema, remove, refresh } = useDesignable();
+  const { schema, remove, refresh, insertAfter } = useDesignable();
   return (
     <div className={cls('designable-bar', { active: visible })}>
       <div
@@ -414,6 +458,14 @@ Menu.DesignableBar = (props) => {
               >
                 修改标题
               </AntdMenu.Item>
+              <AntdMenu.Item onClick={() => {
+                const s = insertAfter({
+                  type: 'void',
+                  key: uid(),
+                  title: uid(),
+                  'x-component': 'Menu.SubMenu',
+                });
+              }}>插入</AntdMenu.Item>
               <AntdMenu.Item
                 onClick={() => {
                   Modal.confirm({

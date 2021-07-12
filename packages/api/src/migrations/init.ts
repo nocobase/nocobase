@@ -27,25 +27,27 @@ import * as uiSchema from './ui-schema';
       exact: true,
     },
     {
+      type: 'route',
       path: '/admin/:name(.+)?',
       component: 'AdminLayout',
       title: `后台`,
       uiSchema: uiSchema.menu,
     },
     {
+      type: 'route',
       component: 'AuthLayout',
       children: [
         {
-          name: 'login',
+          type: 'route',
           path: '/login',
-          component: 'DefaultPage',
+          component: 'RouteSchemaRenderer',
           title: `登录`,
           uiSchema: uiSchema.login,
         },
         {
-          name: 'register',
+          type: 'route',
           path: '/register',
-          component: 'DefaultPage',
+          component: 'RouteSchemaRenderer',
           title: `注册`,
           uiSchema: uiSchema.register,
         },

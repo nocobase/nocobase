@@ -2,7 +2,6 @@ import { ISchema } from '@formily/react';
 
 export const login: ISchema = {
   key: 'dtf9j0b8p9u',
-  name: 'dtf9j0b8p9u',
   type: 'object',
   properties: {
     email: {

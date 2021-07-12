@@ -3,6 +3,7 @@ import { TableOptions } from '@nocobase/database';
 export default {
   name: 'routes',
   title: '路由表',
+  model: 'Route',
   fields: [
     {
       type: 'uid',

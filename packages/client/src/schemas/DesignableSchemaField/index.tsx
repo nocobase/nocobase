@@ -207,6 +207,9 @@ export function useDesignable(path?: any) {
       if (!property.name) {
         property.name = uid();
       }
+      if (target['key']) {
+        property['parentKey'] = target['key'];
+      }
       const properties = {};
       properties[property.name] = property;
       Object.keys(target.properties).forEach((name, index) => {
@@ -231,6 +234,9 @@ export function useDesignable(path?: any) {
       if (!property.name) {
         property.name = uid();
       }
+      if (target['key']) {
+        property['parentKey'] = target['key'];
+      }
       target.addProperty(property.name, property);
       // BUG: 空 properties 时，addProperty 无反应。
       const tmp = { name: uid() };
@@ -251,6 +257,9 @@ export function useDesignable(path?: any) {
       if (!property.name) {
         property.name = uid();
       }
+      if (target['parentKey']) {
+        property['parentKey'] = target['parentKey'];
+      }
       addPropertyAfter(target, property);
       refresh();
       return target.parent.properties[property.name];
@@ -266,6 +275,9 @@ export function useDesignable(path?: any) {
       }
       if (!property.name) {
         property.name = uid();
+      }
+      if (target['parentKey']) {
+        property['parentKey'] = target['parentKey'];
       }
       addPropertyBefore(target, property);
       refresh();

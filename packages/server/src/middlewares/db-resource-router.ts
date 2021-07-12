@@ -1,5 +1,5 @@
 import compose from 'koa-compose';
-import { pathToRegexp } from 'path-to-regexp';
+import pathToRegexp from 'path-to-regexp';
 import Resourcer, { getNameByParams, KoaMiddlewareOptions, parseRequest, parseQuery, ResourcerContext, ResourceType } from '@nocobase/resourcer';
 import Database, { BELONGSTO, BELONGSTOMANY, HASMANY, HASONE } from '@nocobase/database';
 

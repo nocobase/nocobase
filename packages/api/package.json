@@ -19,7 +19,7 @@
     "@nocobase/plugin-file-manager": "^0.4.0-alpha.7",
     "@nocobase/plugin-pages": "^0.4.0-alpha.7",
     "@nocobase/plugin-permissions": "^0.4.0-alpha.7",
-    "@nocobase/plugin-routes": "^0.4.0-alpha.7",
+    "@nocobase/plugin-ui-router": "^0.4.0-alpha.7",
     "@nocobase/plugin-ui-schema": "^0.4.0-alpha.7",
     "@nocobase/plugin-users": "^0.4.0-alpha.7",
     "@nocobase/server": "^0.4.0-alpha.7",
