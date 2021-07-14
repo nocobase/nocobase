@@ -11,13 +11,17 @@ group:
 
 # IconPicker - 图标选择器
 
-## 节点树
+## Node Tree
 
 <pre lang="tsx">
 <IconPicker/>
 </pre>
 
-## 代码演示
+## Designable Bar
+
+- IconPicker.DesignableBar
+
+## Examples
 
 ```tsx
 /**

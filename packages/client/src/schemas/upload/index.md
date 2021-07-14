@@ -11,13 +11,17 @@ group:
 
 # Upload - 上传
 
-## 节点树
+## Node Tree
 
 <pre lang="tsx">
 <Upload/>
 </pre>
 
-## 代码演示
+## Designable Bar
+
+- Upload.DesignableBar
+
+## Examples
 
 ### 上传
 

@@ -11,8 +11,7 @@ group:
 
 # Action - 操作
 
-
-## 组件节点树
+## Node Tree
 
 <pre lang="tsx">
 ////////// 单节点 //////////
@@ -67,17 +66,16 @@ group:
 </Action.Dropdown>
 </pre>
 
-操作有三类：
+## Designable Bar
 
-- 常规操作：Action
-- 弹出层操作，弹出层可以是 Action.Drawer、Action.Modal、Action.Popover
-- 指定容器内打开： Action.Container
-- 下拉菜单：Action.Dropdown，用于收纳多种操作
-- 跳转操作：Action.Link、Action.URL
+- Action.DesignableBar
+- Action.Modal.DesignableBar
+- Action.Drawer.DesignableBar
+- Action.Popover.DesignableBar
 
-Action.Drawer、Action.Modal、Action.Popover 和 Action.Container 需要和 Action 搭配使用
+## Examples
 
-## Action - 常规操作
+### Action - 常规操作
 
 ```tsx
 /**
@@ -100,17 +98,18 @@ const schema = {
   name: 'action1',
   title: '按钮',
   'x-component': 'Action',
+  'x-designable-bar': 'Action.DesignableBar',
   'x-component-props': {
-    useAction,
+    useAction: '{{ useAction }}',
   },
 };
 
 export default () => {
-  return <SchemaRenderer schema={schema} />
+  return <SchemaRenderer debug={true} scope={{ useAction }} schema={schema} />
 }
 ```
 
-## Action.Link - 内链跳转
+### Action.Link - 内链跳转
 
 ```tsx
 import React from 'react';
@@ -131,7 +130,7 @@ export default () => {
 }
 ```
 
-## Action.URL - 外链跳转
+### Action.URL - 外链跳转
 
 ```tsx
 import React from 'react';
@@ -152,7 +151,7 @@ export default () => {
 }
 ```
 
-## Action.Dropdown - 下拉操作
+### Action.Dropdown - 下拉操作
 
 ```tsx
 import React from 'react';
@@ -253,7 +252,7 @@ export default () => {
 }
 ```
 
-## Action.Popover - 打开气泡
+### Action.Popover - 打开气泡
 
 ```tsx
 import React from 'react';
@@ -285,7 +284,7 @@ export default () => {
 }
 ```
 
-## Action.Drawer - 打开抽屉
+### Action.Drawer - 打开抽屉
 
 ```tsx
 import React from 'react';
@@ -338,10 +337,13 @@ export default () => {
 }
 ```
 
-## Action.Modal - 打开对话框
+### Action.Modal - 打开对话框
+
+`x-decorator='Form'` 时，Model 为 Form，并自带按钮
 
 ```tsx
 import React from 'react';
+import { Space } from 'antd';
 import { SchemaRenderer } from '../';
 import { useVisibleContext } from './';
 
@@ -406,12 +408,40 @@ const schema = {
   },
 };
 
+const schema2 = {
+  type: 'void',
+  name: 'action1',
+  title: 'x-decorator=Form',
+  'x-component': 'Action',
+  properties: {
+    drawer1: {
+      type: 'void',
+      title: '弹窗标题',
+      'x-component': 'Action.Modal',
+      'x-component-props': {},
+      'x-decorator': 'Form',
+      properties: {
+        input: {
+          type: 'string',
+          'x-decorator': 'FormItem',
+          'x-component': 'Input',
+        },
+      },
+    },
+  },
+};
+
 export default () => {
-  return <SchemaRenderer schema={schema} />
+  return (
+    <Space>
+      <SchemaRenderer schema={schema} />
+      <SchemaRenderer schema={schema2} />
+    </Space>
+  )
 }
 ```
 
-## Action.Container - 指定容器内打开
+### Action.Container - 指定容器内打开
 
 ```tsx
 import React, { useRef } from 'react';

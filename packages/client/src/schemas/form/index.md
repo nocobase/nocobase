@@ -11,7 +11,7 @@ group:
 
 # Form - 表单
 
-## 组件节点树
+## Node Tree
 
 <pre lang="tsx">
 <Form>
@@ -19,9 +19,15 @@ group:
   <Select/>
   // 添加其他节点
 </Form>
+
+<Table x-decorator={'Form'}/>
 </pre>
 
-## 代码演示
+## Designable Bar
+
+- Form.DesignableBar
+
+## Examples
 
 ### 常规表单
 
@@ -161,7 +167,7 @@ import { uid } from '@formily/shared';
 const schema = {
   type: 'void',
   name: uid(),
-  'x-decorator': 'Card',
+  'x-decorator': 'BlockItem',
   'x-component': 'Form',
   'x-designable-bar': 'Form.DesignableBar',
   properties: {

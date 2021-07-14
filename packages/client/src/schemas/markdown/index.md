@@ -11,13 +11,17 @@ group:
 
 # Markdown 编辑器
 
-## 节点树
+## Node Tree
 
 <pre lang="tsx">
 <Markdown/>
 </pre>
 
-## 代码演示
+## Designable Bar
+
+- Markdown.DesignableBar
+
+## Examples
 
 ### Markdown 编辑器
 

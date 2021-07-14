@@ -11,13 +11,17 @@ group:
 
 # DatePicker - 日期选择器
 
-## 组件节点树
+## Node Tree
 
 <pre lang="tsx">
 <DatePicker/>
 </pre>
 
-## 代码演示
+## Designable Bar
+
+- DatePicker.DesignableBar
+
+## Examples
 
 ### 日期选择器
 

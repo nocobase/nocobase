@@ -9,6 +9,7 @@ import {
   SchemaOptionsContext,
   Schema,
   useField,
+  SchemaExpressionScopeContext,
 } from '@formily/react';
 import { Button, Dropdown, Menu, Popover, Space, Drawer, Modal } from 'antd';
 import { Link, useHistory, LinkProps } from 'react-router-dom';
@@ -22,6 +23,9 @@ import { uid } from '@formily/shared';
 
 import './style.less';
 import constate from 'constate';
+import { Icon } from '../icon-picker';
+import { useMemo } from 'react';
+import { createForm } from '@formily/core';
 
 export function useDefaultAction() {
   return {
@@ -109,6 +113,7 @@ const BaseAction = observer((props: any) => {
   const {
     ButtonComponent = Button,
     className,
+    icon,
     useAction = useDefaultAction,
     ...others
   } = props;
@@ -122,11 +127,10 @@ const BaseAction = observer((props: any) => {
     field.componentProps.setVisible = setVisible;
   }, []);
 
-  console.log('BaseAction', { field, schema, fieldSchema }, field.title);
-
   const renderButton = () => (
     <ButtonComponent
       {...others}
+      icon={<Icon type={icon} />}
       className={classNames(className, `name-${schema.name}`)}
       onClick={async (e) => {
         e.stopPropagation && e.stopPropagation();
@@ -227,7 +231,24 @@ Action.Popover = observer((props) => {
 
 Action.Drawer = observer((props) => {
   const field = useField();
+  // const { visible, setVisible } = useVisibleContext();
+  const { useAction = () => ({ async run() {} }), ...others } = props;
+  const { schema } = useDesignable();
   const { visible, setVisible } = useVisibleContext();
+  const { run } = useAction();
+  const form = useForm();
+  console.log(`schema['x-decorator']`, schema['x-decorator'])
+  if (schema['x-decorator'] === 'Form.Decorator') {
+    Object.assign(others, {
+      footer: (
+        <Space>
+          <Button type={'primary'}>Ok</Button>
+          <Button>Cancel</Button>
+        </Space>
+      ),
+    });
+  }
+
   return (
     <Drawer
       onClick={(e) => {
@@ -235,7 +256,7 @@ Action.Drawer = observer((props) => {
       }}
       title={field.title}
       width={'50%'}
-      {...props}
+      {...others}
       visible={visible}
       onClose={(e) => {
         e.stopPropagation();
@@ -247,103 +268,142 @@ Action.Drawer = observer((props) => {
   );
 });
 
+const [DesignableContextProvider, useDesignableContext] = constate(() => {
+  return useDesignable();
+});
+
+import { DesignableBar } from './designableBar';
+import { cloneDeep } from 'lodash';
+import { clone } from '@formily/shared';
+
+export function useDesignableValues() {
+  const { schema } = useDesignableContext();
+  return schema
+    ? {
+        title: schema.title,
+      }
+    : {};
+}
+
+export function useDesignableUpdate() {
+  const { schema, refresh } = useDesignableContext();
+  const form = useForm();
+  return {
+    async run() {
+      schema.title = form.values.title;
+      refresh();
+      console.log('useDesignableUpdate', schema, form.values);
+    },
+  };
+}
+
+export function useDesignableSchemaRemove() {
+  const { schema, refresh, remove } = useDesignableContext();
+  return {
+    async run() {
+      remove();
+    },
+  };
+}
+
 Action.Modal = observer((props) => {
-  const field = useField();
+  const { useAction = () => ({ async run() {} }), ...others } = props;
+  const { schema } = useDesignable();
+  const { setVisible: setDropdownVisible } = useDropdownVisibleContext();
   const { visible, setVisible } = useVisibleContext();
+  const { run } = useAction();
+  const form = useForm();
+  if (schema['x-decorator'] !== 'Form.Decorator') {
+    Object.assign(others, { footer: null });
+  }
   return (
     <Modal
-      // onClick={e => {
-      //   e.stopPropagation();
-      // }}
-      title={field.title}
+      title={schema.title}
       width={'50%'}
-      {...props}
+      {...others}
       visible={visible}
       closable
       maskClosable
-      onCancel={(e) => {
+      destroyOnClose
+      onCancel={async (e) => {
         e.stopPropagation();
         setVisible(false);
+        setDropdownVisible && setDropdownVisible(false);
       }}
-      footer={null}
+      onOk={async (e) => {
+        console.log('onOk', form.values);
+        // await form.submit();
+        await run();
+        // e.stopPropagation();
+        setVisible(false);
+        setDropdownVisible && setDropdownVisible(false);
+      }}
     >
-      <div onClick={(e) => e.stopPropagation()}>{props.children}</div>
+      <div
+      //onClick={(e) => e.stopPropagation()}
+      >
+        {props.children}
+      </div>
     </Modal>
   );
 });
 
-Action.Dropdown = observer((props) => {
-  // const { visible, setVisible } = useVisibleContext();
+const [DropdownVisibleProvider, useDropdownVisibleContext] = constate((props: any = {}) => {
+  const { initialVisible = false } = props;
+  const [visible, setVisible] = useState(initialVisible);
+
+  return { visible, setVisible };
+});
+
+const ActionDropdown = observer((props: any) => {
+  const { icon, ...others } = props;
   const schema = useFieldSchema();
+  const { visible, setVisible } = useDropdownVisibleContext();
   return (
-    <>
     <Popover
-      // visible={visible}
-      // onVisibleChange={(visible) => {
-      //   setVisible(visible);
-      // }}
-      {...props}
+      visible={visible}
+      onVisibleChange={(visible) => {
+        setVisible(visible);
+      }}
+      // {...props}
       overlayClassName={'nb-action-group'}
       // trigger={'click'}
       content={props.children}
       placement={'bottomLeft'}
     >
-      <Button>{schema.title}</Button>
+      <Button icon={<Icon type={icon} />} {...others}>
+        {schema.title}
+      </Button>
     </Popover>
-    {/* popover 的按钮初始化时并未渲染，暂时先这么处理 */}
-    <div style={{display: 'none'}}>{props.children}</div>
-    </>
+  );
+});
+
+Action.Dropdown = observer((props) => {
+  return (
+    <DropdownVisibleProvider>
+      <ActionDropdown {...props} />
+      <div style={{ display: 'none' }}>{props.children}</div>
+    </DropdownVisibleProvider>
   );
 });
 
 Action.DesignableBar = () => {
   const field = useField();
   // const schema = useFieldSchema();
-  const { schema, insertAfter } = useDesignable();
+  const { schema, insertAfter, refresh } = useDesignable();
   const [visible, setVisible] = useState(false);
   return (
-    <div className={classNames('designable-bar', { active: visible })}>
-      <span
-        onClick={(e) => {
-          e.stopPropagation();
-        }}
-        className={classNames('designable-bar-actions', { active: visible })}
-      >
-        <Dropdown
-          trigger={['click']}
-          visible={visible}
-          onVisibleChange={(visible) => {
-            setVisible(visible);
+    <DesignableContextProvider>
+      <div className={classNames('designable-bar', { active: visible })}>
+        <span
+          onClick={(e) => {
+            e.stopPropagation();
           }}
-          overlay={
-            <Menu>
-              <Menu.Item
-                onClick={(e) => {
-                  console.log({ field, schema });
-                  schema.title = '按钮文案被修改了';
-                  field.setTitle('按钮文案被修改了');
-                  schema.properties.drawer1.title = '抽屉标题文案被修改了';
-                  setVisible(false);
-                }}
-              >
-                点击修改按钮文案
-              </Menu.Item>
-              <Menu.Item
-                onClick={() => {
-                  insertAfter({
-                    name: uid(),
-                    'x-component': 'Input',
-                  });
-                }}
-              >
-                insertAfter
-              </Menu.Item>
-            </Menu>
-          }
+          className={classNames('designable-bar-actions', { active: visible })}
         >
-          <MenuOutlined />
-        </Dropdown>
-      </span>
-    </div>
+          <SchemaRenderer schema={DesignableBar.Action} />
+        </span>
+      </div>
+    </DesignableContextProvider>
   );
 };

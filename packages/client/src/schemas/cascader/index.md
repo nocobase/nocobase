@@ -11,13 +11,17 @@ group:
 
 # Cascader - 级联选择
 
-## 组件节点树
+## Node Tree
 
 <pre lang="tsx">
   <Cascader/>
 </pre>
 
-## 代码演示
+## Designable Bar
+
+- Cascader.DesignableBar
+
+## Examples
 
 ### 省市区级联
 

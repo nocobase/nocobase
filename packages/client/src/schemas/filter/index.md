@@ -11,7 +11,7 @@ group:
 
 # Filter - 筛选器
 
-## 组件节点树
+## Node Tree
 
 <pre lang="tsx">
 <Filter>
@@ -24,16 +24,11 @@ group:
 </Filter>
 </pre>
 
-## 代码演示
+## Designable Bar
 
-<!-- <Filter>
-  <Filter.Column title={'字段1'} operations={[]}>
-    <Input/>
-  </Filter.Column>
-  <Filter.Column title={'字段2'}>
-    <Input/>
-  </Filter.Column>
-</Filter> -->
+- Filter.DesignableBar
+
+## Examples
 
 ```tsx
 import React from 'react';

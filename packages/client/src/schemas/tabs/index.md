@@ -11,7 +11,7 @@ group:
 
 # Tabs - 标签页
 
-## 组件节点树
+## Node
 
 <pre lang="tsx">
 <Tabs>
@@ -24,7 +24,11 @@ group:
 </Tabs>
 </pre>
 
-## 代码演示
+## Designable Bar
+
+- Tabs.DesignableBar
+
+## Examples
 
 ### 基本使用
 
