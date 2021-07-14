@@ -1,8 +1,10 @@
 import { ISchema } from '@formily/react';
 
 export const string: ISchema = {
+  name: 'string',
   type: 'object',
   title: '单行文本',
+  group: 'basic',
   default: {
     dataType: 'string',
     // name,

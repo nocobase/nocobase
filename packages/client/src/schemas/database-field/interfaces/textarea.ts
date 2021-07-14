@@ -1,8 +1,10 @@
 import { ISchema } from '@formily/react';
 
 export const textarea: ISchema = {
+  name: 'textarea',
   type: 'object',
   title: '多行文本',
+  group: 'basic',
   default: {
     dataType: 'text',
     // name,

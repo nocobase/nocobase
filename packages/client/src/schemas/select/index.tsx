@@ -14,7 +14,7 @@ import { LoadingOutlined } from '@ant-design/icons';
 import { SelectProps } from 'antd/lib/select';
 import { isArr, isValid, toArr } from '@formily/shared';
 import { useState } from 'react';
-import { useDesignable } from '../DesignableSchemaField';
+import { useDesignable } from '../';
 import { createContext } from 'react';
 import { useContext } from 'react';
 import { SelectedRowKeysContext, useTableContext } from '../table';

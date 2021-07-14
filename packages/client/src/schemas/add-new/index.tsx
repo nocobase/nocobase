@@ -46,7 +46,7 @@ import {
   DownOutlined,
   DatabaseOutlined,
 } from '@ant-design/icons';
-import { useDesignable, useSchemaPath } from '../DesignableSchemaField';
+import { useDesignable, useSchemaPath } from '../';
 import { uid } from '@formily/shared';
 
 const generateGridBlock = (schema: ISchema) => {

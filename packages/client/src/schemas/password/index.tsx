@@ -3,7 +3,6 @@ import { connect, mapReadPretty } from '@formily/react';
 import { Input } from 'antd';
 import { PasswordProps } from 'antd/lib/input';
 import { PasswordStrength } from './PasswordStrength';
-import { Descriptions } from '../descriptions';
 
 export interface IPasswordProps extends PasswordProps {
   checkStrength: boolean;

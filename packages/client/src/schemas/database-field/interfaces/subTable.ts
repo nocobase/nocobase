@@ -1,8 +1,10 @@
 import { ISchema } from '@formily/react';
 
 export const subTable: ISchema = {
+  name: 'subTable',
   type: 'object',
   title: '子表格',
+  group: 'relation',
   default: {
     // name,
     ui: {
