@@ -1,9 +1,5 @@
 import React, { useEffect } from 'react';
-import {
-  connect,
-  mapProps,
-  mapReadPretty,
-} from '@formily/react';
+import { connect, mapProps, mapReadPretty } from '@formily/react';
 import { LoadingOutlined } from '@ant-design/icons';
 import { useDynamicList } from 'ahooks';
 import { Select } from 'antd';

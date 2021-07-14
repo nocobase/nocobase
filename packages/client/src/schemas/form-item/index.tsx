@@ -16,7 +16,7 @@ import { MenuOutlined, DragOutlined } from '@ant-design/icons';
 import get from 'lodash/get';
 import { GridBlockContext } from '../grid';
 import { uid } from '@formily/shared';
-import { useDesignable } from '../DesignableSchemaField';
+import { useDesignable } from '../';
 import { AddNew } from '../add-new';
 import { BlockItem } from '../block-item';
 import { DraggableBlockContext } from '../../components/drag-and-drop';

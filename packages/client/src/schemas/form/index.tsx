@@ -9,7 +9,7 @@ import {
   FormProvider,
   ISchema,
 } from '@formily/react';
-import { SchemaRenderer, useDesignable } from '../DesignableSchemaField';
+import { SchemaRenderer, useDesignable } from '../';
 import get from 'lodash/get';
 import { Dropdown, Menu } from 'antd';
 import {
@@ -56,19 +56,14 @@ export const Form: any = observer((props: any) => {
   const schema = useFieldSchema();
   const { schema: designableSchema, refresh } = useDesignable();
   const formSchema: ISchema = schema['x-decorator'] === 'Form' ? {
-    type: 'void',
-    "x-component": 'Blank',
+    type: 'object',
     properties: {
       [schema.name]: {
         ...schema.toJSON(),
         "x-decorator": 'Form.Decorator',
       }
     }
-  } : {
-    ...schema.toJSON(),
-    'x-component': 'Form.Blank',
-    'x-component-props': {},
-  };
+  } : schema.toJSON();
   return (
     <SchemaRenderer
       scope={scope}

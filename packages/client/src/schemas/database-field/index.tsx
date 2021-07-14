@@ -12,7 +12,7 @@ import { ArrayCollapse } from '@formily/antd';
 import { uid } from '@formily/shared';
 import '@formily/antd/lib/form-tab/style';
 import { Collapse, Button, Dropdown, Menu, Tag } from 'antd';
-import { interfaces } from './interfaces';
+import { options, interfaces } from './interfaces';
 import { DeleteOutlined } from '@ant-design/icons';
 
 export const DatabaseField: any = observer((props) => {
@@ -33,24 +33,11 @@ export const DatabaseField: any = observer((props) => {
           console.log({ schema });
           return (
             <Collapse.Panel
-              // extra={[
-              //   <Button onClick={() => field.moveUp(index)}>Up</Button>,
-              //   <Button
-              //     onClick={() => {
-              //       field.remove(index);
-              //       field.insert(index, {
-              //         ...item,
-              //         interface: 'textarea',
-              //       });
-              //     }}
-              //   >
-              //     Update
-              //   </Button>,
-              // ]}
               header={
                 <>
                   {(item.ui && item.ui.title) || <i style={{color: 'rgba(0, 0, 0, 0.25)'}}>未命名</i>}{' '}
                   <Tag>{schema.title}</Tag>
+                  <span style={{ color: 'rgba(0, 0, 0, 0.25)', fontSize: 14 }}>{item.name}</span>
                 </>
               }
               extra={[
@@ -100,18 +87,24 @@ export const DatabaseField: any = observer((props) => {
                 return;
               }
               const data = {
+                ...schema.default,
                 id: uid(),
                 name: uid(),
                 interface: info.key,
-                ...schema.default,
               };
               field.push(data);
               setActiveKey(data.id);
               console.log('info.key', info.key, schema);
             }}
           >
-            {Array.from(interfaces).map(([key, schema]) => (
-              <Menu.Item key={key}>{schema.title}</Menu.Item>
+            {options.map(option => (
+              <Menu.ItemGroup title={option.label}>
+                {
+                  option.children.map(item => (
+                    <Menu.Item key={item.name}>{item.title}</Menu.Item>
+                  ))
+                }
+              </Menu.ItemGroup>
             ))}
           </Menu>
         }

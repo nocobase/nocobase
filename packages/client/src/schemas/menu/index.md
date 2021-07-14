@@ -425,6 +425,7 @@ export default () => {
       <Layout>
         <Layout.Header>
           <SchemaRenderer
+            debug={true}
             schema={schema}
             scope={{ onSelect, sideMenuRef }}
           />

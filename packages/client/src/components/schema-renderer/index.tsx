@@ -1,46 +1,51 @@
-import React, {
-  createContext,
-  useCallback,
-  useContext,
-  useMemo,
-  useState,
-} from 'react';
 import { createForm } from '@formily/core';
 import {
-  Field,
-  ISchema,
-  observer,
-  Schema,
   createSchemaField,
   FormProvider,
-  useField,
+  ISchema,
+  Schema,
+  SchemaOptionsContext,
   useFieldSchema,
   useForm,
-  SchemaOptionsContext,
 } from '@formily/react';
-import { observable } from '@formily/reactive';
-import { uid, clone } from '@formily/shared';
+import { uid } from '@formily/shared';
+import constate from 'constate';
+import { get } from 'lodash';
+import React, { createContext } from 'react';
+import { useState } from 'react';
+import { useContext } from 'react';
+import { useMemo } from 'react';
+
+import { CodeOutlined } from '@ant-design/icons';
+import Editor from '@monaco-editor/react';
+
 import { ArrayCollapse, ArrayTable, FormLayout } from '@formily/antd';
 
 import { Space, Card, Modal, Spin } from 'antd';
-import { Action, useLogin, useRegister, useSubmit, useDesignableValues } from '../action';
-import { AddNew } from '../add-new';
-import { Cascader } from '../cascader';
-import { Checkbox } from '../checkbox';
-import { ColorSelect } from '../color-select';
-import { DatabaseField } from '../database-field';
-import { DatePicker } from '../date-picker';
-import { Filter } from '../filter';
-import { Form } from '../form';
-import { Grid } from '../grid';
-import { IconPicker } from '../icon-picker';
-import { Input } from '../input';
-import { InputNumber } from '../input-number';
-import { Markdown } from '../markdown';
-import { Menu } from '../menu';
-import { Password } from '../password';
-import { Radio } from '../radio';
-import { Select } from '../select';
+import {
+  Action,
+  useLogin,
+  useRegister,
+  useSubmit,
+  useDesignableValues,
+} from '../../schemas/action';
+import { AddNew } from '../../schemas/add-new';
+import { Cascader } from '../../schemas/cascader';
+import { Checkbox } from '../../schemas/checkbox';
+import { ColorSelect } from '../../schemas/color-select';
+import { DatabaseField } from '../../schemas/database-field';
+import { DatePicker } from '../../schemas/date-picker';
+import { Filter } from '../../schemas/filter';
+import { Form } from '../../schemas/form';
+import { Grid } from '../../schemas/grid';
+import { IconPicker } from '../../schemas/icon-picker';
+import { Input } from '../../schemas/input';
+import { InputNumber } from '../../schemas/input-number';
+import { Markdown } from '../../schemas/markdown';
+import { Menu } from '../../schemas/menu';
+import { Password } from '../../schemas/password';
+import { Radio } from '../../schemas/radio';
+import { Select } from '../../schemas/select';
 import {
   Table,
   useTableRow,
@@ -48,93 +53,80 @@ import {
   useTableUpdateAction,
   useTableDestroyAction,
   useTableFilterAction,
-} from '../table';
-import { Tabs } from '../tabs';
-import { TimePicker } from '../time-picker';
-import { Upload } from '../upload';
-import { FormItem } from '../form-item';
-import { BlockItem } from '../block-item';
-import { DragAndDrop } from '../drag-and-drop';
-
-import { CodeOutlined } from '@ant-design/icons';
-import Editor from '@monaco-editor/react';
-import { get } from 'lodash';
+} from '../../schemas/table';
+import { Tabs } from '../../schemas/tabs';
+import { TimePicker } from '../../schemas/time-picker';
+import { Upload } from '../../schemas/upload';
+import { FormItem } from '../../schemas/form-item';
+import { BlockItem } from '../../schemas/block-item';
+import { DragAndDrop } from '../../schemas/drag-and-drop';
 
 export const BlockContext = createContext({ dragRef: null });
 
 const Div = (props) => <div {...props} />;
 
-export const scope = {
-  useLogin,
-  useRegister,
-  useSubmit,
-  useTableCreateAction,
-  useTableDestroyAction,
-  useTableFilterAction,
-  useTableRow,
-  useTableUpdateAction,
-  useDesignableValues,
-};
-
-export const components = {
-  Card,
-  Div,
-  Space,
-
-  ArrayCollapse,
-  ArrayTable,
-  FormLayout,
-
-  DragAndDrop,
-
-  BlockItem,
-  FormItem,
-
-  Action,
-  AddNew,
-  Cascader,
-  Checkbox,
-  ColorSelect,
-  DatabaseField,
-  DatePicker,
-  Filter,
-  Form,
-  Grid,
-  IconPicker,
-  Input,
-  InputNumber,
-  Markdown,
-  Menu,
-  Password,
-  Radio,
-  Select,
-  Table,
-  Tabs,
-  TimePicker,
-  Upload,
-};
-
-export function registerScope(scopes) {
-  Object.keys(scopes).forEach((key) => {
-    scope[key] = scopes[key];
-  });
+interface DesignableContextProps {
+  schema?: Schema;
+  refresh?: any;
 }
 
-export function registerComponents(values) {
-  Object.keys(values).forEach((key) => {
-    components[key] = values[key];
-  });
-}
+export const SchemaField = createSchemaField({
+  scope: {
+    useLogin,
+    useRegister,
+    useSubmit,
+    useTableCreateAction,
+    useTableDestroyAction,
+    useTableFilterAction,
+    useTableRow,
+    useTableUpdateAction,
+    useDesignableValues,
+  },
+  components: {
+    Card,
+    Div,
+    Space,
 
-export interface DesignableContextProps {
-  schema: Schema;
-  refresh: () => void;
-}
+    ArrayCollapse,
+    ArrayTable,
+    FormLayout,
 
-export const DesignableContext = createContext<DesignableContextProps>({
-  schema: null,
-  refresh: null,
+    DragAndDrop,
+
+    BlockItem,
+    FormItem,
+
+    Action,
+    AddNew,
+    Cascader,
+    Checkbox,
+    ColorSelect,
+    DatabaseField,
+    DatePicker,
+    Filter,
+    Form,
+    Grid,
+    IconPicker,
+    Input,
+    InputNumber,
+    Markdown,
+    Menu,
+    Password,
+    Radio,
+    Select,
+    Table,
+    Tabs,
+    TimePicker,
+    Upload,
+  },
 });
+
+export const DesignableContext = createContext<DesignableContextProps>(null);
+
+export function useSchema(path?: any) {
+  const { schema, refresh } = useContext(DesignableContext);
+  return { schema, refresh };
+}
 
 export function pathToArray(path): string[] {
   if (Array.isArray(path)) {
@@ -188,13 +180,16 @@ export function addPropertyAfter(target: Schema, data: ISchema) {
 export function useDesignable(path?: any) {
   const { schema, refresh } = useContext(DesignableContext);
   const schemaPath = path || useSchemaPath();
-  const currentSchema = findPropertyByPath(schema, schemaPath) || ({} as Schema);
-  console.log('useDesignable', { schema, schemaPath, currentSchema });
+  const fieldSchema = useFieldSchema();
+  const currentSchema =
+    findPropertyByPath(schema, schemaPath) || ({} as Schema);
+  // console.log('useDesignable', { schema, schemaPath, currentSchema });
   const options = useContext(SchemaOptionsContext);
-  const DesignableBar = get(options.components, currentSchema['x-designable-bar']) || (() => null);
+  const DesignableBar =
+    get(options.components, currentSchema['x-designable-bar']) || (() => null);
   return {
     DesignableBar,
-    schema: currentSchema,
+    schema: currentSchema || fieldSchema,
     refresh,
     prepend: (property: ISchema, targetPath?: any): Schema => {
       let target = currentSchema;
@@ -218,7 +213,7 @@ export function useDesignable(path?: any) {
         current.parent.removeProperty(current.name);
         properties[current.name] = current.toJSON();
       });
-      console.log({ properties }, target.properties);
+      // console.log({ properties }, target.properties);
       target.setProperties(properties);
       refresh();
       return target.properties[property.name];
@@ -331,7 +326,7 @@ export function getSchemaPath(schema: Schema) {
     path.unshift(parent.name);
     parent = parent.parent;
   }
-  console.log('getSchemaPath', path, schema);
+  // console.log('getSchemaPath', path, schema);
   return [...path];
 }
 
@@ -340,38 +335,6 @@ export function useSchemaPath() {
   const path = getSchemaPath(schema);
   return [...path];
 }
-
-console.log({ scope, components });
-
-export const createDesignableSchemaField = (options) => {
-  const SchemaField = createSchemaField(options);
-
-  const DesignableSchemaField = (props) => {
-
-    const schema = useMemo(() => new Schema(props.schema), [props.schema]);
-    const [, refresh] = useState(0);
-    if (props.designable === false) {
-      return <SchemaField schema={schema} />;
-    }
-    return (
-      <DesignableContext.Provider
-        value={{
-          schema,
-          refresh: () => {
-            refresh(Math.random());
-            props.onRefresh && props.onRefresh(schema);
-          },
-        }}
-      >
-        <SchemaField scope={props.scope} components={props.components} schema={schema} />
-        {props.debug && <CodePreview schema={schema} />}
-        {props.debug && <FormValues />}
-      </DesignableContext.Provider>
-    );
-  };
-
-  return DesignableSchemaField;
-};
 
 const FormValues = () => {
   const form = useForm();
@@ -400,7 +363,10 @@ const CodePreview = ({ schema }) => {
   const [visible, setVisible] = useState(false);
   return (
     <>
-      <CodeOutlined style={{position: 'relative', zIndex: 100}} onClick={() => setVisible(true)} />
+      <CodeOutlined
+        style={{ position: 'relative', zIndex: 100 }}
+        onClick={() => setVisible(true)}
+      />
       <Modal
         width={'50%'}
         onOk={() => setVisible(false)}
@@ -418,31 +384,25 @@ const CodePreview = ({ schema }) => {
   );
 };
 
-export const SchemaField = createSchemaField({
-  scope,
-  components,
-});
-
-export const DesignableSchemaField = createDesignableSchemaField({
-  scope,
-  components,
-});
-
 export interface SchemaRendererProps {
-  schema: ISchema;
+  schema: Schema | ISchema;
   form?: any;
-  designable?: boolean;
-  onRefresh?: any;
-  onlyRenderProperties?: boolean;
-  scope?: any;
+  render?: any;
   components?: any;
+  scope?: any;
   debug?: boolean;
+  onlyRenderProperties?: boolean;
+  onRefresh?: any;
+  [key: string]: any;
 }
 
 export const SchemaRenderer = (props: SchemaRendererProps) => {
-  const form = useMemo(() => props.form || createForm({}), []);
-
+  const [, refresh] = useState(uid());
+  const form = useMemo(() => props.form || createForm(), []);
   const schema = useMemo(() => {
+    if (Schema.isSchemaInstance(props.schema)) {
+      return schema;
+    }
     let s = props.schema;
     if (props.onlyRenderProperties) {
       s = {
@@ -457,21 +417,32 @@ export const SchemaRenderer = (props: SchemaRendererProps) => {
         },
       };
     }
-    return s;
+    return new Schema(s);
   }, []);
-
-  console.log('SchemaRenderer', schema, props.schema);
-
-  return (
+  const defaultRender = ({ schema }) => (
     <FormProvider form={form}>
-      <DesignableSchemaField
-        debug={props.debug}
-        scope={props.scope}
+      <SchemaField
         components={props.components}
-        onRefresh={props.onRefresh}
-        designable={props.designable}
+        scope={props.scope}
         schema={schema}
       />
+      {props.debug && <CodePreview schema={schema} />}
+      {props.debug && <FormValues />}
     </FormProvider>
+  );
+  return (
+    <DesignableContext.Provider
+      value={{
+        schema,
+        refresh: () => {
+          props.onRefresh && props.onRefresh(schema);
+          refresh(uid());
+        },
+      }}
+    >
+      <DesignableContext.Consumer>
+        {props.render || defaultRender}
+      </DesignableContext.Consumer>
+    </DesignableContext.Provider>
   );
 };

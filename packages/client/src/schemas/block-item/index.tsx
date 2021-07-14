@@ -16,7 +16,7 @@ import './style.less';
 import get from 'lodash/get';
 import { GridBlockContext } from '../grid';
 import { uid } from '@formily/shared';
-import { useDesignable, useSchemaPath } from '../DesignableSchemaField';
+import { useDesignable, useSchemaPath } from '../';
 import { AddNew } from '../add-new';
 import { Card } from 'antd';
 import {

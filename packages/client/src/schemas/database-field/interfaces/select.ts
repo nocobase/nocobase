@@ -1,8 +1,10 @@
 import { ISchema } from '@formily/react';
 
 export const select: ISchema = {
+  name: 'select',
   type: 'object',
   title: '下拉选择',
+  group: 'choices',
   default: {
     dataType: 'string',
     // name,

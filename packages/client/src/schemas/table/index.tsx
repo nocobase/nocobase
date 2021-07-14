@@ -33,7 +33,7 @@ import {
   SortableElement,
 } from 'react-sortable-hoc';
 import cls from 'classnames';
-import { getSchemaPath, useDesignable, useSchemaPath } from '../DesignableSchemaField';
+import { getSchemaPath, useDesignable, useSchemaPath } from '../';
 import './style.less';
 
 interface TableRowProps {

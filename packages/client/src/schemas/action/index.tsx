@@ -86,24 +86,18 @@ export type ActionType = React.FC<ActionProps> & {
   DesignableBar?: React.FC<any>;
 };
 
-function Blank() {
-  return null;
-}
-
 function useDesignableBar() {
   const schema = useFieldSchema();
   const options = useContext(SchemaOptionsContext);
   const DesignableBar = get(options.components, schema['x-designable-bar']);
-
   return {
-    DesignableBar: DesignableBar || Blank,
+    DesignableBar: DesignableBar || (() => null),
   };
 }
 
 const [VisibleProvider, useVisibleContext] = constate((props: any = {}) => {
   const { initialVisible = false, containerRef = null } = props;
   const [visible, setVisible] = useState(initialVisible);
-
   return { containerRef, visible, setVisible };
 });
 
@@ -123,6 +117,7 @@ const BaseAction = observer((props: any) => {
   const { setVisible } = useVisibleContext();
   const fieldSchema = useFieldSchema();
   const { schema } = useDesignable();
+
   useEffect(() => {
     field.componentProps.setVisible = setVisible;
   }, []);
@@ -130,7 +125,7 @@ const BaseAction = observer((props: any) => {
   const renderButton = () => (
     <ButtonComponent
       {...others}
-      icon={<Icon type={icon} />}
+      icon={icon ? <Icon type={icon} /> : null}
       className={classNames(className, `name-${schema.name}`)}
       onClick={async (e) => {
         e.stopPropagation && e.stopPropagation();
@@ -237,13 +232,29 @@ Action.Drawer = observer((props) => {
   const { visible, setVisible } = useVisibleContext();
   const { run } = useAction();
   const form = useForm();
-  console.log(`schema['x-decorator']`, schema['x-decorator'])
+  console.log(`schema['x-decorator']`, schema['x-decorator']);
   if (schema['x-decorator'] === 'Form.Decorator') {
     Object.assign(others, {
       footer: (
         <Space>
-          <Button type={'primary'}>Ok</Button>
-          <Button>Cancel</Button>
+          <Button
+            onClick={async () => {
+              await form.submit();
+              await run();
+              setVisible(false);
+            }}
+            type={'primary'}
+          >
+            OK
+          </Button>
+          <Button
+            onClick={async () => {
+              form.clearErrors();
+              setVisible(false);
+            }}
+          >
+            Cancel
+          </Button>
         </Space>
       ),
     });
@@ -258,8 +269,10 @@ Action.Drawer = observer((props) => {
       width={'50%'}
       {...others}
       visible={visible}
+      destroyOnClose
       onClose={(e) => {
         e.stopPropagation();
+        form.clearErrors();
         setVisible(false);
       }}
     >
@@ -273,8 +286,6 @@ const [DesignableContextProvider, useDesignableContext] = constate(() => {
 });
 
 import { DesignableBar } from './designableBar';
-import { cloneDeep } from 'lodash';
-import { clone } from '@formily/shared';
 
 export function useDesignableValues() {
   const { schema } = useDesignableContext();
@@ -313,7 +324,11 @@ Action.Modal = observer((props) => {
   const { visible, setVisible } = useVisibleContext();
   const { run } = useAction();
   const form = useForm();
-  if (schema['x-decorator'] !== 'Form.Decorator') {
+  // console.log('Action.Modal', schema['x-component-props'], Object.keys(others).includes('footer'));
+  if (
+    !Object.keys(others).includes('footer') &&
+    schema['x-decorator'] !== 'Form.Decorator'
+  ) {
     Object.assign(others, { footer: null });
   }
   return (
@@ -328,13 +343,13 @@ Action.Modal = observer((props) => {
       onCancel={async (e) => {
         e.stopPropagation();
         setVisible(false);
+        // await form.reset();
         setDropdownVisible && setDropdownVisible(false);
       }}
       onOk={async (e) => {
         console.log('onOk', form.values);
         // await form.submit();
         await run();
-        // e.stopPropagation();
         setVisible(false);
         setDropdownVisible && setDropdownVisible(false);
       }}
@@ -348,12 +363,13 @@ Action.Modal = observer((props) => {
   );
 });
 
-const [DropdownVisibleProvider, useDropdownVisibleContext] = constate((props: any = {}) => {
-  const { initialVisible = false } = props;
-  const [visible, setVisible] = useState(initialVisible);
-
-  return { visible, setVisible };
-});
+const [DropdownVisibleProvider, useDropdownVisibleContext] = constate(
+  (props: any = {}) => {
+    const { initialVisible = false } = props;
+    const [visible, setVisible] = useState(initialVisible);
+    return { visible, setVisible };
+  },
+);
 
 const ActionDropdown = observer((props: any) => {
   const { icon, ...others } = props;
@@ -371,7 +387,7 @@ const ActionDropdown = observer((props: any) => {
       content={props.children}
       placement={'bottomLeft'}
     >
-      <Button icon={<Icon type={icon} />} {...others}>
+      <Button icon={icon ? <Icon type={icon} /> : null} {...others}>
         {schema.title}
       </Button>
     </Popover>

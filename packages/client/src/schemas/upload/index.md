@@ -29,8 +29,8 @@ group:
 import React from 'react';
 import { Button } from 'antd'
 import { UploadOutlined, InboxOutlined } from '@ant-design/icons'
+import { SchemaRenderer } from '../';
 import Upload from './';
-import { SchemaRenderer, registerComponents } from '../';
 
 const NormalUpload = (props) => {
   return (
@@ -45,10 +45,6 @@ const NormalUpload = (props) => {
     </Upload>
   )
 }
-
-registerComponents({
-  NormalUpload,
-});
 
 const schema = {
   type: 'object',
@@ -79,7 +75,7 @@ const schema = {
 
 export default () => {
   return (
-    <SchemaRenderer schema={schema} />
+    <SchemaRenderer components={{ NormalUpload }} schema={schema} />
   );
 };
 ```

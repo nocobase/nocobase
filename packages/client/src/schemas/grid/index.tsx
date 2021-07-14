@@ -21,7 +21,7 @@ import {
 import './style.less';
 import cls from 'classnames';
 
-import { useDesignable, useSchemaPath } from '../DesignableSchemaField';
+import { useDesignable, useSchemaPath } from '../';
 import {
   useDrag,
   useDrop,
