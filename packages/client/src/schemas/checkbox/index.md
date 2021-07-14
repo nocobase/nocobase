@@ -11,7 +11,7 @@ group:
 
 # Checkbox - 多选框
 
-## 组件节点树
+## Node Tree
 
 <pre lang="tsx">
 // 勾选
@@ -20,7 +20,11 @@ group:
 <Checkbox.Group/>
 </pre>
 
-## 代码演示
+## Designable Bar
+
+- Checkbox.DesignableBar
+
+## Examples
 
 ### 勾选
 

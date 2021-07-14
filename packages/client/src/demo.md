@@ -1,5 +1,5 @@
 ---
-title: 介绍
+title: 全站演示
 nav:
   title: 组件
   path: /client
@@ -10,5 +10,5 @@ group:
   path: /client
 ---
 
-# 介绍
+<code src="./demos/demo1.tsx"/>
 

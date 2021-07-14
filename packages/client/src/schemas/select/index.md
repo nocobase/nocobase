@@ -11,7 +11,7 @@ group:
 
 # Select - 选择器
 
-## 节点树
+## Node Tree
 
 <pre lang="tsx">
 // 常规选择器
@@ -37,7 +37,14 @@ group:
 </Select.Drawer>
 </pre>
 
-## Select
+## Designable Bar
+
+- Select.DesignableBar
+- Select.Drawer.DesignableBar
+- Select.Options.DesignableBar
+- Select.OptionTag.DesignableBar
+
+## Examples
 
 ### 单选
 
@@ -62,13 +69,11 @@ const schema = {
   type: 'object',
   properties: {
     input: {
-      interface: 'string',
-      type: 'string',
+      type: 'number',
       title: `编辑模式`,
-      name: 'name1',
       enum: options,
       'x-decorator': 'FormItem',
-      'x-component': 'Select',
+      'x-component': 'Select.Object',
       'x-reactions': {
         target: 'read',
         fulfill: {
@@ -79,14 +84,12 @@ const schema = {
       },
     },
     read: {
-      interface: 'string',
-      type: 'string',
+      type: 'number',
       title: `阅读模式`,
       enum: options,
-      name: 'name2',
-      'x-read-pretty': true,
       'x-decorator': 'FormItem',
-      'x-component': 'Select',
+      'x-component': 'Select.Object',
+      'x-read-pretty': true,
     },
   }
 };
@@ -257,8 +260,7 @@ const schema = {
   type: 'object',
   properties: {
     input: {
-      interface: 'select',
-      type: 'string',
+      type: 'object',
       title: `编辑模式`,
       enum: dataSource,
       'x-decorator': 'FormItem',
@@ -281,8 +283,7 @@ const schema = {
       },
     },
     read: {
-      interface: 'select',
-      type: 'string',
+      type: 'object',
       title: `阅读模式`,
       enum: dataSource,
       'x-read-pretty': true,
@@ -332,8 +333,7 @@ const schema = {
   type: 'object',
   properties: {
     input: {
-      interface: 'select',
-      type: 'string',
+      type: 'array',
       title: `编辑模式`,
       enum: dataSource,
       'x-decorator': 'FormItem',
@@ -356,8 +356,7 @@ const schema = {
       },
     },
     read: {
-      interface: 'select',
-      type: 'string',
+      type: 'array',
       title: `阅读模式`,
       enum: dataSource,
       'x-read-pretty': true,
@@ -571,22 +570,44 @@ export default () => {
 };
 ```
 
-<!-- 
-<Select />
-<Select.Object />
-<Select.Drawer>
-  <Select.Options>
-    <Table />
-    <Action />
-  <Select.Options>
-  <Select.ItemDetails>
-    <Form/>
-  </Select.ItemDetails>
-<Select.Drawer>
+## Schema API
 
-<Action />
+### Select
 
-<Action>
-  <Drawer />
-</Action>
- -->
+type 支持 string、number、object 和 array，array 元素可以是 string、number 或 object。如：
+
+```ts
+{
+  properties: {
+    select: {
+      type: 'string', // 也可以是 number、object、array
+      'x-component': 'Select',
+    }
+  }
+}
+```
+
+可以配置 dataSource（enum）的 fieldNames，如：
+
+```ts
+{
+  properties: {
+    select: {
+      type: 'string', // 也可以是 number、object、array
+      'x-component': 'Select',
+      'x-component-props': {
+        fieldNames: {
+          label: 'label', // 标签文案
+          value: 'value',
+          color: 'color', // 标签颜色
+          children: 'children', // 选项分组时，选项字段对应的 key
+        },
+      },
+    },
+  }
+}
+```
+
+### Select.Drawer 
+
+type 支持 object 和 array，Select.Drawer 的可选项是以抽屉方式展开，提供了 Select.Options 和 Select.OptionTag 用于配置可选项界面和选中项详情界面。

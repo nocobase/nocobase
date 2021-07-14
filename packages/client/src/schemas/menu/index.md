@@ -13,7 +13,7 @@ group:
 
 需要 antd v4.16+ 支持，在此之前的 Menu.Item 不支持 Fragment 包裹。
 
-## 组件树
+## Node Tree
 
 <pre lang="tsx">
 <Menu>
@@ -43,7 +43,11 @@ group:
 </Menu>
 </pre>
 
-## 代码演示
+## Designable Bar
+
+- Menu.DesignableBar
+
+## Examples
 
 ### 横向菜单
 

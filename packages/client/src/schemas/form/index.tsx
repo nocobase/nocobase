@@ -6,6 +6,8 @@ import {
   useFieldSchema,
   observer,
   SchemaExpressionScopeContext,
+  FormProvider,
+  ISchema,
 } from '@formily/react';
 import { SchemaRenderer, useDesignable } from '../DesignableSchemaField';
 import get from 'lodash/get';
@@ -42,7 +44,6 @@ function useDefaultValues() {
 
 export const Form: any = observer((props: any) => {
   const scope = useContext(SchemaExpressionScopeContext);
-
   const { useValues = useDefaultValues } = props;
   const values = useValues();
   const form = useMemo(() => {
@@ -54,36 +55,36 @@ export const Form: any = observer((props: any) => {
   }, [values]);
   const schema = useFieldSchema();
   const { schema: designableSchema, refresh } = useDesignable();
-  const { DesignableBar } = useDesignableBar();
-  const ref = useRef();
-  const [active, setActive] = useState(false);
-  const { onMouseEnter, onMouseLeave, onMouseMove } = useMouseEvents(ref);
-  onMouseEnter((e: React.MouseEvent) => {
-    setActive(true);
-  });
-
-  onMouseLeave((e: React.MouseEvent) => {
-    setActive(false);
-  });
-
-  onMouseMove((e: React.MouseEvent) => {});
+  const formSchema: ISchema = schema['x-decorator'] === 'Form' ? {
+    type: 'void',
+    "x-component": 'Blank',
+    properties: {
+      [schema.name]: {
+        ...schema.toJSON(),
+        "x-decorator": 'Form.Decorator',
+      }
+    }
+  } : {
+    ...schema.toJSON(),
+    'x-component': 'Form.Blank',
+    'x-component-props': {},
+  };
   return (
-    <div ref={ref} className={'nb-form'}>
-      <SchemaRenderer
-        scope={scope}
-        // components={options.components}
-        onRefresh={(subSchema: Schema) => {
-          designableSchema.properties = subSchema.properties;
-          refresh();
-        }}
-        form={form}
-        schema={schema.toJSON()}
-        onlyRenderProperties
-      />
-      <DesignableBar active={active} />
-    </div>
+    <SchemaRenderer
+      scope={scope}
+      // components={options.components}
+      onRefresh={(subSchema: Schema) => {
+        designableSchema.properties = subSchema.properties;
+        refresh();
+      }}
+      form={form}
+      schema={formSchema}
+      onlyRenderProperties
+    />
   );
 });
+
+Form.Decorator = ({children}) => children;
 
 Form.DesignableBar = (props) => {
   const { active } = props;

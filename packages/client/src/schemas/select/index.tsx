@@ -18,6 +18,8 @@ import { useDesignable } from '../DesignableSchemaField';
 import { createContext } from 'react';
 import { useContext } from 'react';
 import { SelectedRowKeysContext, useTableContext } from '../table';
+import { isEmpty } from 'lodash';
+import { isField } from '@formily/core';
 
 export const Select: any = connect(
   (props) => {
@@ -189,8 +191,11 @@ Select.Object = connect(
   ),
   mapReadPretty(
     observer((props: any) => {
-      const { value, fieldNames = { label: 'label' }, ...others } = props;
+      const { value, fieldNames = { label: 'label', color: 'color' }, ...others } = props;
       if (!value) {
+        return null;
+      }
+      if (isEmpty(value)) {
         return null;
       }
       const values = toArr(value);

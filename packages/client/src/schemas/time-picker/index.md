@@ -11,13 +11,17 @@ group:
 
 # TimePicker - 时间选择器
 
-## 节点树
+## Node Tree
 
 <pre lang="tsx">
 <TimePicker/>
 </pre>
 
-## 代码演示
+## Designable Bar
+
+- TimePicker.DesignableBar
+
+## Examples
 
 ### 日期选择器
 

@@ -11,20 +11,23 @@ group:
 
 # DatabaseField - 数据表字段
 
-## 组件节点树
+## Node Tree
 
 <pre lang="tsx">
 <DatabaseField/>
 </pre>
 
-## 代码演示
+## Designable Bar
+
+暂无
+
+## Examples
 
 ```tsx
 import React from 'react';
 import { createForm } from '@formily/core';
 import { SchemaRenderer } from '../';
 import { observer, connect, useField } from '@formily/react';
-import Editor from '@monaco-editor/react';
 
 const schema = {
   type: 'object',
@@ -66,11 +69,6 @@ export default observer(() => {
   return (
     <div>
       <SchemaRenderer form={form} schema={schema} />
-      <Editor
-        height="200px"
-        defaultLanguage="json"
-        value={JSON.stringify(form.values, null, 2)}
-      />
     </div>
   )
 })

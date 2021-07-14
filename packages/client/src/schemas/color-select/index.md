@@ -11,13 +11,17 @@ group:
 
 # ColorSelect - 颜色选择器
 
-## 组件节点树
+## Node Tree
 
 <pre lang="tsx">
 <ColorSelect/>
 </pre>
 
-## 代码演示
+## Designable Bar
+
+- ColorSelect.DesignableBar
+
+## Examples
 
 ### 颜色选择器
 

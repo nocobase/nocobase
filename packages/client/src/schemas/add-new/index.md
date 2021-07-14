@@ -11,7 +11,7 @@ group:
 
 # AddNew - 新增
 
-## 组件节点树
+## Node Tree
 
 <pre lang="tsx">
 // 简单场景，只支持上下拖拽布局
@@ -24,7 +24,7 @@ group:
 
 // 栅格布局，支持行列等复杂的拖拽操作
 <Grid>
-  <Grid.Row>
+  <Grid.Row locked>
     <Grid.Col>
       // 常规区块
       <AddNew.BlockItem/>
@@ -35,7 +35,11 @@ group:
 </Grid>
 </pre>
 
-## 代码演示
+## Designable Bar
+
+暂无
+
+## Examples
 
 ### AddNew.BlockItem
 

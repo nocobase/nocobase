@@ -11,7 +11,7 @@ group:
 
 # Table - 表格
 
-## 组件节点树
+## Node Tree
 
 <pre lang="tsx">
 <Table>
@@ -53,6 +53,11 @@ group:
 </Table>
 </pre>
 
-## 代码演示
+## Designable Bar
+
+- Table.DesignableBar
+- Table.Column.DesignableBar
+
+## Examples
 
 <code src="./demos/demo1.tsx"/>

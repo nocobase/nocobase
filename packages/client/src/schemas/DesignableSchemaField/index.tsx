@@ -23,7 +23,7 @@ import { uid, clone } from '@formily/shared';
 import { ArrayCollapse, ArrayTable, FormLayout } from '@formily/antd';
 
 import { Space, Card, Modal, Spin } from 'antd';
-import { Action, useLogin, useRegister, useSubmit } from '../action';
+import { Action, useLogin, useRegister, useSubmit, useDesignableValues } from '../action';
 import { AddNew } from '../add-new';
 import { Cascader } from '../cascader';
 import { Checkbox } from '../checkbox';
@@ -73,6 +73,7 @@ export const scope = {
   useTableFilterAction,
   useTableRow,
   useTableUpdateAction,
+  useDesignableValues,
 };
 
 export const components = {
@@ -363,8 +364,8 @@ export const createDesignableSchemaField = (options) => {
         }}
       >
         <SchemaField scope={props.scope} components={props.components} schema={schema} />
-        <CodePreview schema={schema} />
-        <FormValues />
+        {props.debug && <CodePreview schema={schema} />}
+        {props.debug && <FormValues />}
       </DesignableContext.Provider>
     );
   };
@@ -435,6 +436,7 @@ export interface SchemaRendererProps {
   onlyRenderProperties?: boolean;
   scope?: any;
   components?: any;
+  debug?: boolean;
 }
 
 export const SchemaRenderer = (props: SchemaRendererProps) => {
@@ -463,6 +465,7 @@ export const SchemaRenderer = (props: SchemaRendererProps) => {
   return (
     <FormProvider form={form}>
       <DesignableSchemaField
+        debug={props.debug}
         scope={props.scope}
         components={props.components}
         onRefresh={props.onRefresh}

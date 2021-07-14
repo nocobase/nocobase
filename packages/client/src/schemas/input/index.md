@@ -13,14 +13,19 @@ group:
 
 输入框是非常常用的控件，参数可以组合成许多字段，如单行文本、多行文本、手机号、邮箱、网址等。
 
-## 节点树
+## Node Tree
 
 <pre lang="tsx">
 <Input/>
 <Input.TextArea/>
 </pre>
 
-## 代码演示
+## Designable Bar
+
+- Input.DesignableBar
+- Input.TextArea.DesignableBar
+
+## Examples
 
 ### 单行文本
 
