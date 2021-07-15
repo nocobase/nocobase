@@ -56,13 +56,13 @@ FormItem.DesignableBar = () => {
                 <Menu.Item
                   onClick={(e) => {
                     const title = uid();
-                    schema.title = title;
+                    // schema.title = title;
                     field.title = title;
                     setVisible(false);
-                    refresh();
+                    // refresh();
                   }}
                 >
-                  点击修改按钮文案
+                  修改文案
                 </Menu.Item>
               </Menu>
             }

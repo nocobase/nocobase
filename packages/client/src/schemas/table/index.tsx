@@ -26,14 +26,13 @@ import useRequest from '@ahooksjs/use-request';
 import { BaseResult } from '@ahooksjs/use-request/lib/types';
 import { uid, clone } from '@formily/shared';
 import { MenuOutlined } from '@ant-design/icons';
-import { useVisibleContext } from '../action';
 import {
   SortableHandle,
   SortableContainer,
   SortableElement,
 } from 'react-sortable-hoc';
 import cls from 'classnames';
-import { getSchemaPath, useDesignable, useSchemaPath } from '../';
+import { getSchemaPath, useDesignable, useSchemaPath, VisibleContext } from '../';
 import './style.less';
 
 interface TableRowProps {
@@ -198,7 +197,7 @@ export function useTableDestroyAction() {
 
 export function useTableFilterAction() {
   const { field, refresh, params } = useTableContext();
-  const { setVisible } = useVisibleContext();
+  const [,setVisible] = useContext(VisibleContext);
   const form = useForm();
   return {
     async run() {
@@ -210,7 +209,7 @@ export function useTableFilterAction() {
 
 export function useTableCreateAction() {
   const { field, run: exec, params } = useTableContext();
-  const { setVisible } = useVisibleContext();
+  const [,setVisible] = useContext(VisibleContext);
   const form = useForm();
   return {
     async run() {
@@ -227,7 +226,7 @@ export function useTableCreateAction() {
 
 export function useTableUpdateAction() {
   const { field, refresh, params } = useTableContext();
-  const { setVisible } = useVisibleContext();
+  const [,setVisible] = useContext(VisibleContext);
   const form = useForm();
   return {
     async run() {
@@ -317,7 +316,7 @@ const TableContainer = observer((props) => {
       {actionBars.top.map((actionBarSchema) => {
         return (
           <RecursionField
-            onlyRenderProperties
+            // onlyRenderProperties
             schema={
               new Schema({
                 type: 'object',
@@ -418,6 +417,13 @@ export const Table: any = observer((props) => {
     </TableContextProvider>
   );
 });
+
+Table.useTableRow = useTableRow;
+Table.useTableIndex = useTableIndex;
+Table.useTableDestroyAction = useTableDestroyAction;
+Table.useTableFilterAction = useTableFilterAction;
+Table.useTableCreateAction = useTableCreateAction;
+Table.useTableUpdateAction = useTableUpdateAction;
 
 function Blank() {
   return null;

@@ -75,208 +75,75 @@ group:
 
 ## Examples
 
-### Action - 常规操作
-
-<code src="./demos/demo1.tsx">
-
-### Action.Link - 内链跳转
-
-<code src="./demos/demo2.tsx">
-
-### Action.URL - 外链跳转
-
-<code src="./demos/demo3.tsx">
-
-### Action.Dropdown - 下拉操作
-
-<code src="./demos/demo4.tsx">
-
-### Action.Popover - 打开气泡
+### Action
 
 ```tsx
+/**
+ * title: 按钮操作
+ * desc: 可以通过配置 `useAction` 来处理操作逻辑
+ */
 import React from 'react';
-import { SchemaRenderer } from '../';
+// @ts-ignore
+import { SchemaRenderer } from '@nocobase/client';
+
+function useAction() {
+  return {
+    run() {
+      alert('这是自定义的操作逻辑');
+    },
+  };
+}
 
 const schema = {
   type: 'void',
   name: 'action1',
   title: '按钮',
   'x-component': 'Action',
-  properties: {
-    popover1: {
-      type: 'void',
-      title: '弹窗标题',
-      'x-component': 'Action.Popover',
-      'x-component-props': {},
-      properties: {
-        input: {
-          type: 'string',
-          'x-component': 'Input',
-        }
-      },
-    },
+  'x-designable-bar': 'Action.DesignableBar',
+  'x-component-props': {
+    useAction: '{{ useAction }}',
   },
 };
 
 export default () => {
-  return <SchemaRenderer schema={schema} />
-}
+  return (
+    <SchemaRenderer 
+      debug={true} 
+      scope={{ useAction }} 
+      schema={schema} 
+    />
+  );
+};
 ```
 
-### Action.Drawer - 打开抽屉
+### Action.Modal
 
 ```tsx
 import React from 'react';
+import { SchemaRenderer } from '@nocobase/client';
 import { Space } from 'antd';
-import { SchemaRenderer } from '../';
 
-const schema1 = {
+const schema = {
   type: 'void',
   name: 'action1',
   title: '按钮',
   'x-component': 'Action',
-  properties: {
-    drawer1: {
-      type: 'void',
-      title: '抽屉标题',
-      'x-component': 'Action.Drawer',
-      'x-component-props': {},
-      properties: {
-        input: {
-          type: 'string',
-          'x-decorator': 'FormItem',
-          'x-component': 'Input',
-        },
-        action2: {
-          type: 'void',
-          title: '打开二级抽屉',
-          // 'x-decorator': 'FormItem',
-          'x-component': 'Action',
-          properties: {
-            drawer1: {
-              type: 'void',
-              title: '二级抽屉标题',
-              'x-component': 'Action.Drawer',
-              'x-component-props': {},
-              properties: {
-                input: {
-                  type: 'string',
-                  'x-component': 'Input',
-                },
-              },
-            },
-          },
-        }
-      },
-    },
+  'x-designable-bar': 'Action.DesignableBar',
+  'x-component-props': {
   },
-};
-
-const schema2 = {
-  type: 'void',
-  name: 'action1',
-  title: 'x-decorator=Form',
-  'x-component': 'Action',
   properties: {
-    drawer1: {
+    modal1: {
       type: 'void',
-      title: '弹窗标题',
-      'x-component': 'Action.Drawer',
-      'x-component-props': {
-        // footer: null,
-      },
-      'x-decorator': 'Form',
+      title: '对话框标题',
+      'x-component': 'Action.Modal',
       properties: {
         input: {
           type: 'string',
           title: '输入框',
-          'x-decorator': 'FormItem',
-          'x-component': 'Input',
           required: true,
-        },
-      },
-    },
-  },
-};
-
-export default () => {
-  return (
-    <Space>
-      <SchemaRenderer schema={schema1} />
-      <SchemaRenderer schema={schema2} />
-    </Space>
-  )
-}
-```
-
-### Action.Modal - 打开对话框
-
-`x-decorator='Form'` 时，Model 为 Form，并自带按钮
-
-```tsx
-import React from 'react';
-import { Space } from 'antd';
-import { SchemaRenderer } from '../';
-import { useVisibleContext } from './';
-
-function useAction() {
-  const { visible, setVisible } = useVisibleContext();
-  return {
-    async run() {
-      console.log({ visible })
-      setVisible(false);
-    }
-  }
-}
-
-const schema = {
-  type: 'void',
-  name: 'action1',
-  title: '按钮',
-  'x-component': 'Action',
-  properties: {
-    drawer1: {
-      type: 'void',
-      title: '弹窗标题',
-      'x-component': 'Action.Modal',
-      'x-component-props': {
-        // footer: null,
-      },
-      properties: {
-        input: {
-          type: 'string',
           'x-decorator': 'FormItem',
           'x-component': 'Input',
         },
-        close: {
-          type: 'void',
-          name: 'action1',
-          title: '关闭',
-          'x-component': 'Action',
-          'x-component-props': {
-            useAction,
-          },
-        },
-        action2: {
-          type: 'void',
-          title: '打开二级抽屉',
-          // 'x-decorator': 'FormItem',
-          'x-component': 'Action',
-          properties: {
-            drawer1: {
-              type: 'void',
-              title: '二级抽屉标题',
-              'x-component': 'Action.Modal',
-              'x-component-props': {},
-              properties: {
-                input: {
-                  type: 'string',
-                  'x-component': 'Input',
-                },
-              },
-            },
-          },
-        }
       },
     },
   },
@@ -285,20 +152,22 @@ const schema = {
 const schema2 = {
   type: 'void',
   name: 'action1',
-  title: 'x-decorator=Form',
+  title: 'ModalForm',
   'x-component': 'Action',
+  'x-designable-bar': 'Action.DesignableBar',
+  'x-component-props': {
+  },
   properties: {
-    drawer1: {
+    modal1: {
       type: 'void',
-      title: '弹窗标题',
-      'x-component': 'Action.Modal',
-      'x-component-props': {
-        // footer: null,
-      },
+      title: '对话框标题',
       'x-decorator': 'Form',
+      'x-component': 'Action.Modal',
       properties: {
         input: {
           type: 'string',
+          title: '输入框',
+          required: true,
           'x-decorator': 'FormItem',
           'x-component': 'Input',
         },
@@ -310,51 +179,226 @@ const schema2 = {
 export default () => {
   return (
     <Space>
-      <SchemaRenderer schema={schema} />
-      <SchemaRenderer schema={schema2} />
+      <SchemaRenderer 
+        schema={schema} 
+      />
+      <SchemaRenderer 
+        schema={schema2} 
+      />
     </Space>
-  )
-}
+  );
+};
 ```
 
-### Action.Container - 指定容器内打开
+### Action.Drawer
 
 ```tsx
-import React, { useRef } from 'react';
-import { SchemaRenderer } from '../';
-import { ActionContext } from './';
+import React from 'react';
+import { SchemaRenderer } from '@nocobase/client';
+import { Space } from 'antd';
 
-export default () => {
-  const containerRef = useRef();
-  const schema = {
-    type: 'void',
-    name: 'action1',
-    title: '按钮',
-    'x-component': 'Action',
-    'x-component-props': {
-      containerRef
-    },
-    properties: {
-      container1: {
-        type: 'void',
-        title: '页面标题',
-        'x-component': 'Action.Container',
-        properties: {
-          input: {
-            type: 'string',
-            title: '字段',
-            'x-designable-bar': 'FormItem.DesignableBar',
-            'x-decorator': 'FormItem',
-            'x-component': 'Input',
-          }
+const schema = {
+  type: 'void',
+  name: 'action1',
+  title: '按钮',
+  'x-component': 'Action',
+  'x-designable-bar': 'Action.DesignableBar',
+  'x-component-props': {
+  },
+  properties: {
+    modal1: {
+      type: 'void',
+      title: '抽屉标题',
+      'x-component': 'Action.Drawer',
+      properties: {
+        input: {
+          type: 'string',
+          title: '输入框',
+          required: true,
+          'x-decorator': 'FormItem',
+          'x-component': 'Input',
         },
       },
     },
-  };
+  },
+};
+
+const schema2 = {
+  type: 'void',
+  name: 'action1',
+  title: 'DrawerForm',
+  'x-component': 'Action',
+  'x-designable-bar': 'Action.DesignableBar',
+  'x-component-props': {
+  },
+  properties: {
+    modal1: {
+      type: 'void',
+      title: '抽屉标题',
+      'x-decorator': 'Form',
+      'x-component': 'Action.Drawer',
+      properties: {
+        input: {
+          type: 'string',
+          title: '输入框',
+          required: true,
+          'x-decorator': 'FormItem',
+          'x-component': 'Input',
+        },
+      },
+    },
+  },
+};
+
+export default () => {
   return (
-    <div>
-      <SchemaRenderer schema={schema} />
-    </div>
-  )
-}
+    <Space>
+      <SchemaRenderer 
+        schema={schema} 
+      />
+      <SchemaRenderer 
+        schema={schema2} 
+      />
+    </Space>
+  );
+};
+```
+
+### Action.Dropdown
+
+```tsx
+import React from 'react';
+import { SchemaRenderer } from '@nocobase/client';
+
+const schema = {
+  type: 'void',
+  name: 'dropdown1',
+  title: '下拉菜单',
+  'x-component': 'Action.Dropdown',
+  'x-designable-bar': 'Action.DesignableBar',
+  'x-component-props': {},
+  properties: {
+    item1: {
+      type: 'void',
+      title: `操作1`,
+      'x-designable-bar': 'Menu.DesignableBar',
+      'x-component': 'Menu.Action',
+      properties: {
+        modal1: {
+          type: 'void',
+          title: '对话框标题',
+          'x-component': 'Action.Modal',
+          properties: {
+            input: {
+              type: 'string',
+              'x-component': 'Input',
+            },
+          },
+        },
+      },
+    },
+    item2: {
+      type: 'void',
+      title: `操作2`,
+      'x-designable-bar': 'Menu.DesignableBar',
+      'x-component': 'Menu.Action',
+      properties: {
+        modal2: {
+          type: 'void',
+          title: '对话框标题',
+          'x-component': 'Action.Modal',
+          properties: {
+            input: {
+              type: 'string',
+              'x-component': 'Input',
+            },
+          },
+        },
+      },
+    },
+  },
+};
+
+export default () => {
+  return (
+    <SchemaRenderer 
+      debug={true} 
+      schema={schema} 
+    />
+  );
+};
+```
+
+### Action.Popover
+
+```tsx
+import React from 'react';
+import { SchemaRenderer } from '@nocobase/client';
+import { Space } from 'antd';
+
+const schema = {
+  type: 'void',
+  name: 'action1',
+  title: '按钮',
+  'x-component': 'Action',
+  'x-designable-bar': 'Action.DesignableBar',
+  'x-component-props': {
+  },
+  properties: {
+    modal1: {
+      type: 'void',
+      title: '抽屉标题',
+      'x-component': 'Action.Popover',
+      properties: {
+        input: {
+          type: 'string',
+          title: '输入框',
+          required: true,
+          'x-decorator': 'FormItem',
+          'x-component': 'Input',
+        },
+      },
+    },
+  },
+};
+
+const schema2 = {
+  type: 'void',
+  name: 'action1',
+  title: 'PopoverForm',
+  'x-component': 'Action',
+  'x-designable-bar': 'Action.DesignableBar',
+  'x-component-props': {
+  },
+  properties: {
+    modal1: {
+      type: 'void',
+      title: '抽屉标题',
+      'x-decorator': 'Form',
+      'x-component': 'Action.Popover',
+      properties: {
+        input: {
+          type: 'string',
+          title: '输入框',
+          required: true,
+          'x-decorator': 'FormItem',
+          'x-component': 'Input',
+        },
+      },
+    },
+  },
+};
+
+export default () => {
+  return (
+    <Space>
+      <SchemaRenderer 
+        schema={schema} 
+      />
+      <SchemaRenderer 
+        schema={schema2} 
+      />
+    </Space>
+  );
+};
 ```

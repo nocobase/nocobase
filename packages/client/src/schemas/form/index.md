@@ -20,6 +20,7 @@ group:
   // 添加其他节点
 </Form>
 
+// Form 用作 decorator 时只用于创建独立的作用域
 <Table x-decorator={'Form'}/>
 </pre>
 
@@ -36,15 +37,19 @@ import React from 'react';
 import { SchemaRenderer } from '../';
 
 const schema = {
-  name: 'form',
   type: 'object',
+  name: 'form',
   'x-component': 'Form',
+  'x-component-props': {
+    layout: 'horizontal',
+  },
   properties: {
     username: {
       type: 'string',
       title: '用户名',
       required: true,
       'x-decorator': 'FormItem',
+      'x-designable-bar': 'FormItem.DesignableBar',
       'x-component': 'Input',
     },
     password: {
@@ -59,7 +64,7 @@ const schema = {
 
 export default () => {
   return (
-    <SchemaRenderer schema={schema} />
+    <SchemaRenderer debug={true} schema={schema} />
   );
 };
 ```
@@ -124,25 +129,14 @@ const schema = {
           type: 'void',
           'x-component': 'Action',
           'x-component-props': {
-            // block: true,
             type: 'primary',
-            useAction: '{{ useLogin }}',
-            style: {
-              // width: '100%',
-            },
           },
           title: '提交',
         },
         reset: {
           type: 'void',
           'x-component': 'Action',
-          'x-component-props': {
-            // block: true,
-            useAction: '{{ useLogin }}',
-            style: {
-              // width: '100%',
-            },
-          },
+          'x-component-props': {},
           title: '重置',
         },
       },
@@ -220,12 +214,7 @@ const schema = {
           type: 'void',
           'x-component': 'Action',
           'x-component-props': {
-            // block: true,
             type: 'primary',
-            useAction: '{{ useLogin }}',
-            style: {
-              // width: '100%',
-            },
           },
           title: '提交',
         },
@@ -233,11 +222,6 @@ const schema = {
           type: 'void',
           'x-component': 'Action',
           'x-component-props': {
-            // block: true,
-            useAction: '{{ useLogin }}',
-            style: {
-              // width: '100%',
-            },
           },
           title: '重置',
         },
