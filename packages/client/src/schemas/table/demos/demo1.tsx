@@ -1,9 +1,9 @@
 import React from 'react';
 import { SchemaRenderer } from '../..';
+import { Table } from '../';
 import { uid } from '@formily/shared';
-import Editor from '@monaco-editor/react';
 import { createForm } from '@formily/core';
-import { observer } from '@formily/react';
+import { ISchema, observer } from '@formily/react';
 
 function useAction() {
   return {
@@ -13,7 +13,7 @@ function useAction() {
   }
 }
 
-const schema = {
+const schema: ISchema = {
   name: `table_${uid()}`,
   type: 'array',
   'x-component': 'Table',
@@ -49,66 +49,52 @@ const schema = {
             popover1: {
               type: 'void',
               title: '弹窗标题',
+              'x-decorator': 'Form',
               'x-component': 'Action.Popover',
               'x-component-props': {},
               properties: {
-                [uid()]: {
-                  name: 'form',
+                filter: {
+                  name: 'filter',
                   type: 'object',
-                  'x-component': 'Form',
+                  'x-component': 'Filter',
                   properties: {
-                    filter: {
-                      name: 'filter',
-                      type: 'object',
-                      'x-component': 'Filter',
-                      properties: {
-                        column1: {
-                          type: 'void',
-                          title: '字段1',
-                          'x-component': 'Filter.Column',
-                          'x-component-props': {
-                            operations: [
-                              { label: '等于', value: 'eq' },
-                              { label: '不等于', value: 'ne' },
-                            ],
-                          },
-                          properties: {
-                            field1: {
-                              type: 'string',
-                              'x-component': 'Input',
-                            },
-                          },
-                        },
-                        column2: {
-                          type: 'void',
-                          title: '字段2',
-                          'x-component': 'Filter.Column',
-                          'x-component-props': {
-                            operations: [
-                              { label: '大于', value: 'gt' },
-                              { label: '小于', value: 'lt' },
-                              { label: '非空', value: 'notNull', noValue: true },
-                            ],
-                          },
-                          properties: {
-                            field1: {
-                              type: 'number',
-                              'x-component': 'InputNumber',
-                            },
-                          },
-                        },
-                      }
-                    },
-                    action: {
+                    column1: {
                       type: 'void',
-                      title: '提交',
-                      'x-component': 'Action',
+                      title: '字段1',
+                      'x-component': 'Filter.Column',
                       'x-component-props': {
-                        useAction: '{{ useTableFilterAction }}',
+                        operations: [
+                          { label: '等于', value: 'eq' },
+                          { label: '不等于', value: 'ne' },
+                        ],
+                      },
+                      properties: {
+                        field1: {
+                          type: 'string',
+                          'x-component': 'Input',
+                        },
                       },
                     },
-                  },
-                },
+                    column2: {
+                      type: 'void',
+                      title: '字段2',
+                      'x-component': 'Filter.Column',
+                      'x-component-props': {
+                        operations: [
+                          { label: '大于', value: 'gt' },
+                          { label: '小于', value: 'lt' },
+                          { label: '非空', value: 'notNull', noValue: true },
+                        ],
+                      },
+                      properties: {
+                        field1: {
+                          type: 'number',
+                          'x-component': 'InputNumber',
+                        },
+                      },
+                    },
+                  }
+                }
               },
             },
           },
@@ -148,7 +134,7 @@ const schema = {
                       title: '提交',
                       'x-component': 'Action',
                       'x-component-props': {
-                        useAction: '{{ useTableCreateAction }}',
+                        useAction: '{{ Table.useTableCreateAction }}',
                       },
                     },
                   },
@@ -163,7 +149,7 @@ const schema = {
           title: '删除',
           'x-component': 'Action',
           'x-component-props': {
-            useAction: '{{ useTableDestroyAction }}',
+            useAction: '{{ Table.useTableDestroyAction }}',
           },
         },
       },
@@ -340,7 +326,7 @@ const schema = {
                   type: 'void',
                   'x-component': 'Form',
                   'x-component-props': {
-                    useValues: '{{ useTableRow }}',
+                    useValues: '{{ Table.useTableRow }}',
                   },
                   properties: {
                     field1: {
@@ -360,7 +346,7 @@ const schema = {
                       title: '提交',
                       'x-component': 'Action',
                       'x-component-props': {
-                        useAction: '{{ useTableUpdateAction }}',
+                        useAction: '{{ Table.useTableUpdateAction }}',
                       },
                     },
                   },
@@ -374,7 +360,7 @@ const schema = {
           title: '删除',
           'x-component': 'Action',
           'x-component-props': {
-            useAction: '{{ useTableDestroyAction }}',
+            useAction: '{{ Table.useTableDestroyAction }}',
           },
         },
         [uid()]: {
@@ -474,7 +460,7 @@ const schema = {
                       type: 'void',
                       'x-component': 'Form',
                       'x-component-props': {
-                        useValues: '{{ useTableRow }}',
+                        useValues: '{{ Table.useTableRow }}',
                       },
                       properties: {
                         field1: {
@@ -494,7 +480,7 @@ const schema = {
                           title: '提交',
                           'x-component': 'Action',
                           'x-component-props': {
-                            useAction: '{{ useTableUpdateAction }}',
+                            useAction: '{{ Table.useTableUpdateAction }}',
                           },
                         },
                       },
@@ -508,7 +494,7 @@ const schema = {
               title: '删除',
               'x-component': 'Action',
               'x-component-props': {
-                useAction: '{{ useTableDestroyAction }}',
+                useAction: '{{ Table.useTableDestroyAction }}',
               },
             },
           },
@@ -525,7 +511,7 @@ const form = createForm({
 export default observer(() => {
   return (
     <div>
-      <SchemaRenderer form={form} schema={schema} />
+      <SchemaRenderer scope={{ Table }} form={form} schema={schema} />
     </div>
   );
 });

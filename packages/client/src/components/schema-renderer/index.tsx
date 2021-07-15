@@ -22,13 +22,7 @@ import Editor from '@monaco-editor/react';
 import { ArrayCollapse, ArrayTable, FormLayout } from '@formily/antd';
 
 import { Space, Card, Modal, Spin } from 'antd';
-import {
-  Action,
-  useLogin,
-  useRegister,
-  useSubmit,
-  useDesignableValues,
-} from '../../schemas/action';
+import { Action } from '../../schemas/action';
 import { AddNew } from '../../schemas/add-new';
 import { Cascader } from '../../schemas/cascader';
 import { Checkbox } from '../../schemas/checkbox';
@@ -46,14 +40,7 @@ import { Menu } from '../../schemas/menu';
 import { Password } from '../../schemas/password';
 import { Radio } from '../../schemas/radio';
 import { Select } from '../../schemas/select';
-import {
-  Table,
-  useTableRow,
-  useTableCreateAction,
-  useTableUpdateAction,
-  useTableDestroyAction,
-  useTableFilterAction,
-} from '../../schemas/table';
+import { Table } from '../../schemas/table';
 import { Tabs } from '../../schemas/tabs';
 import { TimePicker } from '../../schemas/time-picker';
 import { Upload } from '../../schemas/upload';
@@ -71,17 +58,7 @@ interface DesignableContextProps {
 }
 
 export const SchemaField = createSchemaField({
-  scope: {
-    useLogin,
-    useRegister,
-    useSubmit,
-    useTableCreateAction,
-    useTableDestroyAction,
-    useTableFilterAction,
-    useTableRow,
-    useTableUpdateAction,
-    useDesignableValues,
-  },
+  scope: {},
   components: {
     Card,
     Div,
@@ -180,10 +157,12 @@ export function addPropertyAfter(target: Schema, data: ISchema) {
 export function useDesignable(path?: any) {
   const { schema, refresh } = useContext(DesignableContext);
   const schemaPath = path || useSchemaPath();
+  console.log({ schemaPath });
   const fieldSchema = useFieldSchema();
   const currentSchema =
     findPropertyByPath(schema, schemaPath) || ({} as Schema);
-  // console.log('useDesignable', { schema, schemaPath, currentSchema });
+  console.log({ currentSchema })
+    // console.log('useDesignable', { schema, schemaPath, currentSchema });
   const options = useContext(SchemaOptionsContext);
   const DesignableBar =
     get(options.components, currentSchema['x-designable-bar']) || (() => null);
@@ -317,13 +296,17 @@ export function useDesignable(path?: any) {
 }
 
 export function getSchemaPath(schema: Schema) {
-  const path = [schema.name];
+  const path = schema['x-path'] || [schema.name];
   let parent = schema.parent;
   while (parent) {
     if (!parent.name) {
       break;
     }
-    path.unshift(parent.name);
+    if (parent['x-path']) {
+      path.unshift(...parent['x-path']);
+    } else {
+      path.unshift(parent.name);
+    }
     parent = parent.parent;
   }
   // console.log('getSchemaPath', path, schema);

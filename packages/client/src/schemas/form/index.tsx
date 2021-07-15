@@ -9,77 +9,53 @@ import {
   FormProvider,
   ISchema,
 } from '@formily/react';
-import { SchemaRenderer, useDesignable } from '../';
+import { useSchemaPath, SchemaField, useDesignable } from '../';
 import get from 'lodash/get';
 import { Dropdown, Menu } from 'antd';
-import {
-  MenuOutlined,
-  ArrowUpOutlined,
-  ArrowDownOutlined,
-  DeleteOutlined,
-} from '@ant-design/icons';
-import { useMouseEvents } from 'beautiful-react-hooks';
+import { MenuOutlined } from '@ant-design/icons';
 import cls from 'classnames';
-
+import { FormLayout } from '@formily/antd';
 import './style.less';
-import { clone } from '@formily/shared';
-
-function Blank() {
-  return null;
-}
-
-function useDesignableBar() {
-  const schema = useFieldSchema();
-  const options = useContext(SchemaOptionsContext);
-  const DesignableBar = get(options.components, schema['x-designable-bar']);
-
-  return {
-    DesignableBar: DesignableBar || Blank,
-  };
-}
-
-function useDefaultValues() {
-  return {};
-}
 
 export const Form: any = observer((props: any) => {
-  const scope = useContext(SchemaExpressionScopeContext);
-  const { useValues = useDefaultValues } = props;
-  const values = useValues();
+  const { useValues = () => ({}), ...others } = props;
+  const initialValues = useValues();
   const form = useMemo(() => {
-    console.log('Form.useMemo', values);
-    return createForm({
-      values,
-      // values: clone(values),
-    });
-  }, [values]);
-  const schema = useFieldSchema();
-  const { schema: designableSchema, refresh } = useDesignable();
-  const formSchema: ISchema = schema['x-decorator'] === 'Form' ? {
-    type: 'object',
-    properties: {
-      [schema.name]: {
-        ...schema.toJSON(),
-        "x-decorator": 'Form.Decorator',
-      }
-    }
-  } : schema.toJSON();
+    console.log('Form.useMemo', initialValues);
+    return createForm({ initialValues });
+  }, []);
+  const { schema } = useDesignable();
+  const path = useSchemaPath();
   return (
-    <SchemaRenderer
-      scope={scope}
-      // components={options.components}
-      onRefresh={(subSchema: Schema) => {
-        designableSchema.properties = subSchema.properties;
-        refresh();
-      }}
-      form={form}
-      schema={formSchema}
-      onlyRenderProperties
-    />
+    <FormProvider form={form}>
+      {schema['x-decorator'] === 'Form' ? (
+        <SchemaField
+          schema={{
+            type: 'object',
+            properties: {
+              [schema.name]: {
+                ...schema.toJSON(),
+                'x-path': path,
+                'x-decorator': 'Form.__Decorator',
+              },
+            },
+          }}
+        />
+      ) : (
+        <FormLayout layout={'vertical'} {...others}>
+          <SchemaField
+            schema={{
+              type: 'object',
+              properties: schema.properties,
+            }}
+          />
+        </FormLayout>
+      )}
+    </FormProvider>
   );
 });
 
-Form.Decorator = ({children}) => children;
+Form.__Decorator = ({ children }) => children;
 
 Form.DesignableBar = (props) => {
   const { active } = props;
