@@ -227,9 +227,11 @@ export function useTableCreateAction() {
 export function useTableUpdateAction() {
   const { field, refresh, params } = useTableContext();
   const [,setVisible] = useContext(VisibleContext);
+  const ctx = useContext(TableRowContext);
   const form = useForm();
   return {
     async run() {
+      field.value[ctx.index] = form.values;
       setVisible && setVisible(false);
       refresh();
     },

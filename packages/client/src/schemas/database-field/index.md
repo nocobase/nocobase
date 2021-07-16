@@ -23,53 +23,6 @@ group:
 
 ## Examples
 
-```tsx
-import React from 'react';
-import { createForm } from '@formily/core';
-import { SchemaRenderer } from '../';
-import { observer, connect, useField } from '@formily/react';
+<code src="./demos/demo1.tsx"/>
 
-const schema = {
-  type: 'object',
-  properties: {
-    array: {
-      type: 'array',
-      'x-component': 'DatabaseField',
-      default: [
-        {
-          id: 1,
-          interface: 'string',
-          dataType: 'string',
-          name: 'title',
-          ui: {
-            title: '标题',
-          },
-        },
-        {
-          id: 2,
-          dataType: 'text',
-          interface: 'textarea',
-          name: 'content',
-          ui: {
-            title: '内容',
-          },
-        },
-      ],
-    },
-    // input: {
-    //   type: 'string',
-    //   'x-component': 'Input',
-    // },
-  },
-};
-
-const form = createForm();
-
-export default observer(() => {
-  return (
-    <div>
-      <SchemaRenderer form={form} schema={schema} />
-    </div>
-  )
-})
-```
+<code src="./demos/demo2.tsx"/>

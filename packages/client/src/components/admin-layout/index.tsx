@@ -21,6 +21,10 @@ import { SchemaRenderer } from '../../schemas';
 import { useRequest } from 'ahooks';
 import './style.less';
 
+import { uid } from '@formily/shared';
+import { ISchema } from '@formily/react';
+import datatable from './datatable';
+
 function LayoutWithMenu({ schema }) {
   const match = useRouteMatch<any>();
   const location = useLocation();
@@ -33,7 +37,7 @@ function LayoutWithMenu({ schema }) {
   console.log({ match });
   return (
     <Layout>
-      <Layout.Header>
+      <Layout.Header style={{ display: 'flex' }}>
         <SchemaRenderer
           schema={schema}
           scope={{
@@ -42,6 +46,7 @@ function LayoutWithMenu({ schema }) {
             selectedKeys: [activeKey].filter(Boolean),
           }}
         />
+        <SchemaRenderer schema={datatable} />
       </Layout.Header>
       <Layout>
         <Layout.Sider
@@ -59,7 +64,7 @@ function LayoutWithMenu({ schema }) {
 
 function Content({ activeKey }) {
   const { data = {}, loading } = useRequest(
-    `ui_schemas:getTree/${activeKey}?filter[parentId]=${activeKey}`,
+    `ui_schemas:getTree?filter[parentKey]=${activeKey}`,
     {
       refreshDeps: [activeKey],
       formatResult: (result) => result?.data,
@@ -70,7 +75,31 @@ function Content({ activeKey }) {
     return <Spin />;
   }
 
-  return <SchemaRenderer schema={data} />;
+  const schema: ISchema = {
+    type: 'void',
+    name: uid(),
+    'x-component': 'Grid',
+    properties: {
+      [`row_${uid()}`]: {
+        type: 'void',
+        'x-component': 'Grid.Row',
+        properties: {
+          [`col_${uid()}`]: {
+            type: 'void',
+            'x-component': 'Grid.Col',
+            properties: {
+              [uid()]: {
+                type: 'void',
+                'x-component': 'AddNew.BlockItem',
+              },
+            },
+          },
+        },
+      },
+    },
+  };
+
+  return <SchemaRenderer schema={schema} />;
 }
 
 export function AdminLayout({ route }: any) {

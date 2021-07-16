@@ -26,16 +26,19 @@ export const Form: any = observer((props: any) => {
   }, []);
   const { schema } = useDesignable();
   const path = useSchemaPath();
+  const scope = useContext(SchemaExpressionScopeContext);
   return (
     <FormProvider form={form}>
       {schema['x-decorator'] === 'Form' ? (
         <SchemaField
+          scope={scope}
           schema={{
             type: 'object',
             properties: {
               [schema.name]: {
                 ...schema.toJSON(),
                 'x-path': path,
+                // 避免死循环
                 'x-decorator': 'Form.__Decorator',
               },
             },
@@ -44,6 +47,7 @@ export const Form: any = observer((props: any) => {
       ) : (
         <FormLayout layout={'vertical'} {...others}>
           <SchemaField
+            scope={scope}
             schema={{
               type: 'object',
               properties: schema.properties,

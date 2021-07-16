@@ -18,9 +18,11 @@ import './style.less';
 import { uid } from '@formily/shared';
 import cls from 'classnames';
 import { MenuOutlined } from '@ant-design/icons';
+import { FormLayout } from '@formily/antd';
+import IconPicker from '../../components/icon-picker';
 
 export const Action: any = observer((props: any) => {
-  const { useAction = useDefaultAction, ...others } = props;
+  const { useAction = useDefaultAction, icon, ...others } = props;
   const { run } = useAction();
   const { schema, DesignableBar } = useDesignable();
   const [visible, setVisible] = useState(false);
@@ -28,12 +30,13 @@ export const Action: any = observer((props: any) => {
   const isDropdownOrPopover =
     child &&
     ['Action.Dropdown', 'Action.Popover'].includes(child['x-component']);
-  console.log({ DesignableBar, schema })
-    return (
+  console.log({ DesignableBar, schema });
+  return (
     <VisibleContext.Provider value={[visible, setVisible]}>
       {!isDropdownOrPopover && (
         <Button
           {...others}
+          icon={<IconPicker type={icon} />}
           onClick={async () => {
             setVisible(true);
             await run();
@@ -48,10 +51,31 @@ export const Action: any = observer((props: any) => {
   );
 });
 
+Action.Link = observer((props: any) => {
+  const { schema } = useDesignable();
+  return <Link {...props}>{schema.title}</Link>;
+});
+
+Action.URL = observer((props: any) => {
+  const { schema } = useDesignable();
+  return (
+    <a target={'_blank'} {...props}>
+      {schema.title}
+    </a>
+  );
+});
+
 Action.Modal = observer((props: any) => {
+  const {
+    useOkAction = useDefaultAction,
+    useCancelAction = useDefaultAction,
+    ...others
+  } = props;
   const { schema } = useDesignable();
   const [visible, setVisible] = useContext(VisibleContext);
   const form = useForm();
+  const { run: runOk } = useOkAction();
+  const { run: runCancel } = useCancelAction();
   const isFormDecorator = schema['x-decorator'] === 'Form';
   return (
     <Modal
@@ -66,6 +90,7 @@ Action.Modal = observer((props: any) => {
                   if (isFormDecorator) {
                     form.clearErrors();
                   }
+                  runCancel && (await runCancel());
                   setVisible(false);
                 }}
               >
@@ -77,6 +102,7 @@ Action.Modal = observer((props: any) => {
                   if (isFormDecorator) {
                     await form.submit();
                   }
+                  runOk && (await runOk());
                   setVisible(false);
                 }}
               >
@@ -85,24 +111,32 @@ Action.Modal = observer((props: any) => {
             ]
           : null
       }
-      {...props}
-      onCancel={() => {
+      {...others}
+      onCancel={async () => {
         if (isFormDecorator) {
           form.clearErrors();
         }
+        runCancel && (await runCancel());
         setVisible(false);
       }}
       visible={visible}
     >
-      {props.children}
+      <FormLayout layout={'vertical'}>{props.children}</FormLayout>
     </Modal>
   );
 });
 
 Action.Drawer = observer((props: any) => {
+  const {
+    useOkAction = useDefaultAction,
+    useCancelAction = useDefaultAction,
+    ...others
+  } = props;
   const { schema } = useDesignable();
   const [visible, setVisible] = useContext(VisibleContext);
   const form = useForm();
+  const { run: runOk } = useOkAction();
+  const { run: runCancel } = useCancelAction();
   const isFormDecorator = schema['x-decorator'] === 'Form';
   return (
     <Drawer
@@ -117,6 +151,7 @@ Action.Drawer = observer((props: any) => {
               onClick={async (e) => {
                 form.clearErrors();
                 props.onClose && (await props.onClose(e));
+                runCancel && (await runCancel());
                 setVisible(false);
               }}
             >
@@ -126,6 +161,7 @@ Action.Drawer = observer((props: any) => {
               onClick={async (e) => {
                 await form.submit();
                 props.onOk && (await props.onOk(e));
+                runOk && (await runOk());
                 setVisible(false);
               }}
               type={'primary'}
@@ -135,14 +171,15 @@ Action.Drawer = observer((props: any) => {
           </Space>
         )
       }
-      {...props}
+      {...others}
       visible={visible}
       onClose={async (e) => {
         props.onClose && (await props.onClose(e));
+        runCancel && (await runCancel());
         setVisible(false);
       }}
     >
-      {props.children}
+      <FormLayout layout={'vertical'}>{props.children}</FormLayout>
     </Drawer>
   );
 });

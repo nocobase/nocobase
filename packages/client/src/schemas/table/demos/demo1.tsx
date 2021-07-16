@@ -1,6 +1,6 @@
 import React from 'react';
 import { SchemaRenderer } from '../..';
-import { Table } from '../';
+import { Table, useTableCreateAction } from '../';
 import { uid } from '@formily/shared';
 import { createForm } from '@formily/core';
 import { ISchema, observer } from '@formily/react';
@@ -8,9 +8,9 @@ import { ISchema, observer } from '@formily/react';
 function useAction() {
   return {
     async run() {
-      alert('自定义')
-    }
-  }
+      alert('自定义');
+    },
+  };
 }
 
 const schema: ISchema = {
@@ -93,8 +93,8 @@ const schema: ISchema = {
                         },
                       },
                     },
-                  }
-                }
+                  },
+                },
               },
             },
           },
@@ -109,35 +109,23 @@ const schema: ISchema = {
             drawer1: {
               type: 'void',
               title: '抽屉标题',
+              'x-decorator': 'Form',
               'x-component': 'Action.Modal',
-              'x-component-props': {},
+              'x-component-props': {
+                useOkAction: '{{ Table.useTableCreateAction }}',
+              },
               properties: {
-                [uid()]: {
-                  name: 'form',
-                  type: 'object',
-                  'x-component': 'Form',
-                  properties: {
-                    field1: {
-                      type: 'string',
-                      title: '字段1',
-                      'x-decorator': 'FormItem',
-                      'x-component': 'Input',
-                    },
-                    field2: {
-                      type: 'string',
-                      title: '字段2',
-                      'x-decorator': 'FormItem',
-                      'x-component': 'Input',
-                    },
-                    action: {
-                      type: 'void',
-                      title: '提交',
-                      'x-component': 'Action',
-                      'x-component-props': {
-                        useAction: '{{ Table.useTableCreateAction }}',
-                      },
-                    },
-                  },
+                field1: {
+                  type: 'string',
+                  title: '字段1',
+                  'x-decorator': 'FormItem',
+                  'x-component': 'Input',
+                },
+                field2: {
+                  type: 'string',
+                  title: '字段2',
+                  'x-decorator': 'FormItem',
+                  'x-component': 'Input',
                 },
               },
             },
@@ -154,22 +142,6 @@ const schema: ISchema = {
         },
       },
     },
-    // [`a_${uid()}`]: {
-    //   type: 'void',
-    //   'x-component': 'Table.ActionBar',
-    //   'x-component-props': {
-    //     align: 'bottom',
-    //   },
-    //   properties: {
-    //     pagination: {
-    //       type: 'void',
-    //       'x-component': 'Table.Pagination',
-    //       'x-component-props': {
-    //         defaultPageSize: 5,
-    //       },
-    //     },
-    //   },
-    // },
     [`a_${uid()}`]: {
       type: 'void',
       'x-component': 'Table.ActionBar',
@@ -256,7 +228,6 @@ const schema: ISchema = {
           type: 'void',
           name: 'action1',
           title: '查看',
-          
           'x-component': 'Action',
           'x-designable-bar': 'Table.Action.DesignableBar',
           properties: {
@@ -318,38 +289,26 @@ const schema: ISchema = {
             drawer1: {
               type: 'void',
               title: '编辑表单',
+              "x-decorator": 'Form',
+              'x-decorator-props': {
+                useValues: '{{ Table.useTableRow }}',
+              },
               'x-component': 'Action.Modal',
-              'x-component-props': {},
+              'x-component-props': {
+                useOkAction: '{{ Table.useTableUpdateAction }}',
+              },
               properties: {
-                [uid()]: {
-                  name: 'form',
-                  type: 'void',
-                  'x-component': 'Form',
-                  'x-component-props': {
-                    useValues: '{{ Table.useTableRow }}',
-                  },
-                  properties: {
-                    field1: {
-                      type: 'string',
-                      title: '字段1',
-                      'x-decorator': 'FormItem',
-                      'x-component': 'Input',
-                    },
-                    field2: {
-                      type: 'string',
-                      title: '字段2',
-                      'x-decorator': 'FormItem',
-                      'x-component': 'Input',
-                    },
-                    action: {
-                      type: 'void',
-                      title: '提交',
-                      'x-component': 'Action',
-                      'x-component-props': {
-                        useAction: '{{ Table.useTableUpdateAction }}',
-                      },
-                    },
-                  },
+                field1: {
+                  type: 'string',
+                  title: '字段1',
+                  'x-decorator': 'FormItem',
+                  'x-component': 'Input',
+                },
+                field2: {
+                  type: 'string',
+                  title: '字段2',
+                  'x-decorator': 'FormItem',
+                  'x-component': 'Input',
                 },
               },
             },
@@ -371,7 +330,7 @@ const schema: ISchema = {
             [uid()]: {
               type: 'void',
               title: '操作 1',
-              'x-component': 'Action',
+              'x-component': 'Menu.Action',
               'x-component-props': {
                 useAction,
                 disabled: true,
@@ -380,7 +339,7 @@ const schema: ISchema = {
             [uid()]: {
               type: 'void',
               title: '操作 2',
-              'x-component': 'Action',
+              'x-component': 'Menu.Action',
               'x-default-action': true,
               'x-component-props': {
                 useAction,
@@ -390,8 +349,7 @@ const schema: ISchema = {
               type: 'void',
               name: 'action1',
               title: '查看',
-              'x-component': 'Action',
-              // 'x-default-action': true,
+              'x-component': 'Menu.Action',
               'x-designable-bar': 'Table.Action.DesignableBar',
               properties: {
                 drawer1: {
@@ -446,44 +404,32 @@ const schema: ISchema = {
               type: 'void',
               name: 'action1',
               title: '修改',
-              'x-component': 'Action',
+              'x-component': 'Menu.Action',
               'x-designable-bar': 'Table.Action.DesignableBar',
               properties: {
                 drawer1: {
                   type: 'void',
                   title: '编辑表单',
+                  "x-decorator": 'Form',
+                  'x-decorator-props': {
+                    useValues: '{{ Table.useTableRow }}',
+                  },
                   'x-component': 'Action.Modal',
-                  'x-component-props': {},
+                  'x-component-props': {
+                    useOkAction: '{{ Table.useTableUpdateAction }}',
+                  },
                   properties: {
-                    [uid()]: {
-                      name: 'form',
-                      type: 'void',
-                      'x-component': 'Form',
-                      'x-component-props': {
-                        useValues: '{{ Table.useTableRow }}',
-                      },
-                      properties: {
-                        field1: {
-                          type: 'string',
-                          title: '字段1',
-                          'x-decorator': 'FormItem',
-                          'x-component': 'Input',
-                        },
-                        field2: {
-                          type: 'string',
-                          title: '字段2',
-                          'x-decorator': 'FormItem',
-                          'x-component': 'Input',
-                        },
-                        action: {
-                          type: 'void',
-                          title: '提交',
-                          'x-component': 'Action',
-                          'x-component-props': {
-                            useAction: '{{ Table.useTableUpdateAction }}',
-                          },
-                        },
-                      },
+                    field1: {
+                      type: 'string',
+                      title: '字段1',
+                      'x-decorator': 'FormItem',
+                      'x-component': 'Input',
+                    },
+                    field2: {
+                      type: 'string',
+                      title: '字段2',
+                      'x-decorator': 'FormItem',
+                      'x-component': 'Input',
                     },
                   },
                 },
@@ -492,7 +438,7 @@ const schema: ISchema = {
             [uid()]: {
               type: 'void',
               title: '删除',
-              'x-component': 'Action',
+              'x-component': 'Menu.Action',
               'x-component-props': {
                 useAction: '{{ Table.useTableDestroyAction }}',
               },
@@ -511,7 +457,7 @@ const form = createForm({
 export default observer(() => {
   return (
     <div>
-      <SchemaRenderer scope={{ Table }} form={form} schema={schema} />
+      <SchemaRenderer scope={{ Table, useTableCreateAction }} form={form} schema={schema} />
     </div>
   );
 });
