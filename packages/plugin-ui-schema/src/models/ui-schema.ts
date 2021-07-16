@@ -42,7 +42,7 @@ export class UISchema extends Model {
 
   toProperty() {
     const options = this.get('options') || {};
-    const data = _.omit(this.toJSON(), ['created_at', 'updated_at', 'options', 'parentKey']);
+    const data = _.omit(this.toJSON(), ['created_at', 'updated_at', 'options']);
     return { ...data, ...options };
   }
 

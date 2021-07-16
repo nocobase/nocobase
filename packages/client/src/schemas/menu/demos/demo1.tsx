@@ -3,11 +3,13 @@
  */
 import React from 'react';
 import { SchemaRenderer } from '@nocobase/client';
+import { uid } from '@formily/shared';
+import { ISchema } from '@formily/react';
 
-const schema = {
+const schema: ISchema = {
   type: 'object',
   properties: {
-    menu1: {
+    [uid()]: {
       type: 'void',
       'x-component': 'Menu',
       'x-designable-bar': 'Menu.DesignableBar',
@@ -16,37 +18,46 @@ const schema = {
         theme: 'dark',
       },
       properties: {
-        item1: {
+        [uid()]: {
           type: 'void',
           title: `菜单1`,
           'x-designable-bar': 'Menu.DesignableBar',
           'x-component': 'Menu.Item',
         },
-        item2: {
+        [uid()]: {
+          type: 'void',
+          title: `链接`,
+          'x-designable-bar': 'Menu.DesignableBar',
+          'x-component': 'Menu.Link',
+          "x-component-props": {
+            to: '/abc/def',
+          },
+        },
+        [uid()]: {
           type: 'void',
           title: `菜单2`,
           'x-designable-bar': 'Menu.DesignableBar',
           'x-component': 'Menu.Item',
         },
-        item3: {
+        [uid()]: {
           type: 'void',
           title: '菜单组3',
           'x-designable-bar': 'Menu.DesignableBar',
           'x-component': 'Menu.SubMenu',
           properties: {
-            item5: {
+            [uid()]: {
               type: 'void',
               title: `子菜单5`,
               'x-designable-bar': 'Menu.DesignableBar',
               'x-component': 'Menu.SubMenu',
               properties: {
-                item8: {
+                [uid()]: {
                   type: 'void',
                   title: `子菜单8`,
                   'x-designable-bar': 'Menu.DesignableBar',
                   'x-component': 'Menu.Item',
                 },
-                item9: {
+                [uid()]: {
                   type: 'void',
                   title: `子菜单9`,
                   'x-designable-bar': 'Menu.DesignableBar',
@@ -56,19 +67,19 @@ const schema = {
             },
           },
         },
-        item4: {
+        [uid()]: {
           type: 'void',
           title: '菜单组4',
           'x-designable-bar': 'Menu.DesignableBar',
           'x-component': 'Menu.SubMenu',
           properties: {
-            item6: {
+            [uid()]: {
               type: 'void',
               title: `子菜单6`,
               'x-designable-bar': 'Menu.DesignableBar',
               'x-component': 'Menu.Item',
             },
-            item7: {
+            [uid()]: {
               type: 'void',
               title: `子菜单7`,
               'x-designable-bar': 'Menu.DesignableBar',

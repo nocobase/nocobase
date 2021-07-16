@@ -161,8 +161,8 @@ export function useDesignable(path?: any) {
   const fieldSchema = useFieldSchema();
   const currentSchema =
     findPropertyByPath(schema, schemaPath) || ({} as Schema);
-  console.log({ currentSchema })
-    // console.log('useDesignable', { schema, schemaPath, currentSchema });
+  console.log({ currentSchema });
+  // console.log('useDesignable', { schema, schemaPath, currentSchema });
   const options = useContext(SchemaOptionsContext);
   const DesignableBar =
     get(options.components, currentSchema['x-designable-bar']) || (() => null);
@@ -184,6 +184,9 @@ export function useDesignable(path?: any) {
       }
       if (target['key']) {
         property['parentKey'] = target['key'];
+        if (!property['key']) {
+          property['key'] = uid();
+        }
       }
       const properties = {};
       properties[property.name] = property;
@@ -211,6 +214,9 @@ export function useDesignable(path?: any) {
       }
       if (target['key']) {
         property['parentKey'] = target['key'];
+        if (!property['key']) {
+          property['key'] = uid();
+        }
       }
       target.addProperty(property.name, property);
       // BUG: 空 properties 时，addProperty 无反应。
@@ -232,8 +238,12 @@ export function useDesignable(path?: any) {
       if (!property.name) {
         property.name = uid();
       }
+      console.log('target.parentKey', target);
       if (target['parentKey']) {
         property['parentKey'] = target['parentKey'];
+        if (!property['key']) {
+          property['key'] = uid();
+        }
       }
       addPropertyAfter(target, property);
       refresh();
@@ -253,6 +263,9 @@ export function useDesignable(path?: any) {
       }
       if (target['parentKey']) {
         property['parentKey'] = target['parentKey'];
+        if (!property['key']) {
+          property['key'] = uid();
+        }
       }
       addPropertyBefore(target, property);
       refresh();

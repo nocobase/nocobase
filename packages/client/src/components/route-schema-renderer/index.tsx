@@ -6,6 +6,10 @@ import { SchemaRenderer } from '../../schemas';
 import { useForm } from '@formily/react';
 import { useHistory } from 'react-router-dom';
 
+function Div(props) {
+  return <div {...props}></div>
+}
+
 export function useLogin() {
   const form = useForm();
   const history = useHistory();
@@ -41,7 +45,7 @@ export function RouteSchemaRenderer({ route }) {
   }
   return (
     <div>
-      <SchemaRenderer scope={{ useLogin, useRegister }} schema={data} />
+      <SchemaRenderer components={{ Div }} scope={{ useLogin, useRegister }} schema={data} />
     </div>
   );
 }
