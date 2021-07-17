@@ -21,7 +21,7 @@ import {
 import './style.less';
 import cls from 'classnames';
 
-import { useDesignable, useSchemaPath } from '../';
+import { createSchema, useDesignable, useSchemaPath } from '../';
 import {
   useDrag,
   useDrop,
@@ -93,10 +93,10 @@ export const Grid: any = observer((props) => {
         <RowDivider
           key={`${schema.name}_0`}
           name={`${schema.name}_0`}
-          onDrop={(e) => {
+          onDrop={async (e) => {
             const blockSchema = e.dragItem.schema;
             const path = [...e.dragItem.path];
-            prepend({
+            const data = prepend({
               type: 'void',
               'x-component': 'Grid.Row',
               properties: {
@@ -109,6 +109,8 @@ export const Grid: any = observer((props) => {
                 },
               },
             });
+            await createSchema(data);
+            console.log('prepend', data);
             deepRemove(path);
           }}
         />
@@ -121,10 +123,10 @@ export const Grid: any = observer((props) => {
               <RowDivider
                 key={`${schema.name}_${index + 1}`}
                 name={`${schema.name}_${index + 1}`}
-                onDrop={(e) => {
+                onDrop={async (e) => {
                   const blockSchema = e.dragItem.schema;
                   const path = [...e.dragItem.path];
-                  insertAfter(
+                  const data = insertAfter(
                     {
                       type: 'void',
                       'x-component': 'Grid.Row',
@@ -140,6 +142,8 @@ export const Grid: any = observer((props) => {
                     },
                     [...gridPath, key],
                   );
+                  await createSchema(data);
+                  console.log('insertAfter', data);
                   deepRemove(path);
                 }}
               />
@@ -170,15 +174,16 @@ Grid.Row = observer((props) => {
     <ColumnSizeContext.Provider value={len}>
       <ColDivider
         name={`${schema.name}_0`}
-        onDrop={(e) => {
+        onDrop={async (e) => {
           const blockSchema = e.dragItem.schema;
-          prepend({
+          const data = prepend({
             type: 'void',
             'x-component': 'Grid.Col',
             properties: {
               [blockSchema.name]: blockSchema,
             },
           });
+          await createSchema(data);
           const path = [...e.dragItem.path];
           deepRemove(path);
         }}
@@ -190,9 +195,9 @@ Grid.Row = observer((props) => {
             <ColDivider
               name={`${schema.name}_${index + 1}`}
               resizable={index < len - 1}
-              onDrop={(e) => {
+              onDrop={async (e) => {
                 const blockSchema = e.dragItem.schema;
-                insertAfter(
+                const data = insertAfter(
                   {
                     type: 'void',
                     'x-component': 'Grid.Col',
@@ -202,6 +207,8 @@ Grid.Row = observer((props) => {
                   },
                   [...rowPath, key],
                 );
+                console.log('ColDivider', data)
+                await createSchema(data);
                 const path = [...e.dragItem.path];
                 deepRemove(path);
               }}
@@ -242,45 +249,3 @@ Grid.Col = observer((props) => {
     </div>
   );
 });
-
-// Grid.Block = observer((props) => {
-//   const schema = useFieldSchema();
-//   const uid = useDragDropUID();
-//   const path = useSchemaPath();
-//   const { isDragging, dragRef, previewRef } = useDrag({
-//     type: uid,
-//     onDragStart() {
-//       console.log('onDragStart');
-//     },
-//     onDragEnd(event) {
-//       console.log('onDragEnd', event.data);
-//     },
-//     onDrag(event) {
-//       // console.log('onDrag');
-//     },
-//     item: {
-//       path,
-//       schema: schema.toJSON(),
-//     },
-//   });
-//   const { isOver, onTopHalf, dropRef } = useDrop({
-//     uid: schema.name,
-//     accept: uid,
-//     data: {},
-//     canDrop: !isDragging,
-//   });
-//   return (
-//     <GridBlockContext.Provider value={{ dragRef }}>
-//       <div
-//         ref={mergeRefs([previewRef, dropRef])}
-//         className={cls('nb-grid-block', {
-//           'top-half': onTopHalf,
-//           hover: isOver,
-//           dragging: isDragging,
-//         })}
-//       >
-//         {props.children}
-//       </div>
-//     </GridBlockContext.Provider>
-//   );
-// });

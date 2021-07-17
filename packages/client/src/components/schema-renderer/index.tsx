@@ -154,14 +154,24 @@ export function addPropertyAfter(target: Schema, data: ISchema) {
   });
 }
 
+function setKeys(schema: ISchema, parentKey = null) {
+  if (!schema['key']) {
+    schema['key'] = uid();
+  }
+  if (parentKey && !schema['parentKey']) {
+    schema['parentKey'] = parentKey;
+  }
+  Object.keys(schema.properties || {}).forEach((name) => {
+    setKeys(schema.properties[name], schema['key']);
+  });
+}
+
 export function useDesignable(path?: any) {
   const { schema, refresh } = useContext(DesignableContext);
   const schemaPath = path || useSchemaPath();
-  console.log({ schemaPath });
   const fieldSchema = useFieldSchema();
   const currentSchema =
     findPropertyByPath(schema, schemaPath) || ({} as Schema);
-  console.log({ currentSchema });
   // console.log('useDesignable', { schema, schemaPath, currentSchema });
   const options = useContext(SchemaOptionsContext);
   const DesignableBar =
@@ -184,9 +194,11 @@ export function useDesignable(path?: any) {
       }
       if (target['key']) {
         property['parentKey'] = target['key'];
-        if (!property['key']) {
-          property['key'] = uid();
-        }
+        setKeys(property);
+        property['__prepend__'] = true;
+        // if (!property['key']) {
+        //   property['key'] = uid();
+        // }
       }
       const properties = {};
       properties[property.name] = property;
@@ -214,9 +226,10 @@ export function useDesignable(path?: any) {
       }
       if (target['key']) {
         property['parentKey'] = target['key'];
-        if (!property['key']) {
-          property['key'] = uid();
-        }
+        // if (!property['key']) {
+        //   property['key'] = uid();
+        // }
+        setKeys(property);
       }
       target.addProperty(property.name, property);
       // BUG: 空 properties 时，addProperty 无反应。
@@ -241,9 +254,8 @@ export function useDesignable(path?: any) {
       console.log('target.parentKey', target);
       if (target['parentKey']) {
         property['parentKey'] = target['parentKey'];
-        if (!property['key']) {
-          property['key'] = uid();
-        }
+        setKeys(property);
+        property['__insertAfter__'] = target['key'];
       }
       addPropertyAfter(target, property);
       refresh();
@@ -263,9 +275,8 @@ export function useDesignable(path?: any) {
       }
       if (target['parentKey']) {
         property['parentKey'] = target['parentKey'];
-        if (!property['key']) {
-          property['key'] = uid();
-        }
+        setKeys(property);
+        property['__insertBefore__'] = target['key'];
       }
       addPropertyBefore(target, property);
       refresh();
@@ -280,17 +291,20 @@ export function useDesignable(path?: any) {
         console.error('target schema does not exist.');
         return;
       }
+      const removed = [];
       const remove = (s: Schema) => {
         if (!s.parent) {
           return;
         }
         s.parent.removeProperty(s.name);
+        removed.push(s);
         if (Object.keys(s.parent.properties || {}).length === 0) {
           remove(s.parent);
         }
       };
       remove(target);
       refresh();
+      return removed;
     },
     remove(targetPath?: any) {
       let target = currentSchema;

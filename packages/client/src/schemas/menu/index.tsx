@@ -35,21 +35,21 @@ import cls from 'classnames';
 import { useDesignable } from '../../components/schema-renderer';
 import { MenuOutlined, PlusOutlined } from '@ant-design/icons';
 import { IconPicker } from '../../components/icon-picker';
-import { useDefaultAction, VisibleContext } from '..';
+import { createSchema, removeSchema, useDefaultAction, VisibleContext } from '..';
 import { useMount } from 'ahooks';
 import './style.less';
 import { Link } from 'react-router-dom';
-import { useSchemaPath } from '@nocobase/client/lib';
+import { findPropertyByPath, useSchemaPath } from '@nocobase/client/lib';
 import { request } from '../';
+import defaultSchemas from './defaultSchemas';
+import { get } from 'lodash';
 
 export const MenuModeContext = createContext(null);
 
-function useSelectedKey() {}
-
 const SideMenu = (props: any) => {
-  const { visible, selectedKey, onSelect, path } = props;
+  const { selectedKey, onSelect, path } = props;
   const { schema } = useDesignable();
-  if (!selectedKey || !visible) {
+  if (!selectedKey) {
     return null;
   }
   const child = schema.properties && schema.properties[selectedKey];
@@ -108,7 +108,9 @@ export const Menu: any = observer((props: any) => {
           if (mode === 'mix') {
             setSelectedKey(info.key);
           }
-          onSelect && onSelect(info);
+          const selectedSchema = schema.properties[info.key];
+          console.log({ selectedSchema })
+          onSelect && onSelect({ ...info, schema: selectedSchema });
         }}
       >
         <RecursionField schema={schema} onlyRenderProperties />
@@ -120,70 +122,18 @@ export const Menu: any = observer((props: any) => {
         <div ref={ref}>
           <SideMenu
             path={path}
-            onSelect={onSelect}
-            visible={mode === 'mix'}
+            onSelect={(info) => {
+              const keyPath = [selectedKey, ...info.keyPath];
+              const selectedSchema = findPropertyByPath(schema, keyPath);
+              console.log('keyPath', keyPath, selectedSchema);
+              onSelect && onSelect({ ...info, keyPath, schema: selectedSchema });
+            }}
             selectedKey={selectedKey}
             sideMenuRef={sideMenuRef}
           />
         </div>
       )}
     </MenuModeContext.Provider>
-  );
-});
-
-Menu.AddNew = observer((props: any) => {
-  const { appendChild } = useDesignable(props.path);
-  return (
-    <AntdMenu.ItemGroup
-      className={'nb-menu-add-new'}
-      title={
-        <Dropdown
-          overlay={
-            <AntdMenu>
-              <AntdMenu.Item
-                onClick={async () => {
-                  const data = appendChild({
-                    type: 'void',
-                    title: uid(),
-                    'x-component': 'Menu.Item',
-                    'x-designable-bar': 'Menu.DesignableBar',
-                  });
-                  if (data['key']) {
-                    await request('ui_schemas:create', {
-                      method: 'post',
-                      data: data.toJSON(),
-                    });
-                  }
-                }}
-              >
-                新建菜单
-              </AntdMenu.Item>
-              <AntdMenu.Item
-                onClick={async () => {
-                  const data = appendChild({
-                    type: 'void',
-                    key: uid(),
-                    title: uid(),
-                    'x-component': 'Menu.SubMenu',
-                    'x-designable-bar': 'Menu.DesignableBar',
-                  });
-                  if (data['key']) {
-                    await request('ui_schemas:create', {
-                      method: 'post',
-                      data: data.toJSON(),
-                    });
-                  }
-                }}
-              >
-                新建菜单组
-              </AntdMenu.Item>
-            </AntdMenu>
-          }
-        >
-          <a>{props.children}</a>
-        </Dropdown>
-      }
-    />
   );
 });
 
@@ -288,6 +238,47 @@ Menu.SubMenu = observer((props: any) => {
   );
 });
 
+Menu.AddNew = observer((props: any) => {
+  const { appendChild } = useDesignable(props.path);
+  return (
+    <AntdMenu.ItemGroup
+      className={'nb-menu-add-new'}
+      title={
+        <Dropdown
+          overlay={
+            <AntdMenu>
+              <AntdMenu.Item
+                onClick={async () => {
+                  const data = appendChild({
+                    ...defaultSchemas['Menu.Link'],
+                    title: uid(),
+                  });
+                  await createSchema(data);
+                }}
+              >
+                新建菜单
+              </AntdMenu.Item>
+              <AntdMenu.Item
+                onClick={async () => {
+                  const data = appendChild({
+                    ...defaultSchemas['Menu.SubMenu'],
+                    title: uid(),
+                  });
+                  await createSchema(data);
+                }}
+              >
+                新建菜单组
+              </AntdMenu.Item>
+            </AntdMenu>
+          }
+        >
+          <a>{props.children}</a>
+        </Dropdown>
+      }
+    />
+  );
+});
+
 Menu.DesignableBar = (props) => {
   const field = useField();
   const [visible, setVisible] = useState(false);
@@ -328,51 +319,32 @@ Menu.DesignableBar = (props) => {
               <AntdMenu.Item
                 onClick={async () => {
                   const s = insertAfter({
-                    type: 'void',
+                    ...defaultSchemas['Menu.Link'],
                     title: uid(),
-                    'x-component': 'Menu.SubMenu',
                   });
-                  console.log('s.s.s.s', s);
-                  if (s['key']) {
-                    await request('ui_schemas:create', {
-                      method: 'post',
-                      data: s.toJSON(),
-                    });
-                  }
+                  await createSchema(s);
                 }}
               >
-                新建分组
+                新建菜单项
               </AntdMenu.Item>
               <AntdMenu.Item
                 onClick={async () => {
                   const s = insertAfter({
-                    type: 'void',
+                    ...defaultSchemas['Menu.SubMenu'],
                     title: uid(),
-                    'x-component': 'Menu.Item',
                   });
-                  if (s['key']) {
-                    await request('ui_schemas:create', {
-                      method: 'post',
-                      data: s.toJSON(),
-                    });
-                  }
+                  await createSchema(s);
                 }}
               >
-                新建菜单
+                新建菜单分组
               </AntdMenu.Item>
               <AntdMenu.Item
                 onClick={async () => {
                   const s = appendChild({
-                    type: 'void',
+                    ...defaultSchemas['Menu.Link'],
                     title: uid(),
-                    'x-component': 'Menu.Item',
                   });
-                  if (s['key']) {
-                    await request('ui_schemas:create', {
-                      method: 'post',
-                      data: s.toJSON(),
-                    });
-                  }
+                  await createSchema(s);
                 }}
               >
                 在菜单组里新增
@@ -382,8 +354,9 @@ Menu.DesignableBar = (props) => {
                   Modal.confirm({
                     title: '删除菜单',
                     content: '确认删除此菜单项吗？',
-                    onOk: () => {
-                      remove();
+                    onOk: async () => {
+                      const target = remove();
+                      await removeSchema(target);
                     },
                   });
                 }}

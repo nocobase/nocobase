@@ -534,7 +534,7 @@ export async function sort(ctx: Context, next: Next) {
   const Model = ctx.db.getModel(resourceName);
   const table = ctx.db.getTable(resourceName);
 
-  const { sticky, field, target } = values;
+  const { sticky, field, target, insertAfter } = values;
   if (!values.field || typeof target === 'undefined') {
     return next();
   }
@@ -592,11 +592,11 @@ export async function sort(ctx: Context, next: Next) {
     if (sameScope) {
       const direction = source[sortAttr] < targetObject[sortAttr] ? {
         sourceOp: Op.gt,
-        targetOp: Op.lte,
+        targetOp: insertAfter ? Op.lt : Op.lte,
         increment: -1
       } : {
         sourceOp: Op.lt,
-        targetOp: Op.gte,
+        targetOp: insertAfter ? Op.gt : Op.gte,
         increment: 1
       };
 
@@ -617,6 +617,8 @@ export async function sort(ctx: Context, next: Next) {
       });
     }
 
+    console.log({ insertAfter, updateWhere })
+
     await Model.increment(sortAttr, {
       by: increment,
       where: updateWhere,
@@ -624,7 +626,7 @@ export async function sort(ctx: Context, next: Next) {
     });
 
     Object.assign(updates, {
-      [sortAttr]: targetObject[sortAttr]
+      [sortAttr]: insertAfter ? targetObject[sortAttr] + 1 : targetObject[sortAttr]
     });
   } else {
     Object.assign(updates, {

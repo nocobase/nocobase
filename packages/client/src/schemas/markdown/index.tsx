@@ -1,5 +1,5 @@
 import React from 'react';
-import { connect, mapProps, mapReadPretty } from '@formily/react';
+import { connect, mapProps, mapReadPretty, useFieldSchema } from '@formily/react';
 import { Input as AntdInput } from 'antd';
 import { InputProps, TextAreaProps } from 'antd/lib/input';
 import { Display } from '../display';
@@ -7,7 +7,10 @@ import { LoadingOutlined } from '@ant-design/icons';
 import micromark from 'micromark';
 
 export const Markdown = connect(
-  AntdInput.TextArea,
+  (props) => {
+    const schema = useFieldSchema();
+    return <AntdInput.TextArea defaultValue={schema.name} {...props}/>
+  },
   mapProps((props: any, field) => {
     return {
       ...props,

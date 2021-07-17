@@ -38,7 +38,7 @@ const App = () => {
 
   return (
     <div>
-      <Router initialEntries={['/login']}>
+      <Router initialEntries={['/admin']}>
         <RouteSwitch routes={data} />
       </Router>
     </div>
