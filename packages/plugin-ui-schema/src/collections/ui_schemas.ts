@@ -11,6 +11,11 @@ export default {
       primaryKey: true,
     },
     {
+      type: 'sort',
+      name: 'sort',
+      scope: ['parentKey'],
+    },
+    {
       type: 'string',
       name: 'name',
     },

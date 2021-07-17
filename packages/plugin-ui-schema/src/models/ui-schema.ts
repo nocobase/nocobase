@@ -7,6 +7,13 @@ export class UISchema extends Model {
     const attributes = this.toAttributes(value);
     // @ts-ignore
     const model: Model = await super.create(attributes, options);
+    if (value['__prepend__']) {
+      console.log('__prepend__', model.parentKey);
+    } else if (value['__insertAfter__']) {
+      console.log('__insertAfter__', model.parentKey);
+    } else if (value['__insertBefore__']) {
+      console.log('__insertBefore__', model.parentKey);
+    }
     if (!attributes.children) {
       attributes.children = this.properties2children(attributes.properties);
       await model.updateAssociation('children', attributes.children, options);
@@ -48,7 +55,9 @@ export class UISchema extends Model {
 
   async getProperties() {
     const properties = {};
-    const children: UISchema[] = await this.getChildren();
+    const children: UISchema[] = await this.getChildren({
+      order: [['sort', 'asc']],
+    });
     for (const child of children) {
       const property = child.toProperty();
       const childProperties = await child.getProperties();

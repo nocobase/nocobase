@@ -46,8 +46,9 @@ import {
   DownOutlined,
   DatabaseOutlined,
 } from '@ant-design/icons';
-import { useDesignable, useSchemaPath } from '../';
+import { createSchema, useDesignable, useSchemaPath } from '../';
 import { uid } from '@formily/shared';
+import { request } from '../../demos/api';
 
 const generateGridBlock = (schema: ISchema) => {
   const name = schema.name || uid();
@@ -88,7 +89,6 @@ AddNew.BlockItem = observer((props: any) => {
   const { ghost, defaultAction } = props;
   const { schema, insertBefore, insertAfter } = useDesignable();
   const path = useSchemaPath();
-
   return (
     <Dropdown
       overlay={
@@ -108,7 +108,7 @@ AddNew.BlockItem = observer((props: any) => {
             <Menu.Item>新增数据表</Menu.Item>
           </Menu.SubMenu>
           <Menu.Item
-            onClick={() => {
+            onClick={async () => {
               let data: ISchema = {
                 type: 'void',
                 title: uid(),
@@ -116,6 +116,9 @@ AddNew.BlockItem = observer((props: any) => {
                 'x-decorator': 'BlockItem',
                 'x-component': 'Markdown',
               };
+              if (schema['key']) {
+                data['key'] = uid();
+              }
               console.log('isGridBlock(schema)', isGridBlock(schema));
               if (isGridBlock(schema)) {
                 path.pop();
@@ -123,11 +126,13 @@ AddNew.BlockItem = observer((props: any) => {
                 data = generateGridBlock(data);
               }
               if (data) {
+                let s;
                 if (defaultAction === 'insertAfter') {
-                  insertAfter(data, [...path]);
+                  s = insertAfter(data, [...path]);
                 } else {
-                  insertBefore(data, [...path]);
+                  s = insertBefore(data, [...path]);
                 }
+                await createSchema(s);
               }
             }}
           >

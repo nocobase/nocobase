@@ -23,7 +23,7 @@ import './style.less';
 
 import { uid } from '@formily/shared';
 import { ISchema } from '@formily/react';
-import datatable from './datatable';
+import DataTableConfig from './DataTableConfig';
 
 function LayoutWithMenu({ schema }) {
   const match = useRouteMatch<any>();
@@ -31,8 +31,15 @@ function LayoutWithMenu({ schema }) {
   const sideMenuRef = useRef();
   const [activeKey, setActiveKey] = useState(match.params.name);
   const onSelect = (info) => {
-    console.log('LayoutWithMenu', schema);
-    setActiveKey(info.key);
+    console.log('LayoutWithMenu', info);
+    if (!info.schema) {
+      setActiveKey(null);
+    } else if (info.schema['x-component'] === 'Menu.SubMenu') {
+      // 实际应该取第一个子元素
+      setActiveKey(null);
+    } else {
+      setActiveKey(info.schema.key);
+    }
   };
   console.log({ match });
   return (
@@ -46,7 +53,7 @@ function LayoutWithMenu({ schema }) {
             selectedKeys: [activeKey].filter(Boolean),
           }}
         />
-        <SchemaRenderer schema={datatable} />
+        <DataTableConfig />
       </Layout.Header>
       <Layout>
         <Layout.Sider
@@ -75,31 +82,7 @@ function Content({ activeKey }) {
     return <Spin />;
   }
 
-  const schema: ISchema = {
-    type: 'void',
-    name: uid(),
-    'x-component': 'Grid',
-    properties: {
-      [`row_${uid()}`]: {
-        type: 'void',
-        'x-component': 'Grid.Row',
-        properties: {
-          [`col_${uid()}`]: {
-            type: 'void',
-            'x-component': 'Grid.Col',
-            properties: {
-              [uid()]: {
-                type: 'void',
-                'x-component': 'AddNew.BlockItem',
-              },
-            },
-          },
-        },
-      },
-    },
-  };
-
-  return <SchemaRenderer schema={schema} />;
+  return <SchemaRenderer schema={data} />;
 }
 
 export function AdminLayout({ route }: any) {
