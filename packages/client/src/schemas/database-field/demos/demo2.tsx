@@ -1,55 +1,46 @@
 import React from 'react';
 import { createForm } from '@formily/core';
 import { SchemaRenderer } from '../../';
-import { observer, connect, useField } from '@formily/react';
+import { observer, connect, useField, ISchema } from '@formily/react';
 
-const schema = {
-  type: 'void',
-  name: 'action1',
-  title: 'ModalForm',
-  'x-component': 'Action',
+const schema: ISchema = {
+  type: 'array',
+  name: 'collections',
+  'x-component': 'DatabaseCollection',
   'x-component-props': {},
-  properties: {
-    modal1: {
-      type: 'void',
-      title: '对话框标题',
-      'x-decorator': 'Form',
-      'x-component': 'Action.Modal',
-      properties: {
-        title: {
-          type: 'string',
-          title: '数据表名称',
-          required: true,
-          'x-decorator': 'FormItem',
-          'x-component': 'Input',
-        },
-        fields: {
-          type: 'array',
-          'x-component': 'DatabaseField',
-          default: [
-            {
-              id: 1,
-              interface: 'string',
-              dataType: 'string',
-              name: 'title',
-              ui: {
-                title: '标题',
-              },
-            },
-            {
-              id: 2,
-              dataType: 'text',
-              interface: 'textarea',
-              name: 'content',
-              ui: {
-                title: '内容',
-              },
-            },
-          ],
-        },
-      },
+  default: [
+    {
+      name: 'test1',
+      title: '数据表 1',
     },
-  },
+    {
+      name: 'test2',
+      title: '数据表 2',
+    }
+  ],
+  properties: {
+    title: {
+      type: 'string',
+      title: '数据表名称',
+      required: true,
+      'x-decorator': 'FormItem',
+      'x-component': 'Input',
+    },
+    name: {
+      type: 'string',
+      title: '数据表标识',
+      'x-decorator': 'FormItem',
+      'x-component': 'Input',
+      "x-read-pretty": true,
+    },
+    fields: {
+      type: 'array',
+      title: '数据表字段',
+      'x-decorator': 'FormItem',
+      'x-component': 'DatabaseField',
+      default: [],
+    }
+  }
 };
 
 const form = createForm();

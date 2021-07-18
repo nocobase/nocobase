@@ -18,14 +18,19 @@ export const create = async (ctx: actions.Context, next: actions.Next) => {
       payload: 'replace',
     },
   );
-  await actions.common.create(ctx, async () => {});
+  await actions.common.create(ctx, async () => { });
+  const sticky = values['__prepend__'];
   const targetKey = values['__insertAfter__'] || values['__insertBefore__'];
-  if (targetKey) {
+  if (sticky || targetKey) {
     console.log({
       associatedKey: values.parentKey,
       resourceKey: ctx.body.key,
-      values: {
+      values: sticky ? {
         field: 'sort',
+        sticky: true,
+      } : {
+        field: 'sort',
+        insertAfter: !!values['__insertAfter__'],
         target: {
           key: targetKey,
         },
@@ -35,7 +40,11 @@ export const create = async (ctx: actions.Context, next: actions.Next) => {
       {
         associatedKey: values.parentKey,
         resourceKey: ctx.body.key,
-        values: {
+        values: sticky ? {
+          field: 'sort',
+          sticky: true,
+          target: {},
+        } : {
           field: 'sort',
           insertAfter: !!values['__insertAfter__'],
           target: {
@@ -47,8 +56,8 @@ export const create = async (ctx: actions.Context, next: actions.Next) => {
         payload: 'replace',
       },
     );
-    await middlewares.associated(ctx, async () => {});
-    await sort(ctx, async () => {});
+    await middlewares.associated(ctx, async () => { });
+    await sort(ctx, async () => { });
   }
   await next();
 };

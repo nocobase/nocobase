@@ -27,7 +27,7 @@ import { AddNew } from '../../schemas/add-new';
 import { Cascader } from '../../schemas/cascader';
 import { Checkbox } from '../../schemas/checkbox';
 import { ColorSelect } from '../../schemas/color-select';
-import { DatabaseField } from '../../schemas/database-field';
+import { DatabaseField, DatabaseCollection } from '../../schemas/database-field';
 import { DatePicker } from '../../schemas/date-picker';
 import { Filter } from '../../schemas/filter';
 import { Form } from '../../schemas/form';
@@ -79,6 +79,7 @@ export const SchemaField = createSchemaField({
     Checkbox,
     ColorSelect,
     DatabaseField,
+    DatabaseCollection,
     DatePicker,
     Filter,
     Form,

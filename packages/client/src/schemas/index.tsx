@@ -18,6 +18,23 @@ export const request = extend({
   timeout: 1000,
 });
 
+export async function createOrUpdateCollection(data: any) {
+  return await request('collections:createOrUpdate', {
+    method: 'post',
+    data,
+  });
+}
+
+export async function deleteCollection(name) {
+  await request('collections:destroy', {
+    method: 'post',
+    params: {
+      filter: {
+        name,
+      }
+    },
+  });
+}
 
 export async function createSchema(schema: ISchema) {
   if (!schema['key']) {
