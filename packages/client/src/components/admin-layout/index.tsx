@@ -23,7 +23,7 @@ import './style.less';
 
 import { uid } from '@formily/shared';
 import { ISchema } from '@formily/react';
-import DataTableConfig from './DataTableConfig';
+import Database from './datatable';
 
 function LayoutWithMenu({ schema }) {
   const match = useRouteMatch<any>();
@@ -53,7 +53,7 @@ function LayoutWithMenu({ schema }) {
             selectedKeys: [activeKey].filter(Boolean),
           }}
         />
-        <DataTableConfig />
+        <Database />
       </Layout.Header>
       <Layout>
         <Layout.Sider

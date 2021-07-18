@@ -21,7 +21,7 @@ import {
 import './style.less';
 import cls from 'classnames';
 
-import { createSchema, useDesignable, useSchemaPath } from '../';
+import { createSchema, removeSchema, useDesignable, useSchemaPath } from '../';
 import {
   useDrag,
   useDrop,
@@ -36,6 +36,10 @@ const ColumnSizeContext = createContext(null);
 export const GridBlockContext = createContext({
   dragRef: null,
 });
+
+function isGridRowOrCol(schema: ISchema) {
+  return ['Grid.Row', 'Grid.Col'].includes(schema['x-component']);
+}
 
 const RowDivider = ({ name, onDrop }) => {
   const uid = useDragDropUID();
@@ -111,7 +115,11 @@ export const Grid: any = observer((props) => {
             });
             await createSchema(data);
             console.log('prepend', data);
-            deepRemove(path);
+            const removed = deepRemove(path);
+            const last = removed.pop();
+            if (isGridRowOrCol(last)) {
+              await removeSchema(last);
+            }
           }}
         />
         {schema.mapProperties((property, key, index) => {
@@ -143,8 +151,12 @@ export const Grid: any = observer((props) => {
                     [...gridPath, key],
                   );
                   await createSchema(data);
-                  console.log('insertAfter', data);
-                  deepRemove(path);
+                  const removed = deepRemove(path);
+                  const last = removed.pop();
+                  if (isGridRowOrCol(last)) {
+                    await removeSchema(last);
+                  }
+                  console.log('insertAfter', data, removed);
                 }}
               />
             </>
@@ -185,7 +197,11 @@ Grid.Row = observer((props) => {
           });
           await createSchema(data);
           const path = [...e.dragItem.path];
-          deepRemove(path);
+          const removed = deepRemove(path);
+          const last = removed.pop();
+          if (isGridRowOrCol(last)) {
+            await removeSchema(last);
+          }
         }}
       />
       {schema.mapProperties((property, key, index) => {
@@ -207,10 +223,14 @@ Grid.Row = observer((props) => {
                   },
                   [...rowPath, key],
                 );
-                console.log('ColDivider', data)
+                console.log('ColDivider', data);
                 await createSchema(data);
                 const path = [...e.dragItem.path];
-                deepRemove(path);
+                const removed = deepRemove(path);
+                const last = removed.pop();
+                if (isGridRowOrCol(last)) {
+                  await removeSchema(last);
+                }
               }}
               onDragEnd={(e) => {
                 designableSchema.mapProperties((s, key, index) => {
