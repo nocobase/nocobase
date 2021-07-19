@@ -4,16 +4,10 @@ import { Model } from '@nocobase/database';
 export class UISchema extends Model {
   static async create(value?: any, options?: any): Promise<any> {
     // console.log({ value });
-    const attributes = this.toAttributes(value);
+    const attributes = this.toAttributes(_.cloneDeep(value));
+    console.log({ attributes })
     // @ts-ignore
     const model: Model = await super.create(attributes, options);
-    if (value['__prepend__']) {
-      console.log('__prepend__', model.parentKey);
-    } else if (value['__insertAfter__']) {
-      console.log('__insertAfter__', model.parentKey);
-    } else if (value['__insertBefore__']) {
-      console.log('__insertBefore__', model.parentKey);
-    }
     if (!attributes.children) {
       attributes.children = this.properties2children(attributes.properties);
       await model.updateAssociation('children', attributes.children, options);
@@ -22,14 +16,15 @@ export class UISchema extends Model {
   }
 
   async update(key?: any, value?: any, options?: any): Promise<any> {
+    const opts = this.get('options') || {};
     if (typeof key === 'object') {
-      const attributes = UISchema.toAttributes(key);
+      const attributes = UISchema.toAttributes(key, opts);
       return super.update(attributes, value, options);
     }
     return super.update(key, value, options);
   }
 
-  static toAttributes(value = {}): any {
+  static toAttributes(value = {}, opts = {}): any {
     const data = _.cloneDeep(value);
     const keys = [
       'properties',
@@ -38,7 +33,7 @@ export class UISchema extends Model {
     ];
     const attrs = _.pick(data, keys);
     const options = _.omit(data, keys);
-    return { ...attrs, options };
+    return { ...attrs, options: {...options, ...opts} };
   }
 
   static properties2children(properties = []) {

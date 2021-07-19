@@ -47,6 +47,7 @@ import { Upload } from '../../schemas/upload';
 import { FormItem } from '../../schemas/form-item';
 import { BlockItem } from '../../schemas/block-item';
 import { DragAndDrop } from '../../schemas/drag-and-drop';
+import { TreeSelect } from '../../schemas/tree-select';
 
 export const BlockContext = createContext({ dragRef: null });
 
@@ -67,6 +68,7 @@ export const SchemaField = createSchemaField({
     ArrayCollapse,
     ArrayTable,
     FormLayout,
+    TreeSelect,
 
     DragAndDrop,
 
@@ -175,15 +177,21 @@ export function useDesignable(path?: any) {
   const { schema = new Schema({}), refresh } = useContext(DesignableContext);
   const schemaPath = path || useSchemaPath();
   const fieldSchema = useFieldSchema();
-  const currentSchema =
+  let currentSchema =
     findPropertyByPath(schema, schemaPath) || ({} as Schema);
+  if (!currentSchema) {
+    currentSchema = fieldSchema;
+  }
+  if (Object.keys(currentSchema).length === 0) {
+    currentSchema = fieldSchema;
+  }
   // console.log('useDesignable', { schema, schemaPath, currentSchema });
   const options = useContext(SchemaOptionsContext);
   const DesignableBar =
     get(options.components, currentSchema['x-designable-bar']) || (() => null);
   return {
     DesignableBar,
-    schema: currentSchema || fieldSchema,
+    schema: currentSchema,
     refresh,
     prepend: (property: ISchema, targetPath?: any): Schema => {
       let target = currentSchema;

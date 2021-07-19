@@ -7,12 +7,12 @@ export const create = async (ctx: actions.Context, next: actions.Next) => {
   const values = cloneDeep(ctx.action.params.values);
   ctx.action.mergeParams(
     {
-      values: omit(values, [
+      values: cloneDeep(omit(values, [
         '__insertAfter__',
         '__insertBefore__',
         '__prepend__',
         '_isJSONSchemaObject',
-      ]),
+      ])),
     },
     {
       payload: 'replace',
@@ -22,24 +22,11 @@ export const create = async (ctx: actions.Context, next: actions.Next) => {
   const sticky = values['__prepend__'];
   const targetKey = values['__insertAfter__'] || values['__insertBefore__'];
   if (sticky || targetKey) {
-    console.log({
-      associatedKey: values.parentKey,
-      resourceKey: ctx.body.key,
-      values: sticky ? {
-        field: 'sort',
-        sticky: true,
-      } : {
-        field: 'sort',
-        insertAfter: !!values['__insertAfter__'],
-        target: {
-          key: targetKey,
-        },
-      },
-    });
+    const body = ctx.body;
     ctx.action.mergeParams(
       {
         associatedKey: values.parentKey,
-        resourceKey: ctx.body.key,
+        resourceKey: body.key,
         values: sticky ? {
           field: 'sort',
           sticky: true,
@@ -56,8 +43,58 @@ export const create = async (ctx: actions.Context, next: actions.Next) => {
         payload: 'replace',
       },
     );
+    console.log(ctx.action.params.values);
     await middlewares.associated(ctx, async () => { });
     await sort(ctx, async () => { });
+    console.log(ctx.body.toJSON());
+  }
+  await next();
+};
+
+export const update = async (ctx: actions.Context, next: actions.Next) => {
+  const values = cloneDeep(ctx.action.params.values);
+  ctx.action.mergeParams(
+    {
+      values: cloneDeep(omit(values, [
+        '__insertAfter__',
+        '__insertBefore__',
+        '__prepend__',
+        '_isJSONSchemaObject',
+      ])),
+    },
+    {
+      payload: 'replace',
+    },
+  );
+  await actions.common.update(ctx, async () => { });
+  const sticky = values['__prepend__'];
+  const targetKey = values['__insertAfter__'] || values['__insertBefore__'];
+  if (sticky || targetKey) {
+    const body = ctx.body;
+    ctx.action.mergeParams(
+      {
+        associatedKey: values.parentKey,
+        resourceKey: body.key,
+        values: sticky ? {
+          field: 'sort',
+          sticky: true,
+          target: {},
+        } : {
+          field: 'sort',
+          insertAfter: !!values['__insertAfter__'],
+          target: {
+            key: targetKey,
+          },
+        },
+      },
+      {
+        payload: 'replace',
+      },
+    );
+    console.log(ctx.action.params.values);
+    await middlewares.associated(ctx, async () => { });
+    await sort(ctx, async () => { });
+    console.log(ctx.body.toJSON());
   }
   await next();
 };
