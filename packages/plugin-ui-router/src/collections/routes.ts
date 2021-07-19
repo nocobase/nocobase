@@ -6,6 +6,11 @@ export default {
   model: 'Route',
   fields: [
     {
+      type: 'sort',
+      name: 'sort',
+      scope: ['parentKey'],
+    },
+    {
       type: 'uid',
       name: 'key',
       prefix: 'r_',

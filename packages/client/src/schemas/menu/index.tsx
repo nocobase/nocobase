@@ -32,17 +32,34 @@ import {
 } from 'antd';
 import { uid } from '@formily/shared';
 import cls from 'classnames';
-import { useDesignable } from '../../components/schema-renderer';
-import { MenuOutlined, PlusOutlined } from '@ant-design/icons';
+import {
+  SchemaField,
+  SchemaRenderer,
+  useDesignable,
+} from '../../components/schema-renderer';
+import {
+  MenuOutlined,
+  PlusOutlined,
+  GroupOutlined,
+  LinkOutlined,
+} from '@ant-design/icons';
 import { IconPicker } from '../../components/icon-picker';
-import { createSchema, removeSchema, useDefaultAction, VisibleContext } from '..';
+import {
+  createSchema,
+  removeSchema,
+  updateSchema,
+  useDefaultAction,
+  VisibleContext,
+} from '..';
 import { useMount } from 'ahooks';
 import './style.less';
 import { Link } from 'react-router-dom';
 import { findPropertyByPath, useSchemaPath } from '@nocobase/client/lib';
 import { request } from '../';
 import defaultSchemas from './defaultSchemas';
-import { get } from 'lodash';
+import _, { cloneDeep, get, isNull } from 'lodash';
+import { FormDialog, FormItem, FormLayout, Input } from '@formily/antd';
+import deepmerge from 'deepmerge';
 
 export const MenuModeContext = createContext(null);
 
@@ -62,8 +79,8 @@ const SideMenu = (props: any) => {
       <AntdMenu mode={'inline'} onSelect={onSelect}>
         <RecursionField schema={child} onlyRenderProperties />
         <Menu.AddNew key={uid()} path={[...path, selectedKey]}>
-          <Button block type={'dashed'}>
-            <PlusOutlined className={'nb-add-new-icon'} />
+          <Button className={'nb-add-new-menu-item'} block type={'dashed'}>
+            <PlusOutlined />
           </Button>
         </Menu.AddNew>
       </AntdMenu>
@@ -109,13 +126,20 @@ export const Menu: any = observer((props: any) => {
             setSelectedKey(info.key);
           }
           const selectedSchema = schema.properties[info.key];
-          console.log({ selectedSchema })
+          console.log({ selectedSchema });
           onSelect && onSelect({ ...info, schema: selectedSchema });
         }}
       >
         <RecursionField schema={schema} onlyRenderProperties />
         <Menu.AddNew key={uid()} path={path}>
-          <PlusOutlined className={'nb-add-new-icon'} />
+          {/* <PlusOutlined className={'nb-add-new-icon'} /> */}
+          <Button
+            className={`nb-add-new-menu-item menu-mode-${mode === 'mix' ? 'horizontal' : mode}`}
+            block
+            type={mode == 'inline' ? 'dashed' : 'primary'}
+          >
+            <PlusOutlined />
+          </Button>
         </Menu.AddNew>
       </AntdMenu>
       {mode === 'mix' && (
@@ -126,7 +150,8 @@ export const Menu: any = observer((props: any) => {
               const keyPath = [selectedKey, ...info.keyPath];
               const selectedSchema = findPropertyByPath(schema, keyPath);
               console.log('keyPath', keyPath, selectedSchema);
-              onSelect && onSelect({ ...info, keyPath, schema: selectedSchema });
+              onSelect &&
+                onSelect({ ...info, keyPath, schema: selectedSchema });
             }}
             selectedKey={selectedKey}
             sideMenuRef={sideMenuRef}
@@ -240,39 +265,117 @@ Menu.SubMenu = observer((props: any) => {
 
 Menu.AddNew = observer((props: any) => {
   const { appendChild } = useDesignable(props.path);
+
+  const schemas = {
+    'Menu.Link': {
+      icon: <MenuOutlined />,
+      title: '新建菜单项',
+      schema: {
+        type: 'object',
+        properties: {
+          title: {
+            type: 'string',
+            title: '菜单项名称',
+            required: true,
+            'x-decorator': 'FormItem',
+            'x-component': 'Input',
+          },
+          'x-component-props.icon': {
+            type: 'string',
+            title: '图标',
+            'x-decorator': 'FormItem',
+            'x-component': 'IconPicker',
+          },
+        },
+      },
+    },
+    'Menu.SubMenu': {
+      icon: <GroupOutlined />,
+      title: '新建菜单分组',
+      schema: {
+        type: 'object',
+        properties: {
+          title: {
+            type: 'string',
+            title: '分组名称',
+            required: true,
+            'x-decorator': 'FormItem',
+            'x-component': 'Input',
+          },
+          'x-component-props.icon': {
+            type: 'string',
+            title: '图标',
+            'x-decorator': 'FormItem',
+            'x-component': 'IconPicker',
+          },
+        },
+      },
+    },
+    'Menu.URL': {
+      icon: <LinkOutlined />,
+      title: '添加自定义链接',
+      schema: {
+        type: 'object',
+        properties: {
+          title: {
+            type: 'string',
+            title: '链接名称',
+            required: true,
+            'x-decorator': 'FormItem',
+            'x-component': 'Input',
+          },
+          'x-component-props.icon': {
+            type: 'string',
+            title: '图标',
+            'x-decorator': 'FormItem',
+            'x-component': 'IconPicker',
+          },
+          'x-component-props.href': {
+            type: 'string',
+            title: '自定义链接',
+            required: true,
+            'x-decorator': 'FormItem',
+            'x-component': 'Input',
+          },
+        },
+      },
+    },
+  };
+
   return (
     <AntdMenu.ItemGroup
       className={'nb-menu-add-new'}
       title={
         <Dropdown
           overlay={
-            <AntdMenu>
-              <AntdMenu.Item
-                onClick={async () => {
-                  const data = appendChild({
-                    ...defaultSchemas['Menu.Link'],
-                    title: uid(),
-                  });
-                  await createSchema(data);
-                }}
-              >
-                新建菜单
+            <AntdMenu
+              onClick={async (info) => {
+                console.log({ info });
+                const values = await FormDialog(schemas[info.key].title, () => {
+                  return (
+                    <FormLayout layout={'vertical'}>
+                      <SchemaField schema={schemas[info.key].schema} />
+                    </FormLayout>
+                  );
+                }).open();
+                const defaults = cloneDeep(defaultSchemas[info.key]);
+                const data = appendChild(deepmerge(defaults, values));
+                await createSchema(data);
+              }}
+            >
+              <AntdMenu.Item key={'Menu.Link'} icon={<MenuOutlined />}>
+                新建菜单项
               </AntdMenu.Item>
-              <AntdMenu.Item
-                onClick={async () => {
-                  const data = appendChild({
-                    ...defaultSchemas['Menu.SubMenu'],
-                    title: uid(),
-                  });
-                  await createSchema(data);
-                }}
-              >
-                新建菜单组
+              <AntdMenu.Item key={'Menu.SubMenu'} icon={<GroupOutlined />}>
+                新建菜单分组
+              </AntdMenu.Item>
+              <AntdMenu.Item key={'Menu.URL'} icon={<LinkOutlined />}>
+                添加自定义链接
               </AntdMenu.Item>
             </AntdMenu>
           }
         >
-          <a>{props.children}</a>
+          {props.children}
         </Dropdown>
       }
     />
@@ -280,9 +383,131 @@ Menu.AddNew = observer((props: any) => {
 });
 
 Menu.DesignableBar = (props) => {
+  const schemas = {
+    'Menu.Action': {
+      icon: <MenuOutlined />,
+      title: '修改菜单项',
+      schema: {
+        type: 'object',
+        properties: {
+          title: {
+            type: 'string',
+            title: '菜单项名称',
+            required: true,
+            'x-decorator': 'FormItem',
+            'x-component': 'Input',
+          },
+          'x-component-props.icon': {
+            type: 'string',
+            title: '图标',
+            'x-decorator': 'FormItem',
+            'x-component': 'IconPicker',
+          },
+        },
+      },
+    },
+    'Menu.Item': {
+      icon: <MenuOutlined />,
+      title: '修改菜单项',
+      schema: {
+        type: 'object',
+        properties: {
+          title: {
+            type: 'string',
+            title: '菜单项名称',
+            required: true,
+            'x-decorator': 'FormItem',
+            'x-component': 'Input',
+          },
+          'x-component-props.icon': {
+            type: 'string',
+            title: '图标',
+            'x-decorator': 'FormItem',
+            'x-component': 'IconPicker',
+          },
+        },
+      },
+    },
+    'Menu.Link': {
+      icon: <MenuOutlined />,
+      title: '修改菜单项',
+      schema: {
+        type: 'object',
+        properties: {
+          title: {
+            type: 'string',
+            title: '菜单项名称',
+            required: true,
+            'x-decorator': 'FormItem',
+            'x-component': 'Input',
+          },
+          'x-component-props.icon': {
+            type: 'string',
+            title: '图标',
+            'x-decorator': 'FormItem',
+            'x-component': 'IconPicker',
+          },
+        },
+      },
+    },
+    'Menu.SubMenu': {
+      icon: <GroupOutlined />,
+      title: '修改菜单分组',
+      schema: {
+        type: 'object',
+        properties: {
+          title: {
+            type: 'string',
+            title: '分组名称',
+            required: true,
+            'x-decorator': 'FormItem',
+            'x-component': 'Input',
+          },
+          'x-component-props.icon': {
+            type: 'string',
+            title: '图标',
+            'x-decorator': 'FormItem',
+            'x-component': 'IconPicker',
+          },
+        },
+      },
+    },
+    'Menu.URL': {
+      icon: <LinkOutlined />,
+      title: '修改自定义链接',
+      schema: {
+        type: 'object',
+        properties: {
+          title: {
+            type: 'string',
+            title: '链接名称',
+            required: true,
+            'x-decorator': 'FormItem',
+            'x-component': 'Input',
+          },
+          'x-component-props.icon': {
+            type: 'string',
+            title: '图标',
+            'x-decorator': 'FormItem',
+            'x-component': 'IconPicker',
+          },
+          'x-component-props.href': {
+            type: 'string',
+            title: '自定义链接',
+            required: true,
+            'x-decorator': 'FormItem',
+            'x-component': 'Input',
+          },
+        },
+      },
+    },
+  };
+
   const field = useField();
   const [visible, setVisible] = useState(false);
   const { schema, remove, refresh, insertAfter, appendChild } = useDesignable();
+  const formConfig = schemas[schema['x-component']];
+  console.log({ formConfig, schema })
   return (
     <div className={cls('designable-bar', { active: visible })}>
       <div
@@ -304,17 +529,39 @@ Menu.DesignableBar = (props) => {
           overlay={
             <AntdMenu>
               <AntdMenu.Item
-                onClick={() => {
-                  const title = uid();
-                  field.componentProps['icon'] = 'DeleteOutlined';
+                onClick={async () => {
+                  const initialValues = {};
+                  Object.keys(formConfig.schema.properties).forEach((name) => {
+                    _.set(initialValues, name, get(schema, name));
+                  });
+                  const values = await FormDialog(formConfig.title, () => {
+                    return (
+                      <FormLayout layout={'vertical'}>
+                        <SchemaField schema={formConfig.schema} />
+                      </FormLayout>
+                    );
+                  }).open({
+                    initialValues,
+                  });
+                  if (values.title) {
+                    schema.title = values.title;
+                  }
+                  const icon = _.get(values, 'x-component-props.icon') || null;
                   schema['x-component-props'] =
                     schema['x-component-props'] || {};
-                  schema['x-component-props']['icon'] = 'DeleteOutlined';
-                  schema.title = title;
+                  schema['x-component-props']['icon'] = icon;
+                  field.componentProps['icon'] = icon;
                   refresh();
+                  await updateSchema(schema);
+                  // const title = uid();
+                  // field.componentProps['icon'] = 'DeleteOutlined';
+                  
+                  // schema['x-component-props']['icon'] = 'DeleteOutlined';
+                  // schema.title = title;
+                  // refresh();
                 }}
               >
-                修改标题
+                {formConfig.title}
               </AntdMenu.Item>
               <AntdMenu.Item
                 onClick={async () => {

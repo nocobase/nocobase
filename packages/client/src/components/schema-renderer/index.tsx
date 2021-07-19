@@ -99,7 +99,7 @@ export const SchemaField = createSchemaField({
   },
 });
 
-export const DesignableContext = createContext<DesignableContextProps>(null);
+export const DesignableContext = createContext<DesignableContextProps>({});
 
 export function useSchema(path?: any) {
   const { schema, refresh } = useContext(DesignableContext);
@@ -124,10 +124,14 @@ export function findPropertyByPath(schema: Schema, path?: any): Schema {
   let property = schema;
   while (arr.length) {
     const name = arr.shift();
+    if (!property.properties) {
+      console.warn('property does not exist.');
+      return null;
+    }
     property = property.properties[name];
     if (!property) {
-      console.error('property does not exist.');
-      break;
+      console.warn('property does not exist.');
+      return null;
     }
   }
   return property;
@@ -168,7 +172,7 @@ function setKeys(schema: ISchema, parentKey = null) {
 }
 
 export function useDesignable(path?: any) {
-  const { schema, refresh } = useContext(DesignableContext);
+  const { schema = new Schema({}), refresh } = useContext(DesignableContext);
   const schemaPath = path || useSchemaPath();
   const fieldSchema = useFieldSchema();
   const currentSchema =

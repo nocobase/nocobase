@@ -8,14 +8,14 @@ export const string: ISchema = {
   default: {
     dataType: 'string',
     // name,
-    ui: {
+    uiSchema: {
       type: 'string',
       // title,
       'x-component': 'Input',
     } as ISchema,
   },
   properties: {
-    'ui.title': {
+    'uiSchema.title': {
       type: 'string',
       title: '字段名称',
       required: true,
@@ -41,7 +41,7 @@ export const string: ISchema = {
         { label: 'Text', value: 'text' },
       ],
     },
-    'ui.required': {
+    'uiSchema.required': {
       type: 'string',
       title: '必填',
       'x-decorator': 'FormItem',

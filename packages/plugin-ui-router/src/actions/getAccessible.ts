@@ -11,7 +11,9 @@ const flatToNested = new FlatToNested({
 export default async (ctx: actions.Context, next: actions.Next) => {
   const { resourceKey } = ctx.action.params;
   const Route = ctx.db.getModel('routes');
-  const routes = await Route.findAll();
+  const routes = await Route.findAll(Route.parseApiJson({
+    sort: 'sort',
+  }));
   const data = flatToNested.convert(routes.map(route => route.toProps()));
   ctx.body = data.routes;
   await next();

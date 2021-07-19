@@ -185,18 +185,20 @@ Action.Drawer = observer((props: any) => {
 });
 
 Action.Dropdown = observer((props: any) => {
+  const { buttonProps = {}, ...others } = props;
   const { schema } = useDesignable();
   const componentProps = schema.parent['x-component-props'] || {};
   return (
     <Dropdown
       trigger={['click']}
+      {...others}
       overlay={
         <Menu>
           <RecursionField schema={schema} onlyRenderProperties />
         </Menu>
       }
     >
-      <Button {...componentProps}>{schema.title || schema.parent.title}</Button>
+      <Button {...buttonProps} {...componentProps}>{schema.title || schema.parent.title}</Button>
     </Dropdown>
   );
 });

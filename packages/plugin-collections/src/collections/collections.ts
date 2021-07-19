@@ -6,6 +6,10 @@ export default {
   model: 'Collection',
   fields: [
     {
+      type: 'sort',
+      name: 'sort',
+    },
+    {
       type: 'uid',
       name: 'name',
       primaryKey: true,

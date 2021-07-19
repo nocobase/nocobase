@@ -7,16 +7,7 @@ export default () => {
     name: 'collections',
     'x-component': 'DatabaseCollection',
     'x-component-props': {},
-    default: [
-      {
-        name: 'test1',
-        title: '数据表 1',
-      },
-      {
-        name: 'test2',
-        title: '数据表 2',
-      },
-    ],
+    default: [],
     properties: {
       title: {
         type: 'string',

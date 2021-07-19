@@ -7,6 +7,11 @@ export default {
   model: 'Field',
   fields: [
     {
+      type: 'sort',
+      name: 'sort',
+      scope: ['parentKey'],
+    },
+    {
       type: 'uid',
       name: 'key',
       primaryKey: true,

@@ -8,14 +8,14 @@ export const textarea: ISchema = {
   default: {
     dataType: 'text',
     // name,
-    ui: {
+    uiSchema: {
       type: 'string',
       // title,
       'x-component': 'Input.TextArea',
     } as ISchema,
   },
   properties: {
-    'ui.title': {
+    'uiSchema.title': {
       type: 'string',
       required: true,
       title: '字段名称',
@@ -41,7 +41,7 @@ export const textarea: ISchema = {
         { label: 'Text', value: 'text' },
       ],
     },
-    'ui.required': {
+    'uiSchema.required': {
       type: 'string',
       title: '必填',
       'x-decorator': 'FormItem',
