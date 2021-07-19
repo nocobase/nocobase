@@ -7,7 +7,7 @@ export const subTable: ISchema = {
   group: 'relation',
   default: {
     // name,
-    ui: {
+    uiSchema: {
       type: 'string',
       // title,
       'x-component': 'Select',
@@ -15,7 +15,7 @@ export const subTable: ISchema = {
     } as ISchema,
   },
   properties: {
-    'ui.title': {
+    'uiSchema.title': {
       type: 'string',
       required: true,
       title: '字段名称',

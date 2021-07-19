@@ -46,6 +46,16 @@ export async function createSchema(schema: ISchema) {
   });
 };
 
+export async function updateSchema(schema: ISchema) {
+  if (!schema['key']) {
+    return;
+  }
+  return await request(`ui_schemas:update/${schema.key}`, {
+    method: 'post',
+    data: schema.toJSON(),
+  });
+};
+
 export async function removeSchema(schema: ISchema) {
   if (!schema['key']) {
     return;

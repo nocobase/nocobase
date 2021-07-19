@@ -94,11 +94,11 @@ const Block = (props) => {
     <div
       onMouseEnter={(e) => {
         setActive(true);
-        console.log('e.onMouseEnter', new Date().toString());
+        // console.log('e.onMouseEnter', new Date().toString());
       }}
       onMouseLeave={(e) => {
         setActive(false);
-        console.log('e.onMouseLeave', new Date().toString());
+        // console.log('e.onMouseLeave', new Date().toString());
       }}
       className={cls('nb-grid-block', 'designable-form-item', { active })}
     >

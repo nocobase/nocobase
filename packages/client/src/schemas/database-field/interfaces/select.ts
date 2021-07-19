@@ -8,7 +8,7 @@ export const select: ISchema = {
   default: {
     dataType: 'string',
     // name,
-    ui: {
+    uiSchema: {
       type: 'string',
       // title,
       'x-component': 'Select',
@@ -16,7 +16,7 @@ export const select: ISchema = {
     } as ISchema,
   },
   properties: {
-    'ui.title': {
+    'uiSchema.title': {
       type: 'string',
       required: true,
       title: '字段名称',
@@ -42,7 +42,7 @@ export const select: ISchema = {
         { label: 'Text', value: 'text' },
       ],
     },
-    'ui.enum': {
+    'uiSchema.enum': {
       type: 'array',
       title: '可选项',
       'x-decorator': 'FormItem',
@@ -132,7 +132,7 @@ export const select: ISchema = {
         },
       },
     },
-    'ui.required': {
+    'uiSchema.required': {
       type: 'string',
       title: '必填',
       'x-decorator': 'FormItem',

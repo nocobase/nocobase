@@ -8,6 +8,7 @@ import {
   Schema,
   useFieldSchema,
   useForm,
+  FormConsumer,
 } from '@formily/react';
 import { ArrayCollapse, FormLayout } from '@formily/antd';
 import { uid } from '@formily/shared';
@@ -21,6 +22,9 @@ import {
   Select,
   Divider,
   Input,
+  Badge,
+  message,
+  Spin,
 } from 'antd';
 import { options, interfaces } from './interfaces';
 import {
@@ -32,7 +36,7 @@ import {
 import cls from 'classnames';
 import './style.less';
 import Modal from 'antd/lib/modal/Modal';
-import { get } from 'lodash';
+import { clone, cloneDeep, get } from 'lodash';
 import { useEffect } from 'react';
 import { useRequest } from 'ahooks';
 import { createOrUpdateCollection, deleteCollection } from '..';
@@ -46,19 +50,33 @@ export const DatabaseCollection = observer((props) => {
   const form = useForm();
   const [newValue, setNewValue] = useState('');
 
-  useRequest('collections:list?sort=-created_at', {
+  const { run, loading } = useRequest('collections:findAll', {
     formatResult: (result) => result?.data,
     onSuccess(data) {
       field.setValue(data);
       console.log('onSuccess', data);
     },
+    manual: true,
   });
 
   return (
     <div>
       <Button
-        onClick={() => {
+        className={'nb-database-config'}
+        style={{
+          height: 46,
+          borderRadius: 0,
+        }}
+        onClick={async () => {
           setVisible(true);
+          await run();
+          if (field.value?.length === 0) {
+            field.push({
+              name: `t_${uid()}`,
+              unsaved: true,
+              fields: [],
+            });
+          }
         }}
         type={'primary'}
       >
@@ -68,6 +86,7 @@ export const DatabaseCollection = observer((props) => {
         title={
           <div style={{ textAlign: 'center' }}>
             <Select
+              loading={loading}
               value={activeIndex}
               style={{ minWidth: 300, textAlign: 'center' }}
               onChange={(value) => {
@@ -97,8 +116,9 @@ export const DatabaseCollection = observer((props) => {
                         }}
                         onSearch={async (value) => {
                           const data = {
-                            name: uid(),
+                            name: `t_${uid()}`,
                             title: value,
+                            fields: [],
                           };
                           field.push(data);
                           setActiveIndex(field.value.length - 1);
@@ -114,7 +134,12 @@ export const DatabaseCollection = observer((props) => {
             >
               {field.value?.map((item, index) => {
                 return (
-                  <Select.Option value={index} label={item.title || '未命名'}>
+                  <Select.Option
+                    value={index}
+                    label={`${item.title || '未命名'}${
+                      item.unsaved ?  ' （未保存）' : ''
+                    }`}
+                  >
                     <div
                       style={{
                         display: 'flex',
@@ -122,17 +147,26 @@ export const DatabaseCollection = observer((props) => {
                         alignItems: 'center',
                       }}
                     >
-                      {item.title || '未命名'}
+                      {item.title || '未命名'} {item.unsaved ? '（未保存）' : ''}
                       <DeleteOutlined
                         onClick={async (e) => {
                           e.stopPropagation();
                           field.remove(index);
+                          if (field.value?.length === 0) {
+                            field.push({
+                              name: `t_${uid()}`,
+                              unsaved: true,
+                              fields: [],
+                            });
+                          }
                           if (activeIndex === index) {
                             setActiveIndex(0);
                           } else if (activeIndex > index) {
                             setActiveIndex(activeIndex - 1);
                           }
-                          await deleteCollection(item.name);
+                          if (item.name) {
+                            await deleteCollection(item.name);
+                          }
                         }}
                       />
                     </div>
@@ -146,30 +180,38 @@ export const DatabaseCollection = observer((props) => {
         onCancel={() => {
           setVisible(false);
         }}
+        okText={'保存'}
+        cancelText={'关闭'}
         onOk={async () => {
           try {
             form.clearErrors();
             await form.validate(`${field.address.entire}.${activeIndex}.*`);
-            setVisible(false);
+            delete field.value[activeIndex]['unsaved'];
             await createOrUpdateCollection(field.value[activeIndex]);
-            console.log(
-              `${field.address.entire}.${activeIndex}.*`,
-              field.value[activeIndex],
-            );
+            message.success('保存成功');
           } catch (error) {}
         }}
       >
-        <FormLayout layout={'vertical'}>
-          <RecursionField
-            name={activeIndex}
-            schema={
-              new Schema({
-                type: 'object',
-                properties: schema.properties,
-              })
-            }
-          />
-        </FormLayout>
+        {loading ? (
+          <Spin />
+        ) : (
+          <FormLayout layout={'vertical'}>
+            <RecursionField
+              name={activeIndex}
+              schema={
+                new Schema({
+                  type: 'object',
+                  properties: schema.properties,
+                })
+              }
+            />
+            {/* <FormConsumer>
+            {form => (
+              <pre>{JSON.stringify(form.values, null, 2)}</pre>
+            )}
+          </FormConsumer> */}
+          </FormLayout>
+        )}
       </Modal>
     </div>
   );
@@ -177,8 +219,13 @@ export const DatabaseCollection = observer((props) => {
 
 export const DatabaseField: any = observer((props) => {
   const field = useField<Formily.Core.Models.ArrayField>();
-  console.log('DatabaseField', field.value);
+  useEffect(()=> {
+    if (!field.value) {
+      field.setValue([]);
+    }
+  }, [])
   const [activeKey, setActiveKey] = useState(null);
+  console.log('DatabaseField', field);
   return (
     <div>
       <Collapse
@@ -191,12 +238,16 @@ export const DatabaseField: any = observer((props) => {
       >
         {field.value?.map((item, index) => {
           const schema = interfaces.get(item.interface);
-          console.log({ schema });
+          const path = field.address.concat(index);
+          const errors = field.form.queryFeedbacks({
+            type: 'error',
+            address: `*(${path},${path}.*)`,
+          });
           return (
             <Collapse.Panel
               header={
                 <>
-                  {(item.ui && item.ui.title) || (
+                  {(item.uiSchema && item.uiSchema.title) || (
                     <i style={{ color: 'rgba(0, 0, 0, 0.25)' }}>未命名</i>
                   )}{' '}
                   <Tag>{schema.title}</Tag>
@@ -206,16 +257,18 @@ export const DatabaseField: any = observer((props) => {
                 </>
               }
               extra={[
+                <Badge count={errors.length} />,
                 <DeleteOutlined
-                  onClick={() => {
+                  onClick={(e) => {
+                    e.stopPropagation();
                     field.remove(index);
                   }}
                 />,
               ]}
-              key={item.id}
+              key={item.key}
             >
               <RecursionField
-                key={`${item.id}_${index}`}
+                key={`${item.key}_${index}`}
                 name={index}
                 schema={
                   new Schema({
@@ -252,14 +305,14 @@ export const DatabaseField: any = observer((props) => {
                 return;
               }
               const data = {
-                ...schema.default,
-                id: uid(),
-                name: uid(),
+                ...cloneDeep(schema.default),
+                key: uid(),
+                name: `f_${uid()}`,
                 interface: info.key,
               };
               field.push(data);
-              setActiveKey(data.id);
-              console.log('info.key', info.key, schema);
+              setActiveKey(data.key);
+              console.log('info.key', field.value);
             }}
           >
             {options.map((option) => (

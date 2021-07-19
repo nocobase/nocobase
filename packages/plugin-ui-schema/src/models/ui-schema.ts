@@ -21,6 +21,14 @@ export class UISchema extends Model {
     return model;
   }
 
+  async update(key?: any, value?: any, options?: any): Promise<any> {
+    if (typeof key === 'object') {
+      const attributes = UISchema.toAttributes(key);
+      return super.update(attributes, value, options);
+    }
+    return super.update(key, value, options);
+  }
+
   static toAttributes(value = {}): any {
     const data = _.cloneDeep(value);
     const keys = [
@@ -51,6 +59,15 @@ export class UISchema extends Model {
     const options = this.get('options') || {};
     const data = _.omit(this.toJSON(), ['created_at', 'updated_at', 'options']);
     return { ...data, ...options };
+  }
+
+  async toJSONSchema() {
+    const schema = this.toProperty();
+    const properties = await this.getProperties();
+    if (Object.keys(properties).length) {
+      schema['properties'] = properties;
+    }
+    return schema;
   }
 
   async getProperties() {
