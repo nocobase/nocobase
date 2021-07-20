@@ -25,7 +25,7 @@ import constate from 'constate';
 import useRequest from '@ahooksjs/use-request';
 import { BaseResult } from '@ahooksjs/use-request/lib/types';
 import { uid, clone } from '@formily/shared';
-import { MenuOutlined } from '@ant-design/icons';
+import { MenuOutlined, DragOutlined } from '@ant-design/icons';
 import {
   SortableHandle,
   SortableContainer,
@@ -34,6 +34,8 @@ import {
 import cls from 'classnames';
 import { getSchemaPath, useDesignable, useSchemaPath, VisibleContext } from '../';
 import './style.less';
+import { DraggableBlockContext } from '../../components/drag-and-drop';
+import AddNew from '../add-new';
 
 interface TableRowProps {
   index: number;
@@ -633,3 +635,55 @@ Table.Action.DesignableBar = () => {
     </div>
   );
 };
+
+Table.DesignableBar = observer((props) => {
+  const field = useField();
+  const { schema, refresh, deepRemove } = useDesignable();
+  const [visible, setVisible] = useState(false);
+  const { dragRef } = useContext(DraggableBlockContext);
+  return (
+    <div className={cls('designable-bar', { active: visible })}>
+      <span
+        onClick={(e) => {
+          e.stopPropagation();
+        }}
+        className={cls('designable-bar-actions', { active: visible })}
+      >
+        <Space size={'small'}>
+          <AddNew.CardItem defaultAction={'insertAfter'} ghost />
+          {dragRef && <DragOutlined ref={dragRef} />}
+          <Dropdown
+            trigger={['click']}
+            visible={visible}
+            onVisibleChange={(visible) => {
+              setVisible(visible);
+            }}
+            overlay={
+              <Menu>
+                <Menu.Item
+                  key={'update'}
+                  onClick={() => {
+                    field.readPretty = false;
+                  }}
+                >
+                  编辑Markdown
+                </Menu.Item>
+                <Menu.Divider />
+                <Menu.Item
+                  key={'delete'}
+                  onClick={() => {
+                    deepRemove();
+                  }}
+                >
+                  删除当前区块
+                </Menu.Item>
+              </Menu>
+            }
+          >
+            <MenuOutlined />
+          </Dropdown>
+        </Space>
+      </span>
+    </div>
+  );
+});

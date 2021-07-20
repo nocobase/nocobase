@@ -46,8 +46,10 @@ import { TimePicker } from '../../schemas/time-picker';
 import { Upload } from '../../schemas/upload';
 import { FormItem } from '../../schemas/form-item';
 import { BlockItem } from '../../schemas/block-item';
+import { CardItem } from '../../schemas/card-item';
 import { DragAndDrop } from '../../schemas/drag-and-drop';
 import { TreeSelect } from '../../schemas/tree-select';
+import { Page } from '../../schemas/page';
 
 export const BlockContext = createContext({ dragRef: null });
 
@@ -59,11 +61,14 @@ interface DesignableContextProps {
 }
 
 export const SchemaField = createSchemaField({
-  scope: {},
+  scope: {
+    Table,
+  },
   components: {
     Card,
     Div,
     Space,
+    Page,
 
     ArrayCollapse,
     ArrayTable,
@@ -73,6 +78,7 @@ export const SchemaField = createSchemaField({
     DragAndDrop,
 
     BlockItem,
+    CardItem,
     FormItem,
 
     Action,
@@ -171,6 +177,14 @@ function setKeys(schema: ISchema, parentKey = null) {
   Object.keys(schema.properties || {}).forEach((name) => {
     setKeys(schema.properties[name], schema['key']);
   });
+}
+
+export function useSchemaComponent(component: string) {
+  if (!component) {
+    return null;
+  }
+  const options = useContext(SchemaOptionsContext);
+  return get(options.components, component);
 }
 
 export function useDesignable(path?: any) {

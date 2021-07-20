@@ -1,5 +1,6 @@
 import _ from 'lodash';
 import { Model } from '@nocobase/database';
+import deepmerge from 'deepmerge';
 
 export class UISchema extends Model {
   static async create(value?: any, options?: any): Promise<any> {
@@ -33,7 +34,7 @@ export class UISchema extends Model {
     ];
     const attrs = _.pick(data, keys);
     const options = _.omit(data, keys);
-    return { ...attrs, options: {...options, ...opts} };
+    return { ...attrs, options: deepmerge(opts, options) };
   }
 
   static properties2children(properties = []) {

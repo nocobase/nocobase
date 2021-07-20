@@ -17,7 +17,7 @@ import {
   useHistory,
   Redirect,
 } from 'react-router-dom';
-import { SchemaRenderer } from '../../schemas';
+import { CollectionContextProvider, PageTitleContextProvider, SchemaRenderer, usePageTitleContext } from '../../schemas';
 import { useRequest } from 'ahooks';
 import './style.less';
 
@@ -30,6 +30,7 @@ function LayoutWithMenu({ schema }) {
   const location = useLocation();
   const sideMenuRef = useRef();
   const [activeKey, setActiveKey] = useState(match.params.name);
+  const [,setPageTitle] = usePageTitleContext();
   const onSelect = (info) => {
     console.log('LayoutWithMenu', info);
     if (!info.schema) {
@@ -39,6 +40,9 @@ function LayoutWithMenu({ schema }) {
       setActiveKey(null);
     } else {
       setActiveKey(info.schema.key);
+      if (info.schema.title) {
+        setPageTitle(info.schema.title);
+      }
     }
   };
   console.log({ match });
@@ -98,7 +102,13 @@ export function AdminLayout({ route }: any) {
     return <Spin />;
   }
 
-  return <LayoutWithMenu schema={data} />;
+  return (
+    <CollectionContextProvider>
+      <PageTitleContextProvider>
+        <LayoutWithMenu schema={data} />
+      </PageTitleContextProvider>
+    </CollectionContextProvider>
+  );
 }
 
 export default AdminLayout;

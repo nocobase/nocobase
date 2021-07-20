@@ -30,6 +30,7 @@ import {
   useDragDropUID,
   DragDropManagerProvider,
 } from '../../components/drag-and-drop';
+import { useSchemaComponent } from '../../components/schema-renderer';
 
 const ColumnSizeContext = createContext(null);
 
@@ -37,7 +38,7 @@ export const GridBlockContext = createContext({
   dragRef: null,
 });
 
-function isGridRowOrCol(schema: ISchema) {
+export function isGridRowOrCol(schema: ISchema) {
   return ['Grid.Row', 'Grid.Col'].includes(schema['x-component']);
 }
 
@@ -81,11 +82,14 @@ const ColDivider = (props: any) => {
   );
 };
 
-export const Grid: any = observer((props) => {
+export const Grid: any = observer((props: any) => {
+  const { addNewComponent } = props;
+  const AddNewComponent = useSchemaComponent(addNewComponent);
   const ref = useRef();
-  const schema = useFieldSchema();
+  // const schema = useFieldSchema();
   const gridPath = useSchemaPath();
   const {
+    schema,
     schema: designableSchema,
     insertAfter,
     prepend,
@@ -162,6 +166,7 @@ export const Grid: any = observer((props) => {
             </>
           );
         })}
+        {AddNewComponent && <AddNewComponent />}
       </div>
     </DragDropManagerProvider>
   );
@@ -169,9 +174,10 @@ export const Grid: any = observer((props) => {
 
 Grid.Row = observer((props) => {
   const field = useField();
-  const schema = useFieldSchema();
+  // const schema = useFieldSchema();
   const rowPath = useSchemaPath();
   const {
+    schema,
     schema: designableSchema,
     refresh,
     insertAfter,

@@ -39,7 +39,7 @@ import Modal from 'antd/lib/modal/Modal';
 import { clone, cloneDeep, get } from 'lodash';
 import { useEffect } from 'react';
 import { useRequest } from 'ahooks';
-import { createOrUpdateCollection, deleteCollection } from '..';
+import { createOrUpdateCollection, deleteCollection, useCollectionContext } from '..';
 
 export const DatabaseCollection = observer((props) => {
   const field = useField<Formily.Core.Models.ArrayField>();
@@ -49,6 +49,7 @@ export const DatabaseCollection = observer((props) => {
   const [activeIndex, setActiveIndex] = useState(0);
   const form = useForm();
   const [newValue, setNewValue] = useState('');
+  const { refresh } = useCollectionContext();
 
   const { run, loading } = useRequest('collections:findAll', {
     formatResult: (result) => result?.data,
@@ -125,6 +126,7 @@ export const DatabaseCollection = observer((props) => {
                           setOpen(false);
                           setNewValue('');
                           await createOrUpdateCollection(data);
+                          await refresh();
                         }}
                       />
                     </div>
@@ -166,6 +168,7 @@ export const DatabaseCollection = observer((props) => {
                           }
                           if (item.name) {
                             await deleteCollection(item.name);
+                            await refresh();
                           }
                         }}
                       />
@@ -188,6 +191,7 @@ export const DatabaseCollection = observer((props) => {
             await form.validate(`${field.address.entire}.${activeIndex}.*`);
             delete field.value[activeIndex]['unsaved'];
             await createOrUpdateCollection(field.value[activeIndex]);
+            await refresh();
             message.success('保存成功');
           } catch (error) {}
         }}
