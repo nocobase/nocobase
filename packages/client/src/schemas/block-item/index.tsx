@@ -113,17 +113,6 @@ export const BlockItem: any = observer((props) => {
   return React.createElement(uid ? DraggableBlock : Block, props);
 });
 
-// export const BlockItem: any = connect((props) => {
-//   const { children, ...others } = props;
-//   const { DesignableBar } = useDesignableBar();
-//   return (
-//     <div {...others} style={{marginBottom: 24}} className={'designable-form-item'}>
-//       {children}
-//       <DesignableBar />
-//     </div>
-//   );
-// });
-
 BlockItem.DesignableBar = () => {
   const field = useField();
   const { schema, refresh } = useDesignable();

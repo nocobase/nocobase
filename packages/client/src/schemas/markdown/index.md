@@ -33,7 +33,6 @@ const schema = {
   type: 'object',
   properties: {
     input: {
-      interface: 'string',
       type: 'string',
       title: `编辑模式`,
       name: 'name1',
@@ -73,6 +72,61 @@ const schema = {
 export default () => {
   return (
     <SchemaRenderer schema={schema} />
+  );
+};
+```
+
+### Markdown.DesignableBar
+
+
+```tsx
+import React from 'react';
+import { SchemaRenderer } from '../';
+
+const schema1 = {
+  type: 'object',
+  properties: {
+    markdown1: {
+      type: 'string',
+      title: `简易Markdown`,
+      default: '这是一段示例文案',
+      'x-read-pretty': true,
+      'x-decorator': 'CardItem',
+      'x-component': 'Markdown',
+      'x-designable-bar': 'Markdown.DesignableBar',
+      'x-component-props': {
+        savedInSchema: true,
+        // ellipsis: true,
+      },
+    },
+  },
+};
+
+const schema2 = {
+  type: 'object',
+  properties: {
+    markdown1: {
+      type: 'string',
+      title: `简易Markdown`,
+      default: '这是一段示例文案',
+      'x-read-pretty': true,
+      'x-decorator': 'FormItem',
+      'x-component': 'Markdown',
+      'x-designable-bar': 'Markdown.DesignableBar',
+      'x-component-props': {
+      },
+    },
+  },
+};
+
+export default () => {
+  return (
+    <div>
+      <h3>区块项</h3>
+      <SchemaRenderer schema={schema1} />
+      <h3>表单项</h3>
+      <SchemaRenderer schema={schema2} />
+    </div>
   );
 };
 ```

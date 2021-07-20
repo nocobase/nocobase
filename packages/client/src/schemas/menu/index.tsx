@@ -62,7 +62,7 @@ import './style.less';
 import { Link } from 'react-router-dom';
 import { findPropertyByPath, getSchemaPath, useSchemaPath } from '../../';
 import { request } from '../';
-import defaultSchemas from './defaultSchemas';
+import { generateDefaultSchema } from './defaultSchemas';
 import _, { cloneDeep, get, isNull } from 'lodash';
 import { FormDialog, FormItem, FormLayout, Input } from '@formily/antd';
 import deepmerge from 'deepmerge';
@@ -369,7 +369,7 @@ Menu.AddNew = observer((props: any) => {
                     </FormLayout>
                   );
                 }).open();
-                const defaults = cloneDeep(defaultSchemas[info.key]);
+                const defaults = generateDefaultSchema(info.key);
                 const data = appendChild(deepmerge(defaults, values));
                 await createSchema(data);
               }}
@@ -568,7 +568,7 @@ Menu.DesignableBar = (props) => {
                   insertBefore,
                   appendChild,
                 };
-                const defaults = cloneDeep(defaultSchemas[type]);
+                const defaults = generateDefaultSchema(type);
                 const data = methods[method](deepmerge(defaults, values));
                 await createSchema(data);
               }}
@@ -711,11 +711,12 @@ Menu.DesignableBar = (props) => {
                     insertBefore,
                     appendChild,
                   };
+                  const data = schema.toJSON();
+                  remove();
                   const source = methods[values.method](
-                    schema.toJSON(),
+                    data,
                     values.path,
                   );
-                  remove();
                   await updateSchema(source);
                 }}
               >

@@ -14,6 +14,9 @@ const schema: ISchema = {
   type: 'void',
   name: uid(),
   'x-component': 'Grid',
+  "x-component-props": {
+    addNewComponent: 'AddNew.CardItem',
+  },
   properties: {
     [`row_${uid()}`]: {
       type: 'void',
