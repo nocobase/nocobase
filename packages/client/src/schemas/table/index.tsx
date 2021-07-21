@@ -32,10 +32,11 @@ import {
   SortableElement,
 } from 'react-sortable-hoc';
 import cls from 'classnames';
-import { getSchemaPath, useDesignable, useSchemaPath, VisibleContext } from '../';
+import { getSchemaPath, removeSchema, useDesignable, useSchemaPath, VisibleContext } from '../';
 import './style.less';
 import { DraggableBlockContext } from '../../components/drag-and-drop';
 import AddNew from '../add-new';
+import { isGridRowOrCol } from '../grid';
 
 interface TableRowProps {
   index: number;
@@ -446,7 +447,6 @@ function useDesignableBar() {
 Table.Column = observer((props) => {
   const schema = useFieldSchema();
   const field = useField();
-  console.log('Table.Column', schema, field.title);
   const { DesignableBar } = useDesignableBar();
   return (
     <div className={'nb-table-column'}>
@@ -461,7 +461,6 @@ Table.Column.DesignableBar = () => {
   // const fieldSchema = useFieldSchema();
   const { schema, remove, refresh, insertAfter } = useDesignable();
   const [visible, setVisible] = useState(false);
-  console.log('Table.Column.DesignableBar', { schema });
   return (
     <div className={cls('designable-bar', { active: visible })}>
       <span
@@ -571,7 +570,7 @@ Table.Index = observer((props) => {
   const schema = useFieldSchema();
   const field = useField<Formily.Core.Models.Field>();
   const path = useSchemaPath();
-  return <div>#{index + 1}</div>;
+  return <div>{index + 1}</div>;
 });
 
 Table.Addition = observer((props: any) => {
@@ -605,7 +604,7 @@ Table.Action.DesignableBar = () => {
   const path = useSchemaPath();
   const { schema, remove, refresh, insertAfter } = useDesignable();
   const [visible, setVisible] = useState(false);
-  console.log('Table.Action.DesignableBar', path, field.address.entire, { schema, field });
+  // console.log('Table.Action.DesignableBar', path, field.address.entire, { schema, field });
   return (
     <div className={cls('designable-bar', { active: visible })}>
       <span
@@ -638,9 +637,12 @@ Table.Action.DesignableBar = () => {
 
 Table.DesignableBar = observer((props) => {
   const field = useField();
-  const { schema, refresh, deepRemove } = useDesignable();
+  const { designable, schema, refresh, deepRemove } = useDesignable();
   const [visible, setVisible] = useState(false);
   const { dragRef } = useContext(DraggableBlockContext);
+  if (!designable) {
+    return null;
+  }
   return (
     <div className={cls('designable-bar', { active: visible })}>
       <span
@@ -671,8 +673,13 @@ Table.DesignableBar = observer((props) => {
                 <Menu.Divider />
                 <Menu.Item
                   key={'delete'}
-                  onClick={() => {
-                    deepRemove();
+                  onClick={async () => {
+                    const removed = deepRemove();
+                    // console.log({ removed })
+                    const last = removed.pop();
+                    if (isGridRowOrCol(last)) {
+                      await removeSchema(last);
+                    }
                   }}
                 >
                   删除当前区块

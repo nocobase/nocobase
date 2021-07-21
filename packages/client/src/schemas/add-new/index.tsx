@@ -47,6 +47,7 @@ import {
   DatabaseOutlined,
 } from '@ant-design/icons';
 import {
+  createCollectionField,
   createOrUpdateCollection,
   createSchema,
   request,
@@ -57,6 +58,9 @@ import {
 import { uid } from '@formily/shared';
 import { useRequest } from 'ahooks';
 import { SchemaField } from '../../components/schema-renderer';
+import { useFormContext } from '../form';
+import { cloneDeep } from 'lodash';
+import { options } from '../database-field/interfaces';
 
 const generateGridBlock = (schema: ISchema) => {
   const name = schema.name || uid();
@@ -429,6 +433,9 @@ function generateCardItemSchema(component) {
       name: uid(),
       'x-decorator': 'CardItem',
       'x-component': 'Form',
+      'x-component-props': {
+        showDefaultButtons: true,
+      },
       'x-designable-bar': 'Form.DesignableBar',
       properties: {
         [uid()]: {
@@ -491,9 +498,14 @@ AddNew.CardItem = observer((props: any) => {
   const { ghost, defaultAction } = props;
   const { schema, insertBefore, insertAfter, appendChild } = useDesignable();
   const path = useSchemaPath();
-  const { data: collections = [], loading, run } = useRequest('collections:findAll', {
-    formatResult: (result) => result?.data,
-  });
+  // const {
+  //   data: collections = [],
+  //   loading,
+  //   run,
+  // } = useRequest('collections:findAll', {
+  //   formatResult: (result) => result?.data,
+  // });
+  const { data: collections = [], loading, refresh } = useCollectionContext();
   console.log({ collections });
   return (
     <Dropdown
@@ -501,9 +513,6 @@ AddNew.CardItem = observer((props: any) => {
         minWidth: 200,
       }}
       onVisibleChange={(visible) => {
-        if (visible) {
-          run();
-        }
         console.log('onVisibleChange', visible);
       }}
       placement={'bottomCenter'}
@@ -511,6 +520,7 @@ AddNew.CardItem = observer((props: any) => {
         <Menu
           onClick={async (info) => {
             let data: ISchema;
+            let collectionName = null;
             if (['addNewTable', 'addNewForm'].includes(info.key)) {
               const values = await FormDialog(`新建数据表`, () => {
                 return (
@@ -525,13 +535,16 @@ AddNew.CardItem = observer((props: any) => {
                 },
               });
               await createOrUpdateCollection(values);
+              refresh();
               data = generateCardItemSchema(
                 info.key === 'addNewTable' ? 'Table' : 'Form',
               );
+              collectionName = values.name;
             } else if (info.key !== 'Markdown') {
               const keys = info.key.split('.');
               const component = keys.shift();
               const tableName = keys.join('.');
+              collectionName = tableName;
               data = generateCardItemSchema(component);
               console.log('info.keyPath', component, tableName);
             } else {
@@ -539,6 +552,10 @@ AddNew.CardItem = observer((props: any) => {
             }
             if (schema['key']) {
               data['key'] = uid();
+            }
+            if (collectionName) {
+              data['x-component-props'] = data['x-component-props'] || {};
+              data['x-component-props']['collectionName'] = collectionName;
             }
             if (isGridBlock(schema)) {
               path.pop();
@@ -669,8 +686,9 @@ AddNew.BlockItem = observer((props: any) => {
 
 AddNew.FormItem = observer((props: any) => {
   const { ghost, defaultAction } = props;
-  const { schema, insertBefore, insertAfter } = useDesignable();
+  const { schema, insertBefore, insertAfter, appendChild } = useDesignable();
   const path = useSchemaPath();
+  const { collection = {}, refresh } = useFormContext();
   return (
     <Dropdown
       overlayStyle={{
@@ -679,67 +697,136 @@ AddNew.FormItem = observer((props: any) => {
       placement={'bottomCenter'}
       overlay={
         <Menu>
-          <Menu.ItemGroup title={'选择已有字段'}>
-            <Menu.Item
-              style={{
-                minWidth: 150,
-              }}
-              onClick={async () => {
-                let data: ISchema = generateFormItemSchema('Markdown');
-                if (schema['key']) {
-                  data['key'] = uid();
-                }
-                if (isGridBlock(schema)) {
-                  path.pop();
-                  path.pop();
-                  data = generateGridBlock(data);
-                }
-                if (data) {
-                  let s;
-                  if (defaultAction === 'insertAfter') {
-                    s = insertAfter(data, [...path]);
-                  } else {
-                    s = insertBefore(data, [...path]);
+          <Menu.ItemGroup title={`选择「${collection.title}」里已有字段`}>
+            {collection?.fields?.map((field) => (
+              <Menu.Item
+                key={field.key}
+                onClick={async () => {
+                  let data: ISchema = {
+                    key: uid(),
+                    type: 'void',
+                    'x-decorator': 'Form.Field.Item',
+                    'x-designable-bar': 'Form.Field.DesignableBar',
+                    'x-component': 'Form.Field',
+                    'x-component-props': {
+                      fieldName: field.name,
+                    },
+                  };
+                  if (isGridBlock(schema)) {
+                    path.pop();
+                    path.pop();
+                    data = generateGridBlock(data);
+                  } else if (isGrid(schema)) {
+                    data = generateGridBlock(data);
                   }
-                  await createSchema(s);
-                }
-              }}
-            >
-              <Checkbox /> 字段 1
-            </Menu.Item>
-            <Menu.Item>
-              <Checkbox /> 字段2
-            </Menu.Item>
-            <Menu.Item>
-              <Checkbox /> 字段3
-            </Menu.Item>
-            <Menu.Item>
-              <Checkbox /> 字段4
-            </Menu.Item>
-            <Menu.Item>
-              <Checkbox /> 字段5
-            </Menu.Item>
-            <Menu.Item>
-              <Checkbox /> 字段6
-            </Menu.Item>
-            <Menu.Item>
-              <Checkbox /> 字段7
-            </Menu.Item>
+                  if (data) {
+                    let s;
+                    if (isGrid(schema)) {
+                      s = appendChild(data, [...path]);
+                    } else if (defaultAction === 'insertAfter') {
+                      s = insertAfter(data, [...path]);
+                    } else {
+                      s = insertBefore(data, [...path]);
+                    }
+                    await createSchema(s);
+                  }
+                }}
+              >
+                {field?.uiSchema?.title || '未命名'}
+              </Menu.Item>
+            ))}
           </Menu.ItemGroup>
           <Menu.Divider />
-          <Menu.SubMenu title={'新增字段'}>
-            <Menu.Item
-              style={{
-                minWidth: 150,
-              }}
-            >
-              单行文本
-            </Menu.Item>
-            <Menu.Item>多行文本</Menu.Item>
-            <Menu.Item>手机号</Menu.Item>
-            <Menu.Item>数字</Menu.Item>
-            <Menu.Item>说明文本</Menu.Item>
+          <Menu.SubMenu title={'新建字段'}>
+            {options.map((option) => (
+              <Menu.ItemGroup title={option.label}>
+                {option.children.map((item) => (
+                  <Menu.Item
+                    style={{ minWidth: 150 }}
+                    key={item.name}
+                    onClick={async () => {
+                      const values = await FormDialog(`新增字段`, () => {
+                        return (
+                          <FormLayout layout={'vertical'}>
+                            <SchemaField schema={item} />
+                          </FormLayout>
+                        );
+                      }).open({
+                        initialValues: {
+                          ...item.default,
+                          key: uid(),
+                          name: `f_${uid()}`,
+                        },
+                      });
+                      await createCollectionField(collection.name, values);
+                      await refresh();
+                      let data: ISchema = cloneDeep(values.uiSchema);
+                      data['name'] = values.name;
+                      data['referenceKey'] = data['key'];
+                      data['key'] = uid();
+                      if (isGridBlock(schema)) {
+                        path.pop();
+                        path.pop();
+                        data = generateGridBlock(data);
+                      } else if (isGrid(schema)) {
+                        data = generateGridBlock(data);
+                      }
+                      if (data) {
+                        let s;
+                        if (isGrid(schema)) {
+                          s = appendChild(data, [...path]);
+                        } else if (defaultAction === 'insertAfter') {
+                          s = insertAfter(data, [...path]);
+                        } else {
+                          s = insertBefore(data, [...path]);
+                        }
+                        await createSchema(s);
+                      }
+                    }}
+                  >
+                    {item.title}
+                  </Menu.Item>
+                ))}
+              </Menu.ItemGroup>
+            ))}
           </Menu.SubMenu>
+          <Menu.Divider />
+          <Menu.Item
+            onClick={async () => {
+              let data: ISchema = {
+                key: uid(),
+                type: 'string',
+                default: '这是一段演示文字',
+                'x-designable-bar': 'Markdown.FormItemDesignableBar',
+                'x-decorator': 'FormItem',
+                'x-read-pretty': true,
+                'x-component': 'Markdown',
+                'x-component-props': {
+                  savedInSchema: true,
+                },
+              };
+              if (isGridBlock(schema)) {
+                path.pop();
+                path.pop();
+                data = generateGridBlock(data);
+              } else if (isGrid(schema)) {
+                data = generateGridBlock(data);
+              }
+              if (data) {
+                let s;
+                if (isGrid(schema)) {
+                  s = appendChild(data, [...path]);
+                } else if (defaultAction === 'insertAfter') {
+                  s = insertAfter(data, [...path]);
+                } else {
+                  s = insertBefore(data, [...path]);
+                }
+                await createSchema(s);
+              }
+            }}
+          >
+            添加说明文字
+          </Menu.Item>
         </Menu>
       }
     >

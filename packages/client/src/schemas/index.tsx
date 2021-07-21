@@ -6,7 +6,7 @@ import { createContext } from 'react';
 
 import { extend } from 'umi-request';
 import { isVoidField } from '@formily/core';
-import { useRequest } from 'ahooks';
+import { useCookieState, useRequest } from 'ahooks';
 
 export * from '../components/schema-renderer';
 
@@ -14,19 +14,19 @@ export function mapReadPretty(component, readPrettyProps) {
   return function (target) {
     return observer(
       (props) => {
-        const field = useField()
+        const field = useField();
         if (!isVoidField(field) && field?.pattern === 'readPretty') {
           return React.createElement(component, {
             ...readPrettyProps,
             ...props,
-          })
+          });
         }
-        return React.createElement(target, props)
+        return React.createElement(target, props);
       },
       {
         forwardRef: true,
-      }
-    )
+      },
+    );
   };
 }
 
@@ -52,6 +52,13 @@ export const request = extend({
 
 export async function createOrUpdateCollection(data: any) {
   return await request('collections:createOrUpdate', {
+    method: 'post',
+    data,
+  });
+}
+
+export async function createCollectionField(collectionName: string, data: any) {
+  return await request(`collections/${collectionName}/fields:create`, {
     method: 'post',
     data,
   });
@@ -109,3 +116,16 @@ const [CollectionContextProvider, useCollectionContext] = constate(() => {
 });
 
 export { CollectionContextProvider, useCollectionContext };
+
+const [SwithDesignableContextProvider, useSwithDesignableContext] = constate(() => {
+  const [active, setActive] = useCookieState('useCookieDesignable');
+
+  return {
+    designable: active === 'true',
+    setDesignable(value) {
+      setActive(value ? 'true' : 'false');
+    }
+  }
+});
+
+export { SwithDesignableContextProvider, useSwithDesignableContext };

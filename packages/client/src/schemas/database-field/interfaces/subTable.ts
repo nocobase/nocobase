@@ -6,11 +6,14 @@ export const subTable: ISchema = {
   title: '子表格',
   group: 'relation',
   default: {
+    interface: 'subTable',
     // name,
     uiSchema: {
       type: 'string',
       // title,
-      'x-component': 'Select',
+      'x-decorator': 'FormItem',
+      'x-component': 'Table',
+      'x-designable-bar': 'Markdown.DesignableBar',
       enum: [],
     } as ISchema,
   },

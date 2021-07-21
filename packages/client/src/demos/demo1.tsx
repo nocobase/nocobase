@@ -19,6 +19,8 @@ const request = extend({
   timeout: 1000,
 });
 
+// console.log = () => {}
+
 const RouteSwitch = createRouteSwitch({
   components: {
     AdminLayout,

@@ -17,20 +17,46 @@ import {
   useHistory,
   Redirect,
 } from 'react-router-dom';
-import { CollectionContextProvider, PageTitleContextProvider, SchemaRenderer, usePageTitleContext } from '../../schemas';
+import {
+  CollectionContextProvider,
+  PageTitleContextProvider,
+  SchemaRenderer,
+  SwithDesignableContextProvider,
+  usePageTitleContext,
+  useSwithDesignableContext,
+} from '../../schemas';
 import { useRequest } from 'ahooks';
 import './style.less';
 
 import { uid } from '@formily/shared';
 import { ISchema } from '@formily/react';
 import Database from './datatable';
+import { HighlightOutlined } from '@ant-design/icons';
+import { useCookieState } from 'ahooks';
+import cls from 'classnames';
+
+function DesignableToggle() {
+  const { designable, setDesignable } = useSwithDesignableContext();
+  return (
+    <Button
+      className={cls('nb-designable-toggle', { active: designable })}
+      type={'primary'}
+      style={{ height: 46, border: 0 }}
+      onClick={() => {
+        setDesignable(!designable);
+      }}
+    >
+      <HighlightOutlined />
+    </Button>
+  );
+}
 
 function LayoutWithMenu({ schema }) {
   const match = useRouteMatch<any>();
   const location = useLocation();
   const sideMenuRef = useRef();
   const [activeKey, setActiveKey] = useState(match.params.name);
-  const [,setPageTitle] = usePageTitleContext();
+  const [, setPageTitle] = usePageTitleContext();
   const onSelect = (info) => {
     console.log('LayoutWithMenu', info);
     if (!info.schema) {
@@ -58,6 +84,7 @@ function LayoutWithMenu({ schema }) {
           }}
         />
         <Database />
+        <DesignableToggle />
       </Layout.Header>
       <Layout>
         <Layout.Sider
@@ -103,11 +130,13 @@ export function AdminLayout({ route }: any) {
   }
 
   return (
-    <CollectionContextProvider>
-      <PageTitleContextProvider>
-        <LayoutWithMenu schema={data} />
-      </PageTitleContextProvider>
-    </CollectionContextProvider>
+    <SwithDesignableContextProvider>
+      <CollectionContextProvider>
+        <PageTitleContextProvider>
+          <LayoutWithMenu schema={data} />
+        </PageTitleContextProvider>
+      </CollectionContextProvider>
+    </SwithDesignableContextProvider>
   );
 }
 

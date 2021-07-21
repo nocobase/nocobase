@@ -39,7 +39,7 @@ const DraggableBlock = (props) => {
       <div
         onMouseEnter={(e) => {
           setActive(true);
-          console.log('e.onMouseEnter', new Date().toString());
+          // console.log('e.onMouseEnter', new Date().toString());
         }}
         onMouseMove={(event) => {
           let dropElement = document.elementFromPoint(
@@ -65,11 +65,11 @@ const DraggableBlock = (props) => {
           if (dropIds.length > 0) {
             setActive(dropIds[0] === schema.name);
           }
-          console.log('e.onMouseMove', dropIds, schema.name);
+          // console.log('e.onMouseMove', dropIds, schema.name);
         }}
         onMouseLeave={(e) => {
           setActive(false);
-          console.log('e.onMouseLeave', new Date().toString());
+          // console.log('e.onMouseLeave', new Date().toString());
         }}
         ref={mergeRefs([previewRef, dropRef])}
         className={cls('nb-grid-block', 'designable-form-item', {
