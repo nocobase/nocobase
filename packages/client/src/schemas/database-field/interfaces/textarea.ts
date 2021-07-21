@@ -11,7 +11,9 @@ export const textarea: ISchema = {
     uiSchema: {
       type: 'string',
       // title,
+      'x-decorator': 'FormItem',
       'x-component': 'Input.TextArea',
+      'x-designable-bar': 'Markdown.DesignableBar',
     } as ISchema,
   },
   properties: {

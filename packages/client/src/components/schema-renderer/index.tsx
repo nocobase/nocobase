@@ -19,7 +19,7 @@ import { useMemo } from 'react';
 import { CodeOutlined } from '@ant-design/icons';
 import Editor from '@monaco-editor/react';
 
-import { ArrayCollapse, ArrayTable, FormLayout } from '@formily/antd';
+import { ArrayCollapse, ArrayTable, FormLayout, FormItem as FormilyFormItem } from '@formily/antd';
 
 import { Space, Card, Modal, Spin } from 'antd';
 import { Action } from '../../schemas/action';
@@ -50,6 +50,7 @@ import { CardItem } from '../../schemas/card-item';
 import { DragAndDrop } from '../../schemas/drag-and-drop';
 import { TreeSelect } from '../../schemas/tree-select';
 import { Page } from '../../schemas/page';
+import { useCollectionContext, useSwithDesignableContext } from '../../schemas';
 
 export const BlockContext = createContext({ dragRef: null });
 
@@ -74,6 +75,7 @@ export const SchemaField = createSchemaField({
     ArrayTable,
     FormLayout,
     TreeSelect,
+    FormilyFormItem,
 
     DragAndDrop,
 
@@ -188,10 +190,12 @@ export function useSchemaComponent(component: string) {
 }
 
 export function useDesignable(path?: any) {
+  const { designable } = useSwithDesignableContext();
   const { schema = new Schema({}), refresh } = useContext(DesignableContext);
   const schemaPath = path || useSchemaPath();
   const fieldSchema = useFieldSchema();
-  let currentSchema =
+  let current;
+  let currentSchema = current =
     findPropertyByPath(schema, schemaPath) || ({} as Schema);
   if (!currentSchema) {
     currentSchema = fieldSchema;
@@ -204,6 +208,9 @@ export function useDesignable(path?: any) {
   const DesignableBar =
     get(options.components, currentSchema['x-designable-bar']) || (() => null);
   return {
+    designable,
+    root: schema,
+    currentSchema: current,
     DesignableBar,
     schema: currentSchema,
     refresh,
@@ -325,10 +332,14 @@ export function useDesignable(path?: any) {
         }
         s.parent.removeProperty(s.name);
         removed.push(s);
+        if (s['x-component'] === 'Grid.Row') {
+          return;
+        }
         if (Object.keys(s.parent.properties || {}).length === 0) {
           remove(s.parent);
         }
       };
+      console.log({ removed })
       remove(target);
       refresh();
       return removed;
@@ -353,12 +364,12 @@ export function getSchemaPath(schema: Schema) {
   const path = schema['x-path'] || [schema.name];
   let parent = schema.parent;
   while (parent) {
-    if (!parent.name) {
-      break;
-    }
+    // if (!parent.name) {
+    //   break;
+    // }
     if (parent['x-path']) {
       path.unshift(...parent['x-path']);
-    } else {
+    } else if (parent.name) {
       path.unshift(parent.name);
     }
     parent = parent.parent;
@@ -434,6 +445,7 @@ export interface SchemaRendererProps {
 }
 
 export const SchemaRenderer = (props: SchemaRendererProps) => {
+  const { designable } = useSwithDesignableContext();
   const [, refresh] = useState(uid());
   const form = useMemo(() => props.form || createForm(), []);
   const schema = useMemo(() => {
@@ -456,6 +468,10 @@ export const SchemaRenderer = (props: SchemaRendererProps) => {
     }
     return new Schema(s);
   }, []);
+  // useEffect(() => {
+  //   refresh(uid());
+  // }, [designable]);
+  console.log({ designable }, 'designable')
   const defaultRender = ({ schema }) => (
     <FormProvider form={form}>
       <SchemaField

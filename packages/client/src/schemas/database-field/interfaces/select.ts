@@ -6,12 +6,15 @@ export const select: ISchema = {
   title: '下拉选择',
   group: 'choices',
   default: {
+    interface: 'select',
     dataType: 'string',
     // name,
     uiSchema: {
       type: 'string',
       // title,
       'x-component': 'Select',
+      'x-decorator': 'FormItem',
+      'x-designable-bar': 'Markdown.DesignableBar',
       enum: [],
     } as ISchema,
   },

@@ -30,7 +30,7 @@ export const Action: any = observer((props: any) => {
   const isDropdownOrPopover =
     child &&
     ['Action.Dropdown', 'Action.Popover'].includes(child['x-component']);
-  console.log({ DesignableBar, schema });
+  // console.log({ DesignableBar, schema });
   return (
     <VisibleContext.Provider value={[visible, setVisible]}>
       {!isDropdownOrPopover && (

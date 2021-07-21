@@ -97,7 +97,7 @@ const SideMenu = (props: any) => {
 
 export const Menu: any = observer((props: any) => {
   const { mode, onSelect, sideMenuRef, ...others } = props;
-  const { schema } = useDesignable();
+  const { designable, schema } = useDesignable();
   const fieldSchema = useFieldSchema();
   console.log('Menu.schema', schema, fieldSchema);
   const [selectedKey, setSelectedKey] = useState(null);
@@ -275,8 +275,10 @@ Menu.SubMenu = observer((props: any) => {
 });
 
 Menu.AddNew = observer((props: any) => {
-  const { appendChild } = useDesignable(props.path);
-
+  const { designable, appendChild } = useDesignable(props.path);
+  if (!designable) {
+    return null;
+  }
   const schemas = {
     'Menu.Link': {
       icon: <MenuOutlined />,
@@ -516,10 +518,14 @@ Menu.DesignableBar = (props) => {
 
   const field = useField();
   const [visible, setVisible] = useState(false);
-  const { schema, remove, refresh, insertAfter, insertBefore, appendChild } =
+  const { designable, schema, remove, refresh, insertAfter, insertBefore, appendChild } =
     useDesignable();
   const formConfig = schemas[schema['x-component']];
   const isSubMenu = schema['x-component'] === 'Menu.SubMenu';
+
+  if (!designable) {
+    return null;
+  }
 
   return (
     <div className={cls('designable-bar', { active: visible })}>

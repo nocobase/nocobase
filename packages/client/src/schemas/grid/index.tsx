@@ -89,6 +89,7 @@ export const Grid: any = observer((props: any) => {
   // const schema = useFieldSchema();
   const gridPath = useSchemaPath();
   const {
+    designable,
     schema,
     schema: designableSchema,
     insertAfter,
@@ -166,7 +167,7 @@ export const Grid: any = observer((props: any) => {
             </>
           );
         })}
-        {AddNewComponent && <AddNewComponent />}
+        {designable && AddNewComponent && <AddNewComponent />}
       </div>
     </DragDropManagerProvider>
   );
@@ -187,7 +188,7 @@ Grid.Row = observer((props) => {
     deepRemove,
   } = useDesignable();
   const len = Object.keys(designableSchema.properties || {}).length;
-  console.log({ len, schema, designableSchema });
+  // console.log({ len, schema, designableSchema });
   return (
     <ColumnSizeContext.Provider value={len}>
       <ColDivider

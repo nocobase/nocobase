@@ -6,12 +6,15 @@ export const string: ISchema = {
   title: '单行文本',
   group: 'basic',
   default: {
+    interface: 'string',
     dataType: 'string',
     // name,
     uiSchema: {
       type: 'string',
       // title,
       'x-component': 'Input',
+      'x-decorator': 'FormItem',
+      'x-designable-bar': 'Input.DesignableBar',
     } as ISchema,
   },
   properties: {

@@ -20,6 +20,7 @@ import { DraggableBlockContext } from '../../components/drag-and-drop';
 import { uid } from '@formily/shared';
 import { removeSchema, updateSchema } from '..';
 import { isGridRowOrCol } from '../grid';
+import './style.less';
 
 export const Markdown: any = connect(
   (props) => {
@@ -67,7 +68,7 @@ export const Markdown: any = connect(
     console.log('Markdown', props);
     let text = props.value;
     let value = (
-      <div dangerouslySetInnerHTML={{ __html: micromark(text || '') }} />
+      <div className={'nb-markdown'} dangerouslySetInnerHTML={{ __html: micromark(text || '') }} />
     );
     return <Display.TextArea {...props} text={text} value={value} />;
   }),
@@ -75,9 +76,12 @@ export const Markdown: any = connect(
 
 Markdown.DesignableBar = observer((props) => {
   const field = useField();
-  const { schema, refresh, deepRemove } = useDesignable();
+  const { designable, schema, refresh, deepRemove } = useDesignable();
   const [visible, setVisible] = useState(false);
   const { dragRef } = useContext(DraggableBlockContext);
+  if (!designable) {
+    return null;
+  }
   return (
     <div className={cls('designable-bar', { active: visible })}>
       <span
@@ -117,7 +121,67 @@ Markdown.DesignableBar = observer((props) => {
                     }
                   }}
                 >
-                  删除当前区块
+                  删除当前文本
+                </Menu.Item>
+              </Menu>
+            }
+          >
+            <MenuOutlined />
+          </Dropdown>
+        </Space>
+      </span>
+    </div>
+  );
+});
+
+Markdown.FormItemDesignableBar = observer((props) => {
+  const field = useField();
+  const { designable, schema, refresh, deepRemove } = useDesignable();
+  const [visible, setVisible] = useState(false);
+  const { dragRef } = useContext(DraggableBlockContext);
+  if (!designable) {
+    return null;
+  }
+  return (
+    <div className={cls('designable-bar', { active: visible })}>
+      <span
+        onClick={(e) => {
+          e.stopPropagation();
+        }}
+        className={cls('designable-bar-actions', { active: visible })}
+      >
+        <Space size={'small'}>
+          <AddNew.FormItem defaultAction={'insertAfter'} ghost />
+          {dragRef && <DragOutlined ref={dragRef} />}
+          <Dropdown
+            trigger={['click']}
+            visible={visible}
+            onVisibleChange={(visible) => {
+              setVisible(visible);
+            }}
+            overlay={
+              <Menu>
+                <Menu.Item
+                  key={'update'}
+                  onClick={() => {
+                    field.readPretty = false;
+                  }}
+                >
+                  修改文本内容
+                </Menu.Item>
+                <Menu.Divider />
+                <Menu.Item
+                  key={'delete'}
+                  onClick={async () => {
+                    const removed = deepRemove();
+                    // console.log({ removed })
+                    const last = removed.pop();
+                    if (isGridRowOrCol(last)) {
+                      await removeSchema(last);
+                    }
+                  }}
+                >
+                  删除当前文本
                 </Menu.Item>
               </Menu>
             }

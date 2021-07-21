@@ -20,6 +20,13 @@ group:
   // 添加其他节点
 </Form>
 
+<Form>
+  // Form.Field 可用于覆盖字段原配置，但不修改原字段配置，新配置只作用于当前 Form
+  <Form.Field title={'自定义标题'}>
+    <Input title={'原标题'}>
+  </Form.Field>
+</Form>
+
 // Form 用作 decorator 时只用于创建独立的作用域
 <Table x-decorator={'Form'}/>
 </pre>
