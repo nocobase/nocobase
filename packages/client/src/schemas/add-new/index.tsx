@@ -16,6 +16,7 @@ import {
   RecursionField,
   Schema,
   ISchema,
+  useForm,
 } from '@formily/react';
 import {
   Menu,
@@ -58,9 +59,10 @@ import {
 import { uid } from '@formily/shared';
 import { useRequest } from 'ahooks';
 import { SchemaField } from '../../components/schema-renderer';
-import { useFormContext } from '../form';
+import { useResourceContext } from '../';
 import { cloneDeep } from 'lodash';
 import { options } from '../database-field/interfaces';
+import { useDisplayFieldsContext } from '../form';
 
 const generateGridBlock = (schema: ISchema) => {
   const name = schema.name || uid();
@@ -126,73 +128,154 @@ function generateCardItemSchema(component) {
         { key: uid(), field1: uid(), field2: uid() },
         { key: uid(), field1: uid(), field2: uid() },
         { key: uid(), field1: uid(), field2: uid() },
-        { key: uid(), field1: uid(), field2: uid() },
-        { key: uid(), field1: uid(), field2: uid() },
-        { key: uid(), field1: uid(), field2: uid() },
-        { key: uid(), field1: uid(), field2: uid() },
       ],
       'x-component-props': {
         rowKey: 'key',
+        dragSort: true,
+        showIndex: true,
       },
       properties: {
-        [`action_bar_${uid()}`]: {
+        [uid()]: {
           type: 'void',
           'x-component': 'Table.ActionBar',
+          'x-designable-bar': 'Table.ActionBar.DesignableBar',
           properties: {
-            action1: {
+            [uid()]: {
+              type: 'void',
+              'x-component': 'Table.Filter',
+              'x-designable-bar': 'Table.Filter.DesignableBar',
+              'x-component-props': {
+                fieldNames: [],
+              },
+            },
+            [uid()]: {
               type: 'void',
               name: 'action1',
-              title: '筛选',
+              title: '新增',
               'x-component': 'Action',
+              'x-designable-bar': 'Table.Action.DesignableBar',
               properties: {
-                popover1: {
+                modal: {
                   type: 'void',
-                  title: '弹窗标题',
+                  title: '新增数据',
                   'x-decorator': 'Form',
-                  'x-component': 'Action.Popover',
-                  'x-component-props': {},
+                  'x-component': 'Action.Modal',
+                  'x-component-props': {
+                    useOkAction: '{{ Table.useTableCreateAction }}',
+                  },
                   properties: {
-                    filter: {
-                      name: 'filter',
-                      type: 'object',
-                      'x-component': 'Filter',
+                    [uid()]: {
+                      type: 'void',
+                      'x-component': 'Grid',
+                      'x-component-props': {
+                        addNewComponent: 'AddNew.FormItem',
+                      },
+                    },
+                  },
+                },
+              },
+            },
+            [uid()]: {
+              type: 'void',
+              name: 'action1',
+              title: '删除',
+              'x-component': 'Action',
+              'x-designable-bar': 'Table.Action.DesignableBar',
+              'x-component-props': {
+                useAction: '{{ Table.useTableDestroyAction }}',
+              },
+            },
+          },
+        },
+        [uid()]: {
+          type: 'void',
+          'x-component': 'Table.ActionBar',
+          'x-component-props': {
+            align: 'bottom',
+          },
+          properties: {
+            [uid()]: {
+              type: 'void',
+              'x-component': 'Table.Pagination',
+              'x-component-props': {},
+            },
+          },
+        },
+        [uid()]: {
+          type: 'void',
+          'x-component': 'Table.Column',
+          'x-component-props': {
+            className: 'nb-table-operation',
+          },
+          properties: {
+            [uid()]: {
+              type: 'void',
+              'x-component': 'Action.Dropdown',
+              'x-component-props': {
+                buttonProps: {
+                  icon: 'EllipsisOutlined',
+                },
+              },
+              properties: {
+                [uid()]: {
+                  type: 'void',
+                  title: '操作 1',
+                  'x-component': 'Menu.Action',
+                  'x-component-props': {
+                    style: {
+                      minWidth: 150,
+                    },
+                    disabled: true,
+                  },
+                },
+                [uid()]: {
+                  type: 'void',
+                  name: 'action1',
+                  title: '查看',
+                  'x-component': 'Menu.Action',
+                  'x-designable-bar': 'Table.Action.DesignableBar',
+                  properties: {
+                    drawer1: {
+                      type: 'void',
+                      title: '查看',
+                      'x-component': 'Action.Modal',
+                      'x-component-props': {},
                       properties: {
-                        column1: {
+                        [uid()]: {
                           type: 'void',
-                          title: '字段1',
-                          'x-component': 'Filter.Column',
-                          'x-component-props': {
-                            operations: [
-                              { label: '等于', value: 'eq' },
-                              { label: '不等于', value: 'ne' },
-                            ],
-                          },
+                          'x-component': 'Tabs',
                           properties: {
-                            field1: {
-                              type: 'string',
-                              'x-component': 'Input',
-                            },
-                          },
-                        },
-                        column2: {
-                          type: 'void',
-                          title: '字段2',
-                          'x-component': 'Filter.Column',
-                          'x-component-props': {
-                            operations: [
-                              { label: '大于', value: 'gt' },
-                              { label: '小于', value: 'lt' },
-                              {
-                                label: '非空',
-                                value: 'notNull',
-                                noValue: true,
+                            tab1: {
+                              type: 'void',
+                              'x-component': 'Tabs.TabPane',
+                              'x-component-props': {
+                                tab: 'Tab1',
                               },
-                            ],
-                          },
-                          properties: {
-                            field1: {
-                              type: 'number',
-                              'x-component': 'InputNumber',
+                              properties: {
+                                aaa: {
+                                  type: 'string',
+                                  title: 'AAA',
+                                  'x-decorator': 'FormItem',
+                                  required: true,
+                                  'x-component': 'Input',
+                                },
+                              },
+                            },
+                            tab2: {
+                              type: 'void',
+                              'x-component': 'Tabs.TabPane',
+                              'x-component-props': {
+                                tab: 'Tab2',
+                              },
+                              properties: {
+                                bbb: {
+                                  type: 'string',
+                                  title: 'BBB',
+                                  'x-decorator': 'FormItem',
+                                  required: true,
+                                  'x-component': 'Input',
+                                },
+                              },
                             },
                           },
                         },
@@ -200,88 +283,54 @@ function generateCardItemSchema(component) {
                     },
                   },
                 },
-              },
-            },
-            action2: {
-              type: 'void',
-              name: 'action1',
-              title: '新增',
-              'x-component': 'Action',
-              'x-designable-bar': 'Action.DesignableBar',
-              properties: {
-                drawer1: {
+                [uid()]: {
                   type: 'void',
-                  title: '抽屉标题',
-                  'x-decorator': 'Form',
-                  'x-component': 'Action.Modal',
-                  'x-component-props': {
-                    useOkAction: '{{ Table.useTableCreateAction }}',
-                  },
+                  name: 'action1',
+                  title: '修改',
+                  'x-component': 'Menu.Action',
+                  'x-designable-bar': 'Table.Action.DesignableBar',
                   properties: {
-                    field1: {
-                      type: 'string',
-                      title: '字段1',
-                      'x-decorator': 'FormItem',
-                      'x-component': 'Input',
+                    drawer1: {
+                      type: 'void',
+                      title: '编辑表单',
+                      'x-decorator': 'Form',
+                      'x-decorator-props': {
+                        useValues: '{{ Table.useTableRow }}',
+                      },
+                      'x-component': 'Action.Modal',
+                      'x-component-props': {
+                        useOkAction: '{{ Table.useTableUpdateAction }}',
+                      },
+                      properties: {
+                        field1: {
+                          type: 'string',
+                          title: '字段1',
+                          'x-decorator': 'FormItem',
+                          'x-component': 'Input',
+                        },
+                        field2: {
+                          type: 'string',
+                          title: '字段2',
+                          'x-decorator': 'FormItem',
+                          'x-component': 'Input',
+                        },
+                      },
                     },
-                    field2: {
-                      type: 'string',
-                      title: '字段2',
-                      'x-decorator': 'FormItem',
-                      'x-component': 'Input',
-                    },
+                  },
+                },
+                [uid()]: {
+                  type: 'void',
+                  title: '删除',
+                  'x-component': 'Menu.Action',
+                  'x-component-props': {
+                    useAction: '{{ Table.useTableDestroyAction }}',
                   },
                 },
               },
             },
-            action3: {
-              type: 'void',
-              name: 'action1',
-              title: '删除',
-              'x-component': 'Action',
-              'x-component-props': {
-                useAction: '{{ Table.useTableDestroyAction }}',
-              },
-            },
           },
         },
-        [`a_${uid()}`]: {
-          type: 'void',
-          'x-component': 'Table.ActionBar',
-          'x-component-props': {
-            align: 'bottom',
-          },
-          properties: {
-            pagination: {
-              type: 'void',
-              'x-component': 'Table.Pagination',
-              'x-component-props': {},
-            },
-          },
-        },
-        [`column_${uid()}`]: {
-          type: 'void',
-          title: '排序',
-          'x-component': 'Table.Column',
-          properties: {
-            sort: {
-              type: 'void',
-              'x-component': 'Table.SortHandle',
-            },
-          },
-        },
-        [`column_${uid()}`]: {
-          type: 'void',
-          title: '序号',
-          'x-component': 'Table.Column',
-          properties: {
-            index: {
-              type: 'void',
-              'x-component': 'Table.Index',
-            },
-          },
-        },
-        [`column_${uid()}`]: {
+        [uid()]: {
           type: 'void',
           title: '字段1',
           'x-component': 'Table.Column',
@@ -302,15 +351,17 @@ function generateCardItemSchema(component) {
             },
           },
         },
-        [`column_${uid()}`]: {
+        [uid()]: {
           type: 'void',
           title: '字段2',
           'x-component': 'Table.Column',
+          'x-component-props': {
+            // title: 'z1',
+          },
           'x-designable-bar': 'Table.Column.DesignableBar',
           properties: {
             field2: {
               type: 'string',
-              // title: '字段2',
               required: true,
               'x-read-pretty': true,
               'x-decorator-props': {
@@ -318,111 +369,6 @@ function generateCardItemSchema(component) {
               },
               'x-decorator': 'FormItem',
               'x-component': 'Input',
-            },
-          },
-        },
-        [`column_${uid()}`]: {
-          type: 'void',
-          title: '操作',
-          'x-component': 'Table.Column',
-          properties: {
-            [uid()]: {
-              type: 'void',
-              name: 'action1',
-              title: '查看',
-              'x-component': 'Action',
-              'x-designable-bar': 'Table.Action.DesignableBar',
-              properties: {
-                drawer1: {
-                  type: 'void',
-                  title: '查看',
-                  'x-component': 'Action.Modal',
-                  'x-component-props': {},
-                  properties: {
-                    [uid()]: {
-                      type: 'void',
-                      'x-component': 'Tabs',
-                      properties: {
-                        tab1: {
-                          type: 'void',
-                          'x-component': 'Tabs.TabPane',
-                          'x-component-props': {
-                            tab: 'Tab1',
-                          },
-                          properties: {
-                            aaa: {
-                              type: 'string',
-                              title: 'AAA',
-                              'x-decorator': 'FormItem',
-                              required: true,
-                              'x-component': 'Input',
-                            },
-                          },
-                        },
-                        tab2: {
-                          type: 'void',
-                          'x-component': 'Tabs.TabPane',
-                          'x-component-props': {
-                            tab: 'Tab2',
-                          },
-                          properties: {
-                            bbb: {
-                              type: 'string',
-                              title: 'BBB',
-                              'x-decorator': 'FormItem',
-                              required: true,
-                              'x-component': 'Input',
-                            },
-                          },
-                        },
-                      },
-                    },
-                  },
-                },
-              },
-            },
-            [uid()]: {
-              type: 'void',
-              name: 'action1',
-              title: '修改',
-              'x-component': 'Action',
-              'x-designable-bar': 'Table.Action.DesignableBar',
-              properties: {
-                drawer1: {
-                  type: 'void',
-                  title: '编辑表单',
-                  'x-decorator': 'Form',
-                  'x-decorator-props': {
-                    useValues: '{{ Table.useTableRow }}',
-                  },
-                  'x-component': 'Action.Modal',
-                  'x-component-props': {
-                    useOkAction: '{{ Table.useTableUpdateAction }}',
-                  },
-                  properties: {
-                    field1: {
-                      type: 'string',
-                      title: '字段1',
-                      'x-decorator': 'FormItem',
-                      'x-component': 'Input',
-                    },
-                    field2: {
-                      type: 'string',
-                      title: '字段2',
-                      'x-decorator': 'FormItem',
-                      'x-component': 'Input',
-                    },
-                  },
-                },
-              },
-            },
-            [uid()]: {
-              type: 'void',
-              title: '删除',
-              'x-component': 'Action',
-              'x-component-props': {
-                useAction: '{{ Table.useTableDestroyAction }}',
-              },
             },
           },
         },
@@ -509,6 +455,7 @@ AddNew.CardItem = observer((props: any) => {
   console.log({ collections });
   return (
     <Dropdown
+      trigger={['click']}
       overlayStyle={{
         minWidth: 200,
       }}
@@ -520,7 +467,7 @@ AddNew.CardItem = observer((props: any) => {
         <Menu
           onClick={async (info) => {
             let data: ISchema;
-            let collectionName = null;
+            let resourceName = null;
             if (['addNewTable', 'addNewForm'].includes(info.key)) {
               const values = await FormDialog(`新建数据表`, () => {
                 return (
@@ -539,12 +486,12 @@ AddNew.CardItem = observer((props: any) => {
               data = generateCardItemSchema(
                 info.key === 'addNewTable' ? 'Table' : 'Form',
               );
-              collectionName = values.name;
+              resourceName = values.name;
             } else if (info.key !== 'Markdown') {
               const keys = info.key.split('.');
               const component = keys.shift();
               const tableName = keys.join('.');
-              collectionName = tableName;
+              resourceName = tableName;
               data = generateCardItemSchema(component);
               console.log('info.keyPath', component, tableName);
             } else {
@@ -553,9 +500,9 @@ AddNew.CardItem = observer((props: any) => {
             if (schema['key']) {
               data['key'] = uid();
             }
-            if (collectionName) {
+            if (resourceName) {
               data['x-component-props'] = data['x-component-props'] || {};
-              data['x-component-props']['collectionName'] = collectionName;
+              data['x-component-props']['resourceName'] = resourceName;
             }
             if (isGridBlock(schema)) {
               path.pop();
@@ -595,8 +542,8 @@ AddNew.CardItem = observer((props: any) => {
             <Menu.Divider></Menu.Divider>
             <Menu.Item key={'addNewForm'}>新建数据表</Menu.Item>
           </Menu.SubMenu>
-          <Menu.Item key={'Markdown'}>新建 Markdown</Menu.Item>
-          <Menu.SubMenu key={'Ref'} title={'引用模板'}>
+          <Menu.Item key={'Markdown'}>新建文本段</Menu.Item>
+          <Menu.SubMenu disabled key={'Ref'} title={'引用模板'}>
             <Menu.ItemGroup key={'form-select'} title={'选择模板'}>
               <Menu.Item key={'Ref.name1'}>模板1</Menu.Item>
             </Menu.ItemGroup>
@@ -684,55 +631,97 @@ AddNew.BlockItem = observer((props: any) => {
   );
 });
 
+function FieldSwitch({ field, onChange, defaultChecked }) {
+  const [checked, setChecked] = useState(defaultChecked);
+  const form = useForm();
+  return (
+    <div
+      style={{
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+      }}
+      onClick={(e) => {
+        setChecked((value) => {
+          onChange && onChange(!value);
+          return !value;
+        });
+        console.log('FieldSwitch', form);
+      }}
+    >
+      <span>{field?.uiSchema?.title || '未命名'}</span>
+      <Switch
+        onChange={(checked, e) => {
+          e.stopPropagation();
+          setChecked(checked);
+          onChange && onChange(checked);
+        }}
+        size={'small'}
+        checked={checked}
+      />
+    </div>
+  );
+}
+
 AddNew.FormItem = observer((props: any) => {
   const { ghost, defaultAction } = props;
   const { schema, insertBefore, insertAfter, appendChild } = useDesignable();
   const path = useSchemaPath();
-  const { collection = {}, refresh } = useFormContext();
+  const { resource = {}, refresh } = useResourceContext();
+  const [visible, setVisible] = useState(false);
+  const { displayFields = [] } = useDisplayFieldsContext();
+  console.log({ displayFields });
   return (
     <Dropdown
+      trigger={['click']}
+      visible={visible}
+      onVisibleChange={setVisible}
       overlayStyle={{
         minWidth: 200,
       }}
       placement={'bottomCenter'}
       overlay={
         <Menu>
-          <Menu.ItemGroup title={`选择「${collection.title}」里已有字段`}>
-            {collection?.fields?.map((field) => (
-              <Menu.Item
-                key={field.key}
-                onClick={async () => {
-                  let data: ISchema = {
-                    key: uid(),
-                    type: 'void',
-                    'x-decorator': 'Form.Field.Item',
-                    'x-designable-bar': 'Form.Field.DesignableBar',
-                    'x-component': 'Form.Field',
-                    'x-component-props': {
-                      fieldName: field.name,
-                    },
-                  };
-                  if (isGridBlock(schema)) {
-                    path.pop();
-                    path.pop();
-                    data = generateGridBlock(data);
-                  } else if (isGrid(schema)) {
-                    data = generateGridBlock(data);
-                  }
-                  if (data) {
-                    let s;
-                    if (isGrid(schema)) {
-                      s = appendChild(data, [...path]);
-                    } else if (defaultAction === 'insertAfter') {
-                      s = insertAfter(data, [...path]);
-                    } else {
-                      s = insertBefore(data, [...path]);
+          <Menu.ItemGroup title={`要展示的字段`}>
+            {resource?.fields?.map((field) => (
+              <Menu.Item key={field.key}>
+                <FieldSwitch
+                  field={field}
+                  defaultChecked={displayFields.includes(field.name)}
+                  onChange={async (checked) => {
+                    if (!checked) {
+                      return;
                     }
-                    await createSchema(s);
-                  }
-                }}
-              >
-                {field?.uiSchema?.title || '未命名'}
+                    let data: ISchema = {
+                      key: uid(),
+                      type: 'void',
+                      'x-decorator': 'Form.Field.Item',
+                      'x-designable-bar': 'Form.Field.DesignableBar',
+                      'x-component': 'Form.Field',
+                      'x-component-props': {
+                        fieldName: field.name,
+                      },
+                    };
+                    if (isGridBlock(schema)) {
+                      path.pop();
+                      path.pop();
+                      data = generateGridBlock(data);
+                    } else if (isGrid(schema)) {
+                      data = generateGridBlock(data);
+                    }
+                    if (data) {
+                      let s;
+                      if (isGrid(schema)) {
+                        s = appendChild(data, [...path]);
+                      } else if (defaultAction === 'insertAfter') {
+                        s = insertAfter(data, [...path]);
+                      } else {
+                        s = insertBefore(data, [...path]);
+                      }
+                      await createSchema(s);
+                    }
+                  }}
+                />
               </Menu.Item>
             ))}
           </Menu.ItemGroup>
@@ -745,6 +734,7 @@ AddNew.FormItem = observer((props: any) => {
                     style={{ minWidth: 150 }}
                     key={item.name}
                     onClick={async () => {
+                      setVisible(false);
                       const values = await FormDialog(`新增字段`, () => {
                         return (
                           <FormLayout layout={'vertical'}>
@@ -758,7 +748,7 @@ AddNew.FormItem = observer((props: any) => {
                           name: `f_${uid()}`,
                         },
                       });
-                      await createCollectionField(collection.name, values);
+                      await createCollectionField(resource.name, values);
                       await refresh();
                       let data: ISchema = cloneDeep(values.uiSchema);
                       data['name'] = values.name;
@@ -790,13 +780,13 @@ AddNew.FormItem = observer((props: any) => {
               </Menu.ItemGroup>
             ))}
           </Menu.SubMenu>
-          <Menu.Divider />
+          {/* <Menu.Divider /> */}
           <Menu.Item
             onClick={async () => {
               let data: ISchema = {
                 key: uid(),
                 type: 'string',
-                default: '这是一段演示文字',
+                default: '这是一段演示文字，**支持使用 Markdown 语法**',
                 'x-designable-bar': 'Markdown.FormItemDesignableBar',
                 'x-decorator': 'FormItem',
                 'x-read-pretty': true,
@@ -823,6 +813,7 @@ AddNew.FormItem = observer((props: any) => {
                 }
                 await createSchema(s);
               }
+              setVisible(false);
             }}
           >
             添加说明文字

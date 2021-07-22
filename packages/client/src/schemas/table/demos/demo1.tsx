@@ -17,34 +17,41 @@ const schema: ISchema = {
   name: `table_${uid()}`,
   type: 'array',
   'x-component': 'Table',
-  // default: [
-  //   { key: uid(), field1: uid(), field2: uid() },
-  //   { key: uid(), field1: uid(), field2: uid() },
-  //   { key: uid(), field1: uid(), field2: uid() },
-  //   { key: uid(), field1: uid(), field2: uid() },
-  //   { key: uid(), field1: uid(), field2: uid() },
-  //   { key: uid(), field1: uid(), field2: uid() },
-  //   { key: uid(), field1: uid(), field2: uid() },
-  //   { key: uid(), field1: uid(), field2: uid() },
-  //   { key: uid(), field1: uid(), field2: uid() },
-  //   { key: uid(), field1: uid(), field2: uid() },
-  //   { key: uid(), field1: uid(), field2: uid() },
-  //   { key: uid(), field1: uid(), field2: uid() },
-  // ],
+  default: [
+    { key: uid(), field1: uid(), field2: uid() },
+    { key: uid(), field1: uid(), field2: uid() },
+    { key: uid(), field1: uid(), field2: uid() },
+    { key: uid(), field1: uid(), field2: uid() },
+    { key: uid(), field1: uid(), field2: uid() },
+    { key: uid(), field1: uid(), field2: uid() },
+    { key: uid(), field1: uid(), field2: uid() },
+    { key: uid(), field1: uid(), field2: uid() },
+    { key: uid(), field1: uid(), field2: uid() },
+    { key: uid(), field1: uid(), field2: uid() },
+    { key: uid(), field1: uid(), field2: uid() },
+    { key: uid(), field1: uid(), field2: uid() },
+  ],
   'x-component-props': {
     rowKey: 'key',
-    // isRemoteDataSource: true,
+    dragSort: 'sort',
+    showIndex: true,
+    defaultFilter: {},
+    defaultSort: [],
+    pagination: {
+      defaultPageSize: 50,
+    },
   },
   properties: {
     [`action_bar_${uid()}`]: {
       type: 'void',
       'x-component': 'Table.ActionBar',
+      'x-designable-bar': 'Table.ActionBar.DesignableBar',
       properties: {
         action1: {
           type: 'void',
-          name: 'action1',
           title: '筛选',
           'x-component': 'Action',
+          'x-designable-bar': 'Table.Filter.DesignableBar',
           properties: {
             popover1: {
               type: 'void',
@@ -104,7 +111,7 @@ const schema: ISchema = {
           name: 'action1',
           title: '新增',
           'x-component': 'Action',
-          'x-designable-bar': 'Action.DesignableBar',
+          'x-designable-bar': 'Table.Action.DesignableBar',
           properties: {
             drawer1: {
               type: 'void',
@@ -135,6 +142,7 @@ const schema: ISchema = {
           type: 'void',
           name: 'action1',
           title: '删除',
+          'x-designable-bar': 'Table.Action.SimpleDesignableBar',
           'x-component': 'Action',
           'x-component-props': {
             useAction: '{{ Table.useTableDestroyAction }}',
@@ -157,175 +165,43 @@ const schema: ISchema = {
         },
       },
     },
+    // [`column_${uid()}`]: {
+    //   type: 'void',
+    //   title: '排序',
+    //   'x-component': 'Table.Column',
+    //   properties: {
+    //     sort: {
+    //       type: 'void',
+    //       'x-component': 'Table.SortHandle',
+    //     },
+    //   },
+    // },
+    // [`column_${uid()}`]: {
+    //   type: 'void',
+    //   title: '序号',
+    //   'x-component': 'Table.Column',
+    //   properties: {
+    //     index: {
+    //       type: 'void',
+    //       'x-component': 'Table.Index',
+    //     },
+    //   },
+    // },
     [`column_${uid()}`]: {
       type: 'void',
-      title: '排序',
-      'x-component': 'Table.Column',
-      properties: {
-        sort: {
-          type: 'void',
-          'x-component': 'Table.SortHandle',
-        },
-      },
-    },
-    [`column_${uid()}`]: {
-      type: 'void',
-      title: '序号',
-      'x-component': 'Table.Column',
-      properties: {
-        index: {
-          type: 'void',
-          'x-component': 'Table.Index',
-        },
-      },
-    },
-    [`column_${uid()}`]: {
-      type: 'void',
-      title: '字段1',
       'x-component': 'Table.Column',
       'x-component-props': {
-        // title: 'z1',
+        className: 'nb-table-operation',
       },
-      'x-designable-bar': 'Table.Column.DesignableBar',
-      properties: {
-        field1: {
-          type: 'string',
-          required: true,
-          'x-read-pretty': true,
-          'x-decorator-props': {
-            feedbackLayout: 'popover',
-          },
-          'x-decorator': 'FormItem',
-          'x-component': 'Input',
-        },
-      },
-    },
-    [`column_${uid()}`]: {
-      type: 'void',
-      title: '字段2',
-      'x-component': 'Table.Column',
-      'x-designable-bar': 'Table.Column.DesignableBar',
-      properties: {
-        field2: {
-          type: 'string',
-          // title: '字段2',
-          required: true,
-          'x-read-pretty': true,
-          'x-decorator-props': {
-            feedbackLayout: 'popover',
-          },
-          'x-decorator': 'FormItem',
-          'x-component': 'Input',
-        },
-      },
-    },
-    [`column_${uid()}`]: {
-      type: 'void',
-      title: '操作',
-      'x-component': 'Table.Column',
       properties: {
         [uid()]: {
           type: 'void',
-          name: 'action1',
-          title: '查看',
-          'x-component': 'Action',
-          'x-designable-bar': 'Table.Action.DesignableBar',
-          properties: {
-            drawer1: {
-              type: 'void',
-              title: '查看',
-              'x-component': 'Action.Modal',
-              'x-component-props': {},
-              properties: {
-                [uid()]: {
-                  type: 'void',
-                  'x-component': 'Tabs',
-                  properties: {
-                    tab1: {
-                      type: 'void',
-                      'x-component': 'Tabs.TabPane',
-                      'x-component-props': {
-                        tab: 'Tab1',
-                      },
-                      properties: {
-                        aaa: {
-                          type: 'string',
-                          title: 'AAA',
-                          'x-decorator': 'FormItem',
-                          required: true,
-                          'x-component': 'Input',
-                        },
-                      },
-                    },
-                    tab2: {
-                      type: 'void',
-                      'x-component': 'Tabs.TabPane',
-                      'x-component-props': {
-                        tab: 'Tab2',
-                      },
-                      properties: {
-                        bbb: {
-                          type: 'string',
-                          title: 'BBB',
-                          'x-decorator': 'FormItem',
-                          required: true,
-                          'x-component': 'Input',
-                        },
-                      },
-                    },
-                  },
-                },
-              },
-            },
-          },
-        },
-        [uid()]: {
-          type: 'void',
-          name: 'action1',
-          title: '修改',
-          'x-component': 'Action',
-          'x-designable-bar': 'Table.Action.DesignableBar',
-          properties: {
-            drawer1: {
-              type: 'void',
-              title: '编辑表单',
-              "x-decorator": 'Form',
-              'x-decorator-props': {
-                useValues: '{{ Table.useTableRow }}',
-              },
-              'x-component': 'Action.Modal',
-              'x-component-props': {
-                useOkAction: '{{ Table.useTableUpdateAction }}',
-              },
-              properties: {
-                field1: {
-                  type: 'string',
-                  title: '字段1',
-                  'x-decorator': 'FormItem',
-                  'x-component': 'Input',
-                },
-                field2: {
-                  type: 'string',
-                  title: '字段2',
-                  'x-decorator': 'FormItem',
-                  'x-component': 'Input',
-                },
-              },
-            },
-          },
-        },
-        [uid()]: {
-          type: 'void',
-          title: '删除',
-          'x-component': 'Action',
-          'x-component-props': {
-            useAction: '{{ Table.useTableDestroyAction }}',
-          },
-        },
-        [uid()]: {
-          type: 'void',
-          title: '...',
           'x-component': 'Action.Dropdown',
+          'x-component-props': {
+            buttonProps: {
+              icon: 'EllipsisOutlined',
+            },
+          },
           properties: {
             [uid()]: {
               type: 'void',
@@ -333,6 +209,9 @@ const schema: ISchema = {
               'x-component': 'Menu.Action',
               'x-component-props': {
                 useAction,
+                style: {
+                  minWidth: 150,
+                },
                 disabled: true,
               },
             },
@@ -410,7 +289,7 @@ const schema: ISchema = {
                 drawer1: {
                   type: 'void',
                   title: '编辑表单',
-                  "x-decorator": 'Form',
+                  'x-decorator': 'Form',
                   'x-decorator-props': {
                     useValues: '{{ Table.useTableRow }}',
                   },
@@ -447,6 +326,46 @@ const schema: ISchema = {
         },
       },
     },
+    [`column_${uid()}`]: {
+      type: 'void',
+      title: '字段1',
+      'x-component': 'Table.Column',
+      'x-component-props': {
+        // title: 'z1',
+      },
+      'x-designable-bar': 'Table.Column.DesignableBar',
+      properties: {
+        field1: {
+          type: 'string',
+          required: true,
+          'x-read-pretty': true,
+          'x-decorator-props': {
+            feedbackLayout: 'popover',
+          },
+          'x-decorator': 'FormItem',
+          'x-component': 'Input',
+        },
+      },
+    },
+    [`column_${uid()}`]: {
+      type: 'void',
+      title: '字段2',
+      'x-component': 'Table.Column',
+      'x-designable-bar': 'Table.Column.DesignableBar',
+      properties: {
+        field2: {
+          type: 'string',
+          // title: '字段2',
+          required: true,
+          'x-read-pretty': true,
+          'x-decorator-props': {
+            feedbackLayout: 'popover',
+          },
+          'x-decorator': 'FormItem',
+          'x-component': 'Input',
+        },
+      },
+    },
   },
 };
 
@@ -457,7 +376,11 @@ const form = createForm({
 export default observer(() => {
   return (
     <div>
-      <SchemaRenderer scope={{ Table, useTableCreateAction }} form={form} schema={schema} />
+      <SchemaRenderer
+        scope={{ Table, useTableCreateAction }}
+        form={form}
+        schema={schema}
+      />
     </div>
   );
 });

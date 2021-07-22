@@ -20,6 +20,7 @@ import cls from 'classnames';
 import { MenuOutlined } from '@ant-design/icons';
 import { FormLayout } from '@formily/antd';
 import IconPicker from '../../components/icon-picker';
+import { useSchemaComponent } from '../../components/schema-renderer';
 
 export const Action: any = observer((props: any) => {
   const { useAction = useDefaultAction, icon, ...others } = props;
@@ -188,6 +189,7 @@ Action.Dropdown = observer((props: any) => {
   const { buttonProps = {}, ...others } = props;
   const { schema } = useDesignable();
   const componentProps = schema.parent['x-component-props'] || {};
+  const icon = buttonProps.icon || componentProps['icon'];
   return (
     <Dropdown
       trigger={['click']}
@@ -198,7 +200,13 @@ Action.Dropdown = observer((props: any) => {
         </Menu>
       }
     >
-      <Button {...buttonProps} {...componentProps}>{schema.title || schema.parent.title}</Button>
+      <Button
+        {...buttonProps}
+        {...componentProps}
+        icon={<IconPicker type={icon} />}
+      >
+        {schema.title || schema.parent.title}
+      </Button>
     </Dropdown>
   );
 });
@@ -212,6 +220,10 @@ Action.Popover = observer((props) => {
   console.log('Action.Popover', schema, fieldSchema);
   const componentProps =
     (schema.parent && schema.parent['x-component-props']) || {};
+  const designableBarComponent = schema.parent
+    ? schema.parent['x-designable-bar']
+    : null;
+  const DesignableBar = useSchemaComponent(designableBarComponent);
   return (
     <Popover
       visible={visible}
@@ -248,7 +260,10 @@ Action.Popover = observer((props) => {
         </div>
       }
     >
-      <Button {...componentProps}>{schema.parent.title || schema.title}</Button>
+      <Button {...componentProps}>
+        {schema.parent.title || schema.title}
+        {DesignableBar && <DesignableBar />}
+      </Button>
     </Popover>
   );
 });

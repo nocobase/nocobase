@@ -105,9 +105,10 @@ Markdown.DesignableBar = observer((props) => {
                   key={'update'}
                   onClick={() => {
                     field.readPretty = false;
+                    setVisible(false);
                   }}
                 >
-                  修改 Markdown
+                  修改文本段
                 </Menu.Item>
                 <Menu.Divider />
                 <Menu.Item
