@@ -50,4 +50,8 @@ export const textarea: ISchema = {
       'x-component': 'Checkbox',
     },
   },
+  operations: [
+    { label: '等于', value: 'eq' },
+    { label: '不等于', value: 'ne' },
+  ],
 };

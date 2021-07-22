@@ -360,6 +360,7 @@ Menu.AddNew = observer((props: any) => {
       className={'nb-menu-add-new'}
       title={
         <Dropdown
+          // trigger={['click']}
           overlay={
             <AntdMenu
               onClick={async (info) => {

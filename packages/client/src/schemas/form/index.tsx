@@ -18,6 +18,8 @@ import {
   useDesignable,
   removeSchema,
   useCollectionContext,
+  useResourceContext,
+  ResourceContextProvider,
 } from '../';
 import get from 'lodash/get';
 import { Button, Dropdown, Menu, Space } from 'antd';
@@ -37,23 +39,25 @@ import { FieldDesignableBar } from './Field.DesignableBar';
 import { createContext } from 'react';
 import { BlockItem } from '../block-item';
 
-const [FormContextProvider, useFormContext] = constate(({ schema, form }) => {
-  // const schema = useFieldSchema();
-  const collectionName = schema['x-component-props']?.['collectionName'];
-  const { data: collections = [], loading, refresh } = useCollectionContext();
-  const collection = collectionName
-    ? collections.find((item) => item.name === collectionName)
-    : {};
-  console.log({ collection });
-  return { form, schema, collection, refresh };
+const [DisplayFieldsContextProvider, useDisplayFieldsContext] = constate(() => {
+  const [displayFields, setDisplayFields] = useState([]);
+
+  return {
+    displayFields,
+    setDisplayFields,
+    addDisplayField(fieldName) {
+      setDisplayFields(fields => fields.concat(fieldName));
+    },
+  }
 });
 
-export { FormContextProvider, useFormContext };
+export { DisplayFieldsContextProvider, useDisplayFieldsContext }
 
 export const Form: any = observer((props: any) => {
   const {
     useValues = () => ({}),
     showDefaultButtons = false,
+    resourceName,
     ...others
   } = props;
   const initialValues = useValues();
@@ -64,58 +68,65 @@ export const Form: any = observer((props: any) => {
   const { schema } = useDesignable();
   const path = useSchemaPath();
   const scope = useContext(SchemaExpressionScopeContext);
-  return (
+  const content = (
     <FormProvider form={form}>
-      {/* @ts-ignore */}
-      <FormContextProvider schema={schema} form={form}>
-        {schema['x-decorator'] === 'Form' ? (
+      {schema['x-decorator'] === 'Form' ? (
+        <SchemaField
+          scope={scope}
+          schema={{
+            type: 'object',
+            properties: {
+              [schema.name]: {
+                ...schema.toJSON(),
+                'x-path': path,
+                // 避免死循环
+                'x-decorator': 'Form.__Decorator',
+              },
+            },
+          }}
+        />
+      ) : (
+        <FormLayout layout={'vertical'} {...others}>
           <SchemaField
             scope={scope}
             schema={{
               type: 'object',
-              properties: {
-                [schema.name]: {
-                  ...schema.toJSON(),
-                  'x-path': path,
-                  // 避免死循环
-                  'x-decorator': 'Form.__Decorator',
-                },
-              },
+              properties: schema.properties,
             }}
           />
-        ) : (
-          <FormLayout layout={'vertical'} {...others}>
-            <SchemaField
-              scope={scope}
-              schema={{
-                type: 'object',
-                properties: schema.properties,
-              }}
-            />
-          </FormLayout>
-        )}
-        {showDefaultButtons && (
-          <Space style={{ marginTop: 24 }}>
-            <Button
-              onClick={async () => {
-                const values = await form.submit();
-                console.log({ values });
-              }}
-              type={'primary'}
-            >
-              提交
-            </Button>
-            <Button
-              onClick={async () => {
-                await form.reset();
-              }}
-            >
-              重置
-            </Button>
-          </Space>
-        )}
-      </FormContextProvider>
+        </FormLayout>
+      )}
+      {showDefaultButtons && (
+        <Space style={{ marginTop: 24 }}>
+          <Button
+            onClick={async () => {
+              const values = await form.submit();
+              console.log({ values });
+            }}
+            type={'primary'}
+          >
+            提交
+          </Button>
+          <Button
+            onClick={async () => {
+              await form.reset();
+            }}
+          >
+            重置
+          </Button>
+        </Space>
+      )}
     </FormProvider>
+  );
+  return resourceName ? (
+    // @ts-ignore
+    <ResourceContextProvider resourceName={resourceName}>
+      <DisplayFieldsContextProvider>
+        {content}
+      </DisplayFieldsContextProvider>
+    </ResourceContextProvider>
+  ) : (
+    content
   );
 });
 
@@ -126,11 +137,17 @@ Form.Field = observer((props: any) => {
   const { schema } = useDesignable();
   const path = getSchemaPath(schema);
   console.log('getSchemaPath', path);
-  const { collection = {} } = useFormContext();
+  const { addDisplayField } = useDisplayFieldsContext();
+  const { resource = {} } = useResourceContext();
+  useEffect(() => {
+    if (fieldName) {
+      addDisplayField(fieldName);
+    }
+  }, [fieldName]);
   if (!fieldName) {
     return null;
   }
-  const field = collection?.fields?.find((item) => item.name === fieldName);
+  const field = resource?.fields?.find((item) => item.name === fieldName);
   if (!field) {
     return null;
   }

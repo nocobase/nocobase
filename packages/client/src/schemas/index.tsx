@@ -129,3 +129,15 @@ const [SwithDesignableContextProvider, useSwithDesignableContext] = constate(() 
 });
 
 export { SwithDesignableContextProvider, useSwithDesignableContext };
+
+const [ResourceContextProvider, useResourceContext] = constate(
+  ({ resourceName }) => {
+    // const schema = useFieldSchema();
+    const { data: collections = [], loading, refresh } = useCollectionContext();
+    const resource = collections.find((item) => item.name === resourceName);
+    console.log({ resource });
+    return { resource, refresh };
+  },
+);
+
+export { ResourceContextProvider, useResourceContext };
