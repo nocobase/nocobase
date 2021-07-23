@@ -10,12 +10,13 @@ import { useCookieState, useRequest } from 'ahooks';
 
 export * from '../components/schema-renderer';
 
-export function mapReadPretty(component, readPrettyProps) {
+export function mapReadPretty(component: any, readPrettyProps?: any) {
   return function (target) {
     return observer(
       (props) => {
         const field = useField();
-        if (!isVoidField(field) && field?.pattern === 'readPretty') {
+        // if (!isVoidField(field) && field?.pattern === 'readPretty') {
+        if (field?.pattern === 'readPretty') {
           return React.createElement(component, {
             ...readPrettyProps,
             ...props,

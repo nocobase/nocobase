@@ -2,10 +2,10 @@ import React from 'react';
 import {
   connect,
   mapProps,
-  mapReadPretty,
   observer,
   useField,
   useFieldSchema,
+  mapReadPretty,
 } from '@formily/react';
 import { Button, Dropdown, Input as AntdInput, Menu, Space } from 'antd';
 import { InputProps, TextAreaProps } from 'antd/lib/input';
@@ -23,33 +23,7 @@ import { isGridRowOrCol } from '../grid';
 import './style.less';
 
 export const Markdown: any = connect(
-  (props) => {
-    const { schema } = useDesignable();
-    const field = useField<any>();
-    const { savedInSchema, ...others } = props;
-    console.log('Markdown', props);
-    return savedInSchema ? (
-      <div className={'mb-markdown'} style={{ position: 'relative' }}>
-        <AntdInput.TextArea autoSize={{ minRows: 3 }} {...others} />
-        <Button
-          style={{ position: 'absolute', bottom: 5, right: 5 }}
-          type={'primary'}
-          onClick={async () => {
-            field.readPretty = true;
-            schema['default'] = field.value;
-            await updateSchema({
-              key: schema['key'],
-              default: field.value,
-            });
-          }}
-        >
-          保存
-        </Button>
-      </div>
-    ) : (
-      <AntdInput.TextArea autoSize={{ minRows: 1 }} {...others} />
-    );
-  },
+  AntdInput.TextArea,
   mapProps((props: any, field) => {
     return {
       ...props,
@@ -65,16 +39,71 @@ export const Markdown: any = connect(
     };
   }),
   mapReadPretty((props) => {
-    console.log('Markdown', props);
     let text = props.value;
     let value = (
-      <div className={'nb-markdown'} dangerouslySetInnerHTML={{ __html: micromark(text || '') }} />
+      <div
+        className={'nb-markdown'}
+        dangerouslySetInnerHTML={{ __html: micromark(text || '') }}
+      />
     );
     return <Display.TextArea {...props} text={text} value={value} />;
   }),
 );
 
-Markdown.DesignableBar = observer((props) => {
+function MarkdownTextArea(props: any) {
+  const [value, setValue] = useState(props.defaultValue);
+  return (
+    <div className={'mb-markdown'} style={{ position: 'relative' }}>
+      <AntdInput.TextArea
+        autoSize={{ minRows: 3 }}
+        {...props}
+        value={value}
+        onChange={(e) => {
+          setValue(e.target.value);
+        }}
+      />
+      <Button
+        style={{ position: 'absolute', bottom: 5, right: 5 }}
+        type={'primary'}
+        onClick={() => {
+          props.onSubmit && props.onSubmit(value);
+        }}
+      >
+        保存
+      </Button>
+    </div>
+  );
+}
+
+Markdown.Void = observer((props: any) => {
+  const { schema } = useDesignable();
+  const field = useField<any>();
+  const text = schema['default'];
+  let value = (
+    <div
+      className={'nb-markdown'}
+      dangerouslySetInnerHTML={{ __html: micromark(text || '') }}
+    />
+  );
+  return field?.pattern !== 'readPretty' ? (
+    <MarkdownTextArea
+      {...props}
+      defaultValue={schema['default']}
+      onSubmit={async (value) => {
+        field.readPretty = true;
+        schema['default'] = value;
+        await updateSchema({
+          key: schema['key'],
+          default: value,
+        });
+      }}
+    />
+  ) : (
+    <Display.TextArea {...props} text={text} value={value} />
+  );
+});
+
+Markdown.Void.DesignableBar = observer((props) => {
   const field = useField();
   const { designable, schema, refresh, deepRemove } = useDesignable();
   const [visible, setVisible] = useState(false);
@@ -135,7 +164,7 @@ Markdown.DesignableBar = observer((props) => {
   );
 });
 
-Markdown.FormItemDesignableBar = observer((props) => {
+Markdown.DesignableBar = observer((props) => {
   const field = useField();
   const { designable, schema, refresh, deepRemove } = useDesignable();
   const [visible, setVisible] = useState(false);
@@ -162,13 +191,8 @@ Markdown.FormItemDesignableBar = observer((props) => {
             }}
             overlay={
               <Menu>
-                <Menu.Item
-                  key={'update'}
-                  onClick={() => {
-                    field.readPretty = false;
-                  }}
-                >
-                  修改文本内容
+                <Menu.Item key={'update'} onClick={() => {}}>
+                  修改标题
                 </Menu.Item>
                 <Menu.Divider />
                 <Menu.Item
@@ -182,7 +206,7 @@ Markdown.FormItemDesignableBar = observer((props) => {
                     }
                   }}
                 >
-                  删除当前文本
+                  删除当前字段
                 </Menu.Item>
               </Menu>
             }
