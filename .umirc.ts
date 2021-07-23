@@ -3,6 +3,9 @@ import { defineConfig } from 'dumi';
 export default defineConfig({
   title: ' ',
   hash: true,
+  define: {
+    'process.env.API_URL': process.env.API_URL,
+  },
   // ssr: {},
   // exportStatic: {},
   mode: 'site',
