@@ -13,7 +13,7 @@ import {
 } from '@formily/react';
 import { Button, Dropdown, Menu, Popover, Space, Drawer, Modal } from 'antd';
 import { Link, useHistory, LinkProps } from 'react-router-dom';
-import { useDesignable, VisibleContext, useDefaultAction } from '..';
+import { useDesignable, VisibleContext, useDefaultAction, useVisible } from '..';
 import './style.less';
 import { uid } from '@formily/shared';
 import cls from 'classnames';
@@ -25,8 +25,9 @@ import { useSchemaComponent } from '../../components/schema-renderer';
 export const Action: any = observer((props: any) => {
   const { useAction = useDefaultAction, icon, ...others } = props;
   const { run } = useAction();
+  const field = useField();
   const { schema, DesignableBar } = useDesignable();
-  const [visible, setVisible] = useState(false);
+  const { visible, setVisible } = useVisible(field.address.entire);
   const child = Object.values(schema.properties || {}).shift();
   const isDropdownOrPopover =
     child &&
@@ -74,6 +75,7 @@ Action.Modal = observer((props: any) => {
   } = props;
   const { schema } = useDesignable();
   const [visible, setVisible] = useContext(VisibleContext);
+  console.log('VisibleContext', visible);
   const form = useForm();
   const { run: runOk } = useOkAction();
   const { run: runCancel } = useCancelAction();
@@ -81,7 +83,7 @@ Action.Modal = observer((props: any) => {
   return (
     <Modal
       title={schema.title}
-      destroyOnClose
+      // destroyOnClose
       maskClosable
       footer={
         isFormDecorator

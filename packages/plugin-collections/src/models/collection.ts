@@ -1,5 +1,16 @@
 import _ from 'lodash';
-import { Model } from '@nocobase/database';
+import { Model, TableOptions } from '@nocobase/database';
+
+export interface LoadOptions {
+  reset?: boolean;
+  where?: any;
+  skipExisting?: boolean;
+  [key: string]: any;
+}
+
+export interface MigrateOptions {
+  [key: string]: any;
+}
 
 export class Collection extends Model {
   static async create(value?: any, options?: any): Promise<any> {
@@ -36,5 +47,67 @@ export class Collection extends Model {
       items.push(await field.toProps());
     }
     return items;
+  }
+
+  /**
+   * DOTO：
+   * - database.table 初始化可能存在一些缺陷
+   * - 是否需要考虑关系数据的重载？
+   *
+   * @param opts 
+   */
+  async loadTableOptions(opts: any = {}) {
+    const options = await this.toProps();
+    console.log(JSON.stringify(options, null, 2));
+    const table = this.database.table(options);
+    return table;
+  }
+
+  /**
+   * 迁移
+   */
+  async migrate(options: MigrateOptions = {}) {
+    const { isNewRecord } = options;
+    const table = await this.loadTableOptions(options);
+    // 如果不是新增数据，force 必须为 false
+    if (!isNewRecord) {
+      return await table.sync({
+        force: false,
+        alter: {
+          drop: false,
+        }
+      });
+    }
+    // TODO: 暂时加了个 collectionSync 解决 collection.create 的数据不清空问题
+    // @ts-ignore
+    const sync = this.sequelize.options.collectionSync;
+    return await table.sync(sync || {
+      force: false,
+      alter: {
+        drop: false,
+      }
+    });
+  }
+
+  /**
+   * TODO：需要考虑是初次加载还是重载
+   *
+   * @param options 
+   */
+  static async load(options: LoadOptions = {}) {
+    const { skipExisting = false, reset = false, where = {}, transaction } = options;
+    const collections = await this.findAll({
+      transaction,
+      where,
+    });
+    for (const collection of collections) {
+      if (skipExisting && this.database.isDefined(collection.get('name'))) {
+        continue;
+      }
+      await collection.loadTableOptions({
+        transaction,
+        reset,
+      });
+    }
   }
 }

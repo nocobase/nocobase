@@ -1,4 +1,10 @@
-import React, { createContext, useContext, useRef, useState } from 'react';
+import React, {
+  createContext,
+  useContext,
+  useEffect,
+  useRef,
+  useState,
+} from 'react';
 import {
   useFieldSchema,
   Schema,
@@ -22,7 +28,7 @@ import {
   Select,
   Switch,
 } from 'antd';
-import { findIndex, get, set } from 'lodash';
+import { cloneDeep, findIndex, get, set } from 'lodash';
 import constate from 'constate';
 import useRequest from '@ahooksjs/use-request';
 import { uid, clone } from '@formily/shared';
@@ -39,9 +45,11 @@ import {
 } from 'react-sortable-hoc';
 import cls from 'classnames';
 import {
+  createSchema,
   getSchemaPath,
   removeSchema,
   ResourceContextProvider,
+  updateSchema,
   useCollectionContext,
   useDesignable,
   useResourceContext,
@@ -53,6 +61,8 @@ import { DraggableBlockContext } from '../../components/drag-and-drop';
 import AddNew from '../add-new';
 import { isGridRowOrCol } from '../grid';
 import { options } from '../database-field/interfaces';
+import { Resource } from '../../resource';
+import { useDisplayFieldsContext } from '../form';
 
 interface TableRowProps {
   index: number;
@@ -131,10 +141,13 @@ function useTableActionBars() {
   return findActionBars(schema);
 }
 
+const ResourceFieldContext = createContext(null);
+
 function useTableColumns(props?: any) {
   const { schema, designable } = useDesignable();
   // const schema = useFieldSchema();
-  const { dataSource } = props || {};
+  const { dataSource, rowKey = 'id' } = props || {};
+  const { resource = {} } = useResourceContext();
 
   function findColumns(schema: Schema): Schema[] {
     return schema.reduceProperties((columns, current) => {
@@ -148,21 +161,35 @@ function useTableColumns(props?: any) {
   const columns = findColumns(schema).map((item) => {
     const columnProps = item['x-component-props'] || {};
     console.log(item);
+    const resourceField = columnProps.fieldName
+      ? resource?.fields?.find((item) => item.name === columnProps.fieldName)
+      : null;
+
     return {
-      title: <RecursionField name={item.name} schema={item} onlyRenderSelf />,
+      title: (
+        <ResourceFieldContext.Provider value={resourceField}>
+          <RecursionField name={item.name} schema={item} onlyRenderSelf />
+        </ResourceFieldContext.Provider>
+      ),
       dataIndex: item.name,
       ...columnProps,
       render(value, record, recordIndex) {
-        const index = dataSource.indexOf(record);
+        const index = findIndex(
+          dataSource,
+          (item) => item[rowKey] === record[rowKey],
+        );
+        console.log({ dataSource, record, index });
         return (
-          <TableRowContext.Provider
-            value={{
-              index: index,
-              data: record,
-            }}
-          >
-            <RecursionField schema={item} name={index} onlyRenderProperties />
-          </TableRowContext.Provider>
+          <ResourceFieldContext.Provider value={resourceField}>
+            <TableRowContext.Provider
+              value={{
+                index: index,
+                data: record,
+              }}
+            >
+              <Table.Cell schema={item} />
+            </TableRowContext.Provider>
+          </ResourceFieldContext.Provider>
         );
       },
     };
@@ -198,6 +225,7 @@ function useTableColumns(props?: any) {
 
 function AddColumn() {
   const [visible, setVisible] = useState(false);
+  const { appendChild } = useDesignable();
   const { resource = {}, refresh } = useResourceContext();
   return (
     <Dropdown
@@ -206,7 +234,7 @@ function AddColumn() {
       onVisibleChange={setVisible}
       overlay={
         <Menu>
-          <Menu.ItemGroup title={'要展示的字段'}>
+          <Menu.ItemGroup className={'display-fields'} title={'要展示的字段'}>
             {resource?.fields?.map((field) => (
               <Menu.Item style={{ minWidth: 150 }}>
                 <div
@@ -215,15 +243,29 @@ function AddColumn() {
                     alignItems: 'center',
                     justifyContent: 'space-between',
                   }}
+                  onClick={async () => {
+                    const data = appendChild({
+                      type: 'void',
+                      'x-component': 'Table.Column',
+                      'x-component-props': {
+                        fieldName: field.name,
+                      },
+                      'x-designable-bar': 'Table.Column.DesignableBar',
+                    });
+                    await createSchema(data);
+                  }}
                 >
                   <span>{field.uiSchema.title}</span>
-                  <Switch size={'small'} defaultChecked />
+                  <Switch size={'small'} />
                 </div>
               </Menu.Item>
             ))}
           </Menu.ItemGroup>
           <Menu.Divider />
-          <Menu.SubMenu title={'新增字段'}>
+          <Menu.SubMenu
+            popupClassName={'add-new-fields-popup'}
+            title={'新增字段'}
+          >
             {options.map((option) => (
               <Menu.ItemGroup title={option.label}>
                 {option.children.map((item) => (
@@ -266,26 +308,31 @@ export function useTableIndex() {
 
 export function useTableDestroyAction() {
   const ctx = useContext(TableRowContext);
-  const { field, selectedRowKeys, setSelectedRowKeys, refresh } =
+  const { resource, field, selectedRowKeys, setSelectedRowKeys, refresh } =
     useTableContext();
   const rowKey = field.componentProps.rowKey || 'id';
 
   return {
     async run() {
       if (ctx && typeof ctx.index !== 'undefined') {
-        field.remove(ctx.index);
-        refresh();
+        // field.remove(ctx.index);
+        await resource.destroy({
+          [rowKey]: ctx.data[rowKey],
+        });
+        await refresh();
         return;
       }
-
       if (!selectedRowKeys.length) {
         return;
       }
-      while (selectedRowKeys.length) {
-        const key = selectedRowKeys.shift();
-        const index = findIndex(field.value, (item) => item[rowKey] === key);
-        field.remove(index);
-      }
+      await resource.destroy({
+        [`${rowKey}.in`]: selectedRowKeys,
+      });
+      // while (selectedRowKeys.length) {
+      //   const key = selectedRowKeys.shift();
+      //   const index = findIndex(field.value, (item) => item[rowKey] === key);
+      //   field.remove(index);
+      // }
       refresh();
       setSelectedRowKeys([]);
     },
@@ -305,16 +352,18 @@ export function useTableFilterAction() {
 }
 
 export function useTableCreateAction() {
-  const { field, run: exec, params } = useTableContext();
+  const { resource, field, run: exec, params, refresh } = useTableContext();
   const [, setVisible] = useContext(VisibleContext);
   const form = useForm();
   return {
     async run() {
       setVisible && setVisible(false);
-      field.push({
-        key: uid(),
-        ...clone(form.values),
-      });
+      await resource.save(form.values);
+      // await refresh();
+      // field.push({
+      //   key: uid(),
+      //   ...clone(form.values),
+      // });
       form.reset();
       exec({ ...params, page: 1 });
     },
@@ -322,14 +371,16 @@ export function useTableCreateAction() {
 }
 
 export function useTableUpdateAction() {
-  const { field, refresh, params } = useTableContext();
+  const { resource, field, refresh, params } = useTableContext();
   const [, setVisible] = useContext(VisibleContext);
   const ctx = useContext(TableRowContext);
   const form = useForm();
   return {
     async run() {
-      field.value[ctx.index] = form.values;
       setVisible && setVisible(false);
+      await resource.save(form.values, {
+        resourceKey: form.values[field.componentProps.rowKey || 'id'],
+      });
       refresh();
     },
   };
@@ -342,6 +393,7 @@ const [TableContextProvider, useTableContext] = constate(() => {
   const [selectedRowKeys, setSelectedRowKeys] = useState(
     defaultSelectedRowKeys || [],
   );
+  const resource = Resource.make(field.componentProps.resourceName);
   console.log({ defaultSelectedRowKeys });
   const pagination = usePaginationProps();
   const response = useRequest<{
@@ -349,6 +401,21 @@ const [TableContextProvider, useTableContext] = constate(() => {
     total: number;
   }>((params = {}) => {
     return new Promise((resolve) => {
+      resource.list({}).then((res) => {
+        field.setValue(res?.data || []);
+        resolve({
+          list: res?.data || [],
+          total: res?.meta?.count || res?.data?.length,
+        });
+        console.log(
+          'field.componentProps.resourceName',
+          field.componentProps.resourceName,
+          res,
+        );
+      });
+
+      return;
+
       const dataSource = Array.isArray(field.value) ? field.value.slice() : [];
       if (pagination) {
         const {
@@ -375,6 +442,7 @@ const [TableContextProvider, useTableContext] = constate(() => {
     ...(response.params[0] || {}),
   };
   return {
+    resource,
     ...response,
     params,
     field,
@@ -440,7 +508,10 @@ const TableContainer = observer((props) => {
           type: 'checkbox',
           selectedRowKeys,
           renderCell: (checked, record, _, originNode) => {
-            const index = dataSource.indexOf(record);
+            const index = findIndex(
+              dataSource,
+              (item) => item[rowKey] === record[rowKey],
+            );
             return (
               <TableRowContext.Provider
                 value={{
@@ -571,13 +642,79 @@ function useDesignableBar() {
   };
 }
 
-Table.Column = observer((props) => {
-  const schema = useFieldSchema();
-  const field = useField();
-  const { DesignableBar } = useDesignableBar();
+Table.Cell = observer((props: any) => {
+  const ctx = useContext(TableRowContext);
+  const schema = props.schema;
+  const resourceField = useContext(ResourceFieldContext);
+  return (
+    <RecursionField
+      schema={
+        !resourceField
+          ? schema
+          : new Schema({
+              type: 'void',
+              properties: {
+                [resourceField.name]: {
+                  ...resourceField.uiSchema,
+                  title: undefined,
+                  'x-read-pretty': true,
+                  'x-decorator-props': {
+                    feedbackLayout: 'popover',
+                  },
+                  'x-decorator': 'FormilyFormItem',
+                },
+              },
+            })
+      }
+      name={ctx.index}
+      onlyRenderProperties
+    />
+  );
+  // const { fieldName } = props;
+  // const { schema } = useDesignable();
+  // const path = getSchemaPath(schema);
+  // const { addDisplayField } = useDisplayFieldsContext();
+  // const { resource = {} } = useResourceContext();
+  // useEffect(() => {
+  //   if (fieldName) {
+  //     addDisplayField && addDisplayField(fieldName);
+  //   }
+  // }, [fieldName]);
+  // if (!fieldName) {
+  //   return null;
+  // }
+  // const field = resource?.fields?.find((item) => item.name === fieldName);
+  // if (!field) {
+  //   return null;
+  // }
+  // const name = useContext(FormFieldUIDContext);
+  // const title = schema['title'] || field.uiSchema['title'];
+  // return (
+  //   <RecursionField
+  //     name={name}
+  //     schema={
+  //       new Schema({
+  //         'x-path': path,
+  //         type: 'void',
+  //         properties: {
+  //           [field.name]: {
+  //             ...field.uiSchema,
+  //             title,
+  //             'x-decorator': 'FormilyFormItem',
+  //           },
+  //         },
+  //       })
+  //     }
+  //   />
+  // );
+});
+
+Table.Column = observer((props: any) => {
+  const resourceField = useContext(ResourceFieldContext) || {};
+  const { schema, DesignableBar } = useDesignable();
   return (
     <div className={'nb-table-column'}>
-      {field.title}
+      {schema.title || resourceField?.uiSchema?.title}
       <DesignableBar />
     </div>
   );
@@ -605,51 +742,27 @@ Table.Column.DesignableBar = () => {
           overlay={
             <Menu>
               <Menu.Item
-                onClick={(e) => {
+                onClick={async (e) => {
                   const title = uid();
                   field.title = title;
                   schema.title = title;
+                  refresh();
+                  await updateSchema({
+                    key: schema['key'],
+                    title: title,
+                  });
                   setVisible(false);
                 }}
               >
-                点击修改按钮文案
+                编辑列
               </Menu.Item>
               <Menu.Item
-                onClick={() => {
-                  remove();
-                  console.log('Table.Column.DesignableBar', { schema });
+                onClick={async () => {
+                  const s = remove();
+                  await removeSchema(s);
                 }}
               >
                 删除列
-              </Menu.Item>
-              <Menu.Item
-                onClick={() => {
-                  const name = uid();
-                  insertAfter({
-                    name: `column_${name}`,
-                    type: 'void',
-                    title: `字段 ${name}`,
-                    'x-component': 'Table.Column',
-                    'x-component-props': {
-                      // title: 'z1',
-                    },
-                    'x-designable-bar': 'Table.Column.DesignableBar',
-                    properties: {
-                      [name]: {
-                        type: 'string',
-                        required: true,
-                        // 'x-read-pretty': true,
-                        'x-decorator-props': {
-                          feedbackLayout: 'popover',
-                        },
-                        'x-decorator': 'FormItem',
-                        'x-component': 'Input',
-                      },
-                    },
-                  });
-                }}
-              >
-                插入列
               </Menu.Item>
             </Menu>
           }
@@ -927,9 +1040,12 @@ Table.Action.DesignableBar = () => {
               {inActionBar ? (
                 <Menu.Item>放置在右侧</Menu.Item>
               ) : (
-                <Menu.Item>点击表格行时触发 &nbsp;&nbsp;<Switch size={'small'} defaultChecked/></Menu.Item>
+                <Menu.Item>
+                  点击表格行时触发 &nbsp;&nbsp;
+                  <Switch size={'small'} defaultChecked />
+                </Menu.Item>
               )}
-              
+
               <Menu.Divider />
               <Menu.Item>删除</Menu.Item>
             </Menu>

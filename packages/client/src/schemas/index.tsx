@@ -32,6 +32,21 @@ export function mapReadPretty(component: any, readPrettyProps?: any) {
 }
 
 export const VisibleContext = createContext(null);
+
+export function useVisible(name, defaultValue = false) {
+  const [visible, setVisible] = useState(defaultValue);
+  return { visible, setVisible };
+  // const [visible, setVisible] = useCookieState(`${name}-visible`, {
+  //   defaultValue: defaultValue ? 'true' : null,
+  // });
+  // return {
+  //   visible: visible === 'true' ? true : false,
+  //   setVisible: (value) => {
+  //     setVisible(value ? 'true' : null);
+  //   },
+  // }
+}
+
 export const DesignableBarContext = createContext(null);
 
 const [PageTitleContextProvider, usePageTitleContext] = constate(() => {

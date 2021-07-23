@@ -26,7 +26,7 @@ export class Field extends Model {
     const data: any = _.omit(json, ['options', 'created_at', 'updated_at']);
     const options = json['options'] || {};
     const fields = await this.getNestedFields();
-    const props = { ...data, ...options };
+    const props = { type: json['dataType'], ...data, ...options };
     if (fields.length) {
       props['children'] = fields;
     }

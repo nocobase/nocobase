@@ -1,4 +1,4 @@
-import request from 'umi-request';
+import { request } from './schemas';
 
 export interface ResourceOptions {
   resourceName: string;
@@ -33,7 +33,7 @@ export class Resource {
 
   list(options: ListOptions = {}) {
     const { resourceName } = this.options;
-    return request(`/api/${resourceName}:list`);
+    return request(`${resourceName}:list`);
   }
 
   get(options: GetOptions = {}) {
@@ -42,16 +42,27 @@ export class Resource {
     if (!resourceKey) {
       return Promise.resolve({ data: {} });
     }
-    return request(`/api/${resourceName}:get/${resourceKey}`);
+    return request(`${resourceName}:get/${resourceKey}`);
   }
 
   save(values: any, options: SaveOptions = {}) {
     const resourceKey = options.resourceKey || this.options.resourceKey;
     const { resourceName } = this.options;
-    const url = `/api/${resourceName}:${resourceKey ? `update/${resourceKey}` : 'create'}`;
+    const url = `${resourceName}:${resourceKey ? `update/${resourceKey}` : 'create'}`;
     return request(url, {
       method: 'post',
       data: values,
+    });
+  }
+
+  destroy(filter: any) {
+    const { resourceName } = this.options;
+    const url = `${resourceName}:destroy`;
+    return request(url, {
+      method: 'get',
+      params: {
+        filter
+      },
     });
   }
 

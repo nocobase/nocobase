@@ -22,7 +22,7 @@ import {
   ResourceContextProvider,
 } from '../';
 import get from 'lodash/get';
-import { Button, Dropdown, Menu, Space } from 'antd';
+import { Button, Dropdown, Menu, message, Space } from 'antd';
 import { MenuOutlined, DragOutlined } from '@ant-design/icons';
 import cls from 'classnames';
 import { FormLayout } from '@formily/antd';
@@ -38,6 +38,7 @@ import { DesignableBar } from './DesignableBar';
 import { FieldDesignableBar } from './Field.DesignableBar';
 import { createContext } from 'react';
 import { BlockItem } from '../block-item';
+import { Resource } from '../../resource';
 
 const [DisplayFieldsContextProvider, useDisplayFieldsContext] = constate(() => {
   const [displayFields, setDisplayFields] = useState([]);
@@ -46,12 +47,12 @@ const [DisplayFieldsContextProvider, useDisplayFieldsContext] = constate(() => {
     displayFields,
     setDisplayFields,
     addDisplayField(fieldName) {
-      setDisplayFields(fields => fields.concat(fieldName));
+      setDisplayFields((fields) => fields.concat(fieldName));
     },
-  }
+  };
 });
 
-export { DisplayFieldsContextProvider, useDisplayFieldsContext }
+export { DisplayFieldsContextProvider, useDisplayFieldsContext };
 
 export const Form: any = observer((props: any) => {
   const {
@@ -60,12 +61,12 @@ export const Form: any = observer((props: any) => {
     resourceName,
     ...others
   } = props;
+  const { schema } = useDesignable();
   const initialValues = useValues();
   const form = useMemo(() => {
     console.log('Form.useMemo', initialValues);
-    return createForm({ initialValues });
+    return createForm({ initialValues, readPretty: schema['x-read-pretty'] });
   }, []);
-  const { schema } = useDesignable();
   const path = useSchemaPath();
   const scope = useContext(SchemaExpressionScopeContext);
   const content = (
@@ -102,6 +103,9 @@ export const Form: any = observer((props: any) => {
             onClick={async () => {
               const values = await form.submit();
               console.log({ values });
+              await Resource.make(resourceName).save(values);
+              message.success('保存成功');
+              await form.reset();
             }}
             type={'primary'}
           >
@@ -121,9 +125,7 @@ export const Form: any = observer((props: any) => {
   return resourceName ? (
     // @ts-ignore
     <ResourceContextProvider resourceName={resourceName}>
-      <DisplayFieldsContextProvider>
-        {content}
-      </DisplayFieldsContextProvider>
+      <DisplayFieldsContextProvider>{content}</DisplayFieldsContextProvider>
     </ResourceContextProvider>
   ) : (
     content
@@ -141,7 +143,7 @@ Form.Field = observer((props: any) => {
   const { resource = {} } = useResourceContext();
   useEffect(() => {
     if (fieldName) {
-      addDisplayField(fieldName);
+      addDisplayField && addDisplayField(fieldName);
     }
   }, [fieldName]);
   if (!fieldName) {

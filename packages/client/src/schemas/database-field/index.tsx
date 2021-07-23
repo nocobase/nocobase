@@ -145,6 +145,7 @@ export const DatabaseCollection = observer((props) => {
               {field.value?.map((item, index) => {
                 return (
                   <Select.Option
+                    key={index}
                     value={index}
                     label={`${item.title || '未命名'}${
                       item.unsaved ? ' （未保存）' : ''
@@ -254,6 +255,7 @@ export const DatabaseField: any = observer((props) => {
             type: 'error',
             address: `*(${path},${path}.*)`,
           });
+          console.log('item.key', item.key);
           return (
             <Collapse.Panel
               header={
@@ -268,8 +270,9 @@ export const DatabaseField: any = observer((props) => {
                 </>
               }
               extra={[
-                <Badge count={errors.length} />,
+                <Badge key={'1'} count={errors.length} />,
                 <DeleteOutlined
+                  key={'2'} 
                   onClick={(e) => {
                     e.stopPropagation();
                     field.remove(index);
@@ -305,6 +308,7 @@ export const DatabaseField: any = observer((props) => {
       </Collapse>
       <Dropdown
         placement={'bottomCenter'}
+        overlayClassName={'all-fields'}
         overlayStyle={{
           minWidth: 200,
         }}
@@ -327,9 +331,9 @@ export const DatabaseField: any = observer((props) => {
             }}
           >
             {options.map(
-              (option) =>
+              (option, groupIndex) =>
                 option.children.length > 0 && (
-                  <Menu.ItemGroup title={option.label}>
+                  <Menu.ItemGroup key={groupIndex} title={option.label}>
                     {option.children.map((item) => (
                       <Menu.Item key={item.name}>{item.title}</Menu.Item>
                     ))}

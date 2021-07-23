@@ -24,7 +24,6 @@ type ComposedInput = React.FC<InputProps> & {
 export const Input: ComposedInput = connect(
   AntdInput,
   mapProps((props, field) => {
-    console.log('fieldfieldfieldfieldfield', field.address.entire);
     return {
       ...props,
       suffix: (

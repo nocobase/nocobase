@@ -1,5 +1,6 @@
 import { SchemaRenderer } from '../../';
 import React from 'react';
+import { FormItem } from '@formily/antd';
 
 export default () => {
   const schema = {
@@ -32,5 +33,5 @@ export default () => {
       },
     },
   };
-  return <SchemaRenderer schema={schema} />;
+  return <SchemaRenderer components={{ FormItem }} schema={schema} />;
 };
