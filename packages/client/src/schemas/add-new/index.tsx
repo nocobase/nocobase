@@ -689,6 +689,7 @@ AddNew.FormItem = observer((props: any) => {
                             );
                           }).open({
                             initialValues: {
+                              interface: item.name,
                               ...item.default,
                               key: uid(),
                               name: `f_${uid()}`,
@@ -802,7 +803,9 @@ AddNew.PaneItem = observer((props: any) => {
                   'x-decorator': 'CardItem',
                   'x-component': 'Form',
                   'x-read-pretty': true,
-                  'x-component-props': {},
+                  'x-component-props': {
+                    useValues: '{{ Table.useTableRow }}',
+                  },
                   'x-designable-bar': 'Form.DesignableBar',
                   properties: {
                     [uid()]: {
@@ -846,6 +849,7 @@ AddNew.PaneItem = observer((props: any) => {
                   'x-decorator': 'CardItem',
                   'x-component': 'Form',
                   'x-component-props': {
+                    useValues: '{{ Table.useTableRow }}',
                     showDefaultButtons: true,
                   },
                   'x-designable-bar': 'Form.DesignableBar',
