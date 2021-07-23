@@ -103,16 +103,13 @@ const isGridBlock = (schema: Schema) => {
 
 function generateCardItemSchema(component) {
   const defaults = {
-    Markdown: {
-      type: 'string',
-      default: '这是一段演示文字',
-      'x-designable-bar': 'Markdown.DesignableBar',
+    'Markdown.Void': {
+      type: 'void',
+      default: '这是一段演示文字，**支持使用 Markdown 语法**',
+      'x-designable-bar': 'Markdown.Void.DesignableBar',
       'x-decorator': 'CardItem',
       'x-read-pretty': true,
-      'x-component': 'Markdown',
-      'x-component-props': {
-        savedInSchema: true,
-      },
+      'x-component': 'Markdown.Void',
     },
     Table: {
       type: 'array',
@@ -487,7 +484,7 @@ AddNew.CardItem = observer((props: any) => {
                 info.key === 'addNewTable' ? 'Table' : 'Form',
               );
               resourceName = values.name;
-            } else if (info.key !== 'Markdown') {
+            } else if (info.key !== 'Markdown.Void') {
               const keys = info.key.split('.');
               const component = keys.shift();
               const tableName = keys.join('.');
@@ -542,7 +539,7 @@ AddNew.CardItem = observer((props: any) => {
             <Menu.Divider></Menu.Divider>
             <Menu.Item key={'addNewForm'}>新建数据表</Menu.Item>
           </Menu.SubMenu>
-          <Menu.Item key={'Markdown'}>新建文本段</Menu.Item>
+          <Menu.Item key={'Markdown.Void'}>新建文本段</Menu.Item>
           <Menu.SubMenu disabled key={'Ref'} title={'引用模板'}>
             <Menu.ItemGroup key={'form-select'} title={'选择模板'}>
               <Menu.Item key={'Ref.name1'}>模板1</Menu.Item>
@@ -595,7 +592,7 @@ AddNew.BlockItem = observer((props: any) => {
                 title: uid(),
                 'x-designable-bar': 'BlockItem.DesignableBar',
                 'x-decorator': 'CardItem',
-                'x-component': 'Markdown',
+                'x-component': 'Markdown.Void',
               };
               if (schema['key']) {
                 data['key'] = uid();
@@ -788,15 +785,12 @@ AddNew.FormItem = observer((props: any) => {
             onClick={async () => {
               let data: ISchema = {
                 key: uid(),
-                type: 'string',
+                type: 'void',
                 default: '这是一段演示文字，**支持使用 Markdown 语法**',
-                'x-designable-bar': 'Markdown.FormItemDesignableBar',
+                'x-designable-bar': 'Markdown.Void.DesignableBar',
                 'x-decorator': 'FormItem',
                 'x-read-pretty': true,
-                'x-component': 'Markdown',
-                'x-component-props': {
-                  savedInSchema: true,
-                },
+                'x-component': 'Markdown.Void',
               };
               if (isGridBlock(schema)) {
                 path.pop();
