@@ -1,29 +1,24 @@
 import { ISchema } from '@formily/react';
 import { defaultProps } from './properties';
 
-export const string: ISchema = {
-  name: 'string',
+export const icon: ISchema = {
+  name: 'icon',
   type: 'object',
   group: 'basic',
-  order: 1,
-  title: '单行文本',
+  order: 8,
+  title: '图标',
   default: {
-    interface: 'string',
     dataType: 'string',
     // name,
     uiSchema: {
       type: 'string',
       // title,
-      'x-component': 'Input',
+      'x-component': 'IconPicker',
       'x-decorator': 'FormItem',
-      'x-designable-bar': 'Input.DesignableBar',
+      'x-designable-bar': 'IconPicker.DesignableBar',
     } as ISchema,
   },
   properties: {
     ...defaultProps,
   },
-  operations: [
-    { label: '等于', value: 'eq' },
-    { label: '不等于', value: 'ne' },
-  ],
 };

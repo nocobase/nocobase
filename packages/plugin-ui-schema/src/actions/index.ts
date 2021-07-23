@@ -43,10 +43,10 @@ export const create = async (ctx: actions.Context, next: actions.Next) => {
         payload: 'replace',
       },
     );
-    console.log(ctx.action.params.values);
+    // console.log(ctx.action.params.values);
     await middlewares.associated(ctx, async () => { });
     await sort(ctx, async () => { });
-    console.log(ctx.body.toJSON());
+    // console.log(ctx.body.toJSON());
   }
   await next();
 };
@@ -91,10 +91,10 @@ export const update = async (ctx: actions.Context, next: actions.Next) => {
         payload: 'replace',
       },
     );
-    console.log(ctx.action.params.values);
+    // console.log(ctx.action.params.values);
     await middlewares.associated(ctx, async () => { });
     await sort(ctx, async () => { });
-    console.log(ctx.body.toJSON());
+    // console.log(ctx.body.toJSON());
   }
   await next();
 };
@@ -117,7 +117,7 @@ export const getTree = async (ctx: actions.Context, next: actions.Next) => {
         sort: ['sort'],
       }),
     );
-    console.log({ schemas });
+    // console.log({ schemas });
     let properties = {};
     for (const schema of schemas) {
       const property = schema.toProperty();

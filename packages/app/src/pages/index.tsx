@@ -1,21 +1,60 @@
-import React, { useEffect } from 'react';
+import 'antd/dist/antd.css'
+import { useRequest } from 'ahooks';
 import { Spin } from 'antd';
+import React, { useMemo } from 'react';
 import {
-  RouteSwitch,
-  useGlobalAction,
-  loadBlocks,
-  loadTemplates,
-  templates,
+  MemoryRouter as Router,
+} from 'react-router-dom';
+import {
+  createRouteSwitch,
+  AdminLayout,
+  AuthLayout,
+  RouteSchemaRenderer,
 } from '@nocobase/client';
+import { UseRequestProvider } from 'ahooks';
+import { extend } from 'umi-request';
 
-loadBlocks();
-loadTemplates();
+const request = extend({
+  prefix: 'http://localhost:23003/api/',
+  timeout: 1000,
+});
+
+// console.log = () => {}
+
+const RouteSwitch = createRouteSwitch({
+  components: {
+    AdminLayout,
+    AuthLayout,
+    RouteSchemaRenderer,
+  },
+});
+
+const App = () => {
+  const { data, loading } = useRequest('routes:getAccessible', {
+    formatResult: (result) => result?.data,
+  });
+
+  if (loading) {
+    return <Spin/>
+  }
+
+  return (
+    <div>
+      {/* <Router initialEntries={['/admin']}> */}
+        <RouteSwitch routes={data} />
+      {/* </Router> */}
+    </div>
+  );
+};
 
 export default function IndexPage() {
-  const { data, loading } = useGlobalAction('routes:getAccessible');
-  console.log({ data });
-  if (loading) {
-    return <Spin />;
-  }
-  return <RouteSwitch components={templates} routes={data} />;
+  return (
+    <UseRequestProvider
+      value={{
+        requestMethod: (service) => request(service),
+      }}
+    >
+      <App />
+    </UseRequestProvider>
+  );
 }

@@ -92,7 +92,7 @@ function LayoutWithMenu({ schema }) {
           theme={'light'}
           width={200}
         ></Layout.Sider>
-        <Layout.Content>
+        <Layout.Content style={{ minHeight: 'calc(100vh - 46px)' }}>
           {activeKey && <Content activeKey={activeKey} />}
         </Layout.Content>
       </Layout>

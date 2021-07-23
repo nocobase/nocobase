@@ -1,19 +1,20 @@
 import { ISchema } from '@formily/react';
 import { defaultProps, dataSource } from './properties';
 
-export const select: ISchema = {
-  name: 'select',
+export const multipleSelect: ISchema = {
+  name: 'multipleSelect',
   type: 'object',
   group: 'choices',
-  order: 2,
-  title: '下拉选择（单选）',
+  order: 3,
+  title: '下拉选择（多选）',
   default: {
-    dataType: 'string',
+    dataType: 'json',
     // name,
     uiSchema: {
-      type: 'string',
+      type: 'array',
       // title,
       'x-component': 'Select',
+      'x-component-props': {},
       'x-decorator': 'FormItem',
       'x-designable-bar': 'Select.DesignableBar',
       enum: [],

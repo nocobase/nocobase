@@ -69,6 +69,9 @@ export class UISchema extends Model {
   async getProperties() {
     const properties = {};
     const children: UISchema[] = await this.getChildren({
+      where: {
+        async: false,
+      },
       order: [['sort', 'asc']],
     });
     for (const child of children) {

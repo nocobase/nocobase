@@ -1,22 +1,22 @@
 import { ISchema } from '@formily/react';
 import { defaultProps, dataSource } from './properties';
 
-export const select: ISchema = {
-  name: 'select',
+export const checkboxGroup: ISchema = {
+  name: 'checkboxGroup',
   type: 'object',
   group: 'choices',
-  order: 2,
-  title: '下拉选择（单选）',
+  order: 5,
+  title: '复选框',
   default: {
-    dataType: 'string',
+    interface: 'checkboxGroup',
+    dataType: 'json',
     // name,
     uiSchema: {
       type: 'string',
       // title,
-      'x-component': 'Select',
+      'x-component': 'Checkbox.Group',
       'x-decorator': 'FormItem',
-      'x-designable-bar': 'Select.DesignableBar',
-      enum: [],
+      'x-designable-bar': 'Checkbox.Group.DesignableBar',
     } as ISchema,
   },
   properties: {

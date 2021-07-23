@@ -1,26 +1,25 @@
 import { ISchema } from '@formily/react';
 import { defaultProps } from './properties';
 
-export const string: ISchema = {
-  name: 'string',
+export const percent: ISchema = {
+  name: 'percent',
   type: 'object',
   group: 'basic',
-  order: 1,
-  title: '单行文本',
+  order: 6,
+  title: '百分比',
   default: {
-    interface: 'string',
-    dataType: 'string',
+    dataType: 'float',
     // name,
     uiSchema: {
       type: 'string',
       // title,
-      'x-component': 'Input',
+      'x-component': 'InputNumber',
       'x-decorator': 'FormItem',
-      'x-designable-bar': 'Input.DesignableBar',
+      'x-designable-bar': 'InputNumber.DesignableBar',
     } as ISchema,
   },
   properties: {
-    ...defaultProps,
+    ...defaultProps
   },
   operations: [
     { label: '等于', value: 'eq' },
