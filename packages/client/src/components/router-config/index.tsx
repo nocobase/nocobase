@@ -69,10 +69,11 @@ export function createRouteSwitch(options: RouteSwitchOptions) {
         value={{ ...options.components, ...props.components }}
       >
         <Switch>
-          {routes.map((route) => {
+          {routes.map((route, index) => {
             if (route.type == 'redirect') {
               return (
                 <Redirect
+                  key={index}
                   to={route.to}
                   push={route.push}
                   from={route.from}
@@ -87,6 +88,7 @@ export function createRouteSwitch(options: RouteSwitchOptions) {
             }
             return (
               <Route
+                key={index}
                 path={route.path}
                 exact={route.exact}
                 strict={route.strict}

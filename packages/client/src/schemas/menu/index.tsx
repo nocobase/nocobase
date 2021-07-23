@@ -55,6 +55,7 @@ import {
   removeSchema,
   updateSchema,
   useDefaultAction,
+  useVisible,
   VisibleContext,
 } from '..';
 import { useMount } from 'ahooks';
@@ -205,7 +206,8 @@ Menu.Link = observer((props: any) => {
       eventKey={schema.name}
       key={schema.name}
     >
-      <Link to={props.to}>{schema.title}</Link>
+      {schema.title}
+      {/* <Link to={props.to || schema.name}>{schema.title}</Link> */}
       <DesignableBar />
     </AntdMenu.Item>
   );
@@ -232,7 +234,8 @@ Menu.URL = observer((props: any) => {
 Menu.Action = observer((props: any) => {
   const { icon, useAction = useDefaultAction, ...others } = props;
   const { schema, DesignableBar } = useDesignable();
-  const [visible, setVisible] = useState(false);
+  const field = useField();
+  const { visible, setVisible } = useVisible(field.address.entire);
   const { run } = useAction();
   return (
     <VisibleContext.Provider value={[visible, setVisible]}>

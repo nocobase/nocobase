@@ -64,6 +64,8 @@ import { cloneDeep } from 'lodash';
 import { options } from '../database-field/interfaces';
 import { useDisplayFieldsContext } from '../form';
 
+import './style.less';
+
 const generateGridBlock = (schema: ISchema) => {
   const name = schema.name || uid();
   return {
@@ -117,17 +119,17 @@ function generateCardItemSchema(component) {
       'x-decorator': 'CardItem',
       'x-component': 'Table',
       default: [
-        { key: uid(), field1: uid(), field2: uid() },
-        { key: uid(), field1: uid(), field2: uid() },
-        { key: uid(), field1: uid(), field2: uid() },
-        { key: uid(), field1: uid(), field2: uid() },
-        { key: uid(), field1: uid(), field2: uid() },
-        { key: uid(), field1: uid(), field2: uid() },
-        { key: uid(), field1: uid(), field2: uid() },
-        { key: uid(), field1: uid(), field2: uid() },
+        // { key: uid(), field1: uid(), field2: uid() },
+        // { key: uid(), field1: uid(), field2: uid() },
+        // { key: uid(), field1: uid(), field2: uid() },
+        // { key: uid(), field1: uid(), field2: uid() },
+        // { key: uid(), field1: uid(), field2: uid() },
+        // { key: uid(), field1: uid(), field2: uid() },
+        // { key: uid(), field1: uid(), field2: uid() },
+        // { key: uid(), field1: uid(), field2: uid() },
       ],
       'x-component-props': {
-        rowKey: 'key',
+        rowKey: 'id',
         dragSort: true,
         showIndex: true,
       },
@@ -232,45 +234,34 @@ function generateCardItemSchema(component) {
                   'x-component': 'Menu.Action',
                   'x-designable-bar': 'Table.Action.DesignableBar',
                   properties: {
-                    drawer1: {
+                    [uid()]: {
                       type: 'void',
                       title: '查看',
                       'x-component': 'Action.Modal',
-                      'x-component-props': {},
+                      'x-component-props': {
+                        bodyStyle: {
+                          background: '#f0f2f5',
+                          paddingTop: 0,
+                        },
+                      },
                       properties: {
                         [uid()]: {
                           type: 'void',
                           'x-component': 'Tabs',
                           properties: {
-                            tab1: {
+                            [uid()]: {
                               type: 'void',
                               'x-component': 'Tabs.TabPane',
                               'x-component-props': {
                                 tab: 'Tab1',
                               },
                               properties: {
-                                aaa: {
-                                  type: 'string',
-                                  title: 'AAA',
-                                  'x-decorator': 'FormItem',
-                                  required: true,
-                                  'x-component': 'Input',
-                                },
-                              },
-                            },
-                            tab2: {
-                              type: 'void',
-                              'x-component': 'Tabs.TabPane',
-                              'x-component-props': {
-                                tab: 'Tab2',
-                              },
-                              properties: {
-                                bbb: {
-                                  type: 'string',
-                                  title: 'BBB',
-                                  'x-decorator': 'FormItem',
-                                  required: true,
-                                  'x-component': 'Input',
+                                [uid()]: {
+                                  type: 'void',
+                                  'x-component': 'Grid',
+                                  'x-component-props': {
+                                    addNewComponent: 'AddNew.PaneItem',
+                                  },
                                 },
                               },
                             },
@@ -282,14 +273,13 @@ function generateCardItemSchema(component) {
                 },
                 [uid()]: {
                   type: 'void',
-                  name: 'action1',
-                  title: '修改',
+                  title: '编辑',
                   'x-component': 'Menu.Action',
                   'x-designable-bar': 'Table.Action.DesignableBar',
                   properties: {
-                    drawer1: {
+                    [uid()]: {
                       type: 'void',
-                      title: '编辑表单',
+                      title: '编辑数据',
                       'x-decorator': 'Form',
                       'x-decorator-props': {
                         useValues: '{{ Table.useTableRow }}',
@@ -299,17 +289,12 @@ function generateCardItemSchema(component) {
                         useOkAction: '{{ Table.useTableUpdateAction }}',
                       },
                       properties: {
-                        field1: {
-                          type: 'string',
-                          title: '字段1',
-                          'x-decorator': 'FormItem',
-                          'x-component': 'Input',
-                        },
-                        field2: {
-                          type: 'string',
-                          title: '字段2',
-                          'x-decorator': 'FormItem',
-                          'x-component': 'Input',
+                        [uid()]: {
+                          type: 'void',
+                          'x-component': 'Grid',
+                          'x-component-props': {
+                            addNewComponent: 'AddNew.FormItem',
+                          },
                         },
                       },
                     },
@@ -324,48 +309,6 @@ function generateCardItemSchema(component) {
                   },
                 },
               },
-            },
-          },
-        },
-        [uid()]: {
-          type: 'void',
-          title: '字段1',
-          'x-component': 'Table.Column',
-          'x-component-props': {
-            // title: 'z1',
-          },
-          'x-designable-bar': 'Table.Column.DesignableBar',
-          properties: {
-            field1: {
-              type: 'string',
-              required: true,
-              'x-read-pretty': true,
-              'x-decorator-props': {
-                feedbackLayout: 'popover',
-              },
-              'x-decorator': 'FormItem',
-              'x-component': 'Input',
-            },
-          },
-        },
-        [uid()]: {
-          type: 'void',
-          title: '字段2',
-          'x-component': 'Table.Column',
-          'x-component-props': {
-            // title: 'z1',
-          },
-          'x-designable-bar': 'Table.Column.DesignableBar',
-          properties: {
-            field2: {
-              type: 'string',
-              required: true,
-              'x-read-pretty': true,
-              'x-decorator-props': {
-                feedbackLayout: 'popover',
-              },
-              'x-decorator': 'FormItem',
-              'x-component': 'Input',
             },
           },
         },
@@ -679,7 +622,7 @@ AddNew.FormItem = observer((props: any) => {
       placement={'bottomCenter'}
       overlay={
         <Menu>
-          <Menu.ItemGroup title={`要展示的字段`}>
+          <Menu.ItemGroup className={'display-fields'} title={`要展示的字段`}>
             {resource?.fields?.map((field) => (
               <Menu.Item key={field.key}>
                 <FieldSwitch
@@ -723,7 +666,11 @@ AddNew.FormItem = observer((props: any) => {
             ))}
           </Menu.ItemGroup>
           <Menu.Divider />
-          <Menu.SubMenu title={'新建字段'}>
+          <Menu.SubMenu
+            popupClassName={'add-new-fields-popup'}
+            className={'sub-menu-add-new-fields'}
+            title={'新建字段'}
+          >
             {options.map(
               (option) =>
                 option.children.length > 0 && (
@@ -789,6 +736,165 @@ AddNew.FormItem = observer((props: any) => {
                 default: '这是一段演示文字，**支持使用 Markdown 语法**',
                 'x-designable-bar': 'Markdown.Void.DesignableBar',
                 'x-decorator': 'FormItem',
+                'x-read-pretty': true,
+                'x-component': 'Markdown.Void',
+              };
+              if (isGridBlock(schema)) {
+                path.pop();
+                path.pop();
+                data = generateGridBlock(data);
+              } else if (isGrid(schema)) {
+                data = generateGridBlock(data);
+              }
+              if (data) {
+                let s;
+                if (isGrid(schema)) {
+                  s = appendChild(data, [...path]);
+                } else if (defaultAction === 'insertAfter') {
+                  s = insertAfter(data, [...path]);
+                } else {
+                  s = insertBefore(data, [...path]);
+                }
+                await createSchema(s);
+              }
+              setVisible(false);
+            }}
+          >
+            添加说明文字
+          </Menu.Item>
+        </Menu>
+      }
+    >
+      {ghost ? (
+        <PlusOutlined />
+      ) : (
+        <Button block type={'dashed'} icon={<PlusOutlined />}></Button>
+      )}
+    </Dropdown>
+  );
+});
+
+AddNew.PaneItem = observer((props: any) => {
+  const { ghost, defaultAction } = props;
+  const { schema, insertBefore, insertAfter, appendChild } = useDesignable();
+  const path = useSchemaPath();
+  const { resource = {}, refresh } = useResourceContext();
+  const [visible, setVisible] = useState(false);
+  const { displayFields = [] } = useDisplayFieldsContext();
+  console.log({ displayFields });
+  return (
+    <Dropdown
+      trigger={['click']}
+      visible={visible}
+      onVisibleChange={setVisible}
+      overlayStyle={{
+        minWidth: 200,
+      }}
+      placement={'bottomCenter'}
+      overlay={
+        <Menu>
+          <Menu.SubMenu title={'新建卡片'}>
+            <Menu.Item
+              onClick={async () => {
+                let data: ISchema = {
+                  type: 'void',
+                  name: uid(),
+                  'x-decorator': 'CardItem',
+                  'x-component': 'Form',
+                  'x-read-pretty': true,
+                  'x-component-props': {},
+                  'x-designable-bar': 'Form.DesignableBar',
+                  properties: {
+                    [uid()]: {
+                      type: 'void',
+                      'x-component': 'Grid',
+                      'x-component-props': {
+                        addNewComponent: 'AddNew.FormItem',
+                      },
+                    },
+                  },
+                };
+                if (isGridBlock(schema)) {
+                  path.pop();
+                  path.pop();
+                  data = generateGridBlock(data);
+                } else if (isGrid(schema)) {
+                  data = generateGridBlock(data);
+                }
+                if (data) {
+                  let s;
+                  if (isGrid(schema)) {
+                    s = appendChild(data, [...path]);
+                  } else if (defaultAction === 'insertAfter') {
+                    s = insertAfter(data, [...path]);
+                  } else {
+                    s = insertBefore(data, [...path]);
+                  }
+                  await createSchema(s);
+                }
+                setVisible(false);
+              }}
+              style={{ minWidth: 150 }}
+            >
+              阅读模式
+            </Menu.Item>
+            <Menu.Item
+              onClick={async () => {
+                let data: ISchema = {
+                  type: 'void',
+                  name: uid(),
+                  'x-decorator': 'CardItem',
+                  'x-component': 'Form',
+                  'x-component-props': {
+                    showDefaultButtons: true,
+                  },
+                  'x-designable-bar': 'Form.DesignableBar',
+                  properties: {
+                    [uid()]: {
+                      type: 'void',
+                      'x-component': 'Grid',
+                      'x-component-props': {
+                        addNewComponent: 'AddNew.FormItem',
+                      },
+                    },
+                  },
+                };
+                if (isGridBlock(schema)) {
+                  path.pop();
+                  path.pop();
+                  data = generateGridBlock(data);
+                } else if (isGrid(schema)) {
+                  data = generateGridBlock(data);
+                }
+                if (data) {
+                  let s;
+                  if (isGrid(schema)) {
+                    s = appendChild(data, [...path]);
+                  } else if (defaultAction === 'insertAfter') {
+                    s = insertAfter(data, [...path]);
+                  } else {
+                    s = insertBefore(data, [...path]);
+                  }
+                  await createSchema(s);
+                }
+                setVisible(false);
+              }}
+            >
+              编辑模式
+            </Menu.Item>
+          </Menu.SubMenu>
+          <Menu.SubMenu title={'要展示的相关数据'}>
+            <Menu.Item style={{ minWidth: 150 }}>日志</Menu.Item>
+            <Menu.Item>评论</Menu.Item>
+          </Menu.SubMenu>
+          <Menu.Item
+            onClick={async () => {
+              let data: ISchema = {
+                key: uid(),
+                type: 'void',
+                default: '这是一段演示文字，**支持使用 Markdown 语法**',
+                'x-designable-bar': 'Markdown.Void.DesignableBar',
+                'x-decorator': 'CardItem',
                 'x-read-pretty': true,
                 'x-component': 'Markdown.Void',
               };
