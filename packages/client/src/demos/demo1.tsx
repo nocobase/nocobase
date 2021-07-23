@@ -15,9 +15,11 @@ import { UseRequestProvider } from 'ahooks';
 import { extend } from 'umi-request';
 
 const request = extend({
-  prefix: 'http://localhost:23003/api/',
+  prefix: process.env.API_URL,
   timeout: 1000,
 });
+
+console.log('process.env.API_URL', process.env.API_URL);
 
 // console.log = () => {}
 

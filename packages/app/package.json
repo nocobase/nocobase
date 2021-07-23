@@ -2,7 +2,7 @@
   "name": "@nocobase/app",
   "version": "0.4.0-alpha.7",
   "scripts": {
-    "start": "umi dev",
+    "start": "concurrently \"cd ../../ && nodemon\" \"umi dev\"",
     "build": "umi build",
     "postinstall": "umi generate tmp",
     "prettier": "prettier --write '**/*.{js,jsx,tsx,ts,less,md,json}'",
@@ -29,6 +29,7 @@
     "@types/react": "^17.0.0",
     "@types/react-dom": "^17.0.0",
     "@umijs/test": "^3.4.15",
+    "concurrently": "^5.3.0",
     "mockjs": "^1.1.0",
     "prettier": "^2.2.0",
     "react": "17.x",
