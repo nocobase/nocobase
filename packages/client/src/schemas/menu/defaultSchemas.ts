@@ -26,6 +26,7 @@ export function generateDefaultSchema(component) {
       properties: {
         [uid()]: {
           type: 'void',
+          async: true,
           'x-component': 'Page',
           properties: {
             [uid()]: {

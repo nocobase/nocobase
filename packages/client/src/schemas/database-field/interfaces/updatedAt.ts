@@ -1,22 +1,24 @@
 import { ISchema } from '@formily/react';
 import { defaultProps } from './properties';
 
-export const string: ISchema = {
-  name: 'string',
+export const updatedAt: ISchema = {
+  name: 'updatedAt',
   type: 'object',
-  group: 'basic',
-  order: 1,
-  title: '单行文本',
+  group: 'systemInfo',
+  order: 2,
+  title: '最后更新时间',
   default: {
-    interface: 'string',
-    dataType: 'string',
+    dataType: 'date',
+    field: 'updated_at',
     // name,
     uiSchema: {
-      type: 'string',
+      type: 'datetime',
       // title,
-      'x-component': 'Input',
+      'x-component': 'DatePicker',
+      'x-component-props': {},
+      'x-read-pretty': true,
       'x-decorator': 'FormItem',
-      'x-designable-bar': 'Input.DesignableBar',
+      'x-designable-bar': 'DatePicker.DesignableBar',
     } as ISchema,
   },
   properties: {

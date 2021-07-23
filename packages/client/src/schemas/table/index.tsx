@@ -924,7 +924,12 @@ Table.Action.DesignableBar = () => {
                   内打开
                 </Menu.Item>
               )}
-              {inActionBar && <Menu.Item>放置在右侧</Menu.Item>}
+              {inActionBar ? (
+                <Menu.Item>放置在右侧</Menu.Item>
+              ) : (
+                <Menu.Item>点击表格行时触发 &nbsp;&nbsp;<Switch size={'small'} defaultChecked/></Menu.Item>
+              )}
+              
               <Menu.Divider />
               <Menu.Item>删除</Menu.Item>
             </Menu>

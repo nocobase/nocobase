@@ -19,9 +19,10 @@ import { useMemo } from 'react';
 import { CodeOutlined } from '@ant-design/icons';
 import Editor from '@monaco-editor/react';
 
-import { ArrayCollapse, ArrayTable, FormLayout, FormItem as FormilyFormItem } from '@formily/antd';
+import { ArrayCollapse, FormLayout, FormItem as FormilyFormItem } from '@formily/antd';
 
 import { Space, Card, Modal, Spin } from 'antd';
+import { ArrayTable } from '../../schemas/array-table';
 import { Action } from '../../schemas/action';
 import { AddNew } from '../../schemas/add-new';
 import { Cascader } from '../../schemas/cascader';

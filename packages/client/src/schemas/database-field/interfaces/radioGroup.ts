@@ -1,26 +1,26 @@
 import { ISchema } from '@formily/react';
-import { defaultProps } from './properties';
+import { defaultProps, dataSource } from './properties';
 
-export const string: ISchema = {
-  name: 'string',
+export const radioGroup: ISchema = {
+  name: 'radioGroup',
   type: 'object',
-  group: 'basic',
-  order: 1,
-  title: '单行文本',
+  group: 'choices',
+  order: 4,
+  title: '单选框',
   default: {
-    interface: 'string',
     dataType: 'string',
     // name,
     uiSchema: {
       type: 'string',
       // title,
-      'x-component': 'Input',
+      'x-component': 'Radio.Group',
       'x-decorator': 'FormItem',
-      'x-designable-bar': 'Input.DesignableBar',
+      'x-designable-bar': 'Radio.DesignableBar',
     } as ISchema,
   },
   properties: {
     ...defaultProps,
+    'uiSchema.enum': dataSource,
   },
   operations: [
     { label: '等于', value: 'eq' },

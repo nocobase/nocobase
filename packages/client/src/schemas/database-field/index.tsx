@@ -39,7 +39,11 @@ import Modal from 'antd/lib/modal/Modal';
 import { clone, cloneDeep, get } from 'lodash';
 import { useEffect } from 'react';
 import { useRequest } from 'ahooks';
-import { createOrUpdateCollection, deleteCollection, useCollectionContext } from '..';
+import {
+  createOrUpdateCollection,
+  deleteCollection,
+  useCollectionContext,
+} from '..';
 
 export const DatabaseCollection = observer((props) => {
   const field = useField<Formily.Core.Models.ArrayField>();
@@ -84,6 +88,10 @@ export const DatabaseCollection = observer((props) => {
         <DatabaseOutlined />
       </Button>
       <Modal
+        bodyStyle={{
+          overflow: 'auto',
+          maxHeight: 'calc(100vh - 300px)',
+        }}
         title={
           <div style={{ textAlign: 'center' }}>
             <Select
@@ -139,7 +147,7 @@ export const DatabaseCollection = observer((props) => {
                   <Select.Option
                     value={index}
                     label={`${item.title || '未命名'}${
-                      item.unsaved ?  ' （未保存）' : ''
+                      item.unsaved ? ' （未保存）' : ''
                     }`}
                   >
                     <div
@@ -149,7 +157,8 @@ export const DatabaseCollection = observer((props) => {
                         alignItems: 'center',
                       }}
                     >
-                      {item.title || '未命名'} {item.unsaved ? '（未保存）' : ''}
+                      {item.title || '未命名'}{' '}
+                      {item.unsaved ? '（未保存）' : ''}
                       <DeleteOutlined
                         onClick={async (e) => {
                           e.stopPropagation();
@@ -210,10 +219,8 @@ export const DatabaseCollection = observer((props) => {
               }
             />
             {/* <FormConsumer>
-            {form => (
-              <pre>{JSON.stringify(form.values, null, 2)}</pre>
-            )}
-          </FormConsumer> */}
+              {(form) => <pre>{JSON.stringify(form.values, null, 2)}</pre>}
+            </FormConsumer> */}
           </FormLayout>
         )}
       </Modal>
@@ -223,11 +230,11 @@ export const DatabaseCollection = observer((props) => {
 
 export const DatabaseField: any = observer((props) => {
   const field = useField<Formily.Core.Models.ArrayField>();
-  useEffect(()=> {
+  useEffect(() => {
     if (!field.value) {
       field.setValue([]);
     }
-  }, [])
+  }, []);
   const [activeKey, setActiveKey] = useState(null);
   console.log('DatabaseField', field);
   return (
@@ -241,7 +248,7 @@ export const DatabaseField: any = observer((props) => {
         accordion
       >
         {field.value?.map((item, index) => {
-          const schema = interfaces.get(item.interface);
+          const schema = cloneDeep(interfaces.get(item.interface));
           const path = field.address.concat(index);
           const errors = field.form.queryFeedbacks({
             type: 'error',
@@ -319,13 +326,16 @@ export const DatabaseField: any = observer((props) => {
               console.log('info.key', field.value);
             }}
           >
-            {options.map((option) => (
-              <Menu.ItemGroup title={option.label}>
-                {option.children.map((item) => (
-                  <Menu.Item key={item.name}>{item.title}</Menu.Item>
-                ))}
-              </Menu.ItemGroup>
-            ))}
+            {options.map(
+              (option) =>
+                option.children.length > 0 && (
+                  <Menu.ItemGroup title={option.label}>
+                    {option.children.map((item) => (
+                      <Menu.Item key={item.name}>{item.title}</Menu.Item>
+                    ))}
+                  </Menu.ItemGroup>
+                ),
+            )}
           </Menu>
         }
       >

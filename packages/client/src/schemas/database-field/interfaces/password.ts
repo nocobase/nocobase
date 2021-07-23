@@ -1,22 +1,21 @@
 import { ISchema } from '@formily/react';
 import { defaultProps } from './properties';
 
-export const string: ISchema = {
-  name: 'string',
+export const password: ISchema = {
+  name: 'password',
   type: 'object',
   group: 'basic',
-  order: 1,
-  title: '单行文本',
+  order: 7,
+  title: '密码',
   default: {
-    interface: 'string',
-    dataType: 'string',
+    dataType: 'password',
     // name,
     uiSchema: {
       type: 'string',
       // title,
-      'x-component': 'Input',
+      'x-component': 'Password',
       'x-decorator': 'FormItem',
-      'x-designable-bar': 'Input.DesignableBar',
+      'x-designable-bar': 'Password.DesignableBar',
     } as ISchema,
   },
   properties: {

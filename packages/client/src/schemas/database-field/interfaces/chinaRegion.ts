@@ -1,22 +1,24 @@
 import { ISchema } from '@formily/react';
 import { defaultProps } from './properties';
 
-export const string: ISchema = {
-  name: 'string',
+export const chinaRegion: ISchema = {
+  name: 'chinaRegion',
   type: 'object',
-  group: 'basic',
-  order: 1,
-  title: '单行文本',
+  group: 'choices',
+  order: 7,
+  title: '中国行政区划',
   default: {
-    interface: 'string',
-    dataType: 'string',
+    dataType: 'belongsToMany',
+    target: 'china_regions',
+    targetKey: 'code',
     // name,
     uiSchema: {
-      type: 'string',
+      type: 'array',
       // title,
-      'x-component': 'Input',
+      'x-component': 'Cascader',
+      'x-component-props': {},
       'x-decorator': 'FormItem',
-      'x-designable-bar': 'Input.DesignableBar',
+      'x-designable-bar': 'Cascader.DesignableBar',
     } as ISchema,
   },
   properties: {

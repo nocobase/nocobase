@@ -1,22 +1,22 @@
 import { ISchema } from '@formily/react';
 import { defaultProps } from './properties';
 
-export const string: ISchema = {
-  name: 'string',
+export const linkTo: ISchema = {
+  name: 'linkTo',
   type: 'object',
-  group: 'basic',
+  group: 'relation',
   order: 1,
-  title: '单行文本',
+  title: '关联字段',
   default: {
-    interface: 'string',
-    dataType: 'string',
+    dataType: 'belongsToMany',
     // name,
     uiSchema: {
-      type: 'string',
+      type: 'array',
       // title,
-      'x-component': 'Input',
+      'x-component': 'Select.Drawer',
+      'x-component-props': {},
       'x-decorator': 'FormItem',
-      'x-designable-bar': 'Input.DesignableBar',
+      'x-designable-bar': 'Select.Drawer.DesignableBar',
     } as ISchema,
   },
   properties: {

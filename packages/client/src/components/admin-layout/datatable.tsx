@@ -1,4 +1,4 @@
-import { SchemaRenderer } from '@nocobase/client/lib';
+import { SchemaRenderer } from '../../';
 import React from 'react';
 
 export default () => {

@@ -1,22 +1,20 @@
 import { ISchema } from '@formily/react';
 import { defaultProps } from './properties';
 
-export const string: ISchema = {
-  name: 'string',
+export const markdown: ISchema = {
+  name: 'markdown',
   type: 'object',
-  group: 'basic',
-  order: 1,
-  title: '单行文本',
+  title: 'Markdown',
+  group: 'media',
   default: {
-    interface: 'string',
-    dataType: 'string',
+    dataType: 'text',
     // name,
     uiSchema: {
       type: 'string',
       // title,
-      'x-component': 'Input',
+      'x-component': 'Markdown',
       'x-decorator': 'FormItem',
-      'x-designable-bar': 'Input.DesignableBar',
+      'x-designable-bar': 'Markdown.DesignableBar',
     } as ISchema,
   },
   properties: {

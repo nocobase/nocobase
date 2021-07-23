@@ -1,22 +1,21 @@
 import { ISchema } from '@formily/react';
 import { defaultProps } from './properties';
 
-export const string: ISchema = {
-  name: 'string',
+export const number: ISchema = {
+  name: 'number',
   type: 'object',
   group: 'basic',
-  order: 1,
-  title: '单行文本',
+  order: 5,
+  title: '数字',
   default: {
-    interface: 'string',
-    dataType: 'string',
+    dataType: 'float',
     // name,
     uiSchema: {
-      type: 'string',
+      type: 'number',
       // title,
-      'x-component': 'Input',
+      'x-component': 'InputNumber',
       'x-decorator': 'FormItem',
-      'x-designable-bar': 'Input.DesignableBar',
+      'x-designable-bar': 'InputNumber.DesignableBar',
     } as ISchema,
   },
   properties: {

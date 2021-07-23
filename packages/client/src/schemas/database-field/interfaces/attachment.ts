@@ -1,22 +1,21 @@
 import { ISchema } from '@formily/react';
 import { defaultProps } from './properties';
 
-export const string: ISchema = {
-  name: 'string',
+export const attachment: ISchema = {
+  name: 'attachment',
   type: 'object',
-  group: 'basic',
-  order: 1,
-  title: '单行文本',
+  group: 'media',
+  title: '附件',
   default: {
-    interface: 'string',
-    dataType: 'string',
+    dataType: 'belongsToMany',
+    target: 'attachments',
     // name,
     uiSchema: {
-      type: 'string',
+      type: 'array',
       // title,
-      'x-component': 'Input',
+      'x-component': 'Upload',
       'x-decorator': 'FormItem',
-      'x-designable-bar': 'Input.DesignableBar',
+      'x-designable-bar': 'Upload.DesignableBar',
     } as ISchema,
   },
   properties: {

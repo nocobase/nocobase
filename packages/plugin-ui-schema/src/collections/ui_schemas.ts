@@ -33,6 +33,11 @@ export default {
       defaultValue: {},
     },
     {
+      type: 'boolean',
+      name: 'async',
+      defaultValue: false,
+    },
+    {
       type: 'hasMany',
       name: 'children',
       target: 'ui_schemas',

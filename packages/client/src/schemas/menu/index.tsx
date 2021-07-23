@@ -86,7 +86,11 @@ const SideMenu = (props: any) => {
       <AntdMenu mode={'inline'} onSelect={onSelect}>
         <RecursionField schema={child} onlyRenderProperties />
         <Menu.AddNew key={uid()} path={[...path, selectedKey]}>
-          <Button className={'nb-add-new-menu-item'} block type={'dashed'}>
+          <Button
+            block
+            type={'dashed'}
+            className={`nb-add-new-menu-item menu-mode-inline`}
+          >
             <PlusOutlined />
           </Button>
         </Menu.AddNew>
@@ -519,8 +523,15 @@ Menu.DesignableBar = (props) => {
 
   const field = useField();
   const [visible, setVisible] = useState(false);
-  const { designable, schema, remove, refresh, insertAfter, insertBefore, appendChild } =
-    useDesignable();
+  const {
+    designable,
+    schema,
+    remove,
+    refresh,
+    insertAfter,
+    insertBefore,
+    appendChild,
+  } = useDesignable();
   const formConfig = schemas[schema['x-component']];
   const isSubMenu = schema['x-component'] === 'Menu.SubMenu';
 
@@ -626,7 +637,7 @@ Menu.DesignableBar = (props) => {
                     parent = parent.parent;
                   }
 
-                  console.log({ menuSchema })
+                  console.log({ menuSchema });
 
                   const toTreeData = (s: Schema) => {
                     const items = [];
@@ -720,10 +731,7 @@ Menu.DesignableBar = (props) => {
                   };
                   const data = schema.toJSON();
                   remove();
-                  const source = methods[values.method](
-                    data,
-                    values.path,
-                  );
+                  const source = methods[values.method](data, values.path);
                   await updateSchema(source);
                 }}
               >
