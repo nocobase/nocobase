@@ -2,6 +2,9 @@ name: vercel
 
 on: [push]
 
+env:
+  API_URL: ${{env.API_URL}}
+
 jobs:
   deploy:
     runs-on: ubuntu-18.04
@@ -23,6 +26,7 @@ jobs:
 
       - run: npm install
       - run: npm run bootstrap
+      - run: echo "API_URL=${{env.API_URL}}" >> .env
       - run: npm run build-docs
 
       - name: Deploy
