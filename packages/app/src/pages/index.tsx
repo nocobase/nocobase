@@ -40,9 +40,7 @@ const App = () => {
 
   return (
     <div>
-      {/* <Router initialEntries={['/admin']}> */}
-        <RouteSwitch routes={data} />
-      {/* </Router> */}
+      <RouteSwitch routes={data} />
     </div>
   );
 };
