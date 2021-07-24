@@ -1,5 +1,7 @@
 import { defineConfig } from 'dumi';
 
+console.log('process.env.API_URL', process.env.API_URL)
+
 export default defineConfig({
   title: ' ',
   hash: true,

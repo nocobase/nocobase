@@ -65,6 +65,8 @@ import { options } from '../database-field/interfaces';
 import { useDisplayFieldsContext } from '../form';
 
 import './style.less';
+import IconPicker from '../../components/icon-picker';
+import { barChartConfig, columnChartConfig } from './chart';
 
 const generateGridBlock = (schema: ISchema) => {
   const name = schema.name || uid();
@@ -333,6 +335,24 @@ function generateCardItemSchema(component) {
         },
       },
     },
+    'Chart.Column': {
+      type: 'void',
+      'x-decorator': 'CardItem',
+      'x-component': 'Chart.Column',
+      'x-designable-bar': 'Chart.DesignableBar',
+      'x-component-props': {
+        config: cloneDeep(columnChartConfig),
+      },
+    },
+    'Chart.Bar': {
+      type: 'void',
+      'x-decorator': 'CardItem',
+      'x-component': 'Chart.Bar',
+      'x-designable-bar': 'Chart.DesignableBar',
+      'x-component-props': {
+        config: cloneDeep(barChartConfig),
+      },
+    },
   };
   return defaults[component];
 }
@@ -427,15 +447,16 @@ AddNew.CardItem = observer((props: any) => {
                 info.key === 'addNewTable' ? 'Table' : 'Form',
               );
               resourceName = values.name;
-            } else if (info.key !== 'Markdown.Void') {
+            } else if (info.key.startsWith('collection.')) {
               const keys = info.key.split('.');
-              const component = keys.shift();
-              const tableName = keys.join('.');
+              const component = keys.pop();
+              const tableName = keys.pop();
               resourceName = tableName;
               data = generateCardItemSchema(component);
               console.log('info.keyPath', component, tableName);
             } else {
               data = generateCardItemSchema(info.key);
+              console.log('generateCardItemSchema', data, info.key);
             }
             if (schema['key']) {
               data['key'] = uid();
@@ -464,25 +485,92 @@ AddNew.CardItem = observer((props: any) => {
             }
           }}
         >
-          <Menu.SubMenu key={'Table'} title={'新建表格'}>
-            <Menu.ItemGroup key={'table-select'} title={'选择数据表'}>
-              {collections.map((item) => (
-                <Menu.Item key={`Table.${item.name}`}>{item.title}</Menu.Item>
-              ))}
-            </Menu.ItemGroup>
-            <Menu.Divider></Menu.Divider>
-            <Menu.Item key={'addNewTable'}>新建数据表</Menu.Item>
-          </Menu.SubMenu>
-          <Menu.SubMenu key={'Form'} title={'新建表单'}>
-            <Menu.ItemGroup key={'form-select'} title={'选择数据表'}>
-              {collections.map((item) => (
-                <Menu.Item key={`Form.${item.name}`}>{item.title}</Menu.Item>
-              ))}
-            </Menu.ItemGroup>
-            <Menu.Divider></Menu.Divider>
-            <Menu.Item key={'addNewForm'}>新建数据表</Menu.Item>
-          </Menu.SubMenu>
-          <Menu.Item key={'Markdown.Void'}>新建文本段</Menu.Item>
+          <Menu.ItemGroup title={'数据区块'}>
+            {[
+              { key: 'Table', title: '表格', icon: 'TableOutlined' },
+              { key: 'Form', title: '表单', icon: 'FormOutlined' },
+              {
+                key: 'Calendar',
+                title: '日历',
+                icon: 'CalendarOutlined',
+                disabled: true,
+              },
+              {
+                key: 'Kanban',
+                title: '看板',
+                icon: 'CreditCardOutlined',
+                disabled: true,
+              },
+            ].map((view) => (
+              <Menu.SubMenu
+                icon={<IconPicker type={view.icon} />}
+                disabled={view.disabled}
+                key={view.key}
+                title={view.title}
+              >
+                <Menu.ItemGroup key={`${view.key}-select`} title={'所属数据表'}>
+                  {collections.map((item) => (
+                    <Menu.Item
+                      style={{ minWidth: 150 }}
+                      key={`collection.${item.name}.${view.key}`}
+                    >
+                      {item.title}
+                    </Menu.Item>
+                  ))}
+                </Menu.ItemGroup>
+                <Menu.Divider></Menu.Divider>
+                <Menu.Item icon={<PlusOutlined />} key={`addNew${view.key}`}>
+                  新建数据表
+                </Menu.Item>
+              </Menu.SubMenu>
+            ))}
+          </Menu.ItemGroup>
+          <Menu.Divider />
+          <Menu.ItemGroup title={'多媒体区块'}>
+            <Menu.Item
+              key={'Markdown.Void'}
+              icon={<IconPicker type={'FileMarkdownOutlined'} />}
+            >
+              Markdown
+            </Menu.Item>
+            <Menu.Item
+              disabled
+              key={'Wysiwyg.Void'}
+              icon={<IconPicker type={'FileTextOutlined'} />}
+            >
+              富文本
+            </Menu.Item>
+          </Menu.ItemGroup>
+          <Menu.Divider />
+          <Menu.ItemGroup title={'图表区块'}>
+            <Menu.Item
+              key={'Chart.Column'}
+              icon={<IconPicker type={'BarChartOutlined'} />}
+            >
+              柱状图
+            </Menu.Item>
+            <Menu.Item
+              key={'Chart.Bar'}
+              icon={<IconPicker type={'BarChartOutlined'} />}
+            >
+              条形图
+            </Menu.Item>
+            <Menu.Item
+              disabled
+              key={'Chart.Line'}
+              icon={<IconPicker type={'LineChartOutlined'} />}
+            >
+              折线图
+            </Menu.Item>
+            <Menu.Item
+              disabled
+              key={'Chart.Pie'}
+              icon={<IconPicker type={'PieChartOutlined'} />}
+            >
+              饼图
+            </Menu.Item>
+          </Menu.ItemGroup>
+          <Menu.Divider />
           <Menu.SubMenu disabled key={'Ref'} title={'引用模板'}>
             <Menu.ItemGroup key={'form-select'} title={'选择模板'}>
               <Menu.Item key={'Ref.name1'}>模板1</Menu.Item>
