@@ -3,7 +3,6 @@ import { Model } from '@nocobase/database';
 
 export class Field extends Model {
   static async create(value?: any, options?: any): Promise<any> {
-    // console.log({ value });
     const attributes = this.toAttributes(value);
     // @ts-ignore
     const model: Model = await super.create(attributes, options);
@@ -11,13 +10,16 @@ export class Field extends Model {
   }
 
   static toAttributes(value = {}): any {
-    const data = _.cloneDeep(value);
+    const data: any = _.cloneDeep(value);
     const keys = [
       ...Object.keys(this.rawAttributes),
       ...Object.keys(this.associations),
     ];
+    if (!data.dataType && data.type) {
+      data.dataType = data.type;
+    }
     const attrs = _.pick(data, keys);
-    const options = _.omit(data, keys);
+    const options = _.omit(data, [...keys, 'type']);
     return { ...attrs, options };
   }
 

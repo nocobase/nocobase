@@ -1,5 +1,5 @@
 import { ISchema } from '@formily/react';
-import { defaultProps } from './properties';
+import { dateTimeProps, defaultProps } from './properties';
 
 export const datetime: ISchema = {
   name: 'datetime',
@@ -14,13 +14,16 @@ export const datetime: ISchema = {
       type: 'datetime',
       // title,
       'x-component': 'DatePicker',
-      'x-component-props': {},
+      'x-component-props': {
+        showTime: false,
+      },
       'x-decorator': 'FormItem',
       'x-designable-bar': 'DatePicker.DesignableBar',
     } as ISchema,
   },
   properties: {
     ...defaultProps,
+    ...dateTimeProps,
   },
   operations: [
     { label: '等于', value: 'eq' },

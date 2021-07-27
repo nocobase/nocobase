@@ -423,10 +423,11 @@ export abstract class Relation extends Field {
 
   public targetTableInit() {
     const { target, fields = [] } = this.options;
-    if (target && fields.length) {
+    const children = fields.concat(this.options.children || []);
+    if (target && children.length) {
       this.context.database.table({
         name: target,
-        fields,
+        fields: children,
       });
     }
   }

@@ -32,6 +32,10 @@ export default {
       name: 'dataType',
     },
     {
+      type: 'string',
+      name: 'privilege',
+    },
+    {
       type: 'hasMany',
       name: 'children',
       target: 'fields',
@@ -49,7 +53,6 @@ export default {
       type: 'belongsTo',
       name: 'uiSchema',
       target: 'ui_schemas',
-      defaultValue: {},
     },
     {
       type: 'json',

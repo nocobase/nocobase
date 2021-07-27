@@ -26,7 +26,7 @@ import {
   message,
   Spin,
 } from 'antd';
-import { options, interfaces } from './interfaces';
+import { options, interfaces, getDefaultFields } from './interfaces';
 import {
   DeleteOutlined,
   DatabaseOutlined,
@@ -53,16 +53,21 @@ export const DatabaseCollection = observer((props) => {
   const [activeIndex, setActiveIndex] = useState(0);
   const form = useForm();
   const [newValue, setNewValue] = useState('');
-  const { refresh } = useCollectionContext();
+  const { loading, refresh, data } = useCollectionContext();
 
-  const { run, loading } = useRequest('collections:findAll', {
-    formatResult: (result) => result?.data,
-    onSuccess(data) {
-      field.setValue(data);
-      console.log('onSuccess', data);
-    },
-    manual: true,
-  });
+  useEffect(() => {
+    field.setValue(data);
+    console.log('onSuccess', data);
+  }, [data]);
+
+  // const { run, loading } = useRequest('collections:findAll', {
+  //   formatResult: (result) => result?.data,
+  //   onSuccess(data) {
+  //     // field.setValue(data);
+  //     // console.log('onSuccess', data);
+  //   },
+  //   manual: true,
+  // });
 
   return (
     <div>
@@ -74,12 +79,12 @@ export const DatabaseCollection = observer((props) => {
         }}
         onClick={async () => {
           setVisible(true);
-          await run();
+          // await run();
           if (field.value?.length === 0) {
             field.push({
               name: `t_${uid()}`,
               unsaved: true,
-              fields: [],
+              fields: getDefaultFields(),
             });
           }
         }}
@@ -127,7 +132,7 @@ export const DatabaseCollection = observer((props) => {
                           const data = {
                             name: `t_${uid()}`,
                             title: value,
-                            fields: [],
+                            fields: getDefaultFields(),
                           };
                           field.push(data);
                           setActiveIndex(field.value.length - 1);
@@ -160,28 +165,30 @@ export const DatabaseCollection = observer((props) => {
                     >
                       {item.title || '未命名'}{' '}
                       {item.unsaved ? '（未保存）' : ''}
-                      <DeleteOutlined
-                        onClick={async (e) => {
-                          e.stopPropagation();
-                          field.remove(index);
-                          if (field.value?.length === 0) {
-                            field.push({
-                              name: `t_${uid()}`,
-                              unsaved: true,
-                              fields: [],
-                            });
-                          }
-                          if (activeIndex === index) {
-                            setActiveIndex(0);
-                          } else if (activeIndex > index) {
-                            setActiveIndex(activeIndex - 1);
-                          }
-                          if (item.name) {
-                            await deleteCollection(item.name);
-                            await refresh();
-                          }
-                        }}
-                      />
+                      {item.privilege !== 'undelete' && (
+                        <DeleteOutlined
+                          onClick={async (e) => {
+                            e.stopPropagation();
+                            field.remove(index);
+                            if (field.value?.length === 0) {
+                              field.push({
+                                name: `t_${uid()}`,
+                                unsaved: true,
+                                fields: getDefaultFields(),
+                              });
+                            }
+                            if (activeIndex === index) {
+                              setActiveIndex(0);
+                            } else if (activeIndex > index) {
+                              setActiveIndex(activeIndex - 1);
+                            }
+                            if (item.name) {
+                              await deleteCollection(item.name);
+                              await refresh();
+                            }
+                          }}
+                        />
+                      )}
                     </div>
                   </Select.Option>
                 );
@@ -206,24 +213,20 @@ export const DatabaseCollection = observer((props) => {
           } catch (error) {}
         }}
       >
-        {loading ? (
-          <Spin />
-        ) : (
-          <FormLayout layout={'vertical'}>
-            <RecursionField
-              name={activeIndex}
-              schema={
-                new Schema({
-                  type: 'object',
-                  properties: schema.properties,
-                })
-              }
-            />
-            {/* <FormConsumer>
+        <FormLayout layout={'vertical'}>
+          <RecursionField
+            name={activeIndex}
+            schema={
+              new Schema({
+                type: 'object',
+                properties: schema.properties,
+              })
+            }
+          />
+          {/* <FormConsumer>
               {(form) => <pre>{JSON.stringify(form.values, null, 2)}</pre>}
             </FormConsumer> */}
-          </FormLayout>
-        )}
+        </FormLayout>
       </Modal>
     </div>
   );
@@ -237,7 +240,6 @@ export const DatabaseField: any = observer((props) => {
     }
   }, []);
   const [activeKey, setActiveKey] = useState(null);
-  console.log('DatabaseField', field);
   return (
     <div>
       <Collapse
@@ -249,13 +251,19 @@ export const DatabaseField: any = observer((props) => {
         accordion
       >
         {field.value?.map((item, index) => {
+          if (!item.interface) {
+            return;
+          }
           const schema = cloneDeep(interfaces.get(item.interface));
+          if (!schema) {
+            console.error('schema invalid');
+            return;
+          }
           const path = field.address.concat(index);
           const errors = field.form.queryFeedbacks({
             type: 'error',
             address: `*(${path},${path}.*)`,
           });
-          console.log('item.key', item.key);
           return (
             <Collapse.Panel
               header={
@@ -263,22 +271,30 @@ export const DatabaseField: any = observer((props) => {
                   {(item.uiSchema && item.uiSchema.title) || (
                     <i style={{ color: 'rgba(0, 0, 0, 0.25)' }}>未命名</i>
                   )}{' '}
-                  <Tag>{schema.title}</Tag>
+                  <Tag
+                    className={item.privilege ? cls(item.privilege) : undefined}
+                  >
+                    {schema.title}
+                  </Tag>
                   <span style={{ color: 'rgba(0, 0, 0, 0.25)', fontSize: 14 }}>
                     {item.name}
                   </span>
                 </>
               }
-              extra={[
-                <Badge key={'1'} count={errors.length} />,
-                <DeleteOutlined
-                  key={'2'} 
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    field.remove(index);
-                  }}
-                />,
-              ]}
+              extra={
+                item.privilege === 'undelete'
+                  ? []
+                  : [
+                      <Badge key={'1'} count={errors.length} />,
+                      <DeleteOutlined
+                        key={'2'}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          field.remove(index);
+                        }}
+                      />,
+                    ]
+              }
               key={item.key}
             >
               <RecursionField
@@ -325,6 +341,9 @@ export const DatabaseField: any = observer((props) => {
                 name: `f_${uid()}`,
                 interface: info.key,
               };
+              if (schema.initialize) {
+                schema.initialize(data);
+              }
               field.push(data);
               setActiveKey(data.key);
               console.log('info.key', field.value);

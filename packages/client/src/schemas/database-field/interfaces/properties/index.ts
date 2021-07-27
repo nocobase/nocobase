@@ -1,9 +1,10 @@
-import { ISchema } from "@formily/react";
+import { ISchema } from '@formily/react';
 
 export const dataType: ISchema = {
   type: 'string',
   title: '数据类型',
   required: true,
+  'x-disabled': true,
   'x-decorator': 'FormItem',
   'x-component': 'Select',
   enum: [
@@ -24,7 +25,61 @@ export const dataType: ISchema = {
     { label: 'BelongsTo', value: 'belongsTo' },
     { label: 'BelongsToMany', value: 'belongsToMany' },
   ],
-}
+};
+
+export const dateTimeProps: { [key: string]: ISchema } = {
+  dateFormat: {
+    type: 'string',
+    title: '日期格式',
+    'x-component': 'Radio.Group',
+    'x-decorator': 'FormItem',
+    default: 'YYYY-MM-DD',
+    enum: [
+      {
+        label: '年/月/日',
+        value: 'YYYY/MM/DD',
+      },
+      {
+        label: '年-月-日',
+        value: 'YYYY-MM-DD',
+      },
+      {
+        label: '日/月/年',
+        value: 'DD/MM/YYYY',
+      },
+    ],
+  },
+  showTime: {
+    type: 'boolean',
+    'x-decorator': 'FormItem',
+    'x-component': 'Checkbox',
+    'x-content': '显示时间',
+    'x-reactions': [
+      `{{(field) => {
+        field.query('..[].timeFormat').take(f => {
+          f.display = field.value ? 'visible' : 'none';
+        });
+      }}}`,
+    ],
+  },
+  timeFormat: {
+    type: 'string',
+    title: '时间格式',
+    'x-component': 'Radio.Group',
+    'x-decorator': 'FormItem',
+    default: 'HH:mm:ss',
+    enum: [
+      {
+        label: '24小时制',
+        value: 'HH:mm:ss',
+      },
+      {
+        label: '12小时制',
+        value: 'hh:mm:ss a',
+      },
+    ],
+  },
+};
 
 export const dataSource: ISchema = {
   type: 'array',
@@ -53,7 +108,7 @@ export const dataSource: ISchema = {
         type: 'void',
         'x-component': 'ArrayTable.Column',
         'x-component-props': { title: '选项值' },
-        "x-hidden": true,
+        'x-hidden': true,
         properties: {
           value: {
             type: 'string',

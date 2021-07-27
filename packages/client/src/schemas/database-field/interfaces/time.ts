@@ -20,6 +20,23 @@ export const time: ISchema = {
   },
   properties: {
     ...defaultProps,
+    'uiSchema.x-component-props.format': {
+      type: 'string',
+      title: '时间格式',
+      'x-component': 'Radio.Group',
+      'x-decorator': 'FormItem',
+      default: 'HH:mm:ss',
+      enum: [
+        {
+          label: '24小时制',
+          value: 'HH:mm:ss',
+        },
+        {
+          label: '12小时制',
+          value: 'hh:mm:ss a',
+        },
+      ],
+    },
   },
   operations: [
     { label: '等于', value: 'eq' },

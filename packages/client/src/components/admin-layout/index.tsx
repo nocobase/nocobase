@@ -29,7 +29,7 @@ import { useRequest } from 'ahooks';
 import './style.less';
 
 import { uid } from '@formily/shared';
-import { ISchema } from '@formily/react';
+import { ISchema, Schema } from '@formily/react';
 import Database from './datatable';
 import { HighlightOutlined } from '@ant-design/icons';
 import { useCookieState } from 'ahooks';
@@ -51,14 +51,20 @@ function DesignableToggle() {
   );
 }
 
-function LayoutWithMenu({ schema }) {
+interface LayoutWithMenuProps {
+  schema: Schema;
+  [key: string]: any;
+}
+
+function LayoutWithMenu(props: LayoutWithMenuProps) {
+  const { schema, defaultSelectedKeys } = props;
   const match = useRouteMatch<any>();
   const location = useLocation();
   const sideMenuRef = useRef();
+  const history = useHistory();
   const [activeKey, setActiveKey] = useState(match.params.name);
   const [, setPageTitle] = usePageTitleContext();
   const onSelect = (info) => {
-    console.log('LayoutWithMenu', info);
     if (!info.schema) {
       setActiveKey(null);
     } else if (info.schema['x-component'] === 'Menu.SubMenu') {
@@ -66,12 +72,13 @@ function LayoutWithMenu({ schema }) {
       setActiveKey(null);
     } else {
       setActiveKey(info.schema.key);
+      history.push(`/admin/${info.schema.key}`);
       if (info.schema.title) {
         setPageTitle(info.schema.title);
       }
     }
   };
-  console.log({ match });
+  
   return (
     <Layout>
       <Layout.Header style={{ display: 'flex' }}>
@@ -80,7 +87,7 @@ function LayoutWithMenu({ schema }) {
           scope={{
             sideMenuRef,
             onSelect,
-            selectedKeys: [activeKey].filter(Boolean),
+            selectedKeys: defaultSelectedKeys.filter(Boolean),
           }}
         />
         <Database />
@@ -124,16 +131,42 @@ export function AdminLayout({ route }: any) {
       formatResult: (result) => result?.data,
     },
   );
+  const match = useRouteMatch<any>();
 
   if (loading) {
     return <Spin />;
   }
 
+  const findProperties = (schema: Schema): Schema[] => {
+    if (!schema) {
+      return [];
+    }
+    return schema.reduceProperties((items, current) => {
+      if (current['key'] == match.params.name) {
+        return [...items, current];
+      }
+      return [...items, ...findProperties(current)];
+    }, []);
+  }
+  const current = findProperties(new Schema(data)).shift();
+  const defaultSelectedKeys = [current?.name];
+  let parent = current?.parent;
+  while(parent) {
+    if (parent['x-component'] === 'Menu') {
+      break;
+    }
+    defaultSelectedKeys.unshift(parent.name);
+    parent = parent.parent;
+  }
+
+  console.log('current?.title', current, current?.title, defaultSelectedKeys);
+
   return (
     <SwithDesignableContextProvider>
       <CollectionContextProvider>
-        <PageTitleContextProvider>
-          <LayoutWithMenu schema={data} />
+        {/* @ts-ignore */}
+        <PageTitleContextProvider defaultPageTitle={current?.title}>
+          <LayoutWithMenu defaultSelectedKeys={defaultSelectedKeys} current={current} schema={data} />
         </PageTitleContextProvider>
       </CollectionContextProvider>
     </SwithDesignableContextProvider>
