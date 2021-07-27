@@ -43,7 +43,7 @@ const plugins = [
   '@nocobase/plugin-ui-schema',
   // '@nocobase/plugin-action-logs',
   // '@nocobase/plugin-pages',
-  // '@nocobase/plugin-users',
+  '@nocobase/plugin-users',
   // '@nocobase/plugin-file-manager',
   // '@nocobase/plugin-permissions',
   // '@nocobase/plugin-automations',

@@ -23,7 +23,7 @@ jobs:
 
       - run: npm install
       - run: npm run bootstrap
-      - run: echo "API_URL=${{secrets.API_URL}}" >> .env
+      - run: echo "API_URL=${{ secrets.API_URL }}" >> .env
       - run: npm run build-docs
 
       - name: Deploy

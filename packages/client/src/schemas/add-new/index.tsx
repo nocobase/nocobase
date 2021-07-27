@@ -882,8 +882,9 @@ AddNew.PaneItem = observer((props: any) => {
       placement={'bottomCenter'}
       overlay={
         <Menu>
-          <Menu.SubMenu title={'新建卡片'}>
+          <Menu.ItemGroup title={'数据区块'}>
             <Menu.Item
+              icon={<IconPicker type={'FileOutlined'} />}
               onClick={async () => {
                 let data: ISchema = {
                   type: 'void',
@@ -927,9 +928,10 @@ AddNew.PaneItem = observer((props: any) => {
               }}
               style={{ minWidth: 150 }}
             >
-              阅读模式
+              详情
             </Menu.Item>
             <Menu.Item
+              icon={<IconPicker type={'FormOutlined'} />}
               onClick={async () => {
                 let data: ISchema = {
                   type: 'void',
@@ -972,47 +974,50 @@ AddNew.PaneItem = observer((props: any) => {
                 setVisible(false);
               }}
             >
-              编辑模式
+              表单
             </Menu.Item>
-          </Menu.SubMenu>
-          <Menu.SubMenu title={'要展示的相关数据'}>
-            <Menu.Item style={{ minWidth: 150 }}>日志</Menu.Item>
-            <Menu.Item>评论</Menu.Item>
-          </Menu.SubMenu>
-          <Menu.Item
-            onClick={async () => {
-              let data: ISchema = {
-                key: uid(),
-                type: 'void',
-                default: '这是一段演示文字，**支持使用 Markdown 语法**',
-                'x-designable-bar': 'Markdown.Void.DesignableBar',
-                'x-decorator': 'CardItem',
-                'x-read-pretty': true,
-                'x-component': 'Markdown.Void',
-              };
-              if (isGridBlock(schema)) {
-                path.pop();
-                path.pop();
-                data = generateGridBlock(data);
-              } else if (isGrid(schema)) {
-                data = generateGridBlock(data);
-              }
-              if (data) {
-                let s;
-                if (isGrid(schema)) {
-                  s = appendChild(data, [...path]);
-                } else if (defaultAction === 'insertAfter') {
-                  s = insertAfter(data, [...path]);
-                } else {
-                  s = insertBefore(data, [...path]);
+          </Menu.ItemGroup>
+          <Menu.ItemGroup title={'相关数据区块'}>
+            <Menu.Item style={{ minWidth: 150 }} icon={<IconPicker type={'HistoryOutlined'} />}>日志</Menu.Item>
+            <Menu.Item icon={<IconPicker type={'CommentOutlined'} />}>评论</Menu.Item>
+          </Menu.ItemGroup>
+          <Menu.ItemGroup title={'多媒体区块'}>
+            <Menu.Item
+              icon={<IconPicker type={'FileMarkdownOutlined'} />}
+              onClick={async () => {
+                let data: ISchema = {
+                  key: uid(),
+                  type: 'void',
+                  default: '这是一段演示文字，**支持使用 Markdown 语法**',
+                  'x-designable-bar': 'Markdown.Void.DesignableBar',
+                  'x-decorator': 'CardItem',
+                  'x-read-pretty': true,
+                  'x-component': 'Markdown.Void',
+                };
+                if (isGridBlock(schema)) {
+                  path.pop();
+                  path.pop();
+                  data = generateGridBlock(data);
+                } else if (isGrid(schema)) {
+                  data = generateGridBlock(data);
                 }
-                await createSchema(s);
-              }
-              setVisible(false);
-            }}
-          >
-            添加说明文字
-          </Menu.Item>
+                if (data) {
+                  let s;
+                  if (isGrid(schema)) {
+                    s = appendChild(data, [...path]);
+                  } else if (defaultAction === 'insertAfter') {
+                    s = insertAfter(data, [...path]);
+                  } else {
+                    s = insertBefore(data, [...path]);
+                  }
+                  await createSchema(s);
+                }
+                setVisible(false);
+              }}
+            >
+              Markdown
+            </Menu.Item>
+          </Menu.ItemGroup>
         </Menu>
       }
     >

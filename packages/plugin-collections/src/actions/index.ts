@@ -32,7 +32,7 @@ export const createOrUpdate = async (ctx: actions.Context, next: actions.Next) =
     await collection.updateAssociations(values);
     await collection.migrate();
   } catch (error) {
-    console.log('error.errors', error.errors)
+    // console.log('error.errors', error.errors)
     throw error;
   }
   ctx.body = collection;

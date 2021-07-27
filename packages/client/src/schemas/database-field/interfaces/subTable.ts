@@ -1,5 +1,6 @@
 import { ISchema } from '@formily/react';
 import { defaultProps } from './properties';
+import { uid } from '@formily/shared';
 
 export const subTable: ISchema = {
   name: 'subTable',
@@ -19,6 +20,14 @@ export const subTable: ISchema = {
       'x-designable-bar': 'Table.DesignableBar',
       enum: [],
     } as ISchema,
+  },
+  initialize: (values: any) => {
+    if (!values.target) {
+      values.target = `t_${uid()}`;
+    }
+    if (!values.foreignKey) {
+      values.foreignKey = `f_${uid()}`;
+    }
   },
   properties: {
     ...defaultProps,

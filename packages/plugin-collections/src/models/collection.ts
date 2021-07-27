@@ -41,7 +41,9 @@ export class Collection extends Model {
   }
 
   async getNestedFields() {
-    const fields = await this.getFields();
+    const fields = await this.getFields({
+      order: [['sort', 'asc']],
+    });
     const items = [];
     for (const field of fields) {
       items.push(await field.toProps());
@@ -58,7 +60,7 @@ export class Collection extends Model {
    */
   async loadTableOptions(opts: any = {}) {
     const options = await this.toProps();
-    console.log(JSON.stringify(options, null, 2));
+    // console.log(JSON.stringify(options, null, 2));
     const table = this.database.table(options);
     return table;
   }

@@ -1,4 +1,5 @@
 import { ISchema } from '@formily/react';
+import { omit } from 'lodash';
 import { defaultProps } from './properties';
 
 export const checkbox: ISchema = {

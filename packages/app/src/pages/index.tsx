@@ -1,10 +1,8 @@
-import 'antd/dist/antd.css'
+import 'antd/dist/antd.css';
 import { useRequest } from 'ahooks';
 import { Spin } from 'antd';
 import React, { useMemo } from 'react';
-import {
-  MemoryRouter as Router,
-} from 'react-router-dom';
+import { MemoryRouter as Router } from 'react-router-dom';
 import {
   createRouteSwitch,
   AdminLayout,
@@ -18,8 +16,6 @@ const request = extend({
   prefix: process.env.API_URL,
   timeout: 1000,
 });
-
-// console.log = () => {}
 
 const RouteSwitch = createRouteSwitch({
   components: {
@@ -35,7 +31,7 @@ const App = () => {
   });
 
   if (loading) {
-    return <Spin/>
+    return <Spin />;
   }
 
   return (

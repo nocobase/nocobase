@@ -55,7 +55,7 @@ export const FieldDesignableBar = observer((props) => {
         className={cls('designable-bar-actions', { active: visible })}
       >
         <Space size={'small'}>
-          <AddNew.CardItem defaultAction={'insertAfter'} ghost />
+          <AddNew.FormItem defaultAction={'insertAfter'} ghost />
           {dragRef && <DragOutlined ref={dragRef} />}
           <Dropdown
             trigger={['click']}

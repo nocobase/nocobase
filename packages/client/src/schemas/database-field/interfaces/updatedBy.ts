@@ -14,7 +14,7 @@ export const updatedBy: ISchema = {
     // name,
     uiSchema: {
       type: 'object',
-      // title,
+      title: '最后修改人',
       'x-component': 'Select.Drawer',
       'x-component-props': {},
       'x-decorator': 'FormItem',

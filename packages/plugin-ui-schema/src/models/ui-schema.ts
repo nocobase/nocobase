@@ -1,12 +1,12 @@
 import _ from 'lodash';
 import { Model } from '@nocobase/database';
-import deepmerge from 'deepmerge';
+import { merge } from '../utils';
 
 export class UISchema extends Model {
   static async create(value?: any, options?: any): Promise<any> {
     // console.log({ value });
     const attributes = this.toAttributes(_.cloneDeep(value));
-    console.log({ attributes })
+    // console.log({ attributes })
     // @ts-ignore
     const model: Model = await super.create(attributes, options);
     if (!attributes.children) {
@@ -34,7 +34,9 @@ export class UISchema extends Model {
     ];
     const attrs = _.pick(data, keys);
     const options = _.omit(data, keys);
-    return { ...attrs, options: deepmerge(opts, options) };
+    return {
+      ...attrs, options: merge(opts, options)
+    };
   }
 
   static properties2children(properties = []) {

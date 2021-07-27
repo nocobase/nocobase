@@ -72,7 +72,7 @@ import { onFieldChange } from '@formily/core';
 export const MenuModeContext = createContext(null);
 
 const SideMenu = (props: any) => {
-  const { selectedKey, onSelect, path } = props;
+  const { selectedKey, defaultSelectedKeys, onSelect, path } = props;
   const { schema } = useDesignable();
   if (!selectedKey) {
     return null;
@@ -101,11 +101,11 @@ const SideMenu = (props: any) => {
 };
 
 export const Menu: any = observer((props: any) => {
-  const { mode, onSelect, sideMenuRef, ...others } = props;
+  const { mode, onSelect, sideMenuRef, defaultSelectedKeys = [], ...others } = props;
   const { designable, schema } = useDesignable();
   const fieldSchema = useFieldSchema();
   console.log('Menu.schema', schema, fieldSchema);
-  const [selectedKey, setSelectedKey] = useState(null);
+  const [selectedKey, setSelectedKey] = useState(defaultSelectedKeys[0]||null);
   const ref = useRef();
   const path = useSchemaPath();
   const child = schema.properties && schema.properties[selectedKey];
@@ -133,6 +133,7 @@ export const Menu: any = observer((props: any) => {
   return (
     <MenuModeContext.Provider value={mode}>
       <AntdMenu
+        defaultSelectedKeys={defaultSelectedKeys}
         {...others}
         mode={mode === 'mix' ? 'horizontal' : mode}
         onSelect={(info) => {
@@ -163,12 +164,13 @@ export const Menu: any = observer((props: any) => {
           <SideMenu
             path={path}
             onSelect={(info) => {
-              const keyPath = [selectedKey, ...info.keyPath];
+              const keyPath = [selectedKey, ...[...info.keyPath].reverse()];
               const selectedSchema = findPropertyByPath(schema, keyPath);
               console.log('keyPath', keyPath, selectedSchema);
               onSelect &&
                 onSelect({ ...info, keyPath, schema: selectedSchema });
             }}
+            defaultSelectedKeys={defaultSelectedKeys||[]}
             selectedKey={selectedKey}
             sideMenuRef={sideMenuRef}
           />

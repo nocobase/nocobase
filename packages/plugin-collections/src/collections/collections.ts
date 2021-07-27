@@ -21,6 +21,10 @@ export default {
       required: true,
     },
     {
+      type: 'string',
+      name: 'privilege',
+    },
+    {
       type: 'json',
       name: 'options',
       defaultValue: {},
@@ -29,6 +33,11 @@ export default {
       type: 'hasMany',
       name: 'fields',
       sourceKey: 'name',
+    },
+    {
+      type: 'belongsTo',
+      name: 'uiSchema',
+      target: 'ui_schemas',
     },
   ],
 } as TableOptions;

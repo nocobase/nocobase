@@ -49,8 +49,8 @@ export function useVisible(name, defaultValue = false) {
 
 export const DesignableBarContext = createContext(null);
 
-const [PageTitleContextProvider, usePageTitleContext] = constate(() => {
-  return useState(null);
+const [PageTitleContextProvider, usePageTitleContext] = constate(({ defaultPageTitle }) => {
+  return useState(defaultPageTitle);
 });
 
 export { PageTitleContextProvider, usePageTitleContext };

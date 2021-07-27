@@ -14,7 +14,7 @@ export const createdBy: ISchema = {
     // name,
     uiSchema: {
       type: 'object',
-      // title,
+      title: '创建人',
       'x-component': 'Select.Drawer',
       'x-component-props': {},
       'x-decorator': 'FormItem',

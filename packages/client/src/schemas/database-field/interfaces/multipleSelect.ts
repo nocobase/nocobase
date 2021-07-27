@@ -14,7 +14,9 @@ export const multipleSelect: ISchema = {
       type: 'array',
       // title,
       'x-component': 'Select',
-      'x-component-props': {},
+      'x-component-props': {
+        mode: 'multiple',
+      },
       'x-decorator': 'FormItem',
       'x-designable-bar': 'Select.DesignableBar',
       enum: [],
