@@ -62,7 +62,7 @@ import AddNew from '../add-new';
 import { isGridRowOrCol } from '../grid';
 import { options } from '../database-field/interfaces';
 import { Resource } from '../../resource';
-import { useDisplayFieldsContext } from '../form';
+import { DisplayFieldsContextProvider, useDisplayFieldsContext } from '../form';
 
 interface TableRowProps {
   index: number;
@@ -223,10 +223,39 @@ function useTableColumns(props?: any) {
   return columns;
 }
 
+function SwitchField(props) {
+  const { field, onChange } = props;
+  const [checked, setChecked] = useState(props.checked);
+  useEffect(() => {
+    setChecked(props.checked);
+  }, [props.checked]);
+  return (
+    <div
+      style={{
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+      }}
+      onClick={async () => {
+        setChecked((checked) => {
+          onChange(!checked);
+          return !checked;
+        });
+      }}
+    >
+      <span>{field.uiSchema.title}</span>
+      <Switch checked={checked} size={'small'} />
+    </div>
+  );
+}
+
 function AddColumn() {
   const [visible, setVisible] = useState(false);
-  const { appendChild } = useDesignable();
+  const { appendChild, remove } = useDesignable();
   const { resource = {}, refresh } = useResourceContext();
+  const { hasDisplayField, removeDisplayField, getDisplayField } =
+    useDisplayFieldsContext();
+
   return (
     <Dropdown
       trigger={['click']}
@@ -237,27 +266,29 @@ function AddColumn() {
           <Menu.ItemGroup className={'display-fields'} title={'要展示的字段'}>
             {resource?.fields?.map((field) => (
               <Menu.Item style={{ minWidth: 150 }}>
-                <div
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'space-between',
+                <SwitchField
+                  checked={hasDisplayField(field.name)}
+                  field={field}
+                  onChange={async (checked) => {
+                    if (checked) {
+                      const data = appendChild({
+                        type: 'void',
+                        'x-component': 'Table.Column',
+                        'x-component-props': {
+                          fieldName: field.name,
+                        },
+                        'x-designable-bar': 'Table.Column.DesignableBar',
+                      });
+                      await createSchema(data);
+                    } else {
+                      const s: any = getDisplayField(field.name);
+                      const p = getSchemaPath(s);
+                      const removed = remove(p);
+                      await removeSchema(removed);
+                      removeDisplayField(field.name);
+                    }
                   }}
-                  onClick={async () => {
-                    const data = appendChild({
-                      type: 'void',
-                      'x-component': 'Table.Column',
-                      'x-component-props': {
-                        fieldName: field.name,
-                      },
-                      'x-designable-bar': 'Table.Column.DesignableBar',
-                    });
-                    await createSchema(data);
-                  }}
-                >
-                  <span>{field.uiSchema.title}</span>
-                  <Switch size={'small'} />
-                </div>
+                />
               </Menu.Item>
             ))}
           </Menu.ItemGroup>
@@ -611,12 +642,16 @@ export const Table: any = observer((props: any) => {
     // @ts-ignore
     <ResourceContextProvider resourceName={resourceName}>
       <TableContextProvider>
-        <TableContainer />
+        <DisplayFieldsContextProvider>
+          <TableContainer />
+        </DisplayFieldsContextProvider>
       </TableContextProvider>
     </ResourceContextProvider>
   ) : (
     <TableContextProvider>
-      <TableContainer />
+      <DisplayFieldsContextProvider>
+        <TableContainer />
+      </DisplayFieldsContextProvider>
     </TableContextProvider>
   );
 });
@@ -710,8 +745,14 @@ Table.Cell = observer((props: any) => {
 });
 
 Table.Column = observer((props: any) => {
-  const resourceField = useContext(ResourceFieldContext) || {};
+  const resourceField = useContext(ResourceFieldContext);
   const { schema, DesignableBar } = useDesignable();
+  const { addDisplayField } = useDisplayFieldsContext();
+  useEffect(() => {
+    if (resourceField?.name) {
+      addDisplayField(resourceField.name, schema);
+    }
+  }, [resourceField, schema]);
   return (
     <div className={'nb-table-column'}>
       {schema.title || resourceField?.uiSchema?.title}
@@ -725,6 +766,7 @@ Table.Column.DesignableBar = () => {
   // const fieldSchema = useFieldSchema();
   const { schema, remove, refresh, insertAfter } = useDesignable();
   const [visible, setVisible] = useState(false);
+  const { removeDisplayField } = useDisplayFieldsContext();
   return (
     <div className={cls('designable-bar', { active: visible })}>
       <span
@@ -759,6 +801,8 @@ Table.Column.DesignableBar = () => {
               <Menu.Item
                 onClick={async () => {
                   const s = remove();
+                  const fieldName = schema['x-component-props']?.['fieldName'];
+                  removeDisplayField(fieldName);
                   await removeSchema(s);
                 }}
               >

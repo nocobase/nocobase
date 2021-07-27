@@ -51,6 +51,7 @@ import {
   createCollectionField,
   createOrUpdateCollection,
   createSchema,
+  removeSchema,
   request,
   useCollectionContext,
   useDesignable,
@@ -58,7 +59,7 @@ import {
 } from '../';
 import { uid } from '@formily/shared';
 import { useRequest } from 'ahooks';
-import { SchemaField } from '../../components/schema-renderer';
+import { getSchemaPath, SchemaField } from '../../components/schema-renderer';
 import { useResourceContext } from '../';
 import { cloneDeep } from 'lodash';
 import { options } from '../database-field/interfaces';
@@ -67,6 +68,7 @@ import { useDisplayFieldsContext } from '../form';
 import './style.less';
 import IconPicker from '../../components/icon-picker';
 import { barChartConfig, columnChartConfig } from './chart';
+import { isGridRowOrCol } from '../grid';
 
 const generateGridBlock = (schema: ISchema) => {
   const name = schema.name || uid();
@@ -659,9 +661,12 @@ AddNew.BlockItem = observer((props: any) => {
   );
 });
 
-function FieldSwitch({ field, onChange, defaultChecked }) {
-  const [checked, setChecked] = useState(defaultChecked);
-  const form = useForm();
+function SwitchField(props) {
+  const { field, onChange } = props;
+  const [checked, setChecked] = useState(props.checked);
+  useEffect(() => {
+    setChecked(props.checked);
+  }, [props.checked]);
   return (
     <div
       style={{
@@ -669,35 +674,32 @@ function FieldSwitch({ field, onChange, defaultChecked }) {
         alignItems: 'center',
         justifyContent: 'space-between',
       }}
-      onClick={(e) => {
-        setChecked((value) => {
-          onChange && onChange(!value);
-          return !value;
+      onClick={async () => {
+        setChecked((checked) => {
+          onChange(!checked);
+          return !checked;
         });
-        console.log('FieldSwitch', form);
       }}
     >
-      <span>{field?.uiSchema?.title || '未命名'}</span>
-      <Switch
-        onChange={(checked, e) => {
-          e.stopPropagation();
-          setChecked(checked);
-          onChange && onChange(checked);
-        }}
-        size={'small'}
-        checked={checked}
-      />
+      <span>{field.uiSchema.title}</span>
+      <Switch checked={checked} size={'small'} />
     </div>
   );
 }
 
 AddNew.FormItem = observer((props: any) => {
   const { ghost, defaultAction } = props;
-  const { schema, insertBefore, insertAfter, appendChild } = useDesignable();
+  const { schema, insertBefore, insertAfter, appendChild, deepRemove } =
+    useDesignable();
   const path = useSchemaPath();
   const { resource = {}, refresh } = useResourceContext();
   const [visible, setVisible] = useState(false);
-  const { displayFields = [] } = useDisplayFieldsContext();
+  const {
+    displayFields,
+    hasDisplayField,
+    getDisplayField,
+    removeDisplayField,
+  } = useDisplayFieldsContext();
   console.log({ displayFields });
   return (
     <Dropdown
@@ -713,11 +715,23 @@ AddNew.FormItem = observer((props: any) => {
           <Menu.ItemGroup className={'display-fields'} title={`要展示的字段`}>
             {resource?.fields?.map((field) => (
               <Menu.Item key={field.key}>
-                <FieldSwitch
+                <SwitchField
                   field={field}
-                  defaultChecked={displayFields.includes(field.name)}
+                  checked={hasDisplayField(field.name)}
                   onChange={async (checked) => {
                     if (!checked) {
+                      const s: any = getDisplayField(field.name);
+                      const p = getSchemaPath(s);
+                      const removed = deepRemove(p);
+                      if (!removed) {
+                        console.log('getSchemaPath', p, removed);
+                        return;
+                      }
+                      const last = removed.pop();
+                      removeDisplayField(field.name);
+                      if (isGridRowOrCol(last)) {
+                        await removeSchema(last);
+                      }
                       return;
                     }
                     let data: ISchema = {
@@ -869,7 +883,7 @@ AddNew.PaneItem = observer((props: any) => {
   const path = useSchemaPath();
   const { resource = {}, refresh } = useResourceContext();
   const [visible, setVisible] = useState(false);
-  const { displayFields = [] } = useDisplayFieldsContext();
+  const { displayFields } = useDisplayFieldsContext();
   console.log({ displayFields });
   return (
     <Dropdown
@@ -978,8 +992,15 @@ AddNew.PaneItem = observer((props: any) => {
             </Menu.Item>
           </Menu.ItemGroup>
           <Menu.ItemGroup title={'相关数据区块'}>
-            <Menu.Item style={{ minWidth: 150 }} icon={<IconPicker type={'HistoryOutlined'} />}>日志</Menu.Item>
-            <Menu.Item icon={<IconPicker type={'CommentOutlined'} />}>评论</Menu.Item>
+            <Menu.Item
+              style={{ minWidth: 150 }}
+              icon={<IconPicker type={'HistoryOutlined'} />}
+            >
+              日志
+            </Menu.Item>
+            <Menu.Item icon={<IconPicker type={'CommentOutlined'} />}>
+              评论
+            </Menu.Item>
           </Menu.ItemGroup>
           <Menu.ItemGroup title={'多媒体区块'}>
             <Menu.Item

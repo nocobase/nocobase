@@ -39,15 +39,24 @@ import { FieldDesignableBar } from './Field.DesignableBar';
 import { createContext } from 'react';
 import { BlockItem } from '../block-item';
 import { Resource } from '../../resource';
+import { useMap } from 'ahooks';
 
 const [DisplayFieldsContextProvider, useDisplayFieldsContext] = constate(() => {
-  const [displayFields, setDisplayFields] = useState([]);
+  const [displayFields, { set, remove, get }] = useMap([]);
 
   return {
     displayFields,
-    setDisplayFields,
-    addDisplayField(fieldName) {
-      setDisplayFields((fields) => fields.concat(fieldName));
+    hasDisplayField(fieldName) {
+      return !!get(fieldName);
+    },
+    addDisplayField(fieldName, schema) {
+      set(fieldName, schema);
+    },
+    getDisplayField(fieldName) {
+      return get(fieldName);
+    },
+    removeDisplayField(fieldName) {
+      remove(fieldName);
     },
   };
 });
@@ -65,7 +74,10 @@ export const Form: any = observer((props: any) => {
   const initialValues = useValues();
   const form = useMemo(() => {
     console.log('Form.useMemo', initialValues);
-    return createForm({ initialValues, readPretty: schema['x-read-pretty'] });
+    return createForm({ 
+      initialValues, 
+      readPretty: schema['x-read-pretty'],
+    });
   }, []);
   const path = useSchemaPath();
   const scope = useContext(SchemaExpressionScopeContext);
@@ -128,7 +140,7 @@ export const Form: any = observer((props: any) => {
       <DisplayFieldsContextProvider>{content}</DisplayFieldsContextProvider>
     </ResourceContextProvider>
   ) : (
-    content
+    <DisplayFieldsContextProvider>{content}</DisplayFieldsContextProvider>
   );
 });
 
@@ -143,9 +155,9 @@ Form.Field = observer((props: any) => {
   const { resource = {} } = useResourceContext();
   useEffect(() => {
     if (fieldName) {
-      addDisplayField && addDisplayField(fieldName);
+      addDisplayField && addDisplayField(fieldName, schema);
     }
-  }, [fieldName]);
+  }, [fieldName, schema]);
   if (!fieldName) {
     return null;
   }
