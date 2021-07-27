@@ -33,7 +33,7 @@ import constate from 'constate';
 import { useEffect } from 'react';
 import { uid } from '@formily/shared';
 import { getSchemaPath } from '../../components/schema-renderer';
-import { FormFieldUIDContext } from '.';
+import { FormFieldUIDContext, useDisplayFieldsContext } from '.';
 
 export const FieldDesignableBar = observer((props) => {
   const field = useField();
@@ -42,6 +42,7 @@ export const FieldDesignableBar = observer((props) => {
   const [visible, setVisible] = useState(false);
   const { dragRef } = useContext(DraggableBlockContext);
   const fieldUid = useContext(FormFieldUIDContext);
+  const { removeDisplayField } = useDisplayFieldsContext();
   const fieldName = schema['x-component-props']?.['fieldName'];
   if (!designable) {
     return null;
@@ -93,8 +94,11 @@ export const FieldDesignableBar = observer((props) => {
                   key={'delete'}
                   onClick={async () => {
                     const removed = deepRemove();
-                    console.log({ schema, removed });
+                    const fieldName =
+                      schema['x-component-props']?.['fieldName'];
+                    console.log({ schema, removed, fieldName });
                     const last = removed.pop();
+                    removeDisplayField(fieldName);
                     if (isGridRowOrCol(last)) {
                       await removeSchema(last);
                     }
