@@ -51,7 +51,7 @@ import { CardItem } from '../../schemas/card-item';
 import { DragAndDrop } from '../../schemas/drag-and-drop';
 import { TreeSelect } from '../../schemas/tree-select';
 import { Page } from '../../schemas/page';
-// import { Chart } from '../../schemas/chart';
+import { Chart } from '../../schemas/chart';
 import { useCollectionContext, useSwithDesignableContext } from '../../schemas';
 
 export const BlockContext = createContext({ dragRef: null });
@@ -72,7 +72,7 @@ export const SchemaField = createSchemaField({
     Div,
     Space,
     Page,
-    // Chart,
+    Chart,
 
     ArrayCollapse,
     ArrayTable,
