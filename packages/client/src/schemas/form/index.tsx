@@ -12,15 +12,7 @@ import {
   useForm,
   RecursionField,
 } from '@formily/react';
-import {
-  useSchemaPath,
-  SchemaField,
-  useDesignable,
-  removeSchema,
-  useCollectionContext,
-  useResourceContext,
-  ResourceContextProvider,
-} from '../';
+import { useSchemaPath, SchemaField, useDesignable, removeSchema } from '../';
 import get from 'lodash/get';
 import { Button, Dropdown, Menu, message, Space } from 'antd';
 import { MenuOutlined, DragOutlined } from '@ant-design/icons';
@@ -39,48 +31,30 @@ import { FieldDesignableBar } from './Field.DesignableBar';
 import { createContext } from 'react';
 import { BlockItem } from '../block-item';
 import { Resource } from '../../resource';
-import { useMap } from 'ahooks';
-
-const [DisplayFieldsContextProvider, useDisplayFieldsContext] = constate(() => {
-  const [displayFields, { set, remove, get }] = useMap([]);
-
-  return {
-    displayFields,
-    hasDisplayField(fieldName) {
-      return !!get(fieldName);
-    },
-    addDisplayField(fieldName, schema) {
-      set(fieldName, schema);
-    },
-    getDisplayField(fieldName) {
-      return get(fieldName);
-    },
-    removeDisplayField(fieldName) {
-      remove(fieldName);
-    },
-  };
-});
-
-export { DisplayFieldsContextProvider, useDisplayFieldsContext };
+import {
+  CollectionProvider,
+  useCollectionContext,
+  DisplayedMapProvider,
+  useDisplayedMapContext,
+} from '../../constate';
 
 export const Form: any = observer((props: any) => {
   const {
     useValues = () => ({}),
     showDefaultButtons = false,
-    resourceName,
     ...others
   } = props;
   const { schema } = useDesignable();
   const initialValues = useValues();
   const form = useMemo(() => {
-    console.log('Form.useMemo', initialValues);
-    return createForm({ 
-      initialValues, 
+    return createForm({
+      initialValues,
       readPretty: schema['x-read-pretty'],
     });
   }, []);
   const path = useSchemaPath();
   const scope = useContext(SchemaExpressionScopeContext);
+  const { collection } = useCollectionContext();
   const content = (
     <FormProvider form={form}>
       {schema['x-decorator'] === 'Form' ? (
@@ -115,7 +89,7 @@ export const Form: any = observer((props: any) => {
             onClick={async () => {
               const values = await form.submit();
               console.log({ values });
-              await Resource.make(resourceName).save(values);
+              await Resource.make(props.resource).save(values);
               message.success('保存成功');
               await form.reset();
             }}
@@ -134,49 +108,47 @@ export const Form: any = observer((props: any) => {
       )}
     </FormProvider>
   );
-  return resourceName ? (
-    // @ts-ignore
-    <ResourceContextProvider resourceName={resourceName}>
-      <DisplayFieldsContextProvider>{content}</DisplayFieldsContextProvider>
-    </ResourceContextProvider>
-  ) : (
-    <DisplayFieldsContextProvider>{content}</DisplayFieldsContextProvider>
+  return (
+    <CollectionProvider
+      collectionName={props.collectionName || collection?.name}
+    >
+      <DisplayedMapProvider>{content}</DisplayedMapProvider>
+    </CollectionProvider>
   );
 });
 
-export const FormFieldUIDContext = createContext(null);
+export const RandomNameContext = createContext(null);
 
 Form.Field = observer((props: any) => {
   const { fieldName } = props;
   const { schema } = useDesignable();
   const path = getSchemaPath(schema);
-  console.log('getSchemaPath', path);
-  const { addDisplayField } = useDisplayFieldsContext();
-  const { resource = {} } = useResourceContext();
+  const { getField } = useCollectionContext();
+  const displayed = useDisplayedMapContext();
   useEffect(() => {
     if (fieldName) {
-      addDisplayField && addDisplayField(fieldName, schema);
+      displayed.set(fieldName, schema);
     }
   }, [fieldName, schema]);
   if (!fieldName) {
     return null;
   }
-  const field = resource?.fields?.find((item) => item.name === fieldName);
-  if (!field) {
+  const collectionField = getField(fieldName);
+  if (!collectionField) {
     return null;
   }
-  const name = useContext(FormFieldUIDContext);
-  const title = schema['title'] || field.uiSchema['title'];
+  const randomName = useContext(RandomNameContext);
+  const title = schema['title'] || collectionField?.uiSchema?.title;
   return (
     <RecursionField
-      name={name}
+      name={randomName}
       schema={
         new Schema({
           'x-path': path,
           type: 'void',
           properties: {
-            [field.name]: {
-              ...field.uiSchema,
+            [collectionField.name]: {
+              ...collectionField.uiSchema,
               title,
               'x-decorator': 'FormilyFormItem',
             },
@@ -188,11 +160,10 @@ Form.Field = observer((props: any) => {
 });
 
 Form.Field.Item = observer((props) => {
-  const name = uid();
   return (
-    <FormFieldUIDContext.Provider value={name}>
+    <RandomNameContext.Provider value={uid()}>
       <BlockItem>{props.children}</BlockItem>
-    </FormFieldUIDContext.Provider>
+    </RandomNameContext.Provider>
   );
 });
 

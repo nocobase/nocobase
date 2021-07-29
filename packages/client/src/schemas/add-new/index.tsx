@@ -52,23 +52,23 @@ import {
   createOrUpdateCollection,
   createSchema,
   removeSchema,
-  request,
-  useCollectionContext,
   useDesignable,
   useSchemaPath,
 } from '../';
 import { uid } from '@formily/shared';
-import { useRequest } from 'ahooks';
 import { getSchemaPath, SchemaField } from '../../components/schema-renderer';
-import { useResourceContext } from '../';
 import { cloneDeep } from 'lodash';
 import { options } from '../database-field/interfaces';
-import { useDisplayFieldsContext } from '../form';
 
 import './style.less';
 import IconPicker from '../../components/icon-picker';
 import { barChartConfig, columnChartConfig } from './chart';
 import { isGridRowOrCol } from '../grid';
+import {
+  useCollectionContext,
+  useCollectionsContext,
+  useDisplayedMapContext,
+} from '../../constate';
 
 const generateGridBlock = (schema: ISchema) => {
   const name = schema.name || uid();
@@ -136,6 +136,10 @@ function generateCardItemSchema(component) {
         rowKey: 'id',
         dragSort: true,
         showIndex: true,
+        refreshRequestOnChange: true,
+        pagination: {
+          pageSize: 10,
+        },
       },
       properties: {
         [uid()]: {
@@ -192,20 +196,7 @@ function generateCardItemSchema(component) {
         },
         [uid()]: {
           type: 'void',
-          'x-component': 'Table.ActionBar',
-          'x-component-props': {
-            align: 'bottom',
-          },
-          properties: {
-            [uid()]: {
-              type: 'void',
-              'x-component': 'Table.Pagination',
-              'x-component-props': {},
-            },
-          },
-        },
-        [uid()]: {
-          type: 'void',
+          title: '操作',
           'x-component': 'Table.Column',
           'x-component-props': {
             className: 'nb-table-operation',
@@ -286,7 +277,7 @@ function generateCardItemSchema(component) {
                       title: '编辑数据',
                       'x-decorator': 'Form',
                       'x-decorator-props': {
-                        useValues: '{{ Table.useTableRow }}',
+                        useValues: '{{ Table.useTableRowRecord }}',
                       },
                       'x-component': 'Action.Modal',
                       'x-component-props': {
@@ -406,15 +397,7 @@ AddNew.CardItem = observer((props: any) => {
   const { ghost, defaultAction } = props;
   const { schema, insertBefore, insertAfter, appendChild } = useDesignable();
   const path = useSchemaPath();
-  // const {
-  //   data: collections = [],
-  //   loading,
-  //   run,
-  // } = useRequest('collections:findAll', {
-  //   formatResult: (result) => result?.data,
-  // });
-  const { data: collections = [], loading, refresh } = useCollectionContext();
-  console.log({ collections });
+  const { collections = [], loading, refresh } = useCollectionsContext();
   return (
     <Dropdown
       trigger={['click']}
@@ -424,12 +407,11 @@ AddNew.CardItem = observer((props: any) => {
       onVisibleChange={(visible) => {
         console.log('onVisibleChange', visible);
       }}
-      placement={'bottomCenter'}
       overlay={
         <Menu
           onClick={async (info) => {
             let data: ISchema;
-            let resourceName = null;
+            let collectionName = null;
             if (['addNewTable', 'addNewForm'].includes(info.key)) {
               const values = await FormDialog(`新建数据表`, () => {
                 return (
@@ -448,12 +430,12 @@ AddNew.CardItem = observer((props: any) => {
               data = generateCardItemSchema(
                 info.key === 'addNewTable' ? 'Table' : 'Form',
               );
-              resourceName = values.name;
+              collectionName = values.name;
             } else if (info.key.startsWith('collection.')) {
               const keys = info.key.split('.');
               const component = keys.pop();
               const tableName = keys.pop();
-              resourceName = tableName;
+              collectionName = tableName;
               data = generateCardItemSchema(component);
               console.log('info.keyPath', component, tableName);
             } else {
@@ -463,9 +445,10 @@ AddNew.CardItem = observer((props: any) => {
             if (schema['key']) {
               data['key'] = uid();
             }
-            if (resourceName) {
+            if (collectionName) {
               data['x-component-props'] = data['x-component-props'] || {};
-              data['x-component-props']['resourceName'] = resourceName;
+              data['x-component-props']['resource'] = collectionName;
+              data['x-component-props']['collectionName'] = collectionName;
             }
             if (isGridBlock(schema)) {
               path.pop();
@@ -511,7 +494,7 @@ AddNew.CardItem = observer((props: any) => {
                 title={view.title}
               >
                 <Menu.ItemGroup key={`${view.key}-select`} title={'所属数据表'}>
-                  {collections.map((item) => (
+                  {collections?.map((item) => (
                     <Menu.Item
                       style={{ minWidth: 150 }}
                       key={`collection.${item.name}.${view.key}`}
@@ -586,76 +569,9 @@ AddNew.CardItem = observer((props: any) => {
       {ghost ? (
         <PlusOutlined />
       ) : (
-        <Button block type={'dashed'} icon={<PlusOutlined />}></Button>
-      )}
-    </Dropdown>
-  );
-});
-
-AddNew.BlockItem = observer((props: any) => {
-  const { ghost, defaultAction } = props;
-  const { schema, insertBefore, insertAfter } = useDesignable();
-  const path = useSchemaPath();
-  return (
-    <Dropdown
-      overlayStyle={{
-        minWidth: 200,
-      }}
-      placement={'bottomCenter'}
-      overlay={
-        <Menu>
-          <Menu.SubMenu title={'新建表格'}>
-            <Menu.ItemGroup title={'选择数据表'}>
-              <Menu.Item>数据表1</Menu.Item>
-            </Menu.ItemGroup>
-            <Menu.Divider></Menu.Divider>
-            <Menu.Item>新增数据表</Menu.Item>
-          </Menu.SubMenu>
-          <Menu.SubMenu title={'新建表单'}>
-            <Menu.ItemGroup title={'选择数据表'}>
-              <Menu.Item>数据表1</Menu.Item>
-            </Menu.ItemGroup>
-            <Menu.Divider></Menu.Divider>
-            <Menu.Item>新增数据表</Menu.Item>
-          </Menu.SubMenu>
-          <Menu.Item
-            onClick={async () => {
-              let data: ISchema = {
-                type: 'void',
-                title: uid(),
-                'x-designable-bar': 'BlockItem.DesignableBar',
-                'x-decorator': 'CardItem',
-                'x-component': 'Markdown.Void',
-              };
-              if (schema['key']) {
-                data['key'] = uid();
-              }
-              console.log('isGridBlock(schema)', isGridBlock(schema));
-              if (isGridBlock(schema)) {
-                path.pop();
-                path.pop();
-                data = generateGridBlock(data);
-              }
-              if (data) {
-                let s;
-                if (defaultAction === 'insertAfter') {
-                  s = insertAfter(data, [...path]);
-                } else {
-                  s = insertBefore(data, [...path]);
-                }
-                await createSchema(s);
-              }
-            }}
-          >
-            新建 Markdown
-          </Menu.Item>
-        </Menu>
-      }
-    >
-      {ghost ? (
-        <PlusOutlined />
-      ) : (
-        <Button block type={'dashed'} icon={<PlusOutlined />}></Button>
+        <Button type={'dashed'} icon={<PlusOutlined />}>
+          新增区块
+        </Button>
       )}
     </Dropdown>
   );
@@ -692,15 +608,9 @@ AddNew.FormItem = observer((props: any) => {
   const { schema, insertBefore, insertAfter, appendChild, deepRemove } =
     useDesignable();
   const path = useSchemaPath();
-  const { resource = {}, refresh } = useResourceContext();
+  const { collection, fields, refresh } = useCollectionContext();
   const [visible, setVisible] = useState(false);
-  const {
-    displayFields,
-    hasDisplayField,
-    getDisplayField,
-    removeDisplayField,
-  } = useDisplayFieldsContext();
-  console.log({ displayFields });
+  const displayed = useDisplayedMapContext();
   return (
     <Dropdown
       trigger={['click']}
@@ -709,18 +619,17 @@ AddNew.FormItem = observer((props: any) => {
       overlayStyle={{
         minWidth: 200,
       }}
-      placement={'bottomCenter'}
       overlay={
         <Menu>
           <Menu.ItemGroup className={'display-fields'} title={`要展示的字段`}>
-            {resource?.fields?.map((field) => (
+            {fields?.map((field) => (
               <Menu.Item key={field.key}>
                 <SwitchField
                   field={field}
-                  checked={hasDisplayField(field.name)}
+                  checked={displayed.has(field.name)}
                   onChange={async (checked) => {
                     if (!checked) {
-                      const s: any = getDisplayField(field.name);
+                      const s: any = displayed.get(field.name);
                       const p = getSchemaPath(s);
                       const removed = deepRemove(p);
                       if (!removed) {
@@ -728,7 +637,7 @@ AddNew.FormItem = observer((props: any) => {
                         return;
                       }
                       const last = removed.pop();
-                      removeDisplayField(field.name);
+                      displayed.remove(field.name);
                       if (isGridRowOrCol(last)) {
                         await removeSchema(last);
                       }
@@ -797,7 +706,7 @@ AddNew.FormItem = observer((props: any) => {
                               name: `f_${uid()}`,
                             },
                           });
-                          await createCollectionField(resource.name, values);
+                          await createCollectionField(collection?.name, values);
                           await refresh();
                           let data: ISchema = cloneDeep(values.uiSchema);
                           data['name'] = values.name;
@@ -834,7 +743,6 @@ AddNew.FormItem = observer((props: any) => {
           <Menu.Item
             onClick={async () => {
               let data: ISchema = {
-                key: uid(),
                 type: 'void',
                 default: '这是一段演示文字，**支持使用 Markdown 语法**',
                 'x-designable-bar': 'Markdown.Void.DesignableBar',
@@ -842,6 +750,9 @@ AddNew.FormItem = observer((props: any) => {
                 'x-read-pretty': true,
                 'x-component': 'Markdown.Void',
               };
+              if (schema['key']) {
+                data['key'] = uid();
+              }
               if (isGridBlock(schema)) {
                 path.pop();
                 path.pop();
@@ -858,6 +769,7 @@ AddNew.FormItem = observer((props: any) => {
                 } else {
                   s = insertBefore(data, [...path]);
                 }
+                console.log('ISchema', schema, data, path);
                 await createSchema(s);
               }
               setVisible(false);
@@ -871,7 +783,9 @@ AddNew.FormItem = observer((props: any) => {
       {ghost ? (
         <PlusOutlined />
       ) : (
-        <Button block type={'dashed'} icon={<PlusOutlined />}></Button>
+        <Button type={'dashed'} icon={<PlusOutlined />}>
+          配置字段
+        </Button>
       )}
     </Dropdown>
   );
@@ -881,10 +795,8 @@ AddNew.PaneItem = observer((props: any) => {
   const { ghost, defaultAction } = props;
   const { schema, insertBefore, insertAfter, appendChild } = useDesignable();
   const path = useSchemaPath();
-  const { resource = {}, refresh } = useResourceContext();
   const [visible, setVisible] = useState(false);
-  const { displayFields } = useDisplayFieldsContext();
-  console.log({ displayFields });
+
   return (
     <Dropdown
       trigger={['click']}
@@ -893,7 +805,7 @@ AddNew.PaneItem = observer((props: any) => {
       overlayStyle={{
         minWidth: 200,
       }}
-      placement={'bottomCenter'}
+      // placement={'bottomCenter'}
       overlay={
         <Menu>
           <Menu.ItemGroup title={'数据区块'}>
@@ -907,7 +819,7 @@ AddNew.PaneItem = observer((props: any) => {
                   'x-component': 'Form',
                   'x-read-pretty': true,
                   'x-component-props': {
-                    useValues: '{{ Table.useTableRow }}',
+                    useValues: '{{ Table.useTableRowRecord }}',
                   },
                   'x-designable-bar': 'Form.DesignableBar',
                   properties: {
@@ -953,7 +865,7 @@ AddNew.PaneItem = observer((props: any) => {
                   'x-decorator': 'CardItem',
                   'x-component': 'Form',
                   'x-component-props': {
-                    useValues: '{{ Table.useTableRow }}',
+                    useValues: '{{ Table.useTableRowRecord }}',
                     showDefaultButtons: true,
                   },
                   'x-designable-bar': 'Form.DesignableBar',
@@ -1045,7 +957,9 @@ AddNew.PaneItem = observer((props: any) => {
       {ghost ? (
         <PlusOutlined />
       ) : (
-        <Button block type={'dashed'} icon={<PlusOutlined />}></Button>
+        <Button block type={'dashed'} icon={<PlusOutlined />}>
+          新增区块
+        </Button>
       )}
     </Dropdown>
   );

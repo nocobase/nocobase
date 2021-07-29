@@ -1,8 +1,8 @@
 import { SchemaRenderer } from '../../';
 import React from 'react';
 import { FormItem } from '@formily/antd';
-import { useCollectionContext } from '../../schemas';
 import { action } from '@formily/reactive';
+import { useCollectionsContext } from '../../constate/Collections';
 
 const useAsyncDataSource = (service: any) => (field: any) => {
   field.loading = true;
@@ -15,10 +15,10 @@ const useAsyncDataSource = (service: any) => (field: any) => {
 };
 
 export default () => {
-  const { data, loading } = useCollectionContext();
+  const { collections = [], loading } = useCollectionsContext();
 
   const loadCollections = async (field: any) => {
-    return data.map((item: any) => ({
+    return collections.map((item: any) => ({
       label: item.title,
       value: item.name,
     }));

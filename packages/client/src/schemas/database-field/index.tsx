@@ -39,11 +39,8 @@ import Modal from 'antd/lib/modal/Modal';
 import { clone, cloneDeep, get } from 'lodash';
 import { useEffect } from 'react';
 import { useRequest } from 'ahooks';
-import {
-  createOrUpdateCollection,
-  deleteCollection,
-  useCollectionContext,
-} from '..';
+import { createOrUpdateCollection, deleteCollection } from '..';
+import { useCollectionsContext } from '../../constate/Collections';
 
 export const DatabaseCollection = observer((props) => {
   const field = useField<Formily.Core.Models.ArrayField>();
@@ -53,21 +50,12 @@ export const DatabaseCollection = observer((props) => {
   const [activeIndex, setActiveIndex] = useState(0);
   const form = useForm();
   const [newValue, setNewValue] = useState('');
-  const { loading, refresh, data } = useCollectionContext();
+  const { loading, refresh, collections = [] } = useCollectionsContext();
 
   useEffect(() => {
-    field.setValue(data);
-    console.log('onSuccess', data);
-  }, [data]);
-
-  // const { run, loading } = useRequest('collections:findAll', {
-  //   formatResult: (result) => result?.data,
-  //   onSuccess(data) {
-  //     // field.setValue(data);
-  //     // console.log('onSuccess', data);
-  //   },
-  //   manual: true,
-  // });
+    field.setValue(collections);
+    console.log('onSuccess', collections);
+  }, [collections]);
 
   return (
     <div>

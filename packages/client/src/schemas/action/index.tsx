@@ -13,7 +13,7 @@ import {
 } from '@formily/react';
 import { Button, Dropdown, Menu, Popover, Space, Drawer, Modal } from 'antd';
 import { Link, useHistory, LinkProps } from 'react-router-dom';
-import { useDesignable, VisibleContext, useDefaultAction, useVisible } from '..';
+import { useDesignable, useDefaultAction } from '..';
 import './style.less';
 import { uid } from '@formily/shared';
 import cls from 'classnames';
@@ -21,18 +21,18 @@ import { MenuOutlined } from '@ant-design/icons';
 import { FormLayout } from '@formily/antd';
 import IconPicker from '../../components/icon-picker';
 import { useSchemaComponent } from '../../components/schema-renderer';
+import { VisibleContext } from '../../context';
 
 export const Action: any = observer((props: any) => {
   const { useAction = useDefaultAction, icon, ...others } = props;
   const { run } = useAction();
   const field = useField();
   const { schema, DesignableBar } = useDesignable();
-  const { visible, setVisible } = useVisible(field.address.entire);
+  const [visible, setVisible] = useState(false);
   const child = Object.values(schema.properties || {}).shift();
   const isDropdownOrPopover =
     child &&
     ['Action.Dropdown', 'Action.Popover'].includes(child['x-component']);
-  // console.log({ DesignableBar, schema });
   return (
     <VisibleContext.Provider value={[visible, setVisible]}>
       {!isDropdownOrPopover && (
@@ -75,7 +75,6 @@ Action.Modal = observer((props: any) => {
   } = props;
   const { schema } = useDesignable();
   const [visible, setVisible] = useContext(VisibleContext);
-  console.log('VisibleContext', visible);
   const form = useForm();
   const { run: runOk } = useOkAction();
   const { run: runCancel } = useCancelAction();
@@ -190,8 +189,13 @@ Action.Drawer = observer((props: any) => {
 Action.Dropdown = observer((props: any) => {
   const { buttonProps = {}, ...others } = props;
   const { schema } = useDesignable();
-  const componentProps = schema.parent['x-component-props'] || {};
-  const icon = buttonProps.icon || componentProps['icon'];
+  let componentProps = {...buttonProps};
+  let title = schema.title;
+  if (schema.parent['x-component'] === 'Action') {
+    title = schema.parent.title;
+    componentProps = {...buttonProps, ...(schema.parent['x-component-props'] || {})}
+  }
+  const icon = componentProps['icon'];
   return (
     <Dropdown
       trigger={['click']}
@@ -207,7 +211,7 @@ Action.Dropdown = observer((props: any) => {
         {...componentProps}
         icon={<IconPicker type={icon} />}
       >
-        {schema.title || schema.parent.title}
+        {title}
       </Button>
     </Dropdown>
   );

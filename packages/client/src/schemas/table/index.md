@@ -60,4 +60,15 @@ group:
 
 ## Examples
 
-<code src="./demos/demo1.tsx"/>
+<code src="./demos/demo3.tsx"/>
+
+## API
+
+表格的几个重要概念
+
+- collection 当前表格的数据表配置信息（主要是字段）
+- resource 当前资源，用于处理 create、update、list、destroy
+- service 当前表格的 resource.list 实例
+- field 当前表格的 ArrayField 对象
+- schema 当前表格的 json schema
+- props 当前表格的参数

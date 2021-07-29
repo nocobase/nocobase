@@ -52,7 +52,7 @@ import { DragAndDrop } from '../../schemas/drag-and-drop';
 import { TreeSelect } from '../../schemas/tree-select';
 import { Page } from '../../schemas/page';
 import { Chart } from '../../schemas/chart';
-import { useCollectionContext, useSwithDesignableContext } from '../../schemas';
+import { useDesignableSwitchContext } from '../../constate/DesignableSwitch';
 
 export const BlockContext = createContext({ dragRef: null });
 
@@ -193,7 +193,7 @@ export function useSchemaComponent(component: string) {
 }
 
 export function useDesignable(path?: any) {
-  const { designable } = useSwithDesignableContext();
+  let { designable = true } = useDesignableSwitchContext();
   const { schema = new Schema({}), refresh } = useContext(DesignableContext);
   const schemaPath = path || useSchemaPath();
   const fieldSchema = useFieldSchema();
@@ -453,7 +453,7 @@ export interface SchemaRendererProps {
 }
 
 export const SchemaRenderer = (props: SchemaRendererProps) => {
-  const { designable } = useSwithDesignableContext();
+  const { designable = true } = useDesignableSwitchContext();
   const [, refresh] = useState(uid());
   const form = useMemo(() => props.form || createForm(), []);
   const schema = useMemo(() => {

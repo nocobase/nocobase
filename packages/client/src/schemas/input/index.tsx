@@ -46,7 +46,7 @@ Input.URL = connect(AntdInput, mapReadPretty(Display.URL))
 Input.DesignableBar = observer((props) => {
   const field = useField();
   const fieldSchema = useFieldSchema();
-  const { root, currentSchema, schema, refresh, deepRemove } = useDesignable();
+  const { root, currentSchema, schema, refresh, deepRemove, remove } = useDesignable();
   const [visible, setVisible] = useState(false);
   const { dragRef } = useContext(DraggableBlockContext);
   return (
@@ -71,6 +71,10 @@ Input.DesignableBar = observer((props) => {
                 <Menu.Item
                   key={'update'}
                   onClick={() => {
+                    const title = uid();
+                    schema['title'] = title;
+                    field.title = title;
+                    refresh();
                     console.log({ root, currentSchema, schema, fieldSchema }, getSchemaPath(fieldSchema));
                   }}
                 >
@@ -80,12 +84,13 @@ Input.DesignableBar = observer((props) => {
                 <Menu.Item
                   key={'delete'}
                   onClick={async () => {
-                    const removed = deepRemove();
-                    // console.log({ removed })
-                    const last = removed.pop();
-                    if (isGridRowOrCol(last)) {
-                      await removeSchema(last);
-                    }
+                    remove();
+                    // const removed = deepRemove();
+                    // // console.log({ removed })
+                    // const last = removed.pop();
+                    // if (isGridRowOrCol(last)) {
+                    //   await removeSchema(last);
+                    // }
                   }}
                 >
                   删除当前区块

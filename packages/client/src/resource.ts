@@ -21,7 +21,7 @@ export interface ListOptions {
 
 export class Resource {
 
-  protected options: ResourceOptions;
+  public options: ResourceOptions;
 
   constructor(options: string | ResourceOptions) {
     if (typeof options === 'string') {
@@ -45,6 +45,15 @@ export class Resource {
     return request(`${resourceName}:get/${resourceKey}`);
   }
 
+  create(values: any) {
+    const { resourceName } = this.options;
+    const url = `${resourceName}:create`;
+    return request(url, {
+      method: 'post',
+      data: values,
+    });
+  }
+
   save(values: any, options: SaveOptions = {}) {
     const resourceKey = options.resourceKey || this.options.resourceKey;
     const { resourceName } = this.options;
@@ -66,7 +75,7 @@ export class Resource {
     });
   }
 
-  static make(options: string | Resource | ResourceOptions) {
+  static make(options: null | string | Resource | ResourceOptions): Resource | null {
     if (typeof options === 'string') {
       return new Resource({ resourceName: options });
     }
@@ -76,6 +85,7 @@ export class Resource {
     if (typeof options === 'object' && options.resourceName) {
       return new Resource(options);
     }
-    throw 'resource 参数错误';
+    console.warn('resource 初始化参数错误');
+    return null;
   }
 }

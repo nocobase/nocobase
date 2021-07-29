@@ -17,7 +17,6 @@ import {
   SchemaField,
   useDesignable,
   removeSchema,
-  useCollectionContext,
 } from '../';
 import get from 'lodash/get';
 import { Button, Dropdown, Menu, Space } from 'antd';
