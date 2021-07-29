@@ -1,227 +1,295 @@
-import React, {
-  createContext,
-  useContext,
-  useEffect,
-  useRef,
-  useState,
-} from 'react';
 import {
-  useFieldSchema,
-  Schema,
   observer,
   RecursionField,
+  Schema,
   useField,
   useForm,
-  FormProvider,
-  createSchemaField,
-  SchemaOptionsContext,
 } from '@formily/react';
-import {
-  Button,
-  Pagination,
-  PaginationProps,
-  Space,
-  Spin,
-  Table as AntdTable,
-  Dropdown,
-  Menu,
-  Select,
-  Switch,
-} from 'antd';
-import { cloneDeep, findIndex, get, set } from 'lodash';
-import constate from 'constate';
+import { Pagination, Table as AntdTable } from 'antd';
+import { findIndex, forIn, range, set } from 'lodash';
+import React, { Fragment, useEffect, useState } from 'react';
+import { useContext } from 'react';
+import { createContext } from 'react';
+import { useDesignable, updateSchema, removeSchema, createSchema } from '..';
+import { uid } from '@formily/shared';
 import useRequest from '@ahooksjs/use-request';
-import { uid, clone } from '@formily/shared';
-import {
-  EllipsisOutlined,
-  MenuOutlined,
-  DragOutlined,
-  PlusOutlined,
-} from '@ant-design/icons';
-import {
-  SortableHandle,
-  SortableContainer,
-  SortableElement,
-} from 'react-sortable-hoc';
+import { BaseResult } from '@ahooksjs/use-request/lib/types';
 import cls from 'classnames';
-import {
-  createSchema,
-  getSchemaPath,
-  removeSchema,
-  ResourceContextProvider,
-  updateSchema,
-  useCollectionContext,
-  useDesignable,
-  useResourceContext,
-  useSchemaPath,
-  VisibleContext,
-} from '../';
+import { MenuOutlined, DragOutlined } from '@ant-design/icons';
+import { DndContext } from '@dnd-kit/core';
+import { SortableContext, useSortable } from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
+import { Select, Dropdown, Menu, Switch, Button, Space } from 'antd';
+import { PlusOutlined } from '@ant-design/icons';
 import './style.less';
+import { getSchemaPath } from '../../components/schema-renderer';
+import { options } from '../database-field/interfaces';
 import { DraggableBlockContext } from '../../components/drag-and-drop';
 import AddNew from '../add-new';
 import { isGridRowOrCol } from '../grid';
-import { options } from '../database-field/interfaces';
 import { Resource } from '../../resource';
-import { DisplayFieldsContextProvider, useDisplayFieldsContext } from '../form';
+import {
+  CollectionProvider,
+  DisplayedMapProvider,
+  useCollectionContext,
+  useDisplayedMapContext,
+} from '../../constate';
 
-interface TableRowProps {
+const SyntheticListenerMapContext = createContext(null);
+
+function DragableBodyRow(props: any) {
+  const {
+    className,
+    style: prevStyle,
+    ['data-row-key']: dataRowKey,
+    ...others
+  } = props;
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    overIndex,
+    transform,
+    transition,
+  } = useSortable({ id: dataRowKey });
+
+  const style = {
+    ...prevStyle,
+    transform: CSS.Transform.toString(transform),
+    transition,
+  };
+
+  return (
+    <SyntheticListenerMapContext.Provider value={listeners}>
+      <tr
+        className={cls(className)}
+        ref={setNodeRef}
+        {...others}
+        {...attributes}
+        style={style}
+      >
+        {props.children}
+      </tr>
+    </SyntheticListenerMapContext.Provider>
+  );
+}
+
+export interface ITableContext {
+  props: any;
+  field: Formily.Core.Models.ArrayField;
+  schema: Schema;
+  service: BaseResult<any, any>;
+  selectedRowKeys?: any;
+  setSelectedRowKeys?: any;
+  pagination?: any;
+  setPagination?: any;
+  refresh?: any;
+  resource?: Resource;
+}
+
+export interface ITableRowContext {
   index: number;
-  data: any;
+  record: any;
 }
 
-const SortableRow = SortableElement((props: any) => <tr {...props} />);
-const SortableBody = SortableContainer((props: any) => <tbody {...props} />);
+const TableConetxt = createContext<ITableContext>(null);
+const TableRowContext = createContext<ITableRowContext>(null);
+const CollectionFieldContext = createContext(null);
 
-const TableRowContext = createContext<TableRowProps>(null);
+const useTable = () => {
+  return useContext(TableConetxt);
+};
 
-function usePaginationProps() {
-  const schema = useFieldSchema();
+const useTableRow = () => {
+  return useContext(TableRowContext);
+};
 
-  function findPagination(schema: Schema): Schema[] {
-    return schema.reduceProperties((columns, current) => {
-      if (current['x-component'] === 'Table.Pagination') {
-        return [...columns, current];
+function useTableFilterAction() {
+  const {
+    field,
+    service,
+    refresh,
+    props: { refreshRequestOnChange },
+  } = useTable();
+  return {
+    async run() {
+      if (refreshRequestOnChange) {
+        return service.refresh();
       }
-      return [...columns, ...findPagination(current)];
-    }, []);
-  }
-
-  const pagination = findPagination(schema).shift();
-
-  if (pagination) {
-    // console.log({ pagination });
-    const props = pagination['x-component-props'] || {};
-    return { defaultCurrent: 1, defaultPageSize: 10, ...props };
-  }
-
-  return false;
+    },
+  };
 }
 
-function useDefaultAction() {
-  const schema = useFieldSchema();
-
-  function findDefaultAction(schema: Schema): Schema[] {
-    return schema.reduceProperties((columns, current) => {
-      if (current['x-default-action']) {
-        return [...columns, current];
+function useTableCreateAction() {
+  const {
+    field,
+    service,
+    resource,
+    refresh,
+    props: { refreshRequestOnChange },
+  } = useTable();
+  const form = useForm();
+  return {
+    async run() {
+      if (refreshRequestOnChange) {
+        await resource.create(form.values);
+        await form.reset();
+        return service.refresh();
       }
-      return [...columns, ...findDefaultAction(current)];
-    }, []);
-  }
-
-  return findDefaultAction(schema).shift();
+      field.unshift(form.values);
+    },
+  };
 }
 
-function useTableActionBars() {
-  const schema = useFieldSchema();
+const useTableUpdateAction = () => {
+  const {
+    resource,
+    field,
+    service,
+    refresh,
+    props: { refreshRequestOnChange, rowKey },
+  } = useTable();
+  const ctx = useContext(TableRowContext);
+  const form = useForm();
 
-  function findActionBars(schema: Schema) {
-    const actionBars = {
-      top: [],
-      bottom: [],
-    };
-    return schema.reduceProperties((bars, current) => {
-      if (current['x-component'] === 'Table.ActionBar') {
-        const align = current['x-component-props']?.['align'] || 'top';
-        bars[align].push(current);
-
-        return bars;
+  return {
+    async run() {
+      if (refreshRequestOnChange) {
+        await resource.save(form.values, {
+          resourceKey: ctx.record[rowKey],
+        });
+        return service.refresh();
       }
+      field.value[ctx.index] = form.values;
+      // refresh();
+    },
+  };
+};
 
-      const nested = findActionBars(current);
-
-      Object.keys(nested).forEach((align) => {
-        bars[align].push(...nested[align]);
-      });
-
-      return bars;
-    }, actionBars);
-  }
-
-  return findActionBars(schema);
-}
-
-const ResourceFieldContext = createContext(null);
-
-function useTableColumns(props?: any) {
-  const { schema, designable } = useDesignable();
-  // const schema = useFieldSchema();
-  const { dataSource, rowKey = 'id' } = props || {};
-  const { resource = {} } = useResourceContext();
-
-  function findColumns(schema: Schema): Schema[] {
-    return schema.reduceProperties((columns, current) => {
-      if (current['x-component'] === 'Table.Column') {
-        return [...columns, current];
+const useTableDestroyAction = () => {
+  const {
+    resource,
+    field,
+    service,
+    selectedRowKeys,
+    setSelectedRowKeys,
+    refresh,
+    props: { refreshRequestOnChange, rowKey },
+  } = useTable();
+  const ctx = useContext(TableRowContext);
+  return {
+    async run() {
+      if (refreshRequestOnChange) {
+        const rowKeys = selectedRowKeys || [];
+        if (ctx) {
+          rowKeys.push(ctx.record[rowKey]);
+        }
+        await resource.destroy({
+          [`${rowKey}.in`]: rowKeys,
+        });
+        setSelectedRowKeys([]);
+        return service.refresh();
       }
-      return [...columns, ...findColumns(current)];
-    }, []);
+      if (ctx) {
+        console.log('ctx.index', ctx.index);
+        field.remove(ctx.index);
+        refresh();
+      }
+      const rowKeys = [...selectedRowKeys];
+      while (rowKeys.length) {
+        const key = rowKeys.shift();
+        const index = findIndex(field.value, (item) => item[rowKey] === key);
+        field.remove(index);
+      }
+      setSelectedRowKeys([]);
+      refresh();
+      return;
+    },
+  };
+};
+
+const useTableRowRecord = () => {
+  const ctx = useContext(TableRowContext);
+  return ctx.record;
+};
+
+const useTableIndex = () => {
+  const { pagination, props } = useTable();
+  const ctx = useContext(TableRowContext);
+  if (pagination && !props.clientSidePagination) {
+    const { pageSize, page } = pagination;
+    return ctx.index + (page - 1) * pageSize;
   }
+  return ctx.index;
+};
 
-  const columns = findColumns(schema).map((item) => {
-    const columnProps = item['x-component-props'] || {};
-    console.log(item);
-    const resourceField = columnProps.fieldName
-      ? resource?.fields?.find((item) => item.name === columnProps.fieldName)
-      : null;
+const useTableActionBars = () => {
+  const {
+    field,
+    schema,
+    props: { rowKey },
+  } = useTable();
 
-    return {
-      title: (
-        <ResourceFieldContext.Provider value={resourceField}>
-          <RecursionField name={item.name} schema={item} onlyRenderSelf />
-        </ResourceFieldContext.Provider>
-      ),
-      dataIndex: item.name,
-      ...columnProps,
-      render(value, record, recordIndex) {
-        const index = findIndex(
-          dataSource,
-          (item) => item[rowKey] === record[rowKey],
-        );
-        console.log({ dataSource, record, index });
-        return (
-          <ResourceFieldContext.Provider value={resourceField}>
-            <TableRowContext.Provider
-              value={{
-                index: index,
-                data: record,
-              }}
-            >
-              <Table.Cell schema={item} />
-            </TableRowContext.Provider>
-          </ResourceFieldContext.Provider>
-        );
+  const bars = schema.reduceProperties((bars, current) => {
+    if (current['x-component'] === 'Table.ActionBar') {
+      return [...bars, current];
+    }
+    return [...bars];
+  }, []);
+
+  return bars;
+};
+
+const useTableColumns = () => {
+  const {
+    field,
+    schema,
+    props: { rowKey },
+  } = useTable();
+
+  const { getField } = useCollectionContext();
+
+  const columns = schema.reduceProperties((columns, current) => {
+    if (current['x-component'] === 'Table.Column') {
+      return [...columns, current];
+    }
+    return [...columns];
+  }, []);
+
+  return columns
+    .map((column: Schema) => {
+      const columnProps = column['x-component-props'] || {};
+      const collectionField = getField(columnProps.fieldName);
+      return {
+        title: (
+          <CollectionFieldContext.Provider value={collectionField}>
+            <RecursionField name={column.name} schema={column} onlyRenderSelf />
+          </CollectionFieldContext.Provider>
+        ),
+        dataIndex: column.name,
+        ...columnProps,
+        render: (_: any, record: any) => {
+          const index = findIndex(
+            field.value,
+            (item) => item[rowKey] === record[rowKey],
+          );
+          return (
+            <CollectionFieldContext.Provider value={collectionField}>
+              <TableRowContext.Provider value={{ index, record }}>
+                <Table.Cell schema={column} />
+              </TableRowContext.Provider>
+            </CollectionFieldContext.Provider>
+          );
+        },
+      };
+    })
+    .concat([
+      {
+        title: <AddColumn />,
+        dataIndex: 'addnew',
       },
-    };
-  });
-
-  // columns.unshift({
-  //   title: '',
-  //   className: 'nb-table-operation',
-  //   dataIndex: 'operation',
-  //   render(value, record, recordIndex) {
-  //     const index = dataSource.indexOf(record);
-  //     return (
-  //       <TableRowContext.Provider
-  //         value={{
-  //           index: index,
-  //           data: record,
-  //         }}
-  //       >
-  //         <Table.Operation />
-  //       </TableRowContext.Provider>
-  //     );
-  //   },
-  // });
-
-  designable &&
-    columns.push({
-      title: <AddColumn />,
-      dataIndex: 'addnew',
-    });
-
-  return columns;
-}
+    ]);
+};
 
 function SwitchField(props) {
   const { field, onChange } = props;
@@ -252,9 +320,8 @@ function SwitchField(props) {
 function AddColumn() {
   const [visible, setVisible] = useState(false);
   const { appendChild, remove } = useDesignable();
-  const { resource = {}, refresh } = useResourceContext();
-  const { hasDisplayField, removeDisplayField, getDisplayField } =
-    useDisplayFieldsContext();
+  const { fields } = useCollectionContext();
+  const displayed = useDisplayedMapContext();
 
   return (
     <Dropdown
@@ -264,10 +331,10 @@ function AddColumn() {
       overlay={
         <Menu>
           <Menu.ItemGroup className={'display-fields'} title={'要展示的字段'}>
-            {resource?.fields?.map((field) => (
+            {fields.map((field) => (
               <Menu.Item style={{ minWidth: 150 }}>
                 <SwitchField
-                  checked={hasDisplayField(field.name)}
+                  checked={displayed.has(field.name)}
                   field={field}
                   onChange={async (checked) => {
                     if (checked) {
@@ -281,11 +348,11 @@ function AddColumn() {
                       });
                       await createSchema(data);
                     } else {
-                      const s: any = getDisplayField(field.name);
+                      const s: any = displayed.get(field.name);
                       const p = getSchemaPath(s);
                       const removed = remove(p);
                       await removeSchema(removed);
-                      removeDisplayField(field.name);
+                      displayed.remove(field.name);
                     }
                   }}
                 />
@@ -319,504 +386,224 @@ function AddColumn() {
   );
 }
 
-export function useTableRow() {
-  const ctx = useContext(TableRowContext);
-  console.log('useTableRow', ctx.data);
-  return ctx.data;
-}
-
-export function useTableIndex() {
+const useDataSource = () => {
   const {
-    params: { page, pageSize },
-  } = useTableContext();
-  const ctx = useContext(TableRowContext);
-  const field = useField();
-  if (!field.componentProps.isRemoteDataSource) {
-    return ctx.index;
-  }
-  return pageSize ? ctx.index + (page - 1) * pageSize : ctx.index;
-}
-
-export function useTableDestroyAction() {
-  const ctx = useContext(TableRowContext);
-  const { resource, field, selectedRowKeys, setSelectedRowKeys, refresh } =
-    useTableContext();
-  const rowKey = field.componentProps.rowKey || 'id';
-
-  return {
-    async run() {
-      if (ctx && typeof ctx.index !== 'undefined') {
-        // field.remove(ctx.index);
-        await resource.destroy({
-          [rowKey]: ctx.data[rowKey],
-        });
-        await refresh();
-        return;
-      }
-      if (!selectedRowKeys.length) {
-        return;
-      }
-      await resource.destroy({
-        [`${rowKey}.in`]: selectedRowKeys,
-      });
-      // while (selectedRowKeys.length) {
-      //   const key = selectedRowKeys.shift();
-      //   const index = findIndex(field.value, (item) => item[rowKey] === key);
-      //   field.remove(index);
-      // }
-      refresh();
-      setSelectedRowKeys([]);
-    },
-  };
-}
-
-export function useTableFilterAction() {
-  const { field, refresh, params } = useTableContext();
-  const [, setVisible] = useContext(VisibleContext);
-  const form = useForm();
-  return {
-    async run() {
-      setVisible && setVisible(false);
-      refresh();
-    },
-  };
-}
-
-export function useTableCreateAction() {
-  const { resource, field, run: exec, params, refresh } = useTableContext();
-  const [, setVisible] = useContext(VisibleContext);
-  const form = useForm();
-  return {
-    async run() {
-      setVisible && setVisible(false);
-      await resource.save(form.values);
-      // await refresh();
-      // field.push({
-      //   key: uid(),
-      //   ...clone(form.values),
-      // });
-      form.reset();
-      exec({ ...params, page: 1 });
-    },
-  };
-}
-
-export function useTableUpdateAction() {
-  const { resource, field, refresh, params } = useTableContext();
-  const [, setVisible] = useContext(VisibleContext);
-  const ctx = useContext(TableRowContext);
-  const form = useForm();
-  return {
-    async run() {
-      setVisible && setVisible(false);
-      await resource.save(form.values, {
-        resourceKey: form.values[field.componentProps.rowKey || 'id'],
-      });
-      refresh();
-    },
-  };
-}
-
-const [TableContextProvider, useTableContext] = constate(() => {
-  const field = useField<Formily.Core.Models.ArrayField>();
-  const schema = useFieldSchema();
-  const defaultSelectedRowKeys = useContext(SelectedRowKeysContext);
-  const [selectedRowKeys, setSelectedRowKeys] = useState(
-    defaultSelectedRowKeys || [],
-  );
-  const resource = Resource.make(field.componentProps.resourceName);
-  console.log({ defaultSelectedRowKeys });
-  const pagination = usePaginationProps();
-  const response = useRequest<{
-    list: any[];
-    total: number;
-  }>((params = {}) => {
-    return new Promise((resolve) => {
-      resource.list({}).then((res) => {
-        field.setValue(res?.data || []);
-        resolve({
-          list: res?.data || [],
-          total: res?.meta?.count || res?.data?.length,
-        });
-        console.log(
-          'field.componentProps.resourceName',
-          field.componentProps.resourceName,
-          res,
-        );
-      });
-
-      return;
-
-      const dataSource = Array.isArray(field.value) ? field.value.slice() : [];
-      if (pagination) {
-        const {
-          page = pagination.defaultCurrent,
-          pageSize = pagination.defaultPageSize,
-        } = params;
-        const startIndex = (page - 1) * pageSize;
-        const endIndex = startIndex + pageSize - 1;
-        resolve({
-          list: dataSource.slice(startIndex, endIndex + 1),
-          total: dataSource.length,
-        });
-      } else {
-        resolve({
-          list: dataSource,
-          total: dataSource.length,
-        });
-      }
-    });
-  });
-  const params = {
-    page: pagination.defaultCurrent,
-    pageSize: pagination.defaultPageSize,
-    ...(response.params[0] || {}),
-  };
-  return {
-    resource,
-    ...response,
-    params,
+    pagination,
     field,
-    schema,
+    props: { clientSidePagination, dataRequest },
+  } = useTable();
+  let dataSource = field.value;
+  if (pagination && (clientSidePagination || !dataRequest)) {
+    const { page = 1, pageSize } = pagination;
+    const startIndex = (page - 1) * pageSize;
+    const endIndex = startIndex + pageSize - 1;
+    dataSource = field.value?.slice(startIndex, endIndex + 1);
+  }
+  return dataSource;
+};
+
+const TableMain = () => {
+  const {
     selectedRowKeys,
     setSelectedRowKeys,
-  };
-});
-
-export { TableContextProvider, useTableContext };
-
-export const SelectedRowKeysContext = createContext([]);
-
-const TableContainer = observer((props) => {
-  const { schema } = useDesignable();
-  const field = useField<Formily.Core.Models.ArrayField>();
-  // const schema = useFieldSchema();
+    service,
+    field,
+    props: { rowKey, dragSort, showIndex },
+  } = useTable();
+  const columns = useTableColumns();
+  const dataSource = useDataSource();
   const actionBars = useTableActionBars();
-  const { loading, data, refresh, selectedRowKeys, setSelectedRowKeys } =
-    useTableContext();
-  const rowKey = field.componentProps.rowKey || 'id';
-  const defaultAction = useDefaultAction();
-  const dataSource = Array.isArray(field.value) ? field.value.slice() : [];
-  const columns = useTableColumns({ dataSource });
-  const ref = useRef<HTMLDivElement>();
-  const addTdStyles = (node: HTMLElement) => {
-    const helper = document.body.querySelector(`.nb-table-sort-helper`);
-    if (helper) {
-      const tds = node.querySelectorAll('td');
-      requestAnimationFrame(() => {
-        helper.querySelectorAll('td').forEach((td, index) => {
-          if (tds[index]) {
-            td.style.width = getComputedStyle(tds[index]).width;
-          }
-        });
-      });
-    }
-  };
-  const dragSort = schema?.['x-component-props']?.['dragSort'];
-  const showIndex = schema?.['x-component-props']?.['showIndex'];
   return (
-    <div ref={ref} className={'nb-table'}>
-      {actionBars.top.map((actionBarSchema) => {
-        return (
-          <RecursionField
-            // onlyRenderProperties
-            schema={
-              new Schema({
-                type: 'object',
-                properties: {
-                  [actionBarSchema.name]: actionBarSchema,
-                },
-              })
-            }
-          />
-        );
-      })}
-      <AntdTable
-        pagination={false}
-        rowKey={rowKey}
-        loading={loading}
-        rowSelection={{
-          type: 'checkbox',
-          selectedRowKeys,
-          renderCell: (checked, record, _, originNode) => {
-            const index = findIndex(
-              dataSource,
-              (item) => item[rowKey] === record[rowKey],
-            );
-            return (
-              <TableRowContext.Provider
-                value={{
-                  index: index,
-                  data: record,
-                }}
-              >
-                <div
-                  className={cls('nb-table-selection', { dragSort, showIndex })}
-                >
-                  {dragSort && <Table.SortHandle />}
-                  {showIndex && <Table.Index />}
-                  {originNode}
-                  {/* <Table.Operation /> */}
-                </div>
-              </TableRowContext.Provider>
-            );
-          },
-          onChange: (keys) => {
-            console.log(keys);
-            setSelectedRowKeys(keys);
-          },
+    <div className={'nb-table'}>
+      <DndContext
+        onDragEnd={(event) => {
+          console.log({ event });
         }}
-        dataSource={data?.list}
-        columns={columns}
-        components={{
-          body: {
-            wrapper: (props: any) => (
-              <SortableBody
-                useDragHandle
-                lockAxis="y"
-                // disableAutoscroll
-                helperClass={`nb-table-sort-helper`}
-                helperContainer={() => {
-                  return ref.current?.querySelector('tbody');
-                }}
-                onSortStart={({ node }) => {
-                  addTdStyles(node);
-                }}
-                onSortEnd={({ oldIndex, newIndex }) => {
-                  field.move(oldIndex, newIndex);
-                  refresh();
-                }}
-                {...props}
-              />
-            ),
-            row: (props: any) => {
-              const index = findIndex(
-                field.value,
-                (item) => item[rowKey] === props['data-row-key'],
-              );
-              return <SortableRow index={index} {...props} />;
-            },
-          },
-        }}
-        onRow={(data) => {
-          const index = dataSource.indexOf(data);
-          return {
-            onClick(e) {
-              if (!defaultAction) {
-                return;
-              }
-              const el = e.target as HTMLElement;
-              if (!el.classList.contains('ant-table-cell')) {
-                return;
-              }
-              const btn = el.parentElement.querySelector<HTMLElement>(
-                `.name-${defaultAction.name}`,
-              );
-              btn && btn.click();
-            },
-          };
-        }}
-      />
-      {actionBars.bottom.map((actionBarSchema) => {
-        return (
-          <RecursionField
-            onlyRenderProperties
-            schema={
-              new Schema({
-                type: 'object',
-                properties: {
-                  [actionBarSchema.name]: actionBarSchema,
-                },
-              })
-            }
-          />
-        );
-      })}
-    </div>
-  );
-});
-
-export const Table: any = observer((props: any) => {
-  const { resourceName } = props;
-  return resourceName ? (
-    // @ts-ignore
-    <ResourceContextProvider resourceName={resourceName}>
-      <TableContextProvider>
-        <DisplayFieldsContextProvider>
-          <TableContainer />
-        </DisplayFieldsContextProvider>
-      </TableContextProvider>
-    </ResourceContextProvider>
-  ) : (
-    <TableContextProvider>
-      <DisplayFieldsContextProvider>
-        <TableContainer />
-      </DisplayFieldsContextProvider>
-    </TableContextProvider>
-  );
-});
-
-Table.useTableRow = useTableRow;
-Table.useTableIndex = useTableIndex;
-Table.useTableDestroyAction = useTableDestroyAction;
-Table.useTableFilterAction = useTableFilterAction;
-Table.useTableCreateAction = useTableCreateAction;
-Table.useTableUpdateAction = useTableUpdateAction;
-
-function Blank() {
-  return null;
-}
-
-function useDesignableBar() {
-  const schema = useFieldSchema();
-  const options = useContext(SchemaOptionsContext);
-  const DesignableBar = get(options.components, schema['x-designable-bar']);
-
-  return {
-    DesignableBar: DesignableBar || Blank,
-  };
-}
-
-Table.Cell = observer((props: any) => {
-  const ctx = useContext(TableRowContext);
-  const schema = props.schema;
-  const resourceField = useContext(ResourceFieldContext);
-  return (
-    <RecursionField
-      schema={
-        !resourceField
-          ? schema
-          : new Schema({
-              type: 'void',
-              properties: {
-                [resourceField.name]: {
-                  ...resourceField.uiSchema,
-                  title: undefined,
-                  'x-read-pretty': true,
-                  'x-decorator-props': {
-                    feedbackLayout: 'popover',
-                  },
-                  'x-decorator': 'FormilyFormItem',
-                },
-              },
-            })
-      }
-      name={ctx.index}
-      onlyRenderProperties
-    />
-  );
-  // const { fieldName } = props;
-  // const { schema } = useDesignable();
-  // const path = getSchemaPath(schema);
-  // const { addDisplayField } = useDisplayFieldsContext();
-  // const { resource = {} } = useResourceContext();
-  // useEffect(() => {
-  //   if (fieldName) {
-  //     addDisplayField && addDisplayField(fieldName);
-  //   }
-  // }, [fieldName]);
-  // if (!fieldName) {
-  //   return null;
-  // }
-  // const field = resource?.fields?.find((item) => item.name === fieldName);
-  // if (!field) {
-  //   return null;
-  // }
-  // const name = useContext(FormFieldUIDContext);
-  // const title = schema['title'] || field.uiSchema['title'];
-  // return (
-  //   <RecursionField
-  //     name={name}
-  //     schema={
-  //       new Schema({
-  //         'x-path': path,
-  //         type: 'void',
-  //         properties: {
-  //           [field.name]: {
-  //             ...field.uiSchema,
-  //             title,
-  //             'x-decorator': 'FormilyFormItem',
-  //           },
-  //         },
-  //       })
-  //     }
-  //   />
-  // );
-});
-
-Table.Column = observer((props: any) => {
-  const resourceField = useContext(ResourceFieldContext);
-  const { schema, DesignableBar } = useDesignable();
-  const { addDisplayField } = useDisplayFieldsContext();
-  useEffect(() => {
-    if (resourceField?.name) {
-      addDisplayField(resourceField.name, schema);
-    }
-  }, [resourceField, schema]);
-  return (
-    <div className={'nb-table-column'}>
-      {schema.title || resourceField?.uiSchema?.title}
-      <DesignableBar />
-    </div>
-  );
-});
-
-Table.Column.DesignableBar = () => {
-  const field = useField();
-  // const fieldSchema = useFieldSchema();
-  const { schema, remove, refresh, insertAfter } = useDesignable();
-  const [visible, setVisible] = useState(false);
-  const { removeDisplayField } = useDisplayFieldsContext();
-  return (
-    <div className={cls('designable-bar', { active: visible })}>
-      <span
-        onClick={(e) => {
-          e.stopPropagation();
-        }}
-        className={cls('designable-bar-actions', { active: visible })}
       >
-        <Dropdown
-          trigger={['click']}
-          visible={visible}
-          onVisibleChange={(visible) => {
-            setVisible(visible);
-          }}
-          overlay={
-            <Menu>
-              <Menu.Item
-                onClick={async (e) => {
-                  const title = uid();
-                  field.title = title;
-                  schema.title = title;
-                  refresh();
-                  await updateSchema({
-                    key: schema['key'],
-                    title: title,
-                  });
-                  setVisible(false);
-                }}
-              >
-                编辑列
-              </Menu.Item>
-              <Menu.Item
-                onClick={async () => {
-                  const s = remove();
-                  const fieldName = schema['x-component-props']?.['fieldName'];
-                  removeDisplayField(fieldName);
-                  await removeSchema(s);
-                }}
-              >
-                删除列
-              </Menu.Item>
-            </Menu>
-          }
-        >
-          <MenuOutlined />
-        </Dropdown>
-      </span>
+        {actionBars.map((actionBar) => (
+          <RecursionField
+            schema={
+              new Schema({
+                type: 'void',
+                properties: {
+                  [actionBar.name]: actionBar,
+                },
+              })
+            }
+          />
+        ))}
+        <SortableContext items={dataSource}>
+          <AntdTable
+            pagination={false}
+            onChange={(pagination) => {}}
+            loading={service?.loading}
+            rowKey={rowKey}
+            dataSource={dataSource}
+            columns={columns}
+            components={{
+              body: {
+                row: DragableBodyRow,
+              },
+            }}
+            rowSelection={{
+              type: 'checkbox',
+              selectedRowKeys,
+              onChange: (rowKeys) => {
+                setSelectedRowKeys(rowKeys);
+              },
+              renderCell: (checked, record, _, originNode) => {
+                const index = findIndex(
+                  field.value,
+                  (item) => item[rowKey] === record[rowKey],
+                );
+                return (
+                  <TableRowContext.Provider
+                    value={{
+                      index,
+                      record,
+                    }}
+                  >
+                    <div
+                      className={cls('nb-table-selection', {
+                        dragSort,
+                        showIndex,
+                      })}
+                    >
+                      {dragSort && <Table.SortHandle />}
+                      {showIndex && <Table.Index />}
+                      {originNode}
+                    </div>
+                  </TableRowContext.Provider>
+                );
+              },
+            }}
+          />
+        </SortableContext>
+      </DndContext>
+      <Table.Pagination />
     </div>
   );
 };
+
+const usePagination = (paginationProps?: any) => {
+  return useState(() => {
+    if (!paginationProps) {
+      return false;
+    }
+    return { page: 1, pageSize: 10, ...paginationProps };
+  });
+};
+
+export const Table: any = observer((props: any) => {
+  const { rowKey = 'id', dataRequest, ...others } = props;
+  const { schema } = useDesignable();
+  const field = useField<Formily.Core.Models.ArrayField>();
+  const [pagination, setPagination] = usePagination(props.pagination);
+  const [selectedRowKeys, setSelectedRowKeys] = useState<any>([]);
+  const [, refresh] = useState(uid());
+  const resource = Resource.make(props.resource);
+  const service = useRequest(
+    (params?: any) => {
+      if (!resource) {
+        return Promise.resolve({
+          list: field.value,
+          total: field?.value?.length,
+        });
+      }
+      return resource.list(params).then((res) => {
+        return {
+          list: res?.data || [],
+          total: res?.meta?.count || res?.data?.length,
+        };
+      });
+    },
+    {
+      onSuccess(data: any) {
+        field.setValue(data?.list || []);
+      },
+      defaultParams: [{ ...pagination }],
+    },
+  );
+  console.log('refresh', { pagination });
+  return (
+    <TableConetxt.Provider
+      value={{
+        resource,
+        refresh: () => {
+          const { page = 1, pageSize } = pagination;
+          const total = props.clientSidePagination
+            ? field?.value?.length
+            : service?.data?.total;
+          const maxPage = Math.ceil(total / pageSize);
+          if (page > maxPage) {
+            setPagination((prev) => ({ ...prev, page: maxPage }));
+          } else {
+            refresh(uid());
+          }
+        },
+        selectedRowKeys,
+        setSelectedRowKeys,
+        pagination,
+        setPagination,
+        service,
+        field,
+        schema,
+        props: { ...others, rowKey, dataRequest },
+      }}
+    >
+      <CollectionProvider collectionName={props.collectionName}>
+        <DisplayedMapProvider>
+          <TableMain />
+        </DisplayedMapProvider>
+      </CollectionProvider>
+    </TableConetxt.Provider>
+  );
+});
+
+const useTotal = () => {
+  const {
+    field,
+    service,
+    props: { clientSidePagination },
+  } = useTable();
+  return clientSidePagination ? field?.value?.length : service?.data?.total;
+};
+
+Table.Pagination = observer(() => {
+  const { field, service, pagination, setPagination, props } = useTable();
+  if (!pagination || Object.keys(pagination).length === 0) {
+    return null;
+  }
+  const { clientSidePagination } = props;
+  const total = useTotal();
+  const { page = 1 } = pagination;
+  return (
+    <div>
+      <Pagination
+        {...pagination}
+        showSizeChanger
+        current={page}
+        total={total}
+        onChange={(current, pageSize) => {
+          const page = pagination.pageSize !== pageSize ? 1 : current;
+          setPagination((prev) => ({
+            ...prev,
+            page,
+            pageSize,
+          }));
+          if (clientSidePagination) {
+            return;
+          }
+          service.run({
+            ...service.params,
+            page,
+            pageSize,
+          });
+        }}
+      />
+    </div>
+  );
+});
 
 function AddActionButton() {
   const [visible, setVisible] = useState(false);
@@ -857,7 +644,9 @@ function AddActionButton() {
         </Menu>
       }
     >
-      <Button type={'dashed'} icon={<PlusOutlined />}></Button>
+      <Button type={'dashed'} icon={<PlusOutlined />}>
+        配置操作
+      </Button>
     </Dropdown>
   );
 }
@@ -866,7 +655,7 @@ Table.ActionBar = observer((props: any) => {
   const { align = 'top' } = props;
   const { schema, designable } = useDesignable();
   const designableBar = schema['x-designable-bar'];
-  console.log('designableBar', designableBar);
+  console.log('Table.ActionBar', schema);
   return (
     <div className={cls('nb-action-bar', `align-${align}`)}>
       <Space>
@@ -877,171 +666,14 @@ Table.ActionBar = observer((props: any) => {
   );
 });
 
-Table.Pagination = observer((props) => {
-  const { data, params, run } = useTableContext();
-  return (
-    <Pagination
-      {...props}
-      defaultCurrent={1}
-      defaultPageSize={5}
-      current={params?.page}
-      pageSize={params?.pageSize}
-      total={data?.total}
-      onChange={(page, pageSize) => {
-        run({ page, pageSize });
-      }}
-    />
-  );
-});
-
-const SortHandle = SortableHandle((props: any) => {
-  return (
-    <MenuOutlined
-      {...props}
-      className={cls(`nb-table-sort-handle`, props.className)}
-      style={{ ...props.style }}
-    />
-  );
-}) as any;
-
-Table.SortHandle = observer((props) => {
-  return <SortHandle {...props} />;
-});
-
-Table.Operation = observer((props) => {
-  return <EllipsisOutlined />;
-});
-
-Table.Index = observer((props) => {
-  const index = useTableIndex();
-  return <span className={'nb-table-index'}>{index + 1}</span>;
-});
-
-Table.Addition = observer((props: any) => {
-  const { field, refresh } = useTableContext();
-  const current = useField();
-  return (
-    <Button
-      block
-      onClick={() => {
-        if (props.method === 'unshift') {
-          field.unshift({
-            key: uid(),
-          });
-        } else {
-          field.push({
-            key: uid(),
-          });
-        }
-        refresh();
-      }}
-    >
-      {current.title}
-    </Button>
-  );
-});
-
 Table.Action = () => null;
 
-Table.Action.SimpleDesignableBar = () => {
-  const field = useField();
-  const path = useSchemaPath();
-  const { schema, remove, refresh, insertAfter } = useDesignable();
-  const [visible, setVisible] = useState(false);
-  // console.log('Table.Action.DesignableBar', path, field.address.entire, { schema, field });
-  return (
-    <div className={cls('designable-bar', { active: visible })}>
-      <span
-        onClick={(e) => {
-          e.stopPropagation();
-        }}
-        className={cls('designable-bar-actions', { active: visible })}
-      >
-        <Dropdown
-          trigger={['click']}
-          visible={visible}
-          onVisibleChange={(visible) => {
-            setVisible(visible);
-          }}
-          overlay={
-            <Menu>
-              <Menu.Item
-                onClick={(e) => {
-                  schema.title = uid();
-                  refresh();
-                }}
-              >
-                修改名称和图标
-              </Menu.Item>
-              <Menu.Item>放置在右侧</Menu.Item>
-              <Menu.Divider />
-              <Menu.Item>删除</Menu.Item>
-            </Menu>
-          }
-        >
-          <MenuOutlined />
-        </Dropdown>
-      </span>
-    </div>
-  );
-};
-
-Table.Filter = observer((props) => {
-  return null;
-});
-
-Table.Filter.DesignableBar = () => {
-  const field = useField();
-  const path = useSchemaPath();
-  const { schema, remove, refresh, insertAfter } = useDesignable();
-  const [visible, setVisible] = useState(false);
-  // console.log('Table.Action.DesignableBar', path, field.address.entire, { schema, field });
-  return (
-    <div className={cls('designable-bar', { active: visible })}>
-      <span
-        onClick={(e) => {
-          e.stopPropagation();
-        }}
-        className={cls('designable-bar-actions', { active: visible })}
-      >
-        <Dropdown
-          trigger={['click']}
-          visible={visible}
-          onVisibleChange={(visible) => {
-            setVisible(visible);
-          }}
-          overlay={
-            <Menu>
-              <Menu.Item
-                onClick={(e) => {
-                  schema.title = uid();
-                  refresh();
-                }}
-              >
-                修改名称和图标
-              </Menu.Item>
-              <Menu.Item>自定义筛选字段</Menu.Item>
-              <Menu.Item>放置在右侧</Menu.Item>
-              <Menu.Divider />
-              <Menu.Item>删除</Menu.Item>
-            </Menu>
-          }
-        >
-          <MenuOutlined />
-        </Dropdown>
-      </span>
-    </div>
-  );
-};
-
 Table.Action.DesignableBar = () => {
-  const field = useField();
-  const path = useSchemaPath();
   const { schema, remove, refresh, insertAfter } = useDesignable();
   const [visible, setVisible] = useState(false);
   const isPopup = Object.keys(schema.properties || {}).length > 0;
   const inActionBar = schema.parent['x-component'] === 'Table.ActionBar';
-  // console.log('Table.Action.DesignableBar', path, field.address.entire, { schema, field });
+
   return (
     <div className={cls('designable-bar', { active: visible })}>
       <span
@@ -1101,6 +733,128 @@ Table.Action.DesignableBar = () => {
     </div>
   );
 };
+
+Table.Cell = observer((props: any) => {
+  const ctx = useContext(TableRowContext);
+  const schema = props.schema;
+  const collectionField = useContext(CollectionFieldContext);
+  return (
+    <RecursionField
+      schema={
+        !collectionField
+          ? schema
+          : new Schema({
+              type: 'void',
+              properties: {
+                [collectionField.name]: {
+                  ...collectionField.uiSchema,
+                  title: undefined,
+                  'x-read-pretty': true,
+                  'x-decorator-props': {
+                    feedbackLayout: 'popover',
+                  },
+                  'x-decorator': 'FormilyFormItem',
+                },
+              },
+            })
+      }
+      name={ctx.index}
+      onlyRenderProperties
+    />
+  );
+});
+
+Table.Column = observer((props: any) => {
+  const collectionField = useContext(CollectionFieldContext);
+  const { schema, DesignableBar } = useDesignable();
+  const displayed = useDisplayedMapContext();
+  useEffect(() => {
+    if (collectionField?.name) {
+      displayed.set(collectionField.name, schema);
+    }
+  }, [collectionField, schema]);
+  return (
+    <div className={'nb-table-column'}>
+      {schema.title || collectionField?.uiSchema?.title}
+      <DesignableBar />
+    </div>
+  );
+});
+
+Table.Column.DesignableBar = () => {
+  const field = useField();
+  // const fieldSchema = useFieldSchema();
+  const { schema, remove, refresh, insertAfter } = useDesignable();
+  const [visible, setVisible] = useState(false);
+  const displayed = useDisplayedMapContext();
+  return (
+    <div className={cls('designable-bar', { active: visible })}>
+      <span
+        onClick={(e) => {
+          e.stopPropagation();
+        }}
+        className={cls('designable-bar-actions', { active: visible })}
+      >
+        <Dropdown
+          trigger={['click']}
+          visible={visible}
+          onVisibleChange={(visible) => {
+            setVisible(visible);
+          }}
+          overlay={
+            <Menu>
+              <Menu.Item
+                onClick={async (e) => {
+                  const title = uid();
+                  field.title = title;
+                  schema.title = title;
+                  refresh();
+                  await updateSchema({
+                    key: schema['key'],
+                    title: title,
+                  });
+                  setVisible(false);
+                }}
+              >
+                编辑列
+              </Menu.Item>
+              <Menu.Item
+                onClick={async () => {
+                  const s = remove();
+                  const fieldName = schema['x-component-props']?.['fieldName'];
+                  displayed.remove(fieldName);
+                  await removeSchema(s);
+                }}
+              >
+                删除列
+              </Menu.Item>
+            </Menu>
+          }
+        >
+          <MenuOutlined />
+        </Dropdown>
+      </span>
+    </div>
+  );
+};
+
+Table.Index = observer(() => {
+  const index = useTableIndex();
+  return <span className={'nb-table-index'}>{index + 1}</span>;
+});
+
+Table.SortHandle = observer((props: any) => {
+  const listeners = useContext(SyntheticListenerMapContext);
+  const { className, ...others } = props;
+
+  return (
+    <MenuOutlined
+      {...listeners}
+      className={cls(`nb-table-sort-handle`, className)}
+      {...others}
+    />
+  );
+});
 
 Table.DesignableBar = observer((props) => {
   const field = useField();
@@ -1202,3 +956,10 @@ Table.DesignableBar = observer((props) => {
     </div>
   );
 });
+
+Table.useTableFilterAction = useTableFilterAction;
+Table.useTableCreateAction = useTableCreateAction;
+Table.useTableUpdateAction = useTableUpdateAction;
+Table.useTableDestroyAction = useTableDestroyAction;
+Table.useTableIndex = useTableIndex;
+Table.useTableRowRecord = useTableRowRecord;

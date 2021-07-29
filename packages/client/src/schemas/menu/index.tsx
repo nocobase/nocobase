@@ -50,24 +50,16 @@ import {
   DragOutlined,
 } from '@ant-design/icons';
 import { IconPicker } from '../../components/icon-picker';
-import {
-  createSchema,
-  removeSchema,
-  updateSchema,
-  useDefaultAction,
-  useVisible,
-  VisibleContext,
-} from '..';
+import { createSchema, removeSchema, updateSchema, useDefaultAction } from '..';
 import { useMount } from 'ahooks';
 import './style.less';
-import { Link } from 'react-router-dom';
 import { findPropertyByPath, getSchemaPath, useSchemaPath } from '../../';
-import { request } from '../';
 import { generateDefaultSchema } from './defaultSchemas';
 import _, { cloneDeep, get, isNull } from 'lodash';
 import { FormDialog, FormItem, FormLayout, Input } from '@formily/antd';
 import deepmerge from 'deepmerge';
 import { onFieldChange } from '@formily/core';
+import { VisibleContext } from '../../context';
 
 export const MenuModeContext = createContext(null);
 
@@ -101,11 +93,19 @@ const SideMenu = (props: any) => {
 };
 
 export const Menu: any = observer((props: any) => {
-  const { mode, onSelect, sideMenuRef, defaultSelectedKeys = [], ...others } = props;
+  const {
+    mode,
+    onSelect,
+    sideMenuRef,
+    defaultSelectedKeys = [],
+    ...others
+  } = props;
   const { designable, schema } = useDesignable();
   const fieldSchema = useFieldSchema();
   console.log('Menu.schema', schema, fieldSchema);
-  const [selectedKey, setSelectedKey] = useState(defaultSelectedKeys[0]||null);
+  const [selectedKey, setSelectedKey] = useState(
+    defaultSelectedKeys[0] || null,
+  );
   const ref = useRef();
   const path = useSchemaPath();
   const child = schema.properties && schema.properties[selectedKey];
@@ -170,7 +170,7 @@ export const Menu: any = observer((props: any) => {
               onSelect &&
                 onSelect({ ...info, keyPath, schema: selectedSchema });
             }}
-            defaultSelectedKeys={defaultSelectedKeys||[]}
+            defaultSelectedKeys={defaultSelectedKeys || []}
             selectedKey={selectedKey}
             sideMenuRef={sideMenuRef}
           />
@@ -237,7 +237,7 @@ Menu.Action = observer((props: any) => {
   const { icon, useAction = useDefaultAction, ...others } = props;
   const { schema, DesignableBar } = useDesignable();
   const field = useField();
-  const { visible, setVisible } = useVisible(field.address.entire);
+  const [visible, setVisible] = useState(false);
   const { run } = useAction();
   return (
     <VisibleContext.Provider value={[visible, setVisible]}>

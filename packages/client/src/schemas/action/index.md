@@ -281,7 +281,7 @@ const schema = {
     item1: {
       type: 'void',
       title: `操作1`,
-      'x-designable-bar': 'Menu.DesignableBar',
+      'x-designable-bar': 'Action.DesignableBar',
       'x-component': 'Menu.Action',
       properties: {
         modal1: {
@@ -291,7 +291,17 @@ const schema = {
           properties: {
             input: {
               type: 'string',
+              title: '输入框',
+              'x-decorator': 'FormItem',
               'x-component': 'Input',
+              'x-designable-bar': 'Input.DesignableBar',
+            },
+            grid: {
+              type: 'void',
+              'x-component': 'Grid',
+              'x-component-props': {
+                addNewComponent: 'AddNew.FormItem',
+              },
             },
           },
         },

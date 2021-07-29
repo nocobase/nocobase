@@ -17,7 +17,6 @@ import {
   SchemaField,
   useDesignable,
   removeSchema,
-  useCollectionContext,
   updateSchema,
 } from '../';
 import get from 'lodash/get';
@@ -33,7 +32,8 @@ import constate from 'constate';
 import { useEffect } from 'react';
 import { uid } from '@formily/shared';
 import { getSchemaPath } from '../../components/schema-renderer';
-import { FormFieldUIDContext, useDisplayFieldsContext } from '.';
+import { RandomNameContext } from '.';
+import { useDisplayedMapContext } from '../../constate';
 
 export const FieldDesignableBar = observer((props) => {
   const field = useField();
@@ -41,8 +41,8 @@ export const FieldDesignableBar = observer((props) => {
   const { designable, schema, deepRemove } = useDesignable();
   const [visible, setVisible] = useState(false);
   const { dragRef } = useContext(DraggableBlockContext);
-  const fieldUid = useContext(FormFieldUIDContext);
-  const { removeDisplayField } = useDisplayFieldsContext();
+  const randomName = useContext(RandomNameContext);
+  const displayed = useDisplayedMapContext();
   const fieldName = schema['x-component-props']?.['fieldName'];
   if (!designable) {
     return null;
@@ -71,13 +71,13 @@ export const FieldDesignableBar = observer((props) => {
                   onClick={async () => {
                     const title = uid();
                     field
-                      .query(field.address.concat(fieldUid, fieldName))
+                      .query(field.address.concat(randomName, fieldName))
                       .take((f) => {
                         f.title = title;
                       });
                     console.log(
                       'fieldfieldfieldfieldfield',
-                      field.address.concat(fieldUid, fieldName).entire,
+                      field.address.concat(randomName, fieldName).entire,
                       schema,
                     );
                     schema['title'] = title;
@@ -98,7 +98,7 @@ export const FieldDesignableBar = observer((props) => {
                       schema['x-component-props']?.['fieldName'];
                     console.log({ schema, removed, fieldName });
                     const last = removed.pop();
-                    removeDisplayField(fieldName);
+                    displayed.remove(fieldName);
                     if (isGridRowOrCol(last)) {
                       await removeSchema(last);
                     }

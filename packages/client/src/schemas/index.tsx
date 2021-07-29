@@ -10,51 +10,6 @@ import { useCookieState, useRequest } from 'ahooks';
 
 export * from '../components/schema-renderer';
 
-export function mapReadPretty(component: any, readPrettyProps?: any) {
-  return function (target) {
-    return observer(
-      (props) => {
-        const field = useField();
-        // if (!isVoidField(field) && field?.pattern === 'readPretty') {
-        if (field?.pattern === 'readPretty') {
-          return React.createElement(component, {
-            ...readPrettyProps,
-            ...props,
-          });
-        }
-        return React.createElement(target, props);
-      },
-      {
-        forwardRef: true,
-      },
-    );
-  };
-}
-
-export const VisibleContext = createContext(null);
-
-export function useVisible(name, defaultValue = false) {
-  const [visible, setVisible] = useState(defaultValue);
-  return { visible, setVisible };
-  // const [visible, setVisible] = useCookieState(`${name}-visible`, {
-  //   defaultValue: defaultValue ? 'true' : null,
-  // });
-  // return {
-  //   visible: visible === 'true' ? true : false,
-  //   setVisible: (value) => {
-  //     setVisible(value ? 'true' : null);
-  //   },
-  // }
-}
-
-export const DesignableBarContext = createContext(null);
-
-const [PageTitleContextProvider, usePageTitleContext] = constate(({ defaultPageTitle }) => {
-  return useState(defaultPageTitle);
-});
-
-export { PageTitleContextProvider, usePageTitleContext };
-
 export function useDefaultAction() {
   return {
     async run() {},
@@ -93,6 +48,9 @@ export async function deleteCollection(name) {
 }
 
 export async function createSchema(schema: ISchema) {
+  if (!schema) {
+    return;
+  }
   if (!schema['key']) {
     return;
   }
@@ -125,36 +83,3 @@ export async function removeSchema(schema: ISchema) {
     },
   });
 }
-
-const [CollectionContextProvider, useCollectionContext] = constate(() => {
-  return useRequest('collections:findAll', {
-    formatResult: (result) => result?.data,
-  });
-});
-
-export { CollectionContextProvider, useCollectionContext };
-
-const [SwithDesignableContextProvider, useSwithDesignableContext] = constate(() => {
-  const [active, setActive] = useCookieState('useCookieDesignable');
-
-  return {
-    designable: active === 'true',
-    setDesignable(value) {
-      setActive(value ? 'true' : 'false');
-    }
-  }
-});
-
-export { SwithDesignableContextProvider, useSwithDesignableContext };
-
-const [ResourceContextProvider, useResourceContext] = constate(
-  ({ resourceName }) => {
-    // const schema = useFieldSchema();
-    const { data: collections = [], loading, refresh } = useCollectionContext();
-    const resource = collections.find((item) => item.name === resourceName);
-    console.log({ resource });
-    return { resource, refresh };
-  },
-);
-
-export { ResourceContextProvider, useResourceContext };

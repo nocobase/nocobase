@@ -17,26 +17,24 @@ import {
   useHistory,
   Redirect,
 } from 'react-router-dom';
-import {
-  CollectionContextProvider,
-  PageTitleContextProvider,
-  SchemaRenderer,
-  SwithDesignableContextProvider,
-  usePageTitleContext,
-  useSwithDesignableContext,
-} from '../../schemas';
+import { SchemaRenderer } from '../../schemas';
 import { useRequest } from 'ahooks';
 import './style.less';
 
-import { uid } from '@formily/shared';
 import { ISchema, Schema } from '@formily/react';
 import Database from './datatable';
 import { HighlightOutlined } from '@ant-design/icons';
-import { useCookieState } from 'ahooks';
 import cls from 'classnames';
+import {
+  DesignableSwitchProvider,
+  useDesignableSwitchContext,
+  PageTitleProvider,
+  usePageTitleContext,
+  CollectionsProvider,
+} from '../../constate';
 
 function DesignableToggle() {
-  const { designable, setDesignable } = useSwithDesignableContext();
+  const { designable, setDesignable } = useDesignableSwitchContext();
   return (
     <Button
       className={cls('nb-designable-toggle', { active: designable })}
@@ -78,7 +76,7 @@ function LayoutWithMenu(props: LayoutWithMenuProps) {
       }
     }
   };
-  
+
   return (
     <Layout>
       <Layout.Header style={{ display: 'flex' }}>
@@ -147,11 +145,11 @@ export function AdminLayout({ route }: any) {
       }
       return [...items, ...findProperties(current)];
     }, []);
-  }
+  };
   const current = findProperties(new Schema(data)).shift();
   const defaultSelectedKeys = [current?.name];
   let parent = current?.parent;
-  while(parent) {
+  while (parent) {
     if (parent['x-component'] === 'Menu') {
       break;
     }
@@ -162,14 +160,17 @@ export function AdminLayout({ route }: any) {
   console.log('current?.title', current, current?.title, defaultSelectedKeys);
 
   return (
-    <SwithDesignableContextProvider>
-      <CollectionContextProvider>
-        {/* @ts-ignore */}
-        <PageTitleContextProvider defaultPageTitle={current?.title}>
-          <LayoutWithMenu defaultSelectedKeys={defaultSelectedKeys} current={current} schema={data} />
-        </PageTitleContextProvider>
-      </CollectionContextProvider>
-    </SwithDesignableContextProvider>
+    <DesignableSwitchProvider>
+      <CollectionsProvider>
+        <PageTitleProvider defaultPageTitle={current?.title}>
+          <LayoutWithMenu
+            defaultSelectedKeys={defaultSelectedKeys}
+            current={current}
+            schema={data}
+          />
+        </PageTitleProvider>
+      </CollectionsProvider>
+    </DesignableSwitchProvider>
   );
 }
 
