@@ -1,11 +1,13 @@
 import {
+  FormProvider,
+  ISchema,
   observer,
   RecursionField,
   Schema,
   useField,
   useForm,
 } from '@formily/react';
-import { Pagination, Table as AntdTable } from 'antd';
+import { Pagination, Popover, Table as AntdTable } from 'antd';
 import { findIndex, forIn, range, set } from 'lodash';
 import React, { Fragment, useEffect, useState } from 'react';
 import { useContext } from 'react';
@@ -22,8 +24,12 @@ import { CSS } from '@dnd-kit/utilities';
 import { Select, Dropdown, Menu, Switch, Button, Space } from 'antd';
 import { PlusOutlined } from '@ant-design/icons';
 import './style.less';
-import { getSchemaPath } from '../../components/schema-renderer';
-import { options } from '../database-field/interfaces';
+import {
+  getSchemaPath,
+  SchemaField,
+  SchemaRenderer,
+} from '../../components/schema-renderer';
+import { interfaces, options } from '../database-field/interfaces';
 import { DraggableBlockContext } from '../../components/drag-and-drop';
 import AddNew from '../add-new';
 import { isGridRowOrCol } from '../grid';
@@ -35,6 +41,9 @@ import {
   useDisplayedMapContext,
 } from '../../constate';
 import { useResource as useGeneralResource } from '../../hooks/useResource';
+import SwitchMenuItem from '../../components/SwitchMenuItem';
+import { useMemo } from 'react';
+import { createForm } from '@formily/core';
 
 const SyntheticListenerMapContext = createContext(null);
 
@@ -247,6 +256,7 @@ const useTableColumns = () => {
     schema,
     props: { rowKey },
   } = useTable();
+  const { designable } = useDesignable();
 
   const { getField } = useCollectionContext();
 
@@ -284,39 +294,17 @@ const useTableColumns = () => {
         },
       };
     })
-    .concat([
-      {
-        title: <AddColumn />,
-        dataIndex: 'addnew',
-      },
-    ]);
+    .concat(
+      designable
+        ? [
+            {
+              title: <AddColumn />,
+              dataIndex: 'addnew',
+            },
+          ]
+        : [],
+    );
 };
-
-function SwitchField(props) {
-  const { field, onChange } = props;
-  const [checked, setChecked] = useState(props.checked);
-  useEffect(() => {
-    setChecked(props.checked);
-  }, [props.checked]);
-  return (
-    <div
-      style={{
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-      }}
-      onClick={async () => {
-        setChecked((checked) => {
-          onChange(!checked);
-          return !checked;
-        });
-      }}
-    >
-      <span>{field.uiSchema.title}</span>
-      <Switch checked={checked} size={'small'} />
-    </div>
-  );
-}
 
 function AddColumn() {
   const [visible, setVisible] = useState(false);
@@ -333,31 +321,29 @@ function AddColumn() {
         <Menu>
           <Menu.ItemGroup className={'display-fields'} title={'字段展示'}>
             {fields.map((field) => (
-              <Menu.Item style={{ minWidth: 150 }}>
-                <SwitchField
-                  checked={displayed.has(field.name)}
-                  field={field}
-                  onChange={async (checked) => {
-                    if (checked) {
-                      const data = appendChild({
-                        type: 'void',
-                        'x-component': 'Table.Column',
-                        'x-component-props': {
-                          fieldName: field.name,
-                        },
-                        'x-designable-bar': 'Table.Column.DesignableBar',
-                      });
-                      await createSchema(data);
-                    } else {
-                      const s: any = displayed.get(field.name);
-                      const p = getSchemaPath(s);
-                      const removed = remove(p);
-                      await removeSchema(removed);
-                      displayed.remove(field.name);
-                    }
-                  }}
-                />
-              </Menu.Item>
+              <SwitchMenuItem
+                title={field?.uiSchema?.title}
+                checked={displayed.has(field.name)}
+                onChange={async (checked) => {
+                  if (checked) {
+                    const data = appendChild({
+                      type: 'void',
+                      'x-component': 'Table.Column',
+                      'x-component-props': {
+                        fieldName: field.name,
+                      },
+                      'x-designable-bar': 'Table.Column.DesignableBar',
+                    });
+                    await createSchema(data);
+                  } else {
+                    const s: any = displayed.get(field.name);
+                    const p = getSchemaPath(s);
+                    const removed = remove(p);
+                    await removeSchema(removed);
+                    displayed.remove(field.name);
+                  }
+                }}
+              />
             ))}
           </Menu.ItemGroup>
           <Menu.Divider />
@@ -382,7 +368,9 @@ function AddColumn() {
         </Menu>
       }
     >
-      <Button size={'small'} type={'dashed'} icon={<PlusOutlined />}></Button>
+      <Button type={'dashed'} icon={<PlusOutlined />}>
+        配置字段
+      </Button>
     </Dropdown>
   );
 }
@@ -582,7 +570,7 @@ const useTotal = () => {
 };
 
 Table.Pagination = observer(() => {
-  const { field, service, pagination, setPagination, props } = useTable();
+  const { service, pagination, setPagination, props } = useTable();
   if (!pagination || Object.keys(pagination).length === 0) {
     return null;
   }
@@ -590,7 +578,7 @@ Table.Pagination = observer(() => {
   const total = useTotal();
   const { page = 1 } = pagination;
   return (
-    <div>
+    <div style={{ marginTop: 16 }}>
       <Pagination
         {...pagination}
         showSizeChanger
@@ -617,8 +605,90 @@ Table.Pagination = observer(() => {
   );
 });
 
+function generateActionSchema(type) {
+  const actions: { [key: string]: ISchema } = {
+    filter: {
+      key: uid(),
+      name: uid(),
+      type: 'void',
+      title: '筛选',
+      'x-align': 'left',
+      'x-decorator': 'AddNew.Displayed',
+      'x-decorator-props': {
+        displayName: 'filter',
+      },
+      'x-component': 'Table.Filter',
+      'x-designable-bar': 'Table.Filter.DesignableBar',
+      'x-component-props': {
+        fieldNames: [],
+      },
+    },
+    export: {},
+    create: {
+      key: uid(),
+      type: 'void',
+      name: uid(),
+      title: '新增',
+      'x-align': 'right',
+      'x-decorator': 'AddNew.Displayed',
+      'x-decorator-props': {
+        displayName: 'create',
+      },
+      'x-component': 'Action',
+      'x-component-props': {
+        type: 'primary',
+      },
+      'x-designable-bar': 'Table.Action.DesignableBar',
+      properties: {
+        modal: {
+          type: 'void',
+          title: '新增数据',
+          'x-decorator': 'Form',
+          'x-component': 'Action.Modal',
+          'x-component-props': {
+            useOkAction: '{{ Table.useTableCreateAction }}',
+          },
+          properties: {
+            [uid()]: {
+              type: 'void',
+              'x-component': 'Grid',
+              'x-component-props': {
+                addNewComponent: 'AddNew.FormItem',
+              },
+            },
+          },
+        },
+      },
+    },
+    destroy: {
+      key: uid(),
+      type: 'void',
+      name: uid(),
+      title: '删除',
+      'x-align': 'right',
+      'x-decorator': 'AddNew.Displayed',
+      'x-decorator-props': {
+        displayName: 'destroy',
+      },
+      'x-component': 'Action',
+      'x-designable-bar': 'Table.Action.DesignableBar',
+      'x-component-props': {
+        useAction: '{{ Table.useTableDestroyAction }}',
+      },
+    },
+    update: {},
+  };
+  return actions[type];
+}
+
 function AddActionButton() {
   const [visible, setVisible] = useState(false);
+  const displayed = useDisplayedMapContext();
+  const { appendChild, remove } = useDesignable();
+  const { schema, designable } = useDesignable();
+  if (!designable) {
+    return null;
+  }
   return (
     <Dropdown
       trigger={['click']}
@@ -626,25 +696,31 @@ function AddActionButton() {
       onVisibleChange={setVisible}
       overlay={
         <Menu>
-          <Menu.ItemGroup title={'要展示的操作'}>
+          <Menu.ItemGroup title={'操作展示'}>
             {[
-              { title: '筛选', key: 'filter' },
-              { title: '导出', key: 'export' },
-              { title: '新增', key: 'create' },
-              { title: '删除', key: 'destroy' },
+              { title: '筛选', name: 'filter' },
+              // { title: '导出', name: 'export' },
+              { title: '新增', name: 'create' },
+              { title: '删除', name: 'destroy' },
             ].map((item) => (
-              <Menu.Item style={{ minWidth: 150 }}>
-                <div
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'space-between',
-                  }}
-                >
-                  <span>{item.title}</span>
-                  <Switch size={'small'} defaultChecked />
-                </div>
-              </Menu.Item>
+              <SwitchMenuItem
+                key={item.name}
+                checked={displayed.has(item.name)}
+                title={item.title}
+                onChange={async (checked) => {
+                  if (!checked) {
+                    const s = displayed.get(item.name) as Schema;
+                    const path = getSchemaPath(s);
+                    displayed.remove(item.name);
+                    const removed = remove(path);
+                    await removeSchema(removed);
+                  } else {
+                    const s = generateActionSchema(item.name);
+                    const data = appendChild(s);
+                    await createSchema(data);
+                  }
+                }}
+              />
             ))}
           </Menu.ItemGroup>
           <Menu.Divider />
@@ -656,10 +732,26 @@ function AddActionButton() {
         </Menu>
       }
     >
-      <Button type={'dashed'} icon={<PlusOutlined />}>
+      <Button style={{ marginLeft: 8 }} type={'dashed'} icon={<PlusOutlined />}>
         配置操作
       </Button>
     </Dropdown>
+  );
+}
+
+function Actions(props: any) {
+  const { align = 'left' } = props;
+  const { schema, designable } = useDesignable();
+  return (
+    <Space>
+      {schema.mapProperties((s) => {
+        const currentAlign = s['x-align'] || 'left';
+        if (currentAlign !== align) {
+          return null;
+        }
+        return <RecursionField name={s.name} schema={s} />;
+      })}
+    </Space>
   );
 }
 
@@ -667,16 +759,205 @@ Table.ActionBar = observer((props: any) => {
   const { align = 'top' } = props;
   const { schema, designable } = useDesignable();
   const designableBar = schema['x-designable-bar'];
-  console.log('Table.ActionBar', schema);
+  console.log('Table.ActionBar', { schema });
   return (
-    <div className={cls('nb-action-bar', `align-${align}`)}>
-      <Space>
-        {props.children}
-        {designable && designableBar && <AddActionButton />}
-      </Space>
-    </div>
+    <DisplayedMapProvider>
+      <div className={cls('nb-action-bar', `align-${align}`)}>
+        <div>
+          <Actions align={'left'} />
+        </div>
+        <div style={{ marginLeft: 'auto' }}>
+          <Actions align={'right'} />
+        </div>
+        <AddActionButton />
+      </div>
+    </DisplayedMapProvider>
   );
 });
+
+Table.Filter = observer((props: any) => {
+  const { fieldNames = [] } = props;
+  const { schema, DesignableBar } = useDesignable();
+  const form = useMemo(() => createForm(), []);
+  const { fields = [] } = useCollectionContext();
+  const fields2properties = (fields: any[]) => {
+    const properties = {};
+    fields.forEach((field, index) => {
+      if (fieldNames?.length && !fieldNames.includes(field.name)) {
+        return;
+      }
+      const fieldOption = interfaces.get(field.interface);
+      if (!fieldOption.operations) {
+        return;
+      }
+      properties[`column${index}`] = {
+        type: 'void',
+        title: field?.uiSchema?.title,
+        'x-component': 'Filter.Column',
+        'x-component-props': {
+          operations: fieldOption.operations,
+        },
+        properties: {
+          [field.name]: {
+            ...field.uiSchema,
+            title: null,
+          },
+        },
+      };
+    });
+    return properties;
+  };
+  return (
+    <Popover
+      trigger={['click']}
+      placement={'bottomLeft'}
+      content={
+        <div>
+          <FormProvider form={form}>
+            <SchemaField
+              schema={{
+                type: 'object',
+                properties: {
+                  filter: {
+                    type: 'object',
+                    'x-component': 'Filter',
+                    properties: fields2properties(fields),
+                  },
+                },
+              }}
+            />
+          </FormProvider>
+        </div>
+      }
+    >
+      <Button>
+        {schema.title}
+        <DesignableBar />
+      </Button>
+    </Popover>
+  );
+});
+
+Table.Filter.DesignableBar = () => {
+  const { schema, remove, refresh, insertAfter } = useDesignable();
+  const [visible, setVisible] = useState(false);
+  const displayed = useDisplayedMapContext();
+  const { fields } = useCollectionContext();
+
+  return (
+    <div className={cls('designable-bar', { active: visible })}>
+      <span
+        onClick={(e) => {
+          e.stopPropagation();
+        }}
+        className={cls('designable-bar-actions', { active: visible })}
+      >
+        <Dropdown
+          trigger={['click']}
+          visible={visible}
+          onVisibleChange={(visible) => {
+            setVisible(visible);
+          }}
+          overlay={
+            <Menu>
+              <Menu.ItemGroup title={'筛选字段'}>
+                {fields
+                  .filter((field) => {
+                    const option = interfaces.get(field.interface);
+                    return option.operations?.length;
+                  })
+                  .map((field) => (
+                    <SwitchMenuItem
+                      title={field?.uiSchema?.title}
+                      checked={true}
+                      onChange={async (checked) => {}}
+                    />
+                  ))}
+              </Menu.ItemGroup>
+              <Menu.Divider />
+              <Menu.Item
+                onClick={(e) => {
+                  schema.title = uid();
+                  refresh();
+                }}
+              >
+                修改名称和图标
+              </Menu.Item>
+              <Menu.Divider />
+              <Menu.Item
+                onClick={async () => {
+                  const displayName =
+                    schema?.['x-decorator-props']?.['displayName'];
+                  const data = remove();
+                  await removeSchema(data);
+                  if (displayName) {
+                    displayed.remove(displayName);
+                  }
+                  setVisible(false);
+                }}
+              >
+                删除
+              </Menu.Item>
+            </Menu>
+          }
+        >
+          <MenuOutlined />
+        </Dropdown>
+      </span>
+    </div>
+  );
+};
+
+Table.OperationDesignableBar = () => {
+  const { schema, remove, refresh, insertAfter } = useDesignable();
+  const [visible, setVisible] = useState(false);
+  const isPopup = Object.keys(schema.properties || {}).length > 0;
+  const inActionBar = schema.parent['x-component'] === 'Table.ActionBar';
+
+  return (
+    <div className={cls('designable-bar', { active: visible })}>
+      <span
+        onClick={(e) => {
+          e.stopPropagation();
+        }}
+        className={cls('designable-bar-actions', { active: visible })}
+      >
+        <Dropdown
+          trigger={['click']}
+          visible={visible}
+          onVisibleChange={(visible) => {
+            setVisible(visible);
+          }}
+          overlay={
+            <Menu>
+              <Menu.ItemGroup title={'操作展示'}>
+                {[
+                  { title: '查看', name: 'view' },
+                  { title: '编辑', name: 'update' },
+                  { title: '删除', name: 'destroy' },
+                ].map((item) => (
+                  <SwitchMenuItem
+                    key={item.name}
+                    title={item.title}
+                    onChange={async (checked) => {}}
+                  />
+                ))}
+              </Menu.ItemGroup>
+              <Menu.Divider />
+              <Menu.SubMenu title={'自定义'}>
+                <Menu.Item style={{ minWidth: 120 }}>函数操作</Menu.Item>
+                <Menu.Item>弹窗表单</Menu.Item>
+                <Menu.Item>复杂弹窗</Menu.Item>
+              </Menu.SubMenu>
+            </Menu>
+          }
+        >
+          <MenuOutlined />
+        </Dropdown>
+      </span>
+    </div>
+  );
+};
 
 Table.Action = () => null;
 
@@ -685,7 +966,7 @@ Table.Action.DesignableBar = () => {
   const [visible, setVisible] = useState(false);
   const isPopup = Object.keys(schema.properties || {}).length > 0;
   const inActionBar = schema.parent['x-component'] === 'Table.ActionBar';
-
+  const displayed = useDisplayedMapContext();
   return (
     <div className={cls('designable-bar', { active: visible })}>
       <span
@@ -725,17 +1006,27 @@ Table.Action.DesignableBar = () => {
                   内打开
                 </Menu.Item>
               )}
-              {inActionBar ? (
-                <Menu.Item>放置在右侧</Menu.Item>
-              ) : (
+              {!inActionBar && (
                 <Menu.Item>
                   点击表格行时触发 &nbsp;&nbsp;
                   <Switch size={'small'} defaultChecked />
                 </Menu.Item>
               )}
-
               <Menu.Divider />
-              <Menu.Item>删除</Menu.Item>
+              <Menu.Item
+                onClick={async () => {
+                  const displayName =
+                    schema?.['x-decorator-props']?.['displayName'];
+                  const data = remove();
+                  await removeSchema(data);
+                  if (displayName) {
+                    displayed.remove(displayName);
+                  }
+                  setVisible(false);
+                }}
+              >
+                删除
+              </Menu.Item>
             </Menu>
           }
         >

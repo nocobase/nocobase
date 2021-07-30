@@ -69,6 +69,7 @@ import {
   useCollectionsContext,
   useDisplayedMapContext,
 } from '../../constate';
+import SwitchMenuItem from '../../components/SwitchMenuItem';
 
 const generateGridBlock = (schema: ISchema) => {
   const name = schema.name || uid();
@@ -149,6 +150,12 @@ function generateCardItemSchema(component) {
           properties: {
             [uid()]: {
               type: 'void',
+              title: '筛选',
+              'x-decorator': 'AddNew.Displayed',
+              'x-decorator-props': {
+                displayName: 'filter',
+              },
+              'x-align': 'left',
               'x-component': 'Table.Filter',
               'x-designable-bar': 'Table.Filter.DesignableBar',
               'x-component-props': {
@@ -159,6 +166,11 @@ function generateCardItemSchema(component) {
               type: 'void',
               name: 'action1',
               title: '新增',
+              'x-align': 'right',
+              'x-decorator': 'AddNew.Displayed',
+              'x-decorator-props': {
+                displayName: 'create',
+              },
               'x-component': 'Action',
               'x-designable-bar': 'Table.Action.DesignableBar',
               properties: {
@@ -186,6 +198,11 @@ function generateCardItemSchema(component) {
               type: 'void',
               name: 'action1',
               title: '删除',
+              'x-align': 'right',
+              'x-decorator': 'AddNew.Displayed',
+              'x-decorator-props': {
+                displayName: 'destroy',
+              },
               'x-component': 'Action',
               'x-designable-bar': 'Table.Action.DesignableBar',
               'x-component-props': {
@@ -201,6 +218,7 @@ function generateCardItemSchema(component) {
           'x-component-props': {
             className: 'nb-table-operation',
           },
+          'x-designable-bar': 'Table.OperationDesignableBar',
           properties: {
             [uid()]: {
               type: 'void',
@@ -578,32 +596,6 @@ AddNew.CardItem = observer((props: any) => {
   );
 });
 
-function SwitchField(props) {
-  const { field, onChange } = props;
-  const [checked, setChecked] = useState(props.checked);
-  useEffect(() => {
-    setChecked(props.checked);
-  }, [props.checked]);
-  return (
-    <div
-      style={{
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-      }}
-      onClick={async () => {
-        setChecked((checked) => {
-          onChange(!checked);
-          return !checked;
-        });
-      }}
-    >
-      <span>{field.uiSchema.title}</span>
-      <Switch checked={checked} size={'small'} />
-    </div>
-  );
-}
-
 AddNew.FormItem = observer((props: any) => {
   const { ghost, defaultAction } = props;
   const { schema, insertBefore, insertAfter, appendChild, deepRemove } =
@@ -624,57 +616,56 @@ AddNew.FormItem = observer((props: any) => {
         <Menu>
           <Menu.ItemGroup className={'display-fields'} title={`字段展示`}>
             {fields?.map((field) => (
-              <Menu.Item key={field.key}>
-                <SwitchField
-                  field={field}
-                  checked={displayed.has(field.name)}
-                  onChange={async (checked) => {
-                    if (!checked) {
-                      const s: any = displayed.get(field.name);
-                      const p = getSchemaPath(s);
-                      const removed = deepRemove(p);
-                      if (!removed) {
-                        console.log('getSchemaPath', p, removed);
-                        return;
-                      }
-                      const last = removed.pop();
-                      displayed.remove(field.name);
-                      if (isGridRowOrCol(last)) {
-                        await removeSchema(last);
-                      }
+              <SwitchMenuItem
+                key={field.key}
+                title={field?.uiSchema?.title}
+                checked={displayed.has(field.name)}
+                onChange={async (checked) => {
+                  if (!checked) {
+                    const s: any = displayed.get(field.name);
+                    const p = getSchemaPath(s);
+                    const removed = deepRemove(p);
+                    if (!removed) {
+                      console.log('getSchemaPath', p, removed);
                       return;
                     }
-                    let data: ISchema = {
-                      key: uid(),
-                      type: 'void',
-                      'x-decorator': 'Form.Field.Item',
-                      'x-designable-bar': 'Form.Field.DesignableBar',
-                      'x-component': 'Form.Field',
-                      'x-component-props': {
-                        fieldName: field.name,
-                      },
-                    };
-                    if (isGridBlock(schema)) {
-                      path.pop();
-                      path.pop();
-                      data = generateGridBlock(data);
-                    } else if (isGrid(schema)) {
-                      data = generateGridBlock(data);
+                    const last = removed.pop();
+                    displayed.remove(field.name);
+                    if (isGridRowOrCol(last)) {
+                      await removeSchema(last);
                     }
-                    if (data) {
-                      let s;
-                      if (isGrid(schema)) {
-                        s = appendChild(data, [...path]);
-                      } else if (defaultAction === 'insertAfter') {
-                        s = insertAfter(data, [...path]);
-                      } else {
-                        s = insertBefore(data, [...path]);
-                      }
-                      await createSchema(s);
+                    return;
+                  }
+                  let data: ISchema = {
+                    key: uid(),
+                    type: 'void',
+                    'x-decorator': 'Form.Field.Item',
+                    'x-designable-bar': 'Form.Field.DesignableBar',
+                    'x-component': 'Form.Field',
+                    'x-component-props': {
+                      fieldName: field.name,
+                    },
+                  };
+                  if (isGridBlock(schema)) {
+                    path.pop();
+                    path.pop();
+                    data = generateGridBlock(data);
+                  } else if (isGrid(schema)) {
+                    data = generateGridBlock(data);
+                  }
+                  if (data) {
+                    let s;
+                    if (isGrid(schema)) {
+                      s = appendChild(data, [...path]);
+                    } else if (defaultAction === 'insertAfter') {
+                      s = insertAfter(data, [...path]);
+                    } else {
+                      s = insertBefore(data, [...path]);
                     }
-                  }}
-                />
-              </Menu.Item>
+                    await createSchema(s);
+                  }
+                }}
+              />
             ))}
           </Menu.ItemGroup>
           <Menu.Divider />
@@ -966,6 +957,18 @@ AddNew.PaneItem = observer((props: any) => {
       )}
     </Dropdown>
   );
+});
+
+AddNew.Displayed = observer((props: any) => {
+  const { displayName, children } = props;
+  const displayed = useDisplayedMapContext();
+  const { schema } = useDesignable();
+  useEffect(() => {
+    if (displayName) {
+      displayed.set(displayName, schema);
+    }
+  }, [displayName, schema]);
+  return children;
 });
 
 export default AddNew;
