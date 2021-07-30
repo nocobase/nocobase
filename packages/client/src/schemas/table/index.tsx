@@ -34,6 +34,7 @@ import {
   useCollectionContext,
   useDisplayedMapContext,
 } from '../../constate';
+import { useResource as useGeneralResource } from '../../hooks/useResource';
 
 const SyntheticListenerMapContext = createContext(null);
 
@@ -330,7 +331,7 @@ function AddColumn() {
       onVisibleChange={setVisible}
       overlay={
         <Menu>
-          <Menu.ItemGroup className={'display-fields'} title={'要展示的字段'}>
+          <Menu.ItemGroup className={'display-fields'} title={'字段展示'}>
             {fields.map((field) => (
               <Menu.Item style={{ minWidth: 150 }}>
                 <SwitchField
@@ -494,14 +495,19 @@ const usePagination = (paginationProps?: any) => {
   });
 };
 
-export const Table: any = observer((props: any) => {
-  const { rowKey = 'id', dataRequest, ...others } = props;
+const TableProvider = (props: any) => {
+  const {
+    rowKey = 'id',
+    dataRequest,
+    useResource = useGeneralResource,
+    ...others
+  } = props;
   const { schema } = useDesignable();
   const field = useField<Formily.Core.Models.ArrayField>();
   const [pagination, setPagination] = usePagination(props.pagination);
   const [selectedRowKeys, setSelectedRowKeys] = useState<any>([]);
   const [, refresh] = useState(uid());
-  const resource = Resource.make(props.resource);
+  const { resource } = useResource();
   const service = useRequest(
     (params?: any) => {
       if (!resource) {
@@ -551,12 +557,18 @@ export const Table: any = observer((props: any) => {
         props: { ...others, rowKey, dataRequest },
       }}
     >
-      <CollectionProvider collectionName={props.collectionName}>
-        <DisplayedMapProvider>
-          <TableMain />
-        </DisplayedMapProvider>
-      </CollectionProvider>
+      <TableMain />
     </TableConetxt.Provider>
+  );
+};
+
+export const Table: any = observer((props: any) => {
+  return (
+    <CollectionProvider collectionName={props.collectionName}>
+      <DisplayedMapProvider>
+        <TableProvider {...props} />
+      </DisplayedMapProvider>
+    </CollectionProvider>
   );
 });
 
@@ -956,6 +968,28 @@ Table.DesignableBar = observer((props) => {
     </div>
   );
 });
+
+Table.useResource = ({ onSuccess }) => {
+  const { props } = useTable();
+  const { collection } = useCollectionContext();
+  const ctx = useContext(TableRowContext);
+  const resource = Resource.make({
+    resourceName: collection.name,
+    resourceKey: ctx.record[props.rowKey],
+  });
+  const { data, loading, run } = useRequest(
+    (params?: any) => {
+      console.log('Table.useResource', params);
+      return resource.get(params);
+    },
+    {
+      formatResult: (result) => result?.data,
+      onSuccess,
+      manual: true,
+    },
+  );
+  return { initialValues: data, loading, run, resource };
+};
 
 Table.useTableFilterAction = useTableFilterAction;
 Table.useTableCreateAction = useTableCreateAction;

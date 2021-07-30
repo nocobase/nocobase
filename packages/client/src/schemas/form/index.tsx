@@ -30,32 +30,43 @@ import { DesignableBar } from './DesignableBar';
 import { FieldDesignableBar } from './Field.DesignableBar';
 import { createContext } from 'react';
 import { BlockItem } from '../block-item';
-import { Resource } from '../../resource';
 import {
   CollectionProvider,
   useCollectionContext,
   DisplayedMapProvider,
   useDisplayedMapContext,
 } from '../../constate';
+import { useResource as useGeneralResource } from '../../hooks/useResource';
 
-export const Form: any = observer((props: any) => {
+const FormMain = (props: any) => {
   const {
-    useValues = () => ({}),
+    useResource = useGeneralResource,
     showDefaultButtons = false,
     ...others
   } = props;
   const { schema } = useDesignable();
-  const initialValues = useValues();
   const form = useMemo(() => {
     return createForm({
-      initialValues,
       readPretty: schema['x-read-pretty'],
     });
   }, []);
+  const { resource, run } = useResource({
+    onSuccess: (initialValues: any) => {
+      form.setInitialValues(initialValues);
+    },
+  });
   const path = useSchemaPath();
   const scope = useContext(SchemaExpressionScopeContext);
+  const displayed = useDisplayedMapContext();
   const { collection } = useCollectionContext();
-  const content = (
+  useEffect(() => {
+    const keys = [...displayed.map.keys()];
+    if (keys.length) {
+      run({ 'fields[appends]': keys });
+      console.log(displayed.map, 'displayed.map', collection?.name);
+    }
+  }, [displayed.map]);
+  return (
     <FormProvider form={form}>
       {schema['x-decorator'] === 'Form' ? (
         <SchemaField
@@ -89,7 +100,7 @@ export const Form: any = observer((props: any) => {
             onClick={async () => {
               const values = await form.submit();
               console.log({ values });
-              await Resource.make(props.resource).save(values);
+              await resource.save(values);
               message.success('保存成功');
               await form.reset();
             }}
@@ -108,11 +119,17 @@ export const Form: any = observer((props: any) => {
       )}
     </FormProvider>
   );
+};
+
+export const Form: any = observer((props: any) => {
+  const { collection } = useCollectionContext();
   return (
     <CollectionProvider
       collectionName={props.collectionName || collection?.name}
     >
-      <DisplayedMapProvider>{content}</DisplayedMapProvider>
+      <DisplayedMapProvider>
+        <FormMain {...props} />
+      </DisplayedMapProvider>
     </CollectionProvider>
   );
 });

@@ -82,7 +82,7 @@ Action.Modal = observer((props: any) => {
   return (
     <Modal
       title={schema.title}
-      // destroyOnClose
+      destroyOnClose
       maskClosable
       footer={
         isFormDecorator

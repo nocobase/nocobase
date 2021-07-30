@@ -64,7 +64,7 @@ group:
 
 ## API
 
-表格的几个重要概念
+表格的几个重要参数
 
 - collection 当前表格的数据表配置信息（主要是字段）
 - resource 当前资源，用于处理 create、update、list、destroy

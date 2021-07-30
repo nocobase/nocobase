@@ -17,7 +17,6 @@ import { useState } from 'react';
 import { useDesignable } from '../';
 import { createContext } from 'react';
 import { useContext } from 'react';
-import { SelectedRowKeysContext, useTableContext } from '../table';
 import { isEmpty } from 'lodash';
 import { isField } from '@formily/core';
 
@@ -312,7 +311,7 @@ Select.Drawer = connect(
           onClose={() => setVisible(false)}
           destroyOnClose
         >
-          <SelectedRowKeysContext.Provider value={selectedKeys}>
+          {/* <SelectedRowKeysContext.Provider value={selectedKeys}> */}
             <SelectContext.Provider
               value={{
                 onChange(selectValue) {
@@ -329,7 +328,7 @@ Select.Drawer = connect(
                 }}
               />
             </SelectContext.Provider>
-          </SelectedRowKeysContext.Provider>
+          {/* </SelectedRowKeysContext.Provider> */}
         </Drawer>
       </>
     );
@@ -390,11 +389,9 @@ Select.Options = observer((props) => {
 
 export function useSelect() {
   const { onChange } = useContext(SelectContext);
-  const { data, selectedRowKeys } = useTableContext();
   return {
     async run() {
-      console.log({ data, selectedRowKeys });
-      onChange && onChange(selectedRowKeys);
+      onChange && onChange([]);
     },
   };
 }

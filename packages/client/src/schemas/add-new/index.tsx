@@ -277,6 +277,7 @@ function generateCardItemSchema(component) {
                       title: '编辑数据',
                       'x-decorator': 'Form',
                       'x-decorator-props': {
+                        useResource: '{{ Table.useResource }}',
                         useValues: '{{ Table.useTableRowRecord }}',
                       },
                       'x-component': 'Action.Modal',
@@ -621,7 +622,7 @@ AddNew.FormItem = observer((props: any) => {
       }}
       overlay={
         <Menu>
-          <Menu.ItemGroup className={'display-fields'} title={`要展示的字段`}>
+          <Menu.ItemGroup className={'display-fields'} title={`字段展示`}>
             {fields?.map((field) => (
               <Menu.Item key={field.key}>
                 <SwitchField
@@ -819,6 +820,7 @@ AddNew.PaneItem = observer((props: any) => {
                   'x-component': 'Form',
                   'x-read-pretty': true,
                   'x-component-props': {
+                    useResource: '{{ Table.useResource }}',
                     useValues: '{{ Table.useTableRowRecord }}',
                   },
                   'x-designable-bar': 'Form.DesignableBar',
@@ -865,6 +867,7 @@ AddNew.PaneItem = observer((props: any) => {
                   'x-decorator': 'CardItem',
                   'x-component': 'Form',
                   'x-component-props': {
+                    useResource: '{{ Table.useResource }}',
                     useValues: '{{ Table.useTableRowRecord }}',
                     showDefaultButtons: true,
                   },
