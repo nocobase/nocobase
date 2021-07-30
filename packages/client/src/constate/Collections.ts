@@ -17,11 +17,11 @@ export interface CollectionProviderProps {
 const [CollectionProvider, useCollectionContext] = constate(
   (props: CollectionProviderProps) => {
     const { collectionName } = props;
-    const { data = [], loading, refresh } = useCollectionsContext();
+    const { collections = [], loading, refresh } = useCollectionsContext();
     let collection: any;
     let fields = [];
     if (collectionName) {
-      collection = data.find((item) => item.name === collectionName);
+      collection = collections.find((item) => item.name === collectionName);
     }
     if (collection) {
       fields = collection?.fields || [];

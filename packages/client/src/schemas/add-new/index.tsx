@@ -445,7 +445,7 @@ AddNew.CardItem = observer((props: any) => {
                 },
               });
               await createOrUpdateCollection(values);
-              refresh();
+              await refresh();
               data = generateCardItemSchema(
                 info.key === 'addNewTable' ? 'Table' : 'Form',
               );
