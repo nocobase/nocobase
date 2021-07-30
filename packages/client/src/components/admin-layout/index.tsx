@@ -31,6 +31,7 @@ import {
   PageTitleProvider,
   usePageTitleContext,
   CollectionsProvider,
+  useCollectionsContext,
 } from '../../constate';
 
 function DesignableToggle() {
@@ -106,6 +107,7 @@ function LayoutWithMenu(props: LayoutWithMenuProps) {
 }
 
 function Content({ activeKey }) {
+  const { loading: collectionsLoading } = useCollectionsContext();
   const { data = {}, loading } = useRequest(
     `ui_schemas:getTree?filter[parentKey]=${activeKey}`,
     {
@@ -114,7 +116,7 @@ function Content({ activeKey }) {
     },
   );
 
-  if (loading) {
+  if (loading || collectionsLoading) {
     return <Spin />;
   }
 
