@@ -512,7 +512,7 @@ AddNew.CardItem = observer((props: any) => {
                 key={view.key}
                 title={view.title}
               >
-                <Menu.ItemGroup key={`${view.key}-select`} title={'所属数据表'}>
+                <Menu.ItemGroup className={'display-fields'} key={`${view.key}-select`} title={'所属数据表'}>
                   {collections?.map((item) => (
                     <Menu.Item
                       style={{ minWidth: 150 }}

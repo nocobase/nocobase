@@ -107,16 +107,17 @@ function LayoutWithMenu(props: LayoutWithMenuProps) {
 }
 
 function Content({ activeKey }) {
-  const { loading: collectionsLoading } = useCollectionsContext();
-  const { data = {}, loading } = useRequest(
+  const { designable } = useDesignableSwitchContext();
+  const { collections } = useCollectionsContext();
+  const { data = {}, loading, run } = useRequest(
     `ui_schemas:getTree?filter[parentKey]=${activeKey}`,
     {
-      refreshDeps: [activeKey],
+      refreshDeps: [activeKey, collections, designable],
       formatResult: (result) => result?.data,
     },
   );
 
-  if (loading || collectionsLoading) {
+  if (loading) {
     return <Spin />;
   }
 
