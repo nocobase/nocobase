@@ -44,11 +44,18 @@ const schema = {
   properties: {
     tabs: {
       type: 'void',
+      'x-decorator': 'Card',
       'x-component': 'Tabs',
+      'x-designable-bar': 'Tabs.DesignableBar',
+      'x-component-props': {
+        // singleton: true,
+      },
       properties: {
         tab1: {
           type: 'void',
+          title: 'Tab1',
           'x-component': 'Tabs.TabPane',
+          'x-designable-bar': 'Tabs.TabPane.DesignableBar',
           'x-component-props': {
             tab: 'Tab1',
           },
@@ -64,7 +71,9 @@ const schema = {
         },
         tab2: {
           type: 'void',
+          title: 'Tab2',
           'x-component': 'Tabs.TabPane',
+          'x-designable-bar': 'Tabs.TabPane.DesignableBar',
           'x-component-props': {
             tab: 'Tab2',
           },

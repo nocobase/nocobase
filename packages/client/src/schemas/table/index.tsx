@@ -18,8 +18,12 @@ import useRequest from '@ahooksjs/use-request';
 import { BaseResult } from '@ahooksjs/use-request/lib/types';
 import cls from 'classnames';
 import { MenuOutlined, DragOutlined } from '@ant-design/icons';
-import { DndContext } from '@dnd-kit/core';
-import { SortableContext, useSortable } from '@dnd-kit/sortable';
+import { DndContext, DragOverlay } from '@dnd-kit/core';
+import {
+  SortableContext,
+  useSortable,
+  verticalListSortingStrategy,
+} from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { Select, Dropdown, Menu, Switch, Button, Space } from 'antd';
 import { PlusOutlined } from '@ant-design/icons';
@@ -44,6 +48,16 @@ import { useResource as useGeneralResource } from '../../hooks/useResource';
 import SwitchMenuItem from '../../components/SwitchMenuItem';
 import { useMemo } from 'react';
 import { createForm } from '@formily/core';
+import {
+  ColDraggableContext,
+  SortableBodyCell,
+  SortableBodyRow,
+  SortableColumn,
+  SortableHeaderCell,
+  SortableHeaderRow,
+  SortableRowHandle,
+} from './Sortable';
+import { DragHandle, SortableItem } from '../../components/Sortable';
 
 const SyntheticListenerMapContext = createContext(null);
 
@@ -272,7 +286,7 @@ const useTableColumns = () => {
       const columnProps = column['x-component-props'] || {};
       const collectionField = getField(columnProps.fieldName);
       return {
-        title: (
+        title: () => (
           <CollectionFieldContext.Provider value={collectionField}>
             <RecursionField name={column.name} schema={column} onlyRenderSelf />
           </CollectionFieldContext.Provider>
@@ -402,6 +416,7 @@ const TableMain = () => {
   const columns = useTableColumns();
   const dataSource = useDataSource();
   const actionBars = useTableActionBars();
+  const [html, setHtml] = useState('');
   return (
     <div className={'nb-table'}>
       <DndContext
@@ -421,7 +436,10 @@ const TableMain = () => {
             }
           />
         ))}
-        <SortableContext items={dataSource}>
+        <SortableContext
+          items={dataSource}
+          strategy={verticalListSortingStrategy}
+        >
           <AntdTable
             pagination={false}
             onChange={(pagination) => {}}
@@ -429,9 +447,32 @@ const TableMain = () => {
             rowKey={rowKey}
             dataSource={dataSource}
             columns={columns}
+            // components={{
+            //   body: {
+            //     row: DragableBodyRow,
+            //   },
+            // }}
             components={{
+              header: {
+                row: SortableHeaderRow,
+                cell: SortableHeaderCell,
+              },
               body: {
-                row: DragableBodyRow,
+                // wrapper: (props) => {
+                //   return (
+                //     <tbody {...props}>
+                //       <DragOverlay
+                //         className={'ant-table-row'}
+                //         wrapperElement={'tr'}
+                //       >
+                //         <div />
+                //       </DragOverlay>
+                //       {props.children}
+                //     </tbody>
+                //   );
+                // },
+                row: SortableBodyRow,
+                // cell: SortableBodyCell,
               },
             }}
             rowSelection={{
@@ -749,7 +790,11 @@ function Actions(props: any) {
         if (currentAlign !== align) {
           return null;
         }
-        return <RecursionField name={s.name} schema={s} />;
+        return (
+          <SortableItem id={s.name} data={{ title: s.title }}>
+            <RecursionField name={s.name} schema={s} />
+          </SortableItem>
+        );
       })}
     </Space>
   );
@@ -758,20 +803,33 @@ function Actions(props: any) {
 Table.ActionBar = observer((props: any) => {
   const { align = 'top' } = props;
   const { schema, designable } = useDesignable();
-  const designableBar = schema['x-designable-bar'];
-  console.log('Table.ActionBar', { schema });
+  const [dragOverlayContent, setDragOverlayContent] = useState('');
   return (
-    <DisplayedMapProvider>
-      <div className={cls('nb-action-bar', `align-${align}`)}>
-        <div>
-          <Actions align={'left'} />
+    <DndContext onDragStart={(event) => {
+      setDragOverlayContent(event.active.data?.current?.title || '');
+      // const previewRef = event.active.data?.current?.previewRef;
+      // if (previewRef) {
+      //   setDragOverlayContent(previewRef?.current?.innerHTML);
+      // } else {
+      //   setDragOverlayContent('');
+      // }
+    }}>
+      <DragOverlay style={{ pointerEvents: 'none', whiteSpace: 'nowrap' }}>
+        {dragOverlayContent}
+        {/* <div style={{ transform: 'translateX(-100%)' }} dangerouslySetInnerHTML={{__html: dragOverlayContent}}></div> */}
+      </DragOverlay>
+      <DisplayedMapProvider>
+        <div className={cls('nb-action-bar', `align-${align}`)}>
+          <div style={{ width: '50%' }}>
+            <Actions align={'left'} />
+          </div>
+          <div style={{ marginLeft: 'auto', width: '50%', textAlign: 'right' }}>
+            <Actions align={'right'} />
+          </div>
+          <AddActionButton />
         </div>
-        <div style={{ marginLeft: 'auto' }}>
-          <Actions align={'right'} />
-        </div>
-        <AddActionButton />
-      </div>
-    </DisplayedMapProvider>
+      </DisplayedMapProvider>
+    </DndContext>
   );
 });
 
@@ -922,6 +980,7 @@ Table.OperationDesignableBar = () => {
         }}
         className={cls('designable-bar-actions', { active: visible })}
       >
+        <DragHandle />
         <Dropdown
           trigger={['click']}
           visible={visible}
@@ -975,6 +1034,7 @@ Table.Action.DesignableBar = () => {
         }}
         className={cls('designable-bar-actions', { active: visible })}
       >
+        <DragHandle />
         <Dropdown
           trigger={['click']}
           visible={visible}
@@ -1090,6 +1150,7 @@ Table.Column.DesignableBar = () => {
   const { schema, remove, refresh, insertAfter } = useDesignable();
   const [visible, setVisible] = useState(false);
   const displayed = useDisplayedMapContext();
+  const ctx = useContext(ColDraggableContext);
   return (
     <div className={cls('designable-bar', { active: visible })}>
       <span
@@ -1098,6 +1159,7 @@ Table.Column.DesignableBar = () => {
         }}
         className={cls('designable-bar-actions', { active: visible })}
       >
+        <DragHandle />
         <Dropdown
           trigger={['click']}
           visible={visible}
@@ -1147,16 +1209,7 @@ Table.Index = observer(() => {
 });
 
 Table.SortHandle = observer((props: any) => {
-  const listeners = useContext(SyntheticListenerMapContext);
-  const { className, ...others } = props;
-
-  return (
-    <MenuOutlined
-      {...listeners}
-      className={cls(`nb-table-sort-handle`, className)}
-      {...others}
-    />
-  );
+  return <SortableRowHandle {...props} />;
 });
 
 Table.DesignableBar = observer((props) => {

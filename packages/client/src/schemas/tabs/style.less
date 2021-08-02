@@ -1,0 +1,78 @@
+.nb-tabs,
+.nb-tab-pane {
+  &:hover {
+    > .designable-bar {
+      display: block;
+    }
+  }
+  > .designable-bar {
+    pointer-events: none;
+    display: none;
+    position: absolute;
+    top: 0;
+    right: -16px;
+    left: -16px;
+    bottom: 0;
+    border-radius: 0;
+    border: 2px solid #1890ff;
+    &.active {
+      display: block;
+    }
+    .designable-bar-actions {
+      pointer-events: all;
+      position: absolute;
+      right: 0;
+      line-height: 1rem;
+      background-color: #1890ff;
+      color: #fff;
+      z-index: 10;
+      padding: 0 3px;
+      .anticon {
+        font-size: 10px;
+        margin-right: 0;
+      }
+    }
+  }
+}
+
+
+.ant-tabs-tab:first-child {
+  .nb-tab-pane {
+    .designable-bar {
+      left: 0;
+    }
+  }
+}
+
+.ant-tabs-tab:last-child {
+  .nb-tab-pane {
+    .designable-bar {
+      right: 0;
+    }
+  }
+}
+
+.ant-tabs-dropdown-menu-item {
+  position: relative;
+}
+
+.ant-tabs.singleton {
+  .ant-tabs-nav {
+    display: none;
+  }
+}
+.nb-tabs {
+  position: relative;
+  > .designable-bar {
+    left: 0;
+    right: 0;
+  }
+}
+
+.ant-card-body,
+.ant-modal-body {
+  .nb-tabs {
+    margin: -24px;
+    padding: 24px;
+  }
+}

@@ -60,6 +60,13 @@ import { FormDialog, FormItem, FormLayout, Input } from '@formily/antd';
 import deepmerge from 'deepmerge';
 import { onFieldChange } from '@formily/core';
 import { VisibleContext } from '../../context';
+import {
+  DragHandle,
+  SortableItem,
+  SortableItemContext,
+} from '../../components/Sortable';
+import { DndContext, DragOverlay } from '@dnd-kit/core';
+import { createPortal } from 'react-dom';
 
 export const MenuModeContext = createContext(null);
 
@@ -130,53 +137,71 @@ export const Menu: any = observer((props: any) => {
     sideMenuElement.style.display = isSubMenu ? 'block' : 'none';
   }, [selectedKey]);
 
+  const [dragOverlayContent, setDragOverlayContent] = useState('');
+
   return (
-    <MenuModeContext.Provider value={mode}>
-      <AntdMenu
-        defaultSelectedKeys={defaultSelectedKeys}
-        {...others}
-        mode={mode === 'mix' ? 'horizontal' : mode}
-        onSelect={(info) => {
-          if (mode === 'mix') {
-            setSelectedKey(info.key);
-          }
-          const selectedSchema = schema.properties[info.key];
-          console.log({ selectedSchema });
-          onSelect && onSelect({ ...info, schema: selectedSchema });
-        }}
-      >
-        <RecursionField schema={schema} onlyRenderProperties />
-        <Menu.AddNew key={uid()} path={path}>
-          {/* <PlusOutlined className={'nb-add-new-icon'} /> */}
-          <Button
-            className={`nb-add-new-menu-item menu-mode-${
-              mode === 'mix' ? 'horizontal' : mode
-            }`}
-            block
-            type={mode == 'inline' ? 'dashed' : 'primary'}
-          >
-            <PlusOutlined />
-          </Button>
-        </Menu.AddNew>
-      </AntdMenu>
-      {mode === 'mix' && (
-        <div ref={ref}>
-          <SideMenu
-            path={path}
-            onSelect={(info) => {
-              const keyPath = [selectedKey, ...[...info.keyPath].reverse()];
-              const selectedSchema = findPropertyByPath(schema, keyPath);
-              console.log('keyPath', keyPath, selectedSchema);
-              onSelect &&
-                onSelect({ ...info, keyPath, schema: selectedSchema });
-            }}
-            defaultSelectedKeys={defaultSelectedKeys || []}
-            selectedKey={selectedKey}
-            sideMenuRef={sideMenuRef}
-          />
-        </div>
+    <DndContext onDragStart={(event) => {
+      setDragOverlayContent(event.active.data?.current?.title || '');
+    }}>
+      {createPortal(
+        <DragOverlay
+          style={{ pointerEvents: 'none', whiteSpace: 'nowrap' }}
+          dropAnimation={{
+            duration: 10,
+            easing: 'cubic-bezier(0.18, 0.67, 0.6, 1.22)',
+          }}
+        >
+          {dragOverlayContent}
+        </DragOverlay>,
+        document.body,
       )}
-    </MenuModeContext.Provider>
+      <MenuModeContext.Provider value={mode}>
+        <AntdMenu
+          defaultSelectedKeys={defaultSelectedKeys}
+          {...others}
+          mode={mode === 'mix' ? 'horizontal' : mode}
+          onSelect={(info) => {
+            if (mode === 'mix') {
+              setSelectedKey(info.key);
+            }
+            const selectedSchema = schema.properties[info.key];
+            console.log({ selectedSchema });
+            onSelect && onSelect({ ...info, schema: selectedSchema });
+          }}
+        >
+          <RecursionField schema={schema} onlyRenderProperties />
+          <Menu.AddNew key={uid()} path={path}>
+            {/* <PlusOutlined className={'nb-add-new-icon'} /> */}
+            <Button
+              className={`nb-add-new-menu-item menu-mode-${
+                mode === 'mix' ? 'horizontal' : mode
+              }`}
+              block
+              type={mode == 'inline' ? 'dashed' : 'primary'}
+            >
+              <PlusOutlined />
+            </Button>
+          </Menu.AddNew>
+        </AntdMenu>
+        {mode === 'mix' && (
+          <div ref={ref}>
+            <SideMenu
+              path={path}
+              onSelect={(info) => {
+                const keyPath = [selectedKey, ...[...info.keyPath].reverse()];
+                const selectedSchema = findPropertyByPath(schema, keyPath);
+                console.log('keyPath', keyPath, selectedSchema);
+                onSelect &&
+                  onSelect({ ...info, keyPath, schema: selectedSchema });
+              }}
+              defaultSelectedKeys={defaultSelectedKeys || []}
+              selectedKey={selectedKey}
+              sideMenuRef={sideMenuRef}
+            />
+          </div>
+        )}
+      </MenuModeContext.Provider>
+    </DndContext>
   );
 });
 
@@ -188,12 +213,22 @@ Menu.Item = observer((props: any) => {
   return (
     <AntdMenu.Item
       {...props}
-      icon={<IconPicker type={icon} />}
+      icon={null}
       eventKey={schema.name}
       key={schema.name}
     >
-      {schema.title}
-      <DesignableBar />
+      <SortableItem
+        id={schema.name}
+        data={{
+          title: schema.title,
+        }}
+      >
+        {icon && (
+          <span style={{ marginRight: 10 }}><IconPicker type={icon} /></span>
+        )}
+        {schema.title}
+        <DesignableBar />
+      </SortableItem>
     </AntdMenu.Item>
   );
 });
@@ -204,11 +239,22 @@ Menu.Link = observer((props: any) => {
   return (
     <AntdMenu.Item
       {...props}
-      icon={<IconPicker type={icon} />}
+      icon={null}
       eventKey={schema.name}
       key={schema.name}
     >
-      {schema.title}
+      <SortableItem
+        id={schema.name}
+        data={{
+          title: schema.title,
+        }}
+      >
+        {icon && (
+          <span style={{ marginRight: 10 }}><IconPicker type={icon} /></span>
+        )}
+        {schema.title}
+        <DesignableBar />
+      </SortableItem>
       {/* <Link to={props.to || schema.name}>{schema.title}</Link> */}
       <DesignableBar />
     </AntdMenu.Item>
@@ -553,6 +599,7 @@ Menu.DesignableBar = (props) => {
         }}
         className={'designable-bar-actions'}
       >
+        <DragHandle />
         <Dropdown
           overlayStyle={{
             minWidth: 150,
