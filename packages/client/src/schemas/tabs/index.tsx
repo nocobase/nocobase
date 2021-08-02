@@ -12,7 +12,7 @@ import { uid } from '@formily/shared';
 import { DragHandle, SortableItem } from '../../components/Sortable';
 import { DndContext, DragOverlay } from '@dnd-kit/core';
 
-const useTabs = () => {
+const useTabs = ({ singleton }) => {
   const tabsField = useField();
   const { schema } = useDesignable();
   const tabs: { name: SchemaKey; props: any; schema: Schema }[] = [];
@@ -30,13 +30,16 @@ const useTabs = () => {
       });
     }
   });
+  if (singleton) {
+    return [tabs.shift()].filter(Boolean);
+  }
   return tabs;
 };
 
 export const Tabs: any = observer((props: any) => {
   const { singleton, ...others } = props;
   const { schema, DesignableBar, appendChild, root, remove, insertAfter } = useDesignable();
-  const tabs = useTabs();
+  const tabs = useTabs({ singleton });
   const [dragOverlayContent, setDragOverlayContent] = useState('');
 
   const moveToAfter = (path1, path2) => {
@@ -182,7 +185,7 @@ Tabs.DesignableBar = () => {
                 }}
               >
                 禁用标签页 <span style={{ marginRight: 24 }}></span>{' '}
-                <Switch size={'small'} />
+                <Switch size={'small'} checked={!!field.componentProps.singleton}/>
               </Menu.Item>
             </Menu>
           }
