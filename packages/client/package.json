@@ -29,6 +29,7 @@
     "axios": "^0.21.1",
     "beautiful-react-hooks": "^0.35.0",
     "constate": "^3.3.0",
+    "html-react-parser": "^1.2.7",
     "lodash": "^4.17.21",
     "monaco-editor": "^0.25.2",
     "react-dnd": "^14.0.2",

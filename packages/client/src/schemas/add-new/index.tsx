@@ -109,7 +109,7 @@ const isGridBlock = (schema: Schema) => {
 };
 
 function generateCardItemSchema(component) {
-  const defaults = {
+  const defaults: { [key: string]: ISchema } = {
     'Markdown.Void': {
       type: 'void',
       default: '这是一段演示文字，**支持使用 Markdown 语法**',
@@ -165,6 +165,21 @@ function generateCardItemSchema(component) {
             [uid()]: {
               type: 'void',
               name: 'action1',
+              title: '删除',
+              'x-align': 'right',
+              'x-decorator': 'AddNew.Displayed',
+              'x-decorator-props': {
+                displayName: 'destroy',
+              },
+              'x-component': 'Action',
+              'x-designable-bar': 'Table.Action.DesignableBar',
+              'x-component-props': {
+                useAction: '{{ Table.useTableDestroyAction }}',
+              },
+            },
+            [uid()]: {
+              type: 'void',
+              name: 'action1',
               title: '新增',
               'x-align': 'right',
               'x-decorator': 'AddNew.Displayed',
@@ -172,6 +187,9 @@ function generateCardItemSchema(component) {
                 displayName: 'create',
               },
               'x-component': 'Action',
+              'x-component-props': {
+                type: 'primary',
+              },
               'x-designable-bar': 'Table.Action.DesignableBar',
               properties: {
                 modal: {
@@ -194,21 +212,6 @@ function generateCardItemSchema(component) {
                 },
               },
             },
-            [uid()]: {
-              type: 'void',
-              name: 'action1',
-              title: '删除',
-              'x-align': 'right',
-              'x-decorator': 'AddNew.Displayed',
-              'x-decorator-props': {
-                displayName: 'destroy',
-              },
-              'x-component': 'Action',
-              'x-designable-bar': 'Table.Action.DesignableBar',
-              'x-component-props': {
-                useAction: '{{ Table.useTableDestroyAction }}',
-              },
-            },
           },
         },
         [uid()]: {
@@ -222,58 +225,67 @@ function generateCardItemSchema(component) {
           properties: {
             [uid()]: {
               type: 'void',
-              'x-component': 'Action.Dropdown',
+              name: 'action1',
+              'x-component': 'Action',
+              // 'x-designable-bar': 'Action.DesignableBar',
               'x-component-props': {
-                buttonProps: {
-                  icon: 'EllipsisOutlined',
-                },
+                icon: 'EllipsisOutlined',
               },
               properties: {
                 [uid()]: {
                   type: 'void',
-                  title: '操作 1',
-                  'x-component': 'Menu.Action',
-                  'x-component-props': {
-                    style: {
-                      minWidth: 150,
-                    },
-                    disabled: true,
-                  },
-                },
-                [uid()]: {
-                  type: 'void',
-                  name: 'action1',
-                  title: '查看',
-                  'x-component': 'Menu.Action',
-                  'x-designable-bar': 'Table.Action.DesignableBar',
+                  'x-component': 'Action.Dropdown',
+                  'x-component-props': {},
                   properties: {
                     [uid()]: {
                       type: 'void',
-                      title: '查看',
-                      'x-component': 'Action.Modal',
+                      title: '操作 1',
+                      'x-component': 'Menu.Action',
                       'x-component-props': {
-                        bodyStyle: {
-                          background: '#f0f2f5',
-                          paddingTop: 0,
+                        style: {
+                          minWidth: 150,
                         },
+                        disabled: true,
                       },
+                    },
+                    [uid()]: {
+                      type: 'void',
+                      name: 'action1',
+                      title: '查看',
+                      'x-component': 'Menu.Action',
+                      'x-designable-bar': 'Table.Action.DesignableBar',
                       properties: {
                         [uid()]: {
                           type: 'void',
-                          'x-component': 'Tabs',
+                          title: '查看',
+                          'x-component': 'Action.Modal',
+                          'x-component-props': {
+                            bodyStyle: {
+                              background: '#f0f2f5',
+                              // paddingTop: 0,
+                            },
+                          },
                           properties: {
                             [uid()]: {
                               type: 'void',
-                              'x-component': 'Tabs.TabPane',
-                              'x-component-props': {
-                                tab: 'Tab1',
-                              },
+                              'x-component': 'Tabs',
+                              'x-designable-bar': 'Tabs.DesignableBar',
                               properties: {
                                 [uid()]: {
                                   type: 'void',
-                                  'x-component': 'Grid',
+                                  title: '详情',
+                                  'x-designable-bar': 'Tabs.TabPane.DesignableBar',
+                                  'x-component': 'Tabs.TabPane',
                                   'x-component-props': {
-                                    addNewComponent: 'AddNew.PaneItem',
+                                  },
+                                  properties: {
+                                    [uid()]: {
+                                      type: 'void',
+                                      'x-component': 'Grid',
+                                      'x-component-props': {
+                                        addNewComponent: 'AddNew.PaneItem',
+                                      },
+                                    },
                                   },
                                 },
                               },
@@ -282,44 +294,44 @@ function generateCardItemSchema(component) {
                         },
                       },
                     },
-                  },
-                },
-                [uid()]: {
-                  type: 'void',
-                  title: '编辑',
-                  'x-component': 'Menu.Action',
-                  'x-designable-bar': 'Table.Action.DesignableBar',
-                  properties: {
                     [uid()]: {
                       type: 'void',
-                      title: '编辑数据',
-                      'x-decorator': 'Form',
-                      'x-decorator-props': {
-                        useResource: '{{ Table.useResource }}',
-                        useValues: '{{ Table.useTableRowRecord }}',
-                      },
-                      'x-component': 'Action.Modal',
-                      'x-component-props': {
-                        useOkAction: '{{ Table.useTableUpdateAction }}',
-                      },
+                      title: '编辑',
+                      'x-component': 'Menu.Action',
+                      'x-designable-bar': 'Table.Action.DesignableBar',
                       properties: {
                         [uid()]: {
                           type: 'void',
-                          'x-component': 'Grid',
+                          title: '编辑数据',
+                          'x-decorator': 'Form',
+                          'x-decorator-props': {
+                            useResource: '{{ Table.useResource }}',
+                            useValues: '{{ Table.useTableRowRecord }}',
+                          },
+                          'x-component': 'Action.Modal',
                           'x-component-props': {
-                            addNewComponent: 'AddNew.FormItem',
+                            useOkAction: '{{ Table.useTableUpdateAction }}',
+                          },
+                          properties: {
+                            [uid()]: {
+                              type: 'void',
+                              'x-component': 'Grid',
+                              'x-component-props': {
+                                addNewComponent: 'AddNew.FormItem',
+                              },
+                            },
                           },
                         },
                       },
                     },
-                  },
-                },
-                [uid()]: {
-                  type: 'void',
-                  title: '删除',
-                  'x-component': 'Menu.Action',
-                  'x-component-props': {
-                    useAction: '{{ Table.useTableDestroyAction }}',
+                    [uid()]: {
+                      type: 'void',
+                      title: '删除',
+                      'x-component': 'Menu.Action',
+                      'x-component-props': {
+                        useAction: '{{ Table.useTableDestroyAction }}',
+                      },
+                    },
                   },
                 },
               },
@@ -512,7 +524,11 @@ AddNew.CardItem = observer((props: any) => {
                 key={view.key}
                 title={view.title}
               >
-                <Menu.ItemGroup className={'display-fields'} key={`${view.key}-select`} title={'所属数据表'}>
+                <Menu.ItemGroup
+                  className={'display-fields'}
+                  key={`${view.key}-select`}
+                  title={'所属数据表'}
+                >
                   {collections?.map((item) => (
                     <Menu.Item
                       style={{ minWidth: 150 }}

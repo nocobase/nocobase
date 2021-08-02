@@ -272,60 +272,68 @@ import { SchemaRenderer } from '@nocobase/client';
 
 const schema = {
   type: 'void',
-  name: 'dropdown1',
+  name: 'action1',
   title: '下拉菜单',
-  'x-component': 'Action.Dropdown',
+  'x-component': 'Action',
   'x-designable-bar': 'Action.DesignableBar',
-  'x-component-props': {},
+  'x-component-props': {
+  },
   properties: {
-    item1: {
+    dropdown1: {
       type: 'void',
-      title: `操作1`,
-      'x-designable-bar': 'Action.DesignableBar',
-      'x-component': 'Menu.Action',
+      'x-component': 'Action.Dropdown',
+      'x-component-props': {},
       properties: {
-        modal1: {
+        item1: {
           type: 'void',
-          title: '对话框标题',
-          'x-component': 'Action.Modal',
+          title: `操作1`,
+          'x-designable-bar': 'Action.DesignableBar',
+          'x-component': 'Menu.Action',
           properties: {
-            input: {
-              type: 'string',
-              title: '输入框',
-              'x-decorator': 'FormItem',
-              'x-component': 'Input',
-              'x-designable-bar': 'Input.DesignableBar',
-            },
-            grid: {
+            modal1: {
               type: 'void',
-              'x-component': 'Grid',
-              'x-component-props': {
-                addNewComponent: 'AddNew.FormItem',
+              title: '对话框标题',
+              'x-component': 'Action.Modal',
+              properties: {
+                input: {
+                  type: 'string',
+                  title: '输入框',
+                  'x-decorator': 'FormItem',
+                  'x-component': 'Input',
+                  'x-designable-bar': 'Input.DesignableBar',
+                },
+                grid: {
+                  type: 'void',
+                  'x-component': 'Grid',
+                  'x-component-props': {
+                    addNewComponent: 'AddNew.FormItem',
+                  },
+                },
+              },
+            },
+          },
+        },
+        item2: {
+          type: 'void',
+          title: `操作2`,
+          'x-designable-bar': 'Menu.DesignableBar',
+          'x-component': 'Menu.Action',
+          properties: {
+            modal2: {
+              type: 'void',
+              title: '对话框标题',
+              'x-component': 'Action.Modal',
+              properties: {
+                input: {
+                  type: 'string',
+                  'x-component': 'Input',
+                },
               },
             },
           },
         },
       },
-    },
-    item2: {
-      type: 'void',
-      title: `操作2`,
-      'x-designable-bar': 'Menu.DesignableBar',
-      'x-component': 'Menu.Action',
-      properties: {
-        modal2: {
-          type: 'void',
-          title: '对话框标题',
-          'x-component': 'Action.Modal',
-          properties: {
-            input: {
-              type: 'string',
-              'x-component': 'Input',
-            },
-          },
-        },
-      },
-    },
+    }
   },
 };
 

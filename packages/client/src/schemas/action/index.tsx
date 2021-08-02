@@ -20,8 +20,10 @@ import cls from 'classnames';
 import { MenuOutlined } from '@ant-design/icons';
 import { FormLayout } from '@formily/antd';
 import IconPicker from '../../components/icon-picker';
-import { useSchemaComponent } from '../../components/schema-renderer';
+import { getSchemaPath, useSchemaComponent } from '../../components/schema-renderer';
 import { VisibleContext } from '../../context';
+
+export const ButtonComponentContext = createContext(null);
 
 export const Action: any = observer((props: any) => {
   const { useAction = useDefaultAction, icon, ...others } = props;
@@ -33,23 +35,26 @@ export const Action: any = observer((props: any) => {
   const isDropdownOrPopover =
     child &&
     ['Action.Dropdown', 'Action.Popover'].includes(child['x-component']);
+  const button = (
+    <Button
+      {...others}
+      icon={<IconPicker type={icon} />}
+      onClick={async () => {
+        setVisible(true);
+        await run();
+      }}
+    >
+      {schema.title}
+      <DesignableBar path={getSchemaPath(schema)}/>
+    </Button>
+  );
   return (
-    <VisibleContext.Provider value={[visible, setVisible]}>
-      {!isDropdownOrPopover && (
-        <Button
-          {...others}
-          icon={<IconPicker type={icon} />}
-          onClick={async () => {
-            setVisible(true);
-            await run();
-          }}
-        >
-          {schema.title}
-          <DesignableBar />
-        </Button>
-      )}
-      <RecursionField schema={schema} onlyRenderProperties />
-    </VisibleContext.Provider>
+    <ButtonComponentContext.Provider value={button}>
+      <VisibleContext.Provider value={[visible, setVisible]}>
+        {!isDropdownOrPopover && button}
+        <RecursionField schema={schema} onlyRenderProperties />
+      </VisibleContext.Provider>
+    </ButtonComponentContext.Provider>
   );
 });
 
@@ -187,49 +192,29 @@ Action.Drawer = observer((props: any) => {
 });
 
 Action.Dropdown = observer((props: any) => {
-  const { buttonProps = {}, ...others } = props;
   const { schema } = useDesignable();
-  let componentProps = {...buttonProps};
-  let title = schema.title;
-  if (schema.parent['x-component'] === 'Action') {
-    title = schema.parent.title;
-    componentProps = {...buttonProps, ...(schema.parent['x-component-props'] || {})}
-  }
-  const icon = componentProps['icon'];
+  const button = useContext(ButtonComponentContext);
   return (
     <Dropdown
       trigger={['click']}
-      {...others}
+      {...props}
       overlay={
         <Menu>
           <RecursionField schema={schema} onlyRenderProperties />
         </Menu>
       }
     >
-      <Button
-        {...buttonProps}
-        {...componentProps}
-        icon={<IconPicker type={icon} />}
-      >
-        {title}
-      </Button>
+      <span>{button}</span>
     </Dropdown>
   );
 });
 
 Action.Popover = observer((props) => {
-  const fieldSchema = useFieldSchema();
   const { schema } = useDesignable();
   const form = useForm();
   const isFormDecorator = schema['x-decorator'] === 'Form';
   const [visible, setVisible] = useContext(VisibleContext);
-  console.log('Action.Popover', schema, fieldSchema);
-  const componentProps =
-    (schema.parent && schema.parent['x-component-props']) || {};
-  const designableBarComponent = schema.parent
-    ? schema.parent['x-designable-bar']
-    : null;
-  const DesignableBar = useSchemaComponent(designableBarComponent);
+  const button = useContext(ButtonComponentContext);
   return (
     <Popover
       visible={visible}
@@ -266,18 +251,15 @@ Action.Popover = observer((props) => {
         </div>
       }
     >
-      <Button {...componentProps}>
-        {schema.parent.title || schema.title}
-        {DesignableBar && <DesignableBar />}
-      </Button>
+      {button}
     </Popover>
   );
 });
 
-Action.DesignableBar = () => {
+Action.DesignableBar = (props: any) => {
   const field = useField();
   // const schema = useFieldSchema();
-  const { schema, insertAfter, refresh } = useDesignable();
+  const { schema, insertAfter, refresh } = useDesignable(props.path);
   const [visible, setVisible] = useState(false);
   return (
     <div className={cls('designable-bar', { active: visible })}>
@@ -297,7 +279,7 @@ Action.DesignableBar = () => {
             <Menu>
               <Menu.Item
                 onClick={(e) => {
-                  // console.log({ field, schema });
+                  console.log('按钮文案被修改了', { schema });
                   schema.title = '按钮文案被修改了';
                   // field.setTitle('按钮文案被修改了');
                   // setVisible(false);
