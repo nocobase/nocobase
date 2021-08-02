@@ -61,6 +61,9 @@ export async function createSchema(schema: ISchema) {
 }
 
 export async function updateSchema(schema: ISchema) {
+  if (!schema) {
+    return;
+  }
   if (!schema['key']) {
     return;
   }

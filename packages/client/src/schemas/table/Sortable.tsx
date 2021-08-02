@@ -143,6 +143,9 @@ export function SortableHeaderRow(props) {
     if (!path1 || !path2) {
       return;
     }
+    if (path1.join('.') === path2.join('.')) {
+      return;
+    }
     const data = findPropertyByPath(root, path1);
     if (!data) {
       return;
