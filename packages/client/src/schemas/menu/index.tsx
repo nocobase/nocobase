@@ -107,7 +107,18 @@ export const Menu: any = observer((props: any) => {
     defaultSelectedKeys = [],
     ...others
   } = props;
-  const { designable, schema } = useDesignable();
+  const { root, schema, insertAfter, remove } = useDesignable();
+  const moveToAfter = (path1, path2) => {
+    if (!path1 || !path2) {
+      return;
+    }
+    const data = findPropertyByPath(root, path1);
+    if (!data) {
+      return;
+    }
+    remove(path1);
+    return insertAfter(data.toJSON(), path2);
+  }
   const fieldSchema = useFieldSchema();
   console.log('Menu.schema', schema, fieldSchema);
   const [selectedKey, setSelectedKey] = useState(
@@ -140,9 +151,18 @@ export const Menu: any = observer((props: any) => {
   const [dragOverlayContent, setDragOverlayContent] = useState('');
 
   return (
-    <DndContext onDragStart={(event) => {
-      setDragOverlayContent(event.active.data?.current?.title || '');
-    }}>
+    <DndContext
+      onDragStart={(event) => {
+        console.log({ event });
+        setDragOverlayContent(event.active.data?.current?.title || '');
+      }}
+      onDragEnd={async (event) => {
+        const path1 = event.active?.data?.current?.path;
+        const path2 = event.over?.data?.current?.path;
+        const data = moveToAfter(path1, path2);
+        await updateSchema(data);
+      }}
+    >
       {createPortal(
         <DragOverlay
           style={{ pointerEvents: 'none', whiteSpace: 'nowrap' }}
@@ -221,10 +241,13 @@ Menu.Item = observer((props: any) => {
         id={schema.name}
         data={{
           title: schema.title,
+          path: getSchemaPath(schema),
         }}
       >
         {icon && (
-          <span style={{ marginRight: 10 }}><IconPicker type={icon} /></span>
+          <span style={{ marginRight: 10 }}>
+            <IconPicker type={icon} />
+          </span>
         )}
         {schema.title}
         <DesignableBar />
@@ -247,10 +270,13 @@ Menu.Link = observer((props: any) => {
         id={schema.name}
         data={{
           title: schema.title,
+          path: getSchemaPath(schema),
         }}
       >
         {icon && (
-          <span style={{ marginRight: 10 }}><IconPicker type={icon} /></span>
+          <span style={{ marginRight: 10 }}>
+            <IconPicker type={icon} />
+          </span>
         )}
         {schema.title}
         <DesignableBar />

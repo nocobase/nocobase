@@ -1,12 +1,12 @@
 import { observer, connect, useField, RecursionField } from '@formily/react';
 import React from 'react';
 import { Button, Tabs as AntdTabs, Dropdown, Menu, Switch } from 'antd';
-import { useDesignable } from '../../components/schema-renderer';
+import { findPropertyByPath, getSchemaPath, useDesignable } from '../../components/schema-renderer';
 import { Schema, SchemaKey } from '@formily/react';
 import { PlusOutlined, MenuOutlined } from '@ant-design/icons';
 import { useState } from 'react';
 import cls from 'classnames';
-import { createSchema, removeSchema } from '..';
+import { createSchema, removeSchema, updateSchema } from '..';
 import './style.less';
 import { uid } from '@formily/shared';
 import { DragHandle, SortableItem } from '../../components/Sortable';
@@ -35,9 +35,21 @@ const useTabs = () => {
 
 export const Tabs: any = observer((props: any) => {
   const { singleton, ...others } = props;
-  const { schema, DesignableBar, appendChild } = useDesignable();
+  const { schema, DesignableBar, appendChild, root, remove, insertAfter } = useDesignable();
   const tabs = useTabs();
   const [dragOverlayContent, setDragOverlayContent] = useState('');
+
+  const moveToAfter = (path1, path2) => {
+    if (!path1 || !path2) {
+      return;
+    }
+    const data = findPropertyByPath(root, path1);
+    if (!data) {
+      return;
+    }
+    remove(path1);
+    return insertAfter(data.toJSON(), path2);
+  };
 
   if (singleton) {
     return (
@@ -56,6 +68,12 @@ export const Tabs: any = observer((props: any) => {
       <DndContext
         onDragStart={(event) => {
           setDragOverlayContent(event.active.data?.current?.title || '');
+        }}
+        onDragEnd={async (event) => {
+          const path1 = event.active?.data?.current?.path;
+          const path2 = event.over?.data?.current?.path;
+          const data = moveToAfter(path1, path2);
+          await updateSchema(data);
         }}
       >
         <DragOverlay style={{ pointerEvents: 'none', whiteSpace: 'nowrap' }}>
@@ -123,6 +141,7 @@ Tabs.TabPane = observer((props: any) => {
       id={schema.name}
       data={{
         title: schema.title,
+        path: getSchemaPath(schema),
       }}
     >
       <div className={'nb-tab-pane'}>
