@@ -36,6 +36,7 @@ import {
 } from '../../components/schema-renderer';
 import { updateSchema } from '..';
 import { Schema } from '@formily/react';
+import { isColumn, isColumnComponent } from '.';
 
 export const RowDraggableContext = createContext({});
 export const ColDraggableContext = createContext(null);
@@ -188,12 +189,15 @@ export function SortableHeaderRow(props) {
 
 export function SortableHeaderCell(props) {
   const id = useContext(CellContext);
-  if (['RC_TABLE_KEY', 'addnew'].includes(id)) {
+  if (['RC_TABLE_KEY', 'addnew', 'operation'].includes(id)) {
     return <th {...props} />;
   }
   const { schema } = useDesignable();
   const columns: Schema[] = schema.reduceProperties((columns, current) => {
-    if (current['x-component'] === 'Table.Column' && current.name === id) {
+    if (!isColumn(current)) {
+      return [...columns];
+    }
+    if (current.name === id) {
       return [...columns, current];
     }
     return [...columns];

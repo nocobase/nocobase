@@ -217,17 +217,16 @@ function generateCardItemSchema(component) {
         [uid()]: {
           type: 'void',
           title: '操作',
-          'x-component': 'Table.Column',
+          'x-component': 'Table.Operation',
           'x-component-props': {
             className: 'nb-table-operation',
           },
-          'x-designable-bar': 'Table.OperationDesignableBar',
+          'x-designable-bar': 'Table.Operation.DesignableBar',
           properties: {
             [uid()]: {
               type: 'void',
               name: 'action1',
               'x-component': 'Action',
-              // 'x-designable-bar': 'Action.DesignableBar',
               'x-component-props': {
                 icon: 'EllipsisOutlined',
               },
@@ -254,6 +253,7 @@ function generateCardItemSchema(component) {
                       title: '查看',
                       'x-component': 'Menu.Action',
                       'x-designable-bar': 'Table.Action.DesignableBar',
+                      'x-action-type': 'view',
                       properties: {
                         [uid()]: {
                           type: 'void',
@@ -274,10 +274,10 @@ function generateCardItemSchema(component) {
                                 [uid()]: {
                                   type: 'void',
                                   title: '详情',
-                                  'x-designable-bar': 'Tabs.TabPane.DesignableBar',
+                                  'x-designable-bar':
+                                    'Tabs.TabPane.DesignableBar',
                                   'x-component': 'Tabs.TabPane',
-                                  'x-component-props': {
-                                  },
+                                  'x-component-props': {},
                                   properties: {
                                     [uid()]: {
                                       type: 'void',
@@ -299,6 +299,7 @@ function generateCardItemSchema(component) {
                       title: '编辑',
                       'x-component': 'Menu.Action',
                       'x-designable-bar': 'Table.Action.DesignableBar',
+                      'x-action-type': 'update',
                       properties: {
                         [uid()]: {
                           type: 'void',
@@ -328,6 +329,8 @@ function generateCardItemSchema(component) {
                       type: 'void',
                       title: '删除',
                       'x-component': 'Menu.Action',
+                      'x-designable-bar': 'Table.Action.DesignableBar',
+                      'x-action-type': 'destroy',
                       'x-component-props': {
                         useAction: '{{ Table.useTableDestroyAction }}',
                       },
