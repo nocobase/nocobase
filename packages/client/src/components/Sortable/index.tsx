@@ -54,6 +54,30 @@ export function DragHandle() {
   );
 }
 
+export function Droppable(props) {
+  const { id, data = {}, className, component, children, ...others } = props;
+  const { isOver, setNodeRef: setDroppableNodeRef } = useDroppable({
+    id: `droppable-${id}`,
+    data: {
+      ...data,
+    },
+  });
+  const Component = component || Div;
+  return (
+    <Component
+      {...others}
+      className={cls(className, `droppable-${id}`, {
+        isOver,
+      })}
+      ref={(el: HTMLElement) => {
+        setDroppableNodeRef(el);
+      }}
+    >
+      {children}
+    </Component>
+  );
+}
+
 export function SortableItem(props) {
   const { id, data = {}, className, component, children, ...others } = props;
   const previewRef = useRef<HTMLElement>();

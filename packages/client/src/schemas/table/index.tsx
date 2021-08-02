@@ -29,6 +29,7 @@ import { Select, Dropdown, Menu, Switch, Button, Space } from 'antd';
 import { PlusOutlined } from '@ant-design/icons';
 import './style.less';
 import {
+  findPropertyByPath,
   getSchemaPath,
   SchemaField,
   SchemaRenderer,
@@ -57,7 +58,7 @@ import {
   SortableHeaderRow,
   SortableRowHandle,
 } from './Sortable';
-import { DragHandle, SortableItem } from '../../components/Sortable';
+import { DragHandle, Droppable, SortableItem } from '../../components/Sortable';
 
 const SyntheticListenerMapContext = createContext(null);
 
@@ -784,36 +785,107 @@ function Actions(props: any) {
   const { align = 'left' } = props;
   const { schema, designable } = useDesignable();
   return (
-    <Space>
-      {schema.mapProperties((s) => {
-        const currentAlign = s['x-align'] || 'left';
-        if (currentAlign !== align) {
-          return null;
-        }
-        return (
-          <SortableItem id={s.name} data={{ title: s.title }}>
-            <RecursionField name={s.name} schema={s} />
-          </SortableItem>
-        );
-      })}
-    </Space>
+    <Droppable
+      id={`${schema.name}-${align}`}
+      className={`action-bar-align-${align}`}
+      data={{ align, path: getSchemaPath(schema) }}
+    >
+      <Space>
+        {schema.mapProperties((s) => {
+          const currentAlign = s['x-align'] || 'left';
+          if (currentAlign !== align) {
+            return null;
+          }
+          return (
+            <SortableItem
+              id={s.name}
+              data={{
+                align,
+                draggable: true,
+                title: s.title,
+                path: getSchemaPath(s),
+              }}
+            >
+              <RecursionField name={s.name} schema={s} />
+            </SortableItem>
+          );
+        })}
+      </Space>
+    </Droppable>
   );
 }
 
 Table.ActionBar = observer((props: any) => {
   const { align = 'top' } = props;
-  const { schema, designable } = useDesignable();
+  // const { schema, designable } = useDesignable();
+  const { root, schema, insertAfter, remove, appendChild } = useDesignable();
+  const moveToAfter = (path1, path2, extra = {}) => {
+    if (!path1 || !path2) {
+      return;
+    }
+    if (path1.join('.') === path2.join('.')) {
+      return;
+    }
+    const data = findPropertyByPath(root, path1);
+    if (!data) {
+      return;
+    }
+    remove(path1);
+    return insertAfter(
+      {
+        ...data.toJSON(),
+        ...extra,
+      },
+      path2,
+    );
+  };
+
   const [dragOverlayContent, setDragOverlayContent] = useState('');
   return (
-    <DndContext onDragStart={(event) => {
-      setDragOverlayContent(event.active.data?.current?.title || '');
-      // const previewRef = event.active.data?.current?.previewRef;
-      // if (previewRef) {
-      //   setDragOverlayContent(previewRef?.current?.innerHTML);
-      // } else {
-      //   setDragOverlayContent('');
-      // }
-    }}>
+    <DndContext
+      onDragStart={(event) => {
+        setDragOverlayContent(event.active.data?.current?.title || '');
+        // const previewRef = event.active.data?.current?.previewRef;
+        // if (previewRef) {
+        //   setDragOverlayContent(previewRef?.current?.innerHTML);
+        // } else {
+        //   setDragOverlayContent('');
+        // }
+      }}
+      onDragEnd={async (event) => {
+        const path1 = event.active?.data?.current?.path;
+        const path2 = event.over?.data?.current?.path;
+        const align = event.over?.data?.current?.align;
+        const draggable = event.over?.data?.current?.draggable;
+        if (!path1 || !path2) {
+          return;
+        }
+        if (path1.join('.') === path2.join('.')) {
+          return;
+        }
+        if (!draggable) {
+          console.log('alignalignalignalign', align);
+          const p = findPropertyByPath(root, path1);
+          if (!p) {
+            return;
+          }
+          remove(path1);
+          const data = appendChild(
+            {
+              ...p.toJSON(),
+              'x-align': align,
+            },
+            path2,
+          );
+          await updateSchema(data);
+        } else {
+          const data = moveToAfter(path1, path2, {
+            'x-align': align,
+          });
+          await updateSchema(data);
+        }
+      }}
+    >
       <DragOverlay style={{ pointerEvents: 'none', whiteSpace: 'nowrap' }}>
         {dragOverlayContent}
         {/* <div style={{ transform: 'translateX(-100%)' }} dangerouslySetInnerHTML={{__html: dragOverlayContent}}></div> */}
@@ -910,6 +982,7 @@ Table.Filter.DesignableBar = () => {
         }}
         className={cls('designable-bar-actions', { active: visible })}
       >
+        <DragHandle />
         <Dropdown
           trigger={['click']}
           visible={visible}
