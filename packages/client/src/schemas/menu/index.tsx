@@ -121,7 +121,7 @@ export const Menu: any = observer((props: any) => {
     }
     remove(path1);
     return insertAfter(data.toJSON(), path2);
-  }
+  };
   const fieldSchema = useFieldSchema();
   console.log('Menu.schema', schema, fieldSchema);
   const [selectedKey, setSelectedKey] = useState(
@@ -326,8 +326,16 @@ Menu.Action = observer((props: any) => {
           setVisible(true);
         }}
       >
-        {schema.title}
-        <DesignableBar />
+        <SortableItem
+          id={schema.name}
+          data={{
+            title: schema.title,
+            path: getSchemaPath(schema),
+          }}
+        >
+          {schema.title}
+          <DesignableBar />
+        </SortableItem>
       </AntdMenu.Item>
       {props.children}
       {/* <RecursionField schema={schema} onlyRenderProperties /> */}

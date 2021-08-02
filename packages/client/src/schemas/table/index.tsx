@@ -59,45 +59,7 @@ import {
   SortableRowHandle,
 } from './Sortable';
 import { DragHandle, Droppable, SortableItem } from '../../components/Sortable';
-
-const SyntheticListenerMapContext = createContext(null);
-
-function DragableBodyRow(props: any) {
-  const {
-    className,
-    style: prevStyle,
-    ['data-row-key']: dataRowKey,
-    ...others
-  } = props;
-  const {
-    attributes,
-    listeners,
-    setNodeRef,
-    overIndex,
-    transform,
-    transition,
-  } = useSortable({ id: dataRowKey });
-
-  const style = {
-    ...prevStyle,
-    transform: CSS.Transform.toString(transform),
-    transition,
-  };
-
-  return (
-    <SyntheticListenerMapContext.Provider value={listeners}>
-      <tr
-        className={cls(className)}
-        ref={setNodeRef}
-        {...others}
-        {...attributes}
-        style={style}
-      >
-        {props.children}
-      </tr>
-    </SyntheticListenerMapContext.Provider>
-  );
-}
+import { VisibleContext } from '../../context';
 
 export interface ITableContext {
   props: any;
@@ -265,6 +227,68 @@ const useTableActionBars = () => {
   return bars;
 };
 
+export function isOperationColumn(schema: Schema) {
+  return ['Table.Operation'].includes(schema['x-component']);
+}
+
+export function isColumn(schema: Schema) {
+  return ['Table.Column'].includes(schema['x-component']);
+}
+
+export function isColumnComponent(component: string) {
+  return ['Table.Operation', 'Table.Column'].includes(component);
+}
+
+const useTableOperation = () => {
+  const {
+    field,
+    schema,
+    props: { rowKey },
+  } = useTable();
+  const findActionDropdown = (schema: Schema) => {
+    return schema.reduceProperties((s, current) => {
+      if (current['x-component'] === 'Action.Dropdown') {
+        return current;
+      }
+      const action = findActionDropdown(current);
+      if (action) {
+        return action;
+      }
+      return s;
+    }, new Schema({}));
+  };
+  const operationSchema = schema.reduceProperties((s, current) => {
+    if (isOperationColumn(current)) {
+      return current;
+    }
+    return s;
+  }, new Schema({}));
+  const dropdownSchema = findActionDropdown(operationSchema);
+  const columnProps = operationSchema?.['x-component-props'] || {};
+  return {
+    title: <Table.Operation path={getSchemaPath(dropdownSchema)} />,
+    dataIndex: 'operation',
+    ...columnProps,
+    render: (_: any, record: any) => {
+      const index = findIndex(
+        field.value,
+        (item) => item[rowKey] === record[rowKey],
+      );
+      return (
+        <div className={'nb-table-column'}>
+          <TableRowContext.Provider value={{ index, record }}>
+            <RecursionField
+              schema={operationSchema}
+              name={index}
+              onlyRenderProperties
+            />
+          </TableRowContext.Provider>
+        </div>
+      );
+    },
+  };
+};
+
 const useTableColumns = () => {
   const {
     field,
@@ -275,19 +299,21 @@ const useTableColumns = () => {
 
   const { getField } = useCollectionContext();
 
-  const columns = schema.reduceProperties((columns, current) => {
-    if (current['x-component'] === 'Table.Column') {
+  const operation = useTableOperation();
+
+  const columnSchemas = schema.reduceProperties((columns, current) => {
+    if (isColumn(current)) {
       return [...columns, current];
     }
     return [...columns];
   }, []);
 
-  return columns
-    .map((column: Schema) => {
+  const columns: any[] = [operation].concat(
+    columnSchemas.map((column: Schema) => {
       const columnProps = column['x-component-props'] || {};
       const collectionField = getField(columnProps.fieldName);
       return {
-        title: () => (
+        title: (
           <CollectionFieldContext.Provider value={collectionField}>
             <RecursionField name={column.name} schema={column} onlyRenderSelf />
           </CollectionFieldContext.Provider>
@@ -308,17 +334,16 @@ const useTableColumns = () => {
           );
         },
       };
-    })
-    .concat(
-      designable
-        ? [
-            {
-              title: <AddColumn />,
-              dataIndex: 'addnew',
-            },
-          ]
-        : [],
-    );
+    }),
+  );
+
+  if (designable) {
+    columns.push({
+      title: <AddColumn />,
+      dataIndex: 'addnew',
+    });
+  }
+  return columns;
 };
 
 function AddColumn() {
@@ -593,6 +618,7 @@ const TableProvider = (props: any) => {
 };
 
 export const Table: any = observer((props: any) => {
+  const [visible, setVisible] = useState(false);
   return (
     <CollectionProvider collectionName={props.collectionName}>
       <DisplayedMapProvider>
@@ -712,13 +738,113 @@ function generateActionSchema(type) {
       'x-decorator-props': {
         displayName: 'destroy',
       },
+      'x-action-type': 'destroy',
       'x-component': 'Action',
       'x-designable-bar': 'Table.Action.DesignableBar',
       'x-component-props': {
         useAction: '{{ Table.useTableDestroyAction }}',
       },
     },
+    view: {},
     update: {},
+  };
+  return actions[type];
+}
+
+function generateMenuActionSchema(type) {
+  const actions: { [key: string]: ISchema } = {
+    view: {
+      key: uid(),
+      name: uid(),
+      type: 'void',
+      title: '查看',
+      'x-component': 'Menu.Action',
+      'x-designable-bar': 'Table.Action.DesignableBar',
+      'x-action-type': 'view',
+      properties: {
+        [uid()]: {
+          type: 'void',
+          title: '查看',
+          'x-component': 'Action.Modal',
+          'x-component-props': {
+            bodyStyle: {
+              background: '#f0f2f5',
+              // paddingTop: 0,
+            },
+          },
+          properties: {
+            [uid()]: {
+              type: 'void',
+              'x-component': 'Tabs',
+              'x-designable-bar': 'Tabs.DesignableBar',
+              properties: {
+                [uid()]: {
+                  type: 'void',
+                  title: '详情',
+                  'x-designable-bar': 'Tabs.TabPane.DesignableBar',
+                  'x-component': 'Tabs.TabPane',
+                  'x-component-props': {},
+                  properties: {
+                    [uid()]: {
+                      type: 'void',
+                      'x-component': 'Grid',
+                      'x-component-props': {
+                        addNewComponent: 'AddNew.PaneItem',
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+    },
+    update: {
+      key: uid(),
+      name: uid(),
+      type: 'void',
+      title: '编辑',
+      'x-component': 'Menu.Action',
+      'x-designable-bar': 'Table.Action.DesignableBar',
+      'x-action-type': 'update',
+      properties: {
+        [uid()]: {
+          type: 'void',
+          title: '编辑数据',
+          'x-decorator': 'Form',
+          'x-decorator-props': {
+            useResource: '{{ Table.useResource }}',
+            useValues: '{{ Table.useTableRowRecord }}',
+          },
+          'x-component': 'Action.Modal',
+          'x-component-props': {
+            useOkAction: '{{ Table.useTableUpdateAction }}',
+          },
+          properties: {
+            [uid()]: {
+              type: 'void',
+              'x-component': 'Grid',
+              'x-component-props': {
+                addNewComponent: 'AddNew.FormItem',
+              },
+            },
+          },
+        },
+      },
+    },
+    destroy: {
+      key: uid(),
+      name: uid(),
+      type: 'void',
+      title: '删除',
+      'x-component': 'Menu.Action',
+      'x-designable-bar': 'Table.Action.DesignableBar',
+      'x-action-type': 'destroy',
+      'x-component-props': {
+        useAction: '{{ Table.useTableDestroyAction }}',
+      },
+    },
   };
   return actions[type];
 }
@@ -1039,12 +1165,36 @@ Table.Filter.DesignableBar = () => {
   );
 };
 
-Table.OperationDesignableBar = () => {
-  const { schema, remove, refresh, insertAfter } = useDesignable();
+Table.Operation = observer((props: any) => {
   const [visible, setVisible] = useState(false);
-  const isPopup = Object.keys(schema.properties || {}).length > 0;
-  const inActionBar = schema.parent['x-component'] === 'Table.ActionBar';
+  return (
+    <div className={'nb-table-column'}>
+      操作
+      <Table.Operation.DesignableBar path={props.path} />
+    </div>
+  );
+});
 
+Table.Operation.Cell = observer((props: any) => {
+  const ctx = useContext(TableRowContext);
+  const schema = props.schema;
+  return (
+    <div className={'nb-table-column'}>
+      <RecursionField schema={schema} name={ctx.index} onlyRenderProperties />
+    </div>
+  );
+});
+
+Table.Operation.DesignableBar = (props) => {
+  const { schema, remove, refresh, appendChild } = useDesignable(props.path);
+  const [visible, setVisible] = useState(false);
+  const map = new Map();
+  schema.mapProperties((s) => {
+    if (!s['x-action-type']) {
+      return;
+    }
+    map.set(s['x-action-type'], s.name);
+  });
   return (
     <div className={cls('designable-bar', { active: visible })}>
       <span
@@ -1071,7 +1221,20 @@ Table.OperationDesignableBar = () => {
                   <SwitchMenuItem
                     key={item.name}
                     title={item.title}
-                    onChange={async (checked) => {}}
+                    checked={map.has(item.name)}
+                    onChange={async (checked) => {
+                      if (checked) {
+                        const s = generateMenuActionSchema(item.name);
+                        const data = appendChild(s);
+                        await createSchema(data);
+                      } else if (map.get(item.name)) {
+                        const removed = remove([
+                          ...props.path,
+                          map.get(item.name),
+                        ]);
+                        await removeSchema(removed);
+                      }
+                    }}
                   />
                 ))}
               </Menu.ItemGroup>
@@ -1174,6 +1337,9 @@ Table.Cell = observer((props: any) => {
   const ctx = useContext(TableRowContext);
   const schema = props.schema;
   const collectionField = useContext(CollectionFieldContext);
+  if (schema['x-component'] === 'Table.Operation') {
+    return <Table.Operation.Cell {...props} />;
+  }
   return (
     <RecursionField
       schema={
