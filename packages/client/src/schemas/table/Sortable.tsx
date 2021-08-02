@@ -29,6 +29,13 @@ import {
 import { createPortal } from 'react-dom';
 import { useRef } from 'react';
 import { SortableItem } from '../../components/Sortable';
+import {
+  findPropertyByPath,
+  getSchemaPath,
+  useDesignable,
+} from '../../components/schema-renderer';
+import { updateSchema } from '..';
+import { Schema } from '@formily/react';
 
 export const RowDraggableContext = createContext({});
 export const ColDraggableContext = createContext(null);
@@ -131,6 +138,18 @@ export function SortableBodyRow(props: any) {
 }
 
 export function SortableHeaderRow(props) {
+  const { root, remove, insertAfter } = useDesignable();
+  const moveToAfter = (path1, path2) => {
+    if (!path1 || !path2) {
+      return;
+    }
+    const data = findPropertyByPath(root, path1);
+    if (!data) {
+      return;
+    }
+    remove(path1);
+    return insertAfter(data.toJSON(), path2);
+  };
   const [dragOverlayContent, setDragOverlayContent] = useState('');
   return (
     <tr {...props}>
@@ -142,6 +161,12 @@ export function SortableHeaderRow(props) {
           if (previewRef?.current) {
             setDragOverlayContent(previewRef.current.textContent || '');
           }
+        }}
+        onDragEnd={async (event) => {
+          const path1 = event.active?.data?.current?.path;
+          const path2 = event.over?.data?.current?.path;
+          const data = moveToAfter(path1, path2);
+          await updateSchema(data);
         }}
       >
         {createPortal(
@@ -163,10 +188,25 @@ export function SortableHeaderCell(props) {
   if (['RC_TABLE_KEY', 'addnew'].includes(id)) {
     return <th {...props} />;
   }
+  const { schema } = useDesignable();
+  const columns: Schema[] = schema.reduceProperties((columns, current) => {
+    if (current['x-component'] === 'Table.Column' && current.name === id) {
+      return [...columns, current];
+    }
+    return [...columns];
+  }, []);
+  const column = columns.shift();
+  if (!column) {
+    return <th {...props} />;
+  }
   return (
     <SortableItem
       {...props}
       id={id}
+      data={{
+        title: column.title,
+        path: getSchemaPath(column),
+      }}
       component={forwardRef<any>((props, ref) => (
         <th ref={ref} {...props} />
       ))}
