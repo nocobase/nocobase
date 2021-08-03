@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { forwardRef, useState } from 'react';
 import {
   observer,
   connect,
@@ -11,7 +11,7 @@ import {
   FormConsumer,
 } from '@formily/react';
 import { ArrayCollapse, FormLayout } from '@formily/antd';
-import { uid } from '@formily/shared';
+import { uid, isValid } from '@formily/shared';
 import '@formily/antd/lib/form-tab/style';
 import {
   Collapse,
@@ -32,6 +32,7 @@ import {
   DatabaseOutlined,
   PlusOutlined,
   CloseOutlined,
+  MenuOutlined,
 } from '@ant-design/icons';
 import cls from 'classnames';
 import './style.less';
@@ -39,8 +40,53 @@ import Modal from 'antd/lib/modal/Modal';
 import { clone, cloneDeep, get } from 'lodash';
 import { useEffect } from 'react';
 import { useRequest } from 'ahooks';
-import { createOrUpdateCollection, deleteCollection } from '..';
+import {
+  collectionMoveToAfter,
+  createOrUpdateCollection,
+  deleteCollection,
+} from '..';
 import { useCollectionsContext } from '../../constate/Collections';
+import {
+  DragHandle,
+  SortableItem,
+  SortableItemContext,
+} from '../../components/Sortable';
+import { DndContext, DragOverlay } from '@dnd-kit/core';
+import { createPortal } from 'react-dom';
+
+interface SelectOptionProps {
+  id: any;
+  title: string;
+  data?: any;
+  onRemove?: any;
+  showRemove?: boolean;
+}
+
+function SelectOption(props: SelectOptionProps) {
+  const { id, data, onRemove, showRemove } = props;
+  return (
+    <SortableItem id={id} data={data}>
+      <div
+        style={{
+          display: 'flex',
+          // justifyContent: 'space-between',
+          alignItems: 'center',
+        }}
+      >
+        <DragHandle
+          component={forwardRef<any>((props, ref) => {
+            return <MenuOutlined {...props} ref={ref} />;
+          })}
+        />
+        <span style={{ width: 8 }} />
+        {data.title}
+        {showRemove && (
+          <DeleteOutlined style={{ marginLeft: 'auto' }} onClick={onRemove} />
+        )}
+      </div>
+    </SortableItem>
+  );
+}
 
 export const DatabaseCollection = observer((props) => {
   const field = useField<Formily.Core.Models.ArrayField>();
@@ -51,6 +97,7 @@ export const DatabaseCollection = observer((props) => {
   const form = useForm();
   const [newValue, setNewValue] = useState('');
   const { loading, refresh, collections = [] } = useCollectionsContext();
+  const [dragOverlayContent, setDragOverlayContent] = useState('');
 
   useEffect(() => {
     field.setValue(collections);
@@ -87,101 +134,118 @@ export const DatabaseCollection = observer((props) => {
         }}
         title={
           <div style={{ textAlign: 'center' }}>
-            <Select
-              loading={loading}
-              value={activeIndex}
-              style={{ minWidth: 300, textAlign: 'center' }}
-              onChange={(value) => {
-                setActiveIndex(value as any);
+            <DndContext
+              onDragStart={(event) => {
+                setDragOverlayContent(event.active?.data?.current?.title || '');
               }}
-              open={open}
-              onDropdownVisibleChange={setOpen}
-              optionLabelProp={'label'}
-              dropdownRender={(menu) => {
-                return (
-                  <div>
-                    {menu}
-                    <Divider style={{ margin: '5px 0 4px' }} />
-                    <div
-                      style={{
-                        cursor: 'pointer',
-                        padding: '5px 12px',
-                      }}
-                    >
-                      <Input.Search
-                        size={'middle'}
-                        placeholder={'新增数据表'}
-                        enterButton={<PlusOutlined />}
-                        value={newValue}
-                        onChange={(e) => {
-                          setNewValue(e.target.value);
-                        }}
-                        onSearch={async (value) => {
-                          const data = {
-                            name: `t_${uid()}`,
-                            title: value,
-                            fields: getDefaultFields(),
-                          };
-                          field.push(data);
-                          setActiveIndex(field.value.length - 1);
-                          setOpen(false);
-                          setNewValue('');
-                          await createOrUpdateCollection(data);
-                          await refresh();
-                        }}
-                      />
-                    </div>
-                  </div>
-                );
+              onDragEnd={async (event) => {
+                const sourceName = event.active?.data?.current?.name;
+                const targetName = event.over?.data?.current?.name;
+                console.log({ sourceName, targetName });
+                await collectionMoveToAfter(sourceName, targetName);
+                await refresh();
               }}
             >
-              {field.value?.map((item, index) => {
-                return (
-                  <Select.Option
-                    key={index}
-                    value={index}
-                    label={`${item.title || '未命名'}${
-                      item.unsaved ? ' （未保存）' : ''
-                    }`}
-                  >
-                    <div
-                      style={{
-                        display: 'flex',
-                        justifyContent: 'space-between',
-                        alignItems: 'center',
-                      }}
-                    >
-                      {item.title || '未命名'}{' '}
-                      {item.unsaved ? '（未保存）' : ''}
-                      {item.privilege !== 'undelete' && (
-                        <DeleteOutlined
-                          onClick={async (e) => {
-                            e.stopPropagation();
-                            field.remove(index);
-                            if (field.value?.length === 0) {
-                              field.push({
-                                name: `t_${uid()}`,
-                                unsaved: true,
-                                fields: getDefaultFields(),
-                              });
-                            }
-                            if (activeIndex === index) {
-                              setActiveIndex(0);
-                            } else if (activeIndex > index) {
-                              setActiveIndex(activeIndex - 1);
-                            }
-                            if (item.name) {
-                              await deleteCollection(item.name);
-                              await refresh();
-                            }
+              {createPortal(
+                <DragOverlay
+                  zIndex={2000}
+                  style={{ pointerEvents: 'none', whiteSpace: 'nowrap' }}
+                >
+                  {dragOverlayContent}
+                </DragOverlay>,
+                document.body,
+              )}
+              <Select
+                loading={loading}
+                value={activeIndex}
+                style={{ minWidth: 300, textAlign: 'center' }}
+                onChange={(value) => {
+                  setActiveIndex(value as any);
+                }}
+                open={open}
+                onDropdownVisibleChange={setOpen}
+                optionLabelProp={'label'}
+                dropdownRender={(menu) => {
+                  return (
+                    <div>
+                      {menu}
+                      <Divider style={{ margin: '5px 0 4px' }} />
+                      <div
+                        style={{
+                          cursor: 'pointer',
+                          padding: '5px 12px',
+                        }}
+                      >
+                        <Input.Search
+                          size={'middle'}
+                          placeholder={'新增数据表'}
+                          enterButton={<PlusOutlined />}
+                          value={newValue}
+                          onChange={(e) => {
+                            setNewValue(e.target.value);
+                          }}
+                          onSearch={async (value) => {
+                            const data = {
+                              name: `t_${uid()}`,
+                              title: value,
+                              fields: getDefaultFields(),
+                            };
+                            field.push(data);
+                            setActiveIndex(field.value.length - 1);
+                            setOpen(false);
+                            setNewValue('');
+                            await createOrUpdateCollection(data);
+                            await refresh();
                           }}
                         />
-                      )}
+                      </div>
                     </div>
-                  </Select.Option>
-                );
-              })}
-            </Select>
+                  );
+                }}
+              >
+                {field.value?.map((item, index) => {
+                  return (
+                    <Select.Option
+                      key={index}
+                      value={index}
+                      label={`${item.title || '未命名'}${
+                        item.unsaved ? ' （未保存）' : ''
+                      }`}
+                    >
+                      <SelectOption
+                        id={item.name}
+                        title={item.title || '未命名'}
+                        data={{
+                          title: item.title,
+                          name: item.name,
+                        }}
+                        showRemove={item.privilege !== 'undelete'}
+                        onRemove={async (e) => {
+                          e.stopPropagation();
+                          field.remove(index);
+                          if (field.value?.length === 0) {
+                            field.push({
+                              name: `t_${uid()}`,
+                              unsaved: true,
+                              fields: getDefaultFields(),
+                            });
+                          }
+                          if (activeIndex === index) {
+                            setActiveIndex(0);
+                          } else if (activeIndex > index) {
+                            setActiveIndex(activeIndex - 1);
+                          }
+                          if (item.name) {
+                            await deleteCollection(item.name);
+                            await refresh();
+                          }
+                        }}
+                      />
+                    </Select.Option>
+                  );
+                })}
+              </Select>
+            </DndContext>
           </div>
         }
         visible={visible}
@@ -228,88 +292,124 @@ export const DatabaseField: any = observer((props) => {
     }
   }, []);
   const [activeKey, setActiveKey] = useState(null);
+  const [dragOverlayContent, setDragOverlayContent] = useState('');
   return (
     <div>
-      <Collapse
-        activeKey={activeKey}
-        onChange={(key) => {
-          setActiveKey(key);
+      <DndContext
+        onDragStart={(event) => {
+          setDragOverlayContent(event.active?.data?.current?.title || '');
         }}
-        className={cls({ empty: !field.value?.length })}
-        accordion
+        onDragEnd={async (event) => {
+          const fromIndex = event.active?.data?.current?.index;
+          const toIndex = event.over?.data?.current?.index;
+          if (isValid(fromIndex) && isValid(toIndex)) {
+            field.move(fromIndex, toIndex);
+          }
+        }}
       >
-        {field.value?.map((item, index) => {
-          if (!item.interface) {
-            return;
-          }
-          const schema = cloneDeep(interfaces.get(item.interface));
-          if (!schema) {
-            console.error('schema invalid');
-            return;
-          }
-          const path = field.address.concat(index);
-          const errors = field.form.queryFeedbacks({
-            type: 'error',
-            address: `*(${path},${path}.*)`,
-          });
-          return (
-            <Collapse.Panel
-              header={
-                <>
-                  {(item.uiSchema && item.uiSchema.title) || (
-                    <i style={{ color: 'rgba(0, 0, 0, 0.25)' }}>未命名</i>
-                  )}{' '}
-                  <Tag
-                    className={item.privilege ? cls(item.privilege) : undefined}
+        {createPortal(
+          <DragOverlay
+            zIndex={2000}
+            style={{ pointerEvents: 'none', whiteSpace: 'nowrap' }}
+          >
+            {dragOverlayContent}
+          </DragOverlay>,
+          document.body,
+        )}
+        <Collapse
+          activeKey={activeKey}
+          onChange={(key) => {
+            setActiveKey(key);
+          }}
+          className={cls({ empty: !field.value?.length })}
+          accordion
+        >
+          {field.value?.map((item, index) => {
+            if (!item.interface) {
+              return;
+            }
+            const schema = cloneDeep(interfaces.get(item.interface));
+            if (!schema) {
+              console.error('schema invalid');
+              return;
+            }
+            const path = field.address.concat(index);
+            const errors = field.form.queryFeedbacks({
+              type: 'error',
+              address: `*(${path},${path}.*)`,
+            });
+            return (
+              <Collapse.Panel
+                header={
+                  <SortableItem
+                    id={item.key}
+                    className={'sortable-item'}
+                    data={{
+                      index,
+                      title: item?.uiSchema?.title,
+                    }}
                   >
-                    {schema.title}
-                  </Tag>
-                  <span style={{ color: 'rgba(0, 0, 0, 0.25)', fontSize: 14 }}>
-                    {item.name}
-                  </span>
-                </>
-              }
-              extra={
-                item.privilege === 'undelete'
-                  ? []
-                  : [
-                      <Badge key={'1'} count={errors.length} />,
-                      <DeleteOutlined
-                        key={'2'}
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          field.remove(index);
-                        }}
-                      />,
-                    ]
-              }
-              key={item.key}
-            >
-              <RecursionField
-                key={`${item.key}_${index}`}
-                name={index}
-                schema={
-                  new Schema({
-                    type: 'object',
-                    properties: {
-                      layout: {
-                        type: 'void',
-                        'x-component': 'FormLayout',
-                        'x-component-props': {
-                          layout: 'vertical',
-                          // labelCol: 4,
-                          // wrapperCol: 20,
-                        },
-                        properties: schema.properties,
-                      },
-                    },
-                  })
+                    <DragHandle className={'drag-handle'} />
+                    {(item.uiSchema && item.uiSchema.title) || (
+                      <i style={{ color: 'rgba(0, 0, 0, 0.25)' }}>未命名</i>
+                    )}{' '}
+                    <Tag
+                      className={
+                        item.privilege ? cls(item.privilege) : undefined
+                      }
+                    >
+                      {schema.title}
+                    </Tag>
+                    <span
+                      style={{ color: 'rgba(0, 0, 0, 0.25)', fontSize: 14 }}
+                    >
+                      {item.name}
+                    </span>
+                  </SortableItem>
                 }
-              />
-            </Collapse.Panel>
-          );
-        })}
-      </Collapse>
+                extra={
+                  item.privilege === 'undelete'
+                    ? []
+                    : [
+                        <Badge key={'1'} count={errors.length} />,
+                        <DeleteOutlined
+                          key={'2'}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            field.remove(index);
+                          }}
+                        />,
+                      ]
+                }
+                key={item.key}
+                forceRender
+              >
+                <RecursionField
+                  key={`${item.key}_${index}`}
+                  name={index}
+                  schema={
+                    new Schema({
+                      type: 'object',
+                      properties: {
+                        layout: {
+                          type: 'void',
+                          'x-component': 'FormLayout',
+                          'x-component-props': {
+                            layout: 'vertical',
+                            // labelCol: 4,
+                            // wrapperCol: 20,
+                          },
+                          properties: schema.properties,
+                        },
+                      },
+                    })
+                  }
+                />
+              </Collapse.Panel>
+            );
+          })}
+        </Collapse>
+      </DndContext>
       <Dropdown
         placement={'bottomCenter'}
         overlayClassName={'all-fields'}

@@ -236,22 +236,27 @@ function generateCardItemSchema(component) {
                   'x-component': 'Action.Dropdown',
                   'x-component-props': {},
                   properties: {
-                    [uid()]: {
-                      type: 'void',
-                      title: '操作 1',
-                      'x-component': 'Menu.Action',
-                      'x-component-props': {
-                        style: {
-                          minWidth: 150,
-                        },
-                        disabled: true,
-                      },
-                    },
+                    // [uid()]: {
+                    //   type: 'void',
+                    //   title: '操作 1',
+                    //   'x-component': 'Menu.Action',
+                    //   'x-component-props': {
+                    //     style: {
+                    //       minWidth: 150,
+                    //     },
+                    //     disabled: true,
+                    //   },
+                    // },
                     [uid()]: {
                       type: 'void',
                       name: 'action1',
                       title: '查看',
                       'x-component': 'Menu.Action',
+                      'x-component-props': {
+                        style: {
+                          minWidth: 150,
+                        },
+                      },
                       'x-designable-bar': 'Table.Action.DesignableBar',
                       'x-action-type': 'view',
                       properties: {

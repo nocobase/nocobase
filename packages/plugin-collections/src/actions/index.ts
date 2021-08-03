@@ -6,7 +6,7 @@ import { cloneDeep, omit } from 'lodash';
 export const findAll = async (ctx: actions.Context, next: actions.Next) => {
   const Collection = ctx.db.getModel('collections');
   const collections = await Collection.findAll(Collection.parseApiJson({
-    sort: '-created_at',
+    sort: 'sort',
   }));
   const data = [];
   for (const collection of collections) {
@@ -28,6 +28,14 @@ export const createOrUpdate = async (ctx: actions.Context, next: actions.Next) =
       collection = await Collection.create(values);
     } else {
       await collection.update(values);
+    }
+    if (values.fields) {
+      values.fields = values.fields.map((field, index) => {
+        return {
+          ...field,
+          sort: index + 1,
+        }
+      })
     }
     await collection.updateAssociations(values);
     await collection.migrate();
