@@ -60,6 +60,20 @@ export async function createSchema(schema: ISchema) {
   });
 }
 
+export async function collectionMoveToAfter(source, target) {
+  if (source && target) {
+    return request(`collections:sort/${source}`, {
+      method: 'post',
+      data: {
+        field: 'sort',
+        target: {
+          name: target,
+        },
+      },
+    });
+  }
+}
+
 export async function updateSchema(schema: ISchema) {
   if (!schema) {
     return;

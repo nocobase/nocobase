@@ -26,3 +26,28 @@
   color: rgba(0, 0, 0, 0.25);
   cursor: not-allowed;
 }
+
+.ant-collapse-header {
+  position: relative;
+  &:hover {
+    .drag-handle {
+      opacity: 1;
+    }
+  }
+  .drag-handle {
+    opacity: 0;
+    margin-right: 6px;
+    background-color: #fafafa;
+    position: relative;
+    z-index: 3;
+  }
+  .ant-collapse-arrow {
+    position: absolute;
+    top: 18px;
+  }
+  .ant-collapse-extra {
+    position: absolute;
+    right: 16px;
+    top: 12px;
+  }
+}

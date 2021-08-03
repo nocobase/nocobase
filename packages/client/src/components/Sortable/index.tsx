@@ -38,13 +38,16 @@ export interface SortableItemProps {}
 
 export const SortableItemContext = createContext<any>({});
 
-export function DragHandle() {
+export function DragHandle(props) {
+  const { component, ...others } = props;
+  const Icon = component || DragOutlined;
   return (
     <SortableItemContext.Consumer>
       {({ setDraggableNodeRef, attributes, listeners }) =>
         setDraggableNodeRef && (
-          <DragOutlined
+          <Icon
             ref={setDraggableNodeRef}
+            {...others}
             {...attributes}
             {...listeners}
           />
