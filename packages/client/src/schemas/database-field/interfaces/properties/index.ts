@@ -28,7 +28,7 @@ export const dataType: ISchema = {
 };
 
 export const dateTimeProps: { [key: string]: ISchema } = {
-  dateFormat: {
+  'uiSchema.x-component-props.dateFormat': {
     type: 'string',
     title: '日期格式',
     'x-component': 'Radio.Group',
@@ -49,7 +49,7 @@ export const dateTimeProps: { [key: string]: ISchema } = {
       },
     ],
   },
-  showTime: {
+  'uiSchema.x-component-props.showTime': {
     type: 'boolean',
     'x-decorator': 'FormItem',
     'x-component': 'Checkbox',
@@ -62,7 +62,7 @@ export const dateTimeProps: { [key: string]: ISchema } = {
       }}}`,
     ],
   },
-  timeFormat: {
+  'uiSchema.x-component-props.timeFormat': {
     type: 'string',
     title: '时间格式',
     'x-component': 'Radio.Group',
