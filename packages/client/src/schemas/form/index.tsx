@@ -156,6 +156,9 @@ Form.Field = observer((props: any) => {
   }
   const randomName = useContext(RandomNameContext);
   const title = schema['title'] || collectionField?.uiSchema?.title;
+  const required = schema['required'] || collectionField?.uiSchema?.required;
+  const description =
+    schema['description'] || collectionField?.uiSchema?.description;
   return (
     <RecursionField
       name={randomName}
@@ -167,6 +170,8 @@ Form.Field = observer((props: any) => {
             [collectionField.name]: {
               ...collectionField.uiSchema,
               title,
+              required,
+              description,
               'x-decorator': 'FormilyFormItem',
             },
           },

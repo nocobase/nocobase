@@ -20,10 +20,10 @@ import {
   updateSchema,
 } from '../';
 import get from 'lodash/get';
-import { Button, Dropdown, Menu, Space } from 'antd';
+import { Button, Dropdown, Menu, Space, Switch } from 'antd';
 import { MenuOutlined, DragOutlined } from '@ant-design/icons';
 import cls from 'classnames';
-import { FormLayout } from '@formily/antd';
+import { FormDialog, FormLayout } from '@formily/antd';
 import './style.less';
 import AddNew from '../add-new';
 import { DraggableBlockContext } from '../../components/drag-and-drop';
@@ -33,20 +33,27 @@ import { useEffect } from 'react';
 import { uid } from '@formily/shared';
 import { getSchemaPath } from '../../components/schema-renderer';
 import { RandomNameContext } from '.';
-import { useDisplayedMapContext } from '../../constate';
+import { useCollectionContext, useDisplayedMapContext } from '../../constate';
+import SwitchMenuItem from '../../components/SwitchMenuItem';
 
 export const FieldDesignableBar = observer((props) => {
   const field = useField();
-  const fieldSchema = useFieldSchema();
-  const { designable, schema, deepRemove } = useDesignable();
+  const { schema, deepRemove } = useDesignable();
   const [visible, setVisible] = useState(false);
   const { dragRef } = useContext(DraggableBlockContext);
   const randomName = useContext(RandomNameContext);
   const displayed = useDisplayedMapContext();
   const fieldName = schema['x-component-props']?.['fieldName'];
-  if (!designable) {
-    return null;
-  }
+  const { getField } = useCollectionContext();
+
+  const collectionField = getField(fieldName);
+
+  console.log({ collectionField });
+
+  const realField = field
+    .query(field.address.concat(randomName, fieldName))
+    .take();
+
   return (
     <div className={cls('designable-bar', { active: visible })}>
       <span
@@ -59,6 +66,7 @@ export const FieldDesignableBar = observer((props) => {
           <AddNew.FormItem defaultAction={'insertAfter'} ghost />
           {dragRef && <DragOutlined ref={dragRef} />}
           <Dropdown
+            placement={'bottomRight'}
             trigger={['click']}
             visible={visible}
             onVisibleChange={(visible) => {
@@ -69,17 +77,43 @@ export const FieldDesignableBar = observer((props) => {
                 <Menu.Item
                   key={'update'}
                   onClick={async () => {
-                    const title = uid();
+                    const values = await FormDialog('修改字段名称', () => {
+                      return (
+                        <FormLayout layout={'vertical'}>
+                          <SchemaField
+                            schema={{
+                              type: 'object',
+                              properties: {
+                                fieldName: {
+                                  type: 'string',
+                                  title: '原字段名称',
+                                  'x-read-pretty': true,
+                                  'x-decorator': 'FormItem',
+                                  'x-component': 'Input',
+                                },
+                                title: {
+                                  type: 'string',
+                                  title: '自定义名称',
+                                  'x-decorator': 'FormItem',
+                                  'x-component': 'Input',
+                                },
+                              },
+                            }}
+                          />
+                        </FormLayout>
+                      );
+                    }).open({
+                      initialValues: {
+                        fieldName: collectionField?.uiSchema?.title,
+                        title: schema['title'],
+                      },
+                    });
+                    const title = values.title || null;
                     field
                       .query(field.address.concat(randomName, fieldName))
                       .take((f) => {
-                        f.title = title;
+                        f.title = title || collectionField?.uiSchema?.title;
                       });
-                    console.log(
-                      'fieldfieldfieldfieldfield',
-                      field.address.concat(randomName, fieldName).entire,
-                      schema,
-                    );
                     schema['title'] = title;
                     await updateSchema({
                       key: schema['key'],
@@ -87,8 +121,56 @@ export const FieldDesignableBar = observer((props) => {
                     });
                   }}
                 >
-                  修改字段配置
+                  修改字段名称
                 </Menu.Item>
+                <Menu.Item
+                  style={{ minWidth: 150 }}
+                  onClick={async () => {
+                    const values = await FormDialog('编辑描述', () => {
+                      return (
+                        <FormLayout layout={'vertical'}>
+                          <SchemaField
+                            schema={{
+                              type: 'object',
+                              properties: {
+                                description: {
+                                  type: 'string',
+                                  'x-component': 'Input.TextArea',
+                                },
+                              },
+                            }}
+                          />
+                        </FormLayout>
+                      );
+                    }).open({
+                      initialValues: {
+                        description: schema['description'],
+                      },
+                    });
+                    const description = values.description || null;
+                    realField.description = description || collectionField?.uiSchema?.description;
+                    schema['description'] = description;
+                    await updateSchema({
+                      key: schema['key'],
+                      description,
+                    });
+                  }}
+                >
+                  编辑描述
+                </Menu.Item>
+                <SwitchMenuItem
+                  title={'必填'}
+                  checked={schema.required as boolean}
+                  onChange={(checked) => {
+                    field
+                      .query(field.address.concat(randomName, fieldName))
+                      .take((f: any) => {
+                        f.required = checked;
+                        schema.required = checked;
+                        updateSchema(schema);
+                      });
+                  }}
+                />
                 <Menu.Divider />
                 <Menu.Item
                   key={'delete'}
@@ -104,7 +186,7 @@ export const FieldDesignableBar = observer((props) => {
                     }
                   }}
                 >
-                  删除当前字段
+                  移除
                 </Menu.Item>
               </Menu>
             }
