@@ -7,6 +7,7 @@ export const number: ISchema = {
   group: 'basic',
   order: 5,
   title: '数字',
+  sortable: true,
   default: {
     dataType: 'float',
     // name,

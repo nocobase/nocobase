@@ -21,6 +21,7 @@ import * as uiSchema from './ui-schema';
   const Collection = database.getModel('collections');
   const collection = await Collection.create(config);
   await collection.updateAssociations(config);
+  await collection.migrate();
 
   const Route = database.getModel('routes');
 

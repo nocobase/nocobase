@@ -4,12 +4,17 @@ export default {
   name: 'routes',
   title: '路由表',
   model: 'Route',
+  sortable: {
+    type: 'sort',
+    name: 'sort',
+    scope: ['parentKey'],
+  },
   fields: [
-    {
-      type: 'sort',
-      name: 'sort',
-      scope: ['parentKey'],
-    },
+    // {
+    //   type: 'sort',
+    //   name: 'sort',
+    //   scope: ['parentKey'],
+    // },
     {
       type: 'uid',
       name: 'key',

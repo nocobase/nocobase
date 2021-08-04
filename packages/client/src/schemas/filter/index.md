@@ -38,6 +38,20 @@ const schema = {
   name: 'filter',
   type: 'object',
   'x-component': 'Filter',
+  default: {
+    and: [
+      {
+        field1: {
+          eq: 'aa',
+        }
+      },
+      {
+        field1: {
+          eq: 'bbb',
+        }
+      }
+    ],
+  },
   properties: {
     column1: {
       type: 'void',
@@ -68,7 +82,7 @@ const schema = {
         ],
       },
       properties: {
-        field1: {
+        field2: {
           type: 'number',
           'x-component': 'InputNumber',
         },
@@ -79,7 +93,7 @@ const schema = {
 
 export default () => {
   return (
-    <SchemaRenderer schema={schema} />
+    <SchemaRenderer debug={true} schema={schema} />
   );
 };
 ```

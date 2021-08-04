@@ -7,6 +7,7 @@ export const email: ISchema = {
   group: 'basic',
   order: 4,
   title: '电子邮箱',
+  sortable: true,
   default: {
     dataType: 'string',
     // name,

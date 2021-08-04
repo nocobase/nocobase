@@ -7,6 +7,7 @@ export const datetime: ISchema = {
   group: 'datetime',
   order: 1,
   title: '日期',
+  sortable: true,
   default: {
     dataType: 'date',
     // name,

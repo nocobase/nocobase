@@ -17,7 +17,7 @@ import { uid } from '@formily/shared';
 import useRequest from '@ahooksjs/use-request';
 import { BaseResult } from '@ahooksjs/use-request/lib/types';
 import cls from 'classnames';
-import { MenuOutlined, DragOutlined } from '@ant-design/icons';
+import { MenuOutlined, DragOutlined, FilterOutlined } from '@ant-design/icons';
 import { DndContext, DragOverlay } from '@dnd-kit/core';
 import {
   SortableContext,
@@ -42,6 +42,7 @@ import { Resource } from '../../resource';
 import {
   CollectionProvider,
   DisplayedMapProvider,
+  useCollection,
   useCollectionContext,
   useDisplayedMapContext,
 } from '../../constate';
@@ -59,7 +60,10 @@ import {
   SortableRowHandle,
 } from './Sortable';
 import { DragHandle, Droppable, SortableItem } from '../../components/Sortable';
-import { VisibleContext } from '../../context';
+import { isValid } from '@formily/shared';
+import { FormButtonGroup, FormDialog, FormLayout, Submit } from '@formily/antd';
+import flatten from 'flat';
+import IconPicker from '../../components/icon-picker';
 
 export interface ITableContext {
   props: any;
@@ -79,12 +83,12 @@ export interface ITableRowContext {
   record: any;
 }
 
-const TableConetxt = createContext<ITableContext>(null);
+const TableContext = createContext<ITableContext>({} as any);
 const TableRowContext = createContext<ITableRowContext>(null);
 const CollectionFieldContext = createContext(null);
 
 const useTable = () => {
-  return useContext(TableConetxt);
+  return useContext(TableContext);
 };
 
 const useTableRow = () => {
@@ -98,10 +102,15 @@ function useTableFilterAction() {
     refresh,
     props: { refreshRequestOnChange },
   } = useTable();
+  const form = useForm();
   return {
     async run() {
+      console.log('useTableFilterAction', form.values);
       if (refreshRequestOnChange) {
-        return service.refresh();
+        return service.run({
+          ...service.params[0],
+          // filter,
+        });
       }
     },
   };
@@ -204,7 +213,7 @@ const useTableIndex = () => {
   const { pagination, props } = useTable();
   const ctx = useContext(TableRowContext);
   if (pagination && !props.clientSidePagination) {
-    const { pageSize, page } = pagination;
+    const { pageSize, page = 1 } = pagination;
     return ctx.index + (page - 1) * pageSize;
   }
   return ctx.index;
@@ -433,11 +442,13 @@ const useDataSource = () => {
 
 const TableMain = () => {
   const {
+    resource,
     selectedRowKeys,
     setSelectedRowKeys,
     service,
     field,
     props: { rowKey, dragSort, showIndex },
+    refresh,
   } = useTable();
   const columns = useTableColumns();
   const dataSource = useDataSource();
@@ -446,8 +457,29 @@ const TableMain = () => {
   return (
     <div className={'nb-table'}>
       <DndContext
-        onDragEnd={(event) => {
-          console.log({ event });
+        onDragEnd={async (event) => {
+          const fromId = event.active?.id as any;
+          const toId = event.over?.id as any;
+          if (isValid(fromId) && isValid(toId)) {
+            const fromIndex = findIndex(
+              field.value,
+              (item) => item[rowKey] === fromId,
+            );
+            const toIndex = findIndex(
+              field.value,
+              (item) => item[rowKey] === toId,
+            );
+            console.log({ fromId, toId, fromIndex, toIndex });
+            field.move(fromIndex, toIndex);
+            refresh();
+            await resource.sort({
+              resourceKey: fromId,
+              target: {
+                [rowKey]: toId,
+              },
+            });
+            await service.refresh();
+          }
         }}
       >
         {actionBars.map((actionBar) => (
@@ -541,13 +573,35 @@ const TableMain = () => {
   );
 };
 
-const usePagination = (paginationProps?: any) => {
-  return useState(() => {
-    if (!paginationProps) {
-      return false;
-    }
-    return { page: 1, pageSize: 10, ...paginationProps };
-  });
+const usePagination = () => {
+  const field = useField<Formily.Core.Models.ArrayField>();
+  const paginationProps = field.componentProps.pagination;
+
+  let pagination = paginationProps;
+
+  // const [pagination, setPagination] = useState(() => {
+  //   if (!paginationProps) {
+  //     return false;
+  //   }
+  //   const { defaultPageSize = 10, ...others } = paginationProps;
+  //   return { page: 1, pageSize: defaultPageSize, ...others };
+  // });
+
+  // useEffect(() => {
+  //   if (!paginationProps) {
+  //     return setPagination(false);
+  //   }
+  //   const { defaultPageSize = 10, ...others } = paginationProps;
+  //   setPagination({ page: 1, pageSize: defaultPageSize, ...others });
+  // }, [paginationProps]);
+
+  return [
+    pagination,
+    (params) => {
+      const defaults = field.componentProps.pagination;
+      field.componentProps.pagination = { ...defaults, ...params };
+    },
+  ];
 };
 
 const TableProvider = (props: any) => {
@@ -559,10 +613,25 @@ const TableProvider = (props: any) => {
   } = props;
   const { schema } = useDesignable();
   const field = useField<Formily.Core.Models.ArrayField>();
-  const [pagination, setPagination] = usePagination(props.pagination);
+  const [pagination, setPagination] = usePagination();
   const [selectedRowKeys, setSelectedRowKeys] = useState<any>([]);
   const [, refresh] = useState(uid());
   const { resource } = useResource();
+  const { sortableField } = useCollectionContext();
+  const dragSort = props.dragSort;
+  const getDefaultParams = () => {
+    const defaultParams = { ...pagination };
+    if (dragSort) {
+      defaultParams['sort'] = [sortableField || 'sort'];
+    } else {
+      defaultParams['sort'] = (props.defaultSort || []).join(',');
+    }
+    if (props.defaultFilter) {
+      defaultParams['defaultFilter'] = props.defaultFilter;
+    }
+    console.log({ defaultParams });
+    return defaultParams;
+  };
   const service = useRequest(
     (params?: any) => {
       if (!resource) {
@@ -582,12 +651,20 @@ const TableProvider = (props: any) => {
       onSuccess(data: any) {
         field.setValue(data?.list || []);
       },
-      defaultParams: [{ ...pagination }],
+      manual: true,
+      // defaultParams: [getDefaultParams()],
     },
   );
-  console.log('refresh', { pagination });
+  useEffect(() => {
+    service.run(getDefaultParams());
+  }, [
+    pagination.pageSize,
+    props.dragSort,
+    props.defaultSort,
+    props.defaultFilter,
+  ]);
   return (
-    <TableConetxt.Provider
+    <TableContext.Provider
       value={{
         resource,
         refresh: () => {
@@ -597,7 +674,7 @@ const TableProvider = (props: any) => {
             : service?.data?.total;
           const maxPage = Math.ceil(total / pageSize);
           if (page > maxPage) {
-            setPagination((prev) => ({ ...prev, page: maxPage }));
+            setPagination({ page: maxPage });
           } else {
             refresh(uid());
           }
@@ -613,7 +690,7 @@ const TableProvider = (props: any) => {
       }}
     >
       <TableMain />
-    </TableConetxt.Provider>
+    </TableContext.Provider>
   );
 };
 
@@ -654,19 +731,18 @@ Table.Pagination = observer(() => {
         total={total}
         onChange={(current, pageSize) => {
           const page = pagination.pageSize !== pageSize ? 1 : current;
-          setPagination((prev) => ({
-            ...prev,
-            page,
-            pageSize,
-          }));
-          if (clientSidePagination) {
-            return;
-          }
-          service.run({
-            ...service.params,
+          setPagination({
             page,
             pageSize,
           });
+          // if (clientSidePagination) {
+          //   return;
+          // }
+          // service.run({
+          //   ...service.params[0],
+          //   page,
+          //   pageSize,
+          // });
         }}
       />
     </div>
@@ -1031,42 +1107,74 @@ Table.ActionBar = observer((props: any) => {
   );
 });
 
+const fieldsToFilterColumns = (fields: any[], options: any = {}) => {
+  const { fieldNames = [] } = options;
+  const properties = {};
+  fields.forEach((field, index) => {
+    if (fieldNames?.length && !fieldNames.includes(field.name)) {
+      return;
+    }
+    const fieldOption = interfaces.get(field.interface);
+    if (!fieldOption.operations) {
+      return;
+    }
+    properties[`column${index}`] = {
+      type: 'void',
+      title: field?.uiSchema?.title,
+      'x-component': 'Filter.Column',
+      'x-component-props': {
+        operations: fieldOption.operations,
+      },
+      properties: {
+        [field.name]: {
+          ...field.uiSchema,
+          'x-decorator': 'FormilyFormItem',
+          title: null,
+        },
+      },
+    };
+  });
+  return properties;
+};
+
+const fieldsToSortColumns = (fields: any[]) => {
+  const dataSource = [];
+
+  fields.forEach((field) => {
+    const fieldOption = interfaces.get(field.interface);
+    if (!fieldOption.sortable) {
+      return;
+    }
+    dataSource.push({
+      value: field.name,
+      label: field?.uiSchema?.title,
+    });
+  });
+
+  return dataSource;
+};
+
 Table.Filter = observer((props: any) => {
+  const { service } = useTable();
   const { fieldNames = [] } = props;
   const { schema, DesignableBar } = useDesignable();
   const form = useMemo(() => createForm(), []);
   const { fields = [] } = useCollectionContext();
-  const fields2properties = (fields: any[]) => {
-    const properties = {};
-    fields.forEach((field, index) => {
-      if (fieldNames?.length && !fieldNames.includes(field.name)) {
-        return;
-      }
-      const fieldOption = interfaces.get(field.interface);
-      if (!fieldOption.operations) {
-        return;
-      }
-      properties[`column${index}`] = {
-        type: 'void',
-        title: field?.uiSchema?.title,
-        'x-component': 'Filter.Column',
-        'x-component-props': {
-          operations: fieldOption.operations,
-        },
-        properties: {
-          [field.name]: {
-            ...field.uiSchema,
-            title: null,
-          },
-        },
-      };
-    });
-    return properties;
-  };
+  const [visible, setVisible] = useState(false);
+  const obj = flatten(form.values.filter || {});
+  console.log('flatten', obj, Object.values(obj));
+  const count = Object.values(obj).filter((i) =>
+    Array.isArray(i) ? i.length : i,
+  ).length;
+
+  const icon = props.icon || 'FilterOutlined';
+
   return (
     <Popover
       trigger={['click']}
       placement={'bottomLeft'}
+      visible={visible}
+      onVisibleChange={setVisible}
       content={
         <div>
           <FormProvider form={form}>
@@ -1077,17 +1185,32 @@ Table.Filter = observer((props: any) => {
                   filter: {
                     type: 'object',
                     'x-component': 'Filter',
-                    properties: fields2properties(fields),
+                    properties: fieldsToFilterColumns(fields, { fieldNames }),
                   },
                 },
               }}
             />
+            <FormButtonGroup align={'right'}>
+              <Submit
+                onSubmit={() => {
+                  const { filter } = form.values;
+                  console.log('Table.Filter', form.values);
+                  setVisible(false);
+                  return service.run({
+                    ...service.params[0],
+                    filter,
+                  });
+                }}
+              >
+                提交
+              </Submit>
+            </FormButtonGroup>
           </FormProvider>
         </div>
       }
     >
-      <Button>
-        {schema.title}
+      <Button icon={<IconPicker type={icon} />}>
+        {count > 0 ? `${count} 个筛选项` : schema.title}
         <DesignableBar />
       </Button>
     </Popover>
@@ -1099,7 +1222,11 @@ Table.Filter.DesignableBar = () => {
   const [visible, setVisible] = useState(false);
   const displayed = useDisplayedMapContext();
   const { fields } = useCollectionContext();
-
+  const field = useField();
+  let fieldNames = field.componentProps.fieldNames || [];
+  if (fieldNames.length === 0) {
+    fieldNames = fields.map((field) => field.name);
+  }
   return (
     <div className={cls('designable-bar', { active: visible })}>
       <span
@@ -1119,22 +1246,72 @@ Table.Filter.DesignableBar = () => {
             <Menu>
               <Menu.ItemGroup title={'筛选字段'}>
                 {fields
-                  .filter((field) => {
-                    const option = interfaces.get(field.interface);
+                  .filter((collectionField) => {
+                    const option = interfaces.get(collectionField.interface);
                     return option.operations?.length;
                   })
-                  .map((field) => (
+                  .map((collectionField) => (
                     <SwitchMenuItem
-                      title={field?.uiSchema?.title}
-                      checked={true}
-                      onChange={async (checked) => {}}
+                      title={collectionField?.uiSchema?.title}
+                      checked={fieldNames.includes(collectionField.name)}
+                      onChange={async (checked) => {
+                        if (checked) {
+                          fieldNames.push(collectionField.name);
+                        } else {
+                          const index = fieldNames.indexOf(
+                            collectionField.name,
+                          );
+                          if (index > -1) {
+                            fieldNames.splice(index, 1);
+                          }
+                        }
+                        console.log({ fieldNames, field });
+                        schema['x-component-props']['fieldNames'] = fieldNames;
+                        field.componentProps.fieldNames = fieldNames;
+                        updateSchema(schema);
+                      }}
                     />
                   ))}
               </Menu.ItemGroup>
               <Menu.Divider />
               <Menu.Item
-                onClick={(e) => {
-                  schema.title = uid();
+                onClick={async (e) => {
+                  const values = await FormDialog('修改名称和图标', () => {
+                    return (
+                      <FormLayout layout={'vertical'}>
+                        <SchemaField
+                          schema={{
+                            type: 'object',
+                            properties: {
+                              title: {
+                                type: 'string',
+                                title: '按钮名称',
+                                required: true,
+                                'x-decorator': 'FormItem',
+                                'x-component': 'Input',
+                              },
+                              icon: {
+                                type: 'string',
+                                title: '按钮图标',
+                                'x-decorator': 'FormItem',
+                                'x-component': 'IconPicker',
+                              },
+                            },
+                          }}
+                        />
+                      </FormLayout>
+                    );
+                  }).open({
+                    initialValues: {
+                      title: schema['title'],
+                      icon: schema['x-component-props']?.['icon'],
+                    },
+                  });
+                  schema['title'] = values.title;
+                  schema['x-component-props']['icon'] = values.icon;
+                  field.componentProps.icon = values.icon;
+                  field.title = values.title;
+                  updateSchema(schema);
                   refresh();
                 }}
               >
@@ -1153,7 +1330,7 @@ Table.Filter.DesignableBar = () => {
                   setVisible(false);
                 }}
               >
-                删除
+                移除
               </Menu.Item>
             </Menu>
           }
@@ -1262,6 +1439,7 @@ Table.Action.DesignableBar = () => {
   const isPopup = Object.keys(schema.properties || {}).length > 0;
   const inActionBar = schema.parent['x-component'] === 'Table.ActionBar';
   const displayed = useDisplayedMapContext();
+  const field = useField();
   return (
     <div className={cls('designable-bar', { active: visible })}>
       <span
@@ -1280,8 +1458,43 @@ Table.Action.DesignableBar = () => {
           overlay={
             <Menu>
               <Menu.Item
-                onClick={(e) => {
-                  schema.title = uid();
+                onClick={async (e) => {
+                  const values = await FormDialog('修改名称和图标', () => {
+                    return (
+                      <FormLayout layout={'vertical'}>
+                        <SchemaField
+                          schema={{
+                            type: 'object',
+                            properties: {
+                              title: {
+                                type: 'string',
+                                title: '按钮名称',
+                                required: true,
+                                'x-decorator': 'FormItem',
+                                'x-component': 'Input',
+                              },
+                              icon: {
+                                type: 'string',
+                                title: '按钮图标',
+                                'x-decorator': 'FormItem',
+                                'x-component': 'IconPicker',
+                              },
+                            },
+                          }}
+                        />
+                      </FormLayout>
+                    );
+                  }).open({
+                    initialValues: {
+                      title: schema['title'],
+                      icon: schema['x-component-props']?.['icon'],
+                    },
+                  });
+                  schema['title'] = values.title;
+                  schema['x-component-props']['icon'] = values.icon;
+                  field.componentProps.icon = values.icon;
+                  field.title = values.title;
+                  updateSchema(schema);
                   refresh();
                 }}
               >
@@ -1293,11 +1506,19 @@ Table.Action.DesignableBar = () => {
                   <Select
                     bordered={false}
                     size={'small'}
-                    defaultValue={'modal'}
+                    defaultValue={'Action.Modal'}
+                    onChange={(value) => {
+                      const s = Object.values(schema.properties).shift();
+                      s['x-component'] = value;
+                      refresh();
+                      updateSchema(s);
+                      // const f = field.query(getSchemaPath(s)).take()
+                      // console.log('fffffff', { schema, f });
+                    }}
                   >
-                    <Select.Option value={'modal'}>对话框</Select.Option>
-                    <Select.Option value={'drawer'}>抽屉</Select.Option>
-                    <Select.Option value={'window'}>浏览器窗口</Select.Option>
+                    <Select.Option value={'Action.Modal'}>对话框</Select.Option>
+                    <Select.Option value={'Action.Drawer'}>抽屉</Select.Option>
+                    <Select.Option value={'Action.Window'}>浏览器窗口</Select.Option>
                   </Select>{' '}
                   内打开
                 </Menu.Item>
@@ -1321,7 +1542,7 @@ Table.Action.DesignableBar = () => {
                   setVisible(false);
                 }}
               >
-                删除
+                移除
               </Menu.Item>
             </Menu>
           }
@@ -1389,7 +1610,8 @@ Table.Column.DesignableBar = () => {
   const { schema, remove, refresh, insertAfter } = useDesignable();
   const [visible, setVisible] = useState(false);
   const displayed = useDisplayedMapContext();
-  const ctx = useContext(ColDraggableContext);
+  const collectionField = useContext(CollectionFieldContext);
+  console.log('displayed.map', displayed.map);
   return (
     <div className={cls('designable-bar', { active: visible })}>
       <span
@@ -1409,7 +1631,38 @@ Table.Column.DesignableBar = () => {
             <Menu>
               <Menu.Item
                 onClick={async (e) => {
-                  const title = uid();
+                  const values = await FormDialog('修改列标题', () => {
+                    return (
+                      <FormLayout layout={'vertical'}>
+                        <SchemaField
+                          schema={{
+                            type: 'object',
+                            properties: {
+                              fieldName: {
+                                type: 'string',
+                                title: '原字段名称',
+                                'x-read-pretty': true,
+                                'x-decorator': 'FormItem',
+                                'x-component': 'Input',
+                              },
+                              title: {
+                                type: 'string',
+                                title: '自定义列标题',
+                                'x-decorator': 'FormItem',
+                                'x-component': 'Input',
+                              },
+                            },
+                          }}
+                        />
+                      </FormLayout>
+                    );
+                  }).open({
+                    initialValues: {
+                      fieldName: collectionField?.uiSchema?.title,
+                      title: schema['title'],
+                    },
+                  });
+                  const title = values.title || null;
                   field.title = title;
                   schema.title = title;
                   refresh();
@@ -1420,8 +1673,9 @@ Table.Column.DesignableBar = () => {
                   setVisible(false);
                 }}
               >
-                编辑列
+                修改列标题
               </Menu.Item>
+              <Menu.Divider />
               <Menu.Item
                 onClick={async () => {
                   const s = remove();
@@ -1430,7 +1684,7 @@ Table.Column.DesignableBar = () => {
                   await removeSchema(s);
                 }}
               >
-                删除列
+                移除
               </Menu.Item>
             </Menu>
           }
@@ -1453,14 +1707,14 @@ Table.SortHandle = observer((props: any) => {
 
 Table.DesignableBar = observer((props) => {
   const field = useField();
-  const { designable, schema, refresh, deepRemove } = useDesignable();
+  const { schema, refresh, deepRemove } = useDesignable();
   const [visible, setVisible] = useState(false);
   const { dragRef } = useContext(DraggableBlockContext);
-  if (!designable) {
-    return null;
-  }
   const defaultPageSize =
-    schema['x-component-props']?.['pagination']?.['defaultPageSize'] || 20;
+    field?.componentProps?.pagination?.defaultPageSize || 10;
+  const collectionName = field?.componentProps?.collectionName;
+  const { fields } = useCollection({ collectionName });
+  console.log({ collectionName });
   return (
     <div className={cls('designable-bar', { active: visible })}>
       <span
@@ -1486,9 +1740,16 @@ Table.DesignableBar = observer((props) => {
                     const bool = !field.componentProps.showIndex;
                     schema['x-component-props']['showIndex'] = bool;
                     field.componentProps.showIndex = bool;
+                    updateSchema(schema);
                   }}
                 >
-                  {field.componentProps.showIndex ? '隐藏序号' : '显示序号'}
+                  <div className={'nb-space-between'}>
+                    显示序号{' '}
+                    <Switch
+                      size={'small'}
+                      checked={field.componentProps.showIndex}
+                    />
+                  </div>
                 </Menu.Item>
                 <Menu.Item
                   key={'dragSort'}
@@ -1498,16 +1759,166 @@ Table.DesignableBar = observer((props) => {
                       : 'sort';
                     schema['x-component-props']['dragSort'] = dragSort;
                     field.componentProps.dragSort = dragSort;
+                    updateSchema(schema);
                   }}
                 >
-                  {field.componentProps.dragSort
-                    ? '禁用拖拽排序'
-                    : '启用拖拽排序'}
+                  <div className={'nb-space-between'}>
+                    启用拖拽排序{' '}
+                    <Switch
+                      size={'small'}
+                      checked={field.componentProps.dragSort}
+                    />
+                  </div>
                 </Menu.Item>
                 {!field.componentProps.dragSort && (
-                  <Menu.Item key={'defaultSort'}>默认排序</Menu.Item>
+                  <Menu.Item
+                    key={'defaultSort'}
+                    onClick={async () => {
+                      const defaultSort =
+                        field.componentProps?.defaultSort?.map(
+                          (item: string) => {
+                            return item.startsWith('-')
+                              ? {
+                                  field: item.substring(1),
+                                  direction: 'desc',
+                                }
+                              : {
+                                  field: item,
+                                  direction: 'asc',
+                                };
+                          },
+                        );
+                      const values = await FormDialog('设置默认排序', () => {
+                        return (
+                          <FormLayout layout={'vertical'}>
+                            <SchemaField
+                              schema={{
+                                type: 'object',
+                                properties: {
+                                  defaultSort: {
+                                    type: 'array',
+                                    'x-component': 'ArrayItems',
+                                    'x-decorator': 'FormItem',
+                                    items: {
+                                      type: 'object',
+                                      properties: {
+                                        space: {
+                                          type: 'void',
+                                          'x-component': 'Space',
+                                          properties: {
+                                            sort: {
+                                              type: 'void',
+                                              'x-decorator': 'FormItem',
+                                              'x-component':
+                                                'ArrayItems.SortHandle',
+                                            },
+                                            field: {
+                                              type: 'string',
+                                              'x-decorator': 'FormItem',
+                                              'x-component': 'Select',
+                                              enum: fieldsToSortColumns(fields),
+                                              'x-component-props': {
+                                                style: {
+                                                  width: 260,
+                                                },
+                                              },
+                                            },
+                                            direction: {
+                                              type: 'string',
+                                              'x-decorator': 'FormItem',
+                                              'x-component': 'Select',
+                                              'x-component-props': {
+                                                style: {
+                                                  width: 100,
+                                                },
+                                              },
+                                              enum: [
+                                                { label: '正序', value: 'asc' },
+                                                {
+                                                  label: '倒序',
+                                                  value: 'desc',
+                                                },
+                                              ],
+                                            },
+                                            remove: {
+                                              type: 'void',
+                                              'x-decorator': 'FormItem',
+                                              'x-component':
+                                                'ArrayItems.Remove',
+                                            },
+                                          },
+                                        },
+                                      },
+                                    },
+                                    properties: {
+                                      add: {
+                                        type: 'void',
+                                        title: '新增',
+                                        'x-component': 'ArrayItems.Addition',
+                                      },
+                                    },
+                                  },
+                                },
+                              }}
+                            />
+                          </FormLayout>
+                        );
+                      }).open({
+                        initialValues: {
+                          defaultSort,
+                        },
+                      });
+                      const sort = values.defaultSort.map((item) => {
+                        return item.direction === 'desc'
+                          ? `-${item.field}`
+                          : item.field;
+                      });
+                      schema['x-component-props']['defaultSort'] = sort;
+                      field.componentProps.defaultSort = sort;
+                      await updateSchema(schema);
+                      console.log('defaultSort', sort);
+                    }}
+                  >
+                    设置默认排序
+                  </Menu.Item>
                 )}
-                <Menu.Item key={'defaultFilter'}>筛选范围</Menu.Item>
+                <Menu.Item
+                  key={'defaultFilter'}
+                  onClick={async () => {
+                    const { defaultFilter } = await FormDialog(
+                      '设置筛选范围',
+                      () => {
+                        return (
+                          <FormLayout layout={'vertical'}>
+                            <SchemaField
+                              schema={{
+                                type: 'object',
+                                properties: {
+                                  defaultFilter: {
+                                    type: 'object',
+                                    'x-component': 'Filter',
+                                    properties: fieldsToFilterColumns(fields),
+                                  },
+                                },
+                              }}
+                            />
+                          </FormLayout>
+                        );
+                      },
+                    ).open({
+                      initialValues: {
+                        defaultFilter:
+                          field?.componentProps?.defaultFilter || {},
+                      },
+                    });
+                    schema['x-component-props']['defaultFilter'] =
+                      defaultFilter;
+                    field.componentProps.defaultFilter = defaultFilter;
+                    await updateSchema(schema);
+                  }}
+                >
+                  设置筛选范围
+                </Menu.Item>
                 <Menu.Item key={'defaultPageSize'}>
                   每页默认显示{' '}
                   <Select
@@ -1516,11 +1927,16 @@ Table.DesignableBar = observer((props) => {
                     onChange={(value) => {
                       const componentProps = schema['x-component-props'] || {};
                       set(componentProps, 'pagination.defaultPageSize', value);
+                      set(componentProps, 'pagination.pageSize', value);
                       schema['x-component-props'] = componentProps;
+                      field.componentProps.pagination.pageSize = value;
+                      field.componentProps.pagination.defaultPageSize = value;
                       refresh();
+                      updateSchema(schema);
                     }}
                     defaultValue={defaultPageSize}
                   >
+                    <Select.Option value={10}>10</Select.Option>
                     <Select.Option value={20}>20</Select.Option>
                     <Select.Option value={50}>50</Select.Option>
                     <Select.Option value={100}>100</Select.Option>
@@ -1539,7 +1955,7 @@ Table.DesignableBar = observer((props) => {
                     }
                   }}
                 >
-                  删除当前区块
+                  移除
                 </Menu.Item>
               </Menu>
             }

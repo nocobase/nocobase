@@ -7,6 +7,7 @@ export const phone: ISchema = {
   group: 'basic',
   order: 3,
   title: '手机号码',
+  sortable: true,
   default: {
     dataType: 'string',
     // name,

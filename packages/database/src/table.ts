@@ -144,6 +144,7 @@ export class Table {
       model,
       fields = [],
       indexes = [],
+      sortable,
     } = options;
     this.options = options;
     this.database = database;
@@ -155,7 +156,26 @@ export class Table {
     this.addIndexes(indexes, 'modelOnly');
     // this.modelInit('modelOnly');
     this.setFields(fields);
+    this.initSortable();
     database.runHooks('afterTableInit', this);
+  }
+
+  public initSortable() {
+    const { sortable } = this.options;
+    if (!sortable) {
+      return;
+    }
+    if (typeof sortable === 'string') {
+      this.addField({
+        type: 'sort',
+        name: sortable,
+      });
+    } else if (typeof sortable === 'object') {
+      this.addField({
+        ...sortable,
+        type: 'sort',
+      });
+    }
   }
 
   public modelInit(reinitialize: Reinitialize = false) {
@@ -389,6 +409,7 @@ export class Table {
     for (const key in fields) {
       this.addField(fields[key], false);
     }
+    this.initSortable();
     // @ts-ignore
     this.addIndexes(indexes, false);
     this.modelInit(true);

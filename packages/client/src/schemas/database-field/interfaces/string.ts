@@ -7,6 +7,7 @@ export const string: ISchema = {
   group: 'basic',
   order: 1,
   title: '单行文本',
+  sortable: true,
   default: {
     interface: 'string',
     dataType: 'string',

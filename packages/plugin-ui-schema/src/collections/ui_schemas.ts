@@ -4,17 +4,22 @@ export default {
   name: 'ui_schemas',
   title: '字段配置',
   model: 'UISchema',
+  sortable: {
+    type: 'sort',
+    name: 'sort',
+    scope: ['parentKey'],
+  },
   fields: [
     {
       type: 'uid',
       name: 'key',
       primaryKey: true,
     },
-    {
-      type: 'sort',
-      name: 'sort',
-      scope: ['parentKey'],
-    },
+    // {
+    //   type: 'sort',
+    //   name: 'sort',
+    //   scope: ['parentKey'],
+    // },
     {
       type: 'string',
       name: 'name',

@@ -17,6 +17,8 @@ export interface SaveOptions {
 }
 
 export interface ListOptions {
+  defaultFilter?: any;
+  filter?: any;
 }
 
 export class Resource {
@@ -31,9 +33,28 @@ export class Resource {
     }
   }
 
-  list(options: ListOptions = {}) {
+  sort(options) {
     const { resourceName } = this.options;
-    return request(`${resourceName}:list`);
+    const { resourceKey, target, field = 'sort' } = options;
+    return request(`${resourceName}:sort/${resourceKey}`, {
+      method: 'post',
+      data: {
+        target,
+        field,
+      },
+    });
+  }
+
+  list(options: ListOptions = {}) {
+    const { defaultFilter, filter, ...others } = options;
+    const { resourceName } = this.options;
+    return request(`${resourceName}:list`, {
+      method: 'get',
+      params: {
+        filter: decodeURIComponent(JSON.stringify({ and: [defaultFilter, filter].filter(Boolean) })),
+        ...others,
+      },
+    });
   }
 
   get(options: GetOptions = {}) {

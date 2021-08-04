@@ -8710,6 +8710,11 @@ flat-to-nested@^1.1.1:
   resolved "https://registry.npmjs.org/flat-to-nested/-/flat-to-nested-1.1.1.tgz#ec183cd9a72f6bfbf8ca21acb0fc8235e509f581"
   integrity sha512-Sym5oik6BO9JnsDEjv9Q9hPTCexG2ttk0UiM2mgLEiCiiUOQr8acBd33r8ixnoSGR0HAxPoP8WtLAL5oV46IhQ==
 
+flat@^5.0.2:
+  version "5.0.2"
+  resolved "https://registry.npmjs.org/flat/-/flat-5.0.2.tgz#8ca6fe332069ffa9d324c327198c598259ceb241"
+  integrity sha512-b6suED+5/3rTpUBdG1gupIl8MPFCAMA0QXwmljLhvCUKcUvdE4gWky9zpuGCcXHOsz4J9wPGNWq6OKpmIzz3hQ==
+
 flatted@^3.1.0:
   version "3.1.1"
   resolved "https://registry.npmjs.org/flatted/-/flatted-3.1.1.tgz#c4b489e80096d9df1dfc97c79871aea7c617c469"
