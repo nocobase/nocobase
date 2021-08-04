@@ -25,9 +25,9 @@ export function useCollection(props: CollectionProviderProps) {
   if (collection) {
     fields = collection?.fields || [];
   }
-  let sortableField = collection.sortable;
-  if (collection.sortable && typeof collection.sortable === 'object') {
-    sortableField = collection.sortable?.name;
+  let sortableField = collection?.sortable;
+  if (collection?.sortable && typeof collection?.sortable === 'object') {
+    sortableField = collection?.sortable?.name;
   }
   return {
     sortableField,

@@ -8,11 +8,17 @@ import {
   useForm,
 } from '@formily/react';
 import { Pagination, Popover, Table as AntdTable } from 'antd';
-import { findIndex, forIn, range, set } from 'lodash';
+import { cloneDeep, findIndex, forIn, range, set } from 'lodash';
 import React, { Fragment, useEffect, useState } from 'react';
 import { useContext } from 'react';
 import { createContext } from 'react';
-import { useDesignable, updateSchema, removeSchema, createSchema } from '..';
+import {
+  useDesignable,
+  updateSchema,
+  removeSchema,
+  createSchema,
+  createCollectionField,
+} from '..';
 import { uid } from '@formily/shared';
 import useRequest from '@ahooksjs/use-request';
 import { BaseResult } from '@ahooksjs/use-request/lib/types';
@@ -26,7 +32,7 @@ import {
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { Select, Dropdown, Menu, Switch, Button, Space } from 'antd';
-import { PlusOutlined } from '@ant-design/icons';
+import { PlusOutlined, SettingOutlined } from '@ant-design/icons';
 import './style.less';
 import {
   findPropertyByPath,
@@ -358,7 +364,7 @@ const useTableColumns = () => {
 function AddColumn() {
   const [visible, setVisible] = useState(false);
   const { appendChild, remove } = useDesignable();
-  const { fields } = useCollectionContext();
+  const { collection, fields, refresh } = useCollectionContext();
   const displayed = useDisplayedMapContext();
 
   return (
@@ -406,7 +412,34 @@ function AddColumn() {
                   <Menu.Item
                     style={{ minWidth: 150 }}
                     key={item.name}
-                    onClick={async () => {}}
+                    onClick={async () => {
+                      setVisible(false);
+                      const values = await FormDialog(`新增字段`, () => {
+                        return (
+                          <FormLayout layout={'vertical'}>
+                            <SchemaField schema={item} />
+                          </FormLayout>
+                        );
+                      }).open({
+                        initialValues: {
+                          interface: item.name,
+                          ...item.default,
+                          key: uid(),
+                          name: `f_${uid()}`,
+                        },
+                      });
+                      await createCollectionField(collection?.name, values);
+                      const data = appendChild({
+                        type: 'void',
+                        'x-component': 'Table.Column',
+                        'x-component-props': {
+                          fieldName: values.name,
+                        },
+                        'x-designable-bar': 'Table.Column.DesignableBar',
+                      });
+                      await createSchema(data);
+                      await refresh();
+                    }}
                   >
                     {item.title}
                   </Menu.Item>
@@ -417,7 +450,7 @@ function AddColumn() {
         </Menu>
       }
     >
-      <Button type={'dashed'} icon={<PlusOutlined />}>
+      <Button type={'dashed'} icon={<SettingOutlined />}>
         配置字段
       </Button>
     </Dropdown>
@@ -1518,7 +1551,9 @@ Table.Action.DesignableBar = () => {
                   >
                     <Select.Option value={'Action.Modal'}>对话框</Select.Option>
                     <Select.Option value={'Action.Drawer'}>抽屉</Select.Option>
-                    <Select.Option value={'Action.Window'}>浏览器窗口</Select.Option>
+                    <Select.Option value={'Action.Window'}>
+                      浏览器窗口
+                    </Select.Option>
                   </Select>{' '}
                   内打开
                 </Menu.Item>
