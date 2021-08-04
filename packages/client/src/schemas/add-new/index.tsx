@@ -451,6 +451,7 @@ AddNew.CardItem = observer((props: any) => {
           onClick={async (info) => {
             let data: ISchema;
             let collectionName = null;
+            let isNew = false;
             if (['addNewTable', 'addNewForm'].includes(info.key)) {
               const values = await FormDialog(`新建数据表`, () => {
                 return (
@@ -465,7 +466,7 @@ AddNew.CardItem = observer((props: any) => {
                 },
               });
               await createOrUpdateCollection(values);
-              await refresh();
+              isNew = true;
               data = generateCardItemSchema(
                 info.key === 'addNewTable' ? 'Table' : 'Form',
               );
@@ -506,6 +507,9 @@ AddNew.CardItem = observer((props: any) => {
                 s = insertBefore(data, [...path]);
               }
               await createSchema(s);
+            }
+            if (isNew) {
+              await refresh();
             }
           }}
         >
@@ -723,7 +727,6 @@ AddNew.FormItem = observer((props: any) => {
                             },
                           });
                           await createCollectionField(collection?.name, values);
-                          await refresh();
                           let data: ISchema = cloneDeep(values.uiSchema);
                           data['name'] = values.name;
                           data['referenceKey'] = data['key'];
@@ -746,6 +749,7 @@ AddNew.FormItem = observer((props: any) => {
                             }
                             await createSchema(s);
                           }
+                          await refresh();
                         }}
                       >
                         {item.title}
@@ -799,7 +803,7 @@ AddNew.FormItem = observer((props: any) => {
       {ghost ? (
         <PlusOutlined />
       ) : (
-        <Button type={'dashed'} icon={<PlusOutlined />}>
+        <Button type={'dashed'} icon={<SettingOutlined />}>
           配置字段
         </Button>
       )}
