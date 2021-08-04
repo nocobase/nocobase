@@ -1,7 +1,12 @@
 import { observer, connect, useField, RecursionField } from '@formily/react';
 import React from 'react';
 import { Button, Tabs as AntdTabs, Dropdown, Menu, Switch } from 'antd';
-import { findPropertyByPath, getSchemaPath, useDesignable } from '../../components/schema-renderer';
+import {
+  findPropertyByPath,
+  getSchemaPath,
+  SchemaField,
+  useDesignable,
+} from '../../components/schema-renderer';
 import { Schema, SchemaKey } from '@formily/react';
 import { PlusOutlined, MenuOutlined } from '@ant-design/icons';
 import { useState } from 'react';
@@ -11,6 +16,8 @@ import './style.less';
 import { uid } from '@formily/shared';
 import { DragHandle, SortableItem } from '../../components/Sortable';
 import { DndContext, DragOverlay } from '@dnd-kit/core';
+import { FormDialog, FormLayout } from '@formily/antd';
+import IconPicker from '../../components/icon-picker';
 
 const useTabs = ({ singleton }) => {
   const tabsField = useField();
@@ -38,7 +45,8 @@ const useTabs = ({ singleton }) => {
 
 export const Tabs: any = observer((props: any) => {
   const { singleton, ...others } = props;
-  const { schema, DesignableBar, appendChild, root, remove, insertAfter } = useDesignable();
+  const { schema, DesignableBar, appendChild, root, remove, insertAfter } =
+    useDesignable();
   const tabs = useTabs({ singleton });
   const [dragOverlayContent, setDragOverlayContent] = useState('');
 
@@ -93,14 +101,45 @@ export const Tabs: any = observer((props: any) => {
               type={'dashed'}
               icon={<PlusOutlined />}
               onClick={async () => {
+                const values = await FormDialog('新增标签页', () => {
+                  return (
+                    <FormLayout layout={'vertical'}>
+                      <SchemaField
+                        schema={{
+                          type: 'object',
+                          properties: {
+                            title: {
+                              type: 'string',
+                              title: '标签名称',
+                              required: true,
+                              'x-decorator': 'FormItem',
+                              'x-component': 'Input',
+                            },
+                            icon: {
+                              type: 'string',
+                              title: '标签图标',
+                              'x-decorator': 'FormItem',
+                              'x-component': 'IconPicker',
+                            },
+                          },
+                        }}
+                      />
+                    </FormLayout>
+                  );
+                }).open({
+                  initialValues: {
+                    title: schema['title'],
+                    icon: schema['x-component-props']?.['icon'],
+                  },
+                });
                 const data = appendChild({
                   type: 'void',
                   name: uid(),
-                  title: uid(),
+                  title: values.title,
                   'x-component': 'Tabs.TabPane',
                   'x-designable-bar': 'Tabs.TabPane.DesignableBar',
                   'x-component-props': {
-                    tab: uid(),
+                    icon: values.icon,
                   },
                   properties: {
                     [uid()]: {
@@ -151,6 +190,7 @@ Tabs.TabPane = observer((props: any) => {
       }}
     >
       <div className={'nb-tab-pane'}>
+        <IconPicker type={props.icon} />
         {schema.title} <DesignableBar />
       </div>
     </SortableItem>
@@ -185,10 +225,14 @@ Tabs.DesignableBar = () => {
                     schema['x-component-props'] || {};
                   schema['x-component-props'].singleton = singleton;
                   field.componentProps.singleton = singleton;
+                  updateSchema(schema);
                 }}
               >
                 禁用标签页 <span style={{ marginRight: 24 }}></span>{' '}
-                <Switch size={'small'} checked={!!field.componentProps.singleton}/>
+                <Switch
+                  size={'small'}
+                  checked={!!field.componentProps.singleton}
+                />
               </Menu.Item>
             </Menu>
           }
@@ -203,7 +247,7 @@ Tabs.DesignableBar = () => {
 Tabs.TabPane.DesignableBar = () => {
   const { schema, remove, refresh, insertAfter } = useDesignable();
   const [visible, setVisible] = useState(false);
-
+  const field = useField();
   return (
     <div className={cls('designable-bar', { active: visible })}>
       <span
@@ -222,12 +266,45 @@ Tabs.TabPane.DesignableBar = () => {
           overlay={
             <Menu>
               <Menu.Item
-                onClick={() => {
-                  schema.title = uid();
+                onClick={async () => {
+                  const values = await FormDialog('修改名称和图标', () => {
+                    return (
+                      <FormLayout layout={'vertical'}>
+                        <SchemaField
+                          schema={{
+                            type: 'object',
+                            properties: {
+                              title: {
+                                type: 'string',
+                                title: '标签名称',
+                                required: true,
+                                'x-decorator': 'FormItem',
+                                'x-component': 'Input',
+                              },
+                              icon: {
+                                type: 'string',
+                                title: '标签图标',
+                                'x-decorator': 'FormItem',
+                                'x-component': 'IconPicker',
+                              },
+                            },
+                          }}
+                        />
+                      </FormLayout>
+                    );
+                  }).open({
+                    initialValues: {
+                      title: schema['title'],
+                      icon: schema['x-component-props']?.['icon'],
+                    },
+                  });
+                  field.componentProps.icon = values.icon;
+                  schema.title = values.title;
                   schema['x-component-props'] =
                     schema['x-component-props'] || {};
-                  schema['x-component-props']['tab'] = uid();
+                  schema['x-component-props']['icon'] = values.icon;
                   refresh();
+                  updateSchema(schema);
                 }}
               >
                 修改名称和图标
@@ -240,7 +317,7 @@ Tabs.TabPane.DesignableBar = () => {
                   setVisible(false);
                 }}
               >
-                删除
+                移除
               </Menu.Item>
             </Menu>
           }

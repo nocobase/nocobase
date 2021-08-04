@@ -7,6 +7,7 @@ export const createdAt: ISchema = {
   group: 'systemInfo',
   order: 1,
   title: '创建时间',
+  sortable: true,
   default: {
     dataType: 'date',
     field: 'created_at',

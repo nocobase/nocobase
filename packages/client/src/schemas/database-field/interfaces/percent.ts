@@ -7,6 +7,7 @@ export const percent: ISchema = {
   group: 'basic',
   order: 6,
   title: '百分比',
+  sortable: true,
   default: {
     dataType: 'float',
     // name,

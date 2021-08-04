@@ -4,11 +4,12 @@ export default {
   name: 'collections',
   title: '数据表配置',
   model: 'Collection',
+  sortable: 'sort',
   fields: [
-    {
-      type: 'sort',
-      name: 'sort',
-    },
+    // {
+    //   type: 'sort',
+    //   name: 'sort',
+    // },
     {
       type: 'uid',
       name: 'name',
@@ -23,6 +24,11 @@ export default {
     {
       type: 'string',
       name: 'privilege',
+    },
+    {
+      type: 'json',
+      name: 'sortable',
+      defaultValue: 'sort',
     },
     {
       type: 'json',

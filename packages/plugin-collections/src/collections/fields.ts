@@ -5,12 +5,17 @@ export default {
   name: 'fields',
   title: '字段配置',
   model: 'Field',
+  sortable: {
+    type: 'sort',
+    name: 'sort',
+    scope: ['parentKey'],
+  },
   fields: [
-    {
-      type: 'sort',
-      name: 'sort',
-      scope: ['parentKey'],
-    },
+    // {
+    //   type: 'sort',
+    //   name: 'sort',
+    //   scope: ['parentKey'],
+    // },
     {
       type: 'uid',
       name: 'key',

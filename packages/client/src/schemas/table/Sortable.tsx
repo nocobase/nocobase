@@ -123,7 +123,6 @@ export function SortableBodyRow(props: any) {
         <SortableContext
           strategy={horizontalListSortingStrategy}
           items={React.Children.map(props.children, (child) => {
-            console.log(child.key, 'child.key');
             return `td${child.key}`;
           })}
         >

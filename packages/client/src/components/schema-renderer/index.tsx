@@ -19,7 +19,7 @@ import { useMemo } from 'react';
 import { CodeOutlined } from '@ant-design/icons';
 import Editor from '@monaco-editor/react';
 
-import { ArrayCollapse, FormLayout, FormItem as FormilyFormItem } from '@formily/antd';
+import { ArrayItems, ArrayCollapse, FormLayout, FormItem as FormilyFormItem } from '@formily/antd';
 
 import { Space, Card, Modal, Spin } from 'antd';
 import { ArrayTable } from '../../schemas/array-table';
@@ -74,6 +74,7 @@ export const SchemaField = createSchemaField({
     Page,
     Chart,
 
+    ArrayItems,
     ArrayCollapse,
     ArrayTable,
     FormLayout,
@@ -364,6 +365,47 @@ export function useDesignable(path?: any) {
       target.parent.removeProperty(target.name);
       refresh();
       return target;
+    },
+    moveToBefore(path1, path2) {
+      const source = findPropertyByPath(schema, path1);
+      const property = source.toJSON();
+      const target = findPropertyByPath(schema, path2);
+      if (!target) {
+        console.error('target schema does not exist.');
+        return;
+      }
+      if (!property.name) {
+        property.name = uid();
+      }
+      if (target['parentKey']) {
+        property['parentKey'] = target['parentKey'];
+        setKeys(property);
+        property['__insertBefore__'] = target['key'];
+      }
+      addPropertyBefore(target, property);
+      refresh();
+      return target.parent.properties[property.name];
+    },
+    moveToAfter(path1, path2) {
+      const source = findPropertyByPath(schema, path1);
+      const property = source.toJSON();
+      const target = findPropertyByPath(schema, path2);
+      if (!target) {
+        console.error('target schema does not exist.');
+        return;
+      }
+      if (!property.name) {
+        property.name = uid();
+      }
+      if (target['parentKey']) {
+        property['parentKey'] = target['parentKey'];
+        setKeys(property);
+        property['__insertAfter__'] = target['key'];
+      }
+      addPropertyAfter(target, property);
+
+      refresh();
+      return target.parent.properties[property.name];
     },
   };
 }

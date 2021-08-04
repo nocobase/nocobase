@@ -14,31 +14,36 @@ export interface CollectionProviderProps {
   collectionName?: string;
 }
 
-const [CollectionProvider, useCollectionContext] = constate(
-  (props: CollectionProviderProps) => {
-    const { collectionName } = props;
-    const { collections = [], loading, refresh } = useCollectionsContext();
-    let collection: any;
-    let fields = [];
-    if (collectionName) {
-      collection = collections.find((item) => item.name === collectionName);
-    }
-    if (collection) {
-      fields = collection?.fields || [];
-    }
-    return {
-      collection,
-      fields,
-      loading,
-      refresh,
-      getField(name: string) {
-        if (!name) {
-          return null;
-        }
-        return fields.find((item) => item.name === name);
-      },
-    };
-  },
-);
+export function useCollection(props: CollectionProviderProps) {
+  const { collectionName } = props;
+  const { collections = [], loading, refresh } = useCollectionsContext();
+  let collection: any;
+  let fields = [];
+  if (collectionName) {
+    collection = collections.find((item) => item.name === collectionName);
+  }
+  if (collection) {
+    fields = collection?.fields || [];
+  }
+  let sortableField = collection.sortable;
+  if (collection.sortable && typeof collection.sortable === 'object') {
+    sortableField = collection.sortable?.name;
+  }
+  return {
+    sortableField,
+    collection,
+    fields,
+    loading,
+    refresh,
+    getField(name: string) {
+      if (!name) {
+        return null;
+      }
+      return fields.find((item) => item.name === name);
+    },
+  };
+}
+
+const [CollectionProvider, useCollectionContext] = constate(useCollection);
 
 export { CollectionProvider, useCollectionContext };

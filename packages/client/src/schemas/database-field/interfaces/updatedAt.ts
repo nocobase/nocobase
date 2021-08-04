@@ -7,6 +7,7 @@ export const updatedAt: ISchema = {
   group: 'systemInfo',
   order: 2,
   title: '最后更新时间',
+  sortable: true,
   default: {
     dataType: 'date',
     field: 'updated_at',

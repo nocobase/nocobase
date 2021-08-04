@@ -5,12 +5,39 @@ import { useDynamicList } from 'ahooks';
 import { Select } from 'antd';
 import { CloseCircleOutlined } from '@ant-design/icons';
 import { FilterItem } from './FilterItem';
+import cls from 'classnames';
 import './style.less';
 
+const toValue = (value) => {
+  if (!value) {
+    return {
+      logical: 'and',
+      list: [{}],
+    };
+  }
+  if (value.and) {
+    return {
+      logical: 'and',
+      list: value.and,
+    };
+  }
+  if (value.or) {
+    return {
+      logical: 'and',
+      list: value.or,
+    };
+  }
+  return {
+    logical: 'and',
+    list: [{}],
+  };
+};
+
 export function FilterGroup(props) {
-  const { onRemove } = props;
+  const { bordered = true, onRemove, onChange } = props;
+  const value = toValue(props.value);
   return (
-    <div className={'nb-filter-group'}>
+    <div className={cls('nb-filter-group', { bordered })}>
       {onRemove && (
         <a className={'nb-filter-group-close'} onClick={() => onRemove()}>
           <CloseCircleOutlined />
@@ -20,8 +47,13 @@ export function FilterGroup(props) {
         满足组内{' '}
         <Select
           style={{ width: 80 }}
-          onChange={(value) => {}}
-          defaultValue={'and'}
+          onChange={(logical) => {
+            onChange &&
+              onChange({
+                [logical]: value.list,
+              });
+          }}
+          defaultValue={value.logical}
         >
           <Select.Option value={'and'}>全部</Select.Option>
           <Select.Option value={'or'}>任意</Select.Option>
@@ -29,9 +61,12 @@ export function FilterGroup(props) {
         条件
       </div>
       <FilterList
-        initialValue={[{}]}
-        onChange={(list) => {
-          console.log({ list });
+        initialValue={value.list}
+        onChange={(list: any[]) => {
+          onChange &&
+            onChange({
+              [value.logical]: list.filter((item) => Object.keys(item).length),
+            });
         }}
       />
     </div>
@@ -40,7 +75,9 @@ export function FilterGroup(props) {
 
 export function FilterList(props) {
   const { initialValue } = props;
-  const { list, push, remove } = useDynamicList<any>(initialValue || []);
+  const { list, push, remove, replace } = useDynamicList<any>(
+    initialValue || [],
+  );
   useEffect(() => {
     props.onChange && props.onChange(list);
   }, [list]);
@@ -48,18 +85,29 @@ export function FilterList(props) {
     <div className={'nb-filter-list'}>
       <div>
         {list.map((item, index) => {
-          if (item.type === 'group') {
-            return <FilterGroup key={index} onRemove={() => remove(index)} />;
+          if (item.and || item.or) {
+            return (
+              <FilterGroup
+                key={index}
+                value={item}
+                onChange={(value: any) => replace(index, value)}
+                onRemove={() => remove(index)}
+              />
+            );
           }
-          return <FilterItem key={index} onRemove={() => remove(index)} />;
+          return (
+            <FilterItem
+              key={index}
+              value={item}
+              onChange={(value: any) => replace(index, value)}
+              onRemove={() => remove(index)}
+            />
+          );
         })}
       </div>
       <a
         onClick={() => {
-          push({
-            type: 'item',
-            key: new Date().toTimeString(),
-          });
+          push({});
         }}
       >
         添加条件
@@ -67,8 +115,7 @@ export function FilterList(props) {
       <a
         onClick={() => {
           push({
-            type: 'group',
-            key: new Date().toTimeString(),
+            and: [{}],
           });
         }}
       >
@@ -80,9 +127,10 @@ export function FilterList(props) {
 
 export const Filter = connect(
   (props) => {
+    // console.log('Filter.props', { props });
     return (
       <div>
-        <FilterGroup />
+        <FilterGroup bordered={false} {...props} />
       </div>
     );
   },
