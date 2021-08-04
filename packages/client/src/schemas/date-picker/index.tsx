@@ -1,5 +1,5 @@
 import moment from 'moment'
-import { connect, mapProps, mapReadPretty } from '@formily/react'
+import { connect, mapProps, mapReadPretty, useField, useFieldSchema } from '@formily/react'
 import { DatePicker as AntdDatePicker } from 'antd'
 import {
   DatePickerProps as AntdDatePickerProps,
@@ -34,6 +34,8 @@ const mapDateFormat = function () {
     return props['showTime'] ? 'YYYY-MM-DD HH:mm:ss' : 'YYYY-MM-DD'
   }
   return (props: any) => {
+    const field = useField();
+    const fieldSchema = useFieldSchema();
     const format = props['format'] || getDefaultFormat(props)
     const onChange = props.onChange
     return {

@@ -15,6 +15,7 @@ import { Tag, Space, Popover } from 'antd'
 import cls from 'classnames'
 import { formatMomentValue, usePrefixCls } from '@formily/antd/esm/__builtins__'
 import { FullscreenOutlined } from '@ant-design/icons';
+import moment from 'moment';
 
 const PlaceholderContext = createContext<string>('N/A')
 
@@ -287,11 +288,20 @@ const Cascader: React.FC<CascaderProps> = observer((props) => {
   )
 })
 
-const DatePicker: React.FC<DatePickerProps> = (props) => {
+const DatePicker: React.FC<DatePickerProps> = (props: any) => {
   const placeholder = usePlaceholder()
   const prefixCls = usePrefixCls('description-text', props)
+  const getDefaultFormat = () => {
+    const { dateFormat, showTime, timeFormat } = props;
+    let format = dateFormat;
+    if (showTime) {
+      format += ` ${timeFormat}`;
+    }
+    return format || props.format;
+  }
   const getLabels = () => {
-    const labels = formatMomentValue(props.value, props.format, placeholder)
+    const d = moment(props.value);
+    const labels = formatMomentValue(d.isValid() ? d : null, getDefaultFormat(), placeholder)
     return isArr(labels) ? labels.join('~') : labels
   }
   return <div className={cls(prefixCls, props.className)}>{getLabels()}</div>
