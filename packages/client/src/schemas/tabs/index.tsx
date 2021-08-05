@@ -45,8 +45,15 @@ const useTabs = ({ singleton }) => {
 
 export const Tabs: any = observer((props: any) => {
   const { singleton, ...others } = props;
-  const { schema, DesignableBar, appendChild, root, remove, insertAfter } =
-    useDesignable();
+  const {
+    designable,
+    schema,
+    DesignableBar,
+    appendChild,
+    root,
+    remove,
+    insertAfter,
+  } = useDesignable();
   const tabs = useTabs({ singleton });
   const [dragOverlayContent, setDragOverlayContent] = useState('');
 
@@ -97,65 +104,67 @@ export const Tabs: any = observer((props: any) => {
           {...others}
           className={cls({ singleton })}
           tabBarExtraContent={
-            <Button
-              type={'dashed'}
-              icon={<PlusOutlined />}
-              onClick={async () => {
-                const values = await FormDialog('新增标签页', () => {
-                  return (
-                    <FormLayout layout={'vertical'}>
-                      <SchemaField
-                        schema={{
-                          type: 'object',
-                          properties: {
-                            title: {
-                              type: 'string',
-                              title: '标签名称',
-                              required: true,
-                              'x-decorator': 'FormItem',
-                              'x-component': 'Input',
+            designable && (
+              <Button
+                type={'dashed'}
+                icon={<PlusOutlined />}
+                onClick={async () => {
+                  const values = await FormDialog('新增标签页', () => {
+                    return (
+                      <FormLayout layout={'vertical'}>
+                        <SchemaField
+                          schema={{
+                            type: 'object',
+                            properties: {
+                              title: {
+                                type: 'string',
+                                title: '标签名称',
+                                required: true,
+                                'x-decorator': 'FormItem',
+                                'x-component': 'Input',
+                              },
+                              icon: {
+                                type: 'string',
+                                title: '标签图标',
+                                'x-decorator': 'FormItem',
+                                'x-component': 'IconPicker',
+                              },
                             },
-                            icon: {
-                              type: 'string',
-                              title: '标签图标',
-                              'x-decorator': 'FormItem',
-                              'x-component': 'IconPicker',
-                            },
-                          },
-                        }}
-                      />
-                    </FormLayout>
-                  );
-                }).open({
-                  initialValues: {
-                    title: schema['title'],
-                    icon: schema['x-component-props']?.['icon'],
-                  },
-                });
-                const data = appendChild({
-                  type: 'void',
-                  name: uid(),
-                  title: values.title,
-                  'x-component': 'Tabs.TabPane',
-                  'x-designable-bar': 'Tabs.TabPane.DesignableBar',
-                  'x-component-props': {
-                    icon: values.icon,
-                  },
-                  properties: {
-                    [uid()]: {
-                      type: 'void',
-                      'x-component': 'Grid',
-                      'x-component-props': {
-                        addNewComponent: 'AddNew.PaneItem',
+                          }}
+                        />
+                      </FormLayout>
+                    );
+                  }).open({
+                    initialValues: {
+                      title: schema['title'],
+                      icon: schema['x-component-props']?.['icon'],
+                    },
+                  });
+                  const data = appendChild({
+                    type: 'void',
+                    name: uid(),
+                    title: values.title,
+                    'x-component': 'Tabs.TabPane',
+                    'x-designable-bar': 'Tabs.TabPane.DesignableBar',
+                    'x-component-props': {
+                      icon: values.icon,
+                    },
+                    properties: {
+                      [uid()]: {
+                        type: 'void',
+                        'x-component': 'Grid',
+                        'x-component-props': {
+                          addNewComponent: 'AddNew.PaneItem',
+                        },
                       },
                     },
-                  },
-                });
-                await createSchema(data);
-              }}
-            >
-              新增标签页
-            </Button>
+                  });
+                  await createSchema(data);
+                }}
+              >
+                新增标签页
+              </Button>
+            )
           }
         >
           {tabs.map(({ props, schema, name }, key) => (
