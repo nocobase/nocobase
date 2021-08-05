@@ -420,3 +420,28 @@ export default () => {
   );
 };
 ```
+
+
+### Action.Bar
+
+```tsx
+import React from 'react';
+import { SchemaRenderer } from '@nocobase/client';
+
+const schema = {
+  type: 'void',
+  name: 'actionbar1',
+  'x-component': 'Action.Bar',
+  'x-designable-bar': 'Action.Bar.DesignableBar',
+  'x-component-props': {
+  },
+};
+
+export default () => {
+  return (
+    <SchemaRenderer 
+      schema={schema} 
+    />
+  );
+};
+```

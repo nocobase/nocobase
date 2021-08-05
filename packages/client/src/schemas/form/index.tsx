@@ -37,6 +37,18 @@ import {
   useDisplayedMapContext,
 } from '../../constate';
 import { useResource as useGeneralResource } from '../../hooks/useResource';
+import { Resource } from '../../resource';
+import { BaseResult } from '@ahooksjs/use-request/lib/types';
+
+export interface FormReadPrettyContextProps {
+  resource?: Resource;
+  service?: BaseResult<any, any>;
+}
+
+export const FormContext = createContext<FormReadPrettyContextProps>({});
+export const FormReadPrettyContext = createContext<FormReadPrettyContextProps>(
+  {},
+);
 
 const FormMain = (props: any) => {
   const {
@@ -50,9 +62,11 @@ const FormMain = (props: any) => {
       readPretty: schema['x-read-pretty'],
     });
   }, []);
-  const { resource, run } = useResource({
+  const { resource, run, service } = useResource({
     onSuccess: (initialValues: any) => {
+      console.log('onSuccess', { initialValues });
       form.setInitialValues(initialValues);
+      form.setValues(initialValues);
     },
   });
   const path = useSchemaPath();
@@ -66,7 +80,7 @@ const FormMain = (props: any) => {
       console.log(displayed.map, 'displayed.map', collection?.name);
     }
   }, [displayed.map]);
-  return (
+  const content = (
     <FormProvider form={form}>
       {schema['x-decorator'] === 'Form' ? (
         <SchemaField
@@ -118,6 +132,14 @@ const FormMain = (props: any) => {
         </Space>
       )}
     </FormProvider>
+  );
+
+  return schema['x-read-pretty'] ? (
+    <FormReadPrettyContext.Provider value={{ resource, service }}>
+      {content}
+    </FormReadPrettyContext.Provider>
+  ) : (
+    <>{content}</>
   );
 };
 
