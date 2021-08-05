@@ -18,6 +18,7 @@ export const percent: ISchema = {
       'x-component-props': {
         stringMode: true,
         step: '0',
+        addonAfter: '%',
       },
       'x-decorator': 'FormItem',
       'x-designable-bar': 'InputNumber.DesignableBar',

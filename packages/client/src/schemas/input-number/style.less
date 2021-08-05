@@ -1,0 +1,27 @@
+.nb-input-number {
+  display: table;
+  width: 100%;
+  line-height: 32px;
+  .ant-input-number {
+    width: 100%;
+  }
+  .ant-input-number,
+  .ant-input-group-addon {
+    display: table-cell;
+  }
+  .ant-input-group-addon {
+    vertical-align: middle;
+  }
+  &.has-addon-before {
+    .ant-input-number {
+      border-top-left-radius: 0;
+      border-bottom-left-radius: 0;
+    }
+  }
+  &.has-addon-after {
+    .ant-input-number {
+      border-top-right-radius: 0;
+      border-bottom-right-radius: 0;
+    }
+  }
+}
