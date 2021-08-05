@@ -225,7 +225,6 @@ function generateCardItemSchema(component) {
           properties: {
             [uid()]: {
               type: 'void',
-              name: 'action1',
               'x-component': 'Action',
               'x-component-props': {
                 icon: 'EllipsisOutlined',
@@ -844,6 +843,12 @@ AddNew.PaneItem = observer((props: any) => {
                   },
                   'x-designable-bar': 'Form.DesignableBar',
                   properties: {
+                    [uid()]: {
+                      type: 'void',
+                      'x-component': 'Action.Bar',
+                      'x-designable-bar': 'Action.Bar.DesignableBar',
+                      'x-component-props': {},
+                    },
                     [uid()]: {
                       type: 'void',
                       'x-component': 'Grid',

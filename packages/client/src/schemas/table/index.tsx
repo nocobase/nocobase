@@ -70,6 +70,8 @@ import { isValid } from '@formily/shared';
 import { FormButtonGroup, FormDialog, FormLayout, Submit } from '@formily/antd';
 import flatten from 'flat';
 import IconPicker from '../../components/icon-picker';
+import { FormReadPrettyContext } from '../form';
+import { VisibleContext } from '../../context';
 
 export interface ITableContext {
   props: any;
@@ -153,6 +155,7 @@ const useTableUpdateAction = () => {
   } = useTable();
   const ctx = useContext(TableRowContext);
   const form = useForm();
+  const { service: formService } = useContext(FormReadPrettyContext);
 
   return {
     async run() {
@@ -160,7 +163,11 @@ const useTableUpdateAction = () => {
         await resource.save(form.values, {
           resourceKey: ctx.record[rowKey],
         });
-        return service.refresh();
+        if (formService) {
+          await formService.refresh();
+        }
+        await service.refresh();
+        return;
       }
       field.value[ctx.index] = form.values;
       // refresh();
@@ -179,6 +186,7 @@ const useTableDestroyAction = () => {
     props: { refreshRequestOnChange, rowKey },
   } = useTable();
   const ctx = useContext(TableRowContext);
+  const [, setVisible] = useContext(VisibleContext);
   return {
     async run() {
       if (refreshRequestOnChange) {
@@ -190,6 +198,7 @@ const useTableDestroyAction = () => {
           [`${rowKey}.in`]: rowKeys,
         });
         setSelectedRowKeys([]);
+        setVisible && setVisible(false);
         return service.refresh();
       }
       if (ctx) {
@@ -873,7 +882,7 @@ function generateMenuActionSchema(type) {
       properties: {
         [uid()]: {
           type: 'void',
-          title: '查看',
+          title: '查看数据',
           'x-component': 'Action.Modal',
           'x-component-props': {
             bodyStyle: {
@@ -2011,7 +2020,7 @@ Table.useResource = ({ onSuccess }) => {
     resourceName: collection.name,
     resourceKey: ctx.record[props.rowKey],
   });
-  const { data, loading, run } = useRequest(
+  const service = useRequest(
     (params?: any) => {
       console.log('Table.useResource', params);
       return resource.get(params);
@@ -2022,7 +2031,7 @@ Table.useResource = ({ onSuccess }) => {
       manual: true,
     },
   );
-  return { initialValues: data, loading, run, resource };
+  return { resource, service, initialValues: service.data, ...service };
 };
 
 Table.useTableFilterAction = useTableFilterAction;
