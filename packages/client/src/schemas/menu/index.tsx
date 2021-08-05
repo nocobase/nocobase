@@ -160,6 +160,7 @@ export const Menu: any = observer((props: any) => {
         setDragOverlayContent(event.active.data?.current?.title || '');
       }}
       onDragEnd={async (event) => {
+        console.log({ event });
         const path1 = event.active?.data?.current?.path;
         const path2 = event.over?.data?.current?.path;
         const data = moveToAfter(path1, path2);
@@ -296,13 +297,28 @@ Menu.URL = observer((props: any) => {
   return (
     <AntdMenu.Item
       {...props}
-      icon={<IconPicker type={icon} />}
+      icon={null}
       eventKey={schema.name}
       key={schema.name}
+      onClick={(info) => {
+        window.open(props.href);
+      }}
     >
-      <a target={'_blank'} href={props.href}>
+      <SortableItem
+        id={schema.name}
+        data={{
+          title: schema.title,
+          path: getSchemaPath(schema),
+        }}
+      >
+        {icon && (
+          <span style={{ marginRight: 10 }}>
+            <IconPicker type={icon} />
+          </span>
+        )}
         {schema.title}
-      </a>
+        <DesignableBar />
+      </SortableItem>
       <DesignableBar />
     </AntdMenu.Item>
   );
