@@ -1385,11 +1385,12 @@ Table.Filter.DesignableBar = () => {
 };
 
 Table.Operation = observer((props: any) => {
+  const { designable } = useDesignable();
   const [visible, setVisible] = useState(false);
   return (
     <div className={'nb-table-column'}>
       操作
-      <Table.Operation.DesignableBar path={props.path} />
+      {designable && <Table.Operation.DesignableBar path={props.path} />}
     </div>
   );
 });
