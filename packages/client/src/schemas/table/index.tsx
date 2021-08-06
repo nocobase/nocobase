@@ -70,7 +70,7 @@ import { isValid } from '@formily/shared';
 import { FormButtonGroup, FormDialog, FormLayout, Submit } from '@formily/antd';
 import flatten from 'flat';
 import IconPicker from '../../components/icon-picker';
-import { FormReadPrettyContext } from '../form';
+import { DescriptionsContext } from '../form';
 import { VisibleContext } from '../../context';
 
 export interface ITableContext {
@@ -155,7 +155,7 @@ const useTableUpdateAction = () => {
   } = useTable();
   const ctx = useContext(TableRowContext);
   const form = useForm();
-  const { service: formService } = useContext(FormReadPrettyContext);
+  const { service: formService } = useContext(DescriptionsContext);
 
   return {
     async run() {

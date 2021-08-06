@@ -27,7 +27,13 @@ export const datetime: ISchema = {
     ...dateTimeProps,
   },
   operations: [
-    { label: '等于', value: 'eq' },
-    { label: '不等于', value: 'ne' },
+    { label: '等于', value: '$dateOn', selected: true },
+    { label: '不等于', value: '$dateNotOn' },
+    { label: '早于', value: '$dateBefore' },
+    { label: '晚于', value: '$dateAfter' },
+    { label: '不早于', value: '$dateNotBefore' },
+    { label: '不晚于', value: '$dateNotAfter' },
+    { label: '非空', value: '$notNull', noValue: true },
+    { label: '为空', value: '$null', noValue: true },
   ],
 };

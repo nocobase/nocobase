@@ -1,4 +1,5 @@
 import { ISchema } from '@formily/react';
+import { number } from './number';
 import { defaultProps } from './properties';
 
 export const percent: ISchema = {
@@ -42,8 +43,5 @@ export const percent: ISchema = {
       ]
     },
   },
-  operations: [
-    { label: '等于', value: 'eq' },
-    { label: '不等于', value: 'ne' },
-  ],
+  operations: number.operations,
 };

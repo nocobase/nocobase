@@ -1,12 +1,29 @@
 import React, { useEffect } from 'react';
-import { connect, mapProps, mapReadPretty } from '@formily/react';
+import {
+  connect,
+  mapProps,
+  mapReadPretty,
+  observer,
+  RecursionField,
+  ISchema,
+  Schema,
+  ArrayField,
+  useField,
+  FormProvider,
+} from '@formily/react';
 import { LoadingOutlined } from '@ant-design/icons';
-import { useDynamicList } from 'ahooks';
+import { useDynamicList, useMap } from 'ahooks';
 import { Select } from 'antd';
 import { CloseCircleOutlined } from '@ant-design/icons';
 import { FilterItem } from './FilterItem';
 import cls from 'classnames';
 import './style.less';
+import { cloneDeep } from 'lodash';
+import { uid, isValid } from '@formily/shared';
+import { SchemaField, SchemaRenderer } from '../../components/schema-renderer';
+import { useMemo } from 'react';
+import { createForm, onFormValuesChange } from '@formily/core';
+import deepmerge from 'deepmerge';
 
 const toValue = (value) => {
   if (!value) {
@@ -36,6 +53,7 @@ const toValue = (value) => {
 export function FilterGroup(props) {
   const { bordered = true, onRemove, onChange } = props;
   const value = toValue(props.value);
+  console.log('list', value);
   return (
     <div className={cls('nb-filter-group', { bordered })}>
       {onRemove && (
@@ -63,9 +81,12 @@ export function FilterGroup(props) {
       <FilterList
         initialValue={value.list}
         onChange={(list: any[]) => {
+          console.log('list9999', list);
           onChange &&
             onChange({
-              [value.logical]: list.filter((item) => Object.keys(item).length),
+              [value.logical]: list.filter(
+                (item) => isValid(item) && Object.keys(item).length,
+              ),
             });
         }}
       />
@@ -74,23 +95,28 @@ export function FilterGroup(props) {
 }
 
 export function FilterList(props) {
-  const { initialValue } = props;
-  const { list, push, remove, replace } = useDynamicList<any>(
-    initialValue || [],
+  const { initialValue = [] } = props;
+
+  const [map, { set, setAll, remove, reset, get }] = useMap<string, any>(
+    initialValue.map((item, index) => {
+      return [`index-${index}`, item];
+    }),
   );
+
   useEffect(() => {
-    props.onChange && props.onChange(list);
-  }, [list]);
+    props.onChange && props.onChange([...map.values()]);
+  }, [map]);
+
   return (
     <div className={'nb-filter-list'}>
       <div>
-        {list.map((item, index) => {
+        {[...map.entries()].map(([index, item]) => {
           if (item.and || item.or) {
             return (
               <FilterGroup
                 key={index}
                 value={item}
-                onChange={(value: any) => replace(index, value)}
+                onChange={(value: any) => set(index, value)}
                 onRemove={() => remove(index)}
               />
             );
@@ -99,7 +125,7 @@ export function FilterList(props) {
             <FilterItem
               key={index}
               value={item}
-              onChange={(value: any) => replace(index, value)}
+              onChange={(value: any) => set(index, value)}
               onRemove={() => remove(index)}
             />
           );
@@ -107,14 +133,14 @@ export function FilterList(props) {
       </div>
       <a
         onClick={() => {
-          push({});
+          set(uid(), {});
         }}
       >
         添加条件
       </a>{' '}
       <a
         onClick={() => {
-          push({
+          set(uid(), {
             and: [{}],
           });
         }}
@@ -125,7 +151,7 @@ export function FilterList(props) {
   );
 }
 
-export const Filter = connect(
+export const Filter: any = connect(
   (props) => {
     // console.log('Filter.props', { props });
     return (
@@ -152,5 +178,65 @@ export const Filter = connect(
     return null;
   }),
 );
+
+interface DynamicValuePorps {
+  value?: any;
+  onChange?: any;
+  schema?: Schema;
+  operation?: any;
+}
+
+Filter.DynamicValue = connect((props: DynamicValuePorps) => {
+  const { onChange, value, operation } = props;
+  const fieldName = Object.keys(props?.schema?.properties || {}).shift();
+  const fieldSchema = Object.values(props?.schema?.properties || {}).shift();
+  console.log('Filter.DynamicValue', fieldSchema, { operation });
+  const form = useMemo(
+    () =>
+      createForm({
+        initialValues: {
+          [fieldName || 'value']: value,
+        },
+        // effects() {
+        //   onFormValuesChange((form) => {
+        //     onChange(form.values[fieldName]);
+        //   });
+        // },
+      }),
+    [value],
+  );
+  const extra: ISchema = deepmerge(
+    {
+      required: false,
+      'x-read-pretty': false,
+      'x-decorator': 'FormilyFormItem',
+      'x-decorator-props': {
+        asterisk: true,
+        feedbackLayout: 'none',
+      },
+      'x-component-props': {
+        onChange,
+        style: {
+          minWidth: '150px',
+        },
+      },
+    },
+    operation?.schema || {},
+  );
+  return (
+    <FormProvider form={form}>
+      <SchemaField
+        schema={{
+          type: 'object',
+          properties: {
+            [fieldName]: deepmerge(fieldSchema, extra, {
+              arrayMerge: (target, source) => source,
+            }),
+          },
+        }}
+      />
+    </FormProvider>
+  );
+});
 
 export default Filter;

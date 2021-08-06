@@ -27,7 +27,20 @@ export const multipleSelect: ISchema = {
     'uiSchema.enum': dataSource,
   },
   operations: [
-    { label: '等于', value: 'eq' },
-    { label: '不等于', value: 'ne' },
+    {
+      label: '等于',
+      value: '$match',
+      selected: true,
+      schema: { 'x-component': 'Select' },
+    },
+    {
+      label: '不等于',
+      value: '$notMatch',
+      schema: { 'x-component': 'Select' },
+    },
+    { label: '包含', value: '$anyOf', schema: { 'x-component': 'Select' } },
+    { label: '不包含', value: '$noneOf', schema: { 'x-component': 'Select' } },
+    { label: '非空', value: '$notNull', noValue: true },
+    { label: '为空', value: '$null', noValue: true },
   ],
 };

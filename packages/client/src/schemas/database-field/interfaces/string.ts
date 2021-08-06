@@ -24,7 +24,11 @@ export const string: ISchema = {
     ...defaultProps,
   },
   operations: [
+    { label: '包含', value: '$includes', selected: true },
+    { label: '不包含', value: '$notIncludes' },
     { label: '等于', value: 'eq' },
     { label: '不等于', value: 'ne' },
+    { label: '非空', value: '$notNull', noValue: true },
+    { label: '为空', value: '$null', noValue: true },
   ],
 };

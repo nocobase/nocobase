@@ -20,8 +20,4 @@ export const markdown: ISchema = {
   properties: {
     ...defaultProps,
   },
-  operations: [
-    { label: '等于', value: 'eq' },
-    { label: '不等于', value: 'ne' },
-  ],
 };

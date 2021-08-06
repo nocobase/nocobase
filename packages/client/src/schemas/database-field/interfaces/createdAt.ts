@@ -1,4 +1,5 @@
 import { ISchema } from '@formily/react';
+import { datetime } from './datetime';
 import { dateTimeProps, defaultProps } from './properties';
 
 export const createdAt: ISchema = {
@@ -26,8 +27,5 @@ export const createdAt: ISchema = {
     ...defaultProps,
     ...dateTimeProps,
   },
-  operations: [
-    { label: '等于', value: 'eq' },
-    { label: '不等于', value: 'ne' },
-  ],
+  operations: datetime.operations,
 };

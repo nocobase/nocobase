@@ -1,4 +1,5 @@
 import { ISchema } from '@formily/react';
+import { multipleSelect } from './multipleSelect';
 import { defaultProps, dataSource } from './properties';
 
 export const checkboxGroup: ISchema = {
@@ -23,8 +24,5 @@ export const checkboxGroup: ISchema = {
     ...defaultProps,
     'uiSchema.enum': dataSource,
   },
-  operations: [
-    { label: '等于', value: 'eq' },
-    { label: '不等于', value: 'ne' },
-  ],
+  operations: multipleSelect.operations,
 };
