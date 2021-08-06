@@ -23,7 +23,7 @@ export const checkbox: ISchema = {
     ...defaultProps,
   },
   operations: [
-    { label: '等于', value: 'eq' },
-    { label: '不等于', value: 'ne' },
+    { label: '是', value: '$isTruly', selected: true, noValue: true },
+    { label: '否', value: '$isFalsy', noValue: true },
   ],
 };

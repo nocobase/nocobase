@@ -1,7 +1,21 @@
 import React, { useContext, useMemo, useState } from 'react';
 import { SchemaField } from '..';
-import { createForm, onFieldChange, onFieldReact, onFormValuesChange } from '@formily/core';
-import { FormProvider, FormConsumer, useFieldSchema, Schema, SchemaOptionsContext, ISchema, SchemaKey } from '@formily/react';
+import {
+  createForm,
+  onFieldChange,
+  onFieldReact,
+  onFormValuesChange,
+} from '@formily/core';
+import {
+  FormProvider,
+  FormConsumer,
+  useFieldSchema,
+  Schema,
+  SchemaOptionsContext,
+  ISchema,
+  SchemaKey,
+  RecursionField,
+} from '@formily/react';
 import { Field } from '@formily/core/esm/models/Field';
 import { Form } from '@formily/core/esm/models/Form';
 import {
@@ -15,6 +29,7 @@ import {
 import { CloseCircleOutlined } from '@ant-design/icons';
 import { get } from 'lodash';
 import { isValid } from '@formily/shared';
+import { useEffect } from 'react';
 
 function useFilterColumns(): Map<SchemaKey, Schema> {
   const schema = useFieldSchema();
@@ -33,7 +48,6 @@ export const FilterItem = (props) => {
   const { value, initialValues = {}, onRemove, onChange } = props;
   const options = useContext(SchemaOptionsContext);
   const columns = useFilterColumns();
-  console.log('FilterItem', value)
 
   const toValues = (value) => {
     if (!value) {
@@ -45,42 +59,49 @@ export const FilterItem = (props) => {
     const fieldName = Object.keys(value).shift();
     const nested = value[fieldName];
     const column = columns.get(fieldName).toJSON();
+    const operations = column?.['x-component-props']?.['operations'] || [];
     if (!nested) {
       return {
         column,
-      }
+        operations,
+      };
     }
     if (Object.keys(nested).length === 0) {
       return {
         column,
-      }
+        operations,
+      };
     }
     const operationValue = Object.keys(nested).shift();
-    console.log('toValues', {operationValue});
-    const operations = column?.['x-component-props']?.['operations']||[];
-    const operation = operations.find(operation => operation.value === operationValue);
-    console.log('toValues', {operation});
+    console.log('toValues', { operationValue });
+    const operation = operations.find(
+      (operation) => operation.value === operationValue,
+    );
+    console.log('toValues', { operation });
     if (!operation) {
       return {
+        operations,
         column,
-      }
+      };
     }
     if (operation.noValue) {
       return {
         column,
+        operations,
         operation,
-      }
+      };
     }
     return {
       column,
       operation,
+      operations,
       value: nested[operationValue],
-    }
-  }
+    };
+  };
 
   const values = toValues(value);
 
-  // console.log('toValues', values, value);
+  console.log('toValues', values, value);
 
   const Remove = (props) => {
     return (
@@ -92,11 +113,6 @@ export const FilterItem = (props) => {
     );
   };
 
-  const getComponent = (column: ISchema) => {
-    const field = Object.values(column.properties).shift();
-    return field ? get(options.components, field['x-component']) : null;
-  }
-
   const form = useMemo(
     () =>
       createForm({
@@ -104,16 +120,15 @@ export const FilterItem = (props) => {
         effects: (form) => {
           onFieldChange('column', (field: Field, form: Form) => {
             const column = (field.value || {}) as ISchema;
-            const operations = column?.['x-component-props']?.['operations']||[];
+            const operations =
+              column?.['x-component-props']?.['operations'] || [];
             field.query('operation').take((f: Field) => {
               f.setDataSource(operations);
-              f.initialValue = get(operations, [0]);
+              f.value = get(operations, [0]);
             });
             field.query('value').take((f: Field) => {
-              f.value = null;
-              const component = getComponent(column);
-              console.log({ component });
-              f.setComponent(component, {});
+              f.value = undefined;
+              f.componentProps.schema = column;
             });
           });
           onFieldReact('operation', (field: Field) => {
@@ -121,6 +136,10 @@ export const FilterItem = (props) => {
             const operation = field.value || {};
             field.query('value').take((f: Field) => {
               f.visible = !operation.noValue;
+              if (operation.noValue) {
+                f.value = undefined;
+              }
+              f.componentProps.operation = operation;
             });
           });
           onFormValuesChange((form) => {
@@ -130,16 +149,24 @@ export const FilterItem = (props) => {
             }
             const fieldName = Object.keys(column.properties).shift();
             if (operation?.noValue) {
-              onChange({[fieldName]: {
-                [operation.value]: true,
-              }});
-            } else if (isValid(value)) {
-              onChange({[fieldName]: {
-                [operation.value]: value,
-              }});
+              onChange({
+                [fieldName]: {
+                  [operation.value]: true,
+                },
+              });
+            } else {
+              onChange(
+                isValid(value)
+                  ? {
+                      [fieldName]: {
+                        [operation.value]: value,
+                      },
+                    }
+                  : {},
+              );
             }
             console.log('form.values', form.values);
-          })
+          });
         },
       }),
     [],
@@ -166,7 +193,7 @@ export const FilterItem = (props) => {
                 fieldNames: {
                   label: 'title',
                   value: 'name',
-                }
+                },
               }}
               enum={[...columns.values()].map((column) => column.toJSON())}
             />
@@ -183,16 +210,20 @@ export const FilterItem = (props) => {
                   width: 100,
                 },
               }}
-              enum={[]}
+              enum={values.operations}
             />
-            <SchemaField.String
+            <SchemaField.Object
               name="value"
               x-decorator="FormilyFormItem"
               x-decorator-props={{
                 asterisk: true,
                 feedbackLayout: 'none',
               }}
-              x-component="Input"
+              x-component="Filter.DynamicValue"
+              x-component-props={{
+                schema: values.column,
+                operation: values.operation,
+              }}
             />
             <SchemaField.Void x-component="Remove" />
           </SchemaField.Void>

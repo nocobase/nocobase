@@ -25,7 +25,6 @@ export const chinaRegion: ISchema = {
     ...defaultProps,
   },
   operations: [
-    { label: '等于', value: 'eq' },
-    { label: '不等于', value: 'ne' },
+    { label: '等于', value: 'code.in' },
   ],
 };

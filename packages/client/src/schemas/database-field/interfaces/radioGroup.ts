@@ -1,5 +1,6 @@
 import { ISchema } from '@formily/react';
 import { defaultProps, dataSource } from './properties';
+import { select } from './select';
 
 export const radioGroup: ISchema = {
   name: 'radioGroup',
@@ -22,8 +23,5 @@ export const radioGroup: ISchema = {
     ...defaultProps,
     'uiSchema.enum': dataSource,
   },
-  operations: [
-    { label: '等于', value: 'eq' },
-    { label: '不等于', value: 'ne' },
-  ],
+  operations: select.operations,
 };

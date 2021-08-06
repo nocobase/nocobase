@@ -40,7 +40,13 @@ export const time: ISchema = {
     },
   },
   operations: [
-    { label: '等于', value: 'eq' },
-    { label: '不等于', value: 'ne' },
+    { label: '等于', value: 'eq', selected: true },
+    { label: '不等于', value: 'neq' },
+    { label: '大于', value: 'gt' },
+    { label: '大于等于', value: 'gte' },
+    { label: '小于', value: 'lt' },
+    { label: '小于等于', value: 'lte' },
+    { label: '非空', value: '$notNull', noValue: true },
+    { label: '为空', value: '$null', noValue: true },
   ],
 };

@@ -40,15 +40,12 @@ import { useResource as useGeneralResource } from '../../hooks/useResource';
 import { Resource } from '../../resource';
 import { BaseResult } from '@ahooksjs/use-request/lib/types';
 
-export interface FormReadPrettyContextProps {
+export interface DescriptionsContextProps {
   resource?: Resource;
   service?: BaseResult<any, any>;
 }
 
-export const FormContext = createContext<FormReadPrettyContextProps>({});
-export const FormReadPrettyContext = createContext<FormReadPrettyContextProps>(
-  {},
-);
+export const DescriptionsContext = createContext<DescriptionsContextProps>({});
 
 const FormMain = (props: any) => {
   const {
@@ -135,9 +132,9 @@ const FormMain = (props: any) => {
   );
 
   return schema['x-read-pretty'] ? (
-    <FormReadPrettyContext.Provider value={{ resource, service }}>
+    <DescriptionsContext.Provider value={{ resource, service }}>
       {content}
-    </FormReadPrettyContext.Provider>
+    </DescriptionsContext.Provider>
   ) : (
     <>{content}</>
   );

@@ -1,5 +1,6 @@
 import { ISchema } from '@formily/react';
 import { defaultProps } from './properties';
+import { string } from './string';
 
 export const phone: ISchema = {
   name: 'phone',
@@ -23,8 +24,5 @@ export const phone: ISchema = {
   properties: {
     ...defaultProps,
   },
-  operations: [
-    { label: '等于', value: 'eq' },
-    { label: '不等于', value: 'ne' },
-  ],
+  operations: string.operations,
 };
