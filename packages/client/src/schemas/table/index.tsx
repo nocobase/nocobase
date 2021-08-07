@@ -361,7 +361,7 @@ const useTableColumns = () => {
     }),
   );
 
-  if (designable) {
+  if (designable && schema['x-designable-bar']) {
     columns.push({
       title: <AddColumn />,
       dataIndex: 'addnew',
@@ -972,7 +972,7 @@ function AddActionButton() {
   const displayed = useDisplayedMapContext();
   const { appendChild, remove } = useDesignable();
   const { schema, designable } = useDesignable();
-  if (!designable) {
+  if (!designable || !schema['x-designable-bar']) {
     return null;
   }
   return (
@@ -1385,12 +1385,14 @@ Table.Filter.DesignableBar = () => {
 };
 
 Table.Operation = observer((props: any) => {
-  const { designable } = useDesignable();
+  const { designable, schema } = useDesignable();
   const [visible, setVisible] = useState(false);
   return (
     <div className={'nb-table-column'}>
       操作
-      {designable && <Table.Operation.DesignableBar path={props.path} />}
+      {designable && schema['x-designable-bar'] && (
+        <Table.Operation.DesignableBar path={props.path} />
+      )}
     </div>
   );
 });
@@ -2035,6 +2037,14 @@ Table.useResource = ({ onSuccess }) => {
   return { resource, service, initialValues: service.data, ...service };
 };
 
+const useActionLogsResource = (options: any = {}) => {
+  const resource = Resource.make('action_logs');
+  return {
+    resource,
+  };
+};
+
+Table.useActionLogsResource = useActionLogsResource;
 Table.useTableFilterAction = useTableFilterAction;
 Table.useTableCreateAction = useTableCreateAction;
 Table.useTableUpdateAction = useTableUpdateAction;

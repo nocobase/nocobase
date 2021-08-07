@@ -104,7 +104,7 @@ export const Tabs: any = observer((props: any) => {
           {...others}
           className={cls({ singleton })}
           tabBarExtraContent={
-            designable && (
+            designable && schema['x-designable-bar'] && (
               <Button
                 type={'dashed'}
                 icon={<PlusOutlined />}

@@ -384,6 +384,150 @@ function generateCardItemSchema(component) {
         config: cloneDeep(barChartConfig),
       },
     },
+    'Ref.ActionLogs': {
+      type: 'array',
+      name: 'table',
+      'x-decorator': 'CardItem',
+      'x-component': 'Table',
+      default: [],
+      'x-component-props': {
+        useResource: '{{ Table.useActionLogsResource }}',
+        collectionName: 'action_logs',
+        rowKey: 'id',
+        // dragSort: true,
+        showIndex: true,
+        refreshRequestOnChange: true,
+        pagination: {
+          pageSize: 10,
+        },
+      },
+      properties: {
+        [uid()]: {
+          type: 'void',
+          'x-component': 'Table.ActionBar',
+          properties: {
+            [uid()]: {
+              type: 'void',
+              title: '筛选',
+              'x-align': 'left',
+              'x-component': 'Table.Filter',
+              'x-component-props': {
+                fieldNames: [],
+              },
+            },
+          },
+        },
+        [uid()]: {
+          type: 'void',
+          title: '操作',
+          'x-component': 'Table.Operation',
+          'x-component-props': {
+            className: 'nb-table-operation',
+          },
+          properties: {
+            [uid()]: {
+              type: 'void',
+              'x-component': 'Action',
+              'x-component-props': {
+                icon: 'EllipsisOutlined',
+              },
+              properties: {
+                [uid()]: {
+                  type: 'void',
+                  'x-component': 'Action.Dropdown',
+                  'x-component-props': {},
+                  properties: {
+                    [uid()]: {
+                      type: 'void',
+                      name: 'action1',
+                      title: '查看',
+                      'x-component': 'Menu.Action',
+                      'x-component-props': {
+                        style: {
+                          minWidth: 150,
+                        },
+                      },
+                      'x-action-type': 'view',
+                      properties: {
+                        [uid()]: {
+                          type: 'void',
+                          title: '查看',
+                          'x-component': 'Action.Drawer',
+                          'x-component-props': {
+                            bodyStyle: {
+                              background: '#f0f2f5',
+                              // paddingTop: 0,
+                            },
+                          },
+                          properties: {
+                            [uid()]: {
+                              type: 'void',
+                              'x-component': 'Tabs',
+                              'x-component-props': {
+                                singleton: true,
+                              },
+                              properties: {
+                                [uid()]: {
+                                  type: 'void',
+                                  title: '详情',
+                                  'x-component': 'Tabs.TabPane',
+                                  'x-component-props': {},
+                                  properties: {
+                                    [uid()]: {
+                                      type: 'void',
+                                      'x-component': 'Grid',
+                                      'x-component-props': {
+                                        // addNewComponent: 'AddNew.PaneItem',
+                                      },
+                                    },
+                                  },
+                                },
+                              },
+                            },
+                          },
+                        },
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+        column1: {
+          type: 'void',
+          title: '创建时间',
+          'x-component': 'Table.Column',
+          properties: {
+            created_at: {
+              type: 'string',
+              'x-component': 'DatePicker',
+              'x-read-pretty': true,
+              'x-component-props': {
+                format: 'YYYY-MM-DD HH:mm:ss',
+              },
+            },
+          },
+        },
+        column2: {
+          type: 'void',
+          title: '操作类型',
+          'x-component': 'Table.Column',
+          properties: {
+            type: {
+              type: 'string',
+              'x-component': 'Select',
+              'x-read-pretty': true,
+              enum: [
+                { label: '新增数据', value: 'create' },
+                { label: '更新数据', value: 'update' },
+                { label: '删除数据', value: 'destroy' },
+              ],
+            },
+          },
+        },
+      },
+    },
   };
   return defaults[component];
 }
@@ -602,12 +746,12 @@ AddNew.CardItem = observer((props: any) => {
             </Menu.Item>
           </Menu.ItemGroup>
           <Menu.Divider />
-          <Menu.SubMenu disabled key={'Ref'} title={'引用模板'}>
+          <Menu.SubMenu key={'Ref'} title={'引用模板'}>
             <Menu.ItemGroup key={'form-select'} title={'选择模板'}>
-              <Menu.Item key={'Ref.name1'}>模板1</Menu.Item>
+              <Menu.Item key={'Ref.ActionLogs'}>操作日志</Menu.Item>
             </Menu.ItemGroup>
             <Menu.Divider></Menu.Divider>
-            <Menu.Item key={'addNewRef'}>新建模板</Menu.Item>
+            <Menu.Item disabled key={'addNewRef'}>新建模板</Menu.Item>
           </Menu.SubMenu>
         </Menu>
       }
@@ -934,12 +1078,34 @@ AddNew.PaneItem = observer((props: any) => {
             <Menu.Item
               style={{ minWidth: 150 }}
               icon={<IconPicker type={'HistoryOutlined'} />}
+              onClick={async () => {
+                let data: ISchema = generateCardItemSchema('Ref.ActionLogs');
+                if (isGridBlock(schema)) {
+                  path.pop();
+                  path.pop();
+                  data = generateGridBlock(data);
+                } else if (isGrid(schema)) {
+                  data = generateGridBlock(data);
+                }
+                if (data) {
+                  let s;
+                  if (isGrid(schema)) {
+                    s = appendChild(data, [...path]);
+                  } else if (defaultAction === 'insertAfter') {
+                    s = insertAfter(data, [...path]);
+                  } else {
+                    s = insertBefore(data, [...path]);
+                  }
+                  await createSchema(s);
+                }
+                setVisible(false);
+              }}
             >
               日志
             </Menu.Item>
-            <Menu.Item icon={<IconPicker type={'CommentOutlined'} />}>
+            {/* <Menu.Item icon={<IconPicker type={'CommentOutlined'} />}>
               评论
-            </Menu.Item>
+            </Menu.Item> */}
           </Menu.ItemGroup>
           <Menu.ItemGroup title={'多媒体区块'}>
             <Menu.Item
