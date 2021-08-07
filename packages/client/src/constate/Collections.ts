@@ -23,7 +23,7 @@ export function useCollection(props: CollectionProviderProps) {
     collection = collections.find((item) => item.name === collectionName);
   }
   if (collection) {
-    fields = collection?.fields || [];
+    fields = collection?.generalFields || [];
   }
   let sortableField = collection?.sortable;
   if (collection?.sortable && typeof collection?.sortable === 'object') {

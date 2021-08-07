@@ -6,15 +6,16 @@ export default {
   model: 'Collection',
   sortable: 'sort',
   fields: [
-    // {
-    //   type: 'sort',
-    //   name: 'sort',
-    // },
     {
       type: 'uid',
       name: 'name',
       primaryKey: true,
       prefix: 't_',
+    },
+    {
+      type: 'boolean',
+      name: 'logging',
+      defaultValue: true,
     },
     {
       type: 'string',
@@ -38,7 +39,28 @@ export default {
     {
       type: 'hasMany',
       name: 'fields',
+      target: 'fields',
       sourceKey: 'name',
+    },
+    {
+      type: 'hasMany',
+      name: 'generalFields',
+      target: 'fields',
+      foreignKey: 'collection_name',
+      sourceKey: 'name',
+      scope: {
+        state: 1,
+      },
+    },
+    {
+      type: 'hasMany',
+      name: 'systemFields',
+      target: 'fields',
+      foreignKey: 'collection_name',
+      sourceKey: 'name',
+      scope: {
+        state: 0,
+      },
     },
     {
       type: 'belongsTo',

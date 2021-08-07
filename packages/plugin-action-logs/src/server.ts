@@ -12,7 +12,7 @@ export default async function() {
 
   // 为所有的表都加上日志的 hooks
   database.addHook('afterTableInit', (table) => {
-    if (table.options.logging === false) {
+    if (!table.options.logging) {
       return;
     }
     addAll(database.getModel(table.options.name));
@@ -20,7 +20,7 @@ export default async function() {
 
   const Collection = database.getModel('collections');
   Collection.addHook('afterCreate', async (model, options) => {
-    if (model.get('logging') === false) {
+    if (!model.get('logging')) {
       return;
     }
 
@@ -28,20 +28,21 @@ export default async function() {
 
     const exists = await model.countFields({
       where: {
-        type: { [Op.iLike]: 'hasMany' },
+        dataType: { [Op.iLike]: 'hasMany' },
         name: 'action_logs'
       },
       transaction
     });
 
     if (!exists) {
-      await model.createField({
+      await model.createSystemField({
         interface: 'linkTo',
-        type: 'hasMany',
+        dataType: 'hasMany',
         name: 'action_logs',
         target: 'action_logs',
         title: '数据动态',
         foreignKey: 'index',
+        state: 0,
         scope: {
           collection_name: model.get('name')
         },

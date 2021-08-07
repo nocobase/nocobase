@@ -45,7 +45,7 @@ export default () => {
         'x-component': 'Input',
         'x-read-pretty': true,
       },
-      fields: {
+      generalFields: {
         type: 'array',
         title: '数据表字段',
         'x-decorator': 'FormItem',
