@@ -24,7 +24,8 @@ import {
   Input,
   Badge,
   message,
-  Spin,
+  Drawer,
+  Space,
 } from 'antd';
 import { options, interfaces, getDefaultFields } from './interfaces';
 import {
@@ -127,11 +128,12 @@ export const DatabaseCollection = observer((props) => {
       >
         <DatabaseOutlined />
       </Button>
-      <Modal
-        bodyStyle={{
-          overflow: 'auto',
-          maxHeight: 'calc(100vh - 300px)',
-        }}
+      <Drawer
+        width={'50%'}
+        // bodyStyle={{
+        //   overflow: 'auto',
+        //   maxHeight: 'calc(100vh - 300px)',
+        // }}
         title={
           <div style={{ textAlign: 'center' }}>
             <DndContext
@@ -249,21 +251,49 @@ export const DatabaseCollection = observer((props) => {
           </div>
         }
         visible={visible}
-        onCancel={() => {
+        onClose={() => {
           setVisible(false);
         }}
-        okText={'保存'}
-        cancelText={'关闭'}
-        onOk={async () => {
-          try {
-            form.clearErrors();
-            await form.validate(`${field.address.entire}.${activeIndex}.*`);
-            delete field.value[activeIndex]['unsaved'];
-            await createOrUpdateCollection(field.value[activeIndex]);
-            await refresh();
-            message.success('保存成功');
-          } catch (error) {}
-        }}
+        footer={
+          <Space>
+            <Button
+              onClick={() => {
+                setVisible(false);
+              }}
+            >
+              关闭
+            </Button>
+            <Button
+              type={'primary'}
+              onClick={async () => {
+                try {
+                  form.clearErrors();
+                  await form.validate(
+                    `${field.address.entire}.${activeIndex}.*`,
+                  );
+                  delete field.value[activeIndex]['unsaved'];
+                  await createOrUpdateCollection(field.value[activeIndex]);
+                  await refresh();
+                  message.success('保存成功');
+                } catch (error) {}
+              }}
+            >
+              保存
+            </Button>
+          </Space>
+        }
+        // okText={'保存'}
+        // cancelText={'关闭'}
+        // onOk={async () => {
+        //   try {
+        //     form.clearErrors();
+        //     await form.validate(`${field.address.entire}.${activeIndex}.*`);
+        //     delete field.value[activeIndex]['unsaved'];
+        //     await createOrUpdateCollection(field.value[activeIndex]);
+        //     await refresh();
+        //     message.success('保存成功');
+        //   } catch (error) {}
+        // }}
       >
         <FormLayout layout={'vertical'}>
           <RecursionField
@@ -279,7 +309,7 @@ export const DatabaseCollection = observer((props) => {
               {(form) => <pre>{JSON.stringify(form.values, null, 2)}</pre>}
             </FormConsumer> */}
         </FormLayout>
-      </Modal>
+      </Drawer>
     </div>
   );
 });

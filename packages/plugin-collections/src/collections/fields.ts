@@ -11,18 +11,11 @@ export default {
     scope: ['parentKey'],
   },
   fields: [
-    // {
-    //   type: 'sort',
-    //   name: 'sort',
-    //   scope: ['parentKey'],
-    // },
     {
       type: 'uid',
       name: 'key',
       primaryKey: true,
       prefix: 'f_',
-      // autoIncrement: false,
-      // defaultValue: DataTypes.UUIDV4,
     },
     {
       type: 'string',
@@ -39,6 +32,11 @@ export default {
     {
       type: 'string',
       name: 'privilege',
+    },
+    {
+      type: 'integer',
+      name: 'state',
+      default: 1,
     },
     {
       type: 'hasMany',

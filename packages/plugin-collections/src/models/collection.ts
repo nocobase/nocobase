@@ -36,12 +36,22 @@ export class Collection extends Model {
     const json = this.toJSON();
     const data: any = _.omit(json, ['options', 'created_at', 'updated_at']);
     const options = json['options'] || {};
-    const fields = await this.getNestedFields();
-    return { ...data, ...options, fields }
+    const generalFields = await this.getNestedFields({
+      where: {
+        state: 1,
+      }
+    });
+    const systemFields = await this.getNestedFields({
+      where: {
+        state: 0,
+      }
+    });
+    return { ...data, ...options, generalFields, systemFields }
   }
 
-  async getNestedFields() {
+  async getNestedFields(options) {
     const fields = await this.getFields({
+      ...options,
       order: [['sort', 'asc']],
     });
     const items = [];
@@ -60,8 +70,8 @@ export class Collection extends Model {
    */
   async loadTableOptions(opts: any = {}) {
     const options = await this.toProps();
-    // console.log(JSON.stringify(options, null, 2));
-    const table = this.database.table(options);
+    const { generalFields = [], systemFields = [], ...others } = options;
+    const table = this.database.table({ ...others, fields: generalFields.concat(systemFields) });
     return table;
   }
 
