@@ -32,7 +32,7 @@ import { useEffect } from 'react';
 import { uid } from '@formily/shared';
 import { getSchemaPath } from '../../components/schema-renderer';
 
-export const DesignableBar = observer((props) => {
+export const SimpleDesignableBar = observer((props) => {
   const field = useField();
   const { designable, schema, refresh, deepRemove } = useDesignable();
   const [visible, setVisible] = useState(false);

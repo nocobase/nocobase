@@ -63,7 +63,9 @@ export class Resource {
     if (!resourceKey) {
       return Promise.resolve({ data: {} });
     }
-    return request(`${resourceName}:get/${resourceKey}`);
+    return request(`${resourceName}:get/${resourceKey}`, {
+      params: options,
+    });
   }
 
   create(values: any) {

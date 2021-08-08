@@ -72,6 +72,7 @@ import flatten from 'flat';
 import IconPicker from '../../components/icon-picker';
 import { DescriptionsContext } from '../form';
 import { VisibleContext } from '../../context';
+import { SimpleDesignableBar } from './SimpleDesignableBar';
 
 export interface ITableContext {
   props: any;
@@ -361,7 +362,7 @@ const useTableColumns = () => {
     }),
   );
 
-  if (designable && schema['x-designable-bar']) {
+  if (designable && schema['x-designable-bar'] !== 'Table.SimpleDesignableBar') {
     columns.push({
       title: <AddColumn />,
       dataIndex: 'addnew',
@@ -1386,7 +1387,6 @@ Table.Filter.DesignableBar = () => {
 
 Table.Operation = observer((props: any) => {
   const { designable, schema } = useDesignable();
-  const [visible, setVisible] = useState(false);
   return (
     <div className={'nb-table-column'}>
       操作
@@ -1410,6 +1410,9 @@ Table.Operation.Cell = observer((props: any) => {
 Table.Operation.DesignableBar = (props) => {
   const { schema, remove, refresh, appendChild } = useDesignable(props.path);
   const [visible, setVisible] = useState(false);
+  if (!schema['x-designable-bar']) {
+    return null;
+  }
   const map = new Map();
   schema.mapProperties((s) => {
     if (!s['x-action-type']) {
@@ -2015,14 +2018,15 @@ Table.DesignableBar = observer((props) => {
   );
 });
 
-Table.useResource = ({ onSuccess }) => {
+Table.useResource = ({ onSuccess, manual = true }) => {
   const { props } = useTable();
   const { collection } = useCollectionContext();
   const ctx = useContext(TableRowContext);
   const resource = Resource.make({
-    resourceName: collection.name,
+    resourceName: collection?.name || props.collectionName,
     resourceKey: ctx.record[props.rowKey],
   });
+  console.log('collection?.name || props.collectionName', collection?.name || props.collectionName)
   const service = useRequest(
     (params?: any) => {
       console.log('Table.useResource', params);
@@ -2031,9 +2035,39 @@ Table.useResource = ({ onSuccess }) => {
     {
       formatResult: (result) => result?.data,
       onSuccess,
+      manual,
+    },
+  );
+  return { resource, service, initialValues: service.data, ...service };
+};
+
+Table.useActionLogDetailsResource = ({ onSuccess }) => {
+  const { props } = useTable();
+  const { collection } = useCollectionContext();
+  const ctx = useContext(TableRowContext);
+  const resource = Resource.make({
+    resourceName: 'action_logs',
+    resourceKey: ctx.record[props.rowKey],
+  });
+  const service = useRequest(
+    (params?: any) => {
+      console.log('Table.useResource', params);
+      return resource.get({...params, 'fields[appends]': 'changes'});
+    },
+    {
+      formatResult: (result) => result?.data,
+      onSuccess,
       manual: true,
     },
   );
+  const [visible] = useContext(VisibleContext);
+
+  useEffect(() => {
+    if (visible) {
+      service.run({});
+    }
+  }, [visible]);
+
   return { resource, service, initialValues: service.data, ...service };
 };
 
@@ -2051,3 +2085,4 @@ Table.useTableUpdateAction = useTableUpdateAction;
 Table.useTableDestroyAction = useTableDestroyAction;
 Table.useTableIndex = useTableIndex;
 Table.useTableRowRecord = useTableRowRecord;
+Table.SimpleDesignableBar = SimpleDesignableBar;

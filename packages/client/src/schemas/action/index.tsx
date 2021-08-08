@@ -109,14 +109,14 @@ Action.Modal = observer((props: any) => {
   const { run: runCancel } = useCancelAction();
   const isFormDecorator = schema['x-decorator'] === 'Form';
   const field = useField();
-  console.log('Action.Modal.field', field);
+  console.log('Action.Modal.field', schema['x-read-pretty']);
   return (
     <Modal
       title={schema.title}
       destroyOnClose
       maskClosable
       footer={
-        isFormDecorator
+        isFormDecorator && !schema['x-read-pretty']
           ? [
               <Button
                 onClick={async () => {
@@ -171,6 +171,7 @@ Action.Drawer = observer((props: any) => {
   const { run: runOk } = useOkAction();
   const { run: runCancel } = useCancelAction();
   const isFormDecorator = schema['x-decorator'] === 'Form';
+  console.log('Action.Modal.field', schema['x-read-pretty']);
   return (
     <Drawer
       width={'50%'}
@@ -178,7 +179,8 @@ Action.Drawer = observer((props: any) => {
       maskClosable
       destroyOnClose
       footer={
-        isFormDecorator && (
+        isFormDecorator &&
+        !schema['x-read-pretty'] && (
           <Space style={{ float: 'right' }}>
             <Button
               onClick={async (e) => {
