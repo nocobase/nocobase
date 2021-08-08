@@ -68,7 +68,13 @@ import {
 import { DndContext, DragOverlay } from '@dnd-kit/core';
 import { createPortal } from 'react-dom';
 
+export interface MenuContextProps {
+  schema?: Schema;
+  onRemove?: any;
+}
+
 export const MenuModeContext = createContext(null);
+export const MenuContext = createContext<MenuContextProps>(null);
 
 const SideMenu = (props: any) => {
   const { selectedKey, defaultSelectedKeys, onSelect, path } = props;
@@ -105,6 +111,7 @@ export const Menu: any = observer((props: any) => {
     onSelect,
     sideMenuRef,
     defaultSelectedKeys = [],
+    onRemove,
     ...others
   } = props;
   const { root, schema, insertAfter, remove } = useDesignable();
@@ -152,80 +159,82 @@ export const Menu: any = observer((props: any) => {
   }, [selectedKey]);
 
   const [dragOverlayContent, setDragOverlayContent] = useState('');
-
+  console.log('onRemove', onRemove)
   return (
-    <DndContext
-      onDragStart={(event) => {
-        console.log({ event });
-        setDragOverlayContent(event.active.data?.current?.title || '');
-      }}
-      onDragEnd={async (event) => {
-        console.log({ event });
-        const path1 = event.active?.data?.current?.path;
-        const path2 = event.over?.data?.current?.path;
-        const data = moveToAfter(path1, path2);
-        await updateSchema(data);
-      }}
-    >
-      {createPortal(
-        <DragOverlay
-          style={{ pointerEvents: 'none', whiteSpace: 'nowrap' }}
-          dropAnimation={{
-            duration: 10,
-            easing: 'cubic-bezier(0.18, 0.67, 0.6, 1.22)',
-          }}
-        >
-          {dragOverlayContent}
-        </DragOverlay>,
-        document.body,
-      )}
-      <MenuModeContext.Provider value={mode}>
-        <AntdMenu
-          defaultSelectedKeys={defaultSelectedKeys}
-          {...others}
-          mode={mode === 'mix' ? 'horizontal' : mode}
-          onSelect={(info) => {
-            if (mode === 'mix') {
-              setSelectedKey(info.key);
-            }
-            const selectedSchema = schema.properties[info.key];
-            console.log({ selectedSchema });
-            onSelect && onSelect({ ...info, schema: selectedSchema });
-          }}
-        >
-          <RecursionField schema={schema} onlyRenderProperties />
-          <Menu.AddNew key={uid()} path={path}>
-            {/* <PlusOutlined className={'nb-add-new-icon'} /> */}
-            <Button
-              className={`nb-add-new-menu-item menu-mode-${
-                mode === 'mix' ? 'horizontal' : mode
-              }`}
-              block
-              type={mode == 'inline' ? 'dashed' : 'primary'}
-            >
-              <PlusOutlined />
-            </Button>
-          </Menu.AddNew>
-        </AntdMenu>
-        {mode === 'mix' && (
-          <div ref={ref}>
-            <SideMenu
-              path={path}
-              onSelect={(info) => {
-                const keyPath = [selectedKey, ...[...info.keyPath].reverse()];
-                const selectedSchema = findPropertyByPath(schema, keyPath);
-                console.log('keyPath', keyPath, selectedSchema);
-                onSelect &&
-                  onSelect({ ...info, keyPath, schema: selectedSchema });
-              }}
-              defaultSelectedKeys={defaultSelectedKeys || []}
-              selectedKey={selectedKey}
-              sideMenuRef={sideMenuRef}
-            />
-          </div>
+    <MenuContext.Provider value={{ schema, onRemove }}>
+      <DndContext
+        onDragStart={(event) => {
+          console.log({ event });
+          setDragOverlayContent(event.active.data?.current?.title || '');
+        }}
+        onDragEnd={async (event) => {
+          console.log({ event });
+          const path1 = event.active?.data?.current?.path;
+          const path2 = event.over?.data?.current?.path;
+          const data = moveToAfter(path1, path2);
+          await updateSchema(data);
+        }}
+      >
+        {createPortal(
+          <DragOverlay
+            style={{ pointerEvents: 'none', whiteSpace: 'nowrap' }}
+            dropAnimation={{
+              duration: 10,
+              easing: 'cubic-bezier(0.18, 0.67, 0.6, 1.22)',
+            }}
+          >
+            {dragOverlayContent}
+          </DragOverlay>,
+          document.body,
         )}
-      </MenuModeContext.Provider>
-    </DndContext>
+        <MenuModeContext.Provider value={mode}>
+          <AntdMenu
+            defaultSelectedKeys={defaultSelectedKeys}
+            {...others}
+            mode={mode === 'mix' ? 'horizontal' : mode}
+            onSelect={(info) => {
+              if (mode === 'mix') {
+                setSelectedKey(info.key);
+              }
+              const selectedSchema = schema.properties[info.key];
+              console.log({ selectedSchema });
+              onSelect && onSelect({ ...info, schema: selectedSchema });
+            }}
+          >
+            <RecursionField schema={schema} onlyRenderProperties />
+            <Menu.AddNew key={uid()} path={path}>
+              {/* <PlusOutlined className={'nb-add-new-icon'} /> */}
+              <Button
+                className={`nb-add-new-menu-item menu-mode-${
+                  mode === 'mix' ? 'horizontal' : mode
+                }`}
+                block
+                type={mode == 'inline' ? 'dashed' : 'primary'}
+              >
+                <PlusOutlined />
+              </Button>
+            </Menu.AddNew>
+          </AntdMenu>
+          {mode === 'mix' && (
+            <div ref={ref}>
+              <SideMenu
+                path={path}
+                onSelect={(info) => {
+                  const keyPath = [selectedKey, ...[...info.keyPath].reverse()];
+                  const selectedSchema = findPropertyByPath(schema, keyPath);
+                  console.log('keyPath', keyPath, selectedSchema);
+                  onSelect &&
+                    onSelect({ ...info, keyPath, schema: selectedSchema });
+                }}
+                defaultSelectedKeys={defaultSelectedKeys || []}
+                selectedKey={selectedKey}
+                sideMenuRef={sideMenuRef}
+              />
+            </div>
+          )}
+        </MenuModeContext.Provider>
+      </DndContext>
+    </MenuContext.Provider>
   );
 });
 
@@ -638,10 +647,7 @@ Menu.DesignableBar = (props) => {
   } = useDesignable();
   const formConfig = schemas[schema['x-component']];
   const isSubMenu = schema['x-component'] === 'Menu.SubMenu';
-
-  if (!designable) {
-    return null;
-  }
+  const ctx = useContext(MenuContext);
 
   return (
     <div className={cls('designable-bar', { active: visible })}>
@@ -927,6 +933,7 @@ Menu.DesignableBar = (props) => {
                     onOk: async () => {
                       const target = remove();
                       await removeSchema(target);
+                      ctx.onRemove && ctx.onRemove(target);
                     },
                   });
                 }}

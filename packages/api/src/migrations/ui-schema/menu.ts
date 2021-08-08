@@ -10,5 +10,6 @@ export const menu = {
     defaultSelectedKeys: '{{ selectedKeys }}',
     sideMenuRef: '{{ sideMenuRef }}',
     onSelect: '{{ onSelect }}',
+    onRemove: '{{ onMenuItemRemove }}',
   },
 };

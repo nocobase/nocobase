@@ -33,6 +33,7 @@ import {
   CollectionsProvider,
   useCollectionsContext,
 } from '../../constate';
+import { uid } from '@formily/shared';
 
 function DesignableToggle() {
   const { designable, setDesignable } = useDesignableSwitchContext();
@@ -58,7 +59,6 @@ interface LayoutWithMenuProps {
 function LayoutWithMenu(props: LayoutWithMenuProps) {
   const { schema, defaultSelectedKeys } = props;
   const match = useRouteMatch<any>();
-  const location = useLocation();
   const sideMenuRef = useRef();
   const history = useHistory();
   const [activeKey, setActiveKey] = useState(match.params.name);
@@ -77,7 +77,12 @@ function LayoutWithMenu(props: LayoutWithMenuProps) {
       }
     }
   };
-
+  useEffect(() => {
+    setActiveKey(match.params.name);
+  }, [match.params.name]);
+  const onMenuItemRemove = () => {
+    history.push(`/admin`);
+  };
   return (
     <Layout>
       <Layout.Header style={{ display: 'flex' }}>
@@ -86,6 +91,7 @@ function LayoutWithMenu(props: LayoutWithMenuProps) {
           scope={{
             sideMenuRef,
             onSelect,
+            onMenuItemRemove,
             selectedKeys: defaultSelectedKeys.filter(Boolean),
           }}
         />
@@ -109,13 +115,13 @@ function LayoutWithMenu(props: LayoutWithMenuProps) {
 function Content({ activeKey }) {
   const { designable } = useDesignableSwitchContext();
   const { collections } = useCollectionsContext();
-  const { data = {}, loading, run } = useRequest(
-    `ui_schemas:getTree?filter[parentKey]=${activeKey}`,
-    {
-      refreshDeps: [activeKey, collections, designable],
-      formatResult: (result) => result?.data,
-    },
-  );
+  const {
+    data = {},
+    loading,
+  } = useRequest(`ui_schemas:getTree?filter[parentKey]=${activeKey}`, {
+    refreshDeps: [activeKey, collections, designable],
+    formatResult: (result) => result?.data,
+  });
 
   if (loading) {
     return <Spin />;
@@ -124,7 +130,8 @@ function Content({ activeKey }) {
   return <SchemaRenderer schema={data} />;
 }
 
-export function AdminLayout({ route }: any) {
+export function AdminLayout({ route, ...others }: any) {
+  const match = useRouteMatch<any>();
   const { data = {}, loading } = useRequest(
     `ui_schemas:getTree/${route.uiSchemaKey}`,
     {
@@ -132,7 +139,6 @@ export function AdminLayout({ route }: any) {
       formatResult: (result) => result?.data,
     },
   );
-  const match = useRouteMatch<any>();
 
   if (loading) {
     return <Spin />;
