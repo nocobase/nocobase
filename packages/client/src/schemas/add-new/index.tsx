@@ -389,6 +389,7 @@ function generateCardItemSchema(component) {
       name: 'table',
       'x-decorator': 'CardItem',
       'x-component': 'Table',
+      'x-designable-bar': 'Table.SimpleDesignableBar',
       default: [],
       'x-component-props': {
         useResource: '{{ Table.useActionLogsResource }}',
@@ -452,32 +453,86 @@ function generateCardItemSchema(component) {
                         [uid()]: {
                           type: 'void',
                           title: '查看',
+                          'x-read-pretty': true,
+                          'x-decorator': 'Form',
+                          'x-decorator-props': {
+                            useResource: '{{ Table.useActionLogDetailsResource }}',
+                          },
                           'x-component': 'Action.Drawer',
                           'x-component-props': {
-                            bodyStyle: {
-                              background: '#f0f2f5',
-                              // paddingTop: 0,
-                            },
+                            // bodyStyle: {
+                            //   background: '#f0f2f5',
+                            //   // paddingTop: 0,
+                            // },
                           },
                           properties: {
-                            [uid()]: {
-                              type: 'void',
-                              'x-component': 'Tabs',
+                            created_at: {
+                              type: 'string',
+                              title: '创建时间',
+                              'x-decorator': 'FormItem',
+                              'x-component': 'DatePicker',
+                              'x-read-pretty': true,
                               'x-component-props': {
-                                singleton: true,
+                                format: 'YYYY-MM-DD HH:mm:ss',
                               },
-                              properties: {
-                                [uid()]: {
-                                  type: 'void',
-                                  title: '详情',
-                                  'x-component': 'Tabs.TabPane',
-                                  'x-component-props': {},
-                                  properties: {
-                                    [uid()]: {
-                                      type: 'void',
-                                      'x-component': 'Grid',
-                                      'x-component-props': {
-                                        // addNewComponent: 'AddNew.PaneItem',
+                            },
+                            type: {
+                              type: 'string',
+                              title: '操作类型',
+                              'x-decorator': 'FormItem',
+                              'x-component': 'Select',
+                              'x-read-pretty': true,
+                              enum: [
+                                { label: '新增数据', value: 'create' },
+                                { label: '更新数据', value: 'update' },
+                                { label: '删除数据', value: 'destroy' },
+                              ],
+                            },
+                            changes: {
+                              type: 'array',
+                              title: '数据变动',
+                              'x-decorator': 'FormItem',
+                              'x-component': 'ArrayTable',
+                              'x-component-props': {
+                                pagination: false,
+                                // scroll: { x: '100%' },
+                              },
+                              items: {
+                                type: 'object',
+                                properties: {
+                                  column1: {
+                                    type: 'void',
+                                    'x-component': 'ArrayTable.Column',
+                                    'x-component-props': { title: '字段名称' },
+                                    properties: {
+                                      'field.uiSchema.title': {
+                                        type: 'string',
+                                        'x-decorator': 'FormItem',
+                                        'x-component': 'Input',
+                                      },
+                                    },
+                                  },
+                                  column3: {
+                                    type: 'void',
+                                    'x-component': 'ArrayTable.Column',
+                                    'x-component-props': { title: '操作前' },
+                                    properties: {
+                                      before: {
+                                        type: 'string',
+                                        'x-decorator': 'FormItem',
+                                        'x-component': 'Values',
+                                      },
+                                    },
+                                  },
+                                  column4: {
+                                    type: 'void',
+                                    'x-component': 'ArrayTable.Column',
+                                    'x-component-props': { title: '操作后' },
+                                    properties: {
+                                      after: {
+                                        type: 'string',
+                                        'x-decorator': 'FormItem',
+                                        'x-component': 'Values',
                                       },
                                     },
                                   },
