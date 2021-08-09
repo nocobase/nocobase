@@ -36,7 +36,7 @@ export default {
     {
       type: 'integer',
       name: 'state',
-      default: 1,
+      defaultValue: 1,
     },
     {
       type: 'hasMany',
