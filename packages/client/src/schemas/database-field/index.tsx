@@ -120,7 +120,7 @@ export const DatabaseCollection = observer((props) => {
             field.push({
               name: `t_${uid()}`,
               unsaved: true,
-              fields: getDefaultFields(),
+              generalFields: getDefaultFields(),
             });
           }
         }}
@@ -190,7 +190,7 @@ export const DatabaseCollection = observer((props) => {
                             const data = {
                               name: `t_${uid()}`,
                               title: value,
-                              fields: getDefaultFields(),
+                              generalFields: getDefaultFields(),
                             };
                             field.push(data);
                             setActiveIndex(field.value.length - 1);
@@ -229,7 +229,7 @@ export const DatabaseCollection = observer((props) => {
                             field.push({
                               name: `t_${uid()}`,
                               unsaved: true,
-                              fields: getDefaultFields(),
+                              generalFields: getDefaultFields(),
                             });
                           }
                           if (activeIndex === index) {

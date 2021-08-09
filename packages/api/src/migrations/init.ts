@@ -20,7 +20,9 @@ import * as uiSchema from './ui-schema';
   const config = require('@nocobase/plugin-users/src/collections/users').default;
   const Collection = database.getModel('collections');
   const collection = await Collection.create(config);
-  await collection.updateAssociations(config);
+  await collection.updateAssociations({
+    generalFields: config.fields,
+  });
   await collection.migrate();
 
   const Route = database.getModel('routes');

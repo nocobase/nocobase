@@ -538,7 +538,7 @@ const TableMain = () => {
           />
         ))}
         <SortableContext
-          items={dataSource}
+          items={dataSource || []}
           strategy={verticalListSortingStrategy}
         >
           <AntdTable
