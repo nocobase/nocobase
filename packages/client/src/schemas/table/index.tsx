@@ -362,7 +362,10 @@ const useTableColumns = () => {
     }),
   );
 
-  if (designable && schema['x-designable-bar'] !== 'Table.SimpleDesignableBar') {
+  if (
+    designable &&
+    schema['x-designable-bar'] !== 'Table.SimpleDesignableBar'
+  ) {
     columns.push({
       title: <AddColumn />,
       dataIndex: 'addnew',
@@ -1209,9 +1212,11 @@ Table.Filter = observer((props: any) => {
   const count = Object.values(obj).filter((i) =>
     Array.isArray(i) ? i.length : i,
   ).length;
-
   const icon = props.icon || 'FilterOutlined';
-
+  const properties = fieldsToFilterColumns(fields, { fieldNames });
+  schema.mapProperties((p) => {
+    properties[p.name] = p;
+  });
   return (
     <Popover
       trigger={['click']}
@@ -1228,7 +1233,7 @@ Table.Filter = observer((props: any) => {
                   filter: {
                     type: 'object',
                     'x-component': 'Filter',
-                    properties: fieldsToFilterColumns(fields, { fieldNames }),
+                    properties,
                   },
                 },
               }}
@@ -2026,7 +2031,10 @@ Table.useResource = ({ onSuccess, manual = true }) => {
     resourceName: collection?.name || props.collectionName,
     resourceKey: ctx.record[props.rowKey],
   });
-  console.log('collection?.name || props.collectionName', collection?.name || props.collectionName)
+  console.log(
+    'collection?.name || props.collectionName',
+    collection?.name || props.collectionName,
+  );
   const service = useRequest(
     (params?: any) => {
       console.log('Table.useResource', params);
@@ -2052,7 +2060,7 @@ Table.useActionLogDetailsResource = ({ onSuccess }) => {
   const service = useRequest(
     (params?: any) => {
       console.log('Table.useResource', params);
-      return resource.get({...params, 'fields[appends]': 'changes'});
+      return resource.get({ ...params, 'fields[appends]': 'changes' });
     },
     {
       formatResult: (result) => result?.data,
