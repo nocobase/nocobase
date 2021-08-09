@@ -415,6 +415,57 @@ function generateCardItemSchema(component) {
               'x-component-props': {
                 fieldNames: [],
               },
+              properties: {
+                column1: {
+                  type: 'void',
+                  title: '操作类型',
+                  'x-component': 'Filter.Column',
+                  'x-component-props': {
+                    operations: [
+                      {
+                        label: '等于',
+                        value: 'eq',
+                        selected: true,
+                        schema: { 'x-component': 'Select' },
+                      },
+                      {
+                        label: '不等于',
+                        value: 'ne',
+                        schema: { 'x-component': 'Select' },
+                      },
+                      {
+                        label: '包含',
+                        value: 'in',
+                        schema: {
+                          'x-component': 'Select',
+                          'x-component-props': { mode: 'tags' },
+                        },
+                      },
+                      {
+                        label: '不包含',
+                        value: 'notIn',
+                        schema: {
+                          'x-component': 'Select',
+                          'x-component-props': { mode: 'tags' },
+                        },
+                      },
+                      { label: '非空', value: '$notNull', noValue: true },
+                      { label: '为空', value: '$null', noValue: true },
+                    ],
+                  },
+                  properties: {
+                    type: {
+                      type: 'string',
+                      'x-component': 'Select',
+                      enum: [
+                        { label: '新增数据', value: 'create' },
+                        { label: '更新数据', value: 'update' },
+                        { label: '删除数据', value: 'destroy' },
+                      ],
+                    },
+                  },
+                },
+              },
             },
           },
         },
@@ -456,7 +507,8 @@ function generateCardItemSchema(component) {
                           'x-read-pretty': true,
                           'x-decorator': 'Form',
                           'x-decorator-props': {
-                            useResource: '{{ Table.useActionLogDetailsResource }}',
+                            useResource:
+                              '{{ Table.useActionLogDetailsResource }}',
                           },
                           'x-component': 'Action.Drawer',
                           'x-component-props': {
@@ -806,7 +858,9 @@ AddNew.CardItem = observer((props: any) => {
               <Menu.Item key={'Ref.ActionLogs'}>操作日志</Menu.Item>
             </Menu.ItemGroup>
             <Menu.Divider></Menu.Divider>
-            <Menu.Item disabled key={'addNewRef'}>新建模板</Menu.Item>
+            <Menu.Item disabled key={'addNewRef'}>
+              新建模板
+            </Menu.Item>
           </Menu.SubMenu>
         </Menu>
       }
