@@ -672,6 +672,9 @@ const TableProvider = (props: any) => {
     } else {
       defaultParams['sort'] = (props.defaultSort || []).join(',');
     }
+    if (props.defaultAppends) {
+      defaultParams['defaultAppends'] = props.defaultAppends;
+    }
     if (props.defaultFilter) {
       defaultParams['defaultFilter'] = props.defaultFilter;
     }
@@ -2059,8 +2062,7 @@ Table.useActionLogDetailsResource = ({ onSuccess }) => {
   });
   const service = useRequest(
     (params?: any) => {
-      console.log('Table.useResource', params);
-      return resource.get({ ...params, 'fields[appends]': 'changes' });
+      return resource.get({ ...params, appends: 'changes' });
     },
     {
       formatResult: (result) => result?.data,

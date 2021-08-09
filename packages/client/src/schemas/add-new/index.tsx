@@ -397,6 +397,7 @@ function generateCardItemSchema(component) {
         rowKey: 'id',
         // dragSort: true,
         showIndex: true,
+        defaultAppends: ['user', 'collection'],
         refreshRequestOnChange: true,
         pagination: {
           pageSize: 10,
@@ -503,7 +504,7 @@ function generateCardItemSchema(component) {
                       properties: {
                         [uid()]: {
                           type: 'void',
-                          title: '查看',
+                          title: '查看数据',
                           'x-read-pretty': true,
                           'x-decorator': 'Form',
                           'x-decorator-props': {
@@ -559,7 +560,7 @@ function generateCardItemSchema(component) {
                                     properties: {
                                       'field.uiSchema.title': {
                                         type: 'string',
-                                        'x-decorator': 'FormItem',
+                                        'x-decorator': 'FormilyFormItem',
                                         'x-component': 'Input',
                                       },
                                     },
@@ -571,7 +572,7 @@ function generateCardItemSchema(component) {
                                     properties: {
                                       before: {
                                         type: 'string',
-                                        'x-decorator': 'FormItem',
+                                        'x-decorator': 'FormilyFormItem',
                                         'x-component': 'Values',
                                       },
                                     },
@@ -583,7 +584,7 @@ function generateCardItemSchema(component) {
                                     properties: {
                                       after: {
                                         type: 'string',
-                                        'x-decorator': 'FormItem',
+                                        'x-decorator': 'FormilyFormItem',
                                         'x-component': 'Values',
                                       },
                                     },

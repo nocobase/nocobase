@@ -9,6 +9,7 @@ export interface ResourceOptions {
 
 export interface GetOptions {
   resourceKey?: any;
+  defaultAppends?: any[];
   appends?: string[];
 }
 
@@ -19,6 +20,8 @@ export interface SaveOptions {
 export interface ListOptions {
   defaultFilter?: any;
   filter?: any;
+  defaultAppends?: any[];
+  appends?: string[];
 }
 
 export class Resource {
@@ -46,12 +49,13 @@ export class Resource {
   }
 
   list(options: ListOptions = {}) {
-    const { defaultFilter, filter, ...others } = options;
+    const { defaultAppends = [], appends = [], defaultFilter, filter, ...others } = options;
     const { resourceName } = this.options;
     return request(`${resourceName}:list`, {
       method: 'get',
       params: {
         filter: decodeURIComponent(JSON.stringify({ and: [defaultFilter, filter].filter(Boolean) })),
+        'fields[appends]': defaultAppends.concat(appends).join(','),
         ...others,
       },
     });
@@ -63,8 +67,12 @@ export class Resource {
     if (!resourceKey) {
       return Promise.resolve({ data: {} });
     }
+    const { defaultAppends = [], appends = [], ...others } = options;
     return request(`${resourceName}:get/${resourceKey}`, {
-      params: options,
+      params: {
+        ...others,
+        'fields[appends]': defaultAppends.concat(appends).join(','),
+      },
     });
   }
 
