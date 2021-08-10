@@ -49,5 +49,11 @@ export default {
       sourceKey: 'key',
       foreignKey: 'parentKey',
     },
+    {
+      type: 'belongsToMany',
+      name: 'roles',
+      target: 'roles',
+      through: 'roles_ui_schemas'
+    },
   ],
 } as TableOptions;
