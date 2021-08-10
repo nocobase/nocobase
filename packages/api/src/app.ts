@@ -44,7 +44,7 @@ const plugins = [
   '@nocobase/plugin-users',
   '@nocobase/plugin-action-logs',
   // '@nocobase/plugin-file-manager',
-  // '@nocobase/plugin-permissions',
+  '@nocobase/plugin-permissions',
   // '@nocobase/plugin-automations',
   // '@nocobase/plugin-china-region',
 ];

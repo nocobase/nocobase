@@ -53,6 +53,7 @@ import { TreeSelect } from '../../schemas/tree-select';
 import { Page } from '../../schemas/page';
 import { Chart } from '../../schemas/chart';
 import { useDesignableSwitchContext } from '../../constate/DesignableSwitch';
+import { action } from '@formily/reactive';
 
 export const BlockContext = createContext({ dragRef: null });
 
@@ -63,9 +64,20 @@ interface DesignableContextProps {
   refresh?: any;
 }
 
+export const useAsyncDataSource = (service: any) => (field: any) => {
+  field.loading = true;
+  service(field).then(
+    action((data: any) => {
+      field.dataSource = data;
+      field.loading = false;
+    }),
+  );
+};
+
 export const SchemaField = createSchemaField({
   scope: {
     Table,
+    useAsyncDataSource,
   },
   components: {
     Card,
