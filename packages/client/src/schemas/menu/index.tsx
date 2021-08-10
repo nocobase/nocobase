@@ -48,6 +48,7 @@ import {
   ArrowDownOutlined,
   ArrowRightOutlined,
   DragOutlined,
+  LockOutlined,
 } from '@ant-design/icons';
 import { IconPicker } from '../../components/icon-picker';
 import { createSchema, removeSchema, updateSchema, useDefaultAction } from '..';
@@ -67,6 +68,7 @@ import {
 } from '../../components/Sortable';
 import { DndContext, DragOverlay } from '@dnd-kit/core';
 import { createPortal } from 'react-dom';
+import { Resource } from '../../resource';
 
 export interface MenuContextProps {
   schema?: Schema;
@@ -159,7 +161,7 @@ export const Menu: any = observer((props: any) => {
   }, [selectedKey]);
 
   const [dragOverlayContent, setDragOverlayContent] = useState('');
-  console.log('onRemove', onRemove)
+  console.log('onRemove', onRemove);
   return (
     <MenuContext.Provider value={{ schema, onRemove }}>
       <DndContext
@@ -923,6 +925,63 @@ Menu.DesignableBar = (props) => {
                   </AntdMenu.Item>
                 </AntdMenu.SubMenu>
               )}
+              <AntdMenu.Item
+                icon={<LockOutlined />}
+                onClick={async () => {
+                  const loadRoles = async () => {
+                    const resource = Resource.make('roles');
+                    const data = await resource.list();
+                    console.log('loadRoles', data);
+                    return data?.data.map((item) => ({
+                      label: item.title,
+                      value: item.name,
+                    }));
+                  };
+                  const resource = Resource.make({
+                    associatedName: 'ui_schemas',
+                    associatedKey: schema['key'],
+                    resourceName: 'roles',
+                  });
+                  const uiSchemasRoles = await resource.list();
+                  console.log({ uiSchemasRoles });
+                  const values = await FormDialog(`设置权限`, () => {
+                    return (
+                      <FormLayout layout={'vertical'}>
+                        <SchemaField
+                          scope={{ loadRoles }}
+                          schema={{
+                            type: 'object',
+                            properties: {
+                              roles: {
+                                type: 'array',
+                                title: '权限组',
+                                'x-reactions': [
+                                  '{{useAsyncDataSource(loadRoles)}}',
+                                ],
+                                'x-decorator': 'FormilyFormItem',
+                                'x-component': 'Select',
+                                'x-component-props': {
+                                  mode: 'tags',
+                                },
+                              },
+                            },
+                          }}
+                        />
+                      </FormLayout>
+                    );
+                  }).open({
+                    initialValues: {
+                      roles: uiSchemasRoles?.data?.map((role) => role.name),
+                    },
+                  });
+                  await Resource.make({
+                    resourceName: 'ui_schemas',
+                    resourceKey: schema['key'],
+                  }).save(values);
+                }}
+              >
+                设置权限
+              </AntdMenu.Item>
               <AntdMenu.Divider />
               <AntdMenu.Item
                 key={'delete'}
