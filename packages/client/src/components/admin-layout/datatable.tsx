@@ -4,7 +4,7 @@ import { FormItem } from '@formily/antd';
 import { action } from '@formily/reactive';
 import { useCollectionsContext } from '../../constate/Collections';
 
-const useAsyncDataSource = (service: any) => (field: any) => {
+export const useAsyncDataSource = (service: any) => (field: any) => {
   field.loading = true;
   service(field).then(
     action((data: any) => {

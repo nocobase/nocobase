@@ -22,7 +22,7 @@ import { useRequest } from 'ahooks';
 import './style.less';
 
 import { ISchema, Schema } from '@formily/react';
-import Database from './datatable';
+import Database, { useAsyncDataSource } from './datatable';
 import { HighlightOutlined } from '@ant-design/icons';
 import cls from 'classnames';
 import {
@@ -34,6 +34,7 @@ import {
   useCollectionsContext,
 } from '../../constate';
 import { uid } from '@formily/shared';
+import { Permissions } from './Permissions';
 
 function DesignableToggle() {
   const { designable, setDesignable } = useDesignableSwitchContext();
@@ -96,6 +97,7 @@ function LayoutWithMenu(props: LayoutWithMenuProps) {
           }}
         />
         <Database />
+        <Permissions />
         <DesignableToggle />
       </Layout.Header>
       <Layout>
@@ -115,13 +117,13 @@ function LayoutWithMenu(props: LayoutWithMenuProps) {
 function Content({ activeKey }) {
   const { designable } = useDesignableSwitchContext();
   const { collections } = useCollectionsContext();
-  const {
-    data = {},
-    loading,
-  } = useRequest(`ui_schemas:getTree?filter[parentKey]=${activeKey}`, {
-    refreshDeps: [activeKey, collections, designable],
-    formatResult: (result) => result?.data,
-  });
+  const { data = {}, loading } = useRequest(
+    `ui_schemas:getTree?filter[parentKey]=${activeKey}`,
+    {
+      refreshDeps: [activeKey, collections, designable],
+      formatResult: (result) => result?.data,
+    },
+  );
 
   if (loading) {
     return <Spin />;
