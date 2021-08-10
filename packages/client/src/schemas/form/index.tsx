@@ -68,6 +68,7 @@ const FormMain = (props: any) => {
   });
   const path = useSchemaPath();
   const scope = useContext(SchemaExpressionScopeContext);
+  const options = useContext(SchemaOptionsContext);
   const displayed = useDisplayedMapContext();
   const { collection } = useCollectionContext();
   useEffect(() => {
@@ -81,6 +82,7 @@ const FormMain = (props: any) => {
     <FormProvider form={form}>
       {schema['x-decorator'] === 'Form' ? (
         <SchemaField
+          components={options.components}
           scope={scope}
           schema={{
             type: 'object',

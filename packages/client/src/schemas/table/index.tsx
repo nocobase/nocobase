@@ -93,10 +93,10 @@ export interface ITableRowContext {
 }
 
 const TableContext = createContext<ITableContext>({} as any);
-const TableRowContext = createContext<ITableRowContext>(null);
+export const TableRowContext = createContext<ITableRowContext>(null);
 const CollectionFieldContext = createContext(null);
 
-const useTable = () => {
+export const useTable = () => {
   return useContext(TableContext);
 };
 
@@ -364,6 +364,7 @@ const useTableColumns = () => {
 
   if (
     designable &&
+    schema['x-designable-bar'] &&
     schema['x-designable-bar'] !== 'Table.SimpleDesignableBar'
   ) {
     columns.push({

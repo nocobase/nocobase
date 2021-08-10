@@ -50,8 +50,12 @@ export class Resource {
 
   list(options: ListOptions = {}) {
     const { defaultAppends = [], appends = [], defaultFilter, filter, ...others } = options;
-    const { resourceName } = this.options;
-    return request(`${resourceName}:list`, {
+    const { associatedKey, associatedName, resourceName } = this.options;
+    let url = `${resourceName}:list`;
+    if (associatedName && associatedKey) {
+      url = `${associatedName}/${associatedKey}/${resourceName}:list`;
+    }
+    return request(url, {
       method: 'get',
       params: {
         filter: decodeURIComponent(JSON.stringify({ and: [defaultFilter, filter].filter(Boolean) })),
