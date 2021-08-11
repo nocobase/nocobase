@@ -8,11 +8,16 @@ export default {
       type: 'uid',
       name: 'name',
       primaryKey: true,
-      prefix: 't_',
+      prefix: 'r_',
     },
     {
       type: 'string',
       name: 'title',
+    },
+    {
+      type: 'hasMany',
+      name: 'actionPermissions',
+      target: 'action_permissions',
     },
     {
       type: 'belongsToMany',

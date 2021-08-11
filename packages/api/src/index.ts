@@ -17,7 +17,7 @@ import { middlewares } from '@nocobase/server';
     useStaticServer: !(process.env.APP_USE_STATIC_SERVER === 'false' || !process.env.APP_USE_STATIC_SERVER),
   }));
 
-  await api.database.getModel('collections').load({ skipExisting: true });
+  await api.database.getModel('collections').load();
 
   api.listen(process.env.API_PORT, () => {
     console.log(`http://localhost:${process.env.API_PORT}/`);

@@ -31,12 +31,13 @@ const useActionDataSource = () => {
   const field = useField<Formily.Core.Models.ArrayField>();
   const dataSource = [];
   for (const [actionName, value] of actionTypeMap) {
-    const index = field?.value?.findIndex((item) => {
+    const item = field?.value?.find((item) => {
       return item.actionName === actionName;
     });
     dataSource.push({
       actionName,
-      enable: index > -1,
+      ...item,
+      enable: !!item,
     });
   }
   return dataSource;
@@ -52,7 +53,9 @@ const useFieldPermissions = () => {
       return item.actionName === actionName;
     });
     return (
-      item?.fieldPermissions?.map((permission) => permission.field_key) || []
+      item?.fields?.map((field) => {
+        return typeof field === 'string' ? field : field.key;
+      }) || []
     );
   };
   const service = useRequest(
@@ -86,7 +89,7 @@ const useFieldPermissions = () => {
     update: findFieldKeys('update'),
     destroy: findFieldKeys('destroy'),
     create: findFieldKeys('create'),
-  }
+  };
   const renderCell = (actionName, value, record) => {
     return (
       <Checkbox
@@ -95,67 +98,83 @@ const useFieldPermissions = () => {
           let fieldIndex = field?.value?.findIndex((item) => {
             return item.actionName === actionName;
           });
-          console.log('fieldIndex', fieldIndex)
           if (e.target.checked) {
             if (fieldIndex === -1) {
               field.push({
                 actionName,
                 collection_name: ctx.record.name,
                 role_name: role.name,
-                fieldPermissions: [{
-                  field_key: record.field.key,
-                }],
+                fields: [record.field.key],
               });
             } else {
-              const permissions = field.value[fieldIndex].fieldPermissions || [];
-              permissions.push({
-                field_key: record.field.key,
-              });
-              field.value[fieldIndex].fieldPermissions = permissions;
-              console.log('fieldIndex', permissions);
+              const fields = field.value[fieldIndex].fields || [];
+              fields.push(record.field.key);
+              field.value[fieldIndex].fields = fields;
+            }
+          } else if (fieldIndex > -1) {
+            const fields: any[] = field.value[fieldIndex].fields || [];
+            const index = fields?.findIndex((field) => {
+              let fieldKey = field;
+              if (typeof fieldKey === 'object') {
+                fieldKey = fieldKey.key;
+              }
+              return fieldKey === record?.field?.key;
+            });
+            if (index > -1) {
+              fields.splice(index, 1);
+              field.value[fieldIndex].fields = [...fields];
             }
           }
-          
-          // fieldIndex = field.value.length - 1;
-          // const permissions: any[] =
-          //   field.value[fieldIndex].fieldPermissions || [];
-          // const index = permissions?.findIndex(
-          //   (permission) => permission.field_key === record?.field?.key,
-          // );
-          // if (e.target.checked) {
-          //   permissions.push({
-          //     field_key: record.field.key,
-          //   });
-          // } else {
-          //   permissions.splice(index, 1);
-          // }
-          // console.log({ permissions });
-          // field.value[fieldIndex].fieldPermissions = permissions;
         }}
       />
     );
   };
-  const columns = [
-    {
-      title: '字段名称',
-      dataIndex: ['field', 'uiSchema', 'title'],
-    },
-    {
-      title: <div>新增 <Checkbox /></div>,
-      dataIndex: 'create',
-      render: (value, record) => renderCell('create', value, record),
-    },
-    {
-      title: '查看',
-      dataIndex: 'get',
-      render: (value, record) => renderCell('get', value, record),
-    },
-    {
-      title: '编辑',
-      dataIndex: 'update',
-      render: (value, record) => renderCell('update', value, record),
-    },
-  ];
+  const ColumnTitle = ({ actionName }) => {
+    const checked =
+      dataSource?.length > 0 && keys[actionName]?.length === dataSource?.length;
+    return (
+      <div>
+        <Checkbox
+          checked={checked}
+          onChange={(e) => {
+            let fieldIndex = field?.value?.findIndex((item) => {
+              return item.actionName === actionName;
+            });
+            if (e.target.checked) {
+              if (fieldIndex === -1) {
+                field.push({
+                  actionName,
+                  collection_name: ctx.record.name,
+                  role_name: role.name,
+                  fields: dataSource?.map((item) => {
+                    return item?.field?.key;
+                  }),
+                });
+              } else {
+                field.value[fieldIndex].fields = dataSource?.map((item) => {
+                  return item?.field?.key;
+                });
+              }
+            } else {
+              if (fieldIndex > -1) {
+                field.value[fieldIndex].fields = [];
+              }
+            }
+          }}
+        />{' '}
+        {actionTypeMap.get(actionName)}
+      </div>
+    );
+  };
+  const columns: any[] = ['create', 'get', 'update'].map((actionName) => ({
+    title: <ColumnTitle actionName={actionName} />,
+    dataIndex: actionName,
+    render: (value, record) => renderCell(actionName, value, record),
+  }));
+  columns.unshift({
+    title: '字段名称',
+    dataIndex: ['field', 'uiSchema', 'title'],
+  });
   return { columns, dataSource, service };
 };
 
@@ -165,7 +184,7 @@ export const ActionPermissionField = observer((props) => {
   const field = useField<Formily.Core.Models.ArrayField>();
   const actionDataSource = useActionDataSource();
   const { columns, dataSource, service } = useFieldPermissions();
-  console.log('field?.value', field?.value);
+  console.log('actionPermissions', field?.value);
   return (
     <div>
       <Table
@@ -209,7 +228,7 @@ export const ActionPermissionField = observer((props) => {
                         collection_name: ctx.record.name,
                         role_name: role.name,
                         actionName: record.actionName,
-                        fieldPermissions: [],
+                        fields: [],
                       });
                     }
                   } else {

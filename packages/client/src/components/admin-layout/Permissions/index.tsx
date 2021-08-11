@@ -6,12 +6,12 @@ import { useCollectionsContext } from '../../../constate/Collections';
 import { Button } from 'antd';
 import { LockOutlined } from '@ant-design/icons';
 import cls from 'classnames';
-import { uid } from '@formily/shared';
+import { uid, isValid } from '@formily/shared';
 import { Resource } from '../../../resource';
 import { TableRowContext, useTable } from '../../../schemas/table';
 import { useRequest } from 'ahooks';
 import { VisibleContext } from '../../../context';
-import { connect, ISchema, observer } from '@formily/react';
+import { connect, ISchema, observer, useForm } from '@formily/react';
 import { DescriptionsContext } from '../../../schemas/form';
 import { createContext } from 'react';
 import { ActionPermissionField } from './ActionPermissionField';
@@ -51,9 +51,16 @@ class ActionPermissionResource extends Resource {
 }
 
 const useActionPermissionSubmit = () => {
+  const form = useForm();
+  const role = useContext(RoleContext);
+  const resource = Resource.make({
+    resourceName: 'roles',
+    resourceKey: role.name,
+  });
   return {
     async run() {
-      console.log('useActionPermissionSubmit');
+      await resource.save(form.values);
+      console.log('useActionPermissionSubmit', form.values?.actionPermissions);
     },
   };
 };
@@ -74,14 +81,25 @@ const useActionPermissionResource = ({ onSuccess }) => {
           role_name: role.name,
           collection_name: ctx.record.name,
         },
-        appends: ['fieldPermissions'],
+        appends: ['fields'],
       });
     },
     {
       formatResult: (result) => result?.data,
       onSuccess(data) {
+        console.log('actionPermissions', data);
         onSuccess({
-          permissions: data,
+          actionPermissions: data.map((permission) => {
+            const item: any = {}
+            Object.keys(permission).forEach(key => {
+              if (isValid(permission[key])) {
+                item[key] = permission[key];
+              }
+            });
+            item.fields =
+              permission?.fields.map((field) => field.key) || [];
+            return item;
+          }),
         });
       },
       manual: true,
@@ -185,7 +203,7 @@ const collectionSchema: ISchema = {
                         useOkAction: useActionPermissionSubmit,
                       },
                       properties: {
-                        permissions: {
+                        actionPermissions: {
                           type: 'array',
                           'x-component': 'ActionPermissionField',
                         },
@@ -366,7 +384,6 @@ const schema: ISchema = {
                     displayName: 'destroy',
                   },
                   'x-component': 'Action',
-                  'x-designable-bar': 'Table.Action.DesignableBar',
                   'x-component-props': {
                     useAction: '{{ Table.useTableDestroyAction }}',
                   },
