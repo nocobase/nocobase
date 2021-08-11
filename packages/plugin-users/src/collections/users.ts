@@ -50,11 +50,7 @@ export default {
       unique: true,
       hidden: true,
       privilege: 'undelete',
-      uiSchema: {
-        type: 'string',
-        title: 'Token',
-        'x-component': 'Password',
-      },
+      state: 0,
     },
     {
       interface: 'password',
@@ -63,11 +59,7 @@ export default {
       unique: true,
       hidden: true,
       privilege: 'undelete',
-      uiSchema: {
-        type: 'string',
-        title: 'Reset Token',
-        'x-component': 'Password',
-      },
+      state: 0,
     },
   ],
 } as TableOptions;

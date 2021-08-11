@@ -21,7 +21,8 @@ import * as uiSchema from './ui-schema';
   const Collection = database.getModel('collections');
   const collection = await Collection.create(config);
   await collection.updateAssociations({
-    generalFields: config.fields,
+    generalFields: config.fields.filter(field => field.state !== 0),
+    systemFields: config.fields.filter(field => field.state === 0),
   });
   await collection.migrate();
 
