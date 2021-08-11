@@ -135,3 +135,14 @@ export const getTree = async (ctx: actions.Context, next: actions.Next) => {
 
   await next();
 };
+
+export const getMenuItems = async (ctx: actions.Context, next: actions.Next) => {
+  const UISchema = ctx.db.getModel('ui_schemas');
+  const schema = await UISchema.findOne({
+    where: {
+      'x-component': 'Menu',
+    }
+  });
+  ctx.body = await schema.getHierarchy();
+  await next();
+};
