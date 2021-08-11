@@ -15,6 +15,7 @@ import { connect, ISchema, observer, useForm } from '@formily/react';
 import { DescriptionsContext } from '../../../schemas/form';
 import { createContext } from 'react';
 import { ActionPermissionField } from './ActionPermissionField';
+import { MenuPermissionTable } from './MenuPermissionTable';
 
 export const RoleContext = createContext(null);
 
@@ -246,96 +247,7 @@ const collectionSchema: ISchema = {
 
 const menuSchema: ISchema = {
   type: 'array',
-  // 'x-decorator': 'CardItem',
-  'x-component': 'Table',
-  default: [],
-  'x-component-props': {
-    rowKey: 'name',
-    showIndex: true,
-    refreshRequestOnChange: true,
-    pagination: {
-      pageSize: 10,
-    },
-    useResource: useCollectionsResource,
-    collectionName: 'collections',
-  },
-  properties: {
-    [uid()]: {
-      type: 'void',
-      title: '操作',
-      'x-component': 'Table.Operation',
-      'x-component-props': {
-        className: 'nb-table-operation',
-      },
-      properties: {
-        [uid()]: {
-          type: 'void',
-          'x-component': 'Action',
-          'x-component-props': {
-            icon: 'EllipsisOutlined',
-          },
-          properties: {
-            [uid()]: {
-              type: 'void',
-              'x-component': 'Action.Dropdown',
-              'x-component-props': {},
-              properties: {
-                [uid()]: {
-                  type: 'void',
-                  title: '配置',
-                  'x-component': 'Menu.Action',
-                  'x-component-props': {
-                    style: {
-                      minWidth: 150,
-                    },
-                  },
-                  'x-action-type': 'view',
-                  properties: {
-                    [uid()]: {
-                      type: 'void',
-                      title: '权限配置',
-                      'x-component': 'Action.Drawer',
-                      'x-component-props': {
-                        bodyStyle: {
-                          background: '#f0f2f5',
-                          paddingTop: 0,
-                        },
-                      },
-                      properties: {},
-                    },
-                  },
-                },
-              },
-            },
-          },
-        },
-      },
-    },
-    column1: {
-      type: 'void',
-      title: '权限名称',
-      'x-component': 'Table.Column',
-      properties: {
-        title: {
-          type: 'string',
-          'x-component': 'Input',
-          'x-read-pretty': true,
-        },
-      },
-    },
-    column2: {
-      type: 'void',
-      title: '权限标识',
-      'x-component': 'Table.Column',
-      properties: {
-        name: {
-          type: 'string',
-          'x-component': 'Input',
-          'x-read-pretty': true,
-        },
-      },
-    },
-  },
+  'x-component': 'MenuPermissionTable',
 };
 
 const schema: ISchema = {
@@ -488,7 +400,7 @@ const schema: ISchema = {
                                     },
                                     [uid()]: {
                                       type: 'void',
-                                      title: '菜单权限',
+                                      title: '菜单访问权限',
                                       'x-component': 'Tabs.TabPane',
                                       'x-component-props': {},
                                       properties: {
@@ -579,7 +491,7 @@ const schema: ISchema = {
 export const Permissions = () => {
   return (
     <SchemaRenderer
-      components={{ RoleProvider, ActionPermissionField }}
+      components={{ RoleProvider, ActionPermissionField, MenuPermissionTable }}
       schema={schema}
     />
   );

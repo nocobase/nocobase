@@ -86,4 +86,23 @@ export class UISchema extends Model {
     }
     return properties;
   }
+
+  async getHierarchy() {
+    const data = [];
+    const children: UISchema[] = await this.getChildren({
+      where: {
+        async: false,
+      },
+      order: [['sort', 'asc']],
+    });
+    for (const child of children) {
+      const item: any = child.toJSON();
+      const nested = await child.getHierarchy();
+      if (nested.length) {
+        item.children = nested;
+      }
+      data.push(item);
+    }
+    return data;
+  }
 }

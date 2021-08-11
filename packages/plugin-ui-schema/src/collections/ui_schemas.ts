@@ -33,6 +33,10 @@ export default {
       name: 'type',
     },
     {
+      type: 'string',
+      name: 'x-component',
+    },
+    {
       type: 'json',
       name: 'options',
       defaultValue: {},

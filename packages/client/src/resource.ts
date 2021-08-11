@@ -110,6 +110,15 @@ export class Resource {
     });
   }
 
+  toggle(options?: any) {
+    const { associatedKey, associatedName, resourceName } = this.options;
+    const { resourceKey } = options;
+    let url = `${associatedName}/${associatedKey}/${resourceName}:toggle/${resourceKey}`;
+    return request(url, {
+      method: 'post',
+    });
+  }
+
   static make(options: null | string | Resource | ResourceOptions): Resource | null {
     if (typeof options === 'string') {
       return new Resource({ resourceName: options });

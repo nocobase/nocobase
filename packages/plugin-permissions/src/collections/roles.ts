@@ -25,5 +25,11 @@ export default {
       target: 'users',
       through: 'roles_users'
     },
+    {
+      type: 'belongsToMany',
+      name: 'ui_schemas',
+      target: 'ui_schemas',
+      through: 'roles_ui_schemas'
+    },
   ],
 } as TableOptions;
