@@ -1,0 +1,33 @@
+.column {
+  position: relative;
+  width: 25vw;
+  background: #f9f9f9;
+  margin: 0 1%;
+  padding: 24px;
+}
+
+.column-title {
+  line-height: 24px;
+  font-weight: 500;
+  margin-bottom: 12px;
+}
+
+.kanban {
+  display: flex;
+}
+
+.item {
+  position: relative;
+  min-height: 50px;
+  background: #f1f1f1;
+  margin-bottom: 24px;
+  &.isDragging {
+    opacity: 0.5;
+  }
+}
+
+.drag-handle {
+  position: absolute;
+  top: 0;
+  right: 0;
+}
