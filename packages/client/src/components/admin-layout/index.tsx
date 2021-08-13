@@ -35,6 +35,9 @@ import {
 } from '../../constate';
 import { uid } from '@formily/shared';
 import { Permissions } from './Permissions';
+import { More } from './More';
+import { UserInfo } from './UserInfo';
+import { SiteTitle } from './SiteTitle';
 
 function DesignableToggle() {
   const { designable, setDesignable } = useDesignableSwitchContext();
@@ -87,6 +90,7 @@ function LayoutWithMenu(props: LayoutWithMenuProps) {
   return (
     <Layout>
       <Layout.Header style={{ display: 'flex' }}>
+        <SiteTitle />
         <SchemaRenderer
           schema={schema}
           scope={{
@@ -96,9 +100,11 @@ function LayoutWithMenu(props: LayoutWithMenuProps) {
             selectedKeys: defaultSelectedKeys.filter(Boolean),
           }}
         />
+        <DesignableToggle />
         <Database />
         <Permissions />
-        <DesignableToggle />
+        <More/>
+        <UserInfo />
       </Layout.Header>
       <Layout>
         <Layout.Sider
