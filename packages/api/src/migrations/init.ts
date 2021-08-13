@@ -69,5 +69,26 @@ import * as uiSchema from './ui-schema';
     await route.updateAssociations(item);
   }
 
+  const Storage = database.getModel('storages');
+  await Storage.create({
+    title: '本地存储',
+    name: `local`,
+    type: 'local',
+    baseUrl: process.env.LOCAL_STORAGE_BASE_URL,
+    default: process.env.STORAGE_TYPE === 'local',
+  });
+  await Storage.create({
+    name: `ali-oss`,
+    type: 'ali-oss',
+    baseUrl: process.env.ALI_OSS_STORAGE_BASE_URL,
+    options: {
+      region: process.env.ALI_OSS_REGION,
+      accessKeyId: process.env.ALI_OSS_ACCESS_KEY_ID,
+      accessKeySecret: process.env.ALI_OSS_ACCESS_KEY_SECRET,
+      bucket: process.env.ALI_OSS_BUCKET,
+    },
+    default: process.env.STORAGE_TYPE === 'ali-oss',
+  });
+
   await database.close();
 })();

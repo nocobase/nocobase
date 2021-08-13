@@ -3,8 +3,6 @@ import { TableOptions } from '@nocobase/database';
 export default {
   name: 'storages',
   title: '存储引擎',
-  internal: true,
-  developerMode: true,
   fields: [
     {
       title: '存储引擎名称',
