@@ -20,7 +20,9 @@ export default {
     const app = new Application(options);
 
     app.use(bodyParser());
-    app.use(cors());
+    app.use(cors({
+      exposeHeaders: ['content-disposition'],
+    }));
 
     app.resourcer.registerActionHandlers({ ...actions.common, ...actions.associate });
 

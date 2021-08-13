@@ -99,6 +99,40 @@ export class Resource {
     });
   }
 
+  export(options: any) {
+    const { resourceName } = this.options;
+    const { columns, ...others } = options;
+    const url = `${resourceName}:export`;
+    return request(url, {
+      method: 'post',
+      params: {
+        columns: JSON.stringify(columns),
+        ...others,
+      },
+      parseResponse: false,
+      responseType: 'blob'
+    }).then(async (response: Response) => {
+      const filename = decodeURI(response.headers.get('Content-Disposition').replace('attachment; filename=', ''));
+      // ReadableStream
+      let res = new Response(response.body);
+      let blob = await res.blob();
+      let url = URL.createObjectURL(blob);
+      let a = document.createElement('a');
+      a.style.display = 'none';
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      // cleanup
+      URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+      a = null;
+      blob = null;
+      url = null;
+      res = null;
+    });
+  }
+
   destroy(filter: any) {
     const { resourceName } = this.options;
     const url = `${resourceName}:destroy`;

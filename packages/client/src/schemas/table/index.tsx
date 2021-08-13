@@ -220,6 +220,52 @@ const useTableDestroyAction = () => {
   };
 };
 
+const useTableExportAction = () => {
+  const {
+    resource,
+    field,
+    service,
+    selectedRowKeys,
+    setSelectedRowKeys,
+    refresh,
+    schema,
+    props: { refreshRequestOnChange, rowKey },
+  } = useTable();
+  const ctx = useContext(TableRowContext);
+
+  const actionField = useField();
+  const fieldNames = actionField.componentProps.fieldNames || [];
+  const { getField } = useCollectionContext();
+
+  const columns = fieldNames
+    .map((name) => {
+      const f = getField(name);
+      return {
+        title: f?.uiSchema.title,
+        name,
+        sort: f?.sort,
+      };
+    })
+    .sort((a, b) => a.sort - b.sort);
+
+  return {
+    async run() {
+      const rowKeys = selectedRowKeys || [];
+      const { filter = {}, ...others } = service.params[0];
+      if (rowKeys.length) {
+        filter[`${rowKey}.in`] = rowKeys;
+      }
+      await resource.export({
+        ...others,
+        columns,
+        perPage: -1,
+        page: 1,
+        filter,
+      });
+    },
+  };
+};
+
 const useTableRowRecord = () => {
   const ctx = useContext(TableRowContext);
   return ctx.record;
@@ -817,7 +863,24 @@ function generateActionSchema(type) {
         fieldNames: [],
       },
     },
-    export: {},
+    export: {
+      key: uid(),
+      type: 'void',
+      name: uid(),
+      title: '导出',
+      'x-align': 'right',
+      'x-decorator': 'AddNew.Displayed',
+      'x-decorator-props': {
+        displayName: 'export',
+      },
+      'x-action-type': 'export',
+      'x-component': 'Action',
+      'x-designable-bar': 'Table.ExportActionDesignableBar',
+      'x-component-props': {
+        fieldNames: [],
+        useAction: '{{ Table.useTableExportAction }}',
+      },
+    },
     create: {
       key: uid(),
       type: 'void',
@@ -993,7 +1056,7 @@ function AddActionButton() {
           <Menu.ItemGroup title={'操作展示'}>
             {[
               { title: '筛选', name: 'filter' },
-              // { title: '导出', name: 'export' },
+              { title: '导出', name: 'export' },
               { title: '新增', name: 'create' },
               { title: '删除', name: 'destroy' },
             ].map((item) => (
@@ -1324,6 +1387,124 @@ Table.Filter.DesignableBar = () => {
                       }}
                     />
                   ))}
+              </Menu.ItemGroup>
+              <Menu.Divider />
+              <Menu.Item
+                onClick={async (e) => {
+                  const values = await FormDialog('修改名称和图标', () => {
+                    return (
+                      <FormLayout layout={'vertical'}>
+                        <SchemaField
+                          schema={{
+                            type: 'object',
+                            properties: {
+                              title: {
+                                type: 'string',
+                                title: '按钮名称',
+                                required: true,
+                                'x-decorator': 'FormItem',
+                                'x-component': 'Input',
+                              },
+                              icon: {
+                                type: 'string',
+                                title: '按钮图标',
+                                'x-decorator': 'FormItem',
+                                'x-component': 'IconPicker',
+                              },
+                            },
+                          }}
+                        />
+                      </FormLayout>
+                    );
+                  }).open({
+                    initialValues: {
+                      title: schema['title'],
+                      icon: schema['x-component-props']?.['icon'],
+                    },
+                  });
+                  schema['title'] = values.title;
+                  schema['x-component-props']['icon'] = values.icon;
+                  field.componentProps.icon = values.icon;
+                  field.title = values.title;
+                  updateSchema(schema);
+                  refresh();
+                }}
+              >
+                修改名称和图标
+              </Menu.Item>
+              <Menu.Divider />
+              <Menu.Item
+                onClick={async () => {
+                  const displayName =
+                    schema?.['x-decorator-props']?.['displayName'];
+                  const data = remove();
+                  await removeSchema(data);
+                  if (displayName) {
+                    displayed.remove(displayName);
+                  }
+                  setVisible(false);
+                }}
+              >
+                移除
+              </Menu.Item>
+            </Menu>
+          }
+        >
+          <MenuOutlined />
+        </Dropdown>
+      </span>
+    </div>
+  );
+};
+
+Table.ExportActionDesignableBar = () => {
+  const { schema, remove, refresh, insertAfter } = useDesignable();
+  const [visible, setVisible] = useState(false);
+  const displayed = useDisplayedMapContext();
+  const { fields } = useCollectionContext();
+  const field = useField();
+  let fieldNames = field.componentProps.fieldNames || [];
+  if (fieldNames.length === 0) {
+    fieldNames = fields.map((field) => field.name);
+  }
+  return (
+    <div className={cls('designable-bar', { active: visible })}>
+      <span
+        onClick={(e) => {
+          e.stopPropagation();
+        }}
+        className={cls('designable-bar-actions', { active: visible })}
+      >
+        <DragHandle />
+        <Dropdown
+          trigger={['click']}
+          visible={visible}
+          onVisibleChange={(visible) => {
+            setVisible(visible);
+          }}
+          overlay={
+            <Menu>
+              <Menu.ItemGroup title={'导出字段'}>
+                {fields.map((collectionField) => (
+                  <SwitchMenuItem
+                    title={collectionField?.uiSchema?.title}
+                    checked={fieldNames.includes(collectionField.name)}
+                    onChange={async (checked) => {
+                      if (checked) {
+                        fieldNames.push(collectionField.name);
+                      } else {
+                        const index = fieldNames.indexOf(collectionField.name);
+                        if (index > -1) {
+                          fieldNames.splice(index, 1);
+                        }
+                      }
+                      console.log({ fieldNames, field });
+                      schema['x-component-props']['fieldNames'] = fieldNames;
+                      field.componentProps.fieldNames = fieldNames;
+                      updateSchema(schema);
+                    }}
+                  />
+                ))}
               </Menu.ItemGroup>
               <Menu.Divider />
               <Menu.Item
@@ -2094,6 +2275,7 @@ Table.useTableFilterAction = useTableFilterAction;
 Table.useTableCreateAction = useTableCreateAction;
 Table.useTableUpdateAction = useTableUpdateAction;
 Table.useTableDestroyAction = useTableDestroyAction;
+Table.useTableExportAction = useTableExportAction;
 Table.useTableIndex = useTableIndex;
 Table.useTableRowRecord = useTableRowRecord;
 Table.SimpleDesignableBar = SimpleDesignableBar;
