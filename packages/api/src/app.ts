@@ -43,9 +43,10 @@ const plugins = [
   '@nocobase/plugin-ui-schema',
   '@nocobase/plugin-users',
   '@nocobase/plugin-action-logs',
-  // '@nocobase/plugin-file-manager',
+  '@nocobase/plugin-file-manager',
   '@nocobase/plugin-permissions',
   '@nocobase/plugin-export',
+  '@nocobase/plugin-system-settings',
   // '@nocobase/plugin-automations',
   // '@nocobase/plugin-china-region',
 ];

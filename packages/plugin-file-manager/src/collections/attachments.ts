@@ -3,8 +3,6 @@ import { TableOptions } from '@nocobase/database';
 export default {
   name: 'attachments',
   title: '文件管理器',
-  internal: true,
-  developerMode: true,
   fields: [
     {
       comment: '用户文件名（不含扩展名）',
@@ -54,33 +52,9 @@ export default {
     },
     {
       comment: '网络访问地址',
-      type: 'formula',
+      type: 'string',
       name: 'url',
-      formula: '{{ storage.baseUrl }}{{ path }}/{{ filename }}'
+      // formula: '{{ storage.baseUrl }}{{ path }}/{{ filename }}'
     }
-  ],
-  actions: [
-    {
-      type: 'list',
-      name: 'list',
-      title: '查看',
-    },
-    {
-      type: 'create',
-      name: 'create',
-      title: '新增',
-      viewName: 'form',
-    },
-    {
-      type: 'update',
-      name: 'update',
-      title: '编辑',
-      viewName: 'form',
-    },
-    {
-      type: 'destroy',
-      name: 'destroy',
-      title: '删除',
-    },
   ],
 } as TableOptions;

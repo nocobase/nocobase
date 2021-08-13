@@ -93,6 +93,8 @@ export async function action(ctx: actions.Context, next: actions.Next) {
     // TODO(feature): 暂时两者相同，后面 storage.path 模版化以后，这里只是 file 实际的 path
     path: storage.path,
     size: file.size,
+    // 直接缓存起来
+    url: `${storage.baseUrl}${storage.path}/${file.filename}`,
     mimetype: file.mimetype,
     // @ts-ignore
     meta: ctx.request.body
@@ -113,7 +115,7 @@ export async function action(ctx: actions.Context, next: actions.Next) {
   });
 
   // 将存储引擎的信息附在已创建的记录里，节省一次查询
-  attachment.setDataValue('storage', storage);
+  // attachment.setDataValue('storage', storage);
   ctx.body = attachment;
 
   await next();
