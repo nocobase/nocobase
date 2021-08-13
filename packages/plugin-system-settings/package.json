@@ -1,0 +1,15 @@
+{
+  "name": "@nocobase/plugin-system-settings",
+  "version": "0.4.0-alpha.7",
+  "main": "lib/index.js",
+  "license": "MIT",
+  "dependencies": {
+    "@nocobase/database": "^0.4.0-alpha.7",
+    "@nocobase/resourcer": "^0.4.0-alpha.7",
+    "@nocobase/server": "^0.4.0-alpha.7"
+  },
+  "devDependencies": {
+    "@nocobase/actions": "^0.4.0-alpha.7"
+  },
+  "gitHead": "f0b335ac30f29f25c95d7d137655fa64d8d67f1e"
+}
