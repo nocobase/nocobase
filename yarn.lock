@@ -16108,6 +16108,14 @@ react-hooks-global-state@^1.0.1:
   resolved "https://registry.npmjs.org/react-hooks-global-state/-/react-hooks-global-state-1.0.1.tgz#3e4e1009f3e8a6fd001cd507808b4f1b289e9b27"
   integrity sha512-GFe/7KOdf8toByd8eF5LBhogMn65XSyghIzInsnA1e8vqIxGdT2Ohs2Ohdclp8CX0QU9xNj72ZIt+WD/SQEh9Q==
 
+react-image-lightbox@^5.1.4:
+  version "5.1.4"
+  resolved "https://registry.npmjs.org/react-image-lightbox/-/react-image-lightbox-5.1.4.tgz#5b847dcb79e9efdf9d7cd5621a92e0f156d2cf30"
+  integrity sha512-kTiAODz091bgT7SlWNHab0LSMZAPJtlNWDGKv7pLlLY1krmf7FuG1zxE0wyPpeA8gPdwfr3cu6sPwZRqWsc3Eg==
+  dependencies:
+    prop-types "^15.7.2"
+    react-modal "^3.11.1"
+
 react-intl@3.12.1:
   version "3.12.1"
   resolved "https://registry.npmjs.org/react-intl/-/react-intl-3.12.1.tgz#e9a783ea20302e9da25e4eda59e5593a43d2ec80"
@@ -16136,7 +16144,7 @@ react-is@^16.12.0, react-is@^16.13.1, react-is@^16.6.0, react-is@^16.7.0, react-
   resolved "https://registry.npmjs.org/react-is/-/react-is-17.0.2.tgz#e691d4a8e9c789365655539ab372762b0efb54f0"
   integrity sha512-w2GsyukL62IJnlaff/nRegPQR94C/XXamvMWmSHRJ4y7Ts/4ocGRmTHvOs8PSE6pB3dWOrD/nueuU5sduBsQ4w==
 
-react-lifecycles-compat@^3.0.4:
+react-lifecycles-compat@^3.0.0, react-lifecycles-compat@^3.0.4:
   version "3.0.4"
   resolved "https://registry.npmjs.org/react-lifecycles-compat/-/react-lifecycles-compat-3.0.4.tgz#4f1a273afdfc8f3488a8c516bfda78f872352362"
   integrity sha512-fBASbA6LnOU9dOU2eW7aQ8xmYBSXUIWr+UmF9b1efZBazGNO+rcXT/icdKnYm2pTwcRylVUYwW7H1PHfLekVzA==
@@ -16145,6 +16153,16 @@ react-modal-hook@^3.0.0:
   version "3.0.0"
   resolved "https://registry.npmjs.org/react-modal-hook/-/react-modal-hook-3.0.0.tgz#24b2ff2acf288ef25c11e4fb11b329458a823ea3"
   integrity sha512-mNkJwgEtOoIabuILlWnGAto993WVkimZASBWk/rAGZ6tNIqjx4faQtNdr/X31vw+QGfKhspXc4vPi1jbfkk2Yg==
+
+react-modal@^3.11.1:
+  version "3.14.3"
+  resolved "https://registry.npmjs.org/react-modal/-/react-modal-3.14.3.tgz#7eb7c5ec85523e5843e2d4737cc17fc3f6aeb1c0"
+  integrity sha512-+C2KODVKyu20zHXPJxfOOcf571L1u/EpFlH+oS/3YDn8rgVE51QZuxuuIwabJ8ZFnOEHaD+r6XNjqwtxZnXO0g==
+  dependencies:
+    exenv "^1.2.0"
+    prop-types "^15.7.2"
+    react-lifecycles-compat "^3.0.0"
+    warning "^4.0.3"
 
 react-native-swipeout@^2.2.2:
   version "2.3.6"
