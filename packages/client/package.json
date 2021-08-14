@@ -29,6 +29,7 @@
     "axios": "^0.21.1",
     "beautiful-react-hooks": "^0.35.0",
     "constate": "^3.3.0",
+    "file-saver": "^2.0.5",
     "flat": "^5.0.2",
     "html-react-parser": "^1.2.7",
     "lodash": "^4.17.21",
