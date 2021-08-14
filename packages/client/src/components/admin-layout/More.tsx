@@ -91,7 +91,7 @@ const schema: ISchema = {
                   type: 'string',
                   title: 'LOGO',
                   'x-decorator': 'FormItem',
-                  'x-component': 'Upload.File',
+                  'x-component': 'Upload.Attachment',
                   'x-component-props': {
                     // accept: 'jpg,png'
                   },

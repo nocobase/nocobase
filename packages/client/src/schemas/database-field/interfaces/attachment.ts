@@ -13,12 +13,19 @@ export const attachment: ISchema = {
     uiSchema: {
       type: 'array',
       // title,
-      'x-component': 'Upload',
+      'x-component': 'Upload.Attachment',
       'x-decorator': 'FormItem',
       'x-designable-bar': 'Upload.DesignableBar',
     } as ISchema,
   },
   properties: {
     ...defaultProps,
+    'uiSchema.x-component-props.multiple': {
+      type: 'boolean',
+      'x-content': '允许上传多个文件',
+      'x-decorator': 'FormItem',
+      'x-component': 'Checkbox',
+      default: true,
+    },
   },
 };
