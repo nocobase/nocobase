@@ -6,7 +6,7 @@ import {
   observer,
   useField,
 } from '@formily/react';
-import { Button, Progress, Upload as AntdUpload } from 'antd';
+import { Button, Progress, Space, Upload as AntdUpload } from 'antd';
 import {
   UploadChangeParam,
   UploadProps as AntdUploadProps,
@@ -14,7 +14,7 @@ import {
 } from 'antd/lib/upload';
 import { reaction } from '@formily/reactive';
 import { UploadFile } from 'antd/lib/upload/interface';
-import { isArr, toArr } from '@formily/shared';
+import { isArr, toArr as toArray, isValid } from '@formily/shared';
 import { UPLOAD_PLACEHOLDER } from './placeholder';
 import { usePrefixCls } from '@formily/antd/esm/__builtins__';
 import { useState } from 'react';
@@ -23,10 +23,26 @@ import 'react-image-lightbox/style.css'; // This only needs to be imported once 
 import { useMap } from 'ahooks';
 import DeleteOutlined from '@ant-design/icons/DeleteOutlined';
 import UploadOutlined from '@ant-design/icons/UploadOutlined';
+import PlusOutlined from '@ant-design/icons/PlusOutlined';
+import DownloadOutlined from '@ant-design/icons/DownloadOutlined';
+import './style.less';
+import cls from 'classnames';
+import { saveAs } from 'file-saver';
+
+const toArr = (value) => {
+  if (!isValid(value)) {
+    return [];
+  }
+  if (Object.keys(value).length === 0) {
+    return [];
+  }
+  return toArray(value);
+};
 
 type UploadProps = Omit<AntdUploadProps, 'onChange'> & {
   onChange?: (fileList: UploadFile[]) => void;
   serviceErrorMessage?: string;
+  value?: any;
 };
 
 type DraggerProps = Omit<AntdDraggerProps, 'onChange'> & {
@@ -37,6 +53,7 @@ type DraggerProps = Omit<AntdDraggerProps, 'onChange'> & {
 type ComposedUpload = React.FC<UploadProps> & {
   Dragger?: React.FC<DraggerProps>;
   File?: React.FC<UploadProps>;
+  Attachment?: React.FC<UploadProps>;
 };
 
 type IUploadProps = {
@@ -221,6 +238,16 @@ function toItem(file) {
   };
 }
 
+function toFileList(fileList: any) {
+  return toArr(fileList).map(toItem);
+}
+
+function toValue(fileList: any) {
+  return toArr(fileList)
+    .filter((file) => !file.response || file.status === 'done')
+    .map((file) => file?.response?.data || file);
+}
+
 function toMap(fileList: any) {
   if (!fileList) {
     return [];
@@ -228,13 +255,14 @@ function toMap(fileList: any) {
   if (typeof fileList !== 'object') {
     return [];
   }
-  if (Object.keys(fileList).length === 0) {
-    return [];
-  }
   let list = fileList;
-  if (!Array.isArray(fileList) && typeof fileList === 'object') {
+  if (!Array.isArray(fileList)) {
+    if (Object.keys({ ...fileList }).length === 0) {
+      return [];
+    }
     list = [fileList];
   }
+  console.log({ list, fileList });
   return list.map((item) => {
     return [item.id || item.uid, toItem(item)];
   });
@@ -281,7 +309,7 @@ Upload.File = connect(
     useEffect(() => {
       setAll(toMap(value));
     }, [value]);
-    console.log('value', value);
+    console.log('mapmapmapmapmap', map);
     return (
       <div>
         <AntdUpload
@@ -289,10 +317,11 @@ Upload.File = connect(
           {...useUploadProps({ ...others, multiple })}
           onChange={({ file }) => {
             console.log({ multiple, file });
+            const f = toItem(file);
             if (multiple) {
-              set(file.uid, toItem(file));
+              set(f.id, f);
             } else {
-              setAll([[file.uid, toItem(file)]]);
+              setAll([[f.id, f]]);
             }
             if (file.status === 'done') {
               if (multiple) {
@@ -431,5 +460,295 @@ Upload.File = connect(
 );
 
 Upload.Dragger = Dragger;
+
+Upload.Attachment = connect(
+  (props: UploadProps) => {
+    const { disabled, multiple, value, onChange } = props;
+    const [fileList, setFileList] = useState([]);
+    const [sync, setSync] = useState(true);
+    const images = fileList;
+    const [photoIndex, setPhotoIndex] = useState(0);
+    const [visible, setVisible] = useState(false);
+    useEffect(() => {
+      if (sync) {
+        setFileList(toFileList(value));
+      }
+    }, [value, sync]);
+    return (
+      <div>
+        <div className={cls('ant-upload-picture-card-wrapper nb-upload')}>
+          <div className={'ant-upload-list ant-upload-list-picture-card'}>
+            {fileList.map((file) => {
+              const handleClick = (e) => {
+                e.preventDefault();
+                const index = fileList.indexOf(file);
+                setVisible(true);
+                setPhotoIndex(index);
+              };
+              return (
+                <div className={'ant-upload-list-picture-card-container'}>
+                  <div className="ant-upload-list-item ant-upload-list-item-done ant-upload-list-item-list-type-picture-card">
+                    <div className={'ant-upload-list-item-info'}>
+                      <span className="ant-upload-span">
+                        <a
+                          className="ant-upload-list-item-thumbnail"
+                          href={file.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          onClick={handleClick}
+                        >
+                          {file.imageUrl && (
+                            <img
+                              src={file.imageUrl}
+                              alt={file.title}
+                              className="ant-upload-list-item-image"
+                            />
+                          )}
+                        </a>
+                        <a
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="ant-upload-list-item-name"
+                          title={file.title}
+                          href={file.url}
+                          onClick={handleClick}
+                        >
+                          {file.status === 'uploading'
+                            ? '上传中...'
+                            : file.title}
+                        </a>
+                      </span>
+                    </div>
+                    <span className={'ant-upload-list-item-actions'}>
+                      <Space size={3}>
+                        <Button
+                          size={'small'}
+                          type={'text'}
+                          icon={<DownloadOutlined />}
+                          onClick={() => {
+                            saveAs(file.url, `${file.title}${file.extname}`);
+                          }}
+                        />
+                        {!disabled && (
+                          <Button
+                            size={'small'}
+                            type={'text'}
+                            icon={<DeleteOutlined />}
+                            onClick={() => {
+                              setSync(false);
+                              setFileList((prevFileList) => {
+                                if (!multiple) {
+                                  onChange(null);
+                                  return [];
+                                }
+                                const index = prevFileList.indexOf(file);
+                                prevFileList.splice(index, 1);
+                                onChange(toValue([...prevFileList]));
+                                return [...prevFileList];
+                              });
+                            }}
+                          />
+                        )}
+                      </Space>
+                    </span>
+                    {file.status === 'uploading' && (
+                      <div className={'ant-upload-list-item-progress'}>
+                        <Progress
+                          strokeWidth={2}
+                          type={'line'}
+                          showInfo={false}
+                          percent={file.percent}
+                        />
+                      </div>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+            <div className={'ant-upload-list-picture-card-container'}>
+              <AntdUpload
+                {...useUploadProps({ ...props })}
+                disabled={disabled}
+                multiple={multiple}
+                listType={'picture-card'}
+                fileList={fileList}
+                action={`${process.env.API_URL}attachments:upload`}
+                onChange={(info) => {
+                  setSync(false);
+                  if (multiple) {
+                    if (info.file.status === 'done') {
+                      onChange(toValue(info.fileList));
+                    }
+                    setFileList(info.fileList.map(toItem));
+                  } else {
+                    if (info.file.status === 'done') {
+                      console.log('field.value', info.file?.response?.data);
+                      // TODO(BUG): object 的联动有问题，不响应，折中的办法先置空再赋值
+                      onChange(null);
+                      onChange(info.file?.response?.data);
+                    }
+                    setFileList([toItem(info.file)]);
+                  }
+                }}
+                showUploadList={false}
+              >
+                {!disabled && (multiple || toArr(value).length < 1) && (
+                  <span>
+                    <PlusOutlined />
+                    <br /> 上传
+                  </span>
+                )}
+              </AntdUpload>
+            </div>
+          </div>
+        </div>
+        {visible && (
+          <Lightbox
+            // discourageDownloads={true}
+            mainSrc={images[photoIndex]?.imageUrl}
+            nextSrc={images[(photoIndex + 1) % images.length]?.imageUrl}
+            prevSrc={
+              images[(photoIndex + images.length - 1) % images.length]?.imageUrl
+            }
+            onCloseRequest={() => setVisible(false)}
+            onMovePrevRequest={() =>
+              setPhotoIndex((photoIndex + images.length - 1) % images.length)
+            }
+            onMoveNextRequest={() =>
+              setPhotoIndex((photoIndex + 1) % images.length)
+            }
+            imageTitle={images[photoIndex]?.title}
+            toolbarButtons={[
+              <button
+                style={{ fontSize: 22, background: 'none', lineHeight: 1 }}
+                type="button"
+                aria-label="Zoom in"
+                title="Zoom in"
+                className="ril-zoom-in ril__toolbarItemChild ril__builtinButton"
+                onClick={() => {
+                  const file = images[photoIndex];
+                  saveAs(file.url, `${file.title}${file.extname}`);
+                }}
+              >
+                <DownloadOutlined />
+              </button>,
+            ]}
+          />
+        )}
+      </div>
+    );
+  },
+  mapReadPretty((props) => {
+    const field = useField<Formily.Core.Models.Field>();
+    const images = toImages(toArr(field.value));
+    const [photoIndex, setPhotoIndex] = useState(0);
+    const [visible, setVisible] = useState(false);
+    const { size } = props;
+    console.log('field.value', field.value, images);
+    return (
+      <div>
+        <div
+          className={cls(
+            'ant-upload-picture-card-wrapper nb-upload',
+            size ? `nb-upload-${size}` : null,
+          )}
+        >
+          <div className={'ant-upload-list ant-upload-list-picture-card'}>
+            {images.map((file) => {
+              const handleClick = (e) => {
+                e.preventDefault();
+                const index = images.indexOf(file);
+                setVisible(true);
+                setPhotoIndex(index);
+              };
+              return (
+                <div className={'ant-upload-list-picture-card-container'}>
+                  <div className="ant-upload-list-item ant-upload-list-item-done ant-upload-list-item-list-type-picture-card">
+                    <div className={'ant-upload-list-item-info'}>
+                      <span className="ant-upload-span">
+                        <a
+                          className="ant-upload-list-item-thumbnail"
+                          href={file.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          onClick={handleClick}
+                        >
+                          {file.imageUrl && (
+                            <img
+                              src={file.imageUrl}
+                              alt={file.title}
+                              className="ant-upload-list-item-image"
+                            />
+                          )}
+                        </a>
+                        <a
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="ant-upload-list-item-name"
+                          title={file.title}
+                          href={file.url}
+                          onClick={handleClick}
+                        >
+                          {file.title}
+                        </a>
+                      </span>
+                    </div>
+                    {size !== 'small' && (
+                      <span className={'ant-upload-list-item-actions'}>
+                        <Space size={3}>
+                          <Button
+                            size={'small'}
+                            type={'text'}
+                            icon={<DownloadOutlined />}
+                            onClick={async () => {
+                              saveAs(file.url, `${file.title}${file.extname}`);
+                            }}
+                          />
+                        </Space>
+                      </span>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+        {visible && (
+          <Lightbox
+            // discourageDownloads={true}
+            mainSrc={images[photoIndex]?.imageUrl}
+            nextSrc={images[(photoIndex + 1) % images.length]?.imageUrl}
+            prevSrc={
+              images[(photoIndex + images.length - 1) % images.length]?.imageUrl
+            }
+            onCloseRequest={() => setVisible(false)}
+            onMovePrevRequest={() =>
+              setPhotoIndex((photoIndex + images.length - 1) % images.length)
+            }
+            onMoveNextRequest={() =>
+              setPhotoIndex((photoIndex + 1) % images.length)
+            }
+            imageTitle={images[photoIndex]?.title}
+            toolbarButtons={[
+              <button
+                style={{ fontSize: 22, background: 'none', lineHeight: 1 }}
+                type="button"
+                aria-label="Zoom in"
+                title="Zoom in"
+                className="ril-zoom-in ril__toolbarItemChild ril__builtinButton"
+                onClick={() => {
+                  const file = images[photoIndex];
+                  saveAs(file.url, `${file.title}${file.extname}`);
+                }}
+              >
+                <DownloadOutlined />
+              </button>,
+            ]}
+          />
+        )}
+      </div>
+    );
+  }),
+);
 
 export default Upload;

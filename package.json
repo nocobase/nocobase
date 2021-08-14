@@ -23,6 +23,7 @@
     "@types/react-dom": "^17.0.0"
   },
   "devDependencies": {
+    "@types/file-saver": "^2.0.3",
     "@types/jest": "^24.0.18",
     "@types/koa": "^2.13.1",
     "@types/lodash": "^4.14.169",
