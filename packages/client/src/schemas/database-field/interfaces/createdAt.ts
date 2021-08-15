@@ -1,8 +1,8 @@
-import { ISchema } from '@formily/react';
 import { datetime } from './datetime';
 import { dateTimeProps, defaultProps } from './properties';
+import { FieldOptions } from '.';
 
-export const createdAt: ISchema = {
+export const createdAt: FieldOptions = {
   name: 'createdAt',
   type: 'object',
   group: 'systemInfo',
@@ -21,7 +21,7 @@ export const createdAt: ISchema = {
       'x-read-pretty': true,
       'x-decorator': 'FormItem',
       'x-designable-bar': 'DatePicker.DesignableBar',
-    } as ISchema,
+    },
   },
   properties: {
     ...defaultProps,

@@ -15,7 +15,6 @@ import {
   useFieldSchema,
   RecursionField,
   Schema,
-  ISchema,
   useForm,
 } from '@formily/react';
 import {
@@ -51,6 +50,7 @@ import {
   createCollectionField,
   createOrUpdateCollection,
   createSchema,
+  ISchema,
   removeSchema,
   useDesignable,
   useSchemaPath,

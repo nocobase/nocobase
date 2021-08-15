@@ -1,8 +1,8 @@
-import { ISchema } from '@formily/react';
 import { defaultProps } from './properties';
 import { string } from './string';
+import { FieldOptions } from '.';
 
-export const email: ISchema = {
+export const email: FieldOptions = {
   name: 'email',
   type: 'object',
   group: 'basic',
@@ -19,7 +19,7 @@ export const email: ISchema = {
       'x-decorator': 'FormItem',
       'x-validator': 'email',
       'x-designable-bar': 'Input.DesignableBar',
-    } as ISchema,
+    },
   },
   properties: {
     ...defaultProps,

@@ -1,6 +1,4 @@
-import { ISchema } from '@formily/react';
-
-export const login: ISchema = {
+export const login = {
   key: 'dtf9j0b8p9u',
   type: 'object',
   properties: {

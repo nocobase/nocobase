@@ -1,7 +1,7 @@
-import { ISchema } from '@formily/react';
 import { defaultProps } from './properties';
+import { FieldOptions } from '.';
 
-export const number: ISchema = {
+export const number: FieldOptions = {
   name: 'number',
   type: 'object',
   group: 'basic',
@@ -21,7 +21,7 @@ export const number: ISchema = {
       },
       'x-decorator': 'FormItem',
       'x-designable-bar': 'InputNumber.DesignableBar',
-    } as ISchema,
+    },
   },
   properties: {
     ...defaultProps,

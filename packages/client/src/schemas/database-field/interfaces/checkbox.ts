@@ -1,8 +1,7 @@
-import { ISchema } from '@formily/react';
-import { omit } from 'lodash';
 import { defaultProps } from './properties';
+import { FieldOptions } from '.';
 
-export const checkbox: ISchema = {
+export const checkbox: FieldOptions = {
   name: 'checkbox',
   type: 'object',
   group: 'choices',
@@ -17,7 +16,7 @@ export const checkbox: ISchema = {
       'x-component': 'Checkbox',
       'x-decorator': 'FormItem',
       'x-designable-bar': 'Checkbox.DesignableBar',
-    } as ISchema,
+    },
   },
   properties: {
     ...defaultProps,

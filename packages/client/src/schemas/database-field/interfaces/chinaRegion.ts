@@ -1,7 +1,7 @@
-import { ISchema } from '@formily/react';
 import { defaultProps } from './properties';
+import { FieldOptions } from '.';
 
-export const chinaRegion: ISchema = {
+export const chinaRegion: FieldOptions = {
   name: 'chinaRegion',
   type: 'object',
   group: 'choices',
@@ -19,7 +19,7 @@ export const chinaRegion: ISchema = {
       'x-component-props': {},
       'x-decorator': 'FormItem',
       'x-designable-bar': 'Cascader.DesignableBar',
-    } as ISchema,
+    },
   },
   properties: {
     ...defaultProps,

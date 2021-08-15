@@ -7,12 +7,11 @@ import {
   observer,
   SchemaExpressionScopeContext,
   FormProvider,
-  ISchema,
   useField,
   useForm,
   RecursionField,
 } from '@formily/react';
-import { useSchemaPath, SchemaField, useDesignable, removeSchema } from '../';
+import { useSchemaPath, SchemaField, useDesignable, removeSchema, ISchema } from '../';
 import get from 'lodash/get';
 import { Button, Dropdown, Menu, message, Space } from 'antd';
 import { MenuOutlined, DragOutlined } from '@ant-design/icons';
@@ -78,23 +77,24 @@ const FormMain = (props: any) => {
       console.log(displayed.map, 'displayed.map', collection?.name);
     }
   }, [displayed.map]);
+  const s: ISchema = {
+    type: 'object',
+    properties: {
+      [schema.name]: {
+        ...schema.toJSON(),
+        'x-path': path,
+        // 避免死循环
+        'x-decorator': 'Form.__Decorator',
+      },
+    },
+  }
   const content = (
     <FormProvider form={form}>
       {schema['x-decorator'] === 'Form' ? (
         <SchemaField
           components={options.components}
           scope={scope}
-          schema={{
-            type: 'object',
-            properties: {
-              [schema.name]: {
-                ...schema.toJSON(),
-                'x-path': path,
-                // 避免死循环
-                'x-decorator': 'Form.__Decorator',
-              },
-            },
-          }}
+          schema={s}
         />
       ) : (
         <FormLayout layout={'vertical'} {...others}>
@@ -196,7 +196,7 @@ Form.Field = observer((props: any) => {
               'x-decorator': 'FormilyFormItem',
             },
           },
-        })
+        } as ISchema)
       }
     />
   );

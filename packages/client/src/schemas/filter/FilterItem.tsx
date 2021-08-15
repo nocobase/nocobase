@@ -1,5 +1,5 @@
 import React, { useContext, useMemo, useState } from 'react';
-import { SchemaField } from '..';
+import { ISchema, SchemaField } from '..';
 import {
   createForm,
   onFieldChange,
@@ -12,7 +12,6 @@ import {
   useFieldSchema,
   Schema,
   SchemaOptionsContext,
-  ISchema,
   SchemaKey,
   RecursionField,
 } from '@formily/react';
@@ -172,6 +171,8 @@ export const FilterItem = (props) => {
     [],
   );
 
+  const columnEnum: any = [...columns.values()].map((column) => column.toJSON());
+
   return (
     <FormProvider form={form}>
       <FormLayout layout={'inline'}>
@@ -195,7 +196,7 @@ export const FilterItem = (props) => {
                   value: 'name',
                 },
               }}
-              enum={[...columns.values()].map((column) => column.toJSON())}
+              enum={columnEnum}
             />
             <SchemaField.String
               name="operation"

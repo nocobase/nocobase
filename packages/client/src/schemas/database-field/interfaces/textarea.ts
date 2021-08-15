@@ -1,7 +1,7 @@
-import { ISchema } from '@formily/react';
 import { defaultProps } from './properties';
+import { FieldOptions } from '.';
 
-export const textarea: ISchema = {
+export const textarea: FieldOptions = {
   name: 'textarea',
   type: 'object',
   group: 'basic',
@@ -16,7 +16,7 @@ export const textarea: ISchema = {
       'x-decorator': 'FormItem',
       'x-component': 'Input.TextArea',
       'x-designable-bar': 'Input.DesignableBar',
-    } as ISchema,
+    },
   },
   properties: {
     ...defaultProps,

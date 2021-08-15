@@ -1,7 +1,7 @@
-import { ISchema } from '@formily/react';
 import { defaultProps, dataSource } from './properties';
+import { FieldOptions } from '.';
 
-export const select: ISchema = {
+export const select: FieldOptions = {
   name: 'select',
   type: 'object',
   group: 'choices',
@@ -17,7 +17,7 @@ export const select: ISchema = {
       'x-decorator': 'FormItem',
       'x-designable-bar': 'Select.DesignableBar',
       enum: [],
-    } as ISchema,
+    },
   },
   properties: {
     ...defaultProps,

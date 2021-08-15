@@ -1,8 +1,8 @@
-import { ISchema } from '@formily/react';
 import { multipleSelect } from './multipleSelect';
 import { defaultProps, dataSource } from './properties';
+import { FieldOptions } from '.';
 
-export const checkboxGroup: ISchema = {
+export const checkboxGroup: FieldOptions = {
   name: 'checkboxGroup',
   type: 'object',
   group: 'choices',
@@ -18,7 +18,7 @@ export const checkboxGroup: ISchema = {
       'x-component': 'Checkbox.Group',
       'x-decorator': 'FormItem',
       'x-designable-bar': 'Checkbox.Group.DesignableBar',
-    } as ISchema,
+    },
   },
   properties: {
     ...defaultProps,

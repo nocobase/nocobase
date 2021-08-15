@@ -1,8 +1,8 @@
-import { ISchema } from '@formily/react';
 import { defaultProps } from './properties';
 import { uid } from '@formily/shared';
+import { FieldOptions } from '.';
 
-export const subTable: ISchema = {
+export const subTable: FieldOptions = {
   name: 'subTable',
   type: 'object',
   group: 'relation',
@@ -19,7 +19,7 @@ export const subTable: ISchema = {
       'x-component-props': {},
       'x-designable-bar': 'Table.DesignableBar',
       enum: [],
-    } as ISchema,
+    },
   },
   initialize: (values: any) => {
     if (!values.target) {

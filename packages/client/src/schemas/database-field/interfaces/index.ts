@@ -1,7 +1,18 @@
-import { ISchema } from '@formily/react';
 import { cloneDeep, set } from 'lodash';
 import * as types from './types';
 import { uid } from '@formily/shared';
+import { ISchema } from '../..';
+
+interface IDefaultSchema {
+  dataType: string;
+  uiSchema?: ISchema;
+  [key: string]: any;
+}
+
+export interface FieldOptions extends ISchema {
+  [key: string]: any;
+  default?: IDefaultSchema;
+}
 
 export const interfaces = new Map<string, ISchema>();
 

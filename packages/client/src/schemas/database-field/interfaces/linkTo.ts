@@ -1,8 +1,8 @@
-import { ISchema } from '@formily/react';
 import { defaultProps } from './properties';
 import { uid } from '@formily/shared';
+import { FieldOptions } from '.';
 
-export const linkTo: ISchema = {
+export const linkTo: FieldOptions = {
   name: 'linkTo',
   type: 'object',
   group: 'relation',
@@ -18,7 +18,7 @@ export const linkTo: ISchema = {
       'x-component-props': {},
       'x-decorator': 'FormItem',
       'x-designable-bar': 'Select.Drawer.DesignableBar',
-    } as ISchema,
+    },
   },
   initialize: (values: any) => {
     if (values.dataType === 'belongsToMany') {
