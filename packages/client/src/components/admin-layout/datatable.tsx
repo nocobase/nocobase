@@ -7,7 +7,7 @@ import { useCollectionsContext } from '../../constate/Collections';
 export const useAsyncDataSource = (service: any) => (field: any) => {
   field.loading = true;
   service(field).then(
-    action((data: any) => {
+    action.bound((data: any) => {
       field.dataSource = data;
       field.loading = false;
     }),

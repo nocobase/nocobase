@@ -1,7 +1,7 @@
-import { ISchema } from '@formily/react';
 import { defaultProps } from './properties';
+import { FieldOptions } from '.';
 
-export const updatedBy: ISchema = {
+export const updatedBy: FieldOptions = {
   name: 'updatedBy',
   type: 'object',
   group: 'systemInfo',
@@ -20,7 +20,7 @@ export const updatedBy: ISchema = {
       'x-decorator': 'FormItem',
       'x-read-pretty': true,
       'x-designable-bar': 'Select.Drawer.DesignableBar',
-    } as ISchema,
+    },
   },
   properties: {
     ...defaultProps,

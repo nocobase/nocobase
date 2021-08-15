@@ -1,8 +1,8 @@
-import { ISchema } from '@formily/react';
 import { defaultProps, dataSource } from './properties';
 import { select } from './select';
+import { FieldOptions } from '.';
 
-export const radioGroup: ISchema = {
+export const radioGroup: FieldOptions = {
   name: 'radioGroup',
   type: 'object',
   group: 'choices',
@@ -17,7 +17,7 @@ export const radioGroup: ISchema = {
       'x-component': 'Radio.Group',
       'x-decorator': 'FormItem',
       'x-designable-bar': 'Radio.DesignableBar',
-    } as ISchema,
+    },
   },
   properties: {
     ...defaultProps,

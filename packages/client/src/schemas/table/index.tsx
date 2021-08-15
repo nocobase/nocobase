@@ -1,6 +1,5 @@
 import {
   FormProvider,
-  ISchema,
   observer,
   RecursionField,
   Schema,
@@ -18,6 +17,7 @@ import {
   removeSchema,
   createSchema,
   createCollectionField,
+  ISchema,
 } from '..';
 import { uid } from '@formily/shared';
 import useRequest from '@ahooksjs/use-request';

@@ -1,7 +1,7 @@
-import { ISchema } from '@formily/react';
 import { defaultProps, dataSource } from './properties';
+import { FieldOptions } from '.';
 
-export const multipleSelect: ISchema = {
+export const multipleSelect: FieldOptions = {
   name: 'multipleSelect',
   type: 'object',
   group: 'choices',
@@ -20,7 +20,7 @@ export const multipleSelect: ISchema = {
       'x-decorator': 'FormItem',
       'x-designable-bar': 'Select.DesignableBar',
       enum: [],
-    } as ISchema,
+    },
   },
   properties: {
     ...defaultProps,

@@ -1,5 +1,5 @@
-import { ISchema } from '@formily/react';
 import { uid } from '@formily/shared';
+import { ISchema } from '..';
 
 export function generateDefaultSchema(component) {
   const defaultSchemas: { [key: string]: ISchema } = {

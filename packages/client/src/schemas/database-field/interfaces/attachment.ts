@@ -1,7 +1,7 @@
-import { ISchema } from '@formily/react';
+import { FieldOptions } from '.';
 import { defaultProps } from './properties';
 
-export const attachment: ISchema = {
+export const attachment: FieldOptions = {
   name: 'attachment',
   type: 'object',
   group: 'media',
@@ -16,7 +16,7 @@ export const attachment: ISchema = {
       'x-component': 'Upload.Attachment',
       'x-decorator': 'FormItem',
       'x-designable-bar': 'Upload.DesignableBar',
-    } as ISchema,
+    },
   },
   properties: {
     ...defaultProps,

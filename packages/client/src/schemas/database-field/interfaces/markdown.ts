@@ -1,7 +1,7 @@
-import { ISchema } from '@formily/react';
 import { defaultProps } from './properties';
+import { FieldOptions } from '.';
 
-export const markdown: ISchema = {
+export const markdown: FieldOptions = {
   name: 'markdown',
   type: 'object',
   title: 'Markdown',
@@ -15,7 +15,7 @@ export const markdown: ISchema = {
       'x-component': 'Markdown',
       'x-decorator': 'FormItem',
       'x-designable-bar': 'Markdown.DesignableBar',
-    } as ISchema,
+    },
   },
   properties: {
     ...defaultProps,

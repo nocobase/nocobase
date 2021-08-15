@@ -1,7 +1,7 @@
 import { DndContext, DragOverlay } from '@dnd-kit/core';
-import { ISchema, observer, RecursionField, Schema } from '@formily/react';
+import { observer, RecursionField, Schema } from '@formily/react';
 import React, { useState } from 'react';
-import { createSchema, removeSchema, updateSchema } from '..';
+import { createSchema, ISchema, removeSchema, updateSchema } from '..';
 import {
   findPropertyByPath,
   getSchemaPath,

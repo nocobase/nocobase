@@ -2,7 +2,6 @@ import { createForm } from '@formily/core';
 import {
   createSchemaField,
   FormProvider,
-  ISchema,
   Schema,
   SchemaOptionsContext,
   useFieldSchema,
@@ -54,6 +53,7 @@ import { Page } from '../../schemas/page';
 import { Chart } from '../../schemas/chart';
 import { useDesignableSwitchContext } from '../../constate/DesignableSwitch';
 import { action } from '@formily/reactive';
+import { ISchema, FormilyISchema } from '../../schemas';
 
 export const BlockContext = createContext({ dragRef: null });
 
@@ -67,7 +67,7 @@ interface DesignableContextProps {
 export const useAsyncDataSource = (service: any) => (field: any) => {
   field.loading = true;
   service(field).then(
-    action((data: any) => {
+    action.bound((data: any) => {
       field.dataSource = data;
       field.loading = false;
     }),
@@ -163,7 +163,7 @@ export function findPropertyByPath(schema: Schema, path?: any): Schema {
   return property;
 }
 
-export function addPropertyBefore(target: Schema, data: ISchema) {
+export function addPropertyBefore(target: Schema, data: ISchema | FormilyISchema) {
   Object.keys(target.parent.properties).forEach((name) => {
     if (name === target.name) {
       target.parent.addProperty(data.name, data);
@@ -174,7 +174,7 @@ export function addPropertyBefore(target: Schema, data: ISchema) {
   });
 }
 
-export function addPropertyAfter(target: Schema, data: ISchema) {
+export function addPropertyAfter(target: Schema, data: ISchema | FormilyISchema) {
   Object.keys(target.parent.properties).forEach((name) => {
     const property = target.parent.properties[name];
     property.parent.removeProperty(property.name);
@@ -185,7 +185,7 @@ export function addPropertyAfter(target: Schema, data: ISchema) {
   });
 }
 
-function setKeys(schema: ISchema, parentKey = null) {
+function setKeys(schema: ISchema | FormilyISchema, parentKey = null) {
   if (!schema['key']) {
     schema['key'] = uid();
   }
@@ -235,7 +235,7 @@ export function useDesignable(path?: any) {
     DesignableBar,
     schema: currentSchema,
     refresh,
-    prepend: (property: ISchema, targetPath?: any): Schema => {
+    prepend: (property: ISchema | FormilyISchema, targetPath?: any): Schema => {
       let target = currentSchema;
       if (targetPath) {
         target = findPropertyByPath(schema, targetPath);
@@ -267,7 +267,7 @@ export function useDesignable(path?: any) {
       refresh();
       return target.properties[property.name];
     },
-    appendChild: (property: ISchema, targetPath?: any): Schema => {
+    appendChild: (property: ISchema | FormilyISchema, targetPath?: any): Schema => {
       let target = currentSchema;
       if (targetPath) {
         target = findPropertyByPath(schema, targetPath);
@@ -294,7 +294,7 @@ export function useDesignable(path?: any) {
       refresh();
       return target.properties[property.name];
     },
-    insertAfter: (property: ISchema, targetPath?: any): Schema => {
+    insertAfter: (property: ISchema | FormilyISchema, targetPath?: any): Schema => {
       let target = currentSchema;
       if (targetPath) {
         target = findPropertyByPath(schema, targetPath);
@@ -316,7 +316,7 @@ export function useDesignable(path?: any) {
       refresh();
       return target.parent.properties[property.name];
     },
-    insertBefore(property: ISchema, targetPath?: any): Schema {
+    insertBefore(property: ISchema | FormilyISchema, targetPath?: any): Schema {
       let target = currentSchema;
       if (targetPath) {
         target = findPropertyByPath(schema, targetPath);
@@ -380,7 +380,7 @@ export function useDesignable(path?: any) {
     },
     moveToBefore(path1, path2) {
       const source = findPropertyByPath(schema, path1);
-      const property = source.toJSON();
+      const property = source.toJSON() as ISchema;
       const target = findPropertyByPath(schema, path2);
       if (!target) {
         console.error('target schema does not exist.');
@@ -400,7 +400,7 @@ export function useDesignable(path?: any) {
     },
     moveToAfter(path1, path2) {
       const source = findPropertyByPath(schema, path1);
-      const property = source.toJSON();
+      const property = source.toJSON() as ISchema;
       const target = findPropertyByPath(schema, path2);
       if (!target) {
         console.error('target schema does not exist.');
@@ -495,7 +495,7 @@ const CodePreview = ({ schema }) => {
 };
 
 export interface SchemaRendererProps {
-  schema: Schema | ISchema;
+  schema: Schema | ISchema | FormilyISchema;
   form?: any;
   render?: any;
   components?: any;

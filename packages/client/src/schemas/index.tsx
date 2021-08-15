@@ -1,5 +1,5 @@
 import React from 'react';
-import { ISchema, observer, Schema, useField } from '@formily/react';
+import { ISchema as FormilyISchema, observer, Schema, useField } from '@formily/react';
 import constate from 'constate';
 import { useState } from 'react';
 import { createContext } from 'react';
@@ -7,6 +7,15 @@ import { createContext } from 'react';
 import { extend } from 'umi-request';
 import { isVoidField } from '@formily/core';
 import { useCookieState, useRequest } from 'ahooks';
+
+export { FormilyISchema };
+
+export interface ISchema extends FormilyISchema {
+  [key: string]: any;
+  properties?: {
+    [key: string]: ISchema | FormilyISchema;
+  };
+}
 
 export * from '../components/schema-renderer';
 

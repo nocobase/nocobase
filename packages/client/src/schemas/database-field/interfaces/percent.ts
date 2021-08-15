@@ -1,8 +1,8 @@
-import { ISchema } from '@formily/react';
 import { number } from './number';
 import { defaultProps } from './properties';
+import { FieldOptions } from '.';
 
-export const percent: ISchema = {
+export const percent: FieldOptions = {
   name: 'percent',
   type: 'object',
   group: 'basic',
@@ -23,7 +23,7 @@ export const percent: ISchema = {
       },
       'x-decorator': 'FormItem',
       'x-designable-bar': 'InputNumber.DesignableBar',
-    } as ISchema,
+    },
   },
   properties: {
     ...defaultProps,

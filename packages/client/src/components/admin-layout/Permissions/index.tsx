@@ -11,11 +11,12 @@ import { Resource } from '../../../resource';
 import { TableRowContext, useTable } from '../../../schemas/table';
 import { useRequest } from 'ahooks';
 import { VisibleContext } from '../../../context';
-import { connect, ISchema, observer, useForm } from '@formily/react';
+import { connect, observer, useForm } from '@formily/react';
 import { DescriptionsContext } from '../../../schemas/form';
 import { createContext } from 'react';
 import { ActionPermissionField } from './ActionPermissionField';
 import { MenuPermissionTable } from './MenuPermissionTable';
+import { ISchema } from '../../../';
 
 export const RoleContext = createContext(null);
 

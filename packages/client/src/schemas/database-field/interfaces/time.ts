@@ -1,7 +1,7 @@
-import { ISchema } from '@formily/react';
 import { defaultProps } from './properties';
+import { FieldOptions } from '.';
 
-export const time: ISchema = {
+export const time: FieldOptions = {
   name: 'time',
   type: 'object',
   group: 'datetime',
@@ -17,7 +17,7 @@ export const time: ISchema = {
       'x-component': 'TimePicker',
       'x-decorator': 'FormItem',
       'x-designable-bar': 'TimePicker.DesignableBar',
-    } as ISchema,
+    },
   },
   properties: {
     ...defaultProps,
