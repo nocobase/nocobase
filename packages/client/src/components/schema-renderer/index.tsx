@@ -1,9 +1,10 @@
-import { createForm } from '@formily/core';
+import { ArrayField, createForm } from '@formily/core';
 import {
   createSchemaField,
   FormProvider,
   Schema,
   SchemaOptionsContext,
+  useField,
   useFieldSchema,
   useForm,
 } from '@formily/react';
@@ -18,7 +19,12 @@ import { useMemo } from 'react';
 import { CodeOutlined } from '@ant-design/icons';
 import Editor from '@monaco-editor/react';
 
-import { ArrayItems, ArrayCollapse, FormLayout, FormItem as FormilyFormItem } from '@formily/antd';
+import {
+  ArrayItems,
+  ArrayCollapse,
+  FormLayout,
+  FormItem as FormilyFormItem,
+} from '@formily/antd';
 
 import { Space, Card, Modal, Spin } from 'antd';
 import { ArrayTable } from '../../schemas/array-table';
@@ -27,7 +33,10 @@ import { AddNew } from '../../schemas/add-new';
 import { Cascader } from '../../schemas/cascader';
 import { Checkbox } from '../../schemas/checkbox';
 import { ColorSelect } from '../../schemas/color-select';
-import { DatabaseField, DatabaseCollection } from '../../schemas/database-field';
+import {
+  DatabaseField,
+  DatabaseCollection,
+} from '../../schemas/database-field';
 import { DatePicker } from '../../schemas/date-picker';
 import { Filter } from '../../schemas/filter';
 import { Form } from '../../schemas/form';
@@ -54,6 +63,9 @@ import { Chart } from '../../schemas/chart';
 import { useDesignableSwitchContext } from '../../constate/DesignableSwitch';
 import { action } from '@formily/reactive';
 import { ISchema, FormilyISchema } from '../../schemas';
+import { Resource } from '../../resource';
+import { useRequest } from 'ahooks';
+import { CascaderOptionType } from 'antd/lib/cascader';
 
 export const BlockContext = createContext({ dragRef: null });
 
@@ -74,10 +86,68 @@ export const useAsyncDataSource = (service: any) => (field: any) => {
   );
 };
 
+export const useChinaRegionDataSource = ({ onSuccess }) => {
+  const field = useField<ArrayField>();
+  const maxLevel = field.componentProps.maxLevel || 3;
+  const resource = Resource.make('china_regions');
+  console.log('useChinaRegionDataSource');
+  useRequest(
+    () =>
+      resource.list({
+        perPage: -1,
+        filter: {
+          level: 1,
+        },
+      }),
+    {
+      formatResult: (data) =>
+        data?.data?.map((item) => {
+          if (maxLevel !== 1) {
+            item.isLeaf = false;
+          }
+          return item;
+        }),
+      onSuccess,
+    },
+  );
+};
+
+export const loadChinaRegionData = (
+  selectedOptions: CascaderOptionType[],
+  field: ArrayField,
+) => {
+  const maxLevel = field.componentProps.maxLevel || 3;
+  const targetOption = selectedOptions[selectedOptions.length - 1];
+  targetOption.loading = true;
+  const resource = Resource.make('china_regions');
+  resource
+    .list({
+      perPage: -1,
+      filter: {
+        parent_code: targetOption['code'],
+      },
+    })
+    .then((data) => {
+      targetOption.loading = false;
+      targetOption.children =
+        data?.data?.map((item) => {
+          if (maxLevel > item.level) {
+            item.isLeaf = false;
+          }
+          return item;
+        }) || [];
+      field.dataSource = [...field.dataSource];
+    });
+};
+
 export const SchemaField = createSchemaField({
   scope: {
     Table,
     useAsyncDataSource,
+    ChinaRegion: {
+      loadData: loadChinaRegionData,
+      useDataSource: useChinaRegionDataSource,
+    },
   },
   components: {
     Card,
@@ -163,7 +233,10 @@ export function findPropertyByPath(schema: Schema, path?: any): Schema {
   return property;
 }
 
-export function addPropertyBefore(target: Schema, data: ISchema | FormilyISchema) {
+export function addPropertyBefore(
+  target: Schema,
+  data: ISchema | FormilyISchema,
+) {
   Object.keys(target.parent.properties).forEach((name) => {
     if (name === target.name) {
       target.parent.addProperty(data.name, data);
@@ -174,7 +247,10 @@ export function addPropertyBefore(target: Schema, data: ISchema | FormilyISchema
   });
 }
 
-export function addPropertyAfter(target: Schema, data: ISchema | FormilyISchema) {
+export function addPropertyAfter(
+  target: Schema,
+  data: ISchema | FormilyISchema,
+) {
   Object.keys(target.parent.properties).forEach((name) => {
     const property = target.parent.properties[name];
     property.parent.removeProperty(property.name);
@@ -211,8 +287,8 @@ export function useDesignable(path?: any) {
   const schemaPath = path || useSchemaPath();
   const fieldSchema = useFieldSchema();
   let current;
-  let currentSchema = current =
-    findPropertyByPath(schema, schemaPath) || ({} as Schema);
+  let currentSchema = (current =
+    findPropertyByPath(schema, schemaPath) || ({} as Schema));
   if (!currentSchema) {
     currentSchema = fieldSchema;
   }
@@ -221,7 +297,10 @@ export function useDesignable(path?: any) {
   }
   // console.log('useDesignable', { schema, schemaPath, currentSchema });
   const options = useContext(SchemaOptionsContext);
-  let DesignableBar = get(options.components, currentSchema['x-designable-bar']);
+  let DesignableBar = get(
+    options.components,
+    currentSchema['x-designable-bar'],
+  );
   if (!designable) {
     DesignableBar = () => null;
   }
@@ -267,7 +346,10 @@ export function useDesignable(path?: any) {
       refresh();
       return target.properties[property.name];
     },
-    appendChild: (property: ISchema | FormilyISchema, targetPath?: any): Schema => {
+    appendChild: (
+      property: ISchema | FormilyISchema,
+      targetPath?: any,
+    ): Schema => {
       let target = currentSchema;
       if (targetPath) {
         target = findPropertyByPath(schema, targetPath);
@@ -294,7 +376,10 @@ export function useDesignable(path?: any) {
       refresh();
       return target.properties[property.name];
     },
-    insertAfter: (property: ISchema | FormilyISchema, targetPath?: any): Schema => {
+    insertAfter: (
+      property: ISchema | FormilyISchema,
+      targetPath?: any,
+    ): Schema => {
       let target = currentSchema;
       if (targetPath) {
         target = findPropertyByPath(schema, targetPath);
@@ -360,7 +445,7 @@ export function useDesignable(path?: any) {
           remove(s.parent);
         }
       };
-      console.log({ removed })
+      console.log({ removed });
       remove(target);
       refresh();
       return removed;
@@ -533,7 +618,7 @@ export const SchemaRenderer = (props: SchemaRendererProps) => {
   // useEffect(() => {
   //   refresh(uid());
   // }, [designable]);
-  console.log({ designable }, 'designable')
+  console.log({ designable }, 'designable');
   const defaultRender = ({ schema }) => (
     <FormProvider form={form}>
       <SchemaField
