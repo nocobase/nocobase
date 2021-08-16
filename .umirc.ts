@@ -8,6 +8,7 @@ export default defineConfig({
   define: {
     'process.env.API_URL': process.env.API_URL,
   },
+  // mfsu: {},
   // ssr: {},
   // exportStatic: {},
   mode: 'site',

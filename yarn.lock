@@ -7763,7 +7763,7 @@ dumi-theme-default@1.1.8:
     prismjs "^1.21.0"
     rc-tabs "^11.7.1"
 
-dumi@^1.1.16:
+dumi@^1.1.25:
   version "1.1.25"
   resolved "https://registry.npmjs.org/dumi/-/dumi-1.1.25.tgz#8d86043cbcb35d02e7eff5097f43d266634d48bc"
   integrity sha512-YJGjtFILtfy8v09+CXprFOagZTHk5oWCU3zt1FblDcxYO7CXmKFyPatqyeZLKAih+q6iOfBcqTa1taE61WC56A==

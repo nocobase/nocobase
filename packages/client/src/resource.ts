@@ -22,6 +22,7 @@ export interface ListOptions {
   filter?: any;
   defaultAppends?: any[];
   appends?: string[];
+  perPage?: number;
 }
 
 export class Resource {
