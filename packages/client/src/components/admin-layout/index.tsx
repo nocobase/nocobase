@@ -37,7 +37,7 @@ import { uid } from '@formily/shared';
 import { Permissions } from './Permissions';
 import { More } from './More';
 import { UserInfo } from './UserInfo';
-import { SiteTitle } from './SiteTitle';
+import { SiteTitle, SystemSettingsProvider } from './SiteTitle';
 
 function DesignableToggle() {
   const { designable, setDesignable } = useDesignableSwitchContext();
@@ -103,7 +103,7 @@ function LayoutWithMenu(props: LayoutWithMenuProps) {
         <DesignableToggle />
         <Database />
         <Permissions />
-        <More/>
+        <More />
         <UserInfo />
       </Layout.Header>
       <Layout>
@@ -177,17 +177,19 @@ export function AdminLayout({ route, ...others }: any) {
   console.log('current?.title', current, current?.title, defaultSelectedKeys);
 
   return (
-    <DesignableSwitchProvider>
-      <CollectionsProvider>
-        <PageTitleProvider defaultPageTitle={current?.title}>
-          <LayoutWithMenu
-            defaultSelectedKeys={defaultSelectedKeys}
-            current={current}
-            schema={data}
-          />
-        </PageTitleProvider>
-      </CollectionsProvider>
-    </DesignableSwitchProvider>
+    <SystemSettingsProvider>
+      <DesignableSwitchProvider>
+        <CollectionsProvider>
+          <PageTitleProvider defaultPageTitle={current?.title}>
+            <LayoutWithMenu
+              defaultSelectedKeys={defaultSelectedKeys}
+              current={current}
+              schema={data}
+            />
+          </PageTitleProvider>
+        </CollectionsProvider>
+      </DesignableSwitchProvider>
+    </SystemSettingsProvider>
   );
 }
 
