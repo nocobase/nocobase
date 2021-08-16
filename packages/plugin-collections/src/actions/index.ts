@@ -29,8 +29,8 @@ export const createOrUpdate = async (ctx: actions.Context, next: actions.Next) =
     } else {
       await collection.update(values);
     }
-    if (values.fields) {
-      values.fields = values.fields.map((field, index) => {
+    if (values.generalFields) {
+      values.generalFields = values.generalFields.map((field, index) => {
         return {
           ...field,
           sort: index + 1,

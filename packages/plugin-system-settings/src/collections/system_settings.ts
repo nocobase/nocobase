@@ -8,6 +8,10 @@ export default {
       name: 'title',
     },
     {
+      type: 'boolean',
+      name: 'showLogoOnly',
+    },
+    {
       type: 'belongsTo',
       name: 'logo',
       target: 'attachments',
