@@ -36,7 +36,7 @@
     "@umijs/plugin-antd": "^0.9.1",
     "antd": "^4.16.11",
     "dotenv": "^8.2.0",
-    "dumi": "^1.1.16",
+    "dumi": "^1.1.25",
     "eslint": "^7.4.0",
     "eslint-plugin-import": "^2.22.0",
     "eslint-plugin-node": "^11.1.0",
