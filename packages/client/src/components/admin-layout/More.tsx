@@ -6,46 +6,29 @@ import { Resource } from '../../resource';
 import { useRequest } from 'ahooks';
 import { VisibleContext } from '../../context';
 import { ISchema } from '../../schemas';
+import { SystemSettingsContext } from './SiteTitle';
 
 const useResource = ({ onSuccess }) => {
-  const resource = Resource.make({
-    resourceName: 'system_settings',
-    resourceKey: 1,
-  });
-  const service = useRequest(
-    (params?: any) => {
-      return resource.get({ ...params, appends: ['logo'] });
-    },
-    {
-      formatResult: (result) => result?.data,
-      onSuccess,
-      manual: true,
-    },
-  );
-  const [visible] = useContext(VisibleContext);
+  const { service, resource } = useContext(SystemSettingsContext);
 
   useEffect(() => {
-    if (visible) {
-      service.run({});
-    }
-  }, [visible]);
+    onSuccess(service.data);
+  }, []);
 
   return { resource, service, initialValues: service.data, ...service };
 };
 
 const useOkAction = () => {
   const form = useForm();
+  const { service, resource } = useContext(SystemSettingsContext);
   return {
     async run() {
-      const resource = Resource.make({
-        resourceName: 'system_settings',
-        resourceKey: 1,
-      });
-      console.log('system_settings.values', form.values)
+      console.log('system_settings.values', form.values);
       await resource.save(form.values);
-    }
-  }
-}
+      await service.refresh();
+    },
+  };
+};
 
 const schema: ISchema = {
   type: 'void',
@@ -102,7 +85,7 @@ const schema: ISchema = {
           },
         },
       },
-    }
+    },
   },
 };
 
