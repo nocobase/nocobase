@@ -90,5 +90,9 @@ import * as uiSchema from './ui-schema';
     default: process.env.STORAGE_TYPE === 'ali-oss',
   });
 
+  // 导入地域数据
+  const ChinaRegion = database.getModel('china_regions');
+  ChinaRegion && await ChinaRegion.importData();
+
   await database.close();
 })();
