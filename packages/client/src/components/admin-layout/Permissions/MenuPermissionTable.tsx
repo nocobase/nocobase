@@ -3,7 +3,7 @@ import { observer } from '@formily/react';
 import { Table, Checkbox, Spin } from 'antd';
 import { useRequest } from 'ahooks';
 import { request } from '../../../schemas';
-import { Resource } from '@nocobase/client/src/resource';
+import { Resource } from '../../../resource';
 import { useContext } from 'react';
 import { RoleContext } from '.';
 import { useState } from 'react';
