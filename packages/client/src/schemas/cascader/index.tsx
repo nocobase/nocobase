@@ -32,6 +32,7 @@ export const Cascader = connect(
       fieldNames = defaultFieldNames,
       ...others
     } = props;
+    console.log('Cascader', props)
     // 兼容值为 object[] 的情况
     const toValue = () => {
       return toArr(value).map((item) => {
@@ -73,7 +74,7 @@ export const Cascader = connect(
       });
     };
     // 这里没有用 x-reactions 是因为 readyPretty=true 时不需要
-    if (useDataSource) {
+    if (typeof useDataSource === 'function') {
       useDataSource({
         onSuccess: (data) => {
           field.dataSource = data;

@@ -38,7 +38,7 @@ export const SiteTitle = () => {
       {!loading && data?.logo?.url && (
         <img className={'site-logo'} src={data?.logo?.url} />
       )}
-      {!loading && data.title && (
+      {!loading && !data.showLogoOnly && data.title && (
         <div className={'site-title'}>{data.title}</div>
       )}
     </div>

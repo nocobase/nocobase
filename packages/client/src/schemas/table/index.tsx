@@ -2244,7 +2244,7 @@ Table.useActionLogDetailsResource = ({ onSuccess }) => {
   });
   const service = useRequest(
     (params?: any) => {
-      return resource.get({ ...params, appends: 'changes' });
+      return resource.get({ ...params, appends: ['changes', 'user', 'collection'] });
     },
     {
       formatResult: (result) => result?.data,

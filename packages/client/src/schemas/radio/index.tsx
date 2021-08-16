@@ -2,6 +2,7 @@ import React from 'react';
 import { connect, mapProps, mapReadPretty, SchemaOptionsContext, useField } from '@formily/react'
 import { Radio as AntdRadio, Tag } from 'antd'
 import { RadioProps, RadioGroupProps } from 'antd/lib/radio'
+import { isValid } from '@formily/shared';
 
 type ComposedRadio = React.FC<RadioProps> & {
   Group?: React.FC<RadioGroupProps>
@@ -24,6 +25,9 @@ Radio.Group = connect(
     dataSource: 'options',
   }),
   mapReadPretty((props) => {
+    if (!isValid(props.value)) {
+      return <div>N/A</div>;
+    }
     const { options = [], value } = props;
     const field = useField<any>();
     const dataSource = field.dataSource || [];

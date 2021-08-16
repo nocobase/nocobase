@@ -7,6 +7,7 @@ import {
   hasIcon,
   IconPicker as Icon,
 } from '../../components/icon-picker';
+import { isValid } from '@formily/shared';
 
 function IconField(props: any) {
   const { value, onChange } = props;
@@ -72,6 +73,9 @@ export const IconPicker = connect(
     };
   }),
   mapReadPretty((props) => {
+    if (!isValid(props.value)) {
+      return <div>N/A</div>;
+    }
     return <Icon type={props.value} />;
   }),
 );

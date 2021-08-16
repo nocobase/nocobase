@@ -18,7 +18,7 @@ import { useDesignable } from '../';
 import { createContext } from 'react';
 import { useContext } from 'react';
 import { isEmpty } from 'lodash';
-import { isField } from '@formily/core';
+import { Field, isArrayField, isField } from '@formily/core';
 
 export const Select: any = connect(
   (props) => {
@@ -65,7 +65,15 @@ export const Select: any = connect(
     },
   ),
   mapReadPretty((props) => {
+    // console.log('mapReadPretty', props.value)
+    // return <div>N/A</div>;
+    if (!isValid(props.value)) {
+      return <div>N/A</div>;
+    }
     const field = useField<any>();
+    if (isArrayField(field) && field?.value?.length === 0) {
+      return <div>N/A</div>;
+    }
     const dataSource = field.dataSource || [];
     console.log('field.value', field.value, dataSource);
     const values = toArr(field.value);

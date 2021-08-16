@@ -40,6 +40,7 @@ import {
 import { DatePicker } from '../../schemas/date-picker';
 import { Filter } from '../../schemas/filter';
 import { Form } from '../../schemas/form';
+import { ActionLogs } from '../../schemas/action-logs';
 import { Grid } from '../../schemas/grid';
 import { IconPicker } from '../../schemas/icon-picker';
 import { Input } from '../../schemas/input';
@@ -192,6 +193,8 @@ export const SchemaField = createSchemaField({
     Tabs,
     TimePicker,
     Upload,
+
+    ActionLogs,
   },
 });
 

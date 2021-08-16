@@ -4,6 +4,7 @@ import { Checkbox as AntdCheckbox, Tag } from 'antd';
 import { CheckboxProps, CheckboxGroupProps } from 'antd/lib/checkbox';
 import uniq from 'lodash/uniq';
 import { CheckOutlined, CloseOutlined } from '@ant-design/icons';
+import { isValid } from '@formily/shared';
 
 type ComposedCheckbox = React.FC<CheckboxProps> & {
   Group?: React.FC<CheckboxGroupProps>;
@@ -25,6 +26,9 @@ export const Checkbox: ComposedCheckbox = connect(
     },
   ),
   mapReadPretty((props) => {
+    if (!isValid(props.value)) {
+      return <div>N/A</div>;
+    }
     return props.value ? (
       <CheckOutlined style={{ color: '#52c41a' }} />
     ) : (
@@ -41,6 +45,9 @@ Checkbox.Group = connect(
     dataSource: 'options',
   }),
   mapReadPretty((props) => {
+    if (!isValid(props.value)) {
+      return <div>N/A</div>;
+    }
     const { options = [] } = props;
     const field = useField<any>();
     const dataSource = field.dataSource || [];
@@ -50,7 +57,9 @@ Checkbox.Group = connect(
         {dataSource
           .filter((option) => value.includes(option.value))
           .map((option, key) => (
-            <Tag key={key} color={option.color}>{option.label}</Tag>
+            <Tag key={key} color={option.color}>
+              {option.label}
+            </Tag>
           ))}
       </div>
     );
