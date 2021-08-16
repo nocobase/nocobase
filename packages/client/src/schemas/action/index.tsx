@@ -264,7 +264,7 @@ Action.Dropdown = observer((props: any) => {
         document.body,
       )}
       <Dropdown
-        trigger={['click']}
+        trigger={['hover']}
         {...props}
         overlay={
           <Menu>

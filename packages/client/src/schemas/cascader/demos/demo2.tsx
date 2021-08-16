@@ -37,6 +37,7 @@ const schema = {
         loadData: '{{ loadData }}',
         useDataSource: '{{ useDataSource }}',
         labelInValue: true,
+        maxLevel: 3,
         fieldNames: {
           label: 'name',
           value: 'code',

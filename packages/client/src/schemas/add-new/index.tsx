@@ -397,6 +397,7 @@ function generateCardItemSchema(component) {
         rowKey: 'id',
         // dragSort: true,
         showIndex: true,
+        defaultSort: ['-id'],
         defaultAppends: ['user', 'collection'],
         refreshRequestOnChange: true,
         pagination: {
@@ -459,9 +460,9 @@ function generateCardItemSchema(component) {
                       type: 'string',
                       'x-component': 'Select',
                       enum: [
-                        { label: '新增数据', value: 'create' },
-                        { label: '更新数据', value: 'update' },
-                        { label: '删除数据', value: 'destroy' },
+                        { label: '新增', value: 'create', color: 'green' },
+                        { label: '更新', value: 'update', color: 'blue' },
+                        { label: '删除', value: 'destroy', color: 'red' },
                       ],
                     },
                   },
@@ -521,13 +522,27 @@ function generateCardItemSchema(component) {
                           properties: {
                             created_at: {
                               type: 'string',
-                              title: '创建时间',
+                              title: '操作时间',
                               'x-decorator': 'FormItem',
                               'x-component': 'DatePicker',
                               'x-read-pretty': true,
                               'x-component-props': {
                                 format: 'YYYY-MM-DD HH:mm:ss',
                               },
+                            },
+                            'user.nickname': {
+                              type: 'string',
+                              title: '操作用户',
+                              'x-decorator': 'FormItem',
+                              'x-component': 'Input',
+                              'x-read-pretty': true,
+                            },
+                            'collection.title': {
+                              type: 'string',
+                              title: '所属数据表',
+                              'x-decorator': 'FormItem',
+                              'x-component': 'Input',
+                              'x-read-pretty': true,
                             },
                             type: {
                               type: 'string',
@@ -536,9 +551,21 @@ function generateCardItemSchema(component) {
                               'x-component': 'Select',
                               'x-read-pretty': true,
                               enum: [
-                                { label: '新增数据', value: 'create' },
-                                { label: '更新数据', value: 'update' },
-                                { label: '删除数据', value: 'destroy' },
+                                {
+                                  label: '新增',
+                                  value: 'create',
+                                  color: 'green',
+                                },
+                                {
+                                  label: '更新',
+                                  value: 'update',
+                                  color: 'blue',
+                                },
+                                {
+                                  label: '删除',
+                                  value: 'destroy',
+                                  color: 'red',
+                                },
                               ],
                             },
                             changes: {
@@ -550,18 +577,33 @@ function generateCardItemSchema(component) {
                                 pagination: false,
                                 // scroll: { x: '100%' },
                               },
+                              // 'x-reactions': ['{{ filterActionLogs }}'],
                               items: {
                                 type: 'object',
                                 properties: {
+                                  column0: {
+                                    type: 'void',
+                                    'x-component': 'ArrayTable.Column',
+                                    'x-component-props': {
+                                      width: 80,
+                                      align: 'center',
+                                    },
+                                    properties: {
+                                      index: {
+                                        type: 'void',
+                                        'x-component': 'ArrayTable.Index',
+                                      },
+                                    },
+                                  },
                                   column1: {
                                     type: 'void',
                                     'x-component': 'ArrayTable.Column',
                                     'x-component-props': { title: '字段名称' },
                                     properties: {
-                                      'field.uiSchema.title': {
+                                      field: {
                                         type: 'string',
                                         'x-decorator': 'FormilyFormItem',
-                                        'x-component': 'Input',
+                                        'x-component': 'ActionLogs.Field',
                                       },
                                     },
                                   },
@@ -573,7 +615,7 @@ function generateCardItemSchema(component) {
                                       before: {
                                         type: 'string',
                                         'x-decorator': 'FormilyFormItem',
-                                        'x-component': 'Values',
+                                        'x-component': 'ActionLogs.FieldValue',
                                       },
                                     },
                                   },
@@ -585,7 +627,7 @@ function generateCardItemSchema(component) {
                                       after: {
                                         type: 'string',
                                         'x-decorator': 'FormilyFormItem',
-                                        'x-component': 'Values',
+                                        'x-component': 'ActionLogs.FieldValue',
                                       },
                                     },
                                   },
@@ -604,7 +646,7 @@ function generateCardItemSchema(component) {
         },
         column1: {
           type: 'void',
-          title: '创建时间',
+          title: '操作时间',
           'x-component': 'Table.Column',
           properties: {
             created_at: {
@@ -619,6 +661,30 @@ function generateCardItemSchema(component) {
         },
         column2: {
           type: 'void',
+          title: '操作用户',
+          'x-component': 'Table.Column',
+          properties: {
+            'user.nickname': {
+              type: 'string',
+              'x-component': 'Input',
+              'x-read-pretty': true,
+            },
+          },
+        },
+        column3: {
+          type: 'void',
+          title: '所属数据表',
+          'x-component': 'Table.Column',
+          properties: {
+            'collection.title': {
+              type: 'string',
+              'x-component': 'Input',
+              'x-read-pretty': true,
+            },
+          },
+        },
+        column4: {
+          type: 'void',
           title: '操作类型',
           'x-component': 'Table.Column',
           properties: {
@@ -627,9 +693,9 @@ function generateCardItemSchema(component) {
               'x-component': 'Select',
               'x-read-pretty': true,
               enum: [
-                { label: '新增数据', value: 'create' },
-                { label: '更新数据', value: 'update' },
-                { label: '删除数据', value: 'destroy' },
+                { label: '新增', value: 'create', color: 'green' },
+                { label: '更新', value: 'update', color: 'blue' },
+                { label: '删除', value: 'destroy', color: 'red' },
               ],
             },
           },
