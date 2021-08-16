@@ -17,4 +17,11 @@ export default defineConfig({
     { path: '/', exact: false, component: '@/pages/index' },
   ],
   fastRefresh: {},
+  locale: {
+    default: 'zh-CN',
+    // antd: false,
+    // title: false,
+    baseNavigator: false,
+    baseSeparator: '-',
+  },
 });

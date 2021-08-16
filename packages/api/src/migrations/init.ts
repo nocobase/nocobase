@@ -17,12 +17,13 @@ import * as uiSchema from './ui-schema';
     // tables: ['collections', 'fields', 'actions', 'views', 'tabs'],
   });
 
-  const config = require('@nocobase/plugin-users/src/collections/users').default;
+  const config =
+    require('@nocobase/plugin-users/src/collections/users').default;
   const Collection = database.getModel('collections');
   const collection = await Collection.create(config);
   await collection.updateAssociations({
-    generalFields: config.fields.filter(field => field.state !== 0),
-    systemFields: config.fields.filter(field => field.state === 0),
+    generalFields: config.fields.filter((field) => field.state !== 0),
+    systemFields: config.fields.filter((field) => field.state === 0),
   });
   await collection.migrate();
 
@@ -92,7 +93,54 @@ import * as uiSchema from './ui-schema';
 
   // 导入地域数据
   const ChinaRegion = database.getModel('china_regions');
-  ChinaRegion && await ChinaRegion.importData();
+  ChinaRegion && (await ChinaRegion.importData());
 
+  const SystemSetting = database.getModel('system_settings');
+  if (SystemSetting) {
+    const setting = await SystemSetting.create({
+      title: 'NocoBase',
+      showLogoOnly: true,
+    });
+    await setting.updateAssociations({
+      logo: {
+        title: 'nocobase-logo',
+        filename: '682e5ad037dd02a0fe4800a3e91c283b.png',
+        extname: '.png',
+        mimetype: 'image/png',
+        url: 'https://nocobase.oss-cn-beijing.aliyuncs.com/682e5ad037dd02a0fe4800a3e91c283b.png',
+        created_at: '2021-08-16T06:31:53.214Z',
+        updated_at: '2021-08-16T06:31:53.214Z',
+        storage_id: 2,
+      },
+    });
+  }
   await database.close();
 })();
+
+const a = {
+  data: {
+    id: 1,
+    title: 'NocoBase',
+    created_at: '2021-08-16T05:37:50.751Z',
+    updated_at: '2021-08-16T06:31:55.069Z',
+    logo_id: 3,
+    created_by_id: null,
+    updated_by_id: null,
+    logo: {
+      id: 3,
+      title: 'logo-white (1)',
+      filename: '682e5ad037dd02a0fe4800a3e91c283b.png',
+      extname: '.png',
+      size: null,
+      mimetype: 'image/png',
+      path: '',
+      meta: {},
+      url: 'https://nocobase.oss-cn-beijing.aliyuncs.com/682e5ad037dd02a0fe4800a3e91c283b.png',
+      created_at: '2021-08-16T06:31:53.214Z',
+      updated_at: '2021-08-16T06:31:53.214Z',
+      created_by_id: null,
+      updated_by_id: null,
+      storage_id: 2,
+    },
+  },
+};
