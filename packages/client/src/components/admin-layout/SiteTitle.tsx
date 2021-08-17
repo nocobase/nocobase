@@ -1,5 +1,5 @@
 import React, { useContext, useEffect } from 'react';
-import { Button, Dropdown, Menu } from 'antd';
+import { Button, Dropdown, Menu, Spin } from 'antd';
 import { useHistory } from 'react-router-dom';
 import { request } from '../../schemas';
 import { useRequest } from 'ahooks';
@@ -25,7 +25,7 @@ export function SystemSettingsProvider(props) {
   );
   return (
     <SystemSettingsContext.Provider value={{ service, resource }}>
-      {props.children}
+      {service.loading ? <Spin /> : props.children}
     </SystemSettingsContext.Provider>
   );
 }

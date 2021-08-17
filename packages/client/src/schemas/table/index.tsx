@@ -510,7 +510,11 @@ function AddColumn() {
         </Menu>
       }
     >
-      <Button type={'dashed'} icon={<SettingOutlined />}>
+      <Button
+        type={'dashed'}
+        className={'designable-btn designable-btn-dash'}
+        icon={<SettingOutlined />}
+      >
         配置字段
       </Button>
     </Dropdown>
@@ -1089,7 +1093,12 @@ function AddActionButton() {
         </Menu>
       }
     >
-      <Button style={{ marginLeft: 8 }} type={'dashed'} icon={<PlusOutlined />}>
+      <Button
+        className={'designable-btn designable-btn-dash'}
+        style={{ marginLeft: 8 }}
+        type={'dashed'}
+        icon={<PlusOutlined />}
+      >
         配置操作
       </Button>
     </Dropdown>
@@ -1350,108 +1359,111 @@ Table.Filter.DesignableBar = () => {
         }}
         className={cls('designable-bar-actions', { active: visible })}
       >
-        <DragHandle />
-        <Dropdown
-          trigger={['click']}
-          visible={visible}
-          onVisibleChange={(visible) => {
-            setVisible(visible);
-          }}
-          overlay={
-            <Menu>
-              <Menu.ItemGroup title={'筛选字段'}>
-                {fields
-                  .filter((collectionField) => {
-                    const option = interfaces.get(collectionField.interface);
-                    return option.operations?.length;
-                  })
-                  .map((collectionField) => (
-                    <SwitchMenuItem
-                      title={collectionField?.uiSchema?.title}
-                      checked={fieldNames.includes(collectionField.name)}
-                      onChange={async (checked) => {
-                        if (checked) {
-                          fieldNames.push(collectionField.name);
-                        } else {
-                          const index = fieldNames.indexOf(
-                            collectionField.name,
-                          );
-                          if (index > -1) {
-                            fieldNames.splice(index, 1);
+        <Space>
+          <DragHandle />
+          <Dropdown
+            trigger={['click']}
+            visible={visible}
+            onVisibleChange={(visible) => {
+              setVisible(visible);
+            }}
+            overlay={
+              <Menu>
+                <Menu.ItemGroup title={'筛选字段'}>
+                  {fields
+                    .filter((collectionField) => {
+                      const option = interfaces.get(collectionField.interface);
+                      return option.operations?.length;
+                    })
+                    .map((collectionField) => (
+                      <SwitchMenuItem
+                        title={collectionField?.uiSchema?.title}
+                        checked={fieldNames.includes(collectionField.name)}
+                        onChange={async (checked) => {
+                          if (checked) {
+                            fieldNames.push(collectionField.name);
+                          } else {
+                            const index = fieldNames.indexOf(
+                              collectionField.name,
+                            );
+                            if (index > -1) {
+                              fieldNames.splice(index, 1);
+                            }
                           }
-                        }
-                        console.log({ fieldNames, field });
-                        schema['x-component-props']['fieldNames'] = fieldNames;
-                        field.componentProps.fieldNames = fieldNames;
-                        updateSchema(schema);
-                      }}
-                    />
-                  ))}
-              </Menu.ItemGroup>
-              <Menu.Divider />
-              <Menu.Item
-                onClick={async (e) => {
-                  const values = await FormDialog('修改名称和图标', () => {
-                    return (
-                      <FormLayout layout={'vertical'}>
-                        <SchemaField
-                          schema={{
-                            type: 'object',
-                            properties: {
-                              title: {
-                                type: 'string',
-                                title: '按钮名称',
-                                required: true,
-                                'x-decorator': 'FormItem',
-                                'x-component': 'Input',
+                          console.log({ fieldNames, field });
+                          schema['x-component-props']['fieldNames'] =
+                            fieldNames;
+                          field.componentProps.fieldNames = fieldNames;
+                          updateSchema(schema);
+                        }}
+                      />
+                    ))}
+                </Menu.ItemGroup>
+                <Menu.Divider />
+                <Menu.Item
+                  onClick={async (e) => {
+                    const values = await FormDialog('修改名称和图标', () => {
+                      return (
+                        <FormLayout layout={'vertical'}>
+                          <SchemaField
+                            schema={{
+                              type: 'object',
+                              properties: {
+                                title: {
+                                  type: 'string',
+                                  title: '按钮名称',
+                                  required: true,
+                                  'x-decorator': 'FormItem',
+                                  'x-component': 'Input',
+                                },
+                                icon: {
+                                  type: 'string',
+                                  title: '按钮图标',
+                                  'x-decorator': 'FormItem',
+                                  'x-component': 'IconPicker',
+                                },
                               },
-                              icon: {
-                                type: 'string',
-                                title: '按钮图标',
-                                'x-decorator': 'FormItem',
-                                'x-component': 'IconPicker',
-                              },
-                            },
-                          }}
-                        />
-                      </FormLayout>
-                    );
-                  }).open({
-                    initialValues: {
-                      title: schema['title'],
-                      icon: schema['x-component-props']?.['icon'],
-                    },
-                  });
-                  schema['title'] = values.title;
-                  schema['x-component-props']['icon'] = values.icon;
-                  field.componentProps.icon = values.icon;
-                  field.title = values.title;
-                  updateSchema(schema);
-                  refresh();
-                }}
-              >
-                修改名称和图标
-              </Menu.Item>
-              <Menu.Divider />
-              <Menu.Item
-                onClick={async () => {
-                  const displayName =
-                    schema?.['x-decorator-props']?.['displayName'];
-                  const data = remove();
-                  await removeSchema(data);
-                  if (displayName) {
-                    displayed.remove(displayName);
-                  }
-                  setVisible(false);
-                }}
-              >
-                移除
-              </Menu.Item>
-            </Menu>
-          }
-        >
-          <MenuOutlined />
-        </Dropdown>
+                            }}
+                          />
+                        </FormLayout>
+                      );
+                    }).open({
+                      initialValues: {
+                        title: schema['title'],
+                        icon: schema['x-component-props']?.['icon'],
+                      },
+                    });
+                    schema['title'] = values.title;
+                    schema['x-component-props']['icon'] = values.icon;
+                    field.componentProps.icon = values.icon;
+                    field.title = values.title;
+                    updateSchema(schema);
+                    refresh();
+                  }}
+                >
+                  修改名称和图标
+                </Menu.Item>
+                <Menu.Divider />
+                <Menu.Item
+                  onClick={async () => {
+                    const displayName =
+                      schema?.['x-decorator-props']?.['displayName'];
+                    const data = remove();
+                    await removeSchema(data);
+                    if (displayName) {
+                      displayed.remove(displayName);
+                    }
+                    setVisible(false);
+                  }}
+                >
+                  移除
+                </Menu.Item>
+              </Menu>
+            }
+          >
+            <MenuOutlined />
+          </Dropdown>
+        </Space>
       </span>
     </div>
   );
@@ -1475,101 +1487,105 @@ Table.ExportActionDesignableBar = () => {
         }}
         className={cls('designable-bar-actions', { active: visible })}
       >
-        <DragHandle />
-        <Dropdown
-          trigger={['click']}
-          visible={visible}
-          onVisibleChange={(visible) => {
-            setVisible(visible);
-          }}
-          overlay={
-            <Menu>
-              <Menu.ItemGroup title={'导出字段'}>
-                {fields.map((collectionField) => (
-                  <SwitchMenuItem
-                    title={collectionField?.uiSchema?.title}
-                    checked={fieldNames.includes(collectionField.name)}
-                    onChange={async (checked) => {
-                      if (checked) {
-                        fieldNames.push(collectionField.name);
-                      } else {
-                        const index = fieldNames.indexOf(collectionField.name);
-                        if (index > -1) {
-                          fieldNames.splice(index, 1);
+        <Space>
+          <DragHandle />
+          <Dropdown
+            trigger={['click']}
+            visible={visible}
+            onVisibleChange={(visible) => {
+              setVisible(visible);
+            }}
+            overlay={
+              <Menu>
+                <Menu.ItemGroup title={'导出字段'}>
+                  {fields.map((collectionField) => (
+                    <SwitchMenuItem
+                      title={collectionField?.uiSchema?.title}
+                      checked={fieldNames.includes(collectionField.name)}
+                      onChange={async (checked) => {
+                        if (checked) {
+                          fieldNames.push(collectionField.name);
+                        } else {
+                          const index = fieldNames.indexOf(
+                            collectionField.name,
+                          );
+                          if (index > -1) {
+                            fieldNames.splice(index, 1);
+                          }
                         }
-                      }
-                      console.log({ fieldNames, field });
-                      schema['x-component-props']['fieldNames'] = fieldNames;
-                      field.componentProps.fieldNames = fieldNames;
-                      updateSchema(schema);
-                    }}
-                  />
-                ))}
-              </Menu.ItemGroup>
-              <Menu.Divider />
-              <Menu.Item
-                onClick={async (e) => {
-                  const values = await FormDialog('修改名称和图标', () => {
-                    return (
-                      <FormLayout layout={'vertical'}>
-                        <SchemaField
-                          schema={{
-                            type: 'object',
-                            properties: {
-                              title: {
-                                type: 'string',
-                                title: '按钮名称',
-                                required: true,
-                                'x-decorator': 'FormItem',
-                                'x-component': 'Input',
+                        console.log({ fieldNames, field });
+                        schema['x-component-props']['fieldNames'] = fieldNames;
+                        field.componentProps.fieldNames = fieldNames;
+                        updateSchema(schema);
+                      }}
+                    />
+                  ))}
+                </Menu.ItemGroup>
+                <Menu.Divider />
+                <Menu.Item
+                  onClick={async (e) => {
+                    const values = await FormDialog('修改名称和图标', () => {
+                      return (
+                        <FormLayout layout={'vertical'}>
+                          <SchemaField
+                            schema={{
+                              type: 'object',
+                              properties: {
+                                title: {
+                                  type: 'string',
+                                  title: '按钮名称',
+                                  required: true,
+                                  'x-decorator': 'FormItem',
+                                  'x-component': 'Input',
+                                },
+                                icon: {
+                                  type: 'string',
+                                  title: '按钮图标',
+                                  'x-decorator': 'FormItem',
+                                  'x-component': 'IconPicker',
+                                },
                               },
-                              icon: {
-                                type: 'string',
-                                title: '按钮图标',
-                                'x-decorator': 'FormItem',
-                                'x-component': 'IconPicker',
-                              },
-                            },
-                          }}
-                        />
-                      </FormLayout>
-                    );
-                  }).open({
-                    initialValues: {
-                      title: schema['title'],
-                      icon: schema['x-component-props']?.['icon'],
-                    },
-                  });
-                  schema['title'] = values.title;
-                  schema['x-component-props']['icon'] = values.icon;
-                  field.componentProps.icon = values.icon;
-                  field.title = values.title;
-                  updateSchema(schema);
-                  refresh();
-                }}
-              >
-                修改名称和图标
-              </Menu.Item>
-              <Menu.Divider />
-              <Menu.Item
-                onClick={async () => {
-                  const displayName =
-                    schema?.['x-decorator-props']?.['displayName'];
-                  const data = remove();
-                  await removeSchema(data);
-                  if (displayName) {
-                    displayed.remove(displayName);
-                  }
-                  setVisible(false);
-                }}
-              >
-                移除
-              </Menu.Item>
-            </Menu>
-          }
-        >
-          <MenuOutlined />
-        </Dropdown>
+                            }}
+                          />
+                        </FormLayout>
+                      );
+                    }).open({
+                      initialValues: {
+                        title: schema['title'],
+                        icon: schema['x-component-props']?.['icon'],
+                      },
+                    });
+                    schema['title'] = values.title;
+                    schema['x-component-props']['icon'] = values.icon;
+                    field.componentProps.icon = values.icon;
+                    field.title = values.title;
+                    updateSchema(schema);
+                    refresh();
+                  }}
+                >
+                  修改名称和图标
+                </Menu.Item>
+                <Menu.Divider />
+                <Menu.Item
+                  onClick={async () => {
+                    const displayName =
+                      schema?.['x-decorator-props']?.['displayName'];
+                    const data = remove();
+                    await removeSchema(data);
+                    if (displayName) {
+                      displayed.remove(displayName);
+                    }
+                    setVisible(false);
+                  }}
+                >
+                  移除
+                </Menu.Item>
+              </Menu>
+            }
+          >
+            <MenuOutlined />
+          </Dropdown>
+        </Space>
       </span>
     </div>
   );
@@ -1580,9 +1596,7 @@ Table.Operation = observer((props: any) => {
   return (
     <div className={'nb-table-column'}>
       操作
-      {designable && schema['x-designable-bar'] && (
-        <Table.Operation.DesignableBar path={props.path} />
-      )}
+      <Table.Operation.DesignableBar path={props.path} />
     </div>
   );
 });
@@ -1600,9 +1614,10 @@ Table.Operation.Cell = observer((props: any) => {
 Table.Operation.DesignableBar = (props) => {
   const { schema, remove, refresh, appendChild } = useDesignable(props.path);
   const [visible, setVisible] = useState(false);
-  if (!schema['x-designable-bar']) {
+  if (!schema?.parent?.parent['x-designable-bar']) {
     return null;
   }
+  console.log('Table.Operation.DesignableBar', schema?.parent?.parent);
   const map = new Map();
   schema.mapProperties((s) => {
     if (!s['x-action-type']) {
@@ -1618,52 +1633,54 @@ Table.Operation.DesignableBar = (props) => {
         }}
         className={cls('designable-bar-actions', { active: visible })}
       >
-        <DragHandle />
-        <Dropdown
-          trigger={['click']}
-          visible={visible}
-          onVisibleChange={(visible) => {
-            setVisible(visible);
-          }}
-          overlay={
-            <Menu>
-              <Menu.ItemGroup title={'操作展示'}>
-                {[
-                  { title: '查看', name: 'view' },
-                  { title: '编辑', name: 'update' },
-                  { title: '删除', name: 'destroy' },
-                ].map((item) => (
-                  <SwitchMenuItem
-                    key={item.name}
-                    title={item.title}
-                    checked={map.has(item.name)}
-                    onChange={async (checked) => {
-                      if (checked) {
-                        const s = generateMenuActionSchema(item.name);
-                        const data = appendChild(s);
-                        await createSchema(data);
-                      } else if (map.get(item.name)) {
-                        const removed = remove([
-                          ...props.path,
-                          map.get(item.name),
-                        ]);
-                        await removeSchema(removed);
-                      }
-                    }}
-                  />
-                ))}
-              </Menu.ItemGroup>
-              <Menu.Divider />
-              <Menu.SubMenu title={'自定义'}>
-                <Menu.Item style={{ minWidth: 120 }}>函数操作</Menu.Item>
-                <Menu.Item>弹窗表单</Menu.Item>
-                <Menu.Item>复杂弹窗</Menu.Item>
-              </Menu.SubMenu>
-            </Menu>
-          }
-        >
-          <MenuOutlined />
-        </Dropdown>
+        <Space>
+          <DragHandle />
+          <Dropdown
+            trigger={['click']}
+            visible={visible}
+            onVisibleChange={(visible) => {
+              setVisible(visible);
+            }}
+            overlay={
+              <Menu>
+                <Menu.ItemGroup title={'操作展示'}>
+                  {[
+                    { title: '查看', name: 'view' },
+                    { title: '编辑', name: 'update' },
+                    { title: '删除', name: 'destroy' },
+                  ].map((item) => (
+                    <SwitchMenuItem
+                      key={item.name}
+                      title={item.title}
+                      checked={map.has(item.name)}
+                      onChange={async (checked) => {
+                        if (checked) {
+                          const s = generateMenuActionSchema(item.name);
+                          const data = appendChild(s);
+                          await createSchema(data);
+                        } else if (map.get(item.name)) {
+                          const removed = remove([
+                            ...props.path,
+                            map.get(item.name),
+                          ]);
+                          await removeSchema(removed);
+                        }
+                      }}
+                    />
+                  ))}
+                </Menu.ItemGroup>
+                <Menu.Divider />
+                <Menu.SubMenu title={'自定义'}>
+                  <Menu.Item style={{ minWidth: 120 }}>函数操作</Menu.Item>
+                  <Menu.Item>弹窗表单</Menu.Item>
+                  <Menu.Item>复杂弹窗</Menu.Item>
+                </Menu.SubMenu>
+              </Menu>
+            }
+          >
+            <MenuOutlined />
+          </Dropdown>
+        </Space>
       </span>
     </div>
   );
@@ -1686,109 +1703,115 @@ Table.Action.DesignableBar = () => {
         }}
         className={cls('designable-bar-actions', { active: visible })}
       >
-        <DragHandle />
-        <Dropdown
-          trigger={['click']}
-          visible={visible}
-          onVisibleChange={(visible) => {
-            setVisible(visible);
-          }}
-          overlay={
-            <Menu>
-              <Menu.Item
-                onClick={async (e) => {
-                  const values = await FormDialog('修改名称和图标', () => {
-                    return (
-                      <FormLayout layout={'vertical'}>
-                        <SchemaField
-                          schema={{
-                            type: 'object',
-                            properties: {
-                              title: {
-                                type: 'string',
-                                title: '按钮名称',
-                                required: true,
-                                'x-decorator': 'FormItem',
-                                'x-component': 'Input',
+        <Space>
+          <DragHandle />
+          <Dropdown
+            trigger={['click']}
+            visible={visible}
+            onVisibleChange={(visible) => {
+              setVisible(visible);
+            }}
+            overlay={
+              <Menu>
+                <Menu.Item
+                  onClick={async (e) => {
+                    const values = await FormDialog('修改名称和图标', () => {
+                      return (
+                        <FormLayout layout={'vertical'}>
+                          <SchemaField
+                            schema={{
+                              type: 'object',
+                              properties: {
+                                title: {
+                                  type: 'string',
+                                  title: '按钮名称',
+                                  required: true,
+                                  'x-decorator': 'FormItem',
+                                  'x-component': 'Input',
+                                },
+                                icon: {
+                                  type: 'string',
+                                  title: '按钮图标',
+                                  'x-decorator': 'FormItem',
+                                  'x-component': 'IconPicker',
+                                },
                               },
-                              icon: {
-                                type: 'string',
-                                title: '按钮图标',
-                                'x-decorator': 'FormItem',
-                                'x-component': 'IconPicker',
-                              },
-                            },
-                          }}
-                        />
-                      </FormLayout>
-                    );
-                  }).open({
-                    initialValues: {
-                      title: schema['title'],
-                      icon: schema['x-component-props']?.['icon'],
-                    },
-                  });
-                  schema['title'] = values.title;
-                  schema['x-component-props']['icon'] = values.icon;
-                  field.componentProps.icon = values.icon;
-                  field.title = values.title;
-                  updateSchema(schema);
-                  refresh();
-                }}
-              >
-                修改名称和图标
-              </Menu.Item>
-              {isPopup && (
-                <Menu.Item>
-                  在{' '}
-                  <Select
-                    bordered={false}
-                    size={'small'}
-                    defaultValue={'Action.Modal'}
-                    onChange={(value) => {
-                      const s = Object.values(schema.properties).shift();
-                      s['x-component'] = value;
-                      refresh();
-                      updateSchema(s);
-                      // const f = field.query(getSchemaPath(s)).take()
-                      // console.log('fffffff', { schema, f });
-                    }}
-                  >
-                    <Select.Option value={'Action.Modal'}>对话框</Select.Option>
-                    <Select.Option value={'Action.Drawer'}>抽屉</Select.Option>
-                    <Select.Option value={'Action.Window'}>
-                      浏览器窗口
-                    </Select.Option>
-                  </Select>{' '}
-                  内打开
+                            }}
+                          />
+                        </FormLayout>
+                      );
+                    }).open({
+                      initialValues: {
+                        title: schema['title'],
+                        icon: schema['x-component-props']?.['icon'],
+                      },
+                    });
+                    schema['title'] = values.title;
+                    schema['x-component-props']['icon'] = values.icon;
+                    field.componentProps.icon = values.icon;
+                    field.title = values.title;
+                    updateSchema(schema);
+                    refresh();
+                  }}
+                >
+                  修改名称和图标
                 </Menu.Item>
-              )}
-              {!inActionBar && (
-                <Menu.Item>
-                  点击表格行时触发 &nbsp;&nbsp;
-                  <Switch size={'small'} defaultChecked />
+                {isPopup && (
+                  <Menu.Item>
+                    在{' '}
+                    <Select
+                      bordered={false}
+                      size={'small'}
+                      defaultValue={'Action.Modal'}
+                      onChange={(value) => {
+                        const s = Object.values(schema.properties).shift();
+                        s['x-component'] = value;
+                        refresh();
+                        updateSchema(s);
+                        // const f = field.query(getSchemaPath(s)).take()
+                        // console.log('fffffff', { schema, f });
+                      }}
+                    >
+                      <Select.Option value={'Action.Modal'}>
+                        对话框
+                      </Select.Option>
+                      <Select.Option value={'Action.Drawer'}>
+                        抽屉
+                      </Select.Option>
+                      <Select.Option value={'Action.Window'}>
+                        浏览器窗口
+                      </Select.Option>
+                    </Select>{' '}
+                    内打开
+                  </Menu.Item>
+                )}
+                {!inActionBar && (
+                  <Menu.Item>
+                    点击表格行时触发 &nbsp;&nbsp;
+                    <Switch size={'small'} defaultChecked />
+                  </Menu.Item>
+                )}
+                <Menu.Divider />
+                <Menu.Item
+                  onClick={async () => {
+                    const displayName =
+                      schema?.['x-decorator-props']?.['displayName'];
+                    const data = remove();
+                    await removeSchema(data);
+                    if (displayName) {
+                      displayed.remove(displayName);
+                    }
+                    setVisible(false);
+                  }}
+                >
+                  移除
                 </Menu.Item>
-              )}
-              <Menu.Divider />
-              <Menu.Item
-                onClick={async () => {
-                  const displayName =
-                    schema?.['x-decorator-props']?.['displayName'];
-                  const data = remove();
-                  await removeSchema(data);
-                  if (displayName) {
-                    displayed.remove(displayName);
-                  }
-                  setVisible(false);
-                }}
-              >
-                移除
-              </Menu.Item>
-            </Menu>
-          }
-        >
-          <MenuOutlined />
-        </Dropdown>
+              </Menu>
+            }
+          >
+            <MenuOutlined />
+          </Dropdown>
+        </Space>
       </span>
     </div>
   );
@@ -1860,77 +1883,80 @@ Table.Column.DesignableBar = () => {
         }}
         className={cls('designable-bar-actions', { active: visible })}
       >
-        <DragHandle />
-        <Dropdown
-          trigger={['click']}
-          visible={visible}
-          onVisibleChange={(visible) => {
-            setVisible(visible);
-          }}
-          overlay={
-            <Menu>
-              <Menu.Item
-                onClick={async (e) => {
-                  const values = await FormDialog('修改列标题', () => {
-                    return (
-                      <FormLayout layout={'vertical'}>
-                        <SchemaField
-                          schema={{
-                            type: 'object',
-                            properties: {
-                              fieldName: {
-                                type: 'string',
-                                title: '原字段名称',
-                                'x-read-pretty': true,
-                                'x-decorator': 'FormItem',
-                                'x-component': 'Input',
+        <Space>
+          <DragHandle />
+          <Dropdown
+            trigger={['click']}
+            visible={visible}
+            onVisibleChange={(visible) => {
+              setVisible(visible);
+            }}
+            overlay={
+              <Menu>
+                <Menu.Item
+                  onClick={async (e) => {
+                    const values = await FormDialog('修改列标题', () => {
+                      return (
+                        <FormLayout layout={'vertical'}>
+                          <SchemaField
+                            schema={{
+                              type: 'object',
+                              properties: {
+                                fieldName: {
+                                  type: 'string',
+                                  title: '原字段名称',
+                                  'x-read-pretty': true,
+                                  'x-decorator': 'FormItem',
+                                  'x-component': 'Input',
+                                },
+                                title: {
+                                  type: 'string',
+                                  title: '自定义列标题',
+                                  'x-decorator': 'FormItem',
+                                  'x-component': 'Input',
+                                },
                               },
-                              title: {
-                                type: 'string',
-                                title: '自定义列标题',
-                                'x-decorator': 'FormItem',
-                                'x-component': 'Input',
-                              },
-                            },
-                          }}
-                        />
-                      </FormLayout>
-                    );
-                  }).open({
-                    initialValues: {
-                      fieldName: collectionField?.uiSchema?.title,
-                      title: schema['title'],
-                    },
-                  });
-                  const title = values.title || null;
-                  field.title = title;
-                  schema.title = title;
-                  refresh();
-                  await updateSchema({
-                    key: schema['key'],
-                    title: title,
-                  });
-                  setVisible(false);
-                }}
-              >
-                修改列标题
-              </Menu.Item>
-              <Menu.Divider />
-              <Menu.Item
-                onClick={async () => {
-                  const s = remove();
-                  const fieldName = schema['x-component-props']?.['fieldName'];
-                  displayed.remove(fieldName);
-                  await removeSchema(s);
-                }}
-              >
-                移除
-              </Menu.Item>
-            </Menu>
-          }
-        >
-          <MenuOutlined />
-        </Dropdown>
+                            }}
+                          />
+                        </FormLayout>
+                      );
+                    }).open({
+                      initialValues: {
+                        fieldName: collectionField?.uiSchema?.title,
+                        title: schema['title'],
+                      },
+                    });
+                    const title = values.title || null;
+                    field.title = title;
+                    schema.title = title;
+                    refresh();
+                    await updateSchema({
+                      key: schema['key'],
+                      title: title,
+                    });
+                    setVisible(false);
+                  }}
+                >
+                  修改列标题
+                </Menu.Item>
+                <Menu.Divider />
+                <Menu.Item
+                  onClick={async () => {
+                    const s = remove();
+                    const fieldName =
+                      schema['x-component-props']?.['fieldName'];
+                    displayed.remove(fieldName);
+                    await removeSchema(s);
+                  }}
+                >
+                  移除
+                </Menu.Item>
+              </Menu>
+            }
+          >
+            <MenuOutlined />
+          </Dropdown>
+        </Space>
       </span>
     </div>
   );
@@ -1957,14 +1983,16 @@ Table.DesignableBar = observer((props) => {
   console.log({ collectionName });
   return (
     <div className={cls('designable-bar', { active: visible })}>
-      <div className={'designable-info'}>{collection?.title || collection?.name}</div>
+      <div className={'designable-info'}>
+        {collection?.title || collection?.name}
+      </div>
       <span
         onClick={(e) => {
           e.stopPropagation();
         }}
         className={cls('designable-bar-actions', { active: visible })}
       >
-        <Space size={'small'}>
+        <Space size={2}>
           <AddNew.CardItem defaultAction={'insertAfter'} ghost />
           {dragRef && <DragOutlined ref={dragRef} />}
           <Dropdown
@@ -2245,7 +2273,10 @@ Table.useActionLogDetailsResource = ({ onSuccess }) => {
   });
   const service = useRequest(
     (params?: any) => {
-      return resource.get({ ...params, appends: ['changes', 'user', 'collection'] });
+      return resource.get({
+        ...params,
+        appends: ['changes', 'user', 'collection'],
+      });
     },
     {
       formatResult: (result) => result?.data,

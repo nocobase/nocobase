@@ -29,6 +29,7 @@ import {
   Dropdown,
   Modal,
   Button,
+  Space,
 } from 'antd';
 import { uid } from '@formily/shared';
 import cls from 'classnames';
@@ -97,7 +98,7 @@ const SideMenu = (props: any) => {
           <Button
             block
             type={'dashed'}
-            className={`nb-add-new-menu-item menu-mode-inline`}
+            className={`nb-add-new-menu-item menu-mode-inline designable-btn designable-btn-dash`}
           >
             <PlusOutlined />
           </Button>
@@ -207,7 +208,7 @@ export const Menu: any = observer((props: any) => {
             <Menu.AddNew key={uid()} path={path}>
               {/* <PlusOutlined className={'nb-add-new-icon'} /> */}
               <Button
-                className={`nb-add-new-menu-item menu-mode-${
+                className={`designable-btn designable-btn-dash nb-add-new-menu-item designable menu-mode-${
                   mode === 'mix' ? 'horizontal' : mode
                 }`}
                 block
@@ -660,350 +661,357 @@ Menu.DesignableBar = (props) => {
         }}
         className={'designable-bar-actions'}
       >
-        <DragHandle />
-        <Dropdown
-          overlayStyle={{
-            minWidth: 150,
-          }}
-          trigger={['click']}
-          overlay={
-            <AntdMenu
-              onClick={async (info) => {
-                if (['update', 'move', 'delete'].includes(info.key)) {
-                  return;
-                }
-                const methodLabels = {
-                  insertBefore: '之前',
-                  insertAfter: '之后',
-                  appendChild: '里',
-                };
-                const keys = info.key.split('.');
-                const method = keys.shift();
-                const type = keys.join('.');
-                const config = schemas[type];
-                if (!config) {
-                  return;
-                }
-                const values = await FormDialog(
-                  `在「${schema.title}」${methodLabels[method]}新建${config.title}`,
-                  () => {
-                    return (
-                      <FormLayout layout={'vertical'}>
-                        <SchemaField schema={config.schema} />
-                      </FormLayout>
-                    );
-                  },
-                ).open();
-                const methods = {
-                  insertAfter,
-                  insertBefore,
-                  appendChild,
-                };
-                const defaults = generateDefaultSchema(type);
-                const data = methods[method](deepmerge(defaults, values));
-                await createSchema(data);
-              }}
-            >
-              <AntdMenu.Item
-                key={'update'}
-                onClick={async () => {
-                  const initialValues = {};
-                  Object.keys(formConfig.schema.properties).forEach((name) => {
-                    _.set(initialValues, name, get(schema, name));
-                  });
+        <Space size={2}>
+          <DragHandle />
+          <Dropdown
+            overlayStyle={{
+              minWidth: 150,
+            }}
+            trigger={['click']}
+            overlay={
+              <AntdMenu
+                onClick={async (info) => {
+                  if (['update', 'move', 'delete'].includes(info.key)) {
+                    return;
+                  }
+                  const methodLabels = {
+                    insertBefore: '之前',
+                    insertAfter: '之后',
+                    appendChild: '里',
+                  };
+                  const keys = info.key.split('.');
+                  const method = keys.shift();
+                  const type = keys.join('.');
+                  const config = schemas[type];
+                  if (!config) {
+                    return;
+                  }
                   const values = await FormDialog(
-                    `修改${formConfig.title}`,
+                    `在「${schema.title}」${methodLabels[method]}新建${config.title}`,
                     () => {
                       return (
                         <FormLayout layout={'vertical'}>
-                          <SchemaField schema={formConfig.schema} />
+                          <SchemaField schema={config.schema} />
                         </FormLayout>
                       );
                     },
-                  ).open({
-                    initialValues,
-                  });
-                  if (values.title) {
-                    schema.title = values.title;
-                  }
-                  const icon = _.get(values, 'x-component-props.icon') || null;
-                  schema['x-component-props'] =
-                    schema['x-component-props'] || {};
-                  schema['x-component-props']['icon'] = icon;
-                  field.componentProps['icon'] = icon;
-                  refresh();
-                  await updateSchema(schema);
+                  ).open();
+                  const methods = {
+                    insertAfter,
+                    insertBefore,
+                    appendChild,
+                  };
+                  const defaults = generateDefaultSchema(type);
+                  const data = methods[method](deepmerge(defaults, values));
+                  await createSchema(data);
                 }}
               >
-                <EditOutlined /> 修改{formConfig.title}
-              </AntdMenu.Item>
-              <AntdMenu.Item
-                key={'move'}
-                onClick={async () => {
-                  let menuSchema: Schema;
-                  let parent = schema.parent;
-                  while (parent) {
-                    if (parent['x-component'] === 'Menu') {
-                      menuSchema = parent;
-                      break;
-                    }
-                    parent = parent.parent;
-                  }
-
-                  console.log({ menuSchema });
-
-                  const toTreeData = (s: Schema) => {
-                    const items = [];
-                    Object.keys(s.properties || {}).forEach((name) => {
-                      const current = s.properties[name];
-                      if (
-                        !(current['x-component'] as string).startsWith('Menu.')
-                      ) {
-                        return;
-                      }
-                      // if (current.name === schema.name) {
-                      //   return;
-                      // }
-                      items.push({
-                        key: current['key'] || current.name,
-                        label: current.title,
-                        title: current.title,
-                        value: getSchemaPath(current).join('.'),
-                        children: toTreeData(current),
-                      });
+                <AntdMenu.Item
+                  key={'update'}
+                  onClick={async () => {
+                    const initialValues = {};
+                    Object.keys(formConfig.schema.properties).forEach(
+                      (name) => {
+                        _.set(initialValues, name, get(schema, name));
+                      },
+                    );
+                    const values = await FormDialog(
+                      `修改${formConfig.title}`,
+                      () => {
+                        return (
+                          <FormLayout layout={'vertical'}>
+                            <SchemaField schema={formConfig.schema} />
+                          </FormLayout>
+                        );
+                      },
+                    ).open({
+                      initialValues,
                     });
-                    return items;
-                  };
+                    if (values.title) {
+                      schema.title = values.title;
+                    }
+                    const icon =
+                      _.get(values, 'x-component-props.icon') || null;
+                    schema['x-component-props'] =
+                      schema['x-component-props'] || {};
+                    schema['x-component-props']['icon'] = icon;
+                    field.componentProps['icon'] = icon;
+                    refresh();
+                    await updateSchema(schema);
+                  }}
+                >
+                  <EditOutlined /> 修改{formConfig.title}
+                </AntdMenu.Item>
+                <AntdMenu.Item
+                  key={'move'}
+                  onClick={async () => {
+                    let menuSchema: Schema;
+                    let parent = schema.parent;
+                    while (parent) {
+                      if (parent['x-component'] === 'Menu') {
+                        menuSchema = parent;
+                        break;
+                      }
+                      parent = parent.parent;
+                    }
 
-                  const dataSource = toTreeData(menuSchema);
+                    console.log({ menuSchema });
 
-                  const values = await FormDialog(
-                    `将「${schema.title}」移动到`,
-                    () => {
+                    const toTreeData = (s: Schema) => {
+                      const items = [];
+                      Object.keys(s.properties || {}).forEach((name) => {
+                        const current = s.properties[name];
+                        if (
+                          !(current['x-component'] as string).startsWith(
+                            'Menu.',
+                          )
+                        ) {
+                          return;
+                        }
+                        // if (current.name === schema.name) {
+                        //   return;
+                        // }
+                        items.push({
+                          key: current['key'] || current.name,
+                          label: current.title,
+                          title: current.title,
+                          value: getSchemaPath(current).join('.'),
+                          children: toTreeData(current),
+                        });
+                      });
+                      return items;
+                    };
+
+                    const dataSource = toTreeData(menuSchema);
+
+                    const values = await FormDialog(
+                      `将「${schema.title}」移动到`,
+                      () => {
+                        return (
+                          <FormLayout layout={'vertical'}>
+                            <SchemaField
+                              schema={{
+                                type: 'object',
+                                properties: {
+                                  path: {
+                                    type: 'string',
+                                    title: '目标位置',
+                                    enum: dataSource,
+                                    'x-decorator': 'FormItem',
+                                    'x-component': 'TreeSelect',
+                                  },
+                                  method: {
+                                    type: 'string',
+                                    default: 'insertAfter',
+                                    enum: [
+                                      { label: '之后', value: 'insertAfter' },
+                                      { label: '之前', value: 'insertBefore' },
+                                    ],
+                                    'x-decorator': 'FormItem',
+                                    'x-component': 'Radio.Group',
+                                  },
+                                },
+                              }}
+                            />
+                          </FormLayout>
+                        );
+                      },
+                    ).open({
+                      effects(form) {
+                        onFieldChange('path', (field) => {
+                          const target = findPropertyByPath(
+                            schema.root,
+                            // @ts-ignore
+                            field.value,
+                          );
+                          console.log({ field });
+                          field.query('method').take((f) => {
+                            // @ts-ignore
+                            // f.value = 'insertAfter';
+                            // @ts-ignore
+                            f.dataSource =
+                              target['x-component'] === 'Menu.SubMenu'
+                                ? [
+                                    { label: '之后', value: 'insertAfter' },
+                                    { label: '之前', value: 'insertBefore' },
+                                    { label: '组里', value: 'appendChild' },
+                                  ]
+                                : [
+                                    { label: '之后', value: 'insertAfter' },
+                                    { label: '之前', value: 'insertBefore' },
+                                  ];
+                          });
+                        });
+                      },
+                    });
+                    const methods = {
+                      insertAfter,
+                      insertBefore,
+                      appendChild,
+                    };
+                    const data = schema.toJSON();
+                    remove();
+                    const source = methods[values.method](data, values.path);
+                    await updateSchema(source);
+                  }}
+                >
+                  <DragOutlined /> 移动到
+                </AntdMenu.Item>
+                <AntdMenu.Divider />
+                <AntdMenu.SubMenu
+                  key={'insertBefore'}
+                  icon={<ArrowUpOutlined />}
+                  title={'当前菜单项之前'}
+                >
+                  <AntdMenu.Item
+                    key={'insertBefore.Menu.Link'}
+                    icon={<MenuOutlined />}
+                  >
+                    新建菜单项
+                  </AntdMenu.Item>
+                  <AntdMenu.Item
+                    key={'insertBefore.Menu.SubMenu'}
+                    icon={<GroupOutlined />}
+                  >
+                    新建菜单分组
+                  </AntdMenu.Item>
+                  <AntdMenu.Item
+                    key={'insertBefore.Menu.URL'}
+                    icon={<LinkOutlined />}
+                  >
+                    添加自定义链接
+                  </AntdMenu.Item>
+                </AntdMenu.SubMenu>
+                <AntdMenu.SubMenu
+                  key={'insertAfter'}
+                  icon={<ArrowDownOutlined />}
+                  title={'当前菜单项之后'}
+                >
+                  <AntdMenu.Item
+                    key={'insertAfter.Menu.Link'}
+                    icon={<MenuOutlined />}
+                  >
+                    新建菜单项
+                  </AntdMenu.Item>
+                  <AntdMenu.Item
+                    key={'insertAfter.Menu.SubMenu'}
+                    icon={<GroupOutlined />}
+                  >
+                    新建菜单分组
+                  </AntdMenu.Item>
+                  <AntdMenu.Item
+                    key={'insertAfter.Menu.URL'}
+                    icon={<LinkOutlined />}
+                  >
+                    添加自定义链接
+                  </AntdMenu.Item>
+                </AntdMenu.SubMenu>
+                {isSubMenu && (
+                  <AntdMenu.SubMenu
+                    key={'appendChild'}
+                    icon={<ArrowRightOutlined />}
+                    title={'当前菜单分组里'}
+                  >
+                    <AntdMenu.Item
+                      key={'appendChild.Menu.Link'}
+                      icon={<MenuOutlined />}
+                    >
+                      新建菜单项
+                    </AntdMenu.Item>
+                    <AntdMenu.Item
+                      key={'appendChild.Menu.SubMenu'}
+                      icon={<GroupOutlined />}
+                    >
+                      新建菜单分组
+                    </AntdMenu.Item>
+                    <AntdMenu.Item
+                      key={'appendChild.Menu.URL'}
+                      icon={<LinkOutlined />}
+                    >
+                      添加自定义链接
+                    </AntdMenu.Item>
+                  </AntdMenu.SubMenu>
+                )}
+                <AntdMenu.Item
+                  icon={<LockOutlined />}
+                  onClick={async () => {
+                    const loadRoles = async () => {
+                      const resource = Resource.make('roles');
+                      const data = await resource.list();
+                      console.log('loadRoles', data);
+                      return data?.data.map((item) => ({
+                        label: item.title,
+                        value: item.name,
+                      }));
+                    };
+                    const resource = Resource.make({
+                      associatedName: 'ui_schemas',
+                      associatedKey: schema['key'],
+                      resourceName: 'roles',
+                    });
+                    const uiSchemasRoles = await resource.list();
+                    console.log({ uiSchemasRoles });
+                    const values = await FormDialog(`设置权限`, () => {
                       return (
                         <FormLayout layout={'vertical'}>
                           <SchemaField
+                            scope={{ loadRoles }}
                             schema={{
                               type: 'object',
                               properties: {
-                                path: {
-                                  type: 'string',
-                                  title: '目标位置',
-                                  enum: dataSource,
-                                  'x-decorator': 'FormItem',
-                                  'x-component': 'TreeSelect',
-                                },
-                                method: {
-                                  type: 'string',
-                                  default: 'insertAfter',
-                                  enum: [
-                                    { label: '之后', value: 'insertAfter' },
-                                    { label: '之前', value: 'insertBefore' },
+                                roles: {
+                                  type: 'array',
+                                  title: '权限组',
+                                  'x-reactions': [
+                                    '{{useAsyncDataSource(loadRoles)}}',
                                   ],
-                                  'x-decorator': 'FormItem',
-                                  'x-component': 'Radio.Group',
+                                  'x-decorator': 'FormilyFormItem',
+                                  'x-component': 'Select',
+                                  'x-component-props': {
+                                    mode: 'tags',
+                                  },
                                 },
                               },
                             }}
                           />
                         </FormLayout>
                       );
-                    },
-                  ).open({
-                    effects(form) {
-                      onFieldChange('path', (field) => {
-                        const target = findPropertyByPath(
-                          schema.root,
-                          // @ts-ignore
-                          field.value,
-                        );
-                        console.log({ field });
-                        field.query('method').take((f) => {
-                          // @ts-ignore
-                          // f.value = 'insertAfter';
-                          // @ts-ignore
-                          f.dataSource =
-                            target['x-component'] === 'Menu.SubMenu'
-                              ? [
-                                  { label: '之后', value: 'insertAfter' },
-                                  { label: '之前', value: 'insertBefore' },
-                                  { label: '组里', value: 'appendChild' },
-                                ]
-                              : [
-                                  { label: '之后', value: 'insertAfter' },
-                                  { label: '之前', value: 'insertBefore' },
-                                ];
-                        });
-                      });
-                    },
-                  });
-                  const methods = {
-                    insertAfter,
-                    insertBefore,
-                    appendChild,
-                  };
-                  const data = schema.toJSON();
-                  remove();
-                  const source = methods[values.method](data, values.path);
-                  await updateSchema(source);
-                }}
-              >
-                <DragOutlined /> 移动到
-              </AntdMenu.Item>
-              <AntdMenu.Divider />
-              <AntdMenu.SubMenu
-                key={'insertBefore'}
-                icon={<ArrowUpOutlined />}
-                title={'当前菜单项之前'}
-              >
-                <AntdMenu.Item
-                  key={'insertBefore.Menu.Link'}
-                  icon={<MenuOutlined />}
+                    }).open({
+                      initialValues: {
+                        roles: uiSchemasRoles?.data?.map((role) => role.name),
+                      },
+                    });
+                    await Resource.make({
+                      resourceName: 'ui_schemas',
+                      resourceKey: schema['key'],
+                    }).save(values);
+                  }}
                 >
-                  新建菜单项
+                  设置权限
                 </AntdMenu.Item>
+                <AntdMenu.Divider />
                 <AntdMenu.Item
-                  key={'insertBefore.Menu.SubMenu'}
-                  icon={<GroupOutlined />}
+                  key={'delete'}
+                  onClick={() => {
+                    Modal.confirm({
+                      title: '删除菜单',
+                      content: '确认删除此菜单项吗？',
+                      onOk: async () => {
+                        const target = remove();
+                        await removeSchema(target);
+                        ctx.onRemove && ctx.onRemove(target);
+                      },
+                    });
+                  }}
                 >
-                  新建菜单分组
+                  <DeleteOutlined /> 删除
                 </AntdMenu.Item>
-                <AntdMenu.Item
-                  key={'insertBefore.Menu.URL'}
-                  icon={<LinkOutlined />}
-                >
-                  添加自定义链接
-                </AntdMenu.Item>
-              </AntdMenu.SubMenu>
-              <AntdMenu.SubMenu
-                key={'insertAfter'}
-                icon={<ArrowDownOutlined />}
-                title={'当前菜单项之后'}
-              >
-                <AntdMenu.Item
-                  key={'insertAfter.Menu.Link'}
-                  icon={<MenuOutlined />}
-                >
-                  新建菜单项
-                </AntdMenu.Item>
-                <AntdMenu.Item
-                  key={'insertAfter.Menu.SubMenu'}
-                  icon={<GroupOutlined />}
-                >
-                  新建菜单分组
-                </AntdMenu.Item>
-                <AntdMenu.Item
-                  key={'insertAfter.Menu.URL'}
-                  icon={<LinkOutlined />}
-                >
-                  添加自定义链接
-                </AntdMenu.Item>
-              </AntdMenu.SubMenu>
-              {isSubMenu && (
-                <AntdMenu.SubMenu
-                  key={'appendChild'}
-                  icon={<ArrowRightOutlined />}
-                  title={'当前菜单分组里'}
-                >
-                  <AntdMenu.Item
-                    key={'appendChild.Menu.Link'}
-                    icon={<MenuOutlined />}
-                  >
-                    新建菜单项
-                  </AntdMenu.Item>
-                  <AntdMenu.Item
-                    key={'appendChild.Menu.SubMenu'}
-                    icon={<GroupOutlined />}
-                  >
-                    新建菜单分组
-                  </AntdMenu.Item>
-                  <AntdMenu.Item
-                    key={'appendChild.Menu.URL'}
-                    icon={<LinkOutlined />}
-                  >
-                    添加自定义链接
-                  </AntdMenu.Item>
-                </AntdMenu.SubMenu>
-              )}
-              <AntdMenu.Item
-                icon={<LockOutlined />}
-                onClick={async () => {
-                  const loadRoles = async () => {
-                    const resource = Resource.make('roles');
-                    const data = await resource.list();
-                    console.log('loadRoles', data);
-                    return data?.data.map((item) => ({
-                      label: item.title,
-                      value: item.name,
-                    }));
-                  };
-                  const resource = Resource.make({
-                    associatedName: 'ui_schemas',
-                    associatedKey: schema['key'],
-                    resourceName: 'roles',
-                  });
-                  const uiSchemasRoles = await resource.list();
-                  console.log({ uiSchemasRoles });
-                  const values = await FormDialog(`设置权限`, () => {
-                    return (
-                      <FormLayout layout={'vertical'}>
-                        <SchemaField
-                          scope={{ loadRoles }}
-                          schema={{
-                            type: 'object',
-                            properties: {
-                              roles: {
-                                type: 'array',
-                                title: '权限组',
-                                'x-reactions': [
-                                  '{{useAsyncDataSource(loadRoles)}}',
-                                ],
-                                'x-decorator': 'FormilyFormItem',
-                                'x-component': 'Select',
-                                'x-component-props': {
-                                  mode: 'tags',
-                                },
-                              },
-                            },
-                          }}
-                        />
-                      </FormLayout>
-                    );
-                  }).open({
-                    initialValues: {
-                      roles: uiSchemasRoles?.data?.map((role) => role.name),
-                    },
-                  });
-                  await Resource.make({
-                    resourceName: 'ui_schemas',
-                    resourceKey: schema['key'],
-                  }).save(values);
-                }}
-              >
-                设置权限
-              </AntdMenu.Item>
-              <AntdMenu.Divider />
-              <AntdMenu.Item
-                key={'delete'}
-                onClick={() => {
-                  Modal.confirm({
-                    title: '删除菜单',
-                    content: '确认删除此菜单项吗？',
-                    onOk: async () => {
-                      const target = remove();
-                      await removeSchema(target);
-                      ctx.onRemove && ctx.onRemove(target);
-                    },
-                  });
-                }}
-              >
-                <DeleteOutlined /> 删除
-              </AntdMenu.Item>
-            </AntdMenu>
-          }
-        >
-          <MenuOutlined />
-        </Dropdown>
+              </AntdMenu>
+            }
+          >
+            <MenuOutlined />
+          </Dropdown>
+        </Space>
       </div>
     </div>
   );

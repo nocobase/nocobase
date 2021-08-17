@@ -349,7 +349,6 @@ const schema: ISchema = {
               'x-component-props': {
                 className: 'nb-table-operation',
               },
-              'x-designable-bar': 'Table.Operation.DesignableBar',
               properties: {
                 [uid()]: {
                   type: 'void',

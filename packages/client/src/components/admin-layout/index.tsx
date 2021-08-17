@@ -89,7 +89,7 @@ function LayoutWithMenu(props: LayoutWithMenuProps) {
   };
   return (
     <Layout>
-      <Layout.Header style={{ display: 'flex' }}>
+      <Layout.Header className={'site-header'} style={{ display: 'flex' }}>
         <SiteTitle />
         <SchemaRenderer
           schema={schema}
