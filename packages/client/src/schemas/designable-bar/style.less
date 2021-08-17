@@ -9,16 +9,22 @@
   line-height: 16px;
   height: 16px;
   border-bottom-right-radius: 2px;
+  border-radius: 2px;
+  top: 2px;
+  left: 2px;
 }
 
 .designable-bar {
-  border-radius: 1px !important;
-  border: 2px solid @bgcolor !important;
+  border-radius: 2px !important;
+  // border: 2px solid @bgcolor !important;
+  border: 0 !important;
+  background: rgba(241, 139, 98, 0.06) !important;
   .designable-bar-actions {
     padding: 0 !important;
     background: none !important;
     display: flex !important;
     right: 2px !important;
+    top: 2px !important;
     // .ant-space-item {
     //   margin: 0 !important;
     // }
@@ -26,6 +32,7 @@
       gap: 2px !important;
     }
     .anticon {
+      border-radius: 1px;
       width: 16px !important;
       height: 16px !important;
       vertical-align: top;
@@ -68,4 +75,9 @@
 
 .nb-designable-toggle.active {
   background: @bgcolor !important;
+}
+
+.ant-card + .designable-bar {
+  background: none !important;
+  border: 2px solid rgba(241, 139, 98, 0.3) !important;
 }

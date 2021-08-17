@@ -23,7 +23,7 @@ export function useDefaultAction() {
 
 export const request = extend({
   prefix: process.env.API_URL,
-  timeout: 1000,
+  timeout: 30000,
 });
 console.log('process.env.API_URL', process.env.API_URL);
 

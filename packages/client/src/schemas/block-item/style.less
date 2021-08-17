@@ -1,5 +1,6 @@
 .designable-form-item {
   position: relative;
+  &:hover,
   &.active {
     > .designable-bar {
       display: block;
@@ -16,6 +17,7 @@
     bottom: -0;
     border-radius: 2px;
     border: 2px solid #1890ff;
+    &:hover,
     &.active {
       display: block;
     }
@@ -36,5 +38,11 @@
         background-color: #1890ff;
       }
     }
+  }
+  .ant-formily-item + .designable-bar {
+    top: -5px;
+    left: -5px;
+    right: -5px;
+    bottom: -5px;
   }
 }
