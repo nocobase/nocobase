@@ -19,7 +19,6 @@ export const chinaRegion: FieldOptions = {
       'x-component-props': {
         changeOnSelect: true,
         loadData: '{{ ChinaRegion.loadData }}',
-        useDataSource: '{{ ChinaRegion.useDataSource }}',
         labelInValue: true,
         maxLevel: 3,
         fieldNames: {
@@ -28,7 +27,7 @@ export const chinaRegion: FieldOptions = {
           children: 'children',
         },
       },
-      'x-reactions': ['{{useAsyncDataSource(loadChinaRegions)}}'],
+      'x-reactions': ['{{useAsyncDataSource(ChinaRegion.loadDataSource)}}'],
       'x-decorator': 'FormItem',
       'x-designable-bar': 'Cascader.DesignableBar',
     },

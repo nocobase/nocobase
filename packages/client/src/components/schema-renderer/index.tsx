@@ -79,6 +79,10 @@ interface DesignableContextProps {
 
 export const useAsyncDataSource = (service: any) => (field: any) => {
   field.loading = true;
+  const disableAsyncDataSource = field.componentProps.disableAsyncDataSource;
+  if (disableAsyncDataSource) {
+    return;
+  }
   service(field).then(
     action.bound((data: any) => {
       field.dataSource = data;
@@ -87,29 +91,23 @@ export const useAsyncDataSource = (service: any) => (field: any) => {
   );
 };
 
-export const useChinaRegionDataSource = ({ onSuccess }) => {
-  const field = useField<ArrayField>();
+export const loadChinaRegionDataSource = async (field) => {
   const maxLevel = field.componentProps.maxLevel || 3;
   const resource = Resource.make('china_regions');
-  console.log('useChinaRegionDataSource');
-  useRequest(
-    () =>
-      resource.list({
-        perPage: -1,
-        filter: {
-          level: 1,
-        },
-      }),
-    {
-      formatResult: (data) =>
-        data?.data?.map((item) => {
-          if (maxLevel !== 1) {
-            item.isLeaf = false;
-          }
-          return item;
-        }),
-      onSuccess,
+  const { data } = await resource.list({
+    perPage: -1,
+    filter: {
+      level: 1,
     },
+  });
+  console.log('loadChinaRegions', data, field.value);
+  return (
+    data?.map((item) => {
+      if (maxLevel !== 1) {
+        item.isLeaf = false;
+      }
+      return item;
+    }) || []
   );
 };
 
@@ -147,7 +145,7 @@ export const SchemaField = createSchemaField({
     useAsyncDataSource,
     ChinaRegion: {
       loadData: loadChinaRegionData,
-      useDataSource: useChinaRegionDataSource,
+      loadDataSource: loadChinaRegionDataSource,
     },
   },
   components: {

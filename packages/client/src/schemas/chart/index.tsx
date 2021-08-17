@@ -73,7 +73,7 @@ Chart.DesignableBar = observer((props) => {
                     setVisible(false);
                   }}
                 >
-                  修改文本段
+                  修改内容
                 </Menu.Item>
                 <Menu.Divider />
                 <Menu.Item
@@ -87,7 +87,7 @@ Chart.DesignableBar = observer((props) => {
                     }
                   }}
                 >
-                  删除当前文本
+                  移除
                 </Menu.Item>
               </Menu>
             }

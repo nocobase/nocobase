@@ -93,7 +93,7 @@ Input.DesignableBar = observer((props) => {
                     // }
                   }}
                 >
-                  删除当前区块
+                  移除
                 </Menu.Item>
               </Menu>
             }
