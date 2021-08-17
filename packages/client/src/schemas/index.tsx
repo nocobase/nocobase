@@ -2,6 +2,8 @@ import React from 'react';
 import { ISchema as IFormilySchema, observer, Schema, useField } from '@formily/react';
 import { extend } from 'umi-request';
 
+import './designable-bar/style.less';
+
 export type FormilyISchema = IFormilySchema
 
 export interface ISchema extends IFormilySchema {

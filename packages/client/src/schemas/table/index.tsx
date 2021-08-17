@@ -1953,10 +1953,11 @@ Table.DesignableBar = observer((props) => {
   const defaultPageSize =
     field?.componentProps?.pagination?.defaultPageSize || 10;
   const collectionName = field?.componentProps?.collectionName;
-  const { fields } = useCollection({ collectionName });
+  const { collection, fields } = useCollection({ collectionName });
   console.log({ collectionName });
   return (
     <div className={cls('designable-bar', { active: visible })}>
+      <div className={'designable-info'}>{collection?.title || collection?.name}</div>
       <span
         onClick={(e) => {
           e.stopPropagation();

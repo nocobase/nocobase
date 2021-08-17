@@ -12,12 +12,7 @@ import {
   useForm,
   RecursionField,
 } from '@formily/react';
-import {
-  useSchemaPath,
-  SchemaField,
-  useDesignable,
-  removeSchema,
-} from '../';
+import { useSchemaPath, SchemaField, useDesignable, removeSchema } from '../';
 import get from 'lodash/get';
 import { Button, Dropdown, Menu, Space } from 'antd';
 import { MenuOutlined, DragOutlined } from '@ant-design/icons';
@@ -31,17 +26,18 @@ import constate from 'constate';
 import { useEffect } from 'react';
 import { uid } from '@formily/shared';
 import { getSchemaPath } from '../../components/schema-renderer';
+import { useCollection } from '../../constate';
 
 export const DesignableBar = observer((props) => {
   const field = useField();
   const { designable, schema, refresh, deepRemove } = useDesignable();
   const [visible, setVisible] = useState(false);
   const { dragRef } = useContext(DraggableBlockContext);
-  if (!designable) {
-    return null;
-  }
+  const collectionName = field.componentProps.collectionName;
+  const { collection } = useCollection({ collectionName });
   return (
     <div className={cls('designable-bar', { active: visible })}>
+      <div className={'designable-info'}>{collection?.title || collection?.name}</div>
       <span
         onClick={(e) => {
           e.stopPropagation();
