@@ -34,8 +34,7 @@ const schema = {
       'x-component': 'Cascader',
       'x-component-props': {
         changeOnSelect: true,
-        loadData: '{{ loadData }}',
-        useDataSource: '{{ useDataSource }}',
+        loadData: '{{ loadChinaRegionData }}',
         labelInValue: true,
         maxLevel: 3,
         fieldNames: {
@@ -46,7 +45,7 @@ const schema = {
         // changeOnSelect: true,
       },
       'x-reactions': [
-        // '{{useAsyncDataSource(loadOptions)}}',
+        '{{useAsyncDataSource(loadChinaRegions)}}',
         {
           target: 'read',
           fulfill: {
@@ -67,8 +66,7 @@ const schema = {
       'x-component': 'Cascader',
       'x-component-props': {
         changeOnSelect: true,
-        loadData: '{{ loadData }}',
-        useDataSource: '{{ useDataSource }}',
+        loadData: '{{ loadChinaRegionData }}',
         labelInValue: true,
         fieldNames: {
           label: 'name',
@@ -80,32 +78,30 @@ const schema = {
   },
 };
 
-const useDataSource = ({ onSuccess }) => {
-  const field = useField<ArrayField>();
+// disableAsyncDataSource
+const loadChinaRegions = async (field) => {
   const maxLevel = field.componentProps.maxLevel || 3;
   const resource = Resource.make('china_regions');
-  useRequest(
-    () =>
-      resource.list({
-        perPage: -1,
-        filter: {
-          level: 1,
-        },
-      }),
-    {
-      formatResult: (data) =>
-        data?.data?.map((item) => {
-          if (maxLevel !== 1) {
-            item.isLeaf = false;
-          }
-          return item;
-        }),
-      onSuccess,
+  const { data } = await resource.list({
+    perPage: -1,
+    filter: {
+      level: 1,
     },
+  });
+  return (
+    data?.map((item) => {
+      if (maxLevel !== 1) {
+        item.isLeaf = false;
+      }
+      return item;
+    }) || []
   );
 };
 
-const loadData = (selectedOptions: CascaderOptionType[], field: ArrayField) => {
+const loadChinaRegionData = (
+  selectedOptions: CascaderOptionType[],
+  field: ArrayField,
+) => {
   const maxLevel = field.componentProps.maxLevel || 3;
   const targetOption = selectedOptions[selectedOptions.length - 1];
   targetOption.loading = true;
@@ -132,6 +128,6 @@ const loadData = (selectedOptions: CascaderOptionType[], field: ArrayField) => {
 
 export default () => {
   return (
-    <SchemaRenderer debug scope={{ useDataSource, loadData }} schema={schema} />
+    <SchemaRenderer debug scope={{ loadChinaRegions, loadChinaRegionData }} schema={schema} />
   );
 };

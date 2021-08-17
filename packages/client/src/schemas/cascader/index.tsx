@@ -28,11 +28,10 @@ export const Cascader = connect(
       onChange,
       loadData,
       labelInValue,
-      useDataSource,
       fieldNames = defaultFieldNames,
       ...others
     } = props;
-    console.log('Cascader', props)
+    console.log('Cascader', props);
     // 兼容值为 object[] 的情况
     const toValue = () => {
       return toArr(value).map((item) => {
@@ -46,6 +45,7 @@ export const Cascader = connect(
       const values = toArr(value);
       if (values.length !== labels.length) {
         labels = toValue();
+        selectedOptions = values;
       }
       if (selectedOptions.length === 0) {
         selectedOptions = values;
@@ -73,14 +73,6 @@ export const Cascader = connect(
         );
       });
     };
-    // 这里没有用 x-reactions 是因为 readyPretty=true 时不需要
-    if (typeof useDataSource === 'function') {
-      useDataSource({
-        onSuccess: (data) => {
-          field.dataSource = data;
-        },
-      });
-    }
     if (loadData) {
       Object.assign(others, {
         loadData: (selectedOptions: CascaderOptionType[]) => {
