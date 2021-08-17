@@ -37,40 +37,40 @@ const DraggableBlock = (props) => {
   return (
     <DraggableBlockContext.Provider value={{ dragRef }}>
       <div
-        onMouseEnter={(e) => {
-          setActive(true);
-          // console.log('e.onMouseEnter', new Date().toString());
-        }}
-        onMouseMove={(event) => {
-          let dropElement = document.elementFromPoint(
-            event.clientX,
-            event.clientY,
-          );
-          const dropIds = [];
-          while (dropElement) {
-            if (!dropElement.getAttribute) {
-              dropElement = dropElement.parentNode as HTMLElement;
-              continue;
-            }
-            const dropId = dropElement.getAttribute('data-drop-id');
-            if (dropId) {
-              dropIds.push(dropId);
-            }
-            // if (dropId && dropId !== schema.name) {
-            //   setActive(false);
-            //   break;
-            // }
-            dropElement = dropElement.parentNode as HTMLElement;
-          }
-          if (dropIds.length > 0) {
-            setActive(dropIds[0] === schema.name);
-          }
-          // console.log('e.onMouseMove', dropIds, schema.name);
-        }}
-        onMouseLeave={(e) => {
-          setActive(false);
-          // console.log('e.onMouseLeave', new Date().toString());
-        }}
+        // onMouseEnter={(e) => {
+        //   setActive(true);
+        //   // console.log('e.onMouseEnter', new Date().toString());
+        // }}
+        // onMouseMove={(event) => {
+        //   let dropElement = document.elementFromPoint(
+        //     event.clientX,
+        //     event.clientY,
+        //   );
+        //   const dropIds = [];
+        //   while (dropElement) {
+        //     if (!dropElement.getAttribute) {
+        //       dropElement = dropElement.parentNode as HTMLElement;
+        //       continue;
+        //     }
+        //     const dropId = dropElement.getAttribute('data-drop-id');
+        //     if (dropId) {
+        //       dropIds.push(dropId);
+        //     }
+        //     // if (dropId && dropId !== schema.name) {
+        //     //   setActive(false);
+        //     //   break;
+        //     // }
+        //     dropElement = dropElement.parentNode as HTMLElement;
+        //   }
+        //   if (dropIds.length > 0) {
+        //     setActive(dropIds[0] === schema.name);
+        //   }
+        //   // console.log('e.onMouseMove', dropIds, schema.name);
+        // }}
+        // onMouseLeave={(e) => {
+        //   setActive(false);
+        //   // console.log('e.onMouseLeave', new Date().toString());
+        // }}
         ref={mergeRefs([previewRef, dropRef])}
         className={cls('nb-grid-block', 'designable-form-item', {
           'top-half': onTopHalf,
