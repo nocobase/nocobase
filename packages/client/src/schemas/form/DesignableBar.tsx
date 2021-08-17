@@ -26,14 +26,16 @@ import constate from 'constate';
 import { useEffect } from 'react';
 import { uid } from '@formily/shared';
 import { getSchemaPath } from '../../components/schema-renderer';
-import { useCollection } from '../../constate';
+import { useCollection, useCollectionContext } from '../../constate';
+import { useTable } from '../table';
 
 export const DesignableBar = observer((props) => {
   const field = useField();
   const { designable, schema, refresh, deepRemove } = useDesignable();
   const [visible, setVisible] = useState(false);
   const { dragRef } = useContext(DraggableBlockContext);
-  const collectionName = field.componentProps.collectionName;
+  const { props: tableProps } = useTable();
+  const collectionName = field.componentProps?.collectionName || tableProps?.collectionName;
   const { collection } = useCollection({ collectionName });
   return (
     <div className={cls('designable-bar', { active: visible })}>
@@ -44,7 +46,7 @@ export const DesignableBar = observer((props) => {
         }}
         className={cls('designable-bar-actions', { active: visible })}
       >
-        <Space size={'small'}>
+        <Space size={2}>
           <AddNew.CardItem defaultAction={'insertAfter'} ghost />
           {dragRef && <DragOutlined ref={dragRef} />}
           <Dropdown

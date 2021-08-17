@@ -81,3 +81,25 @@
   background: none !important;
   border: 2px solid rgba(241, 139, 98, 0.3) !important;
 }
+
+.action-bar-align-right,
+.action-bar-align-left {
+  position: relative;
+  &.isOver {
+    background-color: transparent !important;
+    .ant-space {
+      position: relative;
+      z-index: 2;
+    }
+    &::after {
+      content: '';
+      background-color: rgba(241, 139, 98, 0.1) !important;
+      position: absolute;
+      top: -3px;
+      left: -3px;
+      right: -3px;
+      bottom: -3px;
+      z-index: 1;
+    }
+  }
+}
