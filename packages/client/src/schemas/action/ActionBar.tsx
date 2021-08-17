@@ -214,7 +214,7 @@ function AddActionButton() {
         </Menu>
       }
     >
-      <Button style={{ marginLeft: 8 }} type={'dashed'} icon={<PlusOutlined />}>
+      <Button className={'designable-btn designable-btn-dash'} style={{ marginLeft: 8 }} type={'dashed'} icon={<PlusOutlined />}>
         配置操作
       </Button>
     </Dropdown>

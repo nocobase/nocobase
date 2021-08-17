@@ -935,7 +935,7 @@ AddNew.CardItem = observer((props: any) => {
       {ghost ? (
         <PlusOutlined />
       ) : (
-        <Button type={'dashed'} icon={<PlusOutlined />}>
+        <Button type={'dashed'} className={'designable-btn designable-btn-dash'} icon={<PlusOutlined />}>
           新增区块
         </Button>
       )}
@@ -1122,7 +1122,7 @@ AddNew.FormItem = observer((props: any) => {
       {ghost ? (
         <PlusOutlined />
       ) : (
-        <Button type={'dashed'} icon={<SettingOutlined />}>
+        <Button type={'dashed'} className={'designable-btn designable-btn-dash'} icon={<SettingOutlined />}>
           配置字段
         </Button>
       )}
@@ -1326,7 +1326,7 @@ AddNew.PaneItem = observer((props: any) => {
       {ghost ? (
         <PlusOutlined />
       ) : (
-        <Button block type={'dashed'} icon={<PlusOutlined />}>
+        <Button block className={'designable-btn designable-btn-dash'} type={'dashed'} icon={<PlusOutlined />}>
           新增区块
         </Button>
       )}

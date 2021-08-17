@@ -1,8 +1,71 @@
+@bgcolor: #F18B62;
+
 .designable-info {
   position: absolute;
   font-size: 12px;
-  background: #1890ff;
+  background: @bgcolor;
   color: #fff;
   padding: 0 5px;
+  line-height: 16px;
+  height: 16px;
   border-bottom-right-radius: 2px;
+}
+
+.designable-bar {
+  border-radius: 1px !important;
+  border: 2px solid @bgcolor !important;
+  .designable-bar-actions {
+    padding: 0 !important;
+    background: none !important;
+    display: flex !important;
+    right: 2px !important;
+    // .ant-space-item {
+    //   margin: 0 !important;
+    // }
+    .ant-space {
+      gap: 2px !important;
+    }
+    .anticon {
+      width: 16px !important;
+      height: 16px !important;
+      vertical-align: top;
+      line-height: 16px !important;
+    //   font-size: 10px;
+    //   display: inline-flex;
+      background-color: @bgcolor !important;
+      border-bottom-left-radius: 1px;
+      border-bottom-right-radius: 1px;
+    //   margin-left: 0 !important;
+    //   margin-right: 2px !important;
+    }
+  }
+}
+
+.designable-btn-dash {
+  border-color: @bgcolor !important;
+  color: @bgcolor !important;
+}
+
+.nb-add-new-menu-item.menu-mode-horizontal.designable {
+  color: @bgcolor !important;
+  border: 1px dashed !important;
+  height: 32px !important;
+  // &:hover {
+  //   color: #fff !important;
+  //   background: @bgcolor !important;
+  // }
+  // &:active {
+  //   color: #fff !important;
+  //   background: @bgcolor !important;
+  // }
+}
+
+.ant-menu-item-group.nb-menu-add-new {
+  .menu-mode-horizontal {
+    margin-left: 8px;
+  }
+}
+
+.nb-designable-toggle.active {
+  background: @bgcolor !important;
 }

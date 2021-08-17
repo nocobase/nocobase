@@ -339,101 +339,107 @@ Action.DesignableBar = (props: any) => {
         }}
         className={cls('designable-bar-actions', { active: visible })}
       >
-        <DragHandle />
-        <Dropdown
-          trigger={['click']}
-          visible={visible}
-          onVisibleChange={(visible) => {
-            setVisible(visible);
-          }}
-          overlay={
-            <Menu>
-              <Menu.Item
-                onClick={async (e) => {
-                  const values = await FormDialog('修改名称和图标', () => {
-                    return (
-                      <FormLayout layout={'vertical'}>
-                        <SchemaField
-                          schema={{
-                            type: 'object',
-                            properties: {
-                              title: {
-                                type: 'string',
-                                title: '按钮名称',
-                                required: true,
-                                'x-decorator': 'FormItem',
-                                'x-component': 'Input',
+        <Space size={2}>
+          <DragHandle />
+          <Dropdown
+            trigger={['click']}
+            visible={visible}
+            onVisibleChange={(visible) => {
+              setVisible(visible);
+            }}
+            overlay={
+              <Menu>
+                <Menu.Item
+                  onClick={async (e) => {
+                    const values = await FormDialog('修改名称和图标', () => {
+                      return (
+                        <FormLayout layout={'vertical'}>
+                          <SchemaField
+                            schema={{
+                              type: 'object',
+                              properties: {
+                                title: {
+                                  type: 'string',
+                                  title: '按钮名称',
+                                  required: true,
+                                  'x-decorator': 'FormItem',
+                                  'x-component': 'Input',
+                                },
+                                icon: {
+                                  type: 'string',
+                                  title: '按钮图标',
+                                  'x-decorator': 'FormItem',
+                                  'x-component': 'IconPicker',
+                                },
                               },
-                              icon: {
-                                type: 'string',
-                                title: '按钮图标',
-                                'x-decorator': 'FormItem',
-                                'x-component': 'IconPicker',
-                              },
-                            },
-                          }}
-                        />
-                      </FormLayout>
-                    );
-                  }).open({
-                    initialValues: {
-                      title: schema['title'],
-                      icon: schema['x-component-props']?.['icon'],
-                    },
-                  });
-                  schema['title'] = values.title;
-                  schema['x-component-props']['icon'] = values.icon;
-                  field.componentProps.icon = values.icon;
-                  field.title = values.title;
-                  updateSchema(schema);
-                  refresh();
-                }}
-              >
-                修改名称和图标
-              </Menu.Item>
-              {isPopup && (
-                <Menu.Item>
-                  在{' '}
-                  <Select
-                    bordered={false}
-                    size={'small'}
-                    defaultValue={'Action.Modal'}
-                    onChange={(value) => {
-                      const s = Object.values(schema.properties).shift();
-                      s['x-component'] = value;
-                      refresh();
-                      updateSchema(s);
-                    }}
-                  >
-                    <Select.Option value={'Action.Modal'}>对话框</Select.Option>
-                    <Select.Option value={'Action.Drawer'}>抽屉</Select.Option>
-                    <Select.Option value={'Action.Window'}>
-                      浏览器窗口
-                    </Select.Option>
-                  </Select>{' '}
-                  内打开
+                            }}
+                          />
+                        </FormLayout>
+                      );
+                    }).open({
+                      initialValues: {
+                        title: schema['title'],
+                        icon: schema['x-component-props']?.['icon'],
+                      },
+                    });
+                    schema['title'] = values.title;
+                    schema['x-component-props']['icon'] = values.icon;
+                    field.componentProps.icon = values.icon;
+                    field.title = values.title;
+                    updateSchema(schema);
+                    refresh();
+                  }}
+                >
+                  修改名称和图标
                 </Menu.Item>
-              )}
-              <Menu.Divider />
-              <Menu.Item
-                onClick={async () => {
-                  const displayName =
-                    schema?.['x-decorator-props']?.['displayName'];
-                  const data = remove();
-                  await removeSchema(data);
-                  if (displayName) {
-                    displayed.remove(displayName);
-                  }
-                  setVisible(false);
-                }}
-              >
-                移除
-              </Menu.Item>
-            </Menu>
-          }
-        >
-          <MenuOutlined />
-        </Dropdown>
+                {isPopup && (
+                  <Menu.Item>
+                    在{' '}
+                    <Select
+                      bordered={false}
+                      size={'small'}
+                      defaultValue={'Action.Modal'}
+                      onChange={(value) => {
+                        const s = Object.values(schema.properties).shift();
+                        s['x-component'] = value;
+                        refresh();
+                        updateSchema(s);
+                      }}
+                    >
+                      <Select.Option value={'Action.Modal'}>
+                        对话框
+                      </Select.Option>
+                      <Select.Option value={'Action.Drawer'}>
+                        抽屉
+                      </Select.Option>
+                      <Select.Option value={'Action.Window'}>
+                        浏览器窗口
+                      </Select.Option>
+                    </Select>{' '}
+                    内打开
+                  </Menu.Item>
+                )}
+                <Menu.Divider />
+                <Menu.Item
+                  onClick={async () => {
+                    const displayName =
+                      schema?.['x-decorator-props']?.['displayName'];
+                    const data = remove();
+                    await removeSchema(data);
+                    if (displayName) {
+                      displayed.remove(displayName);
+                    }
+                    setVisible(false);
+                  }}
+                >
+                  移除
+                </Menu.Item>
+              </Menu>
+            }
+          >
+            <MenuOutlined />
+          </Dropdown>
+        </Space>
       </span>
     </div>
   );
