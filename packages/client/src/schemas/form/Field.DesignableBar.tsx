@@ -148,7 +148,8 @@ export const FieldDesignableBar = observer((props) => {
                       },
                     });
                     const description = values.description || null;
-                    realField.description = description || collectionField?.uiSchema?.description;
+                    realField.description =
+                      description || collectionField?.uiSchema?.description;
                     schema['description'] = description;
                     await updateSchema({
                       key: schema['key'],

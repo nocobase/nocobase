@@ -1612,9 +1612,11 @@ Table.Operation.Cell = observer((props: any) => {
 });
 
 Table.Operation.DesignableBar = (props) => {
-  const { schema, remove, refresh, appendChild } = useDesignable(props.path);
+  const { designable, schema, remove, refresh, appendChild } = useDesignable(
+    props.path,
+  );
   const [visible, setVisible] = useState(false);
-  if (!schema?.parent?.parent['x-designable-bar']) {
+  if (!designable || !schema?.parent?.parent['x-designable-bar']) {
     return null;
   }
   console.log('Table.Operation.DesignableBar', schema?.parent?.parent);

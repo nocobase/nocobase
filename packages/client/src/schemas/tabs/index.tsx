@@ -1,6 +1,6 @@
 import { observer, connect, useField, RecursionField } from '@formily/react';
 import React from 'react';
-import { Button, Tabs as AntdTabs, Dropdown, Menu, Switch } from 'antd';
+import { Button, Tabs as AntdTabs, Dropdown, Menu, Switch, Space } from 'antd';
 import {
   findPropertyByPath,
   getSchemaPath,
@@ -104,7 +104,8 @@ export const Tabs: any = observer((props: any) => {
           {...others}
           className={cls({ singleton })}
           tabBarExtraContent={
-            designable && schema['x-designable-bar'] && (
+            designable &&
+            schema['x-designable-bar'] && (
               <Button
                 type={'dashed'}
                 icon={<PlusOutlined />}
@@ -218,36 +219,38 @@ Tabs.DesignableBar = () => {
         }}
         className={cls('designable-bar-actions', { active: visible })}
       >
-        <Dropdown
-          trigger={['click']}
-          visible={visible}
-          placement={'bottomRight'}
-          onVisibleChange={(visible) => {
-            setVisible(visible);
-          }}
-          overlay={
-            <Menu>
-              <Menu.Item
-                onClick={async () => {
-                  const singleton = !field.componentProps.singleton;
-                  schema['x-component-props'] =
-                    schema['x-component-props'] || {};
-                  schema['x-component-props'].singleton = singleton;
-                  field.componentProps.singleton = singleton;
-                  updateSchema(schema);
-                }}
-              >
-                禁用标签页 <span style={{ marginRight: 24 }}></span>{' '}
-                <Switch
-                  size={'small'}
-                  checked={!!field.componentProps.singleton}
-                />
-              </Menu.Item>
-            </Menu>
-          }
-        >
-          <MenuOutlined />
-        </Dropdown>
+        <Space>
+          <Dropdown
+            trigger={['click']}
+            visible={visible}
+            placement={'bottomRight'}
+            onVisibleChange={(visible) => {
+              setVisible(visible);
+            }}
+            overlay={
+              <Menu>
+                <Menu.Item
+                  onClick={async () => {
+                    const singleton = !field.componentProps.singleton;
+                    schema['x-component-props'] =
+                      schema['x-component-props'] || {};
+                    schema['x-component-props'].singleton = singleton;
+                    field.componentProps.singleton = singleton;
+                    updateSchema(schema);
+                  }}
+                >
+                  禁用标签页 <span style={{ marginRight: 24 }}></span>{' '}
+                  <Switch
+                    size={'small'}
+                    checked={!!field.componentProps.singleton}
+                  />
+                </Menu.Item>
+              </Menu>
+            }
+          >
+            <MenuOutlined />
+          </Dropdown>
+        </Space>
       </span>
     </div>
   );
@@ -265,74 +268,76 @@ Tabs.TabPane.DesignableBar = () => {
         }}
         className={cls('designable-bar-actions', { active: visible })}
       >
-        <DragHandle />{' '}
-        <Dropdown
-          trigger={['click']}
-          visible={visible}
-          onVisibleChange={(visible) => {
-            setVisible(visible);
-          }}
-          overlay={
-            <Menu>
-              <Menu.Item
-                onClick={async () => {
-                  const values = await FormDialog('修改名称和图标', () => {
-                    return (
-                      <FormLayout layout={'vertical'}>
-                        <SchemaField
-                          schema={{
-                            type: 'object',
-                            properties: {
-                              title: {
-                                type: 'string',
-                                title: '标签名称',
-                                required: true,
-                                'x-decorator': 'FormItem',
-                                'x-component': 'Input',
+        <Space>
+          <DragHandle />{' '}
+          <Dropdown
+            trigger={['click']}
+            visible={visible}
+            onVisibleChange={(visible) => {
+              setVisible(visible);
+            }}
+            overlay={
+              <Menu>
+                <Menu.Item
+                  onClick={async () => {
+                    const values = await FormDialog('修改名称和图标', () => {
+                      return (
+                        <FormLayout layout={'vertical'}>
+                          <SchemaField
+                            schema={{
+                              type: 'object',
+                              properties: {
+                                title: {
+                                  type: 'string',
+                                  title: '标签名称',
+                                  required: true,
+                                  'x-decorator': 'FormItem',
+                                  'x-component': 'Input',
+                                },
+                                icon: {
+                                  type: 'string',
+                                  title: '标签图标',
+                                  'x-decorator': 'FormItem',
+                                  'x-component': 'IconPicker',
+                                },
                               },
-                              icon: {
-                                type: 'string',
-                                title: '标签图标',
-                                'x-decorator': 'FormItem',
-                                'x-component': 'IconPicker',
-                              },
-                            },
-                          }}
-                        />
-                      </FormLayout>
-                    );
-                  }).open({
-                    initialValues: {
-                      title: schema['title'],
-                      icon: schema['x-component-props']?.['icon'],
-                    },
-                  });
-                  field.componentProps.icon = values.icon;
-                  schema.title = values.title;
-                  schema['x-component-props'] =
-                    schema['x-component-props'] || {};
-                  schema['x-component-props']['icon'] = values.icon;
-                  refresh();
-                  updateSchema(schema);
-                }}
-              >
-                修改名称和图标
-              </Menu.Item>
-              <Menu.Divider />
-              <Menu.Item
-                onClick={async () => {
-                  const data = remove();
-                  await removeSchema(data);
-                  setVisible(false);
-                }}
-              >
-                移除
-              </Menu.Item>
-            </Menu>
-          }
-        >
-          <MenuOutlined />
-        </Dropdown>
+                            }}
+                          />
+                        </FormLayout>
+                      );
+                    }).open({
+                      initialValues: {
+                        title: schema['title'],
+                        icon: schema['x-component-props']?.['icon'],
+                      },
+                    });
+                    field.componentProps.icon = values.icon;
+                    schema.title = values.title;
+                    schema['x-component-props'] =
+                      schema['x-component-props'] || {};
+                    schema['x-component-props']['icon'] = values.icon;
+                    refresh();
+                    updateSchema(schema);
+                  }}
+                >
+                  修改名称和图标
+                </Menu.Item>
+                <Menu.Divider />
+                <Menu.Item
+                  onClick={async () => {
+                    const data = remove();
+                    await removeSchema(data);
+                    setVisible(false);
+                  }}
+                >
+                  移除
+                </Menu.Item>
+              </Menu>
+            }
+          >
+            <MenuOutlined />
+          </Dropdown>
+        </Space>
       </span>
     </div>
   );
