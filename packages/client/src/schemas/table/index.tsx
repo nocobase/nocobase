@@ -374,6 +374,12 @@ const useTableColumns = () => {
 
   const columnSchemas = schema.reduceProperties((columns, current) => {
     if (isColumn(current)) {
+      if (current['x-hidden']) {
+        return columns;
+      }
+      if (current['x-display'] && current['x-display'] !== 'visible') {
+        return columns;
+      }
       return [...columns, current];
     }
     return [...columns];
@@ -1409,6 +1415,7 @@ Table.Filter.DesignableBar = () => {
                 <Menu.Divider />
                 <Menu.Item
                   onClick={async (e) => {
+                    setVisible(false);
                     const values = await FormDialog('修改名称和图标', () => {
                       return (
                         <FormLayout layout={'vertical'}>
@@ -1531,6 +1538,7 @@ Table.ExportActionDesignableBar = () => {
                 <Menu.Divider />
                 <Menu.Item
                   onClick={async (e) => {
+                    setVisible(false);
                     const values = await FormDialog('修改名称和图标', () => {
                       return (
                         <FormLayout layout={'vertical'}>
@@ -1721,6 +1729,7 @@ Table.Action.DesignableBar = () => {
               <Menu>
                 <Menu.Item
                   onClick={async (e) => {
+                    setVisible(false);
                     const values = await FormDialog('修改名称和图标', () => {
                       return (
                         <FormLayout layout={'vertical'}>
@@ -1901,6 +1910,7 @@ Table.Column.DesignableBar = () => {
               <Menu>
                 <Menu.Item
                   onClick={async (e) => {
+                    setVisible(false);
                     const values = await FormDialog('修改列标题', () => {
                       return (
                         <FormLayout layout={'vertical'}>
@@ -1940,7 +1950,6 @@ Table.Column.DesignableBar = () => {
                       key: schema['key'],
                       title: title,
                     });
-                    setVisible(false);
                   }}
                 >
                   修改列标题
@@ -1948,14 +1957,20 @@ Table.Column.DesignableBar = () => {
                 <Menu.Divider />
                 <Menu.Item
                   onClick={async () => {
-                    const s = remove();
                     const fieldName =
                       schema['x-component-props']?.['fieldName'];
                     displayed.remove(fieldName);
-                    await removeSchema(s);
+                    schema['x-hidden'] = true;
+                    refresh();
+                    await updateSchema({
+                      key: schema['key'],
+                      ['x-hidden']: true,
+                    });
+                    // const s = remove();
+                    // await removeSchema(s);
                   }}
                 >
-                  移除
+                  隐藏
                 </Menu.Item>
               </Menu>
             }

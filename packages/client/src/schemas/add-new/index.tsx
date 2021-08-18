@@ -347,6 +347,123 @@ function generateCardItemSchema(component) {
         },
       },
     },
+    Kanban: {
+      type: 'array',
+      name: 'kanban1',
+      'x-decorator': 'CardItem',
+      'x-decorator-props': {
+        style: {
+          background: 'none',
+        },
+        bodyStyle: {
+          padding: 0,
+        },
+      },
+      'x-designable-bar': 'Kanban.DesignableBar',
+      'x-component': 'Kanban',
+      default: [
+        {
+          id: '1',
+          type: 'A',
+          title: 'A1',
+        },
+        {
+          id: '2',
+          type: 'A',
+          title: 'A2',
+        },
+        {
+          id: '3',
+          type: 'A',
+          title: 'A3',
+        },
+        {
+          id: '4',
+          type: 'B',
+          title: 'B4',
+        },
+        {
+          id: '5',
+          type: 'B',
+          title: 'B5',
+        },
+        {
+          id: '6',
+          type: 'B',
+          title: 'B6',
+        },
+        {
+          id: '7',
+          type: 'C',
+          title: 'C7',
+        },
+        {
+          id: '8',
+          type: 'C',
+          title: 'C8',
+        },
+        {
+          id: '9',
+          type: 'C',
+          title: 'C9',
+        },
+      ],
+      properties: {
+        card1: {
+          type: 'void',
+          'x-component': 'Kanban.Card',
+          properties: {
+            item1: {
+              type: 'void',
+              'x-component': 'Kanban.Item',
+              properties: {
+                title: {
+                  type: 'string',
+                  // title: '标题',
+                  'x-read-pretty': true,
+                  'x-decorator': 'FormItem',
+                  'x-component': 'Input',
+                },
+              },
+            },
+          },
+        },
+        view1: {
+          type: 'void',
+          'x-component': 'Kanban.Card.View',
+          properties: {
+            item1: {
+              type: 'void',
+              'x-component': 'Kanban.Item',
+              properties: {
+                title: {
+                  type: 'string',
+                  title: '标题',
+                  'x-read-pretty': true,
+                  'x-decorator': 'FormItem',
+                  'x-component': 'Input',
+                },
+              },
+            },
+          },
+        },
+      },
+    },
+    Calendar: {
+      type: 'array',
+      name: 'calendar1',
+      'x-component': 'Calendar',
+      'x-designable-bar': 'Calendar.DesignableBar',
+      'x-decorator': 'CardItem',
+      default: [],
+      properties: {
+        event: {
+          type: 'void',
+          'x-component': 'Calendar.Event',
+          properties: {},
+        },
+      },
+    },
     'Chart.Column': {
       type: 'void',
       'x-decorator': 'CardItem',
@@ -733,6 +850,12 @@ AddNew.CardItem = observer((props: any) => {
       overlay={
         <Menu
           onClick={async (info) => {
+            if (info.key.startsWith('Calendar.')) {
+              return;
+            }
+            if (info.key.startsWith('Kanban.')) {
+              return;
+            }
             let data: ISchema;
             let collectionName = null;
             let isNew = false;
@@ -801,22 +924,10 @@ AddNew.CardItem = observer((props: any) => {
             {[
               { key: 'Table', title: '表格', icon: 'TableOutlined' },
               { key: 'Form', title: '表单', icon: 'FormOutlined' },
-              {
-                key: 'Calendar',
-                title: '日历',
-                icon: 'CalendarOutlined',
-                disabled: true,
-              },
-              {
-                key: 'Kanban',
-                title: '看板',
-                icon: 'CreditCardOutlined',
-                disabled: true,
-              },
             ].map((view) => (
               <Menu.SubMenu
                 icon={<IconPicker type={view.icon} />}
-                disabled={view.disabled}
+                // disabled={view.disabled}
                 key={view.key}
                 title={view.title}
               >
@@ -832,6 +943,220 @@ AddNew.CardItem = observer((props: any) => {
                     >
                       {item.title}
                     </Menu.Item>
+                  ))}
+                </Menu.ItemGroup>
+                <Menu.Divider></Menu.Divider>
+                <Menu.Item icon={<PlusOutlined />} key={`addNew${view.key}`}>
+                  新建数据表
+                </Menu.Item>
+              </Menu.SubMenu>
+            ))}
+            {[
+              {
+                key: 'Calendar',
+                title: '日历',
+                icon: 'CalendarOutlined',
+                // disabled: true,
+              },
+            ].map((view) => (
+              <Menu.SubMenu
+                icon={<IconPicker type={view.icon} />}
+                // disabled={view.disabled}
+                key={view.key}
+                title={view.title}
+              >
+                <Menu.ItemGroup
+                  className={'display-fields'}
+                  key={`${view.key}-select`}
+                  title={'所属数据表'}
+                >
+                  {collections?.map((item) => (
+                    <Menu.Item
+                      style={{ minWidth: 150 }}
+                      key={`Calendar.collection.${item.name}.${view.key}`}
+                      onClick={async () => {
+                        const values = await FormDialog(`日历配置`, () => {
+                          return (
+                            <FormLayout layout={'vertical'}>
+                              <SchemaField
+                                schema={{
+                                  type: 'object',
+                                  properties: {
+                                    titleField: {
+                                      type: 'string',
+                                      title: '标题字段',
+                                      required: true,
+                                      'x-decorator': 'FormItem',
+                                      'x-component': 'Select',
+                                      enum: item?.generalFields?.map(
+                                        (field) => {
+                                          return {
+                                            label: field?.uiSchema.title,
+                                            name: field?.name,
+                                          };
+                                        },
+                                      ),
+                                    },
+                                    startTimeField: {
+                                      title: '开始日期字段',
+                                      required: true,
+                                      'x-decorator': 'FormItem',
+                                      'x-component': 'Select',
+                                      enum: item?.generalFields
+                                        ?.filter(
+                                          (field) => field.dataType === 'date',
+                                        )
+                                        ?.map((field) => {
+                                          return {
+                                            label: field?.uiSchema.title,
+                                            name: field?.name,
+                                          };
+                                        }),
+                                    },
+                                    endTimeField: {
+                                      title: '结束日期字段',
+                                      'x-decorator': 'FormItem',
+                                      'x-component': 'Select',
+                                      enum: item?.generalFields
+                                        ?.filter(
+                                          (field) => field.dataType === 'date',
+                                        )
+                                        ?.map((field) => {
+                                          return {
+                                            label: field?.uiSchema.title,
+                                            name: field?.name,
+                                          };
+                                        }),
+                                    },
+                                  },
+                                }}
+                              />
+                            </FormLayout>
+                          );
+                        }).open({});
+                        let data = generateCardItemSchema('Calendar');
+                        const collectionName = item.name;
+                        if (schema['key']) {
+                          data['key'] = uid();
+                        }
+                        if (collectionName) {
+                          data['x-component-props'] =
+                            data['x-component-props'] || {};
+                          data['x-component-props']['resource'] =
+                            collectionName;
+                          data['x-component-props']['collectionName'] =
+                            collectionName;
+                          data['x-component-props']['titleField'] =
+                            values.titleField;
+                          data['x-component-props']['startTimeField'] =
+                            values.startTimeField;
+                          data['x-component-props']['endTimeField'] =
+                            values.endTimeField;
+                        }
+                        if (isGridBlock(schema)) {
+                          path.pop();
+                          path.pop();
+                          data = generateGridBlock(data);
+                        } else if (isGrid(schema)) {
+                          data = generateGridBlock(data);
+                        }
+                        if (data) {
+                          let s;
+                          if (isGrid(schema)) {
+                            s = appendChild(data, [...path]);
+                          } else if (defaultAction === 'insertAfter') {
+                            s = insertAfter(data, [...path]);
+                          } else {
+                            s = insertBefore(data, [...path]);
+                          }
+                          await createSchema(s);
+                        }
+                      }}
+                    >
+                      {item.title}
+                    </Menu.Item>
+                  ))}
+                </Menu.ItemGroup>
+                {/* <Menu.Divider></Menu.Divider> */}
+                {/* <Menu.Item icon={<PlusOutlined />} key={`addNew${view.key}`}>
+                  新建数据表
+                </Menu.Item> */}
+              </Menu.SubMenu>
+            ))}
+            {[
+              {
+                key: 'Kanban',
+                title: '看板',
+                icon: 'CreditCardOutlined',
+                // disabled: true,
+              },
+            ].map((view) => (
+              <Menu.SubMenu
+                icon={<IconPicker type={view.icon} />}
+                // disabled={view.disabled}
+                key={view.key}
+                title={view.title}
+              >
+                <Menu.ItemGroup
+                  className={'display-fields'}
+                  key={`${view.key}-select`}
+                  title={'所属数据表'}
+                >
+                  {collections?.map((item) => (
+                    <Menu.SubMenu
+                      // style={{ minWidth: 150 }}
+                      key={`collection.${item.name}.${view.key}`}
+                      title={item.title}
+                    >
+                      <Menu.ItemGroup title={'选择分组字段'}>
+                        <Menu.Item
+                          style={{ minWidth: 150 }}
+                          key={`Kanban.collection.${item.name}.${view.key}`}
+                          onClick={async () => {
+                            let data = generateCardItemSchema('Kanban');
+                            const collectionName = item.name;
+                            if (schema['key']) {
+                              data['key'] = uid();
+                            }
+                            if (collectionName) {
+                              data['x-component-props'] =
+                                data['x-component-props'] || {};
+                              data['x-component-props']['resource'] =
+                                collectionName;
+                              data['x-component-props']['collectionName'] =
+                                collectionName;
+                              // data['x-component-props']['groupField'] = '';
+                            }
+                            if (isGridBlock(schema)) {
+                              path.pop();
+                              path.pop();
+                              data = generateGridBlock(data);
+                            } else if (isGrid(schema)) {
+                              data = generateGridBlock(data);
+                            }
+                            if (data) {
+                              let s;
+                              if (isGrid(schema)) {
+                                s = appendChild(data, [...path]);
+                              } else if (defaultAction === 'insertAfter') {
+                                s = insertAfter(data, [...path]);
+                              } else {
+                                s = insertBefore(data, [...path]);
+                              }
+                              await createSchema(s);
+                            }
+                          }}
+                        >
+                          分组字段1
+                        </Menu.Item>
+                      </Menu.ItemGroup>
+                    </Menu.SubMenu>
+                    // <Menu.Item
+                    //   style={{ minWidth: 150 }}
+                    //   key={`collection.${item.name}.${view.key}`}
+                    // >
+                    //   {item.title}
+                    // </Menu.Item>
                   ))}
                 </Menu.ItemGroup>
                 <Menu.Divider></Menu.Divider>
@@ -887,7 +1212,7 @@ AddNew.CardItem = observer((props: any) => {
             </Menu.Item>
           </Menu.ItemGroup>
           <Menu.Divider />
-          <Menu.SubMenu key={'Ref'} title={'引用模板'}>
+          <Menu.SubMenu key={'Ref'} icon={<LinkOutlined />} title={'引用模板'}>
             <Menu.ItemGroup key={'form-select'} title={'选择模板'}>
               <Menu.Item key={'Ref.ActionLogs'}>操作日志</Menu.Item>
             </Menu.ItemGroup>

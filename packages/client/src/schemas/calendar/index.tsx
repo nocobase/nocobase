@@ -11,6 +11,7 @@ import { LeftOutlined, RightOutlined } from '@ant-design/icons';
 import { Space, Button, Radio, Select } from 'antd';
 import './style2.less';
 import { observer, useField } from '@formily/react';
+import { DesignableBar } from './DesignableBar';
 
 const localizer = momentLocalizer(moment);
 
@@ -71,7 +72,7 @@ function Toolbar(props: ToolbarProps) {
   );
 }
 
-export const Calendar = observer((props: any) => {
+export const Calendar: any = observer((props: any) => {
   const field = useField<Formily.Core.Models.ArrayField>();
   return (
     <div style={{ height: 700 }}>
@@ -130,3 +131,5 @@ export const Calendar = observer((props: any) => {
     </div>
   );
 });
+
+Calendar.DesignableBar = DesignableBar;
