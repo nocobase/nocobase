@@ -30,6 +30,7 @@ import { Space, Card, Modal, Spin } from 'antd';
 import { ArrayTable } from '../../schemas/array-table';
 import { Action } from '../../schemas/action';
 import { AddNew } from '../../schemas/add-new';
+import { Calendar } from '../../schemas/calendar';
 import { Cascader } from '../../schemas/cascader';
 import { Checkbox } from '../../schemas/checkbox';
 import { ColorSelect } from '../../schemas/color-select';
@@ -46,6 +47,7 @@ import { IconPicker } from '../../schemas/icon-picker';
 import { Input } from '../../schemas/input';
 import { InputNumber } from '../../schemas/input-number';
 import { Markdown } from '../../schemas/markdown';
+import { Kanban } from '../../schemas/kanban';
 import { Menu } from '../../schemas/menu';
 import { Password } from '../../schemas/password';
 import { Radio } from '../../schemas/radio';
@@ -170,6 +172,7 @@ export const SchemaField = createSchemaField({
 
     Action,
     AddNew,
+    Calendar,
     Cascader,
     Checkbox,
     ColorSelect,
@@ -182,6 +185,7 @@ export const SchemaField = createSchemaField({
     IconPicker,
     Input,
     InputNumber,
+    Kanban,
     Markdown,
     Menu,
     Password,

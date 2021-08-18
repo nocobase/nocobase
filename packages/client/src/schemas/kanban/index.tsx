@@ -22,6 +22,7 @@ import { createContext } from 'react';
 import { useContext } from 'react';
 import { PlusOutlined } from '@ant-design/icons';
 import { uid } from '@formily/shared';
+import { DesignableBar } from './DesignableBar';
 
 export function SortableItem(props) {
   const {
@@ -95,109 +96,114 @@ export const Kanban: any = observer(() => {
     return prev;
   }, null);
   return (
-    <div className={'kanban'}>
-      <DndContext
-        // collisionDetection={closestCorners}
-        onDragEnd={({ active, over }) => {
-          const source = values.find((item) => item.id === active?.id);
-          const target = values.find((item) => item.id === over?.id);
-          if (source && target) {
-            const fromIndex = values.findIndex(
-              (item) => item.id === active?.id,
-            );
-            const toIndex = values.findIndex((item) => item.id === over?.id);
-            // setValues((items) => {
-            //   const fromIndex = items.findIndex(
-            //     (item) => item.id === active?.id,
-            //   );
-            //   const toIndex = items.findIndex(
-            //     (item) => item.id === over?.id,
-            //   );
-            //   return arrayMove(items, fromIndex, toIndex);
-            // });
-            field.move(fromIndex, toIndex);
-          }
-        }}
-        onDragOver={({ active, over }) => {
-          if (!over) {
-            return;
-          }
-          if (active?.id === over?.id) {
-            return;
-          }
-          const source = values.find((item) => item.id === active?.id);
-          if (source && over?.data?.current?.type === 'column') {
-            source.type = over.id;
-            return;
-          }
-          console.log('active.id', active.id, over?.data?.current);
-          const target = values.find((item) => item.id === over?.id);
-          if (source && target) {
-            if (source.type !== target.type) {
-              source.type = target.type;
+    <div>
+      {/* <div>
+        <Button>筛选</Button>
+      </div> */}
+      <div className={'kanban'}>
+        <DndContext
+          // collisionDetection={closestCorners}
+          onDragEnd={({ active, over }) => {
+            const source = values.find((item) => item.id === active?.id);
+            const target = values.find((item) => item.id === over?.id);
+            if (source && target) {
+              const fromIndex = values.findIndex(
+                (item) => item.id === active?.id,
+              );
+              const toIndex = values.findIndex((item) => item.id === over?.id);
+              // setValues((items) => {
+              //   const fromIndex = items.findIndex(
+              //     (item) => item.id === active?.id,
+              //   );
+              //   const toIndex = items.findIndex(
+              //     (item) => item.id === over?.id,
+              //   );
+              //   return arrayMove(items, fromIndex, toIndex);
+              // });
+              field.move(fromIndex, toIndex);
             }
-          }
-        }}
-      >
-        <DragOverlay style={{ pointerEvents: 'none' }}>aaa</DragOverlay>
-
-        <SortableContext
-          strategy={horizontalListSortingStrategy}
-          items={columns}
+          }}
+          onDragOver={({ active, over }) => {
+            if (!over) {
+              return;
+            }
+            if (active?.id === over?.id) {
+              return;
+            }
+            const source = values.find((item) => item.id === active?.id);
+            if (source && over?.data?.current?.type === 'column') {
+              source.type = over.id;
+              return;
+            }
+            console.log('active.id', active.id, over?.data?.current);
+            const target = values.find((item) => item.id === over?.id);
+            if (source && target) {
+              if (source.type !== target.type) {
+                source.type = target.type;
+              }
+            }
+          }}
         >
-          {columns.map((column) => (
-            <SortableItem
-              key={column.id}
-              type={'column'}
-              className={'column'}
-              id={column.id}
-            >
-              <div className={'column-title'}>{column.title}</div>
-              <SortableContext
-                strategy={verticalListSortingStrategy}
-                items={column.items}
+          <DragOverlay style={{ pointerEvents: 'none' }}>aaa</DragOverlay>
+
+          <SortableContext
+            strategy={horizontalListSortingStrategy}
+            items={columns}
+          >
+            {columns.map((column) => (
+              <SortableItem
+                key={column.id}
+                type={'column'}
+                className={'column'}
+                id={column.id}
               >
-                {column.items.map((item) => {
-                  const index = values.findIndex(
-                    (value) => value.id === item.id,
-                  );
-                  return (
-                    <SortableItem
-                      key={item.id}
-                      className={'item'}
-                      id={item.id}
-                      type={'item'}
-                    >
-                      <KanbanCardContext.Provider
-                        value={{
-                          index: index,
-                          record: item,
-                          viewSchema: cardViewSchema,
-                        }}
+                <div className={'column-title'}>{column.title}</div>
+                <SortableContext
+                  strategy={verticalListSortingStrategy}
+                  items={column.items}
+                >
+                  {column.items.map((item) => {
+                    const index = values.findIndex(
+                      (value) => value.id === item.id,
+                    );
+                    return (
+                      <SortableItem
+                        key={item.id}
+                        className={'item'}
+                        id={item.id}
+                        type={'item'}
                       >
-                        <RecursionField name={index} schema={cardSchema} />
-                      </KanbanCardContext.Provider>
-                    </SortableItem>
-                  );
-                })}
-              </SortableContext>
-              <Button
-                type={'text'}
-                icon={<PlusOutlined />}
-                onClick={() => {
-                  field.push({
-                    id: uid(),
-                    type: column.id,
-                    title: uid(),
-                  });
-                }}
-              >
-                添加卡片
-              </Button>
-            </SortableItem>
-          ))}
-        </SortableContext>
-      </DndContext>
+                        <KanbanCardContext.Provider
+                          value={{
+                            index: index,
+                            record: item,
+                            viewSchema: cardViewSchema,
+                          }}
+                        >
+                          <RecursionField name={index} schema={cardSchema} />
+                        </KanbanCardContext.Provider>
+                      </SortableItem>
+                    );
+                  })}
+                </SortableContext>
+                <Button
+                  type={'text'}
+                  icon={<PlusOutlined />}
+                  onClick={() => {
+                    field.push({
+                      id: uid(),
+                      type: column.id,
+                      title: uid(),
+                    });
+                  }}
+                >
+                  添加卡片
+                </Button>
+              </SortableItem>
+            ))}
+          </SortableContext>
+        </DndContext>
+      </div>
     </div>
   );
 });
@@ -232,3 +238,5 @@ Kanban.Card = observer((props) => {
 Kanban.Card.View = observer((props) => {
   return <div>{props.children}</div>;
 });
+
+Kanban.DesignableBar = DesignableBar;
