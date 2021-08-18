@@ -421,6 +421,40 @@ export default () => {
 };
 ```
 
+### Action.Group
+
+```tsx
+import React from 'react';
+import { SchemaRenderer } from '@nocobase/client';
+
+const schema = {
+  type: 'void',
+  name: 'group1',
+  'x-component': 'Action.Group',
+  properties: {
+    a1: {
+      type: 'void',
+      title: '按钮1',
+      'x-component': 'Action',
+      'x-component-props': {},
+    },
+    a2: {
+      type: 'void',
+      title: '按钮2',
+      'x-component': 'Action',
+      'x-component-props': {},
+    },
+  },
+};
+
+export default () => {
+  return (
+    <SchemaRenderer 
+      schema={schema} 
+    />
+  );
+};
+```
 
 ### Action.Bar
 
