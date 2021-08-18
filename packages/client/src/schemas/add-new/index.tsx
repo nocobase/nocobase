@@ -196,7 +196,7 @@ function generateCardItemSchema(component) {
                   type: 'void',
                   title: '新增数据',
                   'x-decorator': 'Form',
-                  'x-component': 'Action.Modal',
+                  'x-component': 'Action.Drawer',
                   'x-component-props': {
                     useOkAction: '{{ Table.useTableCreateAction }}',
                   },
@@ -217,79 +217,56 @@ function generateCardItemSchema(component) {
         [uid()]: {
           type: 'void',
           title: '操作',
-          'x-component': 'Table.Operation',
-          'x-component-props': {
-            className: 'nb-table-operation',
-          },
+          'x-component': 'Table.Column',
+          'x-component-props': {},
           'x-designable-bar': 'Table.Operation.DesignableBar',
           properties: {
             [uid()]: {
               type: 'void',
-              'x-component': 'Action',
+              'x-component': 'Action.Group',
               'x-component-props': {
-                icon: 'EllipsisOutlined',
+                type: 'link',
               },
               properties: {
                 [uid()]: {
                   type: 'void',
-                  'x-component': 'Action.Dropdown',
-                  'x-component-props': {},
+                  name: 'action1',
+                  title: '查看',
+                  'x-component': 'Action',
+                  'x-component-props': {
+                    type: 'link',
+                  },
+                  'x-designable-bar': 'Table.Action.DesignableBar',
+                  'x-action-type': 'view',
                   properties: {
-                    // [uid()]: {
-                    //   type: 'void',
-                    //   title: '操作 1',
-                    //   'x-component': 'Menu.Action',
-                    //   'x-component-props': {
-                    //     style: {
-                    //       minWidth: 150,
-                    //     },
-                    //     disabled: true,
-                    //   },
-                    // },
                     [uid()]: {
                       type: 'void',
-                      name: 'action1',
-                      title: '查看',
-                      'x-component': 'Menu.Action',
+                      title: '查看数据',
+                      'x-component': 'Action.Drawer',
                       'x-component-props': {
-                        style: {
-                          minWidth: 150,
+                        bodyStyle: {
+                          background: '#f0f2f5',
+                          // paddingTop: 0,
                         },
                       },
-                      'x-designable-bar': 'Table.Action.DesignableBar',
-                      'x-action-type': 'view',
                       properties: {
                         [uid()]: {
                           type: 'void',
-                          title: '查看',
-                          'x-component': 'Action.Modal',
-                          'x-component-props': {
-                            bodyStyle: {
-                              background: '#f0f2f5',
-                              // paddingTop: 0,
-                            },
-                          },
+                          'x-component': 'Tabs',
+                          'x-designable-bar': 'Tabs.DesignableBar',
                           properties: {
                             [uid()]: {
                               type: 'void',
-                              'x-component': 'Tabs',
-                              'x-designable-bar': 'Tabs.DesignableBar',
+                              title: '详情',
+                              'x-designable-bar': 'Tabs.TabPane.DesignableBar',
+                              'x-component': 'Tabs.TabPane',
+                              'x-component-props': {},
                               properties: {
                                 [uid()]: {
                                   type: 'void',
-                                  title: '详情',
-                                  'x-designable-bar':
-                                    'Tabs.TabPane.DesignableBar',
-                                  'x-component': 'Tabs.TabPane',
-                                  'x-component-props': {},
-                                  properties: {
-                                    [uid()]: {
-                                      type: 'void',
-                                      'x-component': 'Grid',
-                                      'x-component-props': {
-                                        addNewComponent: 'AddNew.PaneItem',
-                                      },
-                                    },
+                                  'x-component': 'Grid',
+                                  'x-component-props': {
+                                    addNewComponent: 'AddNew.PaneItem',
                                   },
                                 },
                               },
@@ -298,47 +275,51 @@ function generateCardItemSchema(component) {
                         },
                       },
                     },
+                  },
+                },
+                [uid()]: {
+                  type: 'void',
+                  title: '编辑',
+                  'x-component': 'Action',
+                  'x-component-props': {
+                    type: 'link',
+                  },
+                  'x-designable-bar': 'Table.Action.DesignableBar',
+                  'x-action-type': 'update',
+                  properties: {
                     [uid()]: {
                       type: 'void',
-                      title: '编辑',
-                      'x-component': 'Menu.Action',
-                      'x-designable-bar': 'Table.Action.DesignableBar',
-                      'x-action-type': 'update',
+                      title: '编辑数据',
+                      'x-decorator': 'Form',
+                      'x-decorator-props': {
+                        useResource: '{{ Table.useResource }}',
+                        useValues: '{{ Table.useTableRowRecord }}',
+                      },
+                      'x-component': 'Action.Drawer',
+                      'x-component-props': {
+                        useOkAction: '{{ Table.useTableUpdateAction }}',
+                      },
                       properties: {
                         [uid()]: {
                           type: 'void',
-                          title: '编辑数据',
-                          'x-decorator': 'Form',
-                          'x-decorator-props': {
-                            useResource: '{{ Table.useResource }}',
-                            useValues: '{{ Table.useTableRowRecord }}',
-                          },
-                          'x-component': 'Action.Modal',
+                          'x-component': 'Grid',
                           'x-component-props': {
-                            useOkAction: '{{ Table.useTableUpdateAction }}',
-                          },
-                          properties: {
-                            [uid()]: {
-                              type: 'void',
-                              'x-component': 'Grid',
-                              'x-component-props': {
-                                addNewComponent: 'AddNew.FormItem',
-                              },
-                            },
+                            addNewComponent: 'AddNew.FormItem',
                           },
                         },
                       },
                     },
-                    [uid()]: {
-                      type: 'void',
-                      title: '删除',
-                      'x-component': 'Menu.Action',
-                      'x-designable-bar': 'Table.Action.DesignableBar',
-                      'x-action-type': 'destroy',
-                      'x-component-props': {
-                        useAction: '{{ Table.useTableDestroyAction }}',
-                      },
-                    },
+                  },
+                },
+                [uid()]: {
+                  type: 'void',
+                  title: '删除',
+                  'x-component': 'Action',
+                  'x-designable-bar': 'Table.Action.DesignableBar',
+                  'x-action-type': 'destroy',
+                  'x-component-props': {
+                    type: 'link',
+                    useAction: '{{ Table.useTableDestroyAction }}',
                   },
                 },
               },
@@ -471,179 +452,6 @@ function generateCardItemSchema(component) {
             },
           },
         },
-        [uid()]: {
-          type: 'void',
-          title: '操作',
-          'x-component': 'Table.Operation',
-          'x-component-props': {
-            className: 'nb-table-operation',
-          },
-          properties: {
-            [uid()]: {
-              type: 'void',
-              'x-component': 'Action',
-              'x-component-props': {
-                icon: 'EllipsisOutlined',
-              },
-              properties: {
-                [uid()]: {
-                  type: 'void',
-                  'x-component': 'Action.Dropdown',
-                  'x-component-props': {},
-                  properties: {
-                    [uid()]: {
-                      type: 'void',
-                      name: 'action1',
-                      title: '查看',
-                      'x-component': 'Menu.Action',
-                      'x-component-props': {
-                        style: {
-                          minWidth: 150,
-                        },
-                      },
-                      'x-action-type': 'view',
-                      properties: {
-                        [uid()]: {
-                          type: 'void',
-                          title: '查看数据',
-                          'x-read-pretty': true,
-                          'x-decorator': 'Form',
-                          'x-decorator-props': {
-                            useResource:
-                              '{{ Table.useActionLogDetailsResource }}',
-                          },
-                          'x-component': 'Action.Drawer',
-                          'x-component-props': {
-                            // bodyStyle: {
-                            //   background: '#f0f2f5',
-                            //   // paddingTop: 0,
-                            // },
-                          },
-                          properties: {
-                            created_at: {
-                              type: 'string',
-                              title: '操作时间',
-                              'x-decorator': 'FormItem',
-                              'x-component': 'DatePicker',
-                              'x-read-pretty': true,
-                              'x-component-props': {
-                                format: 'YYYY-MM-DD HH:mm:ss',
-                              },
-                            },
-                            'user.nickname': {
-                              type: 'string',
-                              title: '操作用户',
-                              'x-decorator': 'FormItem',
-                              'x-component': 'Input',
-                              'x-read-pretty': true,
-                            },
-                            'collection.title': {
-                              type: 'string',
-                              title: '所属数据表',
-                              'x-decorator': 'FormItem',
-                              'x-component': 'Input',
-                              'x-read-pretty': true,
-                            },
-                            type: {
-                              type: 'string',
-                              title: '操作类型',
-                              'x-decorator': 'FormItem',
-                              'x-component': 'Select',
-                              'x-read-pretty': true,
-                              enum: [
-                                {
-                                  label: '新增',
-                                  value: 'create',
-                                  color: 'green',
-                                },
-                                {
-                                  label: '更新',
-                                  value: 'update',
-                                  color: 'blue',
-                                },
-                                {
-                                  label: '删除',
-                                  value: 'destroy',
-                                  color: 'red',
-                                },
-                              ],
-                            },
-                            changes: {
-                              type: 'array',
-                              title: '数据变动',
-                              'x-decorator': 'FormItem',
-                              'x-component': 'ArrayTable',
-                              'x-component-props': {
-                                pagination: false,
-                                // scroll: { x: '100%' },
-                              },
-                              // 'x-reactions': ['{{ filterActionLogs }}'],
-                              items: {
-                                type: 'object',
-                                properties: {
-                                  column0: {
-                                    type: 'void',
-                                    'x-component': 'ArrayTable.Column',
-                                    'x-component-props': {
-                                      width: 80,
-                                      align: 'center',
-                                    },
-                                    properties: {
-                                      index: {
-                                        type: 'void',
-                                        'x-component': 'ArrayTable.Index',
-                                      },
-                                    },
-                                  },
-                                  column1: {
-                                    type: 'void',
-                                    'x-component': 'ArrayTable.Column',
-                                    'x-component-props': { title: '字段名称' },
-                                    properties: {
-                                      field: {
-                                        type: 'string',
-                                        'x-decorator': 'FormilyFormItem',
-                                        'x-component': 'ActionLogs.Field',
-                                      },
-                                    },
-                                  },
-                                  column3: {
-                                    type: 'void',
-                                    'x-component': 'ArrayTable.Column',
-                                    'x-component-props': { title: '操作前' },
-                                    properties: {
-                                      before: {
-                                        type: 'string',
-                                        'x-decorator': 'FormilyFormItem',
-                                        'x-component': 'ActionLogs.FieldValue',
-                                      },
-                                    },
-                                  },
-                                  column4: {
-                                    type: 'void',
-                                    'x-component': 'ArrayTable.Column',
-                                    'x-component-props': { title: '操作后' },
-                                    properties: {
-                                      after: {
-                                        type: 'string',
-                                        'x-decorator': 'FormilyFormItem',
-                                        'x-component': 'ActionLogs.FieldValue',
-                                      },
-                                    },
-                                  },
-                                },
-                              },
-                            },
-                          },
-                        },
-                      },
-                    },
-                  },
-                },
-              },
-            },
-          },
-        },
         column1: {
           type: 'void',
           title: '操作时间',
@@ -697,6 +505,165 @@ function generateCardItemSchema(component) {
                 { label: '更新', value: 'update', color: 'blue' },
                 { label: '删除', value: 'destroy', color: 'red' },
               ],
+            },
+          },
+        },
+        [uid()]: {
+          type: 'void',
+          title: '操作',
+          'x-component': 'Table.Column',
+          'x-component-props': {
+            width: 60,
+            align: 'center',
+          },
+          properties: {
+            [uid()]: {
+              type: 'void',
+              name: 'action1',
+              title: '查看',
+              'x-component': 'Action',
+              'x-component-props': {
+                type: 'link',
+                style: {
+                  padding: '0',
+                  height: 'auto',
+                },
+              },
+              'x-action-type': 'view',
+              properties: {
+                [uid()]: {
+                  type: 'void',
+                  title: '查看数据',
+                  'x-read-pretty': true,
+                  'x-decorator': 'Form',
+                  'x-decorator-props': {
+                    useResource: '{{ Table.useActionLogDetailsResource }}',
+                  },
+                  'x-component': 'Action.Drawer',
+                  'x-component-props': {
+                    // bodyStyle: {
+                    //   background: '#f0f2f5',
+                    //   // paddingTop: 0,
+                    // },
+                  },
+                  properties: {
+                    created_at: {
+                      type: 'string',
+                      title: '操作时间',
+                      'x-decorator': 'FormItem',
+                      'x-component': 'DatePicker',
+                      'x-read-pretty': true,
+                      'x-component-props': {
+                        format: 'YYYY-MM-DD HH:mm:ss',
+                      },
+                    },
+                    'user.nickname': {
+                      type: 'string',
+                      title: '操作用户',
+                      'x-decorator': 'FormItem',
+                      'x-component': 'Input',
+                      'x-read-pretty': true,
+                    },
+                    'collection.title': {
+                      type: 'string',
+                      title: '所属数据表',
+                      'x-decorator': 'FormItem',
+                      'x-component': 'Input',
+                      'x-read-pretty': true,
+                    },
+                    type: {
+                      type: 'string',
+                      title: '操作类型',
+                      'x-decorator': 'FormItem',
+                      'x-component': 'Select',
+                      'x-read-pretty': true,
+                      enum: [
+                        {
+                          label: '新增',
+                          value: 'create',
+                          color: 'green',
+                        },
+                        {
+                          label: '更新',
+                          value: 'update',
+                          color: 'blue',
+                        },
+                        {
+                          label: '删除',
+                          value: 'destroy',
+                          color: 'red',
+                        },
+                      ],
+                    },
+                    changes: {
+                      type: 'array',
+                      title: '数据变动',
+                      'x-decorator': 'FormItem',
+                      'x-component': 'ArrayTable',
+                      'x-component-props': {
+                        pagination: false,
+                        // scroll: { x: '100%' },
+                      },
+                      // 'x-reactions': ['{{ filterActionLogs }}'],
+                      items: {
+                        type: 'object',
+                        properties: {
+                          column0: {
+                            type: 'void',
+                            'x-component': 'ArrayTable.Column',
+                            'x-component-props': {
+                              width: 80,
+                              align: 'center',
+                            },
+                            properties: {
+                              index: {
+                                type: 'void',
+                                'x-component': 'ArrayTable.Index',
+                              },
+                            },
+                          },
+                          column1: {
+                            type: 'void',
+                            'x-component': 'ArrayTable.Column',
+                            'x-component-props': { title: '字段名称' },
+                            properties: {
+                              field: {
+                                type: 'string',
+                                'x-decorator': 'FormilyFormItem',
+                                'x-component': 'ActionLogs.Field',
+                              },
+                            },
+                          },
+                          column3: {
+                            type: 'void',
+                            'x-component': 'ArrayTable.Column',
+                            'x-component-props': { title: '操作前' },
+                            properties: {
+                              before: {
+                                type: 'string',
+                                'x-decorator': 'FormilyFormItem',
+                                'x-component': 'ActionLogs.FieldValue',
+                              },
+                            },
+                          },
+                          column4: {
+                            type: 'void',
+                            'x-component': 'ArrayTable.Column',
+                            'x-component-props': { title: '操作后' },
+                            properties: {
+                              after: {
+                                type: 'string',
+                                'x-decorator': 'FormilyFormItem',
+                                'x-component': 'ActionLogs.FieldValue',
+                              },
+                            },
+                          },
+                        },
+                      },
+                    },
+                  },
+                },
+              },
             },
           },
         },
@@ -935,7 +902,11 @@ AddNew.CardItem = observer((props: any) => {
       {ghost ? (
         <PlusOutlined />
       ) : (
-        <Button type={'dashed'} className={'designable-btn designable-btn-dash'} icon={<PlusOutlined />}>
+        <Button
+          type={'dashed'}
+          className={'designable-btn designable-btn-dash'}
+          icon={<PlusOutlined />}
+        >
           新增区块
         </Button>
       )}
@@ -1122,7 +1093,11 @@ AddNew.FormItem = observer((props: any) => {
       {ghost ? (
         <PlusOutlined />
       ) : (
-        <Button type={'dashed'} className={'designable-btn designable-btn-dash'} icon={<SettingOutlined />}>
+        <Button
+          type={'dashed'}
+          className={'designable-btn designable-btn-dash'}
+          icon={<SettingOutlined />}
+        >
           配置字段
         </Button>
       )}
@@ -1326,7 +1301,12 @@ AddNew.PaneItem = observer((props: any) => {
       {ghost ? (
         <PlusOutlined />
       ) : (
-        <Button block className={'designable-btn designable-btn-dash'} type={'dashed'} icon={<PlusOutlined />}>
+        <Button
+          block
+          className={'designable-btn designable-btn-dash'}
+          type={'dashed'}
+          icon={<PlusOutlined />}
+        >
           新增区块
         </Button>
       )}

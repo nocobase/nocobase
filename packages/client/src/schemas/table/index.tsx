@@ -370,7 +370,7 @@ const useTableColumns = () => {
 
   const { getField } = useCollectionContext();
 
-  const operation = useTableOperation();
+  // const operation = useTableOperation();
 
   const columnSchemas = schema.reduceProperties((columns, current) => {
     if (isColumn(current)) {
@@ -379,7 +379,7 @@ const useTableColumns = () => {
     return [...columns];
   }, []);
 
-  const columns: any[] = [operation].concat(
+  const columns: any[] = [].concat(
     columnSchemas.map((column: Schema) => {
       const columnProps = column['x-component-props'] || {};
       const collectionField = getField(columnProps.fieldName);
@@ -905,7 +905,7 @@ function generateActionSchema(type) {
           type: 'void',
           title: '新增数据',
           'x-decorator': 'Form',
-          'x-component': 'Action.Modal',
+          'x-component': 'Action.Drawer',
           'x-component-props': {
             useOkAction: '{{ Table.useTableCreateAction }}',
           },
@@ -951,14 +951,17 @@ function generateMenuActionSchema(type) {
       name: uid(),
       type: 'void',
       title: '查看',
-      'x-component': 'Menu.Action',
+      'x-component': 'Action',
+      'x-component-props': {
+        type: 'link',
+      },
       'x-designable-bar': 'Table.Action.DesignableBar',
       'x-action-type': 'view',
       properties: {
         [uid()]: {
           type: 'void',
           title: '查看数据',
-          'x-component': 'Action.Modal',
+          'x-component': 'Action.Drawer',
           'x-component-props': {
             bodyStyle: {
               background: '#f0f2f5',
@@ -998,7 +1001,10 @@ function generateMenuActionSchema(type) {
       name: uid(),
       type: 'void',
       title: '编辑',
-      'x-component': 'Menu.Action',
+      'x-component': 'Action',
+      'x-component-props': {
+        type: 'link',
+      },
       'x-designable-bar': 'Table.Action.DesignableBar',
       'x-action-type': 'update',
       properties: {
@@ -1010,7 +1016,7 @@ function generateMenuActionSchema(type) {
             useResource: '{{ Table.useResource }}',
             useValues: '{{ Table.useTableRowRecord }}',
           },
-          'x-component': 'Action.Modal',
+          'x-component': 'Action.Drawer',
           'x-component-props': {
             useOkAction: '{{ Table.useTableUpdateAction }}',
           },
@@ -1031,11 +1037,12 @@ function generateMenuActionSchema(type) {
       name: uid(),
       type: 'void',
       title: '删除',
-      'x-component': 'Menu.Action',
+      'x-component': 'Action',
       'x-designable-bar': 'Table.Action.DesignableBar',
       'x-action-type': 'destroy',
       'x-component-props': {
         useAction: '{{ Table.useTableDestroyAction }}',
+        type: 'link',
       },
     },
   };
@@ -1611,15 +1618,12 @@ Table.Operation.Cell = observer((props: any) => {
   );
 });
 
-Table.Operation.DesignableBar = (props) => {
-  const { designable, schema, remove, refresh, appendChild } = useDesignable(
-    props.path,
-  );
+Table.Operation.DesignableBar = () => {
+  const { schema: columnSchema } = useDesignable();
+  const groupSchema = Object.values(columnSchema.properties || {}).shift();
+  const groupPath = getSchemaPath(groupSchema);
+  const { schema, remove, refresh, appendChild } = useDesignable(groupPath);
   const [visible, setVisible] = useState(false);
-  if (!designable || !schema?.parent?.parent['x-designable-bar']) {
-    return null;
-  }
-  console.log('Table.Operation.DesignableBar', schema?.parent?.parent);
   const map = new Map();
   schema.mapProperties((s) => {
     if (!s['x-action-type']) {
@@ -1627,6 +1631,7 @@ Table.Operation.DesignableBar = (props) => {
     }
     map.set(s['x-action-type'], s.name);
   });
+  const path = getSchemaPath(schema);
   return (
     <div className={cls('designable-bar', { active: visible })}>
       <span
@@ -1661,10 +1666,7 @@ Table.Operation.DesignableBar = (props) => {
                           const data = appendChild(s);
                           await createSchema(data);
                         } else if (map.get(item.name)) {
-                          const removed = remove([
-                            ...props.path,
-                            map.get(item.name),
-                          ]);
+                          const removed = remove([...path, map.get(item.name)]);
                           await removeSchema(removed);
                         }
                       }}
@@ -1672,7 +1674,7 @@ Table.Operation.DesignableBar = (props) => {
                   ))}
                 </Menu.ItemGroup>
                 <Menu.Divider />
-                <Menu.SubMenu title={'自定义'}>
+                <Menu.SubMenu disabled title={'自定义'}>
                   <Menu.Item style={{ minWidth: 120 }}>函数操作</Menu.Item>
                   <Menu.Item>弹窗表单</Menu.Item>
                   <Menu.Item>复杂弹窗</Menu.Item>
@@ -1694,9 +1696,11 @@ Table.Action.DesignableBar = () => {
   const { schema, remove, refresh, insertAfter } = useDesignable();
   const [visible, setVisible] = useState(false);
   const isPopup = Object.keys(schema.properties || {}).length > 0;
+  const popupSchema = Object.values(schema.properties || {}).shift();
   const inActionBar = schema.parent['x-component'] === 'Table.ActionBar';
   const displayed = useDisplayedMapContext();
   const field = useField();
+  const popupComponent = popupSchema?.['x-component'] || 'Action.Drawer';
   return (
     <div className={cls('designable-bar', { active: visible })}>
       <span
@@ -1764,7 +1768,7 @@ Table.Action.DesignableBar = () => {
                     <Select
                       bordered={false}
                       size={'small'}
-                      defaultValue={'Action.Modal'}
+                      defaultValue={popupComponent}
                       onChange={(value) => {
                         const s = Object.values(schema.properties).shift();
                         s['x-component'] = value;
