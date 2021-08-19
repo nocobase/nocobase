@@ -144,6 +144,7 @@ export const loadChinaRegionData = (
 export const SchemaField = createSchemaField({
   scope: {
     Table,
+    Calendar,
     useAsyncDataSource,
     ChinaRegion: {
       loadData: loadChinaRegionData,

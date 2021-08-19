@@ -70,6 +70,7 @@ import {
   useDisplayedMapContext,
 } from '../../constate';
 import SwitchMenuItem from '../../components/SwitchMenuItem';
+import { BlockSchemaContext } from '../../context';
 
 const generateGridBlock = (schema: ISchema) => {
   const name = schema.name || uid();
@@ -457,10 +458,129 @@ function generateCardItemSchema(component) {
       'x-decorator': 'CardItem',
       default: [],
       properties: {
+        toolbar: {
+          type: 'void',
+          'x-component': 'Calendar.Toolbar',
+          properties: {
+            today: {
+              type: 'void',
+              title: '今天',
+              'x-designable-bar': 'Calendar.ActionDesignableBar',
+              'x-component': 'Calendar.Today',
+              'x-align': 'left',
+              'x-decorator': 'AddNew.Displayed',
+              'x-decorator-props': {
+                displayName: 'today',
+              },
+            },
+            nav: {
+              type: 'void',
+              title: '翻页',
+              'x-designable-bar': 'Calendar.ActionDesignableBar',
+              'x-component': 'Calendar.Nav',
+              'x-align': 'left',
+              'x-decorator': 'AddNew.Displayed',
+              'x-decorator-props': {
+                displayName: 'nav',
+              },
+            },
+            title: {
+              type: 'void',
+              title: '标题',
+              'x-designable-bar': 'Calendar.ActionDesignableBar',
+              'x-component': 'Calendar.Title',
+              'x-align': 'left',
+              'x-decorator': 'AddNew.Displayed',
+              'x-decorator-props': {
+                displayName: 'title',
+              },
+            },
+            viewSelect: {
+              type: 'void',
+              title: '视图切换',
+              'x-designable-bar': 'Calendar.ActionDesignableBar',
+              'x-component': 'Calendar.ViewSelect',
+              'x-align': 'right',
+              'x-decorator': 'AddNew.Displayed',
+              'x-decorator-props': {
+                displayName: 'viewSelect',
+              },
+            },
+            filter: {
+              type: 'void',
+              title: '过滤',
+              'x-align': 'right',
+              'x-designable-bar': 'Calendar.Filter.DesignableBar',
+              'x-component': 'Calendar.Filter',
+              'x-decorator': 'AddNew.Displayed',
+              'x-decorator-props': {
+                displayName: 'filter',
+              },
+            },
+            create: {
+              type: 'void',
+              title: '新增',
+              'x-align': 'right',
+              'x-designable-bar': 'Calendar.ActionDesignableBar',
+              'x-component': 'Action',
+              'x-decorator': 'AddNew.Displayed',
+              'x-decorator-props': {
+                displayName: 'create',
+              },
+              'x-component-props': {
+                type: 'primary',
+              },
+              properties: {
+                modal: {
+                  type: 'void',
+                  title: '新增数据',
+                  'x-decorator': 'Form',
+                  'x-component': 'Action.Drawer',
+                  'x-component-props': {
+                    useOkAction: '{{ Calendar.useCreateAction }}',
+                  },
+                  properties: {
+                    [uid()]: {
+                      type: 'void',
+                      'x-component': 'Grid',
+                      'x-component-props': {
+                        addNewComponent: 'AddNew.FormItem',
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
         event: {
           type: 'void',
           'x-component': 'Calendar.Event',
-          properties: {},
+          properties: {
+            [uid()]: {
+              type: 'void',
+              'x-component': 'Tabs',
+              'x-designable-bar': 'Tabs.DesignableBar',
+              properties: {
+                [uid()]: {
+                  type: 'void',
+                  title: '详情',
+                  'x-designable-bar': 'Tabs.TabPane.DesignableBar',
+                  'x-component': 'Tabs.TabPane',
+                  'x-component-props': {},
+                  properties: {
+                    [uid()]: {
+                      type: 'void',
+                      'x-component': 'Grid',
+                      'x-component-props': {
+                        addNewComponent: 'AddNew.PaneItem',
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          },
         },
       },
     },
@@ -598,7 +718,7 @@ function generateCardItemSchema(component) {
         },
         column3: {
           type: 'void',
-          title: '所属数据表',
+          title: '选择数据源',
           'x-component': 'Table.Column',
           properties: {
             'collection.title': {
@@ -683,7 +803,7 @@ function generateCardItemSchema(component) {
                     },
                     'collection.title': {
                       type: 'string',
-                      title: '所属数据表',
+                      title: '选择数据源',
                       'x-decorator': 'FormItem',
                       'x-component': 'Input',
                       'x-read-pretty': true,
@@ -934,7 +1054,7 @@ AddNew.CardItem = observer((props: any) => {
                 <Menu.ItemGroup
                   className={'display-fields'}
                   key={`${view.key}-select`}
-                  title={'所属数据表'}
+                  title={'选择数据源'}
                 >
                   {collections?.map((item) => (
                     <Menu.Item
@@ -968,7 +1088,7 @@ AddNew.CardItem = observer((props: any) => {
                 <Menu.ItemGroup
                   className={'display-fields'}
                   key={`${view.key}-select`}
-                  title={'所属数据表'}
+                  title={'选择数据源'}
                 >
                   {collections?.map((item) => (
                     <Menu.Item
@@ -982,7 +1102,7 @@ AddNew.CardItem = observer((props: any) => {
                                 schema={{
                                   type: 'object',
                                   properties: {
-                                    titleField: {
+                                    title: {
                                       type: 'string',
                                       title: '标题字段',
                                       required: true,
@@ -992,12 +1112,12 @@ AddNew.CardItem = observer((props: any) => {
                                         (field) => {
                                           return {
                                             label: field?.uiSchema.title,
-                                            name: field?.name,
+                                            value: field?.name,
                                           };
                                         },
                                       ),
                                     },
-                                    startTimeField: {
+                                    start: {
                                       title: '开始日期字段',
                                       required: true,
                                       'x-decorator': 'FormItem',
@@ -1009,11 +1129,11 @@ AddNew.CardItem = observer((props: any) => {
                                         ?.map((field) => {
                                           return {
                                             label: field?.uiSchema.title,
-                                            name: field?.name,
+                                            value: field?.name,
                                           };
                                         }),
                                     },
-                                    endTimeField: {
+                                    end: {
                                       title: '结束日期字段',
                                       'x-decorator': 'FormItem',
                                       'x-component': 'Select',
@@ -1024,7 +1144,7 @@ AddNew.CardItem = observer((props: any) => {
                                         ?.map((field) => {
                                           return {
                                             label: field?.uiSchema.title,
-                                            name: field?.name,
+                                            value: field?.name,
                                           };
                                         }),
                                     },
@@ -1039,6 +1159,7 @@ AddNew.CardItem = observer((props: any) => {
                         if (schema['key']) {
                           data['key'] = uid();
                         }
+                        console.log('fieldNames', values);
                         if (collectionName) {
                           data['x-component-props'] =
                             data['x-component-props'] || {};
@@ -1046,12 +1167,7 @@ AddNew.CardItem = observer((props: any) => {
                             collectionName;
                           data['x-component-props']['collectionName'] =
                             collectionName;
-                          data['x-component-props']['titleField'] =
-                            values.titleField;
-                          data['x-component-props']['startTimeField'] =
-                            values.startTimeField;
-                          data['x-component-props']['endTimeField'] =
-                            values.endTimeField;
+                          data['x-component-props']['fieldNames'] = values;
                         }
                         if (isGridBlock(schema)) {
                           path.pop();
@@ -1100,7 +1216,7 @@ AddNew.CardItem = observer((props: any) => {
                 <Menu.ItemGroup
                   className={'display-fields'}
                   key={`${view.key}-select`}
-                  title={'所属数据表'}
+                  title={'选择数据源'}
                 >
                   {collections?.map((item) => (
                     <Menu.SubMenu
@@ -1159,10 +1275,10 @@ AddNew.CardItem = observer((props: any) => {
                     // </Menu.Item>
                   ))}
                 </Menu.ItemGroup>
-                <Menu.Divider></Menu.Divider>
+                {/* <Menu.Divider></Menu.Divider>
                 <Menu.Item icon={<PlusOutlined />} key={`addNew${view.key}`}>
                   新建数据表
-                </Menu.Item>
+                </Menu.Item> */}
               </Menu.SubMenu>
             ))}
           </Menu.ItemGroup>
@@ -1435,7 +1551,9 @@ AddNew.PaneItem = observer((props: any) => {
   const { schema, insertBefore, insertAfter, appendChild } = useDesignable();
   const path = useSchemaPath();
   const [visible, setVisible] = useState(false);
-
+  const blockSchema = useContext(BlockSchemaContext);
+  const useResource = `{{ ${blockSchema['x-component']}.useResource }}`;
+  console.log('AddNew.PaneItem.useResource', useResource)
   return (
     <Dropdown
       trigger={['click']}
@@ -1458,8 +1576,7 @@ AddNew.PaneItem = observer((props: any) => {
                   'x-component': 'Form',
                   'x-read-pretty': true,
                   'x-component-props': {
-                    useResource: '{{ Table.useResource }}',
-                    useValues: '{{ Table.useTableRowRecord }}',
+                    useResource,
                   },
                   'x-designable-bar': 'Form.DesignableBar',
                   properties: {
@@ -1511,8 +1628,7 @@ AddNew.PaneItem = observer((props: any) => {
                   'x-decorator': 'CardItem',
                   'x-component': 'Form',
                   'x-component-props': {
-                    useResource: '{{ Table.useResource }}',
-                    useValues: '{{ Table.useTableRowRecord }}',
+                    useResource,
                     showDefaultButtons: true,
                   },
                   'x-designable-bar': 'Form.DesignableBar',

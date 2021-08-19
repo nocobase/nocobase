@@ -15,6 +15,12 @@ group:
 
 <pre lang="tsx">
 <Calendar>
+  <Calendar.Toolbar>
+    <Calendar.Nav/>
+    <Calendar.Title/>
+    <Calendar.ViewSelect/>
+    <Calendar.Filter/>
+  </Calendar.Toolbar>
   <Calendar.Event>
     // 查看日历事件详情
   </Calendar.Event>

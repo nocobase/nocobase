@@ -1,0 +1,35 @@
+.ant-btn-group {
+  position: relative;
+  &:hover {
+    .designable-bar {
+      display: block;
+    }
+  }
+  .designable-bar {
+    pointer-events: none;
+    display: none;
+    position: absolute;
+    top: -1px;
+    right: -1px;
+    left: -1px;
+    bottom: -1px;
+    border-radius: 2px;
+    border: 2px solid #1890ff;
+    &.active {
+      display: block;
+    }
+    .designable-bar-actions {
+      pointer-events: all;
+      position: absolute;
+      right: 0;
+      line-height: 1rem;
+      background-color: #1890ff;
+      color: #fff;
+      z-index: 10;
+      padding: 0 3px;
+      .anticon {
+        font-size: 10px;
+      }
+    }
+  }
+}
