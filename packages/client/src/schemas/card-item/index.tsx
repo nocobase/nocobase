@@ -20,13 +20,17 @@ import { useDesignable } from '../';
 import { AddNew } from '../add-new';
 import { BlockItem } from '../block-item';
 import { DraggableBlockContext } from '../../components/drag-and-drop';
+import { BlockSchemaContext } from '../../context';
 
 export const CardItem: any = connect((props) => {
+  const { schema } = useDesignable();
   return (
-    <BlockItem>
-      <Card bordered={false} {...props}>
-        {props.children}
-      </Card>
-    </BlockItem>
+    <BlockSchemaContext.Provider value={schema}>
+      <BlockItem>
+        <Card bordered={false} {...props}>
+          {props.children}
+        </Card>
+      </BlockItem>
+    </BlockSchemaContext.Provider>
   );
 });

@@ -61,7 +61,7 @@ const FormMain = (props: any) => {
   const { resource, run, service } = useResource({
     onSuccess: (initialValues: any) => {
       console.log('onSuccess', { initialValues });
-      // form.setInitialValues(initialValues);
+      form.setInitialValues(initialValues);
       form.setValues(initialValues);
     },
   });

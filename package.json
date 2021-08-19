@@ -30,6 +30,7 @@
     "@types/mockjs": "^1.0.3",
     "@types/node": "^12.6.8",
     "@types/react": "^17.0.0",
+    "@types/react-big-calendar": "^0.33.1",
     "@types/react-dom": "^17.0.3",
     "@typescript-eslint/eslint-plugin": "^4.9.1",
     "@typescript-eslint/parser": "^4.8.2",
