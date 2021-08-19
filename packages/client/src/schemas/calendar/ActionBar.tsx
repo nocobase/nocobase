@@ -12,7 +12,7 @@ import cls from 'classnames';
 import { Button, Dropdown, Menu, Space } from 'antd';
 import SwitchMenuItem from '../../components/SwitchMenuItem';
 import { uid } from '@formily/shared';
-import { PlusOutlined } from '@ant-design/icons';
+import { SettingOutlined } from '@ant-design/icons';
 import { Droppable, SortableItem } from '../../components/Sortable';
 
 export const ActionBar = observer((props: any) => {
@@ -257,7 +257,7 @@ function AddActionButton() {
         className={'designable-btn designable-btn-dash'}
         style={{ marginLeft: 8 }}
         type={'dashed'}
-        icon={<PlusOutlined />}
+        icon={<SettingOutlined />}
       >
         配置工具栏
       </Button>

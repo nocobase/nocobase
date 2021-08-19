@@ -1,9 +1,38 @@
 .column {
   position: relative;
-  width: 25vw;
+  width: 300px;
   background: #f9f9f9;
-  margin: 0 12px;
+  margin-right: 24px;
   padding: 24px;
+  &.add-column {
+    padding: 0;
+    margin-right: 0;
+    background: rgba(241, 139, 98, 0.05);
+    cursor: pointer;
+    color: #F18B62;
+    text-align: center;
+    justify-content: center;
+    align-items: center;
+    display: flex;
+    .add-column-plus {
+      position: relative;
+      &::before {
+        position: absolute;
+        width: 1px;
+        height: 50px;
+        background: #F18B62;
+      }
+      &::after {
+        position: absolute;
+        width: 50px;
+        height: 1px;
+        background: #F18B62;
+      }
+    }
+    &:hover {
+      background: rgba(241, 139, 98, 0.1);
+    }
+  }
 }
 
 .column-title {
@@ -14,7 +43,12 @@
 
 .kanban {
   display: flex;
-  margin: 0 -12px;
+  margin: 0;
+  overflow: auto;
+}
+
+.kanban-container {
+  display: flex;
 }
 
 .item {
@@ -32,3 +66,41 @@
   top: 0;
   right: 0;
 }
+
+.kanban .ant-card-body {
+  position: relative;
+  &:hover {
+    > .designable-bar {
+      display: block;
+    }
+  }
+  > .designable-bar {
+    pointer-events: none;
+    display: none;
+    position: absolute;
+    top: -1px;
+    right: -1px;
+    left: -1px;
+    bottom: -1px;
+    border-radius: 2px;
+    background: none !important;
+    border: 2px solid rgba(241, 139, 98, 0.3) !important;
+    &.active {
+      display: block;
+    }
+    .designable-bar-actions {
+      pointer-events: all;
+      position: absolute;
+      right: 0;
+      line-height: 1rem;
+      background-color: #1890ff;
+      color: #fff;
+      z-index: 10;
+      padding: 0 3px;
+      .anticon {
+        font-size: 10px;
+      }
+    }
+  }
+}
+

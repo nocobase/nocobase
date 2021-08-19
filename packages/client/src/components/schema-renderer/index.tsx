@@ -145,6 +145,7 @@ export const SchemaField = createSchemaField({
   scope: {
     Table,
     Calendar,
+    Kanban,
     useAsyncDataSource,
     ChinaRegion: {
       loadData: loadChinaRegionData,

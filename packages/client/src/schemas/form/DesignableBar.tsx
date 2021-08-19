@@ -28,6 +28,7 @@ import { uid } from '@formily/shared';
 import { getSchemaPath } from '../../components/schema-renderer';
 import { useCollection, useCollectionContext } from '../../constate';
 import { useTable } from '../table';
+import { BlockSchemaContext } from '../../context';
 
 export const DesignableBar = observer((props) => {
   const field = useField();
@@ -35,12 +36,14 @@ export const DesignableBar = observer((props) => {
   const [visible, setVisible] = useState(false);
   const { dragRef } = useContext(DraggableBlockContext);
   const { props: tableProps } = useTable();
-  const { collection } = useCollectionContext();
-  // const collectionName = field.componentProps?.collectionName || tableProps?.collectionName;
-  // const { collection } = useCollection({ collectionName });
+  const blockSchema = useContext(BlockSchemaContext);
+  const collectionName = blockSchema['x-component-props']?.collectionName;
+  const { collection } = useCollection({ collectionName });
   return (
     <div className={cls('designable-bar', { active: visible })}>
-      <div className={'designable-info'}>{collection?.title || collection?.name}</div>
+      <div className={'designable-info'}>
+        {collection?.title || collection?.name}
+      </div>
       <span
         onClick={(e) => {
           e.stopPropagation();

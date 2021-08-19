@@ -5,7 +5,11 @@ const [CollectionsProvider, useCollectionsContext] = constate(() => {
   const result = useRequest('collections:findAll', {
     formatResult: (result) => result?.data,
   });
-  return { ...result, collections: result.data || [] };
+  return {
+    ...result, collections: result.data || [], findCollection(name) {
+      return result?.data?.find((item) => item.name === name);
+    }
+  };
 });
 
 export { CollectionsProvider, useCollectionsContext };
