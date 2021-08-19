@@ -183,7 +183,7 @@ export const Calendar: any = observer((props: any) => {
   console.log('field.value', field.value);
   return (
     <CollectionProvider collectionName={props.collectionName}>
-      <CalendarContext.Provider value={{ resource, service, props }}>
+      <CalendarContext.Provider value={{ field, resource, service, props }}>
         <div {...props} style={{ height: 700 }}>
           <Drawer
             width={'50%'}

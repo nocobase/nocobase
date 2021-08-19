@@ -410,40 +410,66 @@ function generateCardItemSchema(component) {
         },
       ],
       properties: {
-        card1: {
+        create: {
           type: 'void',
-          'x-component': 'Kanban.Card',
+          title: '添加卡片',
+          'x-designable-bar': 'Kanban.AddCardDesignableBar',
+          'x-component': 'Kanban.Card.AddNew',
+          // 'x-decorator': 'AddNew.Displayed',
+          'x-component-props': {
+            type: 'text',
+            icon: 'PlusOutlined',
+          },
           properties: {
-            item1: {
+            modal: {
               type: 'void',
-              'x-component': 'Kanban.Item',
+              title: '新增数据',
+              'x-decorator': 'Form',
+              'x-component': 'Action.Drawer',
+              'x-component-props': {
+                useOkAction: '{{ Kanban.useCreateAction }}',
+              },
               properties: {
-                title: {
-                  type: 'string',
-                  // title: '标题',
-                  'x-read-pretty': true,
-                  'x-decorator': 'FormItem',
-                  'x-component': 'Input',
+                [uid()]: {
+                  type: 'void',
+                  'x-component': 'Grid',
+                  'x-component-props': {
+                    addNewComponent: 'AddNew.FormItem',
+                  },
                 },
               },
             },
           },
         },
+        card1: {
+          type: 'void',
+          name: uid(),
+          'x-decorator': 'Form',
+          'x-component': 'Kanban.Card',
+          'x-designable-bar': 'Kanban.Card.DesignableBar',
+          'x-read-pretty': true,
+          'x-decorator-props': {
+            useResource: '{{ Kanban.useResource }}',
+          },
+          properties: {},
+        },
         view1: {
           type: 'void',
+          title: '修改数据',
+          'x-decorator': 'Form',
           'x-component': 'Kanban.Card.View',
+          'x-component-props': {
+            useOkAction: '{{ Kanban.useUpdateAction }}',
+          },
+          'x-decorator-props': {
+            useResource: '{{ Kanban.useResource }}',
+          },
           properties: {
-            item1: {
+            [uid()]: {
               type: 'void',
-              'x-component': 'Kanban.Item',
-              properties: {
-                title: {
-                  type: 'string',
-                  title: '标题',
-                  'x-read-pretty': true,
-                  'x-decorator': 'FormItem',
-                  'x-component': 'Input',
-                },
+              'x-component': 'Grid',
+              'x-component-props': {
+                addNewComponent: 'AddNew.FormItem',
               },
             },
           },
@@ -1225,46 +1251,58 @@ AddNew.CardItem = observer((props: any) => {
                       title={item.title}
                     >
                       <Menu.ItemGroup title={'选择分组字段'}>
-                        <Menu.Item
-                          style={{ minWidth: 150 }}
-                          key={`Kanban.collection.${item.name}.${view.key}`}
-                          onClick={async () => {
-                            let data = generateCardItemSchema('Kanban');
-                            const collectionName = item.name;
-                            if (schema['key']) {
-                              data['key'] = uid();
-                            }
-                            if (collectionName) {
-                              data['x-component-props'] =
-                                data['x-component-props'] || {};
-                              data['x-component-props']['resource'] =
-                                collectionName;
-                              data['x-component-props']['collectionName'] =
-                                collectionName;
-                              // data['x-component-props']['groupField'] = '';
-                            }
-                            if (isGridBlock(schema)) {
-                              path.pop();
-                              path.pop();
-                              data = generateGridBlock(data);
-                            } else if (isGrid(schema)) {
-                              data = generateGridBlock(data);
-                            }
-                            if (data) {
-                              let s;
-                              if (isGrid(schema)) {
-                                s = appendChild(data, [...path]);
-                              } else if (defaultAction === 'insertAfter') {
-                                s = insertAfter(data, [...path]);
-                              } else {
-                                s = insertBefore(data, [...path]);
-                              }
-                              await createSchema(s);
-                            }
-                          }}
-                        >
-                          分组字段1
-                        </Menu.Item>
+                        {item?.generalFields
+                          ?.filter((item) => {
+                            return item?.uiSchema?.enum;
+                          })
+                          ?.map((field) => {
+                            return (
+                              <Menu.Item
+                                style={{ minWidth: 150 }}
+                                key={`Kanban.collection.${field.name}.${view.key}`}
+                                onClick={async () => {
+                                  let data = generateCardItemSchema('Kanban');
+                                  const collectionName = item.name;
+                                  if (schema['key']) {
+                                    data['key'] = uid();
+                                  }
+                                  if (collectionName) {
+                                    data['x-component-props'] =
+                                      data['x-component-props'] || {};
+                                    data['x-component-props']['resource'] =
+                                      collectionName;
+                                    data['x-component-props'][
+                                      'collectionName'
+                                    ] = collectionName;
+                                    data['x-component-props']['groupName'] =
+                                      field.name;
+                                  }
+                                  if (isGridBlock(schema)) {
+                                    path.pop();
+                                    path.pop();
+                                    data = generateGridBlock(data);
+                                  } else if (isGrid(schema)) {
+                                    data = generateGridBlock(data);
+                                  }
+                                  if (data) {
+                                    let s;
+                                    if (isGrid(schema)) {
+                                      s = appendChild(data, [...path]);
+                                    } else if (
+                                      defaultAction === 'insertAfter'
+                                    ) {
+                                      s = insertAfter(data, [...path]);
+                                    } else {
+                                      s = insertBefore(data, [...path]);
+                                    }
+                                    await createSchema(s);
+                                  }
+                                }}
+                              >
+                                {field?.uiSchema?.title}
+                              </Menu.Item>
+                            );
+                          })}
                       </Menu.ItemGroup>
                     </Menu.SubMenu>
                     // <Menu.Item
@@ -1553,7 +1591,7 @@ AddNew.PaneItem = observer((props: any) => {
   const [visible, setVisible] = useState(false);
   const blockSchema = useContext(BlockSchemaContext);
   const useResource = `{{ ${blockSchema['x-component']}.useResource }}`;
-  console.log('AddNew.PaneItem.useResource', useResource)
+  console.log('AddNew.PaneItem.useResource', useResource);
   return (
     <Dropdown
       trigger={['click']}
