@@ -2,14 +2,14 @@
   position: relative;
   width: 300px;
   background: #f9f9f9;
-  margin-right: 24px;
-  padding: 24px;
+  margin-right: 12px;
+  padding: 12px;
   &.add-column {
     padding: 0;
     margin-right: 0;
     background: rgba(241, 139, 98, 0.05);
     cursor: pointer;
-    color: #F18B62;
+    color: #f18b62;
     text-align: center;
     justify-content: center;
     align-items: center;
@@ -20,13 +20,13 @@
         position: absolute;
         width: 1px;
         height: 50px;
-        background: #F18B62;
+        background: #f18b62;
       }
       &::after {
         position: absolute;
         width: 50px;
         height: 1px;
-        background: #F18B62;
+        background: #f18b62;
       }
     }
     &:hover {
@@ -45,20 +45,19 @@
   display: flex;
   margin: 0;
   overflow: auto;
+  .item {
+    position: relative;
+    min-height: 50px;
+    background: #f1f1f1;
+    margin-bottom: 12px;
+    &.isDragging {
+      opacity: 0.5;
+    }
+  }
 }
 
 .kanban-container {
   display: flex;
-}
-
-.item {
-  position: relative;
-  min-height: 50px;
-  background: #f1f1f1;
-  margin-bottom: 24px;
-  &.isDragging {
-    opacity: 0.5;
-  }
 }
 
 .drag-handle {
@@ -103,4 +102,3 @@
     }
   }
 }
-
