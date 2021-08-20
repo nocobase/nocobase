@@ -8,7 +8,7 @@ import {
   useSensors,
   useSensor,
   PointerSensor,
-  MouseSensor
+  MouseSensor,
 } from '@dnd-kit/core';
 import { observer, RecursionField } from '@formily/react';
 import React, { useState } from 'react';
@@ -47,9 +47,11 @@ export const Grid: any = observer((props: any) => {
   const [clientWidths, setClientWidths] = useState([0, 0]);
   const { addNewComponent } = props;
   const AddNewComponent = useSchemaComponent(addNewComponent);
-  const sensors = useSensors(
-    useSensor(MouseSensor),
-  );
+  const sensors = useSensors(useSensor(MouseSensor));
+  const rows = Object.values(schema.properties || {}).filter((item) => {
+    return !item['x-hidden'];
+  });
+  const path = getSchemaPath(schema);
   return (
     <div className={cls('nb-grid', { active })}>
       <DndContext
@@ -190,7 +192,11 @@ export const Grid: any = observer((props: any) => {
         }}
       >
         <DragOverlay
-        // style={{ pointerEvents: 'none' }}
+          dropAnimation={{
+            duration: 20,
+            easing: 'cubic-bezier(0.18, 0.67, 0.6, 1.22)',
+          }}
+          // style={{ pointerEvents: 'none' }}
         >
           <div
             className={'nb-grid-drag-overlay'}
@@ -207,12 +213,36 @@ export const Grid: any = observer((props: any) => {
           data={{
             type: 'row-divider',
             method: 'prepend',
-            path: getSchemaPath(schema),
+            path,
           }}
         />
-        {schema.mapProperties((property) => {
-          return <RecursionField name={property.name} schema={property} />;
+        {rows.map((property, index) => {
+          return (
+            <>
+              {index > 0 && (
+                <Droppable
+                  id={`${schema.name}-row-divider-${index}`}
+                  className={'nb-grid-row-divider'}
+                  data={{
+                    type: 'row-divider',
+                    method: 'insertBefore',
+                    path: [...path, property.name],
+                  }}
+                />
+              )}
+              <RecursionField name={property.name} schema={property} />
+            </>
+          );
         })}
+        <Droppable
+          id={`${schema.name}-row-divider-last`}
+          className={'nb-grid-row-divider'}
+          data={{
+            type: 'row-divider',
+            method: 'appendChild',
+            path,
+          }}
+        />
       </DndContext>
       {designable && AddNewComponent && <AddNewComponent />}
     </div>
