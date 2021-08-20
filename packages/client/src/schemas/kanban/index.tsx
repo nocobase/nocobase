@@ -225,7 +225,7 @@ const InternalKanban = observer((props: any) => {
               }}
             >
               <DragOverlay
-              // style={{ pointerEvents: 'none' }}
+                style={{ pointerEvents: 'none' }}
               >
                 <div
                   className={'nb-kanban-drag-overlay'}
