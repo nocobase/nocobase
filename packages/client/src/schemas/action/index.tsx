@@ -238,49 +238,54 @@ Action.Drawer = observer((props: any) => {
   const isFormDecorator = schema['x-decorator'] === 'Form';
   console.log('Action.Modal.field', schema['x-read-pretty']);
   return (
-    <Drawer
-      width={'50%'}
-      title={schema.title}
-      maskClosable
-      destroyOnClose
-      footer={
-        isFormDecorator &&
-        !schema['x-read-pretty'] && (
-          <Space style={{ float: 'right' }}>
-            <Button
-              onClick={async (e) => {
-                form.clearErrors();
-                props.onClose && (await props.onClose(e));
-                runCancel && (await runCancel());
-                setVisible(false);
-              }}
-            >
-              Cancel
-            </Button>
-            <Button
-              onClick={async (e) => {
-                await form.submit();
-                props.onOk && (await props.onOk(e));
-                runOk && (await runOk());
-                setVisible(false);
-              }}
-              type={'primary'}
-            >
-              OK
-            </Button>
-          </Space>
-        )
-      }
-      {...others}
-      visible={visible}
-      onClose={async (e) => {
-        props.onClose && (await props.onClose(e));
-        runCancel && (await runCancel());
-        setVisible(false);
-      }}
-    >
-      <FormLayout layout={'vertical'}>{props.children}</FormLayout>
-    </Drawer>
+    <>
+      {createPortal(
+        <Drawer
+          width={'50%'}
+          title={schema.title}
+          maskClosable
+          destroyOnClose
+          footer={
+            isFormDecorator &&
+            !schema['x-read-pretty'] && (
+              <Space style={{ float: 'right' }}>
+                <Button
+                  onClick={async (e) => {
+                    form.clearErrors();
+                    props.onClose && (await props.onClose(e));
+                    runCancel && (await runCancel());
+                    setVisible(false);
+                  }}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  onClick={async (e) => {
+                    await form.submit();
+                    props.onOk && (await props.onOk(e));
+                    runOk && (await runOk());
+                    setVisible(false);
+                  }}
+                  type={'primary'}
+                >
+                  OK
+                </Button>
+              </Space>
+            )
+          }
+          {...others}
+          visible={visible}
+          onClose={async (e) => {
+            props.onClose && (await props.onClose(e));
+            runCancel && (await runCancel());
+            setVisible(false);
+          }}
+        >
+          <FormLayout layout={'vertical'}>{props.children}</FormLayout>
+        </Drawer>,
+        document.body,
+      )}
+    </>
   );
 });
 
