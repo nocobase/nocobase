@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useRef } from 'react';
 import {
   observer,
   RecursionField,
@@ -38,6 +38,7 @@ import { CardDesignableBar } from './CardDesignableBar';
 import { VisibleContext } from '../../context';
 
 export function SortableItem(props) {
+  const nodeRef = useRef<any>();
   const {
     attributes,
     listeners,
@@ -49,6 +50,7 @@ export function SortableItem(props) {
     id: props.id,
     data: {
       type: props.type,
+      nodeRef,
     },
   });
 
@@ -60,7 +62,10 @@ export function SortableItem(props) {
   return (
     <div
       className={cls({ isDragging }, props.className)}
-      ref={setNodeRef}
+      ref={(el) => {
+        setNodeRef(el);
+        nodeRef.current = el;
+      }}
       style={style}
       {...attributes}
       {...listeners}
@@ -155,6 +160,10 @@ const InternalKanban = observer((props: any) => {
       sort: 'sort',
     });
   }, [props.defaultFilter]);
+  const [dragOverlayContent, setDragOverlayContent] = useState('');
+  const [style, setStyle] = useState({});
+  const containerRef = useRef<HTMLDivElement>();
+  console.log({ style })
   return (
     <KanbanContext.Provider value={{ field, resource, service, props }}>
       <div>
@@ -162,8 +171,15 @@ const InternalKanban = observer((props: any) => {
         <Button>筛选</Button>
       </div> */}
         <div className={'kanban'}>
-          <div className={'kanban-container'}>
+          <div ref={containerRef} className={'kanban-container'}>
             <DndContext
+              onDragStart={(event) => {
+                const el = event?.active?.data?.current?.nodeRef
+                  ?.current as HTMLElement;
+                console.log(event, el);
+                setDragOverlayContent(el?.outerHTML);
+                setStyle({ width: el.clientWidth, height: containerRef.current?.clientHeight });
+              }}
               // collisionDetection={closestCorners}
               onDragEnd={({ active, over }) => {
                 const source = values.find((item) => item.id === active?.id);
@@ -208,7 +224,17 @@ const InternalKanban = observer((props: any) => {
                 }
               }}
             >
-              <DragOverlay style={{ pointerEvents: 'none' }}>aaa</DragOverlay>
+              <DragOverlay
+              // style={{ pointerEvents: 'none' }}
+              >
+                <div
+                  className={'nb-kanban-drag-overlay'}
+                  style={{
+                    ...style,
+                  }}
+                  dangerouslySetInnerHTML={{ __html: dragOverlayContent }}
+                />
+              </DragOverlay>
 
               <SortableContext
                 strategy={horizontalListSortingStrategy}
@@ -288,7 +314,9 @@ const InternalKanban = observer((props: any) => {
                   className={'column add-column'}
                 >
                   {/* <span className={'add-column-plus'}/> */}
-                  <span><PlusOutlined/> 添加列表</span>
+                  <span>
+                    <PlusOutlined /> 添加列表
+                  </span>
                 </div>
               </SortableContext>
             </DndContext>

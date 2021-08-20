@@ -2015,7 +2015,7 @@ Table.DesignableBar = observer((props) => {
       >
         <Space size={2}>
           <AddNew.CardItem defaultAction={'insertAfter'} ghost />
-          {dragRef && <DragOutlined ref={dragRef} />}
+          <DragHandle />
           <Dropdown
             trigger={['click']}
             visible={visible}

@@ -42,9 +42,8 @@ import SwitchMenuItem from '../../components/SwitchMenuItem';
 
 export const CardDesignableBar = observer((props) => {
   const field = useField();
-  const { designable, schema, appendChild, deepRemove } = useDesignable();
+  const { schema, appendChild, deepRemove } = useDesignable();
   const [visible, setVisible] = useState(false);
-  const { dragRef } = useContext(DraggableBlockContext);
   const { collection, fields } = useCollectionContext();
   const displayed = useDisplayedMapContext();
   console.log('useDisplayedMapContext', schema);

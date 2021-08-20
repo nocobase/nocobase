@@ -43,12 +43,12 @@ export function DragHandle(props) {
   const Icon = component || DragOutlined;
   return (
     <SortableItemContext.Consumer>
-      {({ setDraggableNodeRef, attributes, listeners }) =>
+      {({ draggable, setDraggableNodeRef, attributes, listeners }) =>
         setDraggableNodeRef && (
           <Icon
             ref={setDraggableNodeRef}
             {...others}
-            {...attributes}
+            // {...attributes}
             {...listeners}
           />
         )
@@ -57,7 +57,14 @@ export function DragHandle(props) {
   );
 }
 
-export function Droppable(props) {
+export interface DroppableProps {
+  id: any;
+  data?: any;
+  component?: any;
+  [key: string]: any;
+}
+
+export function Droppable(props: DroppableProps) {
   const { id, data = {}, className, component, children, ...others } = props;
   const { isOver, setNodeRef: setDroppableNodeRef } = useDroppable({
     id: `droppable-${id}`,
@@ -81,8 +88,24 @@ export function Droppable(props) {
   );
 }
 
-export function SortableItem(props) {
-  const { id, data = {}, className, component, children, ...others } = props;
+export interface SortableItemProps {
+  id: any;
+  data?: any;
+  component?: any;
+  draggable?: boolean;
+  [key: string]: any;
+}
+
+export function SortableItem(props: SortableItemProps) {
+  const {
+    id,
+    data = {},
+    draggable,
+    className,
+    component,
+    children,
+    ...others
+  } = props;
   const previewRef = useRef<HTMLElement>();
   const { isOver, setNodeRef: setDroppableNodeRef } = useDroppable({
     id: `droppable-${id}`,
@@ -104,10 +127,14 @@ export function SortableItem(props) {
       previewRef,
     },
   });
+  if (draggable) {
+    Object.assign(others, listeners);
+  }
   const Component = component || Div;
   return (
     <Component
       {...others}
+      {...attributes}
       className={cls(className, `droppable-${id}`, {
         isOver,
         isDragging,
@@ -115,10 +142,13 @@ export function SortableItem(props) {
       ref={(el: HTMLElement) => {
         previewRef.current = el;
         setDroppableNodeRef(el);
+        if (draggable) {
+          setDraggableNodeRef(el);
+        }
       }}
     >
       <SortableItemContext.Provider
-        value={{ setDraggableNodeRef, attributes, listeners }}
+        value={{ draggable, setDraggableNodeRef, attributes, listeners }}
       >
         {children}
       </SortableItemContext.Provider>

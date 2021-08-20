@@ -21,6 +21,7 @@ import { uid } from '@formily/shared';
 import { removeSchema, updateSchema } from '..';
 import { isGridRowOrCol } from '../grid';
 import './style.less';
+import { DragHandle } from '../../components/Sortable';
 
 export const Markdown: any = connect(
   AntdInput.TextArea,
@@ -121,7 +122,7 @@ Markdown.Void.DesignableBar = observer((props) => {
       >
         <Space size={'small'}>
           <AddNew.CardItem defaultAction={'insertAfter'} ghost />
-          {dragRef && <DragOutlined ref={dragRef} />}
+          <DragHandle />
           <Dropdown
             trigger={['click']}
             visible={visible}
@@ -182,7 +183,7 @@ Markdown.DesignableBar = observer((props) => {
       >
         <Space size={'small'}>
           <AddNew.FormItem defaultAction={'insertAfter'} ghost />
-          {dragRef && <DragOutlined ref={dragRef} />}
+          <DragHandle />
           <Dropdown
             trigger={['click']}
             visible={visible}

@@ -28,6 +28,7 @@ import { uid } from '@formily/shared';
 import { getSchemaPath } from '../../components/schema-renderer';
 import { useCollection, useCollectionContext } from '../../constate';
 import { useTable } from '../table';
+import { DragHandle } from '../../components/Sortable';
 
 export const DesignableBar = observer((props) => {
   const field = useField();
@@ -48,7 +49,7 @@ export const DesignableBar = observer((props) => {
       >
         <Space size={2}>
           <AddNew.CardItem defaultAction={'insertAfter'} ghost />
-          {dragRef && <DragOutlined ref={dragRef} />}
+          <DragHandle />
           <Dropdown
             trigger={['click']}
             visible={visible}

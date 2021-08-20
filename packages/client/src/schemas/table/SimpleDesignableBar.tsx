@@ -33,6 +33,7 @@ import { useEffect } from 'react';
 import { uid } from '@formily/shared';
 import { getSchemaPath } from '../../components/schema-renderer';
 import { set } from 'lodash';
+import { DragHandle } from '../../components/Sortable';
 
 export const SimpleDesignableBar = observer((props) => {
   const field = useField();
@@ -54,7 +55,7 @@ export const SimpleDesignableBar = observer((props) => {
       >
         <Space size={'small'}>
           <AddNew.CardItem defaultAction={'insertAfter'} ghost />
-          {dragRef && <DragOutlined ref={dragRef} />}
+          <DragHandle />
           <Dropdown
             trigger={['click']}
             visible={visible}

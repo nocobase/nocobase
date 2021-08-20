@@ -4,6 +4,9 @@
   background: #f9f9f9;
   margin-right: 12px;
   padding: 12px;
+  &.isDragging {
+    opacity: .5;
+  }
   &.add-column {
     padding: 0;
     margin-right: 0;
@@ -35,6 +38,10 @@
   }
 }
 
+.nb-kanban-drag-overlay {
+  opacity: .8;
+}
+
 .column-title {
   line-height: 24px;
   font-weight: 500;
@@ -47,8 +54,7 @@
   overflow: auto;
   .item {
     position: relative;
-    min-height: 50px;
-    background: #f1f1f1;
+    // background: #f1f1f1;
     margin-bottom: 12px;
     &.isDragging {
       opacity: 0.5;
@@ -68,6 +74,15 @@
 
 .kanban .ant-card-body {
   position: relative;
+  padding: 0;
+  
+  > .nb-block-item {
+    padding: 12px;
+    min-height: 50px;
+  }
+  .nb-grid-block, .ant-formily-item {
+    margin-bottom: 0 !important;
+  }
   &:hover {
     > .designable-bar {
       display: block;
