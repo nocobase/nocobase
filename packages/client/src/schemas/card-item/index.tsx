@@ -14,7 +14,6 @@ import classNames from 'classnames';
 import { MenuOutlined, DragOutlined } from '@ant-design/icons';
 // import './style.less';
 import get from 'lodash/get';
-import { GridBlockContext } from '../grid';
 import { uid } from '@formily/shared';
 import { useDesignable } from '../';
 import { AddNew } from '../add-new';
@@ -26,7 +25,7 @@ export const CardItem: any = connect((props) => {
   const { schema } = useDesignable();
   return (
     <BlockSchemaContext.Provider value={schema}>
-      <BlockItem>
+      <BlockItem className={'nb-card-item'}>
         <Card bordered={false} {...props}>
           {props.children}
         </Card>

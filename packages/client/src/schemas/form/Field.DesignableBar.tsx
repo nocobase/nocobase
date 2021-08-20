@@ -35,6 +35,7 @@ import { getSchemaPath } from '../../components/schema-renderer';
 import { RandomNameContext } from '.';
 import { useCollectionContext, useDisplayedMapContext } from '../../constate';
 import SwitchMenuItem from '../../components/SwitchMenuItem';
+import { DragHandle } from '../../components/Sortable';
 
 export const FieldDesignableBar = observer((props) => {
   const field = useField();
@@ -64,7 +65,7 @@ export const FieldDesignableBar = observer((props) => {
       >
         <Space size={2}>
           <AddNew.FormItem defaultAction={'insertAfter'} ghost />
-          {dragRef && <DragOutlined ref={dragRef} />}
+          <DragHandle />
           <Dropdown
             placement={'bottomRight'}
             trigger={['click']}

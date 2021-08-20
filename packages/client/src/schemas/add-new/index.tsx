@@ -446,12 +446,24 @@ function generateCardItemSchema(component) {
           name: uid(),
           'x-decorator': 'Form',
           'x-component': 'Kanban.Card',
-          'x-designable-bar': 'Kanban.Card.DesignableBar',
           'x-read-pretty': true,
           'x-decorator-props': {
             useResource: '{{ Kanban.useResource }}',
           },
-          properties: {},
+          properties: {
+            [uid()]: {
+              type: 'void',
+              'x-decorator': 'BlockItem',
+              'x-decorator-props': {
+                draggable: false,
+              },
+              'x-component': 'Grid',
+              'x-designable-bar': 'Kanban.Card.DesignableBar',
+              // 'x-component-props': {
+              //   addNewComponent: 'AddNew.FormItem',
+              // },
+            },
+          },
         },
         view1: {
           type: 'void',

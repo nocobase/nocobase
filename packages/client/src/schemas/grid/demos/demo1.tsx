@@ -2,13 +2,13 @@ import React from 'react';
 import { uid } from '@formily/shared';
 import {
   observer,
-  ISchema,
   FormProvider,
   useFieldSchema,
   RecursionField,
   useField,
 } from '@formily/react';
-import { SchemaRenderer } from '../..';
+import { ISchema, SchemaRenderer } from '../..';
+import { Grid } from '..';
 
 const schema: ISchema = {
   type: 'void',
@@ -104,13 +104,13 @@ const schema: ISchema = {
                     [`row_${uid()}`]: {
                       type: 'void',
                       'x-component': 'Grid.Row',
+                      'x-component-props': {
+                        colsize: [30, 70],
+                      },
                       properties: {
                         [`col_${uid()}`]: {
                           type: 'void',
                           'x-component': 'Grid.Col',
-                          'x-component-props': {
-                            width: 30,
-                          },
                           properties: {
                             [uid()]: {
                               type: 'string',
@@ -124,9 +124,6 @@ const schema: ISchema = {
                         [`col_${uid()}`]: {
                           type: 'void',
                           'x-component': 'Grid.Col',
-                          'x-component-props': {
-                            width: 70,
-                          },
                           properties: {
                             [uid()]: {
                               type: 'string',
@@ -190,6 +187,6 @@ const schema: ISchema = {
 
 export default () => {
   return (
-    <SchemaRenderer schema={schema} />
+    <SchemaRenderer components={{ Grid }} schema={schema} />
   );
 };

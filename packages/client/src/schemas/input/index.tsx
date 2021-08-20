@@ -14,6 +14,7 @@ import { DraggableBlockContext } from '../../components/drag-and-drop';
 import { uid } from '@formily/shared';
 import { removeSchema, updateSchema } from '..';
 import { isGridRowOrCol } from '../grid';
+import { DragHandle } from '../../components/Sortable';
 
 type ComposedInput = React.FC<InputProps> & {
   TextArea?: React.FC<TextAreaProps>
@@ -59,7 +60,7 @@ Input.DesignableBar = observer((props) => {
       >
         <Space size={'small'}>
           <AddNew.CardItem defaultAction={'insertAfter'} ghost />
-          {dragRef && <DragOutlined ref={dragRef} />}
+          <DragHandle />
           <Dropdown
             trigger={['click']}
             visible={visible}

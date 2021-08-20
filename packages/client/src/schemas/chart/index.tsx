@@ -20,6 +20,7 @@ import { removeSchema, updateSchema } from '..';
 import { isGridRowOrCol } from '../grid';
 import G2Plot from './G2Plot';
 import { Column, Line, Pie, Bar } from '@antv/g2plot';
+import { DragHandle } from '../../components/Sortable';
 
 export const Chart: any = {};
 
@@ -57,7 +58,7 @@ Chart.DesignableBar = observer((props) => {
       >
         <Space size={'small'}>
           <AddNew.CardItem defaultAction={'insertAfter'} ghost />
-          {dragRef && <DragOutlined ref={dragRef} />}
+          <DragHandle />
           <Dropdown
             trigger={['click']}
             visible={visible}

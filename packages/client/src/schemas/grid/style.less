@@ -3,6 +3,7 @@
 }
 .nb-grid-row {
   margin: 0px -24px;
+  display: flex;
 }
 
 // .nb-grid {
@@ -95,4 +96,63 @@ body.dragging {
 
 .anticon-drag {
   cursor: grab;
+}
+
+.nb-block-item {
+  position: relative;
+  &.isDragging {
+    opacity: .3;
+  }
+  &.isOver::after {
+    content: '';
+    position: absolute;
+    bottom: -24px;
+    height: 20px;
+    width: 100%;
+    background: rgba(241, 139, 98, 0.1) !important;
+  }
+}
+
+.nb-grid-row,
+.nb-grid-col {
+  position: relative;
+  &.isOver::after {
+    content: '';
+    position: absolute;
+    left: 0;
+    bottom: 0;
+    height: 20px;
+    width: 100%;
+    background: rgba(241, 139, 98, 0.1) !important;
+  }
+}
+
+.nb-grid-row-divider.isOver,
+.nb-grid-col-divider.isOver {
+  background: rgba(241, 139, 98, 0.1) !important;
+}
+.nb-grid-drag-overlay {
+  opacity: 0.6;
+  .designable-bar {
+    background: rgba(241, 139, 98, 0.1) !important;
+  }
+}
+.nb-grid-row-divider {
+  // background-color: #ddd;
+  height: 24px;
+  width: 100%;
+  top: -24px;
+  position: absolute;
+  z-index: 20;
+  // opacity: 0.5;
+  // background: #e6f7ff;
+}
+
+.nb-grid-col-divider {
+  &.resizable {
+    cursor: col-resize;
+    &:hover {
+      background: rgba(241, 139, 98, 0.1) !important;
+    }
+  }
 }
