@@ -145,11 +145,9 @@ Markdown.Void.DesignableBar = observer((props) => {
                   key={'delete'}
                   onClick={async () => {
                     const removed = deepRemove();
-                    // console.log({ removed })
                     const last = removed.pop();
-                    if (isGridRowOrCol(last)) {
-                      await removeSchema(last);
-                    }
+                    console.log({ last })
+                    await removeSchema(last);
                   }}
                 >
                   移除

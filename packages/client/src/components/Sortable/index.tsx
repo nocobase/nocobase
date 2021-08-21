@@ -48,7 +48,7 @@ export function DragHandle(props) {
           <Icon
             ref={setDraggableNodeRef}
             {...others}
-            // {...attributes}
+            {...attributes}
             {...listeners}
           />
         )
@@ -134,7 +134,7 @@ export function SortableItem(props: SortableItemProps) {
   return (
     <Component
       {...others}
-      {...attributes}
+      // {...attributes}
       className={cls(className, `droppable-${id}`, {
         isOver,
         isDragging,
@@ -142,9 +142,9 @@ export function SortableItem(props: SortableItemProps) {
       ref={(el: HTMLElement) => {
         previewRef.current = el;
         setDroppableNodeRef(el);
-        if (draggable) {
-          setDraggableNodeRef(el);
-        }
+        // if (draggable) {
+          // setDraggableNodeRef(el);
+        // }
       }}
     >
       <SortableItemContext.Provider

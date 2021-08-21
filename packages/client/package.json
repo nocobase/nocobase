@@ -19,8 +19,8 @@
   "gitHead": "f0b335ac30f29f25c95d7d137655fa64d8d67f1e",
   "dependencies": {
     "@antv/g2plot": "^2.3.27",
-    "@dnd-kit/core": "^3.1.1",
-    "@dnd-kit/sortable": "^4.0.0",
+    "@dnd-kit/core": "4.0.0-next-2021720152655",
+    "@dnd-kit/sortable": "5.0.0-next-2021720152655",
     "@formily/antd": "^2.0.0-rc.3",
     "@formily/core": "^2.0.0-rc.3",
     "@formily/react": "^2.0.0-rc.3",
