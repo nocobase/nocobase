@@ -48,7 +48,7 @@ export function DragHandle(props) {
           <Icon
             ref={setDraggableNodeRef}
             {...others}
-            {...attributes}
+            // {...attributes}
             {...listeners}
           />
         )
@@ -104,6 +104,7 @@ export function SortableItem(props: SortableItemProps) {
     className,
     component,
     children,
+    disabled,
     ...others
   } = props;
   const previewRef = useRef<HTMLElement>();
@@ -113,6 +114,7 @@ export function SortableItem(props: SortableItemProps) {
       ...data,
       previewRef,
     },
+    disabled,
   });
   const {
     isDragging,
@@ -122,6 +124,7 @@ export function SortableItem(props: SortableItemProps) {
     transform,
   } = useDraggable({
     id: `draggable-${id}`,
+    disabled,
     data: {
       ...data,
       previewRef,
