@@ -6,7 +6,16 @@ import {
   useField,
   useForm,
 } from '@formily/react';
-import { DndContext, DragOverlay, closestCorners } from '@dnd-kit/core';
+import {
+  DndContext,
+  DragOverlay,
+  closestCorners,
+  rectIntersection,
+  closestCenter,
+  useSensors,
+  useSensor,
+  MouseSensor,
+} from '@dnd-kit/core';
 import {
   SortableContext,
   rectSortingStrategy,
@@ -48,6 +57,7 @@ export function SortableItem(props) {
     transition,
   } = useSortable({
     id: props.id,
+    disabled: props.disabled,
     data: {
       type: props.type,
       nodeRef,
@@ -70,6 +80,7 @@ export function SortableItem(props) {
       {...attributes}
       {...listeners}
     >
+      {/* <div {...listeners}>drag</div> */}
       {props.children}
     </div>
   );
@@ -109,6 +120,22 @@ export const KanbanColumnContext = createContext<any>(null);
 export const useKanban = () => {
   return useContext(KanbanContext);
 };
+
+class MyMouseSensor extends MouseSensor {
+  static activators = [
+    {
+      eventName: 'onMouseDown' as const,
+      handler: (event) => {
+        if (event.target.tagName === 'DIV') {
+          return true;
+        }
+        console.log('event.target.tagName', event.target.tagName);
+        event.target;
+        return false;
+      },
+    },
+  ];
+}
 
 const InternalKanban = observer((props: any) => {
   const field = useField<Formily.Core.Models.ArrayField>();
@@ -163,7 +190,8 @@ const InternalKanban = observer((props: any) => {
   const [dragOverlayContent, setDragOverlayContent] = useState('');
   const [style, setStyle] = useState({});
   const containerRef = useRef<HTMLDivElement>();
-  console.log({ style })
+  console.log({ style });
+  const sensors = useSensors(useSensor(MyMouseSensor));
   return (
     <KanbanContext.Provider value={{ field, resource, service, props }}>
       <div>
@@ -173,14 +201,18 @@ const InternalKanban = observer((props: any) => {
         <div className={'kanban'}>
           <div ref={containerRef} className={'kanban-container'}>
             <DndContext
+              sensors={sensors}
               onDragStart={(event) => {
                 const el = event?.active?.data?.current?.nodeRef
                   ?.current as HTMLElement;
                 console.log(event, el);
                 setDragOverlayContent(el?.outerHTML);
-                setStyle({ width: el.clientWidth, height: containerRef.current?.clientHeight });
+                setStyle({
+                  width: el.clientWidth,
+                  height: containerRef.current?.clientHeight,
+                });
               }}
-              // collisionDetection={closestCorners}
+              collisionDetection={closestCenter}
               onDragEnd={({ active, over }) => {
                 const source = values.find((item) => item.id === active?.id);
                 const target = values.find((item) => item.id === over?.id);
@@ -225,7 +257,8 @@ const InternalKanban = observer((props: any) => {
               }}
             >
               <DragOverlay
-                style={{ pointerEvents: 'none' }}
+                style={{ ...style }}
+                // style={{ pointerEvents: 'none' }}
               >
                 <div
                   className={'nb-kanban-drag-overlay'}
@@ -250,6 +283,7 @@ const InternalKanban = observer((props: any) => {
                     id={column.value}
                     key={column.value}
                     type={'column'}
+                    disabled
                     className={'column'}
                   >
                     <KanbanColumnContext.Provider value={column}>
@@ -269,6 +303,7 @@ const InternalKanban = observer((props: any) => {
                               key={item.id}
                               className={'item'}
                               id={item.id}
+                              // disabled
                               type={'item'}
                             >
                               <KanbanCardContext.Provider
@@ -291,33 +326,9 @@ const InternalKanban = observer((props: any) => {
                         name={addCardSchema?.name}
                         schema={addCardSchema}
                       />
-                      {/* <Button
-                    type={'text'}
-                    icon={<PlusOutlined />}
-                    onClick={() => {
-                      field.push({
-                        id: uid(),
-                        title: uid(),
-                        [groupName]: column.value,
-                      });
-                    }}
-                  >
-                    添加卡片
-                  </Button> */}
                     </KanbanColumnContext.Provider>
                   </SortableItem>
                 ))}
-                <div
-                  id={'addColumn'}
-                  key={'addColumn'}
-                  // type={'column'}
-                  className={'column add-column'}
-                >
-                  {/* <span className={'add-column-plus'}/> */}
-                  <span>
-                    <PlusOutlined /> 添加列表
-                  </span>
-                </div>
               </SortableContext>
             </DndContext>
           </div>
