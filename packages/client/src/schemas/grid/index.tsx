@@ -31,6 +31,7 @@ import {
   removeSchema,
   updateSchema,
 } from '..';
+import { createPortal } from 'react-dom';
 
 const GridRowContext = createContext<any>(null);
 const GridColContext = createContext<any>(null);
@@ -47,7 +48,7 @@ export const Grid: any = observer((props: any) => {
   const [clientWidths, setClientWidths] = useState([0, 0]);
   const { addNewComponent } = props;
   const AddNewComponent = useSchemaComponent(addNewComponent);
-  const sensors = useSensors(useSensor(MouseSensor));
+  // const sensors = useSensors(useSensor(MouseSensor));
   const rows = Object.values(schema.properties || {}).filter((item) => {
     return !item['x-hidden'];
   });
@@ -55,21 +56,24 @@ export const Grid: any = observer((props: any) => {
   return (
     <div className={cls('nb-grid', { active })}>
       <DndContext
-        autoScroll
-        sensors={sensors}
+        // autoScroll
+        // sensors={sensors}
         collisionDetection={rectIntersection}
         onDragStart={(event) => {
           setActive(true);
           const el = event?.active?.data?.current?.previewRef
             ?.current as HTMLElement;
           console.log(event, el);
-          setDragOverlayContent(el?.outerHTML);
-          setStyle({ width: el.clientWidth });
+          // setDragOverlayContent(el?.outerHTML);
+          // setStyle({ width: el?.clientWidth, height: el?.clientHeight });
           const activeType = event?.active?.data?.current?.type;
           if (activeType === 'col-resize') {
+            setDragOverlayContent('');
             const prev = el.previousElementSibling as HTMLDivElement;
             const next = el.nextElementSibling as HTMLDivElement;
             setClientWidths([prev.clientWidth, next.clientWidth]);
+          } else {
+            setDragOverlayContent('拖拽');
           }
         }}
         onDragCancel={() => {
@@ -101,6 +105,7 @@ export const Grid: any = observer((props: any) => {
           const targetPath = event?.over?.data?.current?.path;
           const method = event?.over?.data?.current?.method;
           const type = event?.over?.data?.current?.type;
+          console.log({ event, sourcePath, targetPath });
           if (activeType === 'col-resize') {
             const parentPath = event?.active?.data?.current?.parentPath;
             const el = event?.active?.data?.current?.previewRef
@@ -152,6 +157,15 @@ export const Grid: any = observer((props: any) => {
           }
           let data;
           if (['col-divider', 'col-resize'].includes(type)) {
+            if (sourceSchema?.parent?.['x-component'] === 'Grid.Col') {
+              // console.log('datadata', sourcePath, targetPath);
+              if (
+                sourcePath.join('.').startsWith(targetPath.join('.')) &&
+                Object.keys(sourceSchema?.parent?.properties).length < 2
+              ) {
+                return;
+              }
+            }
             data = {
               type: 'void',
               'x-component': 'Grid.Col',
@@ -177,12 +191,13 @@ export const Grid: any = observer((props: any) => {
             };
           }
           if (data) {
+            console.log('datadata', data, type, method);
             const removed = deepRemove(sourcePath);
             const last = removed.pop();
+            const s = fn(data, targetPath);
             if (isGridRowOrCol(last)) {
               await removeSchema(last);
             }
-            const s = fn(data, targetPath);
             if (['block', 'col'].includes(type)) {
               await updateSchema(s);
             } else {
@@ -196,16 +211,18 @@ export const Grid: any = observer((props: any) => {
             duration: 20,
             easing: 'cubic-bezier(0.18, 0.67, 0.6, 1.22)',
           }}
-          // style={{ pointerEvents: 'none' }}
+          style={{ whiteSpace: 'nowrap' }}
+          // style={{ ...style, pointerEvents: 'none' }}
         >
-          <div
+          {dragOverlayContent}
+          {/* <div
             className={'nb-grid-drag-overlay'}
             style={{
               ...style,
               transform: 'translate(calc(-100% + 30px), 2px)',
             }}
             dangerouslySetInnerHTML={{ __html: dragOverlayContent }}
-          />
+          /> */}
         </DragOverlay>
         <Droppable
           id={`${schema.name}-row-divider`}
