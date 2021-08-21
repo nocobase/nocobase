@@ -272,7 +272,7 @@ function setKeys(schema: ISchema | FormilyISchema, parentKey = null) {
   if (!schema['key']) {
     schema['key'] = uid();
   }
-  if (parentKey && !schema['parentKey']) {
+  if (parentKey) {
     schema['parentKey'] = parentKey;
   }
   Object.keys(schema.properties || {}).forEach((name) => {
@@ -428,6 +428,36 @@ export function useDesignable(path?: any) {
       addPropertyBefore(target, property);
       refresh();
       return target.parent.properties[property.name];
+    },
+    deepRemoveIfEmpty(targetPath) {
+      let target = currentSchema;
+      if (targetPath) {
+        target = findPropertyByPath(schema, targetPath);
+      }
+      if (!target) {
+        console.error('target schema does not exist.');
+        return;
+      }
+      const removed = [];
+      const remove = (s: Schema) => {
+        if (!s.parent) {
+          return;
+        }
+        s.parent.removeProperty(s.name);
+        removed.push(s);
+        if (s['x-component'] === 'Grid.Row') {
+          return;
+        }
+        if (Object.keys(s.parent.properties || {}).length === 0) {
+          remove(s.parent);
+        }
+      };
+      console.log({ removed });
+      if (Object.keys(target.properties || {}).length === 0) {
+        remove(target);
+      }
+      refresh();
+      return removed;
     },
     deepRemove(targetPath?: any) {
       let target = currentSchema;

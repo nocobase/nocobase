@@ -31,17 +31,29 @@ import {
   removeSchema,
   updateSchema,
 } from '..';
-import { createPortal } from 'react-dom';
+import { DesignableBar } from './DesignableBar';
 
 const GridRowContext = createContext<any>(null);
 const GridColContext = createContext<any>(null);
 
 export function isGridRowOrCol(schema: ISchema | FormilyISchema) {
-  return ['Grid.Row', 'Grid.Col'].includes(schema['x-component']);
+  if (!schema) {
+    return;
+  }
+  return ['Grid.Row', 'Grid.Col'].includes(schema?.['x-component']);
 }
 
 export const Grid: any = observer((props: any) => {
-  const { designable, root, schema, deepRemove, ...methods } = useDesignable();
+  const {
+    designable,
+    root,
+    schema,
+    refresh,
+    deepRemove,
+    deepRemoveIfEmpty,
+    remove,
+    ...methods
+  } = useDesignable();
   const [dragOverlayContent, setDragOverlayContent] = useState('');
   const [style, setStyle] = useState({});
   const [active, setActive] = useState(false);
@@ -157,15 +169,15 @@ export const Grid: any = observer((props: any) => {
           }
           let data;
           if (['col-divider', 'col-resize'].includes(type)) {
-            if (sourceSchema?.parent?.['x-component'] === 'Grid.Col') {
-              // console.log('datadata', sourcePath, targetPath);
-              if (
-                sourcePath.join('.').startsWith(targetPath.join('.')) &&
-                Object.keys(sourceSchema?.parent?.properties).length < 2
-              ) {
-                return;
-              }
-            }
+            // if (sourceSchema?.parent?.['x-component'] === 'Grid.Col') {
+            //   // console.log('datadata', sourcePath, targetPath);
+            //   if (
+            //     sourcePath.join('.').startsWith(targetPath.join('.')) &&
+            //     Object.keys(sourceSchema?.parent?.properties).length < 2
+            //   ) {
+            //     return;
+            //   }
+            // }
             data = {
               type: 'void',
               'x-component': 'Grid.Col',
@@ -192,16 +204,19 @@ export const Grid: any = observer((props: any) => {
           }
           if (data) {
             console.log('datadata', data, type, method);
-            const removed = deepRemove(sourcePath);
-            const last = removed.pop();
+            remove(sourcePath);
+            const ppath = [...sourcePath];
+            ppath.pop();
             const s = fn(data, targetPath);
-            if (isGridRowOrCol(last)) {
-              await removeSchema(last);
-            }
+            const removed = deepRemoveIfEmpty(ppath);
+            const last = removed.pop();
             if (['block', 'col'].includes(type)) {
               await updateSchema(s);
             } else {
               await createSchema(s);
+            }
+            if (isGridRowOrCol(last)) {
+              await removeSchema(last);
             }
           }
         }}
@@ -211,18 +226,22 @@ export const Grid: any = observer((props: any) => {
             duration: 20,
             easing: 'cubic-bezier(0.18, 0.67, 0.6, 1.22)',
           }}
-          style={{ whiteSpace: 'nowrap' }}
-          // style={{ ...style, pointerEvents: 'none' }}
+          // dropAnimation={null}
+          // style={{ whiteSpace: 'nowrap' }}
+          style={{
+            width: 40,
+            whiteSpace: 'nowrap',
+            // ...style,
+            // pointerEvents: 'none',
+          }}
         >
-          {dragOverlayContent}
-          {/* <div
+          <div
             className={'nb-grid-drag-overlay'}
             style={{
               ...style,
-              transform: 'translate(calc(-100% + 30px), 2px)',
             }}
             dangerouslySetInnerHTML={{ __html: dragOverlayContent }}
-          /> */}
+          />
         </DragOverlay>
         <Droppable
           id={`${schema.name}-row-divider`}
@@ -267,7 +286,7 @@ export const Grid: any = observer((props: any) => {
 });
 
 Grid.Row = observer((props: any) => {
-  const { schema } = useDesignable();
+  const { designable, schema } = useDesignable();
   const columns = Object.values(schema.properties || {}).filter((item) => {
     return !item['x-hidden'];
   });
@@ -310,7 +329,10 @@ Grid.Row = observer((props: any) => {
                     parentPath: [...path],
                     path: [...path, property.name],
                   }}
-                  className={cls('nb-grid-col-divider', 'resizable')}
+                  disabled={!designable}
+                  className={cls('nb-grid-col-divider', {
+                    resizable: designable,
+                  })}
                 />
               )}
               <GridColContext.Provider value={{ index, width: size[index] }}>
@@ -334,7 +356,7 @@ Grid.Row = observer((props: any) => {
 });
 
 Grid.Col = observer((props: any) => {
-  const { schema } = useDesignable();
+  const { schema, designable, DesignableBar } = useDesignable();
   // const { width } = props;
   const { columnCount } = useContext(GridRowContext);
   const { width } = useContext(GridColContext);
@@ -358,6 +380,9 @@ Grid.Col = observer((props: any) => {
         className={'nb-grid-row-divider'}
       /> */}
       {props.children}
+      {/* <Grid.Col.DesignableBar /> */}
     </Droppable>
   );
 });
+
+Grid.Col.DesignableBar = DesignableBar;
