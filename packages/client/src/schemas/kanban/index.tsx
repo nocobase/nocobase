@@ -135,6 +135,9 @@ class MyMouseSensor extends MouseSensor {
       },
     },
   ];
+  constructor(props) {
+    super(props);
+  }
 }
 
 const InternalKanban = observer((props: any) => {
