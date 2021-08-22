@@ -1,80 +1,31 @@
-.column {
+.nb-kanban-board {
+  display: flex;
+  margin: 0;
+  overflow: auto;
+}
+.nb-kanban-container {
+  display: flex;
+  min-height: 60vh;
+}
+
+.nb-kanban-column {
   position: relative;
   width: 300px;
   background: #f9f9f9;
   margin-right: 12px;
   padding: 12px;
-  &.isDragging {
-    opacity: .5;
-  }
-  &.add-column {
-    padding: 0;
-    margin-right: 0;
-    background: rgba(241, 139, 98, 0.05);
-    cursor: pointer;
-    color: #f18b62;
-    text-align: center;
-    justify-content: center;
-    align-items: center;
-    display: flex;
-    .add-column-plus {
-      position: relative;
-      &::before {
-        position: absolute;
-        width: 1px;
-        height: 50px;
-        background: #f18b62;
-      }
-      &::after {
-        position: absolute;
-        width: 50px;
-        height: 1px;
-        background: #f18b62;
-      }
-    }
-    &:hover {
-      background: rgba(241, 139, 98, 0.1);
-    }
-  }
 }
 
-.nb-kanban-drag-overlay {
-  opacity: .8;
-}
-
-.column-title {
-  line-height: 24px;
-  font-weight: 500;
+.nb-kanban-item {
   margin-bottom: 12px;
-}
-
-.kanban {
-  display: flex;
-  margin: 0;
-  overflow: auto;
-  .item {
-    position: relative;
-    // background: #f1f1f1;
-    margin-bottom: 12px;
-    &.isDragging {
-      opacity: 0.5;
-    }
+  &.isDragging {
+    opacity: .2;
   }
 }
 
-.kanban-container {
-  display: flex;
-}
-
-.drag-handle {
-  position: absolute;
-  top: 0;
-  right: 0;
-}
-
-.kanban .ant-card-body {
+.nb-kanban-item {
   position: relative;
-  padding: 0;
+  // padding: 0;
   
   > .nb-block-item {
     padding: 12px;
@@ -116,4 +67,9 @@
       }
     }
   }
+}
+
+.nb-kanban-column-header {
+  margin-bottom: 12px;
+  line-height: 32px;
 }

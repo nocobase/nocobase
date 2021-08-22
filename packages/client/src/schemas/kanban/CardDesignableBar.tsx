@@ -87,26 +87,14 @@ export const CardDesignableBar = observer((props) => {
                           return;
                         }
                         let data: ISchema = {
+                          key: uid(),
+                          name: uid(),
                           type: 'void',
-                          'x-component': 'Grid.Row',
-                          properties: {
-                            [uid()]: {
-                              type: 'void',
-                              'x-component': 'Grid.Col',
-                              properties: {
-                                [uid()]: {
-                                  key: uid(),
-                                  type: 'void',
-                                  'x-decorator': 'Form.Field.Item',
-                                  'x-designable-bar':
-                                    'Form.Field.DesignableBar',
-                                  'x-component': 'Form.Field',
-                                  'x-component-props': {
-                                    fieldName: field.name,
-                                  },
-                                },
-                              },
-                            },
+                          'x-decorator': 'Form.Field.Item',
+                          // 'x-designable-bar': 'Form.Field.DesignableBar',
+                          'x-component': 'Form.Field',
+                          'x-component-props': {
+                            fieldName: field.name,
                           },
                         };
                         const s = appendChild(data);
