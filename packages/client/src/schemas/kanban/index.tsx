@@ -1,4 +1,17 @@
-import React, { useEffect, useRef } from 'react';
+import {
+  DndContext,
+  DragOverlay,
+  PointerSensor,
+  useDroppable,
+  useSensor,
+  useSensors,
+} from '@dnd-kit/core';
+import {
+  SortableContext,
+  useSortable,
+  verticalListSortingStrategy,
+} from '@dnd-kit/sortable';
+import { ArrayField } from '@formily/core';
 import {
   observer,
   RecursionField,
@@ -6,164 +19,147 @@ import {
   useField,
   useForm,
 } from '@formily/react';
-import {
-  DndContext,
-  DragOverlay,
-  closestCorners,
-  rectIntersection,
-  closestCenter,
-  useSensors,
-  useSensor,
-  MouseSensor,
-} from '@dnd-kit/core';
-import {
-  SortableContext,
-  rectSortingStrategy,
-  verticalListSortingStrategy,
-  horizontalListSortingStrategy,
-} from '@dnd-kit/sortable';
-import { useSortable, arrayMove } from '@dnd-kit/sortable';
-import { CSS } from '@dnd-kit/utilities';
-import './style.less';
-import { useState } from 'react';
+import { Card, Spin, Tag } from 'antd';
 import { groupBy } from 'lodash';
+import React, { createContext, useContext, useRef } from 'react';
+import { useState } from 'react';
+import { CSS } from '@dnd-kit/utilities';
 import cls from 'classnames';
-import { Button, Card, Drawer, Tag } from 'antd';
-import {
-  SchemaRenderer,
-  useDesignable,
-} from '../../components/schema-renderer';
-import { createContext } from 'react';
-import { useContext } from 'react';
-import { PlusOutlined } from '@ant-design/icons';
-import { uid } from '@formily/shared';
-import { DesignableBar } from './DesignableBar';
+import './style.less';
 import { CollectionProvider, useCollectionContext } from '../../constate';
 import { Resource } from '../../resource';
 import { useRequest } from 'ahooks';
 import { Action } from '../action';
-import { Form } from '../form';
 import { CardDesignableBar } from './CardDesignableBar';
 import { VisibleContext } from '../../context';
+import { DesignableBar } from './DesignableBar';
+import { useDesignable } from '../../components/schema-renderer';
 
-export function SortableItem(props) {
+function Droppable(props) {
+  const { id, data, ...others } = props;
+  const { setNodeRef } = useDroppable({
+    id,
+    data,
+  });
+
+  return <div ref={setNodeRef} {...others}></div>;
+}
+
+function SortableItem(props) {
+  const { id, data, className, ...others } = props;
   const nodeRef = useRef<any>();
   const {
+    isDragging,
     attributes,
     listeners,
     setNodeRef,
-    isDragging,
     transform,
     transition,
   } = useSortable({
-    id: props.id,
-    disabled: props.disabled,
-    data: {
-      type: props.type,
-      nodeRef,
-    },
+    id,
+    data: { ...data, nodeRef },
   });
 
   const style = {
+    ...props.style,
     transform: CSS.Transform.toString(transform),
     transition,
   };
 
   return (
     <div
-      className={cls({ isDragging }, props.className)}
+      {...others}
       ref={(el) => {
         setNodeRef(el);
         nodeRef.current = el;
       }}
       style={style}
+      className={cls(className, { isDragging })}
       {...attributes}
       {...listeners}
     >
-      {/* <div {...listeners}>drag</div> */}
       {props.children}
     </div>
   );
 }
 
-const useColumns = () => {
-  const field = useField<Formily.Core.Models.ArrayField>();
-  const { getField } = useCollectionContext();
-  let groupField = field.componentProps.groupField;
-  const groupName = field.componentProps.groupName;
-  const collectionField = getField(groupName);
-  if (collectionField) {
-    groupField = collectionField?.uiSchema;
-  }
-  const values = field.value;
-  const columns = groupField?.enum?.map((group) => {
-    return {
-      ...group,
-      items: values?.filter((item) => item[groupName] === group.value) || [],
-    };
-  });
-  console.log('useColumns', { values, columns });
-  return { values, columns };
-};
-
-interface KanbanCardContextProps {
-  index: number;
-  record?: any;
-  viewSchema: Schema;
+interface KanbanContextProps {
+  props?: any;
+  service?: any;
+  resource?: Resource;
+  [key: string]: any;
 }
 
-const KanbanCardContext = createContext<KanbanCardContextProps>(null);
+interface KanbanCardContextProps {
+  record?: any;
+  [key: string]: any;
+}
 
-export const KanbanContext = createContext<any>(null);
-export const KanbanColumnContext = createContext<any>(null);
+interface KanbanColumnContextProps {
+  [key: string]: any;
+}
+
+export const KanbanContext = createContext<KanbanContextProps>(null);
+export const KanbanColumnContext =
+  createContext<KanbanColumnContextProps>(null);
+export const KanbanCardContext = createContext<KanbanCardContextProps>(null);
 
 export const useKanban = () => {
   return useContext(KanbanContext);
 };
 
-class MyMouseSensor extends MouseSensor {
-  static activators = [
-    {
-      eventName: 'onMouseDown' as const,
-      handler: (event) => {
-        if (event.target.tagName === 'DIV') {
-          return true;
-        }
-        console.log('event.target.tagName', event.target.tagName);
-        event.target;
-        return false;
-      },
-    },
-  ];
-  constructor(props) {
-    super(props);
-  }
-}
+const KanbanColumn = (props) => {
+  const option = useContext(KanbanColumnContext);
+  const { field, schemas } = useKanban();
+  const { items } = props;
+  return (
+    <SortableContext
+      // id={option.value}
+      items={items || []}
+      strategy={verticalListSortingStrategy}
+    >
+      {items?.map((item) => {
+        const index = field.value?.findIndex((val) => val.id === item.id);
+        return (
+          <SortableItem
+            className={'nb-kanban-item'}
+            key={item.id}
+            id={item.id}
+            data={{ type: 'card', columnId: option.value }}
+          >
+            <KanbanCardContext.Provider
+              value={{ index, schemas, record: item }}
+            >
+              {/* <Card bordered={false}>{item.id}</Card> */}
+              <RecursionField
+                name={index}
+                schema={schemas.get('Kanban.Card')}
+              />
+            </KanbanCardContext.Provider>
+          </SortableItem>
+        );
+      })}
+    </SortableContext>
+  );
+};
 
 const InternalKanban = observer((props: any) => {
-  const field = useField<Formily.Core.Models.ArrayField>();
-  const groupName = field.componentProps.groupName;
-  const { values, columns } = useColumns();
-  const { schema } = useDesignable();
+  const { getField } = useCollectionContext();
+  const collectionField = getField(props.groupField?.name);
+  const groupField = {
+    ...collectionField?.uiSchema,
+    ...props.groupField,
+  };
+  const field = useField<ArrayField>();
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 10,
+      },
+    }),
+  );
+  const groups = groupBy(field.value, groupField.name);
   const { collectionName } = props;
-  const cardSchema = schema.reduceProperties((prev, current) => {
-    if (current['x-component'] === 'Kanban.Card') {
-      return current;
-    }
-    return prev;
-  }, null);
-  const cardViewSchema = schema.reduceProperties((prev, current) => {
-    if (current['x-component'] === 'Kanban.Card.View') {
-      return current;
-    }
-    return prev;
-  }, null);
-  const addCardSchema = schema.reduceProperties((prev, current) => {
-    if (current['x-component'] === 'Kanban.Card.AddNew') {
-      return current;
-    }
-    return prev;
-  }, null);
   const resource = Resource.make(collectionName);
   const service = useRequest(
     (params) => {
@@ -180,163 +176,153 @@ const InternalKanban = observer((props: any) => {
       onSuccess(data) {
         field.setValue(data);
       },
-      manual: true,
+      // manual: true,
       // refreshDeps: [props.fieldNames],
     },
   );
-  useEffect(() => {
-    service.run({
-      defaultFilter: props?.defaultFilter,
-      sort: 'sort',
-    });
-  }, [props.defaultFilter]);
-  const [dragOverlayContent, setDragOverlayContent] = useState('');
-  const [style, setStyle] = useState({});
-  const containerRef = useRef<HTMLDivElement>();
-  console.log({ style });
-  const sensors = useSensors(useSensor(MyMouseSensor));
+  const { schema } = useDesignable();
+  const [schemas, setSchemas] = useState(() => {
+    const schemas = new Map<string, Schema>();
+    schema.reduceProperties((map, current) => {
+      if (current['x-component'] === 'Kanban.Card') {
+        map.set('Kanban.Card', current);
+      }
+      if (current['x-component'] === 'Kanban.Card.AddNew') {
+        map.set('Kanban.Card.AddNew', current);
+      }
+      if (current['x-component'] === 'Kanban.Card.View') {
+        map.set('Kanban.Card.View', current);
+      }
+      return map;
+    }, schemas);
+    return schemas;
+  });
+  const addNewCardSchema = schemas.get('Kanban.Card.AddNew');
+  console.log('field.value', schemas);
   return (
-    <KanbanContext.Provider value={{ field, resource, service, props }}>
-      <div>
-        {/* <div>
-        <Button>筛选</Button>
-      </div> */}
-        <div className={'kanban'}>
-          <div ref={containerRef} className={'kanban-container'}>
-            <DndContext
-              sensors={sensors}
-              onDragStart={(event) => {
-                const el = event?.active?.data?.current?.nodeRef
-                  ?.current as HTMLElement;
-                console.log(event, el);
-                setDragOverlayContent(el?.outerHTML);
-                setStyle({
-                  width: el.clientWidth,
-                  height: containerRef.current?.clientHeight,
-                });
-              }}
-              collisionDetection={closestCenter}
-              onDragEnd={({ active, over }) => {
-                const source = values.find((item) => item.id === active?.id);
-                const target = values.find((item) => item.id === over?.id);
-                if (source && target) {
-                  const fromIndex = values.findIndex(
-                    (item) => item.id === active?.id,
-                  );
-                  const toIndex = values.findIndex(
-                    (item) => item.id === over?.id,
-                  );
-                  // setValues((items) => {
-                  //   const fromIndex = items.findIndex(
-                  //     (item) => item.id === active?.id,
-                  //   );
-                  //   const toIndex = items.findIndex(
-                  //     (item) => item.id === over?.id,
-                  //   );
-                  //   return arrayMove(items, fromIndex, toIndex);
-                  // });
-                  field.move(fromIndex, toIndex);
-                }
-              }}
-              onDragOver={({ active, over }) => {
-                if (!over) {
-                  return;
-                }
-                if (active?.id === over?.id) {
-                  return;
-                }
-                const source = values.find((item) => item.id === active?.id);
-                if (source && over?.data?.current?.type === 'column') {
-                  source[groupName] = over.id;
-                  return;
-                }
-                console.log('active.id', active.id, over?.data?.current);
-                const target = values.find((item) => item.id === over?.id);
-                if (source && target) {
-                  if (source[groupName] !== target[groupName]) {
-                    source[groupName] = target[groupName];
-                  }
-                }
-              }}
-            >
-              <DragOverlay
-                style={{ ...style }}
-                // style={{ pointerEvents: 'none' }}
-              >
-                <div
-                  className={'nb-kanban-drag-overlay'}
-                  style={{
-                    ...style,
-                  }}
-                  dangerouslySetInnerHTML={{ __html: dragOverlayContent }}
-                />
-              </DragOverlay>
-
-              <SortableContext
-                strategy={horizontalListSortingStrategy}
-                items={
-                  columns?.map((column) => ({
-                    ...column,
-                    id: column.value,
-                  })) || []
-                }
-              >
-                {columns?.map((column) => (
-                  <SortableItem
-                    id={column.value}
-                    key={column.value}
-                    type={'column'}
-                    disabled
-                    className={'column'}
+    <KanbanContext.Provider
+      value={{ field, resource, service, schemas, props }}
+    >
+      <DndContext
+        sensors={sensors}
+        onDragMove={({ active, over }) => {
+          const overId = over?.id;
+          const activeId = active?.id;
+          if (!overId || !activeId) {
+            return;
+          }
+          if (overId === activeId) {
+            return;
+          }
+          const overType = over?.data?.current?.type;
+          const activeItem = field.value.find((item) => item.id === activeId);
+          if (overType === 'column') {
+            if (overId === activeItem?.[groupField.name]) {
+              return;
+            }
+            const len = groups?.[overId]?.length;
+            if (len > 0) {
+              const last = groups?.[overId]?.[len - 1];
+              const activeIndex = field.value.findIndex(
+                (item) => item.id === activeId,
+              );
+              const overIndex = field.value.findIndex(
+                (item) => item.id === last.id,
+              );
+              console.log({ overId, last, overIndex, activeIndex });
+              field.move(activeIndex, overIndex);
+            }
+            activeItem[groupField.name] = overId;
+          } else {
+            const overColumnId = over?.data?.current?.columnId;
+            const activeColumnId = active?.data?.current?.columnId;
+            if (!overColumnId || !activeColumnId) {
+              return;
+            }
+            if (overColumnId !== activeColumnId) {
+              activeItem[groupField.name] = overColumnId;
+              const activeIndex = field.value.findIndex(
+                (item) => item.id === activeId,
+              );
+              const overIndex = field.value.findIndex(
+                (item) => item.id === overId,
+              );
+              console.log({ overId, overIndex, activeIndex });
+              field.move(activeIndex, overIndex);
+            }
+          }
+        }}
+        onDragEnd={({ active, over }) => {
+          const overId = over?.id;
+          const activeId = active?.id;
+          if (!overId || !activeId) {
+            return;
+          }
+          if (overId === activeId) {
+            return;
+          }
+          const overType = over?.data?.current?.type;
+          if (overType !== 'column') {
+            const overColumnId = over?.data?.current?.columnId;
+            const activeColumnId = active?.data?.current?.columnId;
+            if (!overColumnId || !activeColumnId) {
+              return;
+            }
+            if (overColumnId !== activeColumnId) {
+              return;
+            }
+            const activeIndex = field.value.findIndex(
+              (item) => item.id === activeId,
+            );
+            const overIndex = field.value.findIndex(
+              (item) => item.id === overId,
+            );
+            field.move(activeIndex, overIndex);
+          }
+        }}
+      >
+        <DragOverlay style={{ background: 'yellow' }}>
+          <div>aaa</div>
+        </DragOverlay>
+        <Spin spinning={service.loading}>
+          <div
+            className={'nb-kanban-board'}
+            style={{
+              // display: 'flex',
+              // flexDirection: 'row',
+              userSelect: 'none',
+            }}
+          >
+            <div className={'nb-kanban-container'}>
+              {groupField?.enum?.map((option) => {
+                const items = field.value?.filter(
+                  (item) => item?.[groupField.name] === option.value,
+                );
+                return (
+                  <Droppable
+                    id={option.value}
+                    data={{
+                      type: 'column',
+                    }}
+                    className={'nb-kanban-column'}
                   >
-                    <KanbanColumnContext.Provider value={column}>
-                      <div className={'column-title'}>
-                        <Tag color={column.color}>{column.label}</Tag>
+                    <KanbanColumnContext.Provider value={option}>
+                      <div className={'nb-kanban-column-header'}>
+                        <Tag color={option.color}>{option.label}</Tag>
                       </div>
-                      <SortableContext
-                        strategy={verticalListSortingStrategy}
-                        items={column.items}
-                      >
-                        {column.items.map((item) => {
-                          const index = values.findIndex(
-                            (value) => value.id === item.id,
-                          );
-                          return (
-                            <SortableItem
-                              key={item.id}
-                              className={'item'}
-                              id={item.id}
-                              // disabled
-                              type={'item'}
-                            >
-                              <KanbanCardContext.Provider
-                                value={{
-                                  index: index,
-                                  record: item,
-                                  viewSchema: cardViewSchema,
-                                }}
-                              >
-                                <RecursionField
-                                  name={index}
-                                  schema={cardSchema}
-                                />
-                              </KanbanCardContext.Provider>
-                            </SortableItem>
-                          );
-                        })}
-                      </SortableContext>
+                      <KanbanColumn items={items} />
                       <RecursionField
-                        name={addCardSchema?.name}
-                        schema={addCardSchema}
+                        name={addNewCardSchema.name}
+                        schema={addNewCardSchema}
                       />
                     </KanbanColumnContext.Provider>
-                  </SortableItem>
-                ))}
-              </SortableContext>
-            </DndContext>
+                  </Droppable>
+                );
+              })}
+            </div>
           </div>
-        </div>
-      </div>
+        </Spin>
+      </DndContext>
     </KanbanContext.Provider>
   );
 });
@@ -352,13 +338,13 @@ export const Kanban: any = observer((props: any) => {
 Kanban.useCreateAction = () => {
   const { service, resource, props } = useKanban();
   const column = useContext(KanbanColumnContext);
-  const groupName = props.groupName;
+  const groupField = props.groupField;
   const form = useForm();
   return {
     async run() {
       await resource.create({
         ...form.values,
-        [groupName]: column.value,
+        [groupField.name]: column.value,
       });
       await form.reset();
       return service.refresh();
@@ -380,7 +366,7 @@ Kanban.useUpdateAction = () => {
   };
 };
 
-Kanban.useResource = ({ onSuccess }) => {
+Kanban.useSingleResource = ({ onSuccess }) => {
   const { props } = useKanban();
   const { collection } = useCollectionContext();
   const ctx = useContext(KanbanCardContext);
@@ -408,7 +394,7 @@ Kanban.useResource = ({ onSuccess }) => {
 
 Kanban.Card = observer((props) => {
   const [visible, setVisible] = useState(false);
-  const { index, viewSchema } = useContext(KanbanCardContext);
+  const { index, schemas } = useContext(KanbanCardContext);
   const { DesignableBar } = useDesignable();
   const { children, ...others } = props;
   return (
@@ -421,9 +407,9 @@ Kanban.Card = observer((props) => {
         {...others}
       >
         {children}
-        <DesignableBar />
       </Card>
-      <RecursionField name={index} schema={viewSchema} />
+      <DesignableBar />
+      <RecursionField name={index} schema={schemas.get('Kanban.Card.View')} />
     </VisibleContext.Provider>
   );
 });

@@ -350,7 +350,9 @@ function generateCardItemSchema(component) {
     },
     Kanban: {
       type: 'array',
-      name: 'kanban1',
+      'x-component': 'Kanban',
+      'x-designable-bar': 'Kanban.DesignableBar',
+      'x-component-props': {},
       'x-decorator': 'CardItem',
       'x-decorator-props': {
         style: {
@@ -360,60 +362,11 @@ function generateCardItemSchema(component) {
           padding: 0,
         },
       },
-      'x-designable-bar': 'Kanban.DesignableBar',
-      'x-component': 'Kanban',
-      default: [
-        {
-          id: '1',
-          type: 'A',
-          title: 'A1',
-        },
-        {
-          id: '2',
-          type: 'A',
-          title: 'A2',
-        },
-        {
-          id: '3',
-          type: 'A',
-          title: 'A3',
-        },
-        {
-          id: '4',
-          type: 'B',
-          title: 'B4',
-        },
-        {
-          id: '5',
-          type: 'B',
-          title: 'B5',
-        },
-        {
-          id: '6',
-          type: 'B',
-          title: 'B6',
-        },
-        {
-          id: '7',
-          type: 'C',
-          title: 'C7',
-        },
-        {
-          id: '8',
-          type: 'C',
-          title: 'C8',
-        },
-        {
-          id: '9',
-          type: 'C',
-          title: 'C9',
-        },
-      ],
       properties: {
         create: {
           type: 'void',
           title: '添加卡片',
-          'x-designable-bar': 'Kanban.AddCardDesignableBar',
+          // 'x-designable-bar': 'Kanban.AddCardDesignableBar',
           'x-component': 'Kanban.Card.AddNew',
           // 'x-decorator': 'AddNew.Displayed',
           'x-component-props': {
@@ -446,24 +399,12 @@ function generateCardItemSchema(component) {
           name: uid(),
           'x-decorator': 'Form',
           'x-component': 'Kanban.Card',
+          'x-designable-bar': 'Kanban.Card.DesignableBar',
           'x-read-pretty': true,
           'x-decorator-props': {
-            useResource: '{{ Kanban.useResource }}',
+            useResource: '{{ Kanban.useSingleResource }}',
           },
-          properties: {
-            [uid()]: {
-              type: 'void',
-              'x-decorator': 'BlockItem',
-              'x-decorator-props': {
-                draggable: false,
-              },
-              'x-component': 'Grid',
-              'x-designable-bar': 'Kanban.Card.DesignableBar',
-              // 'x-component-props': {
-              //   addNewComponent: 'AddNew.FormItem',
-              // },
-            },
-          },
+          properties: {},
         },
         view1: {
           type: 'void',
@@ -474,7 +415,7 @@ function generateCardItemSchema(component) {
             useOkAction: '{{ Kanban.useUpdateAction }}',
           },
           'x-decorator-props': {
-            useResource: '{{ Kanban.useResource }}',
+            useResource: '{{ Kanban.useSingleResource }}',
           },
           properties: {
             [uid()]: {
@@ -1286,8 +1227,9 @@ AddNew.CardItem = observer((props: any) => {
                                     data['x-component-props'][
                                       'collectionName'
                                     ] = collectionName;
-                                    data['x-component-props']['groupName'] =
-                                      field.name;
+                                    data['x-component-props']['groupField'] = {
+                                      name: field.name,
+                                    };
                                   }
                                   if (isGridBlock(schema)) {
                                     path.pop();
