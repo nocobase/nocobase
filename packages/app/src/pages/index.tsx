@@ -14,7 +14,7 @@ import { extend } from 'umi-request';
 
 const request = extend({
   prefix: process.env.API_URL,
-  timeout: 1000,
+  timeout: 30000,
 });
 
 const RouteSwitch = createRouteSwitch({
