@@ -115,33 +115,35 @@ const KanbanColumn = (props) => {
   const { field, schemas } = useKanban();
   const { items } = props;
   return (
-    <SortableContext
-      // id={option.value}
-      items={items || []}
-      strategy={verticalListSortingStrategy}
-    >
-      {items?.map((item) => {
-        const index = field.value?.findIndex((val) => val.id === item.id);
-        return (
-          <SortableItem
-            className={'nb-kanban-item'}
-            key={item.id}
-            id={item.id}
-            data={{ type: 'card', columnId: option.value }}
-          >
-            <KanbanCardContext.Provider
-              value={{ index, schemas, record: item }}
+    <div className={'nb-kanban-list'}>
+      <SortableContext
+        // id={option.value}
+        items={items || []}
+        strategy={verticalListSortingStrategy}
+      >
+        {items?.map((item) => {
+          const index = field.value?.findIndex((val) => val.id === item.id);
+          return (
+            <SortableItem
+              className={'nb-kanban-item'}
+              key={item.id}
+              id={item.id}
+              data={{ type: 'card', columnId: option.value }}
             >
-              {/* <Card bordered={false}>{item.id}</Card> */}
-              <RecursionField
-                name={index}
-                schema={schemas.get('Kanban.Card')}
-              />
-            </KanbanCardContext.Provider>
-          </SortableItem>
-        );
-      })}
-    </SortableContext>
+              <KanbanCardContext.Provider
+                value={{ index, schemas, record: item }}
+              >
+                {/* <Card bordered={false}>{item.id}</Card> */}
+                <RecursionField
+                  name={index}
+                  schema={schemas.get('Kanban.Card')}
+                />
+              </KanbanCardContext.Provider>
+            </SortableItem>
+          );
+        })}
+      </SortableContext>
+    </div>
   );
 };
 
@@ -414,7 +416,7 @@ Kanban.useCreateAction = () => {
   const column = useContext(KanbanColumnContext);
   const groupField = props.groupField;
   const form = useForm();
-  const [,setVisible] =  useContext(VisibleContext);
+  const [, setVisible] = useContext(VisibleContext);
   return {
     async run() {
       await resource.create({
@@ -432,7 +434,7 @@ Kanban.useUpdateAction = () => {
   const { service, resource, props } = useKanban();
   const ctx = useContext(KanbanCardContext);
   const form = useForm();
-  const [,setVisible] =  useContext(VisibleContext);
+  const [, setVisible] = useContext(VisibleContext);
   return {
     async run() {
       await resource.save(omit(form.values, ['sort']), {
