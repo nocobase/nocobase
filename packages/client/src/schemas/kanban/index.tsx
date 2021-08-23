@@ -20,7 +20,7 @@ import {
   useForm,
 } from '@formily/react';
 import { Card, Spin, Tag } from 'antd';
-import { groupBy } from 'lodash';
+import { groupBy, omit } from 'lodash';
 import React, { createContext, useContext, useEffect, useRef } from 'react';
 import { useState } from 'react';
 import { CSS } from '@dnd-kit/utilities';
@@ -413,12 +413,14 @@ Kanban.useCreateAction = () => {
   const column = useContext(KanbanColumnContext);
   const groupField = props.groupField;
   const form = useForm();
+  const [,setVisible] =  useContext(VisibleContext);
   return {
     async run() {
       await resource.create({
         ...form.values,
         [groupField.name]: column.value,
       });
+      setVisible(false);
       await form.reset();
       return service.refresh();
     },
@@ -429,11 +431,13 @@ Kanban.useUpdateAction = () => {
   const { service, resource, props } = useKanban();
   const ctx = useContext(KanbanCardContext);
   const form = useForm();
+  const [,setVisible] =  useContext(VisibleContext);
   return {
     async run() {
-      await resource.save(form.values, {
+      await resource.save(omit(form.values, ['sort']), {
         resourceKey: ctx.record.id,
       });
+      setVisible(false);
       await service.refresh();
     },
   };
