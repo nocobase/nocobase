@@ -44,7 +44,7 @@ import { interfaces, options } from '../database-field/interfaces';
 import { DraggableBlockContext } from '../../components/drag-and-drop';
 import AddNew from '../add-new';
 import { isGridRowOrCol } from '../grid';
-import { Resource } from '../../resource';
+import { ListOptions, Resource } from '../../resource';
 import {
   CollectionProvider,
   DisplayedMapProvider,
@@ -432,7 +432,7 @@ function AddColumn() {
   const { appendChild, remove } = useDesignable();
   const { collection, fields, refresh } = useCollectionContext();
   const displayed = useDisplayedMapContext();
-
+  // const { service } = useTable();
   return (
     <Dropdown
       trigger={['click']}
@@ -463,6 +463,7 @@ function AddColumn() {
                     await removeSchema(removed);
                     displayed.remove(field.name);
                   }
+                  // service.refresh();
                 }}
               />
             ))}
@@ -2317,7 +2318,30 @@ Table.useActionLogDetailsResource = ({ onSuccess }) => {
 };
 
 const useActionLogsResource = (options: any = {}) => {
-  const resource = Resource.make('action_logs');
+  const { props } = useTable();
+  const ctx = useContext(TableRowContext);
+
+  class ActionLogoResource extends Resource {
+    list(options?: ListOptions) {
+      console.log({ options });
+      let defaultFilter = options?.defaultFilter;
+      if (ctx?.record) {
+        const extra = {
+          index: ctx?.record?.id,
+          collection_name: props.collectionName,
+        };
+        if (defaultFilter) {
+          defaultFilter = { and: [defaultFilter, extra] };
+        } else {
+          defaultFilter = extra;
+        }
+      }
+      return super.list({ ...options, defaultFilter });
+    }
+  }
+
+  const resource = ActionLogoResource.make('action_logs');
+
   return {
     resource,
   };

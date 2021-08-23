@@ -156,13 +156,13 @@ export class Resource {
 
   static make(options: null | string | Resource | ResourceOptions): Resource | null {
     if (typeof options === 'string') {
-      return new Resource({ resourceName: options });
+      return new this({ resourceName: options });
     }
     if (options instanceof Resource) {
       return options;
     }
     if (typeof options === 'object' && options.resourceName) {
-      return new Resource(options);
+      return new this(options);
     }
     console.warn('resource 初始化参数错误');
     return null;

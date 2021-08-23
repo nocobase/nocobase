@@ -697,7 +697,7 @@ function generateCardItemSchema(component) {
         },
         column3: {
           type: 'void',
-          title: '选择数据源',
+          title: '数据表',
           'x-component': 'Table.Column',
           properties: {
             'collection.title': {
@@ -782,7 +782,7 @@ function generateCardItemSchema(component) {
                     },
                     'collection.title': {
                       type: 'string',
-                      title: '选择数据源',
+                      title: '数据表',
                       'x-decorator': 'FormItem',
                       'x-component': 'Input',
                       'x-read-pretty': true,
