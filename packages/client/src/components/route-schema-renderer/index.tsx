@@ -4,7 +4,7 @@ import { Helmet } from 'react-helmet';
 import { useRequest } from 'ahooks';
 import { request, SchemaRenderer } from '../../schemas';
 import { useForm } from '@formily/react';
-import { useHistory } from 'react-router-dom';
+import { useHistory, useLocation } from 'react-router-dom';
 
 function Div(props) {
   return <div {...props}></div>;
@@ -13,6 +13,9 @@ function Div(props) {
 export function useLogin() {
   const form = useForm();
   const history = useHistory();
+  const location = useLocation<any>();
+  const query = new URLSearchParams(location.search);
+  const redirect = query.get('redirect');
   return {
     async run() {
       await form.submit();
@@ -20,9 +23,8 @@ export function useLogin() {
         method: 'post',
         data: form.values,
       });
-      history.push('/admin');
+      history.push(redirect || '/admin');
       localStorage.setItem('NOCOBASE_TOKEN', data?.data?.token);
-      console.log('NOCOBASE_TOKEN', data?.data?.token);
     },
   };
 }
