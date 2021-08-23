@@ -21,7 +21,7 @@ import {
 } from '@formily/react';
 import { Card, Spin, Tag } from 'antd';
 import { groupBy } from 'lodash';
-import React, { createContext, useContext, useRef } from 'react';
+import React, { createContext, useContext, useEffect, useRef } from 'react';
 import { useState } from 'react';
 import { CSS } from '@dnd-kit/utilities';
 import cls from 'classnames';
@@ -34,6 +34,8 @@ import { CardDesignableBar } from './CardDesignableBar';
 import { VisibleContext } from '../../context';
 import { DesignableBar } from './DesignableBar';
 import { useDesignable } from '../../components/schema-renderer';
+import { Form } from '../form';
+import { FieldDesignableBar } from './FieldDesignableBar';
 
 function Droppable(props) {
   const { id, data, ...others } = props;
@@ -169,6 +171,7 @@ const InternalKanban = observer((props: any) => {
       return resource.list({
         ...params,
         perPage: -1,
+        sort: 'sort',
       });
     },
     {
@@ -176,10 +179,15 @@ const InternalKanban = observer((props: any) => {
       onSuccess(data) {
         field.setValue(data);
       },
-      // manual: true,
+      manual: true,
       // refreshDeps: [props.fieldNames],
     },
   );
+  useEffect(() => {
+    service.run({
+      defaultFilter: props?.defaultFilter,
+    });
+  }, [props.defaultFilter]);
   const { schema } = useDesignable();
   const [schemas, setSchemas] = useState(() => {
     const schemas = new Map<string, Schema>();
@@ -198,6 +206,8 @@ const InternalKanban = observer((props: any) => {
     return schemas;
   });
   const addNewCardSchema = schemas.get('Kanban.Card.AddNew');
+  const [dragOverlayContent, setDragOverlayContent] = useState('');
+  const [lastId, setLastId] = useState(null);
   console.log('field.value', schemas);
   return (
     <KanbanContext.Provider
@@ -205,6 +215,11 @@ const InternalKanban = observer((props: any) => {
     >
       <DndContext
         sensors={sensors}
+        onDragStart={(event) => {
+          const el = event?.active?.data?.current?.nodeRef
+            ?.current as HTMLElement;
+          setDragOverlayContent(el?.outerHTML);
+        }}
         onDragMove={({ active, over }) => {
           const overId = over?.id;
           const activeId = active?.id;
@@ -223,6 +238,7 @@ const InternalKanban = observer((props: any) => {
             const len = groups?.[overId]?.length;
             if (len > 0) {
               const last = groups?.[overId]?.[len - 1];
+              setLastId(last.id);
               const activeIndex = field.value.findIndex(
                 (item) => item.id === activeId,
               );
@@ -252,13 +268,33 @@ const InternalKanban = observer((props: any) => {
             }
           }
         }}
-        onDragEnd={({ active, over }) => {
+        onDragEnd={async ({ active, over }) => {
+          console.log('onDragEnd', { lastId, active, over });
           const overId = over?.id;
           const activeId = active?.id;
           if (!overId || !activeId) {
             return;
           }
           if (overId === activeId) {
+            const overColumnId = over?.data?.current?.columnId;
+            await resource.save(
+              {
+                [groupField.name]: overColumnId,
+              },
+              {
+                resourceKey: activeId,
+              },
+            );
+            await resource.sort({
+              resourceKey: activeId,
+              field: 'sort',
+              target: lastId
+                ? {
+                    id: lastId,
+                  }
+                : {},
+            });
+            setLastId(null);
             return;
           }
           const overType = over?.data?.current?.type;
@@ -278,11 +314,49 @@ const InternalKanban = observer((props: any) => {
               (item) => item.id === overId,
             );
             field.move(activeIndex, overIndex);
+            await resource.save(
+              {
+                [groupField.name]: overColumnId,
+              },
+              {
+                resourceKey: activeId,
+              },
+            );
+            await resource.sort({
+              resourceKey: activeId,
+              field: 'sort',
+              target: {
+                id: overId,
+              },
+            });
+          } else {
+            await resource.save(
+              {
+                [groupField.name]: overId,
+              },
+              {
+                resourceKey: activeId,
+              },
+            );
+            await resource.sort({
+              resourceKey: activeId,
+              field: 'sort',
+              target: lastId
+                ? {
+                    id: lastId,
+                  }
+                : {},
+            });
+            setLastId(null);
           }
         }}
       >
         <DragOverlay style={{ background: 'yellow' }}>
-          <div>aaa</div>
+          {/* <div>aaa</div> */}
+          <div
+            className={'nb-kanban-drag-overlay'}
+            dangerouslySetInnerHTML={{ __html: dragOverlayContent }}
+          />
         </DragOverlay>
         <Spin spinning={service.loading}>
           <div
@@ -418,3 +492,4 @@ Kanban.Card.View = Action.Drawer;
 Kanban.Card.AddNew = Action;
 Kanban.DesignableBar = DesignableBar;
 Kanban.Card.DesignableBar = CardDesignableBar;
+Kanban.FieldDesignableBar = FieldDesignableBar;

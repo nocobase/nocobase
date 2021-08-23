@@ -12,12 +12,12 @@ import {
   useForm,
   RecursionField,
 } from '@formily/react';
-import { useSchemaPath, SchemaField, useDesignable, removeSchema } from '../';
+import { useSchemaPath, SchemaField, useDesignable, removeSchema, updateSchema } from '../';
 import get from 'lodash/get';
 import { Button, Dropdown, Menu, Space } from 'antd';
 import { MenuOutlined, DragOutlined } from '@ant-design/icons';
 import cls from 'classnames';
-import { FormLayout } from '@formily/antd';
+import { FormDialog, FormLayout } from '@formily/antd';
 import './style.less';
 import AddNew from '../add-new';
 import { DraggableBlockContext } from '../../components/drag-and-drop';
@@ -29,6 +29,7 @@ import { getSchemaPath } from '../../components/schema-renderer';
 import { useCollection, useCollectionContext } from '../../constate';
 import { useTable } from '../table';
 import { DragHandle } from '../../components/Sortable';
+import { fieldsToFilterColumns } from '../calendar';
 
 export const DesignableBar = observer((props) => {
   const field = useField();
@@ -37,7 +38,7 @@ export const DesignableBar = observer((props) => {
   const { dragRef } = useContext(DraggableBlockContext);
   const { props: tableProps } = useTable();
   const collectionName = field.componentProps?.collectionName || tableProps?.collectionName;
-  const { collection } = useCollection({ collectionName });
+  const { collection, fields } = useCollection({ collectionName });
   return (
     <div className={cls('designable-bar', { active: visible })}>
       <div className={'designable-info'}>{collection?.title || collection?.name}</div>
@@ -66,7 +67,44 @@ export const DesignableBar = observer((props) => {
                 >
                   编辑表单配置
                 </Menu.Item> */}
-                {/* <Menu.Divider /> */}
+                <Menu.Item
+                  key={'defaultFilter'}
+                  onClick={async () => {
+                    const { defaultFilter } = await FormDialog(
+                      '设置筛选范围',
+                      () => {
+                        return (
+                          <FormLayout layout={'vertical'}>
+                            <SchemaField
+                              schema={{
+                                type: 'object',
+                                properties: {
+                                  defaultFilter: {
+                                    type: 'object',
+                                    'x-component': 'Filter',
+                                    properties: fieldsToFilterColumns(fields),
+                                  },
+                                },
+                              }}
+                            />
+                          </FormLayout>
+                        );
+                      },
+                    ).open({
+                      initialValues: {
+                        defaultFilter:
+                          field?.componentProps?.defaultFilter || {},
+                      },
+                    });
+                    schema['x-component-props']['defaultFilter'] =
+                      defaultFilter;
+                    field.componentProps.defaultFilter = defaultFilter;
+                    await updateSchema(schema);
+                  }}
+                >
+                  设置筛选范围
+                </Menu.Item>
+                <Menu.Divider />
                 <Menu.Item
                   key={'delete'}
                   onClick={async () => {

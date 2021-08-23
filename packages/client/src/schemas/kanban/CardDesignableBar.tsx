@@ -91,7 +91,10 @@ export const CardDesignableBar = observer((props) => {
                           name: uid(),
                           type: 'void',
                           'x-decorator': 'Form.Field.Item',
-                          // 'x-designable-bar': 'Form.Field.DesignableBar',
+                          'x-decorator-props': {
+                            draggable: false,
+                          },
+                          'x-designable-bar': 'Kanban.FieldDesignableBar',
                           'x-component': 'Form.Field',
                           'x-component-props': {
                             fieldName: field.name,

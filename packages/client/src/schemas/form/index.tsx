@@ -205,7 +205,7 @@ Form.Field = observer((props: any) => {
 Form.Field.Item = observer((props) => {
   return (
     <RandomNameContext.Provider value={uid()}>
-      <BlockItem>{props.children}</BlockItem>
+      <BlockItem {...props}>{props.children}</BlockItem>
     </RandomNameContext.Provider>
   );
 });

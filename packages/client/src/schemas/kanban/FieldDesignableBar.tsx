@@ -32,7 +32,7 @@ import constate from 'constate';
 import { useEffect } from 'react';
 import { uid } from '@formily/shared';
 import { getSchemaPath } from '../../components/schema-renderer';
-import { RandomNameContext } from '.';
+import { RandomNameContext } from '../form';
 import { useCollectionContext, useDisplayedMapContext } from '../../constate';
 import SwitchMenuItem from '../../components/SwitchMenuItem';
 import { DragHandle } from '../../components/Sortable';
@@ -64,8 +64,8 @@ export const FieldDesignableBar = observer((props) => {
         className={cls('designable-bar-actions', { active: visible })}
       >
         <Space size={2}>
-          <AddNew.FormItem defaultAction={'insertAfter'} ghost />
-          <DragHandle />
+          {/* <AddNew.FormItem defaultAction={'insertAfter'} ghost />
+          <DragHandle /> */}
           <Dropdown
             placement={'bottomRight'}
             trigger={['click']}
@@ -124,55 +124,6 @@ export const FieldDesignableBar = observer((props) => {
                 >
                   修改字段名称
                 </Menu.Item>
-                <Menu.Item
-                  style={{ minWidth: 150 }}
-                  onClick={async () => {
-                    const values = await FormDialog('编辑描述', () => {
-                      return (
-                        <FormLayout layout={'vertical'}>
-                          <SchemaField
-                            schema={{
-                              type: 'object',
-                              properties: {
-                                description: {
-                                  type: 'string',
-                                  'x-component': 'Input.TextArea',
-                                },
-                              },
-                            }}
-                          />
-                        </FormLayout>
-                      );
-                    }).open({
-                      initialValues: {
-                        description: schema['description'],
-                      },
-                    });
-                    const description = values.description || null;
-                    realField.description =
-                      description || collectionField?.uiSchema?.description;
-                    schema['description'] = description;
-                    await updateSchema({
-                      key: schema['key'],
-                      description,
-                    });
-                  }}
-                >
-                  编辑描述
-                </Menu.Item>
-                <SwitchMenuItem
-                  title={'必填'}
-                  checked={schema.required as boolean}
-                  onChange={(checked) => {
-                    field
-                      .query(field.address.concat(randomName, fieldName))
-                      .take((f: any) => {
-                        f.required = checked;
-                        schema.required = checked;
-                        updateSchema(schema);
-                      });
-                  }}
-                />
                 <Menu.Divider />
                 <Menu.Item
                   key={'delete'}
