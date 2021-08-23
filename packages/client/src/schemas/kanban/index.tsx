@@ -214,6 +214,7 @@ const InternalKanban = observer((props: any) => {
       value={{ field, resource, service, schemas, props }}
     >
       <DndContext
+        autoScroll
         sensors={sensors}
         onDragStart={(event) => {
           const el = event?.active?.data?.current?.nodeRef
