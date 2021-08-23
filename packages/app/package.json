@@ -3,6 +3,7 @@
   "version": "0.4.0-alpha.7",
   "scripts": {
     "start": "concurrently \"cd ../../ && nodemon\" \"umi dev\"",
+    "start-client": "umi dev",
     "build": "umi build",
     "postinstall": "umi generate tmp",
     "prettier": "prettier --write '**/*.{js,jsx,tsx,ts,less,md,json}'",
