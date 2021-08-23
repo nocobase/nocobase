@@ -8,6 +8,7 @@
     "bootstrap": "lerna bootstrap",
     "clean": "lerna clean",
     "start": "cd packages/app && npm start",
+    "start-client": "cd packages/app && npm run start-client",
     "start-server": "nodemon",
     "start-docs": "dumi dev",
     "build-docs": "dumi build",
