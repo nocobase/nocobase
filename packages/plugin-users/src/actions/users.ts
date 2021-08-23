@@ -120,3 +120,13 @@ export async function getUserByResetToken(ctx: actions.Context, next: actions.Ne
   ctx.body = user;
   await next();
 }
+
+export async function updateProfile(ctx: actions.Context, next: actions.Next) {
+  const { values } = ctx.action.params;
+  if (!ctx.state.currentUser) {
+    ctx.throw(401, 'Unauthorized');
+  }
+  await ctx.state.currentUser.update(values);
+  ctx.body = ctx.state.currentUser;
+  await next();
+}

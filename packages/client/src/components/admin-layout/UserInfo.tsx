@@ -1,15 +1,63 @@
 import React, { useContext, useEffect } from 'react';
 import { Button, Dropdown, Menu } from 'antd';
 import { useHistory } from 'react-router-dom';
-import { request } from '../../schemas';
+import { request, SchemaField } from '../../schemas';
+import { AuthContext, useCurrentUser } from './Auth';
+import { FormButtonGroup, FormDrawer, FormLayout, Submit } from '@formily/antd';
 
 export const UserInfo = () => {
   const history = useHistory();
+  const { service, currentUser } = useContext(AuthContext);
   return (
     <Dropdown
       overlay={
         <Menu>
-          <Menu.Item>个人资料</Menu.Item>
+          <Menu.Item
+            onClick={async () => {
+              const values = await FormDrawer('个人资料', () => {
+                return (
+                  <FormLayout layout={'vertical'}>
+                    <SchemaField
+                      schema={{
+                        type: 'object',
+                        properties: {
+                          email: {
+                            type: 'string',
+                            title: '邮箱',
+                            'x-component': 'Input',
+                            'x-decorator': 'FormilyFormItem',
+                          },
+                          nickname: {
+                            type: 'string',
+                            title: '昵称',
+                            'x-component': 'Input',
+                            'x-decorator': 'FormilyFormItem',
+                          },
+                        },
+                      }}
+                    />
+                    <FormDrawer.Footer>
+                      <FormButtonGroup align="right">
+                        <Submit onSubmit={(values) => {
+                        }}>
+                          保存
+                        </Submit>
+                      </FormButtonGroup>
+                    </FormDrawer.Footer>
+                  </FormLayout>
+                );
+              }).open({
+                initialValues: currentUser || {},
+              });
+              const { data } = await request('users:updateProfile', {
+                method: 'post',
+                data: values,
+              });
+              service.mutate(data);
+            }}
+          >
+            个人资料
+          </Menu.Item>
           <Menu.Divider />
           <Menu.Item
             onClick={async () => {
@@ -23,7 +71,9 @@ export const UserInfo = () => {
         </Menu>
       }
     >
-      <Button type={'text'} className={'user-info'}>超级管理员</Button>
+      <Button type={'text'} className={'user-info'}>
+        {currentUser?.nickname || currentUser?.email}
+      </Button>
     </Dropdown>
   );
 };

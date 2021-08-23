@@ -115,6 +115,7 @@ import * as uiSchema from './ui-schema';
 
   const User = database.getModel('users');
   const user = await User.create({
+    nickname: '超级管理员',
     email: process.env.ADMIN_EMAIL,
     password: process.env.ADMIN_PASSWORD,
   });
