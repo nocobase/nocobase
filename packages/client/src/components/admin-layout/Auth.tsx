@@ -11,7 +11,7 @@ export interface AuthContextProps {
   service: BaseResult<any, any>;
 }
 
-export const AuthContext = createContext<AuthContextProps>({});
+export const AuthContext = createContext<AuthContextProps>(null);
 
 export const useCurrentUser = () => {
   const { currentUser } = useContext(AuthContext);
