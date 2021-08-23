@@ -2,19 +2,19 @@ export const register = {
   key: '46qlxqam3xk',
   type: 'object',
   properties: {
-    username: {
+    email: {
       type: 'string',
       required: true,
       'x-decorator': 'FormItem',
       'x-component': 'Input',
       'x-component-props': {
-        placeholder: '用户名',
+        placeholder: '电子邮箱',
         style: {
           // width: 240,
         },
       },
     },
-    pwd1: {
+    password: {
       type: 'string',
       required: true,
       'x-decorator': 'FormItem',
@@ -26,19 +26,41 @@ export const register = {
           // width: 240,
         },
       },
+      'x-reactions': [
+        {
+          dependencies: ['.confirm_password'],
+          fulfill: {
+            state: {
+              errors:
+                '{{$deps[0] && $self.value && $self.value !== $deps[0] ? "确认密码不匹配" : ""}}',
+            },
+          },
+        },
+      ],
     },
-    pwd2: {
+    confirm_password: {
       type: 'string',
       required: true,
       'x-decorator': 'FormItem',
       'x-component': 'Password',
       'x-component-props': {
-        placeholder: '密码',
+        placeholder: '确认密码',
         checkStrength: true,
         style: {
           // width: 240,
         },
       },
+      'x-reactions': [
+        {
+          dependencies: ['.password'],
+          fulfill: {
+            state: {
+              errors:
+                '{{$deps[0] && $self.value && $self.value !== $deps[0] ? "确认密码不匹配" : ""}}',
+            },
+          },
+        },
+      ],
     },
     actions: {
       type: 'void',

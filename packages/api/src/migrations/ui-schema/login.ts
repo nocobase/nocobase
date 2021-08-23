@@ -8,7 +8,7 @@ export const login = {
       'x-decorator': 'FormItem',
       'x-component': 'Input',
       'x-component-props': {
-        placeholder: '邮箱或用户名',
+        placeholder: '电子邮箱',
         style: {
           // width: 240,
         },
