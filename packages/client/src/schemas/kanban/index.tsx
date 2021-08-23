@@ -351,8 +351,7 @@ const InternalKanban = observer((props: any) => {
           }
         }}
       >
-        <DragOverlay style={{ background: 'yellow' }}>
-          {/* <div>aaa</div> */}
+        <DragOverlay>
           <div
             className={'nb-kanban-drag-overlay'}
             dangerouslySetInnerHTML={{ __html: dragOverlayContent }}
@@ -477,6 +476,7 @@ Kanban.Card = observer((props) => {
         onClick={(e) => {
           setVisible(true);
         }}
+        hoverable
         bordered={false}
         {...others}
       >
