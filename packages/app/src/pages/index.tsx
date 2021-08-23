@@ -17,6 +17,15 @@ const request = extend({
   timeout: 30000,
 });
 
+request.use(async (ctx, next) => {
+  const { headers } = ctx.req.options as any;
+  const token = localStorage.getItem('NOCOBASE_TOKEN');
+  if (token) {
+    headers['Authorization'] = `Bearer ${token}`;
+  }
+  await next();
+});
+
 const RouteSwitch = createRouteSwitch({
   components: {
     AdminLayout,

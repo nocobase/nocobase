@@ -19,6 +19,15 @@ const request = extend({
   timeout: 30000,
 });
 
+request.use(async (ctx, next) => {
+  const { headers } = ctx.req.options as any;
+  const token = localStorage.getItem('NOCOBASE_TOKEN');
+  if (token) {
+    headers['Authorization'] = `Bearer ${token}`;
+  }
+  await next();
+});
+
 console.log('process.env.API_URL', process.env.API_URL);
 
 // console.log = () => {}
