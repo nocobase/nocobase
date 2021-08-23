@@ -38,6 +38,7 @@ import { Permissions } from './Permissions';
 import { More } from './More';
 import { UserInfo } from './UserInfo';
 import { SiteTitle, SystemSettingsProvider } from './SiteTitle';
+import { AuthProvider } from './Auth';
 
 function DesignableToggle() {
   const { designable, setDesignable } = useDesignableSwitchContext();
@@ -177,19 +178,21 @@ export function AdminLayout({ route, ...others }: any) {
   console.log('current?.title', current, current?.title, defaultSelectedKeys);
 
   return (
-    <SystemSettingsProvider>
-      <DesignableSwitchProvider>
-        <CollectionsProvider>
-          <PageTitleProvider defaultPageTitle={current?.title}>
-            <LayoutWithMenu
-              defaultSelectedKeys={defaultSelectedKeys}
-              current={current}
-              schema={data}
-            />
-          </PageTitleProvider>
-        </CollectionsProvider>
-      </DesignableSwitchProvider>
-    </SystemSettingsProvider>
+    <AuthProvider>
+      <SystemSettingsProvider>
+        <DesignableSwitchProvider>
+          <CollectionsProvider>
+            <PageTitleProvider defaultPageTitle={current?.title}>
+              <LayoutWithMenu
+                defaultSelectedKeys={defaultSelectedKeys}
+                current={current}
+                schema={data}
+              />
+            </PageTitleProvider>
+          </CollectionsProvider>
+        </DesignableSwitchProvider>
+      </SystemSettingsProvider>
+    </AuthProvider>
   );
 }
 

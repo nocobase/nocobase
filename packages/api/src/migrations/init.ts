@@ -108,39 +108,17 @@ import * as uiSchema from './ui-schema';
         extname: '.png',
         mimetype: 'image/png',
         url: 'https://nocobase.oss-cn-beijing.aliyuncs.com/682e5ad037dd02a0fe4800a3e91c283b.png',
-        created_at: '2021-08-16T06:31:53.214Z',
-        updated_at: '2021-08-16T06:31:53.214Z',
         storage_id: 2,
       },
     });
   }
+
+  const User = database.getModel('users');
+  const user = await User.create({
+    email: process.env.ADMIN_EMAIL,
+    password: process.env.ADMIN_PASSWORD,
+  });
+
   await database.close();
 })();
 
-const a = {
-  data: {
-    id: 1,
-    title: 'NocoBase',
-    created_at: '2021-08-16T05:37:50.751Z',
-    updated_at: '2021-08-16T06:31:55.069Z',
-    logo_id: 3,
-    created_by_id: null,
-    updated_by_id: null,
-    logo: {
-      id: 3,
-      title: 'logo-white (1)',
-      filename: '682e5ad037dd02a0fe4800a3e91c283b.png',
-      extname: '.png',
-      size: null,
-      mimetype: 'image/png',
-      path: '',
-      meta: {},
-      url: 'https://nocobase.oss-cn-beijing.aliyuncs.com/682e5ad037dd02a0fe4800a3e91c283b.png',
-      created_at: '2021-08-16T06:31:53.214Z',
-      updated_at: '2021-08-16T06:31:53.214Z',
-      created_by_id: null,
-      updated_by_id: null,
-      storage_id: 2,
-    },
-  },
-};

@@ -13,7 +13,7 @@ export const UserInfo = () => {
           <Menu.Divider />
           <Menu.Item
             onClick={async () => {
-              await request('/users:logout');
+              await request('users:logout');
               localStorage.removeItem('NOCOBASE_TOKEN');
               history.push('/login');
             }}

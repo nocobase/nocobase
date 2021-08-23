@@ -2,7 +2,7 @@ import React, { useContext, useEffect, useState } from 'react';
 import { Spin } from 'antd';
 import { Helmet } from 'react-helmet';
 import { useRequest } from 'ahooks';
-import { SchemaRenderer } from '../../schemas';
+import { request, SchemaRenderer } from '../../schemas';
 import { useForm } from '@formily/react';
 import { useHistory } from 'react-router-dom';
 
@@ -16,8 +16,13 @@ export function useLogin() {
   return {
     async run() {
       await form.submit();
+      const { data } = await request('users:login', {
+        method: 'post',
+        data: form.values,
+      });
       history.push('/admin');
-      console.log(form.values);
+      localStorage.setItem('NOCOBASE_TOKEN', data?.data?.token);
+      console.log('NOCOBASE_TOKEN', data?.data?.token);
     },
   };
 }
