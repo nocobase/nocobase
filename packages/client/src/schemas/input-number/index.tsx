@@ -35,7 +35,7 @@ export const InputNumber: any = connect(
   mapReadPretty((props: any) => {
     const { step, value, addonBefore, addonAfter } = props;
     if (!isValid(props.value)) {
-      return <div>N/A</div>;
+      return <div></div>;
     }
     const precision = Math.max(
       getNumberPrecision(String(value)),
@@ -56,7 +56,7 @@ InputNumber.Percent = connect(
   mapReadPretty((props: any) => {
     const { step, value } = props;
     if (!isValid(props.value)) {
-      return <div>N/A</div>;
+      return <div></div>;
     }
     return toFixed(
       String(value),

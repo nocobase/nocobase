@@ -61,7 +61,7 @@ export const Password = connect(
   },
   mapReadPretty((props) => {
     if (!isValid(props.value)) {
-      return <div>N/A</div>;
+      return <div></div>;
     }
     return <div>********</div>;
   }),

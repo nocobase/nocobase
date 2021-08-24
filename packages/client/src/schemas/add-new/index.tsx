@@ -181,7 +181,7 @@ function generateCardItemSchema(component) {
             [uid()]: {
               type: 'void',
               name: 'action1',
-              title: '新增',
+              title: '创建',
               'x-align': 'right',
               'x-decorator': 'AddNew.Displayed',
               'x-decorator-props': {
@@ -195,7 +195,7 @@ function generateCardItemSchema(component) {
               properties: {
                 modal: {
                   type: 'void',
-                  title: '新增数据',
+                  title: '创建数据',
                   'x-decorator': 'Form',
                   'x-component': 'Action.Drawer',
                   'x-component-props': {
@@ -365,7 +365,7 @@ function generateCardItemSchema(component) {
       properties: {
         create: {
           type: 'void',
-          title: '新增卡片',
+          title: '添加卡片',
           // 'x-designable-bar': 'Kanban.AddCardDesignableBar',
           'x-component': 'Kanban.Card.AddNew',
           // 'x-decorator': 'AddNew.Displayed',
@@ -376,7 +376,7 @@ function generateCardItemSchema(component) {
           properties: {
             modal: {
               type: 'void',
-              title: '新增数据',
+              title: '创建数据',
               'x-decorator': 'Form',
               'x-component': 'Action.Drawer',
               'x-component-props': {
@@ -408,7 +408,7 @@ function generateCardItemSchema(component) {
         },
         view1: {
           type: 'void',
-          title: '修改数据',
+          title: '编辑数据',
           'x-decorator': 'Form',
           'x-component': 'Kanban.Card.View',
           'x-component-props': {
@@ -512,7 +512,7 @@ function generateCardItemSchema(component) {
               properties: {
                 modal: {
                   type: 'void',
-                  title: '新增数据',
+                  title: '创建数据',
                   'x-decorator': 'Form',
                   'x-component': 'Action.Drawer',
                   'x-component-props': {
@@ -1340,7 +1340,7 @@ AddNew.CardItem = observer((props: any) => {
           className={'designable-btn designable-btn-dash'}
           icon={<PlusOutlined />}
         >
-          新增区块
+          创建区块
         </Button>
       )}
     </Dropdown>
@@ -1435,7 +1435,7 @@ AddNew.FormItem = observer((props: any) => {
                         key={item.name}
                         onClick={async () => {
                           setVisible(false);
-                          const values = await FormDialog(`新增字段`, () => {
+                          const values = await FormDialog(`创建字段`, () => {
                             return (
                               <FormLayout layout={'vertical'}>
                                 <SchemaField schema={item} />
@@ -1739,7 +1739,7 @@ AddNew.PaneItem = observer((props: any) => {
           type={'dashed'}
           icon={<PlusOutlined />}
         >
-          新增区块
+          创建区块
         </Button>
       )}
     </Dropdown>

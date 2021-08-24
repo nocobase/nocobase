@@ -111,7 +111,7 @@ export const Tabs: any = observer((props: any) => {
                 type={'dashed'}
                 icon={<PlusOutlined />}
                 onClick={async () => {
-                  const values = await FormDialog('新增标签页', () => {
+                  const values = await FormDialog('创建标签页', () => {
                     return (
                       <FormLayout layout={'vertical'}>
                         <SchemaField
@@ -164,7 +164,7 @@ export const Tabs: any = observer((props: any) => {
                   await createSchema(data);
                 }}
               >
-                新增标签页
+                创建标签页
               </Button>
             )
           }
@@ -281,7 +281,8 @@ Tabs.TabPane.DesignableBar = () => {
               <Menu>
                 <Menu.Item
                   onClick={async () => {
-                    const values = await FormDialog('编辑按钮', () => {
+                    setVisible(false);
+                    const values = await FormDialog('编辑标签页', () => {
                       return (
                         <FormLayout layout={'vertical'}>
                           <SchemaField
@@ -321,7 +322,7 @@ Tabs.TabPane.DesignableBar = () => {
                     updateSchema(schema);
                   }}
                 >
-                  编辑按钮
+                  编辑标签页
                 </Menu.Item>
                 <Menu.Divider />
                 <Menu.Item

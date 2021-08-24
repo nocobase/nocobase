@@ -139,7 +139,7 @@ export const SimpleDesignableBar = observer((props) => {
                                             'x-component': 'Select',
                                             enum: [
                                               {
-                                                label: '新增数据',
+                                                label: '创建数据',
                                                 value: 'create',
                                               },
                                               {

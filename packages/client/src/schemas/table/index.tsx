@@ -471,7 +471,7 @@ function AddColumn() {
           <Menu.Divider />
           <Menu.SubMenu
             popupClassName={'add-new-fields-popup'}
-            title={'新增字段'}
+            title={'创建字段'}
           >
             {options.map((option) => (
               <Menu.ItemGroup title={option.label}>
@@ -481,7 +481,7 @@ function AddColumn() {
                     key={item.name}
                     onClick={async () => {
                       setVisible(false);
-                      const values = await FormDialog(`新增字段`, () => {
+                      const values = await FormDialog(`创建字段`, () => {
                         return (
                           <FormLayout layout={'vertical'}>
                             <SchemaField schema={item} />
@@ -896,7 +896,7 @@ function generateActionSchema(type) {
       key: uid(),
       type: 'void',
       name: uid(),
-      title: '新增',
+      title: '创建',
       'x-align': 'right',
       'x-decorator': 'AddNew.Displayed',
       'x-decorator-props': {
@@ -910,7 +910,7 @@ function generateActionSchema(type) {
       properties: {
         modal: {
           type: 'void',
-          title: '新增数据',
+          title: '创建数据',
           'x-decorator': 'Form',
           'x-component': 'Action.Drawer',
           'x-component-props': {
@@ -1075,7 +1075,7 @@ function AddActionButton() {
             {[
               { title: '筛选', name: 'filter' },
               { title: '导出', name: 'export' },
-              { title: '新增', name: 'create' },
+              { title: '创建', name: 'create' },
               { title: '删除', name: 'destroy' },
             ].map((item) => (
               <SwitchMenuItem
@@ -1471,7 +1471,7 @@ Table.Filter.DesignableBar = () => {
                     setVisible(false);
                   }}
                 >
-                  移除
+                  隐藏
                 </Menu.Item>
               </Menu>
             }
@@ -1594,7 +1594,7 @@ Table.ExportActionDesignableBar = () => {
                     setVisible(false);
                   }}
                 >
-                  移除
+                  隐藏
                 </Menu.Item>
               </Menu>
             }
@@ -1820,7 +1820,7 @@ Table.Action.DesignableBar = () => {
                     setVisible(false);
                   }}
                 >
-                  移除
+                  隐藏
                 </Menu.Item>
               </Menu>
             }
@@ -2117,11 +2117,9 @@ Table.DesignableBar = observer((props) => {
                                             direction: {
                                               type: 'string',
                                               'x-decorator': 'FormItem',
-                                              'x-component': 'Select',
+                                              'x-component': 'Radio.Group',
                                               'x-component-props': {
-                                                style: {
-                                                  width: 100,
-                                                },
+                                                optionType: 'button',
                                               },
                                               enum: [
                                                 { label: '正序', value: 'asc' },
@@ -2144,7 +2142,7 @@ Table.DesignableBar = observer((props) => {
                                     properties: {
                                       add: {
                                         type: 'void',
-                                        title: '新增',
+                                        title: '添加排序字段',
                                         'x-component': 'ArrayItems.Addition',
                                       },
                                     },

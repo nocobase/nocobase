@@ -126,7 +126,7 @@ const schema: ISchema = {
   properties: {
     create: {
       type: 'void',
-      title: '新增卡片',
+      title: '添加卡片',
       // 'x-designable-bar': 'Kanban.AddCardDesignableBar',
       'x-component': 'Kanban.Card.AddNew',
       // 'x-decorator': 'AddNew.Displayed',
@@ -137,7 +137,7 @@ const schema: ISchema = {
       properties: {
         modal: {
           type: 'void',
-          title: '新增数据',
+          title: '创建数据',
           'x-decorator': 'Form',
           'x-component': 'Action.Drawer',
           'x-component-props': {
@@ -182,7 +182,7 @@ const schema: ISchema = {
     },
     view1: {
       type: 'void',
-      title: '修改数据',
+      title: '编辑数据',
       'x-decorator': 'Form',
       'x-component': 'Kanban.Card.View',
       'x-component-props': {

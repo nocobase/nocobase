@@ -1,5 +1,5 @@
 ---
-title: AddNew - 新增
+title: AddNew - 创建
 nav:
   title: 组件
   path: /client
@@ -9,7 +9,7 @@ group:
   path: /client/schemas
 ---
 
-# AddNew - 新增
+# AddNew - 创建
 
 ## Node Tree
 
