@@ -78,7 +78,7 @@ export const FieldDesignableBar = observer((props) => {
                 <Menu.Item
                   key={'update'}
                   onClick={async () => {
-                    const values = await FormDialog('修改字段名称', () => {
+                    const values = await FormDialog('自定义字段名称', () => {
                       return (
                         <FormLayout layout={'vertical'}>
                           <SchemaField
@@ -122,7 +122,7 @@ export const FieldDesignableBar = observer((props) => {
                     });
                   }}
                 >
-                  修改字段名称
+                  自定义字段名称
                 </Menu.Item>
                 <Menu.Divider />
                 <Menu.Item

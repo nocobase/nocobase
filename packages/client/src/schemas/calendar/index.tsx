@@ -574,7 +574,7 @@ Calendar.Filter.DesignableBar = () => {
                     setVisible(false);
                   }}
                 >
-                  移除
+                  隐藏
                 </Menu.Item>
               </Menu>
             }

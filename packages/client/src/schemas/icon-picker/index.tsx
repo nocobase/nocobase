@@ -74,7 +74,7 @@ export const IconPicker = connect(
   }),
   mapReadPretty((props) => {
     if (!isValid(props.value)) {
-      return <div>N/A</div>;
+      return <div></div>;
     }
     return <Icon type={props.value} />;
   }),

@@ -59,7 +59,7 @@ const schema: ISchema = {
           properties: {
             modal: {
               type: 'void',
-              title: '新增数据',
+              title: '创建数据',
               'x-decorator': 'Form',
               'x-component': 'Action.Modal',
               'x-component-props': {

@@ -20,12 +20,12 @@ import {
 import { FullscreenOutlined } from '@ant-design/icons';
 import moment from 'moment';
 
-const PlaceholderContext = createContext<string>('N/A');
+const PlaceholderContext = createContext<string>('');
 
 const Placeholder = PlaceholderContext.Provider;
 
 const usePlaceholder = (value?: any) => {
-  const placeholder = useContext(PlaceholderContext) || 'N/A';
+  const placeholder = useContext(PlaceholderContext) || '';
   return isValid(value) && value !== '' ? value : placeholder;
 };
 
@@ -299,7 +299,7 @@ const Cascader: React.FC<CascaderProps> = observer((props) => {
 
 const DatePicker: React.FC<DatePickerProps> = (props: any) => {
   if (!props.value) {
-    return <div>N/A</div>;
+    return <div></div>;
   }
   const placeholder = usePlaceholder();
   const prefixCls = usePrefixCls('description-text', props);

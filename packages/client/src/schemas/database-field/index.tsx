@@ -180,7 +180,7 @@ export const DatabaseCollection = observer((props) => {
                       >
                         <Input.Search
                           size={'middle'}
-                          placeholder={'新增数据表'}
+                          placeholder={'创建数据表'}
                           enterButton={<PlusOutlined />}
                           value={newValue}
                           onChange={(e) => {
@@ -480,8 +480,13 @@ export const DatabaseField: any = observer((props) => {
           </Menu>
         }
       >
-        <Button block type={'dashed'} style={{ marginTop: 10 }}>
-          新增
+        <Button
+          block
+          type={'dashed'}
+          icon={<PlusOutlined />}
+          style={{ marginTop: 10 }}
+        >
+          创建字段
         </Button>
       </Dropdown>
     </div>

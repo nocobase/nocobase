@@ -294,7 +294,7 @@ const schema: ISchema = {
                 [uid()]: {
                   type: 'void',
                   name: 'action1',
-                  title: '新增',
+                  title: '创建',
                   'x-align': 'right',
                   'x-decorator': 'AddNew.Displayed',
                   'x-decorator-props': {
@@ -307,7 +307,7 @@ const schema: ISchema = {
                   properties: {
                     modal: {
                       type: 'void',
-                      title: '新增数据',
+                      title: '创建数据',
                       'x-decorator': 'Form',
                       'x-component': 'Action.Drawer',
                       'x-component-props': {

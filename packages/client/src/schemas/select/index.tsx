@@ -66,13 +66,13 @@ export const Select: any = connect(
   ),
   mapReadPretty((props) => {
     // console.log('mapReadPretty', props.value)
-    // return <div>N/A</div>;
+    // return <div></div>;
     if (!isValid(props.value)) {
-      return <div>N/A</div>;
+      return <div></div>;
     }
     const field = useField<any>();
     if (isArrayField(field) && field?.value?.length === 0) {
-      return <div>N/A</div>;
+      return <div></div>;
     }
     const dataSource = field.dataSource || [];
     console.log('field.value', field.value, dataSource);

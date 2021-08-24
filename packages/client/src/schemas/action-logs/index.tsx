@@ -26,7 +26,7 @@ ActionLogs.FieldValue = observer((props: any) => {
 
   if (!collectionField.uiSchema) {
     if (!field.value) {
-      return <div>N/A</div>;
+      return <div></div>;
     }
     if (typeof field.value === 'boolean') {
       return <div>{field.value ? 'true' : 'false'}</div>;

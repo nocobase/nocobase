@@ -74,7 +74,7 @@ Chart.DesignableBar = observer((props) => {
                     setVisible(false);
                   }}
                 >
-                  修改内容
+                  编辑图表
                 </Menu.Item>
                 <Menu.Divider />
                 <Menu.Item

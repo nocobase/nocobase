@@ -27,7 +27,7 @@ export const Checkbox: ComposedCheckbox = connect(
   ),
   mapReadPretty((props) => {
     if (!isValid(props.value)) {
-      return <div>N/A</div>;
+      return <div></div>;
     }
     return props.value ? (
       <CheckOutlined style={{ color: '#52c41a' }} />
@@ -46,7 +46,7 @@ Checkbox.Group = connect(
   }),
   mapReadPretty((props) => {
     if (!isValid(props.value)) {
-      return <div>N/A</div>;
+      return <div></div>;
     }
     const { options = [] } = props;
     const field = useField<any>();
