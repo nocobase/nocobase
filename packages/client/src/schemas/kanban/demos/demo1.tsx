@@ -126,7 +126,7 @@ const schema: ISchema = {
   properties: {
     create: {
       type: 'void',
-      title: '添加卡片',
+      title: '新增卡片',
       // 'x-designable-bar': 'Kanban.AddCardDesignableBar',
       'x-component': 'Kanban.Card.AddNew',
       // 'x-decorator': 'AddNew.Displayed',

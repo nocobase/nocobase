@@ -42,9 +42,11 @@ export const DesignableBar = observer((props) => {
   const { collection } = useCollection({ collectionName });
   return (
     <div className={cls('designable-bar', { active: visible })}>
-      <div className={'designable-info'}>
-        {collection?.title || collection?.name}
-      </div>
+      {collection && (
+        <div className={'designable-info'}>
+          {collection?.title || collection?.name}
+        </div>
+      )}
       <span
         onClick={(e) => {
           e.stopPropagation();
@@ -55,7 +57,7 @@ export const DesignableBar = observer((props) => {
           <AddNew.CardItem defaultAction={'insertAfter'} ghost />
           <DragHandle />
           <Dropdown
-            trigger={['click']}
+            trigger={['hover']}
             visible={visible}
             onVisibleChange={(visible) => {
               setVisible(visible);

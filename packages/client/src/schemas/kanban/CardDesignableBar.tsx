@@ -57,14 +57,14 @@ export const CardDesignableBar = observer((props) => {
       >
         <Space size={2}>
           <Dropdown
-            trigger={['click']}
+            trigger={['hover']}
             visible={visible}
             onVisibleChange={(visible) => {
               setVisible(visible);
             }}
             overlay={
               <Menu>
-                <Menu.ItemGroup className={'display-fields'} title={`字段展示`}>
+                <Menu.ItemGroup className={'display-fields'} title={`显示字段`}>
                   {fields?.map((field) => (
                     <SwitchMenuItem
                       key={field.key}

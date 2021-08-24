@@ -365,7 +365,7 @@ function generateCardItemSchema(component) {
       properties: {
         create: {
           type: 'void',
-          title: '添加卡片',
+          title: '新增卡片',
           // 'x-designable-bar': 'Kanban.AddCardDesignableBar',
           'x-component': 'Kanban.Card.AddNew',
           // 'x-decorator': 'AddNew.Displayed',
@@ -939,7 +939,7 @@ AddNew.CardItem = observer((props: any) => {
   const { collections = [], loading, refresh } = useCollectionsContext();
   return (
     <Dropdown
-      trigger={['click']}
+      trigger={['hover']}
       overlayStyle={{
         minWidth: 200,
       }}
@@ -1357,7 +1357,7 @@ AddNew.FormItem = observer((props: any) => {
   const displayed = useDisplayedMapContext();
   return (
     <Dropdown
-      trigger={['click']}
+      trigger={['hover']}
       visible={visible}
       onVisibleChange={setVisible}
       overlayStyle={{
@@ -1365,7 +1365,7 @@ AddNew.FormItem = observer((props: any) => {
       }}
       overlay={
         <Menu>
-          <Menu.ItemGroup className={'display-fields'} title={`字段展示`}>
+          <Menu.ItemGroup className={'display-fields'} title={`显示字段`}>
             {fields?.map((field) => (
               <SwitchMenuItem
                 key={field.key}
@@ -1548,7 +1548,7 @@ AddNew.PaneItem = observer((props: any) => {
   console.log('AddNew.PaneItem.useResource', useResource);
   return (
     <Dropdown
-      trigger={['click']}
+      trigger={['hover']}
       visible={visible}
       onVisibleChange={setVisible}
       overlayStyle={{
@@ -1735,7 +1735,6 @@ AddNew.PaneItem = observer((props: any) => {
         <PlusOutlined />
       ) : (
         <Button
-          block
           className={'designable-btn designable-btn-dash'}
           type={'dashed'}
           icon={<PlusOutlined />}

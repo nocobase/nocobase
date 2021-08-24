@@ -80,12 +80,6 @@ const schema: ISchema = {
                     // accept: 'jpg,png'
                   },
                 },
-                showLogoOnly: {
-                  type: 'boolean',
-                  'x-decorator': 'FormItem',
-                  'x-component': 'Checkbox',
-                  'x-content': '只显示 LOGO',
-                },
               },
             },
           },

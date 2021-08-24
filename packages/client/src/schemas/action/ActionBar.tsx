@@ -130,7 +130,7 @@ function generateActionSchema(type) {
             useResource: '{{ Table.useResource }}',
             useValues: '{{ Table.useTableRowRecord }}',
           },
-          'x-component': 'Action.Modal',
+          'x-component': 'Action.Drawer',
           'x-component-props': {
             useOkAction: '{{ Table.useTableUpdateAction }}',
           },
@@ -175,12 +175,12 @@ function AddActionButton() {
   }
   return (
     <Dropdown
-      trigger={['click']}
+      trigger={['hover']}
       visible={visible}
       onVisibleChange={setVisible}
       overlay={
         <Menu>
-          <Menu.ItemGroup title={'操作展示'}>
+          <Menu.ItemGroup title={'启用操作'}>
             {[
               { title: '编辑', name: 'update' },
               { title: '删除', name: 'destroy' },

@@ -210,12 +210,12 @@ function AddActionButton() {
   }
   return (
     <Dropdown
-      trigger={['click']}
+      trigger={['hover']}
       visible={visible}
       onVisibleChange={setVisible}
       overlay={
         <Menu>
-          <Menu.ItemGroup title={'操作展示'}>
+          <Menu.ItemGroup title={'启用操作'}>
             {[
               { title: '今天', name: 'today' },
               { title: '翻页', name: 'nav' },

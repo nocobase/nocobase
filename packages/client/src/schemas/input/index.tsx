@@ -62,7 +62,7 @@ Input.DesignableBar = observer((props) => {
           <AddNew.CardItem defaultAction={'insertAfter'} ghost />
           <DragHandle />
           <Dropdown
-            trigger={['click']}
+            trigger={['hover']}
             visible={visible}
             onVisibleChange={(visible) => {
               setVisible(visible);

@@ -52,7 +52,7 @@ export const ActionDesignableBar = (props: any) => {
         <Space size={2}>
           <DragHandle />
           <Dropdown
-            trigger={['click']}
+            trigger={['hover']}
             visible={visible}
             onVisibleChange={(visible) => {
               setVisible(visible);

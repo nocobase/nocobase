@@ -68,7 +68,7 @@ export const FieldDesignableBar = observer((props) => {
           <DragHandle />
           <Dropdown
             placement={'bottomRight'}
-            trigger={['click']}
+            trigger={['hover']}
             visible={visible}
             onVisibleChange={(visible) => {
               setVisible(visible);

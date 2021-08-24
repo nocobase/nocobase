@@ -17,7 +17,7 @@ export const chinaRegion: FieldOptions = {
       // title,
       'x-component': 'Cascader',
       'x-component-props': {
-        changeOnSelect: true,
+        changeOnSelectLast: false,
         loadData: '{{ ChinaRegion.loadData }}',
         labelInValue: true,
         maxLevel: 3,
@@ -48,10 +48,10 @@ export const chinaRegion: FieldOptions = {
         { value: 5, label: '村/居委会' },
       ],
     },
-    'uiSchema.x-component-props.changeOnSelect': {
+    'uiSchema.x-component-props.changeOnSelectLast': {
       type: 'boolean',
       'x-component': 'Checkbox',
-      'x-content': '无需选到最后一级',
+      'x-content': '必须选到最后一级',
       'x-decorator': 'FormItem',
     },
   },

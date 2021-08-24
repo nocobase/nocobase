@@ -435,12 +435,12 @@ function AddColumn() {
   // const { service } = useTable();
   return (
     <Dropdown
-      trigger={['click']}
+      trigger={['hover']}
       visible={visible}
       onVisibleChange={setVisible}
       overlay={
         <Menu>
-          <Menu.ItemGroup className={'display-fields'} title={'字段展示'}>
+          <Menu.ItemGroup className={'display-fields'} title={'显示字段'}>
             {fields.map((field) => (
               <SwitchMenuItem
                 title={field?.uiSchema?.title}
@@ -1066,12 +1066,12 @@ function AddActionButton() {
   }
   return (
     <Dropdown
-      trigger={['click']}
+      trigger={['hover']}
       visible={visible}
       onVisibleChange={setVisible}
       overlay={
         <Menu>
-          <Menu.ItemGroup title={'操作展示'}>
+          <Menu.ItemGroup title={'启用操作'}>
             {[
               { title: '筛选', name: 'filter' },
               { title: '导出', name: 'export' },
@@ -1376,14 +1376,14 @@ Table.Filter.DesignableBar = () => {
         <Space>
           <DragHandle />
           <Dropdown
-            trigger={['click']}
+            trigger={['hover']}
             visible={visible}
             onVisibleChange={(visible) => {
               setVisible(visible);
             }}
             overlay={
               <Menu>
-                <Menu.ItemGroup title={'筛选字段'}>
+                <Menu.ItemGroup title={'可筛选字段'}>
                   {fields
                     .filter((collectionField) => {
                       const option = interfaces.get(collectionField.interface);
@@ -1417,7 +1417,7 @@ Table.Filter.DesignableBar = () => {
                 <Menu.Item
                   onClick={async (e) => {
                     setVisible(false);
-                    const values = await FormDialog('修改名称和图标', () => {
+                    const values = await FormDialog('编辑按钮', () => {
                       return (
                         <FormLayout layout={'vertical'}>
                           <SchemaField
@@ -1456,7 +1456,7 @@ Table.Filter.DesignableBar = () => {
                     refresh();
                   }}
                 >
-                  修改名称和图标
+                  编辑按钮
                 </Menu.Item>
                 <Menu.Divider />
                 <Menu.Item
@@ -1505,7 +1505,7 @@ Table.ExportActionDesignableBar = () => {
         <Space>
           <DragHandle />
           <Dropdown
-            trigger={['click']}
+            trigger={['hover']}
             visible={visible}
             onVisibleChange={(visible) => {
               setVisible(visible);
@@ -1540,7 +1540,7 @@ Table.ExportActionDesignableBar = () => {
                 <Menu.Item
                   onClick={async (e) => {
                     setVisible(false);
-                    const values = await FormDialog('修改名称和图标', () => {
+                    const values = await FormDialog('编辑按钮', () => {
                       return (
                         <FormLayout layout={'vertical'}>
                           <SchemaField
@@ -1579,7 +1579,7 @@ Table.ExportActionDesignableBar = () => {
                     refresh();
                   }}
                 >
-                  修改名称和图标
+                  编辑按钮
                 </Menu.Item>
                 <Menu.Divider />
                 <Menu.Item
@@ -1652,14 +1652,14 @@ Table.Operation.DesignableBar = () => {
         <Space>
           <DragHandle />
           <Dropdown
-            trigger={['click']}
+            trigger={['hover']}
             visible={visible}
             onVisibleChange={(visible) => {
               setVisible(visible);
             }}
             overlay={
               <Menu>
-                <Menu.ItemGroup title={'操作展示'}>
+                <Menu.ItemGroup title={'启用操作'}>
                   {[
                     { title: '查看', name: 'view' },
                     { title: '编辑', name: 'update' },
@@ -1721,7 +1721,7 @@ Table.Action.DesignableBar = () => {
         <Space>
           <DragHandle />
           <Dropdown
-            trigger={['click']}
+            trigger={['hover']}
             visible={visible}
             onVisibleChange={(visible) => {
               setVisible(visible);
@@ -1731,7 +1731,7 @@ Table.Action.DesignableBar = () => {
                 <Menu.Item
                   onClick={async (e) => {
                     setVisible(false);
-                    const values = await FormDialog('修改名称和图标', () => {
+                    const values = await FormDialog('编辑按钮', () => {
                       return (
                         <FormLayout layout={'vertical'}>
                           <SchemaField
@@ -1770,7 +1770,7 @@ Table.Action.DesignableBar = () => {
                     refresh();
                   }}
                 >
-                  修改名称和图标
+                  编辑按钮
                 </Menu.Item>
                 {isPopup && (
                   <Menu.Item>
@@ -1902,7 +1902,7 @@ Table.Column.DesignableBar = () => {
         <Space>
           <DragHandle />
           <Dropdown
-            trigger={['click']}
+            trigger={['hover']}
             visible={visible}
             onVisibleChange={(visible) => {
               setVisible(visible);
@@ -1912,7 +1912,7 @@ Table.Column.DesignableBar = () => {
                 <Menu.Item
                   onClick={async (e) => {
                     setVisible(false);
-                    const values = await FormDialog('修改列标题', () => {
+                    const values = await FormDialog('自定义列名称', () => {
                       return (
                         <FormLayout layout={'vertical'}>
                           <SchemaField
@@ -1928,7 +1928,7 @@ Table.Column.DesignableBar = () => {
                                 },
                                 title: {
                                   type: 'string',
-                                  title: '自定义列标题',
+                                  title: '自定义列名称',
                                   'x-decorator': 'FormItem',
                                   'x-component': 'Input',
                                 },
@@ -1953,7 +1953,7 @@ Table.Column.DesignableBar = () => {
                     });
                   }}
                 >
-                  修改列标题
+                  自定义列名称
                 </Menu.Item>
                 <Menu.Divider />
                 <Menu.Item
@@ -2018,7 +2018,7 @@ Table.DesignableBar = observer((props) => {
           <AddNew.CardItem defaultAction={'insertAfter'} ghost />
           <DragHandle />
           <Dropdown
-            trigger={['click']}
+            trigger={['hover']}
             visible={visible}
             onVisibleChange={(visible) => {
               setVisible(visible);
@@ -2177,7 +2177,7 @@ Table.DesignableBar = observer((props) => {
                   key={'defaultFilter'}
                   onClick={async () => {
                     const { defaultFilter } = await FormDialog(
-                      '设置筛选范围',
+                      '设置数据范围',
                       () => {
                         return (
                           <FormLayout layout={'vertical'}>
@@ -2208,7 +2208,7 @@ Table.DesignableBar = observer((props) => {
                     await updateSchema(schema);
                   }}
                 >
-                  设置筛选范围
+                  设置数据范围
                 </Menu.Item>
                 <Menu.Item key={'defaultPageSize'}>
                   每页默认显示{' '}

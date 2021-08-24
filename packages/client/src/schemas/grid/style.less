@@ -141,6 +141,7 @@ body.dragging {
     pointer-events: none;
   }
 }
+
 .nb-grid-row-divider {
   // background-color: #ddd;
   height: 24px;
@@ -149,10 +150,15 @@ body.dragging {
   margin-top: -24px;
   position: absolute;
   z-index: 20;
+  display: none;
   // opacity: 0.5;
   // background: #e6f7ff;
 }
-
+.nb-grid.active {
+  .nb-grid-row-divider {
+    display: block;
+  }
+}
 .nb-grid-col-divider {
   &.resizable {
     cursor: col-resize;
