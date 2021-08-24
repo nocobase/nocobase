@@ -5,6 +5,7 @@ import {
   useDroppable,
   useSensor,
   useSensors,
+  rectIntersection,
 } from '@dnd-kit/core';
 import {
   SortableContext,
@@ -218,6 +219,7 @@ const InternalKanban = observer((props: any) => {
       <DndContext
         autoScroll
         sensors={sensors}
+        collisionDetection={rectIntersection}
         onDragStart={(event) => {
           const el = event?.active?.data?.current?.nodeRef
             ?.current as HTMLElement;
