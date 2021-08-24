@@ -52,7 +52,7 @@ export const DesignableBar = observer((props) => {
           <AddNew.CardItem defaultAction={'insertAfter'} ghost />
           <DragHandle />
           <Dropdown
-            trigger={['click']}
+            trigger={['hover']}
             visible={visible}
             onVisibleChange={(visible) => {
               setVisible(visible);
@@ -71,7 +71,7 @@ export const DesignableBar = observer((props) => {
                   key={'defaultFilter'}
                   onClick={async () => {
                     const { defaultFilter } = await FormDialog(
-                      '设置筛选范围',
+                      '设置数据范围',
                       () => {
                         return (
                           <FormLayout layout={'vertical'}>
@@ -102,7 +102,7 @@ export const DesignableBar = observer((props) => {
                     await updateSchema(schema);
                   }}
                 >
-                  设置筛选范围
+                  设置数据范围
                 </Menu.Item>
                 <Menu.Divider />
                 <Menu.Item

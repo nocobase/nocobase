@@ -255,7 +255,7 @@ export const DatabaseCollection = observer((props) => {
           setVisible(false);
         }}
         footer={
-          <Space>
+          <Space style={{ float: 'right' }}>
             <Button
               onClick={() => {
                 setVisible(false);

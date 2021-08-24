@@ -479,14 +479,14 @@ Calendar.Filter.DesignableBar = () => {
         <Space>
           <DragHandle />
           <Dropdown
-            trigger={['click']}
+            trigger={['hover']}
             visible={visible}
             onVisibleChange={(visible) => {
               setVisible(visible);
             }}
             overlay={
               <Menu>
-                <Menu.ItemGroup title={'筛选字段'}>
+                <Menu.ItemGroup title={'可筛选字段'}>
                   {fields
                     .filter((collectionField) => {
                       const option = interfaces.get(collectionField.interface);
@@ -520,7 +520,7 @@ Calendar.Filter.DesignableBar = () => {
                 <Menu.Item
                   onClick={async (e) => {
                     setVisible(false);
-                    const values = await FormDialog('修改名称和图标', () => {
+                    const values = await FormDialog('编辑按钮', () => {
                       return (
                         <FormLayout layout={'vertical'}>
                           <SchemaField
@@ -559,7 +559,7 @@ Calendar.Filter.DesignableBar = () => {
                     refresh();
                   }}
                 >
-                  修改名称和图标
+                  编辑按钮
                 </Menu.Item>
                 <Menu.Divider />
                 <Menu.Item

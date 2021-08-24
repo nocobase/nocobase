@@ -316,16 +316,16 @@ const schema: ISchema = {
                       properties: {
                         title: {
                           type: 'string',
-                          title: '权限名称',
+                          title: '权限组名称',
                           'x-component': 'Input',
                           'x-decorator': 'FormilyFormItem',
                         },
-                        name: {
-                          type: 'string',
-                          title: '权限标识',
-                          'x-component': 'Input',
-                          'x-decorator': 'FormilyFormItem',
-                        },
+                        // name: {
+                        //   type: 'string',
+                        //   title: '权限组标识',
+                        //   'x-component': 'Input',
+                        //   'x-decorator': 'FormilyFormItem',
+                        // },
                       },
                     },
                   },
@@ -334,7 +334,7 @@ const schema: ISchema = {
             },
             column1: {
               type: 'void',
-              title: '权限名称',
+              title: '权限组名称',
               'x-component': 'Table.Column',
               properties: {
                 title: {
@@ -344,18 +344,18 @@ const schema: ISchema = {
                 },
               },
             },
-            column2: {
-              type: 'void',
-              title: '权限标识',
-              'x-component': 'Table.Column',
-              properties: {
-                name: {
-                  type: 'string',
-                  'x-component': 'Input',
-                  'x-read-pretty': true,
-                },
-              },
-            },
+            // column2: {
+            //   type: 'void',
+            //   title: '权限组标识',
+            //   'x-component': 'Table.Column',
+            //   properties: {
+            //     name: {
+            //       type: 'string',
+            //       'x-component': 'Input',
+            //       'x-read-pretty': true,
+            //     },
+            //   },
+            // },
             [uid()]: {
               type: 'void',
               title: '操作',
@@ -382,7 +382,7 @@ const schema: ISchema = {
                       properties: {
                         [uid()]: {
                           type: 'void',
-                          title: '权限配置',
+                          title: '配置权限',
                           'x-decorator': 'RoleProvider',
                           'x-component': 'Action.Drawer',
                           'x-component-props': {
@@ -431,7 +431,7 @@ const schema: ISchema = {
                       properties: {
                         [uid()]: {
                           type: 'void',
-                          title: '编辑数据',
+                          title: '编辑权限组',
                           'x-decorator': 'Form',
                           'x-decorator-props': {
                             useResource: useDetailsResource,
@@ -443,7 +443,7 @@ const schema: ISchema = {
                           properties: {
                             title: {
                               type: 'string',
-                              title: '权限名称',
+                              title: '权限组名称',
                               'x-component': 'Input',
                               'x-decorator': 'FormilyFormItem',
                             },

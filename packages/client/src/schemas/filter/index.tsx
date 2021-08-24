@@ -131,22 +131,25 @@ export function FilterList(props) {
           );
         })}
       </div>
-      <a
-        onClick={() => {
-          set(uid(), {});
-        }}
-      >
-        添加条件
-      </a>{' '}
-      <a
-        onClick={() => {
-          set(uid(), {
-            and: [{}],
-          });
-        }}
-      >
-        添加条件组
-      </a>
+      <div style={{ marginTop: 16 }}>
+        <a
+          onClick={() => {
+            set(uid(), {});
+          }}
+        >
+          添加条件
+        </a>
+        <a
+          style={{ marginLeft: 16 }}
+          onClick={() => {
+            set(uid(), {
+              and: [{}],
+            });
+          }}
+        >
+          添加条件组
+        </a>
+      </div>
     </div>
   );
 }

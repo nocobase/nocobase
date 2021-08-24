@@ -51,7 +51,7 @@ export const DesignableBar = observer((props) => {
           <AddNew.CardItem defaultAction={'appendChild'} ghost />
           {/* <DragHandle /> */}
           <Dropdown
-            trigger={['click']}
+            trigger={['hover']}
             visible={visible}
             onVisibleChange={(visible) => {
               setVisible(visible);

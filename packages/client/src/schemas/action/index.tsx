@@ -180,6 +180,7 @@ Action.Modal = observer((props: any) => {
       title={schema.title}
       destroyOnClose
       maskClosable
+      width={'50%'}
       footer={
         isFormDecorator && !schema['x-read-pretty']
           ? [
@@ -192,7 +193,7 @@ Action.Modal = observer((props: any) => {
                   setVisible(false);
                 }}
               >
-                Cancel
+                取消
               </Button>,
               <Button
                 type={'primary'}
@@ -204,7 +205,7 @@ Action.Modal = observer((props: any) => {
                   setVisible(false);
                 }}
               >
-                OK
+                确定
               </Button>,
             ]
           : null
@@ -257,7 +258,7 @@ Action.Drawer = observer((props: any) => {
                     setVisible(false);
                   }}
                 >
-                  Cancel
+                  取消
                 </Button>
                 <Button
                   onClick={async (e) => {
@@ -268,7 +269,7 @@ Action.Drawer = observer((props: any) => {
                   }}
                   type={'primary'}
                 >
-                  OK
+                  确定
                 </Button>
               </Space>
             )
@@ -412,7 +413,7 @@ Action.DesignableBar = (props: any) => {
         <Space size={2}>
           <DragHandle />
           <Dropdown
-            trigger={['click']}
+            trigger={['hover']}
             visible={visible}
             onVisibleChange={(visible) => {
               setVisible(visible);
@@ -421,7 +422,7 @@ Action.DesignableBar = (props: any) => {
               <Menu>
                 <Menu.Item
                   onClick={async (e) => {
-                    const values = await FormDialog('修改名称和图标', () => {
+                    const values = await FormDialog('编辑按钮', () => {
                       return (
                         <FormLayout layout={'vertical'}>
                           <SchemaField
@@ -460,7 +461,7 @@ Action.DesignableBar = (props: any) => {
                     refresh();
                   }}
                 >
-                  修改名称和图标
+                  编辑按钮
                 </Menu.Item>
                 {isPopup && (
                   <Menu.Item>

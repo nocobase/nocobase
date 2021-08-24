@@ -12,7 +12,7 @@ import { LoadingOutlined } from '@ant-design/icons';
 import { CascaderOptionType } from 'antd/lib/cascader';
 import { ArrayField } from '@formily/core';
 import { toArr } from '@formily/shared';
-import { omit } from 'lodash';
+import { isBoolean, omit } from 'lodash';
 
 const defaultFieldNames = {
   label: 'label',
@@ -29,9 +29,11 @@ export const Cascader = connect(
       loadData,
       labelInValue,
       fieldNames = defaultFieldNames,
+      changeOnSelectLast,
+      changeOnSelect,
       ...others
     } = props;
-    console.log('Cascader', props);
+    console.log('changeOnSelectLast', changeOnSelectLast);
     // 兼容值为 object[] 的情况
     const toValue = () => {
       return toArr(value).map((item) => {
@@ -84,6 +86,9 @@ export const Cascader = connect(
     return (
       <AntdCascader
         {...others}
+        changeOnSelect={
+          isBoolean(changeOnSelectLast) ? !changeOnSelectLast : changeOnSelect
+        }
         value={toValue()}
         fieldNames={fieldNames}
         displayRender={displayRender}

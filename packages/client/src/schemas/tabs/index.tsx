@@ -107,6 +107,7 @@ export const Tabs: any = observer((props: any) => {
             designable &&
             schema['x-designable-bar'] && (
               <Button
+                className={'designable-btn designable-btn-dash'}
                 type={'dashed'}
                 icon={<PlusOutlined />}
                 onClick={async () => {
@@ -221,7 +222,7 @@ Tabs.DesignableBar = () => {
       >
         <Space>
           <Dropdown
-            trigger={['click']}
+            trigger={['hover']}
             visible={visible}
             placement={'bottomRight'}
             onVisibleChange={(visible) => {
@@ -271,7 +272,7 @@ Tabs.TabPane.DesignableBar = () => {
         <Space>
           <DragHandle />{' '}
           <Dropdown
-            trigger={['click']}
+            trigger={['hover']}
             visible={visible}
             onVisibleChange={(visible) => {
               setVisible(visible);
@@ -280,7 +281,7 @@ Tabs.TabPane.DesignableBar = () => {
               <Menu>
                 <Menu.Item
                   onClick={async () => {
-                    const values = await FormDialog('修改名称和图标', () => {
+                    const values = await FormDialog('编辑按钮', () => {
                       return (
                         <FormLayout layout={'vertical'}>
                           <SchemaField
@@ -320,7 +321,7 @@ Tabs.TabPane.DesignableBar = () => {
                     updateSchema(schema);
                   }}
                 >
-                  修改名称和图标
+                  编辑按钮
                 </Menu.Item>
                 <Menu.Divider />
                 <Menu.Item
