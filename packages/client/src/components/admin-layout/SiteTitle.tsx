@@ -25,7 +25,7 @@ export function SystemSettingsProvider(props) {
   );
   return (
     <SystemSettingsContext.Provider value={{ service, resource }}>
-      {service.loading ? <Spin /> : props.children}
+      {service.loading ? <Spin size={'large'} className={'nb-spin-center'} /> : props.children}
     </SystemSettingsContext.Provider>
   );
 }

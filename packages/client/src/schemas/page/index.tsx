@@ -6,11 +6,11 @@ import { Helmet } from 'react-helmet';
 
 export const Page = observer((props) => {
   const { children, ...others } = props;
-  const [pageTitle] = usePageTitleContext();
+  const { documentTitle, pageTitle } = usePageTitleContext();
   return (
     <>
       <Helmet>
-        <title>{pageTitle}</title>
+        <title>{documentTitle}</title>
       </Helmet>
       <AntdPageHeader ghost={false} title={pageTitle} {...others} />
       <div style={{margin: 24}}>

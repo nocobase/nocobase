@@ -76,7 +76,7 @@ function LayoutWithMenu(props: LayoutWithMenuProps) {
   const history = useHistory();
   const { title } = useSystemSettings();
   const [activeKey, setActiveKey] = useState(match.params.name);
-  const [, setPageTitle] = usePageTitleContext();
+  const { setPageTitle } = usePageTitleContext();
   const onSelect = (info) => {
     if (!info.schema) {
       setActiveKey(null);
@@ -149,7 +149,7 @@ function Content({ activeKey }) {
   );
 
   if (loading) {
-    return <Spin />;
+    return <Spin size={'large'} className={'nb-spin-center'} />;
   }
 
   return <SchemaRenderer schema={data} />;
@@ -166,7 +166,7 @@ export function AdminLayout({ route, ...others }: any) {
   );
 
   if (loading) {
-    return <Spin />;
+    return <Spin size={'large'} className={'nb-spin-center'} />;
   }
 
   const findProperties = (schema: Schema): Schema[] => {

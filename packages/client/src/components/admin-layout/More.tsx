@@ -25,7 +25,7 @@ const useOkAction = () => {
     async run() {
       console.log('system_settings.values', form.values);
       await resource.save(form.values);
-      await service.refresh();
+      await service.mutate(form.values);
     },
   };
 };
