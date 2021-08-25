@@ -6,6 +6,8 @@ import {
   useSensor,
   useSensors,
   rectIntersection,
+  closestCenter,
+  closestCorners,
 } from '@dnd-kit/core';
 import {
   SortableContext,

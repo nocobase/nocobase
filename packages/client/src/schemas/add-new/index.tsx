@@ -175,6 +175,10 @@ function generateCardItemSchema(component) {
               'x-component': 'Action',
               'x-designable-bar': 'Table.Action.DesignableBar',
               'x-component-props': {
+                confirm: {
+                  title: '删除数据',
+                  content: '删除后无法恢复，确定要删除吗？'
+                },
                 useAction: '{{ Table.useTableDestroyAction }}',
               },
             },
@@ -312,17 +316,17 @@ function generateCardItemSchema(component) {
                     },
                   },
                 },
-                [uid()]: {
-                  type: 'void',
-                  title: '删除',
-                  'x-component': 'Action',
-                  'x-designable-bar': 'Table.Action.DesignableBar',
-                  'x-action-type': 'destroy',
-                  'x-component-props': {
-                    type: 'link',
-                    useAction: '{{ Table.useTableDestroyAction }}',
-                  },
-                },
+                // [uid()]: {
+                //   type: 'void',
+                //   title: '删除',
+                //   'x-component': 'Action',
+                //   'x-designable-bar': 'Table.Action.DesignableBar',
+                //   'x-action-type': 'destroy',
+                //   'x-component-props': {
+                //     type: 'link',
+                //     useAction: '{{ Table.useTableDestroyAction }}',
+                //   },
+                // },
               },
             },
           },

@@ -8,6 +8,7 @@ import {
   Menu,
   Collapse,
   Dropdown,
+  Tooltip,
 } from 'antd';
 import isEmpty from 'lodash/isEmpty';
 import {
@@ -43,16 +44,18 @@ import { AuthProvider } from './Auth';
 function DesignableToggle() {
   const { designable, setDesignable } = useDesignableSwitchContext();
   return (
-    <Button
-      className={cls('nb-designable-toggle', { active: designable })}
-      type={'primary'}
-      style={{ height: 46, border: 0 }}
-      onClick={() => {
-        setDesignable(!designable);
-      }}
-    >
-      <HighlightOutlined />
-    </Button>
+    <Tooltip title={'界面配置'}>
+      <Button
+        className={cls('nb-designable-toggle', { active: designable })}
+        type={'primary'}
+        style={{ height: 46, border: 0 }}
+        onClick={() => {
+          setDesignable(!designable);
+        }}
+      >
+        <HighlightOutlined />
+      </Button>
+    </Tooltip>
   );
 }
 

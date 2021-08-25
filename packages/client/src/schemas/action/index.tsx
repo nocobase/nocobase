@@ -20,6 +20,7 @@ import {
   Drawer,
   Modal,
   Select,
+  Tooltip,
 } from 'antd';
 import { Link, useHistory, LinkProps, Switch } from 'react-router-dom';
 import {
@@ -49,8 +50,21 @@ import { useDisplayedMapContext } from '../../constate';
 
 export const ButtonComponentContext = createContext(null);
 
+function getTooltipProps(tooltip) {
+  if (typeof tooltip === 'string') {
+    return { title: tooltip };
+  }
+  return tooltip;
+}
+
 export const Action: any = observer((props: any) => {
-  const { useAction = useDefaultAction, icon, ...others } = props;
+  const {
+    tooltip,
+    confirm,
+    useAction = useDefaultAction,
+    icon,
+    ...others
+  } = props;
   const { run } = useAction();
   const field = useField();
   const { schema, DesignableBar } = useDesignable();
@@ -59,19 +73,31 @@ export const Action: any = observer((props: any) => {
   const isDropdownOrPopover =
     child &&
     ['Action.Dropdown', 'Action.Popover'].includes(child['x-component']);
-  const button = (
+  let button = (
     <Button
       {...others}
       icon={<IconPicker type={icon} />}
       onClick={async () => {
         setVisible(true);
-        await run();
+        if (confirm) {
+          Modal.confirm({
+            ...confirm,
+            async onOk() {
+              await run();
+            },
+          });
+        } else {
+          await run();
+        }
       }}
     >
       {schema.title}
       <DesignableBar path={getSchemaPath(schema)} />
     </Button>
   );
+  if (tooltip) {
+    button = <Tooltip {...getTooltipProps(tooltip)}>{button}</Tooltip>;
+  }
   return (
     <ButtonComponentContext.Provider value={button}>
       <VisibleContext.Provider value={[visible, setVisible]}>

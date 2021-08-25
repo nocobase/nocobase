@@ -942,6 +942,10 @@ function generateActionSchema(type) {
       'x-component': 'Action',
       'x-designable-bar': 'Table.Action.DesignableBar',
       'x-component-props': {
+        confirm: {
+          title: '删除数据',
+          content: '删除后无法恢复，确定要删除吗？'
+        },
         useAction: '{{ Table.useTableDestroyAction }}',
       },
     },
@@ -1111,7 +1115,7 @@ function AddActionButton() {
         className={'designable-btn designable-btn-dash'}
         style={{ marginLeft: 8 }}
         type={'dashed'}
-        icon={<PlusOutlined />}
+        icon={<SettingOutlined />}
       >
         配置操作
       </Button>
@@ -1779,6 +1783,7 @@ Table.Action.DesignableBar = () => {
                       bordered={false}
                       size={'small'}
                       defaultValue={popupComponent}
+                      style={{ width: 100 }}
                       onChange={(value) => {
                         const s = Object.values(schema.properties).shift();
                         s['x-component'] = value;
@@ -1795,7 +1800,7 @@ Table.Action.DesignableBar = () => {
                         抽屉
                       </Select.Option>
                       <Select.Option value={'Action.Window'}>
-                        浏览器窗口
+                        窗口
                       </Select.Option>
                     </Select>{' '}
                     内打开

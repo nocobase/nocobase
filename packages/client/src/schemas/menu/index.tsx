@@ -668,7 +668,7 @@ Menu.DesignableBar = (props) => {
             overlayStyle={{
               minWidth: 150,
             }}
-            trigger={['click']}
+            trigger={['hover']}
             overlay={
               <AntdMenu
                 onClick={async (info) => {

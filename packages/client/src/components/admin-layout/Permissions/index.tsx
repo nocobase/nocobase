@@ -246,6 +246,7 @@ const schema: ISchema = {
   name: 'action',
   'x-component': 'Action',
   'x-component-props': {
+    tooltip: '权限配置',
     className: 'nb-database-config',
     icon: 'LockOutlined',
     type: 'primary',

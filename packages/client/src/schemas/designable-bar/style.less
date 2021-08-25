@@ -1,4 +1,4 @@
-@bgcolor: #F18B62;
+@bgcolor: #f18b62;
 
 .designable-info {
   position: absolute;
@@ -38,13 +38,17 @@
       height: 16px !important;
       vertical-align: top;
       line-height: 16px !important;
-    //   font-size: 10px;
-    //   display: inline-flex;
+      cursor: pointer;
+      //   font-size: 10px;
+      //   display: inline-flex;
       background-color: @bgcolor !important;
       border-bottom-left-radius: 1px;
       border-bottom-right-radius: 1px;
-    //   margin-left: 0 !important;
-    //   margin-right: 2px !important;
+      //   margin-left: 0 !important;
+      //   margin-right: 2px !important;
+      &.anticon-drag {
+        cursor: grab;
+      }
     }
   }
 }
