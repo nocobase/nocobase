@@ -959,7 +959,7 @@ AddNew.CardItem = observer((props: any) => {
             let collectionName = null;
             let isNew = false;
             if (['addNewTable', 'addNewForm'].includes(info.key)) {
-              const values = await FormDialog(`新建数据表`, () => {
+              const values = await FormDialog(`创建数据表`, () => {
                 return (
                   <FormLayout layout={'vertical'}>
                     <SchemaField schema={dbSchema} />
@@ -1046,7 +1046,7 @@ AddNew.CardItem = observer((props: any) => {
                 </Menu.ItemGroup>
                 <Menu.Divider></Menu.Divider>
                 <Menu.Item icon={<PlusOutlined />} key={`addNew${view.key}`}>
-                  新建数据表
+                  创建数据表
                 </Menu.Item>
               </Menu.SubMenu>
             ))}
@@ -1174,7 +1174,7 @@ AddNew.CardItem = observer((props: any) => {
                 </Menu.ItemGroup>
                 {/* <Menu.Divider></Menu.Divider> */}
                 {/* <Menu.Item icon={<PlusOutlined />} key={`addNew${view.key}`}>
-                  新建数据表
+                  创建数据表
                 </Menu.Item> */}
               </Menu.SubMenu>
             ))}
@@ -1269,7 +1269,7 @@ AddNew.CardItem = observer((props: any) => {
                 </Menu.ItemGroup>
                 {/* <Menu.Divider></Menu.Divider>
                 <Menu.Item icon={<PlusOutlined />} key={`addNew${view.key}`}>
-                  新建数据表
+                  创建数据表
                 </Menu.Item> */}
               </Menu.SubMenu>
             ))}
@@ -1326,7 +1326,7 @@ AddNew.CardItem = observer((props: any) => {
             </Menu.ItemGroup>
             <Menu.Divider></Menu.Divider>
             <Menu.Item disabled key={'addNewRef'}>
-              新建模板
+              创建模板
             </Menu.Item>
           </Menu.SubMenu>
         </Menu>
@@ -1423,7 +1423,7 @@ AddNew.FormItem = observer((props: any) => {
           <Menu.SubMenu
             popupClassName={'add-new-fields-popup'}
             className={'sub-menu-add-new-fields'}
-            title={'新建字段'}
+            title={'添加字段'}
           >
             {options.map(
               (option) =>
@@ -1435,7 +1435,7 @@ AddNew.FormItem = observer((props: any) => {
                         key={item.name}
                         onClick={async () => {
                           setVisible(false);
-                          const values = await FormDialog(`创建字段`, () => {
+                          const values = await FormDialog(`添加字段`, () => {
                             return (
                               <FormLayout layout={'vertical'}>
                                 <SchemaField schema={item} />

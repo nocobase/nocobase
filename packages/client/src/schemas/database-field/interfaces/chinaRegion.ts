@@ -38,7 +38,7 @@ export const chinaRegion: FieldOptions = {
       type: 'number',
       'x-component': 'Radio.Group',
       'x-decorator': 'FormItem',
-      title: '层级',
+      title: '可选择的层级',
       default: 3,
       enum: [
         { value: 1, label: '省' },

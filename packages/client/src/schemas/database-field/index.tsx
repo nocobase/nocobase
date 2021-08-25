@@ -486,7 +486,7 @@ export const DatabaseField: any = observer((props) => {
           icon={<PlusOutlined />}
           style={{ marginTop: 10 }}
         >
-          创建字段
+          添加字段
         </Button>
       </Dropdown>
     </div>

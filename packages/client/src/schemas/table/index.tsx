@@ -471,7 +471,7 @@ function AddColumn() {
           <Menu.Divider />
           <Menu.SubMenu
             popupClassName={'add-new-fields-popup'}
-            title={'创建字段'}
+            title={'添加字段'}
           >
             {options.map((option) => (
               <Menu.ItemGroup title={option.label}>
@@ -481,7 +481,7 @@ function AddColumn() {
                     key={item.name}
                     onClick={async () => {
                       setVisible(false);
-                      const values = await FormDialog(`创建字段`, () => {
+                      const values = await FormDialog(`添加字段`, () => {
                         return (
                           <FormLayout layout={'vertical'}>
                             <SchemaField schema={item} />
