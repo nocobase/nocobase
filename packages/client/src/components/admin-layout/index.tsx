@@ -38,8 +38,13 @@ import { uid } from '@formily/shared';
 import { Permissions } from './Permissions';
 import { More } from './More';
 import { UserInfo } from './UserInfo';
-import { SiteTitle, SystemSettingsProvider } from './SiteTitle';
+import {
+  SiteTitle,
+  SystemSettingsProvider,
+  useSystemSettings,
+} from './SiteTitle';
 import { AuthProvider } from './Auth';
+import { Helmet } from 'react-helmet';
 
 function DesignableToggle() {
   const { designable, setDesignable } = useDesignableSwitchContext();
@@ -69,6 +74,7 @@ function LayoutWithMenu(props: LayoutWithMenuProps) {
   const match = useRouteMatch<any>();
   const sideMenuRef = useRef();
   const history = useHistory();
+  const { title } = useSystemSettings();
   const [activeKey, setActiveKey] = useState(match.params.name);
   const [, setPageTitle] = usePageTitleContext();
   const onSelect = (info) => {
@@ -91,6 +97,7 @@ function LayoutWithMenu(props: LayoutWithMenuProps) {
   const onMenuItemRemove = () => {
     history.push(`/admin`);
   };
+  console.log({ activeKey });
   return (
     <Layout>
       <Layout.Header className={'site-header'} style={{ display: 'flex' }}>
@@ -117,7 +124,13 @@ function LayoutWithMenu(props: LayoutWithMenuProps) {
           width={200}
         ></Layout.Sider>
         <Layout.Content style={{ minHeight: 'calc(100vh - 46px)' }}>
-          {activeKey && <Content activeKey={activeKey} />}
+          {activeKey ? (
+            <Content activeKey={activeKey} />
+          ) : (
+            <Helmet>
+              <title>{title}</title>
+            </Helmet>
+          )}
         </Layout.Content>
       </Layout>
     </Layout>

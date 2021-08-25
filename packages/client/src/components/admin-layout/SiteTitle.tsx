@@ -30,6 +30,11 @@ export function SystemSettingsProvider(props) {
   );
 }
 
+export const useSystemSettings = () => {
+  const ctx = useContext(SystemSettingsContext);
+  return ctx?.service?.data || {};
+};
+
 export const SiteTitle = () => {
   const { service = {} } = useContext(SystemSettingsContext);
   const { loading, data } = service;
