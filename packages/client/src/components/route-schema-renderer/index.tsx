@@ -5,6 +5,7 @@ import { useRequest } from 'ahooks';
 import { request, SchemaRenderer } from '../../schemas';
 import { useForm } from '@formily/react';
 import { useHistory, useLocation } from 'react-router-dom';
+import { useSystemSettings } from '../admin-layout/SiteTitle';
 
 function Div(props) {
   return <div {...props}></div>;
@@ -56,11 +57,15 @@ export function RouteSchemaRenderer({ route }) {
       formatResult: (result) => result?.data,
     },
   );
+  const { title } = useSystemSettings();
   if (loading) {
     return <Spin />;
   }
   return (
     <div>
+      <Helmet>
+        <title>{title ? `${data.title} - ${title}` : data.title}</title>
+      </Helmet>
       <SchemaRenderer
         components={{ Div }}
         scope={{ useLogin, useRegister }}

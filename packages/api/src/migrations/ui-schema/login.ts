@@ -1,6 +1,7 @@
 export const login = {
   key: 'dtf9j0b8p9u',
   type: 'object',
+  title: '登录',
   properties: {
     email: {
       type: 'string',

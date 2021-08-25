@@ -1,6 +1,7 @@
 export const register = {
   key: '46qlxqam3xk',
   type: 'object',
+  title: '注册',
   properties: {
     email: {
       type: 'string',
