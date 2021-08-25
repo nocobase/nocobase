@@ -158,6 +158,10 @@ function generateActionSchema(type) {
       'x-component': 'Action',
       'x-designable-bar': 'Action.DesignableBar',
       'x-component-props': {
+        confirm: {
+          title: '删除数据',
+          content: '删除后无法恢复，确定要删除吗？'
+        },
         useAction: '{{ Table.useTableDestroyAction }}',
       },
     },

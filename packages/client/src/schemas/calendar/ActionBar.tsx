@@ -174,6 +174,7 @@ function generateActionSchema(type) {
       },
       'x-component-props': {
         type: 'primary',
+        icon: 'PlusOutlined',
       },
       properties: {
         modal: {

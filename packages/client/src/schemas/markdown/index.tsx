@@ -7,7 +7,7 @@ import {
   useFieldSchema,
   mapReadPretty,
 } from '@formily/react';
-import { Button, Dropdown, Input as AntdInput, Menu, Space } from 'antd';
+import { Button, Dropdown, Input as AntdInput, Menu, Modal, Space } from 'antd';
 import { InputProps, TextAreaProps } from 'antd/lib/input';
 import { Display } from '../display';
 import { LoadingOutlined, MenuOutlined, DragOutlined } from '@ant-design/icons';
@@ -125,10 +125,10 @@ Markdown.Void.DesignableBar = observer((props) => {
           <DragHandle />
           <Dropdown
             trigger={['hover']}
-            visible={visible}
-            onVisibleChange={(visible) => {
-              setVisible(visible);
-            }}
+            // visible={visible}
+            // onVisibleChange={(visible) => {
+            //   setVisible(visible);
+            // }}
             overlay={
               <Menu>
                 <Menu.Item
@@ -144,68 +144,19 @@ Markdown.Void.DesignableBar = observer((props) => {
                 <Menu.Item
                   key={'delete'}
                   onClick={async () => {
-                    const removed = deepRemove();
-                    const last = removed.pop();
-                    console.log({ last })
-                    await removeSchema(last);
+                    Modal.confirm({
+                      title: '删除区块',
+                      content: '删除后无法恢复，确定要删除吗？',
+                      onOk: async () => {
+                        const removed = deepRemove();
+                        const last = removed.pop();
+                        console.log({ last });
+                        await removeSchema(last);
+                      },
+                    });
                   }}
                 >
-                  移除
-                </Menu.Item>
-              </Menu>
-            }
-          >
-            <MenuOutlined />
-          </Dropdown>
-        </Space>
-      </span>
-    </div>
-  );
-});
-
-Markdown.DesignableBar = observer((props) => {
-  const field = useField();
-  const { designable, schema, refresh, deepRemove } = useDesignable();
-  const [visible, setVisible] = useState(false);
-  const { dragRef } = useContext(DraggableBlockContext);
-  if (!designable) {
-    return null;
-  }
-  return (
-    <div className={cls('designable-bar', { active: visible })}>
-      <span
-        onClick={(e) => {
-          e.stopPropagation();
-        }}
-        className={cls('designable-bar-actions', { active: visible })}
-      >
-        <Space size={'small'}>
-          <AddNew.FormItem defaultAction={'insertAfter'} ghost />
-          <DragHandle />
-          <Dropdown
-            trigger={['hover']}
-            visible={visible}
-            onVisibleChange={(visible) => {
-              setVisible(visible);
-            }}
-            overlay={
-              <Menu>
-                <Menu.Item key={'update'} onClick={() => {}}>
-                  修改标题
-                </Menu.Item>
-                <Menu.Divider />
-                <Menu.Item
-                  key={'delete'}
-                  onClick={async () => {
-                    const removed = deepRemove();
-                    // console.log({ removed })
-                    const last = removed.pop();
-                    if (isGridRowOrCol(last)) {
-                      await removeSchema(last);
-                    }
-                  }}
-                >
-                  移除
+                  删除
                 </Menu.Item>
               </Menu>
             }

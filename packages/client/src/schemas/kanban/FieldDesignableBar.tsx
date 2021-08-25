@@ -20,7 +20,7 @@ import {
   updateSchema,
 } from '../';
 import get from 'lodash/get';
-import { Button, Dropdown, Menu, Space, Switch } from 'antd';
+import { Button, Dropdown, Menu, Modal, Space, Switch } from 'antd';
 import { MenuOutlined, DragOutlined } from '@ant-design/icons';
 import cls from 'classnames';
 import { FormDialog, FormLayout } from '@formily/antd';
@@ -69,10 +69,10 @@ export const FieldDesignableBar = observer((props) => {
           <Dropdown
             placement={'bottomRight'}
             trigger={['hover']}
-            visible={visible}
-            onVisibleChange={(visible) => {
-              setVisible(visible);
-            }}
+            // visible={visible}
+            // onVisibleChange={(visible) => {
+            //   setVisible(visible);
+            // }}
             overlay={
               <Menu>
                 <Menu.Item
@@ -128,16 +128,21 @@ export const FieldDesignableBar = observer((props) => {
                 <Menu.Item
                   key={'delete'}
                   onClick={async () => {
-                    const removed = deepRemove();
-                    const fieldName =
-                      schema['x-component-props']?.['fieldName'];
-                    console.log({ schema, removed, fieldName });
-                    const last = removed.pop();
-                    displayed.remove(fieldName);
-                    await removeSchema(last);
+                    Modal.confirm({
+                      title: '删除区块',
+                      content: '删除后无法恢复，确定要删除吗？',
+                      onOk: async () => {
+                        const removed = deepRemove();
+                        const fieldName =
+                          schema['x-component-props']?.['fieldName'];
+                        const last = removed.pop();
+                        displayed.remove(fieldName);
+                        await removeSchema(last);
+                      },
+                    });
                   }}
                 >
-                  移除
+                  删除
                 </Menu.Item>
               </Menu>
             }

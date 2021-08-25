@@ -53,7 +53,7 @@ const schema: ISchema = {
         [uid()]: {
           type: 'void',
           name: 'action1',
-          title: '新增',
+          title: '创建',
           'x-component': 'Action',
           'x-designable-bar': 'Table.Action.DesignableBar',
           properties: {

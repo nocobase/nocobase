@@ -12,9 +12,15 @@ import {
   useForm,
   RecursionField,
 } from '@formily/react';
-import { useSchemaPath, SchemaField, useDesignable, removeSchema, updateSchema } from '../';
+import {
+  useSchemaPath,
+  SchemaField,
+  useDesignable,
+  removeSchema,
+  updateSchema,
+} from '../';
 import get from 'lodash/get';
-import { Button, Dropdown, Menu, Space } from 'antd';
+import { Button, Dropdown, Menu, Modal, Space } from 'antd';
 import { MenuOutlined, DragOutlined } from '@ant-design/icons';
 import cls from 'classnames';
 import { FormDialog, FormLayout } from '@formily/antd';
@@ -37,11 +43,14 @@ export const DesignableBar = observer((props) => {
   const [visible, setVisible] = useState(false);
   const { dragRef } = useContext(DraggableBlockContext);
   const { props: tableProps } = useTable();
-  const collectionName = field.componentProps?.collectionName || tableProps?.collectionName;
+  const collectionName =
+    field.componentProps?.collectionName || tableProps?.collectionName;
   const { collection, fields } = useCollection({ collectionName });
   return (
     <div className={cls('designable-bar', { active: visible })}>
-      <div className={'designable-info'}>{collection?.title || collection?.name}</div>
+      <div className={'designable-info'}>
+        {collection?.title || collection?.name}
+      </div>
       <span
         onClick={(e) => {
           e.stopPropagation();
@@ -53,10 +62,10 @@ export const DesignableBar = observer((props) => {
           <DragHandle />
           <Dropdown
             trigger={['hover']}
-            visible={visible}
-            onVisibleChange={(visible) => {
-              setVisible(visible);
-            }}
+            // visible={visible}
+            // onVisibleChange={(visible) => {
+            //   setVisible(visible);
+            // }}
             overlay={
               <Menu>
                 {/* <Menu.Item
@@ -108,13 +117,19 @@ export const DesignableBar = observer((props) => {
                 <Menu.Item
                   key={'delete'}
                   onClick={async () => {
-                    const removed = deepRemove();
-                    // console.log({ removed })
-                    const last = removed.pop();
-                    await removeSchema(last);
+                    Modal.confirm({
+                      title: '删除区块',
+                      content: '删除后无法恢复，确定要删除吗？',
+                      onOk: async () => {
+                        const removed = deepRemove();
+                        // console.log({ removed })
+                        const last = removed.pop();
+                        await removeSchema(last);
+                      },
+                    });
                   }}
                 >
-                  移除
+                  删除
                 </Menu.Item>
               </Menu>
             }
