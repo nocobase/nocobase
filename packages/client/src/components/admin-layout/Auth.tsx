@@ -16,7 +16,7 @@ export const AuthContext = createContext<AuthContextProps>(null);
 export const useCurrentUser = () => {
   const { currentUser } = useContext(AuthContext);
   return currentUser;
-}
+};
 
 export function AuthProvider(props) {
   const service = useRequest('users:check', {
@@ -30,7 +30,11 @@ export function AuthProvider(props) {
   }
   return (
     <AuthContext.Provider value={{ service, currentUser: service.data }}>
-      {service.loading ? <Spin /> : props.children}
+      {service.loading ? (
+        <Spin size={'large'} className={'nb-spin-center'} />
+      ) : (
+        props.children
+      )}
     </AuthContext.Provider>
   );
 }

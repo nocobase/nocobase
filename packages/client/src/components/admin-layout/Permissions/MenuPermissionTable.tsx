@@ -44,7 +44,7 @@ export const MenuPermissionTable = observer((props) => {
     },
   });
   if (loading) {
-    return <Spin />;
+    return <Spin size={'large'} className={'nb-spin-center'} />;
   }
   return (
     <div>
