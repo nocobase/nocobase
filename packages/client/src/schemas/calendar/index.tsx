@@ -209,7 +209,7 @@ export const Calendar: any = observer((props: any) => {
             popup
             selectable
             events={Array.isArray(field.value.slice()) ? field.value.slice() : []}
-            views={allViews}
+            views={['month', 'week', 'day']}
             step={60}
             showMultiDayTimes
             messages={messages}

@@ -175,6 +175,7 @@ function generateCardItemSchema(component) {
               'x-component': 'Action',
               'x-designable-bar': 'Table.Action.DesignableBar',
               'x-component-props': {
+                icon: 'DeleteOutlined',
                 confirm: {
                   title: '删除数据',
                   content: '删除后无法恢复，确定要删除吗？'
@@ -193,6 +194,7 @@ function generateCardItemSchema(component) {
               },
               'x-component': 'Action',
               'x-component-props': {
+                icon: 'PlusOutlined',
                 type: 'primary',
               },
               'x-designable-bar': 'Table.Action.DesignableBar',
@@ -491,7 +493,7 @@ function generateCardItemSchema(component) {
             },
             filter: {
               type: 'void',
-              title: '过滤',
+              title: '筛选',
               'x-align': 'right',
               'x-designable-bar': 'Calendar.Filter.DesignableBar',
               'x-component': 'Calendar.Filter',
@@ -502,7 +504,7 @@ function generateCardItemSchema(component) {
             },
             create: {
               type: 'void',
-              title: '新增',
+              title: '创建',
               'x-align': 'right',
               'x-designable-bar': 'Calendar.ActionDesignableBar',
               'x-component': 'Action',
@@ -512,6 +514,7 @@ function generateCardItemSchema(component) {
               },
               'x-component-props': {
                 type: 'primary',
+                icon: 'PlusOutlined',
               },
               properties: {
                 modal: {

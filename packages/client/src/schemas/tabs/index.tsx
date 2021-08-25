@@ -1,6 +1,14 @@
 import { observer, connect, useField, RecursionField } from '@formily/react';
 import React from 'react';
-import { Button, Tabs as AntdTabs, Dropdown, Menu, Switch, Space } from 'antd';
+import {
+  Button,
+  Tabs as AntdTabs,
+  Dropdown,
+  Menu,
+  Switch,
+  Space,
+  Modal,
+} from 'antd';
 import {
   findPropertyByPath,
   getSchemaPath,
@@ -327,12 +335,18 @@ Tabs.TabPane.DesignableBar = () => {
                 <Menu.Divider />
                 <Menu.Item
                   onClick={async () => {
-                    const data = remove();
-                    await removeSchema(data);
                     setVisible(false);
+                    Modal.confirm({
+                      title: '删除标签页',
+                      content: '删除后无法恢复，确定要删除吗？',
+                      onOk: async () => {
+                        const data = remove();
+                        await removeSchema(data);
+                      },
+                    });
                   }}
                 >
-                  移除
+                  删除
                 </Menu.Item>
               </Menu>
             }

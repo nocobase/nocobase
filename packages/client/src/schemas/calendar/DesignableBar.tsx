@@ -20,8 +20,13 @@ import {
   updateSchema,
 } from '../';
 import get from 'lodash/get';
-import { Button, Dropdown, Menu, Select, Space } from 'antd';
-import { MenuOutlined, DragOutlined } from '@ant-design/icons';
+import { Modal, Dropdown, Menu, Select, Space } from 'antd';
+import {
+  MenuOutlined,
+  DragOutlined,
+  CalendarOutlined,
+  FontSizeOutlined,
+} from '@ant-design/icons';
 import cls from 'classnames';
 import { FormDialog, FormLayout } from '@formily/antd';
 // import './style.less';
@@ -37,6 +42,7 @@ import { useTable } from '../table';
 import { fieldsToFilterColumns } from './';
 import { set } from 'lodash';
 import { DragHandle } from '../../components/Sortable';
+import { DeleteOutlined, FilterOutlined } from '@ant-design/icons';
 
 export const DesignableBar = observer((props) => {
   const field = useField();
@@ -70,7 +76,7 @@ export const DesignableBar = observer((props) => {
             }}
             overlay={
               <Menu>
-                <Menu.Item>
+                <Menu.Item icon={<FontSizeOutlined />}>
                   <div
                     style={{ display: 'flex', justifyContent: 'space-between' }}
                   >
@@ -102,7 +108,7 @@ export const DesignableBar = observer((props) => {
                     />
                   </div>
                 </Menu.Item>
-                <Menu.Item>
+                <Menu.Item icon={<CalendarOutlined />}>
                   <div
                     style={{ display: 'flex', justifyContent: 'space-between' }}
                   >
@@ -136,7 +142,7 @@ export const DesignableBar = observer((props) => {
                     />
                   </div>
                 </Menu.Item>
-                <Menu.Item>
+                <Menu.Item icon={<CalendarOutlined />}>
                   <div
                     style={{ display: 'flex', justifyContent: 'space-between' }}
                   >
@@ -171,6 +177,7 @@ export const DesignableBar = observer((props) => {
                 </Menu.Item>
                 <Menu.Item
                   key={'defaultFilter'}
+                  icon={<FilterOutlined />}
                   onClick={async () => {
                     const { defaultFilter } = await FormDialog(
                       '设置数据范围',
@@ -209,16 +216,22 @@ export const DesignableBar = observer((props) => {
                 <Menu.Divider />
                 <Menu.Item
                   key={'delete'}
+                  icon={<DeleteOutlined />}
                   onClick={async () => {
-                    const removed = deepRemove();
-                    // console.log({ removed })
-                    const last = removed.pop();
-                    if (isGridRowOrCol(last)) {
-                      await removeSchema(last);
-                    }
+                    setVisible(false);
+                    Modal.confirm({
+                      title: '删除区块',
+                      content: '删除后无法恢复，确定要删除吗？',
+                      onOk: async () => {
+                        const removed = deepRemove();
+                        // console.log({ removed })
+                        const last = removed.pop();
+                        await removeSchema(last);
+                      },
+                    });
                   }}
                 >
-                  移除
+                  删除
                 </Menu.Item>
               </Menu>
             }

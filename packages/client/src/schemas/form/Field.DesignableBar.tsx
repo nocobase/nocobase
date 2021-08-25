@@ -20,7 +20,7 @@ import {
   updateSchema,
 } from '../';
 import get from 'lodash/get';
-import { Button, Dropdown, Menu, Space, Switch } from 'antd';
+import { Button, Dropdown, Menu, Modal, Space, Switch } from 'antd';
 import { MenuOutlined, DragOutlined } from '@ant-design/icons';
 import cls from 'classnames';
 import { FormDialog, FormLayout } from '@formily/antd';
@@ -186,7 +186,7 @@ export const FieldDesignableBar = observer((props) => {
                     await removeSchema(last);
                   }}
                 >
-                  移除
+                  隐藏
                 </Menu.Item>
               </Menu>
             }

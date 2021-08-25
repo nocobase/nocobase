@@ -289,12 +289,16 @@ const schema: ISchema = {
                   },
                   'x-component': 'Action',
                   'x-component-props': {
+                    icon: 'DeleteOutlined',
+                    confirm: {
+                      title: '删除数据',
+                      content: '删除后无法恢复，确定要删除吗？'
+                    },
                     useAction: '{{ Table.useTableDestroyAction }}',
                   },
                 },
                 [uid()]: {
                   type: 'void',
-                  name: 'action1',
                   title: '创建',
                   'x-align': 'right',
                   'x-decorator': 'AddNew.Displayed',
@@ -304,6 +308,7 @@ const schema: ISchema = {
                   'x-component': 'Action',
                   'x-component-props': {
                     type: 'primary',
+                    icon: 'PlusOutlined',
                   },
                   properties: {
                     modal: {
@@ -460,6 +465,10 @@ const schema: ISchema = {
                       'x-action-type': 'destroy',
                       'x-component-props': {
                         type: 'link',
+                        confirm: {
+                          title: '删除数据',
+                          content: '删除后无法恢复，确定要删除吗？'
+                        },
                         useAction: '{{ Table.useTableDestroyAction }}',
                       },
                     },

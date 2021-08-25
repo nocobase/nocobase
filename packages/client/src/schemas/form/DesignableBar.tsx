@@ -14,7 +14,7 @@ import {
 } from '@formily/react';
 import { useSchemaPath, SchemaField, useDesignable, removeSchema } from '../';
 import get from 'lodash/get';
-import { Button, Dropdown, Menu, Space } from 'antd';
+import { Modal, Dropdown, Menu, Space } from 'antd';
 import { MenuOutlined, DragOutlined } from '@ant-design/icons';
 import cls from 'classnames';
 import { FormLayout } from '@formily/antd';
@@ -58,10 +58,10 @@ export const DesignableBar = observer((props) => {
           <DragHandle />
           <Dropdown
             trigger={['hover']}
-            visible={visible}
-            onVisibleChange={(visible) => {
-              setVisible(visible);
-            }}
+            // visible={visible}
+            // onVisibleChange={(visible) => {
+            //   setVisible(visible);
+            // }}
             overlay={
               <Menu>
                 {/* <Menu.Item
@@ -76,15 +76,19 @@ export const DesignableBar = observer((props) => {
                 <Menu.Item
                   key={'delete'}
                   onClick={async () => {
-                    const removed = deepRemove();
-                    // console.log({ removed })
-                    const last = removed.pop();
-                    if (isGridRowOrCol(last)) {
-                      await removeSchema(last);
-                    }
+                    Modal.confirm({
+                      title: '删除区块',
+                      content: '删除后无法恢复，确定要删除吗？',
+                      onOk: async () => {
+                        const removed = deepRemove();
+                        // console.log({ removed })
+                        const last = removed.pop();
+                        await removeSchema(last);
+                      },
+                    });
                   }}
                 >
-                  移除
+                  删除
                 </Menu.Item>
               </Menu>
             }

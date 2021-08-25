@@ -6,7 +6,7 @@ import {
   useField,
   useForm,
 } from '@formily/react';
-import { Pagination, Popover, Table as AntdTable } from 'antd';
+import { Modal, Pagination, Popover, Table as AntdTable } from 'antd';
 import { cloneDeep, findIndex, forIn, range, set } from 'lodash';
 import React, { Fragment, useEffect, useState } from 'react';
 import { useContext } from 'react';
@@ -905,6 +905,7 @@ function generateActionSchema(type) {
       'x-component': 'Action',
       'x-component-props': {
         type: 'primary',
+        icon: 'PlusOutlined',
       },
       'x-designable-bar': 'Table.Action.DesignableBar',
       properties: {
@@ -944,7 +945,7 @@ function generateActionSchema(type) {
       'x-component-props': {
         confirm: {
           title: '删除数据',
-          content: '删除后无法恢复，确定要删除吗？'
+          content: '删除后无法恢复，确定要删除吗？',
         },
         useAction: '{{ Table.useTableDestroyAction }}',
       },
@@ -1054,6 +1055,10 @@ function generateMenuActionSchema(type) {
       'x-component-props': {
         useAction: '{{ Table.useTableDestroyAction }}',
         type: 'link',
+        confirm: {
+          title: '删除数据',
+          content: '删除后无法恢复，确定要删除吗？',
+        },
       },
     },
   };
@@ -2024,10 +2029,10 @@ Table.DesignableBar = observer((props) => {
           <DragHandle />
           <Dropdown
             trigger={['hover']}
-            visible={visible}
-            onVisibleChange={(visible) => {
-              setVisible(visible);
-            }}
+            // visible={visible}
+            // onVisibleChange={(visible) => {
+            //   setVisible(visible);
+            // }}
             overlay={
               <Menu>
                 <Menu.Item
@@ -2241,15 +2246,19 @@ Table.DesignableBar = observer((props) => {
                 <Menu.Item
                   key={'delete'}
                   onClick={async () => {
-                    const removed = deepRemove();
-                    // console.log({ removed })
-                    const last = removed.pop();
-                    if (isGridRowOrCol(last)) {
-                      await removeSchema(last);
-                    }
+                    Modal.confirm({
+                      title: '删除区块',
+                      content: '删除后无法恢复，确定要删除吗？',
+                      onOk: async () => {
+                        const removed = deepRemove();
+                        // console.log({ removed })
+                        const last = removed.pop();
+                        await removeSchema(last);
+                      },
+                    });
                   }}
                 >
-                  移除
+                  删除
                 </Menu.Item>
               </Menu>
             }

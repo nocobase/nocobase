@@ -52,6 +52,9 @@ const schema: ISchema = {
           type: 'void',
           title: `系统配置`,
           'x-component': 'Menu.Action',
+          "x-component-props": {
+            icon: 'SettingOutlined',
+          },
           properties: {
             drawer1: {
               type: 'void',
