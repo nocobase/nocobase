@@ -102,6 +102,10 @@ const schema = {
   'x-designable-bar': 'Action.DesignableBar',
   'x-component-props': {
     useAction: '{{ useAction }}',
+    tooltip: '提示信息',
+    confirm: {
+      title: 'Do you Want to delete these items?',
+    },
   },
 };
 

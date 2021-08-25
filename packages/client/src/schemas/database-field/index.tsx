@@ -26,6 +26,7 @@ import {
   message,
   Drawer,
   Space,
+  Tooltip,
 } from 'antd';
 import { options, interfaces, getDefaultFields } from './interfaces';
 import {
@@ -107,27 +108,29 @@ export const DatabaseCollection = observer((props) => {
 
   return (
     <div>
-      <Button
-        className={'nb-database-config'}
-        style={{
-          height: 46,
-          borderRadius: 0,
-        }}
-        onClick={async () => {
-          setVisible(true);
-          // await run();
-          if (field.value?.length === 0) {
-            field.push({
-              name: `t_${uid()}`,
-              unsaved: true,
-              generalFields: getDefaultFields(),
-            });
-          }
-        }}
-        type={'primary'}
-      >
-        <DatabaseOutlined />
-      </Button>
+      <Tooltip title={'数据表配置'}>
+        <Button
+          className={'nb-database-config'}
+          style={{
+            height: 46,
+            borderRadius: 0,
+          }}
+          onClick={async () => {
+            setVisible(true);
+            // await run();
+            if (field.value?.length === 0) {
+              field.push({
+                name: `t_${uid()}`,
+                unsaved: true,
+                generalFields: getDefaultFields(),
+              });
+            }
+          }}
+          type={'primary'}
+        >
+          <DatabaseOutlined />
+        </Button>
+      </Tooltip>
       <Drawer
         width={'50%'}
         // bodyStyle={{
