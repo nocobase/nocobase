@@ -27,7 +27,10 @@ export const chinaRegion: FieldOptions = {
           children: 'children',
         },
       },
-      'x-reactions': ['{{useAsyncDataSource(ChinaRegion.loadDataSource)}}'],
+      'x-reactions': [
+        '{{ChinaRegion.useFieldValue}}',
+        '{{useAsyncDataSource(ChinaRegion.loadDataSource)}}',
+      ],
       'x-decorator': 'FormItem',
       'x-designable-bar': 'Cascader.DesignableBar',
     },

@@ -198,7 +198,11 @@ Select.Object = connect(
   ),
   mapReadPretty(
     observer((props: any) => {
-      const { value, fieldNames = { label: 'label', color: 'color' }, ...others } = props;
+      const {
+        value,
+        fieldNames = { label: 'label', color: 'color' },
+        ...others
+      } = props;
       if (!value) {
         return null;
       }
@@ -286,9 +290,9 @@ Select.Drawer = connect(
       }
     };
 
-    const selectedKeys = toArr(optionValue).map(item => item.value);
+    const selectedKeys = toArr(optionValue).map((item) => item.value);
 
-    console.log({ selectedKeys })
+    console.log({ selectedKeys });
 
     return (
       <>
@@ -320,22 +324,22 @@ Select.Drawer = connect(
           destroyOnClose
         >
           {/* <SelectedRowKeysContext.Provider value={selectedKeys}> */}
-            <SelectContext.Provider
-              value={{
-                onChange(selectValue) {
-                  onFieldChange(selectValue);
-                  setVisible(false);
-                },
+          <SelectContext.Provider
+            value={{
+              onChange(selectValue) {
+                onFieldChange(selectValue);
+                setVisible(false);
+              },
+            }}
+          >
+            <RecursionField
+              onlyRenderProperties
+              schema={schema}
+              filterProperties={(s) => {
+                return s['x-component'] === 'Select.Options';
               }}
-            >
-              <RecursionField
-                onlyRenderProperties
-                schema={schema}
-                filterProperties={(s) => {
-                  return s['x-component'] === 'Select.Options';
-                }}
-              />
-            </SelectContext.Provider>
+            />
+          </SelectContext.Provider>
           {/* </SelectedRowKeysContext.Provider> */}
         </Drawer>
       </>
@@ -365,7 +369,7 @@ Select.Drawer = connect(
       const { fieldNames = { label: 'label' }, ...others } = props;
       const value = field.value || field.initialValue;
       const schema = useFieldSchema();
-      console.log({ field, value });
+      console.log({ fieldNames, field, value });
       if (!value) {
         return null;
       }
@@ -375,13 +379,14 @@ Select.Drawer = connect(
           {values.map((data, index) => {
             return (
               <OptionTagContext.Provider value={{ index, data, fieldNames }}>
-                <RecursionField
+                {data[fieldNames.label]}
+                {/* <RecursionField
                   schema={schema}
                   onlyRenderProperties
                   filterProperties={(s) => {
                     return s['x-component'] === 'Select.OptionTag';
                   }}
-                />
+                /> */}
               </OptionTagContext.Provider>
             );
           })}

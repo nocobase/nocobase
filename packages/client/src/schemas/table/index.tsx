@@ -7,7 +7,7 @@ import {
   useForm,
 } from '@formily/react';
 import { Modal, Pagination, Popover, Table as AntdTable } from 'antd';
-import { cloneDeep, findIndex, forIn, range, set } from 'lodash';
+import { cloneDeep, cloneDeepWith, findIndex, forIn, range, set } from 'lodash';
 import React, { Fragment, useEffect, useState } from 'react';
 import { useContext } from 'react';
 import { createContext } from 'react';
@@ -310,54 +310,26 @@ export function isColumnComponent(component: string) {
   return ['Table.Operation', 'Table.Column'].includes(component);
 }
 
-const useTableOperation = () => {
-  const {
-    field,
-    schema,
-    props: { rowKey },
-  } = useTable();
-  const findActionDropdown = (schema: Schema) => {
-    return schema.reduceProperties((s, current) => {
-      if (current['x-component'] === 'Action.Dropdown') {
-        return current;
+const useCollectionFields = (schema: Schema) => {
+  const columns = schema.reduceProperties((columns, current) => {
+    if (isColumn(current)) {
+      if (current['x-hidden']) {
+        return columns;
       }
-      const action = findActionDropdown(current);
-      if (action) {
-        return action;
+      if (current['x-display'] && current['x-display'] !== 'visible') {
+        return columns;
       }
-      return s;
-    }, new Schema({}));
-  };
-  const operationSchema = schema.reduceProperties((s, current) => {
-    if (isOperationColumn(current)) {
-      return current;
+      return [...columns, current];
     }
-    return s;
-  }, new Schema({}));
-  const dropdownSchema = findActionDropdown(operationSchema);
-  const columnProps = operationSchema?.['x-component-props'] || {};
-  return {
-    title: <Table.Operation path={getSchemaPath(dropdownSchema)} />,
-    dataIndex: 'operation',
-    ...columnProps,
-    render: (_: any, record: any) => {
-      const index = findIndex(
-        field.value,
-        (item) => item[rowKey] === record[rowKey],
-      );
-      return (
-        <div className={'nb-table-column'}>
-          <TableRowContext.Provider value={{ index, record }}>
-            <RecursionField
-              schema={operationSchema}
-              name={index}
-              onlyRenderProperties
-            />
-          </TableRowContext.Provider>
-        </div>
-      );
-    },
-  };
+    return [...columns];
+  }, []);
+
+  return columns
+    .map((column) => {
+      const columnProps = column['x-component-props'] || {};
+      return columnProps.fieldName;
+    })
+    .filter(Boolean);
 };
 
 const useTableColumns = () => {
@@ -369,8 +341,6 @@ const useTableColumns = () => {
   const { designable } = useDesignable();
 
   const { getField } = useCollectionContext();
-
-  // const operation = useTableOperation();
 
   const columnSchemas = schema.reduceProperties((columns, current) => {
     if (isColumn(current)) {
@@ -723,6 +693,8 @@ const TableProvider = (props: any) => {
   const { resource } = useResource();
   const { sortableField } = useCollectionContext();
   const dragSort = props.dragSort;
+  const collectionFields = useCollectionFields(schema);
+  console.log({ collectionFields });
   const getDefaultParams = () => {
     const defaultParams = { ...pagination };
     if (dragSort) {
@@ -730,9 +702,10 @@ const TableProvider = (props: any) => {
     } else {
       defaultParams['sort'] = (props.defaultSort || []).join(',');
     }
-    if (props.defaultAppends) {
-      defaultParams['defaultAppends'] = props.defaultAppends;
-    }
+    defaultParams['defaultAppends'] = [
+      ...(props.defaultAppends || []),
+      ...collectionFields,
+    ];
     if (props.defaultFilter) {
       defaultParams['defaultFilter'] = props.defaultFilter;
     }
@@ -1850,29 +1823,36 @@ Table.Cell = observer((props: any) => {
   if (schema['x-component'] === 'Table.Operation') {
     return <Table.Operation.Cell {...props} />;
   }
+  let uiSchema = collectionField?.uiSchema as Schema;
+  if (uiSchema?.['x-component'] === 'Upload.Attachment') {
+    uiSchema = cloneDeepWith(uiSchema);
+    set(uiSchema, 'x-component-props.size', 'small');
+  }
   return (
-    <RecursionField
-      schema={
-        !collectionField
-          ? schema
-          : new Schema({
-              type: 'void',
-              properties: {
-                [collectionField.name]: {
-                  ...collectionField.uiSchema,
-                  title: undefined,
-                  'x-read-pretty': true,
-                  'x-decorator-props': {
-                    feedbackLayout: 'popover',
+    <div className={`field-interface-${collectionField?.interface}`}>
+      <RecursionField
+        schema={
+          !collectionField
+            ? schema
+            : new Schema({
+                type: 'void',
+                properties: {
+                  [collectionField.name]: {
+                    ...uiSchema,
+                    title: undefined,
+                    'x-read-pretty': true,
+                    'x-decorator-props': {
+                      feedbackLayout: 'popover',
+                    },
+                    'x-decorator': 'FormilyFormItem',
                   },
-                  'x-decorator': 'FormilyFormItem',
                 },
-              },
-            })
-      }
-      name={ctx.index}
-      onlyRenderProperties
-    />
+              })
+        }
+        name={ctx.index}
+        onlyRenderProperties
+      />
+    </div>
   );
 });
 
@@ -2279,14 +2259,32 @@ Table.useResource = ({ onSuccess, manual = true }) => {
     resourceName: collection?.name || props.collectionName,
     resourceKey: ctx.record[props.rowKey],
   });
+  const { schema } = useDesignable();
+  const fieldFields = (schema: Schema) => {
+    const names = [];
+    schema.reduceProperties((buf, current) => {
+      if (current['x-component'] === 'Form.Field') {
+        const fieldName = current['x-component-props']?.['fieldName'];
+        if (fieldName) {
+          buf.push(fieldName);
+        }
+      } else {
+        const fieldNames = fieldFields(current);
+        buf.push(...fieldNames);
+      }
+      return buf;
+    }, names);
+    return names;
+  };
   console.log(
     'collection?.name || props.collectionName',
     collection?.name || props.collectionName,
+    // fieldFields(schema),
   );
   const service = useRequest(
     (params?: any) => {
       console.log('Table.useResource', params);
-      return resource.get(params);
+      return resource.get({ ...params, appends: fieldFields(schema) });
     },
     {
       formatResult: (result) => result?.data,
