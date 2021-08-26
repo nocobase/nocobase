@@ -98,9 +98,10 @@ const SideMenu = (props: any) => {
           <Button
             block
             type={'dashed'}
+            icon={<PlusOutlined />}
             className={`nb-add-new-menu-item menu-mode-inline designable-btn designable-btn-dash`}
           >
-            <PlusOutlined />
+            创建菜单项
           </Button>
         </Menu.AddNew>
       </AntdMenu>
@@ -212,9 +213,10 @@ export const Menu: any = observer((props: any) => {
                   mode === 'mix' ? 'horizontal' : mode
                 }`}
                 block
+                icon={<PlusOutlined />}
                 type={mode == 'inline' ? 'dashed' : 'primary'}
               >
-                <PlusOutlined />
+                创建菜单项
               </Button>
             </Menu.AddNew>
           </AntdMenu>
@@ -402,7 +404,7 @@ Menu.AddNew = observer((props: any) => {
   const schemas = {
     'Menu.Link': {
       icon: <MenuOutlined />,
-      title: '创建菜单项',
+      title: '创建页面',
       schema: {
         type: 'object',
         properties: {
@@ -424,7 +426,7 @@ Menu.AddNew = observer((props: any) => {
     },
     'Menu.SubMenu': {
       icon: <GroupOutlined />,
-      title: '创建菜单分组',
+      title: '创建分组',
       schema: {
         type: 'object',
         properties: {
@@ -446,7 +448,7 @@ Menu.AddNew = observer((props: any) => {
     },
     'Menu.URL': {
       icon: <LinkOutlined />,
-      title: '创建自定义链接',
+      title: '创建链接',
       schema: {
         type: 'object',
         properties: {
@@ -465,7 +467,7 @@ Menu.AddNew = observer((props: any) => {
           },
           'x-component-props.href': {
             type: 'string',
-            title: '自定义链接',
+            title: '链接',
             required: true,
             'x-decorator': 'FormItem',
             'x-component': 'Input',
@@ -497,14 +499,14 @@ Menu.AddNew = observer((props: any) => {
                 await createSchema(data);
               }}
             >
-              <AntdMenu.Item key={'Menu.Link'} icon={<MenuOutlined />}>
-                菜单项
-              </AntdMenu.Item>
               <AntdMenu.Item key={'Menu.SubMenu'} icon={<GroupOutlined />}>
-                菜单分组
+                分组
+              </AntdMenu.Item>
+              <AntdMenu.Item key={'Menu.Link'} icon={<MenuOutlined />}>
+                页面
               </AntdMenu.Item>
               <AntdMenu.Item key={'Menu.URL'} icon={<LinkOutlined />}>
-                自定义链接
+                链接
               </AntdMenu.Item>
             </AntdMenu>
           }
@@ -520,7 +522,7 @@ Menu.DesignableBar = (props) => {
   const schemas = {
     'Menu.Action': {
       icon: <MenuOutlined />,
-      title: '菜单项',
+      title: '页面',
       schema: {
         type: 'object',
         properties: {
@@ -542,7 +544,7 @@ Menu.DesignableBar = (props) => {
     },
     'Menu.Item': {
       icon: <MenuOutlined />,
-      title: '菜单项',
+      title: '页面',
       schema: {
         type: 'object',
         properties: {
@@ -564,7 +566,7 @@ Menu.DesignableBar = (props) => {
     },
     'Menu.Link': {
       icon: <MenuOutlined />,
-      title: '菜单项',
+      title: '页面',
       schema: {
         type: 'object',
         properties: {
@@ -586,7 +588,7 @@ Menu.DesignableBar = (props) => {
     },
     'Menu.SubMenu': {
       icon: <GroupOutlined />,
-      title: '菜单分组',
+      title: '分组',
       schema: {
         type: 'object',
         properties: {
@@ -608,7 +610,7 @@ Menu.DesignableBar = (props) => {
     },
     'Menu.URL': {
       icon: <LinkOutlined />,
-      title: '自定义链接',
+      title: '链接',
       schema: {
         type: 'object',
         properties: {
@@ -627,7 +629,7 @@ Menu.DesignableBar = (props) => {
           },
           'x-component-props.href': {
             type: 'string',
-            title: '自定义链接',
+            title: '链接',
             required: true,
             'x-decorator': 'FormItem',
             'x-component': 'Input',
@@ -865,22 +867,22 @@ Menu.DesignableBar = (props) => {
                   title={`向${mode == 'inline' ? '上' : '左'}插入`}
                 >
                   <AntdMenu.Item
-                    key={'insertBefore.Menu.Link'}
-                    icon={<MenuOutlined />}
-                  >
-                    菜单项
-                  </AntdMenu.Item>
-                  <AntdMenu.Item
                     key={'insertBefore.Menu.SubMenu'}
                     icon={<GroupOutlined />}
                   >
-                    菜单分组
+                    分组
+                  </AntdMenu.Item>
+                  <AntdMenu.Item
+                    key={'insertBefore.Menu.Link'}
+                    icon={<MenuOutlined />}
+                  >
+                    页面
                   </AntdMenu.Item>
                   <AntdMenu.Item
                     key={'insertBefore.Menu.URL'}
                     icon={<LinkOutlined />}
                   >
-                    自定义链接
+                    链接
                   </AntdMenu.Item>
                 </AntdMenu.SubMenu>
                 <AntdMenu.SubMenu
@@ -889,22 +891,22 @@ Menu.DesignableBar = (props) => {
                   title={`向${mode == 'inline' ? '下' : '右'}插入`}
                 >
                   <AntdMenu.Item
-                    key={'insertAfter.Menu.Link'}
-                    icon={<MenuOutlined />}
-                  >
-                    菜单项
-                  </AntdMenu.Item>
-                  <AntdMenu.Item
                     key={'insertAfter.Menu.SubMenu'}
                     icon={<GroupOutlined />}
                   >
-                    菜单分组
+                    分组
+                  </AntdMenu.Item>
+                  <AntdMenu.Item
+                    key={'insertAfter.Menu.Link'}
+                    icon={<MenuOutlined />}
+                  >
+                    页面
                   </AntdMenu.Item>
                   <AntdMenu.Item
                     key={'insertAfter.Menu.URL'}
                     icon={<LinkOutlined />}
                   >
-                    自定义链接
+                    链接
                   </AntdMenu.Item>
                 </AntdMenu.SubMenu>
                 {isSubMenu && (
@@ -914,22 +916,22 @@ Menu.DesignableBar = (props) => {
                     title={'向里插入'}
                   >
                     <AntdMenu.Item
-                      key={'appendChild.Menu.Link'}
-                      icon={<MenuOutlined />}
-                    >
-                      菜单项
-                    </AntdMenu.Item>
-                    <AntdMenu.Item
                       key={'appendChild.Menu.SubMenu'}
                       icon={<GroupOutlined />}
                     >
-                      菜单分组
+                      分组
+                    </AntdMenu.Item>
+                    <AntdMenu.Item
+                      key={'appendChild.Menu.Link'}
+                      icon={<MenuOutlined />}
+                    >
+                      页面
                     </AntdMenu.Item>
                     <AntdMenu.Item
                       key={'appendChild.Menu.URL'}
                       icon={<LinkOutlined />}
                     >
-                      自定义链接
+                      链接
                     </AntdMenu.Item>
                   </AntdMenu.SubMenu>
                 )}
@@ -996,8 +998,8 @@ Menu.DesignableBar = (props) => {
                   key={'delete'}
                   onClick={() => {
                     Modal.confirm({
-                      title: '删除菜单',
-                      content: '确认删除此菜单项吗？',
+                      title: `删除${formConfig.title}`,
+                      content: '删除后无法恢复，确定要删除吗？',
                       onOk: async () => {
                         const target = remove();
                         await removeSchema(target);
