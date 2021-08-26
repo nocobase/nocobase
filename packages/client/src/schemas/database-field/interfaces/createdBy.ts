@@ -17,7 +17,12 @@ export const createdBy: FieldOptions = {
       type: 'object',
       title: '创建人',
       'x-component': 'Select.Drawer',
-      'x-component-props': {},
+      'x-component-props': {
+        fieldNames: {
+          value: 'id',
+          label: 'nickname',
+        },
+      },
       'x-decorator': 'FormItem',
       'x-read-pretty': true,
       'x-designable-bar': 'Select.Drawer.DesignableBar',

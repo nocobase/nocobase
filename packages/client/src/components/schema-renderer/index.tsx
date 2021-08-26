@@ -93,7 +93,10 @@ export const useAsyncDataSource = (service: any) => (field: any) => {
   );
 };
 
-export const loadChinaRegionDataSource = async (field) => {
+export const loadChinaRegionDataSource = async (field: ArrayField) => {
+  if (field.readPretty) {
+    return [];
+  }
   const maxLevel = field.componentProps.maxLevel || 3;
   const resource = Resource.make('china_regions');
   const { data } = await resource.list({
@@ -141,6 +144,11 @@ export const loadChinaRegionData = (
     });
 };
 
+const useChinaRegionFieldValue = (field: ArrayField) => {
+  field.value = field?.value?.sort((a, b) => a.level - b.level);
+  console.log('useChinaRegionFieldValue', field.value);
+}
+
 export const SchemaField = createSchemaField({
   scope: {
     Table,
@@ -148,6 +156,7 @@ export const SchemaField = createSchemaField({
     Kanban,
     useAsyncDataSource,
     ChinaRegion: {
+      useFieldValue: useChinaRegionFieldValue,
       loadData: loadChinaRegionData,
       loadDataSource: loadChinaRegionDataSource,
     },
