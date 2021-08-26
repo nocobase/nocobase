@@ -965,7 +965,7 @@ Menu.DesignableBar = (props) => {
                               properties: {
                                 roles: {
                                   type: 'array',
-                                  title: '允许访问的权限组',
+                                  title: '允许访问的角色',
                                   'x-reactions': [
                                     '{{useAsyncDataSource(loadRoles)}}',
                                   ],
