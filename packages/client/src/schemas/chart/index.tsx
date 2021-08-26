@@ -83,12 +83,10 @@ Chart.DesignableBar = observer((props) => {
                     const removed = deepRemove();
                     // console.log({ removed })
                     const last = removed.pop();
-                    if (isGridRowOrCol(last)) {
-                      await removeSchema(last);
-                    }
+                    await removeSchema(last);
                   }}
                 >
-                  移除
+                  删除
                 </Menu.Item>
               </Menu>
             }
