@@ -254,7 +254,7 @@ const schema: ISchema = {
   properties: {
     modal1: {
       type: 'void',
-      title: '权限组',
+      title: '角色',
       'x-component': 'Action.Drawer',
       properties: {
         table: {
@@ -322,13 +322,13 @@ const schema: ISchema = {
                       properties: {
                         title: {
                           type: 'string',
-                          title: '权限组名称',
+                          title: '角色名称',
                           'x-component': 'Input',
                           'x-decorator': 'FormilyFormItem',
                         },
                         // name: {
                         //   type: 'string',
-                        //   title: '权限组标识',
+                        //   title: '角色标识',
                         //   'x-component': 'Input',
                         //   'x-decorator': 'FormilyFormItem',
                         // },
@@ -340,7 +340,7 @@ const schema: ISchema = {
             },
             column1: {
               type: 'void',
-              title: '权限组名称',
+              title: '角色名称',
               'x-component': 'Table.Column',
               properties: {
                 title: {
@@ -352,7 +352,7 @@ const schema: ISchema = {
             },
             // column2: {
             //   type: 'void',
-            //   title: '权限组标识',
+            //   title: '角色标识',
             //   'x-component': 'Table.Column',
             //   properties: {
             //     name: {
@@ -437,7 +437,7 @@ const schema: ISchema = {
                       properties: {
                         [uid()]: {
                           type: 'void',
-                          title: '编辑权限组',
+                          title: '编辑角色',
                           'x-decorator': 'Form',
                           'x-decorator-props': {
                             useResource: useDetailsResource,
@@ -449,7 +449,7 @@ const schema: ISchema = {
                           properties: {
                             title: {
                               type: 'string',
-                              title: '权限组名称',
+                              title: '角色名称',
                               'x-component': 'Input',
                               'x-decorator': 'FormilyFormItem',
                             },
