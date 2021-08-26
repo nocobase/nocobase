@@ -255,21 +255,26 @@ export async function create(ctx: Context, next: Next) {
   const transaction = await ctx.db.sequelize.transaction();
   const options = { transaction, context: ctx };
   let model: Model;
-  if (associated && resourceField) {
-    const AssociatedModel = ctx.db.getModel(associatedName);
-    if (!(associated instanceof AssociatedModel)) {
-      throw new Error(`${associatedName} associated model invalid`);
+  try {
+    if (associated && resourceField) {
+      const AssociatedModel = ctx.db.getModel(associatedName);
+      if (!(associated instanceof AssociatedModel)) {
+        throw new Error(`${associatedName} associated model invalid`);
+      }
+      const { create } = resourceField.getAccessors();
+      model = await associated[create](values, options);
+    } else {
+      const ResourceModel = ctx.db.getModel(resourceName);
+      model = await ResourceModel.create(values, options);
     }
-    const { create } = resourceField.getAccessors();
-    model = await associated[create](values, options);
-  } else {
-    const ResourceModel = ctx.db.getModel(resourceName);
-    model = await ResourceModel.create(values, options);
+    await model.updateAssociations(values, options);
+    await transaction.commit();
+    ctx.body = model;
+    await next();
+  } catch (error) {
+    await transaction.rollback();
+    throw error;
   }
-  await model.updateAssociations(values, options);
-  await transaction.commit();
-  ctx.body = model;
-  await next();
 }
 
 /**
