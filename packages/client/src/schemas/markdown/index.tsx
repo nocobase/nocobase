@@ -63,15 +63,23 @@ function MarkdownTextArea(props: any) {
           setValue(e.target.value);
         }}
       />
-      <Button
-        style={{ position: 'absolute', bottom: 5, right: 5 }}
-        type={'primary'}
-        onClick={() => {
-          props.onSubmit && props.onSubmit(value);
-        }}
-      >
-        保存
-      </Button>
+      <Space style={{ position: 'absolute', bottom: 5, right: 5 }}>
+        <Button
+          onClick={(e) => {
+            props.onCancel && props.onCancel(e);
+          }}
+        >
+          取消
+        </Button>
+        <Button
+          type={'primary'}
+          onClick={() => {
+            props.onSubmit && props.onSubmit(value);
+          }}
+        >
+          保存
+        </Button>
+      </Space>
     </div>
   );
 }
@@ -90,6 +98,9 @@ Markdown.Void = observer((props: any) => {
     <MarkdownTextArea
       {...props}
       defaultValue={schema['default']}
+      onCancel={() => {
+        field.readPretty = true;
+      }}
       onSubmit={async (value) => {
         field.readPretty = true;
         schema['default'] = value;
