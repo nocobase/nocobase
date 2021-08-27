@@ -457,7 +457,8 @@ Upload.Attachment = connect(
                 aria-label="Zoom in"
                 title="Zoom in"
                 className="ril-zoom-in ril__toolbarItemChild ril__builtinButton"
-                onClick={() => {
+                onClick={(e) => {
+                  e.preventDefault();
                   const file = images[photoIndex];
                   saveAs(file.url, `${file.title}${file.extname}`);
                 }}
@@ -489,6 +490,7 @@ Upload.Attachment = connect(
             {images.map((file) => {
               const handleClick = (e) => {
                 e.preventDefault();
+                e.stopPropagation();
                 const index = images.indexOf(file);
                 setVisible(true);
                 setPhotoIndex(index);
@@ -532,7 +534,9 @@ Upload.Attachment = connect(
                             size={'small'}
                             type={'text'}
                             icon={<DownloadOutlined />}
-                            onClick={async () => {
+                            onClick={(e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
                               saveAs(file.url, `${file.title}${file.extname}`);
                             }}
                           />
@@ -553,7 +557,12 @@ Upload.Attachment = connect(
             prevSrc={
               images[(photoIndex + images.length - 1) % images.length]?.imageUrl
             }
-            onCloseRequest={() => setVisible(false)}
+            // @ts-ignore
+            onCloseRequest={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              setVisible(false);
+            }}
             onMovePrevRequest={() =>
               setPhotoIndex((photoIndex + images.length - 1) % images.length)
             }
@@ -568,7 +577,9 @@ Upload.Attachment = connect(
                 aria-label="Zoom in"
                 title="Zoom in"
                 className="ril-zoom-in ril__toolbarItemChild ril__builtinButton"
-                onClick={() => {
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
                   const file = images[photoIndex];
                   saveAs(file.url, `${file.title}${file.extname}`);
                 }}

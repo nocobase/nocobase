@@ -175,6 +175,7 @@ const InternalKanban = observer((props: any) => {
       }
       return resource.list({
         ...params,
+        appends: fieldFields(schemas.get('Kanban.Card')),
         perPage: -1,
         sort: 'sort',
       });
@@ -426,7 +427,7 @@ Kanban.useCreateResource = ({ onSuccess }) => {
   const service = useRequest(
     (params?: any) => {
       return Promise.resolve({
-        [groupField.name]: column.value
+        [groupField.name]: column.value,
       });
     },
     {
@@ -471,7 +472,7 @@ Kanban.useUpdateAction = () => {
   };
 };
 
-Kanban.useSingleResource = ({ onSuccess }) => {
+Kanban.useRowResource = ({ onSuccess }) => {
   const { props } = useKanban();
   const { collection } = useCollectionContext();
   const ctx = useContext(KanbanCardContext);
@@ -479,10 +480,6 @@ Kanban.useSingleResource = ({ onSuccess }) => {
     resourceName: collection?.name || props.collectionName,
     resourceKey: ctx?.record?.id,
   });
-  console.log(
-    'collection?.name || props.collectionName',
-    collection?.name || props.collectionName,
-  );
   const service = useRequest(
     (params?: any) => {
       return Promise.resolve(ctx.record);
@@ -494,6 +491,60 @@ Kanban.useSingleResource = ({ onSuccess }) => {
       // manual,
     },
   );
+  return { resource, service, initialValues: service.data, ...service };
+};
+
+const fieldFields = (schema: Schema) => {
+  const names = [];
+  schema.reduceProperties((buf, current) => {
+    if (current['x-component'] === 'Form.Field') {
+      const fieldName = current['x-component-props']?.['fieldName'];
+      if (fieldName) {
+        buf.push(fieldName);
+      }
+    } else {
+      const fieldNames = fieldFields(current);
+      buf.push(...fieldNames);
+    }
+    return buf;
+  }, names);
+  return names;
+};
+
+Kanban.useSingleResource = ({ onSuccess }) => {
+  const { props } = useKanban();
+  const { collection } = useCollectionContext();
+  const ctx = useContext(KanbanCardContext);
+  const { schema } = useDesignable();
+  const [visible] = useContext(VisibleContext);
+  
+  const resource = Resource.make({
+    resourceName: collection?.name || props.collectionName,
+    resourceKey: ctx?.record?.id,
+  });
+  const service = useRequest(
+    (params?: any) => {
+      console.log('useSingleResource', params);
+      return resource.get({ ...params, appends: fieldFields(schema) });
+    },
+    {
+      formatResult: (result) => result?.data,
+      onSuccess,
+      // refreshDeps: [ctx?.record],
+      // defaultParams: [
+      //   {
+      //     defaultAppends: fieldFields(schema),
+      //   },
+      // ],
+      manual: true,
+      // manual,
+    },
+  );
+  useEffect(() => {
+    if (visible) {
+      service.run();
+    }
+  }, [visible]);
   return { resource, service, initialValues: service.data, ...service };
 };
 
