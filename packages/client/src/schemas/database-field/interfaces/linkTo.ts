@@ -8,6 +8,7 @@ export const linkTo: FieldOptions = {
   group: 'relation',
   order: 1,
   title: '关联字段',
+  isAssociation: true,
   default: {
     dataType: 'belongsToMany',
     // name,

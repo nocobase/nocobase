@@ -1,5 +1,6 @@
 import { defaultProps } from './properties';
 import { FieldOptions } from '.';
+import { uid } from '@formily/shared';
 
 export const chinaRegion: FieldOptions = {
   name: 'chinaRegion',
@@ -7,6 +8,7 @@ export const chinaRegion: FieldOptions = {
   group: 'choices',
   order: 7,
   title: '中国行政区划',
+  isAssociation: true,
   default: {
     dataType: 'belongsToMany',
     target: 'china_regions',
@@ -34,6 +36,23 @@ export const chinaRegion: FieldOptions = {
       'x-decorator': 'FormItem',
       'x-designable-bar': 'Cascader.DesignableBar',
     },
+  },
+  initialize: (values: any) => {
+    if (!values.through) {
+      values.through = `t_${uid()}`;
+    }
+    if (!values.foreignKey) {
+      values.foreignKey = `f_${uid()}`;
+    }
+    if (!values.otherKey) {
+      values.otherKey = `f_${uid()}`;
+    }
+    if (!values.sourceKey) {
+      values.sourceKey = 'id';
+    }
+    if (!values.targetKey) {
+      values.targetKey = 'id';
+    }
   },
   properties: {
     ...defaultProps,

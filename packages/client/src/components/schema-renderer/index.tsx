@@ -145,8 +145,10 @@ export const loadChinaRegionData = (
 };
 
 const useChinaRegionFieldValue = (field: ArrayField) => {
-  field.value = field?.value?.sort((a, b) => a.level - b.level);
-  console.log('useChinaRegionFieldValue', field.value);
+  if (field.readPretty) {
+    field.value = field?.value?.sort((a, b) => a.level - b.level);
+  }
+  console.log('useChinaRegionFieldValue', field);
 }
 
 export const SchemaField = createSchemaField({

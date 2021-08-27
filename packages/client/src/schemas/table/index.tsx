@@ -40,7 +40,7 @@ import {
   SchemaField,
   SchemaRenderer,
 } from '../../components/schema-renderer';
-import { interfaces, options } from '../database-field/interfaces';
+import { interfaces, isAssociation, options } from '../database-field/interfaces';
 import { DraggableBlockContext } from '../../components/drag-and-drop';
 import AddNew from '../add-new';
 import { isGridRowOrCol } from '../grid';
@@ -402,7 +402,7 @@ function AddColumn() {
   const { appendChild, remove } = useDesignable();
   const { collection, fields, refresh } = useCollectionContext();
   const displayed = useDisplayedMapContext();
-  // const { service } = useTable();
+  const { service } = useTable();
   return (
     <Dropdown
       trigger={['hover']}
@@ -417,6 +417,7 @@ function AddColumn() {
                 checked={displayed.has(field.name)}
                 onChange={async (checked) => {
                   if (checked) {
+                    console.log('SwitchMenuItem.field.name', field.dataType, service.params[0])
                     const data = appendChild({
                       type: 'void',
                       'x-component': 'Table.Column',
@@ -426,12 +427,25 @@ function AddColumn() {
                       'x-designable-bar': 'Table.Column.DesignableBar',
                     });
                     await createSchema(data);
+                    if (isAssociation(field)) {
+                      const defaultAppends = service.params[0]?.defaultAppends || [];
+                      defaultAppends.push(field.name);
+                      await service.run({...service.params[0], defaultAppends});
+                    }
                   } else {
                     const s: any = displayed.get(field.name);
                     const p = getSchemaPath(s);
                     const removed = remove(p);
                     await removeSchema(removed);
                     displayed.remove(field.name);
+                    if (isAssociation(field)) {
+                      const defaultAppends = service.params[0]?.defaultAppends || [];
+                      const index = defaultAppends.indexOf(field.name);
+                      if (index > -1) {
+                        defaultAppends.splice(index, 1);
+                      }
+                      await service.run({...service.params[0], defaultAppends});
+                    }
                   }
                   // service.refresh();
                 }}
