@@ -137,8 +137,11 @@ const schema: ISchema = {
       properties: {
         modal: {
           type: 'void',
-          title: '创建数据',
+          title: '添加数据',
           'x-decorator': 'Form',
+          'x-decorator-props': {
+            useResource: '{{ Kanban.useCreateResource }}',
+          },
           'x-component': 'Action.Drawer',
           'x-component-props': {
             useOkAction: '{{ Kanban.useCreateAction }}',

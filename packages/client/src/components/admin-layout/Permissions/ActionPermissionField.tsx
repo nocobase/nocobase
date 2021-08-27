@@ -20,7 +20,7 @@ import { useState } from 'react';
 
 const actionTypeMap = new Map(
   Object.entries({
-    create: '创建',
+    create: '添加',
     get: '查看',
     update: '编辑',
     destroy: '删除',

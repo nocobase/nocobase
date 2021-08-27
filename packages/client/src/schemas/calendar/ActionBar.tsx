@@ -164,7 +164,7 @@ function generateActionSchema(type) {
     },
     create: {
       type: 'void',
-      title: '创建',
+      title: '添加',
       'x-align': 'right',
       'x-designable-bar': 'Calendar.ActionDesignableBar',
       'x-component': 'Action',
@@ -179,7 +179,7 @@ function generateActionSchema(type) {
       properties: {
         modal: {
           type: 'void',
-          title: '创建数据',
+          title: '添加数据',
           'x-decorator': 'Form',
           'x-component': 'Action.Drawer',
           'x-component-props': {
@@ -223,7 +223,7 @@ function AddActionButton() {
               { title: '标题', name: 'title' },
               { title: '视图切换', name: 'viewSelect' },
               { title: '筛选', name: 'filter' },
-              { title: '创建', name: 'create' },
+              { title: '添加', name: 'create' },
             ].map((item) => (
               <SwitchMenuItem
                 key={item.name}

@@ -183,8 +183,8 @@ export const DatabaseCollection = observer((props) => {
                       >
                         <Input.Search
                           size={'middle'}
-                          placeholder={'创建数据表'}
-                          enterButton={<PlusOutlined />}
+                          placeholder={'填写数据表名称'}
+                          enterButton={<><PlusOutlined /> 创建</>}
                           value={newValue}
                           onChange={(e) => {
                             setNewValue(e.target.value);

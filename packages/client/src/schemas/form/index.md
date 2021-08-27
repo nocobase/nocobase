@@ -27,7 +27,7 @@ group:
   </Form.Field>
 </Form>
 
-// Form 用作 decorator 时只用于创建独立的作用域
+// Form 用作 decorator 时只用于添加独立的作用域
 <Table x-decorator={'Form'}/>
 </pre>
 

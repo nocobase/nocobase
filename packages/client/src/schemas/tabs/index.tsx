@@ -119,7 +119,7 @@ export const Tabs: any = observer((props: any) => {
                 type={'dashed'}
                 icon={<PlusOutlined />}
                 onClick={async () => {
-                  const values = await FormDialog('创建标签页', () => {
+                  const values = await FormDialog('添加标签页', () => {
                     return (
                       <FormLayout layout={'vertical'}>
                         <SchemaField
@@ -172,7 +172,7 @@ export const Tabs: any = observer((props: any) => {
                   await createSchema(data);
                 }}
               >
-                创建标签页
+                添加标签页
               </Button>
             )
           }

@@ -101,7 +101,7 @@ const SideMenu = (props: any) => {
             icon={<PlusOutlined />}
             className={`nb-add-new-menu-item menu-mode-inline designable-btn designable-btn-dash`}
           >
-            创建菜单项
+            添加菜单项
           </Button>
         </Menu.AddNew>
       </AntdMenu>
@@ -216,7 +216,7 @@ export const Menu: any = observer((props: any) => {
                 icon={<PlusOutlined />}
                 type={mode == 'inline' ? 'dashed' : 'primary'}
               >
-                创建菜单项
+                添加菜单项
               </Button>
             </Menu.AddNew>
           </AntdMenu>
@@ -404,7 +404,7 @@ Menu.AddNew = observer((props: any) => {
   const schemas = {
     'Menu.Link': {
       icon: <MenuOutlined />,
-      title: '创建页面',
+      title: '添加页面',
       schema: {
         type: 'object',
         properties: {
@@ -426,7 +426,7 @@ Menu.AddNew = observer((props: any) => {
     },
     'Menu.SubMenu': {
       icon: <GroupOutlined />,
-      title: '创建分组',
+      title: '添加分组',
       schema: {
         type: 'object',
         properties: {
@@ -448,7 +448,7 @@ Menu.AddNew = observer((props: any) => {
     },
     'Menu.URL': {
       icon: <LinkOutlined />,
-      title: '创建链接',
+      title: '添加链接',
       schema: {
         type: 'object',
         properties: {

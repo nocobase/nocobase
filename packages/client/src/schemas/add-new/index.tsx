@@ -186,7 +186,7 @@ function generateCardItemSchema(component) {
             [uid()]: {
               type: 'void',
               name: 'action1',
-              title: '创建',
+              title: '添加',
               'x-align': 'right',
               'x-decorator': 'AddNew.Displayed',
               'x-decorator-props': {
@@ -201,7 +201,7 @@ function generateCardItemSchema(component) {
               properties: {
                 modal: {
                   type: 'void',
-                  title: '创建数据',
+                  title: '添加数据',
                   'x-decorator': 'Form',
                   'x-component': 'Action.Drawer',
                   'x-component-props': {
@@ -382,7 +382,7 @@ function generateCardItemSchema(component) {
           properties: {
             modal: {
               type: 'void',
-              title: '创建数据',
+              title: '添加数据',
               'x-decorator': 'Form',
               'x-decorator-props': {
                 useResource: '{{ Kanban.useCreateResource }}',
@@ -507,7 +507,7 @@ function generateCardItemSchema(component) {
             },
             create: {
               type: 'void',
-              title: '创建',
+              title: '添加',
               'x-align': 'right',
               'x-designable-bar': 'Calendar.ActionDesignableBar',
               'x-component': 'Action',
@@ -522,7 +522,7 @@ function generateCardItemSchema(component) {
               properties: {
                 modal: {
                   type: 'void',
-                  title: '创建数据',
+                  title: '添加数据',
                   'x-decorator': 'Form',
                   'x-component': 'Action.Drawer',
                   'x-component-props': {
@@ -1336,7 +1336,7 @@ AddNew.CardItem = observer((props: any) => {
             </Menu.ItemGroup>
             <Menu.Divider></Menu.Divider>
             <Menu.Item disabled key={'addNewRef'}>
-              创建模板
+              添加模板
             </Menu.Item>
           </Menu.SubMenu>
         </Menu>
