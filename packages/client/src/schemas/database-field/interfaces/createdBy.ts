@@ -8,6 +8,7 @@ export const createdBy: FieldOptions = {
   group: 'systemInfo',
   order: 3,
   title: '创建人',
+  isAssociation: true,
   default: {
     dataType: 'belongsTo',
     target: 'users',

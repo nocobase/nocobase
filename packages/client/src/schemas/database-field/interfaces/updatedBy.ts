@@ -7,6 +7,7 @@ export const updatedBy: FieldOptions = {
   group: 'systemInfo',
   order: 4,
   title: '最后修改人',
+  isAssociation: true,
   default: {
     dataType: 'belongsTo',
     target: 'users',

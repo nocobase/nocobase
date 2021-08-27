@@ -66,3 +66,8 @@ export const options = Object.keys(groupLabels).map(groupName => {
     }).sort((a, b) => a.order - b.order),
   }
 });
+
+export const isAssociation = (field) => {
+  const options = interfaces.get(field.interface);
+  return options?.isAssociation;
+}
