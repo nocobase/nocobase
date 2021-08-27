@@ -415,6 +415,27 @@ export const Kanban: any = observer((props: any) => {
   );
 });
 
+Kanban.useCreateResource = ({ onSuccess }) => {
+  const { props } = useKanban();
+  const column = useContext(KanbanColumnContext);
+  const { collection } = useCollectionContext();
+  const resource = Resource.make({
+    resourceName: collection?.name || props.collectionName,
+  });
+  const groupField = props.groupField;
+  const service = useRequest(
+    (params?: any) => {
+      return Promise.resolve({
+        [groupField.name]: column.value
+      });
+    },
+    {
+      onSuccess,
+    },
+  );
+  return { resource, service, initialValues: service.data, ...service };
+};
+
 Kanban.useCreateAction = () => {
   const { service, resource, props } = useKanban();
   const column = useContext(KanbanColumnContext);
