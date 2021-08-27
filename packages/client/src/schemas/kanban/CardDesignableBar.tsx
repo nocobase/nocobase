@@ -39,6 +39,8 @@ import {
 } from '../../constate';
 import { useTable } from '../table';
 import SwitchMenuItem from '../../components/SwitchMenuItem';
+import { useKanban } from '.';
+import { isAssociation } from '../database-field/interfaces';
 
 export const CardDesignableBar = observer((props) => {
   const field = useField();
@@ -47,6 +49,7 @@ export const CardDesignableBar = observer((props) => {
   const { collection, fields } = useCollectionContext();
   const displayed = useDisplayedMapContext();
   console.log('useDisplayedMapContext', schema);
+  const { service } = useKanban();
   return (
     <div className={cls('designable-bar', { active: visible })}>
       <span
@@ -81,8 +84,17 @@ export const CardDesignableBar = observer((props) => {
                           }
                           const last = removed.pop();
                           displayed.remove(field.name);
-                          if (isGridRowOrCol(last)) {
-                            await removeSchema(last);
+                          await removeSchema(last);
+                          if (isAssociation(field)) {
+                            const appends = service.params[0]?.appends || [];
+                            const index = appends.indexOf(field.name);
+                            if (index > -1) {
+                              appends.splice(index, 1);
+                            }
+                            await service.run({
+                              ...service.params[0],
+                              appends,
+                            });
                           }
                           return;
                         }
@@ -102,6 +114,11 @@ export const CardDesignableBar = observer((props) => {
                         };
                         const s = appendChild(data);
                         await createSchema(s);
+                        if (isAssociation(field)) {
+                          const appends = service.params[0]?.appends || [];
+                          appends.push(field.name);
+                          await service.run({ ...service.params[0], appends });
+                        }
                       }}
                     />
                   ))}
