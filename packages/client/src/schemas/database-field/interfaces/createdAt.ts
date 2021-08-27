@@ -7,7 +7,7 @@ export const createdAt: FieldOptions = {
   type: 'object',
   group: 'systemInfo',
   order: 1,
-  title: '创建时间',
+  title: '添加时间',
   sortable: true,
   default: {
     dataType: 'date',
@@ -15,7 +15,7 @@ export const createdAt: FieldOptions = {
     // name,
     uiSchema: {
       type: 'datetime',
-      title: '创建时间',
+      title: '添加时间',
       'x-component': 'DatePicker',
       'x-component-props': {},
       'x-read-pretty': true,

@@ -53,13 +53,13 @@ const schema: ISchema = {
         [uid()]: {
           type: 'void',
           name: 'action1',
-          title: '创建',
+          title: '添加',
           'x-component': 'Action',
           'x-designable-bar': 'Table.Action.DesignableBar',
           properties: {
             modal: {
               type: 'void',
-              title: '创建数据',
+              title: '添加数据',
               'x-decorator': 'Form',
               'x-component': 'Action.Modal',
               'x-component-props': {

@@ -7,7 +7,7 @@ export const createdBy: FieldOptions = {
   type: 'object',
   group: 'systemInfo',
   order: 3,
-  title: '创建人',
+  title: '添加人',
   isAssociation: true,
   default: {
     dataType: 'belongsTo',
@@ -16,7 +16,7 @@ export const createdBy: FieldOptions = {
     // name,
     uiSchema: {
       type: 'object',
-      title: '创建人',
+      title: '添加人',
       'x-component': 'Select.Drawer',
       'x-component-props': {
         fieldNames: {

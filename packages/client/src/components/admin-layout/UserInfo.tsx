@@ -61,18 +61,36 @@ export const UserInfo = () => {
             个人资料
           </Menu.Item>
           <Menu.Item>
-            <Select
-              className={'roles-select'}
-              bordered={false}
-              style={{ minWidth: 100, paddingLeft: 0 }}
-              size={'small'}
-              defaultValue={'admin'}
-              options={[
-                { label: '超级管理员', value: 'admin' },
-                { label: '数据管理员', value: 'editor' },
-                { label: '普通成员', value: 'member' },
-              ]}
-            />
+            <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+              <span style={{ marginRight: 16, display: 'inline-block' }}>角色切换</span>
+              <Select
+                className={'roles-select'}
+                bordered={false}
+                style={{ minWidth: 100 }}
+                size={'small'}
+                defaultValue={'admin'}
+                options={[
+                  { label: '超级管理员', value: 'admin' },
+                  { label: '数据管理员', value: 'editor' },
+                  { label: '普通成员', value: 'member' },
+                ]}
+              />
+            </div>
+          </Menu.Item>
+          <Menu.Item>
+            <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+              <span style={{ marginRight: 16, display: 'inline-block' }}>语言设置</span>
+              <Select
+                className={'roles-select'}
+                bordered={false}
+                size={'small'}
+                defaultValue={'zh-CN'}
+                options={[
+                  { label: '简体中文', value: 'zh-CN' },
+                  { label: 'English', value: 'en-US' },
+                ]}
+              />
+            </div>
           </Menu.Item>
           <Menu.Divider />
           <Menu.Item

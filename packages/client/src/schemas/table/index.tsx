@@ -883,7 +883,7 @@ function generateActionSchema(type) {
       key: uid(),
       type: 'void',
       name: uid(),
-      title: '创建',
+      title: '添加',
       'x-align': 'right',
       'x-decorator': 'AddNew.Displayed',
       'x-decorator-props': {
@@ -898,7 +898,7 @@ function generateActionSchema(type) {
       properties: {
         modal: {
           type: 'void',
-          title: '创建数据',
+          title: '添加数据',
           'x-decorator': 'Form',
           'x-component': 'Action.Drawer',
           'x-component-props': {
@@ -1071,7 +1071,7 @@ function AddActionButton() {
             {[
               { title: '筛选', name: 'filter' },
               { title: '导出', name: 'export' },
-              { title: '创建', name: 'create' },
+              { title: '添加', name: 'create' },
               { title: '删除', name: 'destroy' },
             ].map((item) => (
               <SwitchMenuItem
