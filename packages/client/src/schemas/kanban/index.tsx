@@ -175,7 +175,6 @@ const InternalKanban = observer((props: any) => {
       }
       return resource.list({
         ...params,
-        appends: fieldFields(schemas.get('Kanban.Card')),
         perPage: -1,
         sort: 'sort',
       });
@@ -191,6 +190,7 @@ const InternalKanban = observer((props: any) => {
   );
   useEffect(() => {
     service.run({
+      appends: fieldFields(schemas.get('Kanban.Card')),
       defaultFilter: props?.defaultFilter,
     });
   }, [props.defaultFilter]);
@@ -517,7 +517,7 @@ Kanban.useSingleResource = ({ onSuccess }) => {
   const ctx = useContext(KanbanCardContext);
   const { schema } = useDesignable();
   const [visible] = useContext(VisibleContext);
-  
+
   const resource = Resource.make({
     resourceName: collection?.name || props.collectionName,
     resourceKey: ctx?.record?.id,
