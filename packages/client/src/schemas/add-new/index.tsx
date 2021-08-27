@@ -384,6 +384,9 @@ function generateCardItemSchema(component) {
               type: 'void',
               title: '创建数据',
               'x-decorator': 'Form',
+              'x-decorator-props': {
+                useResource: '{{ Kanban.useCreateResource }}',
+              },
               'x-component': 'Action.Drawer',
               'x-component-props': {
                 useOkAction: '{{ Kanban.useCreateAction }}',
