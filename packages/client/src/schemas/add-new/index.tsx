@@ -124,16 +124,7 @@ function generateCardItemSchema(component) {
       'x-designable-bar': 'Table.DesignableBar',
       'x-decorator': 'CardItem',
       'x-component': 'Table',
-      default: [
-        // { key: uid(), field1: uid(), field2: uid() },
-        // { key: uid(), field1: uid(), field2: uid() },
-        // { key: uid(), field1: uid(), field2: uid() },
-        // { key: uid(), field1: uid(), field2: uid() },
-        // { key: uid(), field1: uid(), field2: uid() },
-        // { key: uid(), field1: uid(), field2: uid() },
-        // { key: uid(), field1: uid(), field2: uid() },
-        // { key: uid(), field1: uid(), field2: uid() },
-      ],
+      default: [],
       'x-component-props': {
         rowKey: 'id',
         dragSort: true,
@@ -178,7 +169,7 @@ function generateCardItemSchema(component) {
                 icon: 'DeleteOutlined',
                 confirm: {
                   title: '删除数据',
-                  content: '删除后无法恢复，确定要删除吗？'
+                  content: '删除后无法恢复，确定要删除吗？',
                 },
                 useAction: '{{ Table.useTableDestroyAction }}',
               },
@@ -1407,6 +1398,110 @@ AddNew.FormItem = observer((props: any) => {
                       fieldName: field.name,
                     },
                   };
+                  if (field.interface === 'linkTo') {
+                    data.properties = {
+                      options: {
+                        type: 'void',
+                        'x-decorator': 'Form',
+                        'x-component': 'Select.Options.Drawer',
+                        'x-component-props': {
+                          useOkAction: '{{ Select.useOkAction }}',
+                        },
+                        title: '关联数据',
+                        properties: {
+                          table: {
+                            type: 'array',
+                            'x-designable-bar': 'Table.DesignableBar',
+                            'x-decorator': 'BlockItem',
+                            'x-decorator-props': {
+                              draggable: false,
+                            },
+                            'x-component': 'Table',
+                            default: [],
+                            'x-component-props': {
+                              rowKey: 'id',
+                              defaultSelectedRowKeys: '{{ Select.useSelectedRowKeys() }}',
+                              onSelect: '{{ Select.useSelect() }}',
+                              collectionName: field.target,
+                              // dragSort: true,
+                              showIndex: true,
+                              refreshRequestOnChange: true,
+                              pagination: {
+                                pageSize: 10,
+                              },
+                            },
+                            properties: {
+                              [uid()]: {
+                                type: 'void',
+                                'x-component': 'Table.ActionBar',
+                                'x-designable-bar':
+                                  'Table.ActionBar.DesignableBar',
+                                properties: {
+                                  [uid()]: {
+                                    type: 'void',
+                                    title: '筛选',
+                                    'x-decorator': 'AddNew.Displayed',
+                                    'x-decorator-props': {
+                                      displayName: 'filter',
+                                    },
+                                    'x-align': 'left',
+                                    'x-component': 'Table.Filter',
+                                    'x-designable-bar':
+                                      'Table.Filter.DesignableBar',
+                                    'x-component-props': {
+                                      fieldNames: [],
+                                    },
+                                  },
+                                },
+                              },
+                            },
+                          },
+                        },
+                      },
+                      option: {
+                        type: 'void',
+                        'x-component': 'Select.OptionTag',
+                        properties: {
+                          [uid()]: {
+                            type: 'void',
+                            title: '查看数据',
+                            'x-component': 'Action.Drawer',
+                            'x-component-props': {
+                              bodyStyle: {
+                                background: '#f0f2f5',
+                              },
+                            },
+                            properties: {
+                              [uid()]: {
+                                type: 'void',
+                                'x-component': 'Tabs',
+                                'x-designable-bar': 'Tabs.DesignableBar',
+                                properties: {
+                                  [uid()]: {
+                                    type: 'void',
+                                    title: '详情',
+                                    'x-designable-bar':
+                                      'Tabs.TabPane.DesignableBar',
+                                    'x-component': 'Tabs.TabPane',
+                                    'x-component-props': {},
+                                    properties: {
+                                      [uid()]: {
+                                        type: 'void',
+                                        'x-component': 'Grid',
+                                        'x-component-props': {
+                                          addNewComponent: 'AddNew.PaneItem',
+                                        },
+                                      },
+                                    },
+                                  },
+                                },
+                              },
+                            },
+                          },
+                        },
+                      },
+                    };
+                  }
                   if (isGridBlock(schema)) {
                     path.pop();
                     path.pop();

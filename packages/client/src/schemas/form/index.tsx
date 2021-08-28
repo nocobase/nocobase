@@ -11,7 +11,13 @@ import {
   useForm,
   RecursionField,
 } from '@formily/react';
-import { useSchemaPath, SchemaField, useDesignable, removeSchema, ISchema } from '../';
+import {
+  useSchemaPath,
+  SchemaField,
+  useDesignable,
+  removeSchema,
+  ISchema,
+} from '../';
 import get from 'lodash/get';
 import { Button, Dropdown, Menu, message, Space } from 'antd';
 import { MenuOutlined, DragOutlined } from '@ant-design/icons';
@@ -38,6 +44,7 @@ import {
 import { useResource as useGeneralResource } from '../../hooks/useResource';
 import { Resource } from '../../resource';
 import { BaseResult } from '@ahooksjs/use-request/lib/types';
+import { CollectionFieldContext } from '../table';
 
 export interface DescriptionsContextProps {
   resource?: Resource;
@@ -87,15 +94,11 @@ const FormMain = (props: any) => {
         'x-decorator': 'Form.__Decorator',
       },
     },
-  }
+  };
   const content = (
     <FormProvider form={form}>
       {schema['x-decorator'] === 'Form' ? (
-        <SchemaField
-          components={options.components}
-          scope={scope}
-          schema={s}
-        />
+        <SchemaField components={options.components} scope={scope} schema={s} />
       ) : (
         <FormLayout layout={'vertical'} {...others}>
           <SchemaField
@@ -180,25 +183,31 @@ Form.Field = observer((props: any) => {
   const required = schema['required'] || collectionField?.uiSchema?.required;
   const description =
     schema['description'] || collectionField?.uiSchema?.description;
+    console.log('schema.properties', schema.properties)
   return (
-    <RecursionField
-      name={randomName}
-      schema={
-        new Schema({
-          'x-path': path,
-          type: 'void',
-          properties: {
-            [collectionField.name]: {
-              ...collectionField.uiSchema,
-              title,
-              required,
-              description,
-              'x-decorator': 'FormilyFormItem',
+    <CollectionFieldContext.Provider value={collectionField}>
+      <RecursionField
+        name={randomName}
+        schema={
+          new Schema({
+            'x-path': path,
+            type: 'void',
+            properties: {
+              [collectionField.name]: {
+                ...collectionField.uiSchema,
+                title,
+                required,
+                description,
+                'x-decorator': 'FormilyFormItem',
+                properties: {
+                  ...schema.properties,
+                },
+              },
             },
-          },
-        } as ISchema)
-      }
-    />
+          } as ISchema)
+        }
+      />
+    </CollectionFieldContext.Provider>
   );
 });
 

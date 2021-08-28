@@ -162,6 +162,7 @@ export const SchemaField = createSchemaField({
       loadData: loadChinaRegionData,
       loadDataSource: loadChinaRegionDataSource,
     },
+    Select,
   },
   components: {
     Card,
