@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import {
   connect,
   mapReadPretty,
@@ -7,6 +7,7 @@ import {
   observer,
   RecursionField,
   useFieldSchema,
+  Schema,
 } from '@formily/react';
 import { Drawer, Select as AntdSelect, Tag } from 'antd';
 import { PreviewText } from '@formily/antd';
@@ -19,6 +20,14 @@ import { createContext } from 'react';
 import { useContext } from 'react';
 import { isEmpty } from 'lodash';
 import { Field, isArrayField, isField } from '@formily/core';
+import { Action } from '../action';
+import { BlockSchemaContext, VisibleContext } from '../../context';
+import { SchemaRenderer } from '../../components/schema-renderer';
+import { uid } from '@formily/shared';
+import { CollectionFieldContext } from '../table';
+import { CollectionProvider, useCollectionContext } from '../../constate';
+import { Resource } from '../../resource';
+import { useRequest } from 'ahooks';
 
 export const Select: any = connect(
   (props) => {
@@ -227,22 +236,48 @@ Select.Object = connect(
 
 const OptionTagContext = createContext(null);
 
-const SelectContext = createContext<any>({});
+const SelectedRowKeysContext = createContext([]);
+
+Select.useOkAction = () => {
+  const { props } = useContext(SelectContext);
+  const [selectedRows] = useContext(SelectedRowKeysContext);
+  return {
+    async run() {
+      props.onChange(selectedRows);
+      console.log('selectedRows', selectedRows);
+    },
+  };
+};
+
+Select.useSelect = () => {
+  const [, setSelectedRows] = useContext(SelectedRowKeysContext);
+  return (keys, rows) => {
+    setSelectedRows(rows);
+    console.log('Select.onSelect', keys, rows);
+  };
+};
+
+Select.useSelectedRowKeys = () => {
+  const [selectedRows] = useContext(SelectedRowKeysContext);
+  return selectedRows?.map((row) => row.id) || [];
+};
+
+const SelectContext = createContext(null);
 
 Select.Drawer = connect(
   (props) => {
-    const field = useField();
+    const field = useField<Field>();
     const {
       value,
       onChange,
       fieldNames = {
-        label: 'label',
-        value: 'value',
+        label: 'id',
+        value: 'id',
       },
       ...others
     } = props;
     const [visible, setVisible] = useState(false);
-    const schema = useFieldSchema();
+    const { schema } = useDesignable();
     const options = field?.['dataSource'] || props.options || [];
 
     let optionValue = undefined;
@@ -289,60 +324,49 @@ Select.Drawer = connect(
         );
       }
     };
-
-    const selectedKeys = toArr(optionValue).map((item) => item.value);
-
-    console.log({ selectedKeys });
-
+    // const selectedKeys = toArr(optionValue).map((item) => item.value);
+    const [selectedRows, setSelectedRows] = useState(toArr(field.value));
+    console.log({ optionValue, value });
+    const collectionField = useContext(CollectionFieldContext);
     return (
-      <>
-        <AntdSelect
-          {...others}
-          labelInValue
-          open={false}
-          value={optionValue}
-          onClick={() => {
-            setVisible(true);
-          }}
-          onChange={(selectValue: any) => {
-            if (!selectValue) {
-              onChange(null);
-              return;
-            }
-            if (isArr(selectValue)) {
-              const selectValues = selectValue.map((s) => s.value);
-              onFieldChange(selectValues);
-            } else {
-              onFieldChange(selectValue.value);
-            }
-          }}
-        ></AntdSelect>
-        <Drawer
-          width={'50%'}
-          visible={visible}
-          onClose={() => setVisible(false)}
-          destroyOnClose
-        >
-          {/* <SelectedRowKeysContext.Provider value={selectedKeys}> */}
-          <SelectContext.Provider
-            value={{
-              onChange(selectValue) {
-                onFieldChange(selectValue);
-                setVisible(false);
-              },
+      <SelectContext.Provider value={{ field, schema, props }}>
+        <VisibleContext.Provider value={[visible, setVisible]}>
+          <AntdSelect
+            {...others}
+            labelInValue
+            open={false}
+            value={optionValue}
+            onClick={() => {
+              setVisible(true);
             }}
+            onChange={(selectValue: any) => {
+              if (!selectValue) {
+                onChange(null);
+                return;
+              }
+              if (isArr(selectValue)) {
+                const selectValues = selectValue.map((s) => s.value);
+                onFieldChange(selectValues);
+              } else {
+                onFieldChange(selectValue.value);
+              }
+            }}
+          ></AntdSelect>
+          <SelectedRowKeysContext.Provider
+            value={[selectedRows, setSelectedRows]}
           >
-            <RecursionField
-              onlyRenderProperties
-              schema={schema}
-              filterProperties={(s) => {
-                return s['x-component'] === 'Select.Options';
-              }}
-            />
-          </SelectContext.Provider>
-          {/* </SelectedRowKeysContext.Provider> */}
-        </Drawer>
-      </>
+            <CollectionProvider collectionName={collectionField?.target}>
+              <RecursionField
+                onlyRenderProperties
+                schema={schema}
+                filterProperties={(s) => {
+                  return s['x-component'] === 'Select.Options.Drawer';
+                }}
+              />
+            </CollectionProvider>
+          </SelectedRowKeysContext.Provider>
+        </VisibleContext.Provider>
+      </SelectContext.Provider>
     );
   },
   mapProps(
@@ -365,40 +389,97 @@ Select.Drawer = connect(
   ),
   mapReadPretty(
     observer((props: any) => {
+      const collectionField = useContext(CollectionFieldContext);
       const field = useField<Formily.Core.Models.Field>();
-      const { fieldNames = { label: 'label' }, ...others } = props;
+      const { fieldNames = { label: 'id' }, ...others } = props;
       const value = field.value || field.initialValue;
-      const schema = useFieldSchema();
+      const { schema } = useDesignable();
       console.log({ fieldNames, field, value });
       if (!value) {
         return null;
       }
       const values = toArr(value);
+      const s = schema.reduceProperties((buf, current) => {
+        if (current['x-component'] === 'Select.OptionTag') {
+          return current;
+        }
+        return buf;
+      }, null);
       return (
         <div>
-          {values.map((data, index) => {
-            return (
-              <OptionTagContext.Provider value={{ index, data, fieldNames }}>
-                {data[fieldNames.label]}
-                {/* <RecursionField
-                  schema={schema}
-                  onlyRenderProperties
-                  filterProperties={(s) => {
-                    return s['x-component'] === 'Select.OptionTag';
-                  }}
-                /> */}
-              </OptionTagContext.Provider>
-            );
-          })}
+          <BlockSchemaContext.Provider value={schema}>
+            <CollectionProvider collectionName={collectionField?.target}>
+              {values.map((data, index) => {
+                return (
+                  <OptionTagContext.Provider
+                    value={{ index, data, fieldNames }}
+                  >
+                    {s ? (
+                      <RecursionField name={s.name} schema={s} />
+                    ) : (
+                      data[fieldNames.label]
+                    )}
+                  </OptionTagContext.Provider>
+                );
+              })}
+            </CollectionProvider>
+          </BlockSchemaContext.Provider>
         </div>
       );
     }),
   ),
 );
 
+Select.Drawer.useResource = ({ onSuccess }) => {
+  const { collection } = useCollectionContext();
+  const ctx = useContext(OptionTagContext);
+  const resource = Resource.make({
+    resourceName: collection?.name,
+    resourceKey: ctx.data.id,
+  });
+  console.log('OptionTagContext', ctx.data.id)
+  const { schema } = useDesignable();
+  const fieldFields = (schema: Schema) => {
+    const names = [];
+    schema.reduceProperties((buf, current) => {
+      if (current['x-component'] === 'Form.Field') {
+        const fieldName = current['x-component-props']?.['fieldName'];
+        if (fieldName) {
+          buf.push(fieldName);
+        }
+      } else {
+        const fieldNames = fieldFields(current);
+        buf.push(...fieldNames);
+      }
+      return buf;
+    }, names);
+    return names;
+  };
+  const [visible] = useContext(VisibleContext);
+  const service = useRequest(
+    (params?: any) => {
+      console.log('Table.useResource', params);
+      return resource.get({ ...params, appends: fieldFields(schema) });
+    },
+    {
+      formatResult: (result) => result?.data,
+      onSuccess,
+      manual: true,
+    },
+  );
+  useEffect(() => {
+    if (visible) {
+      service.run();
+    }
+  }, [visible]);
+  return { resource, service, initialValues: service.data, ...service };
+}
+
 Select.Options = observer((props) => {
   return <>{props.children}</>;
 });
+
+Select.Options.Drawer = Action.Drawer;
 
 export function useSelect() {
   const { onChange } = useContext(SelectContext);
@@ -418,12 +499,10 @@ Select.OptionTag = observer((props) => {
   const [visible, setVisible] = useState(false);
   const { data, fieldNames } = useContext(OptionTagContext);
   return (
-    <>
+    <VisibleContext.Provider value={[visible, setVisible]}>
       <Tag onClick={() => setVisible(true)}>{data[fieldNames.label]}</Tag>
-      <Drawer width={'50%'} visible={visible} onClose={() => setVisible(false)}>
-        {props.children}
-      </Drawer>
-    </>
+      {props.children}
+    </VisibleContext.Provider>
   );
 });
 

@@ -28,6 +28,7 @@ import cls from 'classnames';
 import { Droppable, SortableItem } from '../../components/Sortable';
 import { useDndContext } from '@dnd-kit/core';
 import { getSchemaPath } from '../../components/schema-renderer';
+import { BlockSchemaContext } from '../../context';
 
 const DraggableBlock = (props) => {
   const { className, children, ...others } = props;
@@ -62,8 +63,13 @@ const Block = (props) => {
 export const BlockItem: any = observer((props: any) => {
   const { draggable = true } = props;
   const ctx = useDndContext();
-  return React.createElement(
-    draggable && ctx.activators?.length > 0 ? DraggableBlock : Block,
-    props,
+  const { schema } = useDesignable();
+  return (
+    <BlockSchemaContext.Provider value={schema}>
+      {React.createElement(
+        draggable && ctx.activators?.length > 0 ? DraggableBlock : Block,
+        props,
+      )}
+    </BlockSchemaContext.Provider>
   );
 });

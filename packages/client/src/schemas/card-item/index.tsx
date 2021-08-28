@@ -24,12 +24,10 @@ import { BlockSchemaContext } from '../../context';
 export const CardItem: any = connect((props) => {
   const { schema } = useDesignable();
   return (
-    <BlockSchemaContext.Provider value={schema}>
-      <BlockItem className={'nb-card-item'}>
-        <Card bordered={false} {...props}>
-          {props.children}
-        </Card>
-      </BlockItem>
-    </BlockSchemaContext.Provider>
+    <BlockItem className={'nb-card-item'}>
+      <Card bordered={false} {...props}>
+        {props.children}
+      </Card>
+    </BlockItem>
   );
 });

@@ -40,7 +40,11 @@ import {
   SchemaField,
   SchemaRenderer,
 } from '../../components/schema-renderer';
-import { interfaces, isAssociation, options } from '../database-field/interfaces';
+import {
+  interfaces,
+  isAssociation,
+  options,
+} from '../database-field/interfaces';
 import { DraggableBlockContext } from '../../components/drag-and-drop';
 import AddNew from '../add-new';
 import { isGridRowOrCol } from '../grid';
@@ -94,7 +98,7 @@ export interface ITableRowContext {
 
 const TableContext = createContext<ITableContext>({} as any);
 export const TableRowContext = createContext<ITableRowContext>(null);
-const CollectionFieldContext = createContext(null);
+export const CollectionFieldContext = createContext(null);
 
 export const useTable = () => {
   return useContext(TableContext);
@@ -417,20 +421,133 @@ function AddColumn() {
                 checked={displayed.has(field.name)}
                 onChange={async (checked) => {
                   if (checked) {
-                    console.log('SwitchMenuItem.field.name', field.dataType, service.params[0])
-                    const data = appendChild({
+                    console.log(
+                      'SwitchMenuItem.field.name',
+                      field.dataType,
+                      service.params[0],
+                    );
+                    const columnSchema: ISchema = {
                       type: 'void',
                       'x-component': 'Table.Column',
                       'x-component-props': {
                         fieldName: field.name,
                       },
                       'x-designable-bar': 'Table.Column.DesignableBar',
-                    });
+                    };
+                    if (field.interface === 'linkTo') {
+                      columnSchema.properties = {
+                        options: {
+                          type: 'void',
+                          'x-decorator': 'Form',
+                          'x-component': 'Select.Options.Drawer',
+                          'x-component-props': {
+                            useOkAction: '{{ Select.useOkAction }}',
+                          },
+                          title: '关联数据',
+                          properties: {
+                            table: {
+                              type: 'array',
+                              'x-designable-bar': 'Table.DesignableBar',
+                              'x-decorator': 'BlockItem',
+                              'x-decorator-props': {
+                                draggable: false,
+                              },
+                              'x-component': 'Table',
+                              default: [],
+                              'x-component-props': {
+                                rowKey: 'id',
+                                defaultSelectedRowKeys: '{{ Select.useSelectedRowKeys() }}',
+                                onSelect: '{{ Select.useSelect() }}',
+                                collectionName: field.target,
+                                // dragSort: true,
+                                showIndex: true,
+                                refreshRequestOnChange: true,
+                                pagination: {
+                                  pageSize: 10,
+                                },
+                              },
+                              properties: {
+                                [uid()]: {
+                                  type: 'void',
+                                  'x-component': 'Table.ActionBar',
+                                  'x-designable-bar':
+                                    'Table.ActionBar.DesignableBar',
+                                  properties: {
+                                    [uid()]: {
+                                      type: 'void',
+                                      title: '筛选',
+                                      'x-decorator': 'AddNew.Displayed',
+                                      'x-decorator-props': {
+                                        displayName: 'filter',
+                                      },
+                                      'x-align': 'left',
+                                      'x-component': 'Table.Filter',
+                                      'x-designable-bar':
+                                        'Table.Filter.DesignableBar',
+                                      'x-component-props': {
+                                        fieldNames: [],
+                                      },
+                                    },
+                                  },
+                                },
+                              },
+                            },
+                          },
+                        },
+                        option: {
+                          type: 'void',
+                          'x-component': 'Select.OptionTag',
+                          properties: {
+                            [uid()]: {
+                              type: 'void',
+                              title: '查看数据',
+                              'x-component': 'Action.Drawer',
+                              'x-component-props': {
+                                bodyStyle: {
+                                  background: '#f0f2f5',
+                                },
+                              },
+                              properties: {
+                                [uid()]: {
+                                  type: 'void',
+                                  'x-component': 'Tabs',
+                                  'x-designable-bar': 'Tabs.DesignableBar',
+                                  properties: {
+                                    [uid()]: {
+                                      type: 'void',
+                                      title: '详情',
+                                      'x-designable-bar':
+                                        'Tabs.TabPane.DesignableBar',
+                                      'x-component': 'Tabs.TabPane',
+                                      'x-component-props': {},
+                                      properties: {
+                                        [uid()]: {
+                                          type: 'void',
+                                          'x-component': 'Grid',
+                                          'x-component-props': {
+                                            addNewComponent: 'AddNew.PaneItem',
+                                          },
+                                        },
+                                      },
+                                    },
+                                  },
+                                },
+                              },
+                            },
+                          },
+                        },
+                      };
+                    }
+                    const data = appendChild(columnSchema);
                     await createSchema(data);
                     if (isAssociation(field)) {
-                      const defaultAppends = service.params[0]?.defaultAppends || [];
+                      const defaultAppends =
+                        service.params[0]?.defaultAppends || [];
                       defaultAppends.push(field.name);
-                      await service.run({...service.params[0], defaultAppends});
+                      await service.run({
+                        ...service.params[0],
+                        defaultAppends,
+                      });
                     }
                   } else {
                     const s: any = displayed.get(field.name);
@@ -439,12 +556,16 @@ function AddColumn() {
                     await removeSchema(removed);
                     displayed.remove(field.name);
                     if (isAssociation(field)) {
-                      const defaultAppends = service.params[0]?.defaultAppends || [];
+                      const defaultAppends =
+                        service.params[0]?.defaultAppends || [];
                       const index = defaultAppends.indexOf(field.name);
                       if (index > -1) {
                         defaultAppends.splice(index, 1);
                       }
-                      await service.run({...service.params[0], defaultAppends});
+                      await service.run({
+                        ...service.params[0],
+                        defaultAppends,
+                      });
                     }
                   }
                   // service.refresh();
@@ -535,7 +656,7 @@ const TableMain = () => {
     setSelectedRowKeys,
     service,
     field,
-    props: { rowKey, dragSort, showIndex },
+    props: { rowKey, dragSort, showIndex, onSelect },
     refresh,
   } = useTable();
   const columns = useTableColumns();
@@ -624,8 +745,9 @@ const TableMain = () => {
             rowSelection={{
               type: 'checkbox',
               selectedRowKeys,
-              onChange: (rowKeys) => {
+              onChange: (rowKeys, rows) => {
                 setSelectedRowKeys(rowKeys);
+                onSelect && onSelect(rowKeys, rows);
               },
               renderCell: (checked, record, _, originNode) => {
                 const index = findIndex(
@@ -697,12 +819,15 @@ const TableProvider = (props: any) => {
     rowKey = 'id',
     dataRequest,
     useResource = useGeneralResource,
+    defaultSelectedRowKeys,
     ...others
   } = props;
   const { schema } = useDesignable();
   const field = useField<Formily.Core.Models.ArrayField>();
   const [pagination, setPagination] = usePagination();
-  const [selectedRowKeys, setSelectedRowKeys] = useState<any>([]);
+  const [selectedRowKeys, setSelectedRowKeys] = useState<any>(
+    defaultSelectedRowKeys || [],
+  );
   const [, refresh] = useState(uid());
   const { resource } = useResource();
   const { sortableField } = useCollectionContext();
@@ -1859,6 +1984,9 @@ Table.Cell = observer((props: any) => {
                       feedbackLayout: 'popover',
                     },
                     'x-decorator': 'FormilyFormItem',
+                    properties: {
+                      ...schema?.properties,
+                    },
                   },
                 },
               })
