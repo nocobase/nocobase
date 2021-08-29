@@ -82,8 +82,11 @@ export class Resource {
   }
 
   create(values: any) {
-    const { resourceName } = this.options;
-    const url = `${resourceName}:create`;
+    const { associatedKey, associatedName, resourceName } = this.options;
+    let url = `${resourceName}:create`;
+    if (associatedKey && associatedName) {
+      url = `${associatedName}/${associatedKey}/${url}`
+    }
     return request(url, {
       method: 'post',
       data: values,
@@ -92,8 +95,11 @@ export class Resource {
 
   save(values: any, options: SaveOptions = {}) {
     const resourceKey = options.resourceKey || this.options.resourceKey;
-    const { resourceName } = this.options;
-    const url = `${resourceName}:${resourceKey ? `update/${resourceKey}` : 'create'}`;
+    const { associatedKey, associatedName, resourceName } = this.options;
+    let url = `${resourceName}:${resourceKey ? `update/${resourceKey}` : 'create'}`;
+    if (associatedKey && associatedName) {
+      url = `${associatedName}/${associatedKey}/${url}`
+    }
     return request(url, {
       method: 'post',
       data: values,

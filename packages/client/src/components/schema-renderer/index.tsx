@@ -52,7 +52,11 @@ import { Menu } from '../../schemas/menu';
 import { Password } from '../../schemas/password';
 import { Radio } from '../../schemas/radio';
 import { Select } from '../../schemas/select';
-import { Table } from '../../schemas/table';
+import {
+  CollectionFieldContext,
+  Table,
+  TableRowContext,
+} from '../../schemas/table';
 import { Tabs } from '../../schemas/tabs';
 import { TimePicker } from '../../schemas/time-picker';
 import { Upload } from '../../schemas/upload';
@@ -69,6 +73,7 @@ import { ISchema, FormilyISchema } from '../../schemas';
 import { Resource } from '../../resource';
 import { useRequest } from 'ahooks';
 import { CascaderOptionType } from 'antd/lib/cascader';
+import { useCollectionContext } from '../../constate';
 
 export const BlockContext = createContext({ dragRef: null });
 
@@ -149,7 +154,33 @@ const useChinaRegionFieldValue = (field: ArrayField) => {
     field.value = field?.value?.sort((a, b) => a.level - b.level);
   }
   console.log('useChinaRegionFieldValue', field);
-}
+};
+
+const useAssociationResource = (options) => {
+  const { schema } = useDesignable();
+  const collectionField = useContext(CollectionFieldContext);
+  const { collection } = useCollectionContext();
+  const ctx = useContext(TableRowContext);
+  const associatedKey = ctx?.record?.id;
+  console.log(
+    'useAssociationResource',
+    collection,
+    collectionField,
+    schema['x-component-props'],
+  );
+  const { associatedName, resourceName } = schema['x-component-props'] || {};
+  const resource = Resource.make({
+    associatedName,
+    resourceName,
+    associatedKey,
+  });
+  const service = useRequest((params) => resource.list(params), {
+    manual: schema['x-component'] === 'Form',
+    formatResult: (data) => data?.data?.[0] || {},
+    onSuccess: options?.onSuccess,
+  });
+  return { resource, service, initialValues: service.data, ...service };
+};
 
 export const SchemaField = createSchemaField({
   scope: {
@@ -163,6 +194,9 @@ export const SchemaField = createSchemaField({
       loadDataSource: loadChinaRegionDataSource,
     },
     Select,
+    Association: {
+      useResource: useAssociationResource,
+    },
   },
   components: {
     Card,
