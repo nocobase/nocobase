@@ -345,6 +345,23 @@ function generateCardItemSchema(component) {
         },
       },
     },
+    Descriptions: {
+      type: 'void',
+      name: uid(),
+      'x-decorator': 'CardItem',
+      'x-component': 'Form',
+      'x-read-pretty': true,
+      'x-designable-bar': 'Form.DesignableBar',
+      properties: {
+        [uid()]: {
+          type: 'void',
+          'x-component': 'Grid',
+          'x-component-props': {
+            addNewComponent: 'AddNew.FormItem',
+          },
+        },
+      },
+    },
     Kanban: {
       type: 'array',
       'x-component': 'Kanban',
@@ -1420,7 +1437,8 @@ AddNew.FormItem = observer((props: any) => {
                             default: [],
                             'x-component-props': {
                               rowKey: 'id',
-                              defaultSelectedRowKeys: '{{ Select.useSelectedRowKeys() }}',
+                              defaultSelectedRowKeys:
+                                '{{ Select.useSelectedRowKeys() }}',
                               onSelect: '{{ Select.useSelect() }}',
                               collectionName: field.target,
                               // dragSort: true,
@@ -1651,6 +1669,7 @@ AddNew.PaneItem = observer((props: any) => {
   const blockSchema = useContext(BlockSchemaContext);
   const useResource = `{{ ${blockSchema['x-component']}.useResource }}`;
   console.log('AddNew.PaneItem.useResource', useResource);
+  const { collection, fields } = useCollectionContext();
   return (
     <Dropdown
       trigger={['hover']}
@@ -1792,9 +1811,56 @@ AddNew.PaneItem = observer((props: any) => {
             >
               日志
             </Menu.Item>
-            {/* <Menu.Item icon={<IconPicker type={'CommentOutlined'} />}>
-              评论
-            </Menu.Item> */}
+            {fields
+              ?.filter((f) => f.interface === 'linkTo')
+              ?.map((collectionField) => {
+                return (
+                  <Menu.Item
+                    key={collectionField.name}
+                    onClick={async () => {
+                      const multiple =
+                        collectionField?.uiSchema?.['x-component-props']
+                          ?.multiple;
+                      let data = generateCardItemSchema(
+                        multiple ? 'Table' : 'Descriptions',
+                      );
+                      if (schema['key']) {
+                        data['key'] = uid();
+                      }
+                      data['x-component-props'] =
+                        data['x-component-props'] || {};
+                      data['x-component-props']['collectionName'] =
+                        collectionField?.target;
+                      data['x-component-props']['resourceName'] =
+                        collectionField?.name;
+                      data['x-component-props']['associatedName'] =
+                        collection?.name;
+                      data['x-component-props']['useResource'] =
+                        '{{ Association.useResource }}';
+                      if (isGridBlock(schema)) {
+                        path.pop();
+                        path.pop();
+                        data = generateGridBlock(data);
+                      } else if (isGrid(schema)) {
+                        data = generateGridBlock(data);
+                      }
+                      if (data) {
+                        let s;
+                        if (isGrid(schema)) {
+                          s = appendChild(data, [...path]);
+                        } else if (defaultAction === 'insertAfter') {
+                          s = insertAfter(data, [...path]);
+                        } else {
+                          s = insertBefore(data, [...path]);
+                        }
+                        await createSchema(s);
+                      }
+                    }}
+                  >
+                    {collectionField?.uiSchema?.title}
+                  </Menu.Item>
+                );
+              })}
           </Menu.ItemGroup>
           <Menu.ItemGroup title={'多媒体区块'}>
             <Menu.Item

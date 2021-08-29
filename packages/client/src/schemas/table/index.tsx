@@ -140,6 +140,7 @@ function useTableCreateAction() {
   const form = useForm();
   return {
     async run() {
+      console.log('useTableCreateAction', resource)
       if (refreshRequestOnChange) {
         await resource.create(form.values);
         await form.reset();
