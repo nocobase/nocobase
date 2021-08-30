@@ -20,7 +20,7 @@ import {
   updateSchema,
 } from '../';
 import get from 'lodash/get';
-import { Button, Dropdown, Menu, Modal, Space, Switch } from 'antd';
+import { Button, Dropdown, Menu, Modal, Select, Space, Switch } from 'antd';
 import { MenuOutlined, DragOutlined } from '@ant-design/icons';
 import cls from 'classnames';
 import { FormDialog, FormLayout } from '@formily/antd';
@@ -33,19 +33,25 @@ import { useEffect } from 'react';
 import { uid } from '@formily/shared';
 import { getSchemaPath } from '../../components/schema-renderer';
 import { RandomNameContext } from '.';
-import { useCollectionContext, useDisplayedMapContext } from '../../constate';
+import {
+  useCollectionContext,
+  useCollectionsContext,
+  useDisplayedMapContext,
+} from '../../constate';
 import SwitchMenuItem from '../../components/SwitchMenuItem';
 import { DragHandle } from '../../components/Sortable';
+import { set } from 'lodash';
 
 export const FieldDesignableBar = observer((props) => {
   const field = useField();
-  const { schema, deepRemove } = useDesignable();
+  const { schema, deepRemove, refresh } = useDesignable();
   const [visible, setVisible] = useState(false);
   const { dragRef } = useContext(DraggableBlockContext);
   const randomName = useContext(RandomNameContext);
   const displayed = useDisplayedMapContext();
   const fieldName = schema['x-component-props']?.['fieldName'];
   const { getField } = useCollectionContext();
+  const { getFieldsByCollection } = useCollectionsContext();
 
   const collectionField = getField(fieldName);
 
@@ -124,6 +130,59 @@ export const FieldDesignableBar = observer((props) => {
                 >
                   自定义字段名称
                 </Menu.Item>
+                {collectionField.interface === 'linkTo' && (
+                  <Menu.Item>
+                    <div
+                      style={{
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                      }}
+                    >
+                      标签字段{' '}
+                      <Select
+                        value={
+                          schema?.['x-component-props']?.['fieldNames']?.[
+                            'label'
+                          ]
+                        }
+                        placeholder={'默认为 ID 字段'}
+                        onChange={async (value) => {
+                          set(
+                            schema['x-component-props'],
+                            'fieldNames.label',
+                            value,
+                          );
+                          refresh();
+                          const fieldNames = {
+                            label: value,
+                            value:
+                              get(
+                                schema['x-component-props'],
+                                'fieldNames.value',
+                              ) || 'id',
+                          };
+                          // realField.componentProps.fieldNames = fieldNames;
+                          await updateSchema({
+                            key: schema['key'],
+                            'x-component-props': {
+                              fieldNames,
+                            },
+                          });
+                          // await service.refresh();
+                        }}
+                        bordered={false}
+                        size={'small'}
+                        style={{ marginLeft: 16, minWidth: 120 }}
+                        options={getFieldsByCollection(collectionField.target)
+                          .filter((f) => f?.uiSchema?.title)
+                          .map((field) => ({
+                            label: field?.uiSchema?.title || field.name,
+                            value: field.name,
+                          }))}
+                      />
+                    </div>
+                  </Menu.Item>
+                )}
                 <Menu.Item
                   style={{ minWidth: 150 }}
                   onClick={async () => {

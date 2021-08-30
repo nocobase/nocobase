@@ -18,7 +18,7 @@ import { useState } from 'react';
 import { useDesignable } from '../';
 import { createContext } from 'react';
 import { useContext } from 'react';
-import { isEmpty } from 'lodash';
+import { get, isEmpty } from 'lodash';
 import { Field, isArrayField, isField } from '@formily/core';
 import { Action } from '../action';
 import { BlockSchemaContext, VisibleContext } from '../../context';
@@ -28,6 +28,7 @@ import { CollectionFieldContext } from '../table';
 import { CollectionProvider, useCollectionContext } from '../../constate';
 import { Resource } from '../../resource';
 import { useRequest } from 'ahooks';
+import constate from 'constate';
 
 export const Select: any = connect(
   (props) => {
@@ -236,11 +237,11 @@ Select.Object = connect(
 
 const OptionTagContext = createContext(null);
 
-const SelectedRowKeysContext = createContext([]);
+const SelectedRowsContext = createContext<any>(null);
 
 Select.useOkAction = () => {
   const { props } = useContext(SelectContext);
-  const [selectedRows] = useContext(SelectedRowKeysContext);
+  const { selectedRows } = useContext(SelectedRowsContext);
   return {
     async run() {
       props.onChange(selectedRows);
@@ -249,18 +250,31 @@ Select.useOkAction = () => {
   };
 };
 
+Select.useRowSelection = () => {
+  const { props } = useContext(SelectContext);
+  return {
+    type: props.multiple ? 'checkbox' : 'radio',
+  };
+};
+
 Select.useSelect = () => {
-  const [, setSelectedRows] = useContext(SelectedRowKeysContext);
+  const { setSelectedRows } = useContext(SelectedRowsContext);
   return (keys, rows) => {
     setSelectedRows(rows);
     console.log('Select.onSelect', keys, rows);
   };
 };
 
-Select.useSelectedRowKeys = () => {
-  const [selectedRows] = useContext(SelectedRowKeysContext);
-  return selectedRows?.map((row) => row.id) || [];
+export const useSelectedRowKeys = () => {
+  const { selectedRows } = useContext(SelectedRowsContext);
+  const [selectedRowKeys, setSelectedRowKeys] = useState<any>([]);
+  useEffect(() => {
+    setSelectedRowKeys(selectedRows.map((row) => row.id));
+  }, [selectedRows]);
+  return { selectedRowKeys, setSelectedRowKeys };
 };
+
+Select.useSelectedRowKeys = useSelectedRowKeys;
 
 const SelectContext = createContext(null);
 
@@ -268,19 +282,31 @@ Select.Drawer = connect(
   (props) => {
     const field = useField<Field>();
     const {
-      value,
       onChange,
-      fieldNames = {
-        label: 'id',
-        value: 'id',
-      },
+      // fieldNames = {
+      //   label: 'id',
+      //   value: 'id',
+      // },
       ...others
     } = props;
+    let value = props.value;
     const [visible, setVisible] = useState(false);
     const { schema } = useDesignable();
+    const fieldNames = {
+      label: 'id',
+      value: 'id',
+      ...(get(schema['x-component-props'], 'fieldNames') || {}),
+    };
     const options = field?.['dataSource'] || props.options || [];
-
+    if (props.multiple) {
+      Object.assign(others, {
+        mode: 'multiple',
+      });
+    }
     let optionValue = undefined;
+    if (props.multiple) {
+      value = toArr(value);
+    }
     if (isArr(value)) {
       optionValue = value.map((val) => {
         return {
@@ -294,6 +320,7 @@ Select.Drawer = connect(
         value: value[fieldNames.value],
       };
     }
+    const [selectedRows, setSelectedRows] = useState(toArr(field.value));
 
     const onFieldChange = (selectValue) => {
       if (!isValid(selectValue)) {
@@ -323,9 +350,9 @@ Select.Drawer = connect(
           options.find((option) => option[fieldNames.value] === selectValue),
         );
       }
+      setSelectedRows(toArr(field.value));
     };
     // const selectedKeys = toArr(optionValue).map((item) => item.value);
-    const [selectedRows, setSelectedRows] = useState(toArr(field.value));
     console.log({ optionValue, value });
     const collectionField = useContext(CollectionFieldContext);
     return (
@@ -352,8 +379,8 @@ Select.Drawer = connect(
               }
             }}
           ></AntdSelect>
-          <SelectedRowKeysContext.Provider
-            value={[selectedRows, setSelectedRows]}
+          <SelectedRowsContext.Provider
+            value={{ selectedRows, setSelectedRows }}
           >
             <CollectionProvider collectionName={collectionField?.target}>
               <RecursionField
@@ -364,7 +391,7 @@ Select.Drawer = connect(
                 }}
               />
             </CollectionProvider>
-          </SelectedRowKeysContext.Provider>
+          </SelectedRowsContext.Provider>
         </VisibleContext.Provider>
       </SelectContext.Provider>
     );
@@ -391,9 +418,14 @@ Select.Drawer = connect(
     observer((props: any) => {
       const collectionField = useContext(CollectionFieldContext);
       const field = useField<Formily.Core.Models.Field>();
-      const { fieldNames = { label: 'id' }, ...others } = props;
+      const { ...others } = props;
       const value = field.value || field.initialValue;
       const { schema } = useDesignable();
+      const fieldNames = {
+        label: 'id',
+        value: 'id',
+        ...(get(schema['x-component-props'], 'fieldNames') || {}),
+      };
       console.log({ fieldNames, field, value });
       if (!value) {
         return null;
@@ -437,7 +469,7 @@ Select.Drawer.useResource = ({ onSuccess }) => {
     resourceName: collection?.name,
     resourceKey: ctx.data.id,
   });
-  console.log('OptionTagContext', ctx.data.id)
+  console.log('OptionTagContext', ctx.data.id);
   const { schema } = useDesignable();
   const fieldFields = (schema: Schema) => {
     const names = [];
@@ -473,7 +505,7 @@ Select.Drawer.useResource = ({ onSuccess }) => {
     }
   }, [visible]);
   return { resource, service, initialValues: service.data, ...service };
-}
+};
 
 Select.Options = observer((props) => {
   return <>{props.children}</>;

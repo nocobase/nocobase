@@ -19,7 +19,7 @@ import {
   createCollectionField,
   ISchema,
 } from '..';
-import { uid } from '@formily/shared';
+import { uid, merge } from '@formily/shared';
 import useRequest from '@ahooksjs/use-request';
 import { BaseResult } from '@ahooksjs/use-request/lib/types';
 import cls from 'classnames';
@@ -30,7 +30,6 @@ import {
   useSortable,
   verticalListSortingStrategy,
 } from '@dnd-kit/sortable';
-import { CSS } from '@dnd-kit/utilities';
 import { Select, Dropdown, Menu, Switch, Button, Space } from 'antd';
 import { PlusOutlined, SettingOutlined } from '@ant-design/icons';
 import './style.less';
@@ -54,6 +53,7 @@ import {
   DisplayedMapProvider,
   useCollection,
   useCollectionContext,
+  useCollectionsContext,
   useDisplayedMapContext,
 } from '../../constate';
 import { useResource as useGeneralResource } from '../../hooks/useResource';
@@ -140,7 +140,7 @@ function useTableCreateAction() {
   const form = useForm();
   return {
     async run() {
-      console.log('useTableCreateAction', resource)
+      console.log('useTableCreateAction', resource);
       if (refreshRequestOnChange) {
         await resource.create(form.values);
         await form.reset();
@@ -457,11 +457,13 @@ function AddColumn() {
                               default: [],
                               'x-component-props': {
                                 rowKey: 'id',
-                                defaultSelectedRowKeys: '{{ Select.useSelectedRowKeys() }}',
+                                useRowSelection: '{{ Select.useRowSelection }}',
+                                useSelectedRowKeys:
+                                  '{{ Select.useSelectedRowKeys }}',
                                 onSelect: '{{ Select.useSelect() }}',
                                 collectionName: field.target,
                                 // dragSort: true,
-                                showIndex: true,
+                                // showIndex: true,
                                 refreshRequestOnChange: true,
                                 pagination: {
                                   pageSize: 10,
@@ -634,6 +636,12 @@ function AddColumn() {
   );
 }
 
+const useDefaultRowSelection = () => {
+  return {
+    type: 'checkbox',
+  };
+};
+
 const useDataSource = () => {
   const {
     pagination,
@@ -657,13 +665,20 @@ const TableMain = () => {
     setSelectedRowKeys,
     service,
     field,
-    props: { rowKey, dragSort, showIndex, onSelect },
+    props: {
+      rowKey,
+      dragSort,
+      showIndex,
+      onSelect,
+      useRowSelection = useDefaultRowSelection,
+    },
     refresh,
   } = useTable();
   const columns = useTableColumns();
   const dataSource = useDataSource();
   const actionBars = useTableActionBars();
   const [html, setHtml] = useState('');
+  const { type } = useRowSelection();
   return (
     <div className={'nb-table'}>
       <DndContext
@@ -744,7 +759,7 @@ const TableMain = () => {
               },
             }}
             rowSelection={{
-              type: 'checkbox',
+              type: type || 'checkbox',
               selectedRowKeys,
               onChange: (rowKeys, rows) => {
                 setSelectedRowKeys(rowKeys);
@@ -815,20 +830,25 @@ const usePagination = () => {
   ];
 };
 
+const useDefaultSelectedRowKeys = () => {
+  const [selectedRowKeys, setSelectedRowKeys] = useState<any>([]);
+  return { selectedRowKeys, setSelectedRowKeys };
+};
+
 const TableProvider = (props: any) => {
   const {
     rowKey = 'id',
     dataRequest,
     useResource = useGeneralResource,
     defaultSelectedRowKeys,
+    useSelectedRowKeys = useDefaultSelectedRowKeys,
     ...others
   } = props;
   const { schema } = useDesignable();
   const field = useField<Formily.Core.Models.ArrayField>();
   const [pagination, setPagination] = usePagination();
-  const [selectedRowKeys, setSelectedRowKeys] = useState<any>(
-    defaultSelectedRowKeys || [],
-  );
+  const { selectedRowKeys, setSelectedRowKeys } = useSelectedRowKeys();
+  console.log('props.useSelectedRowKeys', selectedRowKeys);
   const [, refresh] = useState(uid());
   const { resource } = useResource();
   const { sortableField } = useCollectionContext();
@@ -1968,6 +1988,14 @@ Table.Cell = observer((props: any) => {
     uiSchema = cloneDeepWith(uiSchema);
     set(uiSchema, 'x-component-props.size', 'small');
   }
+  const componentProps = merge(
+    uiSchema?.['x-component-props'] || {},
+    schema?.['x-component-props'] || {},
+    {
+      arrayMerge: (t, s) => s,
+    },
+  );
+  console.log('Table.Cell', collectionField?.interface, componentProps);
   return (
     <div className={`field-interface-${collectionField?.interface}`}>
       <RecursionField
@@ -1985,6 +2013,7 @@ Table.Cell = observer((props: any) => {
                       feedbackLayout: 'popover',
                     },
                     'x-decorator': 'FormilyFormItem',
+                    'x-component-props': componentProps,
                     properties: {
                       ...schema?.properties,
                     },
@@ -2018,10 +2047,12 @@ Table.Column = observer((props: any) => {
 
 Table.Column.DesignableBar = () => {
   const field = useField();
+  const { service, refresh: refreshTable } = useTable();
   // const fieldSchema = useFieldSchema();
   const { schema, remove, refresh, insertAfter } = useDesignable();
   const [visible, setVisible] = useState(false);
   const displayed = useDisplayedMapContext();
+  const { getFieldsByCollection } = useCollectionsContext();
   const collectionField = useContext(CollectionFieldContext);
   console.log('displayed.map', displayed.map);
   return (
@@ -2088,6 +2119,52 @@ Table.Column.DesignableBar = () => {
                 >
                   自定义列名称
                 </Menu.Item>
+                {collectionField.interface === 'linkTo' && (
+                  <Menu.Item>
+                    <div
+                      style={{
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                      }}
+                    >
+                      标签字段{' '}
+                      <Select
+                        value={
+                          schema?.['x-component-props']?.['fieldNames']?.[
+                            'label'
+                          ]
+                        }
+                        placeholder={'默认为 ID 字段'}
+                        onChange={async (value) => {
+                          set(
+                            schema['x-component-props'],
+                            'fieldNames.label',
+                            value,
+                          );
+                          await updateSchema({
+                            key: schema['key'],
+                            'x-component-props': {
+                              fieldNames: {
+                                label: value,
+                              },
+                            },
+                          });
+                          refreshTable();
+                          // await service.refresh();
+                        }}
+                        bordered={false}
+                        size={'small'}
+                        style={{ marginLeft: 16, minWidth: 120 }}
+                        options={getFieldsByCollection(collectionField.target)
+                          .filter((f) => f?.uiSchema?.title)
+                          .map((field) => ({
+                            label: field?.uiSchema?.title || field.name,
+                            value: field.name,
+                          }))}
+                      />
+                    </div>
+                  </Menu.Item>
+                )}
                 <Menu.Divider />
                 <Menu.Item
                   onClick={async () => {
