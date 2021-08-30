@@ -29,7 +29,7 @@ import { DraggableBlockContext } from '../../components/drag-and-drop';
 import { isGridRowOrCol } from '../grid';
 import constate from 'constate';
 import { useEffect } from 'react';
-import { uid } from '@formily/shared';
+import { uid, merge } from '@formily/shared';
 import { getSchemaPath } from '../../components/schema-renderer';
 import { DesignableBar } from './DesignableBar';
 import { FieldDesignableBar } from './Field.DesignableBar';
@@ -183,7 +183,15 @@ Form.Field = observer((props: any) => {
   const required = schema['required'] || collectionField?.uiSchema?.required;
   const description =
     schema['description'] || collectionField?.uiSchema?.description;
-    console.log('schema.properties', schema.properties)
+  console.log('schema.properties', schema.properties);
+
+  const componentProps = merge(
+    collectionField?.uiSchema?.['x-component-props'] || {},
+    schema?.['x-component-props'] || {},
+    {
+      arrayMerge: (t, s) => s,
+    },
+  );
   return (
     <CollectionFieldContext.Provider value={collectionField}>
       <RecursionField
@@ -199,6 +207,7 @@ Form.Field = observer((props: any) => {
                 required,
                 description,
                 'x-decorator': 'FormilyFormItem',
+                'x-component-props': componentProps,
                 properties: {
                   ...schema.properties,
                 },

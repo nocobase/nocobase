@@ -1437,12 +1437,13 @@ AddNew.FormItem = observer((props: any) => {
                             default: [],
                             'x-component-props': {
                               rowKey: 'id',
-                              defaultSelectedRowKeys:
-                                '{{ Select.useSelectedRowKeys() }}',
+                              useSelectedRowKeys:
+                                '{{ Select.useSelectedRowKeys }}',
                               onSelect: '{{ Select.useSelect() }}',
+                              useRowSelection: '{{ Select.useRowSelection }}',
                               collectionName: field.target,
                               // dragSort: true,
-                              showIndex: true,
+                              // showIndex: true,
                               refreshRequestOnChange: true,
                               pagination: {
                                 pageSize: 10,

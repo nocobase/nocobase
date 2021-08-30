@@ -3,8 +3,10 @@ import React from 'react';
 import { FormItem } from '@formily/antd';
 import { action } from '@formily/reactive';
 import { useCollectionsContext } from '../../constate/Collections';
+import { Field } from '@formily/core';
 
 export const useAsyncDataSource = (service: any) => (field: any) => {
+  console.log('loadCollectionFields');
   field.loading = true;
   service(field).then(
     action.bound((data: any) => {
@@ -22,6 +24,22 @@ export default () => {
       label: item.title,
       value: item.name,
     }));
+  };
+
+  const loadCollectionFields = async (field: Field) => {
+    const target = field.query('....target').get('value');
+    const f = field.query('....target').take();
+    console.log('loadCollectionFields', f, field);
+    const collection = collections?.find((item) => item.name === target);
+    if (!collection) {
+      return [];
+    }
+    return collection?.generalFields
+      ?.filter((item) => item?.uiSchema?.title)
+      ?.map((item) => ({
+        label: item?.uiSchema?.title || item.name,
+        value: item.name,
+      }));
   };
 
   const schema = {
@@ -56,7 +74,7 @@ export default () => {
   };
   return (
     <SchemaRenderer
-      scope={{ loadCollections, useAsyncDataSource }}
+      scope={{ loadCollections, loadCollectionFields, useAsyncDataSource }}
       components={{ FormItem }}
       schema={schema}
     />

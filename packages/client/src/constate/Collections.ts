@@ -6,9 +6,14 @@ const [CollectionsProvider, useCollectionsContext] = constate(() => {
     formatResult: (result) => result?.data,
   });
   return {
-    ...result, collections: result.data || [], findCollection(name) {
+    ...result, collections: result.data || [],
+    findCollection(name) {
       return result?.data?.find((item) => item.name === name);
-    }
+    },
+    getFieldsByCollection(collectionName) {
+      const collection = result?.data?.find((item) => item.name === collectionName);
+      return collection?.generalFields;
+    },
   };
 });
 
