@@ -267,10 +267,11 @@ Select.useSelect = () => {
 
 export const useSelectedRowKeys = () => {
   const { selectedRows } = useContext(SelectedRowsContext);
-  const [selectedRowKeys, setSelectedRowKeys] = useState<any>([]);
+  const [selectedRowKeys, setSelectedRowKeys] = useState<any>(selectedRows.map((row) => row.id));
   useEffect(() => {
     setSelectedRowKeys(selectedRows.map((row) => row.id));
   }, [selectedRows]);
+  console.log('useSelectedRowKeys', selectedRows)
   return { selectedRowKeys, setSelectedRowKeys };
 };
 
@@ -321,7 +322,10 @@ Select.Drawer = connect(
       };
     }
     const [selectedRows, setSelectedRows] = useState(toArr(field.value));
-
+    console.log('useSelectedRowKeys.toArr', toArr(field.value))
+    useEffect(() => {
+      setSelectedRows(toArr(field.value));
+    }, [field.value]);
     const onFieldChange = (selectValue) => {
       if (!isValid(selectValue)) {
         onChange(null);
@@ -350,7 +354,7 @@ Select.Drawer = connect(
           options.find((option) => option[fieldNames.value] === selectValue),
         );
       }
-      setSelectedRows(toArr(field.value));
+      // setSelectedRows(toArr(field.value));
     };
     // const selectedKeys = toArr(optionValue).map((item) => item.value);
     console.log({ optionValue, value });
