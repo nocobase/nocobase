@@ -50,6 +50,14 @@ export const linkTo: FieldOptions = {
       'x-decorator': 'FormItem',
       'x-component': 'Select',
     },
+    // 'uiSchema.x-component-props.fieldNames.label': {
+    //   type: 'string',
+    //   title: '要显示的标题字段',
+    //   required: true,
+    //   'x-reactions': ['{{useAsyncDataSource(loadCollectionFields)}}'],
+    //   'x-decorator': 'FormItem',
+    //   'x-component': 'Select',
+    // },
     'uiSchema.x-component-props.multiple': {
       type: 'boolean',
       'x-content': '允许关联多条记录',

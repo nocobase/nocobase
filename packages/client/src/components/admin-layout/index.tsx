@@ -45,6 +45,7 @@ import {
 } from './SiteTitle';
 import { AuthProvider } from './Auth';
 import { Helmet } from 'react-helmet';
+import { MenuSelectedKeysContext } from '../../schemas/menu';
 
 function DesignableToggle() {
   const { designable, setDesignable } = useDesignableSwitchContext();
@@ -77,17 +78,58 @@ function LayoutWithMenu(props: LayoutWithMenuProps) {
   const { title } = useSystemSettings();
   const [activeKey, setActiveKey] = useState(match.params.name);
   const { setPageTitle } = usePageTitleContext();
+
+  const [selectedKeys, setSelectedKeys] = useState(defaultSelectedKeys);
   const onSelect = (info) => {
     if (!info.schema) {
       setActiveKey(null);
     } else if (info.schema['x-component'] === 'Menu.SubMenu') {
+      const findMenuItem = (schema: Schema) => {
+        const first = Object.values(schema.properties || {}).shift();
+        if (!first) {
+          return null;
+        }
+        if (['Menu.Link', 'Menu.URL'].includes(first['x-component'])) {
+          return first;
+        }
+        return findMenuItem(first);
+      };
+      console.log('info.schema', findMenuItem(info.schema));
       // 实际应该取第一个子元素
-      setActiveKey(null);
+      const node = findMenuItem(info.schema);
+      setActiveKey(node?.key);
+      if (node?.key) {
+        history.push(`/admin/${node?.key}`);
+        const keys = [node?.name];
+        let parent = node?.parent;
+        while (parent) {
+          if (parent['x-component'] === 'Menu') {
+            break;
+          }
+          keys.unshift(parent.name);
+          parent = parent.parent;
+        }
+        setSelectedKeys(keys);
+        if (node.title) {
+          setPageTitle(node.title);
+        }
+      }
     } else {
       setActiveKey(info.schema.key);
       history.push(`/admin/${info.schema.key}`);
       if (info.schema.title) {
         setPageTitle(info.schema.title);
+        const keys = [info.schema?.name];
+        let parent = info.schema?.parent;
+        while (parent) {
+          if (parent['x-component'] === 'Menu') {
+            break;
+          }
+          keys.unshift(parent.name);
+          parent = parent.parent;
+        }
+        setSelectedKeys(keys);
+        // setSelectedKeys([info.schema.name]);
       }
     }
   };
@@ -97,20 +139,26 @@ function LayoutWithMenu(props: LayoutWithMenuProps) {
   const onMenuItemRemove = () => {
     history.push(`/admin`);
   };
-  console.log({ activeKey });
+  console.log({ activeKey, selectedKeys });
   return (
     <Layout>
       <Layout.Header className={'site-header'} style={{ display: 'flex' }}>
         <SiteTitle />
-        <SchemaRenderer
-          schema={schema}
-          scope={{
-            sideMenuRef,
-            onSelect,
-            onMenuItemRemove,
-            selectedKeys: defaultSelectedKeys.filter(Boolean),
-          }}
-        />
+        <MenuSelectedKeysContext.Provider value={selectedKeys}>
+          <SchemaRenderer
+            schema={schema}
+            scope={{
+              sideMenuRef,
+              onSelect,
+              onMenuItemRemove,
+              getSelectedKeys: () => {
+                console.log('getSelectedKeys', schema);
+                return selectedKeys.filter(Boolean);
+              },
+              selectedKeys: selectedKeys.filter(Boolean),
+            }}
+          />
+        </MenuSelectedKeysContext.Provider>
         <DesignableToggle />
         <Database />
         <Permissions />

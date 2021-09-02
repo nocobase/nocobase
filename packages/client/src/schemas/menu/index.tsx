@@ -82,6 +82,10 @@ export const MenuContext = createContext<MenuContextProps>(null);
 const SideMenu = (props: any) => {
   const { selectedKey, defaultSelectedKeys, onSelect, path } = props;
   const { schema } = useDesignable();
+  const [selectedKeys, setSelectedKeys] = useState(defaultSelectedKeys);
+  useEffect(() => {
+    setSelectedKeys(defaultSelectedKeys);
+  }, [defaultSelectedKeys]);
   if (!selectedKey) {
     return null;
   }
@@ -89,10 +93,17 @@ const SideMenu = (props: any) => {
   if (!child || child['x-component'] !== 'Menu.SubMenu') {
     return null;
   }
-
   return (
     <MenuModeContext.Provider value={'inline'}>
-      <AntdMenu mode={'inline'} onSelect={onSelect}>
+      <AntdMenu
+        mode={'inline'}
+        onSelect={onSelect}
+        onOpenChange={(openKeys) => {
+          setSelectedKeys(openKeys);
+        }}
+        openKeys={selectedKeys}
+        selectedKeys={selectedKeys}
+      >
         <RecursionField schema={child} onlyRenderProperties />
         <Menu.AddNew key={uid()} path={[...path, selectedKey]}>
           <Button
@@ -109,15 +120,19 @@ const SideMenu = (props: any) => {
   );
 };
 
+export const MenuSelectedKeysContext = createContext<any>([]);
+
 export const Menu: any = observer((props: any) => {
   const {
     mode,
     onSelect,
     sideMenuRef,
-    defaultSelectedKeys = [],
+    defaultSelectedKeys: keys,
+    getSelectedKeys,
     onRemove,
     ...others
   } = props;
+  const defaultSelectedKeys = useContext(MenuSelectedKeysContext);
   const { root, schema, insertAfter, remove } = useDesignable();
   const moveToAfter = (path1, path2) => {
     if (!path1 || !path2) {
@@ -163,7 +178,7 @@ export const Menu: any = observer((props: any) => {
   }, [selectedKey]);
 
   const [dragOverlayContent, setDragOverlayContent] = useState('');
-  console.log('onRemove', onRemove);
+  // console.log('defaultSelectedKeys', defaultSelectedKeys, getSelectedKeys);
   return (
     <MenuContext.Provider value={{ schema, onRemove }}>
       <DndContext
@@ -193,6 +208,7 @@ export const Menu: any = observer((props: any) => {
         )}
         <MenuModeContext.Provider value={mode}>
           <AntdMenu
+            defaultOpenKeys={defaultSelectedKeys}
             defaultSelectedKeys={defaultSelectedKeys}
             {...others}
             mode={mode === 'mix' ? 'horizontal' : mode}
