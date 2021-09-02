@@ -69,6 +69,7 @@ export const UserInfo = () => {
                 style={{ minWidth: 100 }}
                 size={'small'}
                 defaultValue={'admin'}
+                disabled
                 options={[
                   { label: '超级管理员', value: 'admin' },
                   { label: '数据管理员', value: 'editor' },
@@ -84,6 +85,7 @@ export const UserInfo = () => {
                 className={'roles-select'}
                 bordered={false}
                 size={'small'}
+                disabled
                 defaultValue={'zh-CN'}
                 options={[
                   { label: '简体中文', value: 'zh-CN' },

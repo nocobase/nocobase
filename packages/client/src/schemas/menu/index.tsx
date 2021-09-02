@@ -107,7 +107,7 @@ const SideMenu = (props: any) => {
         <RecursionField schema={child} onlyRenderProperties />
         <Menu.AddNew key={uid()} path={[...path, selectedKey]}>
           <Button
-            block
+            // block
             type={'dashed'}
             icon={<PlusOutlined />}
             className={`nb-add-new-menu-item menu-mode-inline designable-btn designable-btn-dash`}
@@ -735,7 +735,7 @@ Menu.DesignableBar = (props) => {
                       },
                     );
                     const values = await FormDialog(
-                      `编辑${formConfig.title}`,
+                      `编辑菜单项`,
                       () => {
                         return (
                           <FormLayout layout={'vertical'}>
@@ -759,7 +759,7 @@ Menu.DesignableBar = (props) => {
                     await updateSchema(schema);
                   }}
                 >
-                  <EditOutlined /> 编辑{formConfig.title}
+                  <EditOutlined /> 编辑菜单项
                 </AntdMenu.Item>
                 <AntdMenu.Item
                   key={'move'}
