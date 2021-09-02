@@ -1022,6 +1022,7 @@ function generateActionSchema(type) {
       'x-designable-bar': 'Table.ExportActionDesignableBar',
       'x-component-props': {
         fieldNames: [],
+        icon: 'ExportOutlined',
         useAction: '{{ Table.useTableExportAction }}',
       },
     },
