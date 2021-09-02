@@ -1,6 +1,6 @@
 ---
 title: '@nocobase/sdk'
-order: 3
+order: 5
 # toc: menu
 ---
 
