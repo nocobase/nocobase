@@ -536,7 +536,7 @@ Select.OptionTag = observer((props) => {
   const { data, fieldNames } = useContext(OptionTagContext);
   return (
     <VisibleContext.Provider value={[visible, setVisible]}>
-      <Tag onClick={() => setVisible(true)}>{data[fieldNames.label]}</Tag>
+      <a onClick={() => setVisible(true)}>{data[fieldNames.label]}</a>
       {props.children}
     </VisibleContext.Provider>
   );
