@@ -48,4 +48,54 @@ export class Field extends Model {
     }
     return items;
   }
+
+  async generateReverseField(opts: any = {}) {
+    const { migrate = true } = opts;
+    if (this.get('interface') !== 'linkTo') {
+      return;
+    }
+    if (this.get('reverseKey')) {
+      return;
+    }
+    const fieldCollection = await this.getCollection();
+    const options: any = this.get('options') || {};
+    const Collection = this.database.getModel('collections');
+    let collection = await Collection.findOne({
+      where: {
+        name: options.target,
+      },
+    });
+    if (!collection) {
+      return;
+    }
+    const reverseField = await collection.createField({
+      interface: 'linkTo',
+      dataType: 'belongsToMany',
+      through: options.through,
+      foreignKey: options.otherKey,
+      otherKey: options.foreignKey,
+      sourceKey: options.targetKey,
+      targetKey: options.sourceKey,
+      target: this.get('collection_name'),
+      reverseKey: this.get('key'),
+    });
+    await reverseField.updateAssociations({
+      uiSchema: {
+        type: 'array',
+        title: `${fieldCollection?.title}`,
+        'x-component': 'Select.Drawer',
+        'x-component-props': {
+          multiple: true,
+        },
+        'x-decorator': 'FormItem',
+        'x-designable-bar': 'Select.Drawer.DesignableBar',
+      }
+    });
+    await this.update({
+      reverseKey: reverseField.key,
+    });
+    if (migrate) {
+      await collection.migrate();
+    }
+  }
 }

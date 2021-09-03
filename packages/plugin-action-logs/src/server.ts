@@ -18,40 +18,40 @@ export default async function() {
     addAll(database.getModel(table.options.name));
   });
 
-  const Collection = database.getModel('collections');
-  Collection.addHook('afterCreate', async (model, options) => {
-    if (!model.get('logging')) {
-      return;
-    }
+  // const Collection = database.getModel('collections');
+  // Collection.addHook('afterCreate', async (model, options) => {
+  //   if (!model.get('logging')) {
+  //     return;
+  //   }
 
-    const { transaction = await model.sequelize.transaction() } = options;
+  //   const { transaction = await model.sequelize.transaction() } = options;
 
-    const exists = await model.countFields({
-      where: {
-        dataType: { [Op.iLike]: 'hasMany' },
-        name: 'action_logs'
-      },
-      transaction
-    });
+  //   const exists = await model.countFields({
+  //     where: {
+  //       dataType: { [Op.iLike]: 'hasMany' },
+  //       name: 'action_logs'
+  //     },
+  //     transaction
+  //   });
 
-    if (!exists) {
-      await model.createSystemField({
-        interface: 'linkTo',
-        dataType: 'hasMany',
-        name: 'action_logs',
-        target: 'action_logs',
-        title: '数据动态',
-        foreignKey: 'index',
-        state: 0,
-        scope: {
-          collection_name: model.get('name')
-        },
-        constraints: false
-      }, { transaction });
-    }
+  //   if (!exists) {
+  //     await model.createSystemField({
+  //       interface: 'linkTo',
+  //       dataType: 'hasMany',
+  //       name: 'action_logs',
+  //       target: 'action_logs',
+  //       title: '数据动态',
+  //       foreignKey: 'index',
+  //       state: 0,
+  //       scope: {
+  //         collection_name: model.get('name')
+  //       },
+  //       constraints: false
+  //     }, { transaction });
+  //   }
 
-    if (!options.transaction) {
-      await transaction.commit();
-    }
-  });
+  //   if (!options.transaction) {
+  //     await transaction.commit();
+  //   }
+  // });
 }

@@ -1370,6 +1370,7 @@ AddNew.FormItem = observer((props: any) => {
   const { schema, insertBefore, insertAfter, appendChild, deepRemove } =
     useDesignable();
   const path = useSchemaPath();
+  const { loadCollections } = useCollectionsContext();
   const { collection, fields, refresh } = useCollectionContext();
   const [visible, setVisible] = useState(false);
   const displayed = useDisplayedMapContext();
@@ -1562,7 +1563,7 @@ AddNew.FormItem = observer((props: any) => {
                           const values = await FormDialog(`添加字段`, () => {
                             return (
                               <FormLayout layout={'vertical'}>
-                                <SchemaField schema={item} />
+                                <SchemaField scope={{ loadCollections }} schema={item} />
                               </FormLayout>
                             );
                           }).open({

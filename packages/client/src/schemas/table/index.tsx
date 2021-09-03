@@ -405,6 +405,7 @@ const useTableColumns = () => {
 function AddColumn() {
   const [visible, setVisible] = useState(false);
   const { appendChild, remove } = useDesignable();
+  const { loadCollections } = useCollectionsContext();
   const { collection, fields, refresh } = useCollectionContext();
   const displayed = useDisplayedMapContext();
   const { service } = useTable();
@@ -592,7 +593,7 @@ function AddColumn() {
                       const values = await FormDialog(`添加字段`, () => {
                         return (
                           <FormLayout layout={'vertical'}>
-                            <SchemaField schema={item} />
+                            <SchemaField scope={{ loadCollections }} schema={item} />
                           </FormLayout>
                         );
                       }).open({
