@@ -265,3 +265,28 @@ td.nb-table-operation {
     background-color: #f18b62;
   }
 }
+
+.ant-space-item {
+  .droppable {
+    position: relative;
+  }
+  .droppable.isDragging::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    right: 0;
+    height: 100%;
+    width: 100%;
+    background-color: #f18b62;
+    opacity: .3;
+  }
+  .droppable:not(.isDragging).isOver::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    right: -5px;
+    height: 100%;
+    width: 2px;
+    background-color: #f18b62;
+  }
+}

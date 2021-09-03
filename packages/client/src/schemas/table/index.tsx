@@ -593,7 +593,10 @@ function AddColumn() {
                       const values = await FormDialog(`添加字段`, () => {
                         return (
                           <FormLayout layout={'vertical'}>
-                            <SchemaField scope={{ loadCollections }} schema={item} />
+                            <SchemaField
+                              scope={{ loadCollections }}
+                              schema={item}
+                            />
                           </FormLayout>
                         );
                       }).open({
@@ -1368,7 +1371,13 @@ Table.ActionBar = observer((props: any) => {
         }
       }}
     >
-      <DragOverlay style={{ pointerEvents: 'none', whiteSpace: 'nowrap' }}>
+      <DragOverlay
+        dropAnimation={{
+          duration: 10,
+          easing: 'cubic-bezier(0.18, 0.67, 0.6, 1.22)',
+        }}
+        style={{ pointerEvents: 'none', whiteSpace: 'nowrap' }}
+      >
         {dragOverlayContent}
         {/* <div style={{ transform: 'translateX(-100%)' }} dangerouslySetInnerHTML={{__html: dragOverlayContent}}></div> */}
       </DragOverlay>

@@ -105,7 +105,13 @@ export const Tabs: any = observer((props: any) => {
           await updateSchema(data);
         }}
       >
-        <DragOverlay style={{ pointerEvents: 'none', whiteSpace: 'nowrap' }}>
+        <DragOverlay
+          dropAnimation={{
+            duration: 10,
+            easing: 'cubic-bezier(0.18, 0.67, 0.6, 1.22)',
+          }}
+          style={{ pointerEvents: 'none', whiteSpace: 'nowrap' }}
+        >
           {dragOverlayContent}
         </DragOverlay>
         <AntdTabs
