@@ -398,11 +398,27 @@ Menu.SubMenu = observer((props: any) => {
   ) : (
     <AntdMenu.SubMenu
       {...props}
-      icon={<IconPicker type={icon} />}
+      icon={null}
+      // icon={<IconPicker type={icon} />}
       title={
-        <>
-          {schema.title} <DesignableBar />
-        </>
+        <SortableItem
+          id={schema.name}
+          data={{
+            title: schema.title,
+            path: getSchemaPath(schema),
+          }}
+        >
+          {icon && (
+            <span style={{ marginRight: 10 }}>
+              <IconPicker type={icon} />
+            </span>
+          )}
+          {schema.title}
+          <DesignableBar />
+        </SortableItem>
+        // <>
+        //   {schema.title} <DesignableBar />
+        // </>
       }
       eventKey={schema.name}
       key={schema.name}
@@ -734,16 +750,13 @@ Menu.DesignableBar = (props) => {
                         _.set(initialValues, name, get(schema, name));
                       },
                     );
-                    const values = await FormDialog(
-                      `编辑菜单项`,
-                      () => {
-                        return (
-                          <FormLayout layout={'vertical'}>
-                            <SchemaField schema={formConfig.schema} />
-                          </FormLayout>
-                        );
-                      },
-                    ).open({
+                    const values = await FormDialog(`编辑菜单项`, () => {
+                      return (
+                        <FormLayout layout={'vertical'}>
+                          <SchemaField schema={formConfig.schema} />
+                        </FormLayout>
+                      );
+                    }).open({
                       initialValues,
                     });
                     if (values.title) {

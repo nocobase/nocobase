@@ -6,6 +6,10 @@
 
 .ant-menu-horizontal {
   width: 100%;
+  .ant-menu-item:active,
+  .ant-menu-submenu-title:active {
+    background-color: inherit !important;
+  }
 }
 
 .ant-menu-item-active .designable-bar {
@@ -109,4 +113,40 @@
 
 .nb-add-new-menu-item.menu-mode-inline {
   margin: 0 14px;
+}
+
+.ant-menu-horizontal {
+  .ant-menu-submenu,
+  .ant-menu-item {
+    .droppable.isDragging {
+      opacity: .2;
+    }
+    .droppable:not(.isDragging).isOver::after {
+      content: '';
+      position: absolute;
+      top: 0;
+      right: 0;
+      height: 100%;
+      width: 2px;
+      background-color: #f18b62;
+    }
+  }
+}
+
+.ant-menu-inline {
+  .ant-menu-submenu,
+  .ant-menu-item {
+    .droppable.isDragging {
+      opacity: .2;
+    }
+    .droppable:not(.isDragging).isOver::after {
+      content: '';
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      height: 2px;
+      width: 100%;
+      background-color: #f18b62;
+    }
+  }
 }
