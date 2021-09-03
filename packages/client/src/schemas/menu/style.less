@@ -118,8 +118,15 @@
 .ant-menu-horizontal {
   .ant-menu-submenu,
   .ant-menu-item {
-    .droppable.isDragging {
-      opacity: .2;
+    .droppable.isDragging::after {
+      content: '';
+      position: absolute;
+      top: 0;
+      right: 0;
+      height: 100%;
+      width: 100%;
+      background-color: #f18b62;
+      opacity: .5;
     }
     .droppable:not(.isDragging).isOver::after {
       content: '';
@@ -136,8 +143,15 @@
 .ant-menu-inline {
   .ant-menu-submenu,
   .ant-menu-item {
-    .droppable.isDragging {
-      opacity: .2;
+    .droppable.isDragging::after {
+      content: '';
+      position: absolute;
+      top: 0;
+      right: 0;
+      height: 100%;
+      width: 100%;
+      background-color: #f18b62;
+      opacity: .3;
     }
     .droppable:not(.isDragging).isOver::after {
       content: '';
