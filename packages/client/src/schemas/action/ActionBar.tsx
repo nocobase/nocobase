@@ -86,7 +86,13 @@ export const ActionBar = observer((props: any) => {
         }
       }}
     >
-      <DragOverlay style={{ pointerEvents: 'none', whiteSpace: 'nowrap' }}>
+      <DragOverlay
+        dropAnimation={{
+          duration: 10,
+          easing: 'cubic-bezier(0.18, 0.67, 0.6, 1.22)',
+        }}
+        style={{ pointerEvents: 'none', whiteSpace: 'nowrap' }}
+      >
         {dragOverlayContent}
         {/* <div style={{ transform: 'translateX(-100%)' }} dangerouslySetInnerHTML={{__html: dragOverlayContent}}></div> */}
       </DragOverlay>
@@ -160,7 +166,7 @@ function generateActionSchema(type) {
       'x-component-props': {
         confirm: {
           title: '删除数据',
-          content: '删除后无法恢复，确定要删除吗？'
+          content: '删除后无法恢复，确定要删除吗？',
         },
         useAction: '{{ Table.useTableDestroyAction }}',
       },
@@ -218,7 +224,12 @@ function AddActionButton() {
         </Menu>
       }
     >
-      <Button className={'designable-btn designable-btn-dash'} style={{ marginLeft: 8 }} type={'dashed'} icon={<PlusOutlined />}>
+      <Button
+        className={'designable-btn designable-btn-dash'}
+        style={{ marginLeft: 8 }}
+        type={'dashed'}
+        icon={<PlusOutlined />}
+      >
         配置操作
       </Button>
     </Dropdown>

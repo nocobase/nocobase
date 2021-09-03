@@ -81,3 +81,25 @@
     padding: 24px;
   }
 }
+
+.ant-tabs-tab-btn {
+  .droppable.isDragging::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    right: -16px;
+    height: 100%;
+    left: -16px;
+    background-color: #f18b62;
+    opacity: .3;
+  }
+  .droppable:not(.isDragging).isOver::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    right: -16px;
+    height: 100%;
+    width: 2px;
+    background-color: #f18b62;
+  }
+}
