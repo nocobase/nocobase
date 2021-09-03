@@ -1,6 +1,6 @@
 import path from 'path';
 import { Application } from '@nocobase/server';
-import { registerModels, Table } from '@nocobase/database';
+import { registerModels, Table, uid } from '@nocobase/database';
 import * as models from './models';
 import { createOrUpdate, findAll } from './actions';
 import { create } from './actions/fields';
@@ -27,6 +27,7 @@ export default async function (this: Application, options = {}) {
     }
   });
   Field.beforeUpdate(async (model) => {
+    console.log('beforeUpdate', model.key);
     if (!model.get('collection_name') && model.get('parentKey')) {
       const field = await Field.findByPk(model.get('parentKey'));
       if (field) {
@@ -37,8 +38,8 @@ export default async function (this: Application, options = {}) {
       }
     }
   });
-  Field.afterCreate(async (model) => {
-    console.log('afterCreate');
+  Field.afterCreate(async (model, options) => {
+    console.log('afterCreate', model.key, model.get('collection_name'));
     if (model.get('interface') !== 'subTable') {
       return;
     }

@@ -38,6 +38,17 @@ export const createOrUpdate = async (ctx: actions.Context, next: actions.Next) =
       })
     }
     await collection.updateAssociations(values);
+
+    const fields = await collection.getGeneralFields({
+      where: {
+        interface: 'linkTo',
+      }
+    });
+
+    for (const field of fields) {
+      await field.generateReverseField();
+    }
+
     await collection.migrate();
   } catch (error) {
     // console.log('error.errors', error.errors)

@@ -6,6 +6,7 @@ import { cloneDeep, omit } from 'lodash';
 export const create = async (ctx: actions.Context, next: actions.Next) => {
   await actions.common.create(ctx, async () => {});
   const { associated } = ctx.action.params;
+  await ctx.body.generateReverseField();
   await associated.migrate();
   // console.log('associated.migrate');
   await next();

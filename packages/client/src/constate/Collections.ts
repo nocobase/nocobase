@@ -10,6 +10,12 @@ const [CollectionsProvider, useCollectionsContext] = constate(() => {
     findCollection(name) {
       return result?.data?.find((item) => item.name === name);
     },
+    async loadCollections(field: any) {
+      return result?.data?.map((item: any) => ({
+        label: item.title,
+        value: item.name,
+      }));
+    },
     getFieldsByCollection(collectionName) {
       const collection = result?.data?.find((item) => item.name === collectionName);
       return collection?.generalFields;

@@ -46,11 +46,17 @@ export default {
       foreignKey: 'parentKey',
     },
     {
-      interface: 'linkTo',
       type: 'belongsTo',
       name: 'collection',
       target: 'collections',
       targetKey: 'name',
+    },
+    {
+      type: 'belongsTo',
+      name: 'reverseField',
+      target: 'fields',
+      sourceKey: 'key',
+      foreignKey: 'reverseKey',
     },
     {
       type: 'belongsTo',
