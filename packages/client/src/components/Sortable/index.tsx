@@ -76,7 +76,7 @@ export function Droppable(props: DroppableProps) {
   return (
     <Component
       {...others}
-      className={cls(className, `droppable-${id}`, {
+      className={cls(className, `droppable droppable-${id}`, {
         isOver,
       })}
       ref={(el: HTMLElement) => {
@@ -138,7 +138,7 @@ export function SortableItem(props: SortableItemProps) {
     <Component
       {...others}
       // {...attributes}
-      className={cls(className, `droppable-${id}`, {
+      className={cls(className, `droppable droppable-${id}`, {
         isOver,
         isDragging,
       })}

@@ -243,3 +243,19 @@ td.nb-table-operation {
   margin-top: -13px;
   margin-bottom: -13px;
 }
+
+.ant-table-cell {
+  &.droppable.isDragging {
+    opacity: .5;
+    background-color: rgba(241, 139, 98, 0.06) !important;
+  }
+  &.droppable:not(.isDragging).isOver::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    right: 0;
+    height: 100%;
+    width: 2px;
+    background-color: #f18b62;
+  }
+}
