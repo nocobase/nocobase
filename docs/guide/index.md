@@ -13,7 +13,7 @@ Nocude 是一个开源免费的无代码、低代码开发平台。 无论是不
 
 ## 架构
 
-<img src="../nocude.png" style="max-width: 800px;width:100%"/>
+<img src="../nocobase.png" style="max-width: 800px;width:100%"/>
 
 ### 微内核
 

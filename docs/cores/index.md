@@ -1,6 +1,6 @@
 ---
 title: 介绍
-order: 1
+order: 0
 toc: menu
 nav:
   title: 核心
