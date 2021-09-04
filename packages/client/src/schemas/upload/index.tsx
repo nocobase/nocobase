@@ -509,7 +509,7 @@ Upload.Attachment = connect(
                         >
                           {file.imageUrl && (
                             <img
-                              src={file.imageUrl}
+                              src={`${file.imageUrl}?x-oss-process=style/thumbnail`}
                               alt={file.title}
                               className="ant-upload-list-item-image"
                             />
