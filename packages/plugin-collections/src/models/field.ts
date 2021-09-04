@@ -32,10 +32,12 @@ export class Field extends Model {
     if (fields.length) {
       props['children'] = fields;
     }
-    const uiSchema = await this.getUiSchema();
-    if (uiSchema) {
-      // props['uiSchema1'] = uiSchema;
-      props['uiSchema'] = await uiSchema.toJSONSchema();
+    if (this.getUiSchema) {
+      const uiSchema = await this.getUiSchema();
+      if (uiSchema) {
+        // props['uiSchema1'] = uiSchema;
+        props['uiSchema'] = await uiSchema.toJSONSchema();
+      }
     }
     return props;
   }
