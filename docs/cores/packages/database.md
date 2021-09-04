@@ -3,7 +3,7 @@ title: '@nocobase/database'
 order: 1
 # toc: menu
 group: 
-  order: 1
+  order: 10
   title: 核心库
 ---
 
