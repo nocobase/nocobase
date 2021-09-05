@@ -11,6 +11,10 @@ export default async function (this: Application, options = {}) {
   database.import({
     directory: path.resolve(__dirname, 'collections'),
   });
+  this.on('server.beforeStart', async () => {
+    console.log('server.beforeStart');
+    await database.getModel('collections').load();
+  });
   const [Collection, Field] = database.getModels(['collections', 'fields']);
   Field.beforeCreate(async (model) => {
     if (!model.get('name')) {
