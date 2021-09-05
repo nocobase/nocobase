@@ -1,0 +1,9 @@
+{
+  "extends": "../../tsconfig.json",
+  "compilerOptions": {
+    "outDir": "./lib/api"
+  },
+  "include": [
+    "src/api",
+  ]
+}

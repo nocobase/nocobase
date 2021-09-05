@@ -11,6 +11,7 @@
     "@nocobase/actions": "^0.4.0-alpha.7",
     "@nocobase/database": "^0.4.0-alpha.7",
     "@nocobase/resourcer": "^0.4.0-alpha.7",
+    "commander": "^8.1.0",
     "dotenv": "^8.2.0",
     "koa": "^2.13.0",
     "koa-bodyparser": "^4.3.0",

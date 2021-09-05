@@ -1,6 +1,11 @@
 import Koa from 'koa';
 import Database, { DatabaseOptions } from '@nocobase/database';
 import Resourcer from '@nocobase/resourcer';
+import { Command } from 'commander';
+import { actions, middlewares as m } from '@nocobase/actions';
+import cors from '@koa/cors';
+import { dbResourceRouter } from './middlewares';
+import bodyParser from 'koa-bodyparser';
 
 export interface ApplicationOptions {
   database: DatabaseOptions;
@@ -8,11 +13,12 @@ export interface ApplicationOptions {
 }
 
 export class Application extends Koa {
-  // static const EVENT_PLUGINS_LOADED = Symbol('pluginsLoaded');
 
   public readonly database: Database;
 
   public readonly resourcer: Resourcer;
+
+  public readonly cli: Command;
 
   protected plugins = new Map<string, any>();
 
@@ -20,7 +26,60 @@ export class Application extends Koa {
     super();
     this.database = new Database(options.database);
     this.resourcer = new Resourcer();
-    // this.runHook('afterInit');
+    this.cli = new Command();
+
+    this.use(bodyParser());
+    this.use(cors({
+      exposeHeaders: ['content-disposition'],
+    }));
+
+    this.resourcer.registerActionHandlers({ ...actions.common, ...actions.associate });
+
+    this.use(async (ctx, next) => {
+      ctx.db = this.database;
+      ctx.database = this.database;
+      await next();
+    });
+
+    this.resourcer.use(m.associated);
+    this.use(m.dataWrapping);
+
+    this.use(dbResourceRouter({
+      database: this.database,
+      resourcer: this.resourcer,
+      ...(options.resourcer || {}),
+    }));
+
+    this.cli
+      .command('db sync')
+      .option('-f, --force')
+      .action(async (...args) => {
+        const cli = args.pop();
+        await this.database.sync();
+        await this.database.close();
+      });
+
+    this.cli
+      .command('db init')
+      // .option('-f, --force')
+      .action(async (...args) => {
+        const cli = args.pop();
+        await this.emitAsync('db.init');
+        await this.database.close();
+      });
+
+    this.cli
+      .command('start')
+      .option('-p, --port [port]')
+      .action(async (...args) => {
+        const cli = args.pop();
+        console.log(args);
+        const opts = cli.opts();
+        await this.loadPlugins();
+        await this.emitAsync('server.beforeStart');
+        this.listen(opts.port || 3000);
+        console.log(`http://localhost:${opts.port || 3000}/`);
+      });
   }
 
   async emitAsync(event: string | symbol, ...args: any[]): Promise<boolean> {
@@ -108,10 +167,8 @@ export class Application extends Koa {
     await this.emitAsync('plugins.afterLoad');
   }
 
-  async start(port) {
-    await this.loadPlugins();
-    await this.emitAsync('server.beforeStart');
-    this.listen(port);
+  async start(argv = process.argv) {
+    return this.cli.parseAsync(argv);
   }
 
   protected async loadPlugin({ entry, options = {} }: { entry: string | Function, options: any }) {

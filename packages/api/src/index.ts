@@ -18,7 +18,12 @@ import { middlewares } from '@nocobase/server';
   });
 
   const start = Date.now();
-  await api.start(process.env.API_PORT);
+
+  if (process.argv.length < 3) {
+    process.argv.push('start', '--port', process.env.API_PORT);
+  }
+
+  await api.start(process.argv);
   console.log(api.database.getTables().map(t => t.getName()));
   console.log(`Start-up time: ${(Date.now() - start) / 1000}s`);
   console.log(`http://localhost:${process.env.API_PORT}/`);

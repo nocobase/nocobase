@@ -4,7 +4,11 @@
   "scripts": {
     "start": "concurrently \"cd ../../ && nodemon\" \"umi dev\"",
     "start-client": "umi dev",
-    "build": "umi build",
+    "start-server": "nodemon",
+    "build": "npm run build-server && npm run build-client",
+    "build-client": "umi build",
+    "nocobase": "cross-env TS_NODE_PROJECT=\"tsconfig.api.json\" ts-node ./src/api/index.ts",
+    "build-server": "rimraf -rf lib && tsc --project tsconfig.api.json",
     "postinstall": "umi generate tmp",
     "prettier": "prettier --write '**/*.{js,jsx,tsx,ts,less,md,json}'",
     "test": "umi-test",
@@ -31,10 +35,13 @@
     "@types/react-dom": "^17.0.0",
     "@umijs/test": "^3.4.15",
     "concurrently": "^5.3.0",
+    "cross-env": "^7.0.3",
     "mockjs": "^1.1.0",
+    "nodemon": "^2.0.12",
     "prettier": "^2.2.0",
     "react": "17.x",
     "react-dom": "17.x",
+    "ts-node": "^10.2.1",
     "yorkie": "^2.0.0"
   }
 }
