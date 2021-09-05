@@ -1,14 +1,13 @@
 import Server from '@nocobase/server';
+import dotenv from 'dotenv';
+import path from 'path';
 
-// @ts-ignore
-const sync = global.sync || {
-  force: false,
-  alter: {
-    drop: false,
-  },
-};
+const start = Date.now();
+console.log('startAt', new Date().toUTCString());
 
-console.log('process.env.NOCOBASE_ENV', process.env.NOCOBASE_ENV);
+dotenv.config({
+  path: path.resolve(__dirname, '../../../../.env'),
+});
 
 const api = new Server({
   database: {
@@ -30,7 +29,12 @@ const api = new Server({
     },
     logging: process.env.DB_LOG_SQL === 'on' ? console.log : false,
     define: {},
-    sync,
+    sync: {
+      force: false,
+      alter: {
+        drop: false,
+      },
+    },
   },
   resourcer: {
     prefix: '/api',
@@ -47,12 +51,21 @@ const plugins = [
   '@nocobase/plugin-permissions',
   '@nocobase/plugin-export',
   '@nocobase/plugin-system-settings',
-  // // '@nocobase/plugin-automations',
+  // '@nocobase/plugin-automations',
   '@nocobase/plugin-china-region',
 ];
 
 for (const plugin of plugins) {
-  api.registerPlugin(plugin, [require(`${plugin}/${__filename.endsWith('.ts') ? 'src' : 'lib'}/server`).default]);
+  api.registerPlugin(plugin, [
+    require(`${plugin}/${__filename.endsWith('.ts') ? 'src' : 'lib'}/server`)
+      .default,
+  ]);
 }
 
-export default api;
+if (process.argv.length < 3) {
+  process.argv.push('start', '--port', '2000');
+}
+
+api.start(process.argv).then(() => {
+  console.log(`Start-up time: ${(Date.now() - start) / 1000}s`);
+});
