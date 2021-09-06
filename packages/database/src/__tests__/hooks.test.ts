@@ -122,7 +122,7 @@ describe('hooks', () => {
     expect(test.get('arr')).toEqual([1, 2]);
   });
 
-  it.only('add hook in custom field', async () => {
+  it('add hook in custom field', async () => {
     const table = db.table({
       name: 'test3',
       fields: [
@@ -210,5 +210,62 @@ describe('hooks', () => {
     Test3 = db.getModel('test3');
     const test = await Test3.create({});
     expect(test.get('arr')).toEqual([3, 5, 1, 4, 6, 2]);
+  });
+
+  it('event emitter', async () => {
+    const table = db.table({
+      name: 'test',
+      fields: [
+        {
+          type: 'json',
+          name: 'arr',
+          defaultValue: [],
+        },
+      ],
+    });
+    db.table({
+      name: 'test2',
+      fields: [
+        {
+          type: 'json',
+          name: 'arr',
+          defaultValue: [],
+        },
+      ],
+    });
+    await db.sync();
+    const arr = [];
+    db.on('afterCreate', async function abc1(...args) {
+      return new Promise((resolve) => {
+        setTimeout(() => {
+          console.log('db.on.afterCreate')
+          arr.push(1);
+          resolve();
+        }, 200);
+      });
+    });
+    db.on('test.afterCreate', async function abc2(model, options) {
+      return new Promise((resolve) => {
+        setTimeout(() => {
+          console.log('db.on.test.afterCreate')
+          arr.push(2);
+          resolve();
+        }, 100);
+      });
+    });
+    db.on('test2.afterCreate', async (model, options) => {
+      return new Promise((resolve) => {
+        setTimeout(() => {
+          console.log('db.on.test2.afterCreate')
+          arr.push(3);
+          resolve();
+        }, 100);
+      });
+    });
+    const Test2 = db.getModel('test2');
+    await Test2.create();
+    const Test1 = db.getModel('test');
+    await Test1.create();
+    expect(arr).toEqual([3,1,2,1]);
   });
 });

@@ -8,6 +8,7 @@ import Table, { MergeOptions, TableOptions } from './table';
 import { Model, ModelCtor } from './model';
 import { requireModule } from './utils';
 import _ from 'lodash';
+import { EventEmitter } from 'events';
 
 export interface SyncOptions extends SequelizeSyncOptions {
 
@@ -48,7 +49,7 @@ export function extend(tableOptions: TableOptions, mergeOptions: MergeOptions = 
   return new Extend(tableOptions, mergeOptions);
 }
 
-export default class Database {
+export default class Database extends EventEmitter {
 
   public readonly sequelize: Sequelize;
 
@@ -70,9 +71,138 @@ export default class Database {
 
   protected extTableOptions = new Map<string, any>();
 
-  constructor(options: DatabaseOptions) {
+  protected hookTypes = new Set([
+    'beforeValidate',
+    'afterValidate',
+    'validationFailed',
+    'beforeCreate',
+    'afterCreate',
+    'beforeDestroy',
+    'afterDestroy',
+    'beforeRestore',
+    'afterRestore',
+    'beforeUpdate',
+    'afterUpdate',
+    'beforeSave',
+    'afterSave',
+    'beforeUpsert',
+    'afterUpsert',
+    'beforeBulkCreate',
+    'afterBulkCreate',
+    'beforeBulkDestroy',
+    'afterBulkDestroy',
+    'beforeBulkRestore',
+    'afterBulkRestore',
+    'beforeBulkUpdate',
+    'afterBulkUpdate',
+    'beforeFind',
+    'beforeFindAfterExpandIncludeAll',
+    'beforeFindAfterOptions',
+    'afterFind',
+    'beforeCount',
+    'beforeDefine',
+    'afterDefine',
+    'beforeInit',
+    'afterInit',
+    'beforeAssociate',
+    'afterAssociate',
+    'beforeConnect',
+    'afterConnect',
+    'beforeDisconnect',
+    'afterDisconnect',
+    'beforeSync',
+    'afterSync',
+    'beforeBulkSync',
+    'afterBulkSync',
+    'beforeQuery',
+    'afterQuery'
+  ]);
+
+  constructor(options?: DatabaseOptions) {
+    super();
     this.options = options;
     this.sequelize = new Sequelize(options);
+  }
+
+  private _getHookType(event: any) {
+    if (typeof event === 'string') {
+      event = event.split('.');
+    }
+    if (!Array.isArray(event)) {
+      return;
+    }
+    const hookType = [...event].pop();
+    if (!this.hookTypes.has(hookType)) {
+      return;
+    }
+    return hookType;
+  }
+
+  on(event: string | symbol, listener: (...args: any[]) => void) {
+    const hookType = this._getHookType(event);
+    if (hookType) {
+      console.log('sequelize.addHook', hookType)
+      this.sequelize.addHook(hookType, async (model) => {
+        await this.emitAsync(`${model.constructor.name}.${hookType}`);
+        await this.emitAsync(hookType);
+      });
+      this.hookTypes.delete(hookType);
+    }
+    return super.on(event, listener);
+  }
+
+  async emitAsync(event: string | symbol, ...args: any[]): Promise<boolean> {
+    // @ts-ignore
+    const events = this._events;
+    let callbacks = events?.[event];
+    if (!callbacks) {
+      return false;
+    }
+    // helper function to reuse as much code as possible
+    const run = (cb) => {
+      switch (args.length) {
+        // fast cases
+        case 0:
+          cb = cb.call(this);
+          break;
+        case 1:
+          cb = cb.call(this, args[0]);
+          break;
+        case 2:
+          cb = cb.call(this, args[0], args[1]);
+          break;
+        case 3:
+          cb = cb.call(this, args[0], args[1], args[2]);
+          break;
+        // slower
+        default:
+          cb = cb.apply(this, args);
+      }
+
+      if (
+        cb && (
+          cb instanceof Promise ||
+          typeof cb.then === 'function'
+        )
+      ) {
+        return cb;
+      }
+
+      return Promise.resolve(true);
+    };
+
+    if (typeof callbacks === 'function') {
+      await run(callbacks);
+    } else if (typeof callbacks === 'object') {
+      callbacks = callbacks.slice().filter(Boolean);
+      await callbacks.reduce((prev, next) => {
+        return prev.then((res) => {
+          return run(next).then((result) => Promise.resolve(res.concat(result)));
+        });
+      }, Promise.resolve([]));
+    }
+
+    return true;
   }
 
   /**
