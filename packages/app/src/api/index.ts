@@ -41,26 +41,9 @@ const api = new Server({
   },
 });
 
-const plugins = [
-  '@nocobase/plugin-collections',
-  '@nocobase/plugin-ui-router',
-  '@nocobase/plugin-ui-schema',
-  '@nocobase/plugin-users',
-  '@nocobase/plugin-action-logs',
-  '@nocobase/plugin-file-manager',
-  '@nocobase/plugin-permissions',
-  '@nocobase/plugin-export',
-  '@nocobase/plugin-system-settings',
-  // '@nocobase/plugin-automations',
-  '@nocobase/plugin-china-region',
-];
+console.log(`@nocobase/preset-nocobase/${__filename.endsWith('.ts') ? 'src' : 'lib'}/index`);
 
-for (const plugin of plugins) {
-  api.registerPlugin(plugin, [
-    require(`${plugin}/${__filename.endsWith('.ts') ? 'src' : 'lib'}/server`)
-      .default,
-  ]);
-}
+api.registerPlugin('@nocobase/preset-nocobase', require(`@nocobase/preset-nocobase/${__filename.endsWith('.ts') ? 'src' : 'lib'}/index`).default);
 
 if (process.argv.length < 3) {
   process.argv.push('start', '--port', '2000');
