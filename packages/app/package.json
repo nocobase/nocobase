@@ -27,6 +27,7 @@
   },
   "dependencies": {
     "@nocobase/client": "^0.4.0-alpha.7",
+    "@nocobase/preset-nocobase": "^0.4.0-alpha.7",
     "@umijs/preset-react": "1.x",
     "umi": "^3.0.0"
   },
