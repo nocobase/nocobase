@@ -34,7 +34,7 @@ export interface ImportOptions {
 export interface DatabaseOptions extends Options {
 }
 
-export type HookType = 'beforeTableInit' | 'afterTableInit' | 'beforeAddField' | 'afterAddField';
+// export type HookType = 'beforeTableInit' | 'afterTableInit' | 'beforeAddField' | 'afterAddField';
 
 export class Extend {
   tableOptions: TableOptions;
@@ -49,7 +49,41 @@ export function extend(tableOptions: TableOptions, mergeOptions: MergeOptions = 
   return new Extend(tableOptions, mergeOptions);
 }
 
-export default class Database extends EventEmitter {
+type HookType =
+  'beforeValidate' |
+  'afterValidate' |
+  'beforeCreate' |
+  'afterCreate' |
+  'beforeDestroy' |
+  'afterDestroy' |
+  'beforeRestore' |
+  'afterRestore' |
+  'beforeUpdate' |
+  'afterUpdate' |
+  'beforeSave' |
+  'afterSave' |
+  'beforeBulkCreate' |
+  'afterBulkCreate' |
+  'beforeBulkDestroy' |
+  'afterBulkDestroy' |
+  'beforeBulkRestore' |
+  'afterBulkRestore' |
+  'beforeBulkUpdate' |
+  'afterBulkUpdate' |
+  'beforeSync' |
+  'afterSync' |
+  'beforeBulkSync' |
+  'afterBulkSync' |
+  'beforeDefine' |
+  'afterDefine' |
+  'beforeInit' |
+  'afterInit' |
+  'beforeConnect' |
+  'afterConnect' |
+  'beforeDisconnect' |
+  'afterDisconnect';
+
+  export default class Database extends EventEmitter {
 
   public readonly sequelize: Sequelize;
 
@@ -71,52 +105,44 @@ export default class Database extends EventEmitter {
 
   protected extTableOptions = new Map<string, any>();
 
-  protected hookTypes = new Set([
-    'beforeValidate',
-    'afterValidate',
-    'validationFailed',
-    'beforeCreate',
-    'afterCreate',
-    'beforeDestroy',
-    'afterDestroy',
-    'beforeRestore',
-    'afterRestore',
-    'beforeUpdate',
-    'afterUpdate',
-    'beforeSave',
-    'afterSave',
-    'beforeUpsert',
-    'afterUpsert',
-    'beforeBulkCreate',
-    'afterBulkCreate',
-    'beforeBulkDestroy',
-    'afterBulkDestroy',
-    'beforeBulkRestore',
-    'afterBulkRestore',
-    'beforeBulkUpdate',
-    'afterBulkUpdate',
-    'beforeFind',
-    'beforeFindAfterExpandIncludeAll',
-    'beforeFindAfterOptions',
-    'afterFind',
-    'beforeCount',
-    'beforeDefine',
-    'afterDefine',
-    'beforeInit',
-    'afterInit',
-    'beforeAssociate',
-    'afterAssociate',
-    'beforeConnect',
-    'afterConnect',
-    'beforeDisconnect',
-    'afterDisconnect',
-    'beforeSync',
-    'afterSync',
-    'beforeBulkSync',
-    'afterBulkSync',
-    'beforeQuery',
-    'afterQuery'
-  ]);
+  protected hookTypes = new Map(Object.entries({
+    beforeValidate: 1,
+    afterValidate: 1,
+    beforeCreate: 1,
+    afterCreate: 1,
+    beforeDestroy: 1,
+    afterDestroy: 1,
+    beforeRestore: 1,
+    afterRestore: 1,
+    beforeUpdate: 1,
+    afterUpdate: 1,
+    beforeSave: 1,
+    afterSave: 1,
+
+    beforeBulkCreate: 2,
+    afterBulkCreate: 2,
+
+    beforeBulkDestroy: 3,
+    afterBulkDestroy: 3,
+    beforeBulkRestore: 3,
+    afterBulkRestore: 3,
+    beforeBulkUpdate: 3,
+    afterBulkUpdate: 3,
+
+    beforeSync: 4,
+    afterSync: 4,
+    beforeBulkSync: 4,
+    afterBulkSync: 4,
+
+    beforeDefine: 0,
+    afterDefine: 0,
+    beforeInit: 0,
+    afterInit: 0,
+    beforeConnect: 0,
+    afterConnect: 0,
+    beforeDisconnect: 0,
+    afterDisconnect: 0,
+  }));
 
   constructor(options?: DatabaseOptions) {
     super();
@@ -138,17 +164,33 @@ export default class Database extends EventEmitter {
     return hookType;
   }
 
-  on(event: string | symbol, listener: (...args: any[]) => void) {
+  on(event: HookType | Omit<string, HookType> | symbol, listener: (...args: any[]) => void) {
     const hookType = this._getHookType(event);
     if (hookType) {
+      const state = this.hookTypes.get(hookType);
       console.log('sequelize.addHook', hookType)
-      this.sequelize.addHook(hookType, async (model) => {
-        await this.emitAsync(`${model.constructor.name}.${hookType}`);
-        await this.emitAsync(hookType);
+      this.sequelize.addHook(hookType, async (...args: any[]) => {
+        let modelName: string;
+        switch (state) {
+          case 1:
+            modelName = args?.[0]?.constructor?.name;
+            break;
+          case 2:
+            modelName = args?.[1]?.model?.name;
+            break;
+          case 3:
+            modelName = args?.[0]?.model?.name;
+            break;
+        }
+        console.log({ modelName, args });
+        if (modelName) {
+          await this.emitAsync(`${modelName}.${hookType}`, ...args);
+        }
+        await this.emitAsync(hookType, ...args);
       });
       this.hookTypes.delete(hookType);
     }
-    return super.on(event, listener);
+    return super.on(event as any, listener);
   }
 
   async emitAsync(event: string | symbol, ...args: any[]): Promise<boolean> {

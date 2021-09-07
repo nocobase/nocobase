@@ -298,9 +298,10 @@ export class PASSWORD extends STRING {
 
   constructor(options: Options.StringOptions, context: FieldContext) {
     super(options, context);
-    const Model = context.sourceTable.getModel();
-    Model.addHook('beforeCreate', PASSWORD.hash.bind(this));
-    Model.addHook('beforeUpdate', PASSWORD.hash.bind(this));
+    const { database, sourceTable } = context;
+    const name = sourceTable.getName();
+    database.on(`${name}.beforeCreate`, PASSWORD.hash.bind(this));
+    database.on(`${name}.beforeUpdate`, PASSWORD.hash.bind(this));
   }
 
   public static async hash(this: PASSWORD, model) {
@@ -361,9 +362,9 @@ export class UID extends Column {
 
   constructor(options: Options.StringOptions, context: FieldContext) {
     super(options, context);
+    const { sourceTable, database } = context;
     const { name, prefix = '' } = options;
-    const Model = context.sourceTable.getModel();
-    Model.addHook('beforeCreate', (model) => {
+    database.on(`${sourceTable.getName()}.beforeCreate`, (model) => {
       if (!model.get(name)) {
         model.set(name, `${prefix}${uid()}`);
       }
@@ -819,10 +820,14 @@ export class SORT extends NUMBER {
 
   constructor(options: Options.SortOptions, context: FieldContext) {
     super(options, context);
-    const Model = context.sourceTable.getModel();
+    // const Model = context.sourceTable.getModel();
     // TODO(feature): 可考虑策略模式，以在需要时对外提供接口
-    Model.addHook('beforeCreate', SORT.beforeCreateHook.bind(this));
-    Model.addHook('beforeBulkCreate', SORT.beforeBulkCreateHook.bind(this));
+    const { database, sourceTable } = context;
+    const name = sourceTable.getName();
+    database.on(`${name}.beforeCreate`, SORT.beforeCreateHook.bind(this));
+    database.on(`${name}.beforeBulkCreate`, SORT.beforeBulkCreateHook.bind(this));
+    // Model.addHook('beforeCreate', SORT.beforeCreateHook.bind(this));
+    // Model.addHook('beforeBulkCreate', SORT.beforeBulkCreateHook.bind(this));
   }
 
   public getDataType(): Function {
@@ -901,15 +906,20 @@ export class Radio extends BOOLEAN {
   }
 
   constructor({ type, ...options }: Options.RadioOptions, context: FieldContext) {
-    super({ ...options, type: 'boolean' }, context);
-    const Model = context.sourceTable.getModel();
+    super({ ...options, type: 'radio' }, context);
+    // const Model = context.sourceTable.getModel();
     // TODO(feature): 可考虑策略模式，以在需要时对外提供接口
-    Model.addHook('beforeCreate', Radio.beforeCreateHook.bind(this));
-    Model.addHook('beforeUpdate', Radio.beforeUpdateHook.bind(this));
-    // Model.addHook('beforeUpsert', beforeSaveHook);
-    Model.addHook('beforeBulkCreate', Radio.beforeBulkCreateHook.bind(this));
+    // Model.addHook('beforeCreate', Radio.beforeCreateHook.bind(this));
+    // Model.addHook('beforeUpdate', Radio.beforeUpdateHook.bind(this));
+    // // Model.addHook('beforeUpsert', beforeSaveHook);
+    // Model.addHook('beforeBulkCreate', Radio.beforeBulkCreateHook.bind(this));
     // TODO(optimize): bulkUpdate 的 hooks 参数不一样，没有对象列表，考虑到很少用，暂时不实现
     // Model.addHook('beforeBulkUpdate', beforeBulkCreateHook);
+    const { database, sourceTable } = context;
+    const name = sourceTable.getName();
+    database.on(`${name}.beforeCreate`, Radio.beforeCreateHook.bind(this));
+    database.on(`${name}.beforeUpdate`, Radio.beforeUpdateHook.bind(this));
+    database.on(`${name}.beforeBulkCreate`, Radio.beforeBulkCreateHook.bind(this));
   }
 
   public getDataType() {

@@ -39,9 +39,13 @@ export function getDatabase() {
       }
     },
     hooks: {
-      beforeDefine(columns, model) {
-        model.tableName = `${getTestKey()}_${model.tableName || model.name.plural}`;
-      }
-    }
+      beforeDefine(model, options) {
+        // @ts-ignore
+        options.tableNamePrefix = `${getTestKey()}_`;
+        // @ts-ignore
+        options.hookModelName = options.tableName;
+        options.tableName = `${getTestKey()}_${options.tableName || options.name.plural}`;
+      },
+    },
   });
 };
