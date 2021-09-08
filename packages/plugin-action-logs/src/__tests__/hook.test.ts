@@ -1,69 +1,66 @@
+import Database from '@nocobase/database';
+import Application from '@nocobase/server';
 import { getApp, getAPI, getAgent } from '.';
 
 describe('hook', () => {
-  let app;
-  let anonymousAPI;
-  let userAPI;
-  let db;
-  let user;
+  let app: Application;
+  let db: Database;
+  let api;
 
   beforeEach(async () => {
     app = await getApp();
     db = app.database;
-
-    anonymousAPI = getAPI(getAgent(app));
-
+    db.table({
+      name: 'posts',
+      logging: true,
+      fields: [
+        {
+          type: 'string',
+          name: 'title',
+        },
+        {
+          type: 'string',
+          name: 'status',
+          defaultValue: 'draft',
+        },
+      ]
+    });
+    await db.sync();
     const User = db.getModel('users');
-    user = await User.create({ nickname: 'a', token: 'token1' });
-
+    const user = await User.create({ nickname: 'a', token: 'token1' });
+    console.log('beforeEach', user);
     const userAgent = getAgent(app);
     userAgent.set('Authorization', `Bearer ${user.token}`);
-    userAPI = getAPI(userAgent);
+    api = getAPI(userAgent);
   });
 
-  afterEach(() => db.close());
+  afterEach(async () => {
+    await db.close();
+  });
 
-  describe('common', () => {
-    it('create log', async () => {
-      await userAPI.resource('posts').create({
-        values: { title: 't1' }
-      });
+  it('database', async () => {
+    const Post = db.getModel('posts');
+    const post = await Post.create({ title: 't1' });
+    await post.update({title: 't2'});
+    await post.destroy();
+    const ActionLog = db.getModel('action_logs');
+    const count = await ActionLog.count();
+    expect(count).toBe(3);
+  });
 
-      const Post = db.getModel('posts');
-      const p1 = await Post.findByPk(1);
-
-      const logs = await p1.getAction_logs();
-
-      expect(logs.length).toBe(1);
-      expect(logs[0].get()).toMatchObject({
-        type: 'create',
-        index: p1.id,
-        user_id: user.id,
-        collection_name: 'posts'
-      });
+  it('resource', async () => {
+    const response = await api.resource('posts').create({
+      values: { title: 't1' },
     });
-
-    it('logs should be scoped (no other model logs)', async () => {
-      await userAPI.resource('posts').create({
-        values: { title: 't1' }
-      });
-      await userAPI.resource('posts').update({
-        resourceKey: '1',
-        values: { title: 't11' }
-      });
-      await userAPI.resource('posts').create({
-        values: { title: 't2' }
-      });
-      await userAPI.resource('comments').create({
-        values: { content: 'c1' }
-      });
-
-      const Post = db.getModel('posts');
-      const p1 = await Post.findByPk(1);
-
-      const logs = await p1.getAction_logs();
-      expect(logs.length).toBe(2);
-      expect(logs.map(item => item.collection_name)).toEqual(['posts', 'posts']);
+    await api.resource('posts').update({
+      resourceKey: response.body.data.id,
+      values: { title: 't2' },
     });
+    await api.resource('posts').destroy({
+      resourceKey: response.body.data.id,
+    });
+    const ActionLog = db.getModel('action_logs');
+    const count = await ActionLog.count();
+    expect(count).toBe(3);
   });
 });
