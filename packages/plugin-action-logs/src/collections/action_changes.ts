@@ -12,6 +12,7 @@ export default {
       type: 'belongsTo',
       name: 'log',
       target: 'action_logs',
+      foreignKey: 'log_id',
     },
     {
       type: 'jsonb',

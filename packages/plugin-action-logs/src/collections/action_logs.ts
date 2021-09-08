@@ -22,6 +22,7 @@ export default {
       name: 'collection',
       target: 'collections',
       targetKey: 'name',
+      constraints: false,
     },
     {
       type: 'string',
@@ -35,6 +36,7 @@ export default {
       type: 'hasMany',
       name: 'changes',
       target: 'action_changes',
+      foreignKey: 'log_id',
     }
   ],
 } as TableOptions;

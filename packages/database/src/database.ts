@@ -168,7 +168,7 @@ type HookType =
     const hookType = this._getHookType(event);
     if (hookType) {
       const state = this.hookTypes.get(hookType);
-      console.log('sequelize.addHook', hookType)
+      console.log('sequelize.addHook', event, hookType)
       this.sequelize.addHook(hookType, async (...args: any[]) => {
         let modelName: string;
         switch (state) {
@@ -182,7 +182,7 @@ type HookType =
             modelName = args?.[0]?.model?.name;
             break;
         }
-        console.log({ modelName, args });
+        // console.log({ modelName, args });
         if (modelName) {
           await this.emitAsync(`${modelName}.${hookType}`, ...args);
         }
