@@ -12,18 +12,18 @@ export default {
       type: 'belongsTo',
       name: 'log',
       target: 'action_logs',
-      foreignKey: 'log_id',
+      foreignKey: 'action_log_id',
     },
     {
-      type: 'jsonb',
+      type: 'json',
       name: 'field',
     },
     {
-      type: 'jsonb',
+      type: 'json',
       name: 'before',
     },
     {
-      type: 'jsonb',
+      type: 'json',
       name: 'after',
     }
   ],

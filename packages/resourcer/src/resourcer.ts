@@ -10,7 +10,6 @@ import _ from 'lodash';
 export interface ResourcerContext {
   resourcer?: Resourcer;
   action?: Action;
-  params?: ParsedParams;
   [key: string]: any;
 }
 
