@@ -1,7 +1,7 @@
 import { mockServer, MockServer } from '@nocobase/test';
 import { registerActions } from '..';
 
-describe('add', () => {
+describe('toggle', () => {
   let api: MockServer;
 
   beforeEach(async () => {
@@ -15,7 +15,7 @@ describe('add', () => {
     return api.destroy();
   });
 
-  it('add', async () => {
+  it('toggle', async () => {
     
   });
 });

@@ -1,8 +1,39 @@
 import qs from 'qs';
 import supertest from 'supertest';
 import Application, { ApplicationOptions } from '@nocobase/server';
-import { ActionParams } from '@nocobase/resourcer';
 import { getConfig } from './mockDatabase';
+
+interface ActionParams {
+  fields?: string[] | {
+    only?: string[];
+    except?: string[];
+    appends?: string[];
+  };
+  filter?: any;
+  sort?: string[];
+  page?: number;
+  perPage?: number;
+  values?: any;
+  resourceName?: string;
+  resourceKey?: string;
+  associatedName?: string;
+  associatedKey?: string;
+  [key: string]: any;
+}
+
+interface SortActionParams {
+  resourceName?: string;
+  resourceKey?: any;
+  associatedName?: string;
+  associatedKey?: any;
+  sourceId?: any;
+  targetId?: any;
+  sortField?: string;
+  method?: string;
+  target?: any;
+  sticky?: boolean;
+  [key: string]: any;
+}
 
 interface Resource {
   get: (params?: ActionParams) => Promise<supertest.Response>;
@@ -10,12 +41,19 @@ interface Resource {
   create: (params?: ActionParams) => Promise<supertest.Response>;
   update: (params?: ActionParams) => Promise<supertest.Response>;
   destroy: (params?: ActionParams) => Promise<supertest.Response>;
+  sort: (params?: SortActionParams) => Promise<supertest.Response>;
   [name: string]: (params?: ActionParams) => Promise<supertest.Response>;
 }
 
 export class MockServer extends Application {
+
+  protected agentInstance: supertest.SuperAgentTest;
+
   agent() {
-    return supertest.agent(this.callback());
+    if (!this.agentInstance) {
+      this.agentInstance = supertest.agent(this.callback());
+    }
+    return this.agentInstance;
   }
 
   resource(name: string) {
@@ -34,7 +72,7 @@ export class MockServer extends Application {
           } = params;
           let url = prefix;
           if (keys.length > 1) {
-            url = `/${keys[0]}/${associatedKey}/${keys[1]}}`
+            url = `/${keys[0]}/${associatedKey}/${keys[1]}`
           } else {
             url = `/${name}`;
           }

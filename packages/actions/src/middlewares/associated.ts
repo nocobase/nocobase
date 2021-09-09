@@ -1,4 +1,4 @@
-import { Context, Next } from '../actions';
+import { Context, Next } from '..';
 import { Action } from '@nocobase/resourcer';
 import { HASONE, HASMANY, BELONGSTO, BELONGSTOMANY } from '@nocobase/database';
 

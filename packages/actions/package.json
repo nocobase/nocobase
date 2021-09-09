@@ -11,8 +11,7 @@
     "@nocobase/resourcer": "^0.4.0-alpha.7"
   },
   "devDependencies": {
-    "koa": "^2.13.0",
-    "sequelize": "^6.3.4"
+    "@nocobase/test": "^0.4.0-alpha.7"
   },
   "repository": {
     "type": "git",

@@ -1,91 +1,57 @@
-import { initDatabase, agent } from './index';
+import { mockServer, MockServer } from '@nocobase/test';
+import { registerActions } from '..';
 
 describe('get', () => {
-  let db;
+  let api: MockServer;
 
   beforeEach(async () => {
-    db = await initDatabase();
-  });
-
-  afterAll(() => db.close());
-
-  it('common1', async () => {
-    const Post = db.getModel('posts');
-    const post = await Post.create({
-      title: 'title11112222'
+    api = mockServer({
+      dataWrapping: false,
     });
-    const response = await agent
-      .get(`/posts/${post.id}`);
-    expect(response.body.title).toBe('title11112222');
-  });
-
-  it('hasOne1', async () => {
-    const User = db.getModel('users');
-    const user = await User.create();
-    const response = await agent
-      .get(`/users/${user.id}/profile?fields=email`);
-    expect(response.body).toEqual({});
-  });
-
-  it('hasOne2', async () => {
-    const User = db.getModel('users');
-    const user = await User.create();
-    await user.updateAssociations({
-      profile: {
-        email: 'email1',
-      },
-    });
-    const response = await agent
-      .get(`/users/${user.id}/profile?fields=email`);
-    expect(response.body).toEqual({ email: 'email1' });
-  });
-
-  it('hasMany1', async () => {
-    const Post = db.getModel('posts');
-    const post = await Post.create();
-    await post.updateAssociations({
-      comments: [
-        { content: 'content111222' },
+    registerActions(api);
+    api.database.table({
+      name: 'posts',
+      fields: [
+        { type: 'string', name: 'title' },
+        { type: 'hasMany', name: 'comments' },
       ],
     });
-    const [comment] = await post.getComments();
-    const response = await agent
-      .get(`/posts/${post.id}/comments/${comment.id}`);
-    expect(response.body.post_id).toBe(post.id);
-    expect(response.body.content).toBe('content111222');
-  });
-
-  it('belongsTo1', async () => {
-    const Post = db.getModel('posts');
-    const post = await Post.create();
-    const response = await agent
-      .get(`/posts/${post.id}/user?fields=name`);
-    expect(response.body).toEqual({});
-  });
-
-  it('belongsTo2', async () => {
-    const Post = db.getModel('posts');
-    const post = await Post.create();
-    await post.updateAssociations({
-      user: { name: 'name121234' },
-    });
-    const response = await agent
-      .get(`/posts/${post.id}/user?fields=name`);
-    expect(response.body).toEqual({ name: 'name121234' });
-  });
-
-  it('belongsToMany', async () => {
-    const Post = db.getModel('posts');
-    const post = await Post.create();
-    await post.updateAssociations({
-      tags: [
-        { name: 'tag112233' },
+    api.database.table({
+      name: 'comments',
+      fields: [
+        { type: 'string', name: 'content' },
       ],
     });
-    const [tag] = await post.getTags();
-    const response = await agent
-      .get(`/posts/${post.id}/tags/${tag.id}?fields=name,posts.id`);
-    expect(response.body.posts[0].id).toBe(post.id);
-    expect(response.body.name).toBe('tag112233');
+    await api.database.sync();
+  });
+
+  afterEach(async () => {
+    return api.destroy();
+  });
+
+  it('get', async () => {
+    const Post = api.database.getModel('posts');
+    const post = await Post.create({ title: 't1' });
+    const response = await api.resource('posts').get({
+      resourceKey: post.id,
+      fields: ['id', 'title']
+    });
+    expect(post.toJSON()).toMatchObject(response.body);
+  });
+
+  it('get associations', async () => {
+    const [Post, Comment] = api.database.getModels(['posts', 'comments']);
+    const post = await Post.create();
+    const comment = await Comment.create({ content: 'c2' });
+    await post.updateAssociations({
+      comments: [comment]
+    });
+    const response = await api.resource('posts.comments').get({
+      resourceKey: comment.id,
+      associatedKey: post.id,
+      fields: ['id', 'post_id', 'content']
+    });
+    const comment2 = await Comment.findByPk(comment.id);
+    expect(comment2.toJSON()).toMatchObject(response.body);
   });
 });
