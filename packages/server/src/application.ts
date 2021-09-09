@@ -1,19 +1,24 @@
 import Koa from 'koa';
+import cors from '@koa/cors';
+import bodyParser from 'koa-bodyparser';
+import { Command } from 'commander';
 import Database, { DatabaseOptions } from '@nocobase/database';
 import Resourcer from '@nocobase/resourcer';
-import { Command } from 'commander';
-import { actions, middlewares as m } from '@nocobase/actions';
-import cors from '@koa/cors';
-import { dbResourceRouter } from './middlewares';
-import bodyParser from 'koa-bodyparser';
+import { dataWrapping, table2resource } from './middlewares';
+
+export interface ResourcerOptions {
+  prefix?: string;
+}
 
 export interface ApplicationOptions {
-  database: DatabaseOptions;
-  resourcer?: any;
+  database?: DatabaseOptions;
+  resourcer?: ResourcerOptions;
+  bodyParser?: any;
+  cors?: any;
+  dataWrapping?: boolean;
 }
 
 export class Application extends Koa {
-
   public readonly database: Database;
 
   public readonly resourcer: Resourcer;
@@ -24,31 +29,37 @@ export class Application extends Koa {
 
   constructor(options: ApplicationOptions) {
     super();
+
     this.database = new Database(options.database);
-    this.resourcer = new Resourcer();
+    this.resourcer = new Resourcer({ ...options.resourcer });
     this.cli = new Command();
 
-    this.use(bodyParser());
-    this.use(cors({
-      exposeHeaders: ['content-disposition'],
-    }));
+    this.use(
+      bodyParser({
+        ...options.bodyParser,
+      }),
+    );
 
-    this.resourcer.registerActionHandlers({ ...actions.common, ...actions.associate });
+    this.use(
+      cors({
+        exposeHeaders: ['content-disposition'],
+        ...options.cors,
+      }),
+    );
 
     this.use(async (ctx, next) => {
       ctx.db = this.database;
       ctx.database = this.database;
+      ctx.resourcer = this.resourcer;
       await next();
     });
 
-    this.resourcer.use(m.associated);
-    this.use(m.dataWrapping);
+    if (options.dataWrapping !== false) {
+      this.use(dataWrapping);
+    }
 
-    this.use(dbResourceRouter({
-      database: this.database,
-      resourcer: this.resourcer,
-      ...(options.resourcer || {}),
-    }));
+    this.use(table2resource);
+    this.use(this.resourcer.restApiMiddleware());
 
     this.cli
       .command('db sync')
@@ -65,7 +76,7 @@ export class Application extends Koa {
       .action(async (...args) => {
         const cli = args.pop();
         await this.emitAsync('db.init');
-        await this.database.close();
+        await this.destroy();
       });
 
     this.cli
@@ -110,12 +121,7 @@ export class Application extends Koa {
           cb = cb.apply(this, args);
       }
 
-      if (
-        cb && (
-          cb instanceof Promise ||
-          typeof cb.then === 'function'
-        )
-      ) {
+      if (cb && (cb instanceof Promise || typeof cb.then === 'function')) {
         return cb;
       }
 
@@ -128,7 +134,9 @@ export class Application extends Koa {
       callbacks = callbacks.slice().filter(Boolean);
       await callbacks.reduce((prev, next) => {
         return prev.then((res) => {
-          return run(next).then((result) => Promise.resolve(res.concat(result)));
+          return run(next).then((result) =>
+            Promise.resolve(res.concat(result)),
+          );
         });
       }, Promise.resolve([]));
     }
@@ -153,11 +161,6 @@ export class Application extends Koa {
     }
   }
 
-  getPluginInstance(key: string) {
-    const plugin = this.plugins.get(key);
-    return plugin && plugin.instance;
-  }
-
   async loadPlugins() {
     await this.emitAsync('plugins.beforeLoad');
     const allPlugins = this.plugins.values();
@@ -171,15 +174,26 @@ export class Application extends Koa {
     return this.cli.parseAsync(argv);
   }
 
-  protected async loadPlugin({ entry, options = {} }: { entry: string | Function, options: any }) {
+  async destroy() {
+    await this.database.close()
+  }
+
+  protected async loadPlugin({
+    entry,
+    options = {},
+  }: {
+    entry: string | Function;
+    options: any;
+  }) {
     let main: any;
     if (typeof entry === 'function') {
       main = entry;
     } else if (typeof entry === 'string') {
-      const pathname = `${entry}/${__filename.endsWith('.ts') ? 'src' : 'lib'}/server`;
+      const pathname = `${entry}/${__filename.endsWith('.ts') ? 'src' : 'lib'
+        }/server`;
       main = require(pathname).default;
     }
-    return main && await main.call(this, options);
+    return main && (await main.call(this, options));
   }
 }
 
