@@ -152,32 +152,6 @@ describe('koa middleware', () => {
     expect(response.body.arr).toEqual([3, 4]);
   });
 
-  it('shound work', async () => {
-    const app = new Koa();
-    const resourcer = new Resourcer();
-    const agent = supertest.agent(app.callback());
-
-    resourcer.define({
-      name: 'tables#fields',
-      actions: {
-        async list(ctx, next) {
-          ctx.body = ctx.body || {};
-          ctx.body.arr = ctx.body.arr || [];
-          ctx.body.arr.push(3);
-          await next();
-          ctx.body.arr.push(4);
-        },
-      }
-    });
-
-    app.use(resourcer.middleware({
-      nameRule: ({ resourceName, associatedName }) => associatedName ? `${associatedName}#${resourceName}` : resourceName,
-    }));
-
-    const response = await agent.get('/tables/demos/fields');
-    expect(response.body.arr).toEqual([3, 4]);
-  });
-
   describe('action options', () => {
     let resourcer: Resourcer;
     let app: Koa;

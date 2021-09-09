@@ -29,11 +29,51 @@ export interface KoaMiddlewareOptions {
   nameRule?: (params: ParsedParams) => string;
 
   /**
-   * 上下文中的 key - ctx[paramsKey]
+   * 自定义 action name
    * 
-   * 可以单独配置 paramsKey，默认为 params
+   * 默认为
+   * 
+   * - list 查看列表
+   * - create 新增数据
+   * - get 查看数据详情
+   * - update 更新数据
+   * - delete 删除数据
    */
-  paramsKey?: string;
+  accessors?: {
+
+    /**
+     * 查看列表
+     */
+    list?: string;
+
+    /**
+     * 新增数据
+     */
+    create?: string;
+
+    /**
+     * 查看数据详情
+     */
+    get?: string;
+
+    /**
+     * 更新数据
+     */
+    update?: string;
+
+    /**
+     * 删除数据
+     */
+    delete?: string;
+  };
+}
+
+export interface ResourcerOptions {
+
+  /**
+   * 前缀
+   */
+  prefix?: string;
 
   /**
    * 自定义 action name
@@ -127,9 +167,13 @@ export class Resourcer {
 
   protected middlewareHandlers = new Map<string, any>();
 
-  protected paramsKey = 'params';
-
   protected middlewares = [];
+
+  public readonly options: ResourcerOptions;
+
+  constructor(options: ResourcerOptions = {}) {
+    this.options = options;
+  }
 
   /**
    * 载入指定目录下的 resource 配置（配置的文件驱动）
@@ -174,6 +218,14 @@ export class Resourcer {
     return this.resources.has(name);
   }
 
+  registerAction(name: ActionName, handler: HandlerType) {
+    this.registerActionHandler(name, handler);
+  }
+
+  registerActions(handlers: Handlers) {
+    this.registerActionHandlers(handlers);
+  }
+
   /**
    * 注册全局的 action handlers
    * 
@@ -212,10 +264,6 @@ export class Resourcer {
     return this.getResource(name).getAction(action);
   }
 
-  getParamsKey() {
-    return this.paramsKey;
-  }
-
   getMiddlewares() {
     return this.middlewares;
   }
@@ -228,48 +276,40 @@ export class Resourcer {
     }
   }
 
-  middleware(options: KoaMiddlewareOptions = {}) {
-    const { prefix, accessors, paramsKey = 'params', nameRule = getNameByParams } = options;
-    return async (ctx: ResourcerContext, next: () => Promise<any>) => {
+  restApiMiddleware(options: KoaMiddlewareOptions = {}) {
+    const { prefix, accessors } = options;
+    const restApiMiddleware = async (ctx: ResourcerContext, next: () => Promise<any>) => {
       ctx.resourcer = this;
       let params = parseRequest({
         path: ctx.request.path,
         method: ctx.request.method,
       }, {
-        prefix,
-        accessors,
+        prefix: this.options.prefix || prefix,
+        accessors: this.options.accessors || accessors,
       });
       if (!params) {
         return next();
       }
       try {
-        const resource = this.getResource(nameRule(params));
+        const resource = this.getResource(getNameByParams(params));
         // 为关系资源时，暂时需要再执行一遍 parseRequest
-        if (resource.options.type !== 'single') {
+        if (resource.options.type && resource.options.type !== 'single') {
           params = parseRequest({
             path: ctx.request.path,
             method: ctx.request.method,
             type: resource.options.type,
           }, {
-            prefix,
-            accessors,
+            prefix: this.options.prefix || prefix,
+            accessors: this.options.accessors || accessors,
           });
           if (!params) {
             return next();
           }
         }
         // action 需要 clone 之后再赋给 ctx
-        ctx.action = this.getAction(nameRule(params), params.actionName).clone();
+        ctx.action = this.getAction(getNameByParams(params), params.actionName).clone();
         ctx.action.setContext(ctx);
         const query = parseQuery(ctx.request.querystring);
-        // 兼容 ctx.params 的处理，之后的版本里会去掉
-        ctx[paramsKey] = {
-          table: params.resourceName,
-          tableKey: params.resourceKey,
-          relatedTable: params.associatedName,
-          relatedKey: params.resourceKey,
-          action: params.actionName,
-        };
         if (pathToRegexp('/resourcer/{:associatedName.}?:resourceName{\\::actionName}').test(ctx.request.path)) {
           await ctx.action.mergeParams({
             ...query,
@@ -287,7 +327,12 @@ export class Resourcer {
       } catch (error) {
         return next();
       }
-    }
+    };
+    return restApiMiddleware;
+  }
+
+  middleware(options: KoaMiddlewareOptions = {}) {
+    return this.restApiMiddleware(options);
   }
 
   /**
