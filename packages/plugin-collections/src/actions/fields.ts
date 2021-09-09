@@ -1,10 +1,7 @@
-import { Model, ModelCtor } from '@nocobase/database';
-import { actions, middlewares } from '@nocobase/actions';
-import { sort } from '@nocobase/actions/src/actions/common';
-import { cloneDeep, omit } from 'lodash';
+import { actions, Context, Next } from '@nocobase/actions';
 
-export const create = async (ctx: actions.Context, next: actions.Next) => {
-  await actions.common.create(ctx, async () => {});
+export const create = async (ctx: Context, next: Next) => {
+  await actions.create(ctx, async () => {});
   const { associated } = ctx.action.params;
   await ctx.body.generateReverseField();
   await associated.migrate();

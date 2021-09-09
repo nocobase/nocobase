@@ -221,7 +221,8 @@ export type ColumnOptions = AbstractFieldOptions
   | JsonOptions
   | VirtualOptions
   | FormulaOptions
-  | ReferenceOptions;
+  | ReferenceOptions 
+  | SortOptions;
 
 export type ElementOptions = BooleanOptions
   | IntegerOptions
@@ -236,7 +237,8 @@ export type ElementOptions = BooleanOptions
   | DateOnlyOptions
   | ArrayOptions
   | JsonOptions
-  | VirtualOptions;
+  | VirtualOptions
+  | SortOptions;
 
 export type RelationOptions = HasOneOptions | HasManyOptions | BelongsToOptions | BelongsToManyOptions;
 

@@ -18,12 +18,16 @@ export default {
       target: 'users',
     },
     {
-      type: 'belongsTo',
-      name: 'collection',
-      target: 'collections',
-      targetKey: 'name',
-      constraints: false,
+      type: 'string',
+      name: 'collection_name',
     },
+    // {
+    //   type: 'belongsTo',
+    //   name: 'collection',
+    //   target: 'collections',
+    //   targetKey: 'name',
+    //   constraints: false,
+    // },
     {
       type: 'string',
       name: 'type',
@@ -36,7 +40,7 @@ export default {
       type: 'hasMany',
       name: 'changes',
       target: 'action_changes',
-      foreignKey: 'log_id',
+      foreignKey: 'action_log_id',
     }
   ],
 } as TableOptions;

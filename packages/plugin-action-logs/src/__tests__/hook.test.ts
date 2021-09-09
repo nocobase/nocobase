@@ -1,15 +1,22 @@
 import Database from '@nocobase/database';
-import Application from '@nocobase/server';
-import { getApp, getAPI, getAgent } from '.';
+import { registerActions } from '@nocobase/actions';
+import { mockServer, MockServer } from '@nocobase/test';
+import logPlugin from '../server';
 
 describe('hook', () => {
-  let app: Application;
+  let api: MockServer;
   let db: Database;
-  let api;
 
   beforeEach(async () => {
-    app = await getApp();
-    db = app.database;
+    api = mockServer();
+    api.registerPlugin({
+      collections: require('@nocobase/plugin-collections/src/server').default,
+      users: require('@nocobase/plugin-users/src/server').default,
+      logs: logPlugin,
+    });
+    registerActions(api);
+    await api.loadPlugins();
+    db = api.database;
     db.table({
       name: 'posts',
       logging: true,
@@ -28,14 +35,11 @@ describe('hook', () => {
     await db.sync();
     const User = db.getModel('users');
     const user = await User.create({ nickname: 'a', token: 'token1' });
-    console.log('beforeEach', user);
-    const userAgent = getAgent(app);
-    userAgent.set('Authorization', `Bearer ${user.token}`);
-    api = getAPI(userAgent);
+    api.agent().set('Authorization', `Bearer ${user.token}`);
   });
 
   afterEach(async () => {
-    await db.close();
+    await api.destroy();
   });
 
   it('database', async () => {

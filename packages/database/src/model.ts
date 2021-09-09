@@ -530,7 +530,7 @@ export abstract class Model extends SequelizeModel {
       });
     }
 
-    await this.database.runHooks('afterUpdateAssociations', this, {
+    await this.database.emitAsync('afterUpdateAssociations', this, {
       ...options,
       transaction,
     });

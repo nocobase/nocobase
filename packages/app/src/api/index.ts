@@ -1,9 +1,10 @@
 import Server from '@nocobase/server';
+import { registerActions } from '@nocobase/actions';
 import dotenv from 'dotenv';
 import path from 'path';
 
 const start = Date.now();
-console.log('startAt', new Date().toUTCString());
+console.log('starting... ', new Date().toUTCString());
 
 dotenv.config({
   path: path.resolve(__dirname, '../../../../.env'),
@@ -39,11 +40,17 @@ const api = new Server({
   resourcer: {
     prefix: '/api',
   },
+  dataWrapping: true,
 });
 
-console.log(`@nocobase/preset-nocobase/${__filename.endsWith('.ts') ? 'src' : 'lib'}/index`);
+registerActions(api);
 
-api.registerPlugin('@nocobase/preset-nocobase', require(`@nocobase/preset-nocobase/${__filename.endsWith('.ts') ? 'src' : 'lib'}/index`).default);
+const file = `${__filename.endsWith('.ts') ? 'src' : 'lib'}/index`;
+
+api.registerPlugin(
+  '@nocobase/preset-nocobase',
+  require(`@nocobase/preset-nocobase/${file}`).default,
+);
 
 if (process.argv.length < 3) {
   process.argv.push('start', '--port', '2000');

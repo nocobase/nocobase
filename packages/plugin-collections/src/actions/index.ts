@@ -1,9 +1,6 @@
-import { Model, ModelCtor } from '@nocobase/database';
-import { actions, middlewares } from '@nocobase/actions';
-import { sort } from '@nocobase/actions/src/actions/common';
-import { cloneDeep, omit } from 'lodash';
+import { actions, Context, Next } from '@nocobase/actions';
 
-export const findAll = async (ctx: actions.Context, next: actions.Next) => {
+export const findAll = async (ctx: Context, next: Next) => {
   const Collection = ctx.db.getModel('collections');
   const collections = await Collection.findAll(Collection.parseApiJson({
     sort: 'sort',
@@ -16,7 +13,7 @@ export const findAll = async (ctx: actions.Context, next: actions.Next) => {
   await next();
 }
 
-export const createOrUpdate = async (ctx: actions.Context, next: actions.Next) => {
+export const createOrUpdate = async (ctx: Context, next: Next) => {
   const { values } = ctx.action.params;
   const Collection = ctx.db.getModel('collections');
   let collection;
@@ -55,4 +52,5 @@ export const createOrUpdate = async (ctx: actions.Context, next: actions.Next) =
     throw error;
   }
   ctx.body = collection;
+  await next();
 }
