@@ -1,12 +1,8 @@
 import path from 'path';
-
-import Database, { registerFields } from '@nocobase/database';
+import Database, { registerFields, Table } from '@nocobase/database';
 import Resourcer from '@nocobase/resourcer';
-
 import * as fields from './fields';
-// import hooks from './hooks';
 import * as usersActions from './actions/users';
-import { makeOptions } from './hooks/collection-after-create';
 import * as middlewares from './middlewares';
 
 export default async function (options = {}) {
@@ -15,21 +11,22 @@ export default async function (options = {}) {
 
   registerFields(fields);
 
-  database.addHook('afterTableInit', (table) => {
-    let { createdBy, updatedBy, internal } = table.getOptions();
-    // 非内置表，默认创建 createdBy 和 updatedBy
-    if (!internal) {
-      if (typeof createdBy === 'undefined') {
-        createdBy = true;
-      }
-      if (typeof updatedBy === 'undefined') {
-        updatedBy = true;
-      }
+  database.on('afterTableInit', (table: Table) => {
+    let { createdBy, updatedBy } = table.getOptions();
+    if (createdBy !== false) {
+      table.addField({
+        type: 'createdBy',
+        name: typeof createdBy === 'string' ? createdBy : 'createdBy',
+        target: 'users',
+      });
     }
-    const fieldsToMake = { createdBy, updatedBy };
-    Object.keys(fieldsToMake)
-      .filter(type => Boolean(fieldsToMake[type]))
-      .map(type => table.addField(makeOptions(type, fieldsToMake[type])));
+    if (updatedBy !== false) {
+      table.addField({
+        type: 'updatedBy',
+        name: typeof updatedBy === 'string' ? updatedBy : 'updatedBy',
+        target: 'users',
+      });
+    }
   });
 
   database.import({

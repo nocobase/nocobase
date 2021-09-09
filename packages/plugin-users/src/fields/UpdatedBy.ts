@@ -27,13 +27,18 @@ export default class UpdatedBy extends BELONGSTO {
 
   constructor({ type, ...options }: UpdatedByOptions, context: FieldContext) {
     super({ ...options, type: 'belongsTo' } as BelongsToOptions, context);
-    const Model = context.sourceTable.getModel();
-    // TODO(feature): 可考虑策略模式，以在需要时对外提供接口
-    Model.addHook('beforeCreate', setUserValue.bind(this));
-    Model.addHook('beforeBulkCreate', UpdatedBy.beforeBulkCreateHook.bind(this));
-
-    Model.addHook('beforeUpdate', setUserValue.bind(this));
-    Model.addHook('beforeBulkUpdate', UpdatedBy.beforeBulkUpdateHook.bind(this));
+    // const Model = context.sourceTable.getModel();
+    // // TODO(feature): 可考虑策略模式，以在需要时对外提供接口
+    // Model.addHook('beforeCreate', setUserValue.bind(this));
+    // Model.addHook('beforeBulkCreate', UpdatedBy.beforeBulkCreateHook.bind(this));
+    // Model.addHook('beforeUpdate', setUserValue.bind(this));
+    // Model.addHook('beforeBulkUpdate', UpdatedBy.beforeBulkUpdateHook.bind(this));
+    const { sourceTable, database } = context;
+    const name = sourceTable.getName();
+    database.on(`${name}.beforeCreate`, setUserValue.bind(this));
+    database.on(`${name}.beforeBulkCreate`, UpdatedBy.beforeBulkCreateHook.bind(this));
+    database.on(`${name}.beforeUpdate`, setUserValue.bind(this));
+    database.on(`${name}.beforeBulkUpdate`, UpdatedBy.beforeBulkUpdateHook.bind(this));
   }
 
   public getDataType(): Function {

@@ -1,8 +1,8 @@
-import { actions } from '@nocobase/actions';
+import { Context, Next } from '@nocobase/actions';
 import { PASSWORD } from '@nocobase/database';
 import cryptoRandomString from 'crypto-random-string';
 
-export async function check(ctx: actions.Context, next: actions.Next) {
+export async function check(ctx: Context, next: Next) {
   if (ctx.state.currentUser) {
     const user = ctx.state.currentUser.toJSON();
     delete user.password;
@@ -13,7 +13,7 @@ export async function check(ctx: actions.Context, next: actions.Next) {
   }
 }
 
-export async function login(ctx: actions.Context, next: actions.Next) {
+export async function login(ctx: Context, next: Next) {
   const { uniqueField = 'email', values } = ctx.action.params;
   // console.log(values);
   if (!values[uniqueField]) {
@@ -42,12 +42,12 @@ export async function login(ctx: actions.Context, next: actions.Next) {
   await next();
 }
 
-export async function logout(ctx: actions.Context, next: actions.Next) {
+export async function logout(ctx: Context, next: Next) {
   ctx.body = {};
   await next();
 }
 
-export async function register(ctx: actions.Context, next: actions.Next) {
+export async function register(ctx: Context, next: Next) {
   const User = ctx.db.getModel('users');
   const { values } = ctx.action.params;
   try {
@@ -66,7 +66,7 @@ export async function register(ctx: actions.Context, next: actions.Next) {
   await next();
 }
 
-export async function lostpassword(ctx: actions.Context, next: actions.Next) {
+export async function lostpassword(ctx: Context, next: Next) {
   const { values: { email } } = ctx.action.params;
   if (!email) {
     ctx.throw(401, '请填写邮箱账号');
@@ -86,7 +86,7 @@ export async function lostpassword(ctx: actions.Context, next: actions.Next) {
   await next();
 }
 
-export async function resetpassword(ctx: actions.Context, next: actions.Next) {
+export async function resetpassword(ctx: Context, next: Next) {
   const { values: { email, password, reset_token } } = ctx.action.params;
   const User = ctx.db.getModel('users');
   const user = await User.findOne({
@@ -106,7 +106,7 @@ export async function resetpassword(ctx: actions.Context, next: actions.Next) {
   await next();
 }
 
-export async function getUserByResetToken(ctx: actions.Context, next: actions.Next) {
+export async function getUserByResetToken(ctx: Context, next: Next) {
   const { token } = ctx.action.params;
   const User = ctx.db.getModel('users');
   const user = await User.findOne({
@@ -121,7 +121,7 @@ export async function getUserByResetToken(ctx: actions.Context, next: actions.Ne
   await next();
 }
 
-export async function updateProfile(ctx: actions.Context, next: actions.Next) {
+export async function updateProfile(ctx: Context, next: Next) {
   const { values } = ctx.action.params;
   if (!ctx.state.currentUser) {
     ctx.throw(401, 'Unauthorized');
