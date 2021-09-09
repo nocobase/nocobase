@@ -1,4 +1,3 @@
-import { initDatabase, agent } from './index';
 import { filterByFields } from '../utils';
 
 describe('utils', () => {

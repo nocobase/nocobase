@@ -1,302 +1,513 @@
-import { initDatabase, agent } from './index';
+import { mockServer, MockServer } from '@nocobase/test';
+import { registerActions } from '..';
 
-describe('get', () => {
-  let db;
+describe('sort', () => {
 
-  beforeEach(async () => {
-    db = await initDatabase();
-    const User = db.getModel('users');
-    const users = await User.bulkCreate(Array.from('abcdefg').map(name => ({ name })));
+  describe('same scope', () => {
+    let api: MockServer;
 
-    const Post = db.getModel('posts');
-    const posts = await Post.bulkCreate(Array(10).fill(null).map((_, i) => ({
-      title: `title_${i}`,
-      status: i % 2 ? 'publish' : 'draft',
-      user_id: users[i % users.length].id
-    })));
-
-    await posts.reduce((promise, post) => promise.then(() => post.updateAssociations({
-      comments: Array(post.sort % 5).fill(null).map((_, index) => ({
-        content: `content_${index}`,
-        status: index % 2 ? 'published' : 'draft',
-        user_id: users[index % users.length].id
-      }))
-    })), Promise.resolve());
-  });
-
-  afterAll(() => db.close());
-
-  describe('sort value initialization', () => {
-    it('initialization by bulkCreate', async () => {
-      const Post = db.getModel('posts');
-      const posts = await Post.findAll({
-        order: [['id', 'ASC']]
+    beforeEach(async () => {
+      api = mockServer({
+        dataWrapping: false,
       });
-      expect(posts.map(({ id, sort, sort_in_status, sort_in_user }) => ({ id, sort, sort_in_status, sort_in_user }))).toEqual([
-        { id: 1, sort: 1, sort_in_status: 1, sort_in_user: 1 },
-        { id: 2, sort: 2, sort_in_status: 1, sort_in_user: 1 },
-        { id: 3, sort: 3, sort_in_status: 2, sort_in_user: 1 },
-        { id: 4, sort: 4, sort_in_status: 2, sort_in_user: 1 },
-        { id: 5, sort: 5, sort_in_status: 3, sort_in_user: 1 },
-        { id: 6, sort: 6, sort_in_status: 3, sort_in_user: 1 },
-        { id: 7, sort: 7, sort_in_status: 4, sort_in_user: 1 },
-        { id: 8, sort: 8, sort_in_status: 4, sort_in_user: 2 },
-        { id: 9, sort: 9, sort_in_status: 5, sort_in_user: 2 },
-        { id: 10, sort: 10, sort_in_status: 5, sort_in_user: 2 }
-      ]);
-    });
-
-    it('initialization by updateAssociations', async () => {
-      const Comment = db.getModel('comments');
-      const comments = await Comment.findAll({
-        order: [['id', 'ASC']]
+      registerActions(api);
+      api.database.table({
+        name: 'tests',
+        fields: [
+          { type: 'string', name: 'title' },
+          { type: 'sort', name: 'sort' },
+          { type: 'sort', name: 'sort2' },
+        ],
       });
-      expect(comments.map(({ id, sort, sort_in_status, sort_in_post }) => ({ id, sort, sort_in_status, sort_in_post }))).toEqual([
-        { id: 1, sort: 1, sort_in_status: 1, sort_in_post: 1 },
-        { id: 2, sort: 2, sort_in_status: 2, sort_in_post: 1 },
-        { id: 3, sort: 3, sort_in_status: 1, sort_in_post: 2 },
-        { id: 4, sort: 4, sort_in_status: 3, sort_in_post: 1 },
-        { id: 5, sort: 5, sort_in_status: 2, sort_in_post: 2 },
-        { id: 6, sort: 6, sort_in_status: 4, sort_in_post: 3 },
-        { id: 7, sort: 7, sort_in_status: 5, sort_in_post: 1 },
-        { id: 8, sort: 8, sort_in_status: 3, sort_in_post: 2 },
-        { id: 9, sort: 9, sort_in_status: 6, sort_in_post: 3 },
-        { id: 10, sort: 10, sort_in_status: 4, sort_in_post: 4 },
-        { id: 11, sort: 11, sort_in_status: 7, sort_in_post: 1 },
-        { id: 12, sort: 12, sort_in_status: 8, sort_in_post: 1 },
-        { id: 13, sort: 13, sort_in_status: 5, sort_in_post: 2 },
-        { id: 14, sort: 14, sort_in_status: 9, sort_in_post: 1 },
-        { id: 15, sort: 15, sort_in_status: 6, sort_in_post: 2 },
-        { id: 16, sort: 16, sort_in_status: 10, sort_in_post: 3 },
-        { id: 17, sort: 17, sort_in_status: 11, sort_in_post: 1 },
-        { id: 18, sort: 18, sort_in_status: 7, sort_in_post: 2 },
-        { id: 19, sort: 19, sort_in_status: 12, sort_in_post: 3 },
-        { id: 20, sort: 20, sort_in_status: 8, sort_in_post: 4 }
-      ]);
+      await api.database.sync();
+      const Test = api.database.getModel('tests');
+      for (let index = 1; index < 5; index++) {
+        await Test.create({ title: `t${index}` });
+      }
     });
 
-    it('sort value of append item', async () => {
-      const Post = db.getModel('posts');
-      const post = await Post.create({ user_id: 1 });
-      expect(post.sort).toBe(11);
-      expect(post.sort_in_status).toBe(6);
-      expect(post.sort_in_user).toBe(3);
+    afterEach(async () => {
+      return api.destroy();
     });
-  });
 
-  describe('sort in whole table', () => {
-    it('move id=1 to position at id=2', async () => {
-      await agent
-        .post('/posts:sort/1')
-        .send({
-          field: 'sort',
-          target: { id: 2 },
-        });
-
-      const Post = db.getModel('posts');
-      const posts = await Post.findAll({
-        attributes: ['id', 'sort'],
-        order: [['id', 'ASC']]
+    it('targetId', async () => {
+      await api.resource('tests').sort({
+        sourceId: 1,
+        targetId: 3,
       });
-      expect(posts.map(item => item.get())).toEqual([
-        { id: 1, sort: 2 },
-        { id: 2, sort: 1 },
-        { id: 3, sort: 3 },
-        { id: 4, sort: 4 },
-        { id: 5, sort: 5 },
-        { id: 6, sort: 6 },
-        { id: 7, sort: 7 },
-        { id: 8, sort: 8 },
-        { id: 9, sort: 9 },
-        { id: 10, sort: 10 }
-      ]);
-    });
-
-    it('move id=2 to position at id=1', async () => {
-      await agent
-        .post('/posts:sort/2')
-        .send({
-          field: 'sort',
-          target: { id: 1 },
-        });
-
-      const Post = db.getModel('posts');
-      const posts = await Post.findAll({
-        attributes: ['id', 'sort'],
-        order: [['id', 'ASC']]
+      const response = await api.resource('tests').list({
+        sort: ['sort'],
       });
-      expect(posts.map(item => item.get())).toEqual([
-        { id: 1, sort: 2 },
-        { id: 2, sort: 1 },
-        { id: 3, sort: 3 },
-        { id: 4, sort: 4 },
-        { id: 5, sort: 5 },
-        { id: 6, sort: 6 },
-        { id: 7, sort: 7 },
-        { id: 8, sort: 8 },
-        { id: 9, sort: 9 },
-        { id: 10, sort: 10 }
-      ]);
-    });
-
-    it('move id=1 to position at id=10', async () => {
-      await agent
-        .post('/posts:sort/1')
-        .send({
-          field: 'sort',
-          target: { id: 10 },
-        });
-
-      const Post = db.getModel('posts');
-      const posts = await Post.findAll({
-        attributes: ['id', 'sort'],
-        order: [['id', 'ASC']]
-      });
-      expect(posts.map(item => item.get())).toEqual([
-        { id: 1, sort: 10 },
-        { id: 2, sort: 1 },
-        { id: 3, sort: 2 },
-        { id: 4, sort: 3 },
-        { id: 5, sort: 4 },
-        { id: 6, sort: 5 },
-        { id: 7, sort: 6 },
-        { id: 8, sort: 7 },
-        { id: 9, sort: 8 },
-        { id: 10, sort: 9 }
-      ]);
-    });
-  });
-
-  describe('sort in filtered scope', () => {
-    it('move id=2 to position at id=8 (same scope value)', async () => {
-      await agent
-        .post('/posts:sort/2')
-        .send({
-          field: 'sort_in_status',
-          target: { id: 8 },
-        });
-
-      const Post = db.getModel('posts');
-      const posts = await Post.findAll({
-        where: {
-          status: 'publish'
-        },
-        attributes: ['id', 'sort_in_status'],
-        order: [['id', 'ASC']]
-      });
-      expect(posts.map(item => item.get())).toEqual([
-        { id: 2, sort_in_status: 4 },
-        { id: 4, sort_in_status: 1 },
-        { id: 6, sort_in_status: 2 },
-        { id: 8, sort_in_status: 3 },
-        { id: 10, sort_in_status: 5 }
-      ]);
-    });
-
-    it('move id=1 to position at id=8 (different scope value)', async () => {
-      await agent
-        .post('/posts:sort/1')
-        .send({
-          field: 'sort_in_status',
-          target: { id: 8 },
-        });
-
-      const Post = db.getModel('posts');
-      const posts = await Post.findAll({
-        where: {
-          status: 'publish'
-        },
-        attributes: ['id', 'sort_in_status'],
-        order: [['id', 'ASC']]
-      });
-      expect(posts.map(item => item.get())).toEqual([
-        { id: 1, sort_in_status: 4 },
-        { id: 2, sort_in_status: 1 },
-        { id: 4, sort_in_status: 2 },
-        { id: 6, sort_in_status: 3 },
-        { id: 8, sort_in_status: 5 },
-        { id: 10, sort_in_status: 6 }
-      ]);
-    });
-
-    it('move id=1 to new empty list of scope', async () => {
-      await agent
-        .post('/posts:sort/1')
-        .send({
-          field: 'sort_in_status',
-          target: { status: 'archived' },
-        });
-
-      const Post = db.getModel('posts');
-      const posts = await Post.findAll({
-        attributes: ['id', 'sort_in_status'],
-        order: [['id', 'ASC']]
-      });
-      expect(posts.map(item => item.get())).toEqual([
-        { id: 1, sort_in_status: 1 },
-        { id: 2, sort_in_status: 1 },
-        { id: 3, sort_in_status: 2 },
-        { id: 4, sort_in_status: 2 },
-        { id: 5, sort_in_status: 3 },
-        { id: 6, sort_in_status: 3 },
-        { id: 7, sort_in_status: 4 },
-        { id: 8, sort_in_status: 4 },
-        { id: 9, sort_in_status: 5 },
-        { id: 10, sort_in_status: 5 }
-      ]);
-    });
-
-    it('move id=1 to scope without target primary key', async () => {
-      await agent
-        .post('/posts:sort/1')
-        .send({
-          field: 'sort_in_status',
-          target: { status: 'publish' },
-        });
-
-      const Post = db.getModel('posts');
-      const posts = await Post.findAll({
-        where: {
-          status: 'publish'
-        },
-        attributes: ['id', 'sort_in_status'],
-        order: [['id', 'ASC']]
-      });
-      expect(posts.map(item => item.get())).toEqual([
-        { id: 1, sort_in_status: 6 },
-        { id: 2, sort_in_status: 1 },
-        { id: 4, sort_in_status: 2 },
-        { id: 6, sort_in_status: 3 },
-        { id: 8, sort_in_status: 4 },
-        { id: 10, sort_in_status: 5 }
-      ]);
-    });
-  });
-
-  describe('associations', () => {
-    describe('hasMany', () => {
-      it('move id=1 to position at id=3 (different scope value)', async () => {
-        await agent
-          .post('/users/1/posts:sort/1')
-          .send({
-            field: 'sort_in_user',
-            target: { id: 3 },
-          });
-
-        const Post = db.getModel('posts');
-        const posts = await Post.findAll({
-          where: {
-            user_id: 3
+      expect(response.body).toMatchObject({
+        rows: [
+          {
+            title: 't2',
+            sort: 1,
           },
-          attributes: ['id', 'sort_in_user'],
-          order: [['id', 'ASC']]
-        });
+          {
+            title: 't3',
+            sort: 2,
+          },
+          {
+            title: 't1',
+            sort: 3,
+          },
+          {
+            title: 't4',
+            sort: 4,
+          }
+        ],
+      });
+    });
 
-        expect(posts.map(item => item.get())).toEqual([
-          { id: 1, sort_in_user: 1 },
-          { id: 3, sort_in_user: 2 },
-          { id: 10, sort_in_user: 3 },
-        ]);
+    it('targetId', async () => {
+      await api.resource('tests').sort({
+        sourceId: 3,
+        targetId: 1,
+      });
+      const response = await api.resource('tests').list({
+        sort: ['sort'],
+      });
+      expect(response.body).toMatchObject({
+        rows: [
+          {
+            title: 't3',
+            sort: 1,
+          },
+          {
+            title: 't1',
+            sort: 2,
+          },
+          {
+            title: 't2',
+            sort: 3,
+          },
+          {
+            title: 't4',
+            sort: 4,
+          }
+        ],
+      });
+    });
+
+    it('sortField', async () => {
+      await api.resource('tests').sort({
+        sortField: 'sort2',
+        sourceId: 1,
+        targetId: 3,
+      });
+      const response = await api.resource('tests').list({
+        sort: ['sort2'],
+      });
+      expect(response.body).toMatchObject({
+        rows: [
+          {
+            title: 't2',
+            sort2: 1,
+          },
+          {
+            title: 't3',
+            sort2: 2,
+          },
+          {
+            title: 't1',
+            sort2: 3,
+          },
+          {
+            title: 't4',
+            sort2: 4,
+          }
+        ],
+      });
+    });
+
+    it('sticky', async () => {
+      await api.resource('tests').sort({
+        sourceId: 3,
+        sticky: true,
+      });
+      const response = await api.resource('tests').list({
+        sort: ['sort'],
+      });
+      expect(response.body).toMatchObject({
+        rows: [
+          {
+            title: 't3',
+            sort: 0,
+          },
+          {
+            title: 't1',
+            sort: 1,
+          },
+          {
+            title: 't2',
+            sort: 2,
+          },
+          {
+            title: 't4',
+            sort: 4,
+          }
+        ],
+      });
+    });
+  });
+
+  describe('different scope', () => {
+    let api: MockServer;
+
+    beforeEach(async () => {
+      api = mockServer({
+        dataWrapping: false,
+      });
+      registerActions(api);
+      api.database.table({
+        name: 'tests',
+        fields: [
+          { type: 'string', name: 'title' },
+          { type: 'integer', name: 'state' },
+          { type: 'sort', name: 'sort', scope: ['state'] },
+        ],
+      });
+      await api.database.sync();
+      const Test = api.database.getModel('tests');
+      for (let index = 1; index < 5; index++) {
+        await Test.create({ title: `t1${index}`, state: 1 });
+      }
+      for (let index = 1; index < 5; index++) {
+        await Test.create({ title: `t2${index}`, state: 2 });
+      }
+    });
+
+    afterEach(async () => {
+      return api.destroy();
+    });
+
+    it('targetId/1->6', async () => {
+      await api.resource('tests').sort({
+        sourceId: 1,
+        targetId: 6,
+      });
+      let response = await api.resource('tests').list({
+        sort: ['sort'],
+        filter: { state: 1 },
+      });
+      expect(response.body).toMatchObject({
+        rows: [
+          {
+            title: 't12',
+            sort: 2,
+          },
+          {
+            title: 't13',
+            sort: 3,
+          },
+          {
+            title: 't14',
+            sort: 4,
+          },
+        ],
+      });
+      response = await api.resource('tests').list({
+        sort: ['sort'],
+        filter: { state: 2 },
+      });
+      expect(response.body).toMatchObject({
+        rows: [
+          {
+            title: 't21',
+            sort: 1,
+          },
+          {
+            title: 't11',
+            sort: 2,
+          },
+          {
+            title: 't22',
+            sort: 3,
+          },
+          {
+            title: 't23',
+            sort: 4,
+          },
+          {
+            title: 't24',
+            sort: 5,
+          },
+        ],
+      });
+    });
+
+    it('targetId/1->6 - method=insertAfter', async () => {
+      await api.resource('tests').sort({
+        sourceId: 1,
+        targetId: 6,
+        method: 'insertAfter',
+      });
+      let response = await api.resource('tests').list({
+        sort: ['sort'],
+        filter: { state: 1 },
+      });
+      expect(response.body).toMatchObject({
+        rows: [
+          {
+            title: 't12',
+            sort: 2,
+          },
+          {
+            title: 't13',
+            sort: 3,
+          },
+          {
+            title: 't14',
+            sort: 4,
+          },
+        ],
+      });
+      response = await api.resource('tests').list({
+        sort: ['sort'],
+        filter: { state: 2 },
+      });
+      expect(response.body).toMatchObject({
+        rows: [
+          {
+            title: 't21',
+            sort: 1,
+          },
+          {
+            title: 't22',
+            sort: 2,
+          },
+          {
+            title: 't11',
+            sort: 3,
+          },
+          {
+            title: 't23',
+            sort: 4,
+          },
+          {
+            title: 't24',
+            sort: 5,
+          },
+        ],
+      });
+    });
+
+    it('targetId/6->2', async () => {
+      await api.resource('tests').sort({
+        sourceId: 6,
+        targetId: 2,
+      });
+      let response = await api.resource('tests').list({
+        sort: ['sort'],
+        filter: { state: 1 },
+      });
+      expect(response.body).toMatchObject({
+        rows: [
+          {
+            title: 't11',
+            sort: 1,
+          },
+          {
+            title: 't22',
+            sort: 2,
+          },
+          {
+            title: 't12',
+            sort: 3,
+          },
+          {
+            title: 't13',
+            sort: 4,
+          },
+          {
+            title: 't14',
+            sort: 5,
+          },
+        ],
+      });
+      response = await api.resource('tests').list({
+        sort: ['sort'],
+        filter: { state: 2 },
+      });
+      expect(response.body).toMatchObject({
+        rows: [
+          {
+            title: 't21',
+            sort: 1,
+          },
+          {
+            title: 't23',
+            sort: 3,
+          },
+          {
+            title: 't24',
+            sort: 4,
+          },
+        ],
+      });
+    });
+
+    it('targetId/6->2 - method=insertAfter', async () => {
+      await api.resource('tests').sort({
+        sourceId: 6,
+        targetId: 2,
+        method: 'insertAfter',
+      });
+      let response = await api.resource('tests').list({
+        sort: ['sort'],
+        filter: { state: 1 },
+      });
+      expect(response.body).toMatchObject({
+        rows: [
+          {
+            title: 't11',
+            sort: 1,
+          },
+          {
+            title: 't12',
+            sort: 2,
+          },
+          {
+            title: 't22',
+            sort: 3,
+          },
+          {
+            title: 't13',
+            sort: 4,
+          },
+          {
+            title: 't14',
+            sort: 5,
+          },
+        ],
+      });
+      response = await api.resource('tests').list({
+        sort: ['sort'],
+        filter: { state: 2 },
+      });
+      expect(response.body).toMatchObject({
+        rows: [
+          {
+            title: 't21',
+            sort: 1,
+          },
+          {
+            title: 't23',
+            sort: 3,
+          },
+          {
+            title: 't24',
+            sort: 4,
+          },
+        ],
+      });
+    });
+
+    it('targetScope', async () => {
+      await api.resource('tests').sort({
+        sourceId: 1,
+        targetScope: {
+          state: 2,
+        },
+      });
+      let response = await api.resource('tests').list({
+        sort: ['sort'],
+        filter: { state: 1 },
+      });
+      expect(response.body).toMatchObject({
+        rows: [
+          {
+            title: 't12',
+            sort: 2,
+          },
+          {
+            title: 't13',
+            sort: 3,
+          },
+          {
+            title: 't14',
+            sort: 4,
+          },
+        ],
+      });
+      response = await api.resource('tests').list({
+        sort: ['sort'],
+        filter: { state: 2 },
+      });
+      expect(response.body).toMatchObject({
+        rows: [
+          {
+            title: 't21',
+            sort: 1,
+          },
+          {
+            title: 't22',
+            sort: 2,
+          },
+          {
+            title: 't23',
+            sort: 3,
+          },
+          {
+            title: 't24',
+            sort: 4,
+          },
+          {
+            title: 't11',
+            sort: 5,
+          },
+        ],
+      });
+    });
+
+    it('targetScope - method=prepend', async () => {
+      await api.resource('tests').sort({
+        sourceId: 1,
+        targetScope: {
+          state: 2,
+        },
+        method: 'prepend',
+      });
+      let response = await api.resource('tests').list({
+        sort: ['sort'],
+        filter: { state: 1 },
+      });
+      expect(response.body).toMatchObject({
+        rows: [
+          {
+            title: 't12',
+          },
+          {
+            title: 't13',
+          },
+          {
+            title: 't14',
+          },
+        ],
+      });
+      response = await api.resource('tests').list({
+        sort: ['sort'],
+        filter: { state: 2 },
+      });
+      expect(response.body).toMatchObject({
+        rows: [
+          {
+            title: 't11',
+          },
+          {
+            title: 't21',
+          },
+          {
+            title: 't22',
+          },
+          {
+            title: 't23',
+          },
+          {
+            title: 't24',
+          },
+        ],
       });
     });
   });
