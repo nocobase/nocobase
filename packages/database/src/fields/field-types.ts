@@ -350,6 +350,12 @@ export class JSON extends Column {
 }
 
 export class JSONB extends Column {
+  public getDataType() {
+    if (this.context.database.sequelize.getDialect() === 'postgres') {
+      return DataTypes.JSONB;
+    }
+    return DataTypes.JSON;
+  }
 }
 
 export class UUID extends Column {
