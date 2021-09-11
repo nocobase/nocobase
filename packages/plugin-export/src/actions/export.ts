@@ -1,8 +1,8 @@
 import xlsx from 'node-xlsx';
-import { actions } from '@nocobase/actions';
+import { actions, Context, Next } from '@nocobase/actions';
 import render from '../renders';
 
-async function _export(ctx: actions.Context, next: actions.Next) {
+async function _export(ctx: Context, next: Next) {
   let { columns } = ctx.action.params;
   if (typeof columns === 'string') {
     columns = JSON.parse(columns);
@@ -13,7 +13,7 @@ async function _export(ctx: actions.Context, next: actions.Next) {
     payload: 'replace',
   });
   console.log({ columns });
-  await actions.common.list(ctx, async () => {
+  await actions.list(ctx, async () => {
     const {
       db,
       action: {

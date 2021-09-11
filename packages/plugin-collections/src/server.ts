@@ -7,16 +7,33 @@ import { create } from './actions/fields';
 
 export default async function (this: Application, options = {}) {
   const database = this.database;
+
   registerModels(models);
+
   database.import({
     directory: path.resolve(__dirname, 'collections'),
   });
-  this.on('plugins.afterLoad', async () => {
-    console.log('plugins.afterLoad');
+
+  this.on('pluginsLoaded', async () => {
+    console.log('pluginsLoaded');
     await database.getModel('collections').load();
   });
+
+  this.on('collections.init', async () => {
+    const userTable = database.getTable('users');
+    const config = userTable.getOptions();
+    const Collection = database.getModel('collections');
+    const collection = await Collection.create(config);
+    await collection.updateAssociations({
+      generalFields: config.fields.filter((field) => field.state !== 0),
+      systemFields: config.fields.filter((field) => field.state === 0),
+    });
+    await collection.migrate();
+  });
+
   const [Collection, Field] = database.getModels(['collections', 'fields']);
-  Field.beforeCreate(async (model) => {
+
+  database.on('fields.beforeCreate', async (model) => {
     if (!model.get('name')) {
       model.set('name', model.get('key'));
     }
@@ -30,7 +47,8 @@ export default async function (this: Application, options = {}) {
       }
     }
   });
-  Field.beforeUpdate(async (model) => {
+
+  database.on('fields.beforeUpdate', async (model) => {
     console.log('beforeUpdate', model.key);
     if (!model.get('collection_name') && model.get('parentKey')) {
       const field = await Field.findByPk(model.get('parentKey'));
@@ -42,7 +60,8 @@ export default async function (this: Application, options = {}) {
       }
     }
   });
-  Field.afterCreate(async (model, options) => {
+
+  database.on('fields.afterCreate', async (model) => {
     console.log('afterCreate', model.key, model.get('collection_name'));
     if (model.get('interface') !== 'subTable') {
       return;
@@ -71,7 +90,8 @@ export default async function (this: Application, options = {}) {
       throw error;
     }
   });
-  Field.afterUpdate(async (model) => {
+
+  database.on('fields.afterUpdate', async (model) => {
     console.log('afterUpdate');
     if (model.get('interface') !== 'subTable') {
       return;
@@ -97,6 +117,7 @@ export default async function (this: Application, options = {}) {
       throw error;
     }
   });
+
   this.resourcer.registerActionHandler('collections.fields:create', create);
   this.resourcer.registerActionHandler('collections:findAll', findAll);
   this.resourcer.registerActionHandler('collections:createOrUpdate', createOrUpdate);

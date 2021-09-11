@@ -1,6 +1,6 @@
 import path from 'path';
 import { Application } from '@nocobase/server';
-import { registerModels, Table } from '@nocobase/database';
+import { registerModels } from '@nocobase/database';
 import * as models from './models';
 import * as actions from './actions';
 
