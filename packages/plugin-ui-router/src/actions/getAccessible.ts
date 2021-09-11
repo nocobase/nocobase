@@ -1,5 +1,5 @@
 import { Model, ModelCtor } from '@nocobase/database';
-import { actions } from '@nocobase/actions';
+import { Context, Next } from '@nocobase/actions';
 import FlatToNested from 'flat-to-nested';
 
 const flatToNested = new FlatToNested({
@@ -8,8 +8,7 @@ const flatToNested = new FlatToNested({
   children: 'routes',
 });
 
-export default async (ctx: actions.Context, next: actions.Next) => {
-  const { resourceKey } = ctx.action.params;
+export default async (ctx: Context, next: Next) => {
   const Route = ctx.db.getModel('routes');
   const routes = await Route.findAll(Route.parseApiJson({
     sort: 'sort',

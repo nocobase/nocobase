@@ -8,21 +8,21 @@ export default async function (options = {}) {
 
   resourcer.registerActionHandler(ACTION_NAME_EXPORT, _export);
 
-  // TODO(temp): 继承 list 权限的临时写法
-  resourcer.use(async (ctx, next) => {
-    if (ctx.action.params.actionName === ACTION_NAME_EXPORT) {
-      ctx.action.mergeParams({
-        actionName: 'list'
-      });
+  // // TODO(temp): 继承 list 权限的临时写法
+  // resourcer.use(async (ctx, next) => {
+  //   if (ctx.action.params.actionName === ACTION_NAME_EXPORT) {
+  //     ctx.action.mergeParams({
+  //       actionName: 'list'
+  //     });
 
-      console.log('action name in export has been rewritten to:', ctx.action.params.actionName);
+  //     console.log('action name in export has been rewritten to:', ctx.action.params.actionName);
 
-      const permissionPlugin = ctx.app.getPluginInstance('@nocobase/plugin-permissions');
-      if (permissionPlugin) {
-        return permissionPlugin.middleware(ctx, next);
-      }
-    }
+  //     const permissionPlugin = ctx.app.getPluginInstance('@nocobase/plugin-permissions');
+  //     if (permissionPlugin) {
+  //       return permissionPlugin.middleware(ctx, next);
+  //     }
+  //   }
 
-    await next();
-  });
+  //   await next();
+  // });
 }

@@ -4,12 +4,22 @@ import Resourcer from '@nocobase/resourcer';
 import * as fields from './fields';
 import * as usersActions from './actions/users';
 import * as middlewares from './middlewares';
+import Application from '@nocobase/server';
 
-export default async function (options = {}) {
+export default async function (this: Application, options = {}) {
   const database: Database = this.database;
   const resourcer: Resourcer = this.resourcer;
 
   registerFields(fields);
+
+  this.on('users.init', async () => {
+    const User = database.getModel('users');
+    await User.create({
+      nickname: '超级管理员',
+      email: process.env.ADMIN_EMAIL,
+      password: process.env.ADMIN_PASSWORD,
+    });
+  });
 
   database.on('afterTableInit', (table: Table) => {
     let { createdBy, updatedBy } = table.getOptions();

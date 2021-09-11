@@ -1,24 +1,24 @@
-import { Model, ModelCtor } from '@nocobase/database';
-import { actions, middlewares } from '@nocobase/actions';
-import { sort } from '@nocobase/actions/lib/actions/common';
+import { actions, middlewares, Context, Next } from '@nocobase/actions';
 import { cloneDeep, omit } from 'lodash';
 
-export const create = async (ctx: actions.Context, next: actions.Next) => {
+export const create = async (ctx: Context, next: Next) => {
   const values = cloneDeep(ctx.action.params.values);
   ctx.action.mergeParams(
     {
-      values: cloneDeep(omit(values, [
-        '__insertAfter__',
-        '__insertBefore__',
-        '__prepend__',
-        '_isJSONSchemaObject',
-      ])),
+      values: cloneDeep(
+        omit(values, [
+          '__insertAfter__',
+          '__insertBefore__',
+          '__prepend__',
+          '_isJSONSchemaObject',
+        ]),
+      ),
     },
     {
       payload: 'replace',
     },
   );
-  await actions.common.create(ctx, async () => { });
+  await actions.create(ctx, async () => {});
   const sticky = values['__prepend__'];
   const targetKey = values['__insertAfter__'] || values['__insertBefore__'];
   if (sticky || targetKey) {
@@ -27,46 +27,43 @@ export const create = async (ctx: actions.Context, next: actions.Next) => {
       {
         associatedKey: values.parentKey,
         resourceKey: body.key,
-        values: sticky ? {
-          field: 'sort',
-          sticky: true,
-          target: {},
-        } : {
-          field: 'sort',
-          insertAfter: !!values['__insertAfter__'],
-          target: {
-            key: targetKey,
-          },
-        },
+        ...(sticky
+          ? {
+              sticky: true,
+            }
+          : {
+              method: values['__insertAfter__'] ? 'insertAfter' : null,
+              targetId: targetKey,
+            }),
       },
       {
         payload: 'replace',
       },
     );
-    // console.log(ctx.action.params.values);
-    await middlewares.associated(ctx, async () => { });
-    await sort(ctx, async () => { });
-    // console.log(ctx.body.toJSON());
+    await middlewares.associated(ctx, async () => {});
+    await actions.sort(ctx, async () => {});
   }
   await next();
 };
 
-export const update = async (ctx: actions.Context, next: actions.Next) => {
+export const update = async (ctx: Context, next: Next) => {
   const values = cloneDeep(ctx.action.params.values);
   ctx.action.mergeParams(
     {
-      values: cloneDeep(omit(values, [
-        '__insertAfter__',
-        '__insertBefore__',
-        '__prepend__',
-        '_isJSONSchemaObject',
-      ])),
+      values: cloneDeep(
+        omit(values, [
+          '__insertAfter__',
+          '__insertBefore__',
+          '__prepend__',
+          '_isJSONSchemaObject',
+        ]),
+      ),
     },
     {
       payload: 'replace',
     },
   );
-  await actions.common.update(ctx, async () => { });
+  await actions.update(ctx, async () => {});
   const sticky = values['__prepend__'];
   const targetKey = values['__insertAfter__'] || values['__insertBefore__'];
   if (sticky || targetKey) {
@@ -75,31 +72,29 @@ export const update = async (ctx: actions.Context, next: actions.Next) => {
       {
         associatedKey: values.parentKey,
         resourceKey: body.key,
-        values: sticky ? {
-          field: 'sort',
-          sticky: true,
-          target: {},
-        } : {
-          field: 'sort',
-          insertAfter: !!values['__insertAfter__'],
-          target: {
-            key: targetKey,
-          },
-        },
+        ...(sticky
+          ? {
+              sticky: true,
+            }
+          : {
+              method: values['__insertAfter__'] ? 'insertAfter' : null,
+              // insertAfter: !!values['__insertAfter__'],
+              targetId: targetKey,
+            }),
       },
       {
         payload: 'replace',
       },
     );
     // console.log(ctx.action.params.values);
-    await middlewares.associated(ctx, async () => { });
-    await sort(ctx, async () => { });
+    await middlewares.associated(ctx, async () => {});
+    await actions.sort(ctx, async () => {});
     // console.log(ctx.body.toJSON());
   }
   await next();
 };
 
-export const getTree = async (ctx: actions.Context, next: actions.Next) => {
+export const getTree = async (ctx: Context, next: Next) => {
   const { resourceKey, filter } = ctx.action.params;
   const UISchema = ctx.db.getModel('ui_schemas');
   if (resourceKey) {
@@ -136,12 +131,12 @@ export const getTree = async (ctx: actions.Context, next: actions.Next) => {
   await next();
 };
 
-export const getMenuItems = async (ctx: actions.Context, next: actions.Next) => {
+export const getMenuItems = async (ctx: Context, next: Next) => {
   const UISchema = ctx.db.getModel('ui_schemas');
   const schema = await UISchema.findOne({
     where: {
       'x-component': 'Menu',
-    }
+    },
   });
   ctx.body = await schema.getHierarchy();
   await next();

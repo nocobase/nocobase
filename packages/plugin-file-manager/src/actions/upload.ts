@@ -1,11 +1,11 @@
 import path from 'path';
 import multer from '@koa/multer';
-import actions from '@nocobase/actions';
+import { Context, Next } from '@nocobase/actions';
 import storageMakers from '../storages';
 import * as Rules from '../rules';
 import { FILE_FIELD_NAME, LIMIT_FILES, LIMIT_MAX_FILE_SIZE } from '../constants';
 
-function getRules(ctx: actions.Context) {
+function getRules(ctx: Context) {
   const { resourceField } = ctx.action.params;
   if (!resourceField) {
     return ctx.storage.rules;
@@ -15,7 +15,7 @@ function getRules(ctx: actions.Context) {
 }
 
 // TODO(optimize): 需要优化错误处理，计算失败后需要抛出对应错误，以便程序处理
-function getFileFilter(ctx: actions.Context) {
+function getFileFilter(ctx: Context) {
   return (req, file, cb) => {
     // size 交给 limits 处理
     const { size, ...rules } = getRules(ctx);
@@ -27,7 +27,7 @@ function getFileFilter(ctx: actions.Context) {
   }
 }
 
-export async function middleware(ctx: actions.Context, next: actions.Next) {
+export async function middleware(ctx: Context, next: Next) {
   const { resourceName, actionName, resourceField } = ctx.action.params;
   if (actionName !== 'upload') {
     return next();
@@ -79,7 +79,7 @@ export async function middleware(ctx: actions.Context, next: actions.Next) {
   return upload.single(FILE_FIELD_NAME)(ctx, next);
 };
 
-export async function action(ctx: actions.Context, next: actions.Next) {
+export async function action(ctx: Context, next: Next) {
   const { [FILE_FIELD_NAME]: file, storage } = ctx;
   if (!file) {
     return ctx.throw(400, 'file validation failed');
