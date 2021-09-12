@@ -507,7 +507,7 @@ server.plugin('@nocobase/plugin-client', {
 - TimePicker - 时间选择器
 - Upload - 上传
 
-开发们也可以自行扩展，以上组件基于 Formily 构建，怎么自定义组件大家查看相关组件源码或 Formily 文档吧，这里说点不一样的。
+可以自行扩展组件，以上组件基于 Formily 构建，怎么自定义组件大家查看相关组件源码或 Formily 文档，这里说点不一样的。
 
 - 如何扩展数据库字段？
 - 如何将第三方区块添加到 AddNew 模块中？
@@ -564,32 +564,32 @@ nocobase-app 默认使用 umijs 作为项目构建工具，并集成了 Server �
 
 ## 应用场景
 
-### 常规管理系统（包括后台数据管理）
+### 小型管理信息系统
 
-一套完整的 WEB 服务，包括前后端
+小型管理信息系统（包括后台数据管理系统），具备完整的前后端
 
-<img src="./AdminServer.png" style="max-width: 400px;">
+<img src="./MiniMISServer.png" style="max-width: 400px; width: 100%;">
 
 ### API 服务
 
 无需客户端，提供纯后端接口，也同样适用于 Open API
 
-<img src="./APIServer.png" style="max-width: 400px;">
+<img src="./APIServer.png" style="max-width: 400px; width: 100%;">
 
 ### 小程序 + 后台管理
 
 只需要一套数据库，但有两套用户和权限，一套是用于后台用户，一套用于小程序用户
 
-<img src="./MiniProgramServer.png" style="max-width: 600px;">
+<img src="./MiniProgramServer.png" style="max-width: 600px; width: 100%;">
 
 ### SaaS 服务（共享用户）
 
 每个应用有自己配套的数据库，各应用数据完全隔离。应用不需要用户和权限模块，因为 SaaS 主站全局共享了。
 
-<img src="./SaaSServer1.png" style="max-width: 600px;">
+<img src="./SaaSServer1.png" style="max-width: 600px; width: 100%;">
 
 ### SaaS 服务（独立用户）
 
 每个应用有自己的独立用户模块和权限
 
-<img src="./SaaSServer2.png" style="max-width: 600px;">
+<img src="./SaaSServer2.png" style="max-width: 600px; width: 100%;">
