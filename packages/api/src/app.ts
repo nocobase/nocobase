@@ -1,4 +1,6 @@
 import Api from '@nocobase/server';
+import dotenv from 'dotenv';
+import path from 'path';
 
 // @ts-ignore
 const sync = global.sync || {
@@ -7,6 +9,10 @@ const sync = global.sync || {
     drop: false,
   },
 };
+
+dotenv.config({
+  path: path.resolve(__dirname, '../../../.env'),
+});
 
 console.log('process.env.NOCOBASE_ENV', process.env.NOCOBASE_ENV);
 
