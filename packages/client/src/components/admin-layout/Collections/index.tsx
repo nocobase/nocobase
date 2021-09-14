@@ -189,7 +189,7 @@ const collectionSchema: ISchema = {
     showIndex: true,
     refreshRequestOnChange: true,
     pagination: {
-      pageSize: 10,
+      pageSize: 100,
     },
     defaultAppends: ['uiSchema'],
     useResource: useFieldsResource,
@@ -357,7 +357,7 @@ const schema: ISchema = {
             showIndex: true,
             refreshRequestOnChange: true,
             pagination: {
-              pageSize: 10,
+              pageSize: 100,
             },
             useResource,
             collectionName: 'collections',
