@@ -96,4 +96,6 @@ export default async function (this: Application, options = {}) {
   this.resourcer.registerActionHandler('collections.fields:create', create);
   this.resourcer.registerActionHandler('collections:findAll', findAll);
   this.resourcer.registerActionHandler('collections:createOrUpdate', createOrUpdate);
+  this.resourcer.registerActionHandler('fields:create', create);
+  this.resourcer.registerActionHandler('collections:create', createOrUpdate);
 }
