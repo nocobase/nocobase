@@ -2,6 +2,7 @@ import Server from '@nocobase/server';
 import { registerActions } from '@nocobase/actions';
 import dotenv from 'dotenv';
 import path from 'path';
+import mount from 'koa-mount';
 
 const start = Date.now();
 console.log('starting... ', new Date().toUTCString());
@@ -55,6 +56,8 @@ api.registerPlugin(
 if (process.argv.length < 3) {
   process.argv.push('start', '--port', '2000');
 }
+
+console.log(process.argv);
 
 api.start(process.argv).then(() => {
   console.log(`Start-up time: ${(Date.now() - start) / 1000}s`);

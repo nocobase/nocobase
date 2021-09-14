@@ -6,14 +6,14 @@ import Application from '@nocobase/server';
 registerModels({ ChinaRegion });
 
 export default async function (this: Application, options = {}) {
-  const { database } = this;
+  const { db } = this;
 
-  database.import({
+  db.import({
     directory: path.resolve(__dirname, 'collections'),
   });
 
-  this.on('china-region.init', async () => {
-    const M = database.getModel('china_regions');
+  this.on('db.init', async () => {
+    const M = db.getModel('china_regions');
     await M.importData();
   });
 }

@@ -23,8 +23,9 @@ export default async function () {
   resourcer.registerActionHandler('upload', uploadAction);
   localMiddleware(this);
 
-  this.on('file-manager.init', async () => {
-    const Storage = database.getModel('storages');
+  const Storage = database.getModel('storages');
+
+  this.on('db.init', async () => {
     await Storage.create({
       title: '本地存储',
       name: `local`,

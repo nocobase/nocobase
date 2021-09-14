@@ -10,7 +10,7 @@ describe('user fields', () => {
     api = mockServer();
     api.registerPlugin('users', require('../server').default);
     await api.loadPlugins();
-    db = api.database;
+    db = api.db;
   });
 
   afterEach(async () => {

@@ -9,11 +9,11 @@ describe('routes', () => {
 
   beforeEach(async () => {
     app = await getApp();
-    db = app.database;
+    db = app.db;
     agent = getAgent(app);
   });
 
-  afterEach(() => app.database.close());
+  afterEach(() => app.db.close());
 
   // it.only('create route', async () => {
   //   const Route = db.getModel('routes');

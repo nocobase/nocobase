@@ -1,10 +1,11 @@
 import Koa from 'koa';
 import cors from '@koa/cors';
 import bodyParser from 'koa-bodyparser';
-import { Command } from 'commander';
-import Database, { DatabaseOptions } from '@nocobase/database';
-import Resourcer from '@nocobase/resourcer';
+import { Command, CommandOptions } from 'commander';
+import Database, { DatabaseOptions, TableOptions } from '@nocobase/database';
+import Resourcer, { ResourceOptions } from '@nocobase/resourcer';
 import { dataWrapping, table2resource } from './middlewares';
+import { PluginType, Plugin, PluginOptions } from './plugin';
 
 export interface ResourcerOptions {
   prefix?: string;
@@ -19,18 +20,18 @@ export interface ApplicationOptions {
 }
 
 export class Application extends Koa {
-  public readonly database: Database;
+  public readonly db: Database;
 
   public readonly resourcer: Resourcer;
 
   public readonly cli: Command;
 
-  protected plugins = new Map<string, any>();
+  protected plugins = new Map<string, Plugin>();
 
   constructor(options: ApplicationOptions) {
     super();
 
-    this.database = new Database(options.database);
+    this.db = new Database(options.database);
     this.resourcer = new Resourcer({ ...options.resourcer });
     this.cli = new Command();
 
@@ -48,8 +49,7 @@ export class Application extends Koa {
     );
 
     this.use(async (ctx, next) => {
-      ctx.db = this.database;
-      ctx.database = this.database;
+      ctx.db = this.db;
       ctx.resourcer = this.resourcer;
       await next();
     });
@@ -65,9 +65,21 @@ export class Application extends Koa {
       .command('db sync')
       .option('-f, --force')
       .action(async (...args) => {
+        console.log('db sync');
         const cli = args.pop();
-        await this.database.sync();
-        await this.database.close();
+        const force = cli.opts()?.force;
+        await this.load();
+        await this.db.sync(
+          force
+            ? {
+                force: true,
+                alter: {
+                  drop: true,
+                },
+              }
+            : {},
+        );
+        await this.destroy();
       });
 
     this.cli
@@ -75,6 +87,13 @@ export class Application extends Koa {
       // .option('-f, --force')
       .action(async (...args) => {
         const cli = args.pop();
+        await this.load();
+        await this.db.sync({
+          force: true,
+          alter: {
+            drop: true,
+          },
+        });
         await this.emitAsync('db.init');
         await this.destroy();
       });
@@ -86,11 +105,64 @@ export class Application extends Koa {
         const cli = args.pop();
         console.log(args);
         const opts = cli.opts();
-        await this.loadPlugins();
+        await this.load();
         await this.emitAsync('server.beforeStart');
         this.listen(opts.port || 3000);
         console.log(`http://localhost:${opts.port || 3000}/`);
       });
+  }
+
+  collection(options: TableOptions) {
+    return this.db.table(options);
+  }
+
+  resource(options: ResourceOptions) {
+    return this.resourcer.define(options);
+  }
+
+  command(nameAndArgs: string, opts?: CommandOptions) {
+    return this.cli.command(nameAndArgs, opts);
+  }
+
+  plugin(plugin: PluginType, options?: PluginOptions): Plugin {
+    if (typeof plugin === 'string') {
+      plugin = require(plugin).default;
+    }
+    let instance: Plugin;
+    try {
+      // @ts-ignore
+      const p = new plugin();
+      if (p instanceof Plugin) {
+        // @ts-ignore
+        instance = new plugin({}, {
+          ...options,
+          app: this,
+        });
+      } else {
+        throw new Error('plugin must be instanceof Plugin');
+      }
+    } catch (err) {
+      instance = new Plugin(plugin, {
+        ...options,
+        app: this,
+      });
+    }
+    const name = instance.getName();
+    if (this.plugins.has(name)) {
+      throw new Error(`plugin name [${name}] is repeated`);
+    }
+    this.plugins.set(name, instance);
+    return instance;
+  }
+
+  async load() {
+    await this.emitAsync('plugins.beforeLoad');
+    for (const [name, plugin] of this.plugins) {
+      await this.emitAsync(`plugins.${name}.beforeLoad`);
+      await plugin.load();
+      await this.emitAsync(`plugins.${name}.afterLoad`);
+    }
+    await this.emitAsync('plugins.afterLoad');
   }
 
   async emitAsync(event: string | symbol, ...args: any[]): Promise<boolean> {
@@ -144,57 +216,58 @@ export class Application extends Koa {
     return true;
   }
 
-  registerPlugin(key: string | object, plugin?: any) {
-    if (typeof key === 'object') {
-      Object.keys(key).forEach((k) => {
-        this.registerPlugin(k, key[k]);
-      });
-    } else {
-      const config = {};
-      if (Array.isArray(plugin)) {
-        const [entry, options = {}] = plugin;
-        Object.assign(config, { entry, options });
-      } else {
-        Object.assign(config, { entry: plugin, options: {} });
-      }
-      this.plugins.set(key, config);
-    }
-  }
+  // registerPlugin(key: string | object, plugin?: any) {
+  //   if (typeof key === 'object') {
+  //     Object.keys(key).forEach((k) => {
+  //       this.registerPlugin(k, key[k]);
+  //     });
+  //   } else {
+  //     const config = {};
+  //     if (Array.isArray(plugin)) {
+  //       const [entry, options = {}] = plugin;
+  //       Object.assign(config, { entry, options });
+  //     } else {
+  //       Object.assign(config, { entry: plugin, options: {} });
+  //     }
+  //     this.plugins.set(key, config);
+  //   }
+  // }
 
-  async loadPlugins() {
-    await this.emitAsync('plugins.beforeLoad');
-    const allPlugins = this.plugins.values();
-    for (const plugin of allPlugins) {
-      plugin.instance = await this.loadPlugin(plugin);
-    }
-    await this.emitAsync('plugins.afterLoad');
-  }
+  // async loadPlugins() {
+  //   await this.emitAsync('plugins.beforeLoad');
+  //   const allPlugins = this.plugins.values();
+  //   for (const plugin of allPlugins) {
+  //     plugin.instance = await this.loadPlugin(plugin);
+  //   }
+  //   await this.emitAsync('plugins.afterLoad');
+  // }
 
   async start(argv = process.argv) {
     return this.cli.parseAsync(argv);
   }
 
   async destroy() {
-    await this.database.close()
+    await this.db.close();
   }
 
-  protected async loadPlugin({
-    entry,
-    options = {},
-  }: {
-    entry: string | Function;
-    options: any;
-  }) {
-    let main: any;
-    if (typeof entry === 'function') {
-      main = entry;
-    } else if (typeof entry === 'string') {
-      const pathname = `${entry}/${__filename.endsWith('.ts') ? 'src' : 'lib'
-        }/server`;
-      main = require(pathname).default;
-    }
-    return main && (await main.call(this, options));
-  }
+  // protected async loadPlugin({
+  //   entry,
+  //   options = {},
+  // }: {
+  //   entry: string | Function;
+  //   options: any;
+  // }) {
+  //   let main: any;
+  //   if (typeof entry === 'function') {
+  //     main = entry;
+  //   } else if (typeof entry === 'string') {
+  //     const pathname = `${entry}/${
+  //       __filename.endsWith('.ts') ? 'src' : 'lib'
+  //     }/server`;
+  //     main = require(pathname).default;
+  //   }
+  //   return main && (await main.call(this, options));
+  // }
 }
 
 export default Application;

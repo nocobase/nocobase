@@ -1,5 +1,9 @@
 import supertest from 'supertest';
 import { Application } from '../application';
+import { Plugin } from '../plugin';
+
+class MyPlugin extends Plugin {
+}
 
 describe('application', () => {
   let app: Application;
@@ -42,7 +46,7 @@ describe('application', () => {
   });
 
   afterEach(async () => {
-    return app.database.close();
+    return app.db.close();
   });
 
   it('resourcer.define', async () => {
@@ -63,7 +67,7 @@ describe('application', () => {
   });
 
   it('db.table', async () => {
-    app.database.table({
+    app.db.table({
       name: 'tests',
     });
     const response = await agent.get('/api/tests');
@@ -71,10 +75,10 @@ describe('application', () => {
   });
 
   it('db.association', async () => {
-    app.database.table({
+    app.db.table({
       name: 'bars',
     });
-    app.database.table({
+    app.db.table({
       name: 'foos',
       fields: [
         {
@@ -90,7 +94,7 @@ describe('application', () => {
   it('db.middleware', async () => {
     const index = app.middleware.findIndex(m => m.name === 'table2resource');
     app.middleware.splice(index, 0, async (ctx, next) => {
-      app.database.table({
+      app.db.table({
         name: 'tests',
       });
       await next();
@@ -102,10 +106,10 @@ describe('application', () => {
   it('db.middleware', async () => {
     const index = app.middleware.findIndex(m => m.name === 'table2resource');
     app.middleware.splice(index, 0, async (ctx, next) => {
-      app.database.table({
+      app.db.table({
         name: 'bars',
       });
-      app.database.table({
+      app.db.table({
         name: 'foos',
         fields: [
           {

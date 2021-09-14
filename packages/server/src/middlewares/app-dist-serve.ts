@@ -1,7 +1,7 @@
 import path from 'path';
 import send from 'koa-send';
 import serve from 'koa-static';
-import actions from '@nocobase/actions';
+import { Context, Next } from '@nocobase/actions';
 
 export interface AppDistServeOptions {
   root?: string;
@@ -9,7 +9,7 @@ export interface AppDistServeOptions {
 }
 
 export function appDistServe(options: AppDistServeOptions = {}) {
-  return async (ctx: actions.Context, next: actions.Next) => {
+  return async (ctx: Context, next: Next) => {
     if (!options.root || !options.useStaticServer) {
       return next();
     }

@@ -1,22 +1,24 @@
 ---
-title: 基础概念
+title: 介绍
 toc: menu
 ---
 
 # NocoBase
 
-考虑到大家是初次接触 NocoBase，开发文档的第一篇，从宏观的角度，带大家了解 NocoBase 的基础概念。NocoBase 采用微内核的架构，框架只保留核心概念，各类功能都以插件形式扩展。
+考虑到大家是初次接触 NocoBase，开发文档的第一篇，从宏观的角度，带大家了解 NocoBase 的基础概念。NocoBase 采用微内核架构，框架只保留核心，各类功能以插件形式扩展。
+
+<img src="./NocoBase.png" style="max-width: 800px; width: 100%;">
 
 ## 微服务 - Microservices
 
-先来个例子一睹为快，新建一个 server.js 文件，代码如下：
+首先我们创建一个应用，新建一个 app.js 文件，代码如下：
 
 ```ts
-const Server = require('@nocobase/server');
+const { Application } = require('@nocobase/server');
 
-const server = new Server();
+const app = new Application();
 
-server.collection({
+app.collection({
   name: 'users',
   fields: [
     { type: 'string', name: 'username' },
@@ -24,16 +26,16 @@ server.collection({
   ],
 });
 
-server.start(process.argv);
+app.start(process.argv);
 ```
 
 终端运行
 
 ```bash
 # 根据配置生成数据库表结构
-node server.js db sync
+node app.js db sync
 # 启动应用
-node server.js start --port=3000
+node app.js start --port=3000
 ```
 
 相关 users 表的 REST API 就生成了
@@ -49,7 +51,7 @@ DELETE  http://localhost:3000/api/users/1
 除了内置的 REST API 以外，还可以自定义其他操作，如登录、注册、注销等。
 
 ```ts
-server.registerActions({
+app.registerActions({
   async login(ctx, next) {},
   async register(ctx, next) {},
   async logout(ctx, next) {},
@@ -81,23 +83,23 @@ POST    http://localhost:3000/api/users:destroy/1
 ```ts
 const { ClientSDK } = require('@nocobase/client');
 
-const client = new ClientSDK();
+const api = new ClientSDK();
 
-await client.resource('users').list();
-await client.resource('users').create();
-await client.resource('users').get();
-await client.resource('users').update();
-await client.resource('users').destroy();
-await client.resource('users').login();
-await client.resource('users').register();
-await client.resource('users').logout();
+await api.resource('users').list();
+await api.resource('users').create();
+await api.resource('users').get();
+await api.resource('users').update();
+await api.resource('users').destroy();
+await api.resource('users').login();
+await api.resource('users').register();
+await api.resource('users').logout();
 ```
 
 ## 数据集 - Collection
 
-上述例子，通过 `server.collection()` 方法定义数据的 Schema，Schema 的核心为字段配置，字段类型包括：
+上述例子，通过 `app.collection()` 方法定义数据的 Schema，Schema 的核心为字段配置，字段类型包括：
 
-Attribute 属性
+属性 Attribute
 
 - Boolean 布尔型
 - String 字符串
@@ -115,7 +117,7 @@ Attribute 属性
 - Password 密码
 - Sort 排序
 
-Association/Realtion 关系
+关系 Association/Realtion
 
 - HasOne 一对一
 - HasMany 一对多
@@ -127,7 +129,7 @@ Association/Realtion 关系
 
 ```ts
 // 用户
-server.collection({
+app.collection({
   name: 'users',
   fields: [
     { type: 'string', name: 'username', unique: true },
@@ -137,7 +139,7 @@ server.collection({
 });
 
 // 文章
-server.collection({
+app.collection({
   name: 'posts',
   fields: [
     { type: 'string', name: 'title' },
@@ -149,7 +151,7 @@ server.collection({
 });
 
 // 标签
-server.collection({
+app.collection({
   name: 'tags',
   fields: [
     { type: 'string', name: 'name' },
@@ -158,7 +160,7 @@ server.collection({
 });
 
 // 评论
-server.collection({
+app.collection({
   name: 'comments',
   fields: [
     { type: 'text', name: 'content' },
@@ -169,16 +171,16 @@ server.collection({
 
 存在外键关联时，也无需顾虑建表和字段的顺序，`db sync` 时会自动处理。为了方便开发，提供了一些有用的属性或方法：
 
-- `server.db` 数据库实例
-- `server.db.getModel()` 获取 Model
-- `server.db.getTable()` 获取 Schema Table
+- `app.db` 数据库实例
+- `app.db.getModel()` 获取 Model
+- `app.db.getTable()` 获取 Schema Table
 
 ## 资源 & 操作 - Resource & Action
 
-不同于常规的 MVC + Router，NocoBase 的路由（Resourcer）基于资源（Resource）和操作（Action）设计，将 REST 和 RPC 结合起来，提供更为灵活且统一的 Resource Action API，Action 不局限于增删改查。资源可以通过 `server.resource` 方法定义，如：
+不同于常规的 MVC + Router，NocoBase 的路由（Resourcer）基于资源（Resource）和操作（Action）设计，将 REST 和 RPC 结合起来，提供更为灵活且统一的 Resource Action API，Action 不局限于增删改查。资源可以通过 `app.resource()` 方法定义，如：
 
 ```ts
-server.resource({
+app.resource({
   name: 'users',
   actions: {
     list: {
@@ -210,53 +212,52 @@ server.resource({
 });
 ```
 
-`server.collection()` 和 `server.resource()` 的区别？
+`app.collection()` 和 `app.resource()` 的区别？
 
-- `server.collection()` 定义数据的 Schema（结构和关系）
-- `server.resource()` 定义数据的 Action（操作方法）
+- `app.collection()` 定义数据的 Schema（结构和关系）
+- `app.resource()` 定义数据的 Action（操作方法）
 
 一般情况无需显式声明 collection 的 resource，因为已定义的 collection 会自动同步给 resource。
 
 ## 事件 - Event
 
-在操作执行前、后都放置了相关的事件监听器，可以通过 `server.db.on` 和 `server.on` 添加。区别在于：
+在操作执行前、后都放置了相关事件监听器，可以通过 `app.db.on()` 和 `app.on()` 添加。区别在于：
 
-- `server.db.on` 添加数据库的监听器
-- `server.on` 添加服务器的监听器
+- `app.db.on()` 添加数据库层面的监听器
+- `app.on()` 添加服务器应用层面的监听器
 
-以 `users:login` 为例，在数据库里为「查询」操作，在服务器里为「登录」操作。如果需要记录登录操作日志，需要在 `server.on` 里处理。
+以 `users:login` 为例，在数据库里为「查询」操作，在应用里为「登录」操作。也就是说，如果需要记录登录操作日志，要在 `app.on()` 里处理。
 
 ```ts
 // 创建数据时，执行 User.create() 时触发
-server.db.on('users:beforeCreate', async (model) => {});
+app.db.on('users:beforeCreate', async (model) => {});
 
 // 客户端 `POST /api/users:login` 时触发
-server.on('users:beforeLogin', async (ctx, next) => {});
+app.on('users:beforeLogin', async (ctx, next) => {});
 
 // 客户端 `POST /api/users` 时触发
-server.on('users:beforeCreate', async (ctx, next) => {});
+app.on('users:beforeCreate', async (ctx, next) => {});
 ```
 
 ## 中间件 - Middleware
 
-Server 基于 Koa，所有 Koa 的插件（中间件）都可以直接使用，可以通过 server.use 添加。如：
+Server Application 基于 Koa，所有 Koa 的插件（中间件）都可以直接使用，可以通过 `app.use()` 添加。如：
 
 ```ts
-server.use(async (ctx, next) => {
-  const token = ctx.get('Authorization').replace(/^Bearer\s+/gi, '');
-  if (token !== '123456') {
-    return ctx.throw(401, 'Unauthorized');
-  }
-  return next();
+const responseTime = require('koa-response-time');
+app.use(responseTime());
+
+app.use(async (ctx, next) => {
+  await next();
 });
 ```
 
-弥补 koa.use 的不足，提供了更完善的 middleware 适配器
+弥补 `app.use()` 不足，加了个 `middleware()` 适配器，可以用于限定 resource 和 action。除此之外，也可以控制中间件的插入位置。
 
 ```ts
 import { middleware } from '@nocobase/server';
 
-server.use(middleware(async (ctx, next) => {}, {
+app.use(middleware(async (ctx, next) => {}, {
   name: 'middlewareName1',
   resourceNames: [],
   actionNames: [],
@@ -267,15 +268,16 @@ server.use(middleware(async (ctx, next) => {}, {
 
 ## 命令行 - CLI
 
-除此之外，Server 还集成了 commander，可用于 cli 场景。目前内置的有：
+Application 除了可以做 HTTP Server 以外，也可以是 CLI（内置了 Commander）。目前内置的命令有：
 
 - `db sync --force` 用于配置与数据库表结构同步
 - `start --port` 启动应用
+- `plugin` 插件相关
 
 自定义：
 
 ```ts
-server.command('foo').action(async () => {
+app.command('foo').action(async () => {
   console.log('foo...');
 });
 ```
@@ -285,46 +287,50 @@ server.command('foo').action(async () => {
 上文，讲述了核心的扩展接口，包括但不局限于：
 
 - Database/Collection
-  - `server.db` database 实例
-  - `server.collection()` 等同于 `server.db.table()`
+  - `app.db` database 实例
+  - `app.collection()` 等同于 `app.db.table()`
 - Resource/Action
-  - `server.resource()` 等同于 `server.resourcer.define()`
-  - `server.registerActions()` 等同于 `server.resourcer.registerActions()`
+  - `app.resource()` 等同于 `app.resourcer.define()`
+  - `app.registerActions()` 等同于 `app.resourcer.registerActions()`
 - Hook/Event
-  - `server.on()` 添加服务器监听器
-  - `server.db.on()` 添加数据库监听器
+  - `app.on()` 添加服务器监听器
+  - `app.db.on()` 添加数据库监听器
 - Middleware
-  - `server.use()` 添加中间件
+  - `app.use()` 添加中间件
 - CLI
-  - `server.cli` commander 实例
-  - `server.command()` 等同于 `server.cli.command()`
+  - `app.cli` commander 实例
+  - `app.command()` 等同于 `app.cli.command()`
 - Plugin
-  - `server.pluginManager` 插件管理器
-  - `server.plugin` 等同于 `server.pluginManager.add()`
+  - `app.pluginManager` 插件管理器
+  - `app.plugin` 等同于 `app.pluginManager.add()`
 
-基于以上扩展接口，提供模块化、可插拔的插件，可以通过 `server.plugin()` 添加。
+基于以上扩展接口，提供了模块化、可插拔的插件，可以通过 `app.plugin()` 添加。
+
+完整的插件包括安装、升级、激活、载入、禁用、卸载流程，但是并不是所有插件都要这完整的流程。比如：
 
 **最简单的插件**
 
 ```ts
-server.plugin(function pluginName1() {
+app.plugin(function pluginName1() {
 
 });
 ```
 
+这种方式添加的插件会直接载入。
+
 **JSON 风格**
 
-包括安装、激活、载入、禁用、卸载流程的配置
-
 ```ts
-server.plugin({
+const plugin = app.plugin({
   async install() {},
+  async upgrade() {},
   async activate() {},
   async bootstrap() {},
   async deactivate() {},
   async unstall() {},
 }, {
-  name: 'pluginName1',
+  activate: false, // 默认为 true，不需要启用时可以禁用。
+  name: 'plugin-name1',
   displayName: '插件名称',
   version: '1.2.3',
   dependencies: {
@@ -332,21 +338,24 @@ server.plugin({
     pluginName3: '1.x',
   },
 });
+// 通过 api 激活插件
+plugin.activate();
 ```
 
 **OOP 风格**
 
 ```ts
 class MyPlugin extends Plugin {
-  async bootstrap() {}
   async install() {}
-  async unstall() {}
+  async upgrade() {}
+  async bootstrap() {}
   async activate() {}
   async deactivate() {}
+  async unstall() {}
 }
 
-server.plugin(MyPlugin, {
-  name: 'pluginName1',
+app.plugin(MyPlugin, {
+  name: 'plugin-name1',
   displayName: '插件名称',
   version: '1.2.3',
   dependencies: {
@@ -359,7 +368,7 @@ server.plugin(MyPlugin, {
 **引用独立的 Package**
 
 ```ts
-server.plugin('@nocobase/plugin-action-logs');
+app.plugin('@nocobase/plugin-action-logs');
 ```
 
 插件信息也可以直接写在 `package.json` 里
@@ -374,12 +383,6 @@ server.plugin('@nocobase/plugin-action-logs');
     pluginName3: '1.x',
   },
 }
-```
-
-通过 `server.plugin()` 添加的插件需要激活才能使用
-
-```ts
-await server.pluginManager.activate(['pluginName1', 'pluginName2']);
 ```
 
 **插件 CLI**
@@ -454,7 +457,7 @@ describe('mock server', () => {
 插件配置
 
 ```ts
-server.plugin('@nocobase/plugin-client', {
+app.plugin('@nocobase/plugin-client', {
   // 自定义 dist 路径
   dist: path.resolve(__dirname, './node_modules/@nocobase/client/app'),
 });
@@ -566,30 +569,30 @@ nocobase-app 默认使用 umijs 作为项目构建工具，并集成了 Server �
 
 ### 小型管理信息系统
 
-小型管理信息系统（包括后台数据管理系统），具备完整的前后端
+小型管理信息系统，具备完整的前后端。
 
-<img src="./MiniMISServer.png" style="max-width: 400px; width: 100%;">
+<img src="./MiniMIS.png" style="max-width: 300px; width: 100%;">
 
 ### API 服务
 
-无需客户端，提供纯后端接口，也同样适用于 Open API
+无客户端，提供纯后端接口。
 
-<img src="./APIServer.png" style="max-width: 400px; width: 100%;">
+<img src="./API.png" style="max-width: 280px; width: 100%;">
 
 ### 小程序 + 后台管理
 
-只需要一套数据库，但有两套用户和权限，一套是用于后台用户，一套用于小程序用户
+只需要一套数据库，但有两套用户和权限，一套用于后台用户，一套用于小程序用户。
 
-<img src="./MiniProgramServer.png" style="max-width: 600px; width: 100%;">
+<img src="./MiniProgram.png" style="max-width: 600px; width: 100%;">
 
 ### SaaS 服务（共享用户）
 
-每个应用有自己配套的数据库，各应用数据完全隔离。应用不需要用户和权限模块，SaaS 主站全局共享了。目前的大多数协作平台、无代码平台是这样的结构。
+每个应用有自己配套的数据库，各应用数据完全隔离。应用不需要用户和权限模块，SaaS 主站全局共享了。
 
-<img src="./SaaSServer1.png" style="max-width: 600px; width: 100%;">
+<img src="./SaaS2.png" style="max-width: 450px; width: 100%;">
 
 ### SaaS 服务（独立用户）
 
-每个应用有自己的独立用户模块和权限，每个应用可以绑定自己的域名，更适用于搭建企业应用平台。
+每个应用有自己的独立用户模块和权限，应用可以绑定自己的域名。
 
-<img src="./SaaSServer2.png" style="max-width: 600px; width: 100%;">
+<img src="./SaaS1.png" style="max-width: 450px; width: 100%;">

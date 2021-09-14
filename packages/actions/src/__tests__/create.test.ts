@@ -16,13 +16,13 @@ describe('create', () => {
   });
 
   it('create', async () => {
-    api.database.table({
+    api.db.table({
       name: 'tests',
       fields: [
         { type: 'string', name: 'name' },
       ],
     });
-    await api.database.sync();
+    await api.db.sync();
     const response = await api.resource('tests').create({
       values: { name: 'n1' },
     });
@@ -30,21 +30,21 @@ describe('create', () => {
   });
 
   it('associations', async () => {
-    api.database.table({
+    api.db.table({
       name: 'comments',
       fields: [
         { type: 'string', name: 'content' },
       ],
     });
-    api.database.table({
+    api.db.table({
       name: 'posts',
       fields: [
         { type: 'string', name: 'title' },
         { type: 'hasMany', name: 'comments' },
       ],
     });
-    await api.database.sync();
-    const [Post, Comment] = api.database.getModels(['posts', 'comments']);
+    await api.db.sync();
+    const [Post, Comment] = api.db.getModels(['posts', 'comments']);
     const response = await api.resource('posts').create({
       values: {
         title: 't1',

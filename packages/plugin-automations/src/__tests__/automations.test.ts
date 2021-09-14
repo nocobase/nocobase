@@ -14,7 +14,7 @@ describe('automations', () => {
 
   beforeEach(async () => {
     app = await getApp();
-    db = app.database;
+    db = app.db;
     Automation = db.getModel('automations') as any;
     Test = db.getModel('tests');
     Target = db.getModel('targets');

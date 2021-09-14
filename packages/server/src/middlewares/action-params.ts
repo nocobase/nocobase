@@ -1,7 +1,7 @@
-import { actions } from '@nocobase/actions';
+import { Context, Next } from '@nocobase/actions';
 
 export function actionParams(options: any = {}) {
-  return async (ctx: actions.Context, next: actions.Next) => {
+  return async (ctx: Context, next: Next) => {
     const { actionName, resourceField, resourceName, fields = {} } = ctx.action.params;
     const table = ctx.db.getTable(resourceField ? resourceField.options.target : resourceName);
     // ctx.state.developerMode = {[Op.not]: null};

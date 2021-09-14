@@ -9,20 +9,20 @@ describe('update', () => {
       dataWrapping: false,
     });
     registerActions(api);
-    api.database.table({
+    api.db.table({
       name: 'posts',
       fields: [
         { type: 'string', name: 'title' },
         { type: 'hasMany', name: 'comments' },
       ],
     });
-    api.database.table({
+    api.db.table({
       name: 'comments',
       fields: [
         { type: 'string', name: 'content' },
       ],
     });
-    await api.database.sync();
+    await api.db.sync();
   });
 
   afterEach(async () => {
@@ -30,7 +30,7 @@ describe('update', () => {
   });
 
   it('update', async () => {
-    const Post = api.database.getModel('posts');
+    const Post = api.db.getModel('posts');
     const post = await Post.create();
     await api.resource('posts').update({
       resourceKey: post.id,
@@ -45,7 +45,7 @@ describe('update', () => {
   });
 
   it('update associations', async () => {
-    const [Post, Comment] = api.database.getModels(['posts', 'comments']);
+    const [Post, Comment] = api.db.getModels(['posts', 'comments']);
     const post = await Post.create();
     const comment = await Comment.create();
     await post.updateAssociations({

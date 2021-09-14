@@ -29,6 +29,8 @@
     "@nocobase/client": "^0.4.0-alpha.7",
     "@nocobase/preset-nocobase": "^0.4.0-alpha.7",
     "@umijs/preset-react": "1.x",
+    "koa-mount": "^4.0.0",
+    "ts-node-dev": "^1.1.8",
     "umi": "^3.0.0"
   },
   "devDependencies": {

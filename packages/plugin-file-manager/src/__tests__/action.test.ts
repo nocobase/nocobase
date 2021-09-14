@@ -16,9 +16,9 @@ describe('action', () => {
     app = await getApp();
     agent = getAgent(app);
     api = getAPI(app);
-    db = app.database;
+    db = app.db;
 
-    const Storage = app.database.getModel('storages');
+    const Storage = app.db.getModel('storages');
     await Storage.create({
       name: `local_${Date.now().toString(36)}`,
       type: STORAGE_TYPE_LOCAL,
