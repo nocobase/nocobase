@@ -42,6 +42,11 @@ export class Field extends Model {
     return props;
   }
 
+  async migrate() {
+    const collection = await this.getCollection();
+    await collection.migrate()
+  }
+
   async getNestedFields() {
     const fields = await this.getChildren();
     const items = [];
