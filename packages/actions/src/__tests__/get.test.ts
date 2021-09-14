@@ -9,20 +9,20 @@ describe('get', () => {
       dataWrapping: false,
     });
     registerActions(api);
-    api.database.table({
+    api.db.table({
       name: 'posts',
       fields: [
         { type: 'string', name: 'title' },
         { type: 'hasMany', name: 'comments' },
       ],
     });
-    api.database.table({
+    api.db.table({
       name: 'comments',
       fields: [
         { type: 'string', name: 'content' },
       ],
     });
-    await api.database.sync();
+    await api.db.sync();
   });
 
   afterEach(async () => {
@@ -30,7 +30,7 @@ describe('get', () => {
   });
 
   it('get', async () => {
-    const Post = api.database.getModel('posts');
+    const Post = api.db.getModel('posts');
     const post = await Post.create({ title: 't1' });
     const response = await api.resource('posts').get({
       resourceKey: post.id,
@@ -40,7 +40,7 @@ describe('get', () => {
   });
 
   it('get associations', async () => {
-    const [Post, Comment] = api.database.getModels(['posts', 'comments']);
+    const [Post, Comment] = api.db.getModels(['posts', 'comments']);
     const post = await Post.create();
     const comment = await Comment.create({ content: 'c2' });
     await post.updateAssociations({

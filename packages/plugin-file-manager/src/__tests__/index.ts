@@ -67,23 +67,23 @@ export async function getApp() {
     'file-manager': [plugin]
   });
   await app.loadPlugins();
-  app.database.import({
+  app.db.import({
     directory: path.resolve(__dirname, './tables')
   });
   try {
-    await app.database.sync();
+    await app.db.sync();
   } catch (error) {
     console.error(error);
   }
   app.use(async (ctx, next) => {
-    ctx.db = app.database;
+    ctx.db = app.db;
     await next();
   });
   app.use(bodyParser());
   app.use(middleware({
     prefix: '/api',
     resourcer: app.resourcer,
-    database: app.database,
+    database: app.db,
   }));
   return app;
 }

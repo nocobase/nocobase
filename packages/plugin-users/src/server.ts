@@ -12,7 +12,7 @@ export default async function (this: Application, options = {}) {
 
   registerFields(fields);
 
-  this.on('users.init', async () => {
+  this.on('db.init', async () => {
     const User = database.getModel('users');
     await User.create({
       nickname: '超级管理员',

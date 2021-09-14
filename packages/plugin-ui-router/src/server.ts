@@ -17,7 +17,7 @@ export default async function (this: Application, options = {}) {
 
   const Route = database.getModel('routes');
 
-  this.on('ui-router.init', async () => {
+  this.on('db.init', async () => {
     const data = [
       {
         type: 'redirect',

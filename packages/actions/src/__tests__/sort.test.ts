@@ -11,7 +11,7 @@ describe('sort', () => {
         dataWrapping: false,
       });
       registerActions(api);
-      api.database.table({
+      api.db.table({
         name: 'tests',
         fields: [
           { type: 'string', name: 'title' },
@@ -19,8 +19,8 @@ describe('sort', () => {
           { type: 'sort', name: 'sort2' },
         ],
       });
-      await api.database.sync();
-      const Test = api.database.getModel('tests');
+      await api.db.sync();
+      const Test = api.db.getModel('tests');
       for (let index = 1; index < 5; index++) {
         await Test.create({ title: `t${index}` });
       }
@@ -160,7 +160,7 @@ describe('sort', () => {
         dataWrapping: false,
       });
       registerActions(api);
-      api.database.table({
+      api.db.table({
         name: 'tests',
         fields: [
           { type: 'string', name: 'title' },
@@ -168,8 +168,8 @@ describe('sort', () => {
           { type: 'sort', name: 'sort', scope: ['state'] },
         ],
       });
-      await api.database.sync();
-      const Test = api.database.getModel('tests');
+      await api.db.sync();
+      const Test = api.db.getModel('tests');
       for (let index = 1; index < 5; index++) {
         await Test.create({ title: `t1${index}`, state: 1 });
       }

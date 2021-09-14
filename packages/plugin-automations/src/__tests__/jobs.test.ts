@@ -19,7 +19,7 @@ describe('automations.jobs', () => {
 
   beforeEach(async () => {
     app = await getApp();
-    db = app.database;
+    db = app.db;
     Job = db.getModel('automations_jobs') as any;
     Test = db.getModel('tests');
   });

@@ -1,6 +1,6 @@
-import { Action } from '@nocobase/resourcer';
+import { Context, Next } from '@nocobase/actions';
 
-export async function dataWrapping(ctx, next) {
+export async function dataWrapping(ctx: Context, next: Next) {
   await next();
   if (ctx.withoutDataWrapping) {
     return;

@@ -18,7 +18,7 @@ export function getDocumentRoot(storage): string {
 // TODO(optimize): 初始化的时机不应该放在中间件里
 export function middleware(app) {
   const storages = new Map<string, any>();
-  const StorageModel = app.database.getModel('storages');
+  const StorageModel = app.db.getModel('storages');
 
   return app.use(async function (ctx, next) {
     const items = await StorageModel.findAll({

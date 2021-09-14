@@ -59,11 +59,11 @@ export async function getApp() {
     automations: plugin
   });
   await app.loadPlugins();
-  const testTables = app.database.import({
+  const testTables = app.db.import({
     directory: path.resolve(__dirname, './collections')
   });
   try {
-    await app.database.sync();
+    await app.db.sync();
   } catch (err) {
     console.error(err);
   }
@@ -71,15 +71,15 @@ export async function getApp() {
   for (const table of testTables.values()) {
     // TODO(bug): 由于每个用例结束后不会清理用于测试的数据表，导致再次创建和更新
     // 创建和更新里面仍会再次创建 fields，导致创建相关的数据重复，数据库报错。
-    await app.database.getModel('collections').import(table.getOptions(), { update: true, migrate: false });
+    await app.db.getModel('collections').import(table.getOptions(), { update: true, migrate: false });
   }
 
-  app.context.db = app.database;
+  app.context.db = app.db;
   app.use(bodyParser());
   app.use(middleware({
     prefix: '/api',
     resourcer: app.resourcer,
-    database: app.database,
+    database: app.db,
   }));
   return app;
 }

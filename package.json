@@ -27,6 +27,7 @@
     "@types/file-saver": "^2.0.3",
     "@types/jest": "^24.0.18",
     "@types/koa": "^2.13.1",
+    "@types/koa-mount": "^4.0.1",
     "@types/lodash": "^4.14.169",
     "@types/mockjs": "^1.0.3",
     "@types/node": "^12.6.8",

@@ -59,22 +59,22 @@ export async function getApp() {
   app.resourcer.registerActionHandlers({ ...actions.associate, ...actions.common });
   app.registerPlugin('collections', [plugin]);
   await app.loadPlugins();
-  await app.database.sync();
+  await app.db.sync();
   // 表配置信息存到数据库里
-  // const tables = app.database.getTables([]);
+  // const tables = app.db.getTables([]);
   // for (const table of tables) {
-  //   const Collection = app.database.getModel('collections');
+  //   const Collection = app.db.getModel('collections');
   //   await Collection.import(table.getOptions(), { hooks: false });
   // }
   app.use(async (ctx, next) => {
-    ctx.db = app.database;
+    ctx.db = app.db;
     await next();
   });
   app.use(bodyParser());
   app.use(middleware({
     prefix: '/api',
     resourcer: app.resourcer,
-    database: app.database,
+    database: app.db,
   }));
   return app;
 }

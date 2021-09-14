@@ -3,7 +3,7 @@ import api from '../app';
 
 (async () => {
   await api.loadPlugins();
-  const database: Database = api.database;
+  const database: Database = api.db;
   await database.sync({
     // tables: ['collections', 'fields', 'actions', 'views', 'tabs'],
   });

@@ -16,7 +16,7 @@ describe('hook', () => {
     });
     registerActions(api);
     await api.loadPlugins();
-    db = api.database;
+    db = api.db;
     db.table({
       name: 'posts',
       logging: true,

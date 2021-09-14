@@ -9,11 +9,11 @@ describe('collection hooks', () => {
 
   beforeEach(async () => {
     app = await getApp();
-    db = app.database;
+    db = app.db;
     agent = getAgent(app);
   });
 
-  afterEach(() => app.database.close());
+  afterEach(() => app.db.close());
 
   it('create table', async () => {
     const Collection = db.getModel('collections');

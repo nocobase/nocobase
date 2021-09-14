@@ -25,7 +25,7 @@ export default async function (this: Application, options = {}) {
     await next();
   });
 
-  this.on('system-settings.init', async () => {
+  this.on('db.init', async () => {
     const setting = await SystemSetting.create({
       title: 'NocoBase',
     });

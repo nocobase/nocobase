@@ -6,7 +6,7 @@ import { createOrUpdate, findAll } from './actions';
 import { create } from './actions/fields';
 
 export default async function (this: Application, options = {}) {
-  const database = this.database;
+  const database = this.db;
 
   registerModels(models);
 
@@ -14,12 +14,11 @@ export default async function (this: Application, options = {}) {
     directory: path.resolve(__dirname, 'collections'),
   });
 
-  this.on('pluginsLoaded', async () => {
-    console.log('pluginsLoaded');
+  this.on('afterLoadPlugins', async () => {
     await database.getModel('collections').load();
   });
 
-  this.on('collections.init', async () => {
+  this.on('db.init', async () => {
     const userTable = database.getTable('users');
     const config = userTable.getOptions();
     const Collection = database.getModel('collections');

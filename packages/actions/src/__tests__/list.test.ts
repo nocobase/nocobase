@@ -9,14 +9,14 @@ describe('list', () => {
       dataWrapping: false,
     });
     registerActions(api);
-    api.database.table({
+    api.db.table({
       name: 'comments',
       fields: [
         { type: 'string', name: 'content' },
         { type: 'string', name: 'status', defaultValue: 'draft' },
       ],
     });
-    api.database.table({
+    api.db.table({
       name: 'posts',
       fields: [
         { type: 'string', name: 'title' },
@@ -24,8 +24,8 @@ describe('list', () => {
         { type: 'string', name: 'status', defaultValue: 'draft' },
       ],
     });
-    await api.database.sync();
-    const [Post, Comment] = api.database.getModels(['posts', 'comments']);
+    await api.db.sync();
+    const [Post, Comment] = api.db.getModels(['posts', 'comments']);
     for (let index = 1; index < 4; index++) {
       const post = await Post.create({ title: `t${index}` });
       await post.updateAssociations({
