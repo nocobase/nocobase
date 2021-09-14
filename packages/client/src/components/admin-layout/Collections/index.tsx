@@ -652,7 +652,7 @@ function CreateFieldButton() {
 }
 
 function EditFieldButton() {
-  const { refresh } = useCollectionsContext();
+  const { refresh, findCollection } = useCollectionsContext();
   const { service } = useTable();
   const ctx = useContext(TableRowContext);
   const [visible, setVisible] = useState(false);
@@ -688,7 +688,11 @@ function EditFieldButton() {
         type={'link'}
         onClick={() => {
           setVisible(true);
-          form.setValues(clone(ctx.record));
+          const collection = findCollection(ctx.record.collection_name);
+          const values = collection?.generalFields?.find(
+            (field) => field.key === ctx.record.key,
+          );
+          form.setValues(clone(values || {}));
         }}
       >
         编辑
