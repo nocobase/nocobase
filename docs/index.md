@@ -5,7 +5,7 @@ toc: menu
 
 # NocoBase
 
-考虑到大家是初次接触 NocoBase，开发文档的第一篇，从宏观的角度，带大家了解 NocoBase 的基础概念。NocoBase 采用微内核架构，框架只保留核心，各类功能以插件形式扩展。
+考虑到大家是初次接触 NocoBase，开发文档的第一篇，先带大家了解基础概念。NocoBase 采用微内核架构，框架只保留核心，各类功能以插件形式扩展。
 
 <img src="./NocoBase.png" style="max-width: 800px; width: 100%;">
 
@@ -16,17 +16,21 @@ toc: menu
 ```ts
 const { Application } = require('@nocobase/server');
 
-const app = new Application();
-
-app.collection({
-  name: 'users',
-  fields: [
-    { type: 'string', name: 'username' },
-    { type: 'password', name: 'password' },
-  ],
+const app = new Application({
+  // 省略配置信息
 });
 
-app.start(process.argv);
+// 配置一张 users 表
+app.collection({
+  name: 'users',
+  schema: {
+    username: 'string',
+    password: 'password',
+  },
+});
+
+// 解析 argv 参数，终端通过命令行进行不同操作
+app.parse(process.argv);
 ```
 
 终端运行
@@ -48,19 +52,19 @@ PUT     http://localhost:3000/api/users/1
 DELETE  http://localhost:3000/api/users/1
 ```
 
-除了内置的 REST API 以外，还可以自定义其他操作，如登录、注册、注销等。
+以上示例，只用了 10 行左右的代码就创建了真实可用的 REST API 服务。除了内置的 REST API 以外，还可以通过 `app.actions()` 自定义其他操作，如登录、注册、注销等。
 
 ```ts
-app.registerActions({
+app.actions({
   async login(ctx, next) {},
   async register(ctx, next) {},
   async logout(ctx, next) {},
 }, {
-  resourceName: 'users',
+  resourceName: 'users', // 属于 users 资源
 });
 ```
 
-以上操作的 HTTP API 为：
+以上自定义操作的 HTTP API 为：
 
 ```bash
 POST    http://localhost:3000/api/users:login
@@ -68,22 +72,31 @@ POST    http://localhost:3000/api/users:register
 POST    http://localhost:3000/api/users:logout
 ```
 
-自定义的 HTTP API 依旧保持 REST API 的风格，以 `<resourceName>:<actionName>` 格式表示。REST API 也可以显式指定 actionName，当指定了 actionName 时，无所谓使用什么 Request Method，如：
+自定义的 HTTP API 依旧保持 REST API 的风格，以 `<resourceName>:<actionName>` 格式表示。实际上 REST API 也可以显式指定 `actionName`，当指定了 `actionName`，无所谓使用什么请求方法，如：
 
 ```bash
-GET     http://localhost:3000/api/users:list
-POST    http://localhost:3000/api/users:create
-GET     http://localhost:3000/api/users:get/1
+# 更新操作
+PUT     http://localhost:3000/api/users/1
+# 等同于
 POST    http://localhost:3000/api/users:update/1
+
+# 删除操作
+DELETE  http://localhost:3000/api/users/1
+# 等同于
+GET     http://localhost:3000/api/users:destroy/1
+# 等同于
 POST    http://localhost:3000/api/users:destroy/1
 ```
 
-结合客户端 SDK 是这样的：
+NocoBase 的路由（Resourcer）基于资源（Resource）和操作（Action）设计，将 REST 和 RPC 结合起来，提供更为灵活且统一的 Resource Action API。结合客户端 SDK 是这样的：
 
 ```ts
-const { ClientSDK } = require('@nocobase/client');
+const { ClientSDK } = require('@nocobase/sdk');
 
-const api = new ClientSDK();
+const api = new ClientSDK({
+  // 可以适配不同 request
+  request(params) => Promise.resolve({}),
+});
 
 await api.resource('users').list();
 await api.resource('users').create();
@@ -95,9 +108,39 @@ await api.resource('users').register();
 await api.resource('users').logout();
 ```
 
+## 应用 - Application
+
+NocoBase 的 Application 继承了 Koa，集成了 DB 和 CLI，添加了一些必要的 API，这里列一些重点：
+
+- `app.db`：数据库实例，每个 app 都有自己的 db。
+    - `db.getTable()` 数据表/数据集配置
+    - `db.getRepository()` 数据仓库
+    - `db.getModel()` 数据模型
+  - `db.on()` 添加事件监听，由 EventEmitter 提供
+  - `db.emit()` 触发事件，由 EventEmitter 提供
+  - `db.emitAsync()` 触发异步事件
+- `app.cli`，commander 实例，提供命令行操作
+- `app.context`，上下文
+  - `ctx.db`
+  - `ctx.action`
+- `app.constructor()` 初始化
+- `app.collection()` 定义数据 Schema，等同于 `app.db.table()`
+- `app.resource()` 定义资源
+- `app.actions()` 定义资源的操作方法
+- `app.on()` 添加事件监听，由 EventEmitter 提供
+- `app.emit()` 触发事件，由 EventEmitter 提供
+- `app.emitAsync()` 触发异步事件
+- `app.use()` 添加中间件，由 Koa 提供
+- `app.command()` 自定义命令行，等同于 `app.cli.command()`
+- `app.plugin()` 添加插件
+- `app.load()` 载入配置，主要用于载入插件
+- `app.parse()` 解析 argv 参数，写在最后，等同于 `app.cli.parseAsync()`
+
+经过几次改进，以上罗列的 API 趋近于稳定，但也可能有所变动。
+
 ## 数据集 - Collection
 
-上述例子，通过 `app.collection()` 方法定义数据的 Schema，Schema 的核心为字段配置，字段类型包括：
+NocoBase 通过 `app.collection()` 方法定义数据的 Schema，Schema 的类型包括：
 
 属性 Attribute
 
@@ -131,29 +174,40 @@ await api.resource('users').logout();
 // 用户
 app.collection({
   name: 'users',
-  fields: [
-    { type: 'string', name: 'username', unique: true },
-    { type: 'password', name: 'password', unique: true },
-    { type: 'hasMany', name: 'posts' },
-  ],
+  schema: {
+    username: {
+      type: 'string',
+      unique: true,
+    },
+    password: {
+      type: 'password',
+      unique: true,
+    },
+    posts: {
+      type: 'hasMany',
+    },
+  },
 });
 
 // 文章
 app.collection({
   name: 'posts',
-  fields: [
-    { type: 'string', name: 'title' },
-    { type: 'text', name: 'content' },
-    { type: 'belongsToMany', name: 'tags' },
-    { type: 'hasMany', name: 'comments' },
-    { type: 'belongsTo', name: 'author', target: 'users' },
-  ],
+  schema: {
+    title: 'string',
+    content: 'text',
+    tags: 'belongsToMany',
+    comments: 'hasMany',
+    author: {
+      type: 'belongsTo',
+      target: 'users',
+    },
+  },
 });
 
 // 标签
 app.collection({
   name: 'tags',
-  fields: [
+  schema: [
     { type: 'string', name: 'name' },
     { type: 'belongsToMany', name: 'posts' },
   ],
@@ -162,22 +216,206 @@ app.collection({
 // 评论
 app.collection({
   name: 'comments',
-  fields: [
+  schema: [
     { type: 'text', name: 'content' },
     { type: 'belongsTo', name: 'user' },
   ],
 });
 ```
 
-存在外键关联时，也无需顾虑建表和字段的顺序，`db sync` 时会自动处理。为了方便开发，提供了一些有用的属性或方法：
+除了通过 `app.collection()` 配置 schema，也可以直接调用 api 插入或修改 schema，collection 的核心 API 有：
 
-- `app.db` 数据库实例
-- `app.db.getModel()` 获取 Model
-- `app.db.getTable()` 获取 Schema Table
+- `collection.model` 当前 collection 的数据模型
+- `collection.repository` 当前 collection 的数据仓库
+  - `repository.findAll()`
+  - `repository.findOne()`
+  - `repository.create()`
+  - `repository.update()`
+  - `repository.destroy()`
+- `collection.schema` 当前 collection 的数据结构
+  - `schema.has()` 判断是否存在
+  - `schema.get()` 获取
+  - `schema.set()` 添加或更新
+  - `schema.merge()` 添加、或指定 key path 替换
+  - `schema.replace()` 替换
+  - `schema.delete()` 删除
+
+如：
+
+```ts
+const collection = app.db.getCollection('posts');
+
+collection.schema.has('title');
+
+collection.schema.get('title');
+
+// 添加或更新
+collection.schema.set('content', {
+  type: 'string',
+});
+
+// 移除
+collection.schema.delete('content');
+
+// 添加、或指定 key path 替换
+collection.schema.merge({
+  content: {
+    type: 'content',
+  },
+});
+
+除了全局的 `db.sync()`，也有 `collection.sync()` 方法。
+
+await collection.sync();
+```
+
+存在外键关联时，也无需顾虑建表和字段的顺序，`db sync` 时会自动处理。`db sync` 之后，就可以往表里写入数据了。可以使用 Repository 或 Model 操作。
+
+- Repository 初步提供了 findAll、findOne、create、update、destroy 核心操作方法。
+- Model 为 Sequelize.Model，详细使用说明可以查看 Sequelize 文档。
+- Model 取决于适配的 ORM，Repository 基于 Model 提供统一的接口。
+
+通过 Repository 创建数据
+
+```ts
+const repository = app.db.getRepository('users');
+
+const user = await repository.create({
+  title: 't1',
+  content: 'c1',
+  author: 1,
+  tags: [1,2,3],
+}, {
+  whitelist: [],
+  blacklist: [],
+});
+
+await repository.findAll({
+  filter: {
+    title: 't1',
+  },
+  fields: ['id', 'title', 'content'],
+  sort: '-created_at',
+  page: 1,
+  perPage: 20,
+});
+
+await repository.findOne({
+  filter: {
+    title: 't1',
+  },
+  fields: ['id', 'title', 'content'],
+  sort: '-created_at',
+  page: 1,
+  perPage: 20,
+});
+
+await repository.update({
+  title: 't1',
+  content: 'c1',
+  author: 1,
+  tags: [1,2,3],
+}, {
+  filter: {},
+  whitelist: [],
+  blacklist: [],
+});
+
+await repository.destroy({
+  filter: {},
+});
+```
+
+通过 Model 创建数据
+
+```ts
+const User = db.getModel('users');
+const user = await User.create({
+  title: 't1',
+  content: 'c1',
+});
+await user.updateAssociations({
+  author: 1,
+  tags: [1,2,3],
+});
+```
 
 ## 资源 & 操作 - Resource & Action
 
-不同于常规的 MVC + Router，NocoBase 的路由（Resourcer）基于资源（Resource）和操作（Action）设计，将 REST 和 RPC 结合起来，提供更为灵活且统一的 Resource Action API，Action 不局限于增删改查。资源可以通过 `app.resource()` 方法定义，如：
+Resource 是互联网资源，互联网资源都对应一个地址。客户端请求资源地址，服务器响应请求，在这里「请求」就是一种「操作」，在 REST 里通过判断请求方法（GET/POST/PUT/DELETE）来识别具体的操作，但是请求方法局限性比较大，如上文提到的登录、注册、注销就无法用 REST API 的方式表示。为了解决这类问题，NocoBase 以 `<resourceName>:<actionName>` 格式表示资源的操作。在关系模型的世界里，关系无处不在，基于关系，NocoBase 又延伸了关系资源的概念，对应关系资源的操作的格式为 `<associatedName>.<resourceName>:<actionName>`。
+
+Collection 会自动同步给 Resource，上文 Collection 章节定义的 Schema，提炼的资源有：
+
+- `users`
+- `users.posts`
+- `posts`
+- `posts.tags`
+- `posts.comments`
+- `posts.author`
+- `tags`
+- `tags.posts`
+- `comments`
+- `comments.user`
+
+<Alert title="Collection 和 Resource 的关系与区别" type="warning">
+
+- Collection 定义数据的 schema（结构和关系）
+- Resource 定义数据的 action（操作方法）
+- Resource 请求和响应的数据结构由 Collection 定义
+- Collection 默认自动同步给 Resource
+- Resource 的概念更大，除了对接 Collection 以外，也可以对接外部数据或其他自定义
+
+</Alert>
+
+资源相关 API 有：
+
+- `app.resource()`
+- `app.actions()`
+- `ctx.action`
+
+一个资源可以有多个操作。
+
+```ts
+// 数据类
+app.resource({
+  name: 'users',
+  actions: {
+    async list(ctx, next) {},
+    async get(ctx, next) {},
+    async create(ctx, next) {},
+    async update(ctx, next) {},
+    async destroy(ctx, next) {},
+  },
+});
+
+// 非数据类
+app.resource({
+  name: 'server',
+  actions: {
+    // 获取服务器时间
+    getTime(ctx, next) {},
+    // 健康检测
+    healthCheck(ctx, next) {},
+  },
+});
+```
+
+常规操作可以用于不同资源
+
+```ts
+app.actions({
+  async list(ctx, next) {},
+  async get(ctx, next) {},
+  async create(ctx, next) {},
+  async update(ctx, next) {},
+  async destroy(ctx, next) {},
+}, {
+  // 不指定 resourceName 时，全局共享
+  resourceNames: ['posts', 'comments', 'users'],
+});
+```
+
+在资源内部定义的 action 不会共享，常规类似增删改查的操作建议设置为全局，`app.resource()` 只设置参数，如：
 
 ```ts
 app.resource({
@@ -210,14 +448,100 @@ app.resource({
     },
   },
 });
+
+// app 默认已经内置了 list, get, create, update, destroy 操作
+app.actions({
+  async list(ctx, next) {},
+  async get(ctx, next) {},
+  async create(ctx, next) {},
+  async update(ctx, next) {},
+  async destroy(ctx, next) {},
+});
 ```
 
-`app.collection()` 和 `app.resource()` 的区别？
+在 Middleware Handler 和 Action Handler 里，都可以通过 `ctx.action` 获取到当前 action 实例，提供了两个非常有用的 API：
 
-- `app.collection()` 定义数据的 Schema（结构和关系）
-- `app.resource()` 定义数据的 Action（操作方法）
+- `ctx.action.params`：获取操作对应的参数
+- `ctx.action.mergeParams()`：处理多来源参数合并
 
-一般情况无需显式声明 collection 的 resource，因为已定义的 collection 会自动同步给 resource。
+`ctx.action.params` 有：
+
+- 定位资源和操作
+  - `actionName`
+  - `resourceName`
+  - `associatedName`
+- 定位资源 ID
+  - `resourceId`
+  - `associatedId`
+- request query
+  - `filter`
+  - `fields`
+  - `sort`
+  - `page`
+  - `perPage`
+  - 其他 query 值
+- request body
+  - `values`
+
+示例：
+
+```ts
+async function (ctx, next) {
+  const { resourceName, resourceId, filter, fields } = ctx.action.params;
+  // ...
+}
+```
+
+多来源参数合并，以 `filter` 参数为例。如：客户端请求日期 2021-09-15 创建的文章
+
+```bash
+GET /api/posts:list?filter={"created_at": "2021-09-15"}
+```
+
+资源设置锁定只能查看已发布的文章
+
+```ts
+app.resource({
+  name: 'posts',
+  actions: {
+    list: {
+      filter: { status: 'publish' }, // 只能查看已发布文章
+    },
+  },
+})
+```
+
+权限设定，只能查看自己创建的文章
+
+```ts
+app.use(async (ctx, next) => {
+  const { resourceName, actionName } = ctx.action.params;
+  if (resourceName === 'posts' && actionName === 'list') {
+    ctx.action.mergeParams({
+      filter: {
+        created_by_id: ctx.state.currentUser.id,
+      },
+    });
+  }
+  await next();
+});
+```
+
+以上客户端、资源配置、中间件内我们都指定了 filter 参数，三个来源的参数最终会合并在一起作为最终的过滤条件：
+
+```ts
+async function list(ctx, next) {
+  // list 操作中获取到的 filter
+  console.log(ctx.params.filter);
+  // {
+  //   and: [
+  //     { created_at: '2021-09-15' },
+  //     { status: 'publish' },
+  //     { created_by_id: 1, }
+  //   ]
+  // }
+}
+```
 
 ## 事件 - Event
 
@@ -230,13 +554,13 @@ app.resource({
 
 ```ts
 // 创建数据时，执行 User.create() 时触发
-app.db.on('users:beforeCreate', async (model) => {});
+app.db.on('users.beforeCreate', async (model) => {});
 
 // 客户端 `POST /api/users:login` 时触发
-app.on('users:beforeLogin', async (ctx, next) => {});
+app.on('users.beforeLogin', async (ctx, next) => {});
 
 // 客户端 `POST /api/users` 时触发
-app.on('users:beforeCreate', async (ctx, next) => {});
+app.on('users.beforeCreate', async (ctx, next) => {});
 ```
 
 ## 中间件 - Middleware
@@ -288,10 +612,10 @@ app.command('foo').action(async () => {
 
 - Database/Collection
   - `app.db` database 实例
-  - `app.collection()` 等同于 `app.db.table()`
+  - `app.collection()` 等同于 `app.db.collection()`
 - Resource/Action
   - `app.resource()` 等同于 `app.resourcer.define()`
-  - `app.registerActions()` 等同于 `app.resourcer.registerActions()`
+  - `app.actions()` 等同于 `app.resourcer.registerActions()`
 - Hook/Event
   - `app.on()` 添加服务器监听器
   - `app.db.on()` 添加数据库监听器
@@ -301,12 +625,9 @@ app.command('foo').action(async () => {
   - `app.cli` commander 实例
   - `app.command()` 等同于 `app.cli.command()`
 - Plugin
-  - `app.pluginManager` 插件管理器
-  - `app.plugin` 等同于 `app.pluginManager.add()`
+  - `app.plugin` 添加插件
 
-基于以上扩展接口，提供了模块化、可插拔的插件，可以通过 `app.plugin()` 添加。
-
-完整的插件包括安装、升级、激活、载入、禁用、卸载流程，但是并不是所有插件都要这完整的流程。比如：
+基于以上扩展接口，进一步提供了模块化、可插拔的插件，可以通过 `app.plugin()` 添加。完整的插件包括安装、升级、激活、载入、禁用、卸载流程，但是并不是所有插件都要这完整的流程。比如：
 
 **最简单的插件**
 
@@ -316,7 +637,7 @@ app.plugin(function pluginName1() {
 });
 ```
 
-这种方式添加的插件会直接载入。
+这种方式添加的插件会直接载入，无需安装。
 
 **JSON 风格**
 
@@ -329,7 +650,7 @@ const plugin = app.plugin({
   async deactivate() {},
   async unstall() {},
 }, {
-  activate: false, // 默认为 true，不需要启用时可以禁用。
+  enable: false, // 默认为 true，不需要启用时可以禁用。
   name: 'plugin-name1',
   displayName: '插件名称',
   version: '1.2.3',
@@ -423,7 +744,7 @@ describe('mock server', () => {
     api = mockServer({
       dataWrapping: false,
     });
-    api.registerActions({
+    api.actions({
       list: async (ctx, next) => {
         ctx.body = [1, 2];
         await next();
@@ -548,7 +869,7 @@ ReactDOM.render(
 );
 </pre>
 
-更多细节，可以通过 create-nocobase-app 初始化项目脚手架并体验。
+更多细节，可以通过 `create-nocobase-app` 初始化项目脚手架并体验。
 
 ```bash
 yarn create nocobase-app my-nocobase-project
@@ -565,34 +886,24 @@ nocobase-app 默认使用 umijs 作为项目构建工具，并集成了 Server �
 |- package.json
 ```
 
-## 应用场景
-
-### 小型管理信息系统
+## 场景 - Cases
 
 小型管理信息系统，具备完整的前后端。
 
 <img src="./MiniMIS.png" style="max-width: 300px; width: 100%;">
 
-### API 服务
-
-无客户端，提供纯后端接口。
+API 服务，无客户端，提供纯后端接口。
 
 <img src="./API.png" style="max-width: 280px; width: 100%;">
 
-### 小程序 + 后台管理
-
-只需要一套数据库，但有两套用户和权限，一套用于后台用户，一套用于小程序用户。
+小程序 + 后台管理，只需要一套数据库，但有两套用户和权限，一套用于后台用户，一套用于小程序用户。
 
 <img src="./MiniProgram.png" style="max-width: 600px; width: 100%;">
 
-### SaaS 服务（共享用户）
-
-每个应用有自己配套的数据库，各应用数据完全隔离。应用不需要用户和权限模块，SaaS 主站全局共享了。
+SaaS 服务（共享用户），每个应用有自己配套的数据库，各应用数据完全隔离。应用不需要用户和权限模块，SaaS 主站全局共享了。
 
 <img src="./SaaS2.png" style="max-width: 450px; width: 100%;">
 
-### SaaS 服务（独立用户）
-
-每个应用有自己的独立用户模块和权限，应用可以绑定自己的域名。
+SaaS 服务（独立用户），每个应用有自己的独立用户模块和权限，应用可以绑定自己的域名。
 
 <img src="./SaaS1.png" style="max-width: 450px; width: 100%;">
