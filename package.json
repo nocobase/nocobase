@@ -7,6 +7,7 @@
   "scripts": {
     "bootstrap": "lerna bootstrap",
     "clean": "lerna clean",
+    "examples": "ts-node-dev -r dotenv/config ./examples",
     "start": "cd packages/app && npm start",
     "start-client": "cd packages/app && npm run start-client",
     "start-server": "nodemon",

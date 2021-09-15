@@ -1,5 +1,5 @@
 import qs from 'qs';
-import supertest from 'supertest';
+import supertest, { SuperAgentTest } from 'supertest';
 import Application, { ApplicationOptions } from '@nocobase/server';
 import { getConfig } from './mockDatabase';
 
@@ -46,59 +46,61 @@ interface Resource {
 }
 
 export class MockServer extends Application {
-
-  protected agentInstance: supertest.SuperAgentTest;
-
-  agent() {
-    if (!this.agentInstance) {
-      this.agentInstance = supertest.agent(this.callback());
-    }
-    return this.agentInstance;
-  }
-
-  resource(name: string) {
-    const agent = this.agent();
-    const keys = name.split('.');
+  agent(): SuperAgentTest & { resource: (name: string) => Resource } {
+    const agent = supertest.agent(this.callback());
     const prefix = this.resourcer.options.prefix;
     const proxy = new Proxy({}, {
       get(target, method: string, receiver) {
-        return (params: ActionParams = {}) => {
-          const {
-            associatedKey,
-            resourceKey,
-            values = {},
-            file,
-            ...restParams
-          } = params;
-          let url = prefix;
-          if (keys.length > 1) {
-            url = `/${keys[0]}/${associatedKey}/${keys[1]}`
-          } else {
-            url = `/${name}`;
+        if (method === 'resource') {
+          return (name: string) => {
+            const keys = name.split('.');
+            const proxy = new Proxy({}, {
+              get(target, method: string, receiver) {
+                return (params: ActionParams = {}) => {
+                  const {
+                    associatedKey,
+                    resourceKey,
+                    values = {},
+                    file,
+                    ...restParams
+                  } = params;
+                  let url = prefix;
+                  if (keys.length > 1) {
+                    url = `/${keys[0]}/${associatedKey}/${keys[1]}`
+                  } else {
+                    url = `/${name}`;
+                  }
+                  url += `:${method as string}`;
+                  if (resourceKey) {
+                    url += `/${resourceKey}`;
+                  }
+                  console.log('request url: ' + url);
+                  switch (method) {
+                    case 'upload':
+                      return agent
+                        .post(`${url}?${qs.stringify(restParams)}`)
+                        .attach('file', file)
+                        .field(values);
+                    case 'list':
+                    case 'get':
+                      return agent.get(`${url}?${qs.stringify(restParams)}`);
+                    default:
+                      return agent
+                        .post(`${url}?${qs.stringify(restParams)}`)
+                        .send(values);
+                  }
+                };
+              },
+            });
+            return proxy;
           }
-          url += `:${method as string}`;
-          if (resourceKey) {
-            url += `/${resourceKey}`;
-          }
-          console.log('request url: ' + url);
-          switch (method) {
-            case 'upload':
-              return agent
-                .post(`${url}?${qs.stringify(restParams)}`)
-                .attach('file', file)
-                .field(values);
-            case 'list':
-            case 'get':
-              return agent.get(`${url}?${qs.stringify(restParams)}`);
-            default:
-              return agent
-                .post(`${url}?${qs.stringify(restParams)}`)
-                .send(values);
-          }
+        }
+        return (...args: any[]) => {
+          return agent[method](...args);
         };
-      },
+      }
     });
-    return proxy as Resource;
+    return proxy as any;
   }
 }
 
