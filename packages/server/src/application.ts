@@ -6,6 +6,7 @@ import Database, { DatabaseOptions, TableOptions } from '@nocobase/database';
 import Resourcer, { ResourceOptions } from '@nocobase/resourcer';
 import { dataWrapping, table2resource } from './middlewares';
 import { PluginType, Plugin, PluginOptions } from './plugin';
+import { registerActions } from '@nocobase/actions';
 
 export interface ResourcerOptions {
   prefix?: string;
@@ -20,6 +21,7 @@ export interface ApplicationOptions {
 }
 
 export class Application extends Koa {
+
   public readonly db: Database;
 
   public readonly resourcer: Resourcer;
@@ -31,7 +33,12 @@ export class Application extends Koa {
   constructor(options: ApplicationOptions) {
     super();
 
-    this.db = new Database(options.database);
+    if (options.database instanceof Database) {
+      this.db = options.database;
+    } else {
+      this.db = new Database(options.database);
+    }
+
     this.resourcer = new Resourcer({ ...options.resourcer });
     this.cli = new Command();
 
@@ -55,28 +62,30 @@ export class Application extends Koa {
     });
 
     if (options.dataWrapping !== false) {
-      this.use(dataWrapping);
+      this.use(dataWrapping());
     }
 
-    this.use(table2resource);
+    this.use(table2resource());
     this.use(this.resourcer.restApiMiddleware());
+
+    registerActions(this);
 
     this.cli
       .command('db sync')
       .option('-f, --force')
       .action(async (...args) => {
-        console.log('db sync');
+        console.log('db sync...');
         const cli = args.pop();
         const force = cli.opts()?.force;
         await this.load();
         await this.db.sync(
           force
             ? {
-                force: true,
-                alter: {
-                  drop: true,
-                },
-              }
+              force: true,
+              alter: {
+                drop: true,
+              },
+            }
             : {},
         );
         await this.destroy();
@@ -118,6 +127,10 @@ export class Application extends Koa {
 
   resource(options: ResourceOptions) {
     return this.resourcer.define(options);
+  }
+
+  actions(handlers: any) {
+    return this.resourcer.registerActions(handlers);
   }
 
   command(nameAndArgs: string, opts?: CommandOptions) {
@@ -216,58 +229,13 @@ export class Application extends Koa {
     return true;
   }
 
-  // registerPlugin(key: string | object, plugin?: any) {
-  //   if (typeof key === 'object') {
-  //     Object.keys(key).forEach((k) => {
-  //       this.registerPlugin(k, key[k]);
-  //     });
-  //   } else {
-  //     const config = {};
-  //     if (Array.isArray(plugin)) {
-  //       const [entry, options = {}] = plugin;
-  //       Object.assign(config, { entry, options });
-  //     } else {
-  //       Object.assign(config, { entry: plugin, options: {} });
-  //     }
-  //     this.plugins.set(key, config);
-  //   }
-  // }
-
-  // async loadPlugins() {
-  //   await this.emitAsync('plugins.beforeLoad');
-  //   const allPlugins = this.plugins.values();
-  //   for (const plugin of allPlugins) {
-  //     plugin.instance = await this.loadPlugin(plugin);
-  //   }
-  //   await this.emitAsync('plugins.afterLoad');
-  // }
-
-  async start(argv = process.argv) {
+  async parse(argv = process.argv) {
     return this.cli.parseAsync(argv);
   }
 
   async destroy() {
     await this.db.close();
   }
-
-  // protected async loadPlugin({
-  //   entry,
-  //   options = {},
-  // }: {
-  //   entry: string | Function;
-  //   options: any;
-  // }) {
-  //   let main: any;
-  //   if (typeof entry === 'function') {
-  //     main = entry;
-  //   } else if (typeof entry === 'string') {
-  //     const pathname = `${entry}/${
-  //       __filename.endsWith('.ts') ? 'src' : 'lib'
-  //     }/server`;
-  //     main = require(pathname).default;
-  //   }
-  //   return main && (await main.call(this, options));
-  // }
 }
 
 export default Application;

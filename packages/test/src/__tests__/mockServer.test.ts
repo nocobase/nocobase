@@ -28,7 +28,7 @@ describe('mock server', () => {
   });
 
   it('resource', async () => {
-    const response = await api.resource('test').list();
+    const response = await api.agent().resource('test').list();
     expect(response.body).toEqual([1, 2]);
   });
 });

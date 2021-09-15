@@ -16,7 +16,7 @@
     "baseUrl": ".",
     "paths": {
       "@nocobase/*": [
-        "./packages/*"
+        "./packages/*/src"
       ]
     }
   }
