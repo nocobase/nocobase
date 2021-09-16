@@ -1,16 +1,12 @@
 import { Application } from '@nocobase/server/src';
 import path from 'path';
-import mount from 'koa-mount';
 import compose from 'koa-compose';
 
 const keys = __dirname.split(path.sep);
 const slug = keys[keys.length - 2];
 
-const apps = new Map<string, Application>();
-
 function createApp(opts) {
-  const { name, prefix } = opts;
-  
+  const { name } = opts;
   const options = {
     database: {
       username: process.env.DB_USER,
@@ -23,28 +19,27 @@ function createApp(opts) {
         charset: 'utf8mb4',
         collate: 'utf8mb4_unicode_ci',
       },
+      appName: name,
       hooks: {
         beforeDefine(model, options) {
-          options.tableName = `examples_${slug}_${name}_${options.tableName || options.name.plural}`;
+          options.tableName = `examples_${slug}_${name}_${
+            options.tableName || options.name.plural
+          }`;
         },
       },
     },
     resourcer: {
-      prefix,
+      prefix: `/api/examples/${slug}/${name}`,
     },
   };
-  console.log(options);
   const app = new Application(options);
-  if (name) {
-    apps.set(name, app);
-  }
   app.resource({
-    name: 'server',
+    name: 'saas',
     actions: {
       async getInfo(ctx, next) {
-        ctx.body = name;
+        ctx.body = ctx.db.options;
         await next();
-      }
+      },
     },
   });
   app.collection({
@@ -57,78 +52,103 @@ function createApp(opts) {
   return app;
 }
 
-const app = createApp({
+const saas = createApp({
   name: 'main',
-  prefix: `/api/examples/${slug}/main`
 });
 
-app.collection({
+saas['apps'] = new Map<string, Application>();
+
+saas.collection({
   name: 'applications',
   fields: [
     { type: 'string', name: 'name', unique: true },
   ],
 });
 
-app.command('app-create').argument('<appName>').action(async (appName) => {
-  const App = app.db.getModel('applications');
-  const server = await App.create({
-    name: appName,
+saas
+  .command('app:create')
+  .argument('<appName>')
+  .action(async (appName) => {
+    const App = saas.db.getModel('applications');
+    const model = await App.create({
+      name: appName,
+    });
+    const app = createApp({
+      name: appName,
+    });
+    await app.db.sync();
+    await app.destroy();
+    await saas.destroy();
+    console.log(model.toJSON());
   });
-  const api = createApp({
-    name: appName,
-    prefix: `/api/examples/${slug}/${appName}`,
-  });
-  await api.db.sync();
-  await api.destroy();
-  console.log(server.toJSON());
-  await app.destroy();
-});
 
-app.command('dbsync')
+saas
+  .command('db:sync')
   .option('-f, --force')
   .option('--app [app]')
   .action(async (...args) => {
     const cli = args.pop();
     const force = cli.opts()?.force;
     const appName = cli.opts()?.app;
-    console.log('ac ac', cli.opts());
-    const api = apps.get(appName) || app;
-    await api.load();
-    await api.db.sync(
+    const app = !appName
+      ? saas
+      : createApp({
+          name: appName,
+        });
+    await app.load();
+    await app.db.sync(
       force
         ? {
-          force: true,
-          alter: {
-            drop: true,
-          },
-        }
+            force: true,
+            alter: {
+              drop: true,
+            },
+          }
         : {},
     );
-    await api.destroy();
+    await app.destroy();
+    await saas.destroy();
   });
 
-app.use(async function(ctx, next) {
-  const appName = ctx.path.split('/')[4];
-  if (appName === 'main') {
-    return next();
-  }
-  const App = ctx.db.getModel('applications');
-  const model = await App.findOne({
-    where: { name: appName },
-  });
-  console.log({ appName, model })
-  if (!model) {
-    return next();
-  }
-  if (!apps.has(appName)) {
-    const app1 = createApp({
-      name: appName,
-      prefix: `/api/examples/${slug}/${appName}`
+function multiApps({ getAppName }) {
+  return async function (ctx, next) {
+    const appName = getAppName(ctx);
+    if (!appName) {
+      return next();
+    }
+    const App = ctx.db.getModel('applications');
+    const model = await App.findOne({
+      where: { name: appName },
     });
-    apps.set(appName, app1);
-  }
-  const server = apps.get(appName);
-  await compose(server.middleware)(ctx, next);
-});
+    console.log({ appName, model });
+    if (!model) {
+      return next();
+    }
+    const apps = ctx.app.apps;
+    if (!apps.has(appName)) {
+      const app = createApp({
+        name: appName,
+      });
+      apps.set(appName, app);
+    }
+    const saas = apps.get(appName);
+    await compose(saas.middleware)(ctx, async () => {});
+  };
+}
 
-app.parse(process.argv);
+saas.use(
+  multiApps({
+    getAppName(ctx) {
+      const appName = ctx.path.split('/')[4];
+      return appName === 'main' ? null : appName;
+    },
+  }),
+);
+
+// saas.use(async (ctx, next) => {
+//   ctx.body = 'aaaaa';
+//   console.log(ctx.db.options);
+//   await next();
+// });
+
+saas.parse(process.argv);
