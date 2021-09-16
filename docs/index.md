@@ -1,17 +1,17 @@
 ---
-title: 介绍
+title: NocoBase
 toc: menu
 ---
 
 # NocoBase
 
-考虑到大家是初次接触 NocoBase，开发文档的第一篇，先带大家了解基础概念。NocoBase 采用微内核架构，框架只保留核心，各类功能以插件形式扩展。
+NocoBase 采用微内核架构，框架只保留核心，各类功能以插件形式扩展。
 
 <img src="./NocoBase.png" style="max-width: 800px; width: 100%;">
 
 ## 微服务 - Microservices
 
-首先我们创建一个应用，新建一个 app.js 文件，代码如下：
+为了更快的理解 NocoBase，我们先创建一个应用，新建一个 app.js 文件，代码如下：
 
 ```ts
 const { Application } = require('@nocobase/server');
@@ -23,10 +23,10 @@ const app = new Application({
 // 配置一张 users 表
 app.collection({
   name: 'users',
-  schema: {
-    username: 'string',
-    password: 'password',
-  },
+  schema: [
+    { type: 'string', name: 'username' },
+    { type: 'password', name: 'password' }
+  ],
 });
 
 // 解析 argv 参数，终端通过命令行进行不同操作
@@ -37,7 +37,7 @@ app.parse(process.argv);
 
 ```bash
 # 根据配置生成数据库表结构
-node app.js db sync
+node app.js db:sync
 # 启动应用
 node app.js start --port=3000
 ```
@@ -113,18 +113,21 @@ await api.resource('users').logout();
 NocoBase 的 Application 继承了 Koa，集成了 DB 和 CLI，添加了一些必要的 API，这里列一些重点：
 
 - `app.db`：数据库实例，每个 app 都有自己的 db。
-    - `db.getTable()` 数据表/数据集配置
-    - `db.getRepository()` 数据仓库
-    - `db.getModel()` 数据模型
+    - `db.getCollection()` 数据表/数据集
+      - `collection.schema` 数据结构
+      - `collection.repository` 数据仓库
+      - `collection.model` 数据模型
   - `db.on()` 添加事件监听，由 EventEmitter 提供
   - `db.emit()` 触发事件，由 EventEmitter 提供
   - `db.emitAsync()` 触发异步事件
-- `app.cli`，commander 实例，提供命令行操作
+- `app.cli`，Commander 实例，提供命令行操作
 - `app.context`，上下文
   - `ctx.db`
-  - `ctx.action`
+  - `ctx.action` 当前资源操作实例
+    - `action.params` 操作参数
+    - `action.mergeParams()` 参数合并方法
 - `app.constructor()` 初始化
-- `app.collection()` 定义数据 Schema，等同于 `app.db.table()`
+- `app.collection()` 定义数据 Schema，等同于 `app.db.collection()`
 - `app.resource()` 定义资源
 - `app.actions()` 定义资源的操作方法
 - `app.on()` 添加事件监听，由 EventEmitter 提供
@@ -135,8 +138,6 @@ NocoBase 的 Application 继承了 Koa，集成了 DB 和 CLI，添加了一些�
 - `app.plugin()` 添加插件
 - `app.load()` 载入配置，主要用于载入插件
 - `app.parse()` 解析 argv 参数，写在最后，等同于 `app.cli.parseAsync()`
-
-经过几次改进，以上罗列的 API 趋近于稳定，但也可能有所变动。
 
 ## 数据集 - Collection
 
@@ -175,17 +176,9 @@ NocoBase 通过 `app.collection()` 方法定义数据的 Schema，Schema 的类�
 app.collection({
   name: 'users',
   schema: {
-    username: {
-      type: 'string',
-      unique: true,
-    },
-    password: {
-      type: 'password',
-      unique: true,
-    },
-    posts: {
-      type: 'hasMany',
-    },
+    username: { type: 'string', unique: true },
+    password: { type: 'password', unique: true },
+    posts:    { type: 'hasMany' },
   },
 });
 
@@ -193,14 +186,11 @@ app.collection({
 app.collection({
   name: 'posts',
   schema: {
-    title: 'string',
-    content: 'text',
-    tags: 'belongsToMany',
+    title:    'string',
+    content:  'text',
+    tags:     'belongsToMany',
     comments: 'hasMany',
-    author: {
-      type: 'belongsTo',
-      target: 'users',
-    },
+    author:   { type: 'belongsTo', target: 'users' },
   },
 });
 
@@ -225,13 +215,6 @@ app.collection({
 
 除了通过 `app.collection()` 配置 schema，也可以直接调用 api 插入或修改 schema，collection 的核心 API 有：
 
-- `collection.model` 当前 collection 的数据模型
-- `collection.repository` 当前 collection 的数据仓库
-  - `repository.findAll()`
-  - `repository.findOne()`
-  - `repository.create()`
-  - `repository.update()`
-  - `repository.destroy()`
 - `collection.schema` 当前 collection 的数据结构
   - `schema.has()` 判断是否存在
   - `schema.get()` 获取
@@ -239,8 +222,15 @@ app.collection({
   - `schema.merge()` 添加、或指定 key path 替换
   - `schema.replace()` 替换
   - `schema.delete()` 删除
+- `collection.repository` 当前 collection 的数据仓库
+  - `repository.findAll()`
+  - `repository.findOne()`
+  - `repository.create()`
+  - `repository.update()`
+  - `repository.destroy()`
+- `collection.model` 当前 collection 的数据模型
 
-如：
+Schema 示例：
 
 ```ts
 const collection = app.db.getCollection('posts');
@@ -269,7 +259,7 @@ collection.schema.merge({
 await collection.sync();
 ```
 
-存在外键关联时，也无需顾虑建表和字段的顺序，`db sync` 时会自动处理。`db sync` 之后，就可以往表里写入数据了。可以使用 Repository 或 Model 操作。
+`db:sync` 是非常常用的命令行之一，数据库根据 collection 的 schema 生成表结构。更多详情见 CLI 章节。`db:sync` 之后，就可以往表里写入数据了，可以使用 Repository 或 Model 操作。
 
 - Repository 初步提供了 findAll、findOne、create、update、destroy 核心操作方法。
 - Model 为 Sequelize.Model，详细使用说明可以查看 Sequelize 文档。
@@ -344,7 +334,7 @@ await user.updateAssociations({
 
 Resource 是互联网资源，互联网资源都对应一个地址。客户端请求资源地址，服务器响应请求，在这里「请求」就是一种「操作」，在 REST 里通过判断请求方法（GET/POST/PUT/DELETE）来识别具体的操作，但是请求方法局限性比较大，如上文提到的登录、注册、注销就无法用 REST API 的方式表示。为了解决这类问题，NocoBase 以 `<resourceName>:<actionName>` 格式表示资源的操作。在关系模型的世界里，关系无处不在，基于关系，NocoBase 又延伸了关系资源的概念，对应关系资源的操作的格式为 `<associatedName>.<resourceName>:<actionName>`。
 
-Collection 会自动同步给 Resource，上文 Collection 章节定义的 Schema，提炼的资源有：
+Collection 会自动同步给 Resource，如上文 Collection 章节定义的 Schema，可以提炼的资源有：
 
 - `users`
 - `users.posts`
@@ -492,7 +482,7 @@ async function (ctx, next) {
 }
 ```
 
-多来源参数合并，以 `filter` 参数为例。如：客户端请求日期 2021-09-15 创建的文章
+`ctx.action.mergeParams()` 主要用于多来源参数合并，以 `filter` 参数为例。如：客户端请求日期 2021-09-15 创建的文章
 
 ```bash
 GET /api/posts:list?filter={"created_at": "2021-09-15"}
@@ -533,6 +523,7 @@ app.use(async (ctx, next) => {
 async function list(ctx, next) {
   // list 操作中获取到的 filter
   console.log(ctx.params.filter);
+  // filter 是特殊的 and 合并
   // {
   //   and: [
   //     { created_at: '2021-09-15' },
@@ -576,27 +567,31 @@ app.use(async (ctx, next) => {
 });
 ```
 
-弥补 `app.use()` 不足，加了个 `middleware()` 适配器，可以用于限定 resource 和 action。除此之外，也可以控制中间件的插入位置。
+与 `koa.use(middleware)` 略有不同，`app.use(middleware, options)` 多了个 options 参数，可以用于限定 resource 和 action，也可以用于控制中间件的插入位置。
 
 ```ts
 import { middleware } from '@nocobase/server';
 
-app.use(middleware(async (ctx, next) => {}, {
+app.use(async (ctx, next) => {}, {
   name: 'middlewareName1',
-  resourceNames: [],
-  actionNames: [],
+  resourceNames: [], // 作用于资源内所有 actions
+  actionNames: [
+    'list', // 全部 list action
+    'users:list', // 仅 users 资源的 list action,
+  ],
   insertBefore: '',
   insertAfter: '',
-}));
+});
 ```
 
 ## 命令行 - CLI
 
-Application 除了可以做 HTTP Server 以外，也可以是 CLI（内置了 Commander）。目前内置的命令有：
+Application 除了可以做 HTTP Server 以外，也是 CLI（内置了 Commander）。目前内置的命令有：
 
-- `db sync --force` 用于配置与数据库表结构同步
+- `init` 初始化
+- `db:sync --force` 用于配置与数据库表结构同步
 - `start --port` 启动应用
-- `plugin` 插件相关
+- `plugin:**` 插件相关
 
 自定义：
 
@@ -624,10 +619,8 @@ app.command('foo').action(async () => {
 - CLI
   - `app.cli` commander 实例
   - `app.command()` 等同于 `app.cli.command()`
-- Plugin
-  - `app.plugin` 添加插件
 
-基于以上扩展接口，进一步提供了模块化、可插拔的插件，可以通过 `app.plugin()` 添加。完整的插件包括安装、升级、激活、载入、禁用、卸载流程，但是并不是所有插件都要这完整的流程。比如：
+基于以上扩展接口，进一步提供了模块化、可插拔的插件，可以通过 `app.plugin()` 添加。插件的流程包括安装、升级、激活、载入、禁用、卸载，不需要的流程可缺失。如：
 
 **最简单的插件**
 
@@ -709,10 +702,10 @@ app.plugin('@nocobase/plugin-action-logs');
 **插件 CLI**
 
 ```bash
-plugin install pluginName1
-plugin unstall pluginName1
-plugin activate pluginName1
-plugin deactivate pluginName1
+plugin:install pluginName1
+plugin:unstall pluginName1
+plugin:activate pluginName1
+plugin:deactivate pluginName1
 ```
 
 目前已有的插件：

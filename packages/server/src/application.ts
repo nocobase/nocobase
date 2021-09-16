@@ -20,7 +20,34 @@ export interface ApplicationOptions {
   dataWrapping?: boolean;
 }
 
-export class Application extends Koa {
+interface DefaultState {
+  currentUser?: any;
+  [key: string]: any;
+}
+
+interface DefaultContext {
+  db: Database;
+  resourcer: Resourcer;
+  [key: string]: any;
+}
+
+interface MiddlewareOptions {
+  name?: string;
+  resourceName?: string;
+  resourceNames?: string[];
+  insertBefore?: string;
+  insertAfter?: string;
+}
+
+interface ActionsOptions {
+  resourceName?: string;
+  resourceNames?: string[];
+}
+
+export class Application<
+  StateT = DefaultState,
+  ContextT = DefaultContext
+  > extends Koa {
 
   public readonly db: Database;
 
@@ -55,7 +82,7 @@ export class Application extends Koa {
       }),
     );
 
-    this.use(async (ctx, next) => {
+    this.use<DefaultState, DefaultContext>(async (ctx, next) => {
       ctx.db = this.db;
       ctx.resourcer = this.resourcer;
       await next();
@@ -71,7 +98,7 @@ export class Application extends Koa {
     registerActions(this);
 
     this.cli
-      .command('db sync')
+      .command('db:sync')
       .option('-f, --force')
       .action(async (...args) => {
         console.log('db sync...');
@@ -92,7 +119,7 @@ export class Application extends Koa {
       });
 
     this.cli
-      .command('db init')
+      .command('init')
       // .option('-f, --force')
       .action(async (...args) => {
         const cli = args.pop();
@@ -121,6 +148,15 @@ export class Application extends Koa {
       });
   }
 
+  // @ts-ignore
+  use<NewStateT = {}, NewContextT = {}>(
+    middleware: Koa.Middleware<StateT & NewStateT, ContextT & NewContextT>,
+    options?: MiddlewareOptions,
+  ): Application<StateT & NewStateT, ContextT & NewContextT> {
+    // @ts-ignore
+    return super.use(middleware);
+  }
+
   collection(options: TableOptions) {
     return this.db.table(options);
   }
@@ -129,7 +165,7 @@ export class Application extends Koa {
     return this.resourcer.define(options);
   }
 
-  actions(handlers: any) {
+  actions(handlers: any, options?: ActionsOptions) {
     return this.resourcer.registerActions(handlers);
   }
 
