@@ -41,6 +41,7 @@ export class Schema extends EventEmitter {
         schema: this,
         model: this.context.collection.model,
       });
+      // console.log('field', field);
       this.fields.set(name, field);
       this.emit('setted', field);
     } else if (Array.isArray(name)) {
@@ -59,7 +60,9 @@ export class Schema extends EventEmitter {
   delete(name: string) {
     const field = this.fields.get(name);
     const bool = this.fields.delete(name);
-    this.emit('deleted', field);
+    if (bool) {
+      this.emit('deleted', field);
+    }
     return bool;
   }
 

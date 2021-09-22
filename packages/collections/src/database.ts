@@ -4,6 +4,7 @@ import { Collection, CollectionOptions } from './collection';
 import {
   RelationField,
   StringField,
+  HasOneField,
   HasManyField,
   BelongsToField,
   BelongsToManyField,
@@ -21,6 +22,8 @@ export type DatabaseOptions = Options | Sequelize;
 export class Database extends EventEmitter {
   sequelize: Sequelize;
   schemaTypes = new Map();
+  models = new Map();
+  repositories = new Map();
   collections: Map<string, Collection>;
   pendingFields = new Map<string, RelationField[]>();
 
@@ -42,6 +45,7 @@ export class Database extends EventEmitter {
       string: StringField,
       json: JsonField,
       jsonb: JsonbField,
+      hasOne: HasOneField,
       hasMany: HasManyField,
       belongsTo: BelongsToField,
       belongsToMany: BelongsToManyField,
@@ -72,9 +76,7 @@ export class Database extends EventEmitter {
 
   removePendingField(field: RelationField) {
     const items = this.pendingFields.get(field.target) || [];
-    const index = items.findIndex(
-      (item) => item && item.name === field.name,
-    );
+    const index = items.indexOf(field);
     if (index !== -1) {
       delete items[index];
       this.pendingFields.set(field.target, items);
@@ -84,6 +86,18 @@ export class Database extends EventEmitter {
   registerSchemaTypes(schemaTypes: any) {
     for (const [type, schemaType] of Object.entries(schemaTypes)) {
       this.schemaTypes.set(type, schemaType);
+    }
+  }
+
+  registerModels(models: any) {
+    for (const [type, schemaType] of Object.entries(models)) {
+      this.models.set(type, schemaType);
+    }
+  }
+
+  registerRepositories(repositories: any) {
+    for (const [type, schemaType] of Object.entries(repositories)) {
+      this.repositories.set(type, schemaType);
     }
   }
 

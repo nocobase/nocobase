@@ -60,6 +60,10 @@ export abstract class SchemaField {
   }
 
   toSequelize(): any {
-    return _.omit(this.options, ['name'])
+    const opts = _.omit(this.options, ['name']);
+    if (this.dataType) {
+      Object.assign(opts, { type: this.dataType });
+    }
+    return opts;
   }
 }

@@ -38,23 +38,37 @@ describe('plugin', () => {
       expect(plugin).toBeInstanceOf(Plugin);
       expect(plugin.getName()).toBe('abc');
     });
+
     it('plugin name', async () => {
-      const plugin = app.plugin(function abc() {}, {
-        name: 'plugin-name2'
+      const plugin = app.plugin({
+        name: 'plugin-name2',
+        async load() {},
       });
       expect(plugin).toBeInstanceOf(Plugin);
       expect(plugin.getName()).toBe('plugin-name2');
     });
+
     it('plugin name', async () => {
-      const plugin = app.plugin(function () {}, {
-        name: 'plugin-name3'
+      const plugin = app.plugin({
+        name: 'plugin-name3',
+        load: function () {},
       });
       expect(plugin).toBeInstanceOf(Plugin);
       expect(plugin.getName()).toBe('plugin-name3');
     });
+
     it('plugin name', async () => {
       class MyPlugin extends Plugin {}
       const plugin = app.plugin(MyPlugin);
+      expect(plugin).toBeInstanceOf(MyPlugin);
+      expect(plugin.getName()).toBe('MyPlugin');
+    });
+
+    it('plugin name', async () => {
+      class MyPlugin extends Plugin {}
+      const plugin = app.plugin({
+        plugin: MyPlugin,
+      });
       expect(plugin).toBeInstanceOf(MyPlugin);
       expect(plugin.getName()).toBe('MyPlugin');
     });

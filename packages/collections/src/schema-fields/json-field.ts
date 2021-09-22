@@ -5,13 +5,6 @@ export class JsonField extends SchemaField {
   get dataType() {
     return DataTypes.JSON;
   }
-
-  toSequelize() {
-    return {
-      ...this.options,
-      type: this.dataType,
-    };
-  }
 }
 
 export class JsonbField extends SchemaField {
@@ -21,12 +14,5 @@ export class JsonbField extends SchemaField {
       return DataTypes.JSONB;
     }
     return DataTypes.JSON;
-  }
-
-  toSequelize() {
-    return {
-      ...this.options,
-      type: this.dataType,
-    };
   }
 }
