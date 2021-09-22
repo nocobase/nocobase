@@ -1,3 +1,4 @@
+// @ts-nocheck
 import Database, { registerModels } from '@nocobase/database';
 import Resourcer from '@nocobase/resourcer';
 import path from 'path';

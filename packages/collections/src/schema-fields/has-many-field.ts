@@ -72,6 +72,7 @@ export interface HasManyFieldOptions extends HasManyOptions {
 }
 
 export class HasManyField extends RelationField {
+
   bind() {
     const { database, collection } = this.context;
     const Target = this.TargetModel;

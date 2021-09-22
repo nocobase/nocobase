@@ -142,17 +142,16 @@ export class Application<
         console.log(args);
         const opts = cli.opts();
         await this.load();
-        await this.emitAsync('server.beforeStart');
+        await this.emitAsync('beforeStart');
         this.listen(opts.port || 3000);
         console.log(`http://localhost:${opts.port || 3000}/`);
       });
   }
 
-  // @ts-ignore
   use<NewStateT = {}, NewContextT = {}>(
     middleware: Koa.Middleware<StateT & NewStateT, ContextT & NewContextT>,
     options?: MiddlewareOptions,
-  ): Application<StateT & NewStateT, ContextT & NewContextT> {
+  ) {
     // @ts-ignore
     return super.use(middleware);
   }
@@ -173,25 +172,34 @@ export class Application<
     return this.cli.command(nameAndArgs, opts);
   }
 
-  plugin(plugin: PluginType, options?: PluginOptions): Plugin {
-    if (typeof plugin === 'string') {
-      plugin = require(plugin).default;
+  plugin(options?: PluginType | PluginOptions): Plugin {
+    if (typeof options === 'string') {
+      return this.plugin(require(options).default);
     }
     let instance: Plugin;
-    try {
-      // @ts-ignore
-      const p = new plugin();
-      if (p instanceof Plugin) {
+    if (typeof options === 'function') {
+      try {
         // @ts-ignore
-        instance = new plugin({}, {
-          ...options,
+        instance = new options({
+          name: options.name,
           app: this,
         });
-      } else {
-        throw new Error('plugin must be instanceof Plugin');
+        if (!(instance instanceof Plugin)) {
+          throw new Error('plugin must be instanceof Plugin');
+        }
+      } catch (err) {
+        // console.log(err);
+        instance = new Plugin({
+          name: options.name,
+          // @ts-ignore
+          load: options,
+          app: this,
+        });
       }
-    } catch (err) {
-      instance = new Plugin(plugin, {
+    } else if (typeof options === 'object') {
+      const plugin = options.plugin || Plugin;
+      instance = new plugin({
+        name: options.plugin ? plugin.name : undefined,
         ...options,
         app: this,
       });

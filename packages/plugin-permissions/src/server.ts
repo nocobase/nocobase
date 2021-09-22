@@ -1,12 +1,12 @@
 import path from 'path';
-import Database from '@nocobase/database';
-import Resourcer from '@nocobase/resourcer';
+import { PluginOptions } from '@nocobase/server';
 
-export default async function () {
-  const database: Database = this.database;
-  const resourcer: Resourcer = this.resourcer;
-
-  database.import({
-    directory: path.resolve(__dirname, 'collections'),
-  });
-}
+export default {
+  name: 'permissions',
+  async load() {
+    const database = this.app.db;
+    database.import({
+      directory: path.resolve(__dirname, 'collections'),
+    });
+  }
+} as PluginOptions;

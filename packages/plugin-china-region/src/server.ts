@@ -1,19 +1,22 @@
 import path from 'path';
-import Database, { registerModels } from '@nocobase/database';
+import { registerModels } from '@nocobase/database';
 import { ChinaRegion } from './models/china-region';
-import Application from '@nocobase/server';
+import { Plugin } from '@nocobase/server';
 
 registerModels({ ChinaRegion });
 
-export default async function (this: Application, options = {}) {
-  const { db } = this;
-
-  db.import({
-    directory: path.resolve(__dirname, 'collections'),
-  });
-
-  this.on('db.init', async () => {
-    const M = db.getModel('china_regions');
-    await M.importData();
-  });
-}
+export default {
+  name: 'china-region',
+  async load(this: Plugin) {
+    const db = this.app.db;
+  
+    db.import({
+      directory: path.resolve(__dirname, 'collections'),
+    });
+  
+    this.app.on('db.init', async () => {
+      const M = db.getModel('china_regions');
+      await M.importData();
+    });
+  }
+};

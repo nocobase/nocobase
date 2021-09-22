@@ -29,12 +29,15 @@ export class Collection {
     const { name, tableName } = options;
     this.model = class extends Model<any, any> {};
     const attributes = {};
+    // TODO: 不能重复 model.init，如果有涉及 InitOptions 参数修改，需要另外处理。
     this.model.init(attributes, {
       ..._.omit(options, ['name', 'schema']),
       sequelize: context.database.sequelize,
       modelName: name,
       tableName: tableName || name,
     });
+    // schema 只针对字段，对应 Sequelize 的 Attributes
+    // 其他 InitOptions 参数放在 Collection 里，通过其他方法同步给 model
     this.schema = new Schema(options.schema, {
       ...context,
       collection: this,

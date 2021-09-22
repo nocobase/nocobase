@@ -48,6 +48,32 @@ describe('has many field', () => {
     ]);
   });
 
+  it.only('custom sourceKey', async () => {
+    const collection = db.collection({
+      name: 'posts',
+      schema: [
+        { type: 'string', name: 'key', unique: true },
+        {
+          type: 'hasMany',
+          name: 'comments',
+          sourceKey: 'key',
+          // foreignKey: 'postKey',
+        },
+      ],
+    });
+    const comments = db.collection({
+      name: 'comments',
+      schema: [],
+    });
+    const association = collection.model.associations.comments;
+    expect(association).toBeDefined();
+    expect(association.foreignKey).toBe('postKey');
+    // @ts-ignore
+    expect(association.sourceKey).toBe('key');
+    expect(comments.model.rawAttributes['postKey']).toBeDefined();
+    await db.sync();
+  });
+
   it('custom sourceKey and foreignKey', async () => {
     const collection = db.collection({
       name: 'posts',

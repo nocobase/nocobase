@@ -1,0 +1,67 @@
+import { Database } from '../../database';
+import { mockDatabase } from '../';
+
+describe('has many field', () => {
+  let db: Database;
+
+  beforeEach(() => {
+    db = mockDatabase();
+  });
+
+  afterEach(async () => {
+    await db.close();
+  });
+
+  it('association undefined', async () => {
+    const User = db.collection({
+      name: 'users',
+      schema: [{ type: 'hasOne', name: 'profile' }],
+    });
+    await db.sync();
+    expect(User.model.associations.profile).toBeUndefined();
+  });
+
+  it('association defined', async () => {
+    const User = db.collection({
+      name: 'users',
+      schema: [{ type: 'hasOne', name: 'profile' }],
+    });
+    expect(User.model.associations.phone).toBeUndefined();
+    const Profile = db.collection({
+      name: 'profiles',
+      schema: [{ type: 'string', name: 'content' }],
+    });
+    const association = User.model.associations.profile;
+    expect(association).toBeDefined();
+    expect(association.foreignKey).toBe('userId');
+    // @ts-ignore
+    expect(association.sourceKey).toBe('id');
+    expect(Profile.model.rawAttributes['userId']).toBeDefined();
+    await db.sync();
+    // const post = await model.create<any>();
+    // await post.createComment({
+    //   content: 'content111',
+    // });
+    // const postComments = await post.getComments();
+    // expect(postComments.map((comment) => comment.content)).toEqual([
+    //   'content111',
+    // ]);
+  });
+
+  it('schema delete', async () => {
+    const User = db.collection({
+      name: 'users',
+      schema: [{ type: 'hasOne', name: 'profile' }],
+    });
+    const Profile = db.collection({
+      name: 'profiles',
+      schema: [{ type: 'belongsTo', name: 'user' }],
+    });
+    await db.sync();
+    User.schema.delete('profile');
+    expect(User.model.associations.profile).toBeUndefined();
+    expect(Profile.model.rawAttributes.userId).toBeDefined();
+    Profile.schema.delete('user');
+    expect(Profile.model.rawAttributes.userId).toBeUndefined();
+  });
+});
