@@ -636,13 +636,6 @@ app.plugin(function pluginName1() {
 
 ```ts
 const plugin = app.plugin({
-  async install() {},
-  async upgrade() {},
-  async activate() {},
-  async bootstrap() {},
-  async deactivate() {},
-  async unstall() {},
-}, {
   enable: false, // 默认为 true，不需要启用时可以禁用。
   name: 'plugin-name1',
   displayName: '插件名称',
@@ -651,6 +644,12 @@ const plugin = app.plugin({
     pluginName2: '1.x', 
     pluginName3: '1.x',
   },
+  async install() {},
+  async upgrade() {},
+  async activate() {},
+  async bootstrap() {},
+  async deactivate() {},
+  async unstall() {},
 });
 // 通过 api 激活插件
 plugin.activate();
@@ -668,7 +667,9 @@ class MyPlugin extends Plugin {
   async unstall() {}
 }
 
-app.plugin(MyPlugin, {
+app.plugin(MyPlugin);
+// 或
+app.plugin({
   name: 'plugin-name1',
   displayName: '插件名称',
   version: '1.2.3',
@@ -676,6 +677,7 @@ app.plugin(MyPlugin, {
     pluginName2: '1.x', 
     pluginName3: '1.x',
   },
+  plugin: MyPlugin,
 });
 ```
 

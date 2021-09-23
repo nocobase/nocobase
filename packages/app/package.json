@@ -2,7 +2,7 @@
   "name": "@nocobase/app",
   "version": "0.4.0-alpha.7",
   "scripts": {
-    "start": "concurrently \"cd ../../ && nodemon\" \"umi dev\"",
+    "start": "concurrently \"cd ../../ && npm run start-server\" \"umi dev\"",
     "start-client": "umi dev",
     "start-server": "nodemon",
     "build": "npm run build-server && npm run build-client",

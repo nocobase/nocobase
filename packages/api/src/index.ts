@@ -1,5 +1,7 @@
 import Server from '@nocobase/server';
 
+const start = Date.now();
+
 const api = new Server({
   database: {
     username: process.env.DB_USER,
@@ -49,17 +51,13 @@ for (const plugin of plugins) {
   api.plugin(require(`${plugin}/${__filename.endsWith('.ts') ? 'src' : 'lib'}/server`).default);
 }
 
-(async () => {
-  const start = Date.now();
+if (process.argv.length < 3) {
+  // @ts-ignore
+  process.argv.push('start', '--port', process.env.API_PORT);
+}
 
-  if (process.argv.length < 3) {
-    process.argv.push('start', '--port', process.env.API_PORT);
-  }
+console.log(process.argv);
 
-  console.log(process.argv);
-
-  await api.parse(process.argv);
-  console.log(api.db.getTables().map(t => t.getName()));
+api.parse(process.argv).then(() => {
   console.log(`Start-up time: ${(Date.now() - start) / 1000}s`);
-  // console.log(`http://localhost:${process.env.API_PORT}/`);
-})();
+});
