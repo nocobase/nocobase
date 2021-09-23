@@ -82,10 +82,6 @@ export default {
             // ui_schema_key: uiSchemaKey,
           });
         }
-        // if (model.get('ui_schema_key')) {
-        //   collection.set('ui_schema_key', model.get('ui_schema_key'));
-        //   await collection.save({ hooks: false });
-        // }
         await collection.migrate();
       } catch (error) {
         throw error;

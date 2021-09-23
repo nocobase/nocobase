@@ -1,15 +1,6 @@
 import Server from '@nocobase/server';
-import { registerActions } from '@nocobase/actions';
-import dotenv from 'dotenv';
-import path from 'path';
-import mount from 'koa-mount';
 
 const start = Date.now();
-console.log('starting... ', new Date().toUTCString());
-
-dotenv.config({
-  path: path.resolve(__dirname, '../../../../.env'),
-});
 
 const api = new Server({
   database: {
@@ -41,24 +32,32 @@ const api = new Server({
   resourcer: {
     prefix: '/api',
   },
-  dataWrapping: true,
 });
 
-registerActions(api);
+const plugins = [
+  '@nocobase/plugin-collections',
+  '@nocobase/plugin-ui-router',
+  '@nocobase/plugin-ui-schema',
+  '@nocobase/plugin-users',
+  '@nocobase/plugin-action-logs',
+  '@nocobase/plugin-file-manager',
+  '@nocobase/plugin-permissions',
+  '@nocobase/plugin-export',
+  '@nocobase/plugin-system-settings',
+  '@nocobase/plugin-china-region',
+];
 
-const file = `${__filename.endsWith('.ts') ? 'src' : 'lib'}/index`;
-
-api.registerPlugin(
-  '@nocobase/preset-nocobase',
-  require(`@nocobase/preset-nocobase/${file}`).default,
-);
+for (const plugin of plugins) {
+  api.plugin(require(`${plugin}/${__filename.endsWith('.ts') ? 'src' : 'lib'}/server`).default);
+}
 
 if (process.argv.length < 3) {
-  process.argv.push('start', '--port', '2000');
+  // @ts-ignore
+  process.argv.push('start', '--port', process.env.API_PORT);
 }
 
 console.log(process.argv);
 
-api.start(process.argv).then(() => {
+api.parse(process.argv).then(() => {
   console.log(`Start-up time: ${(Date.now() - start) / 1000}s`);
 });

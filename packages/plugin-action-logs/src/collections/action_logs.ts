@@ -21,13 +21,13 @@ export default {
       type: 'string',
       name: 'collection_name',
     },
-    // {
-    //   type: 'belongsTo',
-    //   name: 'collection',
-    //   target: 'collections',
-    //   targetKey: 'name',
-    //   constraints: false,
-    // },
+    {
+      type: 'belongsTo',
+      name: 'collection',
+      target: 'collections',
+      targetKey: 'name',
+      constraints: false,
+    },
     {
       type: 'string',
       name: 'type',

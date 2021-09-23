@@ -8,7 +8,7 @@
     "bootstrap": "lerna bootstrap",
     "clean": "lerna clean",
     "examples": "ts-node-dev -r dotenv/config ./examples",
-    "start": "cd packages/app && npm start",
+    "start": "concurrently \"npm run start-server\" \"npm run start-client\"",
     "start-client": "cd packages/app && npm run start-client",
     "start-server": "ts-node-dev -r dotenv/config ./packages/api/src/index.ts",
     "start-docs": "dumi dev",
@@ -16,7 +16,6 @@
     "build2": "lerna run build",
     "build": "npm run build-father-build && node packages/father-build/bin/father-build.js",
     "build-father-build": "cd packages/father-build && npm run build",
-    "db-migrate": "ts-node -r dotenv/config ./packages/api/src/migrate.ts",
     "lint": "eslint --ext .ts,.tsx,.js \"packages/*/src/**.@(ts|tsx|js)\" --fix",
     "test": "npm run lint && jest"
   },
@@ -39,6 +38,7 @@
     "@typescript-eslint/parser": "^4.8.2",
     "@umijs/plugin-antd": "^0.9.1",
     "antd": "^4.16.11",
+    "concurrently": "^6.2.1",
     "dotenv": "^8.2.0",
     "dumi": "^1.1.25",
     "eslint": "^7.4.0",
@@ -63,6 +63,7 @@
     "supertest": "^6.1.3",
     "ts-jest": "^26.5.6",
     "ts-node": "^9.1.1",
+    "ts-node-dev": "^1.1.8",
     "typescript": "4.1.5"
   }
 }
