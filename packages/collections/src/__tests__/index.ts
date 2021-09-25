@@ -20,7 +20,7 @@ export function getConfig(config = {}, options?: any): DatabaseOptions {
     host: process.env.DB_HOST,
     port: process.env.DB_PORT,
     dialect: process.env.DB_DIALECT,
-    logging: process.env.DB_LOG_SQL === 'on',
+    // logging: process.env.DB_LOG_SQL === 'on',
     sync: {
       force: true,
       alter: {
