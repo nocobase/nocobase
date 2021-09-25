@@ -3,6 +3,7 @@ import { Database } from './database';
 import { Schema } from './schema';
 import { RelationField } from './schema-fields';
 import _ from 'lodash';
+import { Repository } from './repository';
 
 export interface CollectionOptions {
   schema?: any;
@@ -16,6 +17,7 @@ export interface CollectionContext {
 export class Collection {
   schema: Schema;
   model: ModelCtor<Model>;
+  repository: Repository;
   options: CollectionOptions;
   context: CollectionContext;
 
@@ -44,6 +46,7 @@ export class Collection {
     });
     this.schema2model();
     this.context.database.emit('collection.init', this);
+    this.repository = new Repository(this);
   }
 
   schema2model() {

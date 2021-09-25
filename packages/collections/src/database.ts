@@ -1,4 +1,4 @@
-import { Sequelize, ModelCtor, Model, Options, SyncOptions } from 'sequelize';
+import { Sequelize, ModelCtor, Model, Options, SyncOptions, Op, Utils } from 'sequelize';
 import { EventEmitter } from 'events';
 import { Collection, CollectionOptions } from './collection';
 import {
@@ -24,6 +24,7 @@ export class Database extends EventEmitter {
   schemaTypes = new Map();
   models = new Map();
   repositories = new Map();
+  operators = new Map();
   collections: Map<string, Collection>;
   pendingFields = new Map<string, RelationField[]>();
 
@@ -50,6 +51,18 @@ export class Database extends EventEmitter {
       belongsTo: BelongsToField,
       belongsToMany: BelongsToManyField,
     });
+
+    const operators = new Map();
+
+    // Sequelize 内置
+    for (const key in Op) {
+      operators.set('$' + key, Op[key]);
+      const val = Utils.underscoredIf(key, true);
+      operators.set('$' + val, Op[key]);
+      operators.set('$' + val.replace(/_/g, ''), Op[key]);
+    }
+
+    this.operators = operators;
   }
 
   collection(options: CollectionOptions) {
@@ -98,6 +111,12 @@ export class Database extends EventEmitter {
   registerRepositories(repositories: any) {
     for (const [type, schemaType] of Object.entries(repositories)) {
       this.repositories.set(type, schemaType);
+    }
+  }
+
+  registerOperators(operators) {
+    for (const [key, operator] of Object.entries(operators)) {
+      this.operators.set(key, operator);
     }
   }
 
