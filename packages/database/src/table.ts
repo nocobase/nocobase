@@ -180,7 +180,8 @@ export class Table {
 
   public modelInit(reinitialize: Reinitialize = false) {
     if (reinitialize || !this.Model) {
-      this.Model = this.defaultModel || class extends Model { };
+      let DefaultModel = this.defaultModel;
+      this.Model = DefaultModel ? (class extends DefaultModel {}) : (class extends Model { });
       this.Model.database = this.database;
       // 关系的建立是在 model.init 之后，在配置中表字段（Column）和关系（Relation）都在 fields，
       // 所以需要单独提炼出 associations 字段，并在 Model.init 之后执行 Model.associate

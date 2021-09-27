@@ -10,8 +10,5 @@
     "deepmerge": "^4.2.2",
     "flat-to-nested": "^1.1.1"
   },
-  "devDependencies": {
-    "@nocobase/actions": "^0.4.0-alpha.7"
-  },
   "gitHead": "f0b335ac30f29f25c95d7d137655fa64d8d67f1e"
 }

@@ -104,7 +104,6 @@ export class Application<
         console.log('db sync...');
         const cli = args.pop();
         const force = cli.opts()?.force;
-        await this.load();
         await this.db.sync(
           force
             ? {
@@ -123,7 +122,6 @@ export class Application<
       // .option('-f, --force')
       .action(async (...args) => {
         const cli = args.pop();
-        await this.load();
         await this.db.sync({
           force: true,
           alter: {
@@ -141,7 +139,6 @@ export class Application<
         const cli = args.pop();
         console.log(args);
         const opts = cli.opts();
-        await this.load();
         await this.emitAsync('beforeStart');
         this.listen(opts.port || 3000);
         console.log(`http://localhost:${opts.port || 3000}/`);
@@ -274,6 +271,7 @@ export class Application<
   }
 
   async parse(argv = process.argv) {
+    await this.load();
     return this.cli.parseAsync(argv);
   }
 
