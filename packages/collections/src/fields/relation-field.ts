@@ -1,6 +1,6 @@
-import { SchemaField } from './schema-field';
+import { Field } from './field';
 
-export abstract class RelationField extends SchemaField {
+export abstract class RelationField extends Field {
   get target() {
     const { target, name } = this.options;
     return target || name;

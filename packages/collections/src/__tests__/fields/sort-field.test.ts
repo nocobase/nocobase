@@ -1,13 +1,13 @@
 import { Database } from '../../database';
 import { mockDatabase } from '../';
-import { SortField } from '../../schema-fields';
+import { SortField } from '../../fields';
 
 describe('string field', () => {
   let db: Database;
 
   beforeEach(() => {
     db = mockDatabase();
-    db.registerSchemaTypes({
+    db.registerFieldTypes({
       sort: SortField
     });
   });
@@ -19,7 +19,7 @@ describe('string field', () => {
   it('sort', async () => {
     const Test = db.collection({
       name: 'tests',
-      schema: [
+      fields: [
         { type: 'sort', name: 'sort' },
       ],
     });
@@ -35,7 +35,7 @@ describe('string field', () => {
   it('skip if sort value not empty', async () => {
     const Test = db.collection({
       name: 'tests',
-      schema: [
+      fields: [
         { type: 'sort', name: 'sort' },
       ],
     });
@@ -51,7 +51,7 @@ describe('string field', () => {
   it('scopeKey', async () => {
     const Test = db.collection({
       name: 'tests',
-      schema: [
+      fields: [
         { type: 'sort', name: 'sort', scopeKey: 'status' },
         { type: 'string', name: 'status' },
       ],

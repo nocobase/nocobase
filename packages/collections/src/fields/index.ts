@@ -1,4 +1,4 @@
-export * from './schema-field';
+export * from './field';
 export * from './string-field';
 export * from './relation-field'
 export * from './belongs-to-field'

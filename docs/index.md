@@ -23,7 +23,7 @@ const app = new Application({
 // 配置一张 users 表
 app.collection({
   name: 'users',
-  schema: [
+  fields: [
     { type: 'string', name: 'username' },
     { type: 'password', name: 'password' }
   ],
@@ -114,7 +114,6 @@ NocoBase 的 Application 继承了 Koa，集成了 DB 和 CLI，添加了一些�
 
 - `app.db`：数据库实例，每个 app 都有自己的 db。
     - `db.getCollection()` 数据表/数据集
-      - `collection.schema` 数据结构
       - `collection.repository` 数据仓库
       - `collection.model` 数据模型
   - `db.on()` 添加事件监听，由 EventEmitter 提供
@@ -175,7 +174,7 @@ NocoBase 通过 `app.collection()` 方法定义数据的 Schema，Schema 的类�
 // 用户
 app.collection({
   name: 'users',
-  schema: {
+  fields: {
     username: { type: 'string', unique: true },
     password: { type: 'password', unique: true },
     posts:    { type: 'hasMany' },
@@ -185,7 +184,7 @@ app.collection({
 // 文章
 app.collection({
   name: 'posts',
-  schema: {
+  fields: {
     title:    'string',
     content:  'text',
     tags:     'belongsToMany',
@@ -197,7 +196,7 @@ app.collection({
 // 标签
 app.collection({
   name: 'tags',
-  schema: [
+  fields: [
     { type: 'string', name: 'name' },
     { type: 'belongsToMany', name: 'posts' },
   ],
@@ -206,7 +205,7 @@ app.collection({
 // 评论
 app.collection({
   name: 'comments',
-  schema: [
+  fields: [
     { type: 'text', name: 'content' },
     { type: 'belongsTo', name: 'user' },
   ],
@@ -215,43 +214,52 @@ app.collection({
 
 除了通过 `app.collection()` 配置 schema，也可以直接调用 api 插入或修改 schema，collection 的核心 API 有：
 
-- `collection.schema` 当前 collection 的数据结构
-  - `schema.has()` 判断是否存在
-  - `schema.get()` 获取
-  - `schema.set()` 添加或更新
-  - `schema.merge()` 添加、或指定 key path 替换
-  - `schema.replace()` 替换
-  - `schema.delete()` 删除
+- `collection` 当前 collection 的数据结构
+  - `collection.hasField()` 判断字段是否存在
+  - `collection.addField()` 添加字段配置
+  - `collection.getField()` 获取字段配置
+  - `collection.removeField()` 移除字段配置
+  - `collection.sync()` 与数据库表结构同步
 - `collection.repository` 当前 collection 的数据仓库
-  - `repository.findAll()`
+  - `repository.findMany()`
   - `repository.findOne()`
   - `repository.create()`
   - `repository.update()`
   - `repository.destroy()`
+  - `repository.relatedQuery().for()`
+    - `create()`
+    - `update()`
+    - `destroy()`
+    - `findMany()`
+    - `findOne()`
+    - `set()`
+    - `add()`
+    - `remove()`
+    - `toggle()`
 - `collection.model` 当前 collection 的数据模型
 
-Schema 示例：
+Collection 示例：
 
 ```ts
 const collection = app.db.getCollection('posts');
 
-collection.schema.has('title');
+collection.hasField('title');
 
-collection.schema.get('title');
+collection.getField('title');
 
 // 添加或更新
-collection.schema.set('content', {
+collection.addField({
   type: 'string',
+  name: 'content',
 });
 
 // 移除
-collection.schema.delete('content');
+collection.removeField('content');
 
 // 添加、或指定 key path 替换
-collection.schema.merge({
-  content: {
-    type: 'content',
-  },
+collection.mergeField({
+  name: 'content',
+  type: 'string',
 });
 
 除了全局的 `db.sync()`，也有 `collection.sync()` 方法。
@@ -268,9 +276,9 @@ await collection.sync();
 通过 Repository 创建数据
 
 ```ts
-const repository = app.db.getRepository('users');
+const User = app.db.getCollection('users');
 
-const user = await repository.create({
+const user = await User.repository.create({
   title: 't1',
   content: 'c1',
   author: 1,
@@ -280,7 +288,7 @@ const user = await repository.create({
   blacklist: [],
 });
 
-await repository.findAll({
+await User.repository.findMany({
   filter: {
     title: 't1',
   },
@@ -290,7 +298,7 @@ await repository.findAll({
   perPage: 20,
 });
 
-await repository.findOne({
+await User.repository.findOne({
   filter: {
     title: 't1',
   },
@@ -300,7 +308,7 @@ await repository.findOne({
   perPage: 20,
 });
 
-await repository.update({
+await User.repository.update({
   title: 't1',
   content: 'c1',
   author: 1,
@@ -311,7 +319,7 @@ await repository.update({
   blacklist: [],
 });
 
-await repository.destroy({
+await User.repository.destroy({
   filter: {},
 });
 ```
@@ -319,14 +327,10 @@ await repository.destroy({
 通过 Model 创建数据
 
 ```ts
-const User = db.getModel('users');
-const user = await User.create({
+const User = db.getCollection('users');
+const user = await User.model.create({
   title: 't1',
   content: 'c1',
-});
-await user.updateAssociations({
-  author: 1,
-  tags: [1,2,3],
 });
 ```
 

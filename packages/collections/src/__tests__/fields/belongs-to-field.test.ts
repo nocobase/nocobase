@@ -15,7 +15,7 @@ describe('belongs to field', () => {
   it('association undefined', async () => {
     const Comment = db.collection({
       name: 'comments',
-      schema: [{ type: 'belongsTo', name: 'post' }],
+      fields: [{ type: 'belongsTo', name: 'post' }],
     });
     expect(Comment.model.associations['post']).toBeUndefined();
   });
@@ -23,7 +23,7 @@ describe('belongs to field', () => {
   it('association defined', async () => {
     const Comment = db.collection({
       name: 'comments',
-      schema: [
+      fields: [
         { type: 'string', name: 'content' },
         { type: 'belongsTo', name: 'post' },
       ],
@@ -31,7 +31,7 @@ describe('belongs to field', () => {
     expect(Comment.model.associations.post).toBeUndefined();
     const Post = db.collection({
       name: 'posts',
-      schema: [
+      fields: [
         { type: 'string', name: 'title' },
       ],
     });
@@ -63,13 +63,13 @@ describe('belongs to field', () => {
   it('custom targetKey and foreignKey', async () => {
     const Post = db.collection({
       name: 'posts',
-      schema: [
+      fields: [
         { type: 'string', name: 'key', unique: true },
       ],
     });
     const Comment = db.collection({
       name: 'comments',
-      schema: [
+      fields: [
         {
           type: 'belongsTo',
           name: 'post',
@@ -89,7 +89,7 @@ describe('belongs to field', () => {
   it('custom name and target', async () => {
     const Comment = db.collection({
       name: 'comments',
-      schema: [
+      fields: [
         { type: 'string', name: 'content' },
         {
           type: 'belongsTo',
@@ -103,7 +103,7 @@ describe('belongs to field', () => {
     expect(Comment.model.associations.article).toBeUndefined();
     const Post = db.collection({
       name: 'posts',
-      schema: [
+      fields: [
         { type: 'string', name: 'key', unique: true },
       ],
     });
@@ -135,17 +135,17 @@ describe('belongs to field', () => {
   it('schema delete', async () => {
     const Comment = db.collection({
       name: 'comments',
-      schema: [{ type: 'belongsTo', name: 'post' }],
+      fields: [{ type: 'belongsTo', name: 'post' }],
     });
     const Post = db.collection({
       name: 'posts',
-      schema: [{ type: 'hasMany', name: 'comments' }],
+      fields: [{ type: 'hasMany', name: 'comments' }],
     });
     // await db.sync();
-    Comment.schema.delete('post');
+    Comment.removeField('post');
     expect(Comment.model.associations.post).toBeUndefined();
     expect(Comment.model.rawAttributes.postId).toBeDefined();
-    Post.schema.delete('comments');
+    Post.removeField('comments');
     expect(Comment.model.rawAttributes.postId).toBeUndefined();
   });
 });

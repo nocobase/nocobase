@@ -1,7 +1,7 @@
 import { DataTypes } from 'sequelize';
-import { SchemaField } from './schema-field';
+import { Field } from './field';
 
-export class VirtualField extends SchemaField {
+export class VirtualField extends Field {
   get dataType() {
     return DataTypes.VIRTUAL;
   }

@@ -2,19 +2,18 @@ import { Sequelize, ModelCtor, Model, DataTypes, Utils } from 'sequelize';
 import { EventEmitter } from 'events';
 import { Collection } from '../collection';
 import { Database } from '../database';
-import { Schema } from '../schema';
-import { RelationField } from './relation-field';
 import _ from 'lodash';
 
-export interface SchemaFieldContext {
+export interface FieldContext {
   database: Database;
   collection: Collection;
-  schema: Schema;
 }
 
-export abstract class SchemaField {
+export abstract class Field {
   options: any;
-  context: SchemaFieldContext;
+  context: FieldContext;
+  database: Database;
+  collection: Collection;
   [key: string]: any;
 
   get name() {
@@ -29,8 +28,10 @@ export abstract class SchemaField {
     return this.options.dataType;
   }
 
-  constructor(options?: any, context?: SchemaFieldContext) {
+  constructor(options?: any, context?: FieldContext) {
     this.context = context;
+    this.database = context.database;
+    this.collection = context.collection;
     this.options = options || {};
     this.init();
   }

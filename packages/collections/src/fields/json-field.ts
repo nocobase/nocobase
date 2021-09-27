@@ -1,13 +1,13 @@
 import { DataTypes } from 'sequelize';
-import { SchemaField } from './schema-field';
+import { Field } from './field';
 
-export class JsonField extends SchemaField {
+export class JsonField extends Field {
   get dataType() {
     return DataTypes.JSON;
   }
 }
 
-export class JsonbField extends SchemaField {
+export class JsonbField extends Field {
   get dataType() {
     const dialect = this.context.database.sequelize.getDialect();
     if (dialect === 'postgres') {
