@@ -15,7 +15,7 @@ describe('has many field', () => {
   it('association undefined', async () => {
     const User = db.collection({
       name: 'users',
-      schema: [{ type: 'hasOne', name: 'profile' }],
+      fields: [{ type: 'hasOne', name: 'profile' }],
     });
     await db.sync();
     expect(User.model.associations.profile).toBeUndefined();
@@ -24,12 +24,12 @@ describe('has many field', () => {
   it('association defined', async () => {
     const User = db.collection({
       name: 'users',
-      schema: [{ type: 'hasOne', name: 'profile' }],
+      fields: [{ type: 'hasOne', name: 'profile' }],
     });
     expect(User.model.associations.phone).toBeUndefined();
     const Profile = db.collection({
       name: 'profiles',
-      schema: [{ type: 'string', name: 'content' }],
+      fields: [{ type: 'string', name: 'content' }],
     });
     const association = User.model.associations.profile;
     expect(association).toBeDefined();
@@ -51,17 +51,17 @@ describe('has many field', () => {
   it('schema delete', async () => {
     const User = db.collection({
       name: 'users',
-      schema: [{ type: 'hasOne', name: 'profile' }],
+      fields: [{ type: 'hasOne', name: 'profile' }],
     });
     const Profile = db.collection({
       name: 'profiles',
-      schema: [{ type: 'belongsTo', name: 'user' }],
+      fields: [{ type: 'belongsTo', name: 'user' }],
     });
     await db.sync();
-    User.schema.delete('profile');
+    User.removeField('profile');
     expect(User.model.associations.profile).toBeUndefined();
     expect(Profile.model.rawAttributes.userId).toBeDefined();
-    Profile.schema.delete('user');
+    Profile.removeField('user');
     expect(Profile.model.rawAttributes.userId).toBeUndefined();
   });
 });

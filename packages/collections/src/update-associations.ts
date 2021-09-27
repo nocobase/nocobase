@@ -16,18 +16,18 @@ function isStringOrNumber(value: any) {
 }
 
 export async function updateAssociations(
-  model: Model,
+  instance: Model,
   values: any,
   options: any = {},
 ) {
-  const { transaction = await model.sequelize.transaction() } = options;
+  const { transaction = await instance.sequelize.transaction() } = options;
   // @ts-ignore
-  for (const key of Object.keys(model.constructor.associations)) {
+  for (const key of Object.keys(instance.constructor.associations)) {
     // 如果 key 不存在才跳过
-    if (!Object.keys(values).includes(key)) {
+    if (!Object.keys(values||{}).includes(key)) {
       continue;
     }
-    await updateAssociation(model, key, values[key], {
+    await updateAssociation(instance, key, values[key], {
       ...options,
       transaction,
     });
@@ -38,23 +38,23 @@ export async function updateAssociations(
 }
 
 export async function updateAssociation(
-  model: Model,
+  instance: Model,
   key: string,
   value: any,
   options: any = {},
 ) {
   // @ts-ignore
-  const association = model.constructor.associations[key] as Association;
+  const association = instance.constructor.associations[key] as Association;
   if (!association) {
     return false;
   }
   switch (association.associationType) {
     case 'HasOne':
     case 'BelongsTo':
-      return updateSingleAssociation(model, key, value, options);
+      return updateSingleAssociation(instance, key, value, options);
     case 'HasMany':
     case 'BelongsToMany':
-      return updateMultipleAssociation(model, key, value, options);
+      return updateMultipleAssociation(instance, key, value, options);
   }
 }
 
@@ -77,39 +77,63 @@ export async function updateSingleAssociation(
     // @ts-ignore
     const setAccessor = association.accessors.set;
     if (isUndefinedOrNull(value)) {
-      return await model[setAccessor](null, { transaction });
+      await model[setAccessor](null, { transaction });
+      model.setDataValue(key, null);
+      if (!options.transaction) {
+        await transaction.commit();
+      }
+      return true;
     }
     if (isStringOrNumber(value)) {
-      return await model[setAccessor](value, { transaction });
+      await model[setAccessor](value, { transaction });
+      if (!options.transaction) {
+        await transaction.commit();
+      }
+      return true;
+    }
+    if (value instanceof Model) {
+      await model[setAccessor](value);
+      model.setDataValue(key, value);
+      if (!options.transaction) {
+        await transaction.commit();
+      }
+      return true;
     }
     // @ts-ignore
     const createAccessor = association.accessors.create;
-    let key: string;
+    let dataKey: string;
     let M: ModelCtor<Model>;
     if (association.associationType === 'BelongsTo') {
-      // @ts-ignore
-      key = association.targetKey;
       M = association.target;
-    } else {
       // @ts-ignore
-      key = association.sourceKey;
+      dataKey = association.targetKey;
+    } else {
       M = association.source;
+      dataKey = M.primaryKeyAttribute;
     }
-    if (isStringOrNumber(value)) {
+    if (isStringOrNumber(value[dataKey])) {
       let instance: any = await M.findOne({
         where: {
-          [key]: value[key],
+          [dataKey]: value[dataKey],
         },
         transaction,
       });
-      if (!instance) {
-        instance = await M.create(value, { transaction });
+      if (instance) {
+        await model[setAccessor](instance);
+        await updateAssociations(instance, value, { transaction, ...options });
+        model.setDataValue(key, instance);
+        if (!options.transaction) {
+          await transaction.commit();
+        }
+        return true;
       }
-      await model[setAccessor](value[key]);
-      await updateAssociations(instance, value, { transaction, ...options });
-    } else {
-      const instance = await model[createAccessor](value, { transaction });
-      await updateAssociations(instance, value, { transaction, ...options });
+    }
+    const instance = await model[createAccessor](value, { transaction });
+    await updateAssociations(instance, value, { transaction, ...options });
+    model.setDataValue(key, instance);
+    // @ts-ignore
+    if (association.targetKey) {
+      model.setDataValue(association.foreignKey, instance[dataKey]);
     }
     if (!options.transaction) {
       await transaction.commit();
@@ -143,10 +167,13 @@ export async function updateMultipleAssociation(
     // @ts-ignore
     const createAccessor = association.accessors.create;
     if (isUndefinedOrNull(value)) {
-      return await model[setAccessor](null, { transaction });
+      await model[setAccessor](null, { transaction });
+      model.setDataValue(key, null);
+      return;
     }
     if (isStringOrNumber(value)) {
-      return await model[setAccessor](value, { transaction });
+      await model[setAccessor](value, { transaction });
+      return;
     }
     if (!Array.isArray(value)) {
       value = [value];
@@ -167,21 +194,24 @@ export async function updateMultipleAssociation(
         list2.push(item);
       }
     }
-    console.log('updateMultipleAssociation', list1, list2);
     await model[setAccessor](list1, { transaction });
+    const list3 = [];
     for (const item of list2) {
       const pk = association.target.primaryKeyAttribute;
       if (isUndefinedOrNull(item[pk])) {
         const instance = await model[createAccessor](item, { transaction });
         await updateAssociations(instance, item, { transaction, ...options });
+        list3.push(instance);
       } else {
         const instance = await association.target.findByPk(item[pk], { transaction });
         // @ts-ignore
         const addAccessor = association.accessors.add;
         await model[addAccessor](item[pk], { transaction });
         await updateAssociations(instance, item, { transaction, ...options });
+        list3.push(instance);
       }
     }
+    model.setDataValue(key, list1.concat(list3));
     if (!options.transaction) {
       await transaction.commit();
     }

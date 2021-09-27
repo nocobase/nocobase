@@ -1,31 +1,31 @@
 import { DataTypes } from 'sequelize';
-import { SchemaField } from './schema-field';
+import { Field } from './field';
 
-export class IntegerField extends SchemaField {
+export class IntegerField extends Field {
   get dataType() {
     return DataTypes.INTEGER;
   }
 }
 
-export class FloatField extends SchemaField {
+export class FloatField extends Field {
   get dataType() {
     return DataTypes.FLOAT;
   }
 }
 
-export class DoubleField extends SchemaField {
+export class DoubleField extends Field {
   get dataType() {
     return DataTypes.DOUBLE;
   }
 }
 
-export class RealField extends SchemaField {
+export class RealField extends Field {
   get dataType() {
     return DataTypes.REAL;
   }
 }
 
-export class DecimalField extends SchemaField {
+export class DecimalField extends Field {
   get dataType() {
     return DataTypes.DECIMAL;
   }

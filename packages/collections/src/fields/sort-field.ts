@@ -1,8 +1,8 @@
 import { isNumber } from 'lodash';
 import { DataTypes } from 'sequelize';
-import { SchemaField } from './schema-field';
+import { Field } from './field';
 
-export class SortField extends SchemaField {
+export class SortField extends Field {
   get dataType() {
     return DataTypes.INTEGER;
   }

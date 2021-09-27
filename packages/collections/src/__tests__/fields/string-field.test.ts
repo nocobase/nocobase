@@ -15,7 +15,7 @@ describe('string field', () => {
   it('define', async () => {
     const Test = db.collection({
       name: 'tests',
-      schema: [
+      fields: [
         { type: 'string', name: 'name' },
       ],
     });
@@ -32,12 +32,12 @@ describe('string field', () => {
   it('set', async () => {
     const Test = db.collection({
       name: 'tests',
-      schema: [
+      fields: [
         { type: 'string', name: 'name1' },
       ],
     });
     await db.sync();
-    Test.schema.set('name2', { type: 'string' });
+    Test.addField({ type: 'string', name: 'name2' });
     await db.sync();
     expect(Test.model.rawAttributes['name1']).toBeDefined();
     expect(Test.model.rawAttributes['name2']).toBeDefined();
@@ -54,7 +54,7 @@ describe('string field', () => {
   it('model hook', async () => {
     const collection = db.collection({
       name: 'tests',
-      schema: [
+      fields: [
         { type: 'string', name: 'name' },
       ],
     });
@@ -65,7 +65,7 @@ describe('string field', () => {
         model.set(name, `${model.get(name)}111`);
       }
     });
-    collection.schema.set('name2', { type: 'string' });
+    collection.addField({ type: 'string', name: 'name2' });
     await db.sync();
     const model = await collection.model.create({
       name: 'n1',

@@ -7,6 +7,7 @@ import {
   AssociationScope,
   ForeignKeyOptions,
   HasManyOptions,
+  Utils,
 } from 'sequelize';
 import { RelationField } from './relation-field';
 
@@ -73,6 +74,19 @@ export interface HasManyFieldOptions extends HasManyOptions {
 
 export class HasManyField extends RelationField {
 
+  get foreignKey() {
+    if (this.options.foreignKey) {
+      return this.options.foreignKey;
+    }
+    const { model } = this.context.collection;
+    return Utils.camelize(
+      [
+        model.options.name.singular,
+        this.sourceKey || model.primaryKeyAttribute
+      ].join('_')
+    );
+  }
+
   bind() {
     const { database, collection } = this.context;
     const Target = this.TargetModel;
@@ -82,6 +96,7 @@ export class HasManyField extends RelationField {
     }
     const association = collection.model.hasMany(Target, {
       as: this.name,
+      foreignKey: this.foreignKey,
       ...omit(this.options, ['name', 'type', 'target']),
     });
     // 建立关系之后从 pending 列表中删除
@@ -103,7 +118,7 @@ export class HasManyField extends RelationField {
     // 如果关系表内没有显式的创建外键字段，删除关系时，外键也删除掉
     const tcoll = database.collections.get(this.target);
     const foreignKey = this.options.foreignKey;
-    const field = tcoll.schema.find((field) => {
+    const field = tcoll.findField((field) => {
       if (field.name === foreignKey) {
         return true;
       }

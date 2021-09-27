@@ -3,6 +3,9 @@ import { Sequelize, ModelCtor, Model, DataTypes, Utils } from 'sequelize';
 import { RelationField } from './relation-field';
 
 export class BelongsToField extends RelationField {
+
+  static type = 'belongsTo';
+
   get target() {
     const { target, name } = this.options;
     return target || Utils.pluralize(name);
@@ -38,8 +41,8 @@ export class BelongsToField extends RelationField {
     // 如果外键没有显式的创建，关系表也无反向关联字段，删除关系时，外键也删除掉
     const tcoll = database.collections.get(this.target);
     const foreignKey = this.options.foreignKey;
-    const field1 = collection.schema.get(foreignKey);
-    const field2 = tcoll.schema.find((field) => {
+    const field1 = collection.getField(foreignKey);
+    const field2 = tcoll.findField((field) => {
       return field.type === 'hasMany' && field.foreignKey === foreignKey;
     });
     if (!field1 && !field2) {

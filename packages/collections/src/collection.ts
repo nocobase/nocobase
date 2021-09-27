@@ -1,12 +1,14 @@
-import { ModelCtor, Model } from 'sequelize';
+import { Sequelize, ModelCtor, Model, DataTypes, Utils } from 'sequelize';
+import { EventEmitter } from 'events';
 import { Database } from './database';
-import { Schema } from './schema';
-import { RelationField } from './schema-fields';
+import { Field } from './fields';
 import _ from 'lodash';
 import { Repository } from './repository';
 
 export interface CollectionOptions {
-  schema?: any;
+  name: string;
+  tableName?: string;
+  fields?: any;
   [key: string]: any;
 }
 
@@ -14,52 +16,103 @@ export interface CollectionContext {
   database: Database;
 }
 
-export class Collection {
-  schema: Schema;
-  model: ModelCtor<Model>;
-  repository: Repository;
+export class Collection extends EventEmitter {
   options: CollectionOptions;
   context: CollectionContext;
+  fields: Map<string, any>;
+  model: ModelCtor<Model>;
+  repository: Repository;
 
   get name() {
     return this.options.name;
   }
 
-  constructor(options: CollectionOptions, context: CollectionContext) {
+  constructor(options: CollectionOptions, context?: CollectionContext) {
+    super();
     this.options = options;
     this.context = context;
-    const { name, tableName } = options;
+    this.fields = new Map<string, any>();
     this.model = class extends Model<any, any> {};
     const attributes = {};
+    const { name, tableName } = options;
     // TODO: 不能重复 model.init，如果有涉及 InitOptions 参数修改，需要另外处理。
     this.model.init(attributes, {
-      ..._.omit(options, ['name', 'schema']),
+      ..._.omit(options, ['name', 'fields']),
       sequelize: context.database.sequelize,
       modelName: name,
       tableName: tableName || name,
     });
-    // schema 只针对字段，对应 Sequelize 的 Attributes
-    // 其他 InitOptions 参数放在 Collection 里，通过其他方法同步给 model
-    this.schema = new Schema(options.schema, {
-      ...context,
-      collection: this,
-    });
-    this.schema2model();
-    this.context.database.emit('collection.init', this);
+    this.on('field.afterAdd', (field) => field.bind());
+    this.on('field.afterRemove', (field) => field.unbind());
+    this.setFields(options.fields);
     this.repository = new Repository(this);
   }
 
-  schema2model() {
-    this.schema.forEach((field) => {
-      field.bind();
+  forEachField(callback: (field: Field) => void) {
+    return [...this.fields.values()].forEach(callback);
+  }
+
+  findField(callback: (field: Field) => boolean) {
+    return [...this.fields.values()].find(callback);
+  }
+
+  hasField(name: string) {
+    return this.fields.has(name);
+  }
+
+  getField(name: string) {
+    return this.fields.get(name);
+  }
+
+  addField(options) {
+    const { name, ...others } = options;
+    if (!name) {
+      return this;
+    }
+    const { database } = this.context;
+    const field = database.buildField({ name, ...others }, {
+      ...this.context,
+      collection: this,
+      model: this.model,
     });
-    this.schema.on('setted', (field) => {
-      // console.log('setted', field);
-      field.bind();
-    });
-    this.schema.on('deleted', (field) => field.unbind());
-    this.schema.on('merged', (field) => {
-      //
-    });
+    this.fields.set(name, field);
+    this.emit('field.afterAdd', field);
+  }
+
+  setFields(fields: any, reset = true) {
+    if (!fields) {
+      return this;
+    }
+    if (reset) {
+      this.fields.clear();
+    }
+    if (Array.isArray(fields)) {
+      for (const field of fields) {
+        this.addField(field);
+      }
+    } else if (typeof fields === 'object') {
+      for (const [name, options] of Object.entries<any>(fields)) {
+        this.addField({...options, name});
+      }
+    }
+  }
+
+  removeField(name) {
+    const field = this.fields.get(name);
+    const bool = this.fields.delete(name);
+    if (bool) {
+      this.emit('field.afterRemove', field);
+    }
+    return bool;
+  }
+
+  // TODO
+  extend(options) {
+    const { fields } = options;
+    this.setFields(fields);
+  }
+
+  sync() {
+    
   }
 }

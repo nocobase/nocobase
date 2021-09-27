@@ -15,7 +15,7 @@ describe('belongs to many field', () => {
   it('association undefined', async () => {
     const Post = db.collection({
       name: 'posts',
-      schema: [
+      fields: [
         { type: 'string', name: 'name' },
         { type: 'belongsToMany', name: 'tags' },
       ],
@@ -24,7 +24,7 @@ describe('belongs to many field', () => {
     expect(db.getCollection('posts_tags')).toBeUndefined();
     const Tag = db.collection({
       name: 'tags',
-      schema: [
+      fields: [
         { type: 'string', name: 'name' },
       ],
     });

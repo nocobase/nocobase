@@ -15,7 +15,7 @@ describe('has many field', () => {
   it('association undefined', async () => {
     const collection = db.collection({
       name: 'posts',
-      schema: [{ type: 'hasMany', name: 'comments' }],
+      fields: [{ type: 'hasMany', name: 'comments' }],
     });
     await db.sync();
     expect(collection.model.associations['comments']).toBeUndefined();
@@ -24,12 +24,12 @@ describe('has many field', () => {
   it('association defined', async () => {
     const { model } = db.collection({
       name: 'posts',
-      schema: [{ type: 'hasMany', name: 'comments' }],
+      fields: [{ type: 'hasMany', name: 'comments' }],
     });
     expect(model.associations['comments']).toBeUndefined();
     const comments = db.collection({
       name: 'comments',
-      schema: [{ type: 'string', name: 'content' }],
+      fields: [{ type: 'string', name: 'content' }],
     });
     const association = model.associations.comments;
     expect(association).toBeDefined();
@@ -48,10 +48,10 @@ describe('has many field', () => {
     ]);
   });
 
-  it.only('custom sourceKey', async () => {
+  it('custom sourceKey', async () => {
     const collection = db.collection({
       name: 'posts',
-      schema: [
+      fields: [
         { type: 'string', name: 'key', unique: true },
         {
           type: 'hasMany',
@@ -63,7 +63,7 @@ describe('has many field', () => {
     });
     const comments = db.collection({
       name: 'comments',
-      schema: [],
+      fields: [],
     });
     const association = collection.model.associations.comments;
     expect(association).toBeDefined();
@@ -77,7 +77,7 @@ describe('has many field', () => {
   it('custom sourceKey and foreignKey', async () => {
     const collection = db.collection({
       name: 'posts',
-      schema: [
+      fields: [
         { type: 'string', name: 'key', unique: true },
         {
           type: 'hasMany',
@@ -89,7 +89,7 @@ describe('has many field', () => {
     });
     const comments = db.collection({
       name: 'comments',
-      schema: [],
+      fields: [],
     });
     const association = collection.model.associations.comments;
     expect(association).toBeDefined();
@@ -103,7 +103,7 @@ describe('has many field', () => {
   it('custom name and target', async () => {
     const collection = db.collection({
       name: 'posts',
-      schema: [
+      fields: [
         { type: 'string', name: 'key', unique: true },
         {
           type: 'hasMany',
@@ -116,7 +116,7 @@ describe('has many field', () => {
     });
     db.collection({
       name: 'comments',
-      schema: [{ type: 'string', name: 'content' }],
+      fields: [{ type: 'string', name: 'content' }],
     });
     const association = collection.model.associations.reviews;
     expect(association).toBeDefined();
@@ -139,17 +139,17 @@ describe('has many field', () => {
   it('schema delete', async () => {
     const Post = db.collection({
       name: 'posts',
-      schema: [{ type: 'hasMany', name: 'comments' }],
+      fields: [{ type: 'hasMany', name: 'comments' }],
     });
     const Comment = db.collection({
       name: 'comments',
-      schema: [{ type: 'belongsTo', name: 'post' }],
+      fields: [{ type: 'belongsTo', name: 'post' }],
     });
     await db.sync();
-    Post.schema.delete('comments');
+    Post.removeField('comments');
     expect(Post.model.associations.comments).toBeUndefined();
     expect(Comment.model.rawAttributes.postId).toBeDefined();
-    Comment.schema.delete('post');
+    Comment.removeField('post');
     expect(Comment.model.rawAttributes.postId).toBeUndefined();
   });
 });

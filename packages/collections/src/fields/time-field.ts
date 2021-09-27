@@ -1,7 +1,7 @@
 import { DataTypes } from 'sequelize';
-import { SchemaField } from './schema-field';
+import { Field } from './field';
 
-export class TimeField extends SchemaField {
+export class TimeField extends Field {
   get dataType() {
     return DataTypes.TIME;
   }
