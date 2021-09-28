@@ -465,6 +465,33 @@ type HookType =
     return this.sequelize.close();
   }
 
+  /**
+   * 添加 hook
+   * 
+   * @param hookType 
+   * @param fn 
+   */
+   public addHook(hookType: HookType | string, fn: Function) {
+    const hooks = this.hooks[hookType] || [];
+    hooks.push(fn);
+    this.hooks[hookType] = hooks;
+  }
+
+  /**
+   * 运行 hook
+   *
+   * @param hookType 
+   * @param args 
+   */
+  public async runHooks(hookType: HookType | string, ...args) {
+    const hooks = this.hooks[hookType] || [];
+    for (const hook of hooks) {
+      if (typeof hook === 'function') {
+        await hook(...args);
+      }
+    }
+  }
+
   public getFieldByPath(fieldPath: string) {
     const [tableName, fieldName] = fieldPath.split('.');
     return this.getTable(tableName).getField(fieldName);

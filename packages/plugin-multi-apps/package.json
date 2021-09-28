@@ -1,5 +1,5 @@
 {
-  "name": "@nocobase/plugin-saas",
+  "name": "@nocobase/plugin-multi-apps",
   "version": "0.4.0-alpha.7",
   "main": "lib/index.js",
   "license": "MIT",

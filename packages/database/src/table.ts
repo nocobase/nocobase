@@ -139,6 +139,7 @@ export class Table {
 
   constructor(options: TableOptions, context: TabelContext) {
     const { database } = context;
+    database.runHooks('beforeTableInit', options);
     database.emit('beforeTableInit', options);
     const {
       model,
@@ -158,6 +159,7 @@ export class Table {
     this.setFields(fields);
     this.initSortable();
     database.emit('afterTableInit', this);
+    database.runHooks('afterTableInit', this);
   }
 
   public initSortable() {
@@ -313,6 +315,7 @@ export class Table {
    * @param reinitialize 
    */
   public addField(options: FieldOptions, reinitialize: Reinitialize = true) {
+    this.database.runHooks('beforeAddField', options, this);
     this.database.emit('beforeAddField', options, this);
     const { name, index } = options;
     const field = buildField(options, {
@@ -350,6 +353,7 @@ export class Table {
     }
     this.modelInit(reinitialize);
     this.database.emit('afterAddField', field, this);
+    this.database.runHooks('afterAddField', field, this);
     return field;
   }
 
