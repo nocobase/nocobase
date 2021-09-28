@@ -45,6 +45,7 @@ import {
   CollectionProvider,
   useCollectionContext,
   useDisplayedMapContext,
+  useResourceRequest,
 } from '../../constate';
 import { FormButtonGroup, FormDialog, FormLayout, Submit } from '@formily/antd';
 import IconPicker from '../../components/icon-picker';
@@ -151,7 +152,7 @@ export const Calendar: any = observer((props: any) => {
     }
     return buf;
   }, null);
-  const resource = Resource.make(collectionName);
+  const resource = useResourceRequest(collectionName);
   const service = useRequest(
     (params) => {
       if (!collectionName) {
@@ -271,7 +272,7 @@ Calendar.useResource = ({ onSuccess }) => {
   const { props } = useCalendar();
   const { collection } = useCollectionContext();
   const record = useContext(RecordContext);
-  const resource = Resource.make({
+  const resource = useResourceRequest({
     resourceName: collection?.name || props.collectionName,
     resourceKey: record['id'],
   });

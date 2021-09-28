@@ -10,7 +10,7 @@ import {
   AdminLayout,
   AuthLayout,
   RouteSchemaRenderer,
-  ClientProvider,
+  ConfigProvider,
   ClientSDK
 } from '../';
 import { UseRequestProvider } from 'ahooks';
@@ -66,8 +66,8 @@ const App = () => {
 
 export default () => {
   return (
-    <ClientProvider client={client}>
+    <ConfigProvider client={client}>
       <App />
-    </ClientProvider>
+    </ConfigProvider>
   );
 }

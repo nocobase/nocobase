@@ -22,7 +22,7 @@ function createApp(opts) {
         acquire: 60000,
         idle: 10000,
       },
-      logging: process.env.DB_LOG_SQL === 'on' ? console.log : false,
+      // logging: process.env.DB_LOG_SQL === 'on' ? console.log : false,
       define: {},
       sync: {
         force: false,
@@ -31,6 +31,7 @@ function createApp(opts) {
         },
       },
     },
+    bodyParser: false,
     // dataWrapping: false,
     resourcer: {
       prefix: `/api/saas/${name}`,
@@ -57,9 +58,9 @@ function createApp(opts) {
   });
 
   const plugins = [
-    '@nocobase/plugin-collections',
-    '@nocobase/plugin-ui-router',
     '@nocobase/plugin-ui-schema',
+    '@nocobase/plugin-ui-router',
+    '@nocobase/plugin-collections',
     '@nocobase/plugin-users',
     '@nocobase/plugin-action-logs',
     '@nocobase/plugin-file-manager',
@@ -100,10 +101,22 @@ function multiApps({ getAppName }) {
       await app.load();
       apps.set(appName, app);
     }
-    const app = apps.get(appName);
+
+    console.log('..........................start........................')
     // 完全隔离的做法
+    const app = apps.get(appName) as Application;
+    const bodyParser = async (ctx2, next) => {
+      // @ts-ignore
+      ctx2.request.body = ctx.request.body || {};
+      await next();
+    };
+    app.middleware.unshift(bodyParser);
     const handleRequest = app.callback();
     await handleRequest(ctx.req, ctx.res);
+    const index = app.middleware.indexOf(bodyParser);
+    app.middleware.splice(index, 1);
+    console.log('..........................end........................')
+    // await next();
   };
 }
 

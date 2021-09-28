@@ -7,7 +7,7 @@ import { uid } from '@formily/shared';
 import { useField } from '@formily/react';
 import { useEffect } from 'react';
 import { useRequest } from 'ahooks';
-import { Resource } from '@nocobase/client/src/resource';
+import { Resource } from '../../../resource';
 
 const options = [
   {

@@ -42,9 +42,9 @@ const api = new Server({
 
 const plugins = [
   '@nocobase/plugin-saas',
-  '@nocobase/plugin-collections',
-  '@nocobase/plugin-ui-router',
   '@nocobase/plugin-ui-schema',
+  '@nocobase/plugin-ui-router',
+  '@nocobase/plugin-collections',
   '@nocobase/plugin-users',
   '@nocobase/plugin-action-logs',
   '@nocobase/plugin-file-manager',

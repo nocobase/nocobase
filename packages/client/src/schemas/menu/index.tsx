@@ -52,7 +52,7 @@ import {
   LockOutlined,
 } from '@ant-design/icons';
 import { IconPicker } from '../../components/icon-picker';
-import { createSchema, removeSchema, updateSchema, useDefaultAction } from '..';
+import { useDefaultAction } from '..';
 import { useMount } from 'ahooks';
 import './style.less';
 import { findPropertyByPath, getSchemaPath, useSchemaPath } from '../../';
@@ -70,6 +70,7 @@ import {
 import { DndContext, DragOverlay } from '@dnd-kit/core';
 import { createPortal } from 'react-dom';
 import { Resource } from '../../resource';
+import { useClient } from '../../constate';
 
 export interface MenuContextProps {
   schema?: Schema;
@@ -93,6 +94,7 @@ const SideMenu = (props: any) => {
   if (!child || child['x-component'] !== 'Menu.SubMenu') {
     return null;
   }
+
   return (
     <MenuModeContext.Provider value={'inline'}>
       <AntdMenu
@@ -157,6 +159,7 @@ export const Menu: any = observer((props: any) => {
   const path = useSchemaPath();
   const child = schema.properties && schema.properties[selectedKey];
   const isSubMenu = child && child['x-component'] === 'Menu.SubMenu';
+  const { updateSchema } = useClient();
 
   useMount(() => {
     if (mode !== 'mix') {
@@ -430,6 +433,7 @@ Menu.SubMenu = observer((props: any) => {
 
 Menu.AddNew = observer((props: any) => {
   const { designable, appendChild } = useDesignable(props.path);
+  const { createSchema, removeSchema, updateSchema } = useClient();
   if (!designable) {
     return null;
   }
@@ -686,6 +690,7 @@ Menu.DesignableBar = (props) => {
   const isSubMenu = schema['x-component'] === 'Menu.SubMenu';
   const ctx = useContext(MenuContext);
   const mode = useContext(MenuModeContext);
+  const { createSchema, removeSchema, updateSchema } = useClient();
 
   return (
     <div className={cls('designable-bar', { active: visible })}>
@@ -964,7 +969,7 @@ Menu.DesignableBar = (props) => {
                     </AntdMenu.Item>
                   </AntdMenu.SubMenu>
                 )}
-                <AntdMenu.Divider />
+                {/* <AntdMenu.Divider />
                 <AntdMenu.Item
                   icon={<LockOutlined />}
                   onClick={async () => {
@@ -1021,7 +1026,7 @@ Menu.DesignableBar = (props) => {
                   }}
                 >
                   设置权限
-                </AntdMenu.Item>
+                </AntdMenu.Item> */}
                 <AntdMenu.Divider />
                 <AntdMenu.Item
                   key={'delete'}

@@ -1,4 +1,4 @@
-import { SchemaRenderer } from '../../../';
+import { SchemaRenderer, useResourceRequest } from '../../../';
 import React, { useContext, useEffect } from 'react';
 import { FormItem } from '@formily/antd';
 import { action } from '@formily/reactive';
@@ -58,13 +58,14 @@ const useFieldPermissions = () => {
       }) || []
     );
   };
+  const resource = useResourceRequest({
+    associatedName: 'collections',
+    associatedKey: ctx.record.name,
+    resourceName: 'fields',
+  });
   const service = useRequest(
     () =>
-      Resource.make({
-        associatedName: 'collections',
-        associatedKey: ctx.record.name,
-        resourceName: 'fields',
-      }).list({
+      resource.list({
         filter: {
           state: 1,
         },

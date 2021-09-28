@@ -69,11 +69,13 @@ export class Application<
     this.resourcer = new Resourcer({ ...options.resourcer });
     this.cli = new Command();
 
-    this.use(
-      bodyParser({
-        ...options.bodyParser,
-      }),
-    );
+    if (options.bodyParser !== false) {
+      this.use(
+        bodyParser({
+          ...options.bodyParser,
+        }),
+      );
+    }
 
     this.use(
       cors({

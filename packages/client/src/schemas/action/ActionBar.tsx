@@ -1,7 +1,7 @@
 import { DndContext, DragOverlay } from '@dnd-kit/core';
 import { observer, RecursionField, Schema } from '@formily/react';
 import React, { useState } from 'react';
-import { createSchema, ISchema, removeSchema, updateSchema } from '..';
+import { ISchema } from '..';
 import {
   findPropertyByPath,
   getSchemaPath,
@@ -14,6 +14,7 @@ import SwitchMenuItem from '../../components/SwitchMenuItem';
 import { uid } from '@formily/shared';
 import { PlusOutlined } from '@ant-design/icons';
 import { Droppable, SortableItem } from '../../components/Sortable';
+import { useClient } from '../../constate';
 
 export const ActionBar = observer((props: any) => {
   const { align = 'top' } = props;
@@ -39,6 +40,7 @@ export const ActionBar = observer((props: any) => {
       path2,
     );
   };
+  const { updateSchema } = useClient();
 
   const [dragOverlayContent, setDragOverlayContent] = useState('');
   return (
@@ -180,6 +182,7 @@ function AddActionButton() {
   const displayed = useDisplayedMapContext();
   const { appendChild, remove } = useDesignable();
   const { schema, designable } = useDesignable();
+  const { createSchema, removeSchema } = useClient();
   if (!designable) {
     return null;
   }
@@ -216,7 +219,7 @@ function AddActionButton() {
             ))}
           </Menu.ItemGroup>
           <Menu.Divider />
-          <Menu.SubMenu title={'自定义'}>
+          <Menu.SubMenu disabled title={'自定义'}>
             <Menu.Item style={{ minWidth: 120 }}>函数操作</Menu.Item>
             <Menu.Item>弹窗表单</Menu.Item>
             <Menu.Item>复杂弹窗</Menu.Item>

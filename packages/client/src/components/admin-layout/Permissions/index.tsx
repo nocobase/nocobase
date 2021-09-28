@@ -1,4 +1,4 @@
-import { SchemaRenderer } from '../../../';
+import { SchemaRenderer, useResourceRequest } from '../../../';
 import React, { useContext, useEffect } from 'react';
 import { FormItem } from '@formily/antd';
 import { action } from '@formily/reactive';
@@ -30,7 +30,7 @@ function RoleProvider(props) {
 }
 
 const useResource = () => {
-  const resource = Resource.make('roles');
+  const resource = useResourceRequest('roles');
   return {
     resource,
   };
@@ -39,7 +39,7 @@ const useResource = () => {
 const useCollectionsResource = () => {
   const descriptionsContext = useContext(DescriptionsContext);
   console.log('descriptionsContext.service', descriptionsContext.service);
-  const resource = Resource.make('collections');
+  const resource = useResourceRequest('collections');
   return {
     resource,
   };
@@ -55,7 +55,7 @@ class ActionPermissionResource extends Resource {
 const useActionPermissionSubmit = () => {
   const form = useForm();
   const role = useContext(RoleContext);
-  const resource = Resource.make({
+  const resource = useResourceRequest({
     resourceName: 'roles',
     resourceKey: role.name,
   });
@@ -72,9 +72,9 @@ const useActionPermissionResource = ({ onSuccess }) => {
   console.log('RoleContext', role);
   // const { props } = useTable();
   const ctx = useContext(TableRowContext);
-  const resource = ActionPermissionResource.make({
+  const resource = useResourceRequest({
     resourceName: 'action_permissions',
-  });
+  }, ActionPermissionResource);
   const service = useRequest(
     (params?: any) => {
       return resource.list({
@@ -120,7 +120,7 @@ const useActionPermissionResource = ({ onSuccess }) => {
 const useDetailsResource = ({ onSuccess }) => {
   const { props } = useTable();
   const ctx = useContext(TableRowContext);
-  const resource = Resource.make({
+  const resource = useResourceRequest({
     resourceName: 'roles',
     resourceKey: ctx.record[props.rowKey],
   });

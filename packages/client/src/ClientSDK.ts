@@ -8,7 +8,8 @@ export class ClientSDK {
   }
 
   request(url: string, options?: RequestOptionsInit): RequestMethod {
-    return this.options.request(url, options);
+    console.log('this.options.request', this.options.request);
+    return this.options.request(url, options||{});
   }
 
   resource(name) {

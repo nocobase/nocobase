@@ -24,14 +24,9 @@ import { Droppable, SortableItem } from '../../components/Sortable';
 import { uid } from '@formily/shared';
 import cls from 'classnames';
 import './style.less';
-import {
-  createSchema,
-  FormilyISchema,
-  ISchema,
-  removeSchema,
-  updateSchema,
-} from '..';
+import { FormilyISchema, ISchema } from '..';
 import { DesignableBar } from './DesignableBar';
+import { useClient } from '../../constate';
 
 const GridRowContext = createContext<any>(null);
 const GridColContext = createContext<any>(null);
@@ -60,6 +55,7 @@ export const Grid: any = observer((props: any) => {
   const [clientWidths, setClientWidths] = useState([0, 0]);
   const { addNewComponent } = props;
   const AddNewComponent = useSchemaComponent(addNewComponent);
+  const { createSchema, removeSchema, updateSchema } = useClient();
   // const sensors = useSensors(useSensor(MouseSensor));
   const rows = Object.values(schema.properties || {}).filter((item) => {
     return !item['x-hidden'];

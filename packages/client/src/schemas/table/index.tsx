@@ -13,9 +13,6 @@ import { useContext } from 'react';
 import { createContext } from 'react';
 import {
   useDesignable,
-  updateSchema,
-  removeSchema,
-  createSchema,
   createCollectionField,
   ISchema,
 } from '..';
@@ -55,6 +52,8 @@ import {
   useCollectionContext,
   useCollectionsContext,
   useDisplayedMapContext,
+  useClient,
+  useResourceRequest,
 } from '../../constate';
 import { useResource as useGeneralResource } from '../../hooks/useResource';
 import SwitchMenuItem from '../../components/SwitchMenuItem';
@@ -409,6 +408,8 @@ function AddColumn() {
   const { collection, fields, refresh } = useCollectionContext();
   const displayed = useDisplayedMapContext();
   const { service } = useTable();
+  const { createSchema, removeSchema, updateSchema } = useClient();
+
   return (
     <Dropdown
       trigger={['hover']}
@@ -579,6 +580,7 @@ function AddColumn() {
           </Menu.ItemGroup>
           <Menu.Divider />
           <Menu.SubMenu
+            disabled
             popupClassName={'add-new-fields-popup'}
             title={'添加字段'}
           >
@@ -1208,6 +1210,8 @@ function AddActionButton() {
   const displayed = useDisplayedMapContext();
   const { appendChild, remove } = useDesignable();
   const { schema, designable } = useDesignable();
+  const { createSchema, removeSchema, updateSchema } = useClient();
+
   if (!designable || !schema['x-designable-bar']) {
     return null;
   }
@@ -1324,6 +1328,7 @@ Table.ActionBar = observer((props: any) => {
       path2,
     );
   };
+  const { createSchema, removeSchema, updateSchema } = useClient();
 
   const [dragOverlayContent, setDragOverlayContent] = useState('');
   return (
@@ -1514,6 +1519,7 @@ Table.Filter.DesignableBar = () => {
   const displayed = useDisplayedMapContext();
   const { fields } = useCollectionContext();
   const field = useField();
+  const { createSchema, removeSchema, updateSchema } = useClient();
   let fieldNames = field.componentProps.fieldNames || [];
   if (fieldNames.length === 0) {
     fieldNames = fields.map((field) => field.name);
@@ -1643,6 +1649,7 @@ Table.ExportActionDesignableBar = () => {
   const displayed = useDisplayedMapContext();
   const { fields } = useCollectionContext();
   const field = useField();
+  const { createSchema, removeSchema, updateSchema } = useClient();
   let fieldNames = field.componentProps.fieldNames || [];
   if (fieldNames.length === 0) {
     fieldNames = fields.map((field) => field.name);
@@ -1786,6 +1793,8 @@ Table.Operation.DesignableBar = () => {
   const groupPath = getSchemaPath(groupSchema);
   const { schema, remove, refresh, appendChild } = useDesignable(groupPath);
   const [visible, setVisible] = useState(false);
+  const { createSchema, removeSchema, updateSchema } = useClient();
+
   const map = new Map();
   schema.mapProperties((s) => {
     if (!s['x-action-type']) {
@@ -1862,6 +1871,7 @@ Table.Action.DesignableBar = () => {
   const inActionBar = schema.parent['x-component'] === 'Table.ActionBar';
   const displayed = useDisplayedMapContext();
   const field = useField();
+  const { createSchema, removeSchema, updateSchema } = useClient();
   const popupComponent = popupSchema?.['x-component'] || 'Action.Drawer';
   return (
     <div className={cls('designable-bar', { active: visible })}>
@@ -2065,6 +2075,7 @@ Table.Column.DesignableBar = () => {
   const displayed = useDisplayedMapContext();
   const { getFieldsByCollection } = useCollectionsContext();
   const collectionField = useContext(CollectionFieldContext);
+  const { createSchema, removeSchema, updateSchema } = useClient();
   console.log('displayed.map', displayed.map);
   return (
     <div className={cls('designable-bar', { active: visible })}>
@@ -2223,6 +2234,7 @@ Table.DesignableBar = observer((props) => {
     field?.componentProps?.pagination?.defaultPageSize || 10;
   const collectionName = field?.componentProps?.collectionName;
   const { collection, fields } = useCollection({ collectionName });
+  const { createSchema, removeSchema, updateSchema } = useClient();
   console.log({ collectionName });
   return (
     <div className={cls('designable-bar', { active: visible })}>
@@ -2486,7 +2498,7 @@ Table.useResource = ({ onSuccess, manual = true }) => {
   const { props } = useTable();
   const { collection } = useCollectionContext();
   const ctx = useContext(TableRowContext);
-  const resource = Resource.make({
+  const resource = useResourceRequest({
     resourceName: collection?.name || props.collectionName,
     resourceKey: ctx.record[props.rowKey],
   });
@@ -2530,7 +2542,7 @@ Table.useActionLogDetailsResource = ({ onSuccess }) => {
   const { props } = useTable();
   const { collection } = useCollectionContext();
   const ctx = useContext(TableRowContext);
-  const resource = Resource.make({
+  const resource = useResourceRequest({
     resourceName: 'action_logs',
     resourceKey: ctx.record[props.rowKey],
   });
@@ -2581,7 +2593,7 @@ const useActionLogsResource = (options: any = {}) => {
     }
   }
 
-  const resource = ActionLogoResource.make('action_logs');
+  const resource = useResourceRequest('action_logs', ActionLogoResource);
 
   return {
     resource,

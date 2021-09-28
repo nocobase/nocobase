@@ -1,15 +1,14 @@
 import React, { useContext, useEffect } from 'react';
 import { Button, Dropdown, Menu, Spin } from 'antd';
 import { useHistory } from 'react-router-dom';
-import { request } from '../../schemas';
 import { useRequest } from 'ahooks';
-import { Resource } from '../../resource';
 import { createContext } from 'react';
+import { useResourceRequest } from '../../constate';
 
 export const SystemSettingsContext = createContext(null);
 
 export function SystemSettingsProvider(props) {
-  const resource = Resource.make({
+  const resource = useResourceRequest({
     resourceName: 'system_settings',
     resourceKey: 1,
   });
@@ -25,7 +24,11 @@ export function SystemSettingsProvider(props) {
   );
   return (
     <SystemSettingsContext.Provider value={{ service, resource }}>
-      {service.loading ? <Spin size={'large'} className={'nb-spin-center'} /> : props.children}
+      {service.loading ? (
+        <Spin size={'large'} className={'nb-spin-center'} />
+      ) : (
+        props.children
+      )}
     </SystemSettingsContext.Provider>
   );
 }
