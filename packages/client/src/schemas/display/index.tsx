@@ -30,52 +30,52 @@ const usePlaceholder = (value?: any) => {
 };
 
 const Input: React.FC<InputProps> = (props) => {
-  const prefixCls = usePrefixCls('description-text', props);
+  const prefixCls = usePrefixCls('description-input', props);
   return (
-    <Space className={cls(prefixCls, props.className)} style={props.style}>
+    <div className={cls(prefixCls, props.className)} style={props.style}>
       {props.addonBefore}
       {props.prefix}
       {usePlaceholder(props.value)}
       {props.suffix}
       {props.addonAfter}
-    </Space>
+    </div>
   );
 };
 
 const URL: React.FC<InputProps> = (props) => {
-  const prefixCls = usePrefixCls('description-text', props);
+  const prefixCls = usePrefixCls('description-url', props);
   const content = props.value && (
     <a target={'_blank'} href={props.value as any}>
       {props.value}
     </a>
   );
   return (
-    <Space className={cls(prefixCls, props.className)} style={props.style}>
+    <div className={cls(prefixCls, props.className)} style={props.style}>
       {props.addonBefore}
       {props.prefix}
       {content}
       {props.suffix}
       {props.addonAfter}
-    </Space>
+    </div>
   );
 };
 
 const InputNumber: React.FC<InputProps & InputNumberProps> = (props) => {
-  const prefixCls = usePrefixCls('description-text', props);
+  const prefixCls = usePrefixCls('description-input-number', props);
   const value = usePlaceholder(props.value);
   return (
-    <Space className={cls(prefixCls, props.className)} style={props.style}>
+    <div className={cls(prefixCls, props.className)} style={props.style}>
       {props.addonBefore}
       {props.prefix}
       {props.formatter ? props.formatter(value) : value}
       {props.suffix}
       {props.addonAfter}
-    </Space>
+    </div>
   );
 };
 
 const TextArea: React.FC<any> = (props) => {
-  const prefixCls = usePrefixCls('description-text', props);
+  const prefixCls = usePrefixCls('description-textarea', props);
   const ellipsis = props.ellipsis === true ? {} : props.ellipsis;
   const content = props.ellipsis ? (
     <div>
@@ -100,19 +100,19 @@ const TextArea: React.FC<any> = (props) => {
     usePlaceholder(props.value)
   );
   return (
-    <Space className={cls(prefixCls, props.className)} style={props.style}>
+    <div className={cls(prefixCls, props.className)} style={props.style}>
       {props.addonBefore}
       {props.prefix}
       {content}
       {props.suffix}
       {props.addonAfter}
-    </Space>
+    </div>
   );
 };
 
 const Select: React.FC<SelectProps<any>> = observer((props) => {
   const field = useField<Formily.Core.Models.Field>();
-  const prefixCls = usePrefixCls('description-text', props);
+  const prefixCls = usePrefixCls('description-select', props);
   const dataSource: any[] = field?.dataSource?.length
     ? field.dataSource
     : props?.options?.length
@@ -156,7 +156,7 @@ const Select: React.FC<SelectProps<any>> = observer((props) => {
 
 const ObjectSelect: React.FC<SelectProps<any>> = observer((props) => {
   const field = useField<Formily.Core.Models.Field>();
-  const prefixCls = usePrefixCls('description-text', props);
+  const prefixCls = usePrefixCls('description-select', props);
   const dataSource: any[] = field?.dataSource?.length
     ? field.dataSource
     : props?.options?.length
@@ -201,7 +201,7 @@ const ObjectSelect: React.FC<SelectProps<any>> = observer((props) => {
 const TreeSelect: React.FC<TreeSelectProps<any>> = observer((props) => {
   const field = useField<Formily.Core.Models.Field>();
   const placeholder = usePlaceholder();
-  const prefixCls = usePrefixCls('description-text', props);
+  const prefixCls = usePrefixCls('description-tree-select', props);
   const dataSource = field?.dataSource?.length
     ? field.dataSource
     : props?.options?.length
@@ -259,7 +259,7 @@ const TreeSelect: React.FC<TreeSelectProps<any>> = observer((props) => {
 const Cascader: React.FC<CascaderProps> = observer((props) => {
   const field = useField<Formily.Core.Models.Field>();
   const placeholder = usePlaceholder();
-  const prefixCls = usePrefixCls('description-text', props);
+  const prefixCls = usePrefixCls('description-cascader', props);
   const dataSource: any[] = field?.dataSource?.length
     ? field.dataSource
     : props?.options?.length
@@ -302,7 +302,7 @@ const DatePicker: React.FC<DatePickerProps> = (props: any) => {
     return <div></div>;
   }
   const placeholder = usePlaceholder();
-  const prefixCls = usePrefixCls('description-text', props);
+  const prefixCls = usePrefixCls('description-date-picker', props);
   const getDefaultFormat = () => {
     const { dateFormat, showTime, timeFormat } = props;
     let format = dateFormat;

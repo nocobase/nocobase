@@ -98,7 +98,13 @@ const FormMain = (props: any) => {
   const content = (
     <FormProvider form={form}>
       {schema['x-decorator'] === 'Form' ? (
-        <SchemaField components={options.components} scope={scope} schema={s} />
+        <FormLayout layout={'vertical'} {...others}>
+          <SchemaField
+            components={options.components}
+            scope={scope}
+            schema={s}
+          />
+        </FormLayout>
       ) : (
         <FormLayout layout={'vertical'} {...others}>
           <SchemaField
