@@ -10,6 +10,8 @@ import {
   AdminLayout,
   AuthLayout,
   RouteSchemaRenderer,
+  ClientProvider,
+  ClientSDK
 } from '../';
 import { UseRequestProvider } from 'ahooks';
 import { extend } from 'umi-request';
@@ -26,6 +28,10 @@ request.use(async (ctx, next) => {
     headers['Authorization'] = `Bearer ${token}`;
   }
   await next();
+});
+
+const client = new ClientSDK({
+  request,
 });
 
 console.log('process.env.API_URL', process.env.API_URL);
@@ -60,12 +66,8 @@ const App = () => {
 
 export default () => {
   return (
-    <UseRequestProvider
-      value={{
-        requestMethod: (service) => request(service),
-      }}
-    >
+    <ClientProvider client={client}>
       <App />
-    </UseRequestProvider>
+    </ClientProvider>
   );
 }

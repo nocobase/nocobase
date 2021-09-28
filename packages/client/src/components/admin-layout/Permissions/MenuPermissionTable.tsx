@@ -2,7 +2,6 @@ import React from 'react';
 import { observer } from '@formily/react';
 import { Table, Checkbox, Spin } from 'antd';
 import { useRequest } from 'ahooks';
-import { request } from '../../../schemas';
 import { Resource } from '../../../resource';
 import { useContext } from 'react';
 import { RoleContext } from '.';
@@ -23,7 +22,7 @@ export const MenuPermissionTable = observer((props) => {
   const [allUiSchemaKyes, setAllUiSchemaKyes] = useState([]);
   const [uiSchemaKyes, setUiSchemaKeys] = useState([]);
   const { data, loading } = useRequest(
-    () => request('ui_schemas:getMenuItems'),
+    'ui_schemas:getMenuItems',
     {
       formatResult: (data) => data?.data,
       onSuccess(data) {

@@ -2,10 +2,11 @@
 title: Action - 操作
 nav:
   title: 组件
-  path: /schemas
+  path: /client
 group:
-  title: 组件
-  path: /schemas
+  order: 1
+  title: Schemas
+  path: /client/schemas
 ---
 
 # Action - 操作

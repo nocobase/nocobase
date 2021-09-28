@@ -2,7 +2,6 @@ import React from 'react';
 import { ISchema, SchemaRenderer } from '../../';
 import { useSelect, useOptionTagValues } from '../';
 import { uid } from '@formily/shared';
-import { RequestProvider } from '@nocobase/client/src/demos/RequestProvider';
 import { CollectionsProvider } from '@nocobase/client/src/constate';
 
 console.log({ useSelect });
@@ -194,13 +193,11 @@ const schema: ISchema = {
 
 export default () => {
   return (
-    <RequestProvider>
-      <CollectionsProvider>
+    <CollectionsProvider>
       <SchemaRenderer
         scope={{ useSelect, useValues, useOptionTagValues }}
         schema={schema}
       />
     </CollectionsProvider>
-    </RequestProvider>
   );
 };

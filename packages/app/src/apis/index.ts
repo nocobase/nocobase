@@ -1,4 +1,10 @@
 import Server from '@nocobase/server';
+import dotenv from 'dotenv';
+import path from 'path';
+
+dotenv.config({
+  path: path.resolve(__dirname, '../../../../.env'),
+});
 
 const start = Date.now();
 
@@ -35,6 +41,7 @@ const api = new Server({
 });
 
 const plugins = [
+  '@nocobase/plugin-saas',
   '@nocobase/plugin-collections',
   '@nocobase/plugin-ui-router',
   '@nocobase/plugin-ui-schema',
