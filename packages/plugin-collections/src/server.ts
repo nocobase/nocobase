@@ -5,31 +5,40 @@ import * as models from './models';
 import { createOrUpdate, findAll } from './actions';
 import { create } from './actions/fields';
 
+registerModels(models);
+
 export default {
   name: 'collections',
   async load(this: Plugin) {
     const database = this.app.db;
-
-    registerModels(models);
 
     database.import({
       directory: path.resolve(__dirname, 'collections'),
     });
 
     this.app.on('beforeStart', async () => {
-      await database.getModel('collections').load();
+      await database.getModel('collections').load({
+        skipExisting: true,
+      });
     });
 
     this.app.on('db.init', async () => {
-      const userTable = database.getTable('users');
-      const config = userTable.getOptions();
+      const tableNames = ['users', 'applications'];
       const Collection = database.getModel('collections');
-      const collection = await Collection.create(config);
-      await collection.updateAssociations({
-        generalFields: config.fields.filter((field) => field.state !== 0),
-        systemFields: config.fields.filter((field) => field.state === 0),
-      });
-      await collection.migrate();
+      for (const tableName of tableNames) {
+        const table = database.getTable(tableName);
+        console.log(tableName, table);
+        if (!table) {
+          continue;
+        }
+        const config = table.getOptions();
+        const collection = await Collection.create(config);
+        await collection.updateAssociations({
+          generalFields: config.fields.filter((field) => field.state !== 0),
+          systemFields: config.fields.filter((field) => field.state === 0),
+        });
+        // await collection.migrate();
+      }
     });
 
     const [Collection, Field] = database.getModels(['collections', 'fields']);

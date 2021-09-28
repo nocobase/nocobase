@@ -133,7 +133,15 @@ export class Database extends EventEmitter {
   }
 
   async sync(options?: SyncOptions) {
-    return this.sequelize.sync(options);
+    const isMySQL = this.sequelize.getDialect() === 'mysql';
+    if (isMySQL) {
+      await this.sequelize.query('SET FOREIGN_KEY_CHECKS = 0', null);
+    }
+    const result = await this.sequelize.sync(options);
+    if (isMySQL) {
+      await this.sequelize.query('SET FOREIGN_KEY_CHECKS = 1', null);
+    }
+    return result;
   }
 
   async close() {

@@ -31,6 +31,7 @@ function createApp(opts) {
         },
       },
     },
+    // 不能再 bodyParser，会卡死
     bodyParser: false,
     // dataWrapping: false,
     resourcer: {
@@ -40,9 +41,8 @@ function createApp(opts) {
   const app = new Application(options);
 
   app.db.sequelize.beforeDefine((model, options) => {
-    options.tableName = `saas_${name}_${
-      options.tableName || options.name.plural
-    }`;
+    options.tableName = `saas_${name}_${options.tableName || options.name.plural
+      }`;
   });
 
   app.resource({
@@ -126,9 +126,19 @@ export default {
     this.app['apps'] = new Map<string, Application>();
     this.app.collection({
       name: 'applications',
+      title: '应用',
       fields: [
-        { type: 'string', name: 'name', unique: true },
-        { type: 'belongsTo', name: 'user' },
+        {
+          type: 'string',
+          name: 'name',
+          interface: 'string',
+          unique: true,
+          uiSchema: {
+            type: 'string',
+            title: '名称',
+            'x-component': 'Input',
+          },
+        },
       ],
     });
     this.app.use(
@@ -138,6 +148,23 @@ export default {
         },
       }),
     );
+    this.app.db.on('applications.afterCreate', async (model) => {
+      const name = model.get('name');
+      const app = createApp({
+        name,
+      });
+      (async () => {
+        await app.load();
+        await app.db.sync({
+          force: true,
+          alter: {
+            drop: true,
+          },
+        });
+        await app.emitAsync('db.init');
+        await app.destroy();
+      })()
+    });
     this.app
       .command('app:create')
       .argument('<appName>')

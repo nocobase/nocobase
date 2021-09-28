@@ -8,8 +8,9 @@ import {
   AdminLayout,
   AuthLayout,
   RouteSchemaRenderer,
+  ConfigProvider,
+  ClientSDK,
 } from '@nocobase/client';
-import { UseRequestProvider } from 'ahooks';
 import { extend } from 'umi-request';
 
 const request = extend({
@@ -25,6 +26,8 @@ request.use(async (ctx, next) => {
   }
   await next();
 });
+
+const client = new ClientSDK({ request });
 
 const RouteSwitch = createRouteSwitch({
   components: {
@@ -52,12 +55,8 @@ const App = () => {
 
 export default function IndexPage() {
   return (
-    <UseRequestProvider
-      value={{
-        requestMethod: (service) => request(service),
-      }}
-    >
+    <ConfigProvider client={client}>
       <App />
-    </UseRequestProvider>
+    </ConfigProvider>
   );
 }
