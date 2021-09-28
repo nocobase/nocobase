@@ -1,8 +1,10 @@
 English | [简体中文](./README.zh-CN.md)
 
+![](https://www.nocobase.com/images/demo/11.png)  
+
 Note
 ----------
-NocoBase is still in early development and is for preview purposes only and is not suitable for use in a production environment.  
+NocoBase is still in early development and is for preview purposes only and is not suitable for use in a production environment.  A relatively stable and well-documented public beta is expected to be released as early as the first quarter of 2022.
 If you are interested in NocoBase, please join us to discuss and develop it together.
 
 https://www.nocobase.com/  
@@ -11,15 +13,6 @@ hello@nocobase.com
 What is NocoBase
 ----------
 NocoBase is an open source and free no-code development platform. Whether you are a business executive who does not know programming or a developer who is proficient in programming, you can quickly build various customized and privately deployed collaboration platforms and management systems.
-
-Who is NocoBase for
-----------
-- **SMEs and organizations**
-	- Proficient in the business of their organization or industry
-	- Looking to build digital systems
-- **IT service providers and outsourcing teams**
-	- Provide digital upgrade for SMEs and organizations
-	- Have development capabilities
 
 When to use Nocobase
 ----------
@@ -42,20 +35,20 @@ Why choose NocoBase
 	- Free to expand and develop for actual needs
 	- Good ecological support
 - **Strong no-code capability**
-	- More advanced codeless architecture, both flexible and easy to use, can make a powerful system even if you don't know programming
-	- Support tables, calendars, forms, details, statistical charts and other types of views freely combined into the page
-	- Unlimited hierarchical configuration of navigation menus, allowing flexible organization of pages
-	- Precise configuration of data manipulation rights, access rights to pages and menus
+	- WYSIWYG visual configuration
+	- Separation of data structure configuration from interface configuration
+	- Rich combination of blocks and operations
+	- Role-based access control
 - **Developer-friendly**
 	- Microkernel architecture, flexible and easy to extend, with a robust plug-in system
-	- Node.js-based, with popular frameworks and technologies, including Koa, Sequelize, React, Ant Design, etc.
+	- Node.js-based, with popular frameworks and technologies, including Koa, Sequelize, React, Formily, Ant Design, etc.
 	- Progressive development, easy for getting-started, friendly to newcomers
 	- No binding, no strong dependencies, can be used in any combination or extensions, can be used in existing projects
 
 Architecture
 ----------
 
-![](https://nocobase.oss-cn-beijing.aliyuncs.com/4fde069587182dacbdb00b020d914404.jpg)
+![](https://docs.nocobase.com/static/NocoBase.c9542b1f.png)
 
 Requirements
 ----------
