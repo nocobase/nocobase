@@ -7,7 +7,6 @@ import {
   CollectionsProvider,
   DesignableSwitchProvider,
 } from '@nocobase/client/src/constate';
-import { RequestProvider } from '@nocobase/client/src/demos/RequestProvider';
 
 const schema = {
   name: 'table1',
@@ -222,13 +221,11 @@ const schema = {
 export default () => {
   return (
     <div>
-      <RequestProvider>
-        <DesignableSwitchProvider>
-          <CollectionsProvider>
-            <SchemaRenderer schema={schema} />
-          </CollectionsProvider>
-        </DesignableSwitchProvider>
-      </RequestProvider>
+      <DesignableSwitchProvider>
+        <CollectionsProvider>
+          <SchemaRenderer schema={schema} />
+        </CollectionsProvider>
+      </DesignableSwitchProvider>
     </div>
   );
 };
