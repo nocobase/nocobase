@@ -28,6 +28,24 @@
   &.isDragging {
     opacity: .2;
   }
+
+  .ant-formily-item-control-content-component {
+    min-height: 0 !important;
+  }
+  .ant-space {
+    display: flex !important;
+  }
+
+  .ant-formily-item-label {
+    min-height: 0 !important;
+  }
+
+  .ant-description-input {
+    width: 100%;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
 }
 
 .nb-kanban-drag-overlay {
@@ -44,43 +62,49 @@
   position: relative;
   // padding: 0;
   
-  > .nb-block-item {
-    padding: 12px;
-    min-height: 50px;
+  .nb-block-item {
+    &:last-child {
+      .ant-formily-item {
+        margin-bottom: 0 !important;
+      }
+    }
   }
   .nb-grid-block, .ant-formily-item {
-    margin-bottom: 0 !important;
+    margin-bottom: 12px !important;
   }
-  &:hover {
+  
+  .ant-formily-layout {
+    &:hover {
+      > .designable-bar {
+        display: block;
+      }
+    }
     > .designable-bar {
-      display: block;
-    }
-  }
-  > .designable-bar {
-    pointer-events: none;
-    display: none;
-    position: absolute;
-    top: -1px;
-    right: -1px;
-    left: -1px;
-    bottom: -1px;
-    border-radius: 2px;
-    background: none !important;
-    border: 2px solid rgba(241, 139, 98, 0.3) !important;
-    &.active {
-      display: block;
-    }
-    .designable-bar-actions {
-      pointer-events: all;
+      pointer-events: none;
+      display: none;
       position: absolute;
-      right: 0;
-      line-height: 1rem;
-      background-color: #1890ff;
-      color: #fff;
-      z-index: 10;
-      padding: 0 3px;
-      .anticon {
-        font-size: 10px;
+      top: -1px;
+      right: -1px;
+      left: -1px;
+      bottom: -1px;
+      border-radius: 2px;
+      background: none !important;
+      border: 2px solid rgba(241, 139, 98, 0.3) !important;
+      &.active {
+        display: block;
+      }
+      .designable-bar-actions {
+        pointer-events: all;
+        position: absolute;
+        right: 0;
+        line-height: 1rem;
+        background-color: #1890ff;
+        color: #fff;
+        z-index: 10;
+        padding: 0 3px;
+        .anticon {
+          font-size: 10px;
+        }
       }
     }
   }

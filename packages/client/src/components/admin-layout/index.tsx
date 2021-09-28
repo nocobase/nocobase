@@ -36,6 +36,7 @@ import {
 } from '../../constate';
 import { uid } from '@formily/shared';
 import { Permissions } from './Permissions';
+import { Collections } from './Collections'
 import { More } from './More';
 import { UserInfo } from './UserInfo';
 import {
@@ -160,7 +161,7 @@ function LayoutWithMenu(props: LayoutWithMenuProps) {
           />
         </MenuSelectedKeysContext.Provider>
         <DesignableToggle />
-        <Database />
+        <Collections />
         <Permissions />
         <More />
         <UserInfo />

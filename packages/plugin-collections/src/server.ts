@@ -115,14 +115,10 @@ export default {
       }
     });
 
-    this.app.resourcer.registerActionHandler(
-      'collections.fields:create',
-      create,
-    );
+    this.app.resourcer.registerActionHandler('collections.fields:create', create);
     this.app.resourcer.registerActionHandler('collections:findAll', findAll);
-    this.app.resourcer.registerActionHandler(
-      'collections:createOrUpdate',
-      createOrUpdate,
-    );
+    this.app.resourcer.registerActionHandler('collections:createOrUpdate', createOrUpdate);
+    this.app.resourcer.registerActionHandler('fields:create', create);
+    this.app.resourcer.registerActionHandler('collections:create', createOrUpdate);
   },
 };
