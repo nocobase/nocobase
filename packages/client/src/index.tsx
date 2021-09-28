@@ -5,3 +5,4 @@ export * from './components/route-schema-renderer';
 export * from './schemas';
 export * from './constate';
 export * from './ClientSDK';
+export * from './ConfigProvider';

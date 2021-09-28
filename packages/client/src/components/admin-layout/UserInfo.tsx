@@ -1,15 +1,17 @@
 import React, { useContext, useEffect } from 'react';
 import { Button, Dropdown, Menu, Select } from 'antd';
 import { useHistory } from 'react-router-dom';
-import { request, SchemaField } from '../../schemas';
+import { SchemaField } from '../../schemas';
 import { AuthContext, useCurrentUser } from './Auth';
 import { FormButtonGroup, FormDrawer, FormLayout, Submit } from '@formily/antd';
 import { useState } from 'react';
+import { useClient } from '../../constate';
 
 export const UserInfo = () => {
   const history = useHistory();
   const { service, currentUser } = useContext(AuthContext);
   const [visible, setVisible] = useState(false);
+  const { request } = useClient();
   return (
     <Dropdown
       visible={visible}

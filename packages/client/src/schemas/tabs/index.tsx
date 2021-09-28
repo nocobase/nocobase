@@ -19,7 +19,7 @@ import { Schema, SchemaKey } from '@formily/react';
 import { PlusOutlined, MenuOutlined } from '@ant-design/icons';
 import { useState } from 'react';
 import cls from 'classnames';
-import { createSchema, removeSchema, updateSchema } from '..';
+import { useClient } from '../../constate';
 import './style.less';
 import { uid } from '@formily/shared';
 import { DragHandle, SortableItem } from '../../components/Sortable';
@@ -64,6 +64,7 @@ export const Tabs: any = observer((props: any) => {
   } = useDesignable();
   const tabs = useTabs({ singleton });
   const [dragOverlayContent, setDragOverlayContent] = useState('');
+  const { createSchema, removeSchema, updateSchema } = useClient();
 
   const moveToAfter = (path1, path2) => {
     if (!path1 || !path2) {
@@ -226,6 +227,7 @@ Tabs.DesignableBar = () => {
   const { schema, remove, refresh, insertAfter } = useDesignable();
   const [visible, setVisible] = useState(false);
   const field = useField();
+  const { createSchema, removeSchema, updateSchema } = useClient();
   return (
     <div className={cls('designable-bar', { active: visible })}>
       <span
@@ -275,6 +277,7 @@ Tabs.TabPane.DesignableBar = () => {
   const { schema, remove, refresh, insertAfter } = useDesignable();
   const [visible, setVisible] = useState(false);
   const field = useField();
+  const { createSchema, removeSchema, updateSchema } = useClient();
   return (
     <div className={cls('designable-bar', { active: visible })}>
       <span

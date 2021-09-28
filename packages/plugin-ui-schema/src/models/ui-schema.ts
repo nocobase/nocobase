@@ -29,8 +29,8 @@ export class UISchema extends Model {
     const data = _.cloneDeep(value);
     const keys = [
       'properties',
-      ...Object.keys(this.rawAttributes),
-      ...Object.keys(this.associations),
+      ...Object.keys(this.rawAttributes||{}),
+      ...Object.keys(this.associations||{}),
     ];
     const attrs = _.pick(data, keys);
     const options = _.omit(data, keys);

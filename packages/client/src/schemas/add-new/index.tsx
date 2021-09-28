@@ -49,9 +49,7 @@ import {
 import {
   createCollectionField,
   createOrUpdateCollection,
-  createSchema,
   ISchema,
-  removeSchema,
   useDesignable,
   useSchemaPath,
 } from '../';
@@ -68,6 +66,7 @@ import {
   useCollectionContext,
   useCollectionsContext,
   useDisplayedMapContext,
+  useClient,
 } from '../../constate';
 import SwitchMenuItem from '../../components/SwitchMenuItem';
 import { BlockSchemaContext } from '../../context';
@@ -955,6 +954,7 @@ AddNew.CardItem = observer((props: any) => {
   const { schema, insertBefore, insertAfter, appendChild } = useDesignable();
   const path = useSchemaPath();
   const { collections = [], loading, refresh } = useCollectionsContext();
+  const { createSchema } = useClient();
   return (
     <Dropdown
       trigger={['hover']}
@@ -977,24 +977,24 @@ AddNew.CardItem = observer((props: any) => {
             let collectionName = null;
             let isNew = false;
             if (['addNewTable', 'addNewForm'].includes(info.key)) {
-              const values = await FormDialog(`创建数据表`, () => {
-                return (
-                  <FormLayout layout={'vertical'}>
-                    <SchemaField schema={dbSchema} />
-                  </FormLayout>
-                );
-              }).open({
-                initialValues: {
-                  name: `t_${uid()}`,
-                  fields: [],
-                },
-              });
-              await createOrUpdateCollection(values);
-              isNew = true;
-              data = generateCardItemSchema(
-                info.key === 'addNewTable' ? 'Table' : 'Form',
-              );
-              collectionName = values.name;
+              // const values = await FormDialog(`创建数据表`, () => {
+              //   return (
+              //     <FormLayout layout={'vertical'}>
+              //       <SchemaField schema={dbSchema} />
+              //     </FormLayout>
+              //   );
+              // }).open({
+              //   initialValues: {
+              //     name: `t_${uid()}`,
+              //     fields: [],
+              //   },
+              // });
+              // await createOrUpdateCollection(values);
+              // isNew = true;
+              // data = generateCardItemSchema(
+              //   info.key === 'addNewTable' ? 'Table' : 'Form',
+              // );
+              // collectionName = values.name;
             } else if (info.key.startsWith('collection.')) {
               const keys = info.key.split('.');
               const component = keys.pop();
@@ -1062,10 +1062,10 @@ AddNew.CardItem = observer((props: any) => {
                     </Menu.Item>
                   ))}
                 </Menu.ItemGroup>
-                <Menu.Divider></Menu.Divider>
-                <Menu.Item icon={<PlusOutlined />} key={`addNew${view.key}`}>
+                {/* <Menu.Divider></Menu.Divider> */}
+                {/* <Menu.Item icon={<PlusOutlined />} key={`addNew${view.key}`}>
                   创建数据表
-                </Menu.Item>
+                </Menu.Item> */}
               </Menu.SubMenu>
             ))}
             {[
@@ -1374,6 +1374,8 @@ AddNew.FormItem = observer((props: any) => {
   const { collection, fields, refresh } = useCollectionContext();
   const [visible, setVisible] = useState(false);
   const displayed = useDisplayedMapContext();
+  const { createSchema, removeSchema } = useClient();
+
   return (
     <Dropdown
       trigger={['hover']}
@@ -1546,6 +1548,7 @@ AddNew.FormItem = observer((props: any) => {
           </Menu.ItemGroup>
           <Menu.Divider />
           <Menu.SubMenu
+            disabled
             popupClassName={'add-new-fields-popup'}
             className={'sub-menu-add-new-fields'}
             title={'添加字段'}
@@ -1672,6 +1675,8 @@ AddNew.PaneItem = observer((props: any) => {
   const useResource = `{{ ${blockSchema['x-component']}.useResource }}`;
   console.log('AddNew.PaneItem.useResource', useResource);
   const { collection, fields } = useCollectionContext();
+  const { createSchema } = useClient();
+
   return (
     <Dropdown
       trigger={['hover']}

@@ -20,7 +20,7 @@ export const chinaRegion: FieldOptions = {
       'x-component': 'Cascader',
       'x-component-props': {
         changeOnSelectLast: false,
-        loadData: '{{ ChinaRegion.loadData }}',
+        loadData: '{{ ChinaRegion.loadData() }}',
         labelInValue: true,
         maxLevel: 3,
         fieldNames: {
@@ -30,8 +30,8 @@ export const chinaRegion: FieldOptions = {
         },
       },
       'x-reactions': [
-        '{{ChinaRegion.useFieldValue}}',
-        '{{useAsyncDataSource(ChinaRegion.loadDataSource)}}',
+        '{{ ChinaRegion.useFieldValue }}',
+        '{{ useAsyncDataSource(ChinaRegion.loadDataSource()) }}',
       ],
       'x-decorator': 'FormItem',
       'x-designable-bar': 'Cascader.DesignableBar',

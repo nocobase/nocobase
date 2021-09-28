@@ -15,9 +15,7 @@ import {
   useSchemaPath,
   SchemaField,
   useDesignable,
-  removeSchema,
   ISchema,
-  createSchema,
 } from '../';
 import get from 'lodash/get';
 import { Button, Dropdown, Menu, Space } from 'antd';
@@ -36,6 +34,7 @@ import {
   useCollection,
   useCollectionContext,
   useDisplayedMapContext,
+  useClient,
 } from '../../constate';
 import { useTable } from '../table';
 import SwitchMenuItem from '../../components/SwitchMenuItem';
@@ -50,6 +49,7 @@ export const CardDesignableBar = observer((props) => {
   const displayed = useDisplayedMapContext();
   console.log('useDisplayedMapContext', schema);
   const { service } = useKanban();
+  const { createSchema, removeSchema } = useClient();
   return (
     <div className={cls('designable-bar', { active: visible })}>
       <span

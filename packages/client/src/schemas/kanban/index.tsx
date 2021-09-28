@@ -29,7 +29,7 @@ import { useState } from 'react';
 import { CSS } from '@dnd-kit/utilities';
 import cls from 'classnames';
 import './style.less';
-import { CollectionProvider, useCollectionContext } from '../../constate';
+import { CollectionProvider, useCollectionContext, useResourceRequest } from '../../constate';
 import { Resource } from '../../resource';
 import { useRequest } from 'ahooks';
 import { Action } from '../action';
@@ -167,7 +167,7 @@ const InternalKanban = observer((props: any) => {
   );
   const groups = groupBy(field.value, groupField.name);
   const { collectionName } = props;
-  const resource = Resource.make(collectionName);
+  const resource = useResourceRequest(collectionName);
   const service = useRequest(
     (params) => {
       if (!collectionName) {
@@ -420,7 +420,7 @@ Kanban.useCreateResource = ({ onSuccess }) => {
   const { props } = useKanban();
   const column = useContext(KanbanColumnContext);
   const { collection } = useCollectionContext();
-  const resource = Resource.make({
+  const resource = useResourceRequest({
     resourceName: collection?.name || props.collectionName,
   });
   const groupField = props.groupField;
@@ -476,7 +476,7 @@ Kanban.useRowResource = ({ onSuccess }) => {
   const { props } = useKanban();
   const { collection } = useCollectionContext();
   const ctx = useContext(KanbanCardContext);
-  const resource = Resource.make({
+  const resource = useResourceRequest({
     resourceName: collection?.name || props.collectionName,
     resourceKey: ctx?.record?.id,
   });
@@ -518,7 +518,7 @@ Kanban.useSingleResource = ({ onSuccess }) => {
   const { schema } = useDesignable();
   const [visible] = useContext(VisibleContext);
 
-  const resource = Resource.make({
+  const resource = useResourceRequest({
     resourceName: collection?.name || props.collectionName,
     resourceKey: ctx?.record?.id,
   });

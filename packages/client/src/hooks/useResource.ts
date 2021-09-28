@@ -1,10 +1,10 @@
 import { useEffect } from 'react';
-import { useCollectionContext } from '../constate';
+import { useCollectionContext, useResourceRequest } from '../constate';
 import { Resource } from '../resource';
 
 export const useResource = (options: any = {}) => {
   const { collection } = useCollectionContext();
-  const resource = Resource.make(collection?.name);
+  const resource = useResourceRequest(collection?.name);
   useEffect(() => {
     options.onSuccess && options.onSuccess({});
   }, []);

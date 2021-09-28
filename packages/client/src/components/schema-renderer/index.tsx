@@ -73,7 +73,11 @@ import { ISchema, FormilyISchema } from '../../schemas';
 import { Resource } from '../../resource';
 import { useRequest } from 'ahooks';
 import { CascaderOptionType } from 'antd/lib/cascader';
-import { useCollectionContext } from '../../constate';
+import {
+  useClient,
+  useCollectionContext,
+  useResourceRequest,
+} from '../../constate';
 
 export const BlockContext = createContext({ dragRef: null });
 
@@ -98,55 +102,56 @@ export const useAsyncDataSource = (service: any) => (field: any) => {
   );
 };
 
-export const loadChinaRegionDataSource = async (field: ArrayField) => {
-  if (field.readPretty) {
-    return [];
-  }
-  const maxLevel = field.componentProps.maxLevel || 3;
-  const resource = Resource.make('china_regions');
-  const { data } = await resource.list({
-    perPage: -1,
-    filter: {
-      level: 1,
-    },
-  });
-  console.log('loadChinaRegions', data, field.value);
-  return (
-    data?.map((item) => {
-      if (maxLevel !== 1) {
-        item.isLeaf = false;
-      }
-      return item;
-    }) || []
-  );
-};
-
-export const loadChinaRegionData = (
-  selectedOptions: CascaderOptionType[],
-  field: ArrayField,
-) => {
-  const maxLevel = field.componentProps.maxLevel || 3;
-  const targetOption = selectedOptions[selectedOptions.length - 1];
-  targetOption.loading = true;
-  const resource = Resource.make('china_regions');
-  resource
-    .list({
+export const loadChinaRegionDataSource = function () {
+  const resource = useResourceRequest('china_regions');
+  return async (field: ArrayField) => {
+    if (field.readPretty) {
+      return [];
+    }
+    const maxLevel = field.componentProps.maxLevel || 3;
+    const { data } = await resource.list({
       perPage: -1,
       filter: {
-        parent_code: targetOption['code'],
+        level: 1,
       },
-    })
-    .then((data) => {
-      targetOption.loading = false;
-      targetOption.children =
-        data?.data?.map((item) => {
-          if (maxLevel > item.level) {
-            item.isLeaf = false;
-          }
-          return item;
-        }) || [];
-      field.dataSource = [...field.dataSource];
     });
+    console.log('loadChinaRegions', data, field.value);
+    return (
+      data?.map((item) => {
+        if (maxLevel !== 1) {
+          item.isLeaf = false;
+        }
+        return item;
+      }) || []
+    );
+  };
+};
+
+export const loadChinaRegionData = function () {
+  const resource = useResourceRequest('china_regions');
+  return (selectedOptions: CascaderOptionType[], field: ArrayField) => {
+    const maxLevel = field.componentProps.maxLevel || 3;
+    const targetOption = selectedOptions[selectedOptions.length - 1];
+    targetOption.loading = true;
+    resource
+      .list({
+        perPage: -1,
+        filter: {
+          parent_code: targetOption['code'],
+        },
+      })
+      .then((data) => {
+        targetOption.loading = false;
+        targetOption.children =
+          data?.data?.map((item) => {
+            if (maxLevel > item.level) {
+              item.isLeaf = false;
+            }
+            return item;
+          }) || [];
+        field.dataSource = [...field.dataSource];
+      });
+  };
 };
 
 const useChinaRegionFieldValue = (field: ArrayField) => {
@@ -169,7 +174,7 @@ const useAssociationResource = (options) => {
     schema['x-component-props'],
   );
   const { associatedName, resourceName } = schema['x-component-props'] || {};
-  const resource = Resource.make({
+  const resource = useResourceRequest({
     associatedName,
     resourceName,
     associatedKey,
@@ -188,6 +193,8 @@ export const SchemaField = createSchemaField({
     Calendar,
     Kanban,
     useAsyncDataSource,
+    useClient,
+    useResourceRequest,
     ChinaRegion: {
       useFieldValue: useChinaRegionFieldValue,
       loadData: loadChinaRegionData,

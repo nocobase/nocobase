@@ -6,6 +6,7 @@ import { Resource } from '../../../resource';
 import { useContext } from 'react';
 import { RoleContext } from '.';
 import { useState } from 'react';
+import { useResourceRequest } from '../../../constate';
 
 const getKeys = (items: any[]) => {
   const keys = [];
@@ -31,7 +32,7 @@ export const MenuPermissionTable = observer((props) => {
     },
   );
   console.log('allUiSchemaKyes', allUiSchemaKyes);
-  const resource = Resource.make({
+  const resource = useResourceRequest({
     associatedName: 'roles',
     associatedKey: role.name,
     resourceName: 'ui_schemas',
@@ -41,6 +42,10 @@ export const MenuPermissionTable = observer((props) => {
     onSuccess(data) {
       setUiSchemaKeys(getKeys(data));
     },
+  });
+  const resource2 = useResourceRequest({
+    resourceName: 'roles',
+    resourceKey: role.name,
   });
   if (loading) {
     return <Spin size={'large'} className={'nb-spin-center'} />;
@@ -68,17 +73,13 @@ export const MenuPermissionTable = observer((props) => {
                     allUiSchemaKyes.length === uiSchemaKyes.length
                   }
                   onChange={async (e) => {
-                    const resource = Resource.make({
-                      resourceName: 'roles',
-                      resourceKey: role.name,
-                    });
                     if (e.target.checked) {
-                      await resource.save({
+                      await resource2.save({
                         ui_schemas: allUiSchemaKyes,
                       });
                       setUiSchemaKeys(allUiSchemaKyes);
                     } else {
-                      await resource.save({
+                      await resource2.save({
                         ui_schemas: [],
                       });
                       setUiSchemaKeys([]);

@@ -15,7 +15,7 @@ export async function check(ctx: Context, next: Next) {
 
 export async function login(ctx: Context, next: Next) {
   const { uniqueField = 'email', values } = ctx.action.params;
-  // console.log(values);
+  console.log('login.values', values);
   if (!values[uniqueField]) {
     ctx.throw(401, '请填写邮箱账号');
   }
@@ -36,9 +36,7 @@ export async function login(ctx: Context, next: Next) {
     user.token = cryptoRandomString({ length: 20 });
     await user.save();
   }
-  ctx.body = {
-    data: user,
-  };
+  ctx.body = user;
   await next();
 }
 
@@ -52,9 +50,7 @@ export async function register(ctx: Context, next: Next) {
   const { values } = ctx.action.params;
   try {
     const user = await User.create(values);
-    ctx.body = {
-      data: user,
-    };
+    ctx.body = user;
   } catch (error) {
     if (error.errors) {
       console.log(error.errors.map(data => data.message));

@@ -24,6 +24,7 @@ import {
   interfaces,
   options,
 } from '../../../schemas/database-field/interfaces';
+import { useResourceRequest } from '../../../constate';
 
 export const RoleContext = createContext(null);
 
@@ -38,7 +39,7 @@ function VisibleProvider(props) {
 }
 
 const useResource = () => {
-  const resource = Resource.make('collections');
+  const resource = useResourceRequest('collections');
   return {
     resource,
   };
@@ -47,7 +48,7 @@ const useResource = () => {
 const useCollectionsResource = () => {
   const descriptionsContext = useContext(DescriptionsContext);
   console.log('descriptionsContext.service', descriptionsContext.service);
-  const resource = Resource.make('collections');
+  const resource = useResourceRequest('collections');
   return {
     resource,
   };
@@ -63,7 +64,7 @@ class ActionPermissionResource extends Resource {
 const useActionPermissionSubmit = () => {
   const form = useForm();
   const role = useContext(RoleContext);
-  const resource = Resource.make({
+  const resource = useResourceRequest({
     resourceName: 'roles',
     resourceKey: role.name,
   });
@@ -80,9 +81,9 @@ const useActionPermissionResource = ({ onSuccess }) => {
   console.log('RoleContext', role);
   // const { props } = useTable();
   const ctx = useContext(TableRowContext);
-  const resource = ActionPermissionResource.make({
+  const resource = useResourceRequest({
     resourceName: 'action_permissions',
-  });
+  }, ActionPermissionResource);
   const service = useRequest(
     (params?: any) => {
       return resource.list({
@@ -128,7 +129,7 @@ const useActionPermissionResource = ({ onSuccess }) => {
 const useDetailsResource = ({ onSuccess }) => {
   const { props } = useTable();
   const ctx = useContext(TableRowContext);
-  const resource = Resource.make({
+  const resource = useResourceRequest({
     resourceName: 'collections',
     resourceKey: ctx.record[props.rowKey],
   });
@@ -164,7 +165,7 @@ const useFieldsResource = () => {
       });
     }
   }
-  const resource = FieldResource.make('fields');
+  const resource = useResourceRequest('fields', FieldResource);
   return {
     resource,
   };
@@ -545,6 +546,7 @@ function CreateFieldButton() {
   const form = useMemo(() => createForm(), []);
   const [properties, setProperties] = useState({});
   const { collections = [], loading } = useCollectionsContext();
+  const resource = useResourceRequest('fields');
 
   const loadCollections = async (field: any) => {
     return collections.map((item: any) => ({
@@ -623,7 +625,7 @@ function CreateFieldButton() {
             <Button
               type={'primary'}
               onClick={async () => {
-                await Resource.make('fields').save(form.values);
+                await resource.save(form.values);
                 setVisible(false);
                 await service.refresh();
                 await refresh();
@@ -659,6 +661,7 @@ function EditFieldButton() {
   const form = useMemo(() => createForm(), []);
   const schema = interfaces.get(ctx.record.interface);
   const { collections = [], loading } = useCollectionsContext();
+  const resource = useResourceRequest('fields');
 
   const loadCollections = async (field: any) => {
     return collections.map((item: any) => ({
@@ -714,7 +717,7 @@ function EditFieldButton() {
             <Button
               type={'primary'}
               onClick={async () => {
-                await Resource.make('fields').save(form.values, {
+                await resource.save(form.values, {
                   resourceKey: ctx.record.key,
                 });
                 setVisible(false);

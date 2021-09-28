@@ -2,10 +2,11 @@ import React, { useContext, useEffect, useState } from 'react';
 import { message, Spin } from 'antd';
 import { Helmet } from 'react-helmet';
 import { useRequest } from 'ahooks';
-import { request, SchemaRenderer } from '../../schemas';
+import { SchemaRenderer } from '../../schemas';
 import { useForm } from '@formily/react';
 import { useHistory, useLocation } from 'react-router-dom';
 import { useSystemSettings } from '../admin-layout/SiteTitle';
+import { useClient } from '../../constate';
 
 function Div(props) {
   return <div {...props}></div>;
@@ -17,6 +18,7 @@ export function useLogin() {
   const location = useLocation<any>();
   const query = new URLSearchParams(location.search);
   const redirect = query.get('redirect');
+  const { request } = useClient();
   return {
     async run() {
       await form.submit();
@@ -25,7 +27,7 @@ export function useLogin() {
         data: form.values,
       });
       history.push(redirect || '/admin');
-      localStorage.setItem('NOCOBASE_TOKEN', data?.data?.token);
+      localStorage.setItem('NOCOBASE_TOKEN', data?.token);
     },
   };
 }
@@ -33,6 +35,7 @@ export function useLogin() {
 export function useRegister() {
   const form = useForm();
   const history = useHistory();
+  const { request } = useClient();
   return {
     async run() {
       await form.submit();

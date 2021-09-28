@@ -1,13 +1,13 @@
 import { DndContext, DragOverlay } from '@dnd-kit/core';
 import { observer, RecursionField, Schema } from '@formily/react';
 import React, { useState } from 'react';
-import { createSchema, ISchema, removeSchema, updateSchema } from '..';
+import { ISchema } from '..';
 import {
   findPropertyByPath,
   getSchemaPath,
   useDesignable,
 } from '../../components/schema-renderer';
-import { DisplayedMapProvider, useDisplayedMapContext } from '../../constate';
+import { useClient, DisplayedMapProvider, useDisplayedMapContext } from '../../constate';
 import cls from 'classnames';
 import { Button, Dropdown, Menu, Space } from 'antd';
 import SwitchMenuItem from '../../components/SwitchMenuItem';
@@ -39,6 +39,7 @@ export const ActionBar = observer((props: any) => {
       path2,
     );
   };
+  const { updateSchema } = useClient();
 
   const [dragOverlayContent, setDragOverlayContent] = useState('');
   return (
@@ -206,6 +207,8 @@ function AddActionButton() {
   const displayed = useDisplayedMapContext();
   const { appendChild, remove } = useDesignable();
   const { schema, designable } = useDesignable();
+  const { createSchema, removeSchema } = useClient();
+
   if (!designable) {
     return null;
   }

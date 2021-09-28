@@ -1,9 +1,10 @@
 import React, { createContext, useContext } from 'react';
 import { UseRequestProvider } from 'ahooks';
+import { ISchema } from '../schemas';
+import { Schema, useField } from '@formily/react';
+import { Resource } from '../resource';
 
-const ClientContext = createContext({
-  client: null,
-});
+const ClientContext = createContext<any>(null);
 
 export function ClientProvider(props) {
   const { client } = props;
@@ -20,6 +21,71 @@ export function ClientProvider(props) {
   );
 }
 
+export function useResourceRequest(options, ResourceClass?: any) {
+  const Cls = ResourceClass || Resource;
+  const { request } = useClient();
+  return Cls.make(options, request);;
+}
+
 export function useClient() {
-  return useContext(ClientContext);
+  const client = useContext(ClientContext);
+  const request = client.options.request;
+
+  return {
+    client,
+    request,
+    async createSchema(schema: ISchema) {
+      if (!schema) {
+        return;
+      }
+      if (!schema['key']) {
+        return;
+      }
+      return await request('ui_schemas:create', {
+        method: 'post',
+        data: schema.toJSON(),
+      });
+    },
+
+    async collectionMoveToAfter(source, target) {
+      if (source && target) {
+        return request(`collections:sort/${source}`, {
+          method: 'post',
+          data: {
+            field: 'sort',
+            target: {
+              name: target,
+            },
+          },
+        });
+      }
+    },
+
+    async updateSchema(schema: ISchema) {
+      if (!schema) {
+        return;
+      }
+      if (!schema['key']) {
+        return;
+      }
+      return await request(`ui_schemas:update/${schema.key}`, {
+        method: 'post',
+        data: Schema.isSchemaInstance(schema) ? schema.toJSON() : schema,
+      });
+    },
+
+    async removeSchema(schema: ISchema) {
+      if (!schema['key']) {
+        return;
+      }
+      await request('ui_schemas:destroy', {
+        method: 'post',
+        params: {
+          filter: {
+            key: schema['key'],
+          },
+        },
+      });
+    },
+  };
 }

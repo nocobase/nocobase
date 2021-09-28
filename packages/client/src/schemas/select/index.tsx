@@ -25,7 +25,7 @@ import { BlockSchemaContext, VisibleContext } from '../../context';
 import { SchemaRenderer } from '../../components/schema-renderer';
 import { uid } from '@formily/shared';
 import { CollectionFieldContext } from '../table';
-import { CollectionProvider, useCollectionContext } from '../../constate';
+import { CollectionProvider, useCollectionContext, useResourceRequest } from '../../constate';
 import { Resource } from '../../resource';
 import { useRequest } from 'ahooks';
 import constate from 'constate';
@@ -469,7 +469,7 @@ Select.Drawer = connect(
 Select.Drawer.useResource = ({ onSuccess }) => {
   const { collection } = useCollectionContext();
   const ctx = useContext(OptionTagContext);
-  const resource = Resource.make({
+  const resource = useResourceRequest({
     resourceName: collection?.name,
     resourceKey: ctx.data.id,
   });

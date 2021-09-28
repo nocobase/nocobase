@@ -43,7 +43,6 @@ import { clone, cloneDeep, get } from 'lodash';
 import { useEffect } from 'react';
 import { useRequest } from 'ahooks';
 import {
-  collectionMoveToAfter,
   createOrUpdateCollection,
   deleteCollection,
 } from '..';
@@ -55,6 +54,7 @@ import {
 } from '../../components/Sortable';
 import { DndContext, DragOverlay } from '@dnd-kit/core';
 import { createPortal } from 'react-dom';
+import { useClient } from '../../constate';
 
 interface SelectOptionProps {
   id: any;
@@ -100,6 +100,7 @@ export const DatabaseCollection = observer((props) => {
   const [newValue, setNewValue] = useState('');
   const { loading, refresh, collections = [] } = useCollectionsContext();
   const [dragOverlayContent, setDragOverlayContent] = useState('');
+  const { collectionMoveToAfter } = useClient();
 
   useEffect(() => {
     field.setValue(collections);

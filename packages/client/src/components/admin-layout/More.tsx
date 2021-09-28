@@ -2,7 +2,6 @@ import React, { useContext, useEffect } from 'react';
 import { Button } from 'antd';
 import { SchemaRenderer } from '../schema-renderer';
 import { useForm } from '@formily/react';
-import { Resource } from '../../resource';
 import { useRequest } from 'ahooks';
 import { VisibleContext } from '../../context';
 import { ISchema } from '../../schemas';
