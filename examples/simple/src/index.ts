@@ -43,7 +43,7 @@ app.parse(process.argv);
 
 /*
 根据配置生成相关数据表
-yarn examples simple db sync
+yarn examples simple db:sync
 
 启动服务
 yarn examples simple start

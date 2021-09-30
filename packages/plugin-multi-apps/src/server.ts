@@ -1,6 +1,6 @@
-import compose from 'koa-compose';
 import { Application, PluginOptions } from '@nocobase/server';
 import Koa from 'koa';
+import { Model } from '@nocobase/database';
 
 function createApp(opts) {
   const { name } = opts;
@@ -35,14 +35,15 @@ function createApp(opts) {
     bodyParser: false,
     // dataWrapping: false,
     resourcer: {
-      prefix: `/api/saas/${name}`,
+      prefix: `/api/multiapps/${name}`,
     },
   };
   const app = new Application(options);
 
   app.db.sequelize.beforeDefine((model, options) => {
-    options.tableName = `saas_${name}_${options.tableName || options.name.plural
-      }`;
+    options.tableName = `multiapps_${name}_${
+      options.tableName || options.name.plural
+    }`;
   });
 
   app.resource({
@@ -50,7 +51,9 @@ function createApp(opts) {
     actions: {
       async getInfo(ctx, next) {
         ctx.body = {
-          m: Object.values(ctx.db.sequelize.models).map((m: any) => m.tableName),
+          m: Object.values(ctx.db.sequelize.models).map(
+            (m: any) => m.tableName,
+          ),
         };
         await next();
       },
@@ -102,7 +105,7 @@ function multiApps({ getAppName }) {
       apps.set(appName, app);
     }
 
-    console.log('..........................start........................')
+    console.log('..........................start........................');
     // 完全隔离的做法
     const app = apps.get(appName) as Application;
     const bodyParser = async (ctx2, next) => {
@@ -115,7 +118,7 @@ function multiApps({ getAppName }) {
     await handleRequest(ctx.req, ctx.res);
     const index = app.middleware.indexOf(bodyParser);
     app.middleware.splice(index, 1);
-    console.log('..........................end........................')
+    console.log('..........................end........................');
     // await next();
   };
 }
@@ -129,14 +132,42 @@ export default {
       title: '应用',
       fields: [
         {
-          type: 'string',
+          type: 'uid',
           name: 'name',
+          prefix: 'a',
           interface: 'string',
           unique: true,
           uiSchema: {
             type: 'string',
-            title: '名称',
+            title: '应用标识',
             'x-component': 'Input',
+          },
+        },
+        {
+          type: 'string',
+          name: 'title',
+          interface: 'string',
+          unique: true,
+          uiSchema: {
+            type: 'string',
+            title: '应用名称',
+            'x-component': 'Input',
+          },
+        },
+        {
+          type: 'string',
+          name: 'status',
+          interface: 'select',
+          uiSchema: {
+            type: 'string',
+            title: '状态',
+            'x-component': 'Select',
+            default: 'initializing',
+            enum: [
+              { value: 'initializing', label: '正在初始化' },
+              { value: 'running', label: '运行中' },
+              { value: 'stopped', label: '已停止' },
+            ],
           },
         },
       ],
@@ -148,7 +179,7 @@ export default {
         },
       }),
     );
-    this.app.db.on('applications.afterCreate', async (model) => {
+    this.app.db.on('applications.afterCreate', async (model: Model) => {
       const name = model.get('name');
       const app = createApp({
         name,
@@ -163,7 +194,10 @@ export default {
         });
         await app.emitAsync('db.init');
         await app.destroy();
-      })()
+        this.app['apps'].set(name, app);
+        model.set('status', 'running');
+        await model.save({ hooks: false });
+      })();
     });
     this.app
       .command('app:create')
