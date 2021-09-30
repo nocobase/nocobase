@@ -3,8 +3,28 @@ import { UseRequestProvider } from 'ahooks';
 import { ISchema } from '../schemas';
 import { Schema, useField } from '@formily/react';
 import { Resource } from '../resource';
+import { ClientSDK } from '../ClientSDK';
+import { extend } from 'umi-request';
 
-const ClientContext = createContext<any>(null);
+export const request = extend({
+  prefix: process.env.API_URL,
+  timeout: 30000,
+});
+
+request.use(async (ctx, next) => {
+  const { headers } = ctx.req.options as any;
+  const token = localStorage.getItem('NOCOBASE_TOKEN');
+  if (token) {
+    headers['Authorization'] = `Bearer ${token}`;
+  }
+  await next();
+});
+
+const client = new ClientSDK({
+  request,
+});
+
+const ClientContext = createContext<any>(client);
 
 export function ClientProvider(props) {
   const { client } = props;
