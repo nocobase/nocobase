@@ -24,6 +24,7 @@ request.use(async (ctx, next) => {
   if (token) {
     headers['Authorization'] = `Bearer ${token}`;
   }
+  headers['X-Hostname'] = window.location.hostname;
   await next();
 });
 

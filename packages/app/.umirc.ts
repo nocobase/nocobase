@@ -13,6 +13,13 @@ export default defineConfig({
   define: {
     'process.env.API_URL': process.env.API_URL,
   },
+  proxy: {
+    '/api': {
+      'target': `http://localhost:${process.env.API_PORT}/`,
+      'changeOrigin': true,
+      'pathRewrite': { '^/api' : '/api' },
+    },
+  },
   routes: [
     { path: '/', exact: false, component: '@/pages/index' },
   ],

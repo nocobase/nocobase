@@ -8,7 +8,7 @@ function createApp(opts) {
     database: {
       username: process.env.DB_USER,
       password: process.env.DB_PASSWORD,
-      database: process.env.DB_DATABASE,
+      database: name,
       host: process.env.DB_HOST,
       port: process.env.DB_PORT as any,
       dialect: process.env.DB_DIALECT as any,
@@ -32,33 +32,20 @@ function createApp(opts) {
       },
     },
     // 不能再 bodyParser，会卡死
-    bodyParser: false,
+    // bodyParser: false,
     // dataWrapping: false,
     resourcer: {
-      prefix: `/api/multiapps/${name}`,
+      prefix: '/api',
+      // prefix: `/api/multiapps/${name}`,
     },
   };
   const app = new Application(options);
 
-  app.db.sequelize.beforeDefine((model, options) => {
-    options.tableName = `multiapps_${name}_${
-      options.tableName || options.name.plural
-    }`;
-  });
-
-  app.resource({
-    name: 'saas',
-    actions: {
-      async getInfo(ctx, next) {
-        ctx.body = {
-          m: Object.values(ctx.db.sequelize.models).map(
-            (m: any) => m.tableName,
-          ),
-        };
-        await next();
-      },
-    },
-  });
+  // app.db.sequelize.beforeDefine((model, options) => {
+  //   options.tableName = `multiapps_${name}_${
+  //     options.tableName || options.name.plural
+  //   }`;
+  // });
 
   const plugins = [
     '@nocobase/plugin-ui-schema',
@@ -86,10 +73,12 @@ function createApp(opts) {
 function multiApps({ getAppName }) {
   return async function (ctx: Koa.Context, next) {
     const appName = getAppName(ctx);
+    console.log({ appName });
     if (!appName) {
       return next();
     }
-    const App = ctx.db.getModel('applications');
+    // @ts-ignore
+    const App = ctx.app.db.getModel('applications');
     const model = await App.findOne({
       where: { name: appName },
     });
@@ -108,9 +97,11 @@ function multiApps({ getAppName }) {
     console.log('..........................start........................');
     // 完全隔离的做法
     const app = apps.get(appName) as Application;
+    // @ts-ignore
+    console.log(app.db.options);
     const bodyParser = async (ctx2, next) => {
       // @ts-ignore
-      ctx2.request.body = ctx.request.body || {};
+      // ctx2.request.body = ctx.request.body || {};
       await next();
     };
     app.middleware.unshift(bodyParser);
@@ -172,15 +163,23 @@ export default {
         },
       ],
     });
-    this.app.use(
-      multiApps({
-        getAppName(ctx) {
-          return ctx.path.split('/')[3];
-        },
-      }),
-    );
+    this.app.middleware.unshift(multiApps({
+      getAppName(ctx) {
+        const hostname = ctx.get('X-Hostname');
+        if (!hostname) {
+          return;
+        }
+        const keys = hostname.split('.');
+        if (keys.length < 4) {
+          return;
+        }
+        console.log('ctx.hostname', ctx.get('X-Hostname'));
+        return keys.shift();
+      },
+    }));
     this.app.db.on('applications.afterCreate', async (model: Model) => {
       const name = model.get('name');
+      await this.app.db.sequelize.query(`CREATE DATABASE "${name}";`);
       const app = createApp({
         name,
       });
@@ -193,7 +192,7 @@ export default {
           },
         });
         await app.emitAsync('db.init');
-        await app.destroy();
+        // await app.destroy();
         this.app['apps'].set(name, app);
         model.set('status', 'running');
         await model.save({ hooks: false });
