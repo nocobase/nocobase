@@ -1,5 +1,5 @@
 import { RequestMethod } from 'umi-request';
-import { request } from './schemas';
+import { request as req } from './schemas';
 
 export interface ResourceOptions {
   resourceName: string;
@@ -37,7 +37,7 @@ export class Resource {
     } else {
       this.options = options;
     }
-    this.request = request || request;
+    this.request = request || req;
   }
 
   sort(options) {
