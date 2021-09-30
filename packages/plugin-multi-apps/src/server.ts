@@ -1,6 +1,25 @@
 import { Application, PluginOptions } from '@nocobase/server';
 import Koa from 'koa';
 import { Model } from '@nocobase/database';
+import { readFileSync } from 'fs';
+import glob from 'glob';
+import path from 'path';
+
+function getInitSqls() {
+  const part1 = [];
+  const part2 = [];
+  const files1 = glob.sync(path.resolve(__dirname, './db/part1/*.sql'));
+  for (const file of files1) {
+    const sql = readFileSync(file).toString();
+    part1.push(sql);
+  }
+  const files2 = glob.sync(path.resolve(__dirname, './db/part2/*.sql'));
+  for (const file of files2) {
+    const sql = readFileSync(file).toString();
+    part2.push(sql);
+  }
+  return { part1, part2 };
+}
 
 function createApp(opts) {
   const { name } = opts;
@@ -48,8 +67,8 @@ function createApp(opts) {
   // });
 
   const plugins = [
-    '@nocobase/plugin-ui-schema',
     '@nocobase/plugin-ui-router',
+    '@nocobase/plugin-ui-schema',
     '@nocobase/plugin-collections',
     '@nocobase/plugin-users',
     '@nocobase/plugin-action-logs',
@@ -179,11 +198,12 @@ export default {
     }));
     this.app.db.on('applications.afterCreate', async (model: Model) => {
       const name = model.get('name');
-      await this.app.db.sequelize.query(`CREATE DATABASE "${name}";`);
-      const app = createApp({
-        name,
-      });
       (async () => {
+        await this.app.db.sequelize.query(`CREATE DATABASE "${name}";`);
+        const app = createApp({
+          name,
+        });
+        console.log('creating........')
         await app.load();
         await app.db.sync({
           force: true,
@@ -191,28 +211,92 @@ export default {
             drop: true,
           },
         });
+        await app.emitAsync('beforeStart');
         await app.emitAsync('db.init');
-        // await app.destroy();
+        const transaction = await app.db.sequelize.transaction();
+        const sqls = getInitSqls();
+        try {
+          for (const sql of sqls.part1) {
+            await app.db.sequelize.query(sql, { transaction });
+          }
+          await transaction.commit();
+        } catch (error) {
+          await transaction.rollback();
+        }
+        await app.db.getModel('collections').load({
+          skipExisting: true,
+        });
+        await app.db.sync();
+        const transaction2 = await app.db.sequelize.transaction();
+        try {
+          for (const sql of sqls.part2) {
+            await app.db.sequelize.query(sql, { transaction: transaction2 });
+          }
+          await transaction2.commit();
+        } catch (error) {
+          await transaction2.rollback();
+        }
         this.app['apps'].set(name, app);
         model.set('status', 'running');
         await model.save({ hooks: false });
       })();
     });
     this.app
-      .command('app:create')
+      .command('app:db:sync')
       .argument('<appName>')
       .action(async (appName) => {
-        const App = this.app.db.getModel('applications');
-        const model = await App.findOne({
-          where: {
-            name: appName,
+        const app = createApp({
+          name: appName,
+        });
+        await app.load();
+        await app.emitAsync('beforeStart');
+        await app.db.sync();
+        await app.destroy();
+        await this.app.destroy();
+      });
+
+    this.app
+      .command('app:create')
+      .argument('<appName>')
+      .action(async (name) => {
+        await this.app.db.sequelize.query(`CREATE DATABASE "${name}";`);
+        const app = createApp({
+          name,
+        });
+        console.log('creating........')
+        await app.load();
+        await app.db.sync({
+          force: true,
+          alter: {
+            drop: true,
           },
         });
-        if (!model) {
-          await App.create({
-            name: appName,
-          });
+        await app.emitAsync('beforeStart');
+        await app.emitAsync('db.init');
+        const transaction = await app.db.sequelize.transaction();
+        const sqls = getInitSqls();
+        try {
+          for (const sql of sqls.part1) {
+            await app.db.sequelize.query(sql, { transaction });
+          }
+          await transaction.commit();
+        } catch (error) {
+          await transaction.rollback();
         }
+        await app.db.getModel('collections').load({
+          skipExisting: true,
+        });
+        await app.db.sync();
+        const transaction2 = await app.db.sequelize.transaction();
+        try {
+          for (const sql of sqls.part2) {
+            await app.db.sequelize.query(sql, { transaction: transaction2 });
+          }
+          await transaction2.commit();
+        } catch (error) {
+          await transaction2.rollback();
+        }
+        await app.destroy();
         await this.app.destroy();
       });
   },

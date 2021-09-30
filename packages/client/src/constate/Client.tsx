@@ -6,7 +6,7 @@ import { Resource } from '../resource';
 import { ClientSDK } from '../ClientSDK';
 import { extend } from 'umi-request';
 
-export const request = extend({
+const request = extend({
   prefix: process.env.API_URL,
   timeout: 30000,
 });
