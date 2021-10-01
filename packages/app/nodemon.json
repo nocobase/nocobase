@@ -1,5 +1,0 @@
-{
-  "watch": ["src/api/", ".env"],
-  "ext": "ts",
-  "exec": "cross-env TS_NODE_PROJECT=\"tsconfig.api.json\" ts-node -r dotenv/config ./src/api/index.ts"
-}

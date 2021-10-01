@@ -5,9 +5,6 @@ describe('ui_schemas', () => {
   let api: MockServer;
   beforeEach(async () => {
     api = mockServer();
-    registerActions(api);
-    api.registerPlugin('ui-schema', require('../server').default);
-    await api.loadPlugins();
   });
 
   afterEach(async () => {

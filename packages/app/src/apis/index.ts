@@ -55,8 +55,15 @@ const plugins = [
 ];
 
 for (const plugin of plugins) {
-  api.plugin(require(`${plugin}/${__filename.endsWith('.ts') ? 'src' : 'lib'}/server`).default);
+  api.plugin(
+    require(`${plugin}/${__filename.endsWith('.ts') ? 'src' : 'lib'}/server`).default,
+  );
 }
+
+api.plugin(
+  require(`@nocobase/plugin-client/${__filename.endsWith('.ts') ? 'src' : 'lib'}/server`).default, {
+  dist: path.resolve(process.cwd(), './dist'),
+});
 
 if (process.argv.length < 3) {
   // @ts-ignore

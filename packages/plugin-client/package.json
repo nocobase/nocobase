@@ -8,7 +8,8 @@
     "@nocobase/resourcer": "^0.4.0-alpha.7",
     "@nocobase/server": "^0.4.0-alpha.7",
     "deepmerge": "^4.2.2",
-    "flat-to-nested": "^1.1.1"
+    "flat-to-nested": "^1.1.1",
+    "koa-compress": "^5.1.0"
   },
   "devDependencies": {
     "@nocobase/actions": "^0.4.0-alpha.7"
