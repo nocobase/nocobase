@@ -27,3 +27,4 @@ INSERT INTO "attachments" ("id", "title", "filename", "extname", "size", "mimety
 (26,	'kaffeerad-1543158_1280',	'8b94dd8cbecdbbd03e4c2fcfbd1067e7.jpg',	'.jpg',	NULL,	'image/jpeg',	'',	'{}',	'https://nocobase.oss-cn-beijing.aliyuncs.com/8b94dd8cbecdbbd03e4c2fcfbd1067e7.jpg',	'2021-09-12 07:47:39.63+00',	'2021-09-12 07:47:39.63+00',	NULL,	1,	2),
 (28,	'apple-1609693_1280',	'31b7dee511a8d6364fee18411763c188.jpg',	'.jpg',	NULL,	'image/jpeg',	'',	'{}',	'https://nocobase.oss-cn-beijing.aliyuncs.com/31b7dee511a8d6364fee18411763c188.jpg',	'2021-09-12 07:48:41.367+00',	'2021-09-12 07:48:41.367+00',	NULL,	1,	2),
 (29,	'cappuccino-1609932_1280',	'8f480c4f1bd3d292ef78fb6847669e51.jpg',	'.jpg',	NULL,	'image/jpeg',	'',	'{}',	'https://nocobase.oss-cn-beijing.aliyuncs.com/8f480c4f1bd3d292ef78fb6847669e51.jpg',	'2021-09-12 07:48:41.372+00',	'2021-09-12 07:48:41.372+00',	NULL,	1,	2);
+SELECT setval('attachments_id_seq', (SELECT MAX(id) FROM "attachments"), true);

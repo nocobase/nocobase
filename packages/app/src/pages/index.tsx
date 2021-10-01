@@ -13,8 +13,10 @@ import {
 } from '@nocobase/client';
 import { extend } from 'umi-request';
 
+console.log(`${location.protocol}//${location.hostname}:${process.env.API_PORT}/api/`);
+
 const request = extend({
-  prefix: process.env.API_URL,
+  prefix: `${location.protocol}//${location.hostname}:${process.env.API_PORT}/api/`,
   timeout: 30000,
 });
 

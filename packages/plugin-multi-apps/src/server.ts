@@ -4,6 +4,7 @@ import { Model } from '@nocobase/database';
 import { readFileSync } from 'fs';
 import glob from 'glob';
 import path from 'path';
+import compose from 'koa-compose';
 
 function getInitSqls() {
   const part1 = [];
@@ -41,7 +42,7 @@ function createApp(opts) {
         acquire: 60000,
         idle: 10000,
       },
-      // logging: process.env.DB_LOG_SQL === 'on' ? console.log : false,
+      logging: process.env.DB_LOG_SQL === 'on' ? console.log : false,
       define: {},
       sync: {
         force: false,
@@ -79,6 +80,8 @@ function createApp(opts) {
     '@nocobase/plugin-china-region',
   ];
 
+  // console.log('process.cwd()', process.cwd())
+
   for (const plugin of plugins) {
     app.plugin(
       require(`${plugin}/${__filename.endsWith('.ts') ? 'src' : 'lib'}/server`)
@@ -86,8 +89,16 @@ function createApp(opts) {
     );
   }
 
+  app.plugin(
+    require(`@nocobase/plugin-client/${__filename.endsWith('.ts') ? 'src' : 'lib'}/server`).default, {
+    dist: path.resolve(process.cwd(), './dist'),
+  });
+
   return app;
 }
+
+// import send from 'koa-send';
+// import serve from 'koa-static';
 
 function multiApps({ getAppName }) {
   return async function (ctx: Koa.Context, next) {
@@ -110,6 +121,7 @@ function multiApps({ getAppName }) {
         name: appName,
       });
       await app.load();
+      await app.emitAsync('beforeStart');
       apps.set(appName, app);
     }
 
@@ -129,7 +141,7 @@ function multiApps({ getAppName }) {
     const index = app.middleware.indexOf(bodyParser);
     app.middleware.splice(index, 1);
     console.log('..........................end........................');
-    // await next();
+    await next();
   };
 }
 
@@ -184,7 +196,8 @@ export default {
     });
     this.app.middleware.unshift(multiApps({
       getAppName(ctx) {
-        const hostname = ctx.get('X-Hostname');
+        console.log('ctx.hostname', ctx.hostname);
+        const hostname = ctx.get('X-Hostname') || ctx.hostname;
         if (!hostname) {
           return;
         }
@@ -192,7 +205,6 @@ export default {
         if (keys.length < 4) {
           return;
         }
-        console.log('ctx.hostname', ctx.get('X-Hostname'));
         return keys.shift();
       },
     }));

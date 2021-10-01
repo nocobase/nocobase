@@ -46,9 +46,8 @@ interface ActionsOptions {
 
 export class Application<
   StateT = DefaultState,
-  ContextT = DefaultContext
-  > extends Koa {
-
+  ContextT = DefaultContext,
+> extends Koa {
   public readonly db: Database;
 
   public readonly resourcer: Resourcer;
@@ -109,11 +108,11 @@ export class Application<
         await this.db.sync(
           force
             ? {
-              force: true,
-              alter: {
-                drop: true,
-              },
-            }
+                force: true,
+                alter: {
+                  drop: true,
+                },
+              }
             : {},
         );
         await this.destroy();
@@ -171,9 +170,9 @@ export class Application<
     return this.cli.command(nameAndArgs, opts);
   }
 
-  plugin(options?: PluginType | PluginOptions): Plugin {
+  plugin(options?: PluginType | PluginOptions, ext?: PluginOptions): Plugin {
     if (typeof options === 'string') {
-      return this.plugin(require(options).default);
+      return this.plugin(require(options).default, ext);
     }
     let instance: Plugin;
     if (typeof options === 'function') {
@@ -181,6 +180,7 @@ export class Application<
         // @ts-ignore
         instance = new options({
           name: options.name,
+          ...ext,
           app: this,
         });
         if (!(instance instanceof Plugin)) {
@@ -190,6 +190,7 @@ export class Application<
         // console.log(err);
         instance = new Plugin({
           name: options.name,
+          ...ext,
           // @ts-ignore
           load: options,
           app: this,
@@ -200,6 +201,7 @@ export class Application<
       instance = new plugin({
         name: options.plugin ? plugin.name : undefined,
         ...options,
+        ...ext,
         app: this,
       });
     }
