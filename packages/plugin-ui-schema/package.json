@@ -1,14 +1,14 @@
 {
   "name": "@nocobase/plugin-ui-schema",
-  "version": "0.5.0-alpha.9",
+  "version": "0.5.0-alpha.10",
   "main": "lib/index.js",
   "license": "MIT",
   "dependencies": {
-    "@nocobase/server": "^0.5.0-alpha.9",
+    "@nocobase/server": "^0.5.0-alpha.10",
     "deepmerge": "^4.2.2"
   },
   "devDependencies": {
-    "@nocobase/test": "^0.5.0-alpha.9"
+    "@nocobase/test": "^0.5.0-alpha.10"
   },
   "gitHead": "f0b335ac30f29f25c95d7d137655fa64d8d67f1e"
 }
