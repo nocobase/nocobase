@@ -28,7 +28,7 @@ services:
       dockerfile: Dockerfile
     networks:
       - nocobase
-    command: [ "yarn", "start-server", "start", "--port", "8000" ]
+    command: [ "yarn", "nocobase", "start", "--port", "8000" ]
     working_dir: /app
     env_file: ./.env
     volumes:
