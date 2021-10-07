@@ -1,6 +1,6 @@
 {
   "name": "@nocobase/collections",
-  "version": "0.5.0-alpha.14",
+  "version": "0.5.0-alpha.15",
   "private": true,
   "description": "",
   "main": "./lib/index.js",

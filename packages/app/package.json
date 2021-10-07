@@ -1,7 +1,7 @@
 {
   "name": "@nocobase/app",
   "private": true,
-  "version": "0.5.0-alpha.14",
+  "version": "0.5.0-alpha.15",
   "scripts": {
     "start": "concurrently \"cd ../../ && npm run start-server\" \"umi dev\"",
     "start-client": "umi dev",
@@ -26,20 +26,20 @@
     ]
   },
   "dependencies": {
-    "@nocobase/plugin-action-logs": "^0.5.0-alpha.14",
-    "@nocobase/plugin-china-region": "^0.5.0-alpha.14",
-    "@nocobase/plugin-client": "^0.5.0-alpha.14",
-    "@nocobase/plugin-collections": "^0.5.0-alpha.14",
-    "@nocobase/plugin-file-manager": "^0.5.0-alpha.14",
-    "@nocobase/plugin-multi-apps": "^0.5.0-alpha.14",
-    "@nocobase/plugin-permissions": "^0.5.0-alpha.14",
-    "@nocobase/plugin-ui-router": "^0.5.0-alpha.14",
-    "@nocobase/plugin-ui-schema": "^0.5.0-alpha.14",
-    "@nocobase/plugin-users": "^0.5.0-alpha.14",
-    "@nocobase/server": "^0.5.0-alpha.14"
+    "@nocobase/plugin-action-logs": "^0.5.0-alpha.15",
+    "@nocobase/plugin-china-region": "^0.5.0-alpha.15",
+    "@nocobase/plugin-client": "^0.5.0-alpha.15",
+    "@nocobase/plugin-collections": "^0.5.0-alpha.15",
+    "@nocobase/plugin-file-manager": "^0.5.0-alpha.15",
+    "@nocobase/plugin-multi-apps": "^0.5.0-alpha.15",
+    "@nocobase/plugin-permissions": "^0.5.0-alpha.15",
+    "@nocobase/plugin-ui-router": "^0.5.0-alpha.15",
+    "@nocobase/plugin-ui-schema": "^0.5.0-alpha.15",
+    "@nocobase/plugin-users": "^0.5.0-alpha.15",
+    "@nocobase/server": "^0.5.0-alpha.15"
   },
   "devDependencies": {
-    "@nocobase/client": "^0.5.0-alpha.14",
+    "@nocobase/client": "^0.5.0-alpha.15",
     "@types/react": "^17.0.0",
     "@types/react-dom": "^17.0.0",
     "@umijs/preset-react": "1.x",
