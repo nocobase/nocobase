@@ -57,83 +57,35 @@ NocoBase 架构
 
 Node:
 
-- Node.js 12.x or 14.x
+- Node.js 12.20+
 
 Database:
 
 - PostgreSQL 10.x+
-- MySQL 5.7.x+
 
 安装 & 运行
 ----------
 
-仅作为无代码平台使用
+通过 create-nocobase-app 创建项目
 
 ~~~shell
-# 创建项目目录
-mkdir my-nocobase-project && cd my-nocobase-project
-# 初始化 npm
-npm init
-# 安装 nocobase 包
-npm i @nocobase/api @nocobase/app
-# 复制并配置 env，不要忘了修改数据库信息
-cp -r node_modules/@nocobase/api/.env.example .env
-# 数据库初始化
-npx nocobase db-init
-# 启动应用
-npx nocobase start
+mkdir my-nocobase-app && cd my-nocobase-app
+yarn create @nocobase/nocobase-app
+cp .env.example .env
+docker-compose up -d postgres
+yarn install
+yarn start
 ~~~
 
-想要参与项目开发
+参与开发
 
 ~~~shell
 git clone https://github.com/nocobase/nocobase.git
 cd nocobase
 docker-compose up -d postgres # 用 docker 启动数据库
 cp .env.example .env # 配置数据库信息、APP 端口等
-npm install
-npm run bootstrap
-npm run build
-npm run db-migrate init
-npm start
-~~~
-
-如果本地 node 有问题，可以使用 docker 提供的环境
-
-```shell
-git clone https://github.com/nocobase/nocobase.git
-cd nocobase
-docker-compose up -d postgres # 用 docker 启动数据库
-cp .env.example .env # 配置数据库信息、APP 端口等
-
-# 使用 docker 提供的 node 环境安装依赖与初始化
-docker-compose run nocobase bash -c 'npm install && npm run bootstrap && npm run build && npm run db-migrate init'
-
-# 启动 nocobase 应用
-docker-compose up -d nocobase
-
-# 查看日志
-docker-compose logs nocobase
-```
-
-打包
-----------
-
-~~~shell
-# for all packages
-npm run build
-
-# for specific package
-npm run build <package_name_1> <package_name_2> ...
-~~~
-
-测试
-----------
-
-~~~
-# For all packages
-npm test
-
-# For specific package
-npm test packages/<name>
+yarn install
+yarn run bootstrap
+yarn run build
+yarn start
 ~~~

@@ -1,5 +1,5 @@
 {
-  "name": "@nocobase/create-nocobase-app",
+  "name": "create-nocobase-app",
   "version": "0.5.0-alpha.9",
   "main": "lib/index.js",
   "types": "lib/index.d.ts",
