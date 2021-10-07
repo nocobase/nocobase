@@ -1,0 +1,23 @@
+{
+  "name": "@nocobase/create-nocobase-app",
+  "version": "0.5.0-alpha.5",
+  "main": "lib/index.js",
+  "types": "lib/index.d.ts",
+  "files": [
+    "lib",
+    "bin",
+    "templates"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/nocobase/nocobase.git",
+    "directory": "packages/create-nocobase-app"
+  },
+  "license": "MIT",
+  "dependencies": {
+    "@umijs/utils": "3.5.17"
+  },
+  "bin": {
+    "create-nocobase-app": "bin/create-nocobase-app.js"
+  }
+}
