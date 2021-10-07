@@ -1,19 +1,13 @@
 {
   "name": "@nocobase/plugin-export",
-  "version": "0.4.0-alpha.7",
+  "version": "0.5.0-alpha.5",
   "main": "lib/index.js",
   "license": "MIT",
-  "devDependencies": {
-    "@types/node-xlsx": "^0.15.1"
-  },
   "dependencies": {
-    "@nocobase/actions": "^0.4.0-alpha.7",
-    "@nocobase/database": "^0.4.0-alpha.7",
-    "@nocobase/resourcer": "^0.4.0-alpha.7",
+    "@nocobase/server": "^0.5.0-alpha.5",
     "node-xlsx": "^0.16.1"
   },
-  "peerDependencies": {
-    "@nocobase/plugin-collections": "*",
-    "@nocobase/plugin-permissions": "*"
+  "devDependencies": {
+    "@types/node-xlsx": "^0.15.1"
   }
 }

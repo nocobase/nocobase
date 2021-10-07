@@ -166,6 +166,9 @@ export const Menu: any = observer((props: any) => {
       return;
     }
     const sideMenuElement = sideMenuRef && (sideMenuRef.current as HTMLElement);
+    if (!sideMenuElement) {
+      return;
+    }
     if (sideMenuElement && ref.current) {
       sideMenuElement.querySelector(':scope > div').appendChild(ref.current);
     }
