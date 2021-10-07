@@ -27,7 +27,6 @@ export default {
       const Collection = database.getModel('collections');
       for (const tableName of tableNames) {
         const table = database.getTable(tableName);
-        console.log(tableName, table);
         if (!table) {
           continue;
         }

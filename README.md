@@ -72,6 +72,7 @@ yarn create nocobase-app
 cp .env.example .env
 docker-compose up -d postgres
 yarn install
+yarn nocobase init
 yarn start
 ~~~
 
