@@ -70,7 +70,7 @@ Database:
 
 ~~~shell
 mkdir my-nocobase-app && cd my-nocobase-app
-yarn create @nocobase/nocobase-app
+yarn create nocobase-app
 cp .env.example .env
 docker-compose up -d postgres
 yarn install

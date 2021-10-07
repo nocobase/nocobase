@@ -2,14 +2,8 @@
 
 ## Getting Started
 
-Install dependencies,
-
 ```bash
-$ yarn
-```
-
-Start the dev server,
-
-```bash
-$ yarn start
+yarn install
+yarn nocobase init
+yarn start
 ```
