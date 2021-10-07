@@ -1,6 +1,6 @@
 {
   "name": "@nocobase/server",
-  "version": "0.5.0-alpha.10",
+  "version": "0.5.0-alpha.11",
   "main": "lib/index.js",
   "types": "./lib/index.d.ts",
   "license": "MIT",
@@ -8,9 +8,9 @@
   "dependencies": {
     "@koa/cors": "^3.1.0",
     "@koa/router": "^9.4.0",
-    "@nocobase/actions": "^0.5.0-alpha.10",
-    "@nocobase/database": "^0.5.0-alpha.10",
-    "@nocobase/resourcer": "^0.5.0-alpha.10",
+    "@nocobase/actions": "^0.5.0-alpha.11",
+    "@nocobase/database": "^0.5.0-alpha.11",
+    "@nocobase/resourcer": "^0.5.0-alpha.11",
     "commander": "^8.1.0",
     "dotenv": "^8.2.0",
     "koa": "^2.13.0",
