@@ -1,0 +1,24 @@
+{
+  "compilerOptions": {
+    "esModuleInterop": true,
+    "moduleResolution": "node",
+    "jsx": "react",
+    "module": "commonjs",
+    "target": "ES6",
+    "allowJs": false,
+    "noUnusedLocals": false,
+    "removeComments": true,
+    "preserveConstEnums": true,
+    "sourceMap": true,
+    "declaration": true,
+    "experimentalDecorators": true,
+    "downlevelIteration": true,
+    "baseUrl": ".",
+    "outDir": "./lib/apis",
+    "paths": {
+    }
+  },
+  "include": [
+    "src/apis",
+  ]
+}
