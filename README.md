@@ -64,7 +64,7 @@ Database:
 Installation
 ----------
 
-Create a project with `create-nocobase-app`
+### Create a project with `create-nocobase-app`
 
 ~~~shell
 mkdir my-nocobase-app && cd my-nocobase-app
@@ -76,15 +76,71 @@ yarn nocobase init
 yarn start
 ~~~
 
-Participate in the development
+Open http://localhost:8000 in a web browser.
+
+### Use docker compose
+
+Create a `docker-compose.yml` file
+
+```yaml
+version: "3"
+networks:
+  nocobase:
+    driver: bridge
+services:
+  adminer:
+    image: adminer
+    restart: always
+    networks:
+      - nocobase
+    ports:
+      - 28080:8080
+  postgres:
+    image: postgres:10
+    restart: always
+    networks:
+      - nocobase
+    command: postgres -c wal_level=logical
+    environment:
+      POSTGRES_USER: nocobase
+      POSTGRES_DB: nocobase
+      POSTGRES_PASSWORD: nocobase
+  nocobase:
+    image: nocobase/nocobase:0.5.0-alpha.14
+    networks:
+      - nocobase
+    command: [ "yarn", "serve", "start", "--port", "8000" ]
+    environment:
+      DB_DIALECT: postgres
+      DB_DATABASE: nocobase
+      DB_USER: nocobase
+      DB_PASSWORD: nocobase
+      DB_PORT: 5432
+      DB_HOST: postgres
+    ports:
+      - "28000:8000"
+```
+
+Run the command on your terminal
+
+```
+docker-compose run nocobase bash -c 'yarn serve init'
+docker-compose up -d
+```
+
+Open http://localhost:28000 in a web browser.
+
+### Participate in the development
 
 ~~~shell
 git clone https://github.com/nocobase/nocobase.git
 cd nocobase
-docker-compose up -d postgres # 用 docker 启动数据库
-cp .env.example .env # 配置数据库信息、APP 端口等
+cp .env.example .env
+docker-compose up -d postgres
 yarn install
 yarn run bootstrap
 yarn run build
 yarn start
 ~~~
+
+Open http://localhost:8000 in a web browser.
