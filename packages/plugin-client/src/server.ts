@@ -33,7 +33,7 @@ export default {
         return next();
       }
       await serve(root)(ctx, next);
-      console.log('koa-send', root, ctx.status);
+      // console.log('koa-send', root, ctx.status);
       if (ctx.status == 404) {
         return send(ctx, 'index.html', { root });
       }
