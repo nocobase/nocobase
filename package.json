@@ -19,7 +19,10 @@
     "lint": "eslint --ext .ts,.tsx,.js \"packages/*/src/**.@(ts|tsx|js)\" --fix",
     "start-prod": "concurrently \"npx pm2-runtime start packages/api/lib/index.js\" \"cd packages/app && npm run start-client\"",
     "pm2-start": "npx pm2-runtime start packages/api/lib/index.js",
-    "test": "npm run lint && jest"
+    "version:alpha": "lerna version prerelease --preid alpha --force-publish=* --no-git-tag-version -m \"chore(versions): publish packages %s\"",
+    "test": "npm run lint && jest",
+    "release:force": "lerna publish from-package --yes",
+    "release": "lerna publish"
   },
   "resolutions": {
     "@types/react": "^17.0.0",

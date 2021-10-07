@@ -1915,7 +1915,7 @@
   resolved "https://registry.npmjs.org/@formatjs/intl-utils/-/intl-utils-2.3.0.tgz#2dc8c57044de0340eb53a7ba602e59abf80dc799"
   integrity sha512-KWk80UPIzPmUg+P0rKh6TqspRw0G6eux1PuJr+zz47ftMaZ9QDwbGzHZbtzWkl5hgayM/qrKRutllRC7D/vVXQ==
 
-"@formily/antd@^2.0.0-rc.3":
+"@formily/antd@2.0.0-rc.3":
   version "2.0.0-rc.3"
   resolved "https://registry.npmjs.org/@formily/antd/-/antd-2.0.0-rc.3.tgz#714e3cca4dee78799ff3b51f9d9fca143ed52513"
   integrity sha512-uHq+Z1YWzBQgk5zYRhUcRL6UUfLLveSwRptDxUjw/TRS760WIfzs52m/763TZqKpmMmDb83lFoailEoKwalVtg==
@@ -1932,7 +1932,7 @@
     react-sortable-hoc "^1.11.0"
     react-sticky-box "^0.9.3"
 
-"@formily/core@2.0.0-rc.3", "@formily/core@^2.0.0-rc.3":
+"@formily/core@2.0.0-rc.3":
   version "2.0.0-rc.3"
   resolved "https://registry.npmjs.org/@formily/core/-/core-2.0.0-rc.3.tgz#aeb085c88f24527fec9b14efe162a77b0a9a4741"
   integrity sha512-DZvrCbQqpg8A0V0asVFYWbmdiqmDLq52OZmImr/1Vh3fa6wLExenoMfd1Koz1NXHdtMsLDlqOLnneS8e8+xKgw==
@@ -1955,7 +1955,7 @@
   resolved "https://registry.npmjs.org/@formily/path/-/path-2.0.0-rc.3.tgz#10023fe2776d9f2b22ddce1019b5d931f4a517a5"
   integrity sha512-Q2QgJQH7VOJ/T3dx1GjnA1KCQfutatDcJ7yH7XIJY4XQILnoI5HnNM4b0kJfYH+0LppUsRJrZAhEMO4bH2PUUQ==
 
-"@formily/react@2.0.0-rc.3", "@formily/react@^2.0.0-rc.3":
+"@formily/react@2.0.0-rc.3":
   version "2.0.0-rc.3"
   resolved "https://registry.npmjs.org/@formily/react/-/react-2.0.0-rc.3.tgz#7ba70b8045b096b4117e2664948b695747e5545c"
   integrity sha512-nPiYAOymAtS6ZRN+/uT6c6M729x3c4keRF4johXpBL3gj9Qy3RtGAy41e9Ey/oGHfJjYXCjeLBxtedEyH/3YhA==
@@ -3144,17 +3144,6 @@
     call-me-maybe "^1.0.1"
     glob-to-regexp "^0.3.0"
 
-"@nocobase/plugin-pages@^0.4.0-alpha.7":
-  version "0.4.0-alpha.7"
-  resolved "https://registry.npmjs.org/@nocobase/plugin-pages/-/plugin-pages-0.4.0-alpha.7.tgz#f3998d565eaca66c60b4e8f090ff2b9743cba615"
-  integrity sha512-eOyvxmGuKLaEk9E5M31gA8XYLCEsg2GUYpbtwwqYfurzICxwezEKYJZ/2o4yVy4sSCCdqMMzvwpPJDR/+mmrJw==
-  dependencies:
-    "@nocobase/actions" "^0.4.0-alpha.7"
-    "@nocobase/database" "^0.4.0-alpha.7"
-    "@nocobase/resourcer" "^0.4.0-alpha.7"
-    "@nocobase/server" "^0.4.0-alpha.7"
-    crypto-random-string "^3.3.1"
-
 "@nodelib/fs.scandir@2.1.5":
   version "2.1.5"
   resolved "https://registry.npmjs.org/@nodelib/fs.scandir/-/fs.scandir-2.1.5.tgz#7619c2eb21b25483f6d167548b4cfd5a7488c3d5"
@@ -3385,21 +3374,6 @@
   version "6.1.0"
   resolved "https://registry.npmjs.org/@qixian.cs/path-to-regexp/-/path-to-regexp-6.1.0.tgz#6b84ad01596332aba95fa29d2e70104698cd5c45"
   integrity sha512-2jIiLiVZB1jnY7IIRQKtoV8Gnr7XIhk4mC88ONGunZE3hYt5IHUG4BE/6+JiTBjjEWQLBeWnZB8hGpppkufiVw==
-
-"@react-dnd/asap@^4.0.0":
-  version "4.0.0"
-  resolved "https://registry.npmjs.org/@react-dnd/asap/-/asap-4.0.0.tgz#b300eeed83e9801f51bd66b0337c9a6f04548651"
-  integrity sha512-0XhqJSc6pPoNnf8DhdsPHtUhRzZALVzYMTzRwV4VI6DJNJ/5xxfL9OQUwb8IH5/2x7lSf7nAZrnzUD+16VyOVQ==
-
-"@react-dnd/invariant@^2.0.0":
-  version "2.0.0"
-  resolved "https://registry.npmjs.org/@react-dnd/invariant/-/invariant-2.0.0.tgz#09d2e81cd39e0e767d7da62df9325860f24e517e"
-  integrity sha512-xL4RCQBCBDJ+GRwKTFhGUW8GXa4yoDfJrPbLblc3U09ciS+9ZJXJ3Qrcs/x2IODOdIE5kQxvMmE2UKyqUictUw==
-
-"@react-dnd/shallowequal@^2.0.0":
-  version "2.0.0"
-  resolved "https://registry.npmjs.org/@react-dnd/shallowequal/-/shallowequal-2.0.0.tgz#a3031eb54129f2c66b2753f8404266ec7bf67f0a"
-  integrity sha512-Pc/AFTdwZwEKJxFJvlxrSmGe/di+aAOBn60sremrpLo6VI/6cmiUYNNwlI5KNYttg7uypzA3ILPMPgxB2GYZEg==
 
 "@restart/hooks@^0.3.25":
   version "0.3.27"
@@ -7213,7 +7187,7 @@ crypto-random-string@^2.0.0:
   resolved "https://registry.npmjs.org/crypto-random-string/-/crypto-random-string-2.0.0.tgz#ef2a7a966ec11083388369baa02ebead229b30d5"
   integrity sha512-v1plID3y9r/lPhviJ1wrXpLeyUIGAZ2SHNYTEapm7/8A9nLPoyvVp3RK/EPFqn5kEznyWgYZNsRtYYIWbuG8KA==
 
-crypto-random-string@^3.3.0, crypto-random-string@^3.3.1:
+crypto-random-string@^3.3.0:
   version "3.3.1"
   resolved "https://registry.npmjs.org/crypto-random-string/-/crypto-random-string-3.3.1.tgz#13cee94cac8001e4842501608ef779e0ed08f82d"
   integrity sha512-5j88ECEn6h17UePrLi6pn1JcLtAiANa3KExyr9y9Z5vo2mv56Gh3I4Aja/B9P9uyMwyxNHAHWv+nE72f30T5Dg==
@@ -7917,15 +7891,6 @@ discontinuous-range@1.0.0:
   version "1.0.0"
   resolved "https://registry.npmjs.org/discontinuous-range/-/discontinuous-range-1.0.0.tgz#e38331f0844bba49b9a9cb71c771585aab1bc65a"
   integrity sha1-44Mx8IRLukm5qctxx3FYWqsbxlo=
-
-dnd-core@14.0.0:
-  version "14.0.0"
-  resolved "https://registry.npmjs.org/dnd-core/-/dnd-core-14.0.0.tgz#973ab3470d0a9ac5a0fa9021c4feba93ad12347d"
-  integrity sha512-wTDYKyjSqWuYw3ZG0GJ7k+UIfzxTNoZLjDrut37PbcPGNfwhlKYlPUqjAKUjOOv80izshUiqusaKgJPItXSevA==
-  dependencies:
-    "@react-dnd/asap" "^4.0.0"
-    "@react-dnd/invariant" "^2.0.0"
-    redux "^4.0.5"
 
 doctrine@^2.1.0:
   version "2.1.0"
@@ -16689,39 +16654,6 @@ react-big-calendar@^0.33.6:
     react-overlays "^4.1.1"
     uncontrollable "^7.0.0"
 
-react-dnd-html5-backend@^14.0.0:
-  version "14.0.1"
-  resolved "https://registry.npmjs.org/react-dnd-html5-backend/-/react-dnd-html5-backend-14.0.1.tgz#37d43d6b6ddd91069101969d9eac6d688a9d57ef"
-  integrity sha512-ZDmpvFpd1NR4riw/CMbr8C3mgP6ZhsTf0c48a36kw4ZW8emgiugNlAz/qhhZ4/Pz9TO6DZ63sQohUTTl+AWGiA==
-  dependencies:
-    dnd-core "14.0.0"
-
-react-dnd-preview@^6.0.2:
-  version "6.0.2"
-  resolved "https://registry.npmjs.org/react-dnd-preview/-/react-dnd-preview-6.0.2.tgz#dd34931c270853c80438e1275e6c9e77174f8afe"
-  integrity sha512-F2+uK4Be+q+7mZfNh9kaZols7wp1hX6G7UBTVaTpDsBpMhjFvY7/v7odxYSerSFBShh23MJl33a4XOVRFj1zoQ==
-  dependencies:
-    prop-types "^15.7.2"
-
-react-dnd-touch-backend@^14.0.0:
-  version "14.1.0"
-  resolved "https://registry.npmjs.org/react-dnd-touch-backend/-/react-dnd-touch-backend-14.1.0.tgz#f1e6240cf4ace1136a6bad15bcc887e8db453943"
-  integrity sha512-pOLXe9Hj2tYEzT8Vr8w/VpGZh5d0qaPxSz6nP2gvK+KBoka/KW2hYWsI6tFj+ewhhNjs07cjMjJIlvRg+4zq2Q==
-  dependencies:
-    "@react-dnd/invariant" "^2.0.0"
-    dnd-core "14.0.0"
-
-react-dnd@^14.0.2:
-  version "14.0.3"
-  resolved "https://registry.npmjs.org/react-dnd/-/react-dnd-14.0.3.tgz#1762c1ec84815439f2d8a6a40efd1f57eee41ba6"
-  integrity sha512-i73Hx5SKfDRdwXe30+CjF/DidiRdt/gwpPN14ajkPR20t/0osnNKFNHg3DLV6RZym+DJ0pO9H5APeMsBWGU3+Q==
-  dependencies:
-    "@react-dnd/invariant" "^2.0.0"
-    "@react-dnd/shallowequal" "^2.0.0"
-    dnd-core "14.0.0"
-    fast-deep-equal "^3.1.3"
-    hoist-non-react-statics "^3.3.2"
-
 react-docgen-typescript-dumi-tmp@^1.22.1-0:
   version "1.22.1-0"
   resolved "https://registry.npmjs.org/react-docgen-typescript-dumi-tmp/-/react-docgen-typescript-dumi-tmp-1.22.1-0.tgz#6f452de05c5c114a6e1dd60b34930afaa7ae39a0"
@@ -16760,11 +16692,6 @@ react-helmet@^6.1.0:
     prop-types "^15.7.2"
     react-fast-compare "^3.1.1"
     react-side-effect "^2.1.0"
-
-react-hooks-global-state@^1.0.1:
-  version "1.0.2"
-  resolved "https://registry.npmjs.org/react-hooks-global-state/-/react-hooks-global-state-1.0.2.tgz#37bbc3203a0be9f3ac0658abfd28dd7ce7ee166c"
-  integrity sha512-UcWz+VjcUUCQ7bXGmOhanGII3j22zyPSjwJnQWeycxFYj/etBxIbz9xziEm4sv5+OqGuS7bzvpx24XkCxgJ7Bg==
 
 react-image-lightbox@^5.1.4:
   version "5.1.4"
@@ -16806,11 +16733,6 @@ react-lifecycles-compat@^3.0.0, react-lifecycles-compat@^3.0.4:
   version "3.0.4"
   resolved "https://registry.npmjs.org/react-lifecycles-compat/-/react-lifecycles-compat-3.0.4.tgz#4f1a273afdfc8f3488a8c516bfda78f872352362"
   integrity sha512-fBASbA6LnOU9dOU2eW7aQ8xmYBSXUIWr+UmF9b1efZBazGNO+rcXT/icdKnYm2pTwcRylVUYwW7H1PHfLekVzA==
-
-react-modal-hook@^3.0.0:
-  version "3.0.0"
-  resolved "https://registry.npmjs.org/react-modal-hook/-/react-modal-hook-3.0.0.tgz#24b2ff2acf288ef25c11e4fb11b329458a823ea3"
-  integrity sha512-mNkJwgEtOoIabuILlWnGAto993WVkimZASBWk/rAGZ6tNIqjx4faQtNdr/X31vw+QGfKhspXc4vPi1jbfkk2Yg==
 
 react-modal@^3.11.1:
   version "3.14.3"
@@ -17182,7 +17104,7 @@ redux-saga@^0.16.0:
   resolved "https://registry.npmjs.org/redux-saga/-/redux-saga-0.16.2.tgz#993662e86bc945d8509ac2b8daba3a8c615cc971"
   integrity sha512-iIjKnRThI5sKPEASpUvySemjzwqwI13e3qP7oLub+FycCRDysLSAOwt958niZW6LhxfmS6Qm1BzbU70w/Koc4w==
 
-redux@^4.0.0, redux@^4.0.1, redux@^4.0.5:
+redux@^4.0.0, redux@^4.0.1:
   version "4.1.1"
   resolved "https://registry.npmjs.org/redux/-/redux-4.1.1.tgz#76f1c439bb42043f985fbd9bf21990e60bd67f47"
   integrity sha512-hZQZdDEM25UY2P493kPYuKqviVwZ58lEmGQNeQ+gXa+U0gYPUBf7NKYazbe3m+bs/DzM/ahN12DbF+NG8i0CWw==

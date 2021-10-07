@@ -1,6 +1,7 @@
 {
   "name": "father-build",
-  "version": "1.19.4",
+  "private": true,
+  "version": "1.19.5-alpha.3",
   "description": "Library build tool based on rollup.",
   "main": "lib/index.js",
   "bin": {
@@ -45,8 +46,8 @@
     "gulp-if": "2.0.2",
     "gulp-less": "^4.0.1",
     "gulp-plumber": "^1.2.1",
-    "gulp-typescript": "5.0.1",
     "gulp-sourcemaps": "2.6.5",
+    "gulp-typescript": "5.0.1",
     "less": "3.9.0",
     "less-plugin-npm-import": "2.1.0",
     "lodash": "4.17.19",
