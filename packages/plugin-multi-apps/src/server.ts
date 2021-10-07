@@ -285,29 +285,6 @@ export default {
         });
         await app.emitAsync('beforeStart');
         await app.emitAsync('db.init');
-        const transaction = await app.db.sequelize.transaction();
-        const sqls = getInitSqls();
-        try {
-          for (const sql of sqls.part1) {
-            await app.db.sequelize.query(sql, { transaction });
-          }
-          await transaction.commit();
-        } catch (error) {
-          await transaction.rollback();
-        }
-        await app.db.getModel('collections').load({
-          skipExisting: true,
-        });
-        await app.db.sync();
-        const transaction2 = await app.db.sequelize.transaction();
-        try {
-          for (const sql of sqls.part2) {
-            await app.db.sequelize.query(sql, { transaction: transaction2 });
-          }
-          await transaction2.commit();
-        } catch (error) {
-          await transaction2.rollback();
-        }
         await app.destroy();
         await this.app.destroy();
       });
