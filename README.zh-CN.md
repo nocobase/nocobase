@@ -66,7 +66,7 @@ Database:
 安装 & 运行
 ----------
 
-通过 create-nocobase-app 创建项目
+通过 `create-nocobase-app` 创建项目
 
 ~~~shell
 mkdir my-nocobase-app && cd my-nocobase-app
@@ -74,6 +74,7 @@ yarn create @nocobase/nocobase-app
 cp .env.example .env
 docker-compose up -d postgres
 yarn install
+yarn nocobase init
 yarn start
 ~~~
 
@@ -82,8 +83,8 @@ yarn start
 ~~~shell
 git clone https://github.com/nocobase/nocobase.git
 cd nocobase
-docker-compose up -d postgres # 用 docker 启动数据库
 cp .env.example .env # 配置数据库信息、APP 端口等
+docker-compose up -d postgres # 用 docker 启动数据库
 yarn install
 yarn run bootstrap
 yarn run build
