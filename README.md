@@ -55,86 +55,35 @@ Requirements
 
 Node:
 
-- Node.js 12.x or 14.x
+- Node.js 12.20+
 
-Database(Choose any one):
+Database:
 
-- PostgreSQL 10.x+ (Recommend)
-- MySQL 5.7.x+
+- PostgreSQL 10.x+
 
 Installation
 ----------
 
-Use only as a no-code platform
-
-~~~bash
-# Create project directory
-mkdir my-nocobase-project && cd my-nocobase-project
-# npm initialization
-npm init
-# Installing nocobase dependencies
-npm i @nocobase/api @nocobase/app
-# Copy and configure env, don't forget to change the database information
-cp -r node_modules/@nocobase/api/.env.example .env
-# Database initialization
-npx nocobase db-init
-# Start app
-npx nocobase start
-~~~
-
-Want to participate in the development
+Create a project with `create-nocobase-app`
 
 ~~~shell
-# You can use docker to start the database
-docker-compose up -d postgres
-# Set Environment Variables
+mkdir my-nocobase-app && cd my-nocobase-app
+yarn create nocobase-app
 cp .env.example .env
-npm install
-npm run bootstrap
-npm run build
-npm run db-migrate init
-npm start
+docker-compose up -d postgres
+yarn install
+yarn start
 ~~~
 
-Nodejs provided by docker
+Participate in the development
 
-```shell
+~~~shell
 git clone https://github.com/nocobase/nocobase.git
 cd nocobase
-# You can use docker to start the database
-docker-compose up -d postgres
-# Set Environment Variables
-cp .env.example .env
-
-# Installing dependencies and initializing
-docker-compose run nocobase bash -c 'npm install && npm run bootstrap && npm run build && npm run db-migrate init'
-
-# Start nocobase
-docker-compose up -d nocobase
-
-# View log
-docker-compose logs nocobase
-```
-
-
-Build
-----------
-
-~~~shell
-# for all packages
-npm run build
-
-# for specific package
-npm run build <package_name_1> <package_name_2> ...
-~~~
-
-Test
-----------
-
-~~~
-# For all packages
-npm test
-
-# For specific package
-npm test packages/<name>
+docker-compose up -d postgres # 用 docker 启动数据库
+cp .env.example .env # 配置数据库信息、APP 端口等
+yarn install
+yarn run bootstrap
+yarn run build
+yarn start
 ~~~
