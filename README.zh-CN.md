@@ -66,7 +66,7 @@ Database:
 安装 & 运行
 ----------
 
-通过 `create-nocobase-app` 创建项目
+### 通过 `create-nocobase-app` 创建项目
 
 ~~~shell
 mkdir my-nocobase-app && cd my-nocobase-app
@@ -78,7 +78,61 @@ yarn nocobase init
 yarn start
 ~~~
 
-参与开发
+浏览器内打开 http://localhost:8000
+
+### 使用 docker compose
+
+创建 `docker-compose.yml` 文件
+
+```yaml
+version: "3"
+networks:
+  nocobase:
+    driver: bridge
+services:
+  adminer:
+    image: adminer
+    restart: always
+    networks:
+      - nocobase
+    ports:
+      - 28080:8080
+  postgres:
+    image: postgres:10
+    restart: always
+    networks:
+      - nocobase
+    command: postgres -c wal_level=logical
+    environment:
+      POSTGRES_USER: nocobase
+      POSTGRES_DB: nocobase
+      POSTGRES_PASSWORD: nocobase
+  nocobase:
+    image: nocobase/nocobase:0.5.0-alpha.14
+    networks:
+      - nocobase
+    command: [ "yarn", "serve", "start", "--port", "8000" ]
+    environment:
+      DB_DIALECT: postgres
+      DB_DATABASE: nocobase
+      DB_USER: nocobase
+      DB_PASSWORD: nocobase
+      DB_PORT: 5432
+      DB_HOST: postgres
+    ports:
+      - "28000:8000"
+```
+
+终端运行
+
+```
+docker-compose run nocobase bash -c 'yarn serve init'
+docker-compose up -d
+```
+
+浏览器内打开 http://localhost:28000
+
+### 参与开发
 
 ~~~shell
 git clone https://github.com/nocobase/nocobase.git
@@ -90,3 +144,5 @@ yarn run bootstrap
 yarn run build
 yarn start
 ~~~
+
+浏览器内打开 http://localhost:8000

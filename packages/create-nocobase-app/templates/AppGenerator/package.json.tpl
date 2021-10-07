@@ -6,10 +6,11 @@
     "start-client": "umi dev",
     "start-server": "ts-node-dev -r dotenv/config --project tsconfig.apis.json ./src/apis/index.ts",
     "nocobase": "ts-node-dev -r dotenv/config --project tsconfig.apis.json ./src/apis/index.ts",
+    "serve": "node -r dotenv/config ./lib/apis/index.js",
     "build": "npm run build-server && npm run build-client",
     "build-client": "umi build",
     "build-server": "rimraf -rf lib && tsc --project tsconfig.apis.json",
-    "postinstall": "umi generate tmp",
+    "postinstall": "node ./umi.js generate tmp",
     "prettier": "prettier --write '**/*.{js,jsx,tsx,ts,less,md,json}'",
     "test": "umi-test",
     "test:coverage": "umi-test --coverage"
