@@ -57,6 +57,7 @@ for (const plugin of plugins) {
 api.plugin(
   require(`@nocobase/plugin-client/lib/server`).default, {
   dist: path.resolve(process.cwd(), './dist'),
+  importData: true,
 });
 
 if (process.argv.length < 3) {
