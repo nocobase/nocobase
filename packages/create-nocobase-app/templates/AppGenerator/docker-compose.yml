@@ -1,0 +1,37 @@
+version: "3"
+networks:
+  nocobase:
+    driver: bridge
+services:
+  adminer:
+    image: adminer
+    restart: always
+    networks:
+      - nocobase
+    ports:
+      - ${ADMINER_PORT}:8080
+  postgres:
+    image: postgres:10
+    restart: always
+    ports:
+      - "${DB_POSTGRES_PORT}:5432"
+    networks:
+      - nocobase
+    command: postgres -c wal_level=logical
+    environment:
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_DB: ${DB_DATABASE}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+  nocobase:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    networks:
+      - nocobase
+    command: [ "yarn", "start-server", "start", "--port", "8000" ]
+    working_dir: /app
+    env_file: ./.env
+    volumes:
+      - ./:/app
+    ports:
+      - "${APP_PORT}:8000"
