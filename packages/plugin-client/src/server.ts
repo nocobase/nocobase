@@ -40,6 +40,9 @@ export default {
     });
     const app = this.app;
     this.app.on('db.init', async () => {
+      if  (this.options.importDemo !== true) {
+        return;
+      }
       const transaction = await app.db.sequelize.transaction();
       const sqls = getInitSqls();
       try {
