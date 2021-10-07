@@ -73,6 +73,7 @@ function createApp(opts) {
   app.plugin(
     require(`@nocobase/plugin-client/${__filename.endsWith('.ts') ? 'src' : 'lib'}/server`).default, {
     dist: path.resolve(process.cwd(), './dist'),
+    importDemo: true,
   });
 
   return app;
