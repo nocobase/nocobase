@@ -151,11 +151,30 @@ export default {
           type: 'string',
           name: 'title',
           interface: 'string',
-          unique: true,
           uiSchema: {
             type: 'string',
             title: '应用名称',
             'x-component': 'Input',
+          },
+        },
+        {
+          type: 'string',
+          name: 'email',
+          interface: 'email',
+          uiSchema: {
+            type: 'string',
+            title: '邮箱',
+            'x-component': 'Input',
+          },
+        },
+        {
+          type: 'string',
+          name: 'note',
+          interface: 'textarea',
+          uiSchema: {
+            type: 'string',
+            title: '你希望用 NocoBase 来做什么',
+            'x-component': 'Input.TextArea',
           },
         },
         {
@@ -210,6 +229,7 @@ export default {
         this.app['apps'].set(name, app);
         model.set('status', 'running');
         await model.save({ hooks: false });
+        await this.app.db.emitAsync('applications.afterInit', model);
       })();
     });
     this.app
