@@ -7590,7 +7590,7 @@ debug@3.X, debug@^3.1.0, debug@^3.2.6, debug@^3.2.7:
   dependencies:
     ms "^2.1.1"
 
-debug@4, debug@^4.0.0, debug@^4.0.1, debug@^4.1.0, debug@^4.1.1, debug@^4.3.1, debug@~4.3.1:
+debug@4, debug@^4.0.0, debug@^4.0.1, debug@^4.1.0, debug@^4.1.1, debug@^4.3.1, debug@^4.3.2, debug@~4.3.1:
   version "4.3.2"
   resolved "https://registry.npmjs.org/debug/-/debug-4.3.2.tgz#f0a49c18ac8779e31d4a0c6029dfb76873c7428b"
   integrity sha512-mOp8wKcvj7XxC78zLgw/ZA+6TSgkoE2C/ienthhRD298T7UNwAg9diBpLRxC0mOezLl4B0xV7M0cCO6P/O0Xhw==
@@ -13893,6 +13893,19 @@ node-xlsx@^0.16.1:
     "@babel/runtime" "^7.14.6"
     buffer-from "^1.1.1"
     xlsx "^0.17.0"
+
+nodemailer-mock@^1.5.11:
+  version "1.5.11"
+  resolved "https://registry.npmjs.org/nodemailer-mock/-/nodemailer-mock-1.5.11.tgz#1bb6b9af44e9007380191d32e33555ea136a819f"
+  integrity sha512-RbqkppKkptTgSzry3q8u/YD8pxulln/hYQ30O5brFRki8gEKv7KoAYGwfErZM2VsI7nGNBYRo5IOLnMW3NXBcw==
+  dependencies:
+    debug "^4.3.2"
+    nodemailer "^6.x"
+
+nodemailer@^6.6.1, nodemailer@^6.x:
+  version "6.6.5"
+  resolved "https://registry.npmjs.org/nodemailer/-/nodemailer-6.6.5.tgz#f9f6953cee5cfe82cbea152eeddacf7a0442049a"
+  integrity sha512-C/v856DBijUzHcHIgGpQoTrfsH3suKIRAGliIzCstatM2cAa+MYX3LuyCrABiO/cdJTxgBBHXxV1ztiqUwst5A==
 
 nodemon@^2.0.12:
   version "2.0.12"

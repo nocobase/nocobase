@@ -56,6 +56,7 @@
     "koa-bodyparser": "^4.3.0",
     "lerna": "^3.22.0",
     "mockjs": "^1.1.0",
+    "nodemailer-mock": "^1.5.11",
     "nodemon": "^2.0.12",
     "pg": "^8.6.0",
     "pg-hstore": "^2.3.3",
