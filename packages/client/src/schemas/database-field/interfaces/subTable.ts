@@ -9,6 +9,7 @@ export const subTable: FieldOptions = {
   order: 2,
   title: '子表格',
   isAssociation: true,
+  disabled: true,
   default: {
     dataType: 'hasMany',
     // name,
