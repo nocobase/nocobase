@@ -140,8 +140,9 @@ cd nocobase
 cp .env.example .env # 配置数据库信息、APP 端口等
 docker-compose up -d postgres # 用 docker 启动数据库
 yarn install
-yarn run bootstrap
-yarn run build
+yarn bootstrap
+yarn build
+yarn nocobase init
 yarn start
 ~~~
 

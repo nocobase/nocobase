@@ -1,10 +1,5 @@
 import Server from '@nocobase/server';
-import dotenv from 'dotenv';
 import path from 'path';
-
-dotenv.config({
-  path: path.resolve(__dirname, '../../../../.env'),
-});
 
 const start = Date.now();
 
@@ -41,7 +36,6 @@ const api = new Server({
 });
 
 const plugins = [
-  '@nocobase/plugin-multi-apps',
   '@nocobase/plugin-ui-router',
   '@nocobase/plugin-ui-schema',
   '@nocobase/plugin-collections',
@@ -54,15 +48,18 @@ const plugins = [
   '@nocobase/plugin-china-region',
 ];
 
+const libDir = __filename.endsWith('.ts') ? 'src' : 'lib';
+
 for (const plugin of plugins) {
   api.plugin(
-    require(`${plugin}/${__filename.endsWith('.ts') ? 'src' : 'lib'}/server`).default,
+    require(`${plugin}/${libDir}/server`).default,
   );
 }
 
 api.plugin(
-  require(`@nocobase/plugin-client/${__filename.endsWith('.ts') ? 'src' : 'lib'}/server`).default, {
+  require(`@nocobase/plugin-client/${libDir}/server`).default, {
   dist: path.resolve(process.cwd(), './dist'),
+  importDemo: true,
 });
 
 if (process.argv.length < 3) {

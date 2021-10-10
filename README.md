@@ -138,8 +138,9 @@ cd nocobase
 cp .env.example .env
 docker-compose up -d postgres
 yarn install
-yarn run bootstrap
-yarn run build
+yarn bootstrap
+yarn build
+yarn nocobase init
 yarn start
 ~~~
 
