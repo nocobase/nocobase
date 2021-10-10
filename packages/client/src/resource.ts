@@ -21,6 +21,7 @@ export interface SaveOptions {
 export interface ListOptions {
   defaultFilter?: any;
   filter?: any;
+  pageSize?: number;
   defaultAppends?: any[];
   appends?: string[];
   perPage?: number;
@@ -53,7 +54,7 @@ export class Resource {
   }
 
   list(options: ListOptions = {}) {
-    const { defaultAppends = [], appends = [], defaultFilter, filter, ...others } = options;
+    const { defaultAppends = [], appends = [], defaultFilter, filter, pageSize, ...others } = options;
     const { associatedKey, associatedName, resourceName } = this.options;
     let url = `${resourceName}:list`;
     if (associatedName && associatedKey) {
@@ -64,6 +65,7 @@ export class Resource {
       params: {
         filter: decodeURIComponent(JSON.stringify({ and: [defaultFilter, filter].filter(Boolean) })),
         'fields[appends]': defaultAppends.concat(appends).join(','),
+        perPage: pageSize,
         ...others,
       },
     });
