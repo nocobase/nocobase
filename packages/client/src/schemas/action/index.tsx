@@ -217,6 +217,9 @@ Action.Modal = observer((props: any) => {
                   }
                   runCancel && (await runCancel());
                   setVisible(false);
+                  if (isFormDecorator) {
+                    await form.reset();
+                  }
                 }}
               >
                 取消
@@ -229,6 +232,9 @@ Action.Modal = observer((props: any) => {
                   }
                   runOk && (await runOk());
                   setVisible(false);
+                  if (isFormDecorator) {
+                    await form.reset();
+                  }
                 }}
               >
                 确定
@@ -243,6 +249,9 @@ Action.Modal = observer((props: any) => {
         }
         runCancel && (await runCancel());
         setVisible(false);
+        if (isFormDecorator) {
+          await form.reset();
+        }
       }}
       visible={visible}
     >
@@ -282,6 +291,9 @@ Action.Drawer = observer((props: any) => {
                     props.onClose && (await props.onClose(e));
                     runCancel && (await runCancel());
                     setVisible(false);
+                    if (isFormDecorator) {
+                      await form.reset();
+                    }
                   }}
                 >
                   取消
@@ -292,6 +304,9 @@ Action.Drawer = observer((props: any) => {
                     props.onOk && (await props.onOk(e));
                     runOk && (await runOk());
                     setVisible(false);
+                    if (isFormDecorator) {
+                      await form.reset();
+                    }
                   }}
                   type={'primary'}
                 >
@@ -306,6 +321,9 @@ Action.Drawer = observer((props: any) => {
             props.onClose && (await props.onClose(e));
             runCancel && (await runCancel());
             setVisible(false);
+            if (isFormDecorator) {
+              await form.reset();
+            }
           }}
         >
           <FormLayout layout={'vertical'}>{props.children}</FormLayout>

@@ -176,6 +176,7 @@ for (const [key, schema] of interfaces) {
   fieldInterfaces.push({
     value: key,
     label: schema.title,
+    disabled: schema.disabled,
   });
 }
 
@@ -592,7 +593,7 @@ function CreateFieldButton() {
           option.children.length > 0 && (
             <Menu.SubMenu key={groupIndex} title={option.label}>
               {option.children.map((item) => (
-                <Menu.Item style={{ minWidth: 120 }} key={item.name}>
+                <Menu.Item disabled={item.disabled} style={{ minWidth: 120 }} key={item.name}>
                   {item.title}
                 </Menu.Item>
               ))}
@@ -612,12 +613,16 @@ function CreateFieldButton() {
         title={'添加字段'}
         width={'50%'}
         visible={visible}
-        onClose={() => setVisible(false)}
+        onClose={() => {
+          setVisible(false);
+          form.reset();
+        }}
         footer={
           <Space style={{ float: 'right' }}>
             <Button
-              onClick={() => {
+              onClick={async () => {
                 setVisible(false);
+                await form.reset();
               }}
             >
               取消
@@ -627,6 +632,7 @@ function CreateFieldButton() {
               onClick={async () => {
                 await resource.save(form.values);
                 setVisible(false);
+                await form.reset();
                 await service.refresh();
                 await refresh();
               }}

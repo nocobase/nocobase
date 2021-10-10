@@ -58,10 +58,10 @@ export const SimpleDesignableBar = observer((props) => {
           <DragHandle />
           <Dropdown
             trigger={['hover']}
-            // visible={visible}
-            // onVisibleChange={(visible) => {
-            //   setVisible(visible);
-            // }}
+            visible={visible}
+            onVisibleChange={(visible) => {
+              setVisible(visible);
+            }}
             overlay={
               <Menu>
                 <Menu.Item
@@ -172,6 +172,7 @@ export const SimpleDesignableBar = observer((props) => {
                       defaultFilter;
                     field.componentProps.defaultFilter = defaultFilter;
                     await updateSchema(schema);
+                    setVisible(false);
                   }}
                 >
                   设置数据范围
@@ -190,6 +191,7 @@ export const SimpleDesignableBar = observer((props) => {
                       field.componentProps.pagination.defaultPageSize = value;
                       refresh();
                       updateSchema(schema);
+                      setVisible(false);
                     }}
                     defaultValue={defaultPageSize}
                   >
@@ -212,6 +214,7 @@ export const SimpleDesignableBar = observer((props) => {
                         // console.log({ removed })
                         const last = removed.pop();
                         await removeSchema(last);
+                        setVisible(false);
                       },
                     });
                   }}

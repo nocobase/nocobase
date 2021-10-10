@@ -139,7 +139,7 @@ function useTableCreateAction() {
   const form = useForm();
   return {
     async run() {
-      console.log('useTableCreateAction', resource);
+      console.log('refreshRequestOnChange', refreshRequestOnChange);
       if (refreshRequestOnChange) {
         await resource.create(form.values);
         await form.reset();
@@ -278,6 +278,9 @@ const useTableRowRecord = () => {
 const useTableIndex = () => {
   const { pagination, props } = useTable();
   const ctx = useContext(TableRowContext);
+  const { pageSize, page = 1 } = pagination;
+  console.log({pageSize, page}, ctx.index);
+  return ctx.index + (page - 1) * pageSize;
   if (pagination && !props.clientSidePagination) {
     const { pageSize, page = 1 } = pagination;
     return ctx.index + (page - 1) * pageSize;
@@ -655,12 +658,12 @@ const useDataSource = () => {
     props: { clientSidePagination, dataRequest },
   } = useTable();
   let dataSource = field.value;
-  if (pagination && (clientSidePagination || !dataRequest)) {
-    const { page = 1, pageSize } = pagination;
-    const startIndex = (page - 1) * pageSize;
-    const endIndex = startIndex + pageSize - 1;
-    dataSource = field.value?.slice(startIndex, endIndex + 1);
-  }
+  // if (pagination && (clientSidePagination || !dataRequest)) {
+  //   const { page = 1, pageSize } = pagination;
+  //   const startIndex = (page - 1) * pageSize;
+  //   const endIndex = startIndex + pageSize - 1;
+  //   dataSource = field.value?.slice(startIndex, endIndex + 1);
+  // }
   return dataSource;
 };
 
@@ -860,7 +863,7 @@ const TableProvider = (props: any) => {
   const { sortableField } = useCollectionContext();
   const dragSort = props.dragSort;
   const collectionFields = useCollectionFields(schema);
-  console.log({ collectionFields });
+  // console.log({ collectionFields, pagination });
   const getDefaultParams = () => {
     const defaultParams = { ...pagination };
     if (dragSort) {
@@ -905,6 +908,7 @@ const TableProvider = (props: any) => {
     service.run(getDefaultParams());
   }, [
     pagination.pageSize,
+    pagination.page,
     props.dragSort,
     props.defaultSort,
     props.defaultFilter,
@@ -2252,10 +2256,10 @@ Table.DesignableBar = observer((props) => {
           <DragHandle />
           <Dropdown
             trigger={['hover']}
-            // visible={visible}
-            // onVisibleChange={(visible) => {
-            //   setVisible(visible);
-            // }}
+            visible={visible}
+            onVisibleChange={(visible) => {
+              setVisible(visible);
+            }}
             overlay={
               <Menu>
                 <Menu.Item
@@ -2265,6 +2269,7 @@ Table.DesignableBar = observer((props) => {
                     schema['x-component-props']['showIndex'] = bool;
                     field.componentProps.showIndex = bool;
                     updateSchema(schema);
+                    setVisible(false);
                   }}
                 >
                   <div className={'nb-space-between'}>
@@ -2284,6 +2289,7 @@ Table.DesignableBar = observer((props) => {
                     schema['x-component-props']['dragSort'] = dragSort;
                     field.componentProps.dragSort = dragSort;
                     updateSchema(schema);
+                    setVisible(false);
                   }}
                 >
                   <div className={'nb-space-between'}>
@@ -2398,6 +2404,7 @@ Table.DesignableBar = observer((props) => {
                       schema['x-component-props']['defaultSort'] = sort;
                       field.componentProps.defaultSort = sort;
                       await updateSchema(schema);
+                      setVisible(false);
                       console.log('defaultSort', sort);
                     }}
                   >
@@ -2437,6 +2444,7 @@ Table.DesignableBar = observer((props) => {
                       defaultFilter;
                     field.componentProps.defaultFilter = defaultFilter;
                     await updateSchema(schema);
+                    setVisible(false);
                   }}
                 >
                   设置数据范围
@@ -2455,6 +2463,7 @@ Table.DesignableBar = observer((props) => {
                       field.componentProps.pagination.defaultPageSize = value;
                       refresh();
                       updateSchema(schema);
+                      setVisible(false);
                     }}
                     defaultValue={defaultPageSize}
                   >
@@ -2477,6 +2486,7 @@ Table.DesignableBar = observer((props) => {
                         // console.log({ removed })
                         const last = removed.pop();
                         await removeSchema(last);
+                        setVisible(false);
                       },
                     });
                   }}
