@@ -1,17 +1,17 @@
 {
   "name": "@nocobase/actions",
-  "version": "0.5.0-alpha.17",
+  "version": "0.5.0-alpha.18",
   "description": "",
   "license": "MIT",
   "main": "./lib/index.js",
   "types": "./lib/index.d.ts",
   "scripts": {},
   "dependencies": {
-    "@nocobase/database": "^0.5.0-alpha.17",
-    "@nocobase/resourcer": "^0.5.0-alpha.17"
+    "@nocobase/database": "^0.5.0-alpha.18",
+    "@nocobase/resourcer": "^0.5.0-alpha.18"
   },
   "devDependencies": {
-    "@nocobase/test": "^0.5.0-alpha.17"
+    "@nocobase/test": "^0.5.0-alpha.18"
   },
   "repository": {
     "type": "git",
