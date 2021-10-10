@@ -138,7 +138,7 @@ function LayoutWithMenu(props: LayoutWithMenuProps) {
     setActiveKey(match.params.name);
   }, [match.params.name]);
   const onMenuItemRemove = () => {
-    history.push(`/admin`);
+    history.push(`/admin/${uid()}`);
   };
   console.log({ activeKey, selectedKeys });
   return (
@@ -206,6 +206,7 @@ function Content({ activeKey }) {
 
 export function AdminLayout({ route, ...others }: any) {
   const match = useRouteMatch<any>();
+
   const { data = {}, loading } = useRequest(
     `ui_schemas:getTree/${route.uiSchemaKey}`,
     {
@@ -214,8 +215,32 @@ export function AdminLayout({ route, ...others }: any) {
     },
   );
 
+  const first: any = Object.values(data?.properties||{}).shift();
+
+  const findMenuLinkProperties = (schema: Schema): Schema[] => {
+    if (!schema) {
+      return [];
+    }
+    if (schema['x-component'] == 'Menu.Link') {
+      return [schema];
+    }
+    return schema.reduceProperties((items, current) => {
+      if (current['x-component'] == 'Menu.Link') {
+        return [...items, current];
+      }
+      return [...items, ...findMenuLinkProperties(current)];
+    }, []);
+  };
+
+
   if (loading) {
     return <Spin size={'large'} className={'nb-spin-center'} />;
+  }
+
+  const f = findMenuLinkProperties(new Schema(first||{})).shift();
+
+  if (f?.['key'] && !match.params.name) {
+    return <Redirect to={`/admin/${f?.['key']}`} />;
   }
 
   const findProperties = (schema: Schema): Schema[] => {
@@ -239,8 +264,6 @@ export function AdminLayout({ route, ...others }: any) {
     defaultSelectedKeys.unshift(parent.name);
     parent = parent.parent;
   }
-
-  console.log('current?.title', current, current?.title, defaultSelectedKeys);
 
   return (
     <AuthProvider>
