@@ -42,6 +42,9 @@ export default {
         title: '密码',
         'x-component': 'Password',
       },
+      get() {
+        return () => this.getDataValue('password');
+      },
     },
     {
       interface: 'password',

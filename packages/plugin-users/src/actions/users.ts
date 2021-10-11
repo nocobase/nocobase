@@ -16,19 +16,20 @@ export async function check(ctx: Context, next: Next) {
 export async function login(ctx: Context, next: Next) {
   const { uniqueField = 'email', values } = ctx.action.params;
   console.log('login.values', values);
-  if (!values[uniqueField]) {
+
+  if (!values[ uniqueField ]) {
     ctx.throw(401, '请填写邮箱账号');
   }
   const User = ctx.db.getModel('users');
   const user = await User.findOne({
     where: {
-      [uniqueField]: values[uniqueField],
+      [ uniqueField ]: values[ uniqueField ],
     },
   });
   if (!user) {
     ctx.throw(401, '邮箱账号未注册');
   }
-  const isValid = await PASSWORD.verify(values.password, user.password);
+  const isValid = await PASSWORD.verify(values.password, user.password());
   if (!isValid) {
     ctx.throw(401, '密码错误，请您重新输入');
   }
