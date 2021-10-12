@@ -8,6 +8,14 @@ export default {
   createdBy: false,
   updatedBy: false,
   privilege: 'undelete',
+  scopes: {
+    withPassword: {
+      attributes: { include: ['password'] },
+    },
+  },
+  defaultScope: {
+    attributes: { exclude: ['password'] },
+  },
   fields: [
     {
       interface: 'string',
