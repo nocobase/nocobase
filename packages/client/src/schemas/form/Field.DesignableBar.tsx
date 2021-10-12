@@ -130,7 +130,7 @@ export const FieldDesignableBar = observer((props) => {
                 >
                   自定义字段名称
                 </Menu.Item>
-                {collectionField.interface === 'linkTo' && (
+                {collectionField?.interface === 'linkTo' && (
                   <Menu.Item>
                     <div
                       style={{

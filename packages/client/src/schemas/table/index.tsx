@@ -2145,7 +2145,7 @@ Table.Column.DesignableBar = () => {
                 >
                   自定义列名称
                 </Menu.Item>
-                {collectionField.interface === 'linkTo' && (
+                {collectionField?.interface === 'linkTo' && (
                   <Menu.Item>
                     <div
                       style={{
