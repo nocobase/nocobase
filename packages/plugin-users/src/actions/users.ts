@@ -5,7 +5,6 @@ import cryptoRandomString from 'crypto-random-string';
 export async function check(ctx: Context, next: Next) {
   if (ctx.state.currentUser) {
     const user = ctx.state.currentUser.toJSON();
-    delete user.password;
     ctx.body = user;
     await next();
   } else {
@@ -20,7 +19,7 @@ export async function login(ctx: Context, next: Next) {
     ctx.throw(401, '请填写邮箱账号');
   }
   const User = ctx.db.getModel('users');
-  const user = await User.findOne({
+  const user = await User.scope('withPassword').findOne({
     where: {
       [uniqueField]: values[uniqueField],
     },
@@ -36,7 +35,8 @@ export async function login(ctx: Context, next: Next) {
     user.token = cryptoRandomString({ length: 20 });
     await user.save();
   }
-  ctx.body = user;
+  ctx.body = user.toJSON();
+  delete ctx.body.password;
   await next();
 }
 
@@ -53,8 +53,7 @@ export async function register(ctx: Context, next: Next) {
     ctx.body = user;
   } catch (error) {
     if (error.errors) {
-      console.log(error.errors.map(data => data.message));
-      ctx.throw(401, error.errors.map(data => data.message).join(', '));
+      ctx.throw(401, error.errors.map((data) => data.message).join(', '));
     } else {
       ctx.throw(401, '注册失败');
     }
