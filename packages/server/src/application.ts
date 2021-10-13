@@ -122,15 +122,15 @@ export class Application<
       .command('init')
       // .option('-f, --force')
       .action(async (...args) => {
-        const cli = args.pop();
-        await this.db.sync({
-          force: true,
-          alter: {
-            drop: true,
-          },
-        });
-        await this.emitAsync('db.init');
-        await this.destroy();
+          const cli = args.pop();
+          await this.db.sync({
+            force: true,
+            alter: {
+              drop: true,
+            },
+          });
+          await this.emitAsync('db.init');
+          await this.destroy();
       });
 
     this.cli

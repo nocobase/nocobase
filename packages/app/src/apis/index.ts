@@ -67,7 +67,6 @@ if (process.argv.length < 3) {
   process.argv.push('start', '--port', process.env.API_PORT);
 }
 
-console.log(process.argv);
 
 api.parse(process.argv).then(() => {
   console.log(`Start-up time: ${(Date.now() - start) / 1000}s`);
