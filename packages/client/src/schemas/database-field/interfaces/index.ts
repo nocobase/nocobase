@@ -21,14 +21,14 @@ const groupLabels = {};
 
 export function getDefaultFields() {
   const defaults = ['createdAt', 'updatedAt', 'createdBy', 'updatedBy'];
-  return defaults.map(key => {
+  return defaults.map((key) => {
     return {
       interface: key,
       key: uid(),
       name: uid(),
       privilege: 'undelete',
       ...cloneDeep(interfaces.get(key)?.default),
-    }
+    };
   });
 }
 
@@ -55,19 +55,21 @@ registerGroupLabel('relation', '关系类型');
 registerGroupLabel('systemInfo', '系统信息');
 registerGroupLabel('others', '其他类型');
 
-export const options = Object.keys(groupLabels).map(groupName => {
+export const options = Object.keys(groupLabels).map((groupName) => {
   return {
     label: groupLabels[groupName],
-    children: Object.keys(fields[groupName] || {}).map((type) => {
-      return {
-        name: type,
-        ...fields[groupName][type],
-      };
-    }).sort((a, b) => a.order - b.order),
-  }
+    children: Object.keys(fields[groupName] || {})
+      .map((type) => {
+        return {
+          name: type,
+          ...fields[groupName][type],
+        };
+      })
+      .sort((a, b) => a.order - b.order),
+  };
 });
 
 export const isAssociation = (field) => {
   const options = interfaces.get(field.interface);
   return options?.isAssociation;
-}
+};

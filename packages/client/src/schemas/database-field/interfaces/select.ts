@@ -34,13 +34,17 @@ export const select: FieldOptions = {
     {
       label: '包含',
       value: 'in',
-      schema: { 'x-component': 'Select', 'x-component-props': { mode: 'tags' } },
+      schema: {
+        'x-component': 'Select',
+        'x-component-props': { mode: 'tags' },
+      },
     },
     {
       label: '不包含',
       value: 'notIn',
       schema: {
-        'x-component': 'Select', 'x-component-props': { mode: 'tags' },
+        'x-component': 'Select',
+        'x-component-props': { mode: 'tags' },
       },
     },
     { label: '非空', value: '$notNull', noValue: true },

@@ -29,7 +29,11 @@ import { useState } from 'react';
 import { CSS } from '@dnd-kit/utilities';
 import cls from 'classnames';
 import './style.less';
-import { CollectionProvider, useCollectionContext, useResourceRequest } from '../../constate';
+import {
+  CollectionProvider,
+  useCollectionContext,
+  useResourceRequest,
+} from '../../constate';
 import { Resource } from '../../resource';
 import { useRequest } from 'ahooks';
 import { Action } from '../action';

@@ -1566,7 +1566,10 @@ AddNew.FormItem = observer((props: any) => {
                           const values = await FormDialog(`添加字段`, () => {
                             return (
                               <FormLayout layout={'vertical'}>
-                                <SchemaField scope={{ loadCollections }} schema={item} />
+                                <SchemaField
+                                  scope={{ loadCollections }}
+                                  schema={item}
+                                />
                               </FormLayout>
                             );
                           }).open({

@@ -96,7 +96,7 @@ describe('user fields', () => {
             target: 'users',
             foreignKey: 'updated_by_id',
           },
-        ]
+        ],
       });
 
       await db.sync();
@@ -106,14 +106,19 @@ describe('user fields', () => {
 
       // 用户1 操作
       const user1 = await User.create();
-      const postWithUser = await Post.create({}, { context: { state: { currentUser: user1 } } });
+      const postWithUser = await Post.create(
+        {},
+        { context: { state: { currentUser: user1 } } },
+      );
 
-      const post = await Post.findOne(Post.parseApiJson({
-        filter: {
-          id: postWithUser.id,
-        },
-        fields: ['createdBy1', 'updatedBy1', 'createdBy2', 'updatedBy2'],
-      }));
+      const post = await Post.findOne(
+        Post.parseApiJson({
+          filter: {
+            id: postWithUser.id,
+          },
+          fields: ['createdBy1', 'updatedBy1', 'createdBy2', 'updatedBy2'],
+        }),
+      );
 
       expect(post.createdBy1.id).toBe(user1.id);
       expect(post.updatedBy1.id).toBe(user1.id);
@@ -122,14 +127,19 @@ describe('user fields', () => {
 
       // 换个用户
       const user2 = await User.create();
-      await postWithUser.update({ title: 'title1' }, { context: { state: { currentUser: user2 } } });
+      await postWithUser.update(
+        { title: 'title1' },
+        { context: { state: { currentUser: user2 } } },
+      );
 
-      const post2 = await Post.findOne(Post.parseApiJson({
-        filter: {
-          id: postWithUser.id,
-        },
-        fields: ['createdBy1', 'updatedBy1', 'createdBy2', 'updatedBy2'],
-      }));
+      const post2 = await Post.findOne(
+        Post.parseApiJson({
+          filter: {
+            id: postWithUser.id,
+          },
+          fields: ['createdBy1', 'updatedBy1', 'createdBy2', 'updatedBy2'],
+        }),
+      );
 
       expect(post2.createdBy1.id).toBe(user1.id);
       expect(post2.createdBy2.id).toBe(user1.id);
@@ -151,13 +161,19 @@ describe('user fields', () => {
       expect(postWithoutUser.created_by_id).toBe(null);
       expect(postWithoutUser.updated_by_id).toBe(null);
       // @ts-ignore
-      const postWithUser = await Post.create({}, { context: { state: { currentUser } } });
+      const postWithUser = await Post.create(
+        {},
+        { context: { state: { currentUser } } },
+      );
       expect(postWithUser.created_by_id).toBe(currentUser.id);
       expect(postWithUser.updated_by_id).toBe(currentUser.id);
 
       // 更新数据 createdBy 数据不变
       // @ts-ignore
-      await postWithUser.update({ title: 'title1' }, { context: { state: { currentUser: user2 } } });
+      await postWithUser.update(
+        { title: 'title1' },
+        { context: { state: { currentUser: user2 } } },
+      );
       expect(postWithUser.created_by_id).toBe(currentUser.id);
       expect(postWithUser.updated_by_id).toBe(user2.id);
     });
@@ -170,11 +186,14 @@ describe('user fields', () => {
       const user2 = await User.create();
       const Post = db.getModel('posts');
 
-      const post = await Post.create({
-        created_by_id: user1.id,
-        updated_by_id: user1.id,
-        // @ts-ignore
-      }, { context: { state: { currentUser: user2 } } });
+      const post = await Post.create(
+        {
+          created_by_id: user1.id,
+          updated_by_id: user1.id,
+          // @ts-ignore
+        },
+        { context: { state: { currentUser: user2 } } },
+      );
       expect(post.created_by_id).toBe(user1.id);
       expect(post.updated_by_id).toBe(user1.id);
     });
@@ -189,9 +208,9 @@ describe('user fields', () => {
         fields: [
           {
             type: 'string',
-            name: 'title'
-          }
-        ]
+            name: 'title',
+          },
+        ],
       });
       await db.sync();
       const User = db.getModel('users');
@@ -201,7 +220,10 @@ describe('user fields', () => {
       const post = await Post.create();
       expect(post.updated_by_id).toBe(null);
       // @ts-ignore
-      await post.update({ title: 'title' }, { context: { state: { currentUser } } })
+      await post.update(
+        { title: 'title' },
+        { context: { state: { currentUser } } },
+      );
       expect(post.updated_by_id).toBe(currentUser.id);
     });
 
@@ -212,9 +234,9 @@ describe('user fields', () => {
         fields: [
           {
             type: 'string',
-            name: 'title'
-          }
-        ]
+            name: 'title',
+          },
+        ],
       });
       await db.sync();
       const User = db.getModel('users');
@@ -223,15 +245,21 @@ describe('user fields', () => {
       const Post = db.getModel('posts');
       let context = { state: { currentUser: user2 } };
 
-      const post = await Post.create({
-        updated_by_id: user1.id,
-      }, { context });
+      const post = await Post.create(
+        {
+          updated_by_id: user1.id,
+        },
+        { context },
+      );
       expect(post.updated_by_id).toBe(user1.id);
 
       await post.update({ title: 'title' }, { context });
       expect(post.updated_by_id).toBe(user2.id);
 
-      await post.update({ title: 'title', updated_by_id: user1.id }, { context });
+      await post.update(
+        { title: 'title', updated_by_id: user1.id },
+        { context },
+      );
       expect(post.updated_by_id).toBe(user1.id);
 
       // 不同用户更新数据
@@ -252,9 +280,9 @@ describe('user fields', () => {
         fields: [
           {
             type: 'string',
-            name: 'title'
-          }
-        ]
+            name: 'title',
+          },
+        ],
       });
       await db.sync();
       const User = db.getModel('users');
@@ -263,18 +291,20 @@ describe('user fields', () => {
       const Post = db.getModel('posts');
       let context = { state: { currentUser: user2 } };
 
-      await Post.bulkCreate([
-        { title: 'title1' },
-        { title: 'title2' },
-      ]);
+      await Post.bulkCreate([{ title: 'title1' }, { title: 'title2' }]);
 
-      await Post.update({ title: 'title3' }, {
-        where: { title: 'title1' },
-        context
-      });
+      await Post.update(
+        { title: 'title3' },
+        {
+          where: { title: 'title1' },
+          context,
+        },
+      );
 
       const posts = await Post.findAll({ order: [['id', 'ASC']] });
-      expect(posts.map(({ title, updated_by_id }) => ({ title, updated_by_id }))).toEqual([
+      expect(
+        posts.map(({ title, updated_by_id }) => ({ title, updated_by_id })),
+      ).toEqual([
         { title: 'title3', updated_by_id: 2 },
         { title: 'title2', updated_by_id: null },
       ]);

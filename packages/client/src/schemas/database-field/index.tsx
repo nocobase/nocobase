@@ -42,10 +42,7 @@ import Modal from 'antd/lib/modal/Modal';
 import { clone, cloneDeep, get } from 'lodash';
 import { useEffect } from 'react';
 import { useRequest } from 'ahooks';
-import {
-  createOrUpdateCollection,
-  deleteCollection,
-} from '..';
+import { createOrUpdateCollection, deleteCollection } from '..';
 import { useCollectionsContext } from '../../constate/Collections';
 import {
   DragHandle,
@@ -185,7 +182,11 @@ export const DatabaseCollection = observer((props) => {
                         <Input.Search
                           size={'middle'}
                           placeholder={'填写数据表名称'}
-                          enterButton={<><PlusOutlined /> 创建</>}
+                          enterButton={
+                            <>
+                              <PlusOutlined /> 创建
+                            </>
+                          }
                           value={newValue}
                           onChange={(e) => {
                             setNewValue(e.target.value);

@@ -16,7 +16,7 @@ const schema: ISchema = {
     {
       name: 'test2',
       title: '数据表 2',
-    }
+    },
   ],
   properties: {
     title: {
@@ -31,7 +31,7 @@ const schema: ISchema = {
       title: '数据表标识',
       'x-decorator': 'FormItem',
       'x-component': 'Input',
-      "x-read-pretty": true,
+      'x-read-pretty': true,
     },
     fields: {
       type: 'array',
@@ -39,8 +39,8 @@ const schema: ISchema = {
       'x-decorator': 'FormItem',
       'x-component': 'DatabaseField',
       default: [],
-    }
-  }
+    },
+  },
 };
 
 const form = createForm();

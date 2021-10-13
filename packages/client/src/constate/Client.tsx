@@ -44,7 +44,7 @@ export function ClientProvider(props) {
 export function useResourceRequest(options, ResourceClass?: any) {
   const Cls = ResourceClass || Resource;
   const { request } = useClient();
-  return Cls.make(options, request);;
+  return Cls.make(options, request);
 }
 
 export function useClient() {

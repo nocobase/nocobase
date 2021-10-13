@@ -17,7 +17,7 @@ export const phone: FieldOptions = {
       // title,
       'x-component': 'Input',
       'x-decorator': 'FormItem',
-      "x-validator": 'phone',
+      'x-validator': 'phone',
       'x-designable-bar': 'Input.DesignableBar',
     },
   },

@@ -1,7 +1,14 @@
-import React from 'react'
-import { connect, mapProps, mapReadPretty, observer, useField, useFieldSchema } from '@formily/react'
-import { Input as AntdInput } from 'antd'
-import { InputProps, TextAreaProps } from 'antd/lib/input'
+import React from 'react';
+import {
+  connect,
+  mapProps,
+  mapReadPretty,
+  observer,
+  useField,
+  useFieldSchema,
+} from '@formily/react';
+import { Input as AntdInput } from 'antd';
+import { InputProps, TextAreaProps } from 'antd/lib/input';
 import { Display } from '../display';
 import { DesignableBar } from './DesignableBar';
 import { Dropdown, Menu, Space } from 'antd';
@@ -17,10 +24,10 @@ import { isGridRowOrCol } from '../grid';
 import { DragHandle } from '../../components/Sortable';
 
 type ComposedInput = React.FC<InputProps> & {
-  TextArea?: React.FC<TextAreaProps>
-  URL?: React.FC<InputProps>
-  DesignableBar?: React.FC<any>
-}
+  TextArea?: React.FC<TextAreaProps>;
+  URL?: React.FC<InputProps>;
+  DesignableBar?: React.FC<any>;
+};
 
 export const Input: ComposedInput = connect(
   AntdInput,
@@ -36,12 +43,12 @@ export const Input: ComposedInput = connect(
           )}
         </span>
       ),
-    }
+    };
   }),
-  mapReadPretty(Display.Input)
-)
+  mapReadPretty(Display.Input),
+);
 
-Input.TextArea = connect(AntdInput.TextArea, mapReadPretty(Display.TextArea))
-Input.URL = connect(AntdInput, mapReadPretty(Display.URL))
+Input.TextArea = connect(AntdInput.TextArea, mapReadPretty(Display.TextArea));
+Input.URL = connect(AntdInput, mapReadPretty(Display.URL));
 
-export default Input
+export default Input;

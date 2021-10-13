@@ -49,7 +49,7 @@ const schema = {
               value: '{{$self.value}}',
             },
           },
-        }
+        },
       ],
     },
     read: {

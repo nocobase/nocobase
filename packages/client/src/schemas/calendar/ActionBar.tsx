@@ -7,7 +7,11 @@ import {
   getSchemaPath,
   useDesignable,
 } from '../../components/schema-renderer';
-import { useClient, DisplayedMapProvider, useDisplayedMapContext } from '../../constate';
+import {
+  useClient,
+  DisplayedMapProvider,
+  useDisplayedMapContext,
+} from '../../constate';
 import cls from 'classnames';
 import { Button, Dropdown, Menu, Space } from 'antd';
 import SwitchMenuItem from '../../components/SwitchMenuItem';

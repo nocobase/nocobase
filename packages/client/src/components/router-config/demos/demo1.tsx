@@ -11,7 +11,7 @@ const RouteSwitch = createRouteSwitch({
   components: {
     Home: (props) => {
       console.log({ props });
-      return <div>Home {props.children}</div>
+      return <div>Home {props.children}</div>;
     },
     Login: () => <div>Login</div>,
   },

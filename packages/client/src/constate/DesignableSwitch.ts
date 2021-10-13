@@ -1,4 +1,4 @@
-import { useCookieState } from "ahooks";
+import { useCookieState } from 'ahooks';
 import constate from 'constate';
 
 const [DesignableSwitchProvider, useDesignableSwitchContext] = constate(() => {
@@ -8,8 +8,8 @@ const [DesignableSwitchProvider, useDesignableSwitchContext] = constate(() => {
     designable: active === 'true',
     setDesignable(value) {
       setActive(value ? 'true' : 'false');
-    }
-  }
+    },
+  };
 });
 
 export { DesignableSwitchProvider, useDesignableSwitchContext };

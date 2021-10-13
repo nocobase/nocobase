@@ -14,7 +14,7 @@ const schema: ISchema = {
   type: 'void',
   name: uid(),
   'x-component': 'Grid',
-  "x-component-props": {
+  'x-component-props': {
     addNewComponent: 'AddNew.CardItem',
   },
   properties: {
@@ -186,7 +186,5 @@ const schema: ISchema = {
 };
 
 export default () => {
-  return (
-    <SchemaRenderer components={{ Grid }} schema={schema} />
-  );
+  return <SchemaRenderer components={{ Grid }} schema={schema} />;
 };
