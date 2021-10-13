@@ -86,11 +86,7 @@ export default () => {
   return (
     <Layout>
       <Layout.Header>
-        <SchemaRenderer
-          debug={true}
-          scope={{ sideMenuRef }}
-          schema={schema}
-        />
+        <SchemaRenderer debug={true} scope={{ sideMenuRef }} schema={schema} />
       </Layout.Header>
       <Layout>
         <Layout.Sider theme={'light'} ref={sideMenuRef}></Layout.Sider>

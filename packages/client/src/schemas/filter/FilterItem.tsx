@@ -171,7 +171,9 @@ export const FilterItem = (props) => {
     [],
   );
 
-  const columnEnum: any = [...columns.values()].map((column) => column.toJSON());
+  const columnEnum: any = [...columns.values()].map((column) =>
+    column.toJSON(),
+  );
 
   return (
     <FormProvider form={form}>

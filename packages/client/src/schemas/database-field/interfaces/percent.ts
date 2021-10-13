@@ -40,7 +40,7 @@ export const percent: FieldOptions = {
         { value: '0.001', label: '1.000' },
         { value: '0.0001', label: '1.0000' },
         { value: '0.00001', label: '1.00000' },
-      ]
+      ],
     },
   },
   operations: number.operations,

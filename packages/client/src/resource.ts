@@ -28,13 +28,12 @@ export interface ListOptions {
 }
 
 export class Resource {
-
   public options: ResourceOptions;
   public request: RequestMethod;
 
   constructor(options: string | ResourceOptions, request?: any) {
     if (typeof options === 'string') {
-      this.options = { resourceName: options }
+      this.options = { resourceName: options };
     } else {
       this.options = options;
     }
@@ -54,7 +53,14 @@ export class Resource {
   }
 
   list(options: ListOptions = {}) {
-    const { defaultAppends = [], appends = [], defaultFilter, filter, pageSize, ...others } = options;
+    const {
+      defaultAppends = [],
+      appends = [],
+      defaultFilter,
+      filter,
+      pageSize,
+      ...others
+    } = options;
     const { associatedKey, associatedName, resourceName } = this.options;
     let url = `${resourceName}:list`;
     if (associatedName && associatedKey) {
@@ -63,7 +69,9 @@ export class Resource {
     return this.request(url, {
       method: 'get',
       params: {
-        filter: decodeURIComponent(JSON.stringify({ and: [defaultFilter, filter].filter(Boolean) })),
+        filter: decodeURIComponent(
+          JSON.stringify({ and: [defaultFilter, filter].filter(Boolean) }),
+        ),
         'fields[appends]': defaultAppends.concat(appends).join(','),
         perPage: pageSize,
         ...others,
@@ -90,7 +98,7 @@ export class Resource {
     const { associatedKey, associatedName, resourceName } = this.options;
     let url = `${resourceName}:create`;
     if (associatedKey && associatedName) {
-      url = `${associatedName}/${associatedKey}/${url}`
+      url = `${associatedName}/${associatedKey}/${url}`;
     }
     return this.request(url, {
       method: 'post',
@@ -101,9 +109,11 @@ export class Resource {
   save(values: any, options: SaveOptions = {}) {
     const resourceKey = options.resourceKey || this.options.resourceKey;
     const { associatedKey, associatedName, resourceName } = this.options;
-    let url = `${resourceName}:${resourceKey ? `update/${resourceKey}` : 'create'}`;
+    let url = `${resourceName}:${
+      resourceKey ? `update/${resourceKey}` : 'create'
+    }`;
     if (associatedKey && associatedName) {
-      url = `${associatedName}/${associatedKey}/${url}`
+      url = `${associatedName}/${associatedKey}/${url}`;
     }
     return this.request(url, {
       method: 'post',
@@ -122,9 +132,13 @@ export class Resource {
         ...others,
       },
       parseResponse: false,
-      responseType: 'blob'
+      responseType: 'blob',
     }).then(async (response: Response) => {
-      const filename = decodeURI(response.headers.get('Content-Disposition').replace('attachment; filename=', ''));
+      const filename = decodeURI(
+        response.headers
+          .get('Content-Disposition')
+          .replace('attachment; filename=', ''),
+      );
       // ReadableStream
       let res = new Response(response.body);
       let blob = await res.blob();
@@ -151,7 +165,7 @@ export class Resource {
     return this.request(url, {
       method: 'get',
       params: {
-        filter
+        filter,
       },
     });
   }
@@ -165,7 +179,10 @@ export class Resource {
     });
   }
 
-  static make(options: null | string | Resource | ResourceOptions, request?: any): Resource | null {
+  static make(
+    options: null | string | Resource | ResourceOptions,
+    request?: any,
+  ): Resource | null {
     if (typeof options === 'string') {
       return new this({ resourceName: options }, request);
     }

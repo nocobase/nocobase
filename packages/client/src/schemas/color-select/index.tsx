@@ -1,7 +1,7 @@
-import React from 'react'
-import { connect, mapProps, mapReadPretty } from '@formily/react'
-import { Tag, Select } from 'antd'
-import { LoadingOutlined } from '@ant-design/icons'
+import React from 'react';
+import { connect, mapProps, mapReadPretty } from '@formily/react';
+import { Tag, Select } from 'antd';
+import { LoadingOutlined } from '@ant-design/icons';
 
 const colors = {
   red: '薄暮',
@@ -22,13 +22,13 @@ export const ColorSelect = connect(
   (props) => {
     return (
       <Select {...props}>
-        {Object.keys(colors).map(color => (
+        {Object.keys(colors).map((color) => (
           <Select.Option value={color}>
             <Tag color={color}>{colors[color]}</Tag>
           </Select.Option>
         ))}
       </Select>
-    )
+    );
   },
   mapProps((props, field) => {
     return {
@@ -42,17 +42,15 @@ export const ColorSelect = connect(
           )}
         </span>
       ),
-    }
+    };
   }),
   mapReadPretty((props) => {
     const { value } = props;
     if (!colors[value]) {
       return null;
     }
-    return (
-      <Tag color={value}>{colors[value]}</Tag>
-    );
-  })
-)
+    return <Tag color={value}>{colors[value]}</Tag>;
+  }),
+);
 
-export default ColorSelect
+export default ColorSelect;

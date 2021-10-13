@@ -33,7 +33,7 @@ export const subTable: FieldOptions = {
   },
   properties: {
     ...defaultProps,
-    'children': {
+    children: {
       type: 'array',
       title: '子表格字段',
       'x-decorator': 'FormItem',

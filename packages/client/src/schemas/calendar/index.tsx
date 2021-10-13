@@ -209,7 +209,9 @@ export const Calendar: any = observer((props: any) => {
           <BigCalendar
             popup
             selectable
-            events={Array.isArray(field.value.slice()) ? field.value.slice() : []}
+            events={
+              Array.isArray(field.value.slice()) ? field.value.slice() : []
+            }
             views={['month', 'week', 'day']}
             step={60}
             showMultiDayTimes

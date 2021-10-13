@@ -1,8 +1,8 @@
-import React from 'react'
-import { connect, mapReadPretty, mapProps } from '@formily/react'
-import { TreeSelect as AntdTreeSelect } from 'antd'
-import { Display } from '../display'
-import { LoadingOutlined } from '@ant-design/icons'
+import React from 'react';
+import { connect, mapReadPretty, mapProps } from '@formily/react';
+import { TreeSelect as AntdTreeSelect } from 'antd';
+import { Display } from '../display';
+import { LoadingOutlined } from '@ant-design/icons';
 export const TreeSelect = connect(
   AntdTreeSelect,
   mapProps(
@@ -18,10 +18,10 @@ export const TreeSelect = connect(
           ) : (
             props.suffixIcon
           ),
-      }
-    }
+      };
+    },
   ),
-  mapReadPretty(Display.TreeSelect)
-)
+  mapReadPretty(Display.TreeSelect),
+);
 
-export default TreeSelect
+export default TreeSelect;

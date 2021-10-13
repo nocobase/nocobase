@@ -1,4 +1,4 @@
-import { CreatedBy, UpdatedBy } from ".";
+import { CreatedBy, UpdatedBy } from '.';
 
 export function setUserValue(this: CreatedBy | UpdatedBy, model, { context }) {
   const { foreignKey } = this.options;
@@ -8,7 +8,7 @@ export function setUserValue(this: CreatedBy | UpdatedBy, model, { context }) {
       return;
     }
     const changed = model.changed();
-    if (Array.isArray(changed) && changed.find(key => key === foreignKey)) {
+    if (Array.isArray(changed) && changed.find((key) => key === foreignKey)) {
       return;
     }
   }

@@ -146,7 +146,7 @@ export function SortableItem(props: SortableItemProps) {
         previewRef.current = el;
         setDroppableNodeRef(el);
         // if (draggable) {
-          // setDraggableNodeRef(el);
+        // setDraggableNodeRef(el);
         // }
       }}
     >

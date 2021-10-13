@@ -128,6 +128,10 @@ const loadChinaRegionData = (
 
 export default () => {
   return (
-    <SchemaRenderer debug scope={{ loadChinaRegions, loadChinaRegionData }} schema={schema} />
+    <SchemaRenderer
+      debug
+      scope={{ loadChinaRegions, loadChinaRegionData }}
+      schema={schema}
+    />
   );
 };

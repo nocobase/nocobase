@@ -81,9 +81,12 @@ const useActionPermissionResource = ({ onSuccess }) => {
   console.log('RoleContext', role);
   // const { props } = useTable();
   const ctx = useContext(TableRowContext);
-  const resource = useResourceRequest({
-    resourceName: 'action_permissions',
-  }, ActionPermissionResource);
+  const resource = useResourceRequest(
+    {
+      resourceName: 'action_permissions',
+    },
+    ActionPermissionResource,
+  );
   const service = useRequest(
     (params?: any) => {
       return resource.list({
@@ -593,7 +596,11 @@ function CreateFieldButton() {
           option.children.length > 0 && (
             <Menu.SubMenu key={groupIndex} title={option.label}>
               {option.children.map((item) => (
-                <Menu.Item disabled={item.disabled} style={{ minWidth: 120 }} key={item.name}>
+                <Menu.Item
+                  disabled={item.disabled}
+                  style={{ minWidth: 120 }}
+                  key={item.name}
+                >
                   {item.title}
                 </Menu.Item>
               ))}

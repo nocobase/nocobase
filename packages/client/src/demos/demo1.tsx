@@ -1,9 +1,7 @@
 import { useRequest } from 'ahooks';
 import { Spin } from 'antd';
 import React, { useMemo } from 'react';
-import {
-  MemoryRouter as Router,
-} from 'react-router-dom';
+import { MemoryRouter as Router } from 'react-router-dom';
 import {
   createRouteSwitch,
   RouteRedirectProps,
@@ -11,7 +9,7 @@ import {
   AuthLayout,
   RouteSchemaRenderer,
   ConfigProvider,
-  ClientSDK
+  ClientSDK,
 } from '../';
 import { UseRequestProvider } from 'ahooks';
 import { extend } from 'umi-request';
@@ -53,7 +51,7 @@ const App = () => {
   });
 
   if (loading) {
-    return <Spin size={'large'} className={'nb-spin-center'} />
+    return <Spin size={'large'} className={'nb-spin-center'} />;
   }
 
   return (
@@ -71,4 +69,4 @@ export default () => {
       <App />
     </ConfigProvider>
   );
-}
+};

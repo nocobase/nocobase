@@ -29,7 +29,7 @@ const schema: ISchema = {
           title: `链接`,
           'x-designable-bar': 'Menu.DesignableBar',
           'x-component': 'Menu.Link',
-          "x-component-props": {
+          'x-component-props': {
             to: '/abc/def',
           },
         },

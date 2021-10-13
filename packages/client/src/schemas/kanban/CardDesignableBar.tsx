@@ -11,12 +11,7 @@ import {
   useForm,
   RecursionField,
 } from '@formily/react';
-import {
-  useSchemaPath,
-  SchemaField,
-  useDesignable,
-  ISchema,
-} from '../';
+import { useSchemaPath, SchemaField, useDesignable, ISchema } from '../';
 import get from 'lodash/get';
 import { Button, Dropdown, Menu, Space } from 'antd';
 import { MenuOutlined, DragOutlined } from '@ant-design/icons';

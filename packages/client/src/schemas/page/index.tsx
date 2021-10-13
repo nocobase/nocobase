@@ -13,9 +13,7 @@ export const Page = observer((props) => {
         <title>{documentTitle}</title>
       </Helmet>
       <AntdPageHeader ghost={false} title={pageTitle} {...others} />
-      <div style={{margin: 24}}>
-        {children}
-      </div>
+      <div style={{ margin: 24 }}>{children}</div>
     </>
   );
 });

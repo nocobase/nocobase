@@ -9,12 +9,10 @@ export class ClientSDK {
 
   request(url: string, options?: RequestOptionsInit): RequestMethod {
     console.log('this.options.request', this.options.request);
-    return this.options.request(url, options||{});
+    return this.options.request(url, options || {});
   }
 
-  resource(name) {
-
-  }
+  resource(name) {}
 }
 
 export default ClientSDK;

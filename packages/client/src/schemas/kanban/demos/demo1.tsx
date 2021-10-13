@@ -208,5 +208,11 @@ const schema: ISchema = {
 };
 
 export default () => {
-  return <SchemaRenderer scope={{ Kanban }} components={{ Kanban }} schema={schema} />;
+  return (
+    <SchemaRenderer
+      scope={{ Kanban }}
+      components={{ Kanban }}
+      schema={schema}
+    />
+  );
 };

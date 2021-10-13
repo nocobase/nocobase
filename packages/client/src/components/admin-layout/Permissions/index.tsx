@@ -72,9 +72,12 @@ const useActionPermissionResource = ({ onSuccess }) => {
   console.log('RoleContext', role);
   // const { props } = useTable();
   const ctx = useContext(TableRowContext);
-  const resource = useResourceRequest({
-    resourceName: 'action_permissions',
-  }, ActionPermissionResource);
+  const resource = useResourceRequest(
+    {
+      resourceName: 'action_permissions',
+    },
+    ActionPermissionResource,
+  );
   const service = useRequest(
     (params?: any) => {
       return resource.list({
@@ -292,7 +295,7 @@ const schema: ISchema = {
                     icon: 'DeleteOutlined',
                     confirm: {
                       title: '删除数据',
-                      content: '删除后无法恢复，确定要删除吗？'
+                      content: '删除后无法恢复，确定要删除吗？',
                     },
                     useAction: '{{ Table.useTableDestroyAction }}',
                   },
@@ -467,7 +470,7 @@ const schema: ISchema = {
                         type: 'link',
                         confirm: {
                           title: '删除数据',
-                          content: '删除后无法恢复，确定要删除吗？'
+                          content: '删除后无法恢复，确定要删除吗？',
                         },
                         useAction: '{{ Table.useTableDestroyAction }}',
                       },

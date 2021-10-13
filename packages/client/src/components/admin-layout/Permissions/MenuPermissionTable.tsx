@@ -22,15 +22,12 @@ export const MenuPermissionTable = observer((props) => {
   const role = useContext(RoleContext);
   const [allUiSchemaKyes, setAllUiSchemaKyes] = useState([]);
   const [uiSchemaKyes, setUiSchemaKeys] = useState([]);
-  const { data, loading } = useRequest(
-    'ui_schemas:getMenuItems',
-    {
-      formatResult: (data) => data?.data,
-      onSuccess(data) {
-        setAllUiSchemaKyes(getKeys(data));
-      },
+  const { data, loading } = useRequest('ui_schemas:getMenuItems', {
+    formatResult: (data) => data?.data,
+    onSuccess(data) {
+      setAllUiSchemaKyes(getKeys(data));
     },
-  );
+  });
   console.log('allUiSchemaKyes', allUiSchemaKyes);
   const resource = useResourceRequest({
     associatedName: 'roles',

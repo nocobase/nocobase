@@ -62,7 +62,9 @@ export async function register(ctx: Context, next: Next) {
 }
 
 export async function lostpassword(ctx: Context, next: Next) {
-  const { values: { email } } = ctx.action.params;
+  const {
+    values: { email },
+  } = ctx.action.params;
   if (!email) {
     ctx.throw(401, '请填写邮箱账号');
   }
@@ -82,7 +84,9 @@ export async function lostpassword(ctx: Context, next: Next) {
 }
 
 export async function resetpassword(ctx: Context, next: Next) {
-  const { values: { email, password, reset_token } } = ctx.action.params;
+  const {
+    values: { email, password, reset_token },
+  } = ctx.action.params;
   const User = ctx.db.getModel('users');
   const user = await User.findOne({
     where: {
