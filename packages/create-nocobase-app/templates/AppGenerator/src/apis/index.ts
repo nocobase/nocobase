@@ -4,10 +4,10 @@ import Application from '@nocobase/server';
 const start = Date.now();
 
 const api = new Application({
-  database: require("./config/db").default,
+  database: require('./config/db').default,
   resourcer: {
-    prefix: "/api"
-  }
+    prefix: '/api',
+  },
 });
 
 const plugins = [
@@ -24,13 +24,10 @@ const plugins = [
 ];
 
 for (const plugin of plugins) {
-  api.plugin(
-    require(`${plugin}/lib/server`).default,
-  );
+  api.plugin(require(`${plugin}/lib/server`).default);
 }
 
-api.plugin(
-  require(`@nocobase/plugin-client/lib/server`).default, {
+api.plugin(require(`@nocobase/plugin-client/lib/server`).default, {
   dist: path.resolve(process.cwd(), './dist'),
   importDemo: true,
 });

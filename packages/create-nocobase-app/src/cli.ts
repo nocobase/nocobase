@@ -1,9 +1,9 @@
-import { chalk} from '@umijs/utils';
-import commander from "commander";
-import path from "path";
-import ora from "ora";
-import {hasYarn, runInit, runInstall, runStart} from "./utils";
-import execa from "execa";
+import { chalk } from '@umijs/utils';
+import commander from 'commander';
+import path from 'path';
+import ora from 'ora';
+import { hasYarn, runInit, runInstall, runStart } from './utils';
+import execa from 'execa';
 
 const packageJson = require('../package.json');
 
@@ -14,15 +14,19 @@ const program = new commander.Command(packageJson.name)
   .arguments('<project-directory>')
   .usage(`${chalk.green('<project-directory>')}`)
   .action(async (directory, options) => {
-    console.log(`Creating a new Nocobase application at ${chalk.green(directory)}.`);
+    console.log(
+      `Creating a new Nocobase application at ${chalk.green(directory)}.`,
+    );
     console.log('Creating files.');
 
     const fullPath = path.join(process.cwd(), directory);
 
-    await require("./index").default({
+    await require('./index').default({
       cwd: fullPath,
       args: {},
-      tplContext: options.quickstart ? {quickstart: true}: {quickstart: false}
+      tplContext: options.quickstart
+        ? { quickstart: true }
+        : { quickstart: false },
     });
 
     const cmd = chalk.cyan(hasYarn() ? 'yarn' : 'npm run');
@@ -61,24 +65,22 @@ const program = new commander.Command(packageJson.name)
 
     if (options.quickstart) {
       // Using Sqlite as Database
-      const prefix = chalk.yellow("Nocobase init");
+      const prefix = chalk.yellow('Nocobase init');
       const initLoader = ora(prefix).start();
 
       try {
         const initLog = (chunk = '') => {
-          initLoader.text  = `${prefix} ${chunk
+          initLoader.text = `${prefix} ${chunk
             .toString()
             .split('\n')
             .join(' ')}`;
-        }
+        };
 
         const init = runInit(fullPath);
         init.stderr.on('data', initLog);
-        init.stdout.on('data', initLog)
+        init.stdout.on('data', initLog);
         await init;
         initLoader.stop();
-
-
       } catch (e) {
         initLoader.stop();
         console.log();
@@ -103,5 +105,3 @@ const program = new commander.Command(packageJson.name)
   })
   .showHelpAfterError()
   .parse(process.argv);
-
-

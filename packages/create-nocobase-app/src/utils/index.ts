@@ -1,10 +1,10 @@
-import execa from "execa";
+import execa from 'execa';
 
 export function hasYarn() {
   return (process.env.npm_config_user_agent || '').indexOf('yarn') === 0;
 }
 
-function runYarn(path: string,  args: string[]) {
+function runYarn(path: string, args: string[]) {
   if (hasYarn()) {
     return execa('yarn', args, {
       cwd: path,
@@ -16,7 +16,7 @@ function runYarn(path: string,  args: string[]) {
 }
 
 export function runInstall(path) {
-  return runYarn(path, ['install'])
+  return runYarn(path, ['install']);
 }
 
 export function runStart(path) {
