@@ -9,7 +9,7 @@
   "dependencies": {
     "deepmerge": "^4.2.2",
     "koa-compose": "^4.1.0",
-    "lodash": "^4.17.19",
+    "lodash": "^4.17.21",
     "path-to-regexp": "^6.1.0",
     "qs": "^6.9.4"
   },
