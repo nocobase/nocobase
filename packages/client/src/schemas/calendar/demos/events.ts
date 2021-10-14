@@ -1,4 +1,4 @@
-const now = new Date()
+const now = new Date();
 
 export default [
   {
@@ -177,4 +177,4 @@ export default [
     start: new Date(2015, 3, 14, 18, 30, 0),
     end: new Date(2015, 3, 14, 20, 0, 0),
   },
-]
+];

@@ -22,7 +22,7 @@ export interface RouteProps {
   strict?: boolean;
   sensitive?: boolean;
   component?: any;
-  routes?: RouteProps[],
+  routes?: RouteProps[];
   [key: string]: any;
 }
 

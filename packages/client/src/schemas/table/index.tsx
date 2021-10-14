@@ -11,11 +11,7 @@ import { cloneDeep, cloneDeepWith, findIndex, forIn, range, set } from 'lodash';
 import React, { Fragment, useEffect, useState } from 'react';
 import { useContext } from 'react';
 import { createContext } from 'react';
-import {
-  useDesignable,
-  createCollectionField,
-  ISchema,
-} from '..';
+import { useDesignable, createCollectionField, ISchema } from '..';
 import { uid, merge } from '@formily/shared';
 import useRequest from '@ahooksjs/use-request';
 import { BaseResult } from '@ahooksjs/use-request/lib/types';
@@ -279,7 +275,7 @@ const useTableIndex = () => {
   const { pagination, props } = useTable();
   const ctx = useContext(TableRowContext);
   const { pageSize, page = 1 } = pagination;
-  console.log({pageSize, page}, ctx.index);
+  console.log({ pageSize, page }, ctx.index);
   return ctx.index + (page - 1) * pageSize;
   if (pagination && !props.clientSidePagination) {
     const { pageSize, page = 1 } = pagination;
@@ -2145,7 +2141,7 @@ Table.Column.DesignableBar = () => {
                 >
                   自定义列名称
                 </Menu.Item>
-                {collectionField.interface === 'linkTo' && (
+                {collectionField?.interface === 'linkTo' && (
                   <Menu.Item>
                     <div
                       style={{

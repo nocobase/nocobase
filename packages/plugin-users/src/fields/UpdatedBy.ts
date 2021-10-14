@@ -2,18 +2,20 @@ import { BelongsToOptions, BELONGSTO, FieldContext } from '@nocobase/database';
 import { setUserValue } from './utils';
 
 export interface UpdatedByOptions extends Omit<BelongsToOptions, 'type'> {
-  type: 'updatedBy' | 'updatedby'
+  type: 'updatedBy' | 'updatedby';
 }
 
 export default class UpdatedBy extends BELONGSTO {
-
   static beforeBulkCreateHook(this: UpdatedBy, models, { context }) {
-    models.forEach(model => {
+    models.forEach((model) => {
       setUserValue.call(this, model, { context });
     });
   }
 
-  static beforeBulkUpdateHook(this: UpdatedBy, { attributes, fields, context }) {
+  static beforeBulkUpdateHook(
+    this: UpdatedBy,
+    { attributes, fields, context },
+  ) {
     if (!context) {
       return;
     }
@@ -22,7 +24,9 @@ export default class UpdatedBy extends BELONGSTO {
       return;
     }
     fields.push(this.options.foreignKey);
-    attributes[this.options.foreignKey] = currentUser.get(this.options.targetKey);
+    attributes[this.options.foreignKey] = currentUser.get(
+      this.options.targetKey,
+    );
   }
 
   constructor({ type, ...options }: UpdatedByOptions, context: FieldContext) {
@@ -36,9 +40,15 @@ export default class UpdatedBy extends BELONGSTO {
     const { sourceTable, database } = context;
     const name = sourceTable.getName();
     database.on(`${name}.beforeCreate`, setUserValue.bind(this));
-    database.on(`${name}.beforeBulkCreate`, UpdatedBy.beforeBulkCreateHook.bind(this));
+    database.on(
+      `${name}.beforeBulkCreate`,
+      UpdatedBy.beforeBulkCreateHook.bind(this),
+    );
     database.on(`${name}.beforeUpdate`, setUserValue.bind(this));
-    database.on(`${name}.beforeBulkUpdate`, UpdatedBy.beforeBulkUpdateHook.bind(this));
+    database.on(
+      `${name}.beforeBulkUpdate`,
+      UpdatedBy.beforeBulkUpdateHook.bind(this),
+    );
   }
 
   public getDataType(): Function {

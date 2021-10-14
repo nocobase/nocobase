@@ -40,5 +40,5 @@ export default observer(() => {
     <div>
       <SchemaRenderer form={form} schema={schema} />
     </div>
-  )
-})
+  );
+});

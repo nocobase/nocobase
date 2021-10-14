@@ -2,13 +2,12 @@ import { BelongsToOptions, BELONGSTO, FieldContext } from '@nocobase/database';
 import { setUserValue } from './utils';
 
 export interface CreatedByOptions extends Omit<BelongsToOptions, 'type'> {
-  type: 'createdBy' | 'createdby'
+  type: 'createdBy' | 'createdby';
 }
 
 export default class CreatedBy extends BELONGSTO {
-
   static beforeBulkCreateHook(this: CreatedBy, models, { context }) {
-    models.forEach(model => {
+    models.forEach((model) => {
       setUserValue.call(this, model, { context });
     });
   }
@@ -22,7 +21,10 @@ export default class CreatedBy extends BELONGSTO {
     const { sourceTable, database } = context;
     const name = sourceTable.getName();
     database.on(`${name}.beforeCreate`, setUserValue.bind(this));
-    database.on(`${name}.beforeBulkCreate`, CreatedBy.beforeBulkCreateHook.bind(this));
+    database.on(
+      `${name}.beforeBulkCreate`,
+      CreatedBy.beforeBulkCreateHook.bind(this),
+    );
   }
 
   public getDataType(): Function {

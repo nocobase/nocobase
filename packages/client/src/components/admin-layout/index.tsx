@@ -36,7 +36,7 @@ import {
 } from '../../constate';
 import { uid } from '@formily/shared';
 import { Permissions } from './Permissions';
-import { Collections } from './Collections'
+import { Collections } from './Collections';
 import { More } from './More';
 import { UserInfo } from './UserInfo';
 import {
@@ -215,7 +215,7 @@ export function AdminLayout({ route, ...others }: any) {
     },
   );
 
-  const first: any = Object.values(data?.properties||{}).shift();
+  const first: any = Object.values(data?.properties || {}).shift();
 
   const findMenuLinkProperties = (schema: Schema): Schema[] => {
     if (!schema) {
@@ -232,12 +232,11 @@ export function AdminLayout({ route, ...others }: any) {
     }, []);
   };
 
-
   if (loading) {
     return <Spin size={'large'} className={'nb-spin-center'} />;
   }
 
-  const f = findMenuLinkProperties(new Schema(first||{})).shift();
+  const f = findMenuLinkProperties(new Schema(first || {})).shift();
 
   if (f?.['key'] && !match.params.name) {
     return <Redirect to={`/admin/${f?.['key']}`} />;

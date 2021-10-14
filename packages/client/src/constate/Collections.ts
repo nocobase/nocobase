@@ -1,27 +1,32 @@
 import { useRequest } from 'ahooks';
 import constate from 'constate';
 
-const [CollectionsProvider, useCollectionsContext] = constate<any, any, any>(() => {
-  const result = useRequest('collections:findAll', {
-    formatResult: (result) => result?.data,
-  });
-  return {
-    ...result, collections: result.data || [],
-    findCollection(name) {
-      return result?.data?.find((item) => item.name === name);
-    },
-    async loadCollections(field: any) {
-      return result?.data?.map((item: any) => ({
-        label: item.title,
-        value: item.name,
-      }));
-    },
-    getFieldsByCollection(collectionName) {
-      const collection = result?.data?.find((item) => item.name === collectionName);
-      return collection?.generalFields;
-    },
-  };
-});
+const [CollectionsProvider, useCollectionsContext] = constate<any, any, any>(
+  () => {
+    const result = useRequest('collections:findAll', {
+      formatResult: (result) => result?.data,
+    });
+    return {
+      ...result,
+      collections: result.data || [],
+      findCollection(name) {
+        return result?.data?.find((item) => item.name === name);
+      },
+      async loadCollections(field: any) {
+        return result?.data?.map((item: any) => ({
+          label: item.title,
+          value: item.name,
+        }));
+      },
+      getFieldsByCollection(collectionName) {
+        const collection = result?.data?.find(
+          (item) => item.name === collectionName,
+        );
+        return collection?.generalFields;
+      },
+    };
+  },
+);
 
 export { CollectionsProvider, useCollectionsContext };
 

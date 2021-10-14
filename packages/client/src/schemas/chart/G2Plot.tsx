@@ -7,7 +7,10 @@ export type ReactG2PlotProps<O> = {
   readonly config: O;
 };
 
-export default forwardRef(function<O = any>(props: ReactG2PlotProps<O>, ref: any) {
+export default forwardRef(function <O = any>(
+  props: ReactG2PlotProps<O>,
+  ref: any,
+) {
   const { className, plot, config } = props;
 
   const containerRef = useRef(undefined);

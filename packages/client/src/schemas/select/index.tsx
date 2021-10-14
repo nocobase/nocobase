@@ -25,7 +25,11 @@ import { BlockSchemaContext, VisibleContext } from '../../context';
 import { SchemaRenderer } from '../../components/schema-renderer';
 import { uid } from '@formily/shared';
 import { CollectionFieldContext } from '../table';
-import { CollectionProvider, useCollectionContext, useResourceRequest } from '../../constate';
+import {
+  CollectionProvider,
+  useCollectionContext,
+  useResourceRequest,
+} from '../../constate';
 import { Resource } from '../../resource';
 import { useRequest } from 'ahooks';
 import constate from 'constate';
@@ -267,11 +271,13 @@ Select.useSelect = () => {
 
 export const useSelectedRowKeys = () => {
   const { selectedRows } = useContext(SelectedRowsContext);
-  const [selectedRowKeys, setSelectedRowKeys] = useState<any>(selectedRows.map((row) => row.id));
+  const [selectedRowKeys, setSelectedRowKeys] = useState<any>(
+    selectedRows.map((row) => row.id),
+  );
   useEffect(() => {
     setSelectedRowKeys(selectedRows.map((row) => row.id));
   }, [selectedRows]);
-  console.log('useSelectedRowKeys', selectedRows)
+  console.log('useSelectedRowKeys', selectedRows);
   return { selectedRowKeys, setSelectedRowKeys };
 };
 
@@ -322,7 +328,7 @@ Select.Drawer = connect(
       };
     }
     const [selectedRows, setSelectedRows] = useState(toArr(field.value));
-    console.log('useSelectedRowKeys.toArr', toArr(field.value))
+    console.log('useSelectedRowKeys.toArr', toArr(field.value));
     useEffect(() => {
       setSelectedRows(toArr(field.value));
     }, [field.value]);

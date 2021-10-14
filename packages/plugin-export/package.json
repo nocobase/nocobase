@@ -1,10 +1,10 @@
 {
   "name": "@nocobase/plugin-export",
-  "version": "0.5.0-alpha.19",
+  "version": "0.5.0-alpha.20",
   "main": "lib/index.js",
   "license": "MIT",
   "dependencies": {
-    "@nocobase/server": "^0.5.0-alpha.19",
+    "@nocobase/server": "^0.5.0-alpha.20",
     "node-xlsx": "^0.16.1"
   },
   "devDependencies": {

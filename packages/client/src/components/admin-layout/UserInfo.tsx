@@ -64,7 +64,9 @@ export const UserInfo = () => {
           </Menu.Item>
           <Menu.Item>
             <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-              <span style={{ marginRight: 16, display: 'inline-block' }}>角色切换</span>
+              <span style={{ marginRight: 16, display: 'inline-block' }}>
+                角色切换
+              </span>
               <Select
                 className={'roles-select'}
                 bordered={false}
@@ -82,7 +84,9 @@ export const UserInfo = () => {
           </Menu.Item>
           <Menu.Item>
             <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-              <span style={{ marginRight: 16, display: 'inline-block' }}>语言设置</span>
+              <span style={{ marginRight: 16, display: 'inline-block' }}>
+                语言设置
+              </span>
               <Select
                 className={'roles-select'}
                 bordered={false}
