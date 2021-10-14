@@ -1,45 +1,28 @@
 import execa from "execa";
 
 export function hasYarn() {
-  try {
-    const { exitCode } = execa.sync('yarn --version', { shell: true });
+  return (process.env.npm_config_user_agent || '').indexOf('yarn') === 0;
+}
 
-    if (exitCode === 0) return true;
-    return false;
-  } catch (err) {
-    return false;
+function runYarn(path: string,  args: string[]) {
+  if (hasYarn()) {
+    return execa('yarn', args, {
+      cwd: path,
+      stdin: 'ignore',
+    });
   }
+
+  return execa('npm', args, { cwd: path, stdin: 'ignore' });
 }
 
 export function runInstall(path) {
-  if (hasYarn()) {
-    return execa('yarn', ['install'], {
-      cwd: path,
-      stdin: 'ignore',
-    });
-  }
-
-  return execa('npm', ['install'], { cwd: path, stdin: 'ignore' });
+  return runYarn(path, ['install'])
 }
 
 export function runStart(path) {
-  if (hasYarn()) {
-    return execa('yarn', ['start'], {
-      cwd: path,
-      stdin: 'ignore',
-    });
-  }
-
-  return execa('npm', ['start'], { cwd: path, stdin: 'ignore' });
+  return runYarn(path, ['start']);
 }
 
 export function runInit(path) {
-  if (hasYarn()) {
-    return execa('yarn', ['nocobase', 'init'], {
-      cwd: path,
-      stdin: 'ignore',
-    });
-  }
-
-  return execa('npm', ['nocobase', 'init'], { cwd: path, stdin: 'ignore' });
+  return runYarn(path, ['nocobase', 'init']);
 }
