@@ -14,7 +14,7 @@ What is NocoBase
 ----------
 NocoBase is an open source and free no-code development platform. Whether you are a business executive who does not know programming or a developer who is proficient in programming, you can quickly build various customized and privately deployed collaboration platforms and management systems.
 
-When to use Nocobase
+When to use NocoBase
 ----------
 - **SMEs and organizations build business platforms and management systems for themselves or for their industry**
 	- Want the price to be low enough or even free
