@@ -4,7 +4,7 @@ import Application from '@nocobase/server';
 const start = Date.now();
 
 const api = new Application({
-  database: require("../config/db").default,
+  database: require("./config/db").default,
   resourcer: {
     prefix: "/api"
   }
