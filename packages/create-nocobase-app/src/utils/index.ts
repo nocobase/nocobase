@@ -20,9 +20,9 @@ export function runInstall(path) {
 }
 
 export function runStart(path) {
-  return runYarn(path, ['start']);
+  return runYarn(path, ['run', 'start']);
 }
 
 export function runInit(path) {
-  return runYarn(path, ['nocobase', 'init']);
+  return runYarn(path, ['run', 'nocobase', 'init']);
 }
