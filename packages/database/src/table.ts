@@ -12,16 +12,14 @@ import {
   Relation,
   BELONGSTO,
   BELONGSTOMANY,
-  SORT
+  SORT,
 } from './fields';
 import Database from './database';
 import { Model, ModelCtor } from './model';
 import _ from 'lodash';
 import merge from 'deepmerge';
 
-export interface MergeOptions extends merge.Options {
-
-}
+export interface MergeOptions extends merge.Options {}
 
 const registeredModels = new Map<string, any>();
 
@@ -45,15 +43,15 @@ export function getRegisteredModel(key) {
   return key;
 }
 
-export interface TableOptions extends Omit<ModelOptions<Model>, 'name' | 'modelName'> {
-
+export interface TableOptions
+  extends Omit<ModelOptions<Model>, 'name' | 'modelName'> {
   /**
    * 唯一标识，与 ModelOptions 的 name 有区别
-   * 
+   *
    * 注意：name 可用于初始化 tableName、modelName，但是 tableName 和 modelName 可能有所不同
    * name 主要用于获取指定的 tables 和 models
    * 如果没有特殊指定 tableName 时，name、tableName、modelName 都是一个值
-   * 
+   *
    * TODO: name, tableName, modelName，freezeTableName，underscored，单复数等等情况还比较混乱
    */
   name: string;
@@ -77,7 +75,7 @@ export interface TableOptions extends Omit<ModelOptions<Model>, 'name' | 'modelN
 /**
  * 上下文，Tabel 配置需要的其他变量
  */
-export interface TabelContext {
+export interface TableContext {
   database: Database;
 }
 
@@ -92,11 +90,10 @@ export type Reinitialize = boolean | 'modelOnly';
 
 /**
  * 表配置
- * 
+ *
  * 用于处理相关 Model 的配置
  */
 export class Table {
-
   protected database: Database;
 
   protected options: TableOptions;
@@ -134,19 +131,16 @@ export class Table {
   public relationTables = new Set<string>();
 
   get sortable(): boolean {
-    return Array.from(this.fields.values()).some(field => field instanceof SORT);
+    return Array.from(this.fields.values()).some(
+      (field) => field instanceof SORT,
+    );
   }
 
-  constructor(options: TableOptions, context: TabelContext) {
+  constructor(options: TableOptions, context: TableContext) {
     const { database } = context;
     database.runHooks('beforeTableInit', options);
     database.emit('beforeTableInit', options);
-    const {
-      model,
-      fields = [],
-      indexes = [],
-      sortable,
-    } = options;
+    const { model, fields = [], indexes = [], sortable } = options;
     this.options = options;
     this.database = database;
     // 初始化的时候获取
@@ -183,7 +177,9 @@ export class Table {
   public modelInit(reinitialize: Reinitialize = false) {
     if (reinitialize || !this.Model) {
       let DefaultModel = this.defaultModel;
-      this.Model = DefaultModel ? (class extends DefaultModel {}) : (class extends Model { });
+      this.Model = DefaultModel
+        ? class extends DefaultModel {}
+        : class extends Model {};
       this.Model.database = this.database;
       // 关系的建立是在 model.init 之后，在配置中表字段（Column）和关系（Relation）都在 fields，
       // 所以需要单独提炼出 associations 字段，并在 Model.init 之后执行 Model.associate
@@ -194,7 +190,10 @@ export class Table {
           if (this.database.isDefined(target)) {
             const TargetModel = this.database.getModel(target);
             // 如果关系表在之后才定义，未设置 targetKey 时，targetKey 默认值需要在 target model 初始化之后才能取到
-            if (association instanceof BELONGSTO || association instanceof BELONGSTOMANY) {
+            if (
+              association instanceof BELONGSTO ||
+              association instanceof BELONGSTOMANY
+            ) {
               association.updateOptionsAfterTargetModelBeDefined();
             }
             this.Model[type](TargetModel, association.getAssociationOptions());
@@ -202,7 +201,7 @@ export class Table {
             this.associating.delete(key);
           }
         }
-      }
+      };
     }
 
     this.Model.init(this.getModelAttributes(), this.getModelOptions());
@@ -229,7 +228,7 @@ export class Table {
   }
 
   /**
-   * 
+   *
    * @param key 获取数据表配置，也可以指定 key
    */
   public getOptions(key?: any): TableOptions {
@@ -245,12 +244,9 @@ export class Table {
   }
 
   public getModelOptions(): InitOptions {
-    const {
-      name,
-      underscored = true,
-      ...restOptions
-    } = this.options;
-    const hooks = _.get(this.getModel(), 'options.hooks') || this.options.hooks || {};
+    const { name, underscored = true, ...restOptions } = this.options;
+    const hooks =
+      _.get(this.getModel(), 'options.hooks') || this.options.hooks || {};
     return {
       underscored,
       modelName: name,
@@ -310,9 +306,9 @@ export class Table {
 
   /**
    * 添加字段
-   * 
-   * @param options 
-   * @param reinitialize 
+   *
+   * @param options
+   * @param reinitialize
    */
   public addField(options: FieldOptions, reinitialize: Reinitialize = true) {
     this.database.runHooks('beforeAddField', options, this);
@@ -327,7 +323,9 @@ export class Table {
     if (!this.options.fields) {
       this.options.fields = [];
     }
-    const existIndex = this.options.fields.findIndex(field => field.name === name);
+    const existIndex = this.options.fields.findIndex(
+      (field) => field.name === name,
+    );
     if (existIndex !== -1) {
       this.options.fields.splice(existIndex, 1, options);
     } else {
@@ -344,10 +342,13 @@ export class Table {
       if (index === true) {
         this.addIndex(name, false);
       } else if (typeof index === 'object') {
-        this.addIndex({
-          fields: [name],
-          ...index,
-        }, false);
+        this.addIndex(
+          {
+            fields: [name],
+            ...index,
+          },
+          false,
+        );
       }
       this.modelAttributes[name] = field.getAttributeOptions();
     }
@@ -359,14 +360,20 @@ export class Table {
 
   /**
    * 添加索引
-   * 
-   * @param indexOptions 
-   * @param reinitialize 
+   *
+   * @param indexOptions
+   * @param reinitialize
    */
-  public addIndex(indexOptions: string | ModelIndexesOptions, reinitialize: Reinitialize = true) {
-    const options = typeof indexOptions === 'string' ? {
-      fields: [indexOptions],
-    } : indexOptions;
+  public addIndex(
+    indexOptions: string | ModelIndexesOptions,
+    reinitialize: Reinitialize = true,
+  ) {
+    const options =
+      typeof indexOptions === 'string'
+        ? {
+            fields: [indexOptions],
+          }
+        : indexOptions;
     // @ts-ignore
     const index = Utils.nameIndex(options, this.options.name);
     console.log(this.options, { index, options });
@@ -380,11 +387,14 @@ export class Table {
 
   /**
    * 批量添加索引
-   * 
-   * @param indexes 
-   * @param reinitialize 
+   *
+   * @param indexes
+   * @param reinitialize
    */
-  public addIndexes(indexes: Array<string | ModelIndexesOptions>, reinitialize: Reinitialize = true) {
+  public addIndexes(
+    indexes: Array<string | ModelIndexesOptions>,
+    reinitialize: Reinitialize = true,
+  ) {
     for (const index in indexes) {
       this.addIndex(indexes[index], false);
     }
@@ -393,20 +403,16 @@ export class Table {
 
   /**
    * 扩展（实验性 API）
-   * 
-   * @param options 
+   *
+   * @param options
    */
   public extend(options: TableOptions, mergeOptions: MergeOptions = {}) {
-    const {
-      fields = [],
-      indexes = [],
-      model,
-      ...restOptions
-    } = options;
+    const { fields = [], indexes = [], model, ...restOptions } = options;
     if (model) {
       this.defaultModel = getRegisteredModel(model);
     }
-    const { arrayMerge = (target: any[], source: any[]) => source } = mergeOptions;
+    const { arrayMerge = (target: any[], source: any[]) => source } =
+      mergeOptions;
     this.options = merge(this.options, restOptions, {
       arrayMerge,
       ...mergeOptions,
@@ -422,8 +428,8 @@ export class Table {
 
   /**
    * 相关表字段更新
-   * 
-   * @param options 
+   *
+   * @param options
    */
   public async sync(options: SyncOptions = {}) {
     const tables = [];
