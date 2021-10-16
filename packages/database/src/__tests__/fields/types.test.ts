@@ -33,20 +33,28 @@ describe('field types', () => {
     const table = db.table({
       name: 'test',
     });
-    const field = buildField({
-      type: actual,
-      name: 'test',
-    }, {
-      sourceTable: table,
-      database: db,
-    });
+    const field = buildField(
+      {
+        type: actual,
+        name: 'test',
+      },
+      {
+        sourceTable: table,
+        database: db,
+      },
+    );
+
     expect(field).toBeInstanceOf(expected);
+
     if (field instanceof Column) {
       const { type } = field.getAttributeOptions() as any;
       if (actual instanceof ABSTRACT) {
         expect(type).toBeInstanceOf(field.getDataType());
         // postgres 的 text 不限制长度，无需参数
-        if (db.sequelize.getDialect() !== 'postgres' || getDataTypeKey(type) !== 'TEXT') {
+        if (
+          db.sequelize.getDialect() !== 'postgres' ||
+          getDataTypeKey(type) !== 'TEXT'
+        ) {
           // 非严谨比较，undefined == null
           expect(type).toEqual(actual);
         }
@@ -58,7 +66,7 @@ describe('field types', () => {
       }
     }
     db.close();
-  }
+  };
 
   it('shound be boolean', () => {
     assertTypeInstanceOf(Boolean, 'boolean');
@@ -69,9 +77,12 @@ describe('field types', () => {
     assertTypeInstanceOf(Integer, 'int');
     assertTypeInstanceOf(Integer, 'integer');
     assertTypeInstanceOf(Integer, DataTypes.INTEGER);
-    assertTypeInstanceOf(Integer, DataTypes.INTEGER({
-      length: 5,
-    }));
+    assertTypeInstanceOf(
+      Integer,
+      DataTypes.INTEGER({
+        length: 5,
+      }),
+    );
   });
 
   it('shound be tiny integer', () => {
@@ -80,9 +91,12 @@ describe('field types', () => {
     assertTypeInstanceOf(Integer, 'tinyinteger');
     assertTypeInstanceOf(Integer, 'tinyInteger');
     assertTypeInstanceOf(Integer, DataTypes.TINYINT);
-    assertTypeInstanceOf(Integer, DataTypes.TINYINT({
-      length: 5,
-    }));
+    assertTypeInstanceOf(
+      Integer,
+      DataTypes.TINYINT({
+        length: 5,
+      }),
+    );
   });
 
   it('shound be small integer', () => {
@@ -91,9 +105,12 @@ describe('field types', () => {
     assertTypeInstanceOf(Integer, 'smallinteger');
     assertTypeInstanceOf(Integer, 'smallInteger');
     assertTypeInstanceOf(Integer, DataTypes.SMALLINT);
-    assertTypeInstanceOf(Integer, DataTypes.SMALLINT({
-      length: 5,
-    }));
+    assertTypeInstanceOf(
+      Integer,
+      DataTypes.SMALLINT({
+        length: 5,
+      }),
+    );
   });
 
   it('shound be medium integer', () => {
@@ -102,9 +119,12 @@ describe('field types', () => {
     assertTypeInstanceOf(Integer, 'MediumInteger');
     assertTypeInstanceOf(Integer, 'MediumInteger');
     assertTypeInstanceOf(Integer, DataTypes.MEDIUMINT);
-    assertTypeInstanceOf(Integer, DataTypes.MEDIUMINT({
-      length: 5,
-    }));
+    assertTypeInstanceOf(
+      Integer,
+      DataTypes.MEDIUMINT({
+        length: 5,
+      }),
+    );
   });
 
   it('shound be big integer', () => {
@@ -113,16 +133,22 @@ describe('field types', () => {
     assertTypeInstanceOf(Integer, 'biginteger');
     assertTypeInstanceOf(Integer, 'bigInteger');
     assertTypeInstanceOf(Integer, DataTypes.BIGINT);
-    assertTypeInstanceOf(Integer, DataTypes.BIGINT({
-      length: 5,
-    }));
+    assertTypeInstanceOf(
+      Integer,
+      DataTypes.BIGINT({
+        length: 5,
+      }),
+    );
   });
 
   it('shound be float', () => {
     assertTypeInstanceOf(Float, 'float');
-    assertTypeInstanceOf(Float, DataTypes.FLOAT({
-      length: 5,
-    }));
+    assertTypeInstanceOf(
+      Float,
+      DataTypes.FLOAT({
+        length: 5,
+      }),
+    );
   });
 
   it('shound be double', () => {
@@ -132,9 +158,12 @@ describe('field types', () => {
 
   it('shound be real', () => {
     assertTypeInstanceOf(Real, 'real');
-    assertTypeInstanceOf(Real, DataTypes.REAL({
-      length: 5,
-    }));
+    assertTypeInstanceOf(
+      Real,
+      DataTypes.REAL({
+        length: 5,
+      }),
+    );
   });
 
   it('shound be decimal', () => {
@@ -151,9 +180,12 @@ describe('field types', () => {
   it('shound be text', () => {
     assertTypeInstanceOf(Text, 'text');
     assertTypeInstanceOf(Text, DataTypes.TEXT);
-    assertTypeInstanceOf(Text, DataTypes.TEXT({
-      length: 'long',
-    }));
+    assertTypeInstanceOf(
+      Text,
+      DataTypes.TEXT({
+        length: 'long',
+      }),
+    );
   });
 
   it('shound be time', () => {
@@ -185,6 +217,9 @@ describe('field types', () => {
   });
 
   it('shound be jsonb', () => {
+    if (process.env.DB_DIALECT === 'sqlite') {
+      return;
+    }
     assertTypeInstanceOf(Jsonb, 'jsonb');
     assertTypeInstanceOf(Jsonb, DataTypes.JSONB);
   });
@@ -273,7 +308,7 @@ describe('field types', () => {
             name: 'password',
           },
         ],
-      })
+      });
       db.table({
         name: 'bars',
         tableName: 'formula_bars',
@@ -281,9 +316,9 @@ describe('field types', () => {
           {
             type: 'string',
             name: 'col2',
-          }
+          },
         ],
-      })
+      });
       await db.sync({ force: true });
     });
     afterEach(async () => {
@@ -316,7 +351,7 @@ describe('field types', () => {
       await formula.updateAssociations({
         bar: {
           col2: 'val2',
-        }
+        },
       });
       const f = await Formula.findOne({
         where: {
@@ -324,7 +359,7 @@ describe('field types', () => {
         },
         include: {
           association: 'bar',
-        }
+        },
       });
       expect(f.reference1).toBe('val1');
       expect(f.reference2).toBe('val2');

@@ -290,9 +290,11 @@ export class Table {
     this.fields.clear();
     this.associating.clear();
     this.associations.clear();
-    for (const key in fields) {
-      this.addField(fields[key], false);
+
+    for (const filed of fields) {
+      this.addField(filed, false);
     }
+
     this.modelInit(true);
   }
 

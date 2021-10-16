@@ -68,21 +68,31 @@ op.set('$notEndsWith', (value: string) => ({ [Op.notILike]: `%${value}` }));
 // 仅日期
 
 // 在某日
-op.set('$dateOn', (value: string) => ({ [Op.and]: [{ [Op.gte]: stringToDate(value) }, { [Op.lt]: getNextDay(value) }] }));
+op.set('$dateOn', (value: string) => ({
+  [Op.and]: [{ [Op.gte]: stringToDate(value) }, { [Op.lt]: getNextDay(value) }],
+}));
 // 不在某日
-op.set('$dateNotOn', (value: string) => ({ [Op.or]: [{ [Op.lt]: stringToDate(value) }, { [Op.gte]: getNextDay(value) }] }));
+op.set('$dateNotOn', (value: string) => ({
+  [Op.or]: [{ [Op.lt]: stringToDate(value) }, { [Op.gte]: getNextDay(value) }],
+}));
 // 某日前
 op.set('$dateBefore', (value: string) => ({ [Op.lt]: stringToDate(value) }));
 // 某日后
 op.set('$dateAfter', (value: string) => ({ [Op.gte]: getNextDay(value) }));
 // 不早于（含当天）
-op.set('$dateNotBefore', (value: string) => ({ [Op.gte]: stringToDate(value) }));
+op.set('$dateNotBefore', (value: string) => ({
+  [Op.gte]: stringToDate(value),
+}));
 // 不晚于（含当天）
 op.set('$dateNotAfter', (value: string) => ({ [Op.lt]: getNextDay(value) }));
 // 在期间
-op.set('$dateBetween', ([from, to]: string[]) => ({ [Op.and]: [{ [Op.gte]: stringToDate(from) }, { [Op.lt]: getNextDay(to) }] }));
+op.set('$dateBetween', ([from, to]: string[]) => ({
+  [Op.and]: [{ [Op.gte]: stringToDate(from) }, { [Op.lt]: getNextDay(to) }],
+}));
 // 不在期间
-op.set('$dateNotBetween', ([from, to]: string[]) => ({ [Op.or]: [{ [Op.lt]: stringToDate(from) }, { [Op.gte]: getNextDay(to) }] }));
+op.set('$dateNotBetween', ([from, to]: string[]) => ({
+  [Op.or]: [{ [Op.lt]: stringToDate(from) }, { [Op.gte]: getNextDay(to) }],
+}));
 
 // 多选（JSON）类型
 
@@ -96,9 +106,13 @@ op.set('$anyOf', (values: any[], options) => {
     return Sequelize.literal('');
   }
   const { field, fieldPath } = options;
-  const column = fieldPath.split('.').map(name => `"${name}"`).join('.');
-  const sql = values.map(value => `(${column})::jsonb @> '${JSON.stringify(value)}'`).join(' OR ');
-  console.log(sql);
+  const column = fieldPath
+    .split('.')
+    .map((name) => `"${name}"`)
+    .join('.');
+  const sql = values
+    .map((value) => `(${column})::jsonb @> '${JSON.stringify(value)}'`)
+    .join(' OR ');
   return Sequelize.literal(sql);
 });
 // 包含组中所有值
@@ -113,9 +127,13 @@ op.set('$noneOf', (values: any[], options) => {
     return Sequelize.literal('');
   }
   const { field, fieldPath } = options;
-  const column = fieldPath.split('.').map(name => `"${name}"`).join('.');
-  const sql = values.map(value => `(${column})::jsonb @> '${JSON.stringify(value)}'`).join(' OR ');
-  console.log(sql);
+  const column = fieldPath
+    .split('.')
+    .map((name) => `"${name}"`)
+    .join('.');
+  const sql = values
+    .map((value) => `(${column})::jsonb @> '${JSON.stringify(value)}'`)
+    .join(' OR ');
   return Sequelize.literal(`not (${sql})`);
 });
 // 与组中值匹配
@@ -125,8 +143,13 @@ op.set('$match', (values: any[], options) => {
     return Sequelize.literal('');
   }
   const { field, fieldPath } = options;
-  const column = fieldPath.split('.').map(name => `"${name}"`).join('.');
-  const sql = `(${column})::jsonb @> '${JSON.stringify(array)}' AND (${column})::jsonb <@ '${JSON.stringify(array)}'`
+  const column = fieldPath
+    .split('.')
+    .map((name) => `"${name}"`)
+    .join('.');
+  const sql = `(${column})::jsonb @> '${JSON.stringify(
+    array,
+  )}' AND (${column})::jsonb <@ '${JSON.stringify(array)}'`;
   return Sequelize.literal(sql);
 });
 op.set('$notMatch', (values: any[], options) => {
@@ -135,8 +158,13 @@ op.set('$notMatch', (values: any[], options) => {
     return Sequelize.literal('');
   }
   const { field, fieldPath } = options;
-  const column = fieldPath.split('.').map(name => `"${name}"`).join('.');
-  const sql = `(${column})::jsonb @> '${JSON.stringify(array)}' AND (${column})::jsonb <@ '${JSON.stringify(array)}'`
+  const column = fieldPath
+    .split('.')
+    .map((name) => `"${name}"`)
+    .join('.');
+  const sql = `(${column})::jsonb @> '${JSON.stringify(
+    array,
+  )}' AND (${column})::jsonb <@ '${JSON.stringify(array)}'`;
   return Sequelize.literal(`not (${sql})`);
   // return Sequelize.literal(`(not (${sql})) AND ${column} IS NULL`);
 });
@@ -153,4 +181,4 @@ export default class Operator {
   public static register(key: string, fn: Function) {
     op.set(key, fn);
   }
-};
+}

@@ -33,14 +33,10 @@ if (process.env.DB_DIALECT === 'sqlite') {
 }
 
 export function getDatabase() {
-
   return new Database({
     ...config,
     sync: {
       force: true,
-      alter: {
-        drop: true,
-      },
     },
     hooks: {
       beforeDefine(model, options) {

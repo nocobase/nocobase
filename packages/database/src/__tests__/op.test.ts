@@ -29,6 +29,7 @@ afterEach(async () => {
 
 describe('op', () => {
   it('test', async () => {
+    if ((process.env.DB_DIALECT = 'sqlite')) return;
     const Test = db.getModel('tests');
     await Test.bulkCreate([
       {
@@ -42,7 +43,7 @@ describe('op', () => {
       },
       {
         arr: ['dd'],
-      }
+      },
     ]);
     const options = Test.parseApiJson({
       filter: {
