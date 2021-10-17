@@ -27,7 +27,7 @@
     ]
   },
   "dependencies": {
-    {{#quickstart}}"sqlite3": "^5.0.2",
+    {{#quickstart}}"sqlite3": "https://github.com/mapbox/node-sqlite3/tarball/master",
     {{/quickstart}}"@nocobase/plugin-action-logs": "^{{{ version }}}",
     "@nocobase/plugin-china-region": "^{{{ version }}}",
     "@nocobase/plugin-client": "^{{{ version }}}",
