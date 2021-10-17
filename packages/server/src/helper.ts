@@ -40,7 +40,7 @@ export function createCli(app, options: ApplicationOptions) {
             }
           : {},
       );
-      await this.destroy();
+      await app.destroy();
     });
 
   cli
@@ -51,8 +51,8 @@ export function createCli(app, options: ApplicationOptions) {
       await app.db.sync({
         force: true,
       });
-      await this.emitAsync('db.init');
-      await this.destroy();
+      await app.emitAsync('db.init');
+      await app.destroy();
     });
 
   cli

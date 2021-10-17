@@ -2,8 +2,7 @@ import supertest from 'supertest';
 import { Application } from '../application';
 import { Plugin } from '../plugin';
 
-class MyPlugin extends Plugin {
-}
+class MyPlugin extends Plugin {}
 
 describe('application', () => {
   let app: Application;
@@ -12,16 +11,9 @@ describe('application', () => {
   beforeEach(() => {
     app = new Application({
       database: {
-        username: process.env.DB_USER,
-        password: process.env.DB_PASSWORD,
-        database: process.env.DB_DATABASE,
-        host: process.env.DB_HOST,
-        port: process.env.DB_PORT as any,
-        dialect: process.env.DB_DIALECT as any,
-        dialectOptions: {
-          charset: 'utf8mb4',
-          collate: 'utf8mb4_unicode_ci',
-        },
+        dialect: 'sqlite',
+        dialectModule: require('sqlite3'),
+        storage: ':memory:',
       },
       resourcer: {
         prefix: '/api',
@@ -84,7 +76,7 @@ describe('application', () => {
         {
           type: 'hasMany',
           name: 'bars',
-        }
+        },
       ],
     });
     const response = await agent.get('/api/foos/1/bars');
@@ -92,7 +84,7 @@ describe('application', () => {
   });
 
   it('db.middleware', async () => {
-    const index = app.middleware.findIndex(m => m.name === 'table2resource');
+    const index = app.middleware.findIndex((m) => m.name === 'table2resource');
     app.middleware.splice(index, 0, async (ctx, next) => {
       app.db.table({
         name: 'tests',
@@ -104,7 +96,7 @@ describe('application', () => {
   });
 
   it('db.middleware', async () => {
-    const index = app.middleware.findIndex(m => m.name === 'table2resource');
+    const index = app.middleware.findIndex((m) => m.name === 'table2resource');
     app.middleware.splice(index, 0, async (ctx, next) => {
       app.db.table({
         name: 'bars',
@@ -115,7 +107,7 @@ describe('application', () => {
           {
             type: 'hasMany',
             name: 'bars',
-          }
+          },
         ],
       });
       await next();
