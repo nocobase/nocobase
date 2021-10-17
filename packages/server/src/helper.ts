@@ -2,7 +2,7 @@ import { DefaultContext, DefaultState } from 'koa';
 import bodyParser from 'koa-bodyparser';
 import cors from '@koa/cors';
 import Database from '@nocobase/database';
-import Resourcer from '@nocobase/resourcer/src/resourcer';
+import Resourcer from '@nocobase/resourcer';
 import { Command } from 'commander';
 import Application, { ApplicationOptions } from './application';
 import { dataWrapping } from './middlewares/data-wrapping';
@@ -20,7 +20,7 @@ export function createResourcer(options: ApplicationOptions) {
   return new Resourcer({ ...options.resourcer });
 }
 
-export function createCli(options: ApplicationOptions) {
+export function createCli(app, options: ApplicationOptions) {
   const cli = new Command();
 
   cli
@@ -30,7 +30,7 @@ export function createCli(options: ApplicationOptions) {
       console.log('db sync...');
       const cli = args.pop();
       const force = cli.opts()?.force;
-      await this.db.sync(
+      await app.db.sync(
         force
           ? {
               force: true,
@@ -45,14 +45,11 @@ export function createCli(options: ApplicationOptions) {
 
   cli
     .command('init')
-    // .option('-f, --force')
+    .option('-f, --force')
     .action(async (...args) => {
       const _cli = args.pop();
-      await this.db.sync({
+      await app.db.sync({
         force: true,
-        alter: {
-          drop: true,
-        },
       });
       await this.emitAsync('db.init');
       await this.destroy();
@@ -64,8 +61,8 @@ export function createCli(options: ApplicationOptions) {
     .action(async (...args) => {
       const cli = args.pop();
       const opts = cli.opts();
-      await this.emitAsync('beforeStart');
-      this.listen(opts.port || 3000);
+      await app.emitAsync('beforeStart');
+      app.listen(opts.port || 3000);
       console.log(`http://localhost:${opts.port || 3000}/`);
     });
   return cli;

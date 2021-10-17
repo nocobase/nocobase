@@ -64,7 +64,7 @@ export class Application<
 
     this.db = createDatabase(options);
     this.resourcer = createResourcer(options);
-    this.cli = createCli(options);
+    this.cli = createCli(this, options);
 
     registerMiddlewares(this, options);
     registerActions(this);
