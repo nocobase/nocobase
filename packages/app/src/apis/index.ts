@@ -4,7 +4,18 @@ import path from 'path';
 const start = Date.now();
 
 const api = new Server({
-  database: {
+  database: process.env.DB_DIALECT ? {
+    dialect: process.env.DB_DIALECT as any,
+    storage: path.resolve(__dirname, './db.sqlite'),
+    logging: process.env.DB_LOG_SQL === 'on' ? console.log : false,
+    define: {},
+    sync: {
+      force: false,
+      alter: {
+        drop: false,
+      },
+    },
+  } : {
     username: process.env.DB_USER,
     password: process.env.DB_PASSWORD,
     database: process.env.DB_DATABASE,
