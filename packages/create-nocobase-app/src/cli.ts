@@ -1,7 +1,6 @@
 import { chalk } from '@umijs/utils';
 import commander from 'commander';
 import path from 'path';
-import fs from 'fs';
 import ora from 'ora';
 import { hasYarn, runInit, runInstall, runStart } from './utils';
 import execa from 'execa';
@@ -22,20 +21,13 @@ const program = new commander.Command(packageJson.name)
 
     const fullPath = path.join(process.cwd(), directory);
 
-    await require('./index')
-      .default({
-        cwd: fullPath,
-        args: {},
-        tplContext: options.quickstart
-          ? { quickstart: true }
-          : { quickstart: false },
-      })
-      .then(() => {
-        fs.copyFileSync(
-          path.join(fullPath, '.env.example'),
-          path.join(fullPath, '.env'),
-        );
-      });
+    await require('./index').default({
+      cwd: fullPath,
+      args: {},
+      tplContext: options.quickstart
+        ? { quickstart: true }
+        : { quickstart: false },
+    });
 
     const cmd = chalk.cyan(hasYarn() ? 'yarn' : 'npm run');
 

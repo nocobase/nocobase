@@ -1,9 +1,9 @@
 import { DatabaseOptions } from '@nocobase/database';
 {{#quickstart}}
 export default {
-  dialect: 'sqlite',
+  dialect: process.env.DB_DIALECT,
   dialectModule: require('sqlite3'),
-  storage: 'db.sqlite',
+  storage: process.env.DB_STORAGE
 } as DatabaseOptions;
 {{/quickstart}}
 {{^quickstart}}
