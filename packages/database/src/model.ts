@@ -206,9 +206,8 @@ export abstract class Model extends SequelizeModel {
       };
     } else if (associator.associationType === 'BelongsToMany') {
       where[targetKey] = {
-        // @ts-ignore
         [Op.in]: Sequelize.literal(
-          `(${associator.through.model.selectQuery({
+          `(${(associator as any).through.model.selectQuery({
             attributes: [otherKey],
             where: {
               [foreignKey]: {
@@ -239,7 +238,7 @@ export abstract class Model extends SequelizeModel {
           where: {
             // @ts-ignore
             ...where,
-            ...(associator.scope || {}),
+            ...((associator as any).scope || {}),
           },
         })})`,
       ),
@@ -247,7 +246,7 @@ export abstract class Model extends SequelizeModel {
         Utils.underscoredIf(`${association}Count`, this.options.underscored),
     ].filter(Boolean);
 
-    return attribute as unknown as ProjectionAlias;
+    return (attribute as unknown) as ProjectionAlias;
   }
 
   /**
