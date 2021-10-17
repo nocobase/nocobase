@@ -1,15 +1,5 @@
 import Application from '../../../server/src/application';
-import { getInitSqls } from '../server';
-
-function runSql(sql, database) {
-  const trimmed = sql.trim();
-  if (trimmed.length == 0) {
-    return;
-  }
-  return database.sequelize.query(trimmed, {
-    raw: true,
-  });
-}
+import { getInitSqls, runSql } from '../server';
 
 test('import demo data', async () => {
   const app = new Application({

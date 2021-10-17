@@ -21,6 +21,29 @@ export function getInitSqls() {
   return { part1, part2 };
 }
 
+export function runSql(sql, database) {
+  const trimmed = sql.trim();
+  if (trimmed.length == 0) {
+    return;
+  }
+  return database.sequelize.query(trimmed, {
+    raw: true,
+    logging: false,
+  });
+}
+
+async function runSqlFile(content, database) {
+  for (const sqlGroup of content) {
+    for (const sql of sqlGroup.split(';')) {
+      try {
+        await runSql(sql, database);
+      } catch (e) {
+        console.error({ e, sql });
+      }
+    }
+  }
+}
+
 export default {
   name: 'client',
   async load() {
@@ -43,29 +66,18 @@ export default {
       if (this.options.importDemo !== true) {
         return;
       }
-      const transaction = await app.db.sequelize.transaction();
       const sqls = getInitSqls();
-      try {
-        for (const sql of sqls.part1) {
-          await app.db.sequelize.query(sql, { transaction });
-        }
-        await transaction.commit();
-      } catch (error) {
-        await transaction.rollback();
-      }
+
+      const database = app.db;
+
+      await runSqlFile(sqls.part1, database);
+
       await app.db.getModel('collections').load({
         skipExisting: true,
       });
       await app.db.sync();
-      const transaction2 = await app.db.sequelize.transaction();
-      try {
-        for (const sql of sqls.part2) {
-          await app.db.sequelize.query(sql, { transaction: transaction2 });
-        }
-        await transaction2.commit();
-      } catch (error) {
-        await transaction2.rollback();
-      }
+
+      await runSqlFile(sqls.part2, database);
     });
   },
 } as PluginOptions;
