@@ -1,3 +1,4 @@
+DELETE FROM "t_bphcojtl8bx";
 INSERT INTO "t_bphcojtl8bx" ("created_at", "updated_at", "f_cn6a3p0wq2p", "f_4x6u1waa8r6") VALUES
 ('2021-09-12 01:24:52.263+00',	'2021-09-12 01:24:52.263+00',	1,	1),
 ('2021-09-12 07:36:07.681+00',	'2021-09-12 07:36:07.681+00',	1,	2),

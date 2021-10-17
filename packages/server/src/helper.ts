@@ -47,7 +47,7 @@ export function createCli(options: ApplicationOptions) {
     .command('init')
     // .option('-f, --force')
     .action(async (...args) => {
-      const cli = args.pop();
+      const _cli = args.pop();
       await this.db.sync({
         force: true,
         alter: {

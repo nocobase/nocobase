@@ -5,7 +5,7 @@ import { PluginOptions } from '@nocobase/server';
 import { readFileSync } from 'fs';
 import glob from 'glob';
 
-function getInitSqls() {
+export function getInitSqls() {
   const part1 = [];
   const part2 = [];
   const files1 = glob.sync(path.resolve(__dirname, './db/part1/*.sql'));
@@ -40,7 +40,7 @@ export default {
     });
     const app = this.app;
     this.app.on('db.init', async () => {
-      if  (this.options.importDemo !== true) {
+      if (this.options.importDemo !== true) {
         return;
       }
       const transaction = await app.db.sequelize.transaction();
@@ -67,5 +67,5 @@ export default {
         await transaction2.rollback();
       }
     });
-  }
+  },
 } as PluginOptions;

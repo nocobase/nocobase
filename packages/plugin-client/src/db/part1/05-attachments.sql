@@ -1,3 +1,4 @@
+DELETE FROM "attachments";
 INSERT INTO "attachments" ("id", "title", "filename", "extname", "size", "mimetype", "path", "meta", "url", "created_at", "updated_at", "created_by_id", "updated_by_id", "storage_id") VALUES
 (2,	'Nocobase',	'dac1165de10a3373a87ae4e5da9788ab.png',	'.png',	NULL,	'image/png',	'',	'{}',	'https://nocobase.oss-cn-beijing.aliyuncs.com/dac1165de10a3373a87ae4e5da9788ab.png',	'2021-09-04 01:33:38.878+00',	'2021-09-04 01:33:38.878+00',	NULL,	NULL,	2),
 (3,	'grapes-276070_1280',	'3451976fea63a882b5fd661aa211693e.jpg',	'.jpg',	NULL,	'image/jpeg',	'',	'{}',	'https://nocobase.oss-cn-beijing.aliyuncs.com/3451976fea63a882b5fd661aa211693e.jpg',	'2021-09-04 01:34:50.388+00',	'2021-09-04 01:34:50.388+00',	NULL,	1,	2),
@@ -27,4 +28,3 @@ INSERT INTO "attachments" ("id", "title", "filename", "extname", "size", "mimety
 (26,	'kaffeerad-1543158_1280',	'8b94dd8cbecdbbd03e4c2fcfbd1067e7.jpg',	'.jpg',	NULL,	'image/jpeg',	'',	'{}',	'https://nocobase.oss-cn-beijing.aliyuncs.com/8b94dd8cbecdbbd03e4c2fcfbd1067e7.jpg',	'2021-09-12 07:47:39.63+00',	'2021-09-12 07:47:39.63+00',	NULL,	1,	2),
 (28,	'apple-1609693_1280',	'31b7dee511a8d6364fee18411763c188.jpg',	'.jpg',	NULL,	'image/jpeg',	'',	'{}',	'https://nocobase.oss-cn-beijing.aliyuncs.com/31b7dee511a8d6364fee18411763c188.jpg',	'2021-09-12 07:48:41.367+00',	'2021-09-12 07:48:41.367+00',	NULL,	1,	2),
 (29,	'cappuccino-1609932_1280',	'8f480c4f1bd3d292ef78fb6847669e51.jpg',	'.jpg',	NULL,	'image/jpeg',	'',	'{}',	'https://nocobase.oss-cn-beijing.aliyuncs.com/8f480c4f1bd3d292ef78fb6847669e51.jpg',	'2021-09-12 07:48:41.372+00',	'2021-09-12 07:48:41.372+00',	NULL,	1,	2);
-SELECT setval('attachments_id_seq', (SELECT MAX(id) FROM "attachments"), true);

@@ -1,4 +1,4 @@
-TRUNCATE "ui_schemas" RESTART IDENTITY CASCADE;
+DELETE FROM "ui_schemas";
 INSERT INTO "ui_schemas" ("key", "name", "title", "type", "x-component", "options", "async", "sort", "created_at", "updated_at", "parent_key") VALUES
 ('dtu7erjj0q8',	NULL,	'昵称',	'string',	'Input',	'{}',	'0',	1,	'2021-09-02 15:07:56.984+00',	'2021-09-02 15:07:56.984+00',	NULL),
 ('5nqs5glgn5c',	NULL,	'邮箱',	'string',	'Input',	'{"require":true}',	'0',	2,	'2021-09-02 15:07:57.015+00',	'2021-09-02 15:07:57.015+00',	NULL),

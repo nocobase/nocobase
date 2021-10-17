@@ -1,3 +1,4 @@
+DELETE FROM "field_permissions";
 INSERT INTO "field_permissions" ("created_at", "updated_at", "action_permission_id", "field_key") VALUES
 ('2021-09-14 02:19:38.034+00',	'2021-09-14 02:19:38.034+00',	1,	'nv0iw8wdxmz'),
 ('2021-09-14 02:19:38.034+00',	'2021-09-14 02:19:38.034+00',	1,	'lu1ibrb0yi2'),
