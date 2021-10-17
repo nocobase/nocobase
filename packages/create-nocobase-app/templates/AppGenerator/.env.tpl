@@ -1,29 +1,36 @@
 ########## DOCKER COMPOSE ENV ##########
-DB_POSTGRES_PORT=15432
-APP_PORT=13000
-ADMINER_PORT=18080
+ADMINER_PORT=8080
+DB_MYSQL_PORT=3306
+DB_POSTGRES_PORT=5432
+VERDACCIO_PORT=4873
+APP_PORT=23001
+API_PORT=23002
 
-# set to 'on' to enable log
-DB_LOG_SQL=on
+########## NOCOBASE ENV ##########
 
+# DATABASE
 {{#quickstart}}
 DB_DIALECT=sqlite
 DB_STORAGE=db.sqlite
 {{/quickstart}}
 {{^quickstart}}
+DB_DIALECT=postgres
 DB_HOST=localhost
-DB_PORT=15432
+DB_PORT=5432
 DB_DATABASE=nocobase
-DB_DIALECT=pgsql
-DB_USER=
-DB_PASSWORD=
+DB_USER=nocobase
+DB_PASSWORD=nocobase
 {{/quickstart}}
+
+# set to 'on' to enable log
+DB_LOG_SQL=on
 
 # API & APP
 
 NOCOBASE_ENV=
-API_PORT=13001
-API_URL=/api/
+API_PORT=23000
+APP_USE_STATIC_SERVER=true
+APP_DIST=packages/app/dist
 
 # ADMIN USER (Initialization only)
 
@@ -39,3 +46,9 @@ STORAGE_TYPE=local
 LOCAL_STORAGE_USE_STATIC_SERVER=true
 LOCAL_STORAGE_BASE_URL=http://localhost:23000
 
+# ALI OSS STORAGE
+ALI_OSS_STORAGE_BASE_URL=
+ALI_OSS_REGION=oss-cn-beijing
+ALI_OSS_ACCESS_KEY_ID=
+ALI_OSS_ACCESS_KEY_SECRET=
+ALI_OSS_BUCKET=
