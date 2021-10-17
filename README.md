@@ -71,8 +71,6 @@ Installation
 yarn create nocobase-app my-nocobase-app --quickstart
 ~~~
 
-The browser will be opened automatically after the project is launched.
-
 #### Start with configuration
 ~~~shell
 # 1. create project

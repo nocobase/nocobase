@@ -72,7 +72,6 @@ Database:
 ~~~shell
 yarn create nocobase-app my-nocobase-app --quickstart
 ~~~
-项目启动之后将会自动打开浏览器。
 
 #### 自定义启动方式
 ~~~shell
