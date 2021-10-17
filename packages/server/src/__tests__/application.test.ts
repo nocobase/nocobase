@@ -19,6 +19,7 @@ describe('application', () => {
         prefix: '/api',
       },
       dataWrapping: false,
+      registerActions: false,
     });
     app.resourcer.registerActionHandlers({
       list: async (ctx, next) => {

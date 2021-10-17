@@ -21,6 +21,7 @@ export interface ApplicationOptions {
   bodyParser?: any;
   cors?: any;
   dataWrapping?: boolean;
+  registerActions?: boolean;
 }
 
 interface DefaultState {
@@ -67,7 +68,9 @@ export class Application<
     this.cli = createCli(this, options);
 
     registerMiddlewares(this, options);
-    registerActions(this);
+    if (options.registerActions !== false) {
+      registerActions(this);
+    }
   }
 
   use<NewStateT = {}, NewContextT = {}>(
