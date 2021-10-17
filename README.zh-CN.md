@@ -93,7 +93,7 @@ yarn nocobase init
 yarn start
 ~~~
 
-使用打开浏览器打开 http://localhost:8000
+使用浏览器打开 http://localhost:8000
 
 ### 使用 docker compose
 
