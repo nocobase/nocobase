@@ -8,8 +8,8 @@ describe('user fields', () => {
 
   beforeEach(async () => {
     api = mockServer();
-    api.registerPlugin('users', require('../server').default);
-    await api.loadPlugins();
+    api.plugin(require('../server').default);
+    await api.load();
     db = api.db;
   });
 
