@@ -4,9 +4,9 @@ import path from 'path';
 const start = Date.now();
 
 const api = new Server({
-  database: process.env.DB_DIALECT ? {
+  database: process.env.DB_DIALECT === 'sqlite' ? {
     dialect: process.env.DB_DIALECT as any,
-    storage: path.resolve(__dirname, './db.sqlite'),
+    storage: path.resolve(process.cwd(), './db.sqlite'),
     logging: process.env.DB_LOG_SQL === 'on' ? console.log : false,
     define: {},
     sync: {

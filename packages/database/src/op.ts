@@ -53,17 +53,29 @@ op.set('$isFalsy', () => ({
 // 字符串
 
 // 包含：指对应字段的值包含某个子串
-op.set('$includes', (value: string) => ({ [Op.iLike]: `%${value}%` }));
+op.set('$includes', (value: string, { dialect }) => ({
+  [dialect === 'postgres' ? Op.iLike : Op.like]: `%${value}%`,
+}));
 // 不包含：指对应字段的值不包含某个子串（慎用：性能问题）
-op.set('$notIncludes', (value: string) => ({ [Op.notILike]: `%${value}%` }));
+op.set('$notIncludes', (value: string, { dialect }) => ({
+  [dialect === 'postgres' ? Op.notILike : Op.notLike]: `%${value}%`,
+}));
 // 以之起始
-op.set('$startsWith', (value: string) => ({ [Op.iLike]: `${value}%` }));
+op.set('$startsWith', (value: string, { dialect }) => ({
+  [dialect === 'postgres' ? Op.iLike : Op.like]: `${value}%`,
+}));
 // 不以之起始
-op.set('$notStartsWith', (value: string) => ({ [Op.notILike]: `${value}%` }));
+op.set('$notStartsWith', (value: string, { dialect }) => ({
+  [dialect === 'postgres' ? Op.notILike : Op.notLike]: `${value}%`,
+}));
 // 以之结束
-op.set('$endsWith', (value: string) => ({ [Op.iLike]: `%${value}` }));
+op.set('$endsWith', (value: string, { dialect }) => ({
+  [dialect === 'postgres' ? Op.iLike : Op.like]: `%${value}`,
+}));
 // 不以之结束
-op.set('$notEndsWith', (value: string) => ({ [Op.notILike]: `%${value}` }));
+op.set('$notEndsWith', (value: string, { dialect }) => ({
+  [dialect === 'postgres' ? Op.notILike : Op.notLike]: `%${value}`,
+}));
 
 // 仅日期
 

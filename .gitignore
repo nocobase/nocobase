@@ -21,3 +21,4 @@ uploads/
 
 .vercel
 packages/database/src/__tests__/.db
+db.sqlite
