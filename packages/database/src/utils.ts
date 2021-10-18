@@ -58,6 +58,7 @@ export function toWhere(options: any, context: ToWhereContext = {}) {
             ctx,
             model,
             database,
+            dialect: database.sequelize.getDialect(),
             fieldPath: name ? `${name}.${prefix}` : prefix,
           });
           if (result.constructor.name === 'Literal') {

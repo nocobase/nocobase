@@ -4,7 +4,18 @@ import path from 'path';
 const start = Date.now();
 
 const api = new Server({
-  database: {
+  database: process.env.DB_DIALECT === 'sqlite' ? {
+    dialect: process.env.DB_DIALECT as any,
+    storage: path.resolve(process.cwd(), './db.sqlite'),
+    logging: process.env.DB_LOG_SQL === 'on' ? console.log : false,
+    define: {},
+    sync: {
+      force: false,
+      alter: {
+        drop: false,
+      },
+    },
+  } : {
     username: process.env.DB_USER,
     password: process.env.DB_PASSWORD,
     database: process.env.DB_DATABASE,
@@ -59,7 +70,7 @@ for (const plugin of plugins) {
 api.plugin(
   require(`@nocobase/plugin-client/${libDir}/server`).default, {
   dist: path.resolve(process.cwd(), './dist'),
-  importDemo: true,
+  // importDemo: true,
 });
 
 if (process.argv.length < 3) {
@@ -67,7 +78,6 @@ if (process.argv.length < 3) {
   process.argv.push('start', '--port', process.env.API_PORT);
 }
 
-console.log(process.argv);
 
 api.parse(process.argv).then(() => {
   console.log(`Start-up time: ${(Date.now() - start) / 1000}s`);

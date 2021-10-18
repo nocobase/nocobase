@@ -11,13 +11,13 @@ describe('radio', () => {
       fields: [
         {
           type: 'string',
-          name: 'name'
+          name: 'name',
         },
         {
           type: 'hasMany',
-          name: 'posts'
-        }
-      ]
+          name: 'posts',
+        },
+      ],
     });
 
     db.table({
@@ -38,25 +38,25 @@ describe('radio', () => {
         },
         {
           type: 'radio',
-          name: 'pinned'
+          name: 'pinned',
         },
         {
           type: 'radio',
           name: 'latest',
-          defaultValue: true
+          defaultValue: true,
         },
         {
           type: 'radio',
           name: 'pinned_in_status',
-          scope: ['status']
+          scope: ['status'],
         },
         {
           type: 'radio',
           name: 'pinned_in_user',
           scope: ['user'],
-          defaultValue: true
-        }
-      ]
+          defaultValue: true,
+        },
+      ],
     });
 
     await db.sync({ force: true });
@@ -79,7 +79,7 @@ describe('radio', () => {
 
       expect(posts.map(({ pinned, latest }) => ({ pinned, latest }))).toEqual([
         { pinned: true, latest: false },
-        { pinned: false, latest: true }
+        { pinned: false, latest: true },
       ]);
     });
 
@@ -107,7 +107,7 @@ describe('radio', () => {
       expect(posts.map(({ pinned, latest }) => ({ pinned, latest }))).toEqual([
         { pinned: false, latest: false },
         { pinned: true, latest: false },
-        { pinned: false, latest: true }
+        { pinned: false, latest: true },
       ]);
     });
 
@@ -117,25 +117,50 @@ describe('radio', () => {
       const Post = db.getModel('posts');
       const bulkCreated = await Post.bulkCreate([
         { title: 'title1', status: 'published', user_id: 1 },
-        { title: 'title2', status: 'published', user_id: 2, pinned_in_status: true },
-        { title: 'title3', status: 'draft', user_id: 1, pinned_in_status: true },
+        {
+          title: 'title2',
+          status: 'published',
+          user_id: 2,
+          pinned_in_status: true,
+        },
+        {
+          title: 'title3',
+          status: 'draft',
+          user_id: 1,
+          pinned_in_status: true,
+        },
       ]);
-      expect(bulkCreated.map(({ pinned_in_status, pinned_in_user }) => ({ pinned_in_status, pinned_in_user }))).toEqual([
+      expect(
+        bulkCreated.map(({ pinned_in_status, pinned_in_user }) => ({
+          pinned_in_status,
+          pinned_in_user,
+        })),
+      ).toEqual([
         { pinned_in_status: false, pinned_in_user: false },
         { pinned_in_status: true, pinned_in_user: true },
-        { pinned_in_status: true, pinned_in_user: true }
+        { pinned_in_status: true, pinned_in_user: true },
       ]);
 
-      const user1Post = await users[1].createPost({ title: 'title4', status: 'draft', pinned_in_status: true });
+      const user1Post = await users[1].createPost({
+        title: 'title4',
+        status: 'draft',
+        pinned_in_status: true,
+      });
       expect(user1Post.pinned_in_status).toBe(true);
       expect(user1Post.pinned_in_user).toBe(true);
 
       const posts = await Post.findAll({ order: [['id', 'ASC']] });
-      expect(posts.map(({ title, pinned_in_status, pinned_in_user }) => ({ title, pinned_in_status, pinned_in_user }))).toMatchObject([
+      expect(
+        posts.map(({ title, pinned_in_status, pinned_in_user }) => ({
+          title,
+          pinned_in_status,
+          pinned_in_user,
+        })),
+      ).toMatchObject([
         { title: 'title1', pinned_in_status: false, pinned_in_user: false },
         { title: 'title2', pinned_in_status: true, pinned_in_user: false },
         { title: 'title3', pinned_in_status: false, pinned_in_user: true },
-        { title: 'title4', pinned_in_status: true, pinned_in_user: true }
+        { title: 'title4', pinned_in_status: true, pinned_in_user: true },
       ]);
     });
   });
@@ -145,13 +170,13 @@ describe('radio', () => {
       const Post = db.getModel('posts');
       await Post.bulkCreate([
         { title: 'title1', pinned: true },
-        { title: 'title2' }
+        { title: 'title2' },
       ]);
 
       const created = await Post.create({ pinned: false });
       expect(created.pinned).toBe(false);
 
-      const posts = await Post.findAll({ order: [['title', 'ASC']] });
+      const posts = await Post.findAll({ order: [['id', 'ASC']] });
 
       expect(posts.map(({ pinned }) => pinned)).toEqual([true, false, false]);
     });
@@ -160,13 +185,13 @@ describe('radio', () => {
       const Post = db.getModel('posts');
       await Post.bulkCreate([
         { title: 'title1', pinned: true },
-        { title: 'title2' }
+        { title: 'title2' },
       ]);
 
       const created = await Post.create({ pinned: true });
       expect(created.pinned).toBe(true);
 
-      const posts = await Post.findAll({ order: [['title', 'ASC']] });
+      const posts = await Post.findAll({ order: [['id', 'ASC']] });
 
       expect(posts.map(({ pinned }) => pinned)).toEqual([false, false, true]);
     });
@@ -176,7 +201,7 @@ describe('radio', () => {
       await Post.bulkCreate([
         { title: 'bug1' },
         { title: 'bug2' },
-        { title: 'bug3' }
+        { title: 'bug3' },
       ]);
 
       const post = await Post.findByPk(2);
@@ -186,7 +211,7 @@ describe('radio', () => {
       });
 
       await post.update({
-        status: 'draft'
+        status: 'draft',
       });
 
       const posts = await Post.findAll({ order: [['id', 'ASC']] });

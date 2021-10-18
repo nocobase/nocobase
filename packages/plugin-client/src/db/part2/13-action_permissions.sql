@@ -1,3 +1,4 @@
+DELETE FROM "action_permissions";
 INSERT INTO "action_permissions" ("id", "action_name", "created_at", "updated_at", "collection_name", "user_id", "created_by_id", "updated_by_id", "role_name", "scope_id") VALUES
 (1,	'create',	'2021-09-14 02:19:38.019+00',	'2021-09-14 02:19:45.64+00',	't_geso7fru7a9',	NULL,	1,	1,	NULL,	NULL),
 (2,	'get',	'2021-09-14 02:19:38.04+00',	'2021-09-14 02:19:45.64+00',	't_geso7fru7a9',	NULL,	1,	1,	NULL,	NULL),
@@ -15,4 +16,3 @@ INSERT INTO "action_permissions" ("id", "action_name", "created_at", "updated_at
 (10,	'get',	'2021-09-14 02:19:53.274+00',	'2021-09-14 02:20:00.371+00',	't_fsveob6p269',	NULL,	1,	1,	NULL,	NULL),
 (11,	'update',	'2021-09-14 02:19:53.284+00',	'2021-09-14 02:20:00.371+00',	't_fsveob6p269',	NULL,	1,	1,	NULL,	NULL),
 (12,	'destroy',	'2021-09-14 02:19:53.294+00',	'2021-09-14 02:20:00.371+00',	't_fsveob6p269',	NULL,	1,	1,	NULL,	NULL);
-SELECT setval('action_permissions_id_seq', (SELECT MAX(id) FROM "action_permissions"), true);

@@ -1,5 +1,4 @@
 ########## DOCKER COMPOSE ENV ##########
-
 ADMINER_PORT=8080
 DB_MYSQL_PORT=3306
 DB_POSTGRES_PORT=5432
@@ -10,13 +9,19 @@ API_PORT=13002
 ########## NOCOBASE ENV ##########
 
 # DATABASE
-
+{{#quickstart}}
+DB_DIALECT=sqlite
+DB_STORAGE=db.sqlite
+{{/quickstart}}
+{{^quickstart}}
 DB_DIALECT=postgres
 DB_HOST=localhost
 DB_PORT=5432
 DB_DATABASE=nocobase
 DB_USER=nocobase
 DB_PASSWORD=nocobase
+{{/quickstart}}
+
 # set to 'on' to enable log
 DB_LOG_SQL=
 

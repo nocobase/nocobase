@@ -1,12 +1,15 @@
 import Koa from 'koa';
-import cors from '@koa/cors';
-import bodyParser from 'koa-bodyparser';
 import { Command, CommandOptions } from 'commander';
 import Database, { DatabaseOptions, TableOptions } from '@nocobase/database';
 import Resourcer, { ResourceOptions } from '@nocobase/resourcer';
-import { dataWrapping, table2resource } from './middlewares';
 import { PluginType, Plugin, PluginOptions } from './plugin';
 import { registerActions } from '@nocobase/actions';
+import {
+  createCli,
+  createDatabase,
+  createResourcer,
+  registerMiddlewares,
+} from './helper';
 
 export interface ResourcerOptions {
   prefix?: string;
@@ -18,6 +21,7 @@ export interface ApplicationOptions {
   bodyParser?: any;
   cors?: any;
   dataWrapping?: boolean;
+  registerActions?: boolean;
 }
 
 interface DefaultState {
@@ -46,7 +50,7 @@ interface ActionsOptions {
 
 export class Application<
   StateT = DefaultState,
-  ContextT = DefaultContext,
+  ContextT = DefaultContext
 > extends Koa {
   public readonly db: Database;
 
@@ -59,91 +63,14 @@ export class Application<
   constructor(options: ApplicationOptions) {
     super();
 
-    if (options.database instanceof Database) {
-      this.db = options.database;
-    } else {
-      this.db = new Database(options.database);
+    this.db = createDatabase(options);
+    this.resourcer = createResourcer(options);
+    this.cli = createCli(this, options);
+
+    registerMiddlewares(this, options);
+    if (options.registerActions !== false) {
+      registerActions(this);
     }
-
-    this.resourcer = new Resourcer({ ...options.resourcer });
-    this.cli = new Command();
-
-    if (options.bodyParser !== false) {
-      this.use(
-        bodyParser({
-          ...options.bodyParser,
-        }),
-      );
-    }
-
-    this.use(
-      cors({
-        exposeHeaders: ['content-disposition'],
-        ...options.cors,
-      }),
-    );
-
-    this.use<DefaultState, DefaultContext>(async (ctx, next) => {
-      ctx.db = this.db;
-      ctx.resourcer = this.resourcer;
-      await next();
-    });
-
-    if (options.dataWrapping !== false) {
-      this.use(dataWrapping());
-    }
-
-    this.use(table2resource());
-    this.use(this.resourcer.restApiMiddleware());
-
-    registerActions(this);
-
-    this.cli
-      .command('db:sync')
-      .option('-f, --force')
-      .action(async (...args) => {
-        console.log('db sync...');
-        const cli = args.pop();
-        const force = cli.opts()?.force;
-        await this.db.sync(
-          force
-            ? {
-                force: true,
-                alter: {
-                  drop: true,
-                },
-              }
-            : {},
-        );
-        await this.destroy();
-      });
-
-    this.cli
-      .command('init')
-      // .option('-f, --force')
-      .action(async (...args) => {
-        const cli = args.pop();
-        await this.db.sync({
-          force: true,
-          alter: {
-            drop: true,
-          },
-        });
-        await this.emitAsync('db.init');
-        await this.destroy();
-      });
-
-    this.cli
-      .command('start')
-      .option('-p, --port [port]')
-      .action(async (...args) => {
-        const cli = args.pop();
-        console.log(args);
-        const opts = cli.opts();
-        await this.emitAsync('beforeStart');
-        this.listen(opts.port || 3000);
-        console.log(`http://localhost:${opts.port || 3000}/`);
-      });
   }
 
   use<NewStateT = {}, NewContextT = {}>(
@@ -168,6 +95,10 @@ export class Application<
 
   command(nameAndArgs: string, opts?: CommandOptions) {
     return this.cli.command(nameAndArgs, opts);
+  }
+
+  findCommand(name: string): Command {
+    return (this.cli as any)._findCommand(name);
   }
 
   plugin(options?: PluginType | PluginOptions, ext?: PluginOptions): Plugin {
