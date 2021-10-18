@@ -11,16 +11,11 @@ export function getInitSqls(): {
   const dirs = ['part1', 'part2', 'postgres'];
   return dirs
     .map((dir) => {
-      const files = [];
-      const files1 = glob.sync(path.resolve(__dirname, `./db/${dir}/*.sql`));
-      for (const file of files1) {
-        const sql = readFileSync(file).toString();
-        files.push(sql);
-      }
-
       return {
         dir,
-        files,
+        files: glob
+          .sync(path.resolve(__dirname, `./db/${dir}/*.sql`))
+          .map((fileName) => readFileSync(fileName).toString()),
       };
     })
     .reduce((carry, dirFiles) => {
