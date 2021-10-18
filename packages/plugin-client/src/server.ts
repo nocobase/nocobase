@@ -5,20 +5,28 @@ import { PluginOptions } from '@nocobase/server';
 import { readFileSync } from 'fs';
 import glob from 'glob';
 
-export function getInitSqls() {
-  const part1 = [];
-  const part2 = [];
-  const files1 = glob.sync(path.resolve(__dirname, './db/part1/*.sql'));
-  for (const file of files1) {
-    const sql = readFileSync(file).toString();
-    part1.push(sql);
-  }
-  const files2 = glob.sync(path.resolve(__dirname, './db/part2/*.sql'));
-  for (const file of files2) {
-    const sql = readFileSync(file).toString();
-    part2.push(sql);
-  }
-  return { part1, part2 };
+export function getInitSqls(): {
+  [key: string]: string[];
+} {
+  const dirs = ['part1', 'part2', 'postgres'];
+  return dirs
+    .map((dir) => {
+      const files = [];
+      const files1 = glob.sync(path.resolve(__dirname, `./db/${dir}/*.sql`));
+      for (const file of files1) {
+        const sql = readFileSync(file).toString();
+        files.push(sql);
+      }
+
+      return {
+        dir,
+        files,
+      };
+    })
+    .reduce((carry, dirFiles) => {
+      carry[dirFiles.dir] = dirFiles.files;
+      return carry;
+    }, {});
 }
 
 export function runSql(sql, database) {
@@ -78,6 +86,10 @@ export default {
       await app.db.sync();
 
       await runSqlFile(sqls.part2, database);
+
+      if (app.db.sequelize.getDialect() == 'postgres') {
+        await runSqlFile(sqls.postgres, database);
+      }
     });
   },
 } as PluginOptions;
