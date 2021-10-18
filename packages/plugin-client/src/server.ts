@@ -65,8 +65,14 @@ export default {
       }
     });
     const app = this.app;
-    this.app.on('db.init', async () => {
-      if (this.options.importDemo !== true) {
+    const cmd = app.findCommand('init');
+    if (cmd) {
+      cmd.option('--import-demo');
+    }
+    this.app.on('db.init', async (opts, cli) => {
+      const importDemo = opts.importDemo || this.options.importDemo;
+      console.log({ importDemo });
+      if (importDemo !== true) {
         return;
       }
       const sqls = getInitSqls();

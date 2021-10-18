@@ -70,7 +70,7 @@ for (const plugin of plugins) {
 api.plugin(
   require(`@nocobase/plugin-client/${libDir}/server`).default, {
   dist: path.resolve(process.cwd(), './dist'),
-  importDemo: true,
+  // importDemo: true,
 });
 
 if (process.argv.length < 3) {

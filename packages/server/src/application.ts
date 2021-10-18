@@ -97,6 +97,10 @@ export class Application<
     return this.cli.command(nameAndArgs, opts);
   }
 
+  findCommand(name: string): Command {
+    return (this.cli as any)._findCommand(name);
+  }
+
   plugin(options?: PluginType | PluginOptions, ext?: PluginOptions): Plugin {
     if (typeof options === 'string') {
       return this.plugin(require(options).default, ext);

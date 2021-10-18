@@ -47,14 +47,12 @@ export function createCli(app, options: ApplicationOptions) {
     .command('init')
     .option('-f, --force')
     .action(async (...args) => {
-      const _cli = args.pop();
       await app.db.sync({
         force: true,
       });
-      await app.emitAsync('db.init');
+      await app.emitAsync('db.init', ...args);
       await app.destroy();
     });
-
   cli
     .command('start')
     .option('-p, --port [port]')

@@ -60,6 +60,7 @@ Node:
 Database:
 
 - PostgreSQL 10.x+
+- Sqlite 3+
 
 Installation
 ----------
@@ -84,7 +85,7 @@ vim .env
 docker-compose up -d postgres
 
 # 4. create initialization data
-yarn nocobase init
+yarn nocobase init --import-demo
 
 # 5. start project
 yarn start
