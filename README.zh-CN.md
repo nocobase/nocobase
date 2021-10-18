@@ -62,23 +62,38 @@ Node:
 Database:
 
 - PostgreSQL 10.x+
+- Sqlite 3+
 
 安装 & 运行
 ----------
 
 ### 通过 `create-nocobase-app` 创建项目
 
+#### 快速启动方式
 ~~~shell
-mkdir my-nocobase-app && cd my-nocobase-app
-yarn create nocobase-app
-cp .env.example .env
+yarn create nocobase-app my-nocobase-app --quickstart
+~~~
+
+#### 自定义启动方式
+~~~shell
+# 1. 创建项目
+yarn create nocobase-app my-nocobase-app
+cd my-nocobase-app
+
+# 2. 修改.env中对应的数据库配置
+vim .env
+
+# 3. 启动预置数据库(可选)
 docker-compose up -d postgres
-yarn install
-yarn nocobase init
+
+# 4. 初始化数据
+yarn nocobase init --import-demo
+
+# 5. 启动项目
 yarn start
 ~~~
 
-浏览器内打开 http://localhost:8000
+使用浏览器打开 http://localhost:8000
 
 ### 使用 docker compose
 

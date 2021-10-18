@@ -1,5 +1,10 @@
 import {
-  Model as SequelizeModel, Op, Sequelize, ProjectionAlias, Utils, SaveOptions
+  Model as SequelizeModel,
+  Op,
+  Sequelize,
+  ProjectionAlias,
+  Utils,
+  SaveOptions,
 } from 'sequelize';
 import Database from './database';
 import {
@@ -12,48 +17,50 @@ import {
 import { toInclude } from './utils';
 
 export interface ApiJsonOptions {
-
   /**
    * 字段
-   * 
+   *
    * 数组式：
    * ['col', 'association.col1', 'association_count'],
-   * 
+   *
    * 白名单：
    * {
    *   only: ['col1'],
    *   appends: ['association_count'],
    * }
-   * 
+   *
    * 黑名单：
    * {
    *   except: ['col1'],
    *   appends: ['association_count'],
    * }
    */
-  fields?: string[] | {
-    only?: string[];
-    appends?: string[];
-  } | {
-    except?: string[];
-    appends?: string[];
-  };
+  fields?:
+    | string[]
+    | {
+        only?: string[];
+        appends?: string[];
+      }
+    | {
+        except?: string[];
+        appends?: string[];
+      };
 
   /**
    * 过滤
-   * 
+   *
    * 常规用法：
    * {
    *   col1: {
    *     $eq: 'val1'
    *   },
    * }
-   * 
+   *
    * scope 的用法（如果 scope 与 col 同名，只会执行 scope）：
    * {
    *   scope1: value
    * }
-   * 
+   *
    * json 数据 & 关系数据，可以用点号：
    * {
    *   'association.col1': {
@@ -67,7 +74,7 @@ export interface ApiJsonOptions {
    *     $eq: 'val1'
    *   },
    * }
-   * 
+   *
    * json 数据 & 关系数据的查询也可以不用点号：
    * {
    *   association: {
@@ -81,9 +88,9 @@ export interface ApiJsonOptions {
 
   /**
    * 排序
-   * 
+   *
    * TODO
-   * 
+   *
    * ['col1', '-col2', 'association.col1', '-association.col2']
    */
   sort?: any;
@@ -100,7 +107,6 @@ export interface ApiJsonOptions {
 }
 
 export interface WithCountAttributeOptions {
-
   /**
    * 关系名
    */
@@ -108,9 +114,9 @@ export interface WithCountAttributeOptions {
 
   /**
    * SourceModel 别名
-   * 
+   *
    * 在 include 里使用时，需要指定，一般与 include 的 association 同名
-   * 
+   *
    * include: {
    *   association: 'user', // Post.belongsTo(User)
    *   attributes: [
@@ -143,12 +149,11 @@ export interface UpdateAssociationOptions extends SaveOptions {
 
 /**
  * Model 相关
- * 
+ *
  * TODO: 自定义 model 时的提示问题
  */
 // @ts-ignore
 export abstract class Model extends SequelizeModel {
-
   /**
    * 防止 ts 报错提示
    */
@@ -156,7 +161,7 @@ export abstract class Model extends SequelizeModel {
 
   /**
    * 当前 Model 的 database
-   * 
+   *
    * 与 Model.sequelize 对应，database 也用了 public static readonly
    */
   public static database: Database;
@@ -171,17 +176,25 @@ export abstract class Model extends SequelizeModel {
 
   /**
    * sub query 关联数据的数量
-   * 
+   *
    * TODO: 关联字段暂不支持主键以外的字段
-   * 
-   * @param options 
+   *
+   * @param options
    */
-  static withCountAttribute(options?: string | WithCountAttributeOptions): (string | ProjectionAlias) {
+  static withCountAttribute(
+    options?: string | WithCountAttributeOptions,
+  ): string | ProjectionAlias {
     if (typeof options === 'string') {
       options = { association: options };
     }
 
-    const { sourceAlias, association, where = {}, alias, ...restOptions } = options;
+    const {
+      sourceAlias,
+      association,
+      where = {},
+      alias,
+      ...restOptions
+    } = options;
     const associator = this.associations[association];
     const table = this.database.getTable(this.name);
     const field = table.getField(association);
@@ -193,17 +206,20 @@ export abstract class Model extends SequelizeModel {
       };
     } else if (associator.associationType === 'BelongsToMany') {
       where[targetKey] = {
-        // @ts-ignore
-        [Op.in]: Sequelize.literal(`(${associator.through.model.selectQuery({
-          attributes: [otherKey],
-          where: {
-            [foreignKey]: {
-              [Op.eq]: Sequelize.col(`${sourceAlias || this.name}.${sourceKey}`),
+        [Op.in]: Sequelize.literal(
+          `(${(associator as any).through.model.selectQuery({
+            attributes: [otherKey],
+            where: {
+              [foreignKey]: {
+                [Op.eq]: Sequelize.col(
+                  `${sourceAlias || this.name}.${sourceKey}`,
+                ),
+              },
+              // @ts-ignore
+              ...(associator.through.scope || {}),
             },
-            // @ts-ignore
-            ...(associator.through.scope || {}),
-          },
-        })})`),
+          })})`,
+        ),
       };
     }
 
@@ -221,41 +237,47 @@ export abstract class Model extends SequelizeModel {
           attributes: [[Sequelize.literal(countLiteral), 'count']],
           where: {
             // @ts-ignore
-            ...where, ...(associator.scope || {}),
+            ...where,
+            ...((associator as any).scope || {}),
           },
-        })})`
+        })})`,
       ),
-      alias || Utils.underscoredIf(`${association}Count`, this.options.underscored),
+      alias ||
+        Utils.underscoredIf(`${association}Count`, this.options.underscored),
     ].filter(Boolean);
 
-    return attribute as unknown as ProjectionAlias;
+    return (attribute as unknown) as ProjectionAlias;
   }
 
   /**
    * 当前 Model 的 SQL
-   * 
-   * @param options 
+   *
+   * @param options
    */
   static selectQuery(options = {}): string {
     // @ts-ignore
-    return this.queryGenerator.selectQuery(
-      this.getTableName(),
-      options,
-      this,
-    ).replace(/;$/, '');
+    return this.queryGenerator
+      .selectQuery(this.getTableName(), options, this)
+      .replace(/;$/, '');
   }
 
   static parseApiJson(options: ApiJsonOptions) {
     const { fields, filter, sort, context, page, perPage } = options;
-    const data = toInclude({ fields, filter, sort }, {
-      model: this,
-      associations: this.associations,
-      dialect: this.sequelize.getDialect(),
-      ctx: context,
-      database: this.database,
-    });
+    const data = toInclude(
+      { fields, filter, sort },
+      {
+        model: this,
+        associations: this.associations,
+        dialect: this.sequelize.getDialect(),
+        ctx: context,
+        database: this.database,
+      },
+    );
     if (page || perPage) {
-      data.limit = perPage === -1 ? MAX_LIMIT : Math.min(perPage || DEFAULT_LIMIT, MAX_LIMIT);
+      data.limit =
+        perPage === -1
+          ? MAX_LIMIT
+          : Math.min(perPage || DEFAULT_LIMIT, MAX_LIMIT);
       data.offset = data.limit * (page > 0 ? page - 1 : DEFAULT_OFFSET);
     }
     if (data.attributes && data.attributes.length === 0) {
@@ -269,11 +291,12 @@ export abstract class Model extends SequelizeModel {
     const Model = table.getModel();
     const associations = table.getAssociations();
     const where = {};
-    scope.forEach(col => {
+    scope.forEach((col) => {
       const association = associations.get(col);
-      const dataKey = association && association instanceof BELONGSTO
-        ? association.options.foreignKey
-        : col;
+      const dataKey =
+        association && association instanceof BELONGSTO
+          ? association.options.foreignKey
+          : col;
       if (!Model.rawAttributes[dataKey]) {
         return;
       }
@@ -285,7 +308,11 @@ export abstract class Model extends SequelizeModel {
     return where;
   }
 
-  async updateSingleAssociation(key: string, data: any, options: UpdateAssociationOptions = {}) {
+  async updateSingleAssociation(
+    key: string,
+    data: any,
+    options: UpdateAssociationOptions = {},
+  ) {
     const {
       fields,
       transaction = await this.sequelize.transaction(),
@@ -302,20 +329,25 @@ export abstract class Model extends SequelizeModel {
       return;
     }
 
-    if (typeof data === 'number' || typeof data === 'string' || data instanceof SequelizeModel) {
+    if (
+      typeof data === 'number' ||
+      typeof data === 'string' ||
+      data instanceof SequelizeModel
+    ) {
       await this[accessors.set](data, opts);
     } else if (typeof data === 'object') {
       const Target = association.getTargetModel();
-      const targetAttribute = association instanceof BELONGSTO
-        ? association.options.targetKey
-        : association.options.sourceKey;
+      const targetAttribute =
+        association instanceof BELONGSTO
+          ? association.options.targetKey
+          : association.options.sourceKey;
       if (data[targetAttribute]) {
         if (Object.keys(data).length > 0) {
           const target = await Target.findOne({
             where: {
               [targetAttribute]: data[targetAttribute],
             },
-            transaction
+            transaction,
           });
           if (target) {
             await this[accessors.set](data[targetAttribute], opts);
@@ -337,7 +369,11 @@ export abstract class Model extends SequelizeModel {
     }
   }
 
-  async updateMultipleAssociation(associationName: string, data: any, options: UpdateAssociationOptions = {}) {
+  async updateMultipleAssociation(
+    associationName: string,
+    data: any,
+    options: UpdateAssociationOptions = {},
+  ) {
     const items = Array.isArray(data) ? data : data == null ? [] : [data];
 
     const {
@@ -371,7 +407,7 @@ export abstract class Model extends SequelizeModel {
     const toUpsertObjects = [];
 
     // 遍历所有值成员准备数据
-    items.forEach(item => {
+    items.forEach((item) => {
       if (item instanceof SequelizeModel) {
         if (targetKeyIsPk) {
           toSetPks.add(item.getDataValue(targetPk));
@@ -381,14 +417,18 @@ export abstract class Model extends SequelizeModel {
         return;
       }
       if (typeof item === 'number' || typeof item === 'string') {
-        let targetKeyType = getDataTypeKey(Target.rawAttributes[targetKey].type).toLocaleLowerCase();
+        let targetKeyType = getDataTypeKey(
+          Target.rawAttributes[targetKey].type,
+        ).toLocaleLowerCase();
         if (targetKeyType === 'integer') {
           targetKeyType = 'number';
         }
         // 如果传值类型与之前在 Model 上定义的 targetKey 不同，则报错。
         // 不应兼容定义的 targetKey 不是 primaryKey 却传了 primaryKey 的值的情况。
         if (typeof item !== targetKeyType) {
-          throw new Error(`target key type [${typeof item}] does not match to [${targetKeyType}]`);
+          throw new Error(
+            `target key type [${typeof item}] does not match to [${targetKeyType}]`,
+          );
         }
         if (targetKeyIsPk) {
           toSetPks.add(item);
@@ -404,31 +444,35 @@ export abstract class Model extends SequelizeModel {
 
     /* 仅传关联键处理开始 */
     // 查找已存在的数据
-    const byPkExistItems = toSetPks.size ? await Target.findAll({
-      ...opts,
-      // @ts-ignore
-      where: {
-        [targetPk]: {
-          [Op.in]: Array.from(toSetPks)
-        }
-      },
-      attributes: [targetPk]
-    }) : [];
-    byPkExistItems.forEach(item => {
+    const byPkExistItems = toSetPks.size
+      ? await Target.findAll({
+          ...opts,
+          // @ts-ignore
+          where: {
+            [targetPk]: {
+              [Op.in]: Array.from(toSetPks),
+            },
+          },
+          attributes: [targetPk],
+        })
+      : [];
+    byPkExistItems.forEach((item) => {
       toSetItems.add(item);
     });
 
-    const byUkExistItems = toSetUks.size ? await Target.findAll({
-      ...opts,
-      // @ts-ignore
-      where: {
-        [targetKey]: {
-          [Op.in]: Array.from(toSetUks)
-        }
-      },
-      attributes: [targetPk, targetKey]
-    }) : [];
-    byUkExistItems.forEach(item => {
+    const byUkExistItems = toSetUks.size
+      ? await Target.findAll({
+          ...opts,
+          // @ts-ignore
+          where: {
+            [targetKey]: {
+              [Op.in]: Array.from(toSetUks),
+            },
+          },
+          attributes: [targetPk, targetKey],
+        })
+      : [];
+    byUkExistItems.forEach((item) => {
       toSetItems.add(item);
     });
     /* 仅传关联键处理结束 */
@@ -458,7 +502,7 @@ export abstract class Model extends SequelizeModel {
       if (association instanceof BELONGSTOMANY) {
         belongsToManyList.push({
           item,
-          target
+          target,
         });
       }
 
@@ -474,7 +518,6 @@ export abstract class Model extends SequelizeModel {
       const ThroughModel = (association as BELONGSTOMANY).getThroughModel();
       const throughName = (association as BELONGSTOMANY).getThroughName();
 
-
       for (const { item, target } of belongsToManyList) {
         const throughValues = item[throughName];
         if (throughValues && typeof throughValues === 'object') {
@@ -484,7 +527,7 @@ export abstract class Model extends SequelizeModel {
               [foreignKey]: this.get(sourceKey),
               [otherKey]: target.get(targetKey),
             },
-            transaction
+            transaction,
           });
           await through.update(throughValues, opts);
           // TODO：有 BUG，未知
@@ -498,7 +541,11 @@ export abstract class Model extends SequelizeModel {
     }
   }
 
-  async updateAssociation(key: string, data: any, options: UpdateAssociationOptions = {}) {
+  async updateAssociation(
+    key: string,
+    data: any,
+    options: UpdateAssociationOptions = {},
+  ) {
     const table = this.database.getTable(this.constructor.name);
     const association = table.getAssociations().get(key);
     switch (true) {
@@ -513,7 +560,7 @@ export abstract class Model extends SequelizeModel {
 
   /**
    * 关联数据的更新
-   * 
+   *
    * @param data
    */
   async updateAssociations(data: any, options: UpdateAssociationOptions = {}) {
@@ -526,7 +573,7 @@ export abstract class Model extends SequelizeModel {
       }
       await this.updateAssociation(key, data[key], {
         ...options,
-        transaction
+        transaction,
       });
     }
 
@@ -544,6 +591,8 @@ export abstract class Model extends SequelizeModel {
 /**
  * ModelCtor 需要为当前 Model 的
  */
-export type ModelCtor<M extends Model> = typeof Model & { new(): M } & { [key: string]: any };
+export type ModelCtor<M extends Model> = typeof Model & { new (): M } & {
+  [key: string]: any;
+};
 
 export default Model;

@@ -60,19 +60,34 @@ Node:
 Database:
 
 - PostgreSQL 10.x+
+- Sqlite 3+
 
 Installation
 ----------
 
 ### Create a project with `create-nocobase-app`
 
+#### Quickstart
 ~~~shell
-mkdir my-nocobase-app && cd my-nocobase-app
-yarn create nocobase-app
-cp .env.example .env
+yarn create nocobase-app my-nocobase-app --quickstart
+~~~
+
+#### Start with configuration
+~~~shell
+# 1. create project
+yarn create nocobase-app my-nocobase-app
+cd my-nocobase-app
+
+# 2. edit configuration in .env file
+vim .env
+
+# 3. start a database (optional)
 docker-compose up -d postgres
-yarn install
-yarn nocobase init
+
+# 4. create initialization data
+yarn nocobase init --import-demo
+
+# 5. start project
 yarn start
 ~~~
 

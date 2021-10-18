@@ -2,8 +2,6 @@ import Database from '../..';
 import { getDatabase } from '..';
 import Model, { ModelCtor } from '../../model';
 
-
-
 let db: Database;
 
 beforeEach(async () => {
@@ -39,8 +37,8 @@ describe('model', () => {
           scope: {
             title: 'title1',
           },
-        }
-      ]
+        },
+      ],
     });
 
     db.table({
@@ -51,7 +49,7 @@ describe('model', () => {
           type: 'string',
           name: 'name',
         },
-      ]
+      ],
     });
 
     db.table({
@@ -87,7 +85,7 @@ describe('model', () => {
           name: 'current_user_comments',
           target: 'comments',
         },
-      ]
+      ],
     });
 
     db.table({
@@ -98,7 +96,7 @@ describe('model', () => {
           type: 'string',
           name: 'name',
         },
-      ]
+      ],
     });
 
     db.table({
@@ -131,8 +129,8 @@ describe('model', () => {
         {
           type: 'string',
           name: 'content',
-        }
-      ]
+        },
+      ],
     });
 
     db.table({
@@ -147,7 +145,7 @@ describe('model', () => {
         {
           type: 'hasMany',
           name: 'fields',
-        }
+        },
       ],
     });
 
@@ -161,7 +159,7 @@ describe('model', () => {
         {
           type: 'string',
           name: 'name',
-        }
+        },
       ],
     });
 
@@ -177,7 +175,7 @@ describe('model', () => {
           type: 'hasMany',
           name: 'columns',
           sourceKey: 'name',
-        }
+        },
       ],
     });
 
@@ -192,7 +190,7 @@ describe('model', () => {
         {
           type: 'string',
           name: 'name',
-        }
+        },
       ],
     });
 
@@ -208,7 +206,7 @@ describe('model', () => {
         const user = await User.create();
         const post = await Post.create();
         await post.updateAssociations({
-          user: user.id
+          user: user.id,
         });
 
         const authorizedPost = await Post.findByPk(post.id);
@@ -219,7 +217,7 @@ describe('model', () => {
         const Post = db.getModel('posts');
         const post = await Post.create();
         await post.updateAssociations({
-          user: {}
+          user: {},
         });
 
         const authorizedPost = await Post.findByPk(post.id);
@@ -231,7 +229,7 @@ describe('model', () => {
         const user = await User.create();
         const post = await Post.create();
         await post.updateAssociations({
-          user
+          user,
         });
 
         const authorizedPost = await Post.findByPk(post.id);
@@ -244,10 +242,10 @@ describe('model', () => {
         const user2 = await Post.create();
         const post = await Post.create();
         await post.updateAssociations({
-          user: user1.id
+          user: user1.id,
         });
         await post.updateAssociations({
-          user: user2.id
+          user: user2.id,
         });
 
         const authorizedPost = await Post.findByPk(post.id);
@@ -261,26 +259,26 @@ describe('model', () => {
         const post = await Post.create();
         const comments = await Comment.bulkCreate([{}, {}, {}, {}]);
         await post.updateAssociations({
-          comments: comments.map(item => item.id)
+          comments: comments.map((item) => item.id),
         });
         const postComments = await Comment.findAll({
           where: { post_id: post.id },
-          attributes: ['id']
+          attributes: ['id'],
         });
-        expect(postComments.map(item => item.id)).toEqual([1, 2, 3, 4]);
+        expect(postComments.map((item) => item.id)).toEqual([1, 2, 3, 4]);
       });
 
       it('update with new object', async () => {
         const [Post, Comment] = db.getModels(['posts', 'comments']);
         const post = await Post.create();
         await post.updateAssociations({
-          comments: [{}, {}, {}, {}]
+          comments: [{}, {}, {}, {}],
         });
         const postCommentIds = await Comment.findAll({
           where: { post_id: post.id },
-          attributes: ['id']
+          attributes: ['id'],
         });
-        expect(postCommentIds.map(item => item.id)).toEqual([1, 2, 3, 4]);
+        expect(postCommentIds.map((item) => item.id)).toEqual([1, 2, 3, 4]);
       });
 
       it('update with new model', async () => {
@@ -288,13 +286,13 @@ describe('model', () => {
         const post = await Post.create();
         const comments = await Comment.bulkCreate([{}, {}, {}, {}]);
         await post.updateAssociations({
-          comments
+          comments,
         });
         const postCommentIds = await Comment.findAll({
           where: { post_id: post.id },
-          attributes: ['id']
+          attributes: ['id'],
         });
-        expect(postCommentIds.map(item => item.id)).toEqual([1, 2, 3, 4]);
+        expect(postCommentIds.map((item) => item.id)).toEqual([1, 2, 3, 4]);
       });
 
       it('update with exist rows/primaryKeys', async () => {
@@ -302,19 +300,19 @@ describe('model', () => {
         const post = await Post.create();
         const comments = await Comment.bulkCreate([{}, {}, {}, {}]);
         await post.updateAssociations({
-          comments
+          comments,
         });
         await post.updateAssociations({
-          comments
+          comments,
         });
         await post.updateAssociations({
-          comments: comments.map(item => item.id)
+          comments: comments.map((item) => item.id),
         });
         const postCommentIds = await Comment.findAll({
           where: { post_id: post.id },
-          attributes: ['id']
+          attributes: ['id'],
         });
-        expect(postCommentIds.map(item => item.id)).toEqual([1, 2, 3, 4]);
+        expect(postCommentIds.map((item) => item.id)).toEqual([1, 2, 3, 4]);
       });
 
       it('update with exist objects', async () => {
@@ -322,23 +320,25 @@ describe('model', () => {
         const post = await Post.create();
         const comments = await Comment.bulkCreate([{}, {}, {}, {}]);
         await post.updateAssociations({
-          comments
+          comments,
         });
         await post.updateAssociations({
-          comments: comments.map(item => ({
+          comments: comments.map((item) => ({
             ...item.get(),
-            content: `content${item.id}`
-          }))
+            content: `content${item.id}`,
+          })),
         });
         const postComments = await Comment.findAll({
           where: { post_id: post.id },
-          attributes: ['id', 'content']
+          attributes: ['id', 'content'],
         });
-        expect(postComments.map(({ id, content }) => ({ id, content }))).toEqual([
+        expect(
+          postComments.map(({ id, content }) => ({ id, content })),
+        ).toEqual([
           { id: 1, content: 'content1' },
           { id: 2, content: 'content2' },
           { id: 3, content: 'content3' },
-          { id: 4, content: 'content4' }
+          { id: 4, content: 'content4' },
         ]);
       });
 
@@ -348,39 +348,43 @@ describe('model', () => {
         const post2 = await Post.create();
         const comments = await Comment.bulkCreate([{}, {}, {}, {}]);
         await post.updateAssociations({
-          comments
+          comments,
         });
         const postComments = await Comment.findAll({
-          where: { post_id: post.id }
+          where: { post_id: post.id },
         });
-        expect(postComments.map(({ id, post_id }) => ({ id, post_id }))).toEqual([
+        expect(
+          postComments.map(({ id, post_id }) => ({ id, post_id })),
+        ).toEqual([
           { id: 1, post_id: post.id },
           { id: 2, post_id: post.id },
           { id: 3, post_id: post.id },
-          { id: 4, post_id: post.id }
+          { id: 4, post_id: post.id },
         ]);
 
         await post2.updateAssociations({
-          comments: postComments.map(item => ({
+          comments: postComments.map((item) => ({
             ...item.get(),
-            content: `content${item.id}`
-          }))
+            content: `content${item.id}`,
+          })),
         });
         const updatedComments = await Comment.findAll();
         const post1CommentsCount = await Comment.count({
-          where: { post_id: post.id }
+          where: { post_id: post.id },
         });
         expect(post1CommentsCount).toBe(0);
 
         const post2Comments = await Comment.findAll({
           where: { post_id: post2.id },
-          attributes: ['id', 'content']
+          attributes: ['id', 'content'],
         });
-        expect(post2Comments.map(({ id, content }) => ({ id, content }))).toEqual([
+        expect(
+          post2Comments.map(({ id, content }) => ({ id, content })),
+        ).toEqual([
           { id: 1, content: 'content1' },
           { id: 2, content: 'content2' },
           { id: 3, content: 'content3' },
-          { id: 4, content: 'content4' }
+          { id: 4, content: 'content4' },
         ]);
       });
 
@@ -389,17 +393,17 @@ describe('model', () => {
         const post = await Post.create();
         const comments = await Comment.bulkCreate([{}, {}, {}, {}]);
         await post.updateAssociations({
-          comments
+          comments,
         });
         await post.updateAssociations({
           comments: comments
             .filter(({ id }) => Boolean(id % 2))
-            .concat(...[await Comment.create()])
+            .concat(...[await Comment.create()]),
         });
 
         const postComments = await Comment.findAll({
           where: { post_id: post.id },
-          attributes: ['id']
+          attributes: ['id'],
         });
         expect(postComments.map(({ id }) => id)).toEqual([1, 3, 5]);
       });
@@ -407,37 +411,47 @@ describe('model', () => {
 
     describe('belongsToMany', () => {
       it('update with primary key', async () => {
-        const [Post, Tag, PostTag] = db.getModels(['posts', 'tags', 'posts_tags']);
+        const [Post, Tag, PostTag] = db.getModels([
+          'posts',
+          'tags',
+          'posts_tags',
+        ]);
         const post = await Post.create();
         const tags = await Tag.bulkCreate([{}, {}, {}, {}]);
         await post.updateAssociations({
-          tags: tags.map(item => item.id)
+          tags: tags.map((item) => item.id),
         });
         const tagged = await PostTag.findAll({
           where: { post_id: post.id },
-          attributes: ['tag_id']
+          attributes: ['tag_id'],
         });
-        expect(tagged.map(item => item.tag_id)).toEqual([1, 2, 3, 4]);
+        expect(tagged.map((item) => item.tag_id)).toEqual([1, 2, 3, 4]);
       });
 
       it('update with exist rows/primaryKeys', async () => {
-        const [Post, Tag, PostTag] = db.getModels(['posts', 'tags', 'posts_tags']);
+        const [Post, Tag, PostTag] = db.getModels([
+          'posts',
+          'tags',
+          'posts_tags',
+        ]);
         const post = await Post.create();
         const tags = await Tag.bulkCreate([{}, {}, {}, {}]);
         await post.updateAssociations({
-          tags: tags.map(item => item.id)
+          tags: tags.map((item) => item.id),
         });
         await post.updateAssociations({
-          tags: tags.map(item => item.id)
+          tags: tags.map((item) => item.id),
         });
         await post.updateAssociations({
-          tags
+          tags,
         });
         const tagged = await PostTag.findAll({
           where: { post_id: post.id },
-          attributes: ['tag_id', 'post_id']
+          attributes: ['tag_id', 'post_id'],
         });
-        expect(tagged.map(({ post_id, tag_id }) => ({ post_id, tag_id }))).toEqual([
+        expect(
+          tagged.map(({ post_id, tag_id }) => ({ post_id, tag_id })),
+        ).toEqual([
           { tag_id: 1, post_id: 1 },
           { tag_id: 2, post_id: 1 },
           { tag_id: 3, post_id: 1 },
@@ -446,35 +460,47 @@ describe('model', () => {
       });
 
       it('update with exist rows/primaryKeys and new objects', async () => {
-        const [Post, Tag, PostTag] = db.getModels(['posts', 'tags', 'posts_tags']);
+        const [Post, Tag, PostTag] = db.getModels([
+          'posts',
+          'tags',
+          'posts_tags',
+        ]);
         const post = await Post.create();
         const tags = await Tag.bulkCreate([{}, {}, {}, {}]);
         await post.updateAssociations({
-          tags: tags.map(item => item.id)
+          tags: tags.map((item) => item.id),
         });
         await post.updateAssociations({
-          tags: tags.filter(({ id }) => Boolean(id % 2)).concat(await Tag.create({}))
+          tags: tags
+            .filter(({ id }) => Boolean(id % 2))
+            .concat(await Tag.create({})),
         });
         const tagged = await PostTag.findAll({
           where: { post_id: post.id },
-          attributes: ['tag_id']
+          attributes: ['tag_id'],
         });
         expect(tagged.map(({ tag_id }) => tag_id)).toEqual([1, 3, 5]);
       });
 
       it('update other with exist rows/primaryKeys', async () => {
-        const [Post, Tag, PostTag] = db.getModels(['posts', 'tags', 'posts_tags']);
+        const [Post, Tag, PostTag] = db.getModels([
+          'posts',
+          'tags',
+          'posts_tags',
+        ]);
         const post = await Post.create();
         const post2 = await Post.create();
         const tags = await Tag.bulkCreate([{}, {}, {}, {}]);
         await post.updateAssociations({
-          tags: tags.map(item => item.id)
+          tags: tags.map((item) => item.id),
         });
         await post2.updateAssociations({
-          tags
+          tags,
         });
         const tagged = await PostTag.findAll();
-        expect(tagged.map(({ post_id, tag_id }) => ({ post_id, tag_id }))).toEqual([
+        expect(
+          tagged.map(({ post_id, tag_id }) => ({ post_id, tag_id })),
+        ).toEqual([
           { tag_id: 1, post_id: 1 },
           { tag_id: 2, post_id: 1 },
           { tag_id: 3, post_id: 1 },
@@ -492,17 +518,20 @@ describe('model', () => {
       const post = await Post.create();
       const tag = await Tag.create();
       await post.updateAssociations({
-        tags: [{
-          name: 'xxx',
-          posts_tags: {
-            name: 'name134',
-          }
-        }, {
-          id: tag.id,
-          posts_tags: {
-            name: 'name234',
-          }
-        }],
+        tags: [
+          {
+            name: 'xxx',
+            posts_tags: {
+              name: 'name134',
+            },
+          },
+          {
+            id: tag.id,
+            posts_tags: {
+              name: 'name234',
+            },
+          },
+        ],
       });
       const PostTag = db.getModel('posts_tags');
       const [t1, t2] = await PostTag.findAll({
@@ -518,7 +547,11 @@ describe('model', () => {
 
   describe('scope', () => {
     it('scope', async () => {
-      const [User, Post, Comment] = db.getModels(['users', 'posts', 'comments']);
+      const [User, Post, Comment] = db.getModels([
+        'users',
+        'posts',
+        'comments',
+      ]);
       const user1 = await User.create();
       const user2 = await User.create();
       const user3 = await User.create();
@@ -565,8 +598,8 @@ describe('model', () => {
         return {
           where: {
             name: name,
-          }
-        }
+          },
+        };
       });
 
       const [User, Post] = db.getModels(['users', 'posts']);
@@ -589,29 +622,22 @@ describe('model', () => {
         posts: post,
       });
       await post.updateAssociations({
-        tags: [
-          { name: 'tag1' },
-          { name: 'tag2' },
-          { name: 'tag3' },
-        ],
+        tags: [{ name: 'tag1' }, { name: 'tag2' }, { name: 'tag3' }],
       });
       // where & include
       const options = Post.parseApiJson({
         filter: {
           title: 'title112233',
-          user: { // belongsTo
+          user: {
+            // belongsTo
             name: 'name112233',
           },
-          tags: { // belongsToMany
+          tags: {
+            // belongsToMany
             scopeName: 'tag3',
           },
         },
-        fields: [
-          'title',
-          'tags_count',
-          'tags.name',
-          'user.name'
-        ],
+        fields: ['title', 'tags_count', 'tags.name', 'user.name'],
         sort: '-tags_count,tags.name,user.posts_count',
         context: {
           scopeName: 'tag3',
@@ -631,7 +657,7 @@ describe('model', () => {
 
         // console.log(JSON.stringify(rows[0].toJSON(), null, 2));
 
-        rows.forEach(row => {
+        rows.forEach((row) => {
           // expect(row.toJSON()).toEqual({ title: 'title112233', 'tags_count': 3, user: { name: 'name112233', posts_count: 1 } });
           expect(row.get('title')).toBe('title112233');
           expect(row.user.get('name')).toBe('name112233');
@@ -694,7 +720,7 @@ describe('model', () => {
           include: [
             User.withCountAttribute({
               association: 'posts',
-              alias: 'posts2_count'
+              alias: 'posts2_count',
             }),
           ],
         },
@@ -736,7 +762,9 @@ describe('model', () => {
         include: [
           {
             association: 'user',
-            attributes: ['id', 'name',
+            attributes: [
+              'id',
+              'name',
               User.withCountAttribute({
                 sourceAlias: 'user',
                 association: 'posts',
@@ -752,7 +780,7 @@ describe('model', () => {
       expect(post.get('tags_count')).toBe(5);
       expect(post.get('tags_name1_count')).toBe(1);
       expect(post.user.get('posts_count')).toBe(1);
-      post.tags.forEach(tag => {
+      post.tags.forEach((tag) => {
         expect(tag.get('posts_count')).toBe(1);
       });
     });
@@ -904,9 +932,7 @@ describe('model', () => {
         name: 'examples',
       });
       await table.updateAssociations({
-        fields: [
-          { name: 'name' },
-        ]
+        fields: [{ name: 'name' }],
       });
       const field = await Field.findOne({
         where: {
@@ -924,9 +950,7 @@ describe('model', () => {
         name: 'examples',
       });
       await row.updateAssociations({
-        columns: [
-          { name: 'name' },
-        ]
+        columns: [{ name: 'name' }],
       });
       const column = await Column.findOne({
         where: {
@@ -950,7 +974,7 @@ describe('model', () => {
             id: field.id,
             name: 'nam1234',
           },
-        ]
+        ],
       });
 
       const f = await Field.findOne({
@@ -973,7 +997,6 @@ describe('model', () => {
   });
 
   describe('blongsTo', () => {
-
     it('shoud associated id when association is integer', async () => {
       const [User, Post] = db.getModels(['users', 'posts']);
       const user = await User.create();
@@ -1143,7 +1166,7 @@ describe('model', () => {
       const post = await Post.create();
       await post.updateAssociations({
         tags: {
-          name: 'tag1'
+          name: 'tag1',
         },
       });
       const count = await post.countTags();
@@ -1156,10 +1179,10 @@ describe('model', () => {
       await post.updateAssociations({
         tags: [
           {
-            name: 'tag2'
+            name: 'tag2',
           },
           {
-            name: 'tag3'
+            name: 'tag3',
           },
         ],
       });
@@ -1239,9 +1262,11 @@ describe('belongsToMany', () => {
   });
   it('update with new object', async () => {
     await post.updateAssociations({
-      tags: [{
-        name: 'tag3',
-      }],
+      tags: [
+        {
+          name: 'tag3',
+        },
+      ],
     });
     expect(await post.countTags()).toBe(1);
   });

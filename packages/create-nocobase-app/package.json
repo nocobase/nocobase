@@ -15,7 +15,10 @@
   },
   "license": "MIT",
   "dependencies": {
-    "@umijs/utils": "3.5.17"
+    "@umijs/utils": "3.5.17",
+    "commander": "^8.2.0",
+    "execa": "^5.1.1",
+    "ora": "^5.4.1"
   },
   "bin": {
     "create-nocobase-app": "bin/create-nocobase-app.js"

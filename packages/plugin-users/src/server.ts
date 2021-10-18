@@ -17,8 +17,8 @@ export default {
       const User = database.getModel('users');
       await User.create({
         nickname: '超级管理员',
-        email: process.env.ADMIN_EMAIL,
-        password: process.env.ADMIN_PASSWORD,
+        email: process.env.ADMIN_EMAIL || 'admin@nocobase.com',
+        password: process.env.ADMIN_PASSWORD || 'admin',
       });
     });
 

@@ -1,4 +1,4 @@
-TRUNCATE "routes" RESTART IDENTITY CASCADE;
+DELETE FROM "routes";
 INSERT INTO "routes" ("key", "type", "options", "sort", "created_at", "updated_at", "parent_key", "ui_schema_key") VALUES
 ('r_94b8nz6evyh',	'redirect',	'{"from":"/","to":"/admin","exact":true}',	1,	'2021-09-02 15:07:57.162+00',	'2021-09-02 15:07:57.162+00',	NULL,	NULL),
 ('r_w1sa2lfk44v',	'route',	'{"path":"/admin/:name(.+)?","component":"AdminLayout","title":"后台"}',	2,	'2021-09-02 15:07:57.17+00',	'2021-09-02 15:07:57.185+00',	NULL,	'qqzzjakwkwl'),

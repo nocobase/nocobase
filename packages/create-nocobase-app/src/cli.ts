@@ -1,30 +1,107 @@
-import { chalk, yParser } from '@umijs/utils';
-import { existsSync } from 'fs';
-import { join } from 'path';
+import { chalk } from '@umijs/utils';
+import commander from 'commander';
+import path from 'path';
+import ora from 'ora';
+import { hasYarn, runInit, runInstall, runStart } from './utils';
+import execa from 'execa';
 
-const args = yParser(process.argv.slice(2), {
-  alias: {
-    version: ['v'],
-    help: ['h'],
-  },
-  boolean: ['version'],
-});
+const packageJson = require('../package.json');
 
-if (args.version && !args._[0]) {
-  args._[0] = 'version';
-  const local = existsSync(join(__dirname, '../.local'))
-    ? chalk.cyan('@local')
-    : '';
-  const { name, version } = require('../package.json');
-  console.log(`${name}@${version}${local}`);
-} else {
-  require('./')
-    .default({
-      cwd: process.cwd(),
-      args,
-    })
-    .catch((err: Error) => {
-      console.error(`Create failed, ${err.message}`);
-      console.error(err);
+const program = new commander.Command(packageJson.name)
+  .version(packageJson.version)
+  .option('--simple', 'create nocobase app without install dependencies')
+  .option('--quickstart', 'create quickstart nocobase app')
+  .arguments('<project-directory>')
+  .usage(`${chalk.green('<project-directory>')}`)
+  .action(async (directory, options) => {
+    console.log(
+      `Creating a new Nocobase application at ${chalk.green(directory)}.`,
+    );
+    console.log('Creating files.');
+
+    const fullPath = path.join(process.cwd(), directory);
+
+    await require('./index').default({
+      cwd: fullPath,
+      args: {},
+      tplContext: options.quickstart
+        ? { quickstart: true }
+        : { quickstart: false },
     });
-}
+
+    const cmd = chalk.cyan(hasYarn() ? 'yarn' : 'npm run');
+
+    if (options.simple) {
+      console.log();
+      console.log('Done. You can start by doing:');
+      console.log();
+      console.log(`  ${chalk.cyan('cd')} ${directory}`);
+      console.log(`  ${cmd} install`);
+      console.log(`  ${cmd} nocobase init --import-demo`);
+      console.log(`  ${cmd} start`);
+      console.log();
+      return;
+    }
+
+    const installPrefix = chalk.yellow('Installing dependencies:');
+    const loader = ora(installPrefix).start();
+    const logInstall = (chunk = '') => {
+      loader.text = `${installPrefix} ${chunk
+        .toString()
+        .split('\n')
+        .join(' ')}`;
+    };
+
+    const runner = runInstall(fullPath);
+
+    runner?.stdout?.on('data', logInstall);
+    runner?.stderr?.on('data', logInstall);
+
+    await runner;
+    loader.stop();
+    console.log(`Dependencies installed ${chalk.green('successfully')}.`);
+    console.log();
+    console.log(`Your application was created at ${chalk.green(directory)}.\n`);
+
+    if (options.quickstart) {
+      // Using Sqlite as Database
+      const prefix = chalk.yellow('Nocobase init');
+      const initLoader = ora(prefix).start();
+
+      try {
+        const initLog = (chunk = '') => {
+          initLoader.text = `${prefix} ${chunk
+            .toString()
+            .split('\n')
+            .join(' ')}`;
+        };
+
+        const init = runInit(fullPath);
+        init.stderr.on('data', initLog);
+        init.stdout.on('data', initLog);
+        await init;
+        initLoader.stop();
+      } catch (e) {
+        initLoader.stop();
+        console.log();
+        console.log(e.message);
+        process.exit(1);
+      }
+
+      console.log(`Running your application.`);
+      await execa('npm', ['run', 'start'], {
+        stdio: 'inherit',
+        cwd: fullPath,
+      });
+    } else {
+      console.log();
+      console.log('You can start by doing:');
+      console.log();
+      console.log(`  ${chalk.cyan('cd')} ${directory}`);
+      console.log(`  ${cmd} nocobase init --import-demo`);
+      console.log(`  ${cmd} start`);
+      console.log();
+    }
+  })
+  .showHelpAfterError()
+  .parse(process.argv);

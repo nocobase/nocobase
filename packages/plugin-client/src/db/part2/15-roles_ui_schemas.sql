@@ -1,3 +1,4 @@
+DELETE FROM "roles_ui_schemas";
 INSERT INTO "roles_ui_schemas" ("created_at", "updated_at", "ui_schema_key", "role_name") VALUES
 ('2021-09-14 02:19:13.669+00',	'2021-09-14 02:19:13.669+00',	'0b73gccskc2',	'r_tfs4qtaxjcs'),
 ('2021-09-14 02:19:13.669+00',	'2021-09-14 02:19:13.669+00',	'hall72478p5',	'r_tfs4qtaxjcs'),

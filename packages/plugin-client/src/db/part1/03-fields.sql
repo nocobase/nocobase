@@ -1,4 +1,4 @@
-TRUNCATE "fields" RESTART IDENTITY CASCADE;
+DELETE FROM "fields";
 INSERT INTO "fields" ("key", "name", "interface", "data_type", "privilege", "state", "options", "sort", "created_at", "updated_at", "parent_key", "collection_name", "ui_schema_key", "reverse_key") VALUES
 ('aun85p76s0v',	'f_l8uuiwcnlw9',	'textarea',	'text',	NULL,	1,	'{}',	8,	'2021-09-12 08:18:46.92+00',	'2021-09-12 08:18:46.935+00',	NULL,	't_2uhu4szs1kq',	'c2pallk0lge',	NULL),
 ('sj5p2y4ac06',	'70enejazumv',	'updatedAt',	'date',	'undelete',	1,	'{"field":"updated_at"}',	2,	'2021-09-03 08:17:30.543+00',	'2021-09-03 08:17:30.555+00',	NULL,	't_2uhu4szs1kq',	'lchrxtjm3d5',	NULL),
