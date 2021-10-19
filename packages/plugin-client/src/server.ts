@@ -14,7 +14,7 @@ export function getInitSqls(): {
       return {
         dir,
         files: glob
-          .sync(path.resolve(__dirname, `./db/${dir}/*.sql`))
+          .sync(path.resolve(__dirname, `./db/zh-CN/${dir}/*.sql`))
           .map((fileName) => readFileSync(fileName).toString()),
       };
     })

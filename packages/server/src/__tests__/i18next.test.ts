@@ -1,8 +1,5 @@
 import supertest from 'supertest';
 import { Application } from '../application';
-import { Plugin } from '../plugin';
-
-class MyPlugin extends Plugin {}
 
 describe('i18next', () => {
   let app: Application;
@@ -34,13 +31,13 @@ describe('i18next', () => {
     return app.db.close();
   });
 
-  it('resourcer.define', async () => {
+  it('global', async () => {
     expect(app.i18n.t('hello')).toEqual('Hello');
     app.i18n.changeLanguage('zh-CN');
     expect(app.i18n.t('hello')).toEqual('你好');
   });
 
-  it('resourcer.define', async () => {
+  it('ctx', async () => {
     app.resource({
       name: 'tests',
       actions: {
@@ -56,5 +53,6 @@ describe('i18next', () => {
     expect(response2.text).toEqual('你好');
     const response3 = await agent.get('/api/tests:get?locale=zh-CN');
     expect(response3.text).toEqual('你好');
+    expect(app.i18n.language).toBe('en-US');
   });
 });
