@@ -6,12 +6,14 @@ import { AuthContext, useCurrentUser } from './Auth';
 import { FormButtonGroup, FormDrawer, FormLayout, Submit } from '@formily/antd';
 import { useState } from 'react';
 import { useClient } from '../../constate';
+import { useTranslation } from 'react-i18next';
 
 export const UserInfo = () => {
   const history = useHistory();
   const { service, currentUser } = useContext(AuthContext);
   const [visible, setVisible] = useState(false);
   const { request } = useClient();
+  const { t, i18n } = useTranslation();
   return (
     <Dropdown
       visible={visible}
@@ -91,8 +93,10 @@ export const UserInfo = () => {
                 className={'roles-select'}
                 bordered={false}
                 size={'small'}
-                disabled
-                defaultValue={'zh-CN'}
+                defaultValue={i18n.language}
+                onChange={(value) => {
+                  i18n.changeLanguage(value);
+                }}
                 options={[
                   { label: '简体中文', value: 'zh-CN' },
                   { label: 'English', value: 'en-US' },

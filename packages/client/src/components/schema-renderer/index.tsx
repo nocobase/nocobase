@@ -78,6 +78,7 @@ import {
   useCollectionContext,
   useResourceRequest,
 } from '../../constate';
+import { i18n } from '../../i18n';
 
 export const BlockContext = createContext({ dragRef: null });
 
@@ -189,6 +190,7 @@ const useAssociationResource = (options) => {
 
 export const SchemaField = createSchemaField({
   scope: {
+    t: i18n.t,
     Table,
     Calendar,
     Kanban,

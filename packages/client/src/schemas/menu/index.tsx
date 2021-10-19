@@ -71,6 +71,7 @@ import { DndContext, DragOverlay } from '@dnd-kit/core';
 import { createPortal } from 'react-dom';
 import { Resource } from '../../resource';
 import { useClient } from '../../constate';
+import { useTranslation } from 'react-i18next';
 
 export interface MenuContextProps {
   schema?: Schema;
@@ -82,6 +83,7 @@ export const MenuContext = createContext<MenuContextProps>(null);
 
 const SideMenu = (props: any) => {
   const { selectedKey, defaultSelectedKeys, onSelect, path } = props;
+  const { t } = useTranslation();
   const { schema } = useDesignable();
   const [selectedKeys, setSelectedKeys] = useState(defaultSelectedKeys);
   useEffect(() => {
@@ -114,7 +116,7 @@ const SideMenu = (props: any) => {
             icon={<PlusOutlined />}
             className={`nb-add-new-menu-item menu-mode-inline designable-btn designable-btn-dash`}
           >
-            添加菜单项
+            {t('Add menu item')}
           </Button>
         </Menu.AddNew>
       </AntdMenu>
@@ -160,6 +162,7 @@ export const Menu: any = observer((props: any) => {
   const child = schema.properties && schema.properties[selectedKey];
   const isSubMenu = child && child['x-component'] === 'Menu.SubMenu';
   const { updateSchema } = useClient();
+  const { t } = useTranslation();
 
   useMount(() => {
     if (mode !== 'mix') {
@@ -238,7 +241,7 @@ export const Menu: any = observer((props: any) => {
                 icon={<PlusOutlined />}
                 type={mode == 'inline' ? 'dashed' : 'primary'}
               >
-                添加菜单项
+                {t('Add menu item')}
               </Button>
             </Menu.AddNew>
           </AntdMenu>

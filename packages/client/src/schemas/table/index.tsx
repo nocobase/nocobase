@@ -72,6 +72,7 @@ import IconPicker from '../../components/icon-picker';
 import { DescriptionsContext } from '../form';
 import { VisibleContext } from '../../context';
 import { SimpleDesignableBar } from './SimpleDesignableBar';
+import { useTranslation } from 'react-i18next';
 
 export interface ITableContext {
   props: any;
@@ -1451,6 +1452,7 @@ const fieldsToSortColumns = (fields: any[]) => {
 Table.Filter = observer((props: any) => {
   const { service } = useTable();
   const { fieldNames = [] } = props;
+  const { t } = useTranslation();
   const { schema, DesignableBar } = useDesignable();
   const form = useMemo(() => createForm(), []);
   const { fields = [] } = useCollectionContext();
@@ -1506,7 +1508,7 @@ Table.Filter = observer((props: any) => {
       }
     >
       <Button icon={<IconPicker type={icon} />}>
-        {count > 0 ? `${count} 个筛选项` : schema.title}
+        {count > 0 ? `${count} 个筛选项` : t(schema.title)}
         <DesignableBar />
       </Button>
     </Popover>

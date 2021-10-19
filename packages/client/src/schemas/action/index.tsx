@@ -47,6 +47,7 @@ import { createPortal } from 'react-dom';
 import { ActionBar } from './ActionBar';
 import { DragHandle, SortableItem } from '../../components/Sortable';
 import { useDisplayedMapContext } from '../../constate';
+import { useTranslation } from 'react-i18next';
 
 export const ButtonComponentContext = createContext(null);
 
@@ -65,6 +66,7 @@ export const Action: any = observer((props: any) => {
     icon,
     ...others
   } = props;
+  const { t } = useTranslation();
   const { run } = useAction();
   const field = useField();
   const { schema, DesignableBar } = useDesignable();
@@ -91,7 +93,7 @@ export const Action: any = observer((props: any) => {
         }
       }}
     >
-      {schema.title}
+      {t(schema.title)}
       <DesignableBar path={getSchemaPath(schema)} />
     </Button>
   );

@@ -70,6 +70,8 @@ import {
 } from '../../constate';
 import SwitchMenuItem from '../../components/SwitchMenuItem';
 import { BlockSchemaContext } from '../../context';
+import { useTranslation } from 'react-i18next';
+import { i18n } from '../../i18n';
 
 const generateGridBlock = (schema: ISchema) => {
   const name = schema.name || uid();
@@ -112,7 +114,7 @@ function generateCardItemSchema(component) {
   const defaults: { [key: string]: ISchema } = {
     'Markdown.Void': {
       type: 'void',
-      default: '这是一段演示文字，**支持使用 Markdown 语法**',
+      default: i18n.t('这是一段演示文字，**支持使用 Markdown 语法**'),
       'x-designable-bar': 'Markdown.Void.DesignableBar',
       'x-decorator': 'CardItem',
       'x-read-pretty': true,
@@ -141,7 +143,7 @@ function generateCardItemSchema(component) {
           properties: {
             [uid()]: {
               type: 'void',
-              title: '筛选',
+              title: 'Filter',
               'x-decorator': 'AddNew.Displayed',
               'x-decorator-props': {
                 displayName: 'filter',
@@ -156,7 +158,7 @@ function generateCardItemSchema(component) {
             [uid()]: {
               type: 'void',
               name: 'action1',
-              title: '删除',
+              title: 'Delete',
               'x-align': 'right',
               'x-decorator': 'AddNew.Displayed',
               'x-decorator-props': {
@@ -176,7 +178,7 @@ function generateCardItemSchema(component) {
             [uid()]: {
               type: 'void',
               name: 'action1',
-              title: '添加',
+              title: 'Add New',
               'x-align': 'right',
               'x-decorator': 'AddNew.Displayed',
               'x-decorator-props': {
@@ -955,6 +957,7 @@ AddNew.CardItem = observer((props: any) => {
   const path = useSchemaPath();
   const { collections = [], loading, refresh } = useCollectionsContext();
   const { createSchema } = useClient();
+  const { t } = useTranslation();
   return (
     <Dropdown
       trigger={['hover']}
@@ -1037,10 +1040,10 @@ AddNew.CardItem = observer((props: any) => {
             }
           }}
         >
-          <Menu.ItemGroup title={'数据区块'}>
+          <Menu.ItemGroup title={t('Data Blocks')}>
             {[
-              { key: 'Table', title: '表格', icon: 'TableOutlined' },
-              { key: 'Form', title: '表单', icon: 'FormOutlined' },
+              { key: 'Table', title: t('Table'), icon: 'TableOutlined' },
+              { key: 'Form', title: t('Form'), icon: 'FormOutlined' },
             ].map((view) => (
               <Menu.SubMenu
                 icon={<IconPicker type={view.icon} />}
@@ -1051,7 +1054,7 @@ AddNew.CardItem = observer((props: any) => {
                 <Menu.ItemGroup
                   className={'display-fields'}
                   key={`${view.key}-select`}
-                  title={'选择数据源'}
+                  title={t('Select a data source')}
                 >
                   {collections?.map((item) => (
                     <Menu.Item
@@ -1071,7 +1074,7 @@ AddNew.CardItem = observer((props: any) => {
             {[
               {
                 key: 'Calendar',
-                title: '日历',
+                title: t('Calendar'),
                 icon: 'CalendarOutlined',
                 // disabled: true,
               },
@@ -1085,7 +1088,7 @@ AddNew.CardItem = observer((props: any) => {
                 <Menu.ItemGroup
                   className={'display-fields'}
                   key={`${view.key}-select`}
-                  title={'选择数据源'}
+                  title={t('Select a data source')}
                 >
                   {collections?.map((item) => (
                     <Menu.Item
@@ -1101,7 +1104,7 @@ AddNew.CardItem = observer((props: any) => {
                                   properties: {
                                     title: {
                                       type: 'string',
-                                      title: '标题字段',
+                                      title: t('Title field'),
                                       required: true,
                                       'x-decorator': 'FormItem',
                                       'x-component': 'Select',
@@ -1115,7 +1118,7 @@ AddNew.CardItem = observer((props: any) => {
                                       ),
                                     },
                                     start: {
-                                      title: '开始日期字段',
+                                      title: t('开始日期字段'),
                                       required: true,
                                       'x-decorator': 'FormItem',
                                       'x-component': 'Select',
@@ -1131,7 +1134,7 @@ AddNew.CardItem = observer((props: any) => {
                                         }),
                                     },
                                     end: {
-                                      title: '结束日期字段',
+                                      title: t('结束日期字段'),
                                       'x-decorator': 'FormItem',
                                       'x-component': 'Select',
                                       enum: item?.generalFields
@@ -1199,7 +1202,7 @@ AddNew.CardItem = observer((props: any) => {
             {[
               {
                 key: 'Kanban',
-                title: '看板',
+                title: t('Kanban'),
                 icon: 'CreditCardOutlined',
                 // disabled: true,
               },
@@ -1213,7 +1216,7 @@ AddNew.CardItem = observer((props: any) => {
                 <Menu.ItemGroup
                   className={'display-fields'}
                   key={`${view.key}-select`}
-                  title={'选择数据源'}
+                  title={t('Select a data source')}
                 >
                   {collections?.map((item) => (
                     <Menu.SubMenu
@@ -1221,7 +1224,7 @@ AddNew.CardItem = observer((props: any) => {
                       key={`collection.${item.name}.${view.key}`}
                       title={item.title}
                     >
-                      <Menu.ItemGroup title={'选择分组字段'}>
+                      <Menu.ItemGroup title={t('选择分组字段')}>
                         {item?.generalFields
                           ?.filter((item) => {
                             return item?.uiSchema?.enum;
@@ -1293,58 +1296,58 @@ AddNew.CardItem = observer((props: any) => {
             ))}
           </Menu.ItemGroup>
           <Menu.Divider />
-          <Menu.ItemGroup title={'多媒体区块'}>
+          <Menu.ItemGroup title={t('Media')}>
             <Menu.Item
               key={'Markdown.Void'}
               icon={<IconPicker type={'FileMarkdownOutlined'} />}
             >
-              Markdown
+              {t('Markdown')}
             </Menu.Item>
             <Menu.Item
               disabled
               key={'Wysiwyg.Void'}
               icon={<IconPicker type={'FileTextOutlined'} />}
             >
-              富文本
+              {t('Wysiwyg')}
             </Menu.Item>
           </Menu.ItemGroup>
           <Menu.Divider />
-          <Menu.ItemGroup title={'图表区块'}>
+          <Menu.ItemGroup title={t('Charts')}>
             <Menu.Item
               key={'Chart.Column'}
               icon={<IconPicker type={'BarChartOutlined'} />}
             >
-              柱状图
+              {t('Column chart')}
             </Menu.Item>
             <Menu.Item
               key={'Chart.Bar'}
               icon={<IconPicker type={'BarChartOutlined'} />}
             >
-              条形图
+              {t('Bar chart')}
             </Menu.Item>
             <Menu.Item
               disabled
               key={'Chart.Line'}
               icon={<IconPicker type={'LineChartOutlined'} />}
             >
-              折线图
+              {t('Line chart')}
             </Menu.Item>
             <Menu.Item
               disabled
               key={'Chart.Pie'}
               icon={<IconPicker type={'PieChartOutlined'} />}
             >
-              饼图
+              {t('Pie chart')}
             </Menu.Item>
           </Menu.ItemGroup>
           <Menu.Divider />
-          <Menu.SubMenu key={'Ref'} icon={<LinkOutlined />} title={'引用模板'}>
-            <Menu.ItemGroup key={'form-select'} title={'选择模板'}>
-              <Menu.Item key={'Ref.ActionLogs'}>操作日志</Menu.Item>
+          <Menu.SubMenu key={'Ref'} icon={<LinkOutlined />} title={'Templates'}>
+            <Menu.ItemGroup key={'form-select'} title={t('Select a template')}>
+              <Menu.Item key={'Ref.ActionLogs'}>{t('Action logs')}</Menu.Item>
             </Menu.ItemGroup>
             <Menu.Divider></Menu.Divider>
             <Menu.Item disabled key={'addNewRef'}>
-              添加模板
+              {t('Create a template')}
             </Menu.Item>
           </Menu.SubMenu>
         </Menu>
@@ -1358,7 +1361,7 @@ AddNew.CardItem = observer((props: any) => {
           className={'designable-btn designable-btn-dash'}
           icon={<PlusOutlined />}
         >
-          创建区块
+          {t('Add Block')}
         </Button>
       )}
     </Dropdown>
