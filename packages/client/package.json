@@ -37,6 +37,7 @@
     "monaco-editor": "^0.25.2",
     "react-big-calendar": "^0.33.6",
     "react-helmet": "^6.1.0",
+    "react-i18next": "^11.12.0",
     "react-image-lightbox": "^5.1.4",
     "umi-request": "^1.3.5"
   }
