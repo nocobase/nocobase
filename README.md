@@ -2,17 +2,9 @@ English | [简体中文](./README.zh-CN.md)
 
 ![](https://www.nocobase.com/images/demo/11.png)  
 
-Note
-----------
-NocoBase is still in early development and is for preview purposes only and is not suitable for use in a production environment.  A relatively stable and well-documented public beta is expected to be released as early as the first quarter of 2022.
-If you are interested in NocoBase, please join us to discuss and develop it together.
-
-https://www.nocobase.com/  
-hello@nocobase.com
-
 What is NocoBase
 ----------
-NocoBase is an open source and free no-code development platform. Whether you are a business executive who does not know programming or a developer who is proficient in programming, you can quickly build various customized and privately deployed collaboration platforms and management systems.
+NocoBase is a scalability-first, open-source no-code development platform. No programming required, build your own collaboration platform, management system with NocoBase in minutes.
 
 When to use NocoBase
 ----------
@@ -44,6 +36,14 @@ Why choose NocoBase
 	- Node.js-based, with popular frameworks and technologies, including Koa, Sequelize, React, Formily, Ant Design, etc.
 	- Progressive development, easy for getting-started, friendly to newcomers
 	- No binding, no strong dependencies, can be used in any combination or extensions, can be used in existing projects
+
+Note
+----------
+NocoBase is still in early development and is for preview purposes only and is not suitable for use in a production environment.  A relatively stable and well-documented public beta is expected to be released as early as the first quarter of 2022.
+If you are interested in NocoBase, please join us to discuss and develop it together.
+
+https://www.nocobase.com/  
+hello@nocobase.com
 
 Architecture
 ----------
