@@ -1,18 +1,11 @@
 [English](./README.md) | 简体中文
 
 ![](https://www.nocobase.com/images/demo/11.png)  
-  
-  
-说明
-----------
-NocoBase 仍处于早期开发阶段，功能不完整，稳定性不高，仅用于预览，不适合在生产环境中使用。相对稳定以及包含完善文档的公开测试版预计最早将于 2022 年第一季度发布。
-
-如果你希望加入我们一起开发 NocoBase，或者探讨 NocoBase 未来发展，或者需要提供 NocoBase 使用上的帮助，欢迎通过邮件联系我们：hello@nocobase.com
 
 NocoBase 是什么
 ----------
-NocoBase 是一个开源免费的无代码开发平台。
-无论是不懂编程的业务主管，还是精通编程的开发人员，都可以快速搭建各类定制化、私有部署的协作平台、管理系统。  
+NocoBase 是一个极易扩展的开源无代码开发平台。
+无需编程，使用 NocoBase 搭建自己的协作平台、管理系统，只需要几分钟时间。 
 
 [https://www.nocobase.com/cn](https://www.nocobase.com/cn)
 
@@ -46,6 +39,12 @@ NocoBase 是一个开源免费的无代码开发平台。
    - 基于 Node.js，使用主流框架和技术，包括 Koa、Sequelize、React、Formily、Ant Design 等
    - 渐进式开发，上手难度低，对新人友好
    - 不绑架、不强依赖，可任意组合使用或扩展，可用于现有项目中
+
+说明
+----------
+NocoBase 仍处于早期开发阶段，功能不完整，稳定性不高，仅用于预览，不适合在生产环境中使用。相对稳定以及包含完善文档的公开测试版预计最早将于 2022 年第一季度发布。
+
+如果你希望加入我们一起开发 NocoBase，或者探讨 NocoBase 未来发展，或者需要提供 NocoBase 使用上的帮助，欢迎通过邮件联系我们：hello@nocobase.com
 
 NocoBase 架构
 ----------
