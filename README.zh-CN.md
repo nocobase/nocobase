@@ -44,7 +44,11 @@ NocoBase 是一个极易扩展的开源无代码开发平台。
 ----------
 NocoBase 仍处于早期开发阶段，功能不完整，稳定性不高，仅用于预览，不适合在生产环境中使用。相对稳定以及包含完善文档的公开测试版预计最早将于 2022 年第一季度发布。
 
-如果你希望加入我们一起开发 NocoBase，或者探讨 NocoBase 未来发展，或者需要提供 NocoBase 使用上的帮助，欢迎通过邮件联系我们：hello@nocobase.com
+如果你希望加入我们一起开发 NocoBase，或者探讨 NocoBase 未来发展，或者需要提供 NocoBase 使用上的帮助，欢迎通过邮件联系我们：hello@nocobase.com  
+
+或者添加我们的微信：
+![](https://www.nocobase.com/images/wechat.png)  
+
 
 NocoBase 架构
 ----------
