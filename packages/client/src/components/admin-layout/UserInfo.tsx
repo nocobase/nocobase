@@ -94,8 +94,9 @@ export const UserInfo = () => {
                 bordered={false}
                 size={'small'}
                 defaultValue={i18n.language}
-                onChange={(value) => {
-                  i18n.changeLanguage(value);
+                onChange={async (value) => {
+                  await i18n.changeLanguage(value);
+                  window.location.reload();
                 }}
                 options={[
                   { label: '简体中文', value: 'zh-CN' },

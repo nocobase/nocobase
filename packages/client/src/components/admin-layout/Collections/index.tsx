@@ -25,6 +25,7 @@ import {
   options,
 } from '../../../schemas/database-field/interfaces';
 import { useResourceRequest } from '../../../constate';
+import { useTranslation } from 'react-i18next';
 
 export const RoleContext = createContext(null);
 
@@ -208,7 +209,7 @@ const collectionSchema: ISchema = {
         [uid()]: {
           type: 'void',
           name: 'action1',
-          title: '删除',
+          title: 'Delete',
           'x-align': 'right',
           'x-decorator': 'AddNew.Displayed',
           'x-decorator-props': {
@@ -226,7 +227,7 @@ const collectionSchema: ISchema = {
         },
         [uid()]: {
           type: 'void',
-          title: '添加',
+          title: 'Add New',
           'x-align': 'right',
           'x-decorator': 'AddNew.Displayed',
           'x-decorator-props': {
@@ -340,7 +341,7 @@ const schema: ISchema = {
   name: 'action',
   'x-component': 'Action',
   'x-component-props': {
-    tooltip: '数据表配置',
+    tooltip: 'Collections & Fields',
     className: 'nb-database-config',
     icon: 'DatabaseOutlined',
     type: 'primary',
@@ -543,6 +544,7 @@ const schema: ISchema = {
 };
 
 function CreateFieldButton() {
+  const { t } = useTranslation();
   const { refresh } = useCollectionsContext();
   const ctx = useContext(TableRowContext);
   const { service } = useTable();
@@ -613,7 +615,7 @@ function CreateFieldButton() {
     <>
       <Dropdown overlay={menu} overlayClassName={'all-fields'}>
         <Button type={'primary'} icon={<PlusOutlined />}>
-          添加 <DownOutlined />
+          {t('Add New')} <DownOutlined />
         </Button>
       </Dropdown>
       <Drawer

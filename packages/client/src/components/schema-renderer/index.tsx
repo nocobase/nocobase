@@ -190,7 +190,7 @@ const useAssociationResource = (options) => {
 
 export const SchemaField = createSchemaField({
   scope: {
-    t: i18n.t,
+    t: i18n.t.bind(i18n),
     Table,
     Calendar,
     Kanban,

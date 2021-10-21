@@ -47,11 +47,13 @@ import {
 import { AuthProvider } from './Auth';
 import { Helmet } from 'react-helmet';
 import { MenuSelectedKeysContext } from '../../schemas/menu';
+import { useTranslation } from 'react-i18next';
 
 function DesignableToggle() {
+  const { t } = useTranslation();
   const { designable, setDesignable } = useDesignableSwitchContext();
   return (
-    <Tooltip title={'界面配置'}>
+    <Tooltip title={t('Layout Editor')}>
       <Button
         className={cls('nb-designable-toggle', { active: designable })}
         type={'primary'}

@@ -48,12 +48,15 @@ import { ActionBar } from './ActionBar';
 import { DragHandle, SortableItem } from '../../components/Sortable';
 import { useDisplayedMapContext } from '../../constate';
 import { useTranslation } from 'react-i18next';
+import { useCompile } from '../../hooks/useCompile';
 
 export const ButtonComponentContext = createContext(null);
 
 function getTooltipProps(tooltip) {
+  const { t } = useTranslation();
+  const compile = useCompile();
   if (typeof tooltip === 'string') {
-    return { title: tooltip };
+    return { title: compile(tooltip) };
   }
   return tooltip;
 }
@@ -97,6 +100,7 @@ export const Action: any = observer((props: any) => {
       <DesignableBar path={getSchemaPath(schema)} />
     </Button>
   );
+  console.log('tooltip', tooltip);
   if (tooltip) {
     button = <Tooltip {...getTooltipProps(tooltip)}>{button}</Tooltip>;
   }

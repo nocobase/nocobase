@@ -17,6 +17,7 @@ import { createContext } from 'react';
 import { ActionPermissionField } from './ActionPermissionField';
 import { MenuPermissionTable } from './MenuPermissionTable';
 import { ISchema } from '../../../';
+import { useTranslation } from 'react-i18next';
 
 export const RoleContext = createContext(null);
 
@@ -244,183 +245,186 @@ const menuSchema: ISchema = {
   'x-component': 'MenuPermissionTable',
 };
 
-const schema: ISchema = {
-  type: 'void',
-  name: 'action',
-  'x-component': 'Action',
-  'x-component-props': {
-    tooltip: '权限配置',
-    className: 'nb-database-config',
-    icon: 'LockOutlined',
-    type: 'primary',
-  },
-  properties: {
-    modal1: {
-      type: 'void',
-      title: '角色',
-      'x-component': 'Action.Drawer',
-      properties: {
-        table: {
-          type: 'array',
-          // 'x-decorator': 'CardItem',
-          'x-component': 'Table',
-          default: [],
-          'x-component-props': {
-            rowKey: 'name',
-            dragSort: true,
-            showIndex: true,
-            refreshRequestOnChange: true,
-            pagination: {
-              pageSize: 10,
+export const Permissions = () => {
+  const { t } = useTranslation();
+  const schema: ISchema = {
+    type: 'void',
+    name: 'action',
+    'x-component': 'Action',
+    'x-component-props': {
+      tooltip: '{{ t("Roles & Permissions") }}',
+      className: 'nb-database-config',
+      icon: 'LockOutlined',
+      type: 'primary',
+    },
+    properties: {
+      modal1: {
+        type: 'void',
+        title: '角色',
+        'x-component': 'Action.Drawer',
+        properties: {
+          table: {
+            type: 'array',
+            // 'x-decorator': 'CardItem',
+            'x-component': 'Table',
+            default: [],
+            'x-component-props': {
+              rowKey: 'name',
+              dragSort: true,
+              showIndex: true,
+              refreshRequestOnChange: true,
+              pagination: {
+                pageSize: 10,
+              },
+              useResource,
+              collectionName: 'roles',
             },
-            useResource,
-            collectionName: 'roles',
-          },
-          properties: {
-            [uid()]: {
-              type: 'void',
-              'x-component': 'Table.ActionBar',
-              properties: {
-                [uid()]: {
-                  type: 'void',
-                  name: 'action1',
-                  title: '删除',
-                  'x-align': 'right',
-                  'x-decorator': 'AddNew.Displayed',
-                  'x-decorator-props': {
-                    displayName: 'destroy',
-                  },
-                  'x-component': 'Action',
-                  'x-component-props': {
-                    icon: 'DeleteOutlined',
-                    confirm: {
-                      title: '删除数据',
-                      content: '删除后无法恢复，确定要删除吗？',
+            properties: {
+              [uid()]: {
+                type: 'void',
+                'x-component': 'Table.ActionBar',
+                properties: {
+                  [uid()]: {
+                    type: 'void',
+                    name: 'action1',
+                    title: 'Delete',
+                    'x-align': 'right',
+                    'x-decorator': 'AddNew.Displayed',
+                    'x-decorator-props': {
+                      displayName: 'destroy',
                     },
-                    useAction: '{{ Table.useTableDestroyAction }}',
-                  },
-                },
-                [uid()]: {
-                  type: 'void',
-                  title: '添加',
-                  'x-align': 'right',
-                  'x-decorator': 'AddNew.Displayed',
-                  'x-decorator-props': {
-                    displayName: 'create',
-                  },
-                  'x-component': 'Action',
-                  'x-component-props': {
-                    type: 'primary',
-                    icon: 'PlusOutlined',
-                  },
-                  properties: {
-                    modal: {
-                      type: 'void',
-                      title: '添加数据',
-                      'x-decorator': 'Form',
-                      'x-component': 'Action.Drawer',
-                      'x-component-props': {
-                        useOkAction: '{{ Table.useTableCreateAction }}',
+                    'x-component': 'Action',
+                    'x-component-props': {
+                      icon: 'DeleteOutlined',
+                      confirm: {
+                        title: 'Delete Data',
+                        content: '删除后无法恢复，确定要删除吗？',
                       },
-                      properties: {
-                        title: {
-                          type: 'string',
-                          title: '角色名称',
-                          'x-component': 'Input',
-                          'x-decorator': 'FormilyFormItem',
+                      useAction: '{{ Table.useTableDestroyAction }}',
+                    },
+                  },
+                  [uid()]: {
+                    type: 'void',
+                    title: '添加',
+                    'x-align': 'right',
+                    'x-decorator': 'AddNew.Displayed',
+                    'x-decorator-props': {
+                      displayName: 'create',
+                    },
+                    'x-component': 'Action',
+                    'x-component-props': {
+                      type: 'primary',
+                      icon: 'PlusOutlined',
+                    },
+                    properties: {
+                      modal: {
+                        type: 'void',
+                        title: '添加数据',
+                        'x-decorator': 'Form',
+                        'x-component': 'Action.Drawer',
+                        'x-component-props': {
+                          useOkAction: '{{ Table.useTableCreateAction }}',
                         },
-                        // name: {
-                        //   type: 'string',
-                        //   title: '角色标识',
-                        //   'x-component': 'Input',
-                        //   'x-decorator': 'FormilyFormItem',
-                        // },
+                        properties: {
+                          title: {
+                            type: 'string',
+                            title: '角色名称',
+                            'x-component': 'Input',
+                            'x-decorator': 'FormilyFormItem',
+                          },
+                          // name: {
+                          //   type: 'string',
+                          //   title: '角色标识',
+                          //   'x-component': 'Input',
+                          //   'x-decorator': 'FormilyFormItem',
+                          // },
+                        },
                       },
                     },
                   },
                 },
               },
-            },
-            column1: {
-              type: 'void',
-              title: '角色名称',
-              'x-component': 'Table.Column',
-              properties: {
-                title: {
-                  type: 'string',
-                  'x-component': 'Input',
-                  'x-read-pretty': true,
+              column1: {
+                type: 'void',
+                title: '角色名称',
+                'x-component': 'Table.Column',
+                properties: {
+                  title: {
+                    type: 'string',
+                    'x-component': 'Input',
+                    'x-read-pretty': true,
+                  },
                 },
               },
-            },
-            // column2: {
-            //   type: 'void',
-            //   title: '角色标识',
-            //   'x-component': 'Table.Column',
-            //   properties: {
-            //     name: {
-            //       type: 'string',
-            //       'x-component': 'Input',
-            //       'x-read-pretty': true,
-            //     },
-            //   },
-            // },
-            [uid()]: {
-              type: 'void',
-              title: '操作',
-              'x-component': 'Table.Column',
-              'x-component-props': {
-                width: 160,
-              },
-              properties: {
-                [uid()]: {
-                  type: 'void',
-                  'x-component': 'Action.Group',
-                  'x-component-props': {
-                    type: 'link',
-                  },
-                  properties: {
-                    [uid()]: {
-                      type: 'void',
-                      title: '配置',
-                      'x-component': 'Action',
-                      'x-component-props': {
-                        type: 'link',
-                      },
-                      'x-action-type': 'view',
-                      properties: {
-                        [uid()]: {
-                          type: 'void',
-                          title: '配置权限',
-                          'x-decorator': 'RoleProvider',
-                          'x-component': 'Action.Drawer',
-                          'x-component-props': {
-                            bodyStyle: {
-                              background: '#f0f2f5',
-                              paddingTop: 0,
+              // column2: {
+              //   type: 'void',
+              //   title: '角色标识',
+              //   'x-component': 'Table.Column',
+              //   properties: {
+              //     name: {
+              //       type: 'string',
+              //       'x-component': 'Input',
+              //       'x-read-pretty': true,
+              //     },
+              //   },
+              // },
+              [uid()]: {
+                type: 'void',
+                title: '操作',
+                'x-component': 'Table.Column',
+                'x-component-props': {
+                  width: 160,
+                },
+                properties: {
+                  [uid()]: {
+                    type: 'void',
+                    'x-component': 'Action.Group',
+                    'x-component-props': {
+                      type: 'link',
+                    },
+                    properties: {
+                      [uid()]: {
+                        type: 'void',
+                        title: '配置',
+                        'x-component': 'Action',
+                        'x-component-props': {
+                          type: 'link',
+                        },
+                        'x-action-type': 'view',
+                        properties: {
+                          [uid()]: {
+                            type: 'void',
+                            title: '配置权限',
+                            'x-decorator': 'RoleProvider',
+                            'x-component': 'Action.Drawer',
+                            'x-component-props': {
+                              bodyStyle: {
+                                background: '#f0f2f5',
+                                paddingTop: 0,
+                              },
                             },
-                          },
-                          properties: {
-                            [uid()]: {
-                              type: 'void',
-                              'x-component': 'Tabs',
-                              properties: {
-                                [uid()]: {
-                                  type: 'void',
-                                  title: '数据表操作权限',
-                                  'x-component': 'Tabs.TabPane',
-                                  'x-component-props': {},
-                                  properties: {
-                                    collectionSchema,
+                            properties: {
+                              [uid()]: {
+                                type: 'void',
+                                'x-component': 'Tabs',
+                                properties: {
+                                  [uid()]: {
+                                    type: 'void',
+                                    title: '数据表操作权限',
+                                    'x-component': 'Tabs.TabPane',
+                                    'x-component-props': {},
+                                    properties: {
+                                      collectionSchema,
+                                    },
                                   },
-                                },
-                                [uid()]: {
-                                  type: 'void',
-                                  title: '菜单访问权限',
-                                  'x-component': 'Tabs.TabPane',
-                                  'x-component-props': {},
-                                  properties: {
-                                    menuSchema,
+                                  [uid()]: {
+                                    type: 'void',
+                                    title: '菜单访问权限',
+                                    'x-component': 'Tabs.TabPane',
+                                    'x-component-props': {},
+                                    properties: {
+                                      menuSchema,
+                                    },
                                   },
                                 },
                               },
@@ -428,51 +432,51 @@ const schema: ISchema = {
                           },
                         },
                       },
-                    },
-                    [uid()]: {
-                      type: 'void',
-                      title: '编辑',
-                      'x-component': 'Action',
-                      'x-component-props': {
-                        type: 'link',
-                      },
-                      'x-action-type': 'update',
-                      properties: {
-                        [uid()]: {
-                          type: 'void',
-                          title: '编辑角色',
-                          'x-decorator': 'Form',
-                          'x-decorator-props': {
-                            useResource: useDetailsResource,
-                          },
-                          'x-component': 'Action.Drawer',
-                          'x-component-props': {
-                            useOkAction: '{{ Table.useTableUpdateAction }}',
-                          },
-                          properties: {
-                            title: {
-                              type: 'string',
-                              title: '角色名称',
-                              'x-component': 'Input',
-                              'x-decorator': 'FormilyFormItem',
+                      [uid()]: {
+                        type: 'void',
+                        title: '编辑',
+                        'x-component': 'Action',
+                        'x-component-props': {
+                          type: 'link',
+                        },
+                        'x-action-type': 'update',
+                        properties: {
+                          [uid()]: {
+                            type: 'void',
+                            title: '编辑角色',
+                            'x-decorator': 'Form',
+                            'x-decorator-props': {
+                              useResource: useDetailsResource,
+                            },
+                            'x-component': 'Action.Drawer',
+                            'x-component-props': {
+                              useOkAction: '{{ Table.useTableUpdateAction }}',
+                            },
+                            properties: {
+                              title: {
+                                type: 'string',
+                                title: '角色名称',
+                                'x-component': 'Input',
+                                'x-decorator': 'FormilyFormItem',
+                              },
                             },
                           },
                         },
                       },
-                    },
-                    [uid()]: {
-                      type: 'void',
-                      title: '删除',
-                      'x-component': 'Action',
-                      'x-designable-bar': 'Table.Action.DesignableBar',
-                      'x-action-type': 'destroy',
-                      'x-component-props': {
-                        type: 'link',
-                        confirm: {
-                          title: '删除数据',
-                          content: '删除后无法恢复，确定要删除吗？',
+                      [uid()]: {
+                        type: 'void',
+                        title: '删除',
+                        'x-component': 'Action',
+                        'x-designable-bar': 'Table.Action.DesignableBar',
+                        'x-action-type': 'destroy',
+                        'x-component-props': {
+                          type: 'link',
+                          confirm: {
+                            title: '删除数据',
+                            content: '删除后无法恢复，确定要删除吗？',
+                          },
+                          useAction: '{{ Table.useTableDestroyAction }}',
                         },
-                        useAction: '{{ Table.useTableDestroyAction }}',
                       },
                     },
                   },
@@ -483,12 +487,11 @@ const schema: ISchema = {
         },
       },
     },
-  },
-};
+  };
 
-export const Permissions = () => {
   return (
     <SchemaRenderer
+      scope={{ t }}
       components={{ RoleProvider, ActionPermissionField, MenuPermissionTable }}
       schema={schema}
     />
