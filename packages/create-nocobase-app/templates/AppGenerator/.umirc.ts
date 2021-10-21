@@ -7,23 +7,22 @@ dotenv.config({
 });
 
 export default defineConfig({
+  favicon: '/favicon.png',
   nodeModulesTransform: {
     type: 'none',
   },
   define: {
-    'process.env.API_URL': process.env.API_URL || "http://127.0.0.1",
-    'process.env.API_PORT': process.env.API_PORT || "13001",
+    'process.env.API_URL': process.env.API_URL || 'http://127.0.0.1',
+    'process.env.API_PORT': process.env.API_PORT || '13001',
   },
   proxy: {
     '/api': {
-      'target': `http://localhost:${process.env.API_PORT || "13001"}/`,
-      'changeOrigin': true,
-      'pathRewrite': { '^/api': '/api' },
+      target: `http://localhost:${process.env.API_PORT || '13001'}/`,
+      changeOrigin: true,
+      pathRewrite: { '^/api': '/api' },
     },
   },
-  routes: [
-    { path: '/', exact: false, component: '@/pages/index' },
-  ],
+  routes: [{ path: '/', exact: false, component: '@/pages/index' }],
   fastRefresh: {},
   locale: {
     default: 'zh-CN',
