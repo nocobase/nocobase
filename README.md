@@ -72,7 +72,7 @@ Installation
 yarn create nocobase-app my-nocobase-app --quickstart
 ~~~
 
-#### Start with configuration
+#### Step by step
 ~~~shell
 # 1. create project
 yarn create nocobase-app my-nocobase-app

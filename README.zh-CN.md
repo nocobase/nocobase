@@ -73,12 +73,12 @@ Database:
 
 ### 通过 `create-nocobase-app` 创建项目
 
-#### 快速启动方式
+#### 快速启动
 ~~~shell
 yarn create nocobase-app my-nocobase-app --quickstart
 ~~~
 
-#### 自定义启动方式
+#### 分步骤执行
 ~~~shell
 # 1. 创建项目
 yarn create nocobase-app my-nocobase-app
