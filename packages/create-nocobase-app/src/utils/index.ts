@@ -24,5 +24,5 @@ export function runStart(path) {
 }
 
 export function runInit(path) {
-  return runYarn(path, ['run', 'nocobase', 'init', '--import-demo']);
+  return runYarn(path, ['run', 'nocobase', 'init', hasYarn() ? '--import-demo' : '-- --import-demo']);
 }
