@@ -82,18 +82,14 @@ yarn create nocobase-app my-nocobase-app --quickstart
 ~~~shell
 # 1. 创建项目
 yarn create nocobase-app my-nocobase-app
+
+# 2. 切换到项目根目录
 cd my-nocobase-app
 
-# 2. 修改.env中对应的数据库配置
-vim .env
-
-# 3. 启动预置数据库(可选)
-docker-compose up -d postgres
-
-# 4. 初始化数据
+# 3. 初始化数据
 yarn nocobase init --import-demo
 
-# 5. 启动项目
+# 4. 启动项目
 yarn start
 ~~~
 

@@ -76,18 +76,14 @@ yarn create nocobase-app my-nocobase-app --quickstart
 ~~~shell
 # 1. create project
 yarn create nocobase-app my-nocobase-app
+
+# 2. switch to the project directory
 cd my-nocobase-app
 
-# 2. edit configuration in .env file
-vim .env
-
-# 3. start a database (optional)
-docker-compose up -d postgres
-
-# 4. create initialization data
+# 3. create initialization data
 yarn nocobase init --import-demo
 
-# 5. start project
+# 4. start project
 yarn start
 ~~~
 

@@ -37,7 +37,7 @@ const program = new commander.Command(packageJson.name)
       console.log();
       console.log(`  ${chalk.cyan('cd')} ${directory}`);
       console.log(`  ${cmd} install`);
-      console.log(`  ${cmd} nocobase init --import-demo`);
+      console.log(`  ${cmd} nocobase init${hasYarn() ? '' : ' --'} --import-demo`);
       console.log(`  ${cmd} start`);
       console.log();
       return;
@@ -98,7 +98,7 @@ const program = new commander.Command(packageJson.name)
       console.log('You can start by doing:');
       console.log();
       console.log(`  ${chalk.cyan('cd')} ${directory}`);
-      console.log(`  ${cmd} nocobase init --import-demo`);
+      console.log(`  ${cmd} nocobase init${hasYarn() ? '' : ' --'} --import-demo`);
       console.log(`  ${cmd} start`);
       console.log();
     }
