@@ -50,19 +50,59 @@ import { MenuSelectedKeysContext } from '../../schemas/menu';
 
 function DesignableToggle() {
   const { designable, setDesignable } = useDesignableSwitchContext();
+  const [visible, setVisible] = useState(false);
+  useEffect(() => {
+    if (designable) {
+      return;
+    }
+    if (localStorage.getItem('hide-tip')) {
+      return;
+    }
+    setTimeout(() => {
+      setVisible(true);
+    }, 2000);
+  }, []);
   return (
-    <Tooltip title={'界面配置'}>
-      <Button
-        className={cls('nb-designable-toggle', { active: designable })}
-        type={'primary'}
-        style={{ height: 46, border: 0 }}
-        onClick={() => {
-          setDesignable(!designable);
+    <div>
+      <Tooltip
+        // color={'volcano'}
+        placement={'bottom'}
+        title={
+          <span>
+            点此进入界面配置{' '}
+            <a
+              onClick={() => {
+                localStorage.setItem('hide-tip', 'true');
+                setVisible(false);
+              }}
+            >
+              关闭
+            </a>
+          </span>
+        }
+        visible={visible}
+        onVisibleChange={(visible) => {
+          setVisible(visible);
         }}
       >
-        <HighlightOutlined />
-      </Button>
-    </Tooltip>
+        <span style={{ height: 45, width: 45, position: 'absolute' }}></span>
+      </Tooltip>
+      <Tooltip title={'界面配置'}>
+        <Button
+          className={cls('nb-designable-toggle', {
+            'has-tip': visible,
+            active: designable,
+          })}
+          type={'primary'}
+          style={{ height: 46, border: 0 }}
+          onClick={() => {
+            setDesignable(!designable);
+          }}
+        >
+          <HighlightOutlined />
+        </Button>
+      </Tooltip>
+    </div>
   );
 }
 
