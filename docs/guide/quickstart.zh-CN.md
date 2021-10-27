@@ -22,7 +22,8 @@ yarn create nocobase-app my-nocobase-project --quickstart
 ```shell
 yarn config set registry https://registry.npm.taobao.org/
 ```
-![Screenshot 2021-10-21 at 11.18.58 AM.png](https://cdn.nlark.com/yuque/0/2021/png/104018/1634786343932-8f1363d2-3fbe-4429-827a-f9f6e923e2d3.png#clientId=u34063dfa-0722-4&from=drop&id=LQlYu&margin=%5Bobject%20Object%5D&name=Screenshot%202021-10-21%20at%2011.18.58%20AM.png&originHeight=1174&originWidth=1794&originalType=binary&ratio=1&size=820956&status=done&style=none&taskId=udca8d038-c7da-4052-ab3c-f1fec383be0)
+![yarn-start.png](https://nocobase.oss-cn-beijing.aliyuncs.com/07aef612d4162970f813352ef31a9dba.png)
+
 ### 步骤二：打开系统
 
 
@@ -30,7 +31,8 @@ yarn config set registry https://registry.npm.taobao.org/
 
 
 使用浏览器打开 [http://localhost:8000](http://localhost:8000)，进入系统登录页面，初始登录用户名为`admin@nocobase.com`，密码为`admin`。
-![Screenshot 2021-10-20 at 2.48.48 PM.png](https://cdn.nlark.com/yuque/0/2021/png/104018/1634713358667-e53afbb9-e022-491c-a8a1-5caa0790d32c.png#clientId=ubcd6255f-eb74-4&from=drop&id=sgHYg&margin=%5Bobject%20Object%5D&name=Screenshot%202021-10-20%20at%202.48.48%20PM.png&originHeight=1884&originWidth=3104&originalType=binary&ratio=1&size=584354&status=done&style=none&taskId=u546e0066-3a1e-4db6-8cf4-32a365926d0)
+![nocobae_login.png](https://nocobase.oss-cn-beijing.aliyuncs.com/172457b0a93b608cff2c9d119d42a02f.png)
+
 > 若你的服务未运行，可以在终端执行命令来启动它。
 
 ```bash
@@ -151,7 +153,7 @@ curl -X "POST" "http://127.0.0.1:13001/api/posts" \
 
 此时访问 NocoBase 后台的文章管理，也可以看见新创建的文章数据。
 
-![image.png](https://cdn.nlark.com/yuque/0/2021/png/104018/1635088837229-cca7c467-6ab2-465e-b718-6b1acf941945.png#clientId=u499255cf-7862-4&from=paste&height=560&id=u53153bbf&margin=%5Bobject%20Object%5D&name=image.png&originHeight=1120&originWidth=2880&originalType=binary&ratio=1&size=665144&status=done&style=none&taskId=u433015ef-aa0b-4390-b829-2cd0fe6aee3&width=1440)
+![image.png](https://nocobase.oss-cn-beijing.aliyuncs.com/02665043eeb68af61be2b80550dee239.png)
 
 #### 筛选文章
 Restful API 资源列表接口提供了丰富的筛选、字段控制接口，详情请查看 [NocoBase Restful API ](https://www.baidu.com)文档。在此我们通过API接口筛选出包含某个标签的文章列表。
