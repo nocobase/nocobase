@@ -3,231 +3,108 @@ order: 2
 toc: menu
 ---
 
-# 快速起步
+# 快速入门
 
-NocoBase 提供了简易的快速起步方式，使用一行命令即可快速启动 NocoBase。
+本篇文章将快速的帮助你安装和启动 NocoBase，并教会你基本的使用方法。
 
-> 请确保电脑上已经安装了 [Node.js 12.20+](https://nodejs.org) ，并且可以正常使用 [yarn](https://yarnpkg.com/) 或者 [npm](https://www.npmjs.com/)。
+## 1. 环境要求
 
-## 创建新的 NocoBase 项目
-
-### 步骤一：运行安装脚本
-
-```shell
-yarn create nocobase-app my-nocobase-project --quickstart
-```
-
-> 若安装时遇到网络问题，请使用[淘宝 NPM 镜像](https://npmmirror.com/)
-
-```shell
-yarn config set registry https://registry.npm.taobao.org/
-```
-![yarn-start.png](https://nocobase.oss-cn-beijing.aliyuncs.com/07aef612d4162970f813352ef31a9dba.png)
-
-### 步骤二：打开系统
-
-
-安装脚本执行完毕之后，系统将自行启动。
-
-
-使用浏览器打开 [http://localhost:8000](http://localhost:8000)，进入系统登录页面，初始登录用户名为`admin@nocobase.com`，密码为`admin`。
-![nocobae_login.png](https://nocobase.oss-cn-beijing.aliyuncs.com/172457b0a93b608cff2c9d119d42a02f.png)
-
-> 若你的服务未运行，可以在终端执行命令来启动它。
+请确保你的系统已经安装了 Node.js 12.x 或以上版本。
 
 ```bash
-cd my-nocobase-app && yarn start
+$ node -v
+v12.13.1
 ```
 
+如果你没有安装 Node.js 可以从官网下载并安装[最新的 LTS 版本](https://nodejs.org/en/download/)。如果你打算长期与 Node.js 打交道，推荐使用 [nvm](https://github.com/nvm-sh/nvm)（Win 系统可以使用 [nvm-windows](https://github.com/coreybutler/nvm-windows) ）来管理 Node.js 版本。
 
-## 构建内容
+另外，推荐使用 yarn 包管理器。
 
-
-快速启动程序创建了一个包含演示数据的 NocoBase 项目，你可以随意浏览。
-
-
-我们接下来将会使用数据表配置功能创建数据库结构，之后在界面上配置区块，演示如何使用 NocoBase 管理你的数据，最后我们使用 NocoBase 提供的 Restful API 进行数据操作。
-
-
-我们将要构建一个简单的内容管理系统，包含文章、标签两个模型，文章与标签为多对多关联。
-
-
-### 创建数据表
-
-
-首先，我们使用数据表配置功能创建数据库结构。
-
-
-1. 在顶部导航栏，右侧功能区域，点击`数据表配置`图标。
-1. 在弹出的窗口中，点击`创建数据表`按钮。
-1. 输入数据表名称`标签`，修改数据表标识为`tags`，点击`确定`按钮。
-1. 标签数据表创建完成后，会自动返回数据表配置界面，在此界面点击标签数据表的`配置字段` 。
-1. 在新弹出的`配置「标签」表字段`界面中，点击`添加`按钮。在弹出的下拉选项中选择`基本类型 > 单行文本`。
-1. 输入字段名称为`名称`, 字段标识为`name`。点击`确定`按钮。点击右上角的`X`图标，返回数据库表配置界面。至此`标签`模型创建完成。
-1. 继续以同样的方式创建`文章`模型，数据表标识为`posts`。添加单行文本类型字段`标题`，字段标识为`title`；添加`多媒体类型 > Markdown`类型字段`内容`，字段标识为`content`。
-1. 添加`关系类型 > 关联字段`，字段名称为`标签`，字段标识`tags`，要关联的数据表选项，选择先前添加的`标签`模型。勾选`允许关联多条记录`选项，点击确定。
-
-
-
-至此，我们的数据模型创建完成，接下来我们使用界面配置功能，使我们可以使用 NocoBase 提供的界面进行数据交互。
-
-![create-tags](https://nocobase.oss-cn-beijing.aliyuncs.com/335883d6d91d505195b7a857ac6df161.gif)
-
-### 界面配置
-
-在顶部导航栏的右侧功能区域，点击`界面配置`图标进入界面配置功能。
-
-1. 在顶部导航栏的左侧，将鼠标移至`添加菜单项`按钮上方，在弹出的下拉菜单中，点击`分组`。
-1. 在弹出的窗口中，输入名称为`内容管理`，图标任意选择。
-1. 在顶部导航栏左侧，点击新添加的`内容管理`导航，点击界面上的`添加菜单项`按钮，选择添加`页面`，页面名称输入`标签管理`，点击确认。
-1. 点击新添加的`标签管理`导航，在界面中点击`创建区块`按钮，选择`表格`类型，选择数据源为`标签`。
-1. 在新出现的表格模板中，继续配置表格将要展示的字段，点击`配置字段`按钮，将`名称`字段打开；点击表格模板中的`添加`按钮，配置添加标签的表格，在添加数据弹窗中，选择`配置字段`按钮，打开名称字段，点击右上角`X`图标关闭弹窗。
-1. 以同样的方式继续添加`文章管理`界面，点击`添加菜单项`按钮，选择`页面`类型，输入名称为`文章管理`，点击确认，点击新生成的文章管理导航。
-1. 在文章管理中，点击创建区块，选择数据源为`表格 > 文章`，配置展示字段为`标题`, `内容`和`标签`，将鼠标放置在表格`标签`栏目上方，点击`字段配置`，将标签字段修改为`名称`。
-1. 点击`添加`按钮，配置创建文章表单，点击配置字段按钮，将所有字段打开。点击`标签`字段， 弹出关联数据配置界面，点击`配置字段`，打开`名称`，点击右上角`X`关闭关联数据配置弹窗。
-1. 点击右上角`X`关闭表单配置弹出，再次点击顶部导航栏的右侧功能区域的`界面配置`按钮，退出界面配置。
-
-一个可以实现基础功能的界面交互已经完成，下面我们使用它来添加一些测试数据。
-
-### 添加数据
-首先创建两个标签：点击标签管理，点击添加按钮，输入任意标签名称，点击确定；重复操作再创建一个标签。
-切换到文章管理创建文章：点击添加按钮，填写标题和内容，点击标签输入框，在弹出的窗口中选择文章所关联的标签，点击确认。
-
-### 使用API
-在创建完数据模型之后，就可以通过 NocoBase 提供的 Restful API 接口进行数据操作了。
-
-#### 列出标签
-访问 [http://localhost:13001/api/tags](http://localhost:13001/api/tags)，可列出系统内的标签数据。除去自行添加的数据字段之外，NocoBase 也记录了数据的创建时间、更新时间以及创建用户、最后修改的用户，更多内容可参考 [NocoBase Restful API ](https://www.baidu.com)文档。
-
-```json
-{
-  "data": [
-    {
-      "id": 1,
-      "name": "低代码",
-      "sort": 1,
-      "created_at": "2021-10-24T09:23:29.901Z",
-      "updated_at": "2021-10-24T09:23:29.901Z",
-      "created_by_id": 1,
-      "updated_by_id": 1
-    },
-    {
-      "id": 2,
-      "name": "Javascript",
-      "sort": 2,
-      "created_at": "2021-10-24T09:23:38.265Z",
-      "updated_at": "2021-10-24T09:23:38.265Z",
-      "created_by_id": 1,
-      "updated_by_id": 1
-    }
-  ],
-  "meta": {
-    "count": 2,
-    "page": 1,
-    "per_page": 20
-  }
-}
-```
-#### 创建文章
-可以通过向接口提交POST请求，来创建数据。通过指定关联字段的ID可以补充数据的关联字段信息。更多内容可参考 [NocoBase Restful API ](https://www.baidu.com)文档。
-```shell
-curl -X "POST" "http://127.0.0.1:13001/api/posts" \
-     -H 'Content-Type: application/json; charset=utf-8' \
-     -d '{"title": "NocoBase quickstart test","content": "This is content", "tags": [1]}'
+```bash
+$ npm install --global yarn
 ```
 
-接口将会响应新创建的数据内容。
+由于国内网络环境的原因，强烈建议你更换国内镜像。
 
-```json
-{
-  "data": {
-    "id": 3,
-    "title": "NocoBase quickstart test",
-    "content": "This is content",
-    "updated_at": "2021-10-24T12:11:59.902Z",
-    "created_at": "2021-10-24T12:11:59.902Z",
-    "sort": 3
-  }
-}
+```bash
+$ yarn config set registry https://registry.npm.taobao.org/
 ```
 
-此时访问 NocoBase 后台的文章管理，也可以看见新创建的文章数据。
+环境准备就绪，下一步我们来安装一个 NocoBase 应用。
 
-![image.png](https://nocobase.oss-cn-beijing.aliyuncs.com/02665043eeb68af61be2b80550dee239.png)
+## 2. 安装与启动
 
-#### 筛选文章
-Restful API 资源列表接口提供了丰富的筛选、字段控制接口，详情请查看 [NocoBase Restful API ](https://www.baidu.com)文档。在此我们通过API接口筛选出包含某个标签的文章列表。
+为了方便新人快速的安装并启动 NocoBase 应用，提供了一行非常简单的命令：
 
-```shell
-curl "http://127.0.0.1:13001/api/posts?filter[tags][name][eq]=Javascript"
+```bash
+$ yarn create nocobase-app my-nocobase-app --quickstart
 ```
 
-```json
-{
-  "data": [
-    {
-      "id": 2,
-      "title": "Hello NocoBase",
-      "content": "Hello World",
-      "sort": 1,
-      "created_at": "2021-10-24T15:13:16.004Z",
-      "updated_at": "2021-10-24T15:13:16.004Z",
-      "created_by_id": 1,
-      "updated_by_id": 1,
-      "tags": [
-        {
-          "id": 4,
-          "name": "Javascript",
-          "sort": 2,
-          "created_at": "2021-10-24T15:12:57.341Z",
-          "updated_at": "2021-10-24T15:12:57.341Z",
-          "created_by_id": 1,
-          "updated_by_id": 1,
-          "posts_tags": {
-            "createdAt": "2021-10-24T15:13:16.020Z",
-            "updatedAt": "2021-10-24T15:13:16.020Z",
-            "tag_id": 4,
-            "post_id": 2
-          }
-        }
-      ]
-    },
-    {
-      "id": 3,
-      "title": "Javascript is Fun",
-      "content": "Love Javascript",
-      "sort": 2,
-      "created_at": "2021-10-24T15:13:40.116Z",
-      "updated_at": "2021-10-24T15:13:40.116Z",
-      "created_by_id": 1,
-      "updated_by_id": 1,
-      "tags": [
-        {
-          "id": 4,
-          "name": "Javascript",
-          "sort": 2,
-          "created_at": "2021-10-24T15:12:57.341Z",
-          "updated_at": "2021-10-24T15:12:57.341Z",
-          "created_by_id": 1,
-          "updated_by_id": 1,
-          "posts_tags": {
-            "createdAt": "2021-10-24T15:13:40.130Z",
-            "updatedAt": "2021-10-24T15:13:40.130Z",
-            "tag_id": 4,
-            "post_id": 3
-          }
-        }
-      ]
-    }
-  ],
-  "meta": {
-    "count": 2,
-    "page": 1,
-    "per_page": 20
-  }
-}
+上面这行命令会帮助你快速的下载、安装并启动 NocoBase 应用。如果你喜欢分步执行，也可以这样：
+
+```bash
+# 1. 创建项目
+$ yarn create nocobase-app my-nocobase-app
+
+# 2. 切换到项目根目录
+$ cd my-nocobase-app
+
+# 3. 初始化数据
+$ yarn nocobase init --import-demo
+
+# 4. 启动项目
+$ yarn start
 ```
 
-## 下一步
+分步执行有助于理解整个流程，也更易于排查安装过程中出现的问题。如果出现问题，你也无法自行解决，请将终端输出的错误日志贴在 [GitHub Issue](https://github.com/nocobase/nocobase/issues) 上，大家会一起帮你解决问题。
 
-我们已经简单体验过 NocoBase 的魅力了，通过 NocoBase 你可以快速、简单地构建一个功能完备的管理系统。 下一步，你可以进一步了解 NocoBase 的插件系统，看看如何扩展 NocoBase ，或者查阅文档的其它章节。
+当你看到下面内容，说明你刚才创建的 NocoBase 已经安装并启动了。
+
+<img src="https://nocobase.oss-cn-beijing.aliyuncs.com/07aef612d4162970f813352ef31a9dba.png" style="max-width: 800px;" />
+
+## 3. 登录 NocoBase
+
+使用浏览器打开 http://localhost:8000 ，你会看到 NocoBase 的登录页面，初始的账号为 `admin@nocobase.com`，密码为 `admin`。
+
+<img src="https://nocobase.oss-cn-beijing.aliyuncs.com/172457b0a93b608cff2c9d119d42a02f.png" style="max-width: 800px;" >
+
+## 4. 创建数据表和字段
+
+NocoBase 提供了一个全局的数据表配置面板，方便用户快速的创建数据表和字段。
+
+<img src="https://nocobase.oss-cn-beijing.aliyuncs.com/335883d6d91d505195b7a857ac6df161.gif" style="max-width: 800px;" />
+
+按照视频的提示，创建文章和标签两张数据表和若干字段。
+
+## 5. 配置菜单和页面
+
+接着，添加新的菜单分组和页面用于管理刚才创建的文章和标签数据。
+
+```ts
+// 视频
+```
+
+## 6. 在页面内布置区块
+
+在上一步配置的页面里创建文章和标签的表格区块，并启用需要开放的操作。
+
+```ts
+// 视频
+```
+
+## 7. 添加文章和标签数据
+
+现在可以添加文章和标签了。
+
+```ts
+// 视频
+```
+
+## 8. 通过 API 访问
+
+除了可视化界面以外，也可以通过 NocoBase 提供的 [REST API](/zh-CN/api/rest-api) 访问数据资源。
+
+- 文章资源：http://localhost:8000/api/posts
+- 标签资源：http://localhost:8000/api/tags
+
+你可以直接点击打开上面 API 地址，或者使用类似 Postman 的工具访问。NocoBase 也提供的更贴合的 API Client（JavaScript SDK）来管理 NocoBase 数据资源，更多内容请查看 [API Client](/zh-CN/api/client#apiclient) 章节。
