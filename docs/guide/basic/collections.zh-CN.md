@@ -1,12 +1,12 @@
 ---
 order: 1
 group:
-  title: Basic Concepts
-  path: /guide/basic
+  title: 基础概念
+  path: /zh-CN/guide/basic
   order: 4
 ---
 
-# Collections & Fields
+# 数据表和字段
 
 NocoBase 的数据表由字段（列）和记录（行）组成。数据表的概念与关系型数据库的数据表概念相近，但是字段的概念并不相同。
 

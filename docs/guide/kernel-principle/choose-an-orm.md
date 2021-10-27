@@ -1,9 +1,8 @@
 ---
-title: Database 的无代码改造
 order: 4
 ---
 
-# Database 的无代码改造
+# How to choose an ORM
 
 本篇文章，需要读者至少熟悉一种较流行的 ORM，对 Model、Migration、QueryBuilder、Repository 也有所了解。在正式介绍 NocoBase 的 Database 设计之前，先来看看大部分 ORM 都有的三个概念：
 

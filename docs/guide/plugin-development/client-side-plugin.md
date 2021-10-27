@@ -2,7 +2,7 @@
 order: 3
 ---
 
-# 客户端插件
+# Client-side Plugin
 
 客户端插件的目录结构
 

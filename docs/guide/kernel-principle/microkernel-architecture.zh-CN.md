@@ -1,6 +1,11 @@
 ---
 order: 0
+group:
+  title: 内核原理
+  path: /zh-CN/guide/kernel-principle
+  order:  6
 ---
+
 # 微内核架构
 
 <img src="../../images/NocoBase.png" style="max-width: 800px; width: 100%;">

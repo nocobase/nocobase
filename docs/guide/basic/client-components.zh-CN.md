@@ -6,7 +6,7 @@ order: 2
 
 为了让更多非开发人员也能参与进来，NocoBase 提供了配套的客户端 —— 无代码的可视化界面。客户端界面非常灵活，由不同组件构成，分为了三类：
 
-- 通过 createRouteSwitch 创建的路由组件，如 Layou、Page
+- 通过 createRouteSwitch 创建的路由组件，如 Layout、Page
 - 通过 createCollectionField 创建的字段组件，用于扩展字段
 - 通过 createSchemaComponent 创建的 JSON Schema 组件，可以是任意东西，比如表格、表单、日历、看板等
 

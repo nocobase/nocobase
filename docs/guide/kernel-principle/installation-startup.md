@@ -1,13 +1,8 @@
 ---
-title: 项目安装启动流程
 order: 3
-group:
-  title: 内核原理
-  path: /guide/core
-  order:  6
 ---
 
-# 项目安装启动流程
+# Installation and Startup Process
 
 ## 项目安装
 

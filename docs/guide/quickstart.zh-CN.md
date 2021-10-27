@@ -3,7 +3,7 @@ order: 2
 toc: menu
 ---
 
-# Quick Start
+# 快速起步
 
 ## 创建新的 Nocobase 项目
 

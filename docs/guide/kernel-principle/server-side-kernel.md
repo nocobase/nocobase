@@ -1,9 +1,8 @@
 ---
-title: 服务端内核
 order: 1
 ---
 
-# 深入了解 NocoBase
+# Server-side Kernel
 
 ## 微服务 - Microservices
 
