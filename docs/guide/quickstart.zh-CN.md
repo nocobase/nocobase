@@ -4,10 +4,12 @@ toc: menu
 ---
 
 # 快速起步
+
 ## 创建新的 NocoBase 项目
 
-### 预先要求
-确认你的系统内已正确安装了 [Node.js 12.20+](https://nodejs.org) 。
+### 环境要求
+
+请确保电脑上已经安装了 [Node.js 12.20+](https://nodejs.org) ，并且可以正常使用 [yarn](https://yarnpkg.com/) 或者 [npm](https://www.npmjs.com/)。
 
 ### 步骤一：运行安装脚本
 
