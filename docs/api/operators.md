@@ -1,0 +1,50 @@
+---
+toc: menu
+---
+
+# Operators
+
+## string
+- includes
+- notIncludes
+- eq
+- ne
+- null
+- notNull
+## number
+- eq
+- ne
+- gt
+- gte
+- lt
+- lte
+- between
+- null
+- notNull
+## select
+- eq
+- ne
+- in
+- notIn
+- null
+- notNull
+## multipleSelect
+- match
+- notMatch
+- anyOf
+- noneOf
+- null
+- notNull
+## date
+- dateOn
+- dateNotOn
+- dateBefore
+- dateAfter
+- dateNotBefore
+- dateNotAfter
+- null
+- notNull
+## association
+- fieldName.$name
+- exists
+- notExists
