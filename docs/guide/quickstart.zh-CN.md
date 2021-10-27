@@ -5,11 +5,11 @@ toc: menu
 
 # 快速起步
 
+NocoBase 提供了简易的快速起步方式，使用一行命令即可快速启动 NocoBase。
+
+> 请确保电脑上已经安装了 [Node.js 12.20+](https://nodejs.org) ，并且可以正常使用 [yarn](https://yarnpkg.com/) 或者 [npm](https://www.npmjs.com/)。
+
 ## 创建新的 NocoBase 项目
-
-### 环境要求
-
-请确保电脑上已经安装了 [Node.js 12.20+](https://nodejs.org) ，并且可以正常使用 [yarn](https://yarnpkg.com/) 或者 [npm](https://www.npmjs.com/)。
 
 ### 步骤一：运行安装脚本
 
