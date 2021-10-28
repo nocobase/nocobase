@@ -5,7 +5,7 @@ toc: menu
 
 # 快速入门
 
-本篇文章将快速的帮助你安装和启动 NocoBase，并教会你基本的使用方法。
+本篇文章将帮助你快速安装并启动 NocoBase，并介绍基本的使用方法。
 
 ## 1. 环境要求
 
@@ -34,7 +34,7 @@ $ yarn config set registry https://registry.npm.taobao.org/
 
 ## 2. 安装与启动
 
-为了方便新人快速的安装并启动 NocoBase 应用，提供了一行非常简单的命令：
+为了方便新人快速的安装并启动， NocoBase 提供了一行非常简单的命令：
 
 ```bash
 $ yarn create nocobase-app my-nocobase-app --quickstart
@@ -74,7 +74,7 @@ NocoBase 提供了一个全局的数据表配置面板，方便用户快速的�
 
 <img src="https://nocobase.oss-cn-beijing.aliyuncs.com/335883d6d91d505195b7a857ac6df161.gif" style="max-width: 800px;" />
 
-按照视频的提示，创建文章和标签两张数据表和若干字段。
+按照视频的提示，创建文章（posts）和标签（tags）两张数据表和若干字段。
 
 ## 5. 配置菜单和页面
 
@@ -107,4 +107,4 @@ NocoBase 提供了一个全局的数据表配置面板，方便用户快速的�
 - 文章资源：http://localhost:8000/api/posts
 - 标签资源：http://localhost:8000/api/tags
 
-你可以直接点击打开上面 API 地址，或者使用类似 Postman 的工具访问。NocoBase 也提供的更贴合的 API Client（JavaScript SDK）来管理 NocoBase 数据资源，更多内容请查看 [API Client](/zh-CN/api/client#apiclient) 章节。
+你可以直接点击打开上面 API 地址，或者使用类似 Postman 的工具访问。NocoBase 也提供了更贴合的 API Client（JavaScript SDK）来管理 NocoBase 数据资源，更多内容请查看 [API Client](/zh-CN/api/client#apiclient) 章节。

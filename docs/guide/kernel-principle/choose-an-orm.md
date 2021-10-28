@@ -2,7 +2,7 @@
 order: 4
 ---
 
-# How to choose an ORM
+# How to Choose an ORM
 
 本篇文章，需要读者至少熟悉一种较流行的 ORM，对 Model、Migration、QueryBuilder、Repository 也有所了解。在正式介绍 NocoBase 的 Database 设计之前，先来看看大部分 ORM 都有的三个概念：
 
@@ -960,8 +960,8 @@ NocoBase 的 Repository API 有：
 ```ts
 repository.findMany({
   // 过滤
-	filter: {
-  	$and: [{ a: 5 }, { b: 6 }],            // (a = 5) AND (b = 6)
+  filter: {
+    $and: [{ a: 5 }, { b: 6 }],            // (a = 5) AND (b = 6)
     $or: [{ a: 5 }, { b: 6 }],             // (a = 5) OR (b = 6)
     someAttribute: {
       // Basics
@@ -974,10 +974,10 @@ repository.findMany({
     },
     'someAttribute.$eq': 3,
     'nested.someAttribute': {
-			//
+      //
     },
     nested: {
-    	someAttribute: {},
+      someAttribute: {},
     },
   },
   // 字段白名单
@@ -994,8 +994,8 @@ repository.findMany({
 #### findOne
 ```typescript
 repository.findOne({
-	// 过滤
-	filter: {},
+  // 过滤
+  filter: {},
   // 为更快速的 pk 过滤提供
   filterByPk: 1, // 通常情况等同于 filter: {id: 1}
   // 字段白名单
@@ -1010,16 +1010,16 @@ repository.findOne({
 ```ts
 repository.create({
   // 待存数据
-	values: {
-  	a: 'a',
+  values: {
+    a: 'a',
     // 快速建立关联
     o2o: 1,    // 建立一对一关联
     m2o: 1,    // 建立多对一关联
     o2m: [1,2] // 建立一对多关联
     m2m: [1,2] // 建立多对多关联
-  	// 新建关联数据并建立关联
+    // 新建关联数据并建立关联
     o2o: {
-    	key1: 'val1',
+      key1: 'val1',
     },
     o2m: [{key1: 'val1'}, {key2: 'val2'}],
     // 子表格数据
@@ -1043,7 +1043,7 @@ repository.create({
 ```ts
 repository.update({
   // 待更新数据
-	values: {},
+  values: {},
   // 过滤，哪些数据要更新
   filter: {},
   // 为更快速的 pk 过滤提供
@@ -1076,23 +1076,23 @@ repository.destroy({
 const userPostsRepository = repository.relation('posts').of(1);
 
 userPostsRepository.findMany({
-	
+  
 });
 
 userPostsRepository.findOne({
-	
+  
 });
 
 userPostsRepository.create({
-	values: {},
+  values: {},
 });
 
 userPostsRepository.update({
-	values: {},
+  values: {},
 });
 
 userPostsRepository.destroy({
-	
+  
 });
 ```
 关联操作，只处理关系约束的建立与解除
@@ -1108,9 +1108,9 @@ userPostsRepository.set([1,2,3]);
 
 // BelongsToMany 的中间表
 userPostsRepository.set([
-	[1, {/* 中间表数据 */}],
-	[2, {/* 中间表数据 */}],
-	[3, {/* 中间表数据 */}],
+  [1, {/* 中间表数据 */}],
+  [2, {/* 中间表数据 */}],
+  [3, {/* 中间表数据 */}],
 ]);
 
 // 仅用于 HasMany 和 BelongsToMany
@@ -1211,7 +1211,7 @@ await db.sync();
 有了 Collection API 就可以实现动态 Collection 了。解决动态数据的持久化问题，可以将数据储存在数据表里。为此，我们可以创建 collections 和 fields 两张表。
 ```ts
 const Collection = db.collection({
-	name: 'collections',
+  name: 'collections',
   fields: [
     { name: 'name', type: 'string', unique: true },
     { name: 'fields', type: 'hasMany', foreignKey: 'collectionName' },
@@ -1219,7 +1219,7 @@ const Collection = db.collection({
 });
 
 const Field = db.collection({
-	name: 'fields',
+  name: 'fields',
   fields: [
     { name: 'name', type: 'string' },
   ],
@@ -1231,7 +1231,7 @@ db.on('collections.afterCreate', async (model) => {
 });
 
 db.on('collections.afterUpdate', async (model) => {
-	const collection = db.getCollection(model.get('name'));
+  const collection = db.getCollection(model.get('name'));
   // 更新配置
   collection.mergeOptions(model.get());
   await collection.sync();
@@ -1257,8 +1257,8 @@ db.on('fields.afterUpdate', async (model) => {
 这样就可以用 Collection.repository.create() 来动态创建表了，比如：
 ```ts
 await Collection.repository.create({
-	values: {
-  	name: 'test',
+  values: {
+    name: 'test',
     fields: [
       { name: 'name', type: 'string' },
     ],
