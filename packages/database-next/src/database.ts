@@ -70,18 +70,36 @@ export class Database extends EventEmitter {
     this.operators = operators;
   }
 
-  collection(options: CollectionOptions) {
+  /**
+   * Add collection to database
+   *
+   *
+   * @param options
+   */
+  collection<Attributes = any, CreateAttributes = Attributes>(
+    options: CollectionOptions,
+  ) {
     let collection = this.collections.get(options.name);
+
     if (collection) {
       collection.extend(options);
     } else {
-      collection = new Collection(options, { database: this });
+      collection = new Collection<Attributes, CreateAttributes>(options, {
+        database: this,
+      });
+
+      this.collections.set(collection.name, collection);
     }
-    this.collections.set(collection.name, collection);
+
     this.emit('collection.afterDefine', collection);
-    return collection;
+
+    return collection as Collection<Attributes, CreateAttributes>;
   }
 
+  /**
+   * get exists collection by it's name
+   * @param name
+   */
   getCollection(name: string) {
     return this.collections.get(name);
   }

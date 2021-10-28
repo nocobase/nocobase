@@ -144,17 +144,6 @@ describe('repository.find', () => {
       page: 1,
       pageSize: 1,
     });
-    console.log(
-      data.count,
-      JSON.stringify(
-        data.rows.map((row) => row.toJSON()),
-        null,
-        2,
-      ),
-    );
-    // expect(data.toJSON()).toMatchObject({
-    //   name: 'user3',
-    // });
   });
 });
 
@@ -417,7 +406,7 @@ describe('repository.relatedQuery', () => {
     const post = await Post.repository.create({
       user: {
         name: 'user11',
-      }
+      },
     });
     await Post.repository.relatedQuery('user').for(post).update({
       name: 'user12',

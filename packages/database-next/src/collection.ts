@@ -4,6 +4,7 @@ import { Database } from './database';
 import { Field } from './fields';
 import _ from 'lodash';
 import { Repository } from './repository';
+import { ModelAttributes } from 'sequelize/types/lib/model';
 
 export interface CollectionOptions {
   name: string;
@@ -16,11 +17,14 @@ export interface CollectionContext {
   database: Database;
 }
 
-export class Collection extends EventEmitter {
+export class Collection<
+  TModelAttributes extends {} = any,
+  TCreationAttributes extends {} = TModelAttributes,
+> extends EventEmitter {
   options: CollectionOptions;
   context: CollectionContext;
   fields: Map<string, any>;
-  model: ModelCtor<Model>;
+  model: ModelCtor<Model<TModelAttributes, TCreationAttributes>>;
   repository: Repository;
 
   get name() {
@@ -32,9 +36,13 @@ export class Collection extends EventEmitter {
     this.options = options;
     this.context = context;
     this.fields = new Map<string, any>();
-    this.model = class extends Model<any, any> {};
-    const attributes = {};
+
+    this.model = <ModelCtor<Model>>class extends Model {};
+
+    const attributes = {} as any;
+
     const { name, tableName } = options;
+
     // TODO: 不能重复 model.init，如果有涉及 InitOptions 参数修改，需要另外处理。
     this.model.init(attributes, {
       ..._.omit(options, ['name', 'fields']),
@@ -42,6 +50,7 @@ export class Collection extends EventEmitter {
       modelName: name,
       tableName: tableName || name,
     });
+
     this.on('field.afterAdd', (field) => field.bind());
     this.on('field.afterRemove', (field) => field.unbind());
     this.setFields(options.fields);
@@ -70,11 +79,14 @@ export class Collection extends EventEmitter {
       return this;
     }
     const { database } = this.context;
-    const field = database.buildField({ name, ...others }, {
-      ...this.context,
-      collection: this,
-      model: this.model,
-    });
+    const field = database.buildField(
+      { name, ...others },
+      {
+        ...this.context,
+        collection: this,
+        model: this.model,
+      },
+    );
     this.fields.set(name, field);
     this.emit('field.afterAdd', field);
   }
@@ -92,7 +104,7 @@ export class Collection extends EventEmitter {
       }
     } else if (typeof fields === 'object') {
       for (const [name, options] of Object.entries<any>(fields)) {
-        this.addField({...options, name});
+        this.addField({ ...options, name });
       }
     }
   }
@@ -112,7 +124,5 @@ export class Collection extends EventEmitter {
     this.setFields(fields);
   }
 
-  sync() {
-    
-  }
+  sync() {}
 }

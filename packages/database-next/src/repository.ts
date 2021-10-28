@@ -250,12 +250,17 @@ export class Repository implements IRepository {
     return instance;
   }
 
+  /**
+   * Create
+   * @param records
+   * @param options
+   */
   async createMany(records: any[], options?: CreateManyOptions) {
     const instances = await this.collection.model.bulkCreate(records, options);
-    const promises = instances.map((instance, index) => {
-      return updateAssociations(instance, records[index]);
-    });
-    return Promise.all(promises);
+
+    for (let i = 0; i < instances.length; i++) {
+      await updateAssociations(instances[i], records[i]);
+    }
   }
 
   async update(values: any, options: Identity | Model | UpdateOptions) {

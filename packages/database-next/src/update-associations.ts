@@ -15,23 +15,31 @@ function isStringOrNumber(value: any) {
   return typeof value === 'string' || typeof value === 'number';
 }
 
+function modelAssociations(instance: Model) {
+  return (<typeof Model>instance.constructor).associations;
+}
+
 export async function updateAssociations(
   instance: Model,
   values: any,
   options: any = {},
 ) {
-  const { transaction = await instance.sequelize.transaction() } = options;
-  // @ts-ignore
-  for (const key of Object.keys(instance.constructor.associations)) {
-    // 如果 key 不存在才跳过
-    if (!Object.keys(values||{}).includes(key)) {
-      continue;
-    }
-    await updateAssociation(instance, key, values[key], {
-      ...options,
-      transaction,
-    });
+  // if no values set, return
+  if (!values) {
+    return;
   }
+
+  const { transaction = await instance.sequelize.transaction() } = options;
+
+  for (const key of Object.keys(modelAssociations(instance))) {
+    if (values[key]) {
+      await updateAssociation(instance, key, values[key], {
+        ...options,
+        transaction,
+      });
+    }
+  }
+
   if (!options.transaction) {
     await transaction.commit();
   }
@@ -43,11 +51,12 @@ export async function updateAssociation(
   value: any,
   options: any = {},
 ) {
-  // @ts-ignore
-  const association = instance.constructor.associations[key] as Association;
+  const association: Association = modelAssociations(instance)[key];
+
   if (!association) {
     return false;
   }
+
   switch (association.associationType) {
     case 'HasOne':
     case 'BelongsTo':
@@ -203,7 +212,9 @@ export async function updateMultipleAssociation(
         await updateAssociations(instance, item, { transaction, ...options });
         list3.push(instance);
       } else {
-        const instance = await association.target.findByPk(item[pk], { transaction });
+        const instance = await association.target.findByPk(item[pk], {
+          transaction,
+        });
         // @ts-ignore
         const addAccessor = association.accessors.add;
         await model[addAccessor](item[pk], { transaction });

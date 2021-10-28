@@ -4,7 +4,6 @@ import { updateAssociation, updateAssociations } from '../update-associations';
 import { mockDatabase } from './';
 
 describe('update associations', () => {
-
   describe('belongsTo', () => {
     let db: Database;
     beforeEach(() => {
@@ -14,10 +13,14 @@ describe('update associations', () => {
       await db.close();
     });
     it('post.user', async () => {
-      const User = db.collection({
+      const User = db.collection<
+        { id: string; name: string },
+        { name: string }
+      >({
         name: 'users',
         fields: [{ type: 'string', name: 'name' }],
       });
+
       const Post = db.collection({
         name: 'posts',
         fields: [
@@ -25,12 +28,16 @@ describe('update associations', () => {
           { type: 'belongsTo', name: 'user' },
         ],
       });
+
       await db.sync();
-      const user = await User.model.create<any>({ name: 'user1' });
+
+      const user = await User.model.create({ name: 'user1' });
       const post1 = await Post.model.create({ name: 'post1' });
+
       await updateAssociations(post1, {
         user,
       });
+
       expect(post1.toJSON()).toMatchObject({
         id: 1,
         name: 'post1',
@@ -40,21 +47,25 @@ describe('update associations', () => {
           name: 'user1',
         },
       });
+
       const post2 = await Post.model.create({ name: 'post2' });
       await updateAssociations(post2, {
-        user: user.id,
+        user: user.getDataValue('id'),
       });
+
       expect(post2.toJSON()).toMatchObject({
         id: 2,
         name: 'post2',
         userId: 1,
       });
+
       const post3 = await Post.model.create({ name: 'post3' });
       await updateAssociations(post3, {
         user: {
           name: 'user3',
         },
       });
+
       expect(post3.toJSON()).toMatchObject({
         id: 3,
         name: 'post3',
@@ -64,13 +75,15 @@ describe('update associations', () => {
           name: 'user3',
         },
       });
+
       const post4 = await Post.model.create({ name: 'post4' });
       await updateAssociations(post4, {
         user: {
-          id: user.id,
+          id: user.getDataValue('id'),
           name: 'user4',
         },
       });
+
       expect(post4.toJSON()).toMatchObject({
         id: 4,
         name: 'post4',
@@ -98,9 +111,7 @@ describe('update associations', () => {
       });
       Post = db.collection({
         name: 'posts',
-        fields: [
-          { type: 'string', name: 'name' },
-        ],
+        fields: [{ type: 'string', name: 'name' }],
       });
       await db.sync();
     });
@@ -120,16 +131,18 @@ describe('update associations', () => {
           {
             name: 'post1',
             userId: user1.id,
-          }
+          },
         ],
       });
     });
     it('user.posts', async () => {
       const user1 = await User.model.create<any>({ name: 'user1' });
       await updateAssociations(user1, {
-        posts: [{
-          name: 'post1',
-        }],
+        posts: [
+          {
+            name: 'post1',
+          },
+        ],
       });
       expect(user1.toJSON()).toMatchObject({
         name: 'user1',
@@ -137,7 +150,7 @@ describe('update associations', () => {
           {
             name: 'post1',
             userId: user1.id,
-          }
+          },
         ],
       });
     });
@@ -202,7 +215,7 @@ describe('update associations', () => {
           },
           post2.id,
           post3,
-        ]
+        ],
       });
       console.log(JSON.stringify(user1, null, 2));
       expect(user1.toJSON()).toMatchObject({
@@ -263,8 +276,39 @@ describe('update associations', () => {
       await db.close();
     });
 
+    test('create many with nested associations', async () => {
+      await User.repository.createMany([
+        {
+          name: 'u1',
+          posts: [
+            {
+              name: 'u1p1',
+              comments: [
+                {
+                  name: 'u1p1c1',
+                },
+              ],
+            },
+          ],
+        },
+        {
+          name: 'u2',
+          posts: [
+            {
+              name: 'u2p1',
+              comments: [
+                {
+                  name: 'u2p1c1',
+                },
+              ],
+            },
+          ],
+        },
+      ]);
+    });
+
     it('nested', async () => {
-      const user = await User.model.create<any>({ name: 'user1' });
+      const user = await User.model.create({ name: 'user1' });
       await updateAssociations(user, {
         posts: [
           {
@@ -273,19 +317,37 @@ describe('update associations', () => {
               {
                 name: 'comment1',
               },
+              {
+                name: 'comment12',
+              },
+            ],
+          },
+          {
+            name: 'post2',
+            comments: [
+              {
+                name: 'comment21',
+              },
+              {
+                name: 'comment22',
+              },
             ],
           },
         ],
       });
+
       const post1 = await Post.model.findOne({
-        where: { name: 'post1' }
+        where: { name: 'post1' },
       });
+
       const comment1 = await Comment.model.findOne({
-        where: { name: 'comment1' }
+        where: { name: 'comment1' },
       });
+
       expect(post1).toMatchObject({
         userId: user.get('id'),
       });
+
       expect(comment1).toMatchObject({
         postId: post1.get('id'),
       });
