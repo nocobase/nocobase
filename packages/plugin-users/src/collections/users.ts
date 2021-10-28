@@ -3,6 +3,16 @@ import { TableOptions } from '@nocobase/database';
 export default {
   name: 'users',
   title: '用户',
+  sortable: {
+    interface: 'sort',
+    type: 'sort',
+    name: 'sort',
+    uiSchema: {
+      type: 'string',
+      title: '排序',
+      'x-component': 'Input',
+    },
+  },
   // developerMode: true,
   // internal: true,
   createdBy: false,
