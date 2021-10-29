@@ -374,7 +374,7 @@ export const fieldsToFilterColumns = (fields: any[], options: any = {}) => {
       return;
     }
     const fieldOption = interfaces.get(field.interface);
-    if (!fieldOption.operations) {
+    if (!fieldOption?.operations) {
       return;
     }
     properties[`column${index}`] = {
@@ -493,7 +493,7 @@ Calendar.Filter.DesignableBar = () => {
                   {fields
                     .filter((collectionField) => {
                       const option = interfaces.get(collectionField.interface);
-                      return option.operations?.length;
+                      return option?.operations?.length;
                     })
                     .map((collectionField) => (
                       <SwitchMenuItem

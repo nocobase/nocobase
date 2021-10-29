@@ -16,7 +16,6 @@ export * from './percent';
 export * from './phone';
 export * from './radioGroup';
 export * from './select';
-export * from './sort';
 export * from './string';
 export * from './subTable';
 export * from './textarea';
