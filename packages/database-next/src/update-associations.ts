@@ -5,6 +5,9 @@ import {
   DataTypes,
   Utils,
   Association,
+  HasOne,
+  BelongsTo,
+  BelongsToMany,
 } from 'sequelize';
 
 function isUndefinedOrNull(value: any) {
@@ -17,6 +20,10 @@ function isStringOrNumber(value: any) {
 
 function modelAssociations(instance: Model) {
   return (<typeof Model>instance.constructor).associations;
+}
+
+function modelAssociationByKey(instance: Model, key: string): Association {
+  return modelAssociations(instance)[key] as Association;
 }
 
 export async function updateAssociations(
@@ -51,7 +58,7 @@ export async function updateAssociation(
   value: any,
   options: any = {},
 ) {
-  const association: Association = modelAssociations(instance)[key];
+  const association = modelAssociationByKey(instance, key);
 
   if (!association) {
     return false;
@@ -73,8 +80,8 @@ export async function updateSingleAssociation(
   value: any,
   options: any = {},
 ) {
-  // @ts-ignore
-  const association = model.constructor.associations[key] as Association;
+  const association = <HasOne | BelongsTo>modelAssociationByKey(model, key);
+
   if (!association) {
     return false;
   }
@@ -82,9 +89,10 @@ export async function updateSingleAssociation(
     return false;
   }
   const { transaction = await model.sequelize.transaction() } = options;
+
   try {
-    // @ts-ignore
     const setAccessor = association.accessors.set;
+
     if (isUndefinedOrNull(value)) {
       await model[setAccessor](null, { transaction });
       model.setDataValue(key, null);
@@ -108,7 +116,7 @@ export async function updateSingleAssociation(
       }
       return true;
     }
-    // @ts-ignore
+
     const createAccessor = association.accessors.create;
     let dataKey: string;
     let M: ModelCtor<Model>;
@@ -161,8 +169,7 @@ export async function updateMultipleAssociation(
   value: any,
   options: any = {},
 ) {
-  // @ts-ignore
-  const association = model.constructor.associations[key] as Association;
+  const association = <BelongsToMany>modelAssociationByKey(model, key);
   if (!association) {
     return false;
   }
@@ -170,10 +177,10 @@ export async function updateMultipleAssociation(
     return false;
   }
   const { transaction = await model.sequelize.transaction() } = options;
+
   try {
-    // @ts-ignore
     const setAccessor = association.accessors.set;
-    // @ts-ignore
+
     const createAccessor = association.accessors.create;
     if (isUndefinedOrNull(value)) {
       await model[setAccessor](null, { transaction });
@@ -215,13 +222,14 @@ export async function updateMultipleAssociation(
         const instance = await association.target.findByPk(item[pk], {
           transaction,
         });
-        // @ts-ignore
         const addAccessor = association.accessors.add;
+
         await model[addAccessor](item[pk], { transaction });
         await updateAssociations(instance, item, { transaction, ...options });
         list3.push(instance);
       }
     }
+
     model.setDataValue(key, list1.concat(list3));
     if (!options.transaction) {
       await transaction.commit();
