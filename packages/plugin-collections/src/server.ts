@@ -32,6 +32,8 @@ export default {
         }
         const config = table.getOptions();
         const collection = await Collection.create(config);
+        // 把当前系统排序字段，排除掉，不写入fields表
+        config.fields = config.fields?.filter((field) => field.name !== config.sortable);
         await collection.updateAssociations({
           generalFields: config.fields.filter((field) => field.state !== 0),
           systemFields: config.fields.filter((field) => field.state === 0),
