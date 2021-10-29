@@ -1,19 +1,20 @@
 import { defineConfig } from 'dumi';
 
-console.log('process.env.API_URL', process.env.API_URL)
+const baseUrl = `http://localhost:${process.env.API_PORT || '13001'}/`;
+console.log('baseUrl', baseUrl);
 
 export default defineConfig({
   title: ' ',
   hash: true,
   define: {
-    'process.env.API_URL': process.env.API_URL,
+    'process.env.API_URL': process.env.API_URL || `${baseUrl}api/`,
     'process.env.API_HOSTNAME': process.env.API_HOSTNAME,
   },
   proxy: {
     '/api/': {
-      'target': `http://localhost:${process.env.API_PORT}/`,
-      'changeOrigin': true,
-      'pathRewrite': { '^/api/': '/api/' },
+      target: baseUrl,
+      changeOrigin: true,
+      pathRewrite: { '^/api/': '/api/' },
     },
   },
   resolve: {
@@ -44,7 +45,7 @@ export default defineConfig({
         top: 150px !important;
       }
     }
-    `
+    `,
   ],
   // mfsu: {},
   // ssr: {},
