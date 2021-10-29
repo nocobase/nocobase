@@ -130,9 +130,9 @@ describe('mock server', () => {
 
 ## Full-stack demo
 
-http://localhost:8001/develop
+http://localhost:8000/develop
 
-为了方便开发者本地调试，全栈的演示也内嵌的 Demo，可以点击左下角新标签页内全屏打开。
+为了方便开发者本地调试，全栈的演示也是内嵌的 Demo，可以点击左下角新标签页内全屏打开。
 
 ## Client components
 
@@ -148,5 +148,5 @@ http://localhost:8001/develop
 示例还在整理中...
 </Alert>
 
-示例查看 http://localhost:8001/examples
+示例查看 http://localhost:8000/examples
 
