@@ -12,7 +12,7 @@ toc: menu
 
 ```ts
 interface findMany<M extends Sequelize.Model> {
-  (options: FindManyOptions): Promise<M[]>
+  (options?: FindManyOptions): Promise<M[]>
 }
 
 interface FindManyOptions extends Sequelize.FindOptions {
@@ -37,7 +37,7 @@ type FilterOptions = any;
 ###### 全览
 
 ```ts
-repository.findMany({
+await repository.findMany({
   // 过滤
   filter: {
     $and: [{ a: 5 }, { b: 6 }],            // (a = 5) AND (b = 6)
@@ -281,7 +281,7 @@ await Post.repository.findMany({
 
 ```ts
 interface paginate<M extends Sequelize.Model> {
-  (options: PaginateOptions): Promise<[ M[], number ]>
+  (options?: PaginateOptions): Promise<[ M[], number ]>
 }
 
 interface PaginateOptions extends Sequelize.FindAndCountOptions {
@@ -309,10 +309,20 @@ interface PaginateOptions extends Sequelize.FindAndCountOptions {
 不填写参数时，默认 page=1，pageSize=20。
 
 ```ts
-repository.paginate();
+await repository.paginate();
 // [[{ id, name, content, createdAt, updatedAt }], 50]
 
 const [models, count] = await repository.paginate();
+```
+
+指定页码和单页最大数量
+
+```ts
+await repository.paginate({
+  page: 1,
+  pageSize: 50,
+});
+// [[{ id, name, content, createdAt, updatedAt }], 50]
 ```
 
 ## `repository.findOne()`
@@ -321,7 +331,7 @@ const [models, count] = await repository.paginate();
 
 ```ts
 interface findOne<M extends Sequelize.Model> {
-  (options: FindOneOptions): Promise<[ M[], number ]>
+  (options?: FindOneOptions): Promise<[ M[], number ]>
 }
 
 interface FindOneOptions extends FindManyOptions {
@@ -355,6 +365,123 @@ await repository.findOne({
 ```
 
 ## repository.create()
+
+创建数据
+
+##### Definition
+
+```ts
+interface create<M extends Sequelize.Model> {
+  (options?: CreateOptions): Promise<M>
+}
+
+interface CreateOptions {
+  // 数据
+  values?: any;
+  // 字段白名单
+  whitelist?: string[];
+  // 字段黑名单
+  blacklist?: string[];
+  // 关系数据默认会新建并建立关联处理，如果是已存在的数据只关联，但不更新关系数据
+  // 如果需要更新关联数据，可以通过 updateAssociations 指定
+  updateAssociations?: string[];
+}
+```
+
+##### Examples
+
+例子之前，先定义几个 Collection 吧
+
+```ts
+db.collection({
+  name: 'users',
+  fields: [
+    {name: 'name', type: 'string'},
+  ],
+});
+
+db.collection({
+  name: 'posts',
+  fields: [
+    { type: 'string', name: 'name' },
+    { type: 'belongsTo', name: 'user' },
+    { type: 'belongsToMany', name: 'tags' },
+    { type: 'hasMany', name: 'comments' },
+  ],
+});
+
+db.collection({
+  name: 'tags',
+  fields: [
+    { type: 'string', name: 'name' },
+    { type: 'belongsToMany', name: 'posts' },
+  ],
+});
+
+db.collection({
+  name: 'comments',
+  fields: [
+    { type: 'string', name: 'name' },
+  ],
+});
+```
+
+新建数据，可以不指定 values。
+
+```ts
+const model = await repository.create();
+```
+
+values 必须是 Object。
+
+```ts
+await repository.create({
+  values: {
+    name: 'post1',
+  },
+});
+```
+
+values 可以包含关系数据
+
+```ts
+await repository.create({
+  values: {
+    name: 'post1',
+    // 新建并关联
+    tags: [{ name: 'tag1' }],
+  },
+});
+```
+
+关联字段，可以只提供关系约束值（一般是 id）
+
+```ts
+await repository.create({
+  values: {
+    name: 'post1',
+    // 关联 id=1 的 tag
+    tags: [1],
+    // 也可以这样，会自动识别
+    tags: 1,
+  },
+});
+```
+
+可以设置 values 的白名单和黑名单
+
+```ts
+await repository.create({
+  values: {
+    name: 'post1',
+    // 关联 id=1 的 tag
+    tags: [1],
+  },
+  whitelist: ['name'],
+});
+```
+
+
 ## repository.update()
 ## repository.destroy()
 ## repository.relation().of()
