@@ -79,6 +79,9 @@ const Layout: React.FC<IRouteComponentProps> = ({ children, location }) => {
         setMenuCollapsed(true);
       }}
     >
+      <div className={'tip'} style={{ position: 'fixed', top: 64, left: 0, right: 0, textAlign: 'center', lineHeight: '36px', background: '#fffbe6', borderBottom: '1px solid rgba(60, 72, 88, 0.05)', zIndex: 100 }}>
+        {isCN ? '文档还在建设中，与实际代码存在差异' : 'The documentation is still under construction and differs somewhat from the actual code.'}
+      </div>
       <Navbar
         location={location}
         navPrefix={<SearchBar />}
