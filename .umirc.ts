@@ -10,7 +10,7 @@ export default defineConfig({
     'process.env.API_HOSTNAME': process.env.API_HOSTNAME,
   },
   proxy: {
-    '/api': {
+    '/api/': {
       'target': `http://localhost:${process.env.API_PORT}/`,
       'changeOrigin': true,
       'pathRewrite': { '^/api/': '/api/' },
