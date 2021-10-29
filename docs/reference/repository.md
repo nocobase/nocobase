@@ -481,17 +481,216 @@ await repository.create({
 });
 ```
 
+指定哪些关联字段在建立关联的同时可以更新数据
+
+```ts
+// 原 tag=1 的数据
+// { id: 1, name: 'tag1' }
+
+await repository.create({
+  values: {
+    name: 'post1',
+    tags: [{
+      id: 1,
+      name: 'tag123', // name 与原数据不一样
+    }],
+  },
+  // 指定了 tags，建立关联时，也会同步修改 tag 数据
+  updateAssociations: ['tags'],
+});
+```
+
+全览
+
+```ts
+await repository.create({
+  // 待存数据
+  values: {
+    a: 'a',
+    // 快速建立关联
+    o2o: 1,    // 建立一对一关联
+    m2o: 1,    // 建立多对一关联
+    o2m: [1,2] // 建立一对多关联
+    m2m: [1,2] // 建立多对多关联
+    // 新建关联数据并建立关联
+    o2o: {
+      key1: 'val1',
+    },
+    o2m: [{key1: 'val1'}, {key2: 'val2'}],
+    // 子表格数据
+    subTable: [
+      // 如果数据存在，更新处理
+      {id: 1, key1: 'val1111'},
+      // 如果数据不存在，直接创建并关联
+      {key2: 'val2'},
+    ],
+  },
+  // 字段白名单
+  whitelist: [],
+  // 字段黑名单
+  blacklist: [],
+  // 关系数据默认会新建并建立关联处理，如果是已存在的数据只关联，但不更新关系数据
+  // 如果需要更新关联数据，可以通过 updateAssociations 指定
+  updateAssociations: ['subTable'],
+});
+```
 
 ## repository.update()
+
+更新数据
+
+##### Definition
+
+```ts
+interface update<M extends Sequelize.Model> {
+  (options: UpdateOptions): Promise<M>
+}
+
+interface UpdateOptions {
+  filter?: any;
+  filterByPk?: number | string;
+  // 数据
+  values?: any;
+  // 字段白名单
+  whitelist?: string[];
+  // 字段黑名单
+  blacklist?: string[];
+  // 关系数据默认会新建并建立关联处理，如果是已存在的数据只关联，但不更新关系数据
+  // 如果需要更新关联数据，可以通过 updateAssociations 指定
+  updateAssociations?: string[];
+}
+```
+
+##### Examples
+
+全部改
+
+```ts
+await repository.update({
+  values: {
+    a: 'b'
+  },
+});
+```
+
+只改某条数据
+
+```ts
+await repository.update({
+  filterByPk: 1,
+  values: {
+    a: 'b'
+  },
+});
+```
+
+指定范围修改
+
+```ts
+await repository.update({
+  filter: {
+    name: 'post1.1'
+  },
+  values: {
+    name: 'post1.2'
+  },
+});
+```
+
 ## repository.destroy()
+
+删除数据
+
+##### Definition
+
+```ts
+interface destroy {
+  (options?: number | string | number[] | string[] | DestroyOptions): Promise<boolean | boolean[]>
+}
+
+interface DestroyOptions {
+  filter?: any;
+}
+```
+
+##### Examples
+
+指定 primary key 值
+
+```ts
+repository.destroy(1);
+```
+
+批量 primary key 值
+
+```ts
+repository.destroy([1, 2, 3]);
+```
+
+复杂的 filter
+
+```ts
+repository.destroy({
+  filter: {},
+});
+```
+
 ## repository.relation().of()
 
-### find()
-### findOne()
-### create()
-### update()
-### destroy()
-### set()
-### add()
-### remove()
-### toggle()
+##### Definition
+
+```ts
+interface relation {
+  (name: string): {
+    of: (parent: any): RelationRepository;
+  }
+}
+
+// 关系数据的增删改查在 NocoBase 里非常重要
+class RelationRepository {
+  find() {}
+  findOne() {}
+  create() {}
+  update() {}
+  destroy() {}
+  set() {}
+  add() {}
+  remove() {}
+  toggle() {}
+}
+```
+
+##### Examples
+
+find、findOne、create、update 和 destroy 和常规 Repository API 层面是一致，这里重点列举关联操作的几个方法：
+
+```ts
+// user_id = 1 的 post 的 relatedQuery
+const userPostsRepository = repository.relation('posts').of(1);
+
+// 建立关联
+userPostsRepository.set(1);
+
+// 批量，仅用于 HasMany 和 BelongsToMany
+userPostsRepository.set([1,2,3]);
+
+// BelongsToMany 的中间表
+userPostsRepository.set([
+  [1, {/* 中间表数据 */}],
+  [2, {/* 中间表数据 */}],
+  [3, {/* 中间表数据 */}],
+]);
+
+// 仅用于 HasMany 和 BelongsToMany
+userPostsRepository.add(1);
+
+// BelongsToMany 的中间表
+userPostsRepository.add(1, {/* 中间表数据 */});
+
+// 删除关联
+userPostsRepository.remove(1);
+
+// 建立或解除
+userPostsRepository.toggle(1);
+userPostsRepository.toggle([1, 2, 3]);
+```
