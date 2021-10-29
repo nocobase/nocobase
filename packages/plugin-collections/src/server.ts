@@ -35,8 +35,8 @@ export default {
         // 把当前系统排序字段，排除掉，不写入fields表
         const fields = config.fields?.filter((field) => field.type !== 'sort');
         await collection.updateAssociations({
-          generalFields: config.fields.filter((field) => field.state !== 0),
-          systemFields: config.fields.filter((field) => field.state === 0),
+          generalFields: fields.filter((field) => field.state !== 0),
+          systemFields: fields.filter((field) => field.state === 0),
         });
         // await collection.migrate();
       }
