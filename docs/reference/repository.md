@@ -4,18 +4,18 @@ toc: menu
 
 # Repository
 
-## `repository.findMany()`
+## `repository.find()`
 
-查询数据，返回数组。无数据时为空数组，不返回 count。如果需要，请使用 [repository.paginate()](#repositorypaginate) 方法。
+查询数据，返回数组。无数据时为空数组，不返回 count。如果需要，请使用 [repository.findAndCount()](#repositoryfindandcount) 方法。
 
 ##### Definition
 
 ```ts
-interface findMany<M extends Sequelize.Model> {
-  (options?: FindManyOptions): Promise<M[]>
+interface find<M extends Sequelize.Model> {
+  (options?: FindOptions): Promise<M[]>
 }
 
-interface FindManyOptions extends Sequelize.FindOptions {
+interface FindOptions extends Sequelize.FindOptions {
   // 数据过滤
   filter?: FilterOptions;
   // 输出结果显示哪些字段
@@ -37,7 +37,7 @@ type FilterOptions = any;
 ###### 全览
 
 ```ts
-await repository.findMany({
+await repository.find({
   // 过滤
   filter: {
     $and: [{ a: 5 }, { b: 6 }],            // (a = 5) AND (b = 6)
@@ -98,7 +98,7 @@ const Post = db.collection({
 最简单的筛选过滤
 
 ```ts
-await Post.repository.findMany({
+await Post.repository.find({
   filter: {
     'name': 'post1',
   },
@@ -108,7 +108,7 @@ await Post.repository.findMany({
 支持多种 Operators，以 `$` 开头。[更多内容，查阅 Operators 章节](operators.md)
 
 ```ts
-await Post.repository.findMany({
+await Post.repository.find({
   filter: {
     'name.$includes': 'post1',
     // 等同于
@@ -122,7 +122,7 @@ await Post.repository.findMany({
 支持关系字段过滤，可以使用 dot 来表示层级结构
 
 ```ts
-await Post.repository.findMany({
+await Post.repository.find({
   filter: {
     'tags.name': 'tag1',
     // 等同于
@@ -136,7 +136,7 @@ await Post.repository.findMany({
 多个同一关系字段的过滤可以写在一起
 
 ```ts
-await Post.repository.findMany({
+await Post.repository.find({
   filter: {
     'tags': {
       'name.$includes': 'tag1',
@@ -149,7 +149,7 @@ await Post.repository.findMany({
 同时也支持 and、or 逻辑运算符
 
 ```ts
-await Post.repository.findMany({
+await Post.repository.find({
   filter: {
     $and: [
       // 一个 Object 只写一个条件
@@ -167,7 +167,7 @@ await Post.repository.findMany({
 指定一组数据的排序，倒序时在字段前加上减号 `-`
 
 ```ts
-await Post.repository.findMany({
+await Post.repository.find({
   // 创建日期倒序
   sort: ['-createdAt'],
 });
@@ -176,7 +176,7 @@ await Post.repository.findMany({
 可以设置多个排序规则
 
 ```ts
-await Post.repository.findMany({
+await Post.repository.find({
   // 创建日期倒序，ID 正序
   sort: ['-createdAt', 'id'],
 });
@@ -185,7 +185,7 @@ await Post.repository.findMany({
 也可以是关系表的字段
 
 ```ts
-await Post.repository.findMany({
+await Post.repository.find({
   // 标签名正序，文章创建日期倒序
   sort: ['tags.name', '-createdAt'],
 });
@@ -200,14 +200,14 @@ await Post.repository.findMany({
 如果并未指定 fields，输出所有 Attributes，Associations 字段并不输出
 
 ```ts
-await Post.repository.findMany();
+await Post.repository.find();
 // [{ id, name, content, createdAt, updatedAt }]
 ```
 
 只输出指定字段时，可以用 fields
 
 ```ts
-await Post.repository.findMany({
+await Post.repository.find({
   fields: ['name'],
 });
 // [{ name }]
@@ -216,7 +216,7 @@ await Post.repository.findMany({
 当 fields 里有关系字段时，按默认情况输出
 
 ```ts
-await Post.repository.findMany({
+await Post.repository.find({
   fields: ['id', 'name', 'tags'],
 });
 // 
@@ -227,7 +227,7 @@ await Post.repository.findMany({
 可以只输出关系数据的某个字段
 
 ```ts
-await Post.repository.findMany({
+await Post.repository.find({
   fields: ['id', 'name', 'tags.name'],
 });
 // [{ id, name, tags: [{ name }] }]
@@ -236,7 +236,7 @@ await Post.repository.findMany({
 排除某些字段时，可以使用 expect
 
 ```ts
-await Post.repository.findMany({
+await Post.repository.find({
   expect: ['content'],
 });
 // [{ id, name, createdAt, updatedAt }]
@@ -245,7 +245,7 @@ await Post.repository.findMany({
 Attributes 不变，只附加 Associations 进来时，可以使用 appends
 
 ```ts
-await Post.repository.findMany({
+await Post.repository.find({
   appends: ['tags'],
 });
 // [{ id, name, content, createdAt, updatedAt, tags: [{ id, name, createdAt, updatedAt }] }]
@@ -254,7 +254,7 @@ await Post.repository.findMany({
 如果某个字段只用在 filter 里，但并没有出现在 fields 里，不应该被输出
 
 ```ts
-await Post.repository.findMany({
+await Post.repository.find({
   filter: {
     'tags.name': 'tag1',
   },
@@ -266,25 +266,25 @@ await Post.repository.findMany({
 如果某个字段只用在 sort 里，但并没有出现在 fields 里，也不应该被输出
 
 ```ts
-await Post.repository.findMany({
+await Post.repository.find({
   sort: ['-tags.createdAt']
 });
 // 输出所有的 Attributes，但不输出 tags
 // [{ id, name, content, createdAt, updatedAt }]
 ```
 
-## `repository.paginate()`
+## `repository.findAndCount()`
 
 按分页查询数据，并返回所有符合的数据总数。
 
 ##### Definition
 
 ```ts
-interface paginate<M extends Sequelize.Model> {
-  (options?: PaginateOptions): Promise<[ M[], number ]>
+interface findAndCount<M extends Sequelize.Model> {
+  (options?: FindAndCountOptions): Promise<[ M[], number ]>
 }
 
-interface PaginateOptions extends Sequelize.FindAndCountOptions {
+interface FindAndCountOptions extends Sequelize.FindAndCountOptions {
   // 数据过滤
   filter?: FilterOptions;
   // 输出结果显示哪些字段
@@ -304,21 +304,21 @@ interface PaginateOptions extends Sequelize.FindAndCountOptions {
 
 ##### Examples
 
-大部分参数与 [repository.findMany()](#repositoryfindmany) 一致，所以这里只列举 page 和 pageSize 的例子。
+大部分参数与 [repository.find()](#repositoryfind) 一致，所以这里只列举 page 和 pageSize 的例子。
 
 不填写参数时，默认 page=1，pageSize=20。
 
 ```ts
-await repository.paginate();
+await repository.findAndCount();
 // [[{ id, name, content, createdAt, updatedAt }], 50]
 
-const [models, count] = await repository.paginate();
+const [models, count] = await repository.findAndCount();
 ```
 
 指定页码和单页最大数量
 
 ```ts
-await repository.paginate({
+await repository.findAndCount({
   page: 1,
   pageSize: 50,
 });
@@ -334,7 +334,7 @@ interface findOne<M extends Sequelize.Model> {
   (options?: FindOneOptions): Promise<[ M[], number ]>
 }
 
-interface FindOneOptions extends FindManyOptions {
+interface FindOneOptions extends findOptions {
   // 数据过滤
   filter?: FilterOptions;
   // 输出结果显示哪些字段
@@ -352,7 +352,7 @@ interface FindOneOptions extends FindManyOptions {
 
 ##### Examples
 
-大部分参数与 [repository.findMany()](#repositoryfindmany) 一致。这里只列举 filterByPk 的例子。
+大部分参数与 [repository.find()](#repositoryfind) 一致。这里只列举 filterByPk 的例子。
 
 ```ts
 await repository.findOne({
@@ -486,7 +486,7 @@ await repository.create({
 ## repository.destroy()
 ## repository.relation().of()
 
-### findMany()
+### find()
 ### findOne()
 ### create()
 ### update()
