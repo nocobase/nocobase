@@ -11,7 +11,7 @@ toc: menu
 - 修改源码
 - 提交 pull request
 
-## Local start-up
+## Installation and start-up
 
 ```bash
 # 将以下 git 地址换成自己的 repo
@@ -25,7 +25,34 @@ yarn nocobase init --import-demo
 yarn start
 ```
 
-## Build
+浏览器内打开 http://localhost:8000/
+
+<Alert title="注意">
+参与核心代码开发，项目启动打开的是文档页，并非应用的登录页。
+</Alert>
+
+## Main scripts
+
+### Startup and reboot
+
+以上命令只在第一次执行，之后重启项目只需要
+
+```bash
+yarn start
+```
+
+### Reinstallation
+
+如果想清空重新安装
+
+```bash
+# 如果需要导入 demo 数据，可以加上 --import-demo
+yarn nocobase init --import-demo
+# 重装之后，也需要重启
+yarn start
+```
+
+### Build
 
 <Alert title="注意">
 
@@ -53,7 +80,7 @@ yarn build <package_name_1> <package_name_2>
 # yarn build database
 ```
 
-## Test
+### Testing
 
 <Alert title="注意">
 
@@ -68,6 +95,10 @@ yarn test
 # For specific package
 yarn test packages/<name>
 ```
+
+### More scripts
+
+查看 package.json 的 [scripts](https://github.com/nocobase/nocobase/blob/ff4d432c9fc3faa38cd65ab6d4dad250da02c2fd/package.json#L7)
 
 ## Document revision and translation
 
