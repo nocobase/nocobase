@@ -3,6 +3,7 @@ import { TableOptions } from '@nocobase/database';
 export default {
   name: 'users',
   title: '用户',
+  sortable: 'sort',
   // developerMode: true,
   // internal: true,
   createdBy: false,
