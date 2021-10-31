@@ -11,7 +11,9 @@ describe('parse filter', () => {
     });
 
     await database.sync();
+
     const filterResult = User.repository.parseFilter({ name: 'hello' });
+
     expect(filterResult).toMatchObject({
       where: {
         name: 'hello',
