@@ -3,7 +3,7 @@ import {
   Model,
   ModelCtor,
   Association,
-  FindOptions,
+  FindOptions as SequelizeFindOptions,
   BulkCreateOptions,
   DestroyOptions as SequelizeDestroyOptions,
   CreateOptions as SequelizeCreateOptions,
@@ -20,7 +20,7 @@ export interface IRepository {}
 
 interface CreateManyOptions extends BulkCreateOptions {}
 
-interface FindManyOptions extends FindOptions {
+interface FindOptions extends SequelizeFindOptions {
   filter?: any;
   fields?: any;
   appends?: any;
@@ -93,7 +93,7 @@ class RelatedQuery {
 
   async findMany(options?: any) {
     const { collection } = this.options.target;
-    return await collection.repository.findMany(options);
+    return await collection.repository.find(options);
   }
 
   async findOne(options?: any) {
@@ -174,7 +174,7 @@ export class Repository implements IRepository {
     this.model = collection.model;
   }
 
-  async findMany(options?: FindManyOptions) {
+  async find(options?: FindOptions) {
     const model = this.collection.model;
     const opts = {
       subQuery: false,
@@ -212,6 +212,11 @@ export class Repository implements IRepository {
     return { count, rows };
   }
 
+  /**
+   * Find one record from database
+   *
+   * @param options
+   */
   async findOne(options?: FindOneOptions) {
     const model = this.collection.model;
     const opts = {
@@ -241,6 +246,12 @@ export class Repository implements IRepository {
     return data;
   }
 
+  /**
+   * Save instance to database
+   *
+   * @param values
+   * @param options
+   */
   async create(values?: any, options?: CreateOptions) {
     const instance = await this.model.create<any>(values, options);
     if (!instance) {
@@ -251,7 +262,8 @@ export class Repository implements IRepository {
   }
 
   /**
-   * Create
+   * Save Many instances to database
+   *
    * @param records
    * @param options
    */
@@ -261,8 +273,16 @@ export class Repository implements IRepository {
     for (let i = 0; i < instances.length; i++) {
       await updateAssociations(instances[i], records[i]);
     }
+
+    return instances;
   }
 
+  /**
+   * Update model value
+   *
+   * @param values
+   * @param options
+   */
   async update(values: any, options: Identity | Model | UpdateOptions) {
     if (options instanceof Model) {
       await options.update(values);
@@ -342,6 +362,10 @@ export class Repository implements IRepository {
     return { ...options, ...opts };
   }
 
+  /**
+   * Parse filter to sequelize where params
+   * @param filter
+   */
   parseFilter(filter?: any) {
     if (!filter) {
       return {};

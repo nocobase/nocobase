@@ -2,6 +2,24 @@ import { Collection } from '../collection';
 import { Database } from '../database';
 import { mockDatabase } from './';
 
+describe('parse filter', () => {
+  test('filter by string', async () => {
+    const database = mockDatabase();
+    const User = database.collection({
+      name: 'users',
+      fields: [{ type: 'string', name: 'name' }],
+    });
+
+    await database.sync();
+    const filterResult = User.repository.parseFilter({ name: 'hello' });
+    expect(filterResult).toMatchObject({
+      where: {
+        name: 'hello',
+      },
+    });
+  });
+});
+
 describe('repository.find', () => {
   let db: Database;
   let User: Collection;
@@ -136,8 +154,8 @@ describe('repository.find', () => {
     console.log(data);
   });
 
-  it('findMany', async () => {
-    const data = await User.repository.findMany({
+  it('find item', async () => {
+    const data = await User.repository.find({
       filter: {
         'posts.comments.id': null,
       },
