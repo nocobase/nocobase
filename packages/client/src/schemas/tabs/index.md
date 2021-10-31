@@ -1,12 +1,8 @@
 ---
-title: Tabs - 标签页
 nav:
-  title: 组件
-  path: /client
+  path: /components
 group:
-  order: 1
-  title: Schemas
-  path: /client/schemas
+  path: /components/schema-components
 ---
 
 # Tabs - 标签页

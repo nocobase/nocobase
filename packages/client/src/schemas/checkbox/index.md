@@ -1,13 +1,10 @@
 ---
-title: Checkbox - 多选框
 nav:
-  title: 组件
-  path: /client
+  path: /components
 group:
-  order: 1
-  title: Schemas
-  path: /client/schemas
+  path: /components/schema-components
 ---
+
 
 # Checkbox - 多选框
 

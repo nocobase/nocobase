@@ -130,7 +130,7 @@ const routes = [
 function AntdProvider(props) {
   // The locale here can be handled dynamically depending on the i18next
   return (
-    <ConfigProvider locale={locale}>{props.children}</ConfigProvider
+    <ConfigProvider locale={locale}>{props.children}</ConfigProvider>
   );
 }
 
@@ -138,9 +138,9 @@ const App = () => {
   return (
     <APIClientProvider client={apiClient}>
       <I18nextProvider i18n={i18n}>
-        <AntdProvider
-          <Router
-            <RouteSwitch routes=[routes]/>
+        <AntdProvider>
+          <Router>
+            <RouteSwitch routes={routes}/>
           </Router>
         </AntdProvider>
       </I18nextProvider>
