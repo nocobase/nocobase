@@ -4,39 +4,32 @@ order: 2
 
 # Client Components
 
-为了让更多非开发人员也能参与进来，NocoBase 提供了配套的客户端 —— 无代码的可视化界面。客户端界面非常灵活，由不同组件构成，分为了三类：
+To allow more non-developers to participate, NocoBase provides a companion client - a visual interface without code. The client interface is very flexible and consists of different components, which are divided into three categories.
 
-- 通过 createRouteSwitch 创建的路由组件，如 Layout、Page
-- 通过 createCollectionField 创建的字段组件，用于扩展字段
-- 通过 createSchemaComponent 创建的 JSON Schema 组件，可以是任意东西，比如表格、表单、日历、看板等
+- Routing components created by createRouteSwitch, such as Layout, Page
+- Field components created by createCollectionField, used to extend fields
+- JSON Schema components created by createSchemaComponent, which can be anything, such as tables, forms, calendars, kanban, etc.
 
-[更多组件内容，查看组件章节](#)
+[For more on components, see the section on components](#)
 
-## 组件树结构
+## Component tree structure
 
-界面是由组件构成的组件树，结构如下：
+The interface is a component tree composed of components with the following structure.
 
 <pre lang="tsx">
-// 布局
 <Layout>
-  // 页面
   <Page>
-    // 栅格
     <Grid>
-      // 区块，以表格为例
+      // Block, table
       <Table>
-        // 配置工具栏
         <Table.DesignableBar/>
-        // 操作栏
         <Table.ActionBar>
-          // 操作
           <Action/>
           <Action/>
         </Table.ActionBar>
-        // 内容区
         <Table.Content>
           <Table.Column>
-            // 表格列的字段
+            // Fields in table columns
             <CollectionField />
           </Table.Column>
           <Table.Column>
@@ -50,26 +43,25 @@ order: 2
 </Layout>
 </pre>
 
-注：以上例子只为表达组件树的结构和组件之间的关系，实际代码并不如此。
+Note: The above example is only for expressing the structure of the component tree and the relationship between components, the actual code does not.
 
-接下来，我们来详细的介绍各部分的概念。
+Next, let's introduce the concept of each component in detail.
+## Layout and pages
 
-## 布局和页面
+Pages are web pages that can be accessed by address. Different pages may have the same header, footer and navigation between them, and usually we put these common contents in the layout component. For example, the initialized NocoBase provides two layout components, as shown in
 
-页面是可以通过地址访问的网页，不同页面之间可能具有相同的页眉、页脚和导航，通常我们会把这些公共的内容放在布局组件里。例如，初始化的 NocoBase 提供了两个布局组件，如图所示：
+Figure
 
-图
+- AuthLayout: accessible without login, usually used to embed login, registration, forgot password, etc. pages.
+- AdminLayout: requires login and manages all pages of the backend.
 
-- AuthLayout：无需登录就能访问，一般用于嵌入登录、注册、忘记密码等页面。
-- AdminLayout：需要登录，管理后台的所有页面。
+Layout and page components are registered through createRouteSwitch, more extensions are available here.
 
-布局和页面组件通过 createRouteSwitch 注册，更多扩展内容点此查看。
+## Page content layout
 
-## 页面内容排版
+For developers, the writing of page content is free, but to facilitate the layout of page content, two types of layout are provided.
 
-对开发者来说，页面内容的编写是自由的，不过为了方便对页面内容进行排版，提供了两种排版方式：
-
-### 简易的上下结构
+### Simple top-down structure
 
 <pre lang="tsx">
 <Page>
@@ -79,13 +71,13 @@ order: 2
 </Page>
 </pre>
 
-例子如下：
+Example
 
 ```js
-// 示例 
+// coming soon 
 ```
 
-### 可拖拽的栅格
+### Drag and drop grid
 
 <pre lang="tsx">
 <Page>
@@ -110,25 +102,25 @@ order: 2
 </Page>
 </pre>
 
-栅格组件 Grid 基于行（Grid.Row）和列（Grid.Col）来定义区块的外部框架。例子如下：
+Grid component defines the outer frame of the block based on rows (Grid.Row) and columns (Grid.Col). Examples are as follows:
 
 ```js
-// 示例 
+// coming soon 
 ```
 
 ## AddNew
 
-AddNew 是页面可视化配置最重要的操作按钮，更多关于 AddNew 的内容点此查看
+AddNew is the most important button for visual configuration of the page, more about [AddNew](#) here
 
-## 区块 - Block
+## Block
 
-区块一般放在页面里，可以是任意东西，包括文字、附件、表格、表单、日历、看板等等。一个完整的区块由三部分组成：
+Blocks are generally placed in pages and can be anything, including text, attachments, tables, forms, calendars, kanban boards, etc. A complete block consists of three parts.
 
-- 内容区 Content，区块的主体
-- 操作栏 ActionBar，可以放置各种操作按钮，用于操作区块数据（可选）
-- 配置工具栏 DesignableBar，操作区块配置的按钮（可选）
+- Content, the body of the block
+- ActionBar, where you can place various action buttons to manipulate the block data (optional)
+- DesignableBar, buttons for operating the block configuration (optional)
 
-以表格区块为例，组件结构如下：
+Take the table block as an example, the component structure is as follows:
 
 <pre lang="tsx">
 <Table>
@@ -138,97 +130,96 @@ AddNew 是页面可视化配置最重要的操作按钮，更多关于 AddNew �
 </Table>
 </pre>
 
-具体形态：
+Example
 
 ```js
-//示例（这里放上一个表示区块结构的示例）
+// coming soon 
 ```
 
-区块有几种类型：
+There are several types of blocks.
 
-- 数据类型，用于展示数据表的数据，如表格、日历、看板、表单、详情等。
-- 多媒体，用于丰富页面内容，如文本段、附件等。暂时只有一个简易的 Markdown。
-- 图表，用于展示数据统计。
-- 模板，可直接将某些成品模板化，直接应用到页面上。
+- Data types, used to display data from data tables, such as tables, calendars, kanban, forms, details, etc.
+- Multimedia, for enriching page content, such as text paragraphs, attachments, etc. For now there is only a simple Markdown.
+- Charts, for displaying data statistics.
+- Templates, which can directly template certain finished products and apply them directly to the page.
 
-区块可以任意扩展，如何扩展查看 createSchemaComponent 章节。
+Blocks can be extended at will, see the [createSchemaComponent](#) chapter for how to do so.
 
-## 操作栏 - ActionBar
+## ActionBar
 
-操作栏是一系列操作的集合，一般用于区块内部。用户发出操作指令，程序做出改变，并将结果响应在区块内容区。
+An action bar is a collection of actions, typically used inside a block. The user issues an action command, the program makes a change, and responds with the result in the block's content area.
 
-例如：
+Example.
 
-表格，内容区是一个表格，操作区会放置一些操作按钮，如筛选、新增、删除、导出等
+Form, the content area is a table, and the action area will place some action buttons, such as filter, add, delete, export, etc
 
 ```js
-// 示例（放一个简易的表格，把操作栏重点突出一下）
+// coming soon 
 ```
 
-详情，内容区是详情数据，操作区会放置编辑、导出等按钮
+details, the content area is the details of the data, the operation area will be placed on the edit, export and other buttons
 
 ```js
-// 示例（放一个简易的详情，把操作栏重点突出一下）
+// coming soon 
 ```
 
-不同的区块，操作栏的按钮可能不同。操作栏的按钮也是可以自定义的，具体内容查看操作章节。
+The buttons of the action bar may be different for different blocks. The action bar buttons are also customizable, check the action chapter for details.
 
-## 操作 - Action
+## Action
 
-操作是封装的一段指令，一般需要用户参与。
+An action is an encapsulated piece of instruction that generally requires user participation.
 
-例如：
+For example.
 
-- 删除数据，需要用户选中待删除数据，再触发删除指令
-- 筛选数据，需要用户填写筛选项，再触发筛选指令
-- 新增数据，需要用户填写数据之后提交，触发新增操作指令
-- 查看详情，用户点击操作按钮，弹窗查看详情或当前窗口打开详情页查看
+- Delete data, which requires the user to select the data to be deleted, and then trigger the delete command
+- Filtering data requires the user to fill in the filter items and then triggers the filter command
+- Add data, the user needs to fill in the data and then submit it, triggering the add operation instruction
+- View details, the user clicks the operation button, the pop-up window to view the details or the current window to open the details page to view
 
-最简单的操作，只需要绑定一段指令即可，简单来说就是指定一段函数，无需传参。组件结构如下：
+The simplest operation, you only need to bind a paragraph of instructions, simply specify a function, no need to pass parameters. The component structure is as follows.
 
 <pre lang="tsx">
 <Action useAction={useAction} />
 </pre>
 
-大部分的操作指令需要用户提供参数，如新增数据操作，需要用户填写数据，填写数据一般需要弹出表单，用户填写完数据，点击提交，才触发操作指令。组件结构如下：
+Most of the action instructions require user-supplied parameters, such as the add data action, which requires the user to fill in the data, which usually requires a pop-up form, and the user fills in the data and clicks submit to trigger the action instruction. The component structure is as follows.
 
 <pre lang="tsx">
 <Action useAction={useAction}>
-  {/* 这是个弹窗表单，内置提交按钮，点击提交触发操作指令，具体代码省略 */}
+  {/* This is a popup form with a built-in submit button that triggers an action command when clicked, the specific code is omitted */}
   <Action.Modal x-decorator={'Form'}></Action.Modal>
 </Action>
 </pre>
 
-一个完整的操作大概分为两步：
+A complete action is roughly divided into two steps.
 
-- 为 Action 绑定一段指令
-- 如果指令需要用户提供参数，需要提供交互界面，目前内置的有：
-   - Action.Drawer：抽屉
-   - Action.Modal：对话框
-   - Action.Popover：气泡
+- Bind a directive to the Action
+- If the directive requires user-supplied parameters, it needs to provide an interaction interface, which is currently built in as follows
+   - Action.Drawer: drawer
+   - Modal: dialog box
+   - Popover: bubble
 
-操作是 NocoBase 里非常重要的一个概念，更多详情点此查看
+Action is a very important concept in NocoBase, more details click here to see
 
-## 配置工具栏 - DesignableBar
+## DesignableBar
 
-所有的 Schema Component 都可以绑定自己的配置工具栏（DesignableBar），用于修改当前组件的 Schema。
-​
+All Schema Components can be bound to their own configuration toolbar (DesignableBar) for modifying the Schema of the current component.
 
-**什么是 Schema Component？**  
-通过 Schema 协议编写的类 JSON Schema 格式的组件，如：
+**What is a Schema Component?**  
+A component written in JSON-like Schema format via the Schema protocol, e.g.
 
 ```js
 {
   type: 'void',
-   'x-Component': 'Hello',
+  'x-Component': 'Hello',
   'x-designable-bar': 'Hello.DesignableBar',
   'x-dect': 'CardItem',
 }
 ```
 
-举几个例子，如：
+To give a few examples, e.g.
 
-表单字段的 JSON Schema
+JSON Schema for form fields
 
 ```js
 const schema = {
@@ -239,11 +230,11 @@ const schema = {
 };
 ```
 
-表单项的配置工具栏 `Form.Field.DesignableBar` 的效果
+The effect of the form item's configuration toolbar `Form.Field.DesignableBar`
 
-![image.png](https://cdn.nlark.com/yuque/0/2021/png/1304394/1634135895582-57b6ce7d-af08-4c11-ad14-19c75acf8f8a.png#clientId=u67b0cc68-db77-4&from=paste&height=183&id=m0SAT&margin=%5Bobject%20Object%5D&name=image.png&originHeight=366&originWidth=636&originalType=binary&ratio=1&size=49669&status=done&style=none&taskId=udd86527b-c0f4-46b9-9970-d7c3b23e624&width=318)
+<img src="https://nocobase.oss-cn-beijing.aliyuncs.com/1ffba32f9a5625760c3fe11e7eb19974.png" style="max-width: 350px;"/>
 
-表格的 JSON Schema
+JSON Schema for the form
 
 ```js
 const schema = {
@@ -254,11 +245,11 @@ const schema = {
 };
 ```
 
-表格配置工具栏 `Table.DesignableBar` 的效果
+The effect of the table configuration toolbar `Table.DesignableBar`
 
-![image.png](https://cdn.nlark.com/yuque/0/2021/png/1304394/1634134283034-a3660288-f903-4f19-8334-fda34f0bbe61.png#clientId=u67b0cc68-db77-4&from=paste&height=249&id=ud9d383da&margin=%5Bobject%20Object%5D&name=image.png&originHeight=498&originWidth=440&originalType=binary&ratio=1&size=51402&status=done&style=none&taskId=u94bfca27-5467-42f9-b7a3-ec00a9c688f&width=220)
+<img src="https://nocobase.oss-cn-beijing.aliyuncs.com/dcd762a0444ef55a8515c53d706f7bc4.png" style="max-width: 250px;"/>
 
-菜单项的 JSON Schema：
+JSON Schema for the menu item.
 
 ```js
 const schema = {
@@ -268,15 +259,15 @@ const schema = {
 };
 ```
 
-菜单项配置工具栏 `Menu.Item.DesignableBar` 的效果
+Effect of menu item configuration toolbar `Menu.Item.DesignableBar`
 
-![image.png](https://cdn.nlark.com/yuque/0/2021/png/1304394/1634134190121-f4b028ec-93bf-4a65-8ba8-dcc78886deae.png)
+<img src="https://nocobase.oss-cn-beijing.aliyuncs.com/984ab6da6a8f72fe790bb9bd18b3eb35.png" style="max-width: 200px;"/>
 
-更多配置工具栏详情点此查看
+For more details on the configuration toolbar click here
 
-## 字段组件 - CollectionField
+## CollectionField
 
-字段组件的配置参数可能非常多，在不同数据区块里也可能用到同一个字段组件，为了减少代码重复，NocoBase 里，将字段组件的配置交由数据表统一管理。一处配置，多处使用。数据区块里直接引用字段组件，如果有其他不同参数再另行扩展。
+The configuration parameters of field components can be very many, and the same field component can be used in different data blocks. In order to reduce code duplication, NocoBase assigns the configuration of field components to the data table for unified management. One configuration, many uses. The field component is directly referenced in the data block, and then extended if there are other different parameters.
 
 <pre lang="tsx">
 <Table>
@@ -302,23 +293,23 @@ const schema = {
 </Form>
 </pre>
 
-字段组件有三种显示状态：
+The field component has three display states.
 
-- 可填写 - editable
-- 不可填写 - disabled
-- 阅读模式 - read-pretty
+- fillable - editable
+- unfillable - disabled
+- Read mode - read-pretty
 
-以单行文本（Input）为例：
+As an example for a single line of text (Input).
 
 ```js
-// 示例（Input 的三种显示状态）
+// example (three display states for Input)
 
-// 示例待补充
+// example to be added
 ```
 
-**为什么字段有多种显示状态？**
+**Why do fields have multiple display states? **
 
-- 在表单中，一般情况字段为可填写状态（editable），但如果只供查看，这时候就会把字段设置为 disabled 或 read-pretty。
-- 在表格中，一般情况字段为阅读模式（read-pretty），但如果需要在表格内快捷编辑，又可以动态的将某个字段激活为 editable。
+- In a form, the field is normally filled in (editable), but if it is for viewing only, the field is set to disabled or read-pretty.
+- In forms, fields are generally read-pretty, but if you need to edit them quickly within the form, you can dynamically activate a field as editable.
 
-字段组件可以任意扩展，如何扩展查看 createCollectionField 章节。
+The field component can be extended in any way, see the createCollectionField section for how to do so.

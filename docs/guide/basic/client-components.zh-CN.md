@@ -220,7 +220,7 @@ AddNew 是页面可视化配置最重要的操作按钮，更多关于 AddNew �
 ```js
 {
   type: 'void',
-   'x-Component': 'Hello',
+  'x-Component': 'Hello',
   'x-designable-bar': 'Hello.DesignableBar',
   'x-dect': 'CardItem',
 }
@@ -241,7 +241,7 @@ const schema = {
 
 表单项的配置工具栏 `Form.Field.DesignableBar` 的效果
 
-![image.png](https://cdn.nlark.com/yuque/0/2021/png/1304394/1634135895582-57b6ce7d-af08-4c11-ad14-19c75acf8f8a.png#clientId=u67b0cc68-db77-4&from=paste&height=183&id=m0SAT&margin=%5Bobject%20Object%5D&name=image.png&originHeight=366&originWidth=636&originalType=binary&ratio=1&size=49669&status=done&style=none&taskId=udd86527b-c0f4-46b9-9970-d7c3b23e624&width=318)
+<img src="https://nocobase.oss-cn-beijing.aliyuncs.com/1ffba32f9a5625760c3fe11e7eb19974.png" style="max-width: 350px;"/>
 
 表格的 JSON Schema
 
@@ -256,7 +256,7 @@ const schema = {
 
 表格配置工具栏 `Table.DesignableBar` 的效果
 
-![image.png](https://cdn.nlark.com/yuque/0/2021/png/1304394/1634134283034-a3660288-f903-4f19-8334-fda34f0bbe61.png#clientId=u67b0cc68-db77-4&from=paste&height=249&id=ud9d383da&margin=%5Bobject%20Object%5D&name=image.png&originHeight=498&originWidth=440&originalType=binary&ratio=1&size=51402&status=done&style=none&taskId=u94bfca27-5467-42f9-b7a3-ec00a9c688f&width=220)
+<img src="https://nocobase.oss-cn-beijing.aliyuncs.com/dcd762a0444ef55a8515c53d706f7bc4.png" style="max-width: 250px;"/>
 
 菜单项的 JSON Schema：
 
@@ -270,7 +270,7 @@ const schema = {
 
 菜单项配置工具栏 `Menu.Item.DesignableBar` 的效果
 
-![image.png](https://cdn.nlark.com/yuque/0/2021/png/1304394/1634134190121-f4b028ec-93bf-4a65-8ba8-dcc78886deae.png)
+<img src="https://nocobase.oss-cn-beijing.aliyuncs.com/984ab6da6a8f72fe790bb9bd18b3eb35.png" style="max-width: 200px;"/>
 
 更多配置工具栏详情点此查看
 

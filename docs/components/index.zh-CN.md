@@ -6,6 +6,8 @@ nav:
   order: 4
 ---
 
+# 组件
+
 NocoBase 的客户端组件总共有三类：
 
 - 通过 createRouteSwitch 创建的路由组件，如 Layou、Page

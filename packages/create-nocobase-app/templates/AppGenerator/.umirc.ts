@@ -6,6 +6,8 @@ dotenv.config({
   path: path.resolve(__dirname, './.env'),
 });
 
+process.env.MFSU_AD = 'none';
+
 export default defineConfig({
   favicon: '/favicon.png',
   nodeModulesTransform: {

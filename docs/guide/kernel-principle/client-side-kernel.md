@@ -4,7 +4,7 @@ order: 2
 
 # Client-side Kernel
 
-为了让更多非开发人员也能参与进来，NocoBase 提供了配套的客户端插件 —— 无代码的可视化配置界面。这部分的核心就是 @nocobase/client，理想状态可以用在任意前端构建工具或框架内，如：
+To allow more non-developers to participate, NocoBase provides a companion client-side plugin -- a visual configuration interface with no code. The core of this part is @nocobase/client, which ideally can be used within any front-end build tool or framework, e.g.
 
 - umijs
 - create-react-app
@@ -12,20 +12,20 @@ order: 2
 - vite
 - snowpack
 - nextjs
-- 其他
+- Other
 
-暂时只支持 umijs（打包编译还有些问题），未来会逐步支持以上罗列的各个框架。
+For the time being only support umijs (packaging compilation is still some problems), the future will gradually support the above-listed frameworks.
 
-客户端主要的组成部分包括：
+The main components of the client include.
 
-## 请求
+## Request
 
 - API Client
 - Request Hook
 
 ```ts
 const api = new APIClient({
-	request,
+  request,
 });
 
 api.auth();
@@ -34,10 +34,10 @@ api.post();
 api.resource('collections').create();
 api.resource('collections').findOne({});
 api.resource('collections').findMany({});
-api.resource('collections').relation('fields').of(1).create();
+api.resource('collections').relationship('fields').of(1).create();
 ```
 
-以下细节待定，特殊的资源
+The following details are TBD, special resources
 
 ```js
 api.collections.create();
@@ -52,43 +52,43 @@ Request Hook
 const { data } = useRequest(() => api.resource('users').findMany());
 ```
 
-## 路由
+## Routing
 
 - createRouteSwitch
 
 ```js
 const RouteSwitch = createRouteSwitch({
-	components: {},
+  components: {},
 });
 
 <RouteSwitch routes={[]} />
 ```
 
-## Schema 组件
+## Schema component
 
 - createSchemaComponent
 
 ```js
 function Hello() {
-	return <div>Hello Word</div>
+  return <div>Hello Word</div>
 }
 
 const SchemaComponent = createSchemaComponent({
   scope,
   components: {
-  	Hello
+    Hello
   },
 });
 
 const schema = {
   type: 'void',
-	'x-component': 'Hello',
+  'x-component': 'Hello',
 };
 
 <SchemaComponent schema={schema} />
 ```
 
-## 怎么组装起来？
+## How do you assemble it?
 
 <pre lang="tsx">
 import { I18nextProvider } from 'react-i18next';
@@ -98,27 +98,27 @@ const apiClient = new APIClient();
 const i18n = i18next.createInstance();
 
 const Hello = () => {
-	return <div>Hello</div>;
+  return <div>Hello</div>;
 }
 
 const SchemaComponent = createSchemaComponent({
-	components: {
+  components: {
     Hello,
   },
 });
 
 const PageTemplate = () => {
   const schema = {
-  	type: 'void',
+    type: 'void',
     'x-component': 'Hello',
   };
-	return (
-  	<SchemaComponent schema={schema}/>
+  return (
+    <SchemaComponent schema={schema}/>
   );
 }
 
 const RouteSwitch = createRouteSwitch({
-	components: {
+  components: {
     PageTemplate,
   },
 });
@@ -128,18 +128,18 @@ const routes = [
 ];
 
 function AntdProvider(props) {
-  // 可以根据 i18next 的情况动态处理这里的 locale
-	return (
-  	<ConfigProvider locale={locale}>{props.children}</ConfigProvider>
+  // The locale here can be handled dynamically depending on the i18next
+  return (
+    <ConfigProvider locale={locale}>{props.children}</ConfigProvider
   );
 }
 
 const App = () => {
-	return (
+  return (
     <APIClientProvider client={apiClient}>
       <I18nextProvider i18n={i18n}>
-        <AntdProvider>
-          <Router>
+        <AntdProvider
+          <Router
             <RouteSwitch routes=[routes]/>
           </Router>
         </AntdProvider>
@@ -149,10 +149,10 @@ const App = () => {
 }
 </pre>
 
-- APIClientProvider：提供 APIClient
-- I18nextProvider：国际化
-- AntdProvider：处理 antd 组件的国际化，需要放在 I18nextProvider 里
-- Router：路由驱动
-- RouteSwitch：路由分发
+- APIClientProvider: provides the APIClient
+- I18nextProvider: internationalization
+- AntdProvider: handles the internationalization of antd components, which needs to be placed in I18nextProvider
+- Router: route driver
+- RouteSwitch: route distribution
 
-上面代码看似有些啰嗦，实际各部分的功能和作用并不一样，不适合过度封装。如果需要可以根据实际情况，再进一步封装。
+The above code may seem a bit verbose, but the actual function and role of each part is not the same, so it is not suitable for over-encapsulation. If needed, it can be further encapsulated according to the actual situation.
