@@ -8,8 +8,8 @@ nav:
 
 # Components
 
-NocoBase 的客户端组件总共有三类：
+There are a total of three types of client components for NocoBase.
 
-- 通过 createRouteSwitch 创建的路由组件，如 Layou、Page
-- 通过 createCollectionField 创建的字段组件，用于扩展字段
-- 通过 createSchemaComponent 创建的 JSON Schema 组件，可以是任意东西，比如表格、表单、日历、看板等。Schema Component 可用于 Route Component 或 Collection Field 中。
+- Routing components created by createRouteSwitch, such as Layou, Page
+- Field components created by createCollectionField, which are used to extend fields
+- JSON Schema components created by createSchemaComponent, which can be anything, such as tables, forms, calendars, kanban, etc. Schema Component can be used in Route Component or Collection Field.

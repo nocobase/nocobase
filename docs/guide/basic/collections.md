@@ -8,11 +8,11 @@ group:
 
 # Collections & Fields
 
-NocoBase 的数据表由字段（列）和记录（行）组成。数据表的概念与关系型数据库的数据表概念相近，但是字段的概念并不相同。
+The data table of NocoBase consists of fields (columns) and records (rows). The concept of a data table is similar to the concept of a relational database data table, but the concept of fields is not the same.
 
-## 字段
+## Fields
 
-NocoBase 里，最常见的字段具有组件形态，如：单行文本、多行文本、单选框。这些组件都有数值（value），可交由用户填写，称为有值组件。结构如下：
+In NocoBase, the most common fields have component forms, such as: single-line text, multi-line text, and single-select boxes. These components have values, which can be filled in by the user, and are called valued components. The structure is as follows:
 
 ```ts
 {
@@ -21,22 +21,22 @@ NocoBase 里，最常见的字段具有组件形态，如：单行文本、多�
   name: 'description',
   uiSchema: {
     type: 'string',
-    title: '描述',
+    title: 'Description',
     'x-component': 'Input.TextArea',
     'x-decorator': 'FormItem',
   },
 }
 ```
 
-上述是一个描述字段的配置：
+The above is a description of the field configuration.
 
-- type 表示字段的存储类型，为 text 长文本类型
-- uiSchema 为字段的组件参数
-- uiSchema.type 为字段组件的数值类型
-- uiSchema.x-component 表示组件类型，为多行输入框
-- 绑定了组件的字段，都要设置一个 interface，表示当前字段的类型，例子描述字段为多行文本类型
+- type indicates the field's storage type, which is text long text type
+- uiSchema is the component parameter of the field
+- uiSchema.type is the value type of the field's component
+- uiSchema.x-component indicates the component type, which is a multi-line input box
+- The fields bound to the component are set with an interface that indicates the type of the current field, the example describes the field as a multi-line text type
 
-除了常见的绑定了组件的字段以外，还有一些无需绑定组件的字段，如 token 字段，这类组件并不会显示在界面上。无组件字段的结构如下：
+In addition to the common fields bound to components, there are also fields that do not need to be bound to components, such as token fields, which are not displayed on the interface. The structure of a field without a component is as follows.
 
 ```ts
 {
@@ -45,38 +45,38 @@ NocoBase 里，最常见的字段具有组件形态，如：单行文本、多�
 }
 ```
 
-**为什么字段要区分存储类型和组件类型？**
+**Why do fields distinguish between storage types and component types? **
 
-其一：存储类型和组件类型是多对多关系，并不适合合并处理。
-同一组件的 value 的类型（存储类型）可能并不相同，比如 select 的 value 可能是 string 或者 integer。同一存储类型也可能以不同的组件呈现，如 string 绑定的组件可能是 Input，也可能是 Select。
+1. Store types and component types are many-to-many relationships and do not lend themselves to merging.
+The value of the same component may not be of the same type (storage type), e.g., the value of select may be string or integer, and the same storage type may be presented as different components, e.g., the component to which string is bound may be Input or Select.
 
-其二：有限的存储类型和组件类型可以组合出无数种字段类型。
-单行文本、电子邮件、网址、手机号这些字段的存储类型和组件类型虽然都相同，但是校验参数并不相同，只需要调整 validate 参数即可创建出无数种字段。
+2. A limited number of storage types and component types can be combined to create an infinite number of field types.
+Single line text, email, URL, cell phone number are all the same storage type and component type, but the validation parameters are not the same, so you can create countless fields by simply adjusting the validate parameter.
 
-## 字段的类型
+## Field Types
 
 | 名称     | Interface | Type   | Component      | 备注              |
 | :------- | :-------- | :----- | :------------- | :---------------- |
 | 单行文本 | string    | string | Input          |                   |
 | 多行文本 | textarea  | text   | Input.TextArea |                   |
-| 邮箱     | email     | string | Input          | validate: 'email' |
-| 手机号   | phone     | string | Input          | validate: 'phone' |
+| Email     | email     | string | Input          | validate: 'email' |
+| Phone   | phone     | string | Input          | validate: 'phone' |
 
-## 可以做什么？
+## What can be done?
 
-### 快速建模
+### Fast Modeling
 
-与专业的建模工具不同，NocoBase 提供了一种更利于普通用户理解的数据表配置方法。
+Unlike professional modeling tools, NocoBase provides a more user-friendly approach to data table configuration.
 
-- 可以直接通过 app.collection() 直接写代码里，多用于配置底层系统表。
-- 也可以通过无代码平台的数据表配置入口配置数据表，多用于配置业务表。
+- It can be written directly in code via app.collection(), mostly used to configure the underlying system tables.
+- You can also configure data tables through the data table configuration portal of the no-code platform, which is mostly used to configure business tables.
 
-### 创建数据区块
+### Create data blocks
 
-配置好的数据表可用于创建对应的数据区块，如以表格的形式展示某个数据表的内容。表格里可以选择哪些字段作为表格列显示出来。
+The configured data table can be used to create corresponding blocks of data, e.g. to display the contents of a particular data table in a table format. The table allows you to select which fields are displayed as table columns.
 
-更多关于区块的内容可以查看客户端组件章节。
+More about blocks can be found in the Client-side Components chapter.
 
 ### HTTP API
 
-跨平台也可以通过 HTTP API 的方式操作数据表（增删改查配置等），更多内容查看 SDK 章节。
+Cross-platform operation of data tables (add, delete, configure, etc.) is also possible via HTTP API, see the REST API chapter for more details.

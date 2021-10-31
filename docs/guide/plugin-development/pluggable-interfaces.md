@@ -3,43 +3,41 @@ order: 2
 ---
 # Pluggable Interfaces
 
-插件是按功能划分的可插拔的独立模块，为了以插件的方式扩展功能，需要实现扩展功能的添加和删除方法。  
-NocoBase 的插件化接口主要有：
+Plugins are pluggable independent modules divided by functionality. In order to extend the functionality in the way of plugins, it is necessary to implement methods to add and remove extended functionality.  
+The main pluggable interfaces of NocoBase are.
 
-## 中间件
+## Middleware
 
-- 添加：app.use()
-- 删除：app.unuse() 暂未实现，可以直接操作 app.middleware 数组来移除
+- add: app.use()
+- remove: app.unuse() is not yet implemented, you can directly manipulate the app.middleware array to remove
 
-## 事件
+## Events
 
-- 添加：app.on()
-- 删除：app.removeListener()
+- Add: app.on()
+- Remove: app.removeListener()
 
-## 资源
+## Resources
 
-- 添加：app.resource()
-- 删除：暂无
+- Add: app.resource()
+- Remove: None
 
-## 操作
+## Actions
 
-- 添加：app.actions()
-- 删除：暂无
+- Add: app.actions()
+- Delete: None
 
-## 数据表
+## Data Tables
 
-- 添加：app.collection()
-- 删除：暂无
+- Add: app.collection()
+- Delete: None
 
-## 组件（前端）
+## Components (front-end)
 
-- 添加 createRouteSwitch、createCollectionField、createSchemaComponent
-- 删除：暂无
+- Add createRouteSwitch, createCollectionField, createSchemaComponent
+- Remove: None at this time
 
-<Alert title="注意">
+<Alert title="Note">
 
-目前 NocoBase 的插件化机制还不完善，不能完全实现热插拔。前端的扩展还得依赖开发手动处理再重新构建。
+Currently, NocoBase's plug-in mechanism is not perfect and cannot fully implement hot-plugging. Front-end extensions have to be manually handled by developers and then rebuilt.
 
 </Alert>
-
-
