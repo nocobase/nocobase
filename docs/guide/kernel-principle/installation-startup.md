@@ -4,7 +4,7 @@ order: 3
 
 # Installation and Startup Process
 
-## 项目安装
+## Installation
 
 ```bash
 yarn nocobase init
@@ -13,61 +13,59 @@ yarn nocobase init
 - app.constructor()
 - app.parse()
   - yarn nocobase init  
-    初始化安装
+    Initialize the installation
     - app.load()  
-      加载配置
-      - app.emitAsync('beforeLoad')  
-        所有配置加载之前的钩子
+      Load the configuration
+      - app.exitAsync('beforeLoad')  
+        Hook before all configurations are loaded
       - app.pluginManager.load()  
-        按顺序载入所有激活的插件的配置
-        - 加载 plugin-collections 的配置
-        - 添加 app.on('init') 监听
+        Load the configurations of all active plugins in order
+        - Load the configuration of plugin-collections
+        - Add app.on('init') listener
           - db.getModel('collections').load()  
-            把 collections 表的配置都导入 db.table()
+            Import the collections table configuration into db.table()
           - app.db.sync({force: false})  
-            再执行 sync，创建 collections 表里配置的数据表
-      - app.emitAsync('afterLoad')  
-        所有配置加载之后的钩子
+            Execute sync again to create the data table configured in the collections table
+      - app.exitAsync('afterLoad')  
+        All hooks after the configuration is loaded
       - app.db.sync({force: true})  
-        根据配置生成数据表、字段、索引等
+        Generate data tables, fields, indexes, etc. according to the configuration
       - app.emitAsync('init')  
-        执行所有 init listeners，一般是初始化的数据操作
-        - 触发 plugin-collections 的 init 事件，数据表就创建好了
+        Perform all init listeners, generally initialized data operations
+        - trigger the init event of plugin-collections and the data table is created
       - app.stop()  
-        结束
+        End
 
-## 项目启动
+## Startup
 
 ```bash
 yarn nocobase start --init --sync
-# --init 用于启动时快捷安装
-# --sync 开发环境时，当 app.collection() 有更新时快速建表或更新表
+# --init for quick installation at startup
+# --sync to quickly build or update tables when app.collection() is updated in the development environment
 ```
-
-
 
 - app.constructor()
 - app.parse()
   - yarn nocobase start  
-    初始化安装
+    Initialize the installation
     - app.load()  
-      加载配置
-      - app.emitAsync('beforeLoad')  
-        所有配置加载之前的钩子
+      Load the configuration
+      - app.exitAsync('beforeLoad')  
+        Hook before all configurations are loaded
       - app.pluginManager.load()
-        按顺序载入所有激活的插件的配置
-        - 加载 plugin-collections 的配置
-          - 添加 app.on('start') 监听
+        Load the configurations of all active plugins in order
+        - Load the configuration of plugin-collections
+          - Add app.on('start') listener
           - db.getModel('collections').load()  
-            把 collections 表的配置都导入 db.table()，在 start 流程里不需要再 db.sync
-      - app.emitAsync('afterLoad')  
-        所有配置加载之后的钩子
+            Import the collections table configuration into db.table(), no need for db.sync in the start process
+      - app.exitAsync('afterLoad')  
+        All hooks after configuration loading
       - app.db.sync({force: false})  
-        yarn nocobase start --sync 有更新时快速建表或更新表  
-        yarn nocobase start --init 快捷 init
+        yarn nocobase start --sync to quickly build or update tables when there are updates  
+        yarn nocobase start --init quick init
       - app.emitAsync('init')  
-        yarn nocobase start --init 快捷 init
-      - app.emitAsync('start')  
-        执行所有 start listeners，一般是从数据表里读取一些必要的数据
+        yarn nocobase start --init shortcut init
+      - app.exitAsync('start')  
+        Execute all start listeners, usually reading some necessary data from the data table
       - app.listen()
-        启动 http server
+        Start the http server
