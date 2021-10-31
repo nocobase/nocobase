@@ -1,12 +1,8 @@
 ---
-title: Table - 表格
 nav:
-  title: 组件
-  path: /client
+  path: /components
 group:
-  order: 1
-  title: Schemas
-  path: /client/schemas
+  path: /components/schema-components
 ---
 
 # Table - 表格

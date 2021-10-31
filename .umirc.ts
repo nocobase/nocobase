@@ -20,7 +20,7 @@ export default defineConfig({
     },
   },
   resolve: {
-    includes: ['docs'],
+    includes: ['docs', 'packages/client/src/schemas'],
   },
   styles: [
     `
