@@ -1,12 +1,8 @@
 ---
-title: DesignableBar - 配置操作栏
 nav:
-  title: 组件
-  path: /client
+  path: /components
 group:
-  order: 1
-  title: Schemas
-  path: /client/schemas
+  path: /components/schema-components
 ---
 
 # DesignableBar - 配置操作栏

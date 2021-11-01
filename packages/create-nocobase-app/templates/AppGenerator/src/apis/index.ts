@@ -1,10 +1,11 @@
 import path from 'path';
 import Application from '@nocobase/server';
+import dbConfig from './config/db';
 
 const start = Date.now();
 
 const api = new Application({
-  database: require('./config/db').default,
+  database: dbConfig[process.env.DB_DIALECT || 'sqlite'],
   resourcer: {
     prefix: '/api',
   },
@@ -29,7 +30,7 @@ for (const plugin of plugins) {
 
 api.plugin(require(`@nocobase/plugin-client/lib/server`).default, {
   dist: path.resolve(process.cwd(), './dist'),
-  importDemo: true,
+  // importDemo: true,
 });
 
 if (process.argv.length < 3) {

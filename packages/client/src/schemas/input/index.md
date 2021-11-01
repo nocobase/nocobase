@@ -1,12 +1,8 @@
 ---
-title: Input - 输入框
 nav:
-  title: 组件
-  path: /client
+  path: /components
 group:
-  order: 1
-  title: Schemas
-  path: /client/schemas
+  path: /components/schema-components
 ---
 
 # Input - 输入框

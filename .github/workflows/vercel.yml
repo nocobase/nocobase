@@ -1,6 +1,10 @@
 name: vercel
 
-on: [push]
+on: 
+  push:
+    branches:
+      - develop
+      - feature/docs
 
 jobs:
   deploy:

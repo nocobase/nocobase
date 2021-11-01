@@ -1,12 +1,8 @@
 ---
-title: DatePicker - 日期选择器
 nav:
-  title: 组件
-  path: /client
+  path: /components
 group:
-  order: 1
-  title: Schemas
-  path: /client/schemas
+  path: /components/schema-components
 ---
 
 # DatePicker - 日期选择器

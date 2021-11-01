@@ -12,7 +12,7 @@ export function getDocumentRoot(storage): string {
   // TODO(feature): 后面考虑以字符串模板的方式使用，可注入 req/action 相关变量，以便于区分文件夹
   return path.resolve(path.isAbsolute(documentRoot)
     ? documentRoot
-    : path.join(process.env.PWD, documentRoot), storage.path);
+    : path.join(process.cwd(), documentRoot), storage.path);
 }
 
 // TODO(optimize): 初始化的时机不应该放在中间件里

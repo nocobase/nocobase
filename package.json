@@ -8,7 +8,7 @@
     "bootstrap": "lerna bootstrap",
     "clean": "lerna clean",
     "examples": "ts-node-dev -r dotenv/config ./examples",
-    "start": "concurrently \"npm run start-server\" \"npm run start-client\"",
+    "start": "concurrently \"npm run start-server\" \"npm run start-docs\"",
     "start-client": "cd packages/app && npm run start-client",
     "start-server": "ts-node-dev -r dotenv/config ./packages/app/src/apis/index.ts",
     "nocobase": "ts-node-dev -r dotenv/config ./packages/app/src/apis/index.ts",

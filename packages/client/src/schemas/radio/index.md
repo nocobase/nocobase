@@ -1,12 +1,8 @@
 ---
-title: Radio - 单选框
 nav:
-  title: 组件
-  path: /client
+  path: /components
 group:
-  order: 1
-  title: Schemas
-  path: /client/schemas
+  path: /components/schema-components
 ---
 
 # Radio - 单选框

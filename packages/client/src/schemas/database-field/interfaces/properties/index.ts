@@ -188,9 +188,10 @@ export const defaultProps = {
     type: 'string',
     title: '字段标识',
     required: true,
-    'x-disabled': true,
+    // 'x-disabled': true,
     'x-decorator': 'FormItem',
     'x-component': 'Input',
+    description: '随机生成，可修改。支持英文、数字和下划线，必须以英文字母开头',
   },
   dataType,
   // 'uiSchema.required': {

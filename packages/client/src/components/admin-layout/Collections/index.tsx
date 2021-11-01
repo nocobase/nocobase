@@ -47,8 +47,6 @@ const useResource = () => {
 };
 
 const useCollectionsResource = () => {
-  const descriptionsContext = useContext(DescriptionsContext);
-  console.log('descriptionsContext.service', descriptionsContext.service);
   const resource = useResourceRequest('collections');
   return {
     resource,
@@ -336,6 +334,15 @@ function FieldConfigTitle() {
   return <>{`配置「${ctx.record.title}」表字段`}</>;
 }
 
+function useCollectionResource({ onSuccess }) {
+  const visible = useContext(VisibleContext);
+  const resource = useResourceRequest('collections');
+  useEffect(() => {
+    visible && onSuccess({ name: `t_${uid()}` });
+  }, [visible]);
+  return { resource };
+}
+
 const schema: ISchema = {
   type: 'void',
   name: 'action',
@@ -410,6 +417,9 @@ const schema: ISchema = {
                       type: 'void',
                       title: '创建数据表',
                       'x-decorator': 'Form',
+                      'x-decorator-props': {
+                        useResource: useCollectionResource,
+                      },
                       'x-component': 'Action.Drawer',
                       'x-component-props': {
                         useOkAction: '{{ Table.useTableCreateAction }}',
@@ -420,6 +430,14 @@ const schema: ISchema = {
                           title: '数据表名称',
                           'x-component': 'Input',
                           'x-decorator': 'FormilyFormItem',
+                        },
+                        name: {
+                          type: 'string',
+                          title: '数据表标识',
+                          'x-component': 'Input',
+                          'x-decorator': 'FormilyFormItem',
+                          description:
+                            '随机生成，可修改。支持英文、数字和下划线，必须以英文字母开头',
                         },
                       },
                     },
@@ -583,10 +601,10 @@ function CreateFieldButton() {
         console.log('click', info.key);
         const schema = interfaces.get(info.key);
         form.setValues({
-          ...schema.default,
+          ...clone(schema.default),
           collection_name: ctx.record.name,
           key: uid(),
-          name: uid(),
+          name: `f_${uid()}`,
           interface: info.key,
         });
         setProperties(clone(schema.properties));

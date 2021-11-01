@@ -2,17 +2,9 @@ English | [简体中文](./README.zh-CN.md)
 
 ![](https://www.nocobase.com/images/demo/11.png)  
 
-Note
-----------
-NocoBase is still in early development and is for preview purposes only and is not suitable for use in a production environment.  A relatively stable and well-documented public beta is expected to be released as early as the first quarter of 2022.
-If you are interested in NocoBase, please join us to discuss and develop it together.
-
-https://www.nocobase.com/  
-hello@nocobase.com
-
 What is NocoBase
 ----------
-NocoBase is an open source and free no-code development platform. Whether you are a business executive who does not know programming or a developer who is proficient in programming, you can quickly build various customized and privately deployed collaboration platforms and management systems.
+NocoBase is a scalability-first, open-source no-code development platform. No programming required, build your own collaboration platform, management system with NocoBase in minutes.
 
 When to use NocoBase
 ----------
@@ -45,6 +37,14 @@ Why choose NocoBase
 	- Progressive development, easy for getting-started, friendly to newcomers
 	- No binding, no strong dependencies, can be used in any combination or extensions, can be used in existing projects
 
+Note
+----------
+NocoBase is still in early development and is for preview purposes only and is not suitable for use in a production environment.  A relatively stable and well-documented public beta is expected to be released as early as the first quarter of 2022.
+If you are interested in NocoBase, please join us to discuss and develop it together.
+
+https://www.nocobase.com/  
+hello@nocobase.com
+
 Architecture
 ----------
 
@@ -72,91 +72,32 @@ Installation
 yarn create nocobase-app my-nocobase-app --quickstart
 ~~~
 
-#### Start with configuration
+#### Step by step
 ~~~shell
 # 1. create project
 yarn create nocobase-app my-nocobase-app
+
+# 2. switch to the project directory
 cd my-nocobase-app
 
-# 2. edit configuration in .env file
-vim .env
-
-# 3. start a database (optional)
-docker-compose up -d postgres
-
-# 4. create initialization data
+# 3. create initialization data
 yarn nocobase init --import-demo
 
-# 5. start project
+# 4. start project
 yarn start
 ~~~
 
 Open http://localhost:8000 in a web browser.
 
-### Use docker compose
+### Use docker
 
-Create a `docker-compose.yml` file
-
-```yaml
-version: "3"
-networks:
-  nocobase:
-    driver: bridge
-services:
-  adminer:
-    image: adminer
-    restart: always
-    networks:
-      - nocobase
-    ports:
-      - 28080:8080
-  postgres:
-    image: postgres:10
-    restart: always
-    networks:
-      - nocobase
-    command: postgres -c wal_level=logical
-    environment:
-      POSTGRES_USER: nocobase
-      POSTGRES_DB: nocobase
-      POSTGRES_PASSWORD: nocobase
-  nocobase:
-    image: nocobase/nocobase:0.5.0-alpha.14
-    networks:
-      - nocobase
-    command: [ "yarn", "serve", "start", "--port", "8000" ]
-    environment:
-      DB_DIALECT: postgres
-      DB_DATABASE: nocobase
-      DB_USER: nocobase
-      DB_PASSWORD: nocobase
-      DB_PORT: 5432
-      DB_HOST: postgres
-    ports:
-      - "28000:8000"
+```bash
+docker run --name my-nocobase-app -p 8000:13002 -d nocobase/nocobase:0.5.0-alpha.23
+docker logs my-nocobase-app
 ```
-
-Run the command on your terminal
-
-```
-docker-compose run nocobase bash -c 'yarn serve init'
-docker-compose up -d
-```
-
-Open http://localhost:28000 in a web browser.
-
-### Participate in the development
-
-~~~shell
-git clone https://github.com/nocobase/nocobase.git
-cd nocobase
-cp .env.example .env
-docker-compose up -d postgres
-yarn install
-yarn bootstrap
-yarn build
-yarn nocobase init
-yarn start
-~~~
 
 Open http://localhost:8000 in a web browser.
+
+## Contributing
+
+https://docs.nocobase.com/guide/contributing

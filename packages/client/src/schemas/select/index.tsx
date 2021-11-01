@@ -34,6 +34,8 @@ import { Resource } from '../../resource';
 import { useRequest } from 'ahooks';
 import constate from 'constate';
 
+import './index.less';
+
 export const Select: any = connect(
   (props) => {
     const { options = [], ...others } = props;
@@ -542,7 +544,9 @@ Select.OptionTag = observer((props) => {
   const { data, fieldNames } = useContext(OptionTagContext);
   return (
     <VisibleContext.Provider value={[visible, setVisible]}>
-      <a onClick={() => setVisible(true)}>{data[fieldNames.label]}</a>
+      <a className="option-tag" onClick={() => setVisible(true)}>
+        {data[fieldNames.label]}
+      </a>
       {props.children}
     </VisibleContext.Provider>
   );

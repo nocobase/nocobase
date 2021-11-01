@@ -9,18 +9,15 @@ API_PORT=13002
 ########## NOCOBASE ENV ##########
 
 # DATABASE
-{{#quickstart}}
 DB_DIALECT=sqlite
 DB_STORAGE=db.sqlite
-{{/quickstart}}
-{{^quickstart}}
-DB_DIALECT=postgres
-DB_HOST=localhost
-DB_PORT=5432
-DB_DATABASE=nocobase
-DB_USER=nocobase
-DB_PASSWORD=nocobase
-{{/quickstart}}
+
+# DB_DIALECT=postgres
+# DB_HOST=localhost
+# DB_PORT=5432
+# DB_DATABASE=nocobase
+# DB_USER=nocobase
+# DB_PASSWORD=nocobase
 
 # set to 'on' to enable log
 DB_LOG_SQL=
