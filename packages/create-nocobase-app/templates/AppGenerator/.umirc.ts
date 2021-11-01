@@ -8,15 +8,13 @@ dotenv.config({
 
 process.env.MFSU_AD = 'none';
 
-const baseUrl = `http://localhost:${process.env.API_PORT || '13001'}/`;
-
 export default defineConfig({
   favicon: '/favicon.png',
   nodeModulesTransform: {
     type: 'none',
   },
   define: {
-    'process.env.API_URL': process.env.API_URL || `${baseUrl}api/`,
+    'process.env.API_URL': process.env.API_URL || `/api/`,
     'process.env.API_PORT': process.env.API_PORT || '13001',
   },
   proxy: {
