@@ -89,7 +89,7 @@ function DesignableToggle() {
       >
         <span style={{ height: 45, width: 45, position: 'absolute' }}></span>
       </Tooltip>
-      <Tooltip title={'界面配置'}>
+      <Tooltip title={t('Layout edit')}>
         <Button
           className={cls('nb-designable-toggle', {
             'has-tip': visible,

@@ -23,7 +23,7 @@ export const UserInfo = () => {
           <Menu.Item
             onClick={async () => {
               setVisible(false);
-              const values = await FormDrawer('个人资料', () => {
+              const values = await FormDrawer(t('My profile'), () => {
                 return (
                   <FormLayout layout={'vertical'}>
                     <SchemaField
@@ -32,13 +32,13 @@ export const UserInfo = () => {
                         properties: {
                           email: {
                             type: 'string',
-                            title: '邮箱',
+                            title: t('Email'),
                             'x-component': 'Input',
                             'x-decorator': 'FormilyFormItem',
                           },
                           nickname: {
                             type: 'string',
-                            title: '昵称',
+                            title: t('Nickname'),
                             'x-component': 'Input',
                             'x-decorator': 'FormilyFormItem',
                           },
@@ -47,7 +47,7 @@ export const UserInfo = () => {
                     />
                     <FormDrawer.Footer>
                       <FormButtonGroup align="right">
-                        <Submit onSubmit={(values) => {}}>保存</Submit>
+                        <Submit onSubmit={(values) => {}}>{t('Submit')}</Submit>
                       </FormButtonGroup>
                     </FormDrawer.Footer>
                   </FormLayout>
@@ -62,12 +62,12 @@ export const UserInfo = () => {
               service.mutate(data);
             }}
           >
-            个人资料
+            {t('My profile')}
           </Menu.Item>
           <Menu.Item>
             <div style={{ display: 'flex', justifyContent: 'space-between' }}>
               <span style={{ marginRight: 16, display: 'inline-block' }}>
-                角色切换
+                {t('Change role')}
               </span>
               <Select
                 className={'roles-select'}
@@ -77,7 +77,7 @@ export const UserInfo = () => {
                 defaultValue={'admin'}
                 disabled
                 options={[
-                  { label: '超级管理员', value: 'admin' },
+                  { label: t('Super admin'), value: 'admin' },
                   { label: '数据管理员', value: 'editor' },
                   { label: '普通成员', value: 'member' },
                 ]}
@@ -87,7 +87,7 @@ export const UserInfo = () => {
           <Menu.Item>
             <div style={{ display: 'flex', justifyContent: 'space-between' }}>
               <span style={{ marginRight: 16, display: 'inline-block' }}>
-                语言设置
+                {t('Language setting')}
               </span>
               <Select
                 className={'roles-select'}
@@ -113,7 +113,7 @@ export const UserInfo = () => {
               history.push('/login');
             }}
           >
-            退出登录
+            {t('Logout')}
           </Menu.Item>
         </Menu>
       }

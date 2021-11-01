@@ -348,7 +348,7 @@ const schema: ISchema = {
   name: 'action',
   'x-component': 'Action',
   'x-component-props': {
-    tooltip: 'Collections & Fields',
+    tooltip: "{{ t('Collections & Fields') }}",
     className: 'nb-database-config',
     icon: 'DatabaseOutlined',
     type: 'primary',

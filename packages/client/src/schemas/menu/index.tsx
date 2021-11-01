@@ -440,26 +440,27 @@ Menu.SubMenu = observer((props: any) => {
 Menu.AddNew = observer((props: any) => {
   const { designable, appendChild } = useDesignable(props.path);
   const { createSchema, removeSchema, updateSchema } = useClient();
+  const { t } = useTranslation();
   if (!designable) {
     return null;
   }
   const schemas = {
     'Menu.Link': {
       icon: <MenuOutlined />,
-      title: '添加页面',
+      title: t('Add a page'),
       schema: {
         type: 'object',
         properties: {
           title: {
             type: 'string',
-            title: '名称',
+            title: t('Name'),
             required: true,
             'x-decorator': 'FormItem',
             'x-component': 'Input',
           },
           'x-component-props.icon': {
             type: 'string',
-            title: '图标',
+            title: t('Icon'),
             'x-decorator': 'FormItem',
             'x-component': 'IconPicker',
           },
@@ -468,20 +469,20 @@ Menu.AddNew = observer((props: any) => {
     },
     'Menu.SubMenu': {
       icon: <GroupOutlined />,
-      title: '添加分组',
+      title: t('Add a group'),
       schema: {
         type: 'object',
         properties: {
           title: {
             type: 'string',
-            title: '名称',
+            title: t('Name'),
             required: true,
             'x-decorator': 'FormItem',
             'x-component': 'Input',
           },
           'x-component-props.icon': {
             type: 'string',
-            title: '图标',
+            title: t('Icon'),
             'x-decorator': 'FormItem',
             'x-component': 'IconPicker',
           },
@@ -490,26 +491,26 @@ Menu.AddNew = observer((props: any) => {
     },
     'Menu.URL': {
       icon: <LinkOutlined />,
-      title: '添加链接',
+      title: t('Add a link'),
       schema: {
         type: 'object',
         properties: {
           title: {
             type: 'string',
-            title: '名称',
+            title: t('Name'),
             required: true,
             'x-decorator': 'FormItem',
             'x-component': 'Input',
           },
           'x-component-props.icon': {
             type: 'string',
-            title: '图标',
+            title: t('Icon'),
             'x-decorator': 'FormItem',
             'x-component': 'IconPicker',
           },
           'x-component-props.href': {
             type: 'string',
-            title: '链接',
+            title: t('Link'),
             required: true,
             'x-decorator': 'FormItem',
             'x-component': 'Input',
@@ -542,13 +543,13 @@ Menu.AddNew = observer((props: any) => {
               }}
             >
               <AntdMenu.Item key={'Menu.SubMenu'} icon={<GroupOutlined />}>
-                分组
+                {t('Group')}
               </AntdMenu.Item>
               <AntdMenu.Item key={'Menu.Link'} icon={<MenuOutlined />}>
-                页面
+                {t('Page')}
               </AntdMenu.Item>
               <AntdMenu.Item key={'Menu.URL'} icon={<LinkOutlined />}>
-                链接
+                {t('Link')}
               </AntdMenu.Item>
             </AntdMenu>
           }
@@ -561,23 +562,24 @@ Menu.AddNew = observer((props: any) => {
 });
 
 Menu.DesignableBar = (props) => {
+  const { t } = useTranslation();
   const schemas = {
     'Menu.Action': {
       icon: <MenuOutlined />,
-      title: '页面',
+      title: t('Page'),
       schema: {
         type: 'object',
         properties: {
           title: {
             type: 'string',
-            title: '名称',
+            title: t('Name'),
             required: true,
             'x-decorator': 'FormItem',
             'x-component': 'Input',
           },
           'x-component-props.icon': {
             type: 'string',
-            title: '图标',
+            title: t('Icon'),
             'x-decorator': 'FormItem',
             'x-component': 'IconPicker',
           },
@@ -586,20 +588,20 @@ Menu.DesignableBar = (props) => {
     },
     'Menu.Item': {
       icon: <MenuOutlined />,
-      title: '页面',
+      title: t('Page'),
       schema: {
         type: 'object',
         properties: {
           title: {
             type: 'string',
-            title: '名称',
+            title: t('Name'),
             required: true,
             'x-decorator': 'FormItem',
             'x-component': 'Input',
           },
           'x-component-props.icon': {
             type: 'string',
-            title: '图标',
+            title: t('Icon'),
             'x-decorator': 'FormItem',
             'x-component': 'IconPicker',
           },
@@ -608,20 +610,20 @@ Menu.DesignableBar = (props) => {
     },
     'Menu.Link': {
       icon: <MenuOutlined />,
-      title: '页面',
+      title: t('Page'),
       schema: {
         type: 'object',
         properties: {
           title: {
             type: 'string',
-            title: '名称',
+            title: t('Name'),
             required: true,
             'x-decorator': 'FormItem',
             'x-component': 'Input',
           },
           'x-component-props.icon': {
             type: 'string',
-            title: '图标',
+            title: t('Icon'),
             'x-decorator': 'FormItem',
             'x-component': 'IconPicker',
           },
@@ -630,20 +632,20 @@ Menu.DesignableBar = (props) => {
     },
     'Menu.SubMenu': {
       icon: <GroupOutlined />,
-      title: '分组',
+      title: t('Group'),
       schema: {
         type: 'object',
         properties: {
           title: {
             type: 'string',
-            title: '名称',
+            title: t('Name'),
             required: true,
             'x-decorator': 'FormItem',
             'x-component': 'Input',
           },
           'x-component-props.icon': {
             type: 'string',
-            title: '图标',
+            title: t('Icon'),
             'x-decorator': 'FormItem',
             'x-component': 'IconPicker',
           },
@@ -652,26 +654,26 @@ Menu.DesignableBar = (props) => {
     },
     'Menu.URL': {
       icon: <LinkOutlined />,
-      title: '链接',
+      title: 'Link',
       schema: {
         type: 'object',
         properties: {
           title: {
             type: 'string',
-            title: '名称',
+            title: t('Name'),
             required: true,
             'x-decorator': 'FormItem',
             'x-component': 'Input',
           },
           'x-component-props.icon': {
             type: 'string',
-            title: '图标',
+            title: t('Icon'),
             'x-decorator': 'FormItem',
             'x-component': 'IconPicker',
           },
           'x-component-props.href': {
             type: 'string',
-            title: '链接',
+            title: t('Link'),
             required: true,
             'x-decorator': 'FormItem',
             'x-component': 'Input',
@@ -761,7 +763,7 @@ Menu.DesignableBar = (props) => {
                         _.set(initialValues, name, get(schema, name));
                       },
                     );
-                    const values = await FormDialog(`编辑菜单项`, () => {
+                    const values = await FormDialog(t('Edit menu item'), () => {
                       return (
                         <FormLayout layout={'vertical'}>
                           <SchemaField schema={formConfig.schema} />
@@ -783,7 +785,7 @@ Menu.DesignableBar = (props) => {
                     await updateSchema(schema);
                   }}
                 >
-                  <EditOutlined /> 编辑菜单项
+                  <EditOutlined /> {t('Edit menu item')}
                 </AntdMenu.Item>
                 <AntdMenu.Item
                   key={'move'}
@@ -828,7 +830,7 @@ Menu.DesignableBar = (props) => {
                     const dataSource = toTreeData(menuSchema);
 
                     const values = await FormDialog(
-                      `将「${schema.title}」移动到`,
+                      t(`Move {{ title }} to`, { title: schema.title }),
                       () => {
                         return (
                           <FormLayout layout={'vertical'}>
@@ -838,7 +840,7 @@ Menu.DesignableBar = (props) => {
                                 properties: {
                                   path: {
                                     type: 'string',
-                                    title: '目标位置',
+                                    title: t('Target position'),
                                     enum: dataSource,
                                     'x-decorator': 'FormItem',
                                     'x-component': 'TreeSelect',
@@ -847,8 +849,8 @@ Menu.DesignableBar = (props) => {
                                     type: 'string',
                                     default: 'insertAfter',
                                     enum: [
-                                      { label: '之后', value: 'insertAfter' },
-                                      { label: '之前', value: 'insertBefore' },
+                                      { label: t('After'), value: 'insertAfter' },
+                                      { label: t('Before'), value: 'insertBefore' },
                                     ],
                                     'x-decorator': 'FormItem',
                                     'x-component': 'Radio.Group',
@@ -875,13 +877,13 @@ Menu.DesignableBar = (props) => {
                             f.dataSource =
                               target['x-component'] === 'Menu.SubMenu'
                                 ? [
-                                    { label: '之后', value: 'insertAfter' },
-                                    { label: '之前', value: 'insertBefore' },
-                                    { label: '组里', value: 'appendChild' },
+                                    { label: t('After'), value: 'insertAfter' },
+                                    { label: t('Before'), value: 'insertBefore' },
+                                    { label: t('Inner'), value: 'appendChild' },
                                   ]
                                 : [
-                                    { label: '之后', value: 'insertAfter' },
-                                    { label: '之前', value: 'insertBefore' },
+                                    { label: t('After'), value: 'insertAfter' },
+                                    { label: t('Before'), value: 'insertBefore' },
                                   ];
                           });
                         });
@@ -898,80 +900,80 @@ Menu.DesignableBar = (props) => {
                     await updateSchema(source);
                   }}
                 >
-                  <DragOutlined /> 移动到
+                  <DragOutlined /> {t('Move to')}
                 </AntdMenu.Item>
                 <AntdMenu.Divider />
                 <AntdMenu.SubMenu
                   key={'insertBefore'}
                   icon={<ArrowUpOutlined />}
-                  title={`向${mode == 'inline' ? '上' : '左'}插入`}
+                  title={t(`Insert ${mode == 'inline' ? 'above' : 'left'}`)}
                 >
                   <AntdMenu.Item
                     key={'insertBefore.Menu.SubMenu'}
                     icon={<GroupOutlined />}
                   >
-                    分组
+                    {t('Group')}
                   </AntdMenu.Item>
                   <AntdMenu.Item
                     key={'insertBefore.Menu.Link'}
                     icon={<MenuOutlined />}
                   >
-                    页面
+                    {t('Page')}
                   </AntdMenu.Item>
                   <AntdMenu.Item
                     key={'insertBefore.Menu.URL'}
                     icon={<LinkOutlined />}
                   >
-                    链接
+                    {t('Link')}
                   </AntdMenu.Item>
                 </AntdMenu.SubMenu>
                 <AntdMenu.SubMenu
                   key={'insertAfter'}
                   icon={<ArrowDownOutlined />}
-                  title={`向${mode == 'inline' ? '下' : '右'}插入`}
+                  title={t(`Insert ${mode == 'inline' ? 'below' : 'right'}`)}
                 >
                   <AntdMenu.Item
                     key={'insertAfter.Menu.SubMenu'}
                     icon={<GroupOutlined />}
                   >
-                    分组
+                    {t('Group')}
                   </AntdMenu.Item>
                   <AntdMenu.Item
                     key={'insertAfter.Menu.Link'}
                     icon={<MenuOutlined />}
                   >
-                    页面
+                    {t('Page')}
                   </AntdMenu.Item>
                   <AntdMenu.Item
                     key={'insertAfter.Menu.URL'}
                     icon={<LinkOutlined />}
                   >
-                    链接
+                    {t('Link')}
                   </AntdMenu.Item>
                 </AntdMenu.SubMenu>
                 {isSubMenu && (
                   <AntdMenu.SubMenu
                     key={'appendChild'}
                     icon={<ArrowRightOutlined />}
-                    title={'向里插入'}
+                    title={t('Insert inner')}
                   >
                     <AntdMenu.Item
                       key={'appendChild.Menu.SubMenu'}
                       icon={<GroupOutlined />}
                     >
-                      分组
+                      {t('Group')}
                     </AntdMenu.Item>
                     <AntdMenu.Item
                       key={'appendChild.Menu.Link'}
                       icon={<MenuOutlined />}
                     >
-                      页面
+                      {t('Page')}
                     </AntdMenu.Item>
                     <AntdMenu.Item
                       key={'appendChild.Menu.URL'}
                       icon={<LinkOutlined />}
                     >
-                      链接
+                      {t('Link')}
                     </AntdMenu.Item>
                   </AntdMenu.SubMenu>
                 )}
@@ -1038,7 +1040,7 @@ Menu.DesignableBar = (props) => {
                   key={'delete'}
                   onClick={() => {
                     Modal.confirm({
-                      title: `删除${formConfig.title}`,
+                      title: t(`Delete menu item`),
                       content: '删除后无法恢复，确定要删除吗？',
                       onOk: async () => {
                         const target = remove();
@@ -1048,7 +1050,7 @@ Menu.DesignableBar = (props) => {
                     });
                   }}
                 >
-                  <DeleteOutlined /> 删除
+                  <DeleteOutlined /> {t('Delete')}
                 </AntdMenu.Item>
               </AntdMenu>
             }
