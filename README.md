@@ -92,7 +92,7 @@ Open http://localhost:8000 in a web browser.
 ### Use docker
 
 ```bash
-docker run --name my-nocobase-app -p 8000:13002 -d nocobase/nocobase:0.5.0-alpha.23
+docker run --name my-nocobase-app -p 8000:13002 -d nocobase/nocobase:0.5.0-alpha.24
 docker logs my-nocobase-app
 ```
 

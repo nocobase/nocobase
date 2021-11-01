@@ -58,7 +58,7 @@ When you see the following, it means that the NocoBase you just created has been
 
 ## 3. Log in to NocoBase
 
-Use a browser to open http://localhost:8000 and you will see the login page of NocoBase. The initial account is `admin@nocobase.com` and the password is `admin`.
+Use a browser to open http://localhost:8000 and you will see the login page of NocoBase. The initial account is `admin@nocobase.com` and the password is `admin123`.
 
 <img src="https://nocobase.oss-cn-beijing.aliyuncs.com/158b580706930486132d1f927a71691a.jpg" style="max-width: 800px; width: 100%; box-shadow: 0 8px 24px -2px rgb(0 0 0 / 5%); border-radius: 10px;">
 

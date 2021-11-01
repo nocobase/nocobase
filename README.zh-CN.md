@@ -99,7 +99,7 @@ yarn start
 
 ```bash
 # 启动 app
-docker run --name my-nocobase-app -p 8000:13002 -d nocobase/nocobase:0.5.0-alpha.23
+docker run --name my-nocobase-app -p 8000:13002 -d nocobase/nocobase:0.5.0-alpha.24
 # 查看日志
 docker logs my-nocobase-app
 ```
