@@ -89,70 +89,15 @@ yarn start
 
 Open http://localhost:8000 in a web browser.
 
-### Use docker compose
+### Use docker
 
-Create a `docker-compose.yml` file
-
-```yaml
-version: "3"
-networks:
-  nocobase:
-    driver: bridge
-services:
-  adminer:
-    image: adminer
-    restart: always
-    networks:
-      - nocobase
-    ports:
-      - 28080:8080
-  postgres:
-    image: postgres:10
-    restart: always
-    networks:
-      - nocobase
-    command: postgres -c wal_level=logical
-    environment:
-      POSTGRES_USER: nocobase
-      POSTGRES_DB: nocobase
-      POSTGRES_PASSWORD: nocobase
-  nocobase:
-    image: nocobase/nocobase:0.5.0-alpha.14
-    networks:
-      - nocobase
-    command: [ "yarn", "serve", "start", "--port", "8000" ]
-    environment:
-      DB_DIALECT: postgres
-      DB_DATABASE: nocobase
-      DB_USER: nocobase
-      DB_PASSWORD: nocobase
-      DB_PORT: 5432
-      DB_HOST: postgres
-    ports:
-      - "28000:8000"
+```bash
+docker run --name my-nocobase-app -p 8000:13002 -d nocobase/nocobase:0.5.0-alpha.23
+docker logs my-nocobase-app
 ```
-
-Run the command on your terminal
-
-```
-docker-compose run nocobase bash -c 'yarn serve init'
-docker-compose up -d
-```
-
-Open http://localhost:28000 in a web browser.
-
-### Participate in the development
-
-~~~shell
-git clone https://github.com/nocobase/nocobase.git
-cd nocobase
-cp .env.example .env
-docker-compose up -d postgres
-yarn install
-yarn bootstrap
-yarn build
-yarn nocobase init
-yarn start
-~~~
 
 Open http://localhost:8000 in a web browser.
+
+## Contributing
+
+https://docs.nocobase.com/guide/contributing
