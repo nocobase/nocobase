@@ -1,12 +1,10 @@
 ---
-title: Action - 操作
 nav:
-  title: 组件
-  path: /client
+  path: /components
 group:
-  order: 1
-  title: Schemas
-  path: /client/schemas
+  title: Schema Components
+  path: /components/schema-components
+  order: 2
 ---
 
 # Action - 操作

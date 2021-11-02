@@ -1,12 +1,8 @@
 ---
-title: Grid - 栅格
 nav:
-  title: 组件
-  path: /client
+  path: /components
 group:
-  order: 2
-  title: Blocks 
-  path: /client/schemas
+  path: /components/schema-components
 ---
 
 # Grid - 栅格

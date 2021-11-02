@@ -95,70 +95,17 @@ yarn start
 
 使用浏览器打开 http://localhost:8000
 
-### 使用 docker compose
+### 使用 docker
 
-创建 `docker-compose.yml` 文件
-
-```yaml
-version: "3"
-networks:
-  nocobase:
-    driver: bridge
-services:
-  adminer:
-    image: adminer
-    restart: always
-    networks:
-      - nocobase
-    ports:
-      - 28080:8080
-  postgres:
-    image: postgres:10
-    restart: always
-    networks:
-      - nocobase
-    command: postgres -c wal_level=logical
-    environment:
-      POSTGRES_USER: nocobase
-      POSTGRES_DB: nocobase
-      POSTGRES_PASSWORD: nocobase
-  nocobase:
-    image: nocobase/nocobase:0.5.0-alpha.14
-    networks:
-      - nocobase
-    command: [ "yarn", "serve", "start", "--port", "8000" ]
-    environment:
-      DB_DIALECT: postgres
-      DB_DATABASE: nocobase
-      DB_USER: nocobase
-      DB_PASSWORD: nocobase
-      DB_PORT: 5432
-      DB_HOST: postgres
-    ports:
-      - "28000:8000"
+```bash
+# 启动 app
+docker run --name my-nocobase-app -p 8000:13002 -d nocobase/nocobase
+# 查看日志
+docker logs my-nocobase-app
 ```
 
-终端运行
+使用浏览器打开 http://localhost:8000
 
-```
-docker-compose run nocobase bash -c 'yarn serve init'
-docker-compose up -d
-```
+## 参与贡献
 
-浏览器内打开 http://localhost:28000
-
-### 参与开发
-
-~~~shell
-git clone https://github.com/nocobase/nocobase.git
-cd nocobase
-cp .env.example .env # 配置数据库信息、APP 端口等
-docker-compose up -d postgres # 用 docker 启动数据库
-yarn install
-yarn bootstrap
-yarn build
-yarn nocobase init
-yarn start
-~~~
-
-浏览器内打开 http://localhost:8000
+https://docs.nocobase.com/zh-CN/guide/contributing

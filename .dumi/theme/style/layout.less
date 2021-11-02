@@ -19,9 +19,12 @@ body {
   padding: 16px (@s-content-margin + @s-toc-width) 50px @s-menu-width + @s-content-margin;
 
   @media @mobile {
-    padding-top: 66px !important;
+    padding-top: 98px !important;
     padding-left: 16px !important;
     padding-right: 16px !important;
+    .tip {
+      top: 50px !important;
+    }
   }
 
   &[data-gapless='true'] {
