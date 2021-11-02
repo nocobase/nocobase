@@ -6,7 +6,7 @@ export const textarea: FieldOptions = {
   type: 'object',
   group: 'basic',
   order: 2,
-  title: '多行文本',
+  title: '{{t("Long text")}}',
   default: {
     dataType: 'text',
     // name,

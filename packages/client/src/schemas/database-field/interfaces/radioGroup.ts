@@ -7,7 +7,7 @@ export const radioGroup: FieldOptions = {
   type: 'object',
   group: 'choices',
   order: 4,
-  title: '单选框',
+  title: '{{t("Radio group")}}',
   default: {
     dataType: 'string',
     // name,

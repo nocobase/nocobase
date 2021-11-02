@@ -6,7 +6,7 @@ export const multipleSelect: FieldOptions = {
   type: 'object',
   group: 'choices',
   order: 3,
-  title: '下拉选择（多选）',
+  title: '{{t("Multiple select")}}',
   default: {
     dataType: 'json',
     // name,
@@ -28,19 +28,27 @@ export const multipleSelect: FieldOptions = {
   },
   operations: [
     {
-      label: '等于',
+      label: '{{t("is")}}',
       value: '$match',
       selected: true,
       schema: { 'x-component': 'Select' },
     },
     {
-      label: '不等于',
+      label: '{{t("is not")}}',
       value: '$notMatch',
       schema: { 'x-component': 'Select' },
     },
-    { label: '包含', value: '$anyOf', schema: { 'x-component': 'Select' } },
-    { label: '不包含', value: '$noneOf', schema: { 'x-component': 'Select' } },
-    { label: '非空', value: '$notNull', noValue: true },
-    { label: '为空', value: '$null', noValue: true },
+    {
+      label: '{{t("contains")}}',
+      value: '$anyOf',
+      schema: { 'x-component': 'Select' },
+    },
+    {
+      label: '{{t("does not contain")}}',
+      value: '$noneOf',
+      schema: { 'x-component': 'Select' },
+    },
+    { label: '{{t("is empty")}}', value: '$null', noValue: true },
+    { label: '{{t("is not empty")}}', value: '$notNull', noValue: true },
   ],
 };

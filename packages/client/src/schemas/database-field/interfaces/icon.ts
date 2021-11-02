@@ -6,7 +6,7 @@ export const icon: FieldOptions = {
   type: 'object',
   group: 'basic',
   order: 8,
-  title: '图标',
+  title: '{{t("Icon")}}',
   default: {
     dataType: 'string',
     // name,
