@@ -114,7 +114,7 @@ function generateCardItemSchema(component) {
   const defaults: { [key: string]: ISchema } = {
     'Markdown.Void': {
       type: 'void',
-      default: i18n.t('这是一段演示文字，**支持使用 Markdown 语法**'),
+      default: i18n.t('This is a demo text, **supports Markdown syntax**.'),
       'x-designable-bar': 'Markdown.Void.DesignableBar',
       'x-decorator': 'CardItem',
       'x-read-pretty': true,
@@ -143,7 +143,7 @@ function generateCardItemSchema(component) {
           properties: {
             [uid()]: {
               type: 'void',
-              title: 'Filter',
+              title: "{{t('Filter')}}",
               'x-decorator': 'AddNew.Displayed',
               'x-decorator-props': {
                 displayName: 'filter',
@@ -158,7 +158,7 @@ function generateCardItemSchema(component) {
             [uid()]: {
               type: 'void',
               name: 'action1',
-              title: 'Delete',
+              title: "{{t('Delete')}}",
               'x-align': 'right',
               'x-decorator': 'AddNew.Displayed',
               'x-decorator-props': {
@@ -169,8 +169,8 @@ function generateCardItemSchema(component) {
               'x-component-props': {
                 icon: 'DeleteOutlined',
                 confirm: {
-                  title: '删除数据',
-                  content: '删除后无法恢复，确定要删除吗？',
+                  title: "{{t('Delete record')}}",
+                  content: "{{t('Are you sure you want to delete it?')}}",
                 },
                 useAction: '{{ Table.useTableDestroyAction }}',
               },
@@ -178,7 +178,7 @@ function generateCardItemSchema(component) {
             [uid()]: {
               type: 'void',
               name: 'action1',
-              title: 'Add New',
+              title: "{{t('Add new')}}",
               'x-align': 'right',
               'x-decorator': 'AddNew.Displayed',
               'x-decorator-props': {
@@ -193,7 +193,7 @@ function generateCardItemSchema(component) {
               properties: {
                 modal: {
                   type: 'void',
-                  title: '添加数据',
+                  title: "{{t('Add record')}}",
                   'x-decorator': 'Form',
                   'x-component': 'Action.Drawer',
                   'x-component-props': {
@@ -230,7 +230,7 @@ function generateCardItemSchema(component) {
                 [uid()]: {
                   type: 'void',
                   name: 'action1',
-                  title: '查看',
+                  title: "{{t('View')}}",
                   'x-component': 'Action',
                   'x-component-props': {
                     type: 'link',
@@ -240,7 +240,7 @@ function generateCardItemSchema(component) {
                   properties: {
                     [uid()]: {
                       type: 'void',
-                      title: '查看数据',
+                      title: "{{t('View record')}}",
                       'x-component': 'Action.Drawer',
                       'x-component-props': {
                         bodyStyle: {
@@ -256,7 +256,7 @@ function generateCardItemSchema(component) {
                           properties: {
                             [uid()]: {
                               type: 'void',
-                              title: '详情',
+                              title: "{{t('Details')}}",
                               'x-designable-bar': 'Tabs.TabPane.DesignableBar',
                               'x-component': 'Tabs.TabPane',
                               'x-component-props': {},
@@ -278,7 +278,7 @@ function generateCardItemSchema(component) {
                 },
                 [uid()]: {
                   type: 'void',
-                  title: '编辑',
+                  title: "{{t('Edit')}}",
                   'x-component': 'Action',
                   'x-component-props': {
                     type: 'link',
@@ -288,7 +288,7 @@ function generateCardItemSchema(component) {
                   properties: {
                     [uid()]: {
                       type: 'void',
-                      title: '编辑数据',
+                      title: "{{t('Edit record')}}",
                       'x-decorator': 'Form',
                       'x-decorator-props': {
                         useResource: '{{ Table.useResource }}',
@@ -380,7 +380,7 @@ function generateCardItemSchema(component) {
       properties: {
         create: {
           type: 'void',
-          title: '添加卡片',
+          title: "{{t('Add new')}}",
           // 'x-designable-bar': 'Kanban.AddCardDesignableBar',
           'x-component': 'Kanban.Card.AddNew',
           // 'x-decorator': 'AddNew.Displayed',
@@ -391,7 +391,7 @@ function generateCardItemSchema(component) {
           properties: {
             modal: {
               type: 'void',
-              title: '添加数据',
+              title: "{{t('Add record')}}",
               'x-decorator': 'Form',
               'x-decorator-props': {
                 useResource: '{{ Kanban.useCreateResource }}',
@@ -426,7 +426,7 @@ function generateCardItemSchema(component) {
         },
         view1: {
           type: 'void',
-          title: '编辑数据',
+          title: "{{t('Edit record')}}",
           'x-decorator': 'Form',
           'x-component': 'Kanban.Card.View',
           'x-component-props': {
@@ -461,7 +461,7 @@ function generateCardItemSchema(component) {
           properties: {
             today: {
               type: 'void',
-              title: '今天',
+              title: "{{t('Today')}}",
               'x-designable-bar': 'Calendar.ActionDesignableBar',
               'x-component': 'Calendar.Today',
               'x-align': 'left',
@@ -472,7 +472,7 @@ function generateCardItemSchema(component) {
             },
             nav: {
               type: 'void',
-              title: '翻页',
+              title: "{{t('Navigate')}}",
               'x-designable-bar': 'Calendar.ActionDesignableBar',
               'x-component': 'Calendar.Nav',
               'x-align': 'left',
@@ -483,7 +483,7 @@ function generateCardItemSchema(component) {
             },
             title: {
               type: 'void',
-              title: '标题',
+              title: "{{t('title')}}",
               'x-designable-bar': 'Calendar.ActionDesignableBar',
               'x-component': 'Calendar.Title',
               'x-align': 'left',
@@ -494,7 +494,7 @@ function generateCardItemSchema(component) {
             },
             viewSelect: {
               type: 'void',
-              title: '视图切换',
+              title: "{{t('Select a view')}}",
               'x-designable-bar': 'Calendar.ActionDesignableBar',
               'x-component': 'Calendar.ViewSelect',
               'x-align': 'right',
@@ -505,7 +505,7 @@ function generateCardItemSchema(component) {
             },
             filter: {
               type: 'void',
-              title: '筛选',
+              title: "{{t('Filter')}}",
               'x-align': 'right',
               'x-designable-bar': 'Calendar.Filter.DesignableBar',
               'x-component': 'Calendar.Filter',
@@ -516,7 +516,7 @@ function generateCardItemSchema(component) {
             },
             create: {
               type: 'void',
-              title: '添加',
+              title: "{{t('Add new')}}",
               'x-align': 'right',
               'x-designable-bar': 'Calendar.ActionDesignableBar',
               'x-component': 'Action',
@@ -531,7 +531,7 @@ function generateCardItemSchema(component) {
               properties: {
                 modal: {
                   type: 'void',
-                  title: '添加数据',
+                  title: "{{t('Add record')}}",
                   'x-decorator': 'Form',
                   'x-component': 'Action.Drawer',
                   'x-component-props': {
@@ -562,7 +562,7 @@ function generateCardItemSchema(component) {
               properties: {
                 [uid()]: {
                   type: 'void',
-                  title: '详情',
+                  title: "{{t('Details')}}",
                   'x-designable-bar': 'Tabs.TabPane.DesignableBar',
                   'x-component': 'Tabs.TabPane',
                   'x-component-props': {},
@@ -627,7 +627,7 @@ function generateCardItemSchema(component) {
           properties: {
             [uid()]: {
               type: 'void',
-              title: '筛选',
+              title: "{{t('Filter')}}",
               'x-align': 'left',
               'x-component': 'Table.Filter',
               'x-component-props': {
@@ -636,23 +636,23 @@ function generateCardItemSchema(component) {
               properties: {
                 column1: {
                   type: 'void',
-                  title: '操作类型',
+                  title: "{{t('Action type')}}",
                   'x-component': 'Filter.Column',
                   'x-component-props': {
                     operations: [
                       {
-                        label: '等于',
+                        label: "{{ t('is') }}",
                         value: 'eq',
                         selected: true,
                         schema: { 'x-component': 'Select' },
                       },
                       {
-                        label: '不等于',
+                        label: "{{ t('is not') }}",
                         value: 'ne',
                         schema: { 'x-component': 'Select' },
                       },
                       {
-                        label: '包含',
+                        label: "{{ t('contains') }}",
                         value: 'in',
                         schema: {
                           'x-component': 'Select',
@@ -660,15 +660,23 @@ function generateCardItemSchema(component) {
                         },
                       },
                       {
-                        label: '不包含',
+                        label: "{{ t('does not contain') }}",
                         value: 'notIn',
                         schema: {
                           'x-component': 'Select',
                           'x-component-props': { mode: 'tags' },
                         },
                       },
-                      { label: '非空', value: '$notNull', noValue: true },
-                      { label: '为空', value: '$null', noValue: true },
+                      {
+                        label: "{{ t('is empty') }}",
+                        value: '$null',
+                        noValue: true,
+                      },
+                      {
+                        label: "{{ t('is not empty') }}",
+                        value: '$notNull',
+                        noValue: true,
+                      },
                     ],
                   },
                   properties: {
@@ -676,9 +684,21 @@ function generateCardItemSchema(component) {
                       type: 'string',
                       'x-component': 'Select',
                       enum: [
-                        { label: '新增', value: 'create', color: 'green' },
-                        { label: '更新', value: 'update', color: 'blue' },
-                        { label: '删除', value: 'destroy', color: 'red' },
+                        {
+                          label: "{{ t('Insert') }}",
+                          value: 'create',
+                          color: 'green',
+                        },
+                        {
+                          label: "{{ t('Update') }}",
+                          value: 'update',
+                          color: 'blue',
+                        },
+                        {
+                          label: "{{ t('Delete') }}",
+                          value: 'destroy',
+                          color: 'red',
+                        },
                       ],
                     },
                   },
@@ -689,7 +709,7 @@ function generateCardItemSchema(component) {
         },
         column1: {
           type: 'void',
-          title: '操作时间',
+          title: "{{t('Execution date')}}",
           'x-component': 'Table.Column',
           properties: {
             created_at: {
@@ -704,7 +724,7 @@ function generateCardItemSchema(component) {
         },
         column2: {
           type: 'void',
-          title: '操作用户',
+          title: "{{t('Execution user')}}",
           'x-component': 'Table.Column',
           properties: {
             'user.nickname': {
@@ -716,7 +736,7 @@ function generateCardItemSchema(component) {
         },
         column3: {
           type: 'void',
-          title: '数据表',
+          title: "{{t('Collection')}}",
           'x-component': 'Table.Column',
           properties: {
             'collection.title': {
@@ -728,7 +748,7 @@ function generateCardItemSchema(component) {
         },
         column4: {
           type: 'void',
-          title: '操作类型',
+          title: "{{t('Action type')}}",
           'x-component': 'Table.Column',
           properties: {
             type: {
@@ -736,16 +756,16 @@ function generateCardItemSchema(component) {
               'x-component': 'Select',
               'x-read-pretty': true,
               enum: [
-                { label: '新增', value: 'create', color: 'green' },
-                { label: '更新', value: 'update', color: 'blue' },
-                { label: '删除', value: 'destroy', color: 'red' },
+                { label: "{{ t('Insert') }}", value: 'create', color: 'green' },
+                { label: "{{ t('Update') }}", value: 'update', color: 'blue' },
+                { label: "{{ t('Delete') }}", value: 'destroy', color: 'red' },
               ],
             },
           },
         },
         [uid()]: {
           type: 'void',
-          title: '操作',
+          title: "{{t('Operation')}}",
           'x-component': 'Table.Column',
           'x-component-props': {
             width: 60,
@@ -755,7 +775,7 @@ function generateCardItemSchema(component) {
             [uid()]: {
               type: 'void',
               name: 'action1',
-              title: '查看',
+              title: "{{t('View')}}",
               'x-component': 'Action',
               'x-component-props': {
                 type: 'link',
@@ -768,7 +788,7 @@ function generateCardItemSchema(component) {
               properties: {
                 [uid()]: {
                   type: 'void',
-                  title: '查看数据',
+                  title: "{{t('View record')}}",
                   'x-read-pretty': true,
                   'x-decorator': 'Form',
                   'x-decorator-props': {
@@ -784,7 +804,7 @@ function generateCardItemSchema(component) {
                   properties: {
                     created_at: {
                       type: 'string',
-                      title: '操作时间',
+                      title: "{{t('Execution date')}}",
                       'x-decorator': 'FormItem',
                       'x-component': 'DatePicker',
                       'x-read-pretty': true,
@@ -794,37 +814,37 @@ function generateCardItemSchema(component) {
                     },
                     'user.nickname': {
                       type: 'string',
-                      title: '操作用户',
+                      title: "{{t('Execution user')}}",
                       'x-decorator': 'FormItem',
                       'x-component': 'Input',
                       'x-read-pretty': true,
                     },
                     'collection.title': {
                       type: 'string',
-                      title: '数据表',
+                      title: "{{t('Collection')}}",
                       'x-decorator': 'FormItem',
                       'x-component': 'Input',
                       'x-read-pretty': true,
                     },
                     type: {
                       type: 'string',
-                      title: '操作类型',
+                      title: "{{t('Action type')}}",
                       'x-decorator': 'FormItem',
                       'x-component': 'Select',
                       'x-read-pretty': true,
                       enum: [
                         {
-                          label: '新增',
+                          label: "{{t('Insert')}}",
                           value: 'create',
                           color: 'green',
                         },
                         {
-                          label: '更新',
+                          label: "{{t('Update')}}",
                           value: 'update',
                           color: 'blue',
                         },
                         {
-                          label: '删除',
+                          label: "{{t('Delete')}}",
                           value: 'destroy',
                           color: 'red',
                         },
@@ -832,7 +852,7 @@ function generateCardItemSchema(component) {
                     },
                     changes: {
                       type: 'array',
-                      title: '数据变动',
+                      title: "{{t('Data changes')}}",
                       'x-decorator': 'FormItem',
                       'x-component': 'ArrayTable',
                       'x-component-props': {
@@ -860,7 +880,7 @@ function generateCardItemSchema(component) {
                           column1: {
                             type: 'void',
                             'x-component': 'ArrayTable.Column',
-                            'x-component-props': { title: '字段名称' },
+                            'x-component-props': { title: "{{t('Field name')}}" },
                             properties: {
                               field: {
                                 type: 'string',
@@ -872,7 +892,7 @@ function generateCardItemSchema(component) {
                           column3: {
                             type: 'void',
                             'x-component': 'ArrayTable.Column',
-                            'x-component-props': { title: '操作前' },
+                            'x-component-props': { title: "{{ t('Before change') }}" },
                             properties: {
                               before: {
                                 type: 'string',
@@ -884,7 +904,7 @@ function generateCardItemSchema(component) {
                           column4: {
                             type: 'void',
                             'x-component': 'ArrayTable.Column',
-                            'x-component-props': { title: '操作后' },
+                            'x-component-props': { title: "{{ t('After change') }}" },
                             properties: {
                               after: {
                                 type: 'string',
@@ -921,33 +941,6 @@ function generateFormItemSchema(component) {
   };
   return defaults[component];
 }
-
-const dbSchema = {
-  type: 'object',
-  properties: {
-    title: {
-      type: 'string',
-      title: '数据表名称',
-      required: true,
-      'x-decorator': 'FormItem',
-      'x-component': 'Input',
-    },
-    name: {
-      type: 'string',
-      title: '数据表标识',
-      'x-decorator': 'FormItem',
-      'x-component': 'Input',
-      'x-read-pretty': true,
-    },
-    generalFields: {
-      type: 'array',
-      title: '数据表字段',
-      'x-decorator': 'FormItem',
-      'x-component': 'DatabaseField',
-      default: [],
-    },
-  },
-};
 
 export const AddNew = () => null;
 
@@ -1040,7 +1033,7 @@ AddNew.CardItem = observer((props: any) => {
             }
           }}
         >
-          <Menu.ItemGroup title={t('Data Blocks')}>
+          <Menu.ItemGroup title={t('Data blocks')}>
             {[
               { key: 'Table', title: t('Table'), icon: 'TableOutlined' },
               { key: 'Form', title: t('Form'), icon: 'FormOutlined' },
@@ -1095,7 +1088,7 @@ AddNew.CardItem = observer((props: any) => {
                       style={{ minWidth: 150 }}
                       key={`Calendar.collection.${item.name}.${view.key}`}
                       onClick={async () => {
-                        const values = await FormDialog(`日历配置`, () => {
+                        const values = await FormDialog(t('Configure calendar'), () => {
                           return (
                             <FormLayout layout={'vertical'}>
                               <SchemaField
@@ -1118,7 +1111,7 @@ AddNew.CardItem = observer((props: any) => {
                                       ),
                                     },
                                     start: {
-                                      title: t('开始日期字段'),
+                                      title: t('Start date field'),
                                       required: true,
                                       'x-decorator': 'FormItem',
                                       'x-component': 'Select',
@@ -1134,7 +1127,7 @@ AddNew.CardItem = observer((props: any) => {
                                         }),
                                     },
                                     end: {
-                                      title: t('结束日期字段'),
+                                      title: t('End date field'),
                                       'x-decorator': 'FormItem',
                                       'x-component': 'Select',
                                       enum: item?.generalFields
@@ -1224,7 +1217,7 @@ AddNew.CardItem = observer((props: any) => {
                       key={`collection.${item.name}.${view.key}`}
                       title={item.title}
                     >
-                      <Menu.ItemGroup title={t('选择分组字段')}>
+                      <Menu.ItemGroup title={t('Select a group field')}>
                         {item?.generalFields
                           ?.filter((item) => {
                             return item?.uiSchema?.enum;
@@ -1361,7 +1354,7 @@ AddNew.CardItem = observer((props: any) => {
           className={'designable-btn designable-btn-dash'}
           icon={<PlusOutlined />}
         >
-          {t('Add Block')}
+          {t('Add block')}
         </Button>
       )}
     </Dropdown>
@@ -1378,6 +1371,7 @@ AddNew.FormItem = observer((props: any) => {
   const [visible, setVisible] = useState(false);
   const displayed = useDisplayedMapContext();
   const { createSchema, removeSchema } = useClient();
+  const { t } = useTranslation();
 
   return (
     <Dropdown
@@ -1389,7 +1383,10 @@ AddNew.FormItem = observer((props: any) => {
       }}
       overlay={
         <Menu>
-          <Menu.ItemGroup className={'display-fields'} title={`显示字段`}>
+          <Menu.ItemGroup
+            className={'display-fields'}
+            title={t('Display fields')}
+          >
             {fields?.map((field) => (
               <SwitchMenuItem
                 key={field.key}
@@ -1430,7 +1427,7 @@ AddNew.FormItem = observer((props: any) => {
                         'x-component-props': {
                           useOkAction: '{{ Select.useOkAction }}',
                         },
-                        title: '关联数据',
+                        title: "{{t('Select a record')}}",
                         properties: {
                           table: {
                             type: 'array',
@@ -1464,7 +1461,7 @@ AddNew.FormItem = observer((props: any) => {
                                 properties: {
                                   [uid()]: {
                                     type: 'void',
-                                    title: '筛选',
+                                    title: "{{t('Filter')}}",
                                     'x-decorator': 'AddNew.Displayed',
                                     'x-decorator-props': {
                                       displayName: 'filter',
@@ -1489,7 +1486,7 @@ AddNew.FormItem = observer((props: any) => {
                         properties: {
                           [uid()]: {
                             type: 'void',
-                            title: '查看数据',
+                            title: "{{ t('View record') }}",
                             'x-component': 'Action.Drawer',
                             'x-component-props': {
                               bodyStyle: {
@@ -1504,7 +1501,7 @@ AddNew.FormItem = observer((props: any) => {
                                 properties: {
                                   [uid()]: {
                                     type: 'void',
-                                    title: '详情',
+                                    title: "{{t('Details')}}",
                                     'x-designable-bar':
                                       'Tabs.TabPane.DesignableBar',
                                     'x-component': 'Tabs.TabPane',
@@ -1554,7 +1551,7 @@ AddNew.FormItem = observer((props: any) => {
             disabled
             popupClassName={'add-new-fields-popup'}
             className={'sub-menu-add-new-fields'}
-            title={'添加字段'}
+            title={t('Add field')}
           >
             {options.map(
               (option) =>
@@ -1566,16 +1563,19 @@ AddNew.FormItem = observer((props: any) => {
                         key={item.name}
                         onClick={async () => {
                           setVisible(false);
-                          const values = await FormDialog(`添加字段`, () => {
-                            return (
-                              <FormLayout layout={'vertical'}>
-                                <SchemaField
-                                  scope={{ loadCollections }}
-                                  schema={item}
-                                />
-                              </FormLayout>
-                            );
-                          }).open({
+                          const values = await FormDialog(
+                            t('Add field'),
+                            () => {
+                              return (
+                                <FormLayout layout={'vertical'}>
+                                  <SchemaField
+                                    scope={{ loadCollections }}
+                                    schema={item}
+                                  />
+                                </FormLayout>
+                              );
+                            },
+                          ).open({
                             initialValues: {
                               interface: item.name,
                               ...item.default,
@@ -1621,7 +1621,9 @@ AddNew.FormItem = observer((props: any) => {
             onClick={async () => {
               let data: ISchema = {
                 type: 'void',
-                default: '这是一段演示文字，**支持使用 Markdown 语法**',
+                default: t(
+                  'This is a demo text, **supports Markdown syntax**.',
+                ),
                 'x-designable-bar': 'Markdown.Void.DesignableBar',
                 'x-decorator': 'FormItem',
                 'x-read-pretty': true,
@@ -1652,7 +1654,7 @@ AddNew.FormItem = observer((props: any) => {
               setVisible(false);
             }}
           >
-            添加说明文字
+            {t('Add text')}
           </Menu.Item>
         </Menu>
       }
@@ -1665,7 +1667,7 @@ AddNew.FormItem = observer((props: any) => {
           className={'designable-btn designable-btn-dash'}
           icon={<SettingOutlined />}
         >
-          配置字段
+          {t('Configure fields')}
         </Button>
       )}
     </Dropdown>
@@ -1682,7 +1684,7 @@ AddNew.PaneItem = observer((props: any) => {
   console.log('AddNew.PaneItem.useResource', useResource);
   const { collection, fields } = useCollectionContext();
   const { createSchema } = useClient();
-
+  const { t } = useTranslation();
   return (
     <Dropdown
       trigger={['hover']}
@@ -1694,7 +1696,7 @@ AddNew.PaneItem = observer((props: any) => {
       // placement={'bottomCenter'}
       overlay={
         <Menu>
-          <Menu.ItemGroup title={'数据区块'}>
+          <Menu.ItemGroup title={t('Data blocks')}>
             <Menu.Item
               icon={<IconPicker type={'FileOutlined'} />}
               onClick={async () => {
@@ -1746,7 +1748,7 @@ AddNew.PaneItem = observer((props: any) => {
               }}
               style={{ minWidth: 150 }}
             >
-              详情
+              {t('Details')}
             </Menu.Item>
             <Menu.Item
               icon={<IconPicker type={'FormOutlined'} />}
@@ -1792,10 +1794,10 @@ AddNew.PaneItem = observer((props: any) => {
                 setVisible(false);
               }}
             >
-              表单
+              {t('Form')}
             </Menu.Item>
           </Menu.ItemGroup>
-          <Menu.ItemGroup title={'相关数据区块'}>
+          <Menu.ItemGroup title={t('Association blocks')}>
             <Menu.Item
               style={{ minWidth: 150 }}
               icon={<IconPicker type={'HistoryOutlined'} />}
@@ -1822,7 +1824,7 @@ AddNew.PaneItem = observer((props: any) => {
                 setVisible(false);
               }}
             >
-              日志
+              {t('Action logs')}
             </Menu.Item>
             {fields
               ?.filter((f) => f.interface === 'linkTo')
@@ -1875,14 +1877,16 @@ AddNew.PaneItem = observer((props: any) => {
                 );
               })}
           </Menu.ItemGroup>
-          <Menu.ItemGroup title={'多媒体区块'}>
+          <Menu.ItemGroup title={t('Media')}>
             <Menu.Item
               icon={<IconPicker type={'FileMarkdownOutlined'} />}
               onClick={async () => {
                 let data: ISchema = {
                   key: uid(),
                   type: 'void',
-                  default: '这是一段演示文字，**支持使用 Markdown 语法**',
+                  default: t(
+                    'This is a demo text, **supports Markdown syntax**.',
+                  ),
                   'x-designable-bar': 'Markdown.Void.DesignableBar',
                   'x-decorator': 'CardItem',
                   'x-read-pretty': true,
@@ -1909,7 +1913,7 @@ AddNew.PaneItem = observer((props: any) => {
                 setVisible(false);
               }}
             >
-              Markdown
+              {t('Markdown')}
             </Menu.Item>
           </Menu.ItemGroup>
         </Menu>
@@ -1923,7 +1927,7 @@ AddNew.PaneItem = observer((props: any) => {
           type={'dashed'}
           icon={<PlusOutlined />}
         >
-          创建区块
+          {t('Add block')}
         </Button>
       )}
     </Dropdown>

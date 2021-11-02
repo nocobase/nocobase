@@ -15,6 +15,7 @@ import { uid } from '@formily/shared';
 import { PlusOutlined } from '@ant-design/icons';
 import { Droppable, SortableItem } from '../../components/Sortable';
 import { useClient } from '../../constate';
+import { useTranslation } from 'react-i18next';
 
 export const ActionBar = observer((props: any) => {
   const { align = 'top' } = props;
@@ -117,7 +118,7 @@ function generateActionSchema(type) {
   const actions: { [key: string]: ISchema } = {
     update: {
       type: 'void',
-      title: '编辑',
+      title: "{{ t('Edit') }}",
       'x-align': 'right',
       'x-decorator': 'AddNew.Displayed',
       'x-decorator-props': {
@@ -132,7 +133,7 @@ function generateActionSchema(type) {
       properties: {
         modal: {
           type: 'void',
-          title: '编辑数据',
+          title: "{{ t('Edit record') }}",
           'x-decorator': 'Form',
           'x-decorator-props': {
             useResource: '{{ Table.useResource }}',
@@ -156,7 +157,7 @@ function generateActionSchema(type) {
     },
     destroy: {
       type: 'void',
-      title: '删除',
+      title: "{{ t('Delete') }}",
       'x-align': 'right',
       'x-decorator': 'AddNew.Displayed',
       'x-decorator-props': {
@@ -167,8 +168,8 @@ function generateActionSchema(type) {
       'x-designable-bar': 'Action.DesignableBar',
       'x-component-props': {
         confirm: {
-          title: '删除数据',
-          content: '删除后无法恢复，确定要删除吗？',
+          title: "{{ t('Delete record') }}",
+          content: "{{ t('Are you sure you want to delete it?') }}",
         },
         useAction: '{{ Table.useTableDestroyAction }}',
       },
@@ -178,6 +179,7 @@ function generateActionSchema(type) {
 }
 
 function AddActionButton() {
+  const { t } = useTranslation();
   const [visible, setVisible] = useState(false);
   const displayed = useDisplayedMapContext();
   const { appendChild, remove } = useDesignable();
@@ -193,10 +195,10 @@ function AddActionButton() {
       onVisibleChange={setVisible}
       overlay={
         <Menu>
-          <Menu.ItemGroup title={'启用操作'}>
+          <Menu.ItemGroup title={t('Enable actions')}>
             {[
-              { title: '编辑', name: 'update' },
-              { title: '删除', name: 'destroy' },
+              { title: t('Edit'), name: 'update' },
+              { title: t('Delete'), name: 'destroy' },
             ].map((item) => (
               <SwitchMenuItem
                 key={item.name}
@@ -219,10 +221,10 @@ function AddActionButton() {
             ))}
           </Menu.ItemGroup>
           <Menu.Divider />
-          <Menu.SubMenu disabled title={'自定义'}>
-            <Menu.Item style={{ minWidth: 120 }}>函数操作</Menu.Item>
-            <Menu.Item>弹窗表单</Menu.Item>
-            <Menu.Item>复杂弹窗</Menu.Item>
+          <Menu.SubMenu disabled title={t('Customize')}>
+            <Menu.Item style={{ minWidth: 120 }}>{t('Function')}</Menu.Item>
+            <Menu.Item>{t('Popup form')}</Menu.Item>
+            <Menu.Item>{t('Flexible popup')}</Menu.Item>
           </Menu.SubMenu>
         </Menu>
       }
@@ -233,7 +235,7 @@ function AddActionButton() {
         type={'dashed'}
         icon={<PlusOutlined />}
       >
-        配置操作
+        {t('Configure action')}
       </Button>
     </Dropdown>
   );

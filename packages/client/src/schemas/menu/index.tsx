@@ -1041,7 +1041,7 @@ Menu.DesignableBar = (props) => {
                   onClick={() => {
                     Modal.confirm({
                       title: t(`Delete menu item`),
-                      content: '删除后无法恢复，确定要删除吗？',
+                      content: t('Are you sure you want to delete it?'),
                       onOk: async () => {
                         const target = remove();
                         await removeSchema(target);

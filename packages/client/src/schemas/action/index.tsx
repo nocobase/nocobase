@@ -70,6 +70,7 @@ export const Action: any = observer((props: any) => {
     ...others
   } = props;
   const { t } = useTranslation();
+  const compile = useCompile();
   const { run } = useAction();
   const field = useField();
   const { schema, DesignableBar } = useDesignable();
@@ -96,7 +97,7 @@ export const Action: any = observer((props: any) => {
         }
       }}
     >
-      {t(schema.title)}
+      {compile(schema.title)}
       <DesignableBar path={getSchemaPath(schema)} />
     </Button>
   );
@@ -194,6 +195,8 @@ Action.Group = observer((props: any) => {
 });
 
 Action.Modal = observer((props: any) => {
+  const { t } = useTranslation();
+  const compile = useCompile();
   const {
     useOkAction = useDefaultAction,
     useCancelAction = useDefaultAction,
@@ -209,7 +212,7 @@ Action.Modal = observer((props: any) => {
   console.log('Action.Modal.field', schema['x-read-pretty']);
   return (
     <Modal
-      title={schema.title}
+      title={compile(schema.title)}
       destroyOnClose
       maskClosable
       width={'50%'}
@@ -228,7 +231,7 @@ Action.Modal = observer((props: any) => {
                   }
                 }}
               >
-                取消
+                {t('Cancel')}
               </Button>,
               <Button
                 type={'primary'}
@@ -243,7 +246,7 @@ Action.Modal = observer((props: any) => {
                   }
                 }}
               >
-                确定
+                {t('OK')}
               </Button>,
             ]
           : null
@@ -267,6 +270,8 @@ Action.Modal = observer((props: any) => {
 });
 
 Action.Drawer = observer((props: any) => {
+  const { t } = useTranslation();
+  const compile = useCompile();
   const {
     useOkAction = useDefaultAction,
     useCancelAction = useDefaultAction,
@@ -284,7 +289,7 @@ Action.Drawer = observer((props: any) => {
       {createPortal(
         <Drawer
           width={'50%'}
-          title={schema.title}
+          title={compile(schema.title)}
           maskClosable
           destroyOnClose
           footer={
@@ -302,7 +307,7 @@ Action.Drawer = observer((props: any) => {
                     }
                   }}
                 >
-                  取消
+                  {t('Cancel')}
                 </Button>
                 <Button
                   onClick={async (e) => {
@@ -316,7 +321,7 @@ Action.Drawer = observer((props: any) => {
                   }}
                   type={'primary'}
                 >
-                  确定
+                  {t('OK')}
                 </Button>
               </Space>
             )
@@ -400,6 +405,8 @@ Action.Dropdown = observer((props: any) => {
 });
 
 Action.Popover = observer((props) => {
+  const { t } = useTranslation();
+  const compile = useCompile();
   const { schema } = useDesignable();
   const form = useForm();
   const isFormDecorator = schema['x-decorator'] === 'Form';
@@ -411,7 +418,7 @@ Action.Popover = observer((props) => {
       trigger={['click']}
       onVisibleChange={setVisible}
       {...props}
-      title={schema.title}
+      title={compile(schema.title)}
       content={
         <div>
           {props.children}
@@ -424,7 +431,7 @@ Action.Popover = observer((props) => {
                     setVisible(false);
                   }}
                 >
-                  Cancel
+                  {t('Cancel')}
                 </Button>
                 <Button
                   type={'primary'}
@@ -433,7 +440,7 @@ Action.Popover = observer((props) => {
                     setVisible(false);
                   }}
                 >
-                  Ok
+                  {t('OK')}
                 </Button>
               </Space>
             </div>
@@ -447,6 +454,7 @@ Action.Popover = observer((props) => {
 });
 
 Action.DesignableBar = (props: any) => {
+  const { t } = useTranslation();
   const { schema, remove, refresh, insertAfter } = useDesignable();
   const [visible, setVisible] = useState(false);
   const isPopup = Object.keys(schema.properties || {}).length > 0;
@@ -472,7 +480,7 @@ Action.DesignableBar = (props: any) => {
               <Menu>
                 <Menu.Item
                   onClick={async (e) => {
-                    const values = await FormDialog('编辑按钮', () => {
+                    const values = await FormDialog(t('Edit button'), () => {
                       return (
                         <FormLayout layout={'vertical'}>
                           <SchemaField
@@ -481,14 +489,14 @@ Action.DesignableBar = (props: any) => {
                               properties: {
                                 title: {
                                   type: 'string',
-                                  title: '按钮名称',
+                                  title: t('Display name'),
                                   required: true,
                                   'x-decorator': 'FormItem',
                                   'x-component': 'Input',
                                 },
                                 icon: {
                                   type: 'string',
-                                  title: '按钮图标',
+                                  title: t('Icon'),
                                   'x-decorator': 'FormItem',
                                   'x-component': 'IconPicker',
                                 },
@@ -511,7 +519,7 @@ Action.DesignableBar = (props: any) => {
                     refresh();
                   }}
                 >
-                  编辑按钮
+                  {t('Edit button')}
                 </Menu.Item>
                 {isPopup && (
                   <Menu.Item>
@@ -528,13 +536,13 @@ Action.DesignableBar = (props: any) => {
                       }}
                     >
                       <Select.Option value={'Action.Modal'}>
-                        对话框
+                        {t('Modal')}
                       </Select.Option>
                       <Select.Option value={'Action.Drawer'}>
-                        抽屉
+                        {t('Drawer')}
                       </Select.Option>
                       <Select.Option value={'Action.Window'}>
-                        浏览器窗口
+                        {t('Window')}
                       </Select.Option>
                     </Select>{' '}
                     内打开
@@ -553,7 +561,7 @@ Action.DesignableBar = (props: any) => {
                     setVisible(false);
                   }}
                 >
-                  隐藏
+                  {t('Hide')}
                 </Menu.Item>
               </Menu>
             }

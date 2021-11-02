@@ -34,8 +34,10 @@ import { uid } from '@formily/shared';
 import { getSchemaPath } from '../../components/schema-renderer';
 import { set } from 'lodash';
 import { DragHandle } from '../../components/Sortable';
+import { useTranslation } from 'react-i18next';
 
 export const SimpleDesignableBar = observer((props) => {
+  const { t } = useTranslation();
   const field = useField();
   const { designable, schema, refresh, deepRemove } = useDesignable();
   const [visible, setVisible] = useState(false);
@@ -68,7 +70,7 @@ export const SimpleDesignableBar = observer((props) => {
                   key={'defaultFilter'}
                   onClick={async () => {
                     const { defaultFilter } = await FormDialog(
-                      '设置数据范围',
+                      t('Set the data scope'),
                       () => {
                         return (
                           <FormLayout layout={'vertical'}>
@@ -82,7 +84,7 @@ export const SimpleDesignableBar = observer((props) => {
                                     properties: {
                                       column1: {
                                         type: 'void',
-                                        title: '操作类型',
+                                        title: t('Action type'),
                                         'x-component': 'Filter.Column',
                                         'x-component-props': {
                                           operations: [
@@ -175,7 +177,7 @@ export const SimpleDesignableBar = observer((props) => {
                     setVisible(false);
                   }}
                 >
-                  设置数据范围
+                  {t('Set the data scope')}
                 </Menu.Item>
                 <Menu.Item key={'defaultPageSize'}>
                   每页默认显示{' '}
@@ -207,8 +209,8 @@ export const SimpleDesignableBar = observer((props) => {
                   key={'delete'}
                   onClick={async () => {
                     Modal.confirm({
-                      title: '删除区块',
-                      content: '删除后无法恢复，确定要删除吗？',
+                      title: t('Delete block'),
+                      content: t('Are you sure you want to delete it?'),
                       onOk: async () => {
                         const removed = deepRemove();
                         // console.log({ removed })
@@ -219,7 +221,7 @@ export const SimpleDesignableBar = observer((props) => {
                     });
                   }}
                 >
-                  删除
+                  {t('Delete')}
                 </Menu.Item>
               </Menu>
             }

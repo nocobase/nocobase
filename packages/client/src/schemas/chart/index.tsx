@@ -8,7 +8,7 @@ import {
   useFieldSchema,
   mapReadPretty,
 } from '@formily/react';
-import { Button, Dropdown, Input as AntdInput, Menu, Space } from 'antd';
+import { Button, Dropdown, Input as AntdInput, Menu, Modal, Space } from 'antd';
 import { LoadingOutlined, MenuOutlined, DragOutlined } from '@ant-design/icons';
 import { useDesignable } from '../../components/schema-renderer';
 import { useState } from 'react';
@@ -21,6 +21,7 @@ import { isGridRowOrCol } from '../grid';
 import G2Plot from './G2Plot';
 import { Column, Line, Pie, Bar } from '@antv/g2plot';
 import { DragHandle } from '../../components/Sortable';
+import { useTranslation } from 'react-i18next';
 
 export const Chart: any = {};
 
@@ -41,6 +42,7 @@ Chart.Bar = observer((props: any) => {
 });
 
 Chart.DesignableBar = observer((props) => {
+  const { t } = useTranslation();
   const field = useField();
   const { designable, schema, refresh, deepRemove } = useDesignable();
   const [visible, setVisible] = useState(false);
@@ -73,20 +75,27 @@ Chart.DesignableBar = observer((props) => {
                     field.readPretty = false;
                     setVisible(false);
                   }}
+                  disabled
                 >
-                  编辑图表
+                  {t('Edit chart')}
                 </Menu.Item>
                 <Menu.Divider />
                 <Menu.Item
                   key={'delete'}
                   onClick={async () => {
-                    const removed = deepRemove();
-                    // console.log({ removed })
-                    const last = removed.pop();
-                    await removeSchema(last);
+                    Modal.confirm({
+                      title: t(`Delete block`),
+                      content: t('Are you sure you want to delete it?'),
+                      onOk: async () => {
+                        const removed = deepRemove();
+                        // console.log({ removed })
+                        const last = removed.pop();
+                        await removeSchema(last);
+                      },
+                    });
                   }}
                 >
-                  删除
+                  {t('Delete')}
                 </Menu.Item>
               </Menu>
             }

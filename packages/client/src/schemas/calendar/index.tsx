@@ -57,6 +57,7 @@ import { interfaces } from '../database-field/interfaces';
 import cls from 'classnames';
 import { Resource } from '../../resource';
 import { useRequest } from 'ahooks';
+import { useTranslation } from 'react-i18next';
 
 const localizer = momentLocalizer(moment);
 
@@ -316,13 +317,14 @@ Calendar.Title = observer(() => {
 Calendar.Today = observer((props) => {
   const { DesignableBar } = useDesignable();
   const { onNavigate } = useContext(ToolbarContext);
+  const { t } = useTranslation();
   return (
     <Button
       onClick={() => {
         onNavigate(navigate.TODAY);
       }}
     >
-      今天
+      {t('Today')}
       <DesignableBar />
     </Button>
   );
@@ -398,6 +400,7 @@ export const fieldsToFilterColumns = (fields: any[], options: any = {}) => {
 
 Calendar.Filter = observer((props: any) => {
   const { service } = useCalendar();
+  const { t } = useTranslation();
   const { fieldNames = [] } = props;
   const { schema, DesignableBar } = useDesignable();
   const form = useMemo(() => createForm(), []);
@@ -446,7 +449,7 @@ Calendar.Filter = observer((props: any) => {
                   // });
                 }}
               >
-                提交
+                {t('Submit')}
               </Submit>
             </FormButtonGroup>
           </FormProvider>
@@ -462,6 +465,7 @@ Calendar.Filter = observer((props: any) => {
 });
 
 Calendar.Filter.DesignableBar = () => {
+  const { t } = useTranslation();
   const { schema, remove, refresh, insertAfter } = useDesignable();
   const [visible, setVisible] = useState(false);
   const displayed = useDisplayedMapContext();
@@ -489,7 +493,7 @@ Calendar.Filter.DesignableBar = () => {
             }}
             overlay={
               <Menu>
-                <Menu.ItemGroup title={'可筛选字段'}>
+                <Menu.ItemGroup title={t('Filterable fields')}>
                   {fields
                     .filter((collectionField) => {
                       const option = interfaces.get(collectionField.interface);
@@ -523,7 +527,7 @@ Calendar.Filter.DesignableBar = () => {
                 <Menu.Item
                   onClick={async (e) => {
                     setVisible(false);
-                    const values = await FormDialog('编辑按钮', () => {
+                    const values = await FormDialog(t('Edit button'), () => {
                       return (
                         <FormLayout layout={'vertical'}>
                           <SchemaField
@@ -532,14 +536,14 @@ Calendar.Filter.DesignableBar = () => {
                               properties: {
                                 title: {
                                   type: 'string',
-                                  title: '按钮名称',
+                                  title: t('Display name'),
                                   required: true,
                                   'x-decorator': 'FormItem',
                                   'x-component': 'Input',
                                 },
                                 icon: {
                                   type: 'string',
-                                  title: '按钮图标',
+                                  title: t('Icon'),
                                   'x-decorator': 'FormItem',
                                   'x-component': 'IconPicker',
                                 },
@@ -562,7 +566,7 @@ Calendar.Filter.DesignableBar = () => {
                     refresh();
                   }}
                 >
-                  编辑按钮
+                  {t('Edit button')}
                 </Menu.Item>
                 <Menu.Divider />
                 <Menu.Item
@@ -577,7 +581,7 @@ Calendar.Filter.DesignableBar = () => {
                     setVisible(false);
                   }}
                 >
-                  隐藏
+                  {t('Hide')}
                 </Menu.Item>
               </Menu>
             }

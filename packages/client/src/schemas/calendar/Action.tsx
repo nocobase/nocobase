@@ -34,6 +34,7 @@ import { uid } from '@formily/shared';
 import { getSchemaPath } from '../../components/schema-renderer';
 import { useDisplayedMapContext } from '../../constate';
 import { DragHandle } from '../../components/Sortable';
+import { useTranslation } from 'react-i18next';
 
 export const ActionDesignableBar = (props: any) => {
   const { schema, remove, refresh, insertAfter } = useDesignable();
@@ -41,6 +42,7 @@ export const ActionDesignableBar = (props: any) => {
   const isPopup = Object.keys(schema.properties || {}).length > 0;
   const displayed = useDisplayedMapContext();
   const field = useField();
+  const { t } = useTranslation();
   return (
     <div className={cls('designable-bar', { active: visible })}>
       <span
@@ -71,7 +73,7 @@ export const ActionDesignableBar = (props: any) => {
                     setVisible(false);
                   }}
                 >
-                  隐藏
+                  {t('Hide')}
                 </Menu.Item>
               </Menu>
             }

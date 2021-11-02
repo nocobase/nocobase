@@ -22,6 +22,7 @@ import { removeSchema, updateSchema } from '..';
 import { isGridRowOrCol } from '../grid';
 import './style.less';
 import { DragHandle } from '../../components/Sortable';
+import { useTranslation } from 'react-i18next';
 
 export const Markdown: any = connect(
   AntdInput.TextArea,
@@ -52,6 +53,7 @@ export const Markdown: any = connect(
 );
 
 function MarkdownTextArea(props: any) {
+  const { t } = useTranslation();
   const [value, setValue] = useState(props.defaultValue);
   return (
     <div className={'mb-markdown'} style={{ position: 'relative' }}>
@@ -69,7 +71,7 @@ function MarkdownTextArea(props: any) {
             props.onCancel && props.onCancel(e);
           }}
         >
-          取消
+          {t('Cancel')}
         </Button>
         <Button
           type={'primary'}
@@ -77,7 +79,7 @@ function MarkdownTextArea(props: any) {
             props.onSubmit && props.onSubmit(value);
           }}
         >
-          保存
+          {t('Save')}
         </Button>
       </Space>
     </div>
@@ -116,6 +118,7 @@ Markdown.Void = observer((props: any) => {
 });
 
 Markdown.Void.DesignableBar = observer((props) => {
+  const { t } = useTranslation();
   const field = useField();
   const { designable, schema, refresh, deepRemove } = useDesignable();
   const [visible, setVisible] = useState(false);
@@ -149,15 +152,15 @@ Markdown.Void.DesignableBar = observer((props) => {
                     setVisible(false);
                   }}
                 >
-                  编辑内容
+                  {t('Edit Markdown')}
                 </Menu.Item>
                 <Menu.Divider />
                 <Menu.Item
                   key={'delete'}
                   onClick={async () => {
                     Modal.confirm({
-                      title: '删除区块',
-                      content: '删除后无法恢复，确定要删除吗？',
+                      title: t('Delete Block'),
+                      content: t('Are you sure you want to delete it?'),
                       onOk: async () => {
                         const removed = deepRemove();
                         const last = removed.pop();
@@ -167,7 +170,7 @@ Markdown.Void.DesignableBar = observer((props) => {
                     });
                   }}
                 >
-                  删除
+                  {t('Delete')}
                 </Menu.Item>
               </Menu>
             }
