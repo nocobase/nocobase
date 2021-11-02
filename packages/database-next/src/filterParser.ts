@@ -24,67 +24,69 @@ class FilterParser {
     const filter = this.filter;
     const model = this.model;
 
-    if (typeof filter === 'number' || typeof filter === 'string') {
-      return {
-        where: {
-          [model.primaryKeyAttribute]: filter,
-        },
-      };
-    }
-
+    // supported operators
     const operators = this.collection.context.database.operators;
 
-    const obj = flatten(filter || {});
+    const flattenedFilter = flatten(filter || {});
+
     const include = {};
     const where = {};
+    const filter2 = { ...flattenedFilter };
+
     let skipPrefix = null;
-    const filter2 = {};
-    for (const [key, value] of Object.entries(obj)) {
-      _.set(filter2, key, value);
-    }
-    for (let [key, value] of Object.entries(obj)) {
+
+    const isOperator = (key: string) => {
+      return key.startsWith('$') && operators.has(key);
+    };
+
+    for (let [key, value] of Object.entries(flattenedFilter)) {
       if (skipPrefix && key.startsWith(skipPrefix)) {
         continue;
       }
+
       let keys = key.split('.');
       const associations = model.associations;
       const paths = [];
       const origins = [];
+
       while (keys.length) {
-        const k = keys.shift();
-        origins.push(k);
-        if (k.startsWith('$')) {
-          if (operators.has(k)) {
-            const opKey = operators.get(k);
+        const firstKey = keys.shift();
+        origins.push(firstKey);
+
+        if (firstKey.startsWith('$')) {
+          if (operators.has(firstKey)) {
+            const opKey = operators.get(firstKey);
             if (typeof opKey === 'symbol') {
               paths.push(opKey);
               continue;
             } else if (typeof opKey === 'function') {
               skipPrefix = origins.join('.');
-              // console.log({ skipPrefix }, filter2, _.get(filter2, origins));
               value = opKey(_.get(filter2, origins));
               break;
             }
           } else {
-            paths.push(k);
+            paths.push(firstKey);
             continue;
           }
         }
-        if (/\d+/.test(k)) {
-          paths.push(k);
+
+        if (/\d+/.test(firstKey)) {
+          paths.push(firstKey);
           continue;
         }
-        if (!associations[k]) {
-          paths.push(k);
+        if (!associations[firstKey]) {
+          paths.push(firstKey);
           continue;
         }
+
         const associationKeys = [];
-        associationKeys.push(k);
-        _.set(include, k, {
-          association: k,
+
+        associationKeys.push(firstKey);
+        _.set(include, firstKey, {
+          association: firstKey,
           attributes: [],
         });
-        let target = associations[k].target;
+        let target = associations[firstKey].target;
         while (target) {
           const attr = keys.shift();
           if (target.rawAttributes[attr]) {
@@ -109,11 +111,12 @@ class FilterParser {
         if (associationKeys.length > 1) {
           paths.push(`$${associationKeys.join('.')}$`);
         } else {
-          paths.push(k);
+          paths.push(firstKey);
         }
       }
-      console.log(paths, value);
+
       const values = _.get(where, paths);
+
       if (
         values &&
         typeof values === 'object' &&
@@ -124,6 +127,7 @@ class FilterParser {
       }
       _.set(where, paths, value);
     }
+
     const toInclude = (items) => {
       return Object.values(items).map((item: any) => {
         if (item.include) {

@@ -72,6 +72,8 @@ interface RelatedQueryOptions {
 
 type Identity = string | number;
 
+type ID = Identity;
+
 class RelatedQuery {
   options: RelatedQueryOptions;
   sourceInstance: Model;
@@ -177,11 +179,14 @@ export class Repository implements IRepository {
 
   async find(options?: FindOptions) {
     const model = this.collection.model;
+
     const opts = {
       subQuery: false,
       ...this.buildQueryOptions(options),
     };
+
     let rows = [];
+
     if (opts.include) {
       const ids = (
         await model.findAll({
@@ -206,11 +211,21 @@ export class Repository implements IRepository {
         ...opts,
       });
     }
+
     const count = await model.count({
       ...opts,
       distinct: opts.include ? true : undefined,
     });
+
     return { count, rows };
+  }
+
+  /**
+   * Find By Id
+   *
+   */
+  findById(id: ID) {
+    return this.collection.model.findByPk(id);
   }
 
   /**
@@ -358,7 +373,7 @@ export class Repository implements IRepository {
     };
   }
 
-  buildQueryOptions(options: any) {
+  protected buildQueryOptions(options: any) {
     const opts = this.parseFilter(options.filter);
     return { ...options, ...opts };
   }
@@ -367,7 +382,7 @@ export class Repository implements IRepository {
    * Parse filter to sequelize where params
    * @param filter
    */
-  parseFilter(filter?: any) {
+  protected parseFilter(filter?: any) {
     const parser = new FilterParser(this.collection, filter);
     return parser.toSequelizeParams();
   }
