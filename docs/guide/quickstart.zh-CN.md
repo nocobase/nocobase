@@ -64,7 +64,7 @@ $ yarn start
 
 ## 3. 登录 NocoBase
 
-使用浏览器打开 http://localhost:8000 ，你会看到 NocoBase 的登录页面，初始的账号为 `admin@nocobase.com`，密码为 `admin`。
+使用浏览器打开 http://localhost:8000 ，你会看到 NocoBase 的登录页面，初始的账号为 `admin@nocobase.com`，密码为 `admin123`。
 
 <img src="https://nocobase.oss-cn-beijing.aliyuncs.com/158b580706930486132d1f927a71691a.jpg" style="max-width: 800px; width: 100%; box-shadow: 0 8px 24px -2px rgb(0 0 0 / 5%); border-radius: 10px;">
 

@@ -1,10 +1,10 @@
 {
   "name": "@nocobase/plugin-notifications",
-  "version": "0.5.0-alpha.23",
+  "version": "0.5.0-alpha.25",
   "main": "lib/index.js",
   "license": "MIT",
   "dependencies": {
-    "@nocobase/server": "^0.5.0-alpha.23",
+    "@nocobase/server": "^0.5.0-alpha.25",
     "nodemailer": "^6.6.1"
   },
   "gitHead": "f0b335ac30f29f25c95d7d137655fa64d8d67f1e"

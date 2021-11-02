@@ -89,10 +89,10 @@ yarn start
 
 Open http://localhost:8000 in a web browser.
 
-### Use docker
+### Installing from Docker
 
 ```bash
-docker run --name my-nocobase-app -p 8000:13002 -d nocobase/nocobase:0.5.0-alpha.23
+docker run --name my-nocobase-app -p 8000:13002 -d nocobase/nocobase
 docker logs my-nocobase-app
 ```
 
