@@ -239,6 +239,7 @@ export class Repository implements IRepository {
       subQuery: false,
       ...this.buildQueryOptions(options),
     };
+
     let data: Model;
     if (opts.include) {
       const item = await model.findOne({

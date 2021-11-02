@@ -2,6 +2,7 @@ import { mockDatabase } from './index';
 import FilterParser from '../filterParser';
 import { describe } from 'pm2';
 import { Op } from 'sequelize';
+import { Database } from '../database';
 
 test('filter item by string', async () => {
   const database = mockDatabase();
@@ -27,31 +28,47 @@ test('filter item by string', async () => {
   await database.close();
 });
 
-test('filter by belongsTo', async () => {
-  const database = mockDatabase();
-  const UserCollection = database.collection({
-    name: 'users',
-    fields: [{ type: 'string', name: 'name' }],
+describe('filter by related', () => {
+  let db: Database;
+
+  beforeEach(async () => {
+    db = mockDatabase();
+    db.collection({
+      name: 'users',
+      fields: [
+        { type: 'string', name: 'name' },
+        { type: 'hasMany', name: 'posts' },
+      ],
+    });
+
+    db.collection({
+      name: 'posts',
+      fields: [
+        { type: 'string', name: 'title' },
+        {
+          type: 'belongsTo',
+          name: 'user',
+        },
+      ],
+    });
+
+    await db.sync();
   });
 
-  const PostCollection = database.collection({
-    name: 'posts',
-    fields: [
-      { type: 'string', name: 'title' },
-      {
-        type: 'belongsTo',
-        name: 'user',
-      },
-    ],
+  afterEach(() => {
+    db.close();
+    db = null;
   });
 
-  const filter = {
-    'posts.title.$iLike': '%hello%',
-  };
+  test('hasMany', async () => {
+    const filter = {
+      'posts.title.$iLike': '%hello%',
+    };
 
-  const filterParser = new FilterParser(UserCollection, filter);
+    const filterParser = new FilterParser(db.getCollection('users'), filter);
 
-  const filterParams = filterParser.toSequelizeParams();
-  expect(filterParams.where['posts']['title'][Op.iLike]).toEqual('%hello%');
-  expect(filterParams.include).toEqual('asdasdasdsa');
+    const filterParams = filterParser.toSequelizeParams();
+    expect(filterParams.where['$posts.title$'][Op.iLike]).toEqual('%hello%');
+    expect(filterParams.include[0]['association']).toEqual('posts');
+  });
 });
