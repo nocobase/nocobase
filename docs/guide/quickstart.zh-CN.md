@@ -60,19 +60,21 @@ $ yarn start
 
 当你看到下面内容，说明你刚才创建的 NocoBase 已经安装并启动了。
 
-<img src="https://nocobase.oss-cn-beijing.aliyuncs.com/07aef612d4162970f813352ef31a9dba.png" style="max-width: 800px;" />
+<img src="https://nocobase.oss-cn-beijing.aliyuncs.com/c77012649cab2677117c7628fd11960a.jpg" style="max-width: 800px; width: 100%; box-shadow: 0 8px 24px -2px rgb(0 0 0 / 5%); border-radius: 15px;">
 
 ## 3. 登录 NocoBase
 
-使用浏览器打开 http://localhost:8000 ，你会看到 NocoBase 的登录页面，初始的账号为 `admin@nocobase.com`，密码为 `admin`。
+使用浏览器打开 http://localhost:8000 ，你会看到 NocoBase 的登录页面，初始的账号为 `admin@nocobase.com`，密码为 `admin123`。
 
-<img src="https://nocobase.oss-cn-beijing.aliyuncs.com/172457b0a93b608cff2c9d119d42a02f.png" style="max-width: 800px;" >
+<img src="https://nocobase.oss-cn-beijing.aliyuncs.com/158b580706930486132d1f927a71691a.jpg" style="max-width: 800px; width: 100%; box-shadow: 0 8px 24px -2px rgb(0 0 0 / 5%); border-radius: 10px;">
 
 ## 4. 创建数据表和字段
 
 NocoBase 提供了一个全局的数据表配置面板，方便用户快速的创建数据表和字段。
 
-<img src="https://nocobase.oss-cn-beijing.aliyuncs.com/335883d6d91d505195b7a857ac6df161.gif" style="max-width: 800px;" />
+<video src="https://nocobase.oss-cn-beijing.aliyuncs.com/6e2df7073bf3ea23a10c5d4620dc2be0.m4v" style="max-width: 800px; width: 100%; border-radius: 5px;" controls="controls">
+your browser does not support the video tag
+</video>
 
 按照视频的提示，创建文章（posts）和标签（tags）两张数据表和若干字段。
 
@@ -80,9 +82,9 @@ NocoBase 提供了一个全局的数据表配置面板，方便用户快速的�
 
 接着，添加新的菜单分组和页面用于管理刚才创建的文章和标签数据。
 
-```ts
-// 视频
-```
+<video src="https://nocobase.oss-cn-beijing.aliyuncs.com/405d1d3a6d8db31d247e06f5af18de4b.m4v" style="max-width: 800px; width: 100%; border-radius: 5px;" controls="controls">
+your browser does not support the video tag
+</video>
 
 ## 6. 在页面内布置区块
 

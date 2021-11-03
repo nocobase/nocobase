@@ -25,7 +25,7 @@ DB_LOG_SQL=
 # ADMIN USER (Initialization only)
 
 ADMIN_EMAIL=admin@nocobase.com
-ADMIN_PASSWORD=admin
+ADMIN_PASSWORD=admin123
 
 # STORAGE (Initialization only)
 

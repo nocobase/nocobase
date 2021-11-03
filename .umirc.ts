@@ -3,6 +3,8 @@ import { defineConfig } from 'dumi';
 const baseUrl = `http://localhost:${process.env.API_PORT || '13001'}/`;
 console.log('baseUrl', baseUrl);
 
+process.env.MFSU_AD = 'none';
+
 export default defineConfig({
   title: ' ',
   hash: true,
@@ -18,7 +20,7 @@ export default defineConfig({
     },
   },
   resolve: {
-    includes: ['docs'],
+    includes: ['docs', 'packages/client/src/schemas'],
   },
   styles: [
     `
@@ -44,6 +46,12 @@ export default defineConfig({
       .__dumi-default-layout[data-site-mode='true'] .__dumi-default-layout-toc {
         top: 150px !important;
       }
+    }
+    video {
+      max-width: 800px;
+      width: 100%;
+      border-radius: 5px;
+      box-shadow: 0 8px 24px -2px rgb(0 0 0 / 5%);
     }
     `,
   ],

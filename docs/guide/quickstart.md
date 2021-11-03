@@ -5,42 +5,36 @@ toc: menu
 
 # Quick Start
 
-本篇文章将帮助你快速安装并启动 NocoBase，并介绍基本的使用方法。
+This article will help you quickly install and start NocoBase, and introduce the basic usage.
 
 ## 1. Requirements
 
-请确保你的系统已经安装了 Node.js 12.x 或以上版本。
+Please make sure your system has installed Node.js 12.x or above.
 
 ```bash
 $ node -v
 v12.13.1
 ```
 
-如果你没有安装 Node.js 可以从官网下载并安装[最新的 LTS 版本](https://nodejs.org/en/download/)。如果你打算长期与 Node.js 打交道，推荐使用 [nvm](https://github.com/nvm-sh/nvm)（Win 系统可以使用 [nvm-windows](https://github.com/coreybutler/nvm-windows) ）来管理 Node.js 版本。
+If you don't have Node.js installed you can download and install [the latest LTS version](https://nodejs.org/en/download/) from the official website. If you plan to work with Node.js for a long time, it is recommended to use [nvm](https://github.com/nvm-sh/nvm) (for Win systems you can use [nvm-windows](https://github.com/coreybutler/nvm-windows)) to manage Node.js version.
 
-另外，推荐使用 yarn 包管理器。
+Also, it is recommended to use the yarn package manager.
 
 ```bash
 $ npm install --global yarn
 ```
 
-由于国内网络环境的原因，强烈建议你更换国内镜像。
-
-```bash
-$ yarn config set registry https://registry.npm.taobao.org/
-```
-
-环境准备就绪，下一步我们来安装一个 NocoBase 应用。
+With the environment ready, the next step is to install a NocoBase application.
 
 ## 2. Installation and Start-up
 
-为了方便新人快速的安装并启动， NocoBase 提供了一行非常简单的命令：
+To make it easier for newcomers to install and start quickly, NocoBase provides a very simple command line.
 
 ```bash
 $ yarn create nocobase-app my-nocobase-app --quickstart
 ```
 
-上面这行命令会帮助你快速的下载、安装并启动 NocoBase 应用。如果你喜欢分步执行，也可以这样：
+The above command will help you quickly download, install and start the NocoBase application. If you prefer to perform step by step, you can also do this:
 
 ```bash
 # 1. 创建项目
@@ -56,55 +50,57 @@ $ yarn nocobase init --import-demo
 $ yarn start
 ```
 
-分步执行有助于理解整个流程，也更易于排查安装过程中出现的问题。如果出现问题，你也无法自行解决，请将终端输出的错误日志贴在 [GitHub Issue](https://github.com/nocobase/nocobase/issues) 上，大家会一起帮你解决问题。
+Executing it step-by-step will help you understand the process and make it easier to troubleshoot issues that arise during the installation. If a problem arises and you can't fix it yourself, please post the error log from the terminal output on [GitHub Issue](https://github.com/nocobase/nocobase/issues) and we'll all work together to help you fix it.
 
-当你看到下面内容，说明你刚才创建的 NocoBase 已经安装并启动了。
+When you see the following, it means that the NocoBase you just created has been installed and started.
 
-<img src="https://nocobase.oss-cn-beijing.aliyuncs.com/07aef612d4162970f813352ef31a9dba.png" style="max-width: 800px;" />
+<img src="https://nocobase.oss-cn-beijing.aliyuncs.com/c77012649cab2677117c7628fd11960a.jpg" style="max-width: 800px; width: 100%; box-shadow: 0 8px 24px -2px rgb(0 0 0 / 5%); border-radius: 15px;">
 
 ## 3. Log in to NocoBase
 
-使用浏览器打开 http://localhost:8000 ，你会看到 NocoBase 的登录页面，初始的账号为 `admin@nocobase.com`，密码为 `admin`。
+Use a browser to open http://localhost:8000 and you will see the login page of NocoBase. The initial account is `admin@nocobase.com` and the password is `admin123`.
 
-<img src="https://nocobase.oss-cn-beijing.aliyuncs.com/172457b0a93b608cff2c9d119d42a02f.png" style="max-width: 800px;" >
+<img src="https://nocobase.oss-cn-beijing.aliyuncs.com/158b580706930486132d1f927a71691a.jpg" style="max-width: 800px; width: 100%; box-shadow: 0 8px 24px -2px rgb(0 0 0 / 5%); border-radius: 10px;">
 
 ## 4. Create Collections and Fields
 
-NocoBase 提供了一个全局的数据表配置面板，方便用户快速的创建数据表和字段。
+NocoBase provides a global data table configuration panel to facilitate users to quickly create collections and fields.
 
-<img src="https://nocobase.oss-cn-beijing.aliyuncs.com/335883d6d91d505195b7a857ac6df161.gif" style="max-width: 800px;" />
+<video src="https://nocobase.oss-cn-beijing.aliyuncs.com/6e2df7073bf3ea23a10c5d4620dc2be0.m4v" style="max-width: 800px; width: 100%; border-radius: 5px;" controls="controls">
+your browser does not support the video tag
+</video>
 
-按照视频的提示，创建文章（posts）和标签（tags）两张数据表和若干字段。
+Follow the instructions in the video to create the posts and tags tables and several fields.
 
 ## 5. Configure Menus and Pages
 
-接着，添加新的菜单分组和页面用于管理刚才创建的文章和标签数据。
+Next, add new menu groups and pages to manage the article and tag data you just created.
 
-```ts
-// 视频
-```
+<video src="https://nocobase.oss-cn-beijing.aliyuncs.com/405d1d3a6d8db31d247e06f5af18de4b.m4v" style="max-width: 800px; width: 100%; border-radius: 5px;" controls="controls">
+your browser does not support the video tag
+</video>
 
 ## 6. Create Blocks to Pages
 
-在上一步配置的页面里创建文章和标签的表格区块，并启用需要开放的操作。
+Create table blocks of articles and labels in the page configured in the previous step, and enable the actions that need to be opened.
 
 ```ts
-// 视频
+// coming soon
 ```
 
 ## 7. Add Data
 
-现在可以添加文章和标签了。
+Now you can add posts and tags.
 
 ```ts
-// 视频
+// coming soon
 ```
 
 ## 8. Connect to the API
 
-除了可视化界面以外，也可以通过 NocoBase 提供的 [REST API](/zh-CN/api/rest-api) 访问数据资源。
+In addition to the visual interface, data resources can also be accessed through the [REST API](/zh-CN/api/rest-api) provided by NocoBase.
 
-- 文章资源：http://localhost:8000/api/posts
-- 标签资源：http://localhost:8000/api/tags
+- post resorce：http://localhost:8000/api/posts
+- user resource ：http://localhost:8000/api/tags
 
-你可以直接点击打开上面 API 地址，或者使用类似 Postman 的工具访问。NocoBase 也提供了更贴合的 API Client（JavaScript SDK）来管理 NocoBase 数据资源，更多内容请查看 [API Client](/zh-CN/api/client#apiclient) 章节。
+You can directly click to open the above API address, or use a tool like Postman to access it. NocoBase also provides a more suitable API Client (JavaScript SDK) to manage NocoBase data resources. For more information, please refer to the [API Client](/zh-CN/api/client#apiclient) chapter.

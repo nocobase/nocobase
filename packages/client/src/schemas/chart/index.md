@@ -1,11 +1,10 @@
 ---
-title: Chart - 图表
 nav:
-  title: 组件
-  path: /client
+  path: /components
 group:
-  order: 1
-  title: Schemas
-  path: /client/schemas
+  path: /components/schema-components
 ---
 
+# Chart - 图表
+
+Coming soon...

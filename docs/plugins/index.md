@@ -6,83 +6,85 @@ nav:
   order: 4
 ---
 
-## 插件管理器
+# Plugins
 
-开发可以通过命令行下载、激活、禁用、移除插件，对应的命令行有：
+## Plugin Manager
+
+Development can download, activate, disable, and remove plugins via the command line, which corresponds to
 
 ```bash
-# 下载插件，可以通过 --enable 参数快速激活
+## Download plugins, which can be activated quickly with the --enable parameter
 yarn nocobase pm:download <plugin-name> --enable
-# 激活插件
+# Activate the plugin
 yarn nocobase pm:enable <plugin-name>
-# 禁用插件
+# Disable the plugin
 yarn nocobase pm:disable <plugin-name>
-# 移除插件
+# Remove the plugin
 yarn nocobase pm:remove <plugin-name>
 ```
 
-## 已有的插件列表
+## List of existing plugins
 
-### @nocobase/plugin-collections 数据表配置
+### @nocobase/plugin-collections datasheet configuration
 
-提供 HTTP API 的方式管理数据表和字段
+Provides an HTTP API for managing data tables and fields
 
 ### @nocobase/plugin-permissions
 
-权限模块
+Permissions module
 
 ### @nocobase/plugin-users
 
-用户模块
+User module
 
 ### @nocobase/plugin-system-settings
 
-站点信息配置
+Site information configuration
 
 ### @nocobase/plugin-china-region
 
-字段扩展，中国行政区
+Field extension, China region
 
 ### @nocobase/plugin-file-manager
 
-字段扩展，附件字段
+Field extension, attachment field
 
 ### @nocobase/plugin-action-logs
 
-操作日志
+Action logs
 
 ### @nocobase/plugin-multi-apps
 
-动态多应用，一个简易的 SaaS
+Dynamic multi-apps, a simple SaaS
 
 ### @nocobase/plugin-export
 
-操作扩展，导出
+Operation extensions, export
 
 ### @nocobase/plugin-notifications
 
-通知模块（半成品），暂时只支持邮件发送，没有可视化界面
+Notifications module (half-baked), only supports emailing for now, no visual interface
 
 ### @nocobase/plugin-automations
 
-自动化（暂不可用）
+Automation (not available at the moment)
 
 ### @nocobase/plugin-client
 
-客户端插件，为 nocobase 提供可视化配置的支持。依赖的插件有：
+Client-side plugin that provides visual configuration support for nocobase. Dependent plugins are.
 
-- @nocobase/plugin-collections（必须）
-- @nocobase/plugin-permissions（必须）
-- @nocobase/plugin-users（必须）
-- @nocobase/plugin-system-settings（必须）
-- @nocobase/plugin-file-manager（必须）
-- @nocobase/plugin-china-region（可选）
-- @nocobase/plugin-action-logs（可选）
+- @nocobase/plugin-collections (required)
+- @nocobase/plugin-permissions (required)
+- @nocobase/plugin-users (required)
+- @nocobase/plugin-system-settings (required)
+- @nocobase/plugin-file-manager (required)
+- @nocobase/plugin-china-region (optional)
+- @nocobase/plugin-action-logs (optional)
 
-包括几部分内容：
+Several components are included.
 
-- 将客户端 ui-schema 存储在服务端，以实现按需动态输出
-- 将客户端 ui-router 存储在服务端，以实现按需动态输出
-- 提供 app dist 的 static server 支持，可以配置 app 的 dist 路径
-- 为 nocobase 安装提供初始化 demo 数据导入的支持，可通过 importData 配置
-- 提供 collections 可视化支持
+- Store client ui-schema on the server side for on-demand dynamic output
+- Store client-side ui-router on the server side for on-demand dynamic output
+- Provide static server support for app dist, allowing configuration of app dist paths
+- Provide initial demo data import support for nocobase installation, configurable via importData
+- Provide visualization support for collections

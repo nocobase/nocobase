@@ -7,14 +7,14 @@ toc: menu
 
 ## Basic process
 
-- Fork 源码到自己的仓库
-- 修改源码
-- 提交 pull request
+- Fork the source code to your own repository
+- Modify source code
+- Submit pull request
 
 ## Installation and start-up
 
 ```bash
-# 将以下 git 地址换成自己的 repo
+# Replace the following git address with your own repo
 git clone https://github.com/nocobase/nocobase.git
 cd nocobase
 cp .env.example .env
@@ -25,17 +25,17 @@ yarn nocobase init --import-demo
 yarn start
 ```
 
-浏览器内打开 http://localhost:8000/
+Open http://localhost:8000/ in your browser
 
-<Alert title="注意">
-参与核心代码开发，项目启动打开的是文档页，并非应用的登录页。
+<Alert title="Note">
+Involved in core code development, the project starts with a documentation page, not the application's login page.
 </Alert>
 
 ## Main scripts
 
 ### Startup and reboot
 
-以上命令只在第一次执行，之后重启项目只需要
+The above commands are only executed the first time, after that the project is restarted with
 
 ```bash
 yarn start
@@ -43,20 +43,20 @@ yarn start
 
 ### Reinstallation
 
-如果想清空重新安装
+If you want to clear and reinstall
 
 ```bash
-# 如果需要导入 demo 数据，可以加上 --import-demo
+### If you want to import demo data, you can add --import-demo
 yarn nocobase init --import-demo
-# 重装之后，也需要重启
+# After reinstallation, you also need to restart
 yarn start
 ```
 
 ### Build
 
-<Alert title="注意">
+<Alert title="Note">
 
-集成测试或全站调试时，涉及以下包的修改需要重新编译打包：
+For integration testing or site-wide debugging, the following package changes need to be recompiled and repackaged.
 
 - actions
 - database
@@ -65,7 +65,7 @@ yarn start
 - test
 - utils
 
-除了编译的问题，项目的构建还有诸多细节问题未解决。如果你有一些不错的建议，欢迎你前往 [GitHub Discussions](https://github.com/nocobase/nocobase/discussions) 讨论。
+In addition to the compilation issues, there are many details of the project build that remain unresolved. If you have some good suggestions, you are welcome to discuss them on [GitHub Discussions](https://github.com/nocobase/nocobase/discussions).
 
 </Alert>
 
@@ -82,9 +82,9 @@ yarn build <package_name_1> <package_name_2>
 
 ### Testing
 
-<Alert title="注意">
+<Alert title="Note">
 
-升级 v0.5 之后，有部分测试还未修复，测试的 ci 暂时也不能用。代码测试还不够完善，更多测试会阶段性的补充并完善...
+After upgrading v0.5, some tests have not been fixed yet, and the ci tests are not available yet. The code tests are not perfect yet, more tests will be added and improved in phases...
 
 </Alert>
 
@@ -98,29 +98,29 @@ yarn test packages/<name>
 
 ### More scripts
 
-查看 package.json 的 [scripts](https://github.com/nocobase/nocobase/blob/ff4d432c9fc3faa38cd65ab6d4dad250da02c2fd/package.json#L7)
+View [scripts](https://github.com/nocobase/nocobase/blob/ff4d432c9fc3faa38cd65ab6d4dad250da02c2fd/package.json#L7) of package.json
 
 ## Document revision and translation
 
-文档在 [docs](https://github.com/nocobase/nocobase/tree/develop/docs) 目录下，遵循 Markdown 语法，默认为英文，中文以 `.zh-CN.md` 结尾，如：
+The documentation is in the [docs](https://github.com/nocobase/nocobase/tree/develop/docs) directory and follows Markdown syntax, defaults to English and ends with `.zh-CN.md` in Chinese, e.g.
 
 ```bash
 |- /docs/
-  |- index.md # 英文文档
-  |- index.zh-CN.md 中文文档，缺失时，显示为 index.md 的内容
+  |- index.md # English document
+  |- index.zh-CN.md # Chinese document, when it is missing, the content of index.md is displayed
 ```
 
-修改之后，浏览器内打开 http://localhost:8000/ 查看最终效果。
+After modification, open http://localhost:8000/ in your browser to see the final effect.
 
 ## Back-end
 
-后端的大部分修改可以通过 test 命令校验。
+Most of the changes on the back-end can be verified by the test command.
 
 ```bash
 yarn test packages/<name>
 ```
 
-当然，如果是新增的内容，需要编写新的测试。`@nocobase/test` 提供了 `mockDatabase` 和 `mockServer` 用于数据库和服务器的测试，如：
+Of course, if you are adding new content, you will need to write new tests. ``@nocobase/test`` provides ``mockDatabase`` and ``mockServer` for database and server testing, e.g.
 
 ```ts
 import { mockServer, MockServer } from '@nocobase/test';
@@ -163,21 +163,21 @@ describe('mock server', () => {
 
 http://localhost:8000/develop
 
-为了方便开发者本地调试，全栈的演示也是内嵌的 Demo，可以点击左下角新标签页内全屏打开。
+To facilitate local debugging for developers, the full-stack demo is also an embedded demo, which can be opened full-screen by clicking on the new tab in the bottom left corner.
 
 ## Client components
 
-<Alert title="注意">
-组件库还在整理中...
+<Alert title="Note">
+The component library is still being organized...
 </Alert>
 
-各组件是独立的，方便调试和使用。组件列表查看 http://localhost:8000/components
+Each component is independent, easy to debug and use. See the component list at http://localhost:8000/components
 
 ## Provide more examples
 
-<Alert title="注意">
-示例还在整理中...
+<Alert title="Note">
+Examples are still being compiled...
 </Alert>
 
-示例查看 http://localhost:8000/examples
+Examples are available at http://localhost:8000/examples
 

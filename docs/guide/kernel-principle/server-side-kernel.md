@@ -4,18 +4,18 @@ order: 1
 
 # Server-side Kernel
 
-## 微服务 - Microservices
+## Microservices
 
-为了更快的理解 NocoBase，我们先创建一个应用，新建一个 app.js 文件，代码如下：
+To understand NocoBase faster, let's create an application with a new app.js file with the following code.
 
 ```ts
 const { Application } = require('@nocobase/server');
 
 const app = new Application({
-  // 省略配置信息
+  // omit the configuration information
 });
 
-// 配置一张 users 表
+// configure a users table
 app.collection({
   name: 'users',
   fields: [
@@ -24,30 +24,30 @@ app.collection({
   ],
 });
 
-// 解析 argv 参数，终端通过命令行进行不同操作
+// parse argv arguments, terminal does different operations via command line
 app.parse(process.argv);
 ```
 
-终端运行
+The terminal runs
 
 ```bash
-# 根据配置生成数据库表结构
+# Generate database table structure based on configuration
 node app.js db:sync
-# 启动应用
+# Start the application
 node app.js start --port=3000
 ```
 
-相关 users 表的 REST API 就生成了
+The REST API for the relevant users table is generated
 
 ```bash
-GET     http://localhost:3000/api/users
-POST    http://localhost:3000/api/users
-GET     http://localhost:3000/api/users/1
-PUT     http://localhost:3000/api/users/1
-DELETE  http://localhost:3000/api/users/1
+GET http://localhost:3000/api/users
+POST http://localhost:3000/api/users
+GET http://localhost:3000/api/users/1
+PUT http://localhost:3000/api/users/1
+DELETE http://localhost:3000/api/users/1
 ```
 
-以上示例，只用了 10 行左右的代码就创建了真实可用的 REST API 服务。除了内置的 REST API 以外，还可以通过 `app.actions()` 自定义其他操作，如登录、注册、注销等。
+The above example creates a real working REST API service in just about 10 lines of code. In addition to the built-in REST API, you can also customize other actions such as login, registration, logout, etc. via ``app.actions()`.
 
 ```ts
 app.actions({
@@ -55,41 +55,41 @@ app.actions({
   async register(ctx, next) {},
   async logout(ctx, next) {},
 }, {
-  resourceName: 'users', // 属于 users 资源
+  resourceName: 'users', // resource belonging to users
 });
 ```
 
-以上自定义操作的 HTTP API 为：
+The HTTP API for the above custom operation is
 
 ```bash
-POST    http://localhost:3000/api/users:login
-POST    http://localhost:3000/api/users:register
-POST    http://localhost:3000/api/users:logout
+POST http://localhost:3000/api/users:login
+POST http://localhost:3000/api/users:register
+POST http://localhost:3000/api/users:logout
 ```
 
-自定义的 HTTP API 依旧保持 REST API 的风格，以 `<resourceName>:<actionName>` 格式表示。实际上 REST API 也可以显式指定 `actionName`，当指定了 `actionName`，无所谓使用什么请求方法，如：
+The custom HTTP API remains in the style of the REST API, represented in the ``<resourceName>:<actionName>` format. In fact, the REST API can also explicitly specify ``actionName``, and when ``actionName`` is specified, it does not matter what request method is used, e.g.
 
 ```bash
-# 更新操作
-PUT     http://localhost:3000/api/users/1
-# 等同于
-POST    http://localhost:3000/api/users:update/1
+# Update actions
+PUT http://localhost:3000/api/users/1
+# is equivalent to
+POST http://localhost:3000/api/users:update/1
 
-# 删除操作
-DELETE  http://localhost:3000/api/users/1
-# 等同于
-GET     http://localhost:3000/api/users:destroy/1
-# 等同于
-POST    http://localhost:3000/api/users:destroy/1
+# Delete operation
+DELETE http://localhost:3000/api/users/1
+# Equivalent to
+GET http://localhost:3000/api/users:destroy/1
+# Equivalent to
+POST http://localhost:3000/api/users:destroy/1
 ```
 
-NocoBase 的路由（Resourcer）基于资源（Resource）和操作（Action）设计，将 REST 和 RPC 结合起来，提供更为灵活且统一的 Resource Action API。结合客户端 SDK 是这样的：
+NocoBase's Resourcer is designed based on Resource and Action, combining REST and RPC to provide a more flexible and unified Resource Action API. combined with the client SDK it looks like
 
 ```ts
 const { ClientSDK } = require('@nocobase/sdk');
 
 const api = new ClientSDK({
-  // 可以适配不同 request
+  // can be adapted to different requests
   request(params) => Promise.resolve({}),
 });
 
@@ -103,101 +103,101 @@ await api.resource('users').register();
 await api.resource('users').logout();
 ```
 
-## 应用 - Application
+## Application
 
-NocoBase 的 Application 继承了 Koa，集成了 DB 和 CLI，添加了一些必要的 API，这里列一些重点：
+NocoBase's Application inherits Koa, integrates with DB and CLI, adds some essential APIs, here are some highlights.
 
-- `app.db`：数据库实例，每个 app 都有自己的 db。
-    - `db.getCollection()` 数据表/数据集
-      - `collection.repository` 数据仓库
-      - `collection.model` 数据模型
-  - `db.on()` 添加事件监听，由 EventEmitter 提供
-  - `db.emit()` 触发事件，由 EventEmitter 提供
-  - `db.emitAsync()` 触发异步事件
-- `app.cli`，Commander 实例，提供命令行操作
-- `app.context`，上下文
+- `app.db`: database instance, each app has its own db.
+    - `db.getCollection()` data table/dataset
+      - `collection.repository` data warehouse
+      - `collection.model` data model
+  - `db.on()` Add event listener, provided by EventEmitter
+  - ` db.exit()` Triggers an event, provided by EventEmitter
+  - `db.exitAsync()` Triggers an asynchronous event
+- `app.cli`, the Commander instance, provides command-line operations
+- `app.context`, the context
   - `ctx.db`
-  - `ctx.action` 当前资源操作实例
-    - `action.params` 操作参数
-    - `action.mergeParams()` 参数合并方法
-- `app.constructor()` 初始化
-- `app.collection()` 定义数据 Schema，等同于 `app.db.collection()`
-- `app.resource()` 定义资源
-- `app.actions()` 定义资源的操作方法
-- `app.on()` 添加事件监听，由 EventEmitter 提供
-- `app.emit()` 触发事件，由 EventEmitter 提供
-- `app.emitAsync()` 触发异步事件
-- `app.use()` 添加中间件，由 Koa 提供
-- `app.command()` 自定义命令行，等同于 `app.cli.command()`
-- `app.plugin()` 添加插件
-- `app.load()` 载入配置，主要用于载入插件
-- `app.parse()` 解析 argv 参数，写在最后，等同于 `app.cli.parseAsync()`
+  - `ctx.action`, the current resource operation instance
+    - `action.params` operation parameters
+    - `action.mergeParams()` parameter merge method
+- `app.constructor()` initialization
+- `app.collection()` Define data Schema, equivalent to `app.db.collection()`
+- `app.resource()` Define resources
+- `app.actions()` defines the resource's action methods
+- `app.on()` Add event listeners, provided by EventEmitter
+- `app.exit()` Triggers an event, provided by the EventEmitter
+- `app.exitAsync()` Triggers an asynchronous event
+- `app.use()` Add middleware, provided by Koa
+- `app.command()` Custom command line, equivalent to `app.cli.command()`
+- `app.plugin()` Add plugins
+- `app.load()` Load configuration, mainly for loading plugins
+- `app.parse()` parse argv arguments, written at the end, equivalent to `app.cli.parseAsync()`
 
-## 数据集 - Collection
+## Collection
 
-NocoBase 通过 `app.collection()` 方法定义数据的 Schema，Schema 的类型包括：
+NocoBase defines the Schema of the data through the `app.collection()` method, the types of Schema include
 
-属性 Attribute
+Attribute
 
-- Boolean 布尔型
-- String 字符串
-- Text 长文本
-- Integer 整数型
-- Float 浮点型
-- Decimal 货币
-- Json/Jsonb/Array 不同数据库的 JSON 类型不一致，存在兼容性问题
-- Time 时间
-- Date 日期
-- Virtual 虚拟字段
-- Reference 引用
-- Formula 计算公式
-- Context 上下文
-- Password 密码
-- Sort 排序
+- Boolean Boolean
+- String String
+- Text long text
+- Integer integer
+- Float Floating-point
+- Decimal Currency
+- Json/Jsonb/Array Different database JSON types are not the same, there are compatibility problems
+- Time Time
+- Date
+- Virtual Virtual fields
+- Reference
+- Formula Calculation formula
+- Context Context
+- Password Password
+- Sort Sort
 
-关系 Association/Realtion
+Relationships Association/Realtion
 
-- HasOne 一对一
-- HasMany 一对多
-- BelongsTo 多对一
-- BelongsToMany 多对多
-- Polymorphic 多态
+- HasOne One-to-One
+- HasMany One-to-Many
+- BelongsToMany
+- BelongsToMany Many-to-many
+- Polymorphic Polymorphism
 
-比如一个微型博客的表结构可以这样设计：
+For example, the table structure of a micro-blog can be designed like this
 
 ```ts
-// 用户
+// users
 app.collection({
   name: 'users',
   fields: {
     username: { type: 'string', unique: true },
     password: { type: 'password', unique: true },
-    posts:    { type: 'hasMany' },
+    posts: { type: 'hasMany' },
   },
 });
 
-// 文章
+// Articles
 app.collection({
   name: 'posts',
   fields: {
-    title:    'string',
-    content:  'text',
-    tags:     'belongsToMany',
+    title: 'string',
+    content: 'text',
+    tags: 'believesToMany',
     comments: 'hasMany',
-    author:   { type: 'belongsTo', target: 'users' },
+    author: { type: 'belongsTo', target: 'users' }
   },
 });
 
-// 标签
+// Tags
 app.collection({
   name: 'tags',
   fields: [
-    { type: 'string', name: 'name' },
+    { type: 'string', name: 'name' }
     { type: 'belongsToMany', name: 'posts' },
   ],
 });
 
-// 评论
+// Comments
 app.collection({
   name: 'comments',
   fields: [
@@ -207,15 +207,15 @@ app.collection({
 });
 ```
 
-除了通过 `app.collection()` 配置 schema，也可以直接调用 api 插入或修改 schema，collection 的核心 API 有：
+In addition to configuring the schema via `app.collection()`, you can also directly call the api to insert or modify the schema, the core API of collection are
 
-- `collection` 当前 collection 的数据结构
-  - `collection.hasField()` 判断字段是否存在
-  - `collection.addField()` 添加字段配置
-  - `collection.getField()` 获取字段配置
-  - `collection.removeField()` 移除字段配置
-  - `collection.sync()` 与数据库表结构同步
-- `collection.repository` 当前 collection 的数据仓库
+- `collection` The data structure of the current collection
+  - `collection.hasField()` Determine if a field exists
+  - `collection.addField()` Add a field configuration
+  - `collection.getField()` Get the field configuration
+  - `collection.removeField()` Remove a field configuration
+  - `collection.sync()` Synchronize with database table structure
+- `collection.repository` The data repository for the current collection
   - `repository.findMany()`
   - `repository.findOne()`
   - `repository.create()`
@@ -231,9 +231,9 @@ app.collection({
     - `add()`
     - `remove()`
     - `toggle()`
-- `collection.model` 当前 collection 的数据模型
+- `collection.model` The data model of the current collection
 
-Collection 示例：
+Collection example.
 
 ```ts
 const collection = app.db.getCollection('posts');
@@ -242,33 +242,33 @@ collection.hasField('title');
 
 collection.getField('title');
 
-// 添加或更新
+// Add or update
 collection.addField({
   type: 'string',
   name: 'content',
 });
 
-// 移除
+// Remove
 collection.removeField('content');
 
-// 添加、或指定 key path 替换
+// add, or specify a key path to replace
 collection.mergeField({
   name: 'content',
   type: 'string',
 });
 
-除了全局的 `db.sync()`，也有 `collection.sync()` 方法。
+In addition to the global `db.sync()`, there is also the `collection.sync()` method.
 
 await collection.sync();
 ```
 
-`db:sync` 是非常常用的命令行之一，数据库根据 collection 的 schema 生成表结构。更多详情见 CLI 章节。`db:sync` 之后，就可以往表里写入数据了，可以使用 Repository 或 Model 操作。
+`db:sync` is one of the very commonly used command lines to generate a table structure from the collection's schema. See the CLI section for more details. After ``db:sync``, you can write data to the table, either using Repository or Model operations.
 
-- Repository 初步提供了 findAll、findOne、create、update、destroy 核心操作方法。
-- Model 为 Sequelize.Model，详细使用说明可以查看 Sequelize 文档。
-- Model 取决于适配的 ORM，Repository 基于 Model 提供统一的接口。
+- Repository initially provides findAll, findOne, create, update, destroy core operations.
+- Model. See the Sequelize documentation for detailed instructions on how to use it.
+- Model depends on the adapted ORM, Repository provides a unified interface based on Model.
 
-通过 Repository 创建数据
+Creating data via Repository
 
 ```ts
 const User = app.db.getCollection('users');
@@ -319,7 +319,7 @@ await User.repository.destroy({
 });
 ```
 
-通过 Model 创建数据
+Create data from Model
 
 ```ts
 const User = db.getCollection('users');
@@ -329,11 +329,11 @@ const user = await User.model.create({
 });
 ```
 
-## 资源 & 操作 - Resource & Action
+## Resource & Action
 
-Resource 是互联网资源，互联网资源都对应一个地址。客户端请求资源地址，服务器响应请求，在这里「请求」就是一种「操作」，在 REST 里通过判断请求方法（GET/POST/PUT/DELETE）来识别具体的操作，但是请求方法局限性比较大，如上文提到的登录、注册、注销就无法用 REST API 的方式表示。为了解决这类问题，NocoBase 以 `<resourceName>:<actionName>` 格式表示资源的操作。在关系模型的世界里，关系无处不在，基于关系，NocoBase 又延伸了关系资源的概念，对应关系资源的操作的格式为 `<associatedName>.<resourceName>:<actionName>`。
+Resource is an Internet resource, and all Internet resources correspond to an address. In REST, the request method (GET/POST/PUT/DELETE) is used to identify the specific action, but the request method is rather limited, for example, the above mentioned login, registration and logout cannot be represented by REST API. To solve such problems, NocoBase represents resource actions in `<resourceName>:<actionName>` format. In the world of the relational model, relationships are everywhere, and based on relationships, NocoBase extends the concept of relational resources, with actions corresponding to relational resources in the format `<associatedName>. <resourceName>:<actionName>`.
 
-Collection 会自动同步给 Resource，如上文 Collection 章节定义的 Schema，可以提炼的资源有：
+The Collection is automatically synchronized to the Resource, as defined in the Schema in the Collection section above, and the resources that can be refined are
 
 - `users`
 - `users.posts`
@@ -346,50 +346,50 @@ Collection 会自动同步给 Resource，如上文 Collection 章节定义的 Sc
 - `comments`
 - `comments.user`
 
-<Alert title="Collection 和 Resource 的关系与区别" type="warning">
+<Alert title="Relationship and differences between Collection and Resource" type="warning">
 
-- Collection 定义数据的 schema（结构和关系）
-- Resource 定义数据的 action（操作方法）
-- Resource 请求和响应的数据结构由 Collection 定义
-- Collection 默认自动同步给 Resource
-- Resource 的概念更大，除了对接 Collection 以外，也可以对接外部数据或其他自定义
+- Collection defines the schema (structure and relationships) of the data
+- Resource defines the action of the data
+- The data structure of the Resource request and response is defined by the Collection
+- Collection is automatically synchronized to Resource by default
+- The concept of Resource is much larger and can interface to external data or other customizations in addition to the Collection
 
 </Alert>
 
-资源相关 API 有：
+Resource-related APIs are.
 
 - `app.resource()`
 - `app.actions()`
 - `ctx.action`
 
-一个资源可以有多个操作。
+A resource can have multiple actions.
 
 ```ts
-// 数据类
+// Data classes
 app.resource({
   name: 'users',
   actions: {
     async list(ctx, next) {},
     async get(ctx, next) {},
-    async create(ctx, next) {},
+    async create(ctx, next) {}, async create(ctx, next) {},
     async update(ctx, next) {},
-    async destroy(ctx, next) {},
+    async destroy(ctx, next) {}, async destroy(ctx, next) {},
   },
 });
 
-// 非数据类
+// Non-data classes
 app.resource({
   name: 'server',
   actions: {
-    // 获取服务器时间
+    // Get the server time
     getTime(ctx, next) {},
-    // 健康检测
+    // Health check
     healthCheck(ctx, next) {},
   },
 });
 ```
 
-常规操作可以用于不同资源
+General operations can be used for different resources
 
 ```ts
 app.actions({
@@ -399,67 +399,67 @@ app.actions({
   async update(ctx, next) {},
   async destroy(ctx, next) {},
 }, {
-  // 不指定 resourceName 时，全局共享
+  // shared globally if resourceName is not specified
   resourceNames: ['posts', 'comments', 'users'],
 });
 ```
 
-在资源内部定义的 action 不会共享，常规类似增删改查的操作建议设置为全局，`app.resource()` 只设置参数，如：
+The action defined inside the resource will not be shared, regular operations like adding, deleting, changing and checking are recommended to be set as global, `app.resource()` only set parameters, e.g.
 
 ```ts
 app.resource({
   name: 'users',
   actions: {
     list: {
-      fields: ['id', 'username'], // 只输出 id 和 username 字段
+      fields: ['id', 'username'], // output only the id and username fields
       filter: {
-        'username.$ne': 'admin', // 数据范围筛选过滤 username != admin
+        'username.$ne': 'admin', // data range filtering filter username ! = admin
       },
-      sort: ['-created_at'], // 创建时间倒序
+      sort: ['-created_at'], // reverse order of creation time
       perPage: 50,
     },
     get: {
-      fields: ['id', 'username'], // 只输出 id 和 username 字段
+      fields: ['id', 'username'], // output only the id and username fields
       filter: {
-        'username.$ne': 'admin', // 数据范围筛选过滤 username != admin
+        'username.$ne': 'admin', // data range filtering filter username ! = admin
       },
     },
     create: {
-      fields: ['username'], // 白名单
+      fields: ['username'], // whitelist
     },
     update: {
-      fields: ['username'], // 白名单
+      fields: ['username'], // whitelist
     },
     destroy: {
-      filter: { // 不能删除 admin
+      filter: { // cannot delete admin
         'username.$ne': 'admin',
       },
     },
   },
 });
 
-// app 默认已经内置了 list, get, create, update, destroy 操作
+// The app has built-in list, get, create, update, destroy operations by default
 app.actions({
   async list(ctx, next) {},
   async get(ctx, next) {},
-  async create(ctx, next) {},
+  async create(ctx, next) {}, async create(ctx, next) {},
   async update(ctx, next) {},
-  async destroy(ctx, next) {},
+  async destroy(ctx, next) {}, async destroy(ctx, next) {},
 });
 ```
 
-在 Middleware Handler 和 Action Handler 里，都可以通过 `ctx.action` 获取到当前 action 实例，提供了两个非常有用的 API：
+In both the Middleware Handler and the Action Handler, the current action instance is available via `ctx.action`, providing two very useful APIs.
 
-- `ctx.action.params`：获取操作对应的参数
-- `ctx.action.mergeParams()`：处理多来源参数合并
+- ``ctx.action.params``: Get the parameters of the action
+- `ctx.action.mergeParams()`: handles merging of parameters from multiple sources
 
-`ctx.action.params` 有：
+`ctx.action.params` has.
 
-- 定位资源和操作
+- Locate resources and actions
   - `actionName`
   - `resourceName`
   - `associatedName`
-- 定位资源 ID
+- Locate the resource ID
   - `resourceId`
   - `associatedId`
 - request query
@@ -468,11 +468,11 @@ app.actions({
   - `sort`
   - `page`
   - `perPage`
-  - 其他 query 值
+  - Other query values
 - request body
   - `values`
 
-示例：
+Example.
 
 ```ts
 async function (ctx, next) {
@@ -481,26 +481,26 @@ async function (ctx, next) {
 }
 ```
 
-`ctx.action.mergeParams()` 主要用于多来源参数合并，以 `filter` 参数为例。如：客户端请求日期 2021-09-15 创建的文章
+`ctx.action.mergeParams()` is mainly used for merging multi-source parameters, using the `filter` parameter as an example. E.g., client request for articles created on 2021-09-15
 
 ```bash
 GET /api/posts:list?filter={"created_at": "2021-09-15"}
 ```
 
-资源设置锁定只能查看已发布的文章
+Resource settings are locked to view only published posts
 
 ```ts
 app.resource({
   name: 'posts',
   actions: {
     list: {
-      filter: { status: 'publish' }, // 只能查看已发布文章
+      filter: { status: 'publish' }, // Only view published posts
     },
   },
 })
 ```
 
-权限设定，只能查看自己创建的文章
+Permissions to view only articles you have created
 
 ```ts
 app.use(async (ctx, next) => {
@@ -516,46 +516,46 @@ app.use(async (ctx, next) => {
 });
 ```
 
-以上客户端、资源配置、中间件内我们都指定了 filter 参数，三个来源的参数最终会合并在一起作为最终的过滤条件：
+We specify filter parameters within the client, resource configuration, and middleware above, and the parameters from the three sources will eventually be merged together as the final filter condition: `
 
 ```ts
 async function list(ctx, next) {
-  // list 操作中获取到的 filter
+  // The filter obtained in the list operation
   console.log(ctx.params.filter);
-  // filter 是特殊的 and 合并
+  // filter is a special and merge
   // {
-  //   and: [
-  //     { created_at: '2021-09-15' },
-  //     { status: 'publish' },
-  //     { created_by_id: 1, }
-  //   ]
+  // and: [
+  // { created_at: '2021-09-15' }
+  // { status: 'published' },
+  // { created_by_id: 1, }
+  // ]
   // }
 }
 ```
 
-## 事件 - Event
+## Event
 
-在操作执行前、后都放置了相关事件监听器，可以通过 `app.db.on()` 和 `app.on()` 添加。区别在于：
+Event listeners are placed before and after the execution of an action, and can be added via `app.db.on()` and `app.on()`. The difference is that
 
-- `app.db.on()` 添加数据库层面的监听器
-- `app.on()` 添加服务器应用层面的监听器
+- `app.db.on()` adds a database level listener
+- `app.on()` adds a listener at the server application level
 
-以 `users:login` 为例，在数据库里为「查询」操作，在应用里为「登录」操作。也就是说，如果需要记录登录操作日志，要在 `app.on()` 里处理。
+Take `users:login` as an example, it is a `query` operation in the database and a `login` operation in the application. In other words, if you need to log the login operation, you have to handle it in `app.on()`.
 
 ```ts
-// 创建数据时，执行 User.create() 时触发
+// Triggered when User.create() is executed when creating data
 app.db.on('users.beforeCreate', async (model) => {});
 
-// 客户端 `POST /api/users:login` 时触发
+// Triggered when the client `POST /api/users:login`
 app.on('users.beforeLogin', async (ctx, next) => {});
 
-// 客户端 `POST /api/users` 时触发
+// Triggered when the client `POST /api/users`
 app.on('users.beforeCreate', async (ctx, next) => {});
 ```
 
-## 中间件 - Middleware
+## Middleware
 
-Server Application 基于 Koa，所有 Koa 的插件（中间件）都可以直接使用，可以通过 `app.use()` 添加。如：
+Server Application is based on Koa, all Koa plugins (middleware) can be used directly and can be added via `app.use()`. For example
 
 ```ts
 const responseTime = require('koa-response-time');
@@ -566,62 +566,62 @@ app.use(async (ctx, next) => {
 });
 ```
 
-与 `koa.use(middleware)` 略有不同，`app.use(middleware, options)` 多了个 options 参数，可以用于限定 resource 和 action，也可以用于控制中间件的插入位置。
+Slightly different from `koa.use(middleware)`, `app.use(middleware, options)` has an additional options parameter that can be used to qualify the resource and action, as well as to control where the middleware is inserted.
 
 ```ts
 import { middleware } from '@nocobase/server';
 
 app.use(async (ctx, next) => {}, {
   name: 'middlewareName1',
-  resourceNames: [], // 作用于资源内所有 actions
+  resourceNames: [], // acts on all actions within the resource
   actionNames: [
-    'list', // 全部 list action
-    'users:list', // 仅 users 资源的 list action,
+    'list', // all list actions
+    'users:list', // List action for users resource only,
   ],
   insertBefore: '',
   insertAfter: '',
 });
 ```
 
-## 命令行 - CLI
+## CLI
 
-Application 除了可以做 HTTP Server 以外，也是 CLI（内置了 Commander）。目前内置的命令有：
+Application can be a CLI (with built-in Commander) in addition to being an HTTP Server. The current built-in commands are
 
-- `init` 初始化
-- `db:sync --force` 用于配置与数据库表结构同步
-- `start --port` 启动应用
-- `plugin:**` 插件相关
+- `init` initialize
+- `db:sync --force` to configure synchronization with the database table structure
+- `start --port` to start the application
+- `plugin:**` Plugin-related
 
-自定义：
+Customization.
 
 ```ts
 app.command('foo').action(async () => {
-  console.log('foo...');
+  console.log('foo...') ;
 });
 ```
 
-## 插件 - Plugin
+## Plugin
 
-上文，讲述了核心的扩展接口，包括但不局限于：
+Above, the core extension interfaces are described, including but not limited to.
 
 - Database/Collection
-  - `app.db` database 实例
-  - `app.collection()` 等同于 `app.db.collection()`
+  - `app.db` database instance
+  - `app.collection()` is equivalent to `app.db.collection()`
 - Resource/Action
-  - `app.resource()` 等同于 `app.resourcer.define()`
-  - `app.actions()` 等同于 `app.resourcer.registerActions()`
+  - `app.resource()` is the same as `app.resourcer.define()`
+  - `app.actions()` is the same as `app.resourcer.registerActions()`
 - Hook/Event
-  - `app.on()` 添加服务器监听器
-  - `app.db.on()` 添加数据库监听器
+  - `app.on()` Add a server listener
+  - `app.db.on()` Add a database listener
 - Middleware
-  - `app.use()` 添加中间件
+  - `app.use()` Add middleware
 - CLI
-  - `app.cli` commander 实例
-  - `app.command()` 等同于 `app.cli.command()`
+  - `app.cli` commander instance
+  - `app.command()` is equivalent to `app.cli.command()`
 
-基于以上扩展接口，进一步提供了模块化、可插拔的插件，可以通过 `app.plugin()` 添加。插件的流程包括安装、升级、激活、载入、禁用、卸载，不需要的流程可缺失。如：
+Based on the above extension interface, further modular and pluggable plugins are provided, which can be added via `app.plugin()`. The process of plugins includes install, upgrade, activate, load, disable, uninstall, and the unwanted process can be missing. For example.
 
-**最简单的插件**
+**the simplest plugin**
 
 ```ts
 app.plugin(function pluginName1() {
@@ -629,15 +629,15 @@ app.plugin(function pluginName1() {
 });
 ```
 
-这种方式添加的插件会直接载入，无需安装。
+Plugins added in this way will load directly, no installation required.
 
-**JSON 风格**
+**JSON style**
 
 ```ts
 const plugin = app.plugin({
-  enable: false, // 默认为 true，不需要启用时可以禁用。
+  enable: false, // default is true, you can disable it if you don't need to enable it.
   name: 'plugin-name1',
-  displayName: '插件名称',
+  displayName: 'plugin-name',
   version: '1.2.3',
   dependencies: {
     pluginName2: '1.x', 
@@ -650,11 +650,11 @@ const plugin = app.plugin({
   async deactivate() {},
   async unstall() {},
 });
-// 通过 api 激活插件
+// Activate the plugin via the api
 plugin.activate();
 ```
 
-**OOP 风格**
+**OOP style**
 
 ```ts
 class MyPlugin extends Plugin {
@@ -667,10 +667,10 @@ class MyPlugin extends Plugin {
 }
 
 app.plugin(MyPlugin);
-// 或
+// or
 app.plugin({
   name: 'plugin-name1',
-  displayName: '插件名称',
+  displayName: 'plugin-name',
   version: '1.2.3',
   dependencies: {
     pluginName2: '1.x', 
@@ -680,18 +680,18 @@ app.plugin({
 });
 ```
 
-**引用独立的 Package**
+**Reference to a separate Package**
 
 ```ts
 app.plugin('@nocobase/plugin-action-logs');
 ```
 
-插件信息也可以直接写在 `package.json` 里
+Plugin information can also be written directly in `package.json`
 
 ```js
 {
   name: 'pluginName1',
-  displayName: '插件名称',
+  displayName: 'pluginName',
   version: '1.2.3',
   dependencies: {
     pluginName2: '1.x', 
@@ -700,7 +700,7 @@ app.plugin('@nocobase/plugin-action-logs');
 }
 ```
 
-**插件 CLI**
+**Plugins CLI**
 
 ```bash
 plugin:install pluginName1
@@ -709,24 +709,24 @@ plugin:activate pluginName1
 plugin:deactivate pluginName1
 ```
 
-目前已有的插件：
+Currently available plugins.
 
-- @nocobase/plugin-collections 提供数据表配置接口，可通过 HTTP API 管理数据表。
-- @nocobase/plugin-action-logs 操作日志
-- @nocobase/plugin-automations 自动化（未升级 v0.5，暂不能使用）
-- @nocobase/plugin-china-region 中国行政区
-- @nocobase/plugin-client 提供客户端，无代码的可视化配置界面，需要与 @nocobase/client 配合使用
-- @nocobase/plugin-export 导出
-- @nocobase/plugin-file-manager 文件管理器
-- @nocobase/plugin-permissions 角色和权限
-- @nocobase/plugin-system-settings 系统配置
-- @nocobase/plugin-ui-router 前端路由配置
-- @nocobase/plugin-ui-schema ui 配置
-- @nocobase/plugin-users 用户模块
+- @nocobase/plugin-collections provides data table configuration interface to manage data tables via HTTP API.
+- @nocobase/plugin-action-logs Action logs
+- @nocobase/plugin-automations Automation (not upgraded to v0.5, not available yet)
+- @nocobase/plugin-china-region China Administrative Region
+- @nocobase/plugin-client provides a client-side, codeless visual configuration interface that needs to be used in conjunction with @nocobase/client
+- @nocobase/plugin-export exports
+- @nocobase/plugin-file-manager File manager
+- @nocobase/plugin-permissions Roles and permissions
+- @nocobase/plugin-system-settings System configuration
+- @nocobase/plugin-ui-router Front-end routing configuration
+- @nocobase/plugin-ui-schema ui configuration
+- @nocobase/plugin-users user module
 
-## 测试 - Testing
+## Testing
 
-有代码就需要测试，@nocobase/test 提供了 mockDatabase 和 mockServer 用于数据库和服务器的测试，如：
+If you have code, you need to test it. @nocobase/test provides mockDatabase and mockServer for database and server testing, e.g.
 
 ```ts
 import { mockServer, MockServer } from '@nocobase/test';
@@ -765,86 +765,86 @@ describe('mock server', () => {
 });
 ```
 
-## 客户端 - Client
+## Client
 
-为了让更多非开发人员也能参与进来，NocoBase 提供了配套的客户端插件 —— 无代码的可视化配置界面。客户端插件需要与 @nocobase/client 配合使用，可以直接使用，也可以自行改造。
+To allow more non-developers to participate, NocoBase provides a companion client plugin - a visual configuration interface without code. The client plugin needs to be used in conjunction with @nocobase/client and can be used directly or modified by yourself.
 
-插件配置
+Plugin configuration
 
 ```ts
 app.plugin('@nocobase/plugin-client', {
-  // 自定义 dist 路径
-  dist: path.resolve(__dirname, './node_modules/@nocobase/client/app'),
+  // Customize the dist path
+  dist: path.resolve(__dirname, '. /node_modules/@nocobase/client/app'),
 });
 ```
 
-为了满足各类场景需求，客户端 `@nocobase/client` 提供了丰富的基础组件：
+To meet the needs of various scenarios, the client `@nocobase/client` provides a rich set of basic components.
 
-- Action - 操作
-  - Action.Window 当前浏览器窗口/标签里打开
-  - Action.Drawer 打开抽屉（默认右侧划出）
-  - Action.Modal 打开对话框
-  - Action.Dropdown 下拉菜单
-  - Action.Popover 气泡卡片
-  - Action.Group 按钮分组
-  - Action.Bar 操作栏
-- AddNew 「添加」模块
-  - AddNew.CardItem -  添加区块
-  - AddNew.PaneItem - 添加区块（查看面板，与当前查看的数据相关）
-  - AddNew.FormItem -  添加字段
-- BlockItem/CardItem/FormItem - 装饰器
-  - BlockItem - 普通装饰器（无包装效果）
-  - CardItem - 卡片装饰器
-  - FormItem - 字段装饰器
-- Calendar - 日历
-- Cascader - 级联选择
-- Chart - 图表
-- Checkbox - 勾选
-- Checkbox.Group - 多选框
-- Collection - 数据表配置
-- Collection.Field - 数据表字段
-- ColorSelect - 颜色选择器
-- DatePicker - 日期选择器
-- DesignableBar - 配置工具栏
-- Filter - 筛选器
-- Form - 表单
-- Grid - 栅格布局
-- IconPicker - 图标选择器
-- Input - 输入框
-- Input.TextArea - 多行输入框
-- InputNumber - 数字框
-- Kanban - 看板
-- ListPicker - 列表选择器（用于选择、展示关联数据）
-- Markdown 编辑器
-- Menu - 菜单
-- Password - 密码
-- Radio - 单选框
-- Select - 选择器
-- Table - 表格
-- Tabs - 标签页
-- TimePicker - 时间选择器
-- Upload - 上传
+- Action - Action
+  - Window Open in the current browser window/tab
+  - Drawer opens the drawer (default right-hand drawer)
+  - Action.Modal Open dialog box
+  - Dropdown Dropdown menu
+  - Popover Bubble card
+  - Action.Group Grouping of buttons
+  - Action.Bar Action Bar
+- AddNew "Add" module
+  - AddNew.CardItem - add a block
+  - AddNew.PaneItem - add block (view panel, related to currently viewed data)
+  - AddNew.FormItem - add fields
+- BlockItem/CardItem/FormItem - decorators
+  - BlockItem - normal decorator (no wrapping effect)
+  - CardItem - card decorator
+  - FormItem - field decorator
+- Calendar - Calendar
+- Cascader - Cascade selection
+- Chart - Chart
+- Checkbox - Checkboxes
+- Checkbox.Group - Multiple checkboxes
+- Collection - Data Table Configuration
+- Collection.Field - Data table fields
+- ColorSelect - color selector
+- DatePicker - date picker
+- DesignableBar - Configuration Toolbar
+- Filter - filter
+- Form - Form
+- Grid - Grid layout
+- IconPicker - Icon selector
+- Input - input box
+- TextArea - Multi-line input box
+- InputNumber - Number box
+- Kanban - Kanban board
+- ListPicker - list picker (for selecting and displaying associated data)
+- Markdown editor
+- Menu - Menu
+- Password - password
+- Radio - radio box
+- Select - selector
+- Table - Table
+- Tabs - Tabs
+- TimePicker - time picker
+- Upload - Upload
 
-可以自行扩展组件，以上组件基于 Formily 构建，怎么自定义组件大家查看相关组件源码或 Formily 文档，这里说点不一样的。
+You can extend the component by yourself, the above component is built based on Formily, how to customize the component you see the related component source code or Formily documentation, here is something different.
 
-- 如何扩展数据库字段？
-- 如何将第三方区块添加到 AddNew 模块中？
-- 如何在操作栏里添加更多的内置操作？
-- 如何自定义配置工具栏？
+- How to extend the database fields?
+- How to add third party blocks to the AddNew module?
+- How to add more built-in actions to the action bar?
+- How can I customize the configuration toolbar?
 
-除了组件具备灵活的扩展以外，客户端也可以在任意前端框架中使用，可以自定义 Request 和 Router，如：
+In addition to the components having flexible extensions, the client can also be used in any front-end framework to customize Request and Router, e.g.
 
 <pre lang="tsx">
 import React from 'react';
 import { MemoryRouter } from 'react-router-dom';
 import { ClientSDK, Application } from '@nocobase/client';
 
-// 初始化 client 实例
+// Initialize the client instance
 const client = new ClientSDK({
   request: (options) => Promise.resolve({}),
 });
 
-// 适配 Route Component
+// Adapting the Route Component
 const RouteSwitch = createRouteSwitch({
   components: {
     AdminLayout,
@@ -857,19 +857,19 @@ ReactDOM.render(
   <ClientProvider client={client}>
     <MemoryRouter initialEntries={['/admin']}>
       <RouteSwitch routes={[]}/>
-    </MemoryRouter>
+    </MemoryRouter
   </ClientProvider>,
   document.getElementById('root'),
 );
 </pre>
 
-更多细节，可以通过 `create-nocobase-app` 初始化项目脚手架并体验。
+For more details, you can initialize the project scaffolding and experience it via `create-nocobase-app`.
 
 ```bash
 yarn create nocobase-app my-nocobase-project
 ```
 
-nocobase-app 默认使用 umijs 作为项目构建工具，并集成了 Server 作数据接口，初始化的目录结构如下：
+By default, nocobase-app uses umijs as the project builder and integrates Server as the data interface. The initialized directory structure is as follows
 
 ```bash
 |- src
@@ -880,24 +880,24 @@ nocobase-app 默认使用 umijs 作为项目构建工具，并集成了 Server �
 |- package.json
 ```
 
-## 场景 - Cases
+## Cases
 
-小型管理信息系统，具备完整的前后端。
+Small MIS with full front and back ends.
 
 <img src="../../images/MiniMIS.png" style="max-width: 300px; width: 100%;">
 
-API 服务，无客户端，提供纯后端接口。
+API service with no client, providing a pure back-end interface.
 
 <img src="../../images/API.png" style="max-width: 280px; width: 100%;">
 
-小程序 + 后台管理，只需要一套数据库，但有两套用户和权限，一套用于后台用户，一套用于小程序用户。
+Applet + Backend admin, only one set of database, but two sets of users and permissions, one for backend users and one for applet users.
 
 <img src="../../images/MiniProgram.png" style="max-width: 600px; width: 100%;">
 
-SaaS 服务（共享用户），每个应用有自己配套的数据库，各应用数据完全隔离。应用不需要用户和权限模块，SaaS 主站全局共享了。
+SaaS service (shared user), each application has its own supporting database and the data of each application is completely isolated. Applications don't need user and permission modules, SaaS master is shared globally now.
 
 <img src="../../images/SaaS2.png" style="max-width: 450px; width: 100%;">
 
-SaaS 服务（独立用户），每个应用有自己的独立用户模块和权限，应用可以绑定自己的域名。
+SaaS service (independent user), each app has its own independent user module and permissions, and the app can be bound to its own domain.
 
 <img src="../../images/SaaS1.png" style="max-width: 450px; width: 100%;">

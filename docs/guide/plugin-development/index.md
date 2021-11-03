@@ -9,15 +9,15 @@ group:
 
 # What is a Plugin?
 
-插件是按功能划分的可插拔的独立模块。
+Plugins are pluggable, standalone modules divided by function.
 
 ## Why Write Plugins?
 
-NocoBase 提供了丰富的 API 用于应用开发，即使不写插件也是可以实现功能扩展。之所以写成插件，是为了降低耦合，以及更好的复用。做到一处编写，随处使用。当然有些业务联系非常紧密，也没有必要过分的插件化拆分。
+NocoBase provides a rich API for application development and can be extended even without writing plugins. The reason for writing plugins is to reduce coupling and better reuse. To do a place to write, use anywhere. Of course, some business links are very close, there is no need to overly plug-in split.
 
 ## How to Write a Plugin?
 
-例如，添加一个 ratelimit 中间件，可以这样写：
+For example, to add a ratelimit middleware, you can write it like this.
 
 ```ts
 import ratelimit from 'koa-ratelimit';
@@ -44,7 +44,7 @@ app.use(ratelimit({
 }));
 ```
 
-但是这种写法，只能开发处理，不能动态移除。为此，NocoBase 提供了可插拔的 `app.plugin()` 接口，用于实现中间件的添加和移除。改造之后，代码如下：
+But with this kind of writing, it can only be handled by development, not dynamically removed. For this reason, NocoBase provides a pluggable `app.plugin()` interface for adding and removing middleware. After the modification, the code is as follows.
 
 ```ts
 import ratelimit from 'koa-ratelimit';
@@ -90,27 +90,27 @@ app.plugin(RateLimitPlugin, {
 });
 ```
 
-- 将 ratelimit 的参数提炼出来，更进一步可以把参数配置交给插件管理面板
-- 当插件激活时，执行 plugin.enable()，把 ratelimit 添加进来
-- 当插件禁用时，执行 plugin.disable()，把 ratelimit 移除
+- Distilling the parameters of ratelimit goes a step further by giving the parameter configuration to the plugin management panel
+- When the plugin is active, execute plugin.enable() to add ratelimit to it
+- When the plugin is disabled, execute plugin.disable() to remove ratelimit
 
-以上就是插件的核心内容了，任何功能扩展都可以这样处理。只要两步：
+The above is the core content of the plugin, any functional extension can be handled in this way. Just two steps.
 
-- 实现插件的 enable 接口，用于添加功能；
-- 再实现 disable 接口，用于移除功能模块。
+- Implement the enable interface of the plugin for adding functionality.
+- Then implement the disable interface for removing the function module.
 
 ```ts
 class MyPlugin extends Plugin {
   enable() {
-    // 添加的逻辑
+    // Logic for adding
   }
 
   disable() {
-    // 移除的逻辑
+    // Logic to remove
   }
 }
 ```
 
-**不实现 disable 可不可以？**
+**Is it possible not to implement disable? **
 
-disable 接口是为了实现插件的热插拔，应用不需要重启就能实现插件的激活和禁用。如果某个插件不需要被禁用，也可以只实现 enable 接口。
+The disable interface is designed to enable hot-plugging of plugins so that applications can activate and disable plugins without rebooting. If a plugin does not need to be disabled, you can also just implement the enable interface.
