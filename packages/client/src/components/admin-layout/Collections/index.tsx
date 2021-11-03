@@ -333,7 +333,8 @@ const collectionSchema: ISchema = {
 function FieldConfigTitle() {
   const ctx = useContext(TableRowContext);
   const { t } = useTranslation();
-  return <>{t('Configure fields of {{title}}', { title: ctx.record.title })}</>;
+  const compile = useCompile();
+  return <>{t('Configure fields of {{title}}', { title: compile(ctx.record.title) })}</>;
 }
 
 function useCollectionResource({ onSuccess }) {

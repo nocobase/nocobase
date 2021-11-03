@@ -125,7 +125,7 @@ const FormMain = (props: any) => {
               const values = await form.submit();
               console.log({ values });
               await resource.save(values);
-              message.success('保存成功');
+              message.success(t('Saved successfully'));
               await form.reset();
             }}
             type={'primary'}

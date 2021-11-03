@@ -72,6 +72,7 @@ import SwitchMenuItem from '../../components/SwitchMenuItem';
 import { BlockSchemaContext } from '../../context';
 import { useTranslation } from 'react-i18next';
 import { i18n } from '../../i18n';
+import { useCompile } from '../../hooks/useCompile';
 
 const generateGridBlock = (schema: ISchema) => {
   const name = schema.name || uid();
@@ -215,7 +216,7 @@ function generateCardItemSchema(component) {
         },
         [uid()]: {
           type: 'void',
-          title: '操作',
+          title: '{{t("Operation")}}',
           'x-component': 'Table.Column',
           'x-component-props': {},
           'x-designable-bar': 'Table.Operation.DesignableBar',
@@ -483,7 +484,7 @@ function generateCardItemSchema(component) {
             },
             title: {
               type: 'void',
-              title: "{{t('title')}}",
+              title: "{{t('Title')}}",
               'x-designable-bar': 'Calendar.ActionDesignableBar',
               'x-component': 'Calendar.Title',
               'x-align': 'left',
@@ -494,7 +495,7 @@ function generateCardItemSchema(component) {
             },
             viewSelect: {
               type: 'void',
-              title: "{{t('Select a view')}}",
+              title: "{{t('Select view')}}",
               'x-designable-bar': 'Calendar.ActionDesignableBar',
               'x-component': 'Calendar.ViewSelect',
               'x-align': 'right',
@@ -951,6 +952,7 @@ AddNew.CardItem = observer((props: any) => {
   const { collections = [], loading, refresh } = useCollectionsContext();
   const { createSchema } = useClient();
   const { t } = useTranslation();
+  const compile = useCompile();
   return (
     <Dropdown
       trigger={['hover']}
@@ -1054,7 +1056,7 @@ AddNew.CardItem = observer((props: any) => {
                       style={{ minWidth: 150 }}
                       key={`collection.${item.name}.${view.key}`}
                     >
-                      {item.title}
+                      {compile(item.title)}
                     </Menu.Item>
                   ))}
                 </Menu.ItemGroup>
@@ -1182,7 +1184,7 @@ AddNew.CardItem = observer((props: any) => {
                         }
                       }}
                     >
-                      {item.title}
+                      {compile(item.title)}
                     </Menu.Item>
                   ))}
                 </Menu.ItemGroup>
@@ -1215,7 +1217,7 @@ AddNew.CardItem = observer((props: any) => {
                     <Menu.SubMenu
                       // style={{ minWidth: 150 }}
                       key={`collection.${item.name}.${view.key}`}
-                      title={item.title}
+                      title={compile(item.title)}
                     >
                       <Menu.ItemGroup title={t('Select a group field')}>
                         {item?.generalFields
@@ -1267,7 +1269,7 @@ AddNew.CardItem = observer((props: any) => {
                                   }
                                 }}
                               >
-                                {field?.uiSchema?.title}
+                                {compile(field?.uiSchema?.title)}
                               </Menu.Item>
                             );
                           })}
@@ -1334,7 +1336,7 @@ AddNew.CardItem = observer((props: any) => {
             </Menu.Item>
           </Menu.ItemGroup>
           <Menu.Divider />
-          <Menu.SubMenu key={'Ref'} icon={<LinkOutlined />} title={'Templates'}>
+          <Menu.SubMenu key={'Ref'} icon={<LinkOutlined />} title={t('Templates')}>
             <Menu.ItemGroup key={'form-select'} title={t('Select a template')}>
               <Menu.Item key={'Ref.ActionLogs'}>{t('Action logs')}</Menu.Item>
             </Menu.ItemGroup>
@@ -1797,7 +1799,7 @@ AddNew.PaneItem = observer((props: any) => {
               {t('Form')}
             </Menu.Item>
           </Menu.ItemGroup>
-          <Menu.ItemGroup title={t('Association blocks')}>
+          <Menu.ItemGroup title={t('Relationship blocks')}>
             <Menu.Item
               style={{ minWidth: 150 }}
               icon={<IconPicker type={'HistoryOutlined'} />}

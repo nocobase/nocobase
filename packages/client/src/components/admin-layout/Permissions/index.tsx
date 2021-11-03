@@ -167,7 +167,7 @@ const collectionSchema: ISchema = {
   properties: {
     column1: {
       type: 'void',
-      title: '数据表名称',
+      title: '{{t("Collection display name")}}',
       'x-component': 'Table.Column',
       properties: {
         title: {
@@ -179,7 +179,7 @@ const collectionSchema: ISchema = {
     },
     column2: {
       type: 'void',
-      title: '数据表标识',
+      title: '{{t("Collection name")}}',
       'x-component': 'Table.Column',
       properties: {
         name: {
@@ -191,7 +191,7 @@ const collectionSchema: ISchema = {
     },
     column3: {
       type: 'void',
-      title: '操作',
+      title: '{{t("Operation")}}',
       'x-component': 'Table.Column',
       'x-component-props': {
         width: 60,
@@ -206,7 +206,7 @@ const collectionSchema: ISchema = {
           properties: {
             [uid()]: {
               type: 'void',
-              title: '配置',
+              title: '{{t("Configure")}}',
               'x-component': 'Action',
               'x-component-props': {
                 type: 'link',
@@ -215,7 +215,7 @@ const collectionSchema: ISchema = {
               properties: {
                 [uid()]: {
                   type: 'void',
-                  title: '数据表操作权限',
+                  title: '{{t("Collection action permissions")}}',
                   'x-component': 'Action.Drawer',
                   'x-decorator': 'Form',
                   'x-decorator-props': {
@@ -260,7 +260,7 @@ export const Permissions = () => {
     properties: {
       modal1: {
         type: 'void',
-        title: '角色',
+        title: '{{t("Roles")}}',
         'x-component': 'Action.Drawer',
         properties: {
           table: {
@@ -287,7 +287,7 @@ export const Permissions = () => {
                   [uid()]: {
                     type: 'void',
                     name: 'action1',
-                    title: 'Delete',
+                    title: '{{t("Delete")}}',
                     'x-align': 'right',
                     'x-decorator': 'AddNew.Displayed',
                     'x-decorator-props': {
@@ -297,15 +297,15 @@ export const Permissions = () => {
                     'x-component-props': {
                       icon: 'DeleteOutlined',
                       confirm: {
-                        title: 'Delete Data',
-                        content: '删除后无法恢复，确定要删除吗？',
+                        title: '{{t("Delete record")}}',
+                        content: '{{t("Are you sure you want to delete it?")}}',
                       },
                       useAction: '{{ Table.useTableDestroyAction }}',
                     },
                   },
                   [uid()]: {
                     type: 'void',
-                    title: '添加',
+                    title: '{{t("Add new")}}',
                     'x-align': 'right',
                     'x-decorator': 'AddNew.Displayed',
                     'x-decorator-props': {
@@ -319,7 +319,7 @@ export const Permissions = () => {
                     properties: {
                       modal: {
                         type: 'void',
-                        title: '添加数据',
+                        title: '{{t("Add new role")}}',
                         'x-decorator': 'Form',
                         'x-component': 'Action.Drawer',
                         'x-component-props': {
@@ -328,7 +328,7 @@ export const Permissions = () => {
                         properties: {
                           title: {
                             type: 'string',
-                            title: '角色名称',
+                            title: '{{t("Role name")}}',
                             'x-component': 'Input',
                             'x-decorator': 'FormilyFormItem',
                           },
@@ -346,7 +346,7 @@ export const Permissions = () => {
               },
               column1: {
                 type: 'void',
-                title: '角色名称',
+                title: '{{t("Role name")}}',
                 'x-component': 'Table.Column',
                 properties: {
                   title: {
@@ -370,7 +370,7 @@ export const Permissions = () => {
               // },
               [uid()]: {
                 type: 'void',
-                title: '操作',
+                title: '{{t("Operation")}}',
                 'x-component': 'Table.Column',
                 'x-component-props': {
                   width: 160,
@@ -385,7 +385,7 @@ export const Permissions = () => {
                     properties: {
                       [uid()]: {
                         type: 'void',
-                        title: '配置',
+                        title: '{{t("Configure")}}',
                         'x-component': 'Action',
                         'x-component-props': {
                           type: 'link',
@@ -394,7 +394,7 @@ export const Permissions = () => {
                         properties: {
                           [uid()]: {
                             type: 'void',
-                            title: '配置权限',
+                            title: '{{t("Configure permissions")}}',
                             'x-decorator': 'RoleProvider',
                             'x-component': 'Action.Drawer',
                             'x-component-props': {
@@ -410,7 +410,7 @@ export const Permissions = () => {
                                 properties: {
                                   [uid()]: {
                                     type: 'void',
-                                    title: '数据表操作权限',
+                                    title: '{{t("Collection action permissions")}}',
                                     'x-component': 'Tabs.TabPane',
                                     'x-component-props': {},
                                     properties: {
@@ -419,7 +419,7 @@ export const Permissions = () => {
                                   },
                                   [uid()]: {
                                     type: 'void',
-                                    title: '菜单访问权限',
+                                    title: '{{t("Menu access permissions")}}',
                                     'x-component': 'Tabs.TabPane',
                                     'x-component-props': {},
                                     properties: {
@@ -434,7 +434,7 @@ export const Permissions = () => {
                       },
                       [uid()]: {
                         type: 'void',
-                        title: '编辑',
+                        title: '{{t("Edit")}}',
                         'x-component': 'Action',
                         'x-component-props': {
                           type: 'link',
@@ -443,7 +443,7 @@ export const Permissions = () => {
                         properties: {
                           [uid()]: {
                             type: 'void',
-                            title: '编辑角色',
+                            title: '{{t("Edit role")}}',
                             'x-decorator': 'Form',
                             'x-decorator-props': {
                               useResource: useDetailsResource,
@@ -455,7 +455,7 @@ export const Permissions = () => {
                             properties: {
                               title: {
                                 type: 'string',
-                                title: '角色名称',
+                                title: '{{t("Role name")}}',
                                 'x-component': 'Input',
                                 'x-decorator': 'FormilyFormItem',
                               },
@@ -465,15 +465,15 @@ export const Permissions = () => {
                       },
                       [uid()]: {
                         type: 'void',
-                        title: '删除',
+                        title: '{{t("Delete")}}',
                         'x-component': 'Action',
                         'x-designable-bar': 'Table.Action.DesignableBar',
                         'x-action-type': 'destroy',
                         'x-component-props': {
                           type: 'link',
                           confirm: {
-                            title: '删除数据',
-                            content: '删除后无法恢复，确定要删除吗？',
+                            title: '{{t("Delete record")}}',
+                            content: "{{t('Are you sure you want to delete it?')}}",
                           },
                           useAction: '{{ Table.useTableDestroyAction }}',
                         },

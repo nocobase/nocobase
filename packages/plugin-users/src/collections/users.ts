@@ -2,7 +2,7 @@ import { TableOptions } from '@nocobase/database';
 
 export default {
   name: 'users',
-  title: '用户',
+  title: '{{t("Users")}}',
   sortable: 'sort',
   // developerMode: true,
   // internal: true,
@@ -24,7 +24,7 @@ export default {
       name: 'nickname',
       uiSchema: {
         type: 'string',
-        title: '昵称',
+        title: '{{t("Nickname")}}',
         'x-component': 'Input',
       },
     },
@@ -36,7 +36,7 @@ export default {
       privilege: 'undelete',
       uiSchema: {
         type: 'string',
-        title: '邮箱',
+        title: '{{t("Email")}}',
         'x-component': 'Input',
         require: true,
       },
@@ -48,7 +48,7 @@ export default {
       privilege: 'undelete',
       uiSchema: {
         type: 'string',
-        title: '密码',
+        title: '{{t("Password")}}',
         'x-component': 'Password',
       },
     },

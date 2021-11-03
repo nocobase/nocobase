@@ -152,14 +152,14 @@ Markdown.Void.DesignableBar = observer((props) => {
                     setVisible(false);
                   }}
                 >
-                  {t('Edit Markdown')}
+                  {t('Edit markdown')}
                 </Menu.Item>
                 <Menu.Divider />
                 <Menu.Item
                   key={'delete'}
                   onClick={async () => {
                     Modal.confirm({
-                      title: t('Delete Block'),
+                      title: t('Delete block'),
                       content: t('Are you sure you want to delete it?'),
                       onOk: async () => {
                         const removed = deepRemove();

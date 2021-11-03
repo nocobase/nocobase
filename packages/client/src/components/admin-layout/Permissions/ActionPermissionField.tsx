@@ -17,13 +17,15 @@ import { createContext } from 'react';
 import { RoleContext } from '.';
 import Checkbox from 'antd/lib/checkbox/Checkbox';
 import { useState } from 'react';
+import { useCompile } from '../../../hooks/useCompile';
+import { useTranslation } from 'react-i18next';
 
 const actionTypeMap = new Map(
   Object.entries({
-    create: '添加',
-    get: '查看',
-    update: '编辑',
-    destroy: '删除',
+    create: '{{t("Create")}}',
+    get: '{{t("View")}}',
+    update: '{{t("Update")}}',
+    destroy: '{{t("Delete")}}',
   }),
 );
 
@@ -44,6 +46,8 @@ const useActionDataSource = () => {
 };
 
 const useFieldPermissions = () => {
+  const { t } = useTranslation();
+  const compile = useCompile();
   const role = useContext(RoleContext);
   const ctx = useContext(TableRowContext);
   const field = useField<Formily.Core.Models.ArrayField>();
@@ -163,7 +167,7 @@ const useFieldPermissions = () => {
             }
           }}
         />{' '}
-        {actionTypeMap.get(actionName)}
+        {compile(actionTypeMap.get(actionName))}
       </div>
     );
   };
@@ -173,13 +177,16 @@ const useFieldPermissions = () => {
     render: (value, record) => renderCell(actionName, value, record),
   }));
   columns.unshift({
-    title: '字段名称',
+    title: t('Field display name'),
     dataIndex: ['field', 'uiSchema', 'title'],
+    render: (v) => compile(v),
   });
   return { columns, dataSource, service };
 };
 
 export const ActionPermissionField = observer((props) => {
+  const { t } = useTranslation();
+  const compile = useCompile();
   const role = useContext(RoleContext);
   const ctx = useContext(TableRowContext);
   const field = useField<Formily.Core.Models.ArrayField>();
@@ -193,22 +200,22 @@ export const ActionPermissionField = observer((props) => {
         pagination={false}
         columns={[
           {
-            title: '操作',
+            title: t('Action name'),
             dataIndex: 'actionName',
-            render: (value) => <span>{actionTypeMap.get(value)}</span>,
+            render: (value) => <span>{compile(actionTypeMap.get(value))}</span>,
           },
           {
-            title: '类型',
+            title: t('Action type'),
             dataIndex: 'actionName',
             render: (value) =>
               value === 'create' ? (
-                <Tag>对新数据操作</Tag>
+                <Tag color={'green'}>{t('Operate on new data')}</Tag>
               ) : (
-                <Tag>对已有数据操作</Tag>
+                <Tag color={'blue'}>{t('Operate on existing data')}</Tag>
               ),
           },
           {
-            title: '允许操作',
+            title: t('Allow operation'),
             dataIndex: 'enable',
             render: (value, record) => (
               <Checkbox
@@ -242,7 +249,7 @@ export const ActionPermissionField = observer((props) => {
             ),
           },
           {
-            title: '可操作的数据范围',
+            title: t('Operable data scope'),
             dataIndex: ['scope', 'title'],
             render: (value) => (
               <Select style={{ minWidth: 150 }} size={'small'}></Select>

@@ -47,7 +47,7 @@ import { createPortal } from 'react-dom';
 import { ActionBar } from './ActionBar';
 import { DragHandle, SortableItem } from '../../components/Sortable';
 import { useDisplayedMapContext } from '../../constate';
-import { useTranslation } from 'react-i18next';
+import { Trans, useTranslation } from 'react-i18next';
 import { useCompile } from '../../hooks/useCompile';
 
 export const ButtonComponentContext = createContext(null);
@@ -117,14 +117,16 @@ export const Action: any = observer((props: any) => {
 
 Action.Link = observer((props: any) => {
   const { schema } = useDesignable();
-  return <Link {...props}>{schema.title}</Link>;
+  const compile = useCompile();
+  return <Link {...props}>{compile(schema.title)}</Link>;
 });
 
 Action.URL = observer((props: any) => {
   const { schema } = useDesignable();
+  const compile = useCompile();
   return (
     <a target={'_blank'} {...props}>
-      {schema.title}
+      {compile(schema.title)}
     </a>
   );
 });
@@ -246,7 +248,7 @@ Action.Modal = observer((props: any) => {
                   }
                 }}
               >
-                {t('OK')}
+                {t('Submit')}
               </Button>,
             ]
           : null
@@ -321,7 +323,7 @@ Action.Drawer = observer((props: any) => {
                   }}
                   type={'primary'}
                 >
-                  {t('OK')}
+                  {t('Submit')}
                 </Button>
               </Space>
             )
@@ -440,7 +442,7 @@ Action.Popover = observer((props) => {
                     setVisible(false);
                   }}
                 >
-                  {t('OK')}
+                  {t('Submit')}
                 </Button>
               </Space>
             </div>
@@ -523,29 +525,30 @@ Action.DesignableBar = (props: any) => {
                 </Menu.Item>
                 {isPopup && (
                   <Menu.Item>
-                    在{' '}
-                    <Select
-                      bordered={false}
-                      size={'small'}
-                      defaultValue={'Action.Modal'}
-                      onChange={(value) => {
-                        const s = Object.values(schema.properties).shift();
-                        s['x-component'] = value;
-                        refresh();
-                        updateSchema(s);
-                      }}
-                    >
-                      <Select.Option value={'Action.Modal'}>
-                        {t('Modal')}
-                      </Select.Option>
-                      <Select.Option value={'Action.Drawer'}>
-                        {t('Drawer')}
-                      </Select.Option>
-                      <Select.Option value={'Action.Window'}>
-                        {t('Window')}
-                      </Select.Option>
-                    </Select>{' '}
-                    内打开
+                    <Trans>
+                      Open in
+                      <Select
+                        bordered={false}
+                        size={'small'}
+                        defaultValue={'Action.Modal'}
+                        onChange={(value) => {
+                          const s = Object.values(schema.properties).shift();
+                          s['x-component'] = value;
+                          refresh();
+                          updateSchema(s);
+                        }}
+                      >
+                        <Select.Option value={'Action.Modal'}>
+                          Modal
+                        </Select.Option>
+                        <Select.Option value={'Action.Drawer'}>
+                          Drawer
+                        </Select.Option>
+                        <Select.Option value={'Action.Window'}>
+                          Window
+                        </Select.Option>
+                      </Select>
+                    </Trans>
                   </Menu.Item>
                 )}
                 <Menu.Divider />

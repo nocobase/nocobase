@@ -44,9 +44,11 @@ import { set } from 'lodash';
 import { DragHandle } from '../../components/Sortable';
 import { DeleteOutlined, FilterOutlined } from '@ant-design/icons';
 import { useTranslation } from 'react-i18next';
+import { useCompile } from '../../hooks/useCompile';
 
 export const DesignableBar = observer((props) => {
   const { t } = useTranslation();
+  const compile = useCompile();
   const field = useField();
   const { designable, schema, refresh, deepRemove } = useDesignable();
   const [visible, setVisible] = useState(false);
@@ -59,7 +61,7 @@ export const DesignableBar = observer((props) => {
   return (
     <div className={cls('designable-bar', { active: visible })}>
       <div className={'designable-info'}>
-        {collection?.title || collection?.name}
+        {compile(collection?.title || collection?.name)}
       </div>
       <span
         onClick={(e) => {
@@ -103,7 +105,7 @@ export const DesignableBar = observer((props) => {
                       }}
                       options={fields?.map((field) => {
                         return {
-                          label: field?.uiSchema.title,
+                          label: compile(field?.uiSchema.title),
                           value: field?.name,
                         };
                       })}
@@ -137,7 +139,7 @@ export const DesignableBar = observer((props) => {
                         ?.filter((field) => field.dataType === 'date')
                         ?.map((field) => {
                           return {
-                            label: field?.uiSchema.title,
+                            label: compile(field?.uiSchema.title),
                             value: field?.name,
                           };
                         })}
@@ -170,7 +172,7 @@ export const DesignableBar = observer((props) => {
                         ?.filter((field) => field.dataType === 'date')
                         ?.map((field) => {
                           return {
-                            label: field?.uiSchema.title,
+                            label: compile(field?.uiSchema.title),
                             value: field?.name,
                           };
                         })}

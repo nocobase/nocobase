@@ -235,7 +235,7 @@ function AddActionButton() {
         type={'dashed'}
         icon={<PlusOutlined />}
       >
-        {t('Configure action')}
+        {t('Configure actions')}
       </Button>
     </Dropdown>
   );

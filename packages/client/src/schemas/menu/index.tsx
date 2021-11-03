@@ -723,9 +723,9 @@ Menu.DesignableBar = (props) => {
                     return;
                   }
                   const methodLabels = {
-                    insertBefore: '之前',
-                    insertAfter: '之后',
-                    appendChild: '里',
+                    insertBefore: 'before',
+                    insertAfter: 'after',
+                    appendChild: 'in',
                   };
                   const keys = info.key.split('.');
                   const method = keys.shift();
@@ -735,7 +735,8 @@ Menu.DesignableBar = (props) => {
                     return;
                   }
                   const values = await FormDialog(
-                    `在「${schema.title}」${methodLabels[method]}插入${config.title}`,
+                    t(`Add {{type}} ${methodLabels[method]} "{{title}}"`, { type: (config.title as string).toLowerCase(), title: schema.title }),
+                    // `在「${schema.title}」${methodLabels[method]}插入${config.title}`,
                     () => {
                       return (
                         <FormLayout layout={'vertical'}>
@@ -830,7 +831,7 @@ Menu.DesignableBar = (props) => {
                     const dataSource = toTreeData(menuSchema);
 
                     const values = await FormDialog(
-                      t(`Move {{ title }} to`, { title: schema.title }),
+                      t(`Move {{title}} to`, { title: schema.title }),
                       () => {
                         return (
                           <FormLayout layout={'vertical'}>
@@ -842,6 +843,7 @@ Menu.DesignableBar = (props) => {
                                     type: 'string',
                                     title: t('Target position'),
                                     enum: dataSource,
+                                    required: true,
                                     'x-decorator': 'FormItem',
                                     'x-component': 'TreeSelect',
                                   },

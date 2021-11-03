@@ -7,6 +7,7 @@ import { useContext } from 'react';
 import { RoleContext } from '.';
 import { useState } from 'react';
 import { useResourceRequest } from '../../../constate';
+import { useTranslation } from 'react-i18next';
 
 const getKeys = (items: any[]) => {
   const keys = [];
@@ -19,6 +20,7 @@ const getKeys = (items: any[]) => {
 };
 
 export const MenuPermissionTable = observer((props) => {
+  const { t } = useTranslation();
   const role = useContext(RoleContext);
   const [allUiSchemaKyes, setAllUiSchemaKyes] = useState([]);
   const [uiSchemaKyes, setUiSchemaKeys] = useState([]);
@@ -58,7 +60,7 @@ export const MenuPermissionTable = observer((props) => {
         }}
         columns={[
           {
-            title: '菜单名称',
+            title: t('Menu item name'),
             dataIndex: 'title',
           },
           {
@@ -83,7 +85,7 @@ export const MenuPermissionTable = observer((props) => {
                     }
                   }}
                 />{' '}
-                允许访问
+                {t('Allow access')}
               </div>
             ),
             dataIndex: 'key',

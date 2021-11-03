@@ -7,6 +7,7 @@ import { useForm } from '@formily/react';
 import { useHistory, useLocation } from 'react-router-dom';
 import { useSystemSettings } from '../admin-layout/SiteTitle';
 import { useClient } from '../../constate';
+import { useCompile } from '../../hooks/useCompile';
 
 function Div(props) {
   return <div {...props}></div>;
@@ -60,6 +61,7 @@ export function RouteSchemaRenderer({ route }) {
       formatResult: (result) => result?.data,
     },
   );
+  const compile = useCompile();
   const { title } = useSystemSettings();
   if (loading) {
     return <Spin size={'large'} className={'nb-spin-center'} />;
@@ -67,7 +69,7 @@ export function RouteSchemaRenderer({ route }) {
   return (
     <div>
       <Helmet>
-        <title>{title ? `${data.title} - ${title}` : data.title}</title>
+        <title>{title ? `${compile(data.title)} - ${title}` : compile(data.title)}</title>
       </Helmet>
       <SchemaRenderer
         components={{ Div }}

@@ -1514,7 +1514,7 @@ Table.Filter = observer((props: any) => {
       }
     >
       <Button icon={<IconPicker type={icon} />}>
-        {count > 0 ? `${count} 个筛选项` : compile(schema.title)}
+        {count > 0 ? t('{{count}} filter items', { count }) : compile(schema.title)}
         <DesignableBar />
       </Button>
     </Popover>
@@ -2245,6 +2245,7 @@ Table.SortHandle = observer((props: any) => {
 
 Table.DesignableBar = observer((props) => {
   const { t } = useTranslation();
+  const compile = useCompile();
   const field = useField();
   const { schema, refresh, deepRemove } = useDesignable();
   const [visible, setVisible] = useState(false);
@@ -2258,7 +2259,7 @@ Table.DesignableBar = observer((props) => {
   return (
     <div className={cls('designable-bar', { active: visible })}>
       <div className={'designable-info'}>
-        {collection?.title || collection?.name}
+        {compile(collection?.title || collection?.name)}
       </div>
       <span
         onClick={(e) => {
@@ -2308,7 +2309,8 @@ Table.DesignableBar = observer((props) => {
                   }}
                 >
                   <div className={'nb-space-between'}>
-                    {t('Enable drag and drop sorting')}{' '}
+                    {t('Enable drag and drop sorting')}
+                    &nbsp;&nbsp;
                     <Switch
                       size={'small'}
                       checked={field.componentProps.dragSort}
@@ -2473,29 +2475,36 @@ Table.DesignableBar = observer((props) => {
                   {t('Set the data scope')}
                 </Menu.Item>
                 <Menu.Item key={'defaultPageSize'}>
-                  每页默认显示{' '}
-                  <Select
-                    bordered={false}
-                    size={'small'}
-                    onChange={(value) => {
-                      const componentProps = schema['x-component-props'] || {};
-                      set(componentProps, 'pagination.defaultPageSize', value);
-                      set(componentProps, 'pagination.pageSize', value);
-                      schema['x-component-props'] = componentProps;
-                      field.componentProps.pagination.pageSize = value;
-                      field.componentProps.pagination.defaultPageSize = value;
-                      refresh();
-                      updateSchema(schema);
-                      setVisible(false);
-                    }}
-                    defaultValue={defaultPageSize}
-                  >
-                    <Select.Option value={10}>10</Select.Option>
-                    <Select.Option value={20}>20</Select.Option>
-                    <Select.Option value={50}>50</Select.Option>
-                    <Select.Option value={100}>100</Select.Option>
-                  </Select>{' '}
-                  条
+                  <Trans>
+                    {'Display '}
+                    <Select
+                      bordered={false}
+                      size={'small'}
+                      onChange={(value) => {
+                        const componentProps =
+                          schema['x-component-props'] || {};
+                        set(
+                          componentProps,
+                          'pagination.defaultPageSize',
+                          value,
+                        );
+                        set(componentProps, 'pagination.pageSize', value);
+                        schema['x-component-props'] = componentProps;
+                        field.componentProps.pagination.pageSize = value;
+                        field.componentProps.pagination.defaultPageSize = value;
+                        refresh();
+                        updateSchema(schema);
+                        setVisible(false);
+                      }}
+                      defaultValue={defaultPageSize}
+                    >
+                      <Select.Option value={10}>10</Select.Option>
+                      <Select.Option value={20}>20</Select.Option>
+                      <Select.Option value={50}>50</Select.Option>
+                      <Select.Option value={100}>100</Select.Option>
+                    </Select>
+                    {' items per page'}
+                  </Trans>
                 </Menu.Item>
                 <Menu.Divider />
                 <Menu.Item

@@ -1,7 +1,7 @@
 export const login = {
   key: 'dtf9j0b8p9u',
   type: 'object',
-  title: '登录',
+  title: '{{t("Login")}}',
   properties: {
     email: {
       type: 'string',
@@ -9,7 +9,7 @@ export const login = {
       'x-decorator': 'FormItem',
       'x-component': 'Input',
       'x-component-props': {
-        placeholder: '电子邮箱',
+        placeholder: '{{t("Email")}}',
         style: {
           // width: 240,
         },
@@ -21,7 +21,7 @@ export const login = {
       'x-decorator': 'FormItem',
       'x-component': 'Password',
       'x-component-props': {
-        placeholder: '密码',
+        placeholder: '{{t("Password")}}',
         style: {
           // width: 240,
         },
@@ -42,7 +42,7 @@ export const login = {
               width: '100%',
             },
           },
-          title: '登录',
+          title: '{{t("Login")}}',
         },
       },
     },
@@ -56,7 +56,7 @@ export const login = {
           'x-component-props': {
             to: '/register',
           },
-          title: '注册账号',
+          title: '{{t("Register an account")}}',
         },
       },
     },

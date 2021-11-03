@@ -31,6 +31,7 @@ import { useTable } from '../table';
 import { BlockSchemaContext } from '../../context';
 import { DragHandle } from '../../components/Sortable';
 import { useTranslation } from 'react-i18next';
+import { useCompile } from '../../hooks/useCompile';
 
 export const DesignableBar = observer((props) => {
   const field = useField();
@@ -42,11 +43,12 @@ export const DesignableBar = observer((props) => {
   const collectionName = blockSchema['x-component-props']?.collectionName;
   const { collection } = useCollection({ collectionName });
   const { t } = useTranslation();
+  const compile = useCompile();
   return (
     <div className={cls('designable-bar', { active: visible })}>
       {collection && (
         <div className={'designable-info'}>
-          {collection?.title || collection?.name}
+          {compile(collection?.title || collection?.name)}
         </div>
       )}
       <span

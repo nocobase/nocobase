@@ -1,7 +1,7 @@
 export const register = {
   key: '46qlxqam3xk',
   type: 'object',
-  title: '注册',
+  title: '{{t("Register")}}',
   properties: {
     email: {
       type: 'string',
@@ -9,7 +9,7 @@ export const register = {
       'x-decorator': 'FormItem',
       'x-component': 'Input',
       'x-component-props': {
-        placeholder: '电子邮箱',
+        placeholder: '{{t("Email")}}',
         style: {
           // width: 240,
         },
@@ -21,7 +21,7 @@ export const register = {
       'x-decorator': 'FormItem',
       'x-component': 'Password',
       'x-component-props': {
-        placeholder: '密码',
+        placeholder: '{{t("Password")}}',
         checkStrength: true,
         style: {
           // width: 240,
@@ -33,7 +33,7 @@ export const register = {
           fulfill: {
             state: {
               errors:
-                '{{$deps[0] && $self.value && $self.value !== $deps[0] ? "确认密码不匹配" : ""}}',
+                '{{$deps[0] && $self.value && $self.value !== $deps[0] ? t("Confirm password does not match") : ""}}',
             },
           },
         },
@@ -45,7 +45,7 @@ export const register = {
       'x-decorator': 'FormItem',
       'x-component': 'Password',
       'x-component-props': {
-        placeholder: '确认密码',
+        placeholder: '{{t("Confirm password")}}',
         checkStrength: true,
         style: {
           // width: 240,
@@ -57,7 +57,7 @@ export const register = {
           fulfill: {
             state: {
               errors:
-                '{{$deps[0] && $self.value && $self.value !== $deps[0] ? "确认密码不匹配" : ""}}',
+                '{{$deps[0] && $self.value && $self.value !== $deps[0] ? t("Confirm password does not match") : ""}}',
             },
           },
         },
@@ -69,7 +69,7 @@ export const register = {
       properties: {
         submit: {
           type: 'void',
-          title: '注册',
+          title: '{{t("Register")}}',
           'x-component': 'Action',
           'x-component-props': {
             block: true,
@@ -92,7 +92,7 @@ export const register = {
           'x-component-props': {
             to: '/login',
           },
-          title: '使用已有账号登录',
+          title: '{{t("Log in with an existing account")}}',
         },
       },
     },
