@@ -174,7 +174,7 @@ export default {
   'Relationship blocks': '关系数据区块',
   'Select a record': '选择数据',
   'Display name': 'Display name',
-  'Select a icon': '选择图标',
+  'Select an icon': '选择图标',
   'Custom column name': 'Custom column name',
   'Custom field name': 'Custom field name',
   'Edit description': '编辑描述',

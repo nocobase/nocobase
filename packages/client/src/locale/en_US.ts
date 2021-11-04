@@ -174,7 +174,7 @@ export default {
   'Relationship blocks': 'Relationship blocks',
   'Select a record': 'Select a record',
   'Display name': 'Display name',
-  'Select a icon': 'Select a icon',
+  'Select an icon': 'Select an icon',
   'Custom column name': 'Custom column name',
   'Custom field name': 'Custom field name',
   'Edit description': 'Edit description',
