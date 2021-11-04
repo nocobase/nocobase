@@ -63,7 +63,7 @@ export default {
   'Edit markdown': '编辑 Markdown',
   'Add block': '创建区块',
   'Add new': '添加',
-  'Add record': '添加数据',
+  'Add a new record': '添加数据',
   'Custom field display name': 'Custom field display name',
   'Display fields': '显示字段',
   'Edit record': '编辑数据',
@@ -83,7 +83,7 @@ export default {
   'Execution user': '操作用户',
   'Collection': '数据表',
   'Action type': '操作类型',
-  'Operation': '操作',
+  'Actions': '操作',
   'Insert': '新增',
   'Update': '更新',
   'View': '查看',
@@ -252,9 +252,8 @@ export default {
   'Allow access': '允许访问',
 
   'Action name': '操作名称',
-  'Allow operation': '允许操作',
+  'Allow action': '允许操作',
   'Operable data scope': '可操作数据范围',
-  'Create': '新增',
   'Operate on new data': '对新增数据操作',
   'Operate on existing data': '对已有数据操作',
 
@@ -273,4 +272,6 @@ export default {
   'Geek Blue': '极客蓝',
   'Purple': '酱紫',
   'Default': '默认',
+
+  'Add a card': '添加卡片',
 };

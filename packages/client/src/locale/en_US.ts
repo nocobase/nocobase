@@ -61,7 +61,7 @@ export default {
   'Edit markdown': 'Edit markdown',
   'Add block': 'Add block',
   'Add new': 'Add new',
-  'Add record': 'Add record',
+  'Add a new record': 'Add a new record',
   'Custom field display name': 'Custom field display name',
   'Display fields': 'Display fields',
   'Edit record': 'Edit record',
@@ -81,7 +81,7 @@ export default {
   'Execution user': 'Execution user',
   'Collection': 'Collection',
   'Action type': 'Action type',
-  'Operation': 'Operation',
+  'Actions': 'Actions',
   'Insert': 'Insert',
   'Update': 'Update',
   'View': 'View',
@@ -253,9 +253,8 @@ export default {
   'Allow access': 'Allow access',
 
   'Action name': 'Action name',
-  'Allow operation': 'Allow operation',
+  'Allow action': 'Allow action',
   'Operable data scope': 'Operable data scope',
-  'Create': 'Create',
   'Operate on new data': 'Operate on new data',
   'Operate on existing data': 'Operate on existing data',
 
@@ -274,4 +273,5 @@ export default {
   'Geek Blue': 'Geek Blue',
   'Purple': 'Purple',
   'Default': 'Default',
+  'Add a card': 'Add a card',
 };

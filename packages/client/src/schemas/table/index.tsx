@@ -1056,7 +1056,7 @@ function generateActionSchema(type) {
       properties: {
         modal: {
           type: 'void',
-          title: "{{ t('Add record') }}",
+          title: "{{ t('Add a new record') }}",
           'x-decorator': 'Form',
           'x-component': 'Action.Drawer',
           'x-component-props': {

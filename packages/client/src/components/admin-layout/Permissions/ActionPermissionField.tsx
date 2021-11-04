@@ -22,7 +22,7 @@ import { useTranslation } from 'react-i18next';
 
 const actionTypeMap = new Map(
   Object.entries({
-    create: '{{t("Create")}}',
+    create: '{{t("Insert")}}',
     get: '{{t("View")}}',
     update: '{{t("Update")}}',
     destroy: '{{t("Delete")}}',
@@ -215,7 +215,7 @@ export const ActionPermissionField = observer((props) => {
               ),
           },
           {
-            title: t('Allow operation'),
+            title: t('Allow action'),
             dataIndex: 'enable',
             render: (value, record) => (
               <Checkbox

@@ -194,7 +194,7 @@ function generateCardItemSchema(component) {
               properties: {
                 modal: {
                   type: 'void',
-                  title: "{{t('Add record')}}",
+                  title: "{{t('Add a new record')}}",
                   'x-decorator': 'Form',
                   'x-component': 'Action.Drawer',
                   'x-component-props': {
@@ -216,7 +216,7 @@ function generateCardItemSchema(component) {
         },
         [uid()]: {
           type: 'void',
-          title: '{{t("Operation")}}',
+          title: '{{t("Actions")}}',
           'x-component': 'Table.Column',
           'x-component-props': {},
           'x-designable-bar': 'Table.Operation.DesignableBar',
@@ -381,7 +381,7 @@ function generateCardItemSchema(component) {
       properties: {
         create: {
           type: 'void',
-          title: "{{t('Add new')}}",
+          title: "{{t('Add a card')}}",
           // 'x-designable-bar': 'Kanban.AddCardDesignableBar',
           'x-component': 'Kanban.Card.AddNew',
           // 'x-decorator': 'AddNew.Displayed',
@@ -392,7 +392,7 @@ function generateCardItemSchema(component) {
           properties: {
             modal: {
               type: 'void',
-              title: "{{t('Add record')}}",
+              title: "{{t('Add a new record')}}",
               'x-decorator': 'Form',
               'x-decorator-props': {
                 useResource: '{{ Kanban.useCreateResource }}',
@@ -532,7 +532,7 @@ function generateCardItemSchema(component) {
               properties: {
                 modal: {
                   type: 'void',
-                  title: "{{t('Add record')}}",
+                  title: "{{t('Add a new record')}}",
                   'x-decorator': 'Form',
                   'x-component': 'Action.Drawer',
                   'x-component-props': {
@@ -766,7 +766,7 @@ function generateCardItemSchema(component) {
         },
         [uid()]: {
           type: 'void',
-          title: "{{t('Operation')}}",
+          title: "{{t('Actions')}}",
           'x-component': 'Table.Column',
           'x-component-props': {
             width: 60,

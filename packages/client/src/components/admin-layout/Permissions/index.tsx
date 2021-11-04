@@ -191,7 +191,7 @@ const collectionSchema: ISchema = {
     },
     column3: {
       type: 'void',
-      title: '{{t("Operation")}}',
+      title: '{{t("Actions")}}',
       'x-component': 'Table.Column',
       'x-component-props': {
         width: 60,
@@ -370,7 +370,7 @@ export const Permissions = () => {
               // },
               [uid()]: {
                 type: 'void',
-                title: '{{t("Operation")}}',
+                title: '{{t("Actions")}}',
                 'x-component': 'Table.Column',
                 'x-component-props': {
                   width: 160,
