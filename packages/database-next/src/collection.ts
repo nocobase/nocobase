@@ -25,7 +25,7 @@ export class Collection<
   context: CollectionContext;
   fields: Map<string, any>;
   model: ModelCtor<Model<TModelAttributes, TCreationAttributes>>;
-  repository: Repository;
+  repository: Repository<TModelAttributes, TCreationAttributes>;
 
   get name() {
     return this.options.name;

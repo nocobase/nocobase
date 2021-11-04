@@ -35,10 +35,6 @@ class FilterParser {
 
     let skipPrefix = null;
 
-    const isOperator = (key: string) => {
-      return key.startsWith('$') && operators.has(key);
-    };
-
     for (let [key, value] of Object.entries(flattenedFilter)) {
       if (skipPrefix && key.startsWith(skipPrefix)) {
         continue;

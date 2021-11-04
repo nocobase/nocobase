@@ -21,8 +21,10 @@ export interface IRepository {}
 
 interface CreateManyOptions extends BulkCreateOptions {}
 
+type Filter = any;
+
 interface FindOptions extends SequelizeFindOptions {
-  filter?: any;
+  filter?: Filter;
   fields?: any;
   appends?: any;
   expect?: any;
@@ -94,6 +96,10 @@ class RelatedQuery {
     return this.sourceInstance;
   }
 
+  /**
+   * same as find
+   * @param options
+   */
   async findMany(options?: any) {
     const { collection } = this.options.target;
     return await collection.repository.find(options);
@@ -166,7 +172,11 @@ class BelongsToQuery extends RelatedQuery {}
 
 class BelongsToManyQuery extends RelatedQuery {}
 
-export class Repository implements IRepository {
+export class Repository<
+  TModelAttributes extends {} = any,
+  TCreationAttributes extends {} = TModelAttributes,
+> implements IRepository
+{
   database: Database;
   collection: Collection;
   model: ModelCtor<Model>;
@@ -175,6 +185,13 @@ export class Repository implements IRepository {
     this.database = collection.context.database;
     this.collection = collection;
     this.model = collection.model;
+  }
+
+  /**
+   * return count by filter
+   */
+  async count(filter?: Filter) {
+    return await this.collection.model.count(this.parseFilter(filter));
   }
 
   async find(options?: FindOptions) {
@@ -269,7 +286,7 @@ export class Repository implements IRepository {
    * @param values
    * @param options
    */
-  async create(values?: any, options?: CreateOptions) {
+  async create(values?: TCreationAttributes, options?: CreateOptions) {
     const instance = await this.model.create<any>(values, options);
     if (!instance) {
       return;
@@ -284,7 +301,10 @@ export class Repository implements IRepository {
    * @param records
    * @param options
    */
-  async createMany(records: any[], options?: CreateManyOptions) {
+  async createMany(
+    records: TCreationAttributes[],
+    options?: CreateManyOptions,
+  ) {
     const instances = await this.collection.model.bulkCreate(records, options);
 
     for (let i = 0; i < instances.length; i++) {
@@ -380,10 +400,11 @@ export class Repository implements IRepository {
   }
 
   /**
-   * Parse filter to sequelize where params
+   * Parse filter to sequelize params with `where` and `include` key
    * @param filter
    */
-  protected parseFilter(filter?: any) {
+  protected parseFilter(filter?: Filter) {
+    if (!filter) return {};
     const parser = new FilterParser(this.collection, filter);
     return parser.toSequelizeParams();
   }
