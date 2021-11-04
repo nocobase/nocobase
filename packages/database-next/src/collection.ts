@@ -44,6 +44,7 @@ export class Collection<
     const { name, tableName } = options;
 
     // TODO: 不能重复 model.init，如果有涉及 InitOptions 参数修改，需要另外处理。
+    // init sequelize model
     this.model.init(attributes, {
       ..._.omit(options, ['name', 'fields']),
       sequelize: context.database.sequelize,
@@ -51,9 +52,13 @@ export class Collection<
       tableName: tableName || name,
     });
 
-    this.on('field.afterAdd', (field) => field.bind());
+    // call field bind method on field
+    this.on('field.afterAdd', (field: Field) => field.bind());
     this.on('field.afterRemove', (field) => field.unbind());
+    // set collection fields
     this.setFields(options.fields);
+
+    // add collection repository
     this.repository = new Repository(this);
   }
 
@@ -84,9 +89,9 @@ export class Collection<
       {
         ...this.context,
         collection: this,
-        model: this.model,
       },
     );
+
     this.fields.set(name, field);
     this.emit('field.afterAdd', field);
   }
@@ -95,9 +100,11 @@ export class Collection<
     if (!fields) {
       return this;
     }
+
     if (reset) {
       this.fields.clear();
     }
+
     if (Array.isArray(fields)) {
       for (const field of fields) {
         this.addField(field);

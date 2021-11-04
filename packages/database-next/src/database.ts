@@ -10,7 +10,7 @@ import {
 import { EventEmitter } from 'events';
 import { Collection, CollectionOptions } from './collection';
 import * as FieldTypes from './fields';
-import { RelationField } from './fields';
+import { FieldContext, RelationField } from './fields';
 
 export interface PendingOptions {
   field: RelationField;
@@ -40,12 +40,11 @@ export class Database extends EventEmitter {
     this.collections = new Map();
 
     this.on('collection.afterDefine', (collection) => {
-      const items = this.pendingFields.get(collection.name);
-      for (const field of items || []) {
-        field.bind();
-      }
+      // after collection defined, call bind method on pending fields
+      this.pendingFields.get(collection.name)?.forEach((field) => field.bind());
     });
 
+    // register database field types
     for (const [name, field] of Object.entries(FieldTypes)) {
       if (['Field', 'RelationField'].includes(name)) {
         continue;
@@ -78,7 +77,7 @@ export class Database extends EventEmitter {
    */
   collection<Attributes = any, CreateAttributes = Attributes>(
     options: CollectionOptions,
-  ) {
+  ): Collection<Attributes, CreateAttributes> {
     let collection = this.collections.get(options.name);
 
     if (collection) {
@@ -144,7 +143,7 @@ export class Database extends EventEmitter {
     }
   }
 
-  buildField(options, context) {
+  buildField(options, context: FieldContext) {
     const { type } = options;
     const Field = this.fieldTypes.get(type);
     return new Field(options, context);

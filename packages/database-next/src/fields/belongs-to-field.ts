@@ -1,9 +1,11 @@
 import { omit } from 'lodash';
 import { Sequelize, ModelCtor, Model, DataTypes, Utils } from 'sequelize';
 import { RelationField } from './relation-field';
+import { HasInverseField } from './has-inverse-field';
+import { Field } from './field';
+import { HasManyField } from './has-many-field';
 
 export class BelongsToField extends RelationField {
-
   static type = 'belongsTo';
 
   get target() {
@@ -14,23 +16,39 @@ export class BelongsToField extends RelationField {
   bind() {
     const { database, collection } = this.context;
     const Target = this.TargetModel;
+
+    // if target model not exists, add it to pending field,
+    // it will bind later
     if (!Target) {
       database.addPendingField(this);
       return false;
     }
+
+    if (collection.model.associations[this.name]) {
+      delete collection.model.associations[this.name];
+    }
+
+    // define relation on sequelize model
     const association = collection.model.belongsTo(Target, {
       as: this.name,
       ...omit(this.options, ['name', 'type', 'target']),
     });
+
+    // inverse relation
+    this.TargetModel.hasMany(collection.model);
+
     // 建立关系之后从 pending 列表中删除
     database.removePendingField(this);
+
     if (!this.options.foreignKey) {
       this.options.foreignKey = association.foreignKey;
     }
+
     if (!this.options.sourceKey) {
       // @ts-ignore
       this.options.sourceKey = association.sourceKey;
     }
+
     return true;
   }
 
