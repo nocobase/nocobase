@@ -77,9 +77,6 @@ export default {
   'This is a demo text, **supports Markdown syntax**.': 'This is a demo text, **supports Markdown syntax**.',
 
   'Filter': 'Filter',
-  'Execution date': 'Execution date',
-  'Execution user': 'Execution user',
-  'Collection': 'Collection',
   'Action type': 'Action type',
   'Actions': 'Actions',
   'Insert': 'Insert',

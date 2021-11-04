@@ -710,7 +710,7 @@ function generateCardItemSchema(component) {
         },
         column1: {
           type: 'void',
-          title: "{{t('Execution date')}}",
+          title: "{{t('Created at')}}",
           'x-component': 'Table.Column',
           properties: {
             created_at: {
@@ -725,7 +725,7 @@ function generateCardItemSchema(component) {
         },
         column2: {
           type: 'void',
-          title: "{{t('Execution user')}}",
+          title: "{{t('Created by')}}",
           'x-component': 'Table.Column',
           properties: {
             'user.nickname': {
@@ -737,7 +737,7 @@ function generateCardItemSchema(component) {
         },
         column3: {
           type: 'void',
-          title: "{{t('Collection')}}",
+          title: "{{t('Collection display name')}}",
           'x-component': 'Table.Column',
           properties: {
             'collection.title': {
@@ -805,7 +805,7 @@ function generateCardItemSchema(component) {
                   properties: {
                     created_at: {
                       type: 'string',
-                      title: "{{t('Execution date')}}",
+                      title: "{{t('Created at')}}",
                       'x-decorator': 'FormItem',
                       'x-component': 'DatePicker',
                       'x-read-pretty': true,
@@ -815,14 +815,14 @@ function generateCardItemSchema(component) {
                     },
                     'user.nickname': {
                       type: 'string',
-                      title: "{{t('Execution user')}}",
+                      title: "{{t('Created by')}}",
                       'x-decorator': 'FormItem',
                       'x-component': 'Input',
                       'x-read-pretty': true,
                     },
                     'collection.title': {
                       type: 'string',
-                      title: "{{t('Collection')}}",
+                      title: "{{t('Collection display name')}}",
                       'x-decorator': 'FormItem',
                       'x-component': 'Input',
                       'x-read-pretty': true,
