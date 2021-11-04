@@ -29,7 +29,7 @@ export default {
   'Insert right': 'Insert right',
   'Insert inner': 'Insert inner',
   'Delete': 'Delete',
-  'Layout edit': 'Layout edit',
+  'UI editor': 'UI editor',
   'Collections & Fields': 'Collections & Fields',
   'Roles & Permissions': 'Roles & Permissions',
   'My profile': 'My profile',

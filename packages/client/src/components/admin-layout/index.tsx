@@ -71,14 +71,14 @@ function DesignableToggle() {
         placement={'bottom'}
         title={
           <span>
-            点此进入界面配置{' '}
+            {t('Click here to enter UI editor.')}{' '}
             <a
               onClick={() => {
                 localStorage.setItem('hide-tip', 'true');
                 setVisible(false);
               }}
             >
-              关闭
+              {t('Close')}
             </a>
           </span>
         }
@@ -89,7 +89,7 @@ function DesignableToggle() {
       >
         <span style={{ height: 45, width: 45, position: 'absolute' }}></span>
       </Tooltip>
-      <Tooltip title={t('Layout edit')}>
+      <Tooltip title={t('UI editor')}>
         <Button
           className={cls('nb-designable-toggle', {
             'has-tip': visible,

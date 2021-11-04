@@ -30,7 +30,7 @@ export default {
   'Insert right': '在右边插入',
   'Insert inner': '在里面插入',
   'Delete': '删除',
-  'Layout edit': '界面配置',
+  'UI editor': '界面配置',
   'Collections & Fields': '数据表配置',
   'Roles & Permissions': '角色和权限',
   'My profile': '个人资料',
