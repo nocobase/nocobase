@@ -53,6 +53,13 @@ export default {
       },
     },
     {
+      interface: 'select',
+      type: 'string',
+      name: 'appLang',
+      privilege: 'undelete',
+      state: 0,
+    },
+    {
       interface: 'password',
       type: 'string',
       name: 'token',

@@ -42,6 +42,16 @@ export const UserInfo = () => {
                             'x-component': 'Input',
                             'x-decorator': 'FormilyFormItem',
                           },
+                          // appLang: {
+                          //   type: 'string',
+                          //   title: '{{t("Language settings")}}',
+                          //   'x-component': 'Select',
+                          //   'x-decorator': 'FormItem',
+                          //   enum: [
+                          //     { label: 'English', value: 'en-US' },
+                          //     { label: '简体中文', value: 'zh-CN' },
+                          //   ],
+                          // },
                         },
                       }}
                     />
@@ -95,8 +105,13 @@ export const UserInfo = () => {
                 size={'small'}
                 defaultValue={i18n.language}
                 onChange={async (value) => {
+                  await request('users:updateProfile', {
+                    method: 'post',
+                    data: {
+                      appLang: value,
+                    },
+                  });
                   await i18n.changeLanguage(value);
-                  window.location.reload();
                 }}
                 options={[
                   { label: '简体中文', value: 'zh-CN' },

@@ -83,6 +83,16 @@ const schema: ISchema = {
                     // accept: 'jpg,png'
                   },
                 },
+                appLang: {
+                  type: 'string',
+                  title: '{{t("Language settings")}}',
+                  'x-component': 'Select',
+                  'x-decorator': 'FormItem',
+                  enum: [
+                    { label: 'English', value: 'en-US' },
+                    { label: '简体中文', value: 'zh-CN' },
+                  ],
+                },
               },
             },
           },

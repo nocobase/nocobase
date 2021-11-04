@@ -8,6 +8,7 @@ import { useHistory, useLocation } from 'react-router-dom';
 import { useSystemSettings } from '../admin-layout/SiteTitle';
 import { useClient } from '../../constate';
 import { useCompile } from '../../hooks/useCompile';
+import { useTranslation } from 'react-i18next';
 
 function Div(props) {
   return <div {...props}></div>;
@@ -20,6 +21,7 @@ export function useLogin() {
   const query = new URLSearchParams(location.search);
   const redirect = query.get('redirect');
   const { request } = useClient();
+  const { i18n } = useTranslation();
   return {
     async run() {
       await form.submit();
@@ -27,6 +29,10 @@ export function useLogin() {
         method: 'post',
         data: form.values,
       });
+      const lang = localStorage.getItem('locale');
+      if (data.appLang !== lang) {
+        await i18n.changeLanguage(data.appLang);
+      }
       history.push(redirect || '/admin');
       localStorage.setItem('NOCOBASE_TOKEN', data?.token);
     },
@@ -69,7 +75,9 @@ export function RouteSchemaRenderer({ route }) {
   return (
     <div>
       <Helmet>
-        <title>{title ? `${compile(data.title)} - ${title}` : compile(data.title)}</title>
+        <title>
+          {title ? `${compile(data.title)} - ${title}` : compile(data.title)}
+        </title>
       </Helmet>
       <SchemaRenderer
         components={{ Div }}
