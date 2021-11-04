@@ -881,7 +881,7 @@ function generateCardItemSchema(component) {
                           column1: {
                             type: 'void',
                             'x-component': 'ArrayTable.Column',
-                            'x-component-props': { title: "{{t('Field name')}}" },
+                            'x-component-props': { title: "{{t('Field display name')}}" },
                             properties: {
                               field: {
                                 type: 'string',

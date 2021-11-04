@@ -23,7 +23,7 @@ export const UserInfo = () => {
           <Menu.Item
             onClick={async () => {
               setVisible(false);
-              const values = await FormDrawer(t('My profile'), () => {
+              const values = await FormDrawer(t('Edit profile'), () => {
                 return (
                   <FormLayout layout={'vertical'}>
                     <SchemaField
@@ -62,12 +62,12 @@ export const UserInfo = () => {
               service.mutate(data);
             }}
           >
-            {t('My profile')}
+            {t('Edit profile')}
           </Menu.Item>
           <Menu.Item>
             <div style={{ display: 'flex', justifyContent: 'space-between' }}>
               <span style={{ marginRight: 16, display: 'inline-block' }}>
-                {t('Change role')}
+                {t('Switch role')}
               </span>
               <Select
                 className={'roles-select'}
@@ -87,7 +87,7 @@ export const UserInfo = () => {
           <Menu.Item>
             <div style={{ display: 'flex', justifyContent: 'space-between' }}>
               <span style={{ marginRight: 16, display: 'inline-block' }}>
-                {t('Language setting')}
+                {t('Language settings')}
               </span>
               <Select
                 className={'roles-select'}

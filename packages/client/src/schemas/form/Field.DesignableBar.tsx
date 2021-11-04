@@ -86,7 +86,7 @@ export const FieldDesignableBar = observer((props) => {
                 <Menu.Item
                   key={'update'}
                   onClick={async () => {
-                    const values = await FormDialog(t('Custom field name'), () => {
+                    const values = await FormDialog(t('Custom field display name'), () => {
                       return (
                         <FormLayout layout={'vertical'}>
                           <SchemaField
@@ -130,7 +130,7 @@ export const FieldDesignableBar = observer((props) => {
                     });
                   }}
                 >
-                  {t('Custom field name')}
+                  {t('Custom field display name')}
                 </Menu.Item>
                 {collectionField?.interface === 'linkTo' && (
                   <Menu.Item>
