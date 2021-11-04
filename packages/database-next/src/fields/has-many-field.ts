@@ -94,12 +94,6 @@ export class HasManyField extends RelationField {
       return false;
     }
 
-    console.log({
-      model: this.collection.name,
-      as: this.name,
-      associations: collection.model.associations,
-    });
-
     if (collection.model.associations[this.name]) {
       delete collection.model.associations[this.name];
     }
