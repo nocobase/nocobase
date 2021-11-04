@@ -258,4 +258,20 @@ export default {
   'Create': 'Create',
   'Operate on new data': 'Operate on new data',
   'Operate on existing data': 'Operate on existing data',
+
+  'Yes': 'Yes',
+  'No': 'No',
+
+  'Red': 'Red',
+  'Magenta': 'Magenta',
+  'Volcano': 'Volcano',
+  'Orange': 'Orange',
+  'Gold': 'Gold',
+  'Lime': 'Lime',
+  'Green': 'Green',
+  'Cyan': 'Cyan',
+  'Blue': 'Blue',
+  'Geek Blue': 'Geek Blue',
+  'Purple': 'Purple',
+  'Default': 'Default',
 };

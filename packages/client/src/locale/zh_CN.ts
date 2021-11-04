@@ -133,7 +133,7 @@ export default {
   'Last updated by': '最后更新日期',
   'Add field': '添加字段',
   'Field display name': 'Field display name',
-  'Field type': 'Field type',
+  'Field type': '字段类型',
 
   'Date format': '日期格式',
   'Year/Month/Day': '年/月/日',
@@ -257,4 +257,20 @@ export default {
   'Create': '新增',
   'Operate on new data': '对新增数据操作',
   'Operate on existing data': '对已有数据操作',
+
+  'Yes': '是',
+  'No': '否',
+
+  'Red': '薄暮',
+  'Magenta': '法式洋红',
+  'Volcano': '火山',
+  'Orange': '日暮',
+  'Gold': '金盏花',
+  'Lime': '青柠',
+  'Green': '极光绿',
+  'Cyan': '明青',
+  'Blue': '拂晓蓝',
+  'Geek Blue': '极客蓝',
+  'Purple': '酱紫',
+  'Default': '默认',
 };
