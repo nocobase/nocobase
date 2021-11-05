@@ -219,9 +219,7 @@ await Post.repository.find({
 await Post.repository.find({
   fields: ['id', 'name', 'tags'],
 });
-// 
-// [{ id, name, createdAt, updatedAt, tags: [{ id, name, createdAt, updatedAt }] }]
-
+// [{ id, name, tags: [{ id, name, createdAt, updatedAt }] }]
 ```
 
 可以只输出关系数据的某个字段
@@ -383,8 +381,8 @@ interface CreateOptions {
   // 字段黑名单
   blacklist?: string[];
   // 关系数据默认会新建并建立关联处理，如果是已存在的数据只关联，但不更新关系数据
-  // 如果需要更新关联数据，可以通过 updateAssociations 指定
-  updateAssociations?: string[];
+  // 如果需要更新关联数据，可以通过 updateAssociationValues 指定
+  updateAssociationValues?: string[];
 }
 ```
 
@@ -496,7 +494,7 @@ await repository.create({
     }],
   },
   // 指定了 tags，建立关联时，也会同步修改 tag 数据
-  updateAssociations: ['tags'],
+  updateAssociationValues: ['tags'],
 });
 ```
 
@@ -530,8 +528,8 @@ await repository.create({
   // 字段黑名单
   blacklist: [],
   // 关系数据默认会新建并建立关联处理，如果是已存在的数据只关联，但不更新关系数据
-  // 如果需要更新关联数据，可以通过 updateAssociations 指定
-  updateAssociations: ['subTable'],
+  // 如果需要更新关联数据，可以通过 updateAssociationValues 指定
+  updateAssociationValues: ['subTable'],
 });
 ```
 
@@ -556,8 +554,8 @@ interface UpdateOptions {
   // 字段黑名单
   blacklist?: string[];
   // 关系数据默认会新建并建立关联处理，如果是已存在的数据只关联，但不更新关系数据
-  // 如果需要更新关联数据，可以通过 updateAssociations 指定
-  updateAssociations?: string[];
+  // 如果需要更新关联数据，可以通过 updateAssociationValues 指定
+  updateAssociationValues?: string[];
 }
 ```
 
