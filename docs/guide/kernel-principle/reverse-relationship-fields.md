@@ -258,4 +258,4 @@ const collection = db.collection({
 collection.addField({ type: 'belongsTo', name: 'user' });
 ```
 
-注：显式添加指的是代码配置上可见，隐式添加指的是自动生成，存在代码上但看不见。
+注：显式添加指的是代码配置上可见，隐式添加指的是自动生成，配置存在，但代码上但看不见。
