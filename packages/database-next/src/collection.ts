@@ -23,7 +23,7 @@ export class Collection<
 > extends EventEmitter {
   options: CollectionOptions;
   context: CollectionContext;
-  fields: Map<string, any>;
+  fields: Map<string, any> = new Map<string, any>();
   model: ModelCtor<Model<TModelAttributes, TCreationAttributes>>;
   repository: Repository<TModelAttributes, TCreationAttributes>;
 
@@ -35,31 +35,30 @@ export class Collection<
     super();
     this.options = options;
     this.context = context;
-    this.fields = new Map<string, any>();
 
-    this.model = <ModelCtor<Model>>class extends Model {};
+    this.defineSequelizeModel();
+    this.bindFieldEventListener();
 
-    const attributes = {} as any;
-
-    const { name, tableName } = options;
-
-    // TODO: 不能重复 model.init，如果有涉及 InitOptions 参数修改，需要另外处理。
-    // init sequelize model
-    this.model.init(attributes, {
-      ..._.omit(options, ['name', 'fields']),
-      sequelize: context.database.sequelize,
-      modelName: name,
-      tableName: tableName || name,
-    });
-
-    // call field bind method on field
-    this.on('field.afterAdd', (field: Field) => field.bind());
-    this.on('field.afterRemove', (field) => field.unbind());
     // set collection fields
     this.setFields(options.fields);
 
     // add collection repository
     this.repository = new Repository(this);
+  }
+
+  private bindFieldEventListener() {
+    this.on('field.afterAdd', (field: Field) => field.bind());
+    this.on('field.afterRemove', (field) => field.unbind());
+  }
+
+  private defineSequelizeModel() {
+    // define sequelize model
+    const { name, tableName } = this.options;
+
+    this.model = this.context.database.sequelize.define(name, {
+      ..._.omit(this.options, ['name', 'fields']),
+      tableName: tableName || name,
+    });
   }
 
   forEachField(callback: (field: Field) => void) {
