@@ -23,6 +23,10 @@ export function runStart(path) {
   return runYarn(path, ['run', 'start']);
 }
 
-export function runInit(path) {
-  return runYarn(path, ['run', 'nocobase', 'init', hasYarn() ? '--import-demo' : '-- --import-demo']);
+export function runInit(path, args: any[] = []) {
+  if (!hasYarn()) {
+    args.unshift('--');
+  }
+  console.log('run init', args);
+  return runYarn(path, ['run', 'nocobase', 'init', ...args]);
 }
