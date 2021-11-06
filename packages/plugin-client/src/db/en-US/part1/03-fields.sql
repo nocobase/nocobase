@@ -11,7 +11,7 @@ INSERT INTO "fields" ("key", "name", "interface", "data_type", "privilege", "sta
 ('ymwwuuje5cf',	'vygajfyejo0',	'updatedBy',	'belongsTo',	'undelete',	1,	'{"target":"users","foreignKey":"updated_by_id"}',	3,	'2021-09-12 01:05:52.791+00',	'2021-09-18 04:16:11.834+00',	NULL,	't_fsveob6p269',	'g6fgjhxwqdt',	NULL),
 ('kru7yomwffj',	'f_kk4nspj1i28',	'textarea',	'text',	NULL,	1,	'{}',	13,	'2021-09-12 01:13:43.315+00',	'2021-09-14 02:50:54.757+00',	NULL,	't_fsveob6p269',	'ic1crmml3ww',	NULL),
 ('xjnnqtckv6o',	'f_x9kmuovlm79',	'radioGroup',	'string',	NULL,	1,	'{}',	11,	'2021-09-12 01:13:43.241+00',	'2021-09-14 02:50:54.738+00',	NULL,	't_fsveob6p269',	'cntdgyegzk1',	NULL),
-('hfry2ook2w4',	'f_n6snaop9d4y',	'chinaRegion',	'belongsToMany',	NULL,	1,	'{"target":"china_regions","targetKey":"code","through":"t_p13gbi31uux","foreignKey":"f_86s65mbw93e","otherKey":"f_hwx3hgg5b5t","sourceKey":"id"}',	10,	'2021-09-12 01:17:01.062+00',	'2021-09-14 02:50:54.728+00',	NULL,	't_fsveob6p269',	'o21p57oi4ci',	NULL),
+('hfry2ook2w4',	'f_n6snaop9d4y',	'textarea',	'string',	NULL,	1,	'{}',	10,	'2021-09-12 01:17:01.062+00',	'2021-09-14 02:50:54.728+00',	NULL,	't_fsveob6p269',	'o21p57oi4ci',	NULL),
 ('zobi3o3dqzp',	'f_61znsfh307m',	'select',	'string',	NULL,	1,	'{}',	8,	'2021-09-12 01:17:01.042+00',	'2021-09-14 02:50:54.697+00',	NULL,	't_fsveob6p269',	'zncs2fmi3md',	NULL),
 ('gjc3mks1xvj',	'f_bysgds7j36p',	'datetime',	'date',	NULL,	1,	'{}',	9,	'2021-09-12 01:13:43.26+00',	'2021-09-14 02:50:54.713+00',	NULL,	't_fsveob6p269',	'wy9l25k1k8n',	NULL),
 ('lie1tta3peq',	'f_3det6kr3vn8',	'phone',	'string',	NULL,	1,	'{}',	7,	'2021-09-12 01:13:43.221+00',	'2021-09-14 02:50:54.686+00',	NULL,	't_fsveob6p269',	'd0vxh9zspr0',	NULL),
