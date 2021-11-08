@@ -589,7 +589,7 @@ function generateCardItemSchema(component) {
       'x-component': 'Chart.Column',
       'x-designable-bar': 'Chart.DesignableBar',
       'x-component-props': {
-        config: cloneDeep(columnChartConfig),
+        config: cloneDeep(columnChartConfig[i18n.language] || columnChartConfig['en-US']),
       },
     },
     'Chart.Bar': {
@@ -598,7 +598,7 @@ function generateCardItemSchema(component) {
       'x-component': 'Chart.Bar',
       'x-designable-bar': 'Chart.DesignableBar',
       'x-component-props': {
-        config: cloneDeep(barChartConfig),
+        config: cloneDeep(barChartConfig[i18n.language] || barChartConfig['en-US']),
       },
     },
     'Ref.ActionLogs': {
