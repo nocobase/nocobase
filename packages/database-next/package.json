@@ -11,7 +11,7 @@
     "bcrypt": "^5.0.0",
     "deepmerge": "^4.2.2",
     "glob": "^7.1.6",
-    "sequelize": "^6.3.3"
+    "sequelize": "^6.9.0"
   },
   "repository": {
     "type": "git",
