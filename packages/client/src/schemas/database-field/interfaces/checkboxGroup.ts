@@ -7,7 +7,7 @@ export const checkboxGroup: FieldOptions = {
   type: 'object',
   group: 'choices',
   order: 5,
-  title: '复选框',
+  title: '{{t("Checkbox group")}}',
   default: {
     interface: 'checkboxGroup',
     dataType: 'json',

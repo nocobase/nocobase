@@ -6,7 +6,7 @@ export const password: FieldOptions = {
   type: 'object',
   group: 'basic',
   order: 7,
-  title: '密码',
+  title: '{{t("Password")}}',
   default: {
     dataType: 'password',
     // name,

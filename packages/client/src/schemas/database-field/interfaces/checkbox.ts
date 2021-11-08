@@ -6,7 +6,7 @@ export const checkbox: FieldOptions = {
   type: 'object',
   group: 'choices',
   order: 1,
-  title: '勾选',
+  title: '{{t("Checkbox")}}',
   default: {
     dataType: 'boolean',
     // name,
@@ -22,7 +22,7 @@ export const checkbox: FieldOptions = {
     ...defaultProps,
   },
   operations: [
-    { label: '是', value: '$isTruly', selected: true, noValue: true },
-    { label: '否', value: '$isFalsy', noValue: true },
+    { label: '{{t("Yes")}}', value: '$isTruly', selected: true, noValue: true },
+    { label: '{{t("No")}}', value: '$isFalsy', noValue: true },
   ],
 };

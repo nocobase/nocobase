@@ -7,45 +7,53 @@ import { useForm } from '@formily/react';
 import { useHistory, useLocation } from 'react-router-dom';
 import { useSystemSettings } from '../admin-layout/SiteTitle';
 import { useClient } from '../../constate';
+import { useCompile } from '../../hooks/useCompile';
+import { useTranslation } from 'react-i18next';
 
 function Div(props) {
   return <div {...props}></div>;
 }
 
-export function useLogin() {
+export function useSignin() {
   const form = useForm();
   const history = useHistory();
   const location = useLocation<any>();
   const query = new URLSearchParams(location.search);
   const redirect = query.get('redirect');
   const { request } = useClient();
+  const { i18n } = useTranslation();
   return {
     async run() {
       await form.submit();
-      const { data } = await request('users:login', {
+      const { data } = await request('users:signin', {
         method: 'post',
         data: form.values,
       });
+      const lang = localStorage.getItem('locale');
+      if (data.appLang !== lang) {
+        await i18n.changeLanguage(data.appLang);
+      }
       history.push(redirect || '/admin');
       localStorage.setItem('NOCOBASE_TOKEN', data?.token);
     },
   };
 }
 
-export function useRegister() {
+export function useSignup() {
   const form = useForm();
   const history = useHistory();
   const { request } = useClient();
+  const { t } = useTranslation();
   return {
     async run() {
       await form.submit();
-      const { data } = await request('users:register', {
+      const { data } = await request('users:signup', {
         method: 'post',
         data: form.values,
       });
-      message.success('注册成功，将跳转登录页');
+      message.success(t('Signed up successfully. It will jump to the login page.'));
       setTimeout(() => {
-        history.push('/login');
+        history.push('/signin');
       }, 1000);
       console.log(form.values);
     },
@@ -60,6 +68,7 @@ export function RouteSchemaRenderer({ route }) {
       formatResult: (result) => result?.data,
     },
   );
+  const compile = useCompile();
   const { title } = useSystemSettings();
   if (loading) {
     return <Spin size={'large'} className={'nb-spin-center'} />;
@@ -67,11 +76,13 @@ export function RouteSchemaRenderer({ route }) {
   return (
     <div>
       <Helmet>
-        <title>{title ? `${data.title} - ${title}` : data.title}</title>
+        <title>
+          {title ? `${compile(data.title)} - ${title}` : compile(data.title)}
+        </title>
       </Helmet>
       <SchemaRenderer
         components={{ Div }}
-        scope={{ useLogin, useRegister }}
+        scope={{ useSignin, useSignup }}
         schema={data}
       />
     </div>

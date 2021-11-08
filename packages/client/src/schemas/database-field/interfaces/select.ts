@@ -6,7 +6,7 @@ export const select: FieldOptions = {
   type: 'object',
   group: 'choices',
   order: 2,
-  title: '下拉选择（单选）',
+  title: '{{t("Single select")}}',
   default: {
     dataType: 'string',
     // name,
@@ -25,14 +25,18 @@ export const select: FieldOptions = {
   },
   operations: [
     {
-      label: '等于',
+      label: '{{t("is")}}',
       value: 'eq',
       selected: true,
       schema: { 'x-component': 'Select' },
     },
-    { label: '不等于', value: 'ne', schema: { 'x-component': 'Select' } },
     {
-      label: '包含',
+      label: '{{t("is not")}}',
+      value: 'ne',
+      schema: { 'x-component': 'Select' },
+    },
+    {
+      label: '{{t("contains")}}',
       value: 'in',
       schema: {
         'x-component': 'Select',
@@ -40,14 +44,14 @@ export const select: FieldOptions = {
       },
     },
     {
-      label: '不包含',
+      label: '{{t("does not contain")}}',
       value: 'notIn',
       schema: {
         'x-component': 'Select',
         'x-component-props': { mode: 'tags' },
       },
     },
-    { label: '非空', value: '$notNull', noValue: true },
-    { label: '为空', value: '$null', noValue: true },
+    { label: '{{t("is empty")}}', value: '$null', noValue: true },
+    { label: '{{t("is not empty")}}', value: '$notNull', noValue: true },
   ],
 };

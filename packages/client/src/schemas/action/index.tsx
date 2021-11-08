@@ -47,12 +47,16 @@ import { createPortal } from 'react-dom';
 import { ActionBar } from './ActionBar';
 import { DragHandle, SortableItem } from '../../components/Sortable';
 import { useDisplayedMapContext } from '../../constate';
+import { Trans, useTranslation } from 'react-i18next';
+import { useCompile } from '../../hooks/useCompile';
 
 export const ButtonComponentContext = createContext(null);
 
 function getTooltipProps(tooltip) {
+  const { t } = useTranslation();
+  const compile = useCompile();
   if (typeof tooltip === 'string') {
-    return { title: tooltip };
+    return { title: compile(tooltip) };
   }
   return tooltip;
 }
@@ -65,6 +69,8 @@ export const Action: any = observer((props: any) => {
     icon,
     ...others
   } = props;
+  const { t } = useTranslation();
+  const compile = useCompile();
   const { run } = useAction();
   const field = useField();
   const { schema, DesignableBar } = useDesignable();
@@ -91,10 +97,11 @@ export const Action: any = observer((props: any) => {
         }
       }}
     >
-      {schema.title}
+      {compile(schema.title)}
       <DesignableBar path={getSchemaPath(schema)} />
     </Button>
   );
+  console.log('tooltip', tooltip);
   if (tooltip) {
     button = <Tooltip {...getTooltipProps(tooltip)}>{button}</Tooltip>;
   }
@@ -110,14 +117,16 @@ export const Action: any = observer((props: any) => {
 
 Action.Link = observer((props: any) => {
   const { schema } = useDesignable();
-  return <Link {...props}>{schema.title}</Link>;
+  const compile = useCompile();
+  return <Link {...props}>{compile(schema.title)}</Link>;
 });
 
 Action.URL = observer((props: any) => {
   const { schema } = useDesignable();
+  const compile = useCompile();
   return (
     <a target={'_blank'} {...props}>
-      {schema.title}
+      {compile(schema.title)}
     </a>
   );
 });
@@ -188,6 +197,8 @@ Action.Group = observer((props: any) => {
 });
 
 Action.Modal = observer((props: any) => {
+  const { t } = useTranslation();
+  const compile = useCompile();
   const {
     useOkAction = useDefaultAction,
     useCancelAction = useDefaultAction,
@@ -203,7 +214,7 @@ Action.Modal = observer((props: any) => {
   console.log('Action.Modal.field', schema['x-read-pretty']);
   return (
     <Modal
-      title={schema.title}
+      title={compile(schema.title)}
       destroyOnClose
       maskClosable
       width={'50%'}
@@ -222,7 +233,7 @@ Action.Modal = observer((props: any) => {
                   }
                 }}
               >
-                取消
+                {t('Cancel')}
               </Button>,
               <Button
                 type={'primary'}
@@ -237,7 +248,7 @@ Action.Modal = observer((props: any) => {
                   }
                 }}
               >
-                确定
+                {t('Submit')}
               </Button>,
             ]
           : null
@@ -261,6 +272,8 @@ Action.Modal = observer((props: any) => {
 });
 
 Action.Drawer = observer((props: any) => {
+  const { t } = useTranslation();
+  const compile = useCompile();
   const {
     useOkAction = useDefaultAction,
     useCancelAction = useDefaultAction,
@@ -278,7 +291,7 @@ Action.Drawer = observer((props: any) => {
       {createPortal(
         <Drawer
           width={'50%'}
-          title={schema.title}
+          title={compile(schema.title)}
           maskClosable
           destroyOnClose
           footer={
@@ -296,7 +309,7 @@ Action.Drawer = observer((props: any) => {
                     }
                   }}
                 >
-                  取消
+                  {t('Cancel')}
                 </Button>
                 <Button
                   onClick={async (e) => {
@@ -310,7 +323,7 @@ Action.Drawer = observer((props: any) => {
                   }}
                   type={'primary'}
                 >
-                  确定
+                  {t('Submit')}
                 </Button>
               </Space>
             )
@@ -394,6 +407,8 @@ Action.Dropdown = observer((props: any) => {
 });
 
 Action.Popover = observer((props) => {
+  const { t } = useTranslation();
+  const compile = useCompile();
   const { schema } = useDesignable();
   const form = useForm();
   const isFormDecorator = schema['x-decorator'] === 'Form';
@@ -405,7 +420,7 @@ Action.Popover = observer((props) => {
       trigger={['click']}
       onVisibleChange={setVisible}
       {...props}
-      title={schema.title}
+      title={compile(schema.title)}
       content={
         <div>
           {props.children}
@@ -418,7 +433,7 @@ Action.Popover = observer((props) => {
                     setVisible(false);
                   }}
                 >
-                  Cancel
+                  {t('Cancel')}
                 </Button>
                 <Button
                   type={'primary'}
@@ -427,7 +442,7 @@ Action.Popover = observer((props) => {
                     setVisible(false);
                   }}
                 >
-                  Ok
+                  {t('Submit')}
                 </Button>
               </Space>
             </div>
@@ -441,6 +456,7 @@ Action.Popover = observer((props) => {
 });
 
 Action.DesignableBar = (props: any) => {
+  const { t } = useTranslation();
   const { schema, remove, refresh, insertAfter } = useDesignable();
   const [visible, setVisible] = useState(false);
   const isPopup = Object.keys(schema.properties || {}).length > 0;
@@ -466,7 +482,7 @@ Action.DesignableBar = (props: any) => {
               <Menu>
                 <Menu.Item
                   onClick={async (e) => {
-                    const values = await FormDialog('编辑按钮', () => {
+                    const values = await FormDialog(t('Edit button'), () => {
                       return (
                         <FormLayout layout={'vertical'}>
                           <SchemaField
@@ -475,14 +491,14 @@ Action.DesignableBar = (props: any) => {
                               properties: {
                                 title: {
                                   type: 'string',
-                                  title: '按钮名称',
+                                  title: t('Display name'),
                                   required: true,
                                   'x-decorator': 'FormItem',
                                   'x-component': 'Input',
                                 },
                                 icon: {
                                   type: 'string',
-                                  title: '按钮图标',
+                                  title: t('Icon'),
                                   'x-decorator': 'FormItem',
                                   'x-component': 'IconPicker',
                                 },
@@ -505,33 +521,34 @@ Action.DesignableBar = (props: any) => {
                     refresh();
                   }}
                 >
-                  编辑按钮
+                  {t('Edit button')}
                 </Menu.Item>
                 {isPopup && (
                   <Menu.Item>
-                    在{' '}
-                    <Select
-                      bordered={false}
-                      size={'small'}
-                      defaultValue={'Action.Modal'}
-                      onChange={(value) => {
-                        const s = Object.values(schema.properties).shift();
-                        s['x-component'] = value;
-                        refresh();
-                        updateSchema(s);
-                      }}
-                    >
-                      <Select.Option value={'Action.Modal'}>
-                        对话框
-                      </Select.Option>
-                      <Select.Option value={'Action.Drawer'}>
-                        抽屉
-                      </Select.Option>
-                      <Select.Option value={'Action.Window'}>
-                        浏览器窗口
-                      </Select.Option>
-                    </Select>{' '}
-                    内打开
+                    <Trans>
+                      Open in
+                      <Select
+                        bordered={false}
+                        size={'small'}
+                        defaultValue={'Action.Modal'}
+                        onChange={(value) => {
+                          const s = Object.values(schema.properties).shift();
+                          s['x-component'] = value;
+                          refresh();
+                          updateSchema(s);
+                        }}
+                      >
+                        <Select.Option value={'Action.Modal'}>
+                          Modal
+                        </Select.Option>
+                        <Select.Option value={'Action.Drawer'}>
+                          Drawer
+                        </Select.Option>
+                        <Select.Option value={'Action.Window'}>
+                          Window
+                        </Select.Option>
+                      </Select>
+                    </Trans>
                   </Menu.Item>
                 )}
                 <Menu.Divider />
@@ -547,7 +564,7 @@ Action.DesignableBar = (props: any) => {
                     setVisible(false);
                   }}
                 >
-                  隐藏
+                  {t('Hide')}
                 </Menu.Item>
               </Menu>
             }

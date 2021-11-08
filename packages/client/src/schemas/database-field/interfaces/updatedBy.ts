@@ -6,7 +6,7 @@ export const updatedBy: FieldOptions = {
   type: 'object',
   group: 'systemInfo',
   order: 4,
-  title: '最后修改人',
+  title: '{{t("Last updated by")}}',
   isAssociation: true,
   default: {
     dataType: 'belongsTo',
@@ -15,7 +15,7 @@ export const updatedBy: FieldOptions = {
     // name,
     uiSchema: {
       type: 'object',
-      title: '最后修改人',
+      title: '{{t("Last updated by")}}',
       'x-component': 'Select.Drawer',
       'x-component-props': {
         fieldNames: {

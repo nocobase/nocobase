@@ -16,9 +16,9 @@ export default {
     this.app.on('db.init', async () => {
       const User = database.getModel('users');
       await User.create({
-        nickname: '超级管理员',
+        nickname: 'Super Admin',
         email: process.env.ADMIN_EMAIL || 'admin@nocobase.com',
-        password: process.env.ADMIN_PASSWORD || 'admin',
+        password: process.env.ADMIN_PASSWORD || 'admin123',
       });
     });
 

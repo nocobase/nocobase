@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Menu, Switch } from 'antd';
+import { useCompile } from '../hooks/useCompile';
 
 export interface SwitchMenuItemProps {
   onChange?: any;
@@ -9,6 +10,7 @@ export interface SwitchMenuItemProps {
 
 export function SwitchMenuItem(props: SwitchMenuItemProps) {
   const { onChange } = props;
+  const compile = useCompile();
   const [checked, setChecked] = useState(props.checked);
   useEffect(() => {
     setChecked(props.checked);
@@ -30,7 +32,7 @@ export function SwitchMenuItem(props: SwitchMenuItemProps) {
           justifyContent: 'space-between',
         }}
       >
-        <span>{props.title}</span>
+        <span>{compile(props.title)}</span>
         <Switch checked={checked} size={'small'} />
       </div>
     </Menu.Item>

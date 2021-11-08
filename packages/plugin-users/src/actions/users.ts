@@ -12,9 +12,9 @@ export async function check(ctx: Context, next: Next) {
   }
 }
 
-export async function login(ctx: Context, next: Next) {
+export async function signin(ctx: Context, next: Next) {
   const { uniqueField = 'email', values } = ctx.action.params;
-  console.log('login.values', values);
+  console.log('signin.values', values);
   if (!values[uniqueField]) {
     ctx.throw(401, '请填写邮箱账号');
   }
@@ -40,12 +40,12 @@ export async function login(ctx: Context, next: Next) {
   await next();
 }
 
-export async function logout(ctx: Context, next: Next) {
+export async function signout(ctx: Context, next: Next) {
   ctx.body = {};
   await next();
 }
 
-export async function register(ctx: Context, next: Next) {
+export async function signup(ctx: Context, next: Next) {
   const User = ctx.db.getModel('users');
   const { values } = ctx.action.params;
   try {

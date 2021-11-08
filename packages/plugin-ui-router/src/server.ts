@@ -31,7 +31,7 @@ export default {
           type: 'route',
           path: '/admin/:name(.+)?',
           component: 'AdminLayout',
-          title: `后台`,
+          title: `NocoBase`,
           uiSchema: uiSchema.menu,
         },
         {
@@ -40,17 +40,17 @@ export default {
           children: [
             {
               type: 'route',
-              path: '/login',
+              path: '/signin',
               component: 'RouteSchemaRenderer',
-              title: `登录`,
-              uiSchema: uiSchema.login,
+              title: `{{t("Sign in")}}`,
+              uiSchema: uiSchema.signin,
             },
             {
               type: 'route',
-              path: '/register',
+              path: '/signup',
               component: 'RouteSchemaRenderer',
-              title: `注册`,
-              uiSchema: uiSchema.register,
+              title: `{{t("Sign up")}}`,
+              uiSchema: uiSchema.signup,
             },
           ],
         },

@@ -35,8 +35,10 @@ import { useTable } from '../table';
 import SwitchMenuItem from '../../components/SwitchMenuItem';
 import { useKanban } from '.';
 import { isAssociation } from '../database-field/interfaces';
+import { useTranslation } from 'react-i18next';
 
 export const CardDesignableBar = observer((props) => {
+  const { t } = useTranslation();
   const field = useField();
   const { schema, appendChild, deepRemove } = useDesignable();
   const [visible, setVisible] = useState(false);
@@ -62,7 +64,7 @@ export const CardDesignableBar = observer((props) => {
             }}
             overlay={
               <Menu>
-                <Menu.ItemGroup className={'display-fields'} title={`显示字段`}>
+                <Menu.ItemGroup className={'display-fields'} title={t('Display fields')}>
                   {fields?.map((field) => (
                     <SwitchMenuItem
                       key={field.key}

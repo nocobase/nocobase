@@ -31,7 +31,7 @@ With the environment ready, the next step is to install a NocoBase application.
 To make it easier for newcomers to install and start quickly, NocoBase provides a very simple command line.
 
 ```bash
-$ yarn create nocobase-app my-nocobase-app --quickstart
+$ yarn create nocobase-app my-nocobase-app --quickstart --lang=en-US
 ```
 
 The above command will help you quickly download, install and start the NocoBase application. If you prefer to perform step by step, you can also do this:
@@ -44,7 +44,7 @@ $ yarn create nocobase-app my-nocobase-app
 $ cd my-nocobase-app
 
 # 3. 初始化数据
-$ yarn nocobase init --import-demo
+$ yarn nocobase init --import-demo --lang=en-US
 
 # 4. 启动项目
 $ yarn start

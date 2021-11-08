@@ -6,12 +6,14 @@ import { AuthContext, useCurrentUser } from './Auth';
 import { FormButtonGroup, FormDrawer, FormLayout, Submit } from '@formily/antd';
 import { useState } from 'react';
 import { useClient } from '../../constate';
+import { useTranslation } from 'react-i18next';
 
 export const UserInfo = () => {
   const history = useHistory();
   const { service, currentUser } = useContext(AuthContext);
   const [visible, setVisible] = useState(false);
   const { request } = useClient();
+  const { t, i18n } = useTranslation();
   return (
     <Dropdown
       visible={visible}
@@ -21,7 +23,7 @@ export const UserInfo = () => {
           <Menu.Item
             onClick={async () => {
               setVisible(false);
-              const values = await FormDrawer('个人资料', () => {
+              const values = await FormDrawer(t('Edit profile'), () => {
                 return (
                   <FormLayout layout={'vertical'}>
                     <SchemaField
@@ -30,22 +32,32 @@ export const UserInfo = () => {
                         properties: {
                           email: {
                             type: 'string',
-                            title: '邮箱',
+                            title: t('Email'),
                             'x-component': 'Input',
                             'x-decorator': 'FormilyFormItem',
                           },
                           nickname: {
                             type: 'string',
-                            title: '昵称',
+                            title: t('Nickname'),
                             'x-component': 'Input',
                             'x-decorator': 'FormilyFormItem',
                           },
+                          // appLang: {
+                          //   type: 'string',
+                          //   title: '{{t("Language")}}',
+                          //   'x-component': 'Select',
+                          //   'x-decorator': 'FormItem',
+                          //   enum: [
+                          //     { label: 'English', value: 'en-US' },
+                          //     { label: '简体中文', value: 'zh-CN' },
+                          //   ],
+                          // },
                         },
                       }}
                     />
                     <FormDrawer.Footer>
                       <FormButtonGroup align="right">
-                        <Submit onSubmit={(values) => {}}>保存</Submit>
+                        <Submit onSubmit={(values) => {}}>{t('Submit')}</Submit>
                       </FormButtonGroup>
                     </FormDrawer.Footer>
                   </FormLayout>
@@ -60,12 +72,12 @@ export const UserInfo = () => {
               service.mutate(data);
             }}
           >
-            个人资料
+            {t('Edit profile')}
           </Menu.Item>
           <Menu.Item>
             <div style={{ display: 'flex', justifyContent: 'space-between' }}>
               <span style={{ marginRight: 16, display: 'inline-block' }}>
-                角色切换
+                {t('Switch role')}
               </span>
               <Select
                 className={'roles-select'}
@@ -75,7 +87,7 @@ export const UserInfo = () => {
                 defaultValue={'admin'}
                 disabled
                 options={[
-                  { label: '超级管理员', value: 'admin' },
+                  { label: t('Super admin'), value: 'admin' },
                   { label: '数据管理员', value: 'editor' },
                   { label: '普通成员', value: 'member' },
                 ]}
@@ -85,14 +97,22 @@ export const UserInfo = () => {
           <Menu.Item>
             <div style={{ display: 'flex', justifyContent: 'space-between' }}>
               <span style={{ marginRight: 16, display: 'inline-block' }}>
-                语言设置
+                {t('Language')}
               </span>
               <Select
                 className={'roles-select'}
                 bordered={false}
                 size={'small'}
-                disabled
-                defaultValue={'zh-CN'}
+                defaultValue={i18n.language}
+                onChange={async (value) => {
+                  await request('users:updateProfile', {
+                    method: 'post',
+                    data: {
+                      appLang: value,
+                    },
+                  });
+                  await i18n.changeLanguage(value);
+                }}
                 options={[
                   { label: '简体中文', value: 'zh-CN' },
                   { label: 'English', value: 'en-US' },
@@ -103,12 +123,12 @@ export const UserInfo = () => {
           <Menu.Divider />
           <Menu.Item
             onClick={async () => {
-              await request('users:logout');
+              await request('users:signout');
               localStorage.removeItem('NOCOBASE_TOKEN');
-              history.push('/login');
+              history.push('/signin');
             }}
           >
-            退出登录
+            {t('Sign out')}
           </Menu.Item>
         </Menu>
       }

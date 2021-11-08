@@ -18,6 +18,7 @@ import SwitchMenuItem from '../../components/SwitchMenuItem';
 import { uid } from '@formily/shared';
 import { SettingOutlined } from '@ant-design/icons';
 import { Droppable, SortableItem } from '../../components/Sortable';
+import { useTranslation } from 'react-i18next';
 
 export const ActionBar = observer((props: any) => {
   const { align = 'top' } = props;
@@ -114,7 +115,7 @@ function generateActionSchema(type) {
   const actions: { [key: string]: ISchema } = {
     today: {
       type: 'void',
-      title: '今天',
+      title: '{{t("Today")}}',
       'x-designable-bar': 'Calendar.ActionDesignableBar',
       'x-component': 'Calendar.Today',
       'x-align': 'left',
@@ -125,7 +126,7 @@ function generateActionSchema(type) {
     },
     nav: {
       type: 'void',
-      title: '翻页',
+      title: '{{t("Navigate")}}',
       'x-designable-bar': 'Calendar.ActionDesignableBar',
       'x-component': 'Calendar.Nav',
       'x-align': 'left',
@@ -136,7 +137,7 @@ function generateActionSchema(type) {
     },
     title: {
       type: 'void',
-      title: '标题',
+      title: '{{t("Title")}}',
       'x-designable-bar': 'Calendar.ActionDesignableBar',
       'x-component': 'Calendar.Title',
       'x-align': 'left',
@@ -147,7 +148,7 @@ function generateActionSchema(type) {
     },
     viewSelect: {
       type: 'void',
-      title: '视图切换',
+      title: '{{t("Select view")}}',
       'x-designable-bar': 'Calendar.ActionDesignableBar',
       'x-component': 'Calendar.ViewSelect',
       'x-align': 'right',
@@ -158,7 +159,7 @@ function generateActionSchema(type) {
     },
     filter: {
       type: 'void',
-      title: '过滤',
+      title: '{{t("Filter")}}',
       'x-align': 'right',
       'x-designable-bar': 'Calendar.ActionDesignableBar',
       'x-component': 'Calendar.Filter',
@@ -169,7 +170,7 @@ function generateActionSchema(type) {
     },
     create: {
       type: 'void',
-      title: '添加',
+      title: '{{t("Add new")}}',
       'x-align': 'right',
       'x-designable-bar': 'Calendar.ActionDesignableBar',
       'x-component': 'Action',
@@ -184,7 +185,7 @@ function generateActionSchema(type) {
       properties: {
         modal: {
           type: 'void',
-          title: '添加数据',
+          title: '{{t("Add record")}}',
           'x-decorator': 'Form',
           'x-component': 'Action.Drawer',
           'x-component-props': {
@@ -207,6 +208,7 @@ function generateActionSchema(type) {
 }
 
 function AddActionButton() {
+  const { t } = useTranslation();
   const [visible, setVisible] = useState(false);
   const displayed = useDisplayedMapContext();
   const { appendChild, remove } = useDesignable();
@@ -223,14 +225,14 @@ function AddActionButton() {
       onVisibleChange={setVisible}
       overlay={
         <Menu>
-          <Menu.ItemGroup title={'启用操作'}>
+          <Menu.ItemGroup title={t('Enable actions')}>
             {[
-              { title: '今天', name: 'today' },
-              { title: '翻页', name: 'nav' },
-              { title: '标题', name: 'title' },
-              { title: '视图切换', name: 'viewSelect' },
-              { title: '筛选', name: 'filter' },
-              { title: '添加', name: 'create' },
+              { title: t('Today'), name: 'today' },
+              { title: t('Navigate'), name: 'nav' },
+              { title: t('Title'), name: 'title' },
+              { title: t('Select view'), name: 'viewSelect' },
+              { title: t('Filter'), name: 'filter' },
+              { title: t('Add new'), name: 'create' },
             ].map((item) => (
               <SwitchMenuItem
                 key={item.name}
@@ -253,10 +255,10 @@ function AddActionButton() {
             ))}
           </Menu.ItemGroup>
           <Menu.Divider />
-          <Menu.SubMenu disabled title={'自定义'}>
-            <Menu.Item style={{ minWidth: 120 }}>函数操作</Menu.Item>
-            <Menu.Item>弹窗表单</Menu.Item>
-            <Menu.Item>复杂弹窗</Menu.Item>
+          <Menu.SubMenu disabled title={t('Customize')}>
+            <Menu.Item style={{ minWidth: 120 }}>{t('Function')}</Menu.Item>
+            <Menu.Item>{t('Popup form')}</Menu.Item>
+            <Menu.Item>{t('Flexible popup')}</Menu.Item>
           </Menu.SubMenu>
         </Menu>
       }
@@ -267,7 +269,7 @@ function AddActionButton() {
         type={'dashed'}
         icon={<SettingOutlined />}
       >
-        配置工具栏
+        {t('Configure actions')}
       </Button>
     </Dropdown>
   );
