@@ -14,7 +14,7 @@ function Div(props) {
   return <div {...props}></div>;
 }
 
-export function useLogin() {
+export function useSignin() {
   const form = useForm();
   const history = useHistory();
   const location = useLocation<any>();
@@ -25,7 +25,7 @@ export function useLogin() {
   return {
     async run() {
       await form.submit();
-      const { data } = await request('users:login', {
+      const { data } = await request('users:signin', {
         method: 'post',
         data: form.values,
       });
@@ -39,20 +39,21 @@ export function useLogin() {
   };
 }
 
-export function useRegister() {
+export function useSignup() {
   const form = useForm();
   const history = useHistory();
   const { request } = useClient();
+  const { t } = useTranslation();
   return {
     async run() {
       await form.submit();
-      const { data } = await request('users:register', {
+      const { data } = await request('users:signup', {
         method: 'post',
         data: form.values,
       });
-      message.success('注册成功，将跳转登录页');
+      message.success(t('Signed up successfully. It will jump to the login page.'));
       setTimeout(() => {
-        history.push('/login');
+        history.push('/signin');
       }, 1000);
       console.log(form.values);
     },
@@ -81,7 +82,7 @@ export function RouteSchemaRenderer({ route }) {
       </Helmet>
       <SchemaRenderer
         components={{ Div }}
-        scope={{ useLogin, useRegister }}
+        scope={{ useSignin, useSignup }}
         schema={data}
       />
     </div>

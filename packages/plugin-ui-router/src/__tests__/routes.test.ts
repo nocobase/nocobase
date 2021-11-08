@@ -52,8 +52,8 @@ describe('routes', () => {
         component: 'AuthLayout',
         children: [
           {
-            name: 'login',
-            path: '/login',
+            name: 'signin',
+            path: '/signin',
             component: 'DefaultPage',
             title: `登录`,
             uiSchema: {
@@ -63,7 +63,7 @@ describe('routes', () => {
           },
           {
             name: 'register',
-            path: '/register',
+            path: '/signup',
             component: 'DefaultPage',
             title: `注册`,
             uiSchema: {

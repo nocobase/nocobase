@@ -38,14 +38,14 @@ const routes: Array<RouteRedirectProps> = [
     children: [
       {
         type: 'route',
-        path: '/login',
+        path: '/signin',
         component: 'RouteSchemaRenderer',
         title: `登录`,
         uiSchemaKey: 'dtf9j0b8p9u',
       },
       {
         type: 'route',
-        path: '/register',
+        path: '/signup',
         component: 'RouteSchemaRenderer',
         title: `注册`,
         uiSchemaKey: '46qlxqam3xk',

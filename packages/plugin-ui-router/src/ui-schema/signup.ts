@@ -1,7 +1,7 @@
-export const register = {
+export const signup = {
   key: '46qlxqam3xk',
   type: 'object',
-  title: '{{t("Register")}}',
+  title: '{{t("Sign up")}}',
   properties: {
     email: {
       type: 'string',
@@ -69,12 +69,12 @@ export const register = {
       properties: {
         submit: {
           type: 'void',
-          title: '{{t("Register")}}',
+          title: '{{t("Sign up")}}',
           'x-component': 'Action',
           'x-component-props': {
             block: true,
             type: 'primary',
-            useAction: '{{ useRegister }}',
+            useAction: '{{ useSignup }}',
             style: {
               width: '100%',
             },
@@ -90,7 +90,7 @@ export const register = {
           type: 'void',
           'x-component': 'Action.Link',
           'x-component-props': {
-            to: '/login',
+            to: '/signin',
           },
           title: '{{t("Log in with an existing account")}}',
         },

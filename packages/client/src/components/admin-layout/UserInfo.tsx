@@ -123,12 +123,12 @@ export const UserInfo = () => {
           <Menu.Divider />
           <Menu.Item
             onClick={async () => {
-              await request('users:logout');
+              await request('users:signout');
               localStorage.removeItem('NOCOBASE_TOKEN');
-              history.push('/login');
+              history.push('/signin');
             }}
           >
-            {t('Logout')}
+            {t('Sign out')}
           </Menu.Item>
         </Menu>
       }

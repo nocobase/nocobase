@@ -1,7 +1,7 @@
-export const login = {
+export const signin = {
   key: 'dtf9j0b8p9u',
   type: 'object',
-  title: '{{t("Login")}}',
+  title: '{{t("Sign in")}}',
   properties: {
     email: {
       type: 'string',
@@ -37,12 +37,12 @@ export const login = {
           'x-component-props': {
             block: true,
             type: 'primary',
-            useAction: '{{ useLogin }}',
+            useAction: '{{ useSignin }}',
             style: {
               width: '100%',
             },
           },
-          title: '{{t("Login")}}',
+          title: '{{t("Sign in")}}',
         },
       },
     },
@@ -54,9 +54,9 @@ export const login = {
           type: 'void',
           'x-component': 'Action.Link',
           'x-component-props': {
-            to: '/register',
+            to: '/signup',
           },
-          title: '{{t("Register an account")}}',
+          title: '{{t("Create an account")}}',
         },
       },
     },
