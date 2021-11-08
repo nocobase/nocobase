@@ -6,6 +6,7 @@ import { useRequest } from 'ahooks';
 import { VisibleContext } from '../../context';
 import { ISchema } from '../../schemas';
 import { SystemSettingsContext } from './SiteTitle';
+import { i18n } from '../../i18n';
 
 const useResource = ({ onSuccess }) => {
   const { service, resource } = useContext(SystemSettingsContext);
@@ -49,7 +50,7 @@ const schema: ISchema = {
       properties: {
         item1: {
           type: 'void',
-          title: `系统配置`,
+          title: i18n.t('System settings'),
           'x-component': 'Menu.Action',
           'x-component-props': {
             icon: 'SettingOutlined',
@@ -57,7 +58,7 @@ const schema: ISchema = {
           properties: {
             drawer1: {
               type: 'void',
-              title: '系统配置',
+              title: i18n.t('System settings'),
               'x-decorator': 'Form',
               'x-decorator-props': {
                 useResource,
@@ -69,18 +70,28 @@ const schema: ISchema = {
               properties: {
                 title: {
                   type: 'string',
-                  title: '系统名称',
+                  title: i18n.t('System title'),
                   'x-decorator': 'FormItem',
                   'x-component': 'Input',
                 },
                 logo: {
                   type: 'string',
-                  title: 'LOGO',
+                  title: i18n.t('Logo'),
                   'x-decorator': 'FormItem',
                   'x-component': 'Upload.Attachment',
                   'x-component-props': {
                     // accept: 'jpg,png'
                   },
+                },
+                appLang: {
+                  type: 'string',
+                  title: '{{t("Language")}}',
+                  'x-component': 'Select',
+                  'x-decorator': 'FormItem',
+                  enum: [
+                    { label: 'English', value: 'en-US' },
+                    { label: '简体中文', value: 'zh-CN' },
+                  ],
                 },
               },
             },

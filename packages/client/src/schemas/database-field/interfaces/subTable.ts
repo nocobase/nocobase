@@ -7,7 +7,7 @@ export const subTable: FieldOptions = {
   type: 'object',
   group: 'relation',
   order: 2,
-  title: '子表格',
+  title: '{{t("Sub-table")}}',
   isAssociation: true,
   disabled: true,
   default: {
@@ -35,7 +35,7 @@ export const subTable: FieldOptions = {
     ...defaultProps,
     children: {
       type: 'array',
-      title: '子表格字段',
+      title: '{{t("Sub-table fields")}}',
       'x-decorator': 'FormItem',
       'x-component': 'DatabaseField',
     },

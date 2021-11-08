@@ -1,7 +1,7 @@
 import { useRequest } from 'ahooks';
 import { Spin } from 'antd';
 import React, { useMemo } from 'react';
-import { MemoryRouter as Router } from 'react-router-dom';
+import { HashRouter as Router } from 'react-router-dom';
 import {
   createRouteSwitch,
   RouteRedirectProps,
@@ -56,7 +56,7 @@ const App = () => {
 
   return (
     <div>
-      <Router initialEntries={['/admin']}>
+      <Router>
         <RouteSwitch routes={data} />
       </Router>
     </div>

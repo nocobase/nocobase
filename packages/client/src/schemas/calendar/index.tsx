@@ -40,7 +40,8 @@ import { SchemaField, useDesignable } from '../../components/schema-renderer';
 import { ActionBar } from './ActionBar';
 import { ActionDesignableBar } from './Action';
 import { createForm } from '@formily/core';
-import { flatten, get } from 'lodash';
+import { get } from 'lodash';
+import flatten from 'flat';
 import {
   CollectionProvider,
   useCollectionContext,
@@ -57,10 +58,11 @@ import { interfaces } from '../database-field/interfaces';
 import cls from 'classnames';
 import { Resource } from '../../resource';
 import { useRequest } from 'ahooks';
+import { useTranslation } from 'react-i18next';
+import { useCompile } from '../../hooks/useCompile';
+import { i18n } from '../../i18n';
 
 const localizer = momentLocalizer(moment);
-
-moment.locale('zh-CN');
 
 const allViews = Object.keys(Views).map((k) => Views[k]);
 
@@ -113,17 +115,17 @@ const messages: any = {
       <RightOutlined />
     </div>
   ),
-  today: '今天',
-  month: '月',
-  week: '周',
-  work_week: '工作日',
-  day: '天',
-  agenda: '列表',
-  date: '日期',
-  time: '时间',
-  event: '事件',
-  noEventsInRange: '无',
-  showMore: (count) => `还有 ${count} 项`,
+  today: i18n.t('Today'),
+  month: i18n.t('Month'),
+  week: i18n.t('Week'),
+  work_week: i18n.t('Work week'),
+  day: i18n.t('Day'),
+  agenda: i18n.t('Agenda'),
+  date: i18n.t('Date'),
+  time: i18n.t('Time'),
+  event: i18n.t('Event'),
+  noEventsInRange: i18n.t('None'),
+  showMore: (count) => i18n.t('{{count}} more items', { count }),
 };
 
 const useCalendar = () => {
@@ -134,14 +136,15 @@ const toEvents = (data: any[], fieldNames: any) => {
   return data?.map((item) => {
     return {
       id: get(item, fieldNames.id || 'id'),
-      title: get(item, fieldNames.title) || '无标题',
-      start: get(item, fieldNames.start),
-      end: get(item, fieldNames.end || fieldNames.start),
+      title: get(item, fieldNames.title) || i18n.t('Untitle'),
+      start: new Date(get(item, fieldNames.start)),
+      end: new Date(get(item, fieldNames.end || fieldNames.start)),
     };
   });
 };
 
 export const Calendar: any = observer((props: any) => {
+  const { t } = useTranslation();
   const field = useField<Formily.Core.Models.ArrayField>();
   const { collectionName, fieldNames = {} } = props;
   console.log('Calendar', props);
@@ -167,7 +170,7 @@ export const Calendar: any = observer((props: any) => {
       formatResult: (data) => data?.data,
       onSuccess(data) {
         const events = toEvents(data, fieldNames) || [];
-        // console.log('events', events);
+        console.log('events', events);
         field.setValue(events);
       },
       // refreshDeps: [props.fieldNames],
@@ -192,7 +195,7 @@ export const Calendar: any = observer((props: any) => {
             onClose={() => {
               setVisible(false);
             }}
-            title={'查看数据'}
+            title={t('View record')}
             bodyStyle={{
               background: '#f0f2f5',
               paddingTop: 0,
@@ -232,18 +235,18 @@ export const Calendar: any = observer((props: any) => {
               console.log('onSelectEvent');
             }}
             formats={{
-              monthHeaderFormat: 'Y年M月',
-              agendaDateFormat: 'M月DD日',
-              dayHeaderFormat: 'Y年M月DD日',
+              monthHeaderFormat: 'Y-M',
+              agendaDateFormat: 'M-DD',
+              dayHeaderFormat: 'Y-M-DD',
               dayRangeHeaderFormat: ({ start, end }, culture, local) => {
                 if (dates.eq(start, end, 'month')) {
-                  return local.format(start, 'Y年M月', culture);
+                  return local.format(start, 'Y-M', culture);
                 }
                 return `${local.format(
                   start,
-                  'Y年M月',
+                  'Y-M',
                   culture,
-                )} - ${local.format(end, 'Y年M月', culture)}`;
+                )} - ${local.format(end, 'Y-M', culture)}`;
               },
             }}
             defaultDate={new Date()}
@@ -316,13 +319,14 @@ Calendar.Title = observer(() => {
 Calendar.Today = observer((props) => {
   const { DesignableBar } = useDesignable();
   const { onNavigate } = useContext(ToolbarContext);
+  const { t } = useTranslation();
   return (
     <Button
       onClick={() => {
         onNavigate(navigate.TODAY);
       }}
     >
-      今天
+      {t('Today')}
       <DesignableBar />
     </Button>
   );
@@ -398,13 +402,14 @@ export const fieldsToFilterColumns = (fields: any[], options: any = {}) => {
 
 Calendar.Filter = observer((props: any) => {
   const { service } = useCalendar();
+  const { t } = useTranslation();
+  const compile = useCompile();
   const { fieldNames = [] } = props;
   const { schema, DesignableBar } = useDesignable();
   const form = useMemo(() => createForm(), []);
   const { fields = [] } = useCollectionContext();
   const [visible, setVisible] = useState(false);
   const obj = flatten(form.values.filter || {});
-  console.log('flatten', obj, Object.values(obj));
   const count = Object.values(obj).filter((i) =>
     Array.isArray(i) ? i.length : i,
   ).length;
@@ -446,7 +451,7 @@ Calendar.Filter = observer((props: any) => {
                   // });
                 }}
               >
-                提交
+                {t('Submit')}
               </Submit>
             </FormButtonGroup>
           </FormProvider>
@@ -454,7 +459,7 @@ Calendar.Filter = observer((props: any) => {
       }
     >
       <Button icon={<IconPicker type={icon} />}>
-        {count > 0 ? `${count} 个筛选项` : schema.title}
+        {count > 0 ? t('{{count}} filter items', { count }) : compile(schema.title)}
         <DesignableBar />
       </Button>
     </Popover>
@@ -462,6 +467,7 @@ Calendar.Filter = observer((props: any) => {
 });
 
 Calendar.Filter.DesignableBar = () => {
+  const { t } = useTranslation();
   const { schema, remove, refresh, insertAfter } = useDesignable();
   const [visible, setVisible] = useState(false);
   const displayed = useDisplayedMapContext();
@@ -489,7 +495,7 @@ Calendar.Filter.DesignableBar = () => {
             }}
             overlay={
               <Menu>
-                <Menu.ItemGroup title={'可筛选字段'}>
+                <Menu.ItemGroup title={t('Filterable fields')}>
                   {fields
                     .filter((collectionField) => {
                       const option = interfaces.get(collectionField.interface);
@@ -523,7 +529,7 @@ Calendar.Filter.DesignableBar = () => {
                 <Menu.Item
                   onClick={async (e) => {
                     setVisible(false);
-                    const values = await FormDialog('编辑按钮', () => {
+                    const values = await FormDialog(t('Edit button'), () => {
                       return (
                         <FormLayout layout={'vertical'}>
                           <SchemaField
@@ -532,14 +538,14 @@ Calendar.Filter.DesignableBar = () => {
                               properties: {
                                 title: {
                                   type: 'string',
-                                  title: '按钮名称',
+                                  title: t('Display name'),
                                   required: true,
                                   'x-decorator': 'FormItem',
                                   'x-component': 'Input',
                                 },
                                 icon: {
                                   type: 'string',
-                                  title: '按钮图标',
+                                  title: t('Icon'),
                                   'x-decorator': 'FormItem',
                                   'x-component': 'IconPicker',
                                 },
@@ -562,7 +568,7 @@ Calendar.Filter.DesignableBar = () => {
                     refresh();
                   }}
                 >
-                  编辑按钮
+                  {t('Edit button')}
                 </Menu.Item>
                 <Menu.Divider />
                 <Menu.Item
@@ -577,7 +583,7 @@ Calendar.Filter.DesignableBar = () => {
                     setVisible(false);
                   }}
                 >
-                  隐藏
+                  {t('Hide')}
                 </Menu.Item>
               </Menu>
             }

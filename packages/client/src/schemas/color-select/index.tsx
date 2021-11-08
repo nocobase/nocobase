@@ -2,29 +2,31 @@ import React from 'react';
 import { connect, mapProps, mapReadPretty } from '@formily/react';
 import { Tag, Select } from 'antd';
 import { LoadingOutlined } from '@ant-design/icons';
+import { useCompile } from '../../hooks/useCompile';
 
 const colors = {
-  red: '薄暮',
-  magenta: '法式洋红',
-  volcano: '火山',
-  orange: '日暮',
-  gold: '金盏花',
-  lime: '青柠',
-  green: '极光绿',
-  cyan: '明青',
-  blue: '拂晓蓝',
-  geekblue: '极客蓝',
-  purple: '酱紫',
-  default: '默认',
+  red: '{{t("Red")}}',
+  magenta: '{{t("Magenta")}}',
+  volcano: '{{t("Volcano")}}',
+  orange: '{{t("Orange")}}',
+  gold: '{{t("Gold")}}',
+  lime: '{{t("Lime")}}',
+  green: '{{t("Green")}}',
+  cyan: '{{t("Cyan")}}',
+  blue: '{{t("Blue")}}',
+  geekblue: '{{t("Geek blue")}}',
+  purple: '{{t("Purple")}}',
+  default: '{{t("Default")}}',
 };
 
 export const ColorSelect = connect(
   (props) => {
+    const compile = useCompile();
     return (
       <Select {...props}>
         {Object.keys(colors).map((color) => (
           <Select.Option value={color}>
-            <Tag color={color}>{colors[color]}</Tag>
+            <Tag color={color}>{compile(colors[color] || colors.default)}</Tag>
           </Select.Option>
         ))}
       </Select>
@@ -45,11 +47,12 @@ export const ColorSelect = connect(
     };
   }),
   mapReadPretty((props) => {
+    const compile = useCompile();
     const { value } = props;
     if (!colors[value]) {
       return null;
     }
-    return <Tag color={value}>{colors[value]}</Tag>;
+    return <Tag color={value}>{compile(colors[value] || colors.default)}</Tag>;
   }),
 );
 
