@@ -72,6 +72,7 @@ import { createPortal } from 'react-dom';
 import { Resource } from '../../resource';
 import { useClient } from '../../constate';
 import { useTranslation } from 'react-i18next';
+import { useCompile } from '../../hooks/useCompile';
 
 export interface MenuContextProps {
   schema?: Schema;
@@ -273,6 +274,8 @@ Menu.Divider = observer(AntdMenu.Divider);
 Menu.Item = observer((props: any) => {
   const { icon } = props;
   const { schema, DesignableBar } = useDesignable();
+  const compile = useCompile();
+  const title = compile(schema.title);
   return (
     <AntdMenu.Item
       {...props}
@@ -283,7 +286,7 @@ Menu.Item = observer((props: any) => {
       <SortableItem
         id={schema.name}
         data={{
-          title: schema.title,
+          title,
           path: getSchemaPath(schema),
         }}
       >
@@ -292,7 +295,7 @@ Menu.Item = observer((props: any) => {
             <IconPicker type={icon} />
           </span>
         )}
-        {schema.title}
+        {title}
         <DesignableBar />
       </SortableItem>
     </AntdMenu.Item>
@@ -302,6 +305,8 @@ Menu.Item = observer((props: any) => {
 Menu.Link = observer((props: any) => {
   const { icon } = props;
   const { schema, DesignableBar } = useDesignable();
+  const compile = useCompile();
+  const title = compile(schema.title);
   return (
     <AntdMenu.Item
       {...props}
@@ -312,7 +317,7 @@ Menu.Link = observer((props: any) => {
       <SortableItem
         id={schema.name}
         data={{
-          title: schema.title,
+          title,
           path: getSchemaPath(schema),
         }}
       >
@@ -321,7 +326,7 @@ Menu.Link = observer((props: any) => {
             <IconPicker type={icon} />
           </span>
         )}
-        {schema.title}
+        {title}
         <DesignableBar />
       </SortableItem>
       {/* <Link to={props.to || schema.name}>{schema.title}</Link> */}
@@ -333,6 +338,8 @@ Menu.Link = observer((props: any) => {
 Menu.URL = observer((props: any) => {
   const { icon } = props;
   const { schema, DesignableBar } = useDesignable();
+  const compile = useCompile();
+  const title = compile(schema.title);
   return (
     <AntdMenu.Item
       {...props}
@@ -346,7 +353,7 @@ Menu.URL = observer((props: any) => {
       <SortableItem
         id={schema.name}
         data={{
-          title: schema.title,
+          title,
           path: getSchemaPath(schema),
         }}
       >
@@ -355,7 +362,7 @@ Menu.URL = observer((props: any) => {
             <IconPicker type={icon} />
           </span>
         )}
-        {schema.title}
+        {title}
         <DesignableBar />
       </SortableItem>
       <DesignableBar />
@@ -369,6 +376,8 @@ Menu.Action = observer((props: any) => {
   const field = useField();
   const [visible, setVisible] = useState(false);
   const { run } = useAction();
+  const compile = useCompile();
+  const title = compile(schema.title);
   return (
     <VisibleContext.Provider value={[visible, setVisible]}>
       <AntdMenu.Item
@@ -384,11 +393,11 @@ Menu.Action = observer((props: any) => {
         <SortableItem
           id={schema.name}
           data={{
-            title: schema.title,
+            title,
             path: getSchemaPath(schema),
           }}
         >
-          {schema.title}
+          {title}
           <DesignableBar />
         </SortableItem>
       </AntdMenu.Item>
@@ -402,6 +411,8 @@ Menu.SubMenu = observer((props: any) => {
   const { icon } = props;
   const { schema, DesignableBar } = useDesignable();
   const mode = useContext(MenuModeContext);
+  const compile = useCompile();
+  const title = compile(schema.title);
   return mode === 'mix' ? (
     <Menu.Item {...props} />
   ) : (
@@ -413,7 +424,7 @@ Menu.SubMenu = observer((props: any) => {
         <SortableItem
           id={schema.name}
           data={{
-            title: schema.title,
+            title,
             path: getSchemaPath(schema),
           }}
         >
@@ -422,7 +433,7 @@ Menu.SubMenu = observer((props: any) => {
               <IconPicker type={icon} />
             </span>
           )}
-          {schema.title}
+          {title}
           <DesignableBar />
         </SortableItem>
         // <>
