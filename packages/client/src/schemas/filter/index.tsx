@@ -142,7 +142,7 @@ export function FilterList(props) {
             set(uid(), {});
           }}
         >
-          {t('Add a filter')}
+          {t('Add filter')}
         </a>
         <a
           style={{ marginLeft: 16 }}
@@ -152,7 +152,7 @@ export function FilterList(props) {
             });
           }}
         >
-          {t('Add a filter group')}
+          {t('Add filter group')}
         </a>
       </div>
     </div>

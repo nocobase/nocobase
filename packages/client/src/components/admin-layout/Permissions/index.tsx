@@ -215,7 +215,7 @@ const collectionSchema: ISchema = {
               properties: {
                 [uid()]: {
                   type: 'void',
-                  title: '{{t("Collection action permissions")}}',
+                  title: '{{t("Action permissions")}}',
                   'x-component': 'Action.Drawer',
                   'x-decorator': 'Form',
                   'x-decorator-props': {
@@ -319,7 +319,7 @@ export const Permissions = () => {
                     properties: {
                       modal: {
                         type: 'void',
-                        title: '{{t("Add new role")}}',
+                        title: '{{t("Add role")}}',
                         'x-decorator': 'Form',
                         'x-component': 'Action.Drawer',
                         'x-component-props': {
@@ -410,7 +410,7 @@ export const Permissions = () => {
                                 properties: {
                                   [uid()]: {
                                     type: 'void',
-                                    title: '{{t("Collection action permissions")}}',
+                                    title: '{{t("Action permissions")}}',
                                     'x-component': 'Tabs.TabPane',
                                     'x-component-props': {},
                                     properties: {
@@ -419,7 +419,7 @@ export const Permissions = () => {
                                   },
                                   [uid()]: {
                                     type: 'void',
-                                    title: '{{t("Menu access permissions")}}',
+                                    title: '{{t("Menu permissions")}}',
                                     'x-component': 'Tabs.TabPane',
                                     'x-component-props': {},
                                     properties: {

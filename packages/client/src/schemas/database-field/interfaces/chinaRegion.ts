@@ -60,7 +60,7 @@ export const chinaRegion: FieldOptions = {
       type: 'number',
       'x-component': 'Radio.Group',
       'x-decorator': 'FormItem',
-      title: '{{t("Select a level")}}',
+      title: '{{t("Select level")}}',
       default: 3,
       enum: [
         { value: 1, label: '{{t("Province")}}' },

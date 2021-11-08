@@ -85,7 +85,7 @@ const schema: ISchema = {
                 },
                 appLang: {
                   type: 'string',
-                  title: '{{t("Language settings")}}',
+                  title: '{{t("Language")}}',
                   'x-component': 'Select',
                   'x-decorator': 'FormItem',
                   enum: [

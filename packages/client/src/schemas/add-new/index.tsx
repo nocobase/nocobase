@@ -194,7 +194,7 @@ function generateCardItemSchema(component) {
               properties: {
                 modal: {
                   type: 'void',
-                  title: "{{t('Add a new record')}}",
+                  title: "{{t('Add record')}}",
                   'x-decorator': 'Form',
                   'x-component': 'Action.Drawer',
                   'x-component-props': {
@@ -381,7 +381,7 @@ function generateCardItemSchema(component) {
       properties: {
         create: {
           type: 'void',
-          title: "{{t('Add a card')}}",
+          title: "{{t('Add card')}}",
           // 'x-designable-bar': 'Kanban.AddCardDesignableBar',
           'x-component': 'Kanban.Card.AddNew',
           // 'x-decorator': 'AddNew.Displayed',
@@ -392,7 +392,7 @@ function generateCardItemSchema(component) {
           properties: {
             modal: {
               type: 'void',
-              title: "{{t('Add a new record')}}",
+              title: "{{t('Add record')}}",
               'x-decorator': 'Form',
               'x-decorator-props': {
                 useResource: '{{ Kanban.useCreateResource }}',
@@ -532,7 +532,7 @@ function generateCardItemSchema(component) {
               properties: {
                 modal: {
                   type: 'void',
-                  title: "{{t('Add a new record')}}",
+                  title: "{{t('Add record')}}",
                   'x-decorator': 'Form',
                   'x-component': 'Action.Drawer',
                   'x-component-props': {
@@ -1049,7 +1049,7 @@ AddNew.CardItem = observer((props: any) => {
                 <Menu.ItemGroup
                   className={'display-fields'}
                   key={`${view.key}-select`}
-                  title={t('Select a data source')}
+                  title={t('Select data source')}
                 >
                   {collections?.map((item) => (
                     <Menu.Item
@@ -1083,7 +1083,7 @@ AddNew.CardItem = observer((props: any) => {
                 <Menu.ItemGroup
                   className={'display-fields'}
                   key={`${view.key}-select`}
-                  title={t('Select a data source')}
+                  title={t('Select data source')}
                 >
                   {collections?.map((item) => (
                     <Menu.Item
@@ -1211,7 +1211,7 @@ AddNew.CardItem = observer((props: any) => {
                 <Menu.ItemGroup
                   className={'display-fields'}
                   key={`${view.key}-select`}
-                  title={t('Select a data source')}
+                  title={t('Select data source')}
                 >
                   {collections?.map((item) => (
                     <Menu.SubMenu
@@ -1219,7 +1219,7 @@ AddNew.CardItem = observer((props: any) => {
                       key={`collection.${item.name}.${view.key}`}
                       title={compile(item.title)}
                     >
-                      <Menu.ItemGroup title={t('Select a group field')}>
+                      <Menu.ItemGroup title={t('Select group field')}>
                         {item?.generalFields
                           ?.filter((item) => {
                             return item?.uiSchema?.enum;
@@ -1337,12 +1337,12 @@ AddNew.CardItem = observer((props: any) => {
           </Menu.ItemGroup>
           <Menu.Divider />
           <Menu.SubMenu key={'Ref'} icon={<LinkOutlined />} title={t('Templates')}>
-            <Menu.ItemGroup key={'form-select'} title={t('Select a template')}>
+            <Menu.ItemGroup key={'form-select'} title={t('Select template')}>
               <Menu.Item key={'Ref.ActionLogs'}>{t('Action logs')}</Menu.Item>
             </Menu.ItemGroup>
             <Menu.Divider></Menu.Divider>
             <Menu.Item disabled key={'addNewRef'}>
-              {t('Create a template')}
+              {t('Create template')}
             </Menu.Item>
           </Menu.SubMenu>
         </Menu>
@@ -1429,7 +1429,7 @@ AddNew.FormItem = observer((props: any) => {
                         'x-component-props': {
                           useOkAction: '{{ Select.useOkAction }}',
                         },
-                        title: "{{t('Select a record')}}",
+                        title: "{{t('Select record')}}",
                         properties: {
                           table: {
                             type: 'array',

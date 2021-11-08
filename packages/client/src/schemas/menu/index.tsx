@@ -447,7 +447,7 @@ Menu.AddNew = observer((props: any) => {
   const schemas = {
     'Menu.Link': {
       icon: <MenuOutlined />,
-      title: t('Add a page'),
+      title: t('Add page'),
       schema: {
         type: 'object',
         properties: {
@@ -469,7 +469,7 @@ Menu.AddNew = observer((props: any) => {
     },
     'Menu.SubMenu': {
       icon: <GroupOutlined />,
-      title: t('Add a group'),
+      title: t('Add group'),
       schema: {
         type: 'object',
         properties: {
@@ -491,7 +491,7 @@ Menu.AddNew = observer((props: any) => {
     },
     'Menu.URL': {
       icon: <LinkOutlined />,
-      title: t('Add a link'),
+      title: t('Add link'),
       schema: {
         type: 'object',
         properties: {
@@ -786,7 +786,7 @@ Menu.DesignableBar = (props) => {
                     await updateSchema(schema);
                   }}
                 >
-                  <EditOutlined /> {t('Edit menu item')}
+                  <EditOutlined /> {t('Edit')}
                 </AntdMenu.Item>
                 <AntdMenu.Item
                   key={'move'}

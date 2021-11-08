@@ -43,7 +43,7 @@ function IconField(props: any) {
           title={t('Icon')}
           trigger="click"
         >
-          <Button>{hasIcon(value) ? <Icon type={value} /> : t('Select an icon')}</Button>
+          <Button>{hasIcon(value) ? <Icon type={value} /> : t('Select icon')}</Button>
         </Popover>
         {value && (
           <Button

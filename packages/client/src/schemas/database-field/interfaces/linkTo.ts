@@ -44,7 +44,7 @@ export const linkTo: FieldOptions = {
     ...defaultProps,
     target: {
       type: 'string',
-      title: '{{t("Relationship collection")}}',
+      title: '{{t("Related collection")}}',
       required: true,
       'x-reactions': ['{{useAsyncDataSource(loadCollections)}}'],
       'x-decorator': 'FormItem',

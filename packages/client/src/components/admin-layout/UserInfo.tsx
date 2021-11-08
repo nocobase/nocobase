@@ -44,7 +44,7 @@ export const UserInfo = () => {
                           },
                           // appLang: {
                           //   type: 'string',
-                          //   title: '{{t("Language settings")}}',
+                          //   title: '{{t("Language")}}',
                           //   'x-component': 'Select',
                           //   'x-decorator': 'FormItem',
                           //   enum: [
@@ -97,7 +97,7 @@ export const UserInfo = () => {
           <Menu.Item>
             <div style={{ display: 'flex', justifyContent: 'space-between' }}>
               <span style={{ marginRight: 16, display: 'inline-block' }}>
-                {t('Language settings')}
+                {t('Language')}
               </span>
               <Select
                 className={'roles-select'}

@@ -450,7 +450,7 @@ function AddColumn() {
                           'x-component-props': {
                             useOkAction: '{{ Select.useOkAction }}',
                           },
-                          title: "{{t('Select a record')}}",
+                          title: "{{t('Select record')}}",
                           properties: {
                             table: {
                               type: 'array',
@@ -1056,7 +1056,7 @@ function generateActionSchema(type) {
       properties: {
         modal: {
           type: 'void',
-          title: "{{ t('Add a new record') }}",
+          title: "{{ t('Add record') }}",
           'x-decorator': 'Form',
           'x-component': 'Action.Drawer',
           'x-component-props': {

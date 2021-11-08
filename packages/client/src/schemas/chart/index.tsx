@@ -77,7 +77,7 @@ Chart.DesignableBar = observer((props) => {
                   }}
                   disabled
                 >
-                  {t('Edit chart')}
+                  {t('Edit')}
                 </Menu.Item>
                 <Menu.Divider />
                 <Menu.Item

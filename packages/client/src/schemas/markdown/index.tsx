@@ -152,7 +152,7 @@ Markdown.Void.DesignableBar = observer((props) => {
                     setVisible(false);
                   }}
                 >
-                  {t('Edit markdown')}
+                  {t('Edit')}
                 </Menu.Item>
                 <Menu.Divider />
                 <Menu.Item

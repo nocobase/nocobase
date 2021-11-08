@@ -33,7 +33,7 @@ export const register = {
           fulfill: {
             state: {
               errors:
-                '{{$deps[0] && $self.value && $self.value !== $deps[0] ? t("Confirm password does not match") : ""}}',
+                '{{$deps[0] && $self.value && $self.value !== $deps[0] ? t("Password mismatch") : ""}}',
             },
           },
         },
@@ -57,7 +57,7 @@ export const register = {
           fulfill: {
             state: {
               errors:
-                '{{$deps[0] && $self.value && $self.value !== $deps[0] ? t("Confirm password does not match") : ""}}',
+                '{{$deps[0] && $self.value && $self.value !== $deps[0] ? t("Password mismatch") : ""}}',
             },
           },
         },

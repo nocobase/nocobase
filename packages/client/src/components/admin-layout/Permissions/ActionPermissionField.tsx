@@ -249,7 +249,7 @@ export const ActionPermissionField = observer((props) => {
             ),
           },
           {
-            title: t('Operable data scope'),
+            title: t('Action scope'),
             dataIndex: ['scope', 'title'],
             render: (value) => (
               <Select style={{ minWidth: 150 }} size={'small'}></Select>
