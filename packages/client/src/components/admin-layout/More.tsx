@@ -50,7 +50,7 @@ const schema: ISchema = {
       properties: {
         item1: {
           type: 'void',
-          title: i18n.t('System settings'),
+          title: "{{t('System settings')}}",
           'x-component': 'Menu.Action',
           'x-component-props': {
             icon: 'SettingOutlined',
@@ -58,7 +58,7 @@ const schema: ISchema = {
           properties: {
             drawer1: {
               type: 'void',
-              title: i18n.t('System settings'),
+              title: "{{t('System settings')}}",
               'x-decorator': 'Form',
               'x-decorator-props': {
                 useResource,
@@ -70,13 +70,13 @@ const schema: ISchema = {
               properties: {
                 title: {
                   type: 'string',
-                  title: i18n.t('System title'),
+                  title: "{{t('System title')}}",
                   'x-decorator': 'FormItem',
                   'x-component': 'Input',
                 },
                 logo: {
                   type: 'string',
-                  title: i18n.t('Logo'),
+                  title: "{{t('Logo')}}",
                   'x-decorator': 'FormItem',
                   'x-component': 'Upload.Attachment',
                   'x-component-props': {
