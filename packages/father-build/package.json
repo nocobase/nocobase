@@ -1,7 +1,7 @@
 {
   "name": "father-build",
   "private": true,
-  "version": "1.19.5-alpha.26",
+  "version": "1.19.5-alpha.27",
   "description": "Library build tool based on rollup.",
   "main": "lib/index.js",
   "bin": {
