@@ -1,6 +1,6 @@
 {
   "name": "@nocobase/database-next",
-  "version": "0.5.0-alpha.30",
+  "version": "0.5.0-alpha.31",
   "private": true,
   "description": "",
   "main": "./lib/index.js",
