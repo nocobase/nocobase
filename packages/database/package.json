@@ -1,6 +1,6 @@
 {
   "name": "@nocobase/database",
-  "version": "0.5.0-alpha.31",
+  "version": "0.5.0-alpha.32",
   "description": "",
   "main": "./lib/index.js",
   "types": "./lib/index.d.ts",
