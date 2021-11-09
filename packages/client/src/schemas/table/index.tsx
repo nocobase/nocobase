@@ -1959,11 +1959,12 @@ Table.Action.DesignableBar = () => {
                         size={'small'}
                         defaultValue={popupComponent}
                         style={{ width: 100 }}
-                        onChange={(value) => {
+                        onChange={async (value) => {
                           const s = Object.values(schema.properties).shift();
                           s['x-component'] = value;
                           refresh();
-                          updateSchema(s);
+                          await updateSchema(s);
+                          window.location.reload();
                           // const f = field.query(getSchemaPath(s)).take()
                           // console.log('fffffff', { schema, f });
                         }}
@@ -1974,7 +1975,7 @@ Table.Action.DesignableBar = () => {
                         <Select.Option value={'Action.Drawer'}>
                           Drawer
                         </Select.Option>
-                        <Select.Option value={'Action.Window'}>
+                        <Select.Option disabled value={'Action.Window'}>
                           Window
                         </Select.Option>
                       </Select>
@@ -1983,7 +1984,7 @@ Table.Action.DesignableBar = () => {
                 )}
                 {!inActionBar && (
                   <Menu.Item>
-                    {t('Trigger on click the table row')} &nbsp;&nbsp;
+                    {t('Triggered when the row is clicked')} &nbsp;&nbsp;
                     <Switch size={'small'} defaultChecked />
                   </Menu.Item>
                 )}
