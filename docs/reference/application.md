@@ -7,9 +7,25 @@ toc: menu
 
 # Application
 
-## app.db
+## `app.db`
 
-数据库实例
+数据库实例，详情见 [Database API](database)
+
+##### Definition
+
+```ts
+class Application {
+  public db: Database;
+}
+```
+
+##### Examples
+
+```ts
+app.db.on('xxx', () => {
+
+});
+```
 
 ## app.resourcer
 
@@ -17,11 +33,39 @@ toc: menu
 
 ## app.pm
 
-插件管理器
+插件管理器，详情见 [Plugin Manager](plugin-manager)
+
+##### Definition
+
+```ts
+class Application {
+  public pm: PluginManager;
+}
+```
+
+##### Examples
+
+```ts
+app.pm.enable(['plugin-name']);
+```
 
 ## app.i18n
 
-国际化
+国际化，i18next 实例，详情见 [I18next API](https://www.i18next.com/overview/api)，在 Middleware 里请使用 [ctx.i18n](context#ctxi18n)
+
+##### Definition
+
+```ts
+class Application {
+  public i18n: I18next.i18n;
+}
+```
+
+##### Examples
+
+```ts
+app.i18n.t('Hello');
+```
 
 ## app.constructor()
 
