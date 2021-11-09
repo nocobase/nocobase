@@ -271,6 +271,65 @@ await Post.repository.find({
 // [{ id, name, content, createdAt, updatedAt }]
 ```
 
+fields、appends、expect 同时出现时，优先处理 fields，再把 appends 的合并进来，最后处理 expect。
+
+fields 和 appends 同时出现时：
+
+```ts
+{
+  fields: ['id', 'name'],
+  appends: ['tags'],
+}
+// 等同于 
+{
+  fields: ['id', 'name', 'tags'],
+}
+// { id, name, tags: [ { id, name, createdAt, updatedAt } ] }
+```
+
+fields 和 expect 同时出现时，如果 expect 的 key 在 fields 里，需要排除掉
+
+```ts
+{
+  fields: ['id', 'name'],
+  expect: ['name'],
+}
+// { id }
+```
+
+fields 取了多个关联字段的子字段，但是 expect 把整个关联字段都排除了
+
+```ts
+{
+  fields: ['id', 'name', 'tags.id', 'tags.name'],
+  expect: ['tags'],
+}
+// tags 排除了，tags.id 和 tags.name 都不应该被输出
+// { id, name }
+```
+
+fields 和 expect 同时出现时，如果 expect 的 key 不在 fields 里，不处理。
+
+```ts
+{
+  fields: ['id', 'name'],
+  expect: ['tags.createdAt', 'tags.updatedAt'],
+}
+// { id, name }
+```
+
+
+fields、appends、expect 同时出现时：
+
+```ts
+{
+  fields: ['id', 'name'],
+  appends: ['tags'],
+  expect: ['tags.createdAt', 'tags.updatedAt'],
+}
+// { id, name, tags: [ { id, name } ] }
+```
+
 ## `repository.findAndCount()`
 
 按分页查询数据，并返回所有符合的数据总数。
