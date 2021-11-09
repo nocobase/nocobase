@@ -59,6 +59,9 @@ export default {
       root = path.resolve(process.cwd(), root);
     }
     this.app.middleware.unshift(async (ctx, next) => {
+      if (process.env.NOCOBASE_ENV === 'production') {
+        return next();
+      }
       if (!root) {
         return next();
       }
