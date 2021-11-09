@@ -80,9 +80,6 @@ function createApp(opts) {
   return app;
 }
 
-// import send from 'koa-send';
-// import serve from 'koa-static';
-
 function multiApps({ getAppName }) {
   return async function (ctx: Koa.Context, next) {
     const appName = getAppName(ctx);
