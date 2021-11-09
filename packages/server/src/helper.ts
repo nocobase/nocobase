@@ -31,7 +31,7 @@ export function createI18n(options: ApplicationOptions) {
   return instance;
 }
 
-export function createCli(app, options: ApplicationOptions) {
+export function createCli(app: Application, options: ApplicationOptions) {
   const cli = new Command();
 
   cli
@@ -57,13 +57,28 @@ export function createCli(app, options: ApplicationOptions) {
   cli
     .command('init')
     .option('-f, --force')
-    .action(async (...args) => {
+    .action(async (opts, ...args) => {
+      if (!opts?.force) {
+        const tables = await app.db.sequelize.getQueryInterface().showAllTables();
+        if (tables.includes('collections')) {
+          console.log('NocoBase is already installed. To reinstall, please execute:');
+          console.log();
+          let command = 'yarn nocobase init --force'
+          for (const [key, value] of Object.entries(opts||{})) {
+            command += value === true ? ` --${key}` : ` --${key}=${value}`;
+          }
+          console.log(command);
+          console.log();
+          return;
+        }
+      }
       await app.db.sync({
         force: true,
       });
-      await app.emitAsync('db.init', ...args);
+      await app.emitAsync('db.init', opts, ...args);
       await app.destroy();
     });
+
   cli
     .command('start')
     .option('-p, --port [port]')
