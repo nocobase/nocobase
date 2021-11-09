@@ -1,11 +1,11 @@
 {
   "name": "@nocobase/plugin-automations",
-  "version": "0.5.0-alpha.29",
+  "version": "0.5.0-alpha.30",
   "main": "lib/index.js",
   "private": true,
   "license": "MIT",
   "dependencies": {
-    "@nocobase/server": "^0.5.0-alpha.29",
+    "@nocobase/server": "^0.5.0-alpha.30",
     "json-templates": "^4.1.0",
     "node-schedule": "^2.0.0"
   },
