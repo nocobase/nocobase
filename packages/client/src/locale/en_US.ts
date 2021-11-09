@@ -163,7 +163,7 @@ export default {
   'Configure actions': 'Configure actions',
   'Display order number': 'Display order number',
   'Enable drag and drop sorting': 'Enable drag and drop sorting',
-  'Trigger on click the table row': 'Trigger on click the table row',
+  'Triggered when the row is clicked': 'Triggered when the row is clicked',
   'Add tab': 'Add tab',
   'Disable tabs': 'Disable tabs',
   'Details': 'Details',

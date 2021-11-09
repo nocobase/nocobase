@@ -163,7 +163,7 @@ export default {
   'Configure actions': '配置操作',
   'Display order number': '显示序号',
   'Enable drag and drop sorting': '启用拖拽排序',
-  'Trigger on click the table row': '点击表格行时触发',
+  'Triggered when the row is clicked': '点击表格行时触发',
   'Add tab': '添加标签页',
   'Disable tabs': '禁用标签页',
   'Details': '详情',
