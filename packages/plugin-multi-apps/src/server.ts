@@ -71,11 +71,15 @@ function createApp(opts) {
   }
 
   app.plugin(
-    require(`@nocobase/plugin-client/${__filename.endsWith('.ts') ? 'src' : 'lib'}/server`).default, {
-    dist: path.resolve(process.cwd(), './dist'),
-    importDemo: true,
-    lang: process.env.APP_LANG || 'zh-CN',
-  });
+    require(`@nocobase/plugin-client/${
+      __filename.endsWith('.ts') ? 'src' : 'lib'
+    }/server`).default,
+    {
+      dist: path.resolve(process.cwd(), './dist'),
+      importDemo: true,
+      lang: process.env.APP_LANG || 'zh-CN',
+    },
+  );
 
   return app;
 }
@@ -93,7 +97,16 @@ function multiApps({ getAppName }) {
       where: { name: appName },
     });
     if (!model) {
-      return next();
+      if (ctx.path.includes('app:getLang')) {
+        ctx.body = {
+          data: {
+            lang: process.env.APP_LANG || 'en-US',
+          },
+        };
+      } else {
+        ctx.body = 'Expired';
+      }
+      return;
     }
     const apps = ctx.app['apps'];
     if (!apps.has(appName)) {
@@ -193,20 +206,22 @@ export default {
         },
       ],
     });
-    this.app.middleware.unshift(multiApps({
-      getAppName(ctx) {
-        console.log('ctx.hostname', ctx.hostname);
-        const hostname = ctx.get('X-Hostname') || ctx.hostname;
-        if (!hostname) {
-          return;
-        }
-        const keys = hostname.split('.');
-        if (keys.length < 4) {
-          return;
-        }
-        return keys.shift();
-      },
-    }));
+    this.app.middleware.unshift(
+      multiApps({
+        getAppName(ctx) {
+          console.log('ctx.hostname', ctx.hostname);
+          const hostname = ctx.get('X-Hostname') || ctx.hostname;
+          if (!hostname) {
+            return;
+          }
+          const keys = hostname.split('.');
+          if (keys.length < 4) {
+            return;
+          }
+          return keys.shift();
+        },
+      }),
+    );
     this.app.db.on('applications.afterCreate', async (model: Model) => {
       const name = model.get('name');
       (async () => {
@@ -214,7 +229,7 @@ export default {
         const app = createApp({
           name,
         });
-        console.log('creating........')
+        console.log('creating........');
         await app.load();
         await app.db.sync({
           force: true,
@@ -252,7 +267,7 @@ export default {
         const app = createApp({
           name,
         });
-        console.log('creating........')
+        console.log('creating........');
         await app.load();
         await app.db.sync({
           force: true,
