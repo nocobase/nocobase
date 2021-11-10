@@ -69,7 +69,8 @@ Installation
 
 #### Quickstart
 ~~~shell
-yarn create nocobase-app my-nocobase-app --quickstart
+yarn create nocobase-app my-nocobase-app --quickstart --lang=en-US
+# `--lang=en-US` Language settings support `--lang=en-US` and `--lang=zh-CN`
 ~~~
 
 #### Step by step
@@ -81,7 +82,9 @@ yarn create nocobase-app my-nocobase-app
 cd my-nocobase-app
 
 # 3. create initialization data
-yarn nocobase init --import-demo
+yarn nocobase init --import-demo --lang=en-US
+# `--import-demo` Importing demo data
+# `--lang=en-US` Language settings support `--lang=en-US` and `--lang=zh-CN`
 
 # 4. start project
 yarn start

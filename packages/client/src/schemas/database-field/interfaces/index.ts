@@ -47,13 +47,13 @@ Object.keys(types).forEach((type) => {
   registerField(schema.group || 'others', type, { order: 0, ...schema });
 });
 
-registerGroupLabel('basic', '基本类型');
-registerGroupLabel('choices', '选择类型');
-registerGroupLabel('media', '多媒体类型');
-registerGroupLabel('datetime', '日期和时间');
-registerGroupLabel('relation', '关系类型');
-registerGroupLabel('systemInfo', '系统信息');
-registerGroupLabel('others', '其他类型');
+registerGroupLabel('basic', '{{t("Basic")}}');
+registerGroupLabel('choices', '{{t("Choices")}}');
+registerGroupLabel('media', '{{t("Media")}}');
+registerGroupLabel('datetime', '{{t("Date & Time")}}');
+registerGroupLabel('relation', '{{t("Relation")}}');
+registerGroupLabel('systemInfo', '{{t("System info")}}');
+registerGroupLabel('others', '{{t("Others")}}');
 
 export const options = Object.keys(groupLabels).map((groupName) => {
   return {

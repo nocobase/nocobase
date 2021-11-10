@@ -6,7 +6,7 @@ export const string: FieldOptions = {
   type: 'object',
   group: 'basic',
   order: 1,
-  title: '单行文本',
+  title: '{{t("Single line text")}}',
   sortable: true,
   default: {
     interface: 'string',
@@ -24,11 +24,11 @@ export const string: FieldOptions = {
     ...defaultProps,
   },
   operations: [
-    { label: '包含', value: '$includes', selected: true },
-    { label: '不包含', value: '$notIncludes' },
-    { label: '等于', value: 'eq' },
-    { label: '不等于', value: 'ne' },
-    { label: '非空', value: '$notNull', noValue: true },
-    { label: '为空', value: '$null', noValue: true },
+    { label: '{{t("contains")}}', value: '$includes', selected: true },
+    { label: '{{t("does not contain")}}', value: '$notIncludes' },
+    { label: '{{t("is")}}', value: 'eq' },
+    { label: '{{t("is not")}}', value: 'ne' },
+    { label: '{{t("is empty")}}', value: '$null', noValue: true },
+    { label: '{{t("is not empty")}}', value: '$notNull', noValue: true },
   ],
 };

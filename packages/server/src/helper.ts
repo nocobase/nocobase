@@ -7,6 +7,7 @@ import { Command } from 'commander';
 import Application, { ApplicationOptions } from './application';
 import { dataWrapping } from './middlewares/data-wrapping';
 import { table2resource } from './middlewares/table2resource';
+import i18next from 'i18next';
 
 export function createDatabase(options: ApplicationOptions) {
   if (options.database instanceof Database) {
@@ -20,7 +21,17 @@ export function createResourcer(options: ApplicationOptions) {
   return new Resourcer({ ...options.resourcer });
 }
 
-export function createCli(app, options: ApplicationOptions) {
+export function createI18n(options: ApplicationOptions) {
+  const instance = i18next.createInstance();
+  instance.init({
+    lng: 'en-US',
+    resources: {},
+    ...options.i18n,
+  });
+  return instance;
+}
+
+export function createCli(app: Application, options: ApplicationOptions) {
   const cli = new Command();
 
   cli
@@ -46,13 +57,28 @@ export function createCli(app, options: ApplicationOptions) {
   cli
     .command('init')
     .option('-f, --force')
-    .action(async (...args) => {
+    .action(async (opts, ...args) => {
+      if (!opts?.force) {
+        const tables = await app.db.sequelize.getQueryInterface().showAllTables();
+        if (tables.includes('collections')) {
+          console.log('NocoBase is already installed. To reinstall, please execute:');
+          console.log();
+          let command = 'yarn nocobase init --force'
+          for (const [key, value] of Object.entries(opts||{})) {
+            command += value === true ? ` --${key}` : ` --${key}=${value}`;
+          }
+          console.log(command);
+          console.log();
+          return;
+        }
+      }
       await app.db.sync({
         force: true,
       });
-      await app.emitAsync('db.init', ...args);
+      await app.emitAsync('db.init', opts, ...args);
       await app.destroy();
     });
+
   cli
     .command('start')
     .option('-p, --port [port]')
@@ -88,6 +114,13 @@ export function registerMiddlewares(
   app.use<DefaultState, DefaultContext>(async (ctx, next) => {
     ctx.db = app.db;
     ctx.resourcer = app.resourcer;
+    const i18n = app.i18n.cloneInstance({ initImmediate: false })
+    ctx.i18n = i18n;
+    ctx.t = i18n.t.bind(i18n);
+    const lng = ctx.request.query.locale as string || ctx.acceptsLanguages().shift();
+    if (lng !== '*' && lng) {
+      i18n.changeLanguage(lng);
+    }
     await next();
   });
 

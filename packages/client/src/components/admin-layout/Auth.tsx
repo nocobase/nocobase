@@ -26,7 +26,7 @@ export function AuthProvider(props) {
   const { pathname, search } = location;
   let redirect = `?redirect=${pathname}${search}`;
   if (service.error) {
-    return <Redirect to={'/login' + redirect} />;
+    return <Redirect to={'/signin' + redirect} />;
   }
   return (
     <AuthContext.Provider value={{ service, currentUser: service.data }}>

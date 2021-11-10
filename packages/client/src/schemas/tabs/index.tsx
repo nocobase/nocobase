@@ -26,6 +26,8 @@ import { DragHandle, SortableItem } from '../../components/Sortable';
 import { DndContext, DragOverlay } from '@dnd-kit/core';
 import { FormDialog, FormLayout } from '@formily/antd';
 import IconPicker from '../../components/icon-picker';
+import { useCompile } from '../../hooks/useCompile';
+import { useTranslation } from 'react-i18next';
 
 const useTabs = ({ singleton }) => {
   const tabsField = useField();
@@ -65,6 +67,7 @@ export const Tabs: any = observer((props: any) => {
   const tabs = useTabs({ singleton });
   const [dragOverlayContent, setDragOverlayContent] = useState('');
   const { createSchema, removeSchema, updateSchema } = useClient();
+  const { t } = useTranslation();
 
   const moveToAfter = (path1, path2) => {
     if (!path1 || !path2) {
@@ -126,7 +129,7 @@ export const Tabs: any = observer((props: any) => {
                 type={'dashed'}
                 icon={<PlusOutlined />}
                 onClick={async () => {
-                  const values = await FormDialog('添加标签页', () => {
+                  const values = await FormDialog('Add tab', () => {
                     return (
                       <FormLayout layout={'vertical'}>
                         <SchemaField
@@ -135,14 +138,14 @@ export const Tabs: any = observer((props: any) => {
                             properties: {
                               title: {
                                 type: 'string',
-                                title: '标签名称',
+                                title: t('Display name'),
                                 required: true,
                                 'x-decorator': 'FormItem',
                                 'x-component': 'Input',
                               },
                               icon: {
                                 type: 'string',
-                                title: '标签图标',
+                                title: t('Icon'),
                                 'x-decorator': 'FormItem',
                                 'x-component': 'IconPicker',
                               },
@@ -179,7 +182,7 @@ export const Tabs: any = observer((props: any) => {
                   await createSchema(data);
                 }}
               >
-                添加标签页
+                {t('Add tab')}
               </Button>
             )
           }
@@ -207,17 +210,19 @@ export const Tabs: any = observer((props: any) => {
 
 Tabs.TabPane = observer((props: any) => {
   const { schema, DesignableBar } = useDesignable();
+  const compile = useCompile();
+  const title = compile(schema.title);
   return (
     <SortableItem
       id={schema.name}
       data={{
-        title: schema.title,
+        title,
         path: getSchemaPath(schema),
       }}
     >
       <div className={'nb-tab-pane'}>
         <IconPicker type={props.icon} />
-        {schema.title} <DesignableBar />
+        {title} <DesignableBar />
       </div>
     </SortableItem>
   );
@@ -228,6 +233,7 @@ Tabs.DesignableBar = () => {
   const [visible, setVisible] = useState(false);
   const field = useField();
   const { createSchema, removeSchema, updateSchema } = useClient();
+  const { t } = useTranslation();
   return (
     <div className={cls('designable-bar', { active: visible })}>
       <span
@@ -256,7 +262,7 @@ Tabs.DesignableBar = () => {
                     updateSchema(schema);
                   }}
                 >
-                  禁用标签页 <span style={{ marginRight: 24 }}></span>{' '}
+                  {t('Disable tabs')} <span style={{ marginRight: 24 }}></span>{' '}
                   <Switch
                     size={'small'}
                     checked={!!field.componentProps.singleton}
@@ -278,6 +284,7 @@ Tabs.TabPane.DesignableBar = () => {
   const [visible, setVisible] = useState(false);
   const field = useField();
   const { createSchema, removeSchema, updateSchema } = useClient();
+  const { t } = useTranslation();
   return (
     <div className={cls('designable-bar', { active: visible })}>
       <span
@@ -299,7 +306,7 @@ Tabs.TabPane.DesignableBar = () => {
                 <Menu.Item
                   onClick={async () => {
                     setVisible(false);
-                    const values = await FormDialog('编辑标签页', () => {
+                    const values = await FormDialog(t('Edit tab'), () => {
                       return (
                         <FormLayout layout={'vertical'}>
                           <SchemaField
@@ -308,14 +315,14 @@ Tabs.TabPane.DesignableBar = () => {
                               properties: {
                                 title: {
                                   type: 'string',
-                                  title: '标签名称',
+                                  title: t('Display name'),
                                   required: true,
                                   'x-decorator': 'FormItem',
                                   'x-component': 'Input',
                                 },
                                 icon: {
                                   type: 'string',
-                                  title: '标签图标',
+                                  title: t('Icon'),
                                   'x-decorator': 'FormItem',
                                   'x-component': 'IconPicker',
                                 },
@@ -339,15 +346,15 @@ Tabs.TabPane.DesignableBar = () => {
                     updateSchema(schema);
                   }}
                 >
-                  编辑标签页
+                  {t('Edit tab')}
                 </Menu.Item>
                 <Menu.Divider />
                 <Menu.Item
                   onClick={async () => {
                     setVisible(false);
                     Modal.confirm({
-                      title: '删除标签页',
-                      content: '删除后无法恢复，确定要删除吗？',
+                      title: t('Delete tab'),
+                      content: t('Are you sure you want to delete it?'),
                       onOk: async () => {
                         const data = remove();
                         await removeSchema(data);
@@ -355,7 +362,7 @@ Tabs.TabPane.DesignableBar = () => {
                     });
                   }}
                 >
-                  删除
+                  {t('Delete')}
                 </Menu.Item>
               </Menu>
             }

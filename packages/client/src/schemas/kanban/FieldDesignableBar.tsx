@@ -36,9 +36,11 @@ import { RandomNameContext } from '../form';
 import { useCollectionContext, useDisplayedMapContext } from '../../constate';
 import SwitchMenuItem from '../../components/SwitchMenuItem';
 import { DragHandle } from '../../components/Sortable';
+import { useTranslation } from 'react-i18next';
 
 export const FieldDesignableBar = observer((props) => {
   const field = useField();
+  const { t } = useTranslation();
   const { schema, deepRemove } = useDesignable();
   const [visible, setVisible] = useState(false);
   const { dragRef } = useContext(DraggableBlockContext);
@@ -78,7 +80,7 @@ export const FieldDesignableBar = observer((props) => {
                 <Menu.Item
                   key={'update'}
                   onClick={async () => {
-                    const values = await FormDialog('自定义字段名称', () => {
+                    const values = await FormDialog(t('Custom field display name'), () => {
                       return (
                         <FormLayout layout={'vertical'}>
                           <SchemaField
@@ -87,14 +89,14 @@ export const FieldDesignableBar = observer((props) => {
                               properties: {
                                 fieldName: {
                                   type: 'string',
-                                  title: '原字段名称',
+                                  title: t('Original name'),
                                   'x-read-pretty': true,
                                   'x-decorator': 'FormItem',
                                   'x-component': 'Input',
                                 },
                                 title: {
                                   type: 'string',
-                                  title: '自定义名称',
+                                  title: t('Custom name'),
                                   'x-decorator': 'FormItem',
                                   'x-component': 'Input',
                                 },
@@ -122,15 +124,15 @@ export const FieldDesignableBar = observer((props) => {
                     });
                   }}
                 >
-                  自定义字段名称
+                  {t('Custom field display name')}
                 </Menu.Item>
                 <Menu.Divider />
                 <Menu.Item
                   key={'delete'}
                   onClick={async () => {
                     Modal.confirm({
-                      title: '删除区块',
-                      content: '删除后无法恢复，确定要删除吗？',
+                      title: t('Delete block'),
+                      content: t('Are you sure you want to delete it?'),
                       onOk: async () => {
                         const removed = deepRemove();
                         const fieldName =
@@ -142,7 +144,7 @@ export const FieldDesignableBar = observer((props) => {
                     });
                   }}
                 >
-                  删除
+                  {t('Delete')}
                 </Menu.Item>
               </Menu>
             }

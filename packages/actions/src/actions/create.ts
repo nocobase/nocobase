@@ -23,7 +23,7 @@ export async function create(ctx: Context, next: Next) {
     resourceField,
     associatedName,
     resourceName,
-    values: data,
+    values: data = {},
     fields,
   } = ctx.action.params;
   const values = filterByFields(data, fields);

@@ -34,8 +34,10 @@ import { uid } from '@formily/shared';
 import { getSchemaPath } from '../../components/schema-renderer';
 import { set } from 'lodash';
 import { DragHandle } from '../../components/Sortable';
+import { Trans, useTranslation } from 'react-i18next';
 
 export const SimpleDesignableBar = observer((props) => {
+  const { t } = useTranslation();
   const field = useField();
   const { designable, schema, refresh, deepRemove } = useDesignable();
   const [visible, setVisible] = useState(false);
@@ -68,7 +70,7 @@ export const SimpleDesignableBar = observer((props) => {
                   key={'defaultFilter'}
                   onClick={async () => {
                     const { defaultFilter } = await FormDialog(
-                      '设置数据范围',
+                      t('Set the data scope'),
                       () => {
                         return (
                           <FormLayout layout={'vertical'}>
@@ -82,12 +84,12 @@ export const SimpleDesignableBar = observer((props) => {
                                     properties: {
                                       column1: {
                                         type: 'void',
-                                        title: '操作类型',
+                                        title: t('Action type'),
                                         'x-component': 'Filter.Column',
                                         'x-component-props': {
                                           operations: [
                                             {
-                                              label: '等于',
+                                              label: '{{t("is")}}',
                                               value: 'eq',
                                               selected: true,
                                               schema: {
@@ -95,14 +97,14 @@ export const SimpleDesignableBar = observer((props) => {
                                               },
                                             },
                                             {
-                                              label: '不等于',
+                                              label: '{{t("is not")}}',
                                               value: 'ne',
                                               schema: {
                                                 'x-component': 'Select',
                                               },
                                             },
                                             {
-                                              label: '包含',
+                                              label: '{{t("contains")}}',
                                               value: 'in',
                                               schema: {
                                                 'x-component': 'Select',
@@ -112,7 +114,7 @@ export const SimpleDesignableBar = observer((props) => {
                                               },
                                             },
                                             {
-                                              label: '不包含',
+                                              label: '{{t("does not contain")}}',
                                               value: 'notIn',
                                               schema: {
                                                 'x-component': 'Select',
@@ -122,13 +124,13 @@ export const SimpleDesignableBar = observer((props) => {
                                               },
                                             },
                                             {
-                                              label: '非空',
-                                              value: '$notNull',
+                                              label: '{{t("is empty")}}',
+                                              value: '$null',
                                               noValue: true,
                                             },
                                             {
-                                              label: '为空',
-                                              value: '$null',
+                                              label: '{{t("is not empty")}}',
+                                              value: '$notNull',
                                               noValue: true,
                                             },
                                           ],
@@ -139,15 +141,15 @@ export const SimpleDesignableBar = observer((props) => {
                                             'x-component': 'Select',
                                             enum: [
                                               {
-                                                label: '添加数据',
+                                                label: '{{t("Insert")}}',
                                                 value: 'create',
                                               },
                                               {
-                                                label: '更新数据',
+                                                label: '{{t("Update")}}',
                                                 value: 'update',
                                               },
                                               {
-                                                label: '删除数据',
+                                                label: '{{t("Delete")}}',
                                                 value: 'destroy',
                                               },
                                             ],
@@ -175,40 +177,42 @@ export const SimpleDesignableBar = observer((props) => {
                     setVisible(false);
                   }}
                 >
-                  设置数据范围
+                  {t('Set the data scope')}
                 </Menu.Item>
                 <Menu.Item key={'defaultPageSize'}>
-                  每页默认显示{' '}
-                  <Select
-                    bordered={false}
-                    size={'small'}
-                    onChange={(value) => {
-                      const componentProps = schema['x-component-props'] || {};
-                      set(componentProps, 'pagination.defaultPageSize', value);
-                      set(componentProps, 'pagination.pageSize', value);
-                      schema['x-component-props'] = componentProps;
-                      field.componentProps.pagination.pageSize = value;
-                      field.componentProps.pagination.defaultPageSize = value;
-                      refresh();
-                      updateSchema(schema);
-                      setVisible(false);
-                    }}
-                    defaultValue={defaultPageSize}
-                  >
-                    <Select.Option value={10}>10</Select.Option>
-                    <Select.Option value={20}>20</Select.Option>
-                    <Select.Option value={50}>50</Select.Option>
-                    <Select.Option value={100}>100</Select.Option>
-                  </Select>{' '}
-                  条
+                  <Trans>
+                    {'Display '}
+                    <Select
+                      bordered={false}
+                      size={'small'}
+                      onChange={(value) => {
+                        const componentProps = schema['x-component-props'] || {};
+                        set(componentProps, 'pagination.defaultPageSize', value);
+                        set(componentProps, 'pagination.pageSize', value);
+                        schema['x-component-props'] = componentProps;
+                        field.componentProps.pagination.pageSize = value;
+                        field.componentProps.pagination.defaultPageSize = value;
+                        refresh();
+                        updateSchema(schema);
+                        setVisible(false);
+                      }}
+                      defaultValue={defaultPageSize}
+                    >
+                      <Select.Option value={10}>10</Select.Option>
+                      <Select.Option value={20}>20</Select.Option>
+                      <Select.Option value={50}>50</Select.Option>
+                      <Select.Option value={100}>100</Select.Option>
+                    </Select>
+                    {' items per page'}
+                  </Trans>
                 </Menu.Item>
                 <Menu.Divider />
                 <Menu.Item
                   key={'delete'}
                   onClick={async () => {
                     Modal.confirm({
-                      title: '删除区块',
-                      content: '删除后无法恢复，确定要删除吗？',
+                      title: t('Delete block'),
+                      content: t('Are you sure you want to delete it?'),
                       onOk: async () => {
                         const removed = deepRemove();
                         // console.log({ removed })
@@ -219,7 +223,7 @@ export const SimpleDesignableBar = observer((props) => {
                     });
                   }}
                 >
-                  删除
+                  {t('Delete')}
                 </Menu.Item>
               </Menu>
             }

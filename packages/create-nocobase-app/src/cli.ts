@@ -11,11 +11,12 @@ const program = new commander.Command(packageJson.name)
   .version(packageJson.version)
   .option('--simple', 'create nocobase app without install dependencies')
   .option('--quickstart', 'create quickstart nocobase app')
+  .option('--lang [lang]', 'language settings')
   .arguments('<project-directory>')
   .usage(`${chalk.green('<project-directory>')}`)
   .action(async (directory, options) => {
     console.log(
-      `Creating a new Nocobase application at ${chalk.green(directory)}.`,
+      `Creating a new NocoBase application at ${chalk.green(directory)}.`,
     );
     console.log('Creating files.');
 
@@ -65,7 +66,7 @@ const program = new commander.Command(packageJson.name)
 
     if (options.quickstart) {
       // Using Sqlite as Database
-      const prefix = chalk.yellow('Nocobase init');
+      const prefix = chalk.yellow('NocoBase init');
       const initLoader = ora(prefix).start();
 
       try {
@@ -76,7 +77,7 @@ const program = new commander.Command(packageJson.name)
             .join(' ')}`;
         };
 
-        const init = runInit(fullPath);
+        const init = runInit(fullPath, ['--import-demo', `--lang=${options.lang||'en-US'}`]);
         init.stderr.on('data', initLog);
         init.stdout.on('data', initLog);
         await init;

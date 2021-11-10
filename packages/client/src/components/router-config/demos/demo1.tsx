@@ -13,7 +13,7 @@ const RouteSwitch = createRouteSwitch({
       console.log({ props });
       return <div>Home {props.children}</div>;
     },
-    Login: () => <div>Login</div>,
+    Signin: () => <div>Signin</div>,
   },
 });
 
@@ -21,9 +21,9 @@ export default () => {
   const routes: Array<RouteRedirectProps> = [
     {
       type: 'route',
-      path: '/login',
+      path: '/signin',
       exact: true,
-      component: 'Login',
+      component: 'Signin',
     },
     {
       type: 'route',
@@ -34,7 +34,7 @@ export default () => {
           type: 'route',
           path: '/home/123',
           exact: true,
-          component: 'Login',
+          component: 'Signin',
         },
       ],
     },

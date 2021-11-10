@@ -19,6 +19,7 @@ import {
 } from '@formily/antd/esm/__builtins__';
 import { FullscreenOutlined } from '@ant-design/icons';
 import moment from 'moment';
+import { useCompile } from '../../hooks/useCompile';
 
 const PlaceholderContext = createContext<string>('');
 
@@ -31,11 +32,12 @@ const usePlaceholder = (value?: any) => {
 
 const Input: React.FC<InputProps> = (props) => {
   const prefixCls = usePrefixCls('description-input', props);
+  const compile = useCompile();
   return (
     <div className={cls(prefixCls, props.className)} style={props.style}>
       {props.addonBefore}
       {props.prefix}
-      {usePlaceholder(props.value)}
+      {compile(usePlaceholder(props.value))}
       {props.suffix}
       {props.addonAfter}
     </div>

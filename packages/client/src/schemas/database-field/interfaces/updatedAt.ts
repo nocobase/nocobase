@@ -7,7 +7,7 @@ export const updatedAt: FieldOptions = {
   type: 'object',
   group: 'systemInfo',
   order: 2,
-  title: '最后更新时间',
+  title: '{{t("Last updated at")}}',
   sortable: true,
   default: {
     dataType: 'date',
@@ -15,7 +15,7 @@ export const updatedAt: FieldOptions = {
     // name,
     uiSchema: {
       type: 'datetime',
-      title: '最后更新时间',
+      title: '{{t("Last updated at")}}',
       'x-component': 'DatePicker',
       'x-component-props': {},
       'x-read-pretty': true,

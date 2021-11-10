@@ -29,6 +29,7 @@ import { getSchemaPath } from '../../components/schema-renderer';
 import { useCollection, useCollectionContext } from '../../constate';
 import { useTable } from '../table';
 import { DragHandle } from '../../components/Sortable';
+import { useCompile } from '../../hooks/useCompile';
 
 export const DesignableBar = observer((props) => {
   const field = useField();
@@ -39,10 +40,11 @@ export const DesignableBar = observer((props) => {
   const collectionName =
     field.componentProps?.collectionName || tableProps?.collectionName;
   const { collection } = useCollection({ collectionName });
+  const compile = useCompile();
   return (
     <div className={cls('designable-bar', { active: visible })}>
       <div className={'designable-info'}>
-        {collection?.title || collection?.name}
+        {compile(collection?.title || collection?.name)}
       </div>
       <span
         onClick={(e) => {

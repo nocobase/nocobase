@@ -74,13 +74,11 @@ function createApp(opts) {
     require(`@nocobase/plugin-client/${__filename.endsWith('.ts') ? 'src' : 'lib'}/server`).default, {
     dist: path.resolve(process.cwd(), './dist'),
     importDemo: true,
+    lang: process.env.APP_LANG || 'zh-CN',
   });
 
   return app;
 }
-
-// import send from 'koa-send';
-// import serve from 'koa-static';
 
 function multiApps({ getAppName }) {
   return async function (ctx: Koa.Context, next) {

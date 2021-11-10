@@ -17,6 +17,10 @@ export function getDocumentRoot(storage): string {
 
 // TODO(optimize): 初始化的时机不应该放在中间件里
 export function middleware(app) {
+  if (process.env.NOCOBASE_ENV === 'production') {
+    return;
+  }
+
   const storages = new Map<string, any>();
   const StorageModel = app.db.getModel('storages');
 

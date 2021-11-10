@@ -7,7 +7,7 @@ export const email: FieldOptions = {
   type: 'object',
   group: 'basic',
   order: 4,
-  title: '电子邮箱',
+  title: '{{t("Email")}}',
   sortable: true,
   default: {
     dataType: 'string',

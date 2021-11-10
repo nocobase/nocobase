@@ -1,3 +1,3 @@
-export * from './login';
+export * from './signin';
 export * from './menu';
-export * from './register';
+export * from './signup';

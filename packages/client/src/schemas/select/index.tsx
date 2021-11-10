@@ -243,7 +243,7 @@ Select.Object = connect(
 
 const OptionTagContext = createContext(null);
 
-const SelectedRowsContext = createContext<any>(null);
+const SelectedRowsContext = createContext<any>({});
 
 Select.useOkAction = () => {
   const { props } = useContext(SelectContext);
@@ -266,7 +266,7 @@ Select.useRowSelection = () => {
 Select.useSelect = () => {
   const { setSelectedRows } = useContext(SelectedRowsContext);
   return (keys, rows) => {
-    setSelectedRows(rows);
+    setSelectedRows && setSelectedRows(rows);
     console.log('Select.onSelect', keys, rows);
   };
 };

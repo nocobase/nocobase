@@ -30,6 +30,8 @@ import { useCollection, useCollectionContext } from '../../constate';
 import { useTable } from '../table';
 import { BlockSchemaContext } from '../../context';
 import { DragHandle } from '../../components/Sortable';
+import { useTranslation } from 'react-i18next';
+import { useCompile } from '../../hooks/useCompile';
 
 export const DesignableBar = observer((props) => {
   const field = useField();
@@ -40,11 +42,13 @@ export const DesignableBar = observer((props) => {
   const blockSchema = useContext(BlockSchemaContext);
   const collectionName = blockSchema['x-component-props']?.collectionName;
   const { collection } = useCollection({ collectionName });
+  const { t } = useTranslation();
+  const compile = useCompile();
   return (
     <div className={cls('designable-bar', { active: visible })}>
       {collection && (
         <div className={'designable-info'}>
-          {collection?.title || collection?.name}
+          {compile(collection?.title || collection?.name)}
         </div>
       )}
       <span
@@ -77,8 +81,8 @@ export const DesignableBar = observer((props) => {
                   key={'delete'}
                   onClick={async () => {
                     Modal.confirm({
-                      title: '删除区块',
-                      content: '删除后无法恢复，确定要删除吗？',
+                      title: t('Delete block'),
+                      content: t('Are you sure you want to delete it?'),
                       onOk: async () => {
                         const removed = deepRemove();
                         // console.log({ removed })
@@ -88,7 +92,7 @@ export const DesignableBar = observer((props) => {
                     });
                   }}
                 >
-                  删除
+                  {t('Delete')}
                 </Menu.Item>
               </Menu>
             }
