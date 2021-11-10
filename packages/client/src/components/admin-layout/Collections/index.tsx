@@ -610,7 +610,7 @@ function CreateFieldButton() {
           key: uid(),
           name: `f_${uid()}`,
           interface: info.key,
-        });
+        }, 'overwrite');
         setProperties(clone(schema.properties));
         setVisible(true);
       }}
@@ -644,16 +644,16 @@ function CreateFieldButton() {
         title={t('Add field')}
         width={'50%'}
         visible={visible}
-        onClose={() => {
+        onClose={async () => {
+          await form.clearFormGraph();
           setVisible(false);
-          form.reset();
         }}
         footer={
           <Space style={{ float: 'right' }}>
             <Button
               onClick={async () => {
+                await form.clearFormGraph();
                 setVisible(false);
-                await form.reset();
               }}
             >
               {t('Cancel')}
