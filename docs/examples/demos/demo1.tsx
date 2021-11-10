@@ -24,8 +24,8 @@ request.use(async (ctx, next) => {
   const token = localStorage.getItem('NOCOBASE_TOKEN');
   if (token) {
     headers['Authorization'] = `Bearer ${token}`;
-    headers['X-Hostname'] = process.env.API_HOSTNAME;
   }
+  headers['X-Hostname'] = window.location.hostname;
   await next();
 });
 

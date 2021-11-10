@@ -47,6 +47,7 @@ const api = new Server({
 });
 
 const plugins = [
+  '@nocobase/plugin-multi-apps',
   '@nocobase/plugin-ui-router',
   '@nocobase/plugin-ui-schema',
   '@nocobase/plugin-collections',

@@ -7,7 +7,7 @@ NocoBase 是什么
 NocoBase 是一个极易扩展的开源无代码开发平台。
 无需编程，使用 NocoBase 搭建自己的协作平台、管理系统，只需要几分钟时间。 
 
-[https://www.nocobase.com/cn](https://www.nocobase.com/cn)
+[https://cn.nocobase.com/](https://cn.nocobase.com/)
 
 哪些场景适合使用 NocoBase
 ----------

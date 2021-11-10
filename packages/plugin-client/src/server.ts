@@ -92,9 +92,9 @@ export default {
         }
       },
     });
-    this.app.on('db.init', async (opts, cli) => {
-      const importDemo = opts.importDemo || this.options.importDemo;
-      const lang = opts.lang || this.options.lang;
+    this.app.on('db.init', async (opts = {}, cli) => {
+      const importDemo = opts?.importDemo || this.options.importDemo;
+      const lang = opts?.lang || this.options.lang;
       const SystemSetting = app.db.getModel('system_settings');
       const model = await SystemSetting.findOne();
       model.appLang = lang || 'en-US';
