@@ -1,4 +1,4 @@
-DELETE FROM "attachments";
+-- DELETE FROM "attachments";
 INSERT INTO "attachments" ("id", "title", "filename", "extname", "size", "mimetype", "path", "meta", "url", "created_at", "updated_at", "created_by_id", "updated_by_id", "storage_id") VALUES
 (2,	'Nocobase',	'dac1165de10a3373a87ae4e5da9788ab.png',	'.png',	NULL,	'image/png',	'',	'{}',	'https://nocobase.oss-cn-beijing.aliyuncs.com/dac1165de10a3373a87ae4e5da9788ab.png',	'2021-09-04 01:33:38.878+00',	'2021-09-04 01:33:38.878+00',	NULL,	NULL,	2),
 (3,	'grapes-276070_1280',	'3451976fea63a882b5fd661aa211693e.jpg',	'.jpg',	NULL,	'image/jpeg',	'',	'{}',	'https://nocobase.oss-cn-beijing.aliyuncs.com/3451976fea63a882b5fd661aa211693e.jpg',	'2021-09-04 01:34:50.388+00',	'2021-09-04 01:34:50.388+00',	NULL,	1,	2),
