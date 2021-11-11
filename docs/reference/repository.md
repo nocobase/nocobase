@@ -600,7 +600,7 @@ await repository.create({
 
 ```ts
 interface update<M extends Sequelize.Model> {
-  (options: UpdateOptions): Promise<M>
+  (options: UpdateOptions): Promise<any>
 }
 
 interface UpdateOptions {
@@ -646,11 +646,57 @@ await repository.update({
 ```ts
 await repository.update({
   filter: {
-    name: 'post1.1'
+    name: 'post 1'
   },
   values: {
-    name: 'post1.2'
+    name: 'post 2'
   },
+});
+// 对应的 SQL 为
+// update posts set name = 'post 2' where name = 'post 1'
+```
+
+filter 和 values 都可能包含关联字段，如将 name 为 user 1 的文章的 user 改为 id=3 的 user
+
+```ts
+await Post.repository.update({
+  filter: {
+    'user.name': 'user 1'
+  },
+  values: {
+    user: 3
+  },
+});
+```
+
+values 也可以是关系数据，参数与 create 的 values 一致：
+
+```ts
+await repository.update({
+  filterByPk: 1,
+  values: {
+    a: 'a',
+    // 快速建立关联
+    o2o: 1,    // 建立一对一关联
+    m2o: 1,    // 建立多对一关联
+    o2m: [1,2] // 建立一对多关联
+    m2m: [1,2] // 建立多对多关联
+    // 新建关联数据并建立关联
+    o2o: {
+      key1: 'val1',
+    },
+    o2m: [{key1: 'val1'}, {key2: 'val2'}],
+    // 子表格数据
+    subTable: [
+      // 如果数据存在，更新处理
+      {id: 1, key1: 'val1111'},
+      // 如果数据不存在，直接创建并关联
+      {key2: 'val2'},
+    ],
+  },
+  // 关系数据默认会新建并建立关联处理，如果是已存在的数据只关联，但不更新关系数据
+  // 如果需要更新关联数据，可以通过 updateAssociationValues 指定
+  updateAssociationValues: ['subTable'],
 });
 ```
 
