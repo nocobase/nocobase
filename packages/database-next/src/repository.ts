@@ -17,17 +17,21 @@ import { updateAssociations } from './update-associations';
 import { RelationField } from './fields';
 import FilterParser from './filterParser';
 
+const debug = require('debug')('noco-database');
+
 export interface IRepository {}
 
 interface CreateManyOptions extends BulkCreateOptions {}
 
-type Filter = any;
+export type Filter = any;
+export type Appends = string[];
+export type Expect = string[];
 
-interface FindOptions extends SequelizeFindOptions {
+export interface FindOptions extends SequelizeFindOptions {
   filter?: Filter;
   fields?: any;
-  appends?: any;
-  expect?: any;
+  appends?: Appends;
+  expect?: Expect;
   page?: any;
   pageSize?: any;
   sort?: any;
@@ -204,30 +208,9 @@ export class Repository<
 
     let rows = [];
 
-    if (opts.include) {
-      const ids = (
-        await model.findAll({
-          ...opts,
-          includeIgnoreAttributes: false,
-          attributes: [model.primaryKeyAttribute],
-          group: `${model.name}.${model.primaryKeyAttribute}`,
-        })
-      ).map((item) => item[model.primaryKeyAttribute]);
-      if (ids.length > 0) {
-        rows = await model.findAll({
-          ...opts,
-          where: {
-            [model.primaryKeyAttribute]: {
-              [Op.in]: ids,
-            },
-          },
-        });
-      }
-    } else {
-      rows = await model.findAll({
-        ...opts,
-      });
-    }
+    rows = await model.findAll({
+      ...opts,
+    });
 
     const count = await model.count({
       ...opts,
@@ -252,32 +235,16 @@ export class Repository<
    */
   async findOne(options?: FindOneOptions) {
     const model = this.collection.model;
-    const opts = {
+
+    const findOptions = {
       subQuery: false,
       ...this.buildQueryOptions(options),
     };
 
-    let data: Model;
-    if (opts.include) {
-      const item = await model.findOne({
-        ...opts,
-        includeIgnoreAttributes: false,
-        attributes: [model.primaryKeyAttribute],
-        group: `${model.name}.${model.primaryKeyAttribute}`,
-      });
-      if (!item) {
-        return;
-      }
-      data = await model.findOne({
-        ...opts,
-        where: item.toJSON(),
-      });
-    } else {
-      data = await model.findOne({
-        ...opts,
-      });
-    }
-    return data;
+    // set subQuery to false
+    const result = await model.findOne(findOptions);
+
+    return result;
   }
 
   /**
@@ -286,7 +253,10 @@ export class Repository<
    * @param values
    * @param options
    */
-  async create(values?: TCreationAttributes, options?: CreateOptions) {
+  async create(
+    values?: TCreationAttributes,
+    options?: CreateOptions,
+  ): Promise<Model> {
     const instance = await this.model.create<any>(values, options);
     if (!instance) {
       return;
@@ -395,8 +365,67 @@ export class Repository<
   }
 
   protected buildQueryOptions(options: any) {
-    const opts = this.parseFilter(options.filter);
-    return { ...options, ...opts };
+    let filterParams = this.parseFilter(options?.filter);
+
+    if (options.fields) {
+      filterParams = this.parseFields(options.fields, filterParams);
+    } else if (options.appends) {
+      filterParams = this.parseAppends(options.appends, filterParams);
+    }
+
+    return Object.assign({}, options, filterParams);
+  }
+
+  protected parseFields(fields: any, filterParams: any) {
+    filterParams['attributes'] = fields;
+    return filterParams;
+  }
+
+  protected appendIncludeAssociation(filterParams: any, name: string) {
+    const associations = this.model.associations;
+    if (!associations[name]) {
+      throw new Error(`${name} is not a valid association`);
+    }
+
+    const existIncludeIndex = filterParams['include'].findIndex(
+      (include) => include['association'] == name,
+    );
+
+    if (existIncludeIndex == -1) {
+      filterParams['include'].push({
+        association: name,
+      });
+    }
+  }
+
+  /**
+   * appends to sequelize params
+   * @protected
+   */
+  protected parseAppends(appends: Appends, filterParams: any) {
+    if (!appends) return filterParams;
+    const associations = this.model.associations;
+
+    for (const append of appends) {
+      if (!associations[append]) {
+        throw new Error(`${append} is not a valid association`);
+      }
+
+      const existIncludeIndex = filterParams['include'].findIndex(
+        (include) => include['association'] == append,
+      );
+
+      if (existIncludeIndex == -1) {
+        filterParams['include'].push({
+          association: append,
+        });
+      } else {
+        delete filterParams['include'][existIncludeIndex]['attributes'];
+      }
+    }
+
+    debug('filter params: %o', filterParams);
+    return filterParams;
   }
 
   /**

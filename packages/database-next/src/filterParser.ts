@@ -3,6 +3,8 @@ import _ from 'lodash';
 import { flatten } from 'flat';
 import { Collection } from './collection';
 
+const debug = require('debug')('noco-database');
+
 type FilterType = any;
 
 class FilterParser {
@@ -17,6 +19,8 @@ class FilterParser {
   }
 
   toSequelizeParams() {
+    debug('filter %o', this.filter);
+
     if (!this.filter) {
       return {};
     }
@@ -29,29 +33,46 @@ class FilterParser {
 
     const flattenedFilter = flatten(filter || {});
 
+    debug('flattened filter %o', flattenedFilter);
+
     const include = {};
     const where = {};
     const filter2 = { ...flattenedFilter };
 
     let skipPrefix = null;
+    const associations = model.associations;
+    debug('associations %O', associations);
 
     for (let [key, value] of Object.entries(flattenedFilter)) {
+      // 处理 filter 条件
       if (skipPrefix && key.startsWith(skipPrefix)) {
         continue;
       }
 
+      debug('handle filter key "%s: "%s"', key, value);
       let keys = key.split('.');
-      const associations = model.associations;
+
+      // paths ?
       const paths = [];
+
+      // origins ?
       const origins = [];
 
       while (keys.length) {
+        debug('keys: %o, paths: %o, origins: %o', keys, paths, origins);
+
+        // move key from keys to origins
         const firstKey = keys.shift();
         origins.push(firstKey);
 
         if (firstKey.startsWith('$')) {
           if (operators.has(firstKey)) {
+            debug('%s is operator', firstKey);
+            // if firstKey is operator
             const opKey = operators.get(firstKey);
+            debug('operator key %s, operator: %o', firstKey, opKey);
+
+            // 默认操作符
             if (typeof opKey === 'symbol') {
               paths.push(opKey);
               continue;
@@ -66,10 +87,13 @@ class FilterParser {
           }
         }
 
+        // firstKey is number
         if (/\d+/.test(firstKey)) {
           paths.push(firstKey);
           continue;
         }
+
+        // firstKey is not association
         if (!associations[firstKey]) {
           paths.push(firstKey);
           continue;
@@ -78,17 +102,28 @@ class FilterParser {
         const associationKeys = [];
 
         associationKeys.push(firstKey);
+
+        debug('associationKeys %o', associationKeys);
+
+        // set sequelize include option
         _.set(include, firstKey, {
           association: firstKey,
           attributes: [],
         });
+
+        // association target model
         let target = associations[firstKey].target;
+        debug('association target %o', target);
+
         while (target) {
           const attr = keys.shift();
+
+          // if it is target model attribute
           if (target.rawAttributes[attr]) {
             associationKeys.push(attr);
             target = null;
           } else if (target.associations[attr]) {
+            // if it is target model association (nested association filter)
             associationKeys.push(attr);
             const assoc = [];
             associationKeys.forEach((associationKey, index) => {
@@ -102,8 +137,15 @@ class FilterParser {
               attributes: [],
             });
             target = target.associations[attr].target;
+          } else {
+            throw new Error(
+              `${attr} neither ${firstKey}'s association nor ${firstKey}'s attribute`,
+            );
           }
         }
+
+        debug('associationKeys %o', associationKeys);
+
         if (associationKeys.length > 1) {
           paths.push(`$${associationKeys.join('.')}$`);
         } else {
@@ -111,6 +153,7 @@ class FilterParser {
         }
       }
 
+      debug('where %o, paths %o, value, %o', where, paths, value);
       const values = _.get(where, paths);
 
       if (
@@ -132,6 +175,7 @@ class FilterParser {
         return item;
       });
     };
+    debug('where %o, include %o', where, include);
     return { where, include: toInclude(include) };
   }
 }

@@ -55,7 +55,8 @@ export class Collection<
     // define sequelize model
     const { name, tableName } = this.options;
 
-    this.model = this.context.database.sequelize.define(name, {
+    // we will set model fields using setField, not here
+    this.model = this.context.database.sequelize.define(name, null, {
       ..._.omit(this.options, ['name', 'fields']),
       tableName: tableName || name,
     });
