@@ -16,6 +16,7 @@ import { Database } from './database';
 import { updateAssociations } from './update-associations';
 import { RelationField } from './fields';
 import FilterParser from './filterParser';
+import { OptionsParser } from './optionsParser';
 
 const debug = require('debug')('noco-database');
 
@@ -365,75 +366,12 @@ export class Repository<
   }
 
   protected buildQueryOptions(options: any) {
-    let filterParams = this.parseFilter(options?.filter);
-
-    if (options.fields) {
-      filterParams = this.parseFields(options.fields, filterParams);
-    } else if (options.appends) {
-      filterParams = this.parseAppends(options.appends, filterParams);
-    }
-
-    return Object.assign({}, options, filterParams);
+    const parser = new OptionsParser(this.collection, options);
+    const params = parser.toSequelizeParams();
+    return params;
   }
 
-  protected parseFields(fields: any, filterParams: any) {
-    filterParams['attributes'] = fields;
-    return filterParams;
-  }
-
-  protected appendIncludeAssociation(filterParams: any, name: string) {
-    const associations = this.model.associations;
-    if (!associations[name]) {
-      throw new Error(`${name} is not a valid association`);
-    }
-
-    const existIncludeIndex = filterParams['include'].findIndex(
-      (include) => include['association'] == name,
-    );
-
-    if (existIncludeIndex == -1) {
-      filterParams['include'].push({
-        association: name,
-      });
-    }
-  }
-
-  /**
-   * appends to sequelize params
-   * @protected
-   */
-  protected parseAppends(appends: Appends, filterParams: any) {
-    if (!appends) return filterParams;
-    const associations = this.model.associations;
-
-    for (const append of appends) {
-      if (!associations[append]) {
-        throw new Error(`${append} is not a valid association`);
-      }
-
-      const existIncludeIndex = filterParams['include'].findIndex(
-        (include) => include['association'] == append,
-      );
-
-      if (existIncludeIndex == -1) {
-        filterParams['include'].push({
-          association: append,
-        });
-      } else {
-        delete filterParams['include'][existIncludeIndex]['attributes'];
-      }
-    }
-
-    debug('filter params: %o', filterParams);
-    return filterParams;
-  }
-
-  /**
-   * Parse filter to sequelize params with `where` and `include` key
-   * @param filter
-   */
-  protected parseFilter(filter?: Filter) {
-    if (!filter) return {};
+  protected parseFilter(filter: Filter) {
     const parser = new FilterParser(this.collection, filter);
     return parser.toSequelizeParams();
   }

@@ -34,17 +34,13 @@ const db = new Database({
     { name: 'u3', posts: [{ title: 'u3t1' }] },
   ]);
 
-  const filterParser = new FilterParser(User, {
-    'posts.title': 'u1t1',
-  });
-
   const Model = User.model;
   const user = await Model.findOne({
     subQuery: false,
     where: {
       '$posts.title$': 'u1t1',
     },
-    include: { association: 'posts' },
+    include: { association: 'posts', attributes: [] },
     attributes: {
       include: [],
     },

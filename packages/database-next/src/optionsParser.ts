@@ -38,7 +38,7 @@ export class OptionsParser {
    * @protected
    */
   protected parseSort(filterParams) {
-    const sort = this.options.sort || [];
+    const sort = this.options?.sort || [];
 
     const orderParams = sort.map((sortKey: string) => {
       const direction = sortKey.startsWith('-') ? 'DESC' : 'ASC';
@@ -58,7 +58,7 @@ export class OptionsParser {
   }
 
   protected parseFields(filterParams: any) {
-    const appends = this.options.appends || [];
+    const appends = this.options?.appends || [];
     const expect = [];
 
     let attributes: FindAttributeOptions = {
@@ -66,7 +66,7 @@ export class OptionsParser {
       exclude: [],
     }; // out put all fields by default
 
-    if (this.options.fields) {
+    if (this.options?.fields) {
       // 将fields拆分为 attributes 和 appends
       for (const field of this.options.fields) {
         if (this.isAssociationPath(field)) {
@@ -81,7 +81,7 @@ export class OptionsParser {
       }
     }
 
-    if (this.options.expect) {
+    if (this.options?.expect) {
       for (const expectKey of this.options.expect) {
         if (this.isAssociationPath(expectKey)) {
           // expect association field
@@ -207,6 +207,13 @@ export class OptionsParser {
             attributes = [];
             // push field to it
             attributes.push(appendFields[1]);
+          }
+        } else {
+          // if attributes is empty array, change it to object
+          if (Array.isArray(attributes) && attributes.length == 0) {
+            attributes = {
+              include: [],
+            };
           }
         }
 

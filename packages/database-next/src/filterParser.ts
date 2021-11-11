@@ -108,7 +108,7 @@ class FilterParser {
         // set sequelize include option
         _.set(include, firstKey, {
           association: firstKey,
-          attributes: [],
+          attributes: [], // out put empty fields by default
         });
 
         // association target model

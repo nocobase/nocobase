@@ -182,31 +182,37 @@ describe('repository find', () => {
       expect(user['posts']).toBeDefined();
     });
 
-    test('find with appends', async () => {
-      const user = await User.repository.findOne({
-        filter: {
-          name: 'u1',
-        },
-        appends: ['posts'],
+    describe('find with appends', () => {
+      test('filter attribute', async () => {
+        const user = await User.repository.findOne({
+          filter: {
+            name: 'u1',
+          },
+          appends: ['posts'],
+        });
+
+        expect(user['posts']).toBeDefined();
       });
 
-      expect(user['posts']).toBeDefined();
-
-      const user2 = await User.repository.findOne({
-        filter: {
-          'posts.title': 'u1t1',
-        },
-        appends: ['posts'],
-      });
-      expect(user2['posts']).toBeDefined();
-
-      const user3 = await User.repository.findOne({
-        filter: {
-          'posts.title': 'u1t1',
-        },
+      test('filter association attribute', async () => {
+        const user2 = await User.repository.findOne({
+          filter: {
+            'posts.title': 'u1t1',
+          },
+          appends: ['posts'],
+        });
+        expect(user2['posts']).toBeDefined();
       });
 
-      expect(user3['posts']).toBeUndefined();
+      test('without appends', async () => {
+        const user3 = await User.repository.findOne({
+          filter: {
+            'posts.title': 'u1t1',
+          },
+        });
+
+        expect(user3['posts']).toBeUndefined();
+      });
     });
 
     test('find all', async () => {
