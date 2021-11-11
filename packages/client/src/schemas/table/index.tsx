@@ -11,6 +11,7 @@ import { cloneDeep, cloneDeepWith, findIndex, forIn, range, set } from 'lodash';
 import React, { Fragment, useEffect, useState } from 'react';
 import { useContext } from 'react';
 import { createContext } from 'react';
+import { useDeepCompareEffectNoCheck } from 'use-deep-compare-effect';
 import { useDesignable, createCollectionField, ISchema } from '..';
 import { uid, merge } from '@formily/shared';
 import useRequest from '@ahooksjs/use-request';
@@ -905,7 +906,8 @@ const TableProvider = (props: any) => {
       // defaultParams: [getDefaultParams()],
     },
   );
-  useEffect(() => {
+  useDeepCompareEffectNoCheck(() => {
+    debugger;
     service.run(getDefaultParams());
   }, [
     pagination?.pageSize,
@@ -914,6 +916,7 @@ const TableProvider = (props: any) => {
     props.defaultSort,
     props.defaultFilter,
   ]);
+  debugger;
   return (
     <TableContext.Provider
       value={{

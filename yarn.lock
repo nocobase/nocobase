@@ -20458,6 +20458,14 @@ urllib@^2.33.1:
     statuses "^1.3.1"
     utility "^1.16.1"
 
+use-deep-compare-effect@^1.8.1:
+  version "1.8.1"
+  resolved "https://registry.npmmirror.com/use-deep-compare-effect/download/use-deep-compare-effect-1.8.1.tgz#ef0ce3b3271edb801da1ec23bf0754ef4189d0c6"
+  integrity sha1-7wzjsyce24AdoewjvwdU70GJ0MY=
+  dependencies:
+    "@babel/runtime" "^7.12.5"
+    dequal "^2.0.2"
+
 use-subscription@1.5.1:
   version "1.5.1"
   resolved "https://registry.npmmirror.com/use-subscription/download/use-subscription-1.5.1.tgz#73501107f02fad84c6dd57965beb0b75c68c42d1"
