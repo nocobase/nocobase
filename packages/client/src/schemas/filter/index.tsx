@@ -239,7 +239,7 @@ Filter.DynamicValue = connect((props: DynamicValuePorps) => {
           properties: {
             [fieldName]: deepmerge(fieldSchema, extra, {
               arrayMerge: (target, source) => source,
-            }),
+            }) as any,
           },
         }}
       />
