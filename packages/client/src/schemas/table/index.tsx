@@ -907,7 +907,6 @@ const TableProvider = (props: any) => {
     },
   );
   useDeepCompareEffectNoCheck(() => {
-    debugger;
     service.run(getDefaultParams());
   }, [
     pagination?.pageSize,
@@ -916,7 +915,6 @@ const TableProvider = (props: any) => {
     props.defaultSort,
     props.defaultFilter,
   ]);
-  debugger;
   return (
     <TableContext.Provider
       value={{
