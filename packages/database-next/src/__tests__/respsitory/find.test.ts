@@ -138,16 +138,7 @@ describe('repository find', () => {
     });
   });
 
-  describe('find', () => {
-    test('find with logic or', async () => {
-      const users = await User.repository.find({
-        filter: {
-          $or: [{ 'posts.title': 'u1t1' }, { 'posts.title': 'u2t1' }],
-        },
-      });
-
-      expect(users['count']).toEqual(2);
-    });
+  describe('findOne', () => {
     test('find one with attribute', async () => {
       const user = await User.repository.findOne({
         filter: {
@@ -164,6 +155,33 @@ describe('repository find', () => {
         },
       });
       expect(user['name']).toEqual('u2');
+    });
+
+    test('find one with fields', async () => {
+      const user = await User.repository.findOne({
+        filter: {
+          name: 'u2',
+        },
+        fields: ['id'],
+        appends: ['posts'],
+        expect: ['posts.id'],
+      });
+
+      const data = user.toJSON();
+      expect(Object.keys(data)).toEqual(['id', 'posts']);
+      expect(Object.keys(data['posts'])).not.toContain('id');
+    });
+  });
+
+  describe('find', () => {
+    test('find with logic or', async () => {
+      const users = await User.repository.find({
+        filter: {
+          $or: [{ 'posts.title': 'u1t1' }, { 'posts.title': 'u2t1' }],
+        },
+      });
+
+      expect(users['count']).toEqual(2);
     });
 
     test('find with fields', async () => {
