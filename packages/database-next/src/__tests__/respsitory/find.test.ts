@@ -49,6 +49,28 @@ describe('repository find', () => {
   });
 
   describe('option parser', () => {
+    test('with sort option', () => {
+      let options: any = {
+        sort: ['id'],
+      };
+
+      let parser = new OptionsParser(User, options);
+      let params = parser.toSequelizeParams();
+      expect(params['order']).toEqual([['id', 'ASC']]);
+
+      options = {
+        sort: ['id', '-posts.title', 'posts.comments.createdAt'],
+      };
+
+      parser = new OptionsParser(User, options);
+      params = parser.toSequelizeParams();
+      expect(params['order']).toEqual([
+        ['id', 'ASC'],
+        ['posts', 'title', 'DESC'],
+        ['posts', 'comments', 'createdAt', 'ASC'],
+      ]);
+    });
+
     test('option parser with fields option', async () => {
       let options: any = {
         fields: ['id', 'posts'],

@@ -29,8 +29,35 @@ export class OptionsParser {
 
   toSequelizeParams() {
     const filterParams = this.filterParser.toSequelizeParams();
+    return this.parseSort(this.parseFields(filterParams));
+  }
 
-    const associations = this.collection.model.associations;
+  /**
+   * parser sort options
+   * @param filterParams
+   * @protected
+   */
+  protected parseSort(filterParams) {
+    const sort = this.options.sort || [];
+
+    const orderParams = sort.map((sortKey: string) => {
+      const direction = sortKey.startsWith('-') ? 'DESC' : 'ASC';
+      const sort = sortKey.replace('-', '').split('.');
+      sort.push(direction);
+      return sort;
+    });
+
+    if (orderParams.length > 0) {
+      return {
+        order: orderParams,
+        ...filterParams,
+      };
+    }
+
+    return filterParams;
+  }
+
+  protected parseFields(filterParams: any) {
     const appends = this.options.appends || [];
     const expect = [];
 
