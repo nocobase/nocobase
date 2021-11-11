@@ -233,8 +233,25 @@ describe('repository find', () => {
       });
     });
 
-    test('find all', async () => {
-      expect((await User.repository.find()).rows.length).toEqual(3);
+    describe('find all', () => {
+      test('without params', async () => {
+        expect((await User.repository.find()).length).toEqual(3);
+      });
+      test('with limit', async () => {
+        expect(
+          (
+            await User.repository.find({
+              limit: 1,
+            })
+          ).length,
+        ).toEqual(1);
+      });
+    });
+
+    describe('find and count', () => {
+      test('without params', async () => {
+        expect((await User.repository.findAndCount()).count).toEqual(3);
+      });
     });
 
     test('find with filter', async () => {
@@ -244,7 +261,7 @@ describe('repository find', () => {
         },
       });
 
-      expect(results.count).toEqual(1);
+      expect(results.length).toEqual(1);
     });
 
     test('find with association', async () => {
@@ -254,9 +271,10 @@ describe('repository find', () => {
         },
       });
 
-      expect(results.count).toEqual(1);
+      expect(results.length).toEqual(1);
     });
   });
+
   describe('count', () => {
     test('without filter params', async () => {
       expect(await User.repository.count()).toEqual(3);

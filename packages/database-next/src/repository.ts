@@ -27,24 +27,20 @@ interface CreateManyOptions extends BulkCreateOptions {}
 export type Filter = any;
 export type Appends = string[];
 export type Expect = string[];
+export type Fields = string[];
+export type Sort = string[];
 
-export interface FindOptions extends SequelizeFindOptions {
+interface CommonFindOptions {
   filter?: Filter;
-  fields?: any;
+  fields?: Fields;
   appends?: Appends;
   expect?: Expect;
-  page?: any;
-  pageSize?: any;
-  sort?: any;
+  sort?: Sort;
 }
 
-interface FindOneOptions extends FindOptions {
-  filter?: any;
-  fields?: any;
-  appends?: any;
-  expect?: any;
-  sort?: any;
-}
+export interface FindOptions extends SequelizeFindOptions, CommonFindOptions {}
+
+interface FindOneOptions extends FindOptions, CommonFindOptions {}
 
 interface CreateOptions extends SequelizeCreateOptions {
   values?: any;
@@ -199,6 +195,10 @@ export class Repository<
     return await this.collection.model.count(this.parseFilter(filter));
   }
 
+  /**
+   * find
+   * @param options
+   */
   async find(options?: FindOptions) {
     const model = this.collection.model;
 
@@ -207,20 +207,27 @@ export class Repository<
       ...this.buildQueryOptions(options),
     };
 
-    let rows = [];
-
-    rows = await model.findAll({
+    return await model.findAll({
       ...opts,
     });
-
-    const count = await model.count({
-      ...opts,
-      distinct: opts.include ? true : undefined,
-    });
-
-    return { count, rows };
   }
 
+  /**
+   * find and count
+   * @param options
+   */
+  async findAndCount(options?: FindOptions) {
+    const model = this.collection.model;
+
+    const opts = {
+      subQuery: false,
+      ...this.buildQueryOptions(options),
+    };
+
+    return await model.findAndCountAll({
+      ...opts,
+    });
+  }
   /**
    * Find By Id
    *
@@ -298,12 +305,14 @@ export class Repository<
       return options;
     }
     let instance: Model;
+
     if (typeof options === 'string' || typeof options === 'number') {
       instance = await this.model.findByPk(options);
     } else {
-      // TODO
+      // @ts-ignore
       instance = await this.findOne(options);
     }
+
     await instance.update(values);
     await updateAssociations(instance, values);
     return instance;
@@ -368,7 +377,7 @@ export class Repository<
   protected buildQueryOptions(options: any) {
     const parser = new OptionsParser(this.collection, options);
     const params = parser.toSequelizeParams();
-    return params;
+    return { ...options, ...params };
   }
 
   protected parseFilter(filter: Filter) {
