@@ -175,7 +175,7 @@ describe('repository find', () => {
 
   describe('find', () => {
     test('find with logic or', async () => {
-      const users = await User.repository.find({
+      const users = await User.repository.findAndCount({
         filter: {
           $or: [{ 'posts.title': 'u1t1' }, { 'posts.title': 'u2t1' }],
         },
