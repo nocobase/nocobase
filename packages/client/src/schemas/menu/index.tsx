@@ -158,26 +158,11 @@ export const Menu: any = observer((props: any) => {
   const [selectedKey, setSelectedKey] = useState(
     defaultSelectedKeys[0] || null,
   );
-  const ref = useRef();
   const path = useSchemaPath();
   const child = schema.properties && schema.properties[selectedKey];
   const isSubMenu = child && child['x-component'] === 'Menu.SubMenu';
   const { updateSchema } = useClient();
   const { t } = useTranslation();
-
-  useMount(() => {
-    if (mode !== 'mix') {
-      return;
-    }
-    const sideMenuElement = sideMenuRef && (sideMenuRef.current as HTMLElement);
-    if (!sideMenuElement) {
-      return;
-    }
-    if (sideMenuElement && ref.current) {
-      sideMenuElement.querySelector(':scope > div').appendChild(ref.current);
-    }
-    sideMenuElement.style.display = isSubMenu ? 'block' : 'none';
-  });
 
   useEffect(() => {
     const sideMenuElement = sideMenuRef && (sideMenuRef.current as HTMLElement);
@@ -185,7 +170,7 @@ export const Menu: any = observer((props: any) => {
       return;
     }
     sideMenuElement.style.display = isSubMenu ? 'block' : 'none';
-  }, [selectedKey]);
+  }, [selectedKey, sideMenuRef]);
 
   const [dragOverlayContent, setDragOverlayContent] = useState('');
   // console.log('defaultSelectedKeys', defaultSelectedKeys, getSelectedKeys);
@@ -246,8 +231,9 @@ export const Menu: any = observer((props: any) => {
               </Button>
             </Menu.AddNew>
           </AntdMenu>
-          {mode === 'mix' && (
-            <div ref={ref}>
+          {mode === 'mix' &&
+            sideMenuRef.current?.firstChild &&
+            createPortal(
               <SideMenu
                 path={path}
                 onSelect={(info) => {
@@ -260,9 +246,9 @@ export const Menu: any = observer((props: any) => {
                 defaultSelectedKeys={defaultSelectedKeys || []}
                 selectedKey={selectedKey}
                 sideMenuRef={sideMenuRef}
-              />
-            </div>
-          )}
+              />,
+              sideMenuRef.current.firstChild,
+            )}
         </MenuModeContext.Provider>
       </DndContext>
     </MenuContext.Provider>
@@ -746,7 +732,10 @@ Menu.DesignableBar = (props) => {
                     return;
                   }
                   const values = await FormDialog(
-                    t(`Add {{type}} ${methodLabels[method]} "{{title}}"`, { type: (config.title as string).toLowerCase(), title: schema.title }),
+                    t(`Add {{type}} ${methodLabels[method]} "{{title}}"`, {
+                      type: (config.title as string).toLowerCase(),
+                      title: schema.title,
+                    }),
                     // `在「${schema.title}」${methodLabels[method]}插入${config.title}`,
                     () => {
                       return (
@@ -862,8 +851,14 @@ Menu.DesignableBar = (props) => {
                                     type: 'string',
                                     default: 'insertAfter',
                                     enum: [
-                                      { label: t('After'), value: 'insertAfter' },
-                                      { label: t('Before'), value: 'insertBefore' },
+                                      {
+                                        label: t('After'),
+                                        value: 'insertAfter',
+                                      },
+                                      {
+                                        label: t('Before'),
+                                        value: 'insertBefore',
+                                      },
                                     ],
                                     'x-decorator': 'FormItem',
                                     'x-component': 'Radio.Group',
@@ -891,12 +886,18 @@ Menu.DesignableBar = (props) => {
                               target['x-component'] === 'Menu.SubMenu'
                                 ? [
                                     { label: t('After'), value: 'insertAfter' },
-                                    { label: t('Before'), value: 'insertBefore' },
+                                    {
+                                      label: t('Before'),
+                                      value: 'insertBefore',
+                                    },
                                     { label: t('Inner'), value: 'appendChild' },
                                   ]
                                 : [
                                     { label: t('After'), value: 'insertAfter' },
-                                    { label: t('Before'), value: 'insertBefore' },
+                                    {
+                                      label: t('Before'),
+                                      value: 'insertBefore',
+                                    },
                                   ];
                           });
                         });
