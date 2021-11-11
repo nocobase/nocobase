@@ -687,7 +687,7 @@ export const SchemaRenderer = (props: SchemaRendererProps) => {
   const form = useMemo(() => props.form || createForm(), []);
   const schema = useMemo(() => {
     if (Schema.isSchemaInstance(props.schema)) {
-      return schema;
+      return props.schema;
     }
     let s = props.schema;
     if (props.onlyRenderProperties) {
