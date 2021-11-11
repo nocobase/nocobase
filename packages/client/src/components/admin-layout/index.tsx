@@ -119,7 +119,7 @@ function LayoutWithMenu(props: LayoutWithMenuProps) {
   const sideMenuRef = useRef();
   const history = useHistory();
   const { title } = useSystemSettings();
-  const [activeKey, setActiveKey] = useState(match.params.name);
+  const [activeKey, setActiveKey] = useState('');
   const { setPageTitle } = usePageTitleContext();
 
   const [selectedKeys, setSelectedKeys] = useState(defaultSelectedKeys);
@@ -183,6 +183,7 @@ function LayoutWithMenu(props: LayoutWithMenuProps) {
     history.push(`/admin/${uid()}`);
   };
   console.log({ activeKey, selectedKeys });
+  
   return (
     <Layout>
       <Layout.Header className={'site-header'} style={{ display: 'flex' }}>
