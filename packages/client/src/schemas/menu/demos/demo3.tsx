@@ -3,7 +3,7 @@
  */
 import React from 'react';
 import { SchemaRenderer } from '@nocobase/client';
-import { ISchema } from '@formily/react';
+import { ISchema } from '../../index';
 
 const schema: ISchema = {
   type: 'object',

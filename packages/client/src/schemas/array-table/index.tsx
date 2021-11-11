@@ -131,7 +131,7 @@ const useArrayTableColumns = (
       render: (value: any, record: any) => {
         const index = dataSource.indexOf(record);
         const children = (
-          <ArrayBase.Item index={index}>
+          <ArrayBase.Item index={index} record={record}>
             <RecursionField schema={schema} name={index} onlyRenderProperties />
           </ArrayBase.Item>
         );
