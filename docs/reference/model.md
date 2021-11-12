@@ -30,8 +30,6 @@ interface UpdateAssociationValues {
 }
 ```
 
-##### Examples
-
 ### HasOne
 
 以用户个人资料 user.profile 为例：
@@ -99,6 +97,21 @@ await user.updateAssociations({
 });
 ```
 
+传 `null` 时，可以解除关联
+
+```ts
+const user = await User.model.create();
+await user.updateAssociations({
+  profile: {
+    gender: 'male',
+  },
+});
+// 删除关联
+await user.updateAssociations({
+  profile: null,
+});
+```
+
 如果要修改关联数据，需要指定 `updateAssociationValues` 路径，如：
 
 ```ts
@@ -117,8 +130,48 @@ await user.updateAssociations({
 });
 ```
 
+updateAssociationValues 只处理当前层级的，如果有 profile.phone 也需要加进来才会更新，例如：
+
+```ts
+const Profile = db.collection({
+  name: 'profiles';
+  fields: [
+    { type: 'string', name: 'gender' },
+    { type: 'hasOne', name: 'phone' },
+  ],
+});
+
+const Phone = db.collection({
+  name: 'phones';
+  fields: [
+    { type: 'string', name: 'number' },
+  ],
+});
+
+const user = await User.model.create();
+const profile = await Profile.model.create({
+  gender: 'male',
+});
+await user.updateAssociations({
+  profile: {
+    id: profile.id,
+    gender: 'female',
+    phone: {
+      number: '12312341234',
+    },
+  },
+}, {
+  updateAssociationValues: ['profile', 'profile.phone'],
+});
+```
+
+暂时不支持泛解析，如 `profile.*`，这种情况较难控制，暂时不支持。
+
 <Alert title="注意">
-修改关联数据的使用频率较低，用不好破坏性很大，默认只关联并不更新关联数据。如果 JSON 不包含 pk，需要创建并关联处理。
+
+- 修改关联数据的使用频率较低，用不好破坏性很大，默认只关联并不更新关联数据。
+- 如果 JSON 不包含 pk，需要创建并关联处理。
+
 </Alert>
 
 如果已经存在关联，解除关联，但不删除关联数据，并与新的数据建立关联
@@ -137,7 +190,7 @@ await user.updateAssociations({
 });
 ```
 
-## BelongsTo
+### BelongsTo
 
 与 HasOne 的处理机制类似，不过多了个 targetKey 的情况，当 targetKey 不为 id 时，会有些区别：
 
@@ -167,7 +220,7 @@ await post.updateAssociations({
 });
 ```
 
-## HasMany
+### HasMany
 
 可以传 instance
 
@@ -282,7 +335,7 @@ await order.updateAssociations({
 });
 ```
 
-## BelongsToMany
+### BelongsToMany
 
 常规写法与 HasMany 类似，不过有两个特殊参数 targetKey 和 through。targetKey 与 BelongsTo 类似。through 为实体表时，需要可以更新 through 数据。
 
