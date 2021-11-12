@@ -439,6 +439,7 @@ function AddColumn() {
                       'x-component': 'Table.Column',
                       'x-component-props': {
                         fieldName: field.name,
+                        ellipsis: false,
                       },
                       'x-designable-bar': 'Table.Column.DesignableBar',
                     };
@@ -2207,6 +2208,21 @@ Table.Column.DesignableBar = () => {
                     </div>
                   </Menu.Item>
                 )}
+                <Menu.Divider />
+                <Menu.SubMenu title={t('Set attribute')}>
+                    <Menu.Item 
+                    onClick={() => {
+                      const bool = !field.componentProps.ellipsis;
+                      schema['x-component-props']['ellipsis'] = bool;
+                      field.componentProps.ellipsis = bool;
+                      updateSchema(schema);
+                      setVisible(false);
+                    }}
+                  >
+                      {t('Long text ellipsis')} &nbsp;&nbsp;
+                      <Switch size={'small'} checked={field.componentProps.ellipsis} />
+                    </Menu.Item>
+                </Menu.SubMenu>
                 <Menu.Divider />
                 <Menu.Item
                   onClick={async () => {

@@ -178,6 +178,8 @@ export default {
   'Label field': '标签字段',
   'Default is the ID field': '默认为 ID 字段',
   'Set default sorting rules': '设置排序规则',
+  'Set attribute': '属性配置',
+  'Long text ellipsis': '长文本省略',
 
   'is before': '早于',
   'is after': '晚于',
