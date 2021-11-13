@@ -7,3 +7,11 @@ export const create = async (ctx: Context, next: Next) => {
   await ctx.body.migrate();
   await next();
 }
+
+export const update = async (ctx: Context, next: Next) => {
+  await actions.update(ctx, async () => {});
+  const { associated } = ctx.action.params;
+  await ctx.body.generateReverseField();
+  await ctx.body.migrate();
+  await next();
+}
