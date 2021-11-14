@@ -3,6 +3,7 @@ import { Collection } from '../collection';
 import { mockDatabase } from './index';
 import { string } from '@nocobase/client/lib/schemas/database-field/interfaces/string';
 import { UpdateGuard } from '../update-guard';
+import lodash from 'lodash';
 
 describe('update-guard', () => {
   let db: Database;
@@ -12,11 +13,13 @@ describe('update-guard', () => {
 
   beforeEach(async () => {
     const db = mockDatabase();
-    User = db.collection<{ id: number; name: string }, { name: string }>({
+
+    User = db.collection({
       name: 'users',
       fields: [
         { type: 'string', name: 'name' },
         { type: 'integer', name: 'age' },
+        { type: 'hasMany', name: 'posts' },
       ],
     });
 
@@ -29,11 +32,15 @@ describe('update-guard', () => {
           type: 'belongsTo',
           name: 'user',
         },
+        {
+          type: 'hasMany',
+          name: 'comments',
+        },
       ],
     });
 
     Comment = db.collection({
-      name: 'comment',
+      name: 'comments',
       field: [
         { type: string, name: 'content' },
         { type: string, name: 'comment_as' },
@@ -202,6 +209,113 @@ describe('update-guard', () => {
 
     expect(guard.sanitize(values)).toEqual({
       posts: values.posts,
+    });
+  });
+
+  test('associationKeysToBeUpdate', () => {
+    const values = {
+      name: '123',
+      age: 30,
+      posts: [
+        {
+          title: '123',
+          content: '345',
+        },
+        {
+          id: 1,
+          title: '456',
+          content: '789',
+        },
+      ],
+    };
+
+    const guard = new UpdateGuard();
+    guard.setModel(User.model);
+
+    expect(guard.sanitize(values)).toEqual({
+      name: '123',
+      age: 30,
+      posts: [
+        {
+          title: '123',
+          content: '345',
+        },
+        {
+          id: 1,
+        },
+      ],
+    });
+
+    guard.setAssociationKeysToBeUpdate(['posts']);
+    expect(guard.sanitize(values)).toEqual(values);
+  });
+
+  test('associationKeysToBeUpdate nested association', () => {
+    const values = {
+      name: '123',
+      age: 30,
+      posts: [
+        {
+          title: '123',
+          content: '345',
+        },
+        {
+          id: 1,
+          title: '456',
+          content: '789',
+          comments: [
+            {
+              id: 1,
+              content: '123',
+            },
+          ],
+        },
+      ],
+    };
+
+    const guard = new UpdateGuard();
+    guard.setModel(User.model);
+
+    expect(guard.sanitize(lodash.clone(values))).toEqual({
+      name: '123',
+      age: 30,
+      posts: [
+        {
+          title: '123',
+          content: '345',
+        },
+        {
+          id: 1,
+          comments: [
+            {
+              id: 1,
+            },
+          ],
+        },
+      ],
+    });
+
+    guard.setAssociationKeysToBeUpdate(['posts']);
+
+    expect(guard.sanitize(lodash.clone(values))).toEqual({
+      name: '123',
+      age: 30,
+      posts: [
+        {
+          title: '123',
+          content: '345',
+        },
+        {
+          id: 1,
+          title: '456',
+          content: '789',
+          comments: [
+            {
+              id: 1,
+            },
+          ],
+        },
+      ],
     });
   });
 });

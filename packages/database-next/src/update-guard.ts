@@ -3,8 +3,6 @@ import lodash, { keys } from 'lodash';
 
 import { Collection } from './collection';
 import { Model, ModelCtor } from 'sequelize';
-import { modelAssociations } from './update-associations';
-import { type } from 'os';
 
 type WhiteList = string[];
 type BlackList = string[];
@@ -71,6 +69,25 @@ export class UpdateGuard {
     Object.keys(associationsValues).forEach((association) => {
       let associationValues = associationsValues[association];
 
+      const filterAssociationToBeUpdate = (value) => {
+        const associationKeysToBeUpdate = this.associationKeysToBeUpdate || [];
+
+        if (associationKeysToBeUpdate.includes(association)) {
+          return value;
+        }
+
+        const associationObj = associations[association];
+
+        if (value[associationObj.target.primaryKeyAttribute]) {
+          return lodash.pick(value, [
+            associationObj.target.primaryKeyAttribute,
+            ...Object.keys(associationObj.target.associations),
+          ]);
+        }
+
+        return value;
+      };
+
       const sanitizeValue = (value) => {
         const associationUpdateGuard = new UpdateGuard();
         associationUpdateGuard.setModel(associations[association].target);
@@ -83,7 +100,9 @@ export class UpdateGuard {
           },
         );
 
-        return associationUpdateGuard.sanitize(value);
+        return associationUpdateGuard.sanitize(
+          filterAssociationToBeUpdate(value),
+        );
       };
 
       if (Array.isArray(associationValues)) {
@@ -101,6 +120,7 @@ export class UpdateGuard {
         associationValues = sanitizeValue(associationValues);
       }
 
+      // set association values to sanitized value
       values[association] = associationValues;
     });
 
@@ -123,10 +143,12 @@ export class UpdateGuard {
       );
     }
 
-    return valuesKeys.reduce((obj, key) => {
+    const result = valuesKeys.reduce((obj, key) => {
       lodash.set(obj, key, values[key]);
       return obj;
     }, {});
+
+    return result;
   }
 
   static factory(collection: Collection) {}
