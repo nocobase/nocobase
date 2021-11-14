@@ -304,6 +304,7 @@ export class Repository<
       await updateAssociations(options, values);
       return options;
     }
+
     let instance: Model;
 
     if (typeof options === 'string' || typeof options === 'number') {

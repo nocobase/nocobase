@@ -8,6 +8,7 @@ import {
   HasOne,
   BelongsTo,
   BelongsToMany,
+  HasMany,
 } from 'sequelize';
 
 function isUndefinedOrNull(value: any) {
@@ -18,14 +19,23 @@ function isStringOrNumber(value: any) {
   return typeof value === 'string' || typeof value === 'number';
 }
 
-function modelAssociations(instance: Model) {
+export function modelAssociations(instance: Model) {
   return (<typeof Model>instance.constructor).associations;
 }
 
-function modelAssociationByKey(instance: Model, key: string): Association {
+export function modelAssociationByKey(
+  instance: Model,
+  key: string,
+): Association {
   return modelAssociations(instance)[key] as Association;
 }
 
+/**
+ * update association of instance by values
+ * @param instance
+ * @param values
+ * @param options
+ */
 export async function updateAssociations(
   instance: Model,
   values: any,
@@ -52,6 +62,13 @@ export async function updateAssociations(
   }
 }
 
+/**
+ * update model association by key
+ * @param instance
+ * @param key
+ * @param value
+ * @param options
+ */
 export async function updateAssociation(
   instance: Model,
   key: string,
@@ -74,6 +91,13 @@ export async function updateAssociation(
   }
 }
 
+/**
+ * update belongsTo and HasOne
+ * @param model
+ * @param key
+ * @param value
+ * @param options
+ */
 export async function updateSingleAssociation(
   model: Model,
   key: string,
@@ -85,22 +109,30 @@ export async function updateSingleAssociation(
   if (!association) {
     return false;
   }
+
   if (!['undefined', 'string', 'number', 'object'].includes(typeof value)) {
     return false;
   }
+
   const { transaction = await model.sequelize.transaction() } = options;
 
   try {
+    // set method of association
     const setAccessor = association.accessors.set;
 
-    if (isUndefinedOrNull(value)) {
+    const removeAssociation = async () => {
       await model[setAccessor](null, { transaction });
       model.setDataValue(key, null);
       if (!options.transaction) {
         await transaction.commit();
       }
       return true;
+    };
+
+    if (isUndefinedOrNull(value)) {
+      return await removeAssociation();
     }
+
     if (isStringOrNumber(value)) {
       await model[setAccessor](value, { transaction });
       if (!options.transaction) {
@@ -128,6 +160,7 @@ export async function updateSingleAssociation(
       M = association.source;
       dataKey = M.primaryKeyAttribute;
     }
+
     if (isStringOrNumber(value[dataKey])) {
       let instance: any = await M.findOne({
         where: {
@@ -145,6 +178,11 @@ export async function updateSingleAssociation(
         return true;
       }
     }
+
+    if (value[dataKey] === null) {
+      return await removeAssociation();
+    }
+
     const instance = await model[createAccessor](value, { transaction });
     await updateAssociations(instance, value, { transaction, ...options });
     model.setDataValue(key, instance);
@@ -163,13 +201,22 @@ export async function updateSingleAssociation(
   }
 }
 
+/**
+ * update multiple association of model by value
+ * @param model
+ * @param key
+ * @param value
+ * @param options
+ */
 export async function updateMultipleAssociation(
   model: Model,
   key: string,
   value: any,
   options: any = {},
 ) {
-  const association = <BelongsToMany>modelAssociationByKey(model, key);
+  const association = <BelongsToMany | HasMany>(
+    modelAssociationByKey(model, key)
+  );
   if (!association) {
     return false;
   }
@@ -210,7 +257,10 @@ export async function updateMultipleAssociation(
         list2.push(item);
       }
     }
+
+    // associate targets in lists1
     await model[setAccessor](list1, { transaction });
+
     const list3 = [];
     for (const item of list2) {
       const pk = association.target.primaryKeyAttribute;
