@@ -50,6 +50,7 @@ export class UpdateGuard {
     const associations = this.model.associations;
     const associationsValues = lodash.pick(values, Object.keys(associations));
 
+    // build params of association update guard
     const listOfAssociation = (list, association) => {
       if (list) {
         list = list
@@ -66,6 +67,7 @@ export class UpdateGuard {
       return undefined;
     };
 
+    // sanitize association values
     Object.keys(associationsValues).forEach((association) => {
       let associationValues = associationsValues[association];
 
@@ -126,6 +128,7 @@ export class UpdateGuard {
 
     let valuesKeys = Object.keys(values);
 
+    // handle whitelist
     if (this.whiteList) {
       valuesKeys = valuesKeys.filter((valueKey) => {
         return (
@@ -137,6 +140,7 @@ export class UpdateGuard {
       });
     }
 
+    // handle blacklist
     if (this.blackList) {
       valuesKeys = valuesKeys.filter(
         (valueKey) => !this.blackList.includes(valueKey),
