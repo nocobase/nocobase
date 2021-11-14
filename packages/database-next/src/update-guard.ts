@@ -2,7 +2,7 @@ import { flatten } from 'flat';
 import lodash, { keys } from 'lodash';
 
 import { Collection } from './collection';
-import { Model, ModelCtor } from 'sequelize';
+import { BelongsTo, HasOne, Model, ModelCtor } from 'sequelize';
 
 type WhiteList = string[];
 type BlackList = string[];
@@ -43,8 +43,10 @@ export class UpdateGuard {
    * @param values
    */
   sanitize(values: UpdateValues) {
+    values = lodash.clone(values);
+
     if (!this.model) {
-      throw new Error('please set collection first');
+      throw new Error('please set model first');
     }
 
     const associations = this.model.associations;
@@ -80,9 +82,15 @@ export class UpdateGuard {
 
         const associationObj = associations[association];
 
-        if (value[associationObj.target.primaryKeyAttribute]) {
+        const associationKeyName =
+          associationObj.associationType == 'BelongsTo' ||
+          associationObj.associationType == 'HasOne'
+            ? (<any>associationObj).targetKey
+            : associationObj.target.primaryKeyAttribute;
+
+        if (value[associationKeyName]) {
           return lodash.pick(value, [
-            associationObj.target.primaryKeyAttribute,
+            associationKeyName,
             ...Object.keys(associationObj.target.associations),
           ]);
         }

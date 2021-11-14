@@ -319,3 +319,41 @@ describe('update-guard', () => {
     });
   });
 });
+
+describe('One2One Association', () => {
+  test('associationKeysToBeUpdate hasOne & BelongsTo', () => {
+    const db = mockDatabase();
+    const Post = db.collection({
+      name: 'posts',
+      fields: [{ type: 'belongsTo', name: 'user', targetKey: 'uid' }],
+    });
+
+    const User = db.collection({
+      name: 'users',
+      fields: [{ type: 'string', name: 'uid', unique: true }],
+    });
+
+    const values = {
+      title: '123',
+      content: '456',
+      user: {
+        uid: 1,
+        name: '123',
+      },
+    };
+
+    const guard = new UpdateGuard();
+    guard.setModel(Post.model);
+
+    expect(guard.sanitize(values)).toEqual({
+      title: '123',
+      content: '456',
+      user: {
+        uid: 1,
+      },
+    });
+
+    guard.setAssociationKeysToBeUpdate(['user']);
+    expect(guard.sanitize(values)).toEqual(values);
+  });
+});

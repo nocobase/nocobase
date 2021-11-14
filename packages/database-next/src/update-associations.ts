@@ -220,6 +220,7 @@ export async function updateMultipleAssociation(
   if (!association) {
     return false;
   }
+
   if (!['undefined', 'string', 'number', 'object'].includes(typeof value)) {
     return false;
   }
