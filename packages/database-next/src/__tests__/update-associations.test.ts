@@ -9,9 +9,11 @@ describe('update associations', () => {
     beforeEach(() => {
       db = mockDatabase();
     });
+
     afterEach(async () => {
       await db.close();
     });
+
     it('post.user', async () => {
       const User = db.collection<
         { id: string; name: string },

@@ -10,6 +10,7 @@ import {
   BelongsToMany,
   HasMany,
 } from 'sequelize';
+import { UpdateGuard } from './update-guard';
 
 function isUndefinedOrNull(value: any) {
   return typeof value === 'undefined' || value === null;
@@ -28,6 +29,21 @@ export function modelAssociationByKey(
   key: string,
 ): Association {
   return modelAssociations(instance)[key] as Association;
+}
+
+export async function updateModelByValues(
+  instance: Model,
+  values: any,
+  options: any = {},
+) {
+  const guard = new UpdateGuard();
+
+  //@ts-ignore
+  guard.setModel(instance.constructor);
+  values = guard.sanitize(values);
+
+  await instance.update(values);
+  await updateAssociations(instance, values, options);
 }
 
 /**

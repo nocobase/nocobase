@@ -4,7 +4,6 @@ import { Collection } from './collection';
 import { Appends, Expect, FindOptions } from './repository';
 import FilterParser from './filterParser';
 import { FindAttributeOptions } from 'sequelize';
-import fields from '@nocobase/database/examples/plugins/db-driven/tables/fields';
 
 const debug = require('debug')('noco-database');
 
