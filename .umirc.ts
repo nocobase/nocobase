@@ -6,7 +6,7 @@ console.log('baseUrl', baseUrl);
 process.env.MFSU_AD = 'none';
 
 export default defineConfig({
-  title: ' ',
+  title: 'NocoBase',
   hash: true,
   define: {
     'process.env.API_URL': process.env.API_URL || `${baseUrl}api/`,

@@ -97,33 +97,6 @@ interface hasField {
 collection.hasField('name');
 ```
 
-## `collection.updateOptions()`
-
-更改当前 collection 的 options
-
-##### Definition
-
-```ts
-interface updateOptions {
-  (options: CollectionOptions): void;
-}
-```
-
-##### Examples
-
-```ts
-const collection = db.collection({
-  name: 'tests',
-});
-
-collection.updateOptions({
-  createdAt: true,
-  updatedAt: true,
-  sortable: true,
-  fields: [],
-});
-```
-
 ## `collection.removeField()`
 
 移除字段
@@ -234,4 +207,31 @@ const field = collection.updateField('name1', {
   name: 'name2',
 });
 await field.sync();
+```
+
+## `collection.updateOptions()`
+
+更改当前 collection 的 options
+
+##### Definition
+
+```ts
+interface updateOptions {
+  (options: CollectionOptions): void;
+}
+```
+
+##### Examples
+
+```ts
+const collection = db.collection({
+  name: 'tests',
+});
+
+collection.updateOptions({
+  createdAt: true,
+  updatedAt: true,
+  sortable: true,
+  fields: [],
+});
 ```
