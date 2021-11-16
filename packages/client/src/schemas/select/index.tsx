@@ -35,10 +35,12 @@ import { useRequest } from 'ahooks';
 import constate from 'constate';
 
 import './index.less';
+import { useCompile } from '../../hooks/useCompile';
 
 export const Select: any = connect(
   (props) => {
     const { options = [], ...others } = props;
+    const compile = useCompile();
     return (
       <AntdSelect {...others}>
         {options.map((option: any, key: any) => {
@@ -47,7 +49,7 @@ export const Select: any = connect(
               <AntdSelect.OptGroup key={key} label={option.label}>
                 {option.children.map((child: any, childKey: any) => (
                   <AntdSelect.Option key={`${key}-${childKey}`} {...child}>
-                    {child.label}
+                    {compile(child.label)}
                   </AntdSelect.Option>
                 ))}
               </AntdSelect.OptGroup>
@@ -55,7 +57,7 @@ export const Select: any = connect(
           } else {
             return (
               <AntdSelect.Option key={key} {...option}>
-                {option.label}
+                {compile(option.label)}
               </AntdSelect.Option>
             );
           }
@@ -86,6 +88,7 @@ export const Select: any = connect(
     if (!isValid(props.value)) {
       return <div></div>;
     }
+    const compile = useCompile();
     const field = useField<any>();
     if (isArrayField(field) && field?.value?.length === 0) {
       return <div></div>;
@@ -111,7 +114,7 @@ export const Select: any = connect(
       <div>
         {options.map((option, key) => (
           <Tag key={key} color={option.color}>
-            {option.label}
+            {compile(option.label)}
           </Tag>
         ))}
       </div>
@@ -365,8 +368,8 @@ Select.Drawer = connect(
       // setSelectedRows(toArr(field.value));
     };
     // const selectedKeys = toArr(optionValue).map((item) => item.value);
-    console.log({ optionValue, value });
     const collectionField = useContext(CollectionFieldContext);
+    // console.log({ optionValue, value, schema, collectionField });
     return (
       <SelectContext.Provider value={{ field, schema, props }}>
         <VisibleContext.Provider value={[visible, setVisible]}>
@@ -399,6 +402,12 @@ Select.Drawer = connect(
                 onlyRenderProperties
                 schema={schema}
                 filterProperties={(s) => {
+                  if (s['x-component'] === 'Select.Options.Drawer') {
+                    const prop = Object.values(s.properties).shift();
+                    if (prop) {
+                      prop['x-component-props']['rowKey'] = collectionField?.targetKey || 'id';
+                    }
+                  }
                   return s['x-component'] === 'Select.Options.Drawer';
                 }}
               />

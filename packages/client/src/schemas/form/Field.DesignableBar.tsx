@@ -42,6 +42,7 @@ import SwitchMenuItem from '../../components/SwitchMenuItem';
 import { DragHandle } from '../../components/Sortable';
 import { set } from 'lodash';
 import { useTranslation } from 'react-i18next';
+import { useCompile } from '../../hooks/useCompile';
 
 export const FieldDesignableBar = observer((props) => {
   const { t } = useTranslation();
@@ -54,6 +55,7 @@ export const FieldDesignableBar = observer((props) => {
   const fieldName = schema['x-component-props']?.['fieldName'];
   const { getField } = useCollectionContext();
   const { getFieldsByCollection } = useCollectionsContext();
+  const compile = useCompile();
 
   const collectionField = getField(fieldName);
 
@@ -178,7 +180,7 @@ export const FieldDesignableBar = observer((props) => {
                         options={getFieldsByCollection(collectionField.target)
                           .filter((f) => f?.uiSchema?.title)
                           .map((field) => ({
-                            label: field?.uiSchema?.title || field.name,
+                            label: compile(field?.uiSchema?.title || field.name),
                             value: field.name,
                           }))}
                       />
