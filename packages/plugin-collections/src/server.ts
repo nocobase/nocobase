@@ -23,7 +23,7 @@ export default {
     });
 
     this.app.on('db.init', async () => {
-      const tableNames = ['users', 'applications'];
+      const tableNames = ['users', 'applications', 'roles'];
       const Collection = database.getModel('collections');
       for (const tableName of tableNames) {
         const table = database.getTable(tableName);
