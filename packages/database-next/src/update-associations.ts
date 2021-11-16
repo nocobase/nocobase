@@ -233,6 +233,7 @@ export async function updateMultipleAssociation(
   const association = <BelongsToMany | HasMany>(
     modelAssociationByKey(model, key)
   );
+
   if (!association) {
     return false;
   }
@@ -251,13 +252,16 @@ export async function updateMultipleAssociation(
       model.setDataValue(key, null);
       return;
     }
+
     if (isStringOrNumber(value)) {
       await model[setAccessor](value, { transaction });
       return;
     }
+
     if (!Array.isArray(value)) {
       value = [value];
     }
+
     const list1 = []; // to be setted
     const list2 = []; // to be added
     for (const item of value) {
@@ -275,23 +279,40 @@ export async function updateMultipleAssociation(
       }
     }
 
+    console.log({ list2 });
     // associate targets in lists1
     await model[setAccessor](list1, { transaction });
 
     const list3 = [];
     for (const item of list2) {
       const pk = association.target.primaryKeyAttribute;
+
+      const through = (<any>association).through
+        ? (<any>association).through.model.name
+        : null;
+
+      const accessorOptions = {
+        transaction,
+      };
+
+      const throughValue = item[through];
+      if (throughValue) {
+        accessorOptions['through'] = throughValue;
+      }
+
       if (isUndefinedOrNull(item[pk])) {
-        const instance = await model[createAccessor](item, { transaction });
+        // create new record
+        const instance = await model[createAccessor](item, accessorOptions);
         await updateAssociations(instance, item, { transaction, ...options });
         list3.push(instance);
       } else {
+        // set & update record
         const instance = await association.target.findByPk(item[pk], {
           transaction,
         });
         const addAccessor = association.accessors.add;
 
-        await model[addAccessor](item[pk], { transaction });
+        await model[addAccessor](item[pk], accessorOptions);
         await updateAssociations(instance, item, { transaction, ...options });
         list3.push(instance);
       }

@@ -355,4 +355,54 @@ describe('update associations', () => {
       });
     });
   });
+
+  describe('belongsToMany', () => {
+    let db;
+    let Post;
+    let Tag;
+    let PostTag;
+
+    beforeEach(async () => {
+      db = mockDatabase();
+      PostTag = db.collection({
+        name: 'posts_tags',
+        fields: [{ type: 'string', name: 'tagged_at' }],
+      });
+      Post = db.collection({
+        name: 'posts',
+        fields: [
+          { type: 'belongsToMany', name: 'tags', through: 'posts_tags' },
+          { type: 'string', name: 'title' },
+        ],
+      });
+
+      Tag = db.collection({
+        name: 'tags',
+        fields: [
+          { type: 'belongsToMany', name: 'posts', through: 'posts_tags' },
+          { type: 'string', name: 'name' },
+        ],
+      });
+
+      await db.sync();
+    });
+
+    test('set through value', async () => {
+      const p1 = await Post.repository.create({
+        title: 'hello',
+        tags: [
+          {
+            name: 't1',
+            posts_tags: {
+              tagged_at: '123',
+            },
+          },
+          { name: 't2' },
+        ],
+      });
+
+      const t1 = (await p1.getTags())[0];
+      expect(t1.posts_tags.tagged_at).toEqual('123');
+    });
+  });
 });
