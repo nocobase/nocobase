@@ -2,7 +2,7 @@
 toc: menu
 ---
 
-# Plugin
+# Plugin <Badge>待完善</Badge>
 
 ## plugin.constructor()
 ## plugin.enable()
