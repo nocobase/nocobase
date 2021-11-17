@@ -2,7 +2,7 @@
 toc: menu
 ---
 
-# CLI
+# CLI <Badge>待完善</Badge>
 
 这里的 CLI 指的是通过 app.cli 提供的默认的 commands。
 
@@ -23,18 +23,18 @@ toc: menu
 
 - `--force` 删除重建
 
-## `pm:download`
+## `pm:download` <Badge>待完善</Badge>
 
 下载插件
 
-## `pm:enable`
+## `pm:enable` <Badge>待完善</Badge>
 
 激活插件
 
-## `pm:disable`
+## `pm:disable` <Badge>待完善</Badge>
 
 禁用插件
 
-## `pm:remove`
+## `pm:remove` <Badge>待完善</Badge>
 
 移除插件

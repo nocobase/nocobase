@@ -2,7 +2,7 @@
 toc: menu
 ---
 
-# PluginManager
+# PluginManager <Badge>待完善</Badge>
 
 ## pm.constructor()
 

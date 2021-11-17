@@ -31,7 +31,7 @@ app.db.on('xxx', () => {
 
 资源实例
 
-## app.pm
+## app.pm <Badge>待完善</Badge>
 
 插件管理器，详情见 [Plugin Manager](plugin-manager)
 
@@ -71,9 +71,13 @@ app.i18n.t('Hello');
 
 构造器
 
-## app.use()
+## app.use() <Badge>待完善</Badge>
 
-中间件
+添加中间件
+
+## app.unuse() <Badge>待完善</Badge>
+
+移除中间件
 
 ## app.on()
 
@@ -87,11 +91,11 @@ app.i18n.t('Hello');
 
 等同于 app.db.collection()
 
-## app.actions()
+## app.actions() <Badge>待完善</Badge>
 
 等同于 app.resourcer.registerActions()
 
-## app.resource()
+## app.resource() <Badge>待完善</Badge>
 
 等同于 app.resourcer.define()
 
@@ -99,19 +103,19 @@ app.i18n.t('Hello');
 
 等同于 app.cli.parse()
 
-## app.load()
+## app.load() <Badge>待完善</Badge>
 
 加载配置
 
-## app.init()
+## app.init() <Badge>待完善</Badge>
 
 初始化
 
-## app.start()
+## app.start() <Badge>待完善</Badge>
 
 启动应用
 
-## app.stop()
+## app.stop() <Badge>待完善</Badge>
 
 停止应用
 

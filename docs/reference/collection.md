@@ -2,7 +2,7 @@
 toc: menu
 ---
 
-# Collection
+# Collection <Badge>待完善</Badge>
 
 ## `collection.addField()`
 

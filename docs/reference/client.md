@@ -2,15 +2,15 @@
 toc: menu
 ---
 
-# Client
+# Client <Badge>待完善</Badge>
 
-## APIClient
+## APIClient <Badge>待完善</Badge>
 
-## createRouteSwitch
+## createRouteSwitch <Badge>待完善</Badge>
 
-## createCollectionField
+## createCollectionField <Badge>待完善</Badge>
 
-## createSchemaComponent
+## createSchemaComponent <Badge>待完善</Badge>
 
 ## i18n
 

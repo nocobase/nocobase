@@ -1,0 +1,3 @@
+# @nocobase/plugin-permissions
+
+
