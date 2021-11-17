@@ -16,8 +16,8 @@ export function getConfig(config = {}, options?: any): DatabaseOptions {
   return merge(
     {
       dialect: 'sqlite',
-      storage: ':memory:',
-      logging: false,
+      storage: options?.storage || ':memory:',
+      logging: options?.logging || false,
       hooks: {
         beforeDefine(model, options) {
           options.tableName = `${generatePrefixByPath()}_${

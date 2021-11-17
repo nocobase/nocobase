@@ -1,5 +1,5 @@
 import { RelationRepository } from './relation-repository';
-import { BelongsToMany, HasMany, Model } from 'sequelize';
+import { BelongsToMany, HasMany, Model, Op } from 'sequelize';
 import { UpdateGuard } from '../update-guard';
 import {
   updateAssociations,
@@ -58,23 +58,6 @@ export class HasManyRepository
   extends RelationRepository
   implements IHasManyRepository<any>
 {
-  async create(options?: CreateOptions): Promise<any> {
-    const createAccessor = this.accessors().create;
-
-    const guard = UpdateGuard.fromOptions(this.target, options);
-    const values = options.values;
-
-    const sourceModel = await this.getSourceModel();
-
-    const instance = await sourceModel[createAccessor](
-      guard.sanitize(options.values),
-    );
-
-    await updateAssociations(instance, values, options);
-
-    return instance;
-  }
-
   destroy(options?: number | string | number[] | string[]): Promise<Boolean> {
     return Promise.resolve(false);
   }
@@ -86,6 +69,26 @@ export class HasManyRepository
 
     const getAccessor = this.accessors().get;
     const sourceModel = await this.getSourceModel();
+
+    if (findOptions.include && findOptions.include.length > 0) {
+      const ids = (
+        await sourceModel[getAccessor]({
+          ...findOptions,
+          includeIgnoreAttributes: false,
+          attributes: [this.target.primaryKeyAttribute],
+          group: `${this.target.name}.${this.target.primaryKeyAttribute}`,
+        })
+      ).map((row) => row.get(this.target.primaryKeyAttribute));
+
+      return await sourceModel[getAccessor]({
+        ...findOptions,
+        where: {
+          [this.target.primaryKeyAttribute]: {
+            [Op.in]: ids,
+          },
+        },
+      });
+    }
 
     return await sourceModel[getAccessor](findOptions);
   }

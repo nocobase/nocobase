@@ -53,14 +53,6 @@ export class HasOneRepository<M extends Model>
   extends RelationRepository
   implements IHasOneRepository<M>
 {
-  async create(options: CreateOptions): Promise<M> {
-    const createAccessor = this.accessors().create;
-    const values = options.values;
-    const sourceModel = await this.getSourceModel();
-
-    return sourceModel[createAccessor](values);
-  }
-
   async destroy(): Promise<Boolean> {
     const target = await this.find();
 
