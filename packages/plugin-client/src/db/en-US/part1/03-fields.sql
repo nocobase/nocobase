@@ -52,7 +52,7 @@ INSERT INTO "fields" ("key", "name", "interface", "data_type", "privilege", "sta
 ('sbrf1cdkpb9',	'h1f9o1xvevb',	'createdAt',	'date',	'undelete',	1,	'{"field":"created_at"}',	1,	'2021-09-12 01:06:55.123+00',	'2021-09-12 01:06:55.133+00',	NULL,	NULL,	'oo7ejuze28i',	NULL);
 
 INSERT INTO "fields" ("key", "name", "interface", "data_type", "privilege", "state", "options", "sort", "created_at", "updated_at", "parent_key", "collection_name", "reverse_key", "ui_schema_key") VALUES
-('f_v3j9yv454ch',	'roles',	'linkTo',	'belongsToMany',	NULL,	1,	'{"target":"roles","foreignKey":"user_id","otherKey":"role_id","sourceKey":"id","targetKey":"id"}',	NULL,	'2021-11-16 08:32:08.033+00',	'2021-11-16 08:32:08.049+00',	NULL,	'users',	NULL,	'sarppf56eim'),
+('f_v3j9yv454ch',	'roles',	'linkTo',	'belongsToMany',	NULL,	1,	'{"target":"roles","foreignKey":"user_id","otherKey":"role_name","sourceKey":"id","targetKey":"name"}',	NULL,	'2021-11-16 08:32:08.033+00',	'2021-11-16 08:32:08.049+00',	NULL,	'users',	NULL,	'sarppf56eim'),
 ('f_jd6k0hxqe91',	'title',	'string',	'string',	NULL,	1,	'{}',	NULL,	'2021-11-16 08:32:08.096+00',	'2021-11-16 08:32:08.113+00',	NULL,	'roles',	NULL,	'bhqy0xdfiog'),
 ('f_9jeplea2nwz',	'name',	NULL,	'uid',	NULL,	0,	'{"unique":true,"prefix":"r_"}',	NULL,	'2021-11-16 08:32:08.121+00',	'2021-11-16 08:32:08.121+00',	NULL,	'roles',	NULL,	NULL),
 ('f_no8fg9nvnuk',	'actionPermissions',	NULL,	'hasMany',	NULL,	0,	'{"target":"action_permissions"}',	NULL,	'2021-11-16 08:32:08.128+00',	'2021-11-16 08:32:08.128+00',	NULL,	'roles',	NULL,	NULL),

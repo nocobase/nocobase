@@ -652,6 +652,7 @@ function CreateFieldButton() {
           <Space style={{ float: 'right' }}>
             <Button
               onClick={async () => {
+                console.log('form.values', form.values);
                 await form.clearFormGraph();
                 setVisible(false);
               }}
@@ -661,6 +662,9 @@ function CreateFieldButton() {
             <Button
               type={'primary'}
               onClick={async () => {
+                const fieldInterface = interfaces.get(form.values?.interface);
+                fieldInterface?.initialize && fieldInterface?.initialize(form.values);
+                console.log('form.values', form.values);
                 await resource.save(form.values);
                 setVisible(false);
                 await form.reset();
@@ -755,6 +759,8 @@ function EditFieldButton() {
             <Button
               type={'primary'}
               onClick={async () => {
+                const fieldInterface = interfaces.get(form.values?.interface);
+                fieldInterface?.initialize && fieldInterface?.initialize(form.values);
                 await resource.save(form.values, {
                   resourceKey: ctx.record.key,
                 });

@@ -275,12 +275,12 @@ Select.useSelect = () => {
 };
 
 export const useSelectedRowKeys = () => {
-  const { selectedRows } = useContext(SelectedRowsContext);
+  const { rowKey, selectedRows } = useContext(SelectedRowsContext);
   const [selectedRowKeys, setSelectedRowKeys] = useState<any>(
-    selectedRows.map((row) => row.id),
+    selectedRows.map((row) => row[rowKey]),
   );
   useEffect(() => {
-    setSelectedRowKeys(selectedRows.map((row) => row.id));
+    setSelectedRowKeys(selectedRows.map((row) => row[rowKey]));
   }, [selectedRows]);
   console.log('useSelectedRowKeys', selectedRows);
   return { selectedRowKeys, setSelectedRowKeys };
@@ -333,6 +333,7 @@ Select.Drawer = connect(
       };
     }
     const [selectedRows, setSelectedRows] = useState(toArr(field.value));
+    console.log('fieldNames', { fieldNames, field, value });
     console.log('useSelectedRowKeys.toArr', toArr(field.value));
     useEffect(() => {
       setSelectedRows(toArr(field.value));
@@ -395,7 +396,7 @@ Select.Drawer = connect(
             }}
           ></AntdSelect>
           <SelectedRowsContext.Provider
-            value={{ selectedRows, setSelectedRows }}
+            value={{ rowKey: collectionField?.targetKey || 'id', selectedRows, setSelectedRows }}
           >
             <CollectionProvider collectionName={collectionField?.target}>
               <RecursionField
@@ -447,7 +448,7 @@ Select.Drawer = connect(
         value: 'id',
         ...(get(schema['x-component-props'], 'fieldNames') || {}),
       };
-      console.log({ fieldNames, field, value });
+      console.log('fieldNames', { fieldNames, field, value });
       if (!value) {
         return null;
       }

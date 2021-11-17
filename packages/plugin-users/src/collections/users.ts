@@ -58,14 +58,19 @@ export default {
       name: 'roles',
       target: 'roles',
       foreignKey: 'user_id',
-      otherKey: 'role_id',
+      otherKey: 'role_name',
       sourceKey: 'id',
-      targetKey: 'id',
+      targetKey: 'name',
       uiSchema: {
         type: 'array',
         title: '{{t("Roles")}}',
         'x-component': 'Select.Drawer',
-        'x-component-props': {},
+        'x-component-props': {
+          fieldNames: {
+            label: 'title',
+            value: 'name',
+          },
+        },
         'x-decorator': 'FormItem',
         'x-designable-bar': 'Select.Drawer.DesignableBar',
       },

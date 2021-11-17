@@ -1568,6 +1568,6 @@ INSERT INTO "ui_schemas" ("key", "name", "title", "type", "x-component", "option
 INSERT INTO "ui_schemas" ("key", "name", "title", "type", "x-component", "options", "async", "sort", "created_at", "updated_at", "parent_key") VALUES
 ('17mcgd6s6d7',	'liia3b09auv',	'Star on GitHub',	'void',	'Menu.URL',	'{"version":"2.0","x-designable-bar":"Menu.DesignableBar","x-component-props":{"href":"https://github.com/nocobase/nocobase","icon":"githuboutlined"}}',	'0',	12,	'2021-11-08 14:27:02.538+00',	'2021-11-08 14:27:02.538+00',	'qqzzjakwkwl');
 INSERT INTO "ui_schemas" ("key", "name", "title", "type", "x-component", "options", "async", "sort", "created_at", "updated_at", "parent_key") VALUES
-('sarppf56eim',	NULL,	'{{t("Roles")}}',	'array',	'Select.Drawer',	'{"x-component-props":{},"x-decorator":"FormItem","x-designable-bar":"Select.Drawer.DesignableBar"}',	'0',	4,	'2021-11-16 08:32:08.041+00',	'2021-11-16 08:32:08.041+00',	NULL);
+('sarppf56eim',	NULL,	'{{t("Roles")}}',	'array',	'Select.Drawer',	'{"x-component-props":{"fieldNames": {"label": "title","value": "name"}},"x-decorator":"FormItem","x-designable-bar":"Select.Drawer.DesignableBar"}',	'0',	4,	'2021-11-16 08:32:08.041+00',	'2021-11-16 08:32:08.041+00',	NULL);
 INSERT INTO "ui_schemas" ("key", "name", "title", "type", "x-component", "options", "async", "sort", "created_at", "updated_at", "parent_key") VALUES
 ('bhqy0xdfiog',	NULL,	'{{t("Role name")}}',	'string',	'Input',	'{}',	'0',	5,	'2021-11-16 09:32:00.3+00',	'2021-11-16 09:32:00.3+00',	NULL);

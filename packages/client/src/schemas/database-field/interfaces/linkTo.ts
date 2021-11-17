@@ -36,7 +36,11 @@ export const linkTo: FieldOptions = {
         values.sourceKey = 'id';
       }
       if (!values.targetKey) {
-        values.targetKey = 'id';
+        if (values.target === 'roles') {
+          values.targetKey = 'name';
+        } else {
+          values.targetKey = 'id';
+        }
       }
     }
   },
