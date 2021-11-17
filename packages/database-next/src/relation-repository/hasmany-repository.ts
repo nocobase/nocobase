@@ -1,10 +1,11 @@
 import { RelationRepository } from './relation-repository';
-import { BelongsToMany, HasMany, Model, Op } from 'sequelize';
+import { BelongsToMany, HasMany, Model, Op, Sequelize } from 'sequelize';
 import { UpdateGuard } from '../update-guard';
 import {
   updateAssociations,
   updateModelByValues,
 } from '../update-associations';
+import lodash, { omit } from 'lodash';
 
 type FindOptions = any;
 type FindAndCountOptions = any;
@@ -81,7 +82,7 @@ export class HasManyRepository
       ).map((row) => row.get(this.target.primaryKeyAttribute));
 
       return await sourceModel[getAccessor]({
-        ...findOptions,
+        ...omit(findOptions, ['limit', 'offset']),
         where: {
           [this.target.primaryKeyAttribute]: {
             [Op.in]: ids,
@@ -97,9 +98,30 @@ export class HasManyRepository
     const rows = await this.find(options);
     const sourceModel = await this.getSourceModel();
     const queryOptions = this.buildQueryOptions(options);
-    const count = await sourceModel[this.accessors().count](queryOptions);
 
-    return [rows, count];
+    const count = await sourceModel[this.accessors().get]({
+      where: queryOptions.where,
+      include: queryOptions.include,
+      includeIgnoreAttributes: false,
+      attributes: [
+        [
+          Sequelize.fn(
+            'COUNT',
+            Sequelize.fn(
+              'DISTINCT',
+              Sequelize.col(
+                `${this.target.name}.${this.target.primaryKeyAttribute}`,
+              ),
+            ),
+          ),
+          'count',
+        ],
+      ],
+      raw: true,
+      plain: true,
+    });
+
+    return [rows, count.count];
   }
 
   async findOne(options?: FindOneOptions): Promise<any> {

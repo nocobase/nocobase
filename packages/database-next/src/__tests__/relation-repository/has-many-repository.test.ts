@@ -10,7 +10,7 @@ describe('has many repository', () => {
   let Tag;
 
   beforeEach(async () => {
-    db = mockDatabase({});
+    db = mockDatabase();
     User = db.collection({
       name: 'users',
       fields: [
@@ -44,7 +44,7 @@ describe('has many repository', () => {
       ],
     });
 
-    await db.sync();
+    await db.sync({ force: true });
   });
 
   test('find', async () => {
@@ -121,10 +121,28 @@ describe('has many repository', () => {
 
     const p2 = await Post.repository.create({
       title: 'p2',
+      tags: [t1, t2, t3],
+    });
+
+    const p3 = await Post.repository.create({
+      title: 'p3',
+      tags: [t1, t2, t3],
+    });
+    const p4 = await Post.repository.create({
+      title: 'p4',
+      tags: [t1, t2, t3],
+    });
+    const p5 = await Post.repository.create({
+      title: 'p5',
+      tags: [t1, t2, t3],
+    });
+    const p6 = await Post.repository.create({
+      title: 'p6',
+      tags: [t1, t2, t3],
     });
 
     const UserPostRepository = new HasManyRepository(User, 'posts', u1.id);
-    await UserPostRepository.add(p1.id);
+    await UserPostRepository.add([p1, p2, p3, p4, p5, p6].map((p) => p.id));
 
     const PostTagRepository = new BelongsToManyRepository(Post, 'tags', p1.id);
     await PostTagRepository.set([t1.id, t2.id, t3.id]);
@@ -139,5 +157,13 @@ describe('has many repository', () => {
     const post = posts[0];
 
     expect(post.tags.length).toEqual(3);
+
+    const findAndCount = await UserPostRepository.findAndCount({
+      filter: {
+        'tags.name.$like': 't%',
+      },
+    });
+
+    expect(findAndCount[1]).toEqual(6);
   });
 });
