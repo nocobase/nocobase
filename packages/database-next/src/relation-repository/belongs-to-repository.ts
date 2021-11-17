@@ -2,6 +2,7 @@ import { RelationRepository } from './relation-repository';
 import { BelongsTo, HasOne, Model } from 'sequelize';
 import { updateModelByValues } from '../update-associations';
 import lodash from 'lodash';
+import { SingleRelationRepository } from './single-relation-repository';
 
 type BelongsToFindOptions = any;
 type CreateOptions = any;
@@ -23,48 +24,5 @@ interface IBelongsToRepository<M extends Model> {
 }
 
 class BelongsToRepository
-  extends RelationRepository
-  implements IBelongsToRepository<any>
-{
-  async destroy(): Promise<Boolean> {
-    const target = await this.find();
-
-    await target.destroy();
-    return true;
-  }
-
-  async find(options?: BelongsToFindOptions): Promise<Model<any>> {
-    const findOptions = this.buildQueryOptions({
-      ...options,
-    });
-
-    const getAccessor = this.accessors().get;
-    const sourceModel = await this.getSourceModel();
-
-    return await sourceModel[getAccessor](findOptions);
-  }
-
-  async remove(): Promise<void> {
-    const sourceModel = await this.getSourceModel();
-    return await sourceModel[this.accessors().set](null);
-  }
-
-  async set(primaryKey: any): Promise<void> {
-    const sourceModel = await this.getSourceModel();
-    return await sourceModel[this.accessors().set](primaryKey);
-  }
-
-  async update(options?): Promise<any> {
-    const target = await this.find();
-    await updateModelByValues(
-      target,
-      options?.values,
-      lodash.omit(options, 'values'),
-    );
-    return target;
-  }
-
-  accessors() {
-    return (<BelongsTo>this.association).accessors;
-  }
-}
+  extends SingleRelationRepository
+  implements IBelongsToRepository<any> {}

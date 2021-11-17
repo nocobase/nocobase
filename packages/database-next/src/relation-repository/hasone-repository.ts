@@ -3,6 +3,7 @@ import { HasOne, Model, Sequelize } from 'sequelize';
 import { Appends, Expect, Fields } from '../repository';
 import { updateModelByValues } from '../update-associations';
 import lodash from 'lodash';
+import { SingleRelationRepository } from './single-relation-repository';
 
 interface HasOneFindOptions {
   fields?: Fields;
@@ -50,48 +51,5 @@ interface IHasOneRepository<M extends Model> {
 }
 
 export class HasOneRepository<M extends Model>
-  extends RelationRepository
-  implements IHasOneRepository<M>
-{
-  async destroy(): Promise<Boolean> {
-    const target = await this.find();
-
-    await target.destroy();
-    return true;
-  }
-
-  async find(options?: HasOneFindOptions): Promise<Model<any>> {
-    const findOptions = this.buildQueryOptions({
-      ...options,
-    });
-
-    const getAccessor = this.accessors().get;
-    const sourceModel = await this.getSourceModel();
-
-    return await sourceModel[getAccessor](findOptions);
-  }
-
-  async remove(): Promise<void> {
-    const sourceModel = await this.getSourceModel();
-    return await sourceModel[this.accessors().set](null);
-  }
-
-  async set(primaryKey: any): Promise<void> {
-    const sourceModel = await this.getSourceModel();
-    return await sourceModel[this.accessors().set](primaryKey);
-  }
-
-  async update(options?): Promise<any> {
-    const target = await this.find();
-    await updateModelByValues(
-      target,
-      options?.values,
-      lodash.omit(options, 'values'),
-    );
-    return target;
-  }
-
-  accessors() {
-    return (<HasOne>this.association).accessors;
-  }
-}
+  extends SingleRelationRepository
+  implements IHasOneRepository<M> {}
