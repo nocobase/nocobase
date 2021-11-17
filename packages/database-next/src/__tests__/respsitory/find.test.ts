@@ -54,7 +54,11 @@ describe('repository find', () => {
         sort: ['id'],
       };
 
-      let parser = new OptionsParser(User, options);
+      let parser = new OptionsParser(
+        User.model,
+        User.context.database,
+        options,
+      );
       let params = parser.toSequelizeParams();
       expect(params['order']).toEqual([['id', 'ASC']]);
 
@@ -62,7 +66,7 @@ describe('repository find', () => {
         sort: ['id', '-posts.title', 'posts.comments.createdAt'],
       };
 
-      parser = new OptionsParser(User, options);
+      parser = new OptionsParser(User.model, User.context.database, options);
       params = parser.toSequelizeParams();
       expect(params['order']).toEqual([
         ['id', 'ASC'],
@@ -76,7 +80,11 @@ describe('repository find', () => {
         fields: ['id', 'posts'],
       };
       // 转换为 attributes: ['id'], include: [{association: 'posts'}]
-      let parser = new OptionsParser(User, options);
+      let parser = new OptionsParser(
+        User.model,
+        User.context.database,
+        options,
+      );
       let params = parser.toSequelizeParams();
 
       expect(params['attributes']).toContain('id');
@@ -87,7 +95,7 @@ describe('repository find', () => {
         appends: ['posts'],
       };
 
-      parser = new OptionsParser(User, options);
+      parser = new OptionsParser(User.model, User.context.database, options);
       params = parser.toSequelizeParams();
       expect(params['attributes']['include']).toEqual([]);
       expect(params['include'][0]['association']).toEqual('posts');
@@ -97,7 +105,7 @@ describe('repository find', () => {
         fields: ['id', 'posts.title'],
       };
 
-      parser = new OptionsParser(User, options);
+      parser = new OptionsParser(User.model, User.context.database, options);
       params = parser.toSequelizeParams();
       expect(params['attributes']).toContain('id');
       expect(params['include'][0]['association']).toEqual('posts');
@@ -108,7 +116,7 @@ describe('repository find', () => {
         fields: ['id', 'posts', 'posts.comments.content'],
       };
 
-      parser = new OptionsParser(User, options);
+      parser = new OptionsParser(User.model, User.context.database, options);
       params = parser.toSequelizeParams();
       expect(params['attributes']).toContain('id');
       expect(params['include'][0]['association']).toEqual('posts');
@@ -121,7 +129,7 @@ describe('repository find', () => {
       options = {
         expect: ['id'],
       };
-      parser = new OptionsParser(User, options);
+      parser = new OptionsParser(User.model, User.context.database, options);
       params = parser.toSequelizeParams();
       expect(params['attributes']['exclude']).toContain('id');
 
@@ -131,7 +139,7 @@ describe('repository find', () => {
         expect: ['posts.id'],
       };
 
-      parser = new OptionsParser(User, options);
+      parser = new OptionsParser(User.model, User.context.database, options);
       params = parser.toSequelizeParams();
 
       expect(params['include'][0]['attributes']['exclude']).toContain('id');

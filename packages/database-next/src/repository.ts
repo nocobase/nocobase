@@ -11,7 +11,7 @@ import {
 } from 'sequelize';
 import { flatten } from 'flat';
 import { Collection } from './collection';
-import _ from 'lodash';
+import _, { omit } from 'lodash';
 import { Database } from './database';
 import { updateAssociations } from './update-associations';
 import { RelationField } from './fields';
@@ -209,6 +209,28 @@ export class Repository<
       ...this.buildQueryOptions(options),
     };
 
+    if (opts.include && opts.include.length > 0) {
+      const ids = (
+        await model.findAll({
+          ...opts,
+          includeIgnoreAttributes: false,
+          attributes: [model.primaryKeyAttribute],
+          group: `${model.name}.${model.primaryKeyAttribute}`,
+        })
+      ).map((row) => row.get(model.primaryKeyAttribute));
+
+      const where = {
+        [model.primaryKeyAttribute]: {
+          [Op.in]: ids,
+        },
+      };
+
+      return await model.findAll({
+        ...omit(opts, ['limit', 'offset']),
+        where,
+      });
+    }
+
     return await model.findAll({
       ...opts,
     });
@@ -230,6 +252,7 @@ export class Repository<
       ...opts,
     });
   }
+
   /**
    * Find By Id
    *
@@ -244,17 +267,8 @@ export class Repository<
    * @param options
    */
   async findOne(options?: FindOneOptions) {
-    const model = this.collection.model;
-
-    const findOptions = {
-      subQuery: false,
-      ...this.buildQueryOptions(options),
-    };
-
-    // set subQuery to false
-    const result = await model.findOne(findOptions);
-
-    return result;
+    const rows = await this.find({ ...options, limit: 1 });
+    return rows.length == 1 ? rows[0] : null;
   }
 
   /**
@@ -341,9 +355,6 @@ export class Repository<
     const opts = this.buildQueryOptions(options);
     return await this.model.destroy(opts);
   }
-
-  // TODO
-  async sort() {}
 
   relatedQuery(name: string) {
     return {
