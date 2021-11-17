@@ -24,6 +24,20 @@ export function modelAssociations(instance: Model) {
   return (<typeof Model>instance.constructor).associations;
 }
 
+export function belongsToManyAssociations(
+  instance: Model,
+): Array<BelongsToMany> {
+  const associations = modelAssociations(instance);
+  return Object.entries(associations)
+    .filter((entry) => {
+      const [key, association] = entry;
+      return association.associationType == 'BelongsToMany';
+    })
+    .map((association) => {
+      return <BelongsToMany>association[1];
+    });
+}
+
 export function modelAssociationByKey(
   instance: Model,
   key: string,
@@ -31,19 +45,66 @@ export function modelAssociationByKey(
   return modelAssociations(instance)[key] as Association;
 }
 
+type UpdateValue = { [key: string]: any };
+
+type UpdateOptions = {
+  filter?: any;
+  filterByPk?: number | string;
+  // 字段白名单
+  whitelist?: string[];
+  // 字段黑名单
+  blacklist?: string[];
+  // 关系数据默认会新建并建立关联处理，如果是已存在的数据只关联，但不更新关系数据
+  // 如果需要更新关联数据，可以通过 updateAssociationValues 指定
+  updateAssociationValues?: string[];
+  sanitized?: boolean;
+  sourceModel?: Model;
+};
+
 export async function updateModelByValues(
   instance: Model,
-  values: any,
-  options: any = {},
+  values: UpdateValue,
+  options?: UpdateOptions,
 ) {
-  const guard = new UpdateGuard();
-
-  //@ts-ignore
-  guard.setModel(instance.constructor);
-  values = guard.sanitize(values);
+  if (!options?.sanitized) {
+    const guard = new UpdateGuard();
+    //@ts-ignore
+    guard.setModel(instance.constructor);
+    guard.setBlackList(options.blacklist);
+    guard.setWhiteList(options.whitelist);
+    guard.setAssociationKeysToBeUpdate(options.updateAssociationValues);
+    values = guard.sanitize(values);
+  }
 
   await instance.update(values);
   await updateAssociations(instance, values, options);
+}
+
+export async function updateThroughTableValue(
+  instance: Model,
+  throughName: string,
+  throughValues: any,
+  source: Model,
+  transaction = null,
+) {
+  // update through table values
+  for (const belongsToMany of belongsToManyAssociations(instance)) {
+    // @ts-ignore
+    const throughModel = belongsToMany.through.model;
+    const throughModelName = throughModel.name;
+
+    if (throughModelName === throughModelName) {
+      const where = {
+        [belongsToMany.foreignKey]: instance.get(belongsToMany.sourceKey),
+        [belongsToMany.otherKey]: source.get(belongsToMany.targetKey),
+      };
+
+      return await throughModel.update(throughValues, {
+        where,
+        transaction,
+      });
+    }
+  }
 }
 
 /**
@@ -68,6 +129,27 @@ export async function updateAssociations(
     if (values[key]) {
       await updateAssociation(instance, key, values[key], {
         ...options,
+        transaction,
+      });
+    }
+  }
+
+  // update through table values
+  for (const belongsToMany of belongsToManyAssociations(instance)) {
+    // @ts-ignore
+    const throughModel = belongsToMany.through.model;
+    const throughModelName = throughModel.name;
+
+    if (values[throughModelName] && options.sourceModel) {
+      const where = {
+        [belongsToMany.foreignKey]: instance.get(belongsToMany.sourceKey),
+        [belongsToMany.otherKey]: options.sourceModel.get(
+          belongsToMany.targetKey,
+        ),
+      };
+
+      await throughModel.update(values[throughModel.name], {
+        where,
         transaction,
       });
     }
@@ -241,6 +323,7 @@ export async function updateMultipleAssociation(
   if (!['undefined', 'string', 'number', 'object'].includes(typeof value)) {
     return false;
   }
+
   const { transaction = await model.sequelize.transaction() } = options;
 
   try {
@@ -279,7 +362,6 @@ export async function updateMultipleAssociation(
       }
     }
 
-    console.log({ list2 });
     // associate targets in lists1
     await model[setAccessor](list1, { transaction });
 
@@ -296,6 +378,7 @@ export async function updateMultipleAssociation(
       };
 
       const throughValue = item[through];
+
       if (throughValue) {
         accessorOptions['through'] = throughValue;
       }

@@ -3,31 +3,48 @@ import _, { filter } from 'lodash';
 import { Collection } from './collection';
 import { Appends, Expect, FindOptions } from './repository';
 import FilterParser from './filterParser';
-import { FindAttributeOptions } from 'sequelize';
+import { FindAttributeOptions, ModelCtor } from 'sequelize';
+import { Database } from './database';
 
 const debug = require('debug')('noco-database');
 
 export class OptionsParser {
   options: FindOptions;
-  collection: Collection;
+  database: Database;
+  model: ModelCtor<any>;
   filterParser: FilterParser;
 
-  constructor(collection: Collection, options: FindOptions) {
-    this.collection = collection;
+  constructor(model: ModelCtor<any>, database: Database, options: FindOptions) {
+    this.model = model;
     this.options = options;
-    this.filterParser = new FilterParser(collection, options?.filter);
+    this.database = database;
+    this.filterParser = new FilterParser(model, this.database, options?.filter);
   }
 
   isAssociation(key: string) {
-    return this.collection.model.associations[key] !== undefined;
+    return this.model.associations[key] !== undefined;
   }
 
   isAssociationPath(path: string) {
     return this.isAssociation(path.split('.')[0]);
   }
 
+  parseFilterByPk() {
+    if (this.options?.filterByPk) {
+      return {
+        where: {
+          [this.model.primaryKeyAttribute]: this.options.filterByPk,
+        },
+      };
+    }
+
+    return null;
+  }
+
   toSequelizeParams() {
-    const filterParams = this.filterParser.toSequelizeParams();
+    const filterParams = this.options?.filterByPk
+      ? this.parseFilterByPk()
+      : this.filterParser.toSequelizeParams();
     return this.parseSort(this.parseFields(filterParams));
   }
 
@@ -153,7 +170,7 @@ export class OptionsParser {
 
   protected parseAppends(appends: Appends, filterParams: any) {
     if (!appends) return filterParams;
-    const associations = this.collection.model.associations;
+    const associations = this.model.associations;
 
     /**
      * set include params

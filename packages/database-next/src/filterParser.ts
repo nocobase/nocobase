@@ -2,20 +2,21 @@ import { Model, ModelCtor } from 'sequelize';
 import _ from 'lodash';
 import { flatten } from 'flat';
 import { Collection } from './collection';
+import { Database } from './database';
 
 const debug = require('debug')('noco-database');
 
 type FilterType = any;
 
 class FilterParser {
+  database: Database;
   model: ModelCtor<Model>;
-  collection: Collection;
   filter: FilterType;
 
-  constructor(collection: Collection, filter: FilterType) {
-    this.collection = collection;
-    this.model = collection.model;
+  constructor(model: ModelCtor<any>, database: Database, filter: FilterType) {
+    this.model = model;
     this.filter = filter;
+    this.database = database;
   }
 
   toSequelizeParams() {
@@ -29,7 +30,7 @@ class FilterParser {
     const model = this.model;
 
     // supported operators
-    const operators = this.collection.context.database.operators;
+    const operators = this.database.operators;
 
     const flattenedFilter = flatten(filter || {});
 

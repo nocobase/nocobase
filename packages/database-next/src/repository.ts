@@ -38,7 +38,9 @@ interface CommonFindOptions {
   sort?: Sort;
 }
 
-export interface FindOptions extends SequelizeFindOptions, CommonFindOptions {}
+export interface FindOptions extends SequelizeFindOptions, CommonFindOptions {
+  filterByPk?: string | number;
+}
 
 interface FindOneOptions extends FindOptions, CommonFindOptions {}
 
@@ -376,13 +378,21 @@ export class Repository<
   }
 
   protected buildQueryOptions(options: any) {
-    const parser = new OptionsParser(this.collection, options);
+    const parser = new OptionsParser(
+      this.collection.model,
+      this.collection.context.database,
+      options,
+    );
     const params = parser.toSequelizeParams();
     return { ...options, ...params };
   }
 
   protected parseFilter(filter: Filter) {
-    const parser = new FilterParser(this.collection, filter);
+    const parser = new FilterParser(
+      this.collection.model,
+      this.collection.context.database,
+      filter,
+    );
     return parser.toSequelizeParams();
   }
 }

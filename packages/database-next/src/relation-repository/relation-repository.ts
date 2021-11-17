@@ -1,7 +1,8 @@
 import { Association, Model, ModelCtor } from 'sequelize';
 import { OptionsParser } from '../optionsParser';
 import { Collection } from '../collection';
-import { FindOptions } from '../repository';
+import { Filter, FindOptions } from '../repository';
+import FilterParser from '../filterParser';
 
 export abstract class RelationRepository {
   source: Collection;
@@ -19,7 +20,7 @@ export abstract class RelationRepository {
     this.sourceId = sourceId;
     this.association = this.source.model.associations[association];
 
-    this.target = this.source.model.associations[association].target;
+    this.target = this.association.target;
   }
 
   async getSourceModel() {
@@ -31,7 +32,11 @@ export abstract class RelationRepository {
   }
 
   protected buildQueryOptions(options: FindOptions) {
-    const parser = new OptionsParser(this.source, options);
+    const parser = new OptionsParser(
+      this.target,
+      this.source.context.database,
+      options,
+    );
     const params = parser.toSequelizeParams();
     return { ...options, ...params };
   }
