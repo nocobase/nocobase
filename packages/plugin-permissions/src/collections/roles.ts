@@ -8,8 +8,8 @@ export default {
     {
       type: 'uid',
       name: 'name',
-      unique: true,
-      // primaryKey: true,
+      // unique: true,
+      primaryKey: true,
       prefix: 'r_',
       state: 0,
     },
