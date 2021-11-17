@@ -1,11 +1,13 @@
 import { RelationRepository } from './relation-repository';
-import { BelongsToMany, HasOne, Model } from 'sequelize';
+import { BelongsToMany, HasOne, Model, Op, Sequelize } from 'sequelize';
 import FilterParser from '../filterParser';
 import {
   updateModelByValues,
   updateThroughTableValue,
 } from '../update-associations';
 import { UpdateGuard } from '../update-guard';
+import { omit } from 'lodash';
+import { MultipleRelationRepository } from './multiple-relation-repository';
 
 type FindOptions = any;
 type FindAndCountOptions = any;
@@ -50,7 +52,7 @@ interface IBelongsToManyRepository<M extends Model> {
 }
 
 export class BelongsToManyRepository
-  extends RelationRepository
+  extends MultipleRelationRepository
   implements IBelongsToManyRepository<any>
 {
   async create(options?: CreateBelongsToManyOptions): Promise<any> {
@@ -70,39 +72,6 @@ export class BelongsToManyRepository
     options?: number | string | number[] | string[] | DestroyOptions,
   ): Promise<Boolean> {
     return Promise.resolve(false);
-  }
-
-  async find(options?: FindOptions): Promise<any[]> {
-    const findOptions = this.buildQueryOptions({
-      ...options,
-    });
-
-    const getAccessor = this.accessors().get;
-    const sourceModel = await this.getSourceModel();
-
-    return await sourceModel[getAccessor](findOptions);
-  }
-
-  async findAndCount(options?: FindAndCountOptions): Promise<[any[], number]> {
-    const rows = await this.find(options);
-    const sourceModel = await this.getSourceModel();
-    const queryOptions = this.buildQueryOptions(options);
-    const count = await sourceModel[this.accessors().count](queryOptions);
-
-    return [rows, count];
-  }
-
-  async findOne(options?: FindOneOptions): Promise<any> {
-    const findOptions = this.buildQueryOptions({
-      ...options,
-    });
-
-    const getAccessor = this.accessors().get;
-    const sourceModel = await this.getSourceModel();
-
-    const rows = await sourceModel[getAccessor]({ ...findOptions, limit: 1 });
-
-    return rows.length == 1 ? rows[0] : null;
   }
 
   async setTargets(
