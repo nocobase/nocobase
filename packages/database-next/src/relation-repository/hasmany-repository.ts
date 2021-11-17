@@ -6,7 +6,10 @@ import {
   updateModelByValues,
 } from '../update-associations';
 import lodash, { omit } from 'lodash';
-import { MultipleRelationRepository } from './multiple-relation-repository';
+import {
+  MultipleRelationRepository,
+  UpdateOptions,
+} from './multiple-relation-repository';
 
 type FindOptions = any;
 type FindAndCountOptions = any;
@@ -24,19 +27,6 @@ type CreateOptions = {
 };
 
 type primaryKey = string | number;
-
-type UpdateOptions = {
-  values: { [key: string]: any };
-  filter?: any;
-  filterByPk?: number | string;
-  // 字段白名单
-  whitelist?: string[];
-  // 字段黑名单
-  blacklist?: string[];
-  // 关系数据默认会新建并建立关联处理，如果是已存在的数据只关联，但不更新关系数据
-  // 如果需要更新关联数据，可以通过 updateAssociationValues 指定
-  updateAssociationValues?: string[];
-};
 
 interface IHasManyRepository<M extends Model> {
   find(options?: FindOptions): Promise<M>;
@@ -64,15 +54,6 @@ export class HasManyRepository
     return Promise.resolve(false);
   }
 
-  async remove(primaryKey: primaryKey | Array<primaryKey>): Promise<void> {
-    if (!Array.isArray(primaryKey)) {
-      primaryKey = [primaryKey];
-    }
-
-    const sourceModel = await this.getSourceModel();
-    await sourceModel[this.accessors().removeMultiple](primaryKey);
-  }
-
   async set(primaryKey: primaryKey | Array<primaryKey>): Promise<void> {
     if (!Array.isArray(primaryKey)) {
       primaryKey = [primaryKey];
@@ -89,25 +70,6 @@ export class HasManyRepository
 
     const sourceModel = await this.getSourceModel();
     await sourceModel[this.accessors().add](primaryKey);
-  }
-
-  async update(options?: UpdateOptions): Promise<any> {
-    const guard = UpdateGuard.fromOptions(this.target, options);
-
-    const values = guard.sanitize(options.values);
-
-    const queryOptions = this.buildQueryOptions(options);
-
-    const instances = await this.find(queryOptions);
-
-    for (const instance of instances) {
-      await updateModelByValues(instance, values, {
-        sanitized: true,
-        sourceModel: this.sourceModel,
-      });
-    }
-
-    return true;
   }
 
   accessors() {

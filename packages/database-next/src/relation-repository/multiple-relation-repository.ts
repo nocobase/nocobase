@@ -1,13 +1,28 @@
 import { RelationRepository } from './relation-repository';
 import { omit } from 'lodash';
-import { Op, Sequelize } from 'sequelize';
+import { MultiAssociationAccessors, Op, Sequelize } from 'sequelize';
+import { UpdateGuard } from '../update-guard';
+import { updateModelByValues } from '../update-associations';
 
 type FindOptions = any;
 type FindAndCountOptions = any;
 type FindOneOptions = any;
 type CountOptions = any;
+type primaryKey = string | number;
+export type UpdateOptions = {
+  values: { [key: string]: any };
+  filter?: any;
+  filterByPk?: number | string;
+  // 字段白名单
+  whitelist?: string[];
+  // 字段黑名单
+  blacklist?: string[];
+  // 关系数据默认会新建并建立关联处理，如果是已存在的数据只关联，但不更新关系数据
+  // 如果需要更新关联数据，可以通过 updateAssociationValues 指定
+  updateAssociationValues?: string[];
+};
 
-export class MultipleRelationRepository extends RelationRepository {
+export abstract class MultipleRelationRepository extends RelationRepository {
   async find(options?: FindOptions): Promise<any> {
     const findOptions = this.buildQueryOptions({
       ...options,
@@ -75,5 +90,38 @@ export class MultipleRelationRepository extends RelationRepository {
   async findOne(options?: FindOneOptions): Promise<any> {
     const rows = await this.find({ ...options, limit: 1 });
     return rows.length == 1 ? rows[0] : null;
+  }
+
+  async remove(primaryKey: primaryKey | primaryKey[]): Promise<void> {
+    if (!Array.isArray(primaryKey)) {
+      primaryKey = [primaryKey];
+    }
+
+    const sourceModel = await this.getSourceModel();
+    await sourceModel[this.accessors().removeMultiple](primaryKey);
+    return;
+  }
+
+  async update(options?: UpdateOptions): Promise<any> {
+    const guard = UpdateGuard.fromOptions(this.target, options);
+
+    const values = guard.sanitize(options.values);
+
+    const queryOptions = this.buildQueryOptions(options);
+
+    const instances = await this.find(queryOptions);
+
+    for (const instance of instances) {
+      await updateModelByValues(instance, values, {
+        sanitized: true,
+        sourceModel: this.sourceModel,
+      });
+    }
+
+    return true;
+  }
+
+  protected accessors() {
+    return <MultiAssociationAccessors>super.accessors();
   }
 }

@@ -133,42 +133,6 @@ export class BelongsToManyRepository
     return;
   }
 
-  async remove(primaryKey: primaryKey | primaryKey[]): Promise<void> {
-    if (!Array.isArray(primaryKey)) {
-      primaryKey = [primaryKey];
-    }
-
-    const sourceModel = await this.getSourceModel();
-    await sourceModel[this.accessors().removeMultiple](primaryKey);
-    return;
-  }
-
-  async update(options?: UpdateOptions): Promise<any> {
-    const guard = new UpdateGuard();
-    guard.setModel(this.target);
-    guard.setWhiteList(options.whitelist);
-    guard.setBlackList(options.blacklist);
-    guard.setAssociationKeysToBeUpdate(options.updateAssociationValues);
-
-    const values = guard.sanitize(options.values);
-
-    const queryOptions = this.buildQueryOptions(options);
-
-    const instances = await this.find(queryOptions);
-    for (const instance of instances) {
-      await updateModelByValues(instance, values, {
-        sanitized: true,
-        sourceModel: this.sourceModel,
-      });
-    }
-
-    return true;
-  }
-
-  accessors() {
-    return (<BelongsToMany>this.association).accessors;
-  }
-
   throughName() {
     // @ts-ignore
     return this.association.through.model.name;
