@@ -5,6 +5,7 @@ import { Op, Sequelize } from 'sequelize';
 type FindOptions = any;
 type FindAndCountOptions = any;
 type FindOneOptions = any;
+type CountOptions = any;
 
 export class MultipleRelationRepository extends RelationRepository {
   async find(options?: FindOptions): Promise<any> {
@@ -39,7 +40,10 @@ export class MultipleRelationRepository extends RelationRepository {
   }
 
   async findAndCount(options?: FindAndCountOptions): Promise<[any[], number]> {
-    const rows = await this.find(options);
+    return [await this.find(options), await this.count(options)];
+  }
+
+  async count(options: CountOptions) {
     const sourceModel = await this.getSourceModel();
     const queryOptions = this.buildQueryOptions(options);
 
@@ -65,7 +69,7 @@ export class MultipleRelationRepository extends RelationRepository {
       plain: true,
     });
 
-    return [rows, count.count];
+    return count.count;
   }
 
   async findOne(options?: FindOneOptions): Promise<any> {
