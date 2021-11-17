@@ -6,7 +6,6 @@ import {
   updateThroughTableValue,
 } from '../update-associations';
 import { UpdateGuard } from '../update-guard';
-import { util } from 'prettier';
 
 type FindOptions = any;
 type FindAndCountOptions = any;

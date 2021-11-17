@@ -163,5 +163,13 @@ export class UpdateGuard {
     return result;
   }
 
-  static factory(collection: Collection) {}
+  static fromOptions(model, options) {
+    const guard = new UpdateGuard();
+    guard.setModel(model);
+    guard.setWhiteList(options.whitelist);
+    guard.setBlackList(options.blacklist);
+    guard.setAssociationKeysToBeUpdate(options.updateAssociationValues);
+
+    return guard;
+  }
 }
