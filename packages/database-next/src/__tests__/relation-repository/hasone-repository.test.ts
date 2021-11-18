@@ -28,7 +28,7 @@ describe('has one repository', () => {
 
   test('find', async () => {
     const user = await User.repository.create({
-      name: 'u1',
+      values: { name: 'u1' },
     });
 
     const UserProfileRepository = new HasOneRepository(

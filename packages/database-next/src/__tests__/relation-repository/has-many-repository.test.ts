@@ -49,7 +49,7 @@ describe('has many repository', () => {
 
   test('find', async () => {
     const u1 = await User.repository.create({
-      name: 'u1',
+      values: { name: 'u1' },
     });
 
     const UserPostRepository = new HasManyRepository(User, 'posts', u1.id);
@@ -65,7 +65,7 @@ describe('has many repository', () => {
 
   test('create', async () => {
     const u1 = await User.repository.create({
-      name: 'u1',
+      values: { name: 'u1' },
     });
 
     const UserPostRepository = new HasManyRepository(User, 'posts', u1.id);
@@ -82,7 +82,7 @@ describe('has many repository', () => {
 
   test('update', async () => {
     const u1 = await User.repository.create({
-      name: 'u1',
+      values: { name: 'u1' },
     });
 
     const UserPostRepository = new HasManyRepository(User, 'posts', u1.id);
@@ -107,38 +107,33 @@ describe('has many repository', () => {
   });
 
   test('find', async () => {
-    const u1 = await User.repository.create({ name: 'u1' });
+    const u1 = await User.repository.create({ values: { name: 'u1' } });
 
-    const t1 = await Tag.repository.create({ name: 't1' });
+    const t1 = await Tag.repository.create({ values: { name: 't1' } });
 
-    const t2 = await Tag.repository.create({ name: 't2' });
+    const t2 = await Tag.repository.create({ values: { name: 't2' } });
 
-    const t3 = await Tag.repository.create({ name: 't3' });
+    const t3 = await Tag.repository.create({ values: { name: 't3' } });
 
     const p1 = await Post.repository.create({
-      title: 'p1',
+      values: { title: 'p1' },
     });
 
     const p2 = await Post.repository.create({
-      title: 'p2',
-      tags: [t1, t2, t3],
+      values: { title: 'p2', tags: [t1, t2, t3] },
     });
 
     const p3 = await Post.repository.create({
-      title: 'p3',
-      tags: [t1, t2, t3],
+      values: { title: 'p3', tags: [t1, t2, t3] },
     });
     const p4 = await Post.repository.create({
-      title: 'p4',
-      tags: [t1, t2, t3],
+      values: { title: 'p4', tags: [t1, t2, t3] },
     });
     const p5 = await Post.repository.create({
-      title: 'p5',
-      tags: [t1, t2, t3],
+      values: { title: 'p5', tags: [t1, t2, t3] },
     });
     const p6 = await Post.repository.create({
-      title: 'p6',
-      tags: [t1, t2, t3],
+      values: { title: 'p6', tags: [t1, t2, t3] },
     });
 
     const UserPostRepository = new HasManyRepository(User, 'posts', u1.id);

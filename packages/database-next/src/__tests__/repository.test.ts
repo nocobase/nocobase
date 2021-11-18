@@ -1,7 +1,6 @@
 import { Collection } from '../collection';
 import { Database } from '../database';
 import { mockDatabase } from './';
-import { HasManyRepository } from '../relation-repository/hasmany-repository';
 
 describe('repository.find', () => {
   let db: Database;
@@ -181,17 +180,19 @@ describe('repository.create', () => {
 
   it('create', async () => {
     const user = await User.repository.create({
-      name: 'user1',
-      posts: [
-        {
-          name: 'post11',
-          comments: [
-            { name: 'comment111' },
-            { name: 'comment112' },
-            { name: 'comment113' },
-          ],
-        },
-      ],
+      values: {
+        name: 'user1',
+        posts: [
+          {
+            name: 'post11',
+            comments: [
+              { name: 'comment111' },
+              { name: 'comment112' },
+              { name: 'comment113' },
+            ],
+          },
+        ],
+      },
     });
     const post = await Post.model.findOne();
     expect(post).toMatchObject({
@@ -381,11 +382,15 @@ describe('repository.relatedQuery', () => {
   });
 
   it('create', async () => {
-    const user = await User.repository.create({});
+    const user = await User.repository.create({
+      values: {
+        name: 'u1',
+      },
+    });
 
     const userPostRepository = await User.repository
       .relation('posts')
-      .of<HasManyRepository>(<number>user.get('id'));
+      .of(<number>user.get('id'));
 
     const post = await userPostRepository.create({
       values: { name: 'post1' },

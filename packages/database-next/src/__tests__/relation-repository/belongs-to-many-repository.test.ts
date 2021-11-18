@@ -73,7 +73,9 @@ describe('belongs to many', () => {
     expect(t1).toBeDefined();
 
     const t2 = await Tag.repository.create({
-      name: 't2',
+      values: {
+        name: 't2',
+      },
     });
 
     await PostTagRepository.add(t2.id);
@@ -91,8 +93,10 @@ describe('belongs to many', () => {
 
   test('find and count', async () => {
     const p1 = await Post.repository.create({
-      title: 'p1',
-      tags: [{ name: 't1' }, { name: 't2' }],
+      values: {
+        title: 'p1',
+        tags: [{ name: 't1' }, { name: 't2' }],
+      },
     });
 
     const PostTagRepository = new BelongsToManyRepository(Post, 'tags', p1.id);
@@ -112,8 +116,7 @@ describe('belongs to many', () => {
 
   test('find one', async () => {
     const p1 = await Post.repository.create({
-      title: 'p1',
-      tags: [{ name: 't1' }, { name: 't2' }],
+      values: { title: 'p1', tags: [{ name: 't1' }, { name: 't2' }] },
     });
 
     const PostTagRepository = new BelongsToManyRepository(Post, 'tags', p1.id);
@@ -135,12 +138,14 @@ describe('belongs to many', () => {
 
   test('update raw attribute', async () => {
     const otherTag = await Tag.repository.create({
-      name: 'other_tag',
+      values: { name: 'other_tag' },
     });
 
     const p1 = await Post.repository.create({
-      title: 'p1',
-      tags: [{ name: 't1' }, { name: 't2' }],
+      values: {
+        title: 'p1',
+        tags: [{ name: 't1' }, { name: 't2' }],
+      },
     });
 
     const PostTagRepository = new BelongsToManyRepository(Post, 'tags', p1.id);
@@ -183,16 +188,18 @@ describe('belongs to many', () => {
 
   test('update through table attribute', async () => {
     const p1 = await Post.repository.create({
-      title: 'p1',
-      tags: [
-        {
-          name: 't1',
-          posts_tags: {
-            tagged_at: '123',
+      values: {
+        title: 'p1',
+        tags: [
+          {
+            name: 't1',
+            posts_tags: {
+              tagged_at: '123',
+            },
           },
-        },
-        { name: 't2' },
-      ],
+          { name: 't2' },
+        ],
+      },
     });
 
     const PostTagRepository = new BelongsToManyRepository(Post, 'tags', p1.id);
@@ -206,8 +213,10 @@ describe('belongs to many', () => {
     expect(t1.posts_tags.tagged_at).toEqual('123');
 
     const p2 = await Post.repository.create({
-      title: 'p2',
-      tags: [t1.id],
+      values: {
+        title: 'p2',
+        tags: [t1.id],
+      },
     });
 
     const Post2TagRepository = new BelongsToManyRepository(Post, 'tags', p2.id);
@@ -237,11 +246,11 @@ describe('belongs to many', () => {
 
   test('add', async () => {
     let t1 = await Tag.repository.create({
-      name: 't1',
+      values: { name: 't1' },
     });
 
     const p1 = await Post.repository.create({
-      title: 'p1',
+      values: { title: 'p1' },
     });
 
     const PostTagRepository = new BelongsToManyRepository(Post, 'tags', p1.id);
@@ -253,15 +262,15 @@ describe('belongs to many', () => {
 
   test('set', async () => {
     let t1 = await Tag.repository.create({
-      name: 't1',
+      values: { name: 't1' },
     });
 
     const t2 = await Tag.repository.create({
-      name: 't2',
+      values: { name: 't2' },
     });
 
     const p1 = await Post.repository.create({
-      title: 'p1',
+      values: { title: 'p1' },
     });
 
     const PostTagRepository = new BelongsToManyRepository(Post, 'tags', p1.id);
@@ -284,15 +293,19 @@ describe('belongs to many', () => {
 
   test('find by pk', async () => {
     let t1 = await Tag.repository.create({
-      name: 't1',
+      values: {
+        name: 't1',
+      },
     });
 
     const t2 = await Tag.repository.create({
-      name: 't2',
+      values: {
+        name: 't2',
+      },
     });
 
     const p1 = await Post.repository.create({
-      title: 'p1',
+      values: { title: 'p1' },
     });
 
     const PostTagRepository = new BelongsToManyRepository(Post, 'tags', p1.id);
@@ -308,11 +321,11 @@ describe('belongs to many', () => {
 
   test('toggle', async () => {
     let t1 = await Tag.repository.create({
-      name: 't1',
+      values: { name: 't1' },
     });
 
     const p1 = await Post.repository.create({
-      title: 'p1',
+      values: { title: 'p1' },
     });
 
     const PostTagRepository = new BelongsToManyRepository(Post, 'tags', p1.id);

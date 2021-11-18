@@ -389,16 +389,18 @@ describe('update associations', () => {
 
     test('set through value', async () => {
       const p1 = await Post.repository.create({
-        title: 'hello',
-        tags: [
-          {
-            name: 't1',
-            posts_tags: {
-              tagged_at: '123',
+        values: {
+          title: 'hello',
+          tags: [
+            {
+              name: 't1',
+              posts_tags: {
+                tagged_at: '123',
+              },
             },
-          },
-          { name: 't2' },
-        ],
+            { name: 't2' },
+          ],
+        },
       });
 
       const t1 = (await p1.getTags())[0];

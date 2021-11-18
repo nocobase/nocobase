@@ -189,7 +189,7 @@ describe('repository find', () => {
         },
       });
 
-      expect(users['count']).toEqual(2);
+      expect(users[1]).toEqual(2);
     });
 
     test('find with fields', async () => {
@@ -258,7 +258,7 @@ describe('repository find', () => {
 
     describe('find and count', () => {
       test('without params', async () => {
-        expect((await User.repository.findAndCount()).count).toEqual(3);
+        expect((await User.repository.findAndCount())[1]).toEqual(3);
       });
     });
 
@@ -291,7 +291,9 @@ describe('repository find', () => {
     test('with filter params', async () => {
       expect(
         await User.repository.count({
-          name: 'u1',
+          filter: {
+            name: 'u1',
+          },
         }),
       ).toEqual(1);
     });

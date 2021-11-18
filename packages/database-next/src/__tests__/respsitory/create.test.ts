@@ -26,8 +26,10 @@ describe('create', () => {
   });
   test('create with association', async () => {
     const u1 = await User.repository.create({
-      name: 'u1',
-      posts: [{ title: 'u1p1' }],
+      values: {
+        name: 'u1',
+        posts: [{ title: 'u1p1' }],
+      },
     });
 
     expect(u1.name).toEqual('u1');
