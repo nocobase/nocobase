@@ -8,6 +8,7 @@ import {
   DestroyOptions as SequelizeDestroyOptions,
   CreateOptions as SequelizeCreateOptions,
   UpdateOptions as SequelizeUpdateOptions,
+  Sequelize,
 } from 'sequelize';
 
 import { Collection } from './collection';
@@ -22,6 +23,8 @@ import { HasOneRepository } from './relation-repository/hasone-repository';
 import { BelongsToRepository } from './relation-repository/belongs-to-repository';
 import { BelongsToManyRepository } from './relation-repository/belongs-to-many-repository';
 import { HasManyRepository } from './relation-repository/hasmany-repository';
+import { UpdateGuard } from './update-guard';
+import lodash from 'lodash';
 
 const debug = require('debug')('noco-database');
 
@@ -34,6 +37,11 @@ export type Appends = string[];
 export type Expect = string[];
 export type Fields = string[];
 export type Sort = string[];
+
+interface CountOptions
+  extends Omit<SequelizeCreateOptions, 'distinct' | 'where' | 'include'> {
+  filter?: Filter;
+}
 
 interface CommonFindOptions {
   filter?: Filter;
@@ -49,10 +57,16 @@ export interface FindOptions extends SequelizeFindOptions, CommonFindOptions {
 
 interface FindOneOptions extends FindOptions, CommonFindOptions {}
 
-interface CreateOptions extends SequelizeCreateOptions {
+interface CreateOptions {
+  // 数据
   values?: any;
-  whitelist?: any;
-  blacklist?: any;
+  // 字段白名单
+  whitelist?: string[];
+  // 字段黑名单
+  blacklist?: string[];
+  // 关系数据默认会新建并建立关联处理，如果是已存在的数据只关联，但不更新关系数据
+  // 如果需要更新关联数据，可以通过 updateAssociationValues 指定
+  updateAssociationValues?: string[];
 }
 
 interface UpdateOptions extends SequelizeUpdateOptions {
@@ -84,14 +98,14 @@ type Identity = string | number;
 
 type ID = Identity;
 
-class RelationRepositoryBuilder {
+class RelationRepositoryBuilder<R extends RelationRepository> {
   collection: Collection;
   associationName: string;
   constructor(collection: Collection, associationName: string) {
     this.collection = collection;
     this.associationName = associationName;
   }
-  of<R extends RelationRepository>(id: string | number): R {
+  of(id: string | number): R {
     const association =
       this.collection.model.associations[this.associationName];
 
@@ -125,8 +139,20 @@ export class Repository<
   /**
    * return count by filter
    */
-  async count(filter?: Filter) {
-    return await this.collection.model.count(this.parseFilter(filter));
+  async count(countOptions?: CountOptions) {
+    let options = countOptions ? lodash.clone(countOptions) : {};
+
+    if (countOptions?.filter) {
+      options = {
+        ...options,
+        ...this.parseFilter(countOptions.filter),
+      };
+    }
+
+    return await this.collection.model.count({
+      ...options,
+      distinct: true,
+    });
   }
 
   /**
@@ -209,15 +235,17 @@ export class Repository<
    * @param values
    * @param options
    */
-  async create(
-    values?: TCreationAttributes,
-    options?: CreateOptions,
-  ): Promise<Model> {
-    const instance = await this.model.create<any>(values, options);
+  async create(options: CreateOptions): Promise<Model> {
+    const guard = UpdateGuard.fromOptions(this.model, options);
+    const values = guard.sanitize(options.values);
+
+    const instance = await this.model.create<any>(values);
+
     if (!instance) {
       return;
     }
-    await updateAssociations(instance, values, options);
+
+    await updateAssociations(instance, values);
     return instance;
   }
 
@@ -291,13 +319,10 @@ export class Repository<
   /**
    * @param association target association
    */
-  relation(association: string): RelationRepositoryBuilder {
-    const relationQueryBuilder = new RelationRepositoryBuilder(
-      this.collection,
-      association,
-    );
-
-    return relationQueryBuilder;
+  relation<R extends RelationRepository>(
+    association: string,
+  ): RelationRepositoryBuilder<R> {
+    return new RelationRepositoryBuilder<R>(this.collection, association);
   }
 
   protected buildQueryOptions(options: any) {
