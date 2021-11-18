@@ -66,6 +66,7 @@ export default {
         title: '{{t("Roles")}}',
         'x-component': 'Select.Drawer',
         'x-component-props': {
+          multiple: true,
           fieldNames: {
             label: 'title',
             value: 'name',
