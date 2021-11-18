@@ -16,9 +16,9 @@ export default {
     this.app.on('db.init', async () => {
       const User = database.getModel('users');
       await User.create({
-        nickname: '超级管理员',
+        nickname: 'Super Admin',
         email: process.env.ADMIN_EMAIL || 'admin@nocobase.com',
-        password: process.env.ADMIN_PASSWORD || 'admin',
+        password: process.env.ADMIN_PASSWORD || 'admin123',
       });
     });
 
@@ -29,6 +29,7 @@ export default {
           type: 'createdBy',
           name: typeof createdBy === 'string' ? createdBy : 'createdBy',
           target: 'users',
+          state: 0,
         });
       }
       if (updatedBy !== false) {
@@ -36,6 +37,7 @@ export default {
           type: 'updatedBy',
           name: typeof updatedBy === 'string' ? updatedBy : 'updatedBy',
           target: 'users',
+          state: 0,
         });
       }
     });

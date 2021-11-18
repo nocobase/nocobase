@@ -21,7 +21,7 @@ interface FindOptions extends Sequelize.FindOptions {
   // 输出结果显示哪些字段
   fields?: string[];
   // 输出结果不显示哪些字段
-  expect?: string[];
+  except?: string[];
   // 附加字段，用于控制关系字段的输出
   appends?: string[];
   // 排序，字段前面加上 “-” 表示降序
@@ -67,7 +67,7 @@ await repository.find({
   // 附加字段，主要用于附加关系字段
   appends: [],
   // 字段黑名单
-  expect: [],
+  except: [],
   // 排序
   sort: ['-createdAt', 'updatedAt'],
 });
@@ -194,7 +194,7 @@ await Post.repository.find({
 ###### fields 参数示例说明
 
 - `fields` 显示哪些字段
-- `expect` 不显示哪些字段
+- `except` 不显示哪些字段
 - `appends` 附加哪些字段
 
 如果并未指定 fields，输出所有 Attributes，Associations 字段并不输出
@@ -219,9 +219,7 @@ await Post.repository.find({
 await Post.repository.find({
   fields: ['id', 'name', 'tags'],
 });
-// 
-// [{ id, name, createdAt, updatedAt, tags: [{ id, name, createdAt, updatedAt }] }]
-
+// [{ id, name, tags: [{ id, name, createdAt, updatedAt }] }]
 ```
 
 可以只输出关系数据的某个字段
@@ -233,11 +231,11 @@ await Post.repository.find({
 // [{ id, name, tags: [{ name }] }]
 ```
 
-排除某些字段时，可以使用 expect
+排除某些字段时，可以使用 except
 
 ```ts
 await Post.repository.find({
-  expect: ['content'],
+  except: ['content'],
 });
 // [{ id, name, createdAt, updatedAt }]
 ```
@@ -273,6 +271,65 @@ await Post.repository.find({
 // [{ id, name, content, createdAt, updatedAt }]
 ```
 
+fields、appends、except 同时出现时，优先处理 fields，再把 appends 的合并进来，最后处理 except。
+
+fields 和 appends 同时出现时：
+
+```ts
+{
+  fields: ['id', 'name'],
+  appends: ['tags'],
+}
+// 等同于 
+{
+  fields: ['id', 'name', 'tags'],
+}
+// { id, name, tags: [ { id, name, createdAt, updatedAt } ] }
+```
+
+fields 和 except 同时出现时，如果 except 的 key 在 fields 里，需要排除掉
+
+```ts
+{
+  fields: ['id', 'name'],
+  except: ['name'],
+}
+// { id }
+```
+
+fields 取了多个关联字段的子字段，但是 except 把整个关联字段都排除了
+
+```ts
+{
+  fields: ['id', 'name', 'tags.id', 'tags.name'],
+  except: ['tags'],
+}
+// tags 排除了，tags.id 和 tags.name 都不应该被输出
+// { id, name }
+```
+
+fields 和 except 同时出现时，如果 except 的 key 不在 fields 里，不处理。
+
+```ts
+{
+  fields: ['id', 'name'],
+  except: ['tags.createdAt', 'tags.updatedAt'],
+}
+// { id, name }
+```
+
+
+fields、appends、except 同时出现时：
+
+```ts
+{
+  fields: ['id', 'name'],
+  appends: ['tags'],
+  except: ['tags.createdAt', 'tags.updatedAt'],
+}
+// { id, name, tags: [ { id, name } ] }
+```
+
 ## `repository.findAndCount()`
 
 按分页查询数据，并返回所有符合的数据总数。
@@ -290,7 +347,7 @@ interface FindAndCountOptions extends Sequelize.FindAndCountOptions {
   // 输出结果显示哪些字段
   fields?: string[];
   // 输出结果不显示哪些字段
-  expect?: string[];
+  except?: string[];
   // 附加字段，用于控制关系字段的输出
   appends?: string[];
   // 排序，字段前面加上 “-” 表示降序
@@ -340,7 +397,7 @@ interface FindOneOptions extends findOptions {
   // 输出结果显示哪些字段
   fields?: string[];
   // 输出结果不显示哪些字段
-  expect?: string[];
+  except?: string[];
   // 附加字段，用于控制关系字段的输出
   appends?: string[];
   // 排序，字段前面加上 “-” 表示降序
@@ -383,8 +440,8 @@ interface CreateOptions {
   // 字段黑名单
   blacklist?: string[];
   // 关系数据默认会新建并建立关联处理，如果是已存在的数据只关联，但不更新关系数据
-  // 如果需要更新关联数据，可以通过 updateAssociations 指定
-  updateAssociations?: string[];
+  // 如果需要更新关联数据，可以通过 updateAssociationValues 指定
+  updateAssociationValues?: string[];
 }
 ```
 
@@ -496,7 +553,7 @@ await repository.create({
     }],
   },
   // 指定了 tags，建立关联时，也会同步修改 tag 数据
-  updateAssociations: ['tags'],
+  updateAssociationValues: ['tags'],
 });
 ```
 
@@ -530,8 +587,8 @@ await repository.create({
   // 字段黑名单
   blacklist: [],
   // 关系数据默认会新建并建立关联处理，如果是已存在的数据只关联，但不更新关系数据
-  // 如果需要更新关联数据，可以通过 updateAssociations 指定
-  updateAssociations: ['subTable'],
+  // 如果需要更新关联数据，可以通过 updateAssociationValues 指定
+  updateAssociationValues: ['subTable'],
 });
 ```
 
@@ -543,7 +600,7 @@ await repository.create({
 
 ```ts
 interface update<M extends Sequelize.Model> {
-  (options: UpdateOptions): Promise<M>
+  (options: UpdateOptions): Promise<any>
 }
 
 interface UpdateOptions {
@@ -556,8 +613,8 @@ interface UpdateOptions {
   // 字段黑名单
   blacklist?: string[];
   // 关系数据默认会新建并建立关联处理，如果是已存在的数据只关联，但不更新关系数据
-  // 如果需要更新关联数据，可以通过 updateAssociations 指定
-  updateAssociations?: string[];
+  // 如果需要更新关联数据，可以通过 updateAssociationValues 指定
+  updateAssociationValues?: string[];
 }
 ```
 
@@ -589,11 +646,57 @@ await repository.update({
 ```ts
 await repository.update({
   filter: {
-    name: 'post1.1'
+    name: 'post 1'
   },
   values: {
-    name: 'post1.2'
+    name: 'post 2'
   },
+});
+// 对应的 SQL 为
+// update posts set name = 'post 2' where name = 'post 1'
+```
+
+filter 和 values 都可能包含关联字段，如将 name 为 user 1 的文章的 user 改为 id=3 的 user
+
+```ts
+await Post.repository.update({
+  filter: {
+    'user.name': 'user 1'
+  },
+  values: {
+    user: 3
+  },
+});
+```
+
+values 也可以是关系数据，参数与 create 的 values 一致：
+
+```ts
+await repository.update({
+  filterByPk: 1,
+  values: {
+    a: 'a',
+    // 快速建立关联
+    o2o: 1,    // 建立一对一关联
+    m2o: 1,    // 建立多对一关联
+    o2m: [1,2] // 建立一对多关联
+    m2m: [1,2] // 建立多对多关联
+    // 新建关联数据并建立关联
+    o2o: {
+      key1: 'val1',
+    },
+    o2m: [{key1: 'val1'}, {key2: 'val2'}],
+    // 子表格数据
+    subTable: [
+      // 如果数据存在，更新处理
+      {id: 1, key1: 'val1111'},
+      // 如果数据不存在，直接创建并关联
+      {key2: 'val2'},
+    ],
+  },
+  // 关系数据默认会新建并建立关联处理，如果是已存在的数据只关联，但不更新关系数据
+  // 如果需要更新关联数据，可以通过 updateAssociationValues 指定
+  updateAssociationValues: ['subTable'],
 });
 ```
 
@@ -640,57 +743,185 @@ repository.destroy({
 ##### Definition
 
 ```ts
-interface relation {
+interface relation<R extends RelationRepository> {
   (name: string): {
-    of: (parent: any): RelationRepository;
+    of: (parent: any): R;
   }
-}
-
-// 关系数据的增删改查在 NocoBase 里非常重要
-class RelationRepository {
-  find() {}
-  findOne() {}
-  create() {}
-  update() {}
-  destroy() {}
-  set() {}
-  add() {}
-  remove() {}
-  toggle() {}
 }
 ```
 
 ##### Examples
 
-find、findOne、create、update 和 destroy 和常规 Repository API 层面是一致，这里重点列举关联操作的几个方法：
+```ts
+const userPostsRepository = User.repository.relation<HasManyRepository>('posts').of(1);
+```
+
+RelationRepository 有四类，对应四种关系的处理：
+
+- HasOneRepository
+- HasManyRepository
+- BelongsToRepository
+- BelongsToManyRepository
+
+### HasOne
+
+##### Definition
 
 ```ts
-// user_id = 1 的 post 的 relatedQuery
-const userPostsRepository = repository.relation('posts').of(1);
+interface IHasOneRepository<M extends Sequelize.Model> {
+  // 不需要 findOne，find 就是 findOne
+  find(options?: HasOneFindOptions): Promise<M>;
+  // 新增并关联，如果存在关联，解除之后，与新数据建立关联
+  create(options?: CreateOptions): Promise<M>;
+  // 更新
+  update(options?: UpdateOptions): Promise<M>;
+  // 删除
+  destroy(): Promise<Boolean>;
+  // 建立关联
+  set(primaryKey: any): Promise<void>;
+  // 移除关联
+  remove(): Promise<void>;
+}
 
-// 建立关联
-userPostsRepository.set(1);
+interface HasOneFindOptions {
+  fields?: string[];
+  except?: string[];
+  appends?: string[];
+}
+```
 
-// 批量，仅用于 HasMany 和 BelongsToMany
-userPostsRepository.set([1,2,3]);
+##### Examples
 
-// BelongsToMany 的中间表
-userPostsRepository.set([
+以 user.profile 为例
+
+```ts
+// id = 1 的 user 的 profile
+const userProfileRepository = User.repository.relation<HasOneRepository>('profile').of(1);
+
+const profile = await userProfileRepository.find({
+  fields,
+  appends,
+  except,
+});
+```
+
+### BelongsTo
+
+##### Definition
+
+```ts
+interface IBelongsToRepository<M extends Sequelize.Model> {
+  // 不需要 findOne，find 就是 findOne
+  find(options?: BelongsToFindOptions): Promise<M>;
+  // 新增并关联，如果存在关联，解除之后，与新数据建立关联
+  create(options?: CreateOptions): Promise<M>;
+  // 更新
+  update(options?: UpdateOptions): Promise<M>;
+  // 删除
+  destroy(): Promise<Boolean>;
+  // 建立关联
+  set(primaryKey: any): Promise<void>;
+  // 移除关联
+  remove(): Promise<void>;
+}
+
+interface HasOneFindOptions {
+  fields?: string[];
+  except?: string[];
+  appends?: string[];
+}
+```
+
+##### Examples
+
+以 posts.user 为例
+
+```ts
+// id = 1 的 post 的 user
+const postUserRepository = Post.repository.relation<BelongsToRepository>('user').of(1);
+
+const user = await postUserRepository.find({
+  fields,
+  appends,
+  except,
+});
+```
+
+### HasMany
+
+##### Definition
+
+```ts
+interface IHasManyRepository<M extends Sequelize.Model> {
+  find(options?: FindOptions): Promise<M>;
+  findAndCount(options?: FindAndCountOptions): Promise<[ M[], number ]>
+  findOne(options?: FindOneOptions): Promise<M>;
+  // 新增并关联
+  create(options?: CreateOptions): Promise<M>;
+  // 更新
+  update(options?: UpdateOptions): Promise<M>;
+  // 删除
+  destroy(options?: number | string | number[] | string[] | DestroyOptions): Promise<Boolean>;
+  // 建立关联
+  set(primaryKey: any | primaryKeys: any[]): Promise<void>;
+  // 附加关联
+  add(primaryKey: any | primaryKeys: any[]): Promise<void>;
+  // 移除关联
+  remove(primaryKey: any | primaryKeys: any[]): Promise<void>;
+}
+```
+
+##### Examples
+
+```ts
+repository.find();
+repository.create();
+repository.update({
+  filterByPk: 1,
+  values: {},
+});
+repository.set(1);
+repository.set([1, 2]);
+repository.add([3]);
+repository.remove(1);
+repository.remove([2, 3]);
+```
+
+### BelongsToMany
+
+##### Definition
+
+```ts
+interface IBelongsToManyRepository<M extends Sequelize.Model> {
+  find(options?: FindOptions): Promise<M[]>;
+  findAndCount(options?: FindAndCountOptions): Promise<[ M[], number ]>
+  findOne(options?: FindOneOptions): Promise<M>;
+  // 新增并关联，存在中间表数据
+  create(options?: CreateBelongsToManyOptions): Promise<M>;
+  // 更新，存在中间表数据
+  update(options?: UpdateOptions): Promise<M>;
+  // 删除
+  destroy(options?: number | string | number[] | string[] | DestroyOptions): Promise<Boolean>;
+  // 建立关联
+  set(primaryKey: any | primaryKeys: any[]): Promise<void>;
+  // 附加关联，存在中间表数据
+  add(primaryKey: any | primaryKeys: any[]): Promise<void>;
+  // 移除关联
+  remove(primaryKey: any | primaryKeys: any[]): Promise<void>;
+  toggle(primaryKey: any): Promise<void>;
+}
+```
+
+##### Examples
+
+多对多关系多了中间表的处理
+
+```ts
+repository.set(1);
+repository.set([1,2,3]);
+repository.set([
   [1, {/* 中间表数据 */}],
   [2, {/* 中间表数据 */}],
   [3, {/* 中间表数据 */}],
 ]);
-
-// 仅用于 HasMany 和 BelongsToMany
-userPostsRepository.add(1);
-
-// BelongsToMany 的中间表
-userPostsRepository.add(1, {/* 中间表数据 */});
-
-// 删除关联
-userPostsRepository.remove(1);
-
-// 建立或解除
-userPostsRepository.toggle(1);
-userPostsRepository.toggle([1, 2, 3]);
 ```

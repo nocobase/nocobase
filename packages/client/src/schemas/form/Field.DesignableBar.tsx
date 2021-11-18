@@ -41,8 +41,11 @@ import {
 import SwitchMenuItem from '../../components/SwitchMenuItem';
 import { DragHandle } from '../../components/Sortable';
 import { set } from 'lodash';
+import { useTranslation } from 'react-i18next';
+import { useCompile } from '../../hooks/useCompile';
 
 export const FieldDesignableBar = observer((props) => {
+  const { t } = useTranslation();
   const field = useField();
   const { schema, deepRemove, refresh } = useDesignable();
   const [visible, setVisible] = useState(false);
@@ -52,6 +55,7 @@ export const FieldDesignableBar = observer((props) => {
   const fieldName = schema['x-component-props']?.['fieldName'];
   const { getField } = useCollectionContext();
   const { getFieldsByCollection } = useCollectionsContext();
+  const compile = useCompile();
 
   const collectionField = getField(fieldName);
 
@@ -84,7 +88,7 @@ export const FieldDesignableBar = observer((props) => {
                 <Menu.Item
                   key={'update'}
                   onClick={async () => {
-                    const values = await FormDialog('自定义字段名称', () => {
+                    const values = await FormDialog(t('Custom field display name'), () => {
                       return (
                         <FormLayout layout={'vertical'}>
                           <SchemaField
@@ -93,14 +97,14 @@ export const FieldDesignableBar = observer((props) => {
                               properties: {
                                 fieldName: {
                                   type: 'string',
-                                  title: '原字段名称',
+                                  title: t('Original name'),
                                   'x-read-pretty': true,
                                   'x-decorator': 'FormItem',
                                   'x-component': 'Input',
                                 },
                                 title: {
                                   type: 'string',
-                                  title: '自定义名称',
+                                  title: t('Custom name'),
                                   'x-decorator': 'FormItem',
                                   'x-component': 'Input',
                                 },
@@ -128,7 +132,7 @@ export const FieldDesignableBar = observer((props) => {
                     });
                   }}
                 >
-                  自定义字段名称
+                  {t('Custom field display name')}
                 </Menu.Item>
                 {collectionField?.interface === 'linkTo' && (
                   <Menu.Item>
@@ -138,14 +142,14 @@ export const FieldDesignableBar = observer((props) => {
                         justifyContent: 'space-between',
                       }}
                     >
-                      标签字段{' '}
+                      {t('Label field')}{' '}
                       <Select
                         value={
                           schema?.['x-component-props']?.['fieldNames']?.[
                             'label'
                           ]
                         }
-                        placeholder={'默认为 ID 字段'}
+                        placeholder={t('Default is the ID field')}
                         onChange={async (value) => {
                           set(
                             schema['x-component-props'],
@@ -176,7 +180,7 @@ export const FieldDesignableBar = observer((props) => {
                         options={getFieldsByCollection(collectionField.target)
                           .filter((f) => f?.uiSchema?.title)
                           .map((field) => ({
-                            label: field?.uiSchema?.title || field.name,
+                            label: compile(field?.uiSchema?.title || field.name),
                             value: field.name,
                           }))}
                       />
@@ -186,7 +190,7 @@ export const FieldDesignableBar = observer((props) => {
                 <Menu.Item
                   style={{ minWidth: 150 }}
                   onClick={async () => {
-                    const values = await FormDialog('编辑描述', () => {
+                    const values = await FormDialog(t('Edit description'), () => {
                       return (
                         <FormLayout layout={'vertical'}>
                           <SchemaField
@@ -217,10 +221,10 @@ export const FieldDesignableBar = observer((props) => {
                     });
                   }}
                 >
-                  编辑描述
+                  {t('Edit description')}
                 </Menu.Item>
                 <SwitchMenuItem
-                  title={'必填'}
+                  title={t('Required')}
                   checked={schema.required as boolean}
                   onChange={(checked) => {
                     field
@@ -245,7 +249,7 @@ export const FieldDesignableBar = observer((props) => {
                     await removeSchema(last);
                   }}
                 >
-                  隐藏
+                  {t('Hide')}
                 </Menu.Item>
               </Menu>
             }

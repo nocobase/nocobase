@@ -3,7 +3,7 @@ import { Plugin } from '@nocobase/server';
 import { registerModels, Table, uid } from '@nocobase/database';
 import * as models from './models';
 import { createOrUpdate, findAll } from './actions';
-import { create } from './actions/fields';
+import { create, update } from './actions/fields';
 
 registerModels(models);
 
@@ -23,7 +23,7 @@ export default {
     });
 
     this.app.on('db.init', async () => {
-      const tableNames = ['users', 'applications'];
+      const tableNames = ['users', 'applications', 'roles'];
       const Collection = database.getModel('collections');
       for (const tableName of tableNames) {
         const table = database.getTable(tableName);
@@ -126,9 +126,11 @@ export default {
     });
 
     this.app.resourcer.registerActionHandler('collections.fields:create', create);
+    this.app.resourcer.registerActionHandler('collections.fields:update', update);
     this.app.resourcer.registerActionHandler('collections:findAll', findAll);
     this.app.resourcer.registerActionHandler('collections:createOrUpdate', createOrUpdate);
     this.app.resourcer.registerActionHandler('fields:create', create);
+    this.app.resourcer.registerActionHandler('fields:update', update);
     this.app.resourcer.registerActionHandler('collections:create', createOrUpdate);
   },
 };

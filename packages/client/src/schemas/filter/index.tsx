@@ -24,6 +24,7 @@ import { SchemaField, SchemaRenderer } from '../../components/schema-renderer';
 import { useMemo } from 'react';
 import { createForm, onFormValuesChange } from '@formily/core';
 import deepmerge from 'deepmerge';
+import { Trans, useTranslation } from 'react-i18next';
 
 const toValue = (value) => {
   if (!value) {
@@ -62,21 +63,23 @@ export function FilterGroup(props) {
         </a>
       )}
       <div style={{ marginBottom: 14 }}>
-        满足组内{' '}
-        <Select
-          style={{ width: 80 }}
-          onChange={(logical) => {
-            onChange &&
-              onChange({
-                [logical]: value.list,
-              });
-          }}
-          defaultValue={value.logical}
-        >
-          <Select.Option value={'and'}>全部</Select.Option>
-          <Select.Option value={'or'}>任意</Select.Option>
-        </Select>{' '}
-        条件
+        <Trans>
+          {'Meet '}
+          <Select
+            style={{ width: 80 }}
+            onChange={(logical) => {
+              onChange &&
+                onChange({
+                  [logical]: value.list,
+                });
+            }}
+            defaultValue={value.logical}
+          >
+            <Select.Option value={'and'}>All</Select.Option>
+            <Select.Option value={'or'}>Any</Select.Option>
+          </Select>
+          {' conditions in the group'}
+        </Trans>
       </div>
       <FilterList
         initialValue={value.list}
@@ -96,6 +99,8 @@ export function FilterGroup(props) {
 
 export function FilterList(props) {
   const { initialValue = [] } = props;
+
+  const { t } = useTranslation();
 
   const [map, { set, setAll, remove, reset, get }] = useMap<string, any>(
     initialValue.map((item, index) => {
@@ -137,7 +142,7 @@ export function FilterList(props) {
             set(uid(), {});
           }}
         >
-          添加条件
+          {t('Add filter')}
         </a>
         <a
           style={{ marginLeft: 16 }}
@@ -147,7 +152,7 @@ export function FilterList(props) {
             });
           }}
         >
-          添加条件组
+          {t('Add filter group')}
         </a>
       </div>
     </div>
@@ -234,7 +239,7 @@ Filter.DynamicValue = connect((props: DynamicValuePorps) => {
           properties: {
             [fieldName]: deepmerge(fieldSchema, extra, {
               arrayMerge: (target, source) => source,
-            }),
+            }) as any,
           },
         }}
       />

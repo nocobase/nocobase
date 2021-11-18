@@ -2,7 +2,7 @@ import { TableOptions } from '@nocobase/database';
 
 export default {
   name: 'users',
-  title: '用户',
+  title: '{{t("Users")}}',
   sortable: 'sort',
   // developerMode: true,
   // internal: true,
@@ -24,7 +24,7 @@ export default {
       name: 'nickname',
       uiSchema: {
         type: 'string',
-        title: '昵称',
+        title: '{{t("Nickname")}}',
         'x-component': 'Input',
       },
     },
@@ -36,7 +36,7 @@ export default {
       privilege: 'undelete',
       uiSchema: {
         type: 'string',
-        title: '邮箱',
+        title: '{{t("Email")}}',
         'x-component': 'Input',
         require: true,
       },
@@ -48,9 +48,39 @@ export default {
       privilege: 'undelete',
       uiSchema: {
         type: 'string',
-        title: '密码',
+        title: '{{t("Password")}}',
         'x-component': 'Password',
       },
+    },
+    {
+      interface: 'linkTo',
+      type: 'belongsToMany',
+      name: 'roles',
+      target: 'roles',
+      foreignKey: 'user_id',
+      otherKey: 'role_name',
+      sourceKey: 'id',
+      targetKey: 'name',
+      uiSchema: {
+        type: 'array',
+        title: '{{t("Roles")}}',
+        'x-component': 'Select.Drawer',
+        'x-component-props': {
+          fieldNames: {
+            label: 'title',
+            value: 'name',
+          },
+        },
+        'x-decorator': 'FormItem',
+        'x-designable-bar': 'Select.Drawer.DesignableBar',
+      },
+    },
+    {
+      interface: 'select',
+      type: 'string',
+      name: 'appLang',
+      privilege: 'undelete',
+      state: 0,
     },
     {
       interface: 'password',

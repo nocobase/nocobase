@@ -1,7 +1,7 @@
 import { useRequest } from 'ahooks';
 import { Spin } from 'antd';
 import React, { useMemo } from 'react';
-import { MemoryRouter as Router } from 'react-router-dom';
+import { HashRouter as Router } from 'react-router-dom';
 import {
   createRouteSwitch,
   RouteRedirectProps,
@@ -24,8 +24,8 @@ request.use(async (ctx, next) => {
   const token = localStorage.getItem('NOCOBASE_TOKEN');
   if (token) {
     headers['Authorization'] = `Bearer ${token}`;
-    headers['X-Hostname'] = process.env.API_HOSTNAME;
   }
+  headers['X-Hostname'] = window.location.hostname;
   await next();
 });
 
@@ -56,7 +56,7 @@ const App = () => {
 
   return (
     <div>
-      <Router initialEntries={['/admin']}>
+      <Router>
         <RouteSwitch routes={data} />
       </Router>
     </div>

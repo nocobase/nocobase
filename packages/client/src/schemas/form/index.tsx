@@ -45,6 +45,7 @@ import { useResource as useGeneralResource } from '../../hooks/useResource';
 import { Resource } from '../../resource';
 import { BaseResult } from '@ahooksjs/use-request/lib/types';
 import { CollectionFieldContext } from '../table';
+import { useTranslation } from 'react-i18next';
 
 export interface DescriptionsContextProps {
   resource?: Resource;
@@ -54,6 +55,7 @@ export interface DescriptionsContextProps {
 export const DescriptionsContext = createContext<DescriptionsContextProps>({});
 
 const FormMain = (props: any) => {
+  const { t } = useTranslation();
   const {
     useResource = useGeneralResource,
     showDefaultButtons = false,
@@ -123,19 +125,19 @@ const FormMain = (props: any) => {
               const values = await form.submit();
               console.log({ values });
               await resource.save(values);
-              message.success('保存成功');
+              message.success(t('Saved successfully'));
               await form.reset();
             }}
             type={'primary'}
           >
-            提交
+            {t('Submit')}
           </Button>
           <Button
             onClick={async () => {
               await form.reset();
             }}
           >
-            重置
+            {t('Reset')}
           </Button>
         </Space>
       )}

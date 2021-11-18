@@ -5,16 +5,20 @@ import { PluginOptions } from '@nocobase/server';
 import { readFileSync } from 'fs';
 import glob from 'glob';
 
-export function getInitSqls(): {
+export function getInitSqls(opts: any = {}): {
   [key: string]: string[];
 } {
+  let { lang = 'en-US' } = opts;
+  if (!['zh-CN', 'en-US'].includes(lang)) {
+    lang = 'en-US';
+  }
   const dirs = ['part1', 'part2', 'postgres'];
   return dirs
     .map((dir) => {
       return {
         dir,
         files: glob
-          .sync(path.resolve(__dirname, `./db/${dir}/*.sql`))
+          .sync(path.resolve(__dirname, `./db/${lang}/${dir}/*.sql`))
           .map((fileName) => readFileSync(fileName).toString()),
       };
     })
@@ -55,6 +59,9 @@ export default {
       root = path.resolve(process.cwd(), root);
     }
     this.app.middleware.unshift(async (ctx, next) => {
+      if (process.env.NOCOBASE_ENV === 'production') {
+        return next();
+      }
       if (!root) {
         return next();
       }
@@ -68,14 +75,36 @@ export default {
     const cmd = app.findCommand('init');
     if (cmd) {
       cmd.option('--import-demo');
+      cmd.option('--lang [lang]');
     }
-    this.app.on('db.init', async (opts, cli) => {
-      const importDemo = opts.importDemo || this.options.importDemo;
-      console.log({ importDemo });
+    this.app.resource({
+      name: 'app',
+      actions: {
+        async getLang(ctx, next) {
+          const SystemSetting = ctx.db.getModel('system_settings');
+          const model = await SystemSetting.findOne();
+          const currentUser = ctx.state.currentUser;
+          ctx.body = {
+            // lang: 'en-US',
+            lang: currentUser?.appLang || model?.appLang || process.env.APP_LANG || 'en-US',
+          }
+          await next();
+        }
+      },
+    });
+    this.app.on('db.init', async (opts = {}, cli) => {
+      const importDemo = opts?.importDemo || this.options.importDemo;
+      const lang = opts?.lang || this.options.lang;
+      const SystemSetting = app.db.getModel('system_settings');
+      const model = await SystemSetting.findOne();
+      model.appLang = lang || 'en-US';
+      console.log({ importDemo, lang });
       if (importDemo !== true) {
         return;
       }
-      const sqls = getInitSqls();
+      await model.save();
+
+      const sqls = getInitSqls({ lang });
 
       const database = app.db;
 

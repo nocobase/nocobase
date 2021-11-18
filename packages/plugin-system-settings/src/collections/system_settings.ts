@@ -16,5 +16,9 @@ export default {
       name: 'logo',
       target: 'attachments',
     },
+    {
+      type: 'string',
+      name: 'appLang',
+    },
   ],
 } as TableOptions;

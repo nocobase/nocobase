@@ -7,7 +7,7 @@ export const linkTo: FieldOptions = {
   type: 'object',
   group: 'relation',
   order: 1,
-  title: '关联字段',
+  title: '{{t("Link to")}}',
   isAssociation: true,
   default: {
     dataType: 'belongsToMany',
@@ -36,7 +36,11 @@ export const linkTo: FieldOptions = {
         values.sourceKey = 'id';
       }
       if (!values.targetKey) {
-        values.targetKey = 'id';
+        if (values.target === 'roles') {
+          values.targetKey = 'name';
+        } else {
+          values.targetKey = 'id';
+        }
       }
     }
   },
@@ -44,7 +48,7 @@ export const linkTo: FieldOptions = {
     ...defaultProps,
     target: {
       type: 'string',
-      title: '要关联的数据表',
+      title: '{{t("Related collection")}}',
       required: true,
       'x-reactions': ['{{useAsyncDataSource(loadCollections)}}'],
       'x-decorator': 'FormItem',
@@ -60,7 +64,7 @@ export const linkTo: FieldOptions = {
     // },
     'uiSchema.x-component-props.multiple': {
       type: 'boolean',
-      'x-content': '允许关联多条记录',
+      'x-content': '{{t("Allow linking to multiple records")}}',
       'x-decorator': 'FormItem',
       'x-component': 'Checkbox',
     },

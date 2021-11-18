@@ -7,7 +7,7 @@ export const phone: FieldOptions = {
   type: 'object',
   group: 'basic',
   order: 3,
-  title: '手机号码',
+  title: '{{t("Phone")}}',
   sortable: true,
   default: {
     dataType: 'string',

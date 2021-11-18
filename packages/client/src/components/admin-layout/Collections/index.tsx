@@ -25,6 +25,8 @@ import {
   options,
 } from '../../../schemas/database-field/interfaces';
 import { useResourceRequest } from '../../../constate';
+import { useTranslation } from 'react-i18next';
+import { useCompile } from '../../../hooks/useCompile';
 
 export const RoleContext = createContext(null);
 
@@ -206,7 +208,7 @@ const collectionSchema: ISchema = {
         [uid()]: {
           type: 'void',
           name: 'action1',
-          title: '删除',
+          title: "{{t('Delete')}}",
           'x-align': 'right',
           'x-decorator': 'AddNew.Displayed',
           'x-decorator-props': {
@@ -216,15 +218,15 @@ const collectionSchema: ISchema = {
           'x-component-props': {
             icon: 'DeleteOutlined',
             confirm: {
-              title: '删除数据',
-              content: '删除后无法恢复，确定要删除吗？',
+              title: "{{t('Delete record')}}",
+              content: "{{t('Are you sure you want to delete it?')}}",
             },
             useAction: '{{ Table.useTableDestroyAction }}',
           },
         },
         [uid()]: {
           type: 'void',
-          title: '添加',
+          title: "{{t('Add new')}}",
           'x-align': 'right',
           'x-decorator': 'AddNew.Displayed',
           'x-decorator-props': {
@@ -240,7 +242,7 @@ const collectionSchema: ISchema = {
     },
     column1: {
       type: 'void',
-      title: '字段名称',
+      title: "{{t('Field display name')}}",
       'x-component': 'Table.Column',
       properties: {
         'uiSchema.title': {
@@ -252,7 +254,7 @@ const collectionSchema: ISchema = {
     },
     column2: {
       type: 'void',
-      title: '字段标识',
+      title: "{{t('Field name')}}",
       'x-component': 'Table.Column',
       properties: {
         name: {
@@ -264,7 +266,7 @@ const collectionSchema: ISchema = {
     },
     column3: {
       type: 'void',
-      title: '字段类型',
+      title: "{{t('Field type')}}",
       'x-component': 'Table.Column',
       properties: {
         interface: {
@@ -278,7 +280,7 @@ const collectionSchema: ISchema = {
     },
     [uid()]: {
       type: 'void',
-      title: '操作',
+      title: "{{t('Actions')}}",
       'x-component': 'Table.Column',
       'x-component-props': {
         width: 160,
@@ -293,7 +295,7 @@ const collectionSchema: ISchema = {
           properties: {
             [uid()]: {
               type: 'void',
-              title: '编辑',
+              title: "{{t('Edit')}}",
               'x-component': 'EditFieldButton',
               'x-component-props': {
                 type: 'link',
@@ -309,7 +311,7 @@ const collectionSchema: ISchema = {
             },
             [uid()]: {
               type: 'void',
-              title: '删除',
+              title: "{{t('Delete')}}",
               'x-component': 'Action',
               'x-action-type': 'destroy',
               'x-component-props': {
@@ -330,7 +332,9 @@ const collectionSchema: ISchema = {
 
 function FieldConfigTitle() {
   const ctx = useContext(TableRowContext);
-  return <>{`配置「${ctx.record.title}」表字段`}</>;
+  const { t } = useTranslation();
+  const compile = useCompile();
+  return <>{t('Configure fields of {{title}}', { title: compile(ctx.record.title) })}</>;
 }
 
 function useCollectionResource({ onSuccess }) {
@@ -347,7 +351,7 @@ const schema: ISchema = {
   name: 'action',
   'x-component': 'Action',
   'x-component-props': {
-    tooltip: '数据表配置',
+    tooltip: "{{ t('Collections & Fields') }}",
     className: 'nb-database-config',
     icon: 'DatabaseOutlined',
     type: 'primary',
@@ -355,7 +359,7 @@ const schema: ISchema = {
   properties: {
     modal1: {
       type: 'void',
-      title: '数据表配置',
+      title: "{{t('Collections & Fields')}}",
       'x-component': 'Action.Drawer',
       properties: {
         table: {
@@ -382,7 +386,7 @@ const schema: ISchema = {
                 [uid()]: {
                   type: 'void',
                   name: 'action1',
-                  title: '删除',
+                  title: "{{t('Delete')}}",
                   'x-align': 'right',
                   'x-decorator': 'AddNew.Displayed',
                   'x-decorator-props': {
@@ -392,15 +396,15 @@ const schema: ISchema = {
                   'x-component-props': {
                     icon: 'DeleteOutlined',
                     confirm: {
-                      title: '删除数据',
-                      content: '删除后无法恢复，确定要删除吗？',
+                      title: "{{t('Delete record')}}",
+                      content: "{{t('Are you sure you want to delete it?')}}",
                     },
                     useAction: '{{ Table.useTableDestroyAction }}',
                   },
                 },
                 [uid()]: {
                   type: 'void',
-                  title: '创建数据表',
+                  title: "{{t('Create collection')}}",
                   'x-align': 'right',
                   'x-decorator': 'AddNew.Displayed',
                   'x-decorator-props': {
@@ -414,7 +418,7 @@ const schema: ISchema = {
                   properties: {
                     modal: {
                       type: 'void',
-                      title: '创建数据表',
+                      title: "{{t('Create collection')}}",
                       'x-decorator': 'Form',
                       'x-decorator-props': {
                         useResource: useCollectionResource,
@@ -426,17 +430,17 @@ const schema: ISchema = {
                       properties: {
                         title: {
                           type: 'string',
-                          title: '数据表名称',
+                          title: "{{t('Collection display name')}}",
                           'x-component': 'Input',
                           'x-decorator': 'FormilyFormItem',
                         },
                         name: {
                           type: 'string',
-                          title: '数据表标识',
+                          title: "{{t('Collection name')}}",
                           'x-component': 'Input',
                           'x-decorator': 'FormilyFormItem',
                           description:
-                            '随机生成，可修改。支持英文、数字和下划线，必须以英文字母开头',
+                            "{{t('Randomly generated and can be modified. Support letters, numbers and underscores, must start with an letter.')}}",
                         },
                       },
                     },
@@ -446,7 +450,7 @@ const schema: ISchema = {
             },
             column1: {
               type: 'void',
-              title: '数据表名称',
+              title: "{{t('Collection display name')}}",
               'x-component': 'Table.Column',
               properties: {
                 title: {
@@ -458,7 +462,7 @@ const schema: ISchema = {
             },
             column2: {
               type: 'void',
-              title: '数据表标识',
+              title: "{{t('Collection name')}}",
               'x-component': 'Table.Column',
               properties: {
                 name: {
@@ -470,7 +474,7 @@ const schema: ISchema = {
             },
             [uid()]: {
               type: 'void',
-              title: '操作',
+              title: "{{t('Actions')}}",
               'x-component': 'Table.Column',
               'x-component-props': {
                 width: 160,
@@ -485,7 +489,7 @@ const schema: ISchema = {
                   properties: {
                     [uid()]: {
                       type: 'void',
-                      title: '配置字段',
+                      title: "{{t('Configure fields')}}",
                       'x-component': 'Action',
                       'x-component-props': {
                         type: 'link',
@@ -506,7 +510,7 @@ const schema: ISchema = {
                     },
                     [uid()]: {
                       type: 'void',
-                      title: '编辑',
+                      title: "{{t('Edit')}}",
                       'x-component': 'Action',
                       'x-component-props': {
                         type: 'link',
@@ -515,7 +519,7 @@ const schema: ISchema = {
                       properties: {
                         [uid()]: {
                           type: 'void',
-                          title: '编辑数据表',
+                          title: "{{t('Edit collection')}}",
                           'x-decorator': 'Form',
                           'x-decorator-props': {
                             useResource: useDetailsResource,
@@ -527,7 +531,7 @@ const schema: ISchema = {
                           properties: {
                             title: {
                               type: 'string',
-                              title: '数据表名称',
+                              title: "{{t('Collection display name')}}",
                               'x-component': 'Input',
                               'x-decorator': 'FormilyFormItem',
                             },
@@ -537,14 +541,14 @@ const schema: ISchema = {
                     },
                     [uid()]: {
                       type: 'void',
-                      title: '删除',
+                      title: "{{t('Delete')}}",
                       'x-component': 'Action',
                       'x-action-type': 'destroy',
                       'x-component-props': {
                         type: 'link',
                         confirm: {
-                          title: '删除数据',
-                          content: '删除后无法恢复，确定要删除吗？',
+                          title: "{{t('Delete record')}}",
+                          content: "{{t('Are you sure you want to delete it?')}}",
                         },
                         useAction: '{{ Table.useTableDestroyAction }}',
                       },
@@ -561,6 +565,8 @@ const schema: ISchema = {
 };
 
 function CreateFieldButton() {
+  const { t } = useTranslation();
+  const compile = useCompile();
   const { refresh } = useCollectionsContext();
   const ctx = useContext(TableRowContext);
   const { service } = useTable();
@@ -604,7 +610,7 @@ function CreateFieldButton() {
           key: uid(),
           name: `f_${uid()}`,
           interface: info.key,
-        });
+        }, 'overwrite');
         setProperties(clone(schema.properties));
         setVisible(true);
       }}
@@ -612,14 +618,14 @@ function CreateFieldButton() {
       {options.map(
         (option, groupIndex) =>
           option.children.length > 0 && (
-            <Menu.SubMenu key={groupIndex} title={option.label}>
+            <Menu.SubMenu key={groupIndex} title={compile(option.label)}>
               {option.children.map((item) => (
                 <Menu.Item
                   disabled={item.disabled}
                   style={{ minWidth: 120 }}
                   key={item.name}
                 >
-                  {item.title}
+                  {compile(item.title)}
                 </Menu.Item>
               ))}
             </Menu.SubMenu>
@@ -631,30 +637,34 @@ function CreateFieldButton() {
     <>
       <Dropdown overlay={menu} overlayClassName={'all-fields'}>
         <Button type={'primary'} icon={<PlusOutlined />}>
-          添加 <DownOutlined />
+          {t('Add new')} <DownOutlined />
         </Button>
       </Dropdown>
       <Drawer
-        title={'添加字段'}
+        title={t('Add field')}
         width={'50%'}
         visible={visible}
-        onClose={() => {
+        onClose={async () => {
+          await form.clearFormGraph();
           setVisible(false);
-          form.reset();
         }}
         footer={
           <Space style={{ float: 'right' }}>
             <Button
               onClick={async () => {
+                console.log('form.values', form.values);
+                await form.clearFormGraph();
                 setVisible(false);
-                await form.reset();
               }}
             >
-              取消
+              {t('Cancel')}
             </Button>
             <Button
               type={'primary'}
               onClick={async () => {
+                const fieldInterface = interfaces.get(form.values?.interface);
+                fieldInterface?.initialize && fieldInterface?.initialize(form.values);
+                console.log('form.values', form.values);
                 await resource.save(form.values);
                 setVisible(false);
                 await form.reset();
@@ -662,7 +672,7 @@ function CreateFieldButton() {
                 await refresh();
               }}
             >
-              确定
+              {t('Submit')}
             </Button>
           </Space>
         }
@@ -685,6 +695,7 @@ function CreateFieldButton() {
 }
 
 function EditFieldButton() {
+  const { t } = useTranslation();
   const { refresh, findCollection } = useCollectionsContext();
   const { service } = useTable();
   const ctx = useContext(TableRowContext);
@@ -729,10 +740,10 @@ function EditFieldButton() {
           form.setValues(clone(values || {}));
         }}
       >
-        编辑
+        {t('Edit')}
       </Button>
       <Drawer
-        title={'编辑字段'}
+        title={t('Edit field')}
         width={'50%'}
         visible={visible}
         onClose={() => setVisible(false)}
@@ -743,11 +754,13 @@ function EditFieldButton() {
                 setVisible(false);
               }}
             >
-              取消
+              {t('Cancel')}
             </Button>
             <Button
               type={'primary'}
               onClick={async () => {
+                const fieldInterface = interfaces.get(form.values?.interface);
+                fieldInterface?.initialize && fieldInterface?.initialize(form.values);
                 await resource.save(form.values, {
                   resourceKey: ctx.record.key,
                 });
@@ -756,7 +769,7 @@ function EditFieldButton() {
                 await refresh();
               }}
             >
-              确定
+              {t('Submit')}
             </Button>
           </Space>
         }

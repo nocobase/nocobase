@@ -4,7 +4,16 @@
 import React from 'react';
 import { SchemaRenderer } from '@nocobase/client';
 import { uid } from '@formily/shared';
-import { ISchema } from '@formily/react';
+import { ISchema } from '../../index';
+
+type TestSchema = {
+  [key: `x-${string | number}` | symbol]: any;
+};
+
+const a:TestSchema={
+  'x-232ddd-sd': 'Menu',
+  'x-key':'dd'
+};
 
 const schema: ISchema = {
   type: 'object',

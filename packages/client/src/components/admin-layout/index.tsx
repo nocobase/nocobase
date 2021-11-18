@@ -47,8 +47,10 @@ import {
 import { AuthProvider } from './Auth';
 import { Helmet } from 'react-helmet';
 import { MenuSelectedKeysContext } from '../../schemas/menu';
+import { useTranslation } from 'react-i18next';
 
 function DesignableToggle() {
+  const { t } = useTranslation();
   const { designable, setDesignable } = useDesignableSwitchContext();
   const [visible, setVisible] = useState(false);
   useEffect(() => {
@@ -69,14 +71,14 @@ function DesignableToggle() {
         placement={'bottom'}
         title={
           <span>
-            点此进入界面配置{' '}
+            {t('Click here to enter UI editor.')}{' '}
             <a
               onClick={() => {
                 localStorage.setItem('hide-tip', 'true');
                 setVisible(false);
               }}
             >
-              关闭
+              {t('Close')}
             </a>
           </span>
         }
@@ -87,7 +89,7 @@ function DesignableToggle() {
       >
         <span style={{ height: 45, width: 45, position: 'absolute' }}></span>
       </Tooltip>
-      <Tooltip title={'界面配置'}>
+      <Tooltip title={t('UI editor')}>
         <Button
           className={cls('nb-designable-toggle', {
             'has-tip': visible,
@@ -117,7 +119,7 @@ function LayoutWithMenu(props: LayoutWithMenuProps) {
   const sideMenuRef = useRef();
   const history = useHistory();
   const { title } = useSystemSettings();
-  const [activeKey, setActiveKey] = useState(match.params.name);
+  const [activeKey, setActiveKey] = useState('');
   const { setPageTitle } = usePageTitleContext();
 
   const [selectedKeys, setSelectedKeys] = useState(defaultSelectedKeys);
@@ -181,6 +183,7 @@ function LayoutWithMenu(props: LayoutWithMenuProps) {
     history.push(`/admin/${uid()}`);
   };
   console.log({ activeKey, selectedKeys });
+  
   return (
     <Layout>
       <Layout.Header className={'site-header'} style={{ display: 'flex' }}>

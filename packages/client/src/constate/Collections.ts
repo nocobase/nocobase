@@ -22,7 +22,7 @@ const [CollectionsProvider, useCollectionsContext] = constate<any, any, any>(
         const collection = result?.data?.find(
           (item) => item.name === collectionName,
         );
-        return collection?.generalFields;
+        return collection?.generalFields || [];
       },
     };
   },

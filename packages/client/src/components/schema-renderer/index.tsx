@@ -78,6 +78,7 @@ import {
   useCollectionContext,
   useResourceRequest,
 } from '../../constate';
+import { i18n } from '../../i18n';
 
 export const BlockContext = createContext({ dragRef: null });
 
@@ -189,6 +190,7 @@ const useAssociationResource = (options) => {
 
 export const SchemaField = createSchemaField({
   scope: {
+    t: i18n.t.bind(i18n),
     Table,
     Calendar,
     Kanban,
@@ -687,7 +689,7 @@ export const SchemaRenderer = (props: SchemaRendererProps) => {
   const form = useMemo(() => props.form || createForm(), []);
   const schema = useMemo(() => {
     if (Schema.isSchemaInstance(props.schema)) {
-      return schema;
+      return props.schema;
     }
     let s = props.schema;
     if (props.onlyRenderProperties) {

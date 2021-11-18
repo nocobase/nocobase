@@ -7,7 +7,9 @@ NocoBase 是什么
 NocoBase 是一个极易扩展的开源无代码开发平台。
 无需编程，使用 NocoBase 搭建自己的协作平台、管理系统，只需要几分钟时间。 
 
-[https://www.nocobase.com/cn](https://www.nocobase.com/cn)
+官网：https://cn.nocobase.com/
+
+在线体验：https://demo-cn.nocobase.com/new
 
 哪些场景适合使用 NocoBase
 ----------
@@ -75,7 +77,8 @@ Database:
 
 #### 快速启动
 ~~~shell
-yarn create nocobase-app my-nocobase-app --quickstart
+yarn create nocobase-app my-nocobase-app --quickstart --lang=zh-CN
+# `--lang=en-US` 语言设置，支持 `--lang=en-US` 和 `--lang=zh-CN`
 ~~~
 
 #### 分步骤执行
@@ -87,7 +90,9 @@ yarn create nocobase-app my-nocobase-app
 cd my-nocobase-app
 
 # 3. 初始化数据
-yarn nocobase init --import-demo
+yarn nocobase init --import-demo --lang=zh-CN
+# `--import-demo` 导入演示数据
+# `--lang=en-US` 语言设置，支持 `--lang=en-US` 和 `--lang=zh-CN`
 
 # 4. 启动项目
 yarn start

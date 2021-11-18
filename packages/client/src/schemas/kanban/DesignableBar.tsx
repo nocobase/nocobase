@@ -36,9 +36,12 @@ import { useCollection, useCollectionContext } from '../../constate';
 import { useTable } from '../table';
 import { DragHandle } from '../../components/Sortable';
 import { fieldsToFilterColumns } from '../calendar';
+import { useTranslation } from 'react-i18next';
+import { useCompile } from '../../hooks/useCompile';
 
 export const DesignableBar = observer((props) => {
   const field = useField();
+  const { t } = useTranslation();
   const { designable, schema, refresh, deepRemove } = useDesignable();
   const [visible, setVisible] = useState(false);
   const { dragRef } = useContext(DraggableBlockContext);
@@ -46,10 +49,11 @@ export const DesignableBar = observer((props) => {
   const collectionName =
     field.componentProps?.collectionName || tableProps?.collectionName;
   const { collection, fields } = useCollection({ collectionName });
+  const compile = useCompile();
   return (
     <div className={cls('designable-bar', { active: visible })}>
       <div className={'designable-info'}>
-        {collection?.title || collection?.name}
+        {compile(collection?.title || collection?.name)}
       </div>
       <span
         onClick={(e) => {
@@ -80,7 +84,7 @@ export const DesignableBar = observer((props) => {
                   key={'defaultFilter'}
                   onClick={async () => {
                     const { defaultFilter } = await FormDialog(
-                      '设置数据范围',
+                      t('Set the data scope'),
                       () => {
                         return (
                           <FormLayout layout={'vertical'}>
@@ -111,15 +115,15 @@ export const DesignableBar = observer((props) => {
                     await updateSchema(schema);
                   }}
                 >
-                  设置数据范围
+                  {t('Set the data scope')}
                 </Menu.Item>
                 <Menu.Divider />
                 <Menu.Item
                   key={'delete'}
                   onClick={async () => {
                     Modal.confirm({
-                      title: '删除区块',
-                      content: '删除后无法恢复，确定要删除吗？',
+                      title: t('Delete block'),
+                      content: t('Are you sure you want to delete it?'),
                       onOk: async () => {
                         const removed = deepRemove();
                         // console.log({ removed })
@@ -129,7 +133,7 @@ export const DesignableBar = observer((props) => {
                     });
                   }}
                 >
-                  删除
+                  {t('Delete')}
                 </Menu.Item>
               </Menu>
             }

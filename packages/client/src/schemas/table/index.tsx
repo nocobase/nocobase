@@ -11,6 +11,7 @@ import { cloneDeep, cloneDeepWith, findIndex, forIn, range, set } from 'lodash';
 import React, { Fragment, useEffect, useState } from 'react';
 import { useContext } from 'react';
 import { createContext } from 'react';
+import { useDeepCompareEffectNoCheck } from 'use-deep-compare-effect';
 import { useDesignable, createCollectionField, ISchema } from '..';
 import { uid, merge } from '@formily/shared';
 import useRequest from '@ahooksjs/use-request';
@@ -72,6 +73,8 @@ import IconPicker from '../../components/icon-picker';
 import { DescriptionsContext } from '../form';
 import { VisibleContext } from '../../context';
 import { SimpleDesignableBar } from './SimpleDesignableBar';
+import { Trans, useTranslation } from 'react-i18next';
+import { useCompile } from '../../hooks/useCompile';
 
 export interface ITableContext {
   props: any;
@@ -401,6 +404,7 @@ const useTableColumns = () => {
 };
 
 function AddColumn() {
+  const { t } = useTranslation();
   const [visible, setVisible] = useState(false);
   const { appendChild, remove } = useDesignable();
   const { loadCollections } = useCollectionsContext();
@@ -408,7 +412,6 @@ function AddColumn() {
   const displayed = useDisplayedMapContext();
   const { service } = useTable();
   const { createSchema, removeSchema, updateSchema } = useClient();
-
   return (
     <Dropdown
       trigger={['hover']}
@@ -416,7 +419,10 @@ function AddColumn() {
       onVisibleChange={setVisible}
       overlay={
         <Menu>
-          <Menu.ItemGroup className={'display-fields'} title={'显示字段'}>
+          <Menu.ItemGroup
+            className={'display-fields'}
+            title={t('Display fields')}
+          >
             {fields.map((field) => (
               <SwitchMenuItem
                 title={field?.uiSchema?.title}
@@ -445,7 +451,7 @@ function AddColumn() {
                           'x-component-props': {
                             useOkAction: '{{ Select.useOkAction }}',
                           },
-                          title: '关联数据',
+                          title: "{{t('Select record')}}",
                           properties: {
                             table: {
                               type: 'array',
@@ -479,7 +485,7 @@ function AddColumn() {
                                   properties: {
                                     [uid()]: {
                                       type: 'void',
-                                      title: '筛选',
+                                      title: "{{t('Filter')}}",
                                       'x-decorator': 'AddNew.Displayed',
                                       'x-decorator-props': {
                                         displayName: 'filter',
@@ -504,7 +510,7 @@ function AddColumn() {
                           properties: {
                             [uid()]: {
                               type: 'void',
-                              title: '查看数据',
+                              title: "{{t('View record')}}",
                               'x-component': 'Action.Drawer',
                               'x-component-props': {
                                 bodyStyle: {
@@ -519,7 +525,7 @@ function AddColumn() {
                                   properties: {
                                     [uid()]: {
                                       type: 'void',
-                                      title: '详情',
+                                      title: "{{t('Details')}}",
                                       'x-designable-bar':
                                         'Tabs.TabPane.DesignableBar',
                                       'x-component': 'Tabs.TabPane',
@@ -581,7 +587,7 @@ function AddColumn() {
           <Menu.SubMenu
             disabled
             popupClassName={'add-new-fields-popup'}
-            title={'添加字段'}
+            title={t('Add field')}
           >
             {options.map((option) => (
               <Menu.ItemGroup title={option.label}>
@@ -591,7 +597,7 @@ function AddColumn() {
                     key={item.name}
                     onClick={async () => {
                       setVisible(false);
-                      const values = await FormDialog(`添加字段`, () => {
+                      const values = await FormDialog(t('Add field'), () => {
                         return (
                           <FormLayout layout={'vertical'}>
                             <SchemaField
@@ -635,7 +641,7 @@ function AddColumn() {
         className={'designable-btn designable-btn-dash'}
         icon={<SettingOutlined />}
       >
-        配置字段
+        {t('Configure fields')}
       </Button>
     </Dropdown>
   );
@@ -900,11 +906,11 @@ const TableProvider = (props: any) => {
       // defaultParams: [getDefaultParams()],
     },
   );
-  useEffect(() => {
+  useDeepCompareEffectNoCheck(() => {
     service.run(getDefaultParams());
   }, [
-    pagination.pageSize,
-    pagination.page,
+    pagination?.pageSize,
+    pagination?.page,
     props.dragSort,
     props.defaultSort,
     props.defaultFilter,
@@ -1001,7 +1007,7 @@ function generateActionSchema(type) {
       key: uid(),
       name: uid(),
       type: 'void',
-      title: '筛选',
+      title: "{{ t('Filter') }}",
       'x-align': 'left',
       'x-decorator': 'AddNew.Displayed',
       'x-decorator-props': {
@@ -1017,7 +1023,7 @@ function generateActionSchema(type) {
       key: uid(),
       type: 'void',
       name: uid(),
-      title: '导出',
+      title: "{{ t('Export') }}",
       'x-align': 'right',
       'x-decorator': 'AddNew.Displayed',
       'x-decorator-props': {
@@ -1036,7 +1042,7 @@ function generateActionSchema(type) {
       key: uid(),
       type: 'void',
       name: uid(),
-      title: '添加',
+      title: "{{ t('Add new') }}",
       'x-align': 'right',
       'x-decorator': 'AddNew.Displayed',
       'x-decorator-props': {
@@ -1051,7 +1057,7 @@ function generateActionSchema(type) {
       properties: {
         modal: {
           type: 'void',
-          title: '添加数据',
+          title: "{{ t('Add record') }}",
           'x-decorator': 'Form',
           'x-component': 'Action.Drawer',
           'x-component-props': {
@@ -1073,7 +1079,7 @@ function generateActionSchema(type) {
       key: uid(),
       type: 'void',
       name: uid(),
-      title: '删除',
+      title: "{{ t('Delete') }}",
       'x-align': 'right',
       'x-decorator': 'AddNew.Displayed',
       'x-decorator-props': {
@@ -1084,8 +1090,8 @@ function generateActionSchema(type) {
       'x-designable-bar': 'Table.Action.DesignableBar',
       'x-component-props': {
         confirm: {
-          title: '删除数据',
-          content: '删除后无法恢复，确定要删除吗？',
+          title: "{{ t('Delete record') }}",
+          content: "{{ t('Are you sure you want to delete it?') }}",
         },
         useAction: '{{ Table.useTableDestroyAction }}',
       },
@@ -1102,7 +1108,7 @@ function generateMenuActionSchema(type) {
       key: uid(),
       name: uid(),
       type: 'void',
-      title: '查看',
+      title: "{{ t('View') }}",
       'x-component': 'Action',
       'x-component-props': {
         type: 'link',
@@ -1112,7 +1118,7 @@ function generateMenuActionSchema(type) {
       properties: {
         [uid()]: {
           type: 'void',
-          title: '查看数据',
+          title: "{{ t('View record') }}",
           'x-component': 'Action.Drawer',
           'x-component-props': {
             bodyStyle: {
@@ -1128,7 +1134,7 @@ function generateMenuActionSchema(type) {
               properties: {
                 [uid()]: {
                   type: 'void',
-                  title: '详情',
+                  title: "{{ t('Details') }}",
                   'x-designable-bar': 'Tabs.TabPane.DesignableBar',
                   'x-component': 'Tabs.TabPane',
                   'x-component-props': {},
@@ -1152,7 +1158,7 @@ function generateMenuActionSchema(type) {
       key: uid(),
       name: uid(),
       type: 'void',
-      title: '编辑',
+      title: "{{ t('Edit') }}",
       'x-component': 'Action',
       'x-component-props': {
         type: 'link',
@@ -1162,7 +1168,7 @@ function generateMenuActionSchema(type) {
       properties: {
         [uid()]: {
           type: 'void',
-          title: '编辑数据',
+          title: "{{ t('Edit record') }}",
           'x-decorator': 'Form',
           'x-decorator-props': {
             useResource: '{{ Table.useResource }}',
@@ -1188,7 +1194,7 @@ function generateMenuActionSchema(type) {
       key: uid(),
       name: uid(),
       type: 'void',
-      title: '删除',
+      title: "{{ t('Delete') }}",
       'x-component': 'Action',
       'x-designable-bar': 'Table.Action.DesignableBar',
       'x-action-type': 'destroy',
@@ -1196,8 +1202,8 @@ function generateMenuActionSchema(type) {
         useAction: '{{ Table.useTableDestroyAction }}',
         type: 'link',
         confirm: {
-          title: '删除数据',
-          content: '删除后无法恢复，确定要删除吗？',
+          title: "{{ t('Delete record') }}",
+          content: "{{ t('Are you sure you want to delete it?') }}",
         },
       },
     },
@@ -1206,6 +1212,7 @@ function generateMenuActionSchema(type) {
 }
 
 function AddActionButton() {
+  const { t } = useTranslation();
   const [visible, setVisible] = useState(false);
   const displayed = useDisplayedMapContext();
   const { appendChild, remove } = useDesignable();
@@ -1222,12 +1229,12 @@ function AddActionButton() {
       onVisibleChange={setVisible}
       overlay={
         <Menu>
-          <Menu.ItemGroup title={'启用操作'}>
+          <Menu.ItemGroup title={t('Enable actions')}>
             {[
-              { title: '筛选', name: 'filter' },
-              { title: '导出', name: 'export' },
-              { title: '添加', name: 'create' },
-              { title: '删除', name: 'destroy' },
+              { title: t('Filter'), name: 'filter' },
+              { title: t('Export'), name: 'export' },
+              { title: t('Add new'), name: 'create' },
+              { title: t('Delete'), name: 'destroy' },
             ].map((item) => (
               <SwitchMenuItem
                 key={item.name}
@@ -1250,10 +1257,10 @@ function AddActionButton() {
             ))}
           </Menu.ItemGroup>
           <Menu.Divider />
-          <Menu.SubMenu title={'自定义'}>
-            <Menu.Item style={{ minWidth: 120 }}>函数操作</Menu.Item>
-            <Menu.Item>弹窗表单</Menu.Item>
-            <Menu.Item>复杂弹窗</Menu.Item>
+          <Menu.SubMenu disabled title={t('Customize')}>
+            <Menu.Item style={{ minWidth: 120 }}>{t('Function')}</Menu.Item>
+            <Menu.Item>{t('Popup form')}</Menu.Item>
+            <Menu.Item>{t('Flexible popup')}</Menu.Item>
           </Menu.SubMenu>
         </Menu>
       }
@@ -1264,7 +1271,7 @@ function AddActionButton() {
         type={'dashed'}
         icon={<SettingOutlined />}
       >
-        配置操作
+        {t('Configure actions')}
       </Button>
     </Dropdown>
   );
@@ -1451,6 +1458,8 @@ const fieldsToSortColumns = (fields: any[]) => {
 Table.Filter = observer((props: any) => {
   const { service } = useTable();
   const { fieldNames = [] } = props;
+  const compile = useCompile();
+  const { t } = useTranslation();
   const { schema, DesignableBar } = useDesignable();
   const form = useMemo(() => createForm(), []);
   const { fields = [] } = useCollectionContext();
@@ -1498,7 +1507,7 @@ Table.Filter = observer((props: any) => {
                   });
                 }}
               >
-                提交
+                {t('Submit')}
               </Submit>
             </FormButtonGroup>
           </FormProvider>
@@ -1506,7 +1515,7 @@ Table.Filter = observer((props: any) => {
       }
     >
       <Button icon={<IconPicker type={icon} />}>
-        {count > 0 ? `${count} 个筛选项` : schema.title}
+        {count > 0 ? t('{{count}} filter items', { count }) : compile(schema.title)}
         <DesignableBar />
       </Button>
     </Popover>
@@ -1514,6 +1523,7 @@ Table.Filter = observer((props: any) => {
 });
 
 Table.Filter.DesignableBar = () => {
+  const { t } = useTranslation();
   const { schema, remove, refresh, insertAfter } = useDesignable();
   const [visible, setVisible] = useState(false);
   const displayed = useDisplayedMapContext();
@@ -1542,7 +1552,7 @@ Table.Filter.DesignableBar = () => {
             }}
             overlay={
               <Menu>
-                <Menu.ItemGroup title={'可筛选字段'}>
+                <Menu.ItemGroup title={t('Filterable fields')}>
                   {fields
                     .filter((collectionField) => {
                       const option = interfaces.get(collectionField.interface);
@@ -1576,7 +1586,7 @@ Table.Filter.DesignableBar = () => {
                 <Menu.Item
                   onClick={async (e) => {
                     setVisible(false);
-                    const values = await FormDialog('编辑按钮', () => {
+                    const values = await FormDialog(t('Edit button'), () => {
                       return (
                         <FormLayout layout={'vertical'}>
                           <SchemaField
@@ -1585,14 +1595,14 @@ Table.Filter.DesignableBar = () => {
                               properties: {
                                 title: {
                                   type: 'string',
-                                  title: '按钮名称',
+                                  title: t('Display name'),
                                   required: true,
                                   'x-decorator': 'FormItem',
                                   'x-component': 'Input',
                                 },
                                 icon: {
                                   type: 'string',
-                                  title: '按钮图标',
+                                  title: t('Icon'),
                                   'x-decorator': 'FormItem',
                                   'x-component': 'IconPicker',
                                 },
@@ -1615,7 +1625,7 @@ Table.Filter.DesignableBar = () => {
                     refresh();
                   }}
                 >
-                  编辑按钮
+                  {t('Edit button')}
                 </Menu.Item>
                 <Menu.Divider />
                 <Menu.Item
@@ -1630,7 +1640,7 @@ Table.Filter.DesignableBar = () => {
                     setVisible(false);
                   }}
                 >
-                  隐藏
+                  {t('Hide')}
                 </Menu.Item>
               </Menu>
             }
@@ -1644,6 +1654,7 @@ Table.Filter.DesignableBar = () => {
 };
 
 Table.ExportActionDesignableBar = () => {
+  const { t } = useTranslation();
   const { schema, remove, refresh, insertAfter } = useDesignable();
   const [visible, setVisible] = useState(false);
   const displayed = useDisplayedMapContext();
@@ -1672,7 +1683,7 @@ Table.ExportActionDesignableBar = () => {
             }}
             overlay={
               <Menu>
-                <Menu.ItemGroup title={'导出字段'}>
+                <Menu.ItemGroup title={t('Export fields')}>
                   {fields.map((collectionField) => (
                     <SwitchMenuItem
                       title={collectionField?.uiSchema?.title}
@@ -1700,7 +1711,7 @@ Table.ExportActionDesignableBar = () => {
                 <Menu.Item
                   onClick={async (e) => {
                     setVisible(false);
-                    const values = await FormDialog('编辑按钮', () => {
+                    const values = await FormDialog(t('Edit button'), () => {
                       return (
                         <FormLayout layout={'vertical'}>
                           <SchemaField
@@ -1709,14 +1720,14 @@ Table.ExportActionDesignableBar = () => {
                               properties: {
                                 title: {
                                   type: 'string',
-                                  title: '按钮名称',
+                                  title: t('Display name'),
                                   required: true,
                                   'x-decorator': 'FormItem',
                                   'x-component': 'Input',
                                 },
                                 icon: {
                                   type: 'string',
-                                  title: '按钮图标',
+                                  title: t('Icon'),
                                   'x-decorator': 'FormItem',
                                   'x-component': 'IconPicker',
                                 },
@@ -1739,7 +1750,7 @@ Table.ExportActionDesignableBar = () => {
                     refresh();
                   }}
                 >
-                  编辑按钮
+                  {t('Edit button')}
                 </Menu.Item>
                 <Menu.Divider />
                 <Menu.Item
@@ -1754,7 +1765,7 @@ Table.ExportActionDesignableBar = () => {
                     setVisible(false);
                   }}
                 >
-                  隐藏
+                  {t('Hide')}
                 </Menu.Item>
               </Menu>
             }
@@ -1769,9 +1780,10 @@ Table.ExportActionDesignableBar = () => {
 
 Table.Operation = observer((props: any) => {
   const { designable, schema } = useDesignable();
+  const { t } = useTranslation();
   return (
     <div className={'nb-table-column'}>
-      操作
+      {t('Operations')}
       <Table.Operation.DesignableBar path={props.path} />
     </div>
   );
@@ -1788,6 +1800,7 @@ Table.Operation.Cell = observer((props: any) => {
 });
 
 Table.Operation.DesignableBar = () => {
+  const { t } = useTranslation();
   const { schema: columnSchema } = useDesignable();
   const groupSchema = Object.values(columnSchema.properties || {}).shift();
   const groupPath = getSchemaPath(groupSchema);
@@ -1821,11 +1834,11 @@ Table.Operation.DesignableBar = () => {
             }}
             overlay={
               <Menu>
-                <Menu.ItemGroup title={'启用操作'}>
+                <Menu.ItemGroup title={t('Enable actions')}>
                   {[
-                    { title: '查看', name: 'view' },
-                    { title: '编辑', name: 'update' },
-                    { title: '删除', name: 'destroy' },
+                    { title: t('View'), name: 'view' },
+                    { title: t('Edit'), name: 'update' },
+                    { title: t('Delete'), name: 'destroy' },
                   ].map((item) => (
                     <SwitchMenuItem
                       key={item.name}
@@ -1845,10 +1858,12 @@ Table.Operation.DesignableBar = () => {
                   ))}
                 </Menu.ItemGroup>
                 <Menu.Divider />
-                <Menu.SubMenu disabled title={'自定义'}>
-                  <Menu.Item style={{ minWidth: 120 }}>函数操作</Menu.Item>
-                  <Menu.Item>弹窗表单</Menu.Item>
-                  <Menu.Item>复杂弹窗</Menu.Item>
+                <Menu.SubMenu disabled title={t('Customize')}>
+                  <Menu.Item style={{ minWidth: 120 }}>
+                    {t('Function')}
+                  </Menu.Item>
+                  <Menu.Item>{t('Popup form')}</Menu.Item>
+                  <Menu.Item>{t('Flexible popup')}</Menu.Item>
                 </Menu.SubMenu>
               </Menu>
             }
@@ -1864,6 +1879,7 @@ Table.Operation.DesignableBar = () => {
 Table.Action = () => null;
 
 Table.Action.DesignableBar = () => {
+  const { t } = useTranslation();
   const { schema, remove, refresh, insertAfter } = useDesignable();
   const [visible, setVisible] = useState(false);
   const isPopup = Object.keys(schema.properties || {}).length > 0;
@@ -1894,7 +1910,7 @@ Table.Action.DesignableBar = () => {
                 <Menu.Item
                   onClick={async (e) => {
                     setVisible(false);
-                    const values = await FormDialog('编辑按钮', () => {
+                    const values = await FormDialog(t('Edit button'), () => {
                       return (
                         <FormLayout layout={'vertical'}>
                           <SchemaField
@@ -1903,14 +1919,14 @@ Table.Action.DesignableBar = () => {
                               properties: {
                                 title: {
                                   type: 'string',
-                                  title: '按钮名称',
+                                  title: t('Display name'),
                                   required: true,
                                   'x-decorator': 'FormItem',
                                   'x-component': 'Input',
                                 },
                                 icon: {
                                   type: 'string',
-                                  title: '按钮图标',
+                                  title: t('Icon'),
                                   'x-decorator': 'FormItem',
                                   'x-component': 'IconPicker',
                                 },
@@ -1933,41 +1949,43 @@ Table.Action.DesignableBar = () => {
                     refresh();
                   }}
                 >
-                  编辑按钮
+                  {t('Edit button')}
                 </Menu.Item>
                 {isPopup && (
                   <Menu.Item>
-                    在{' '}
-                    <Select
-                      bordered={false}
-                      size={'small'}
-                      defaultValue={popupComponent}
-                      style={{ width: 100 }}
-                      onChange={(value) => {
-                        const s = Object.values(schema.properties).shift();
-                        s['x-component'] = value;
-                        refresh();
-                        updateSchema(s);
-                        // const f = field.query(getSchemaPath(s)).take()
-                        // console.log('fffffff', { schema, f });
-                      }}
-                    >
-                      <Select.Option value={'Action.Modal'}>
-                        对话框
-                      </Select.Option>
-                      <Select.Option value={'Action.Drawer'}>
-                        抽屉
-                      </Select.Option>
-                      <Select.Option value={'Action.Window'}>
-                        窗口
-                      </Select.Option>
-                    </Select>{' '}
-                    内打开
+                    <Trans t={t}>
+                      Open in
+                      <Select
+                        bordered={false}
+                        size={'small'}
+                        defaultValue={popupComponent}
+                        style={{ width: 100 }}
+                        onChange={async (value) => {
+                          const s = Object.values(schema.properties).shift();
+                          s['x-component'] = value;
+                          refresh();
+                          await updateSchema(s);
+                          window.location.reload();
+                          // const f = field.query(getSchemaPath(s)).take()
+                          // console.log('fffffff', { schema, f });
+                        }}
+                      >
+                        <Select.Option value={'Action.Modal'}>
+                          Modal
+                        </Select.Option>
+                        <Select.Option value={'Action.Drawer'}>
+                          Drawer
+                        </Select.Option>
+                        <Select.Option disabled value={'Action.Window'}>
+                          Window
+                        </Select.Option>
+                      </Select>
+                    </Trans>
                   </Menu.Item>
                 )}
                 {!inActionBar && (
                   <Menu.Item>
-                    点击表格行时触发 &nbsp;&nbsp;
+                    {t('Triggered when the row is clicked')} &nbsp;&nbsp;
                     <Switch size={'small'} defaultChecked />
                   </Menu.Item>
                 )}
@@ -1984,7 +2002,7 @@ Table.Action.DesignableBar = () => {
                     setVisible(false);
                   }}
                 >
-                  隐藏
+                  {t('Hide')}
                 </Menu.Item>
               </Menu>
             }
@@ -2052,6 +2070,7 @@ Table.Cell = observer((props: any) => {
 Table.Column = observer((props: any) => {
   const collectionField = useContext(CollectionFieldContext);
   const { schema, DesignableBar } = useDesignable();
+  const compile = useCompile();
   const displayed = useDisplayedMapContext();
   useEffect(() => {
     if (collectionField?.name) {
@@ -2060,7 +2079,7 @@ Table.Column = observer((props: any) => {
   }, [collectionField, schema]);
   return (
     <div className={'nb-table-column'}>
-      {schema.title || collectionField?.uiSchema?.title}
+      {compile(schema.title || collectionField?.uiSchema?.title)}
       <DesignableBar />
     </div>
   );
@@ -2068,6 +2087,8 @@ Table.Column = observer((props: any) => {
 
 Table.Column.DesignableBar = () => {
   const field = useField();
+  const { t } = useTranslation();
+  const compile = useCompile();
   const { service, refresh: refreshTable } = useTable();
   // const fieldSchema = useFieldSchema();
   const { schema, remove, refresh, insertAfter } = useDesignable();
@@ -2098,7 +2119,7 @@ Table.Column.DesignableBar = () => {
                 <Menu.Item
                   onClick={async (e) => {
                     setVisible(false);
-                    const values = await FormDialog('自定义列名称', () => {
+                    const values = await FormDialog(t('Custom name'), () => {
                       return (
                         <FormLayout layout={'vertical'}>
                           <SchemaField
@@ -2107,14 +2128,14 @@ Table.Column.DesignableBar = () => {
                               properties: {
                                 fieldName: {
                                   type: 'string',
-                                  title: '原字段名称',
+                                  title: t('Original name'),
                                   'x-read-pretty': true,
                                   'x-decorator': 'FormItem',
                                   'x-component': 'Input',
                                 },
                                 title: {
                                   type: 'string',
-                                  title: '自定义列名称',
+                                  title: t('Custom name'),
                                   'x-decorator': 'FormItem',
                                   'x-component': 'Input',
                                 },
@@ -2139,7 +2160,7 @@ Table.Column.DesignableBar = () => {
                     });
                   }}
                 >
-                  自定义列名称
+                  {t('Custom column name')}
                 </Menu.Item>
                 {collectionField?.interface === 'linkTo' && (
                   <Menu.Item>
@@ -2149,14 +2170,14 @@ Table.Column.DesignableBar = () => {
                         justifyContent: 'space-between',
                       }}
                     >
-                      标签字段{' '}
+                      {t('Label field')}{' '}
                       <Select
                         value={
                           schema?.['x-component-props']?.['fieldNames']?.[
                             'label'
                           ]
                         }
-                        placeholder={'默认为 ID 字段'}
+                        placeholder={t('Default is the ID field')}
                         onChange={async (value) => {
                           set(
                             schema['x-component-props'],
@@ -2180,7 +2201,7 @@ Table.Column.DesignableBar = () => {
                         options={getFieldsByCollection(collectionField.target)
                           .filter((f) => f?.uiSchema?.title)
                           .map((field) => ({
-                            label: field?.uiSchema?.title || field.name,
+                            label: compile(field?.uiSchema?.title || field.name),
                             value: field.name,
                           }))}
                       />
@@ -2203,7 +2224,7 @@ Table.Column.DesignableBar = () => {
                     // await removeSchema(s);
                   }}
                 >
-                  隐藏
+                  {t('Hide')}
                 </Menu.Item>
               </Menu>
             }
@@ -2226,6 +2247,8 @@ Table.SortHandle = observer((props: any) => {
 });
 
 Table.DesignableBar = observer((props) => {
+  const { t } = useTranslation();
+  const compile = useCompile();
   const field = useField();
   const { schema, refresh, deepRemove } = useDesignable();
   const [visible, setVisible] = useState(false);
@@ -2239,7 +2262,7 @@ Table.DesignableBar = observer((props) => {
   return (
     <div className={cls('designable-bar', { active: visible })}>
       <div className={'designable-info'}>
-        {collection?.title || collection?.name}
+        {compile(collection?.title || collection?.name)}
       </div>
       <span
         onClick={(e) => {
@@ -2269,7 +2292,7 @@ Table.DesignableBar = observer((props) => {
                   }}
                 >
                   <div className={'nb-space-between'}>
-                    显示序号{' '}
+                    {t('Display order number')}{' '}
                     <Switch
                       size={'small'}
                       checked={field.componentProps.showIndex}
@@ -2289,7 +2312,8 @@ Table.DesignableBar = observer((props) => {
                   }}
                 >
                   <div className={'nb-space-between'}>
-                    启用拖拽排序{' '}
+                    {t('Enable drag and drop sorting')}
+                    &nbsp;&nbsp;
                     <Switch
                       size={'small'}
                       checked={field.componentProps.dragSort}
@@ -2314,80 +2338,88 @@ Table.DesignableBar = observer((props) => {
                                 };
                           },
                         );
-                      const values = await FormDialog('设置默认排序', () => {
-                        return (
-                          <FormLayout layout={'vertical'}>
-                            <SchemaField
-                              schema={{
-                                type: 'object',
-                                properties: {
-                                  defaultSort: {
-                                    type: 'array',
-                                    'x-component': 'ArrayItems',
-                                    'x-decorator': 'FormItem',
-                                    items: {
-                                      type: 'object',
-                                      properties: {
-                                        space: {
-                                          type: 'void',
-                                          'x-component': 'Space',
-                                          properties: {
-                                            sort: {
-                                              type: 'void',
-                                              'x-decorator': 'FormItem',
-                                              'x-component':
-                                                'ArrayItems.SortHandle',
-                                            },
-                                            field: {
-                                              type: 'string',
-                                              'x-decorator': 'FormItem',
-                                              'x-component': 'Select',
-                                              enum: fieldsToSortColumns(fields),
-                                              'x-component-props': {
-                                                style: {
-                                                  width: 260,
+                      const values = await FormDialog(
+                        t('Set default sorting rules'),
+                        () => {
+                          return (
+                            <FormLayout layout={'vertical'}>
+                              <SchemaField
+                                schema={{
+                                  type: 'object',
+                                  properties: {
+                                    defaultSort: {
+                                      type: 'array',
+                                      'x-component': 'ArrayItems',
+                                      'x-decorator': 'FormItem',
+                                      items: {
+                                        type: 'object',
+                                        properties: {
+                                          space: {
+                                            type: 'void',
+                                            'x-component': 'Space',
+                                            properties: {
+                                              sort: {
+                                                type: 'void',
+                                                'x-decorator': 'FormItem',
+                                                'x-component':
+                                                  'ArrayItems.SortHandle',
+                                              },
+                                              field: {
+                                                type: 'string',
+                                                'x-decorator': 'FormItem',
+                                                'x-component': 'Select',
+                                                enum: fieldsToSortColumns(
+                                                  fields,
+                                                ),
+                                                'x-component-props': {
+                                                  style: {
+                                                    width: 260,
+                                                  },
                                                 },
                                               },
-                                            },
-                                            direction: {
-                                              type: 'string',
-                                              'x-decorator': 'FormItem',
-                                              'x-component': 'Radio.Group',
-                                              'x-component-props': {
-                                                optionType: 'button',
-                                              },
-                                              enum: [
-                                                { label: '正序', value: 'asc' },
-                                                {
-                                                  label: '倒序',
-                                                  value: 'desc',
+                                              direction: {
+                                                type: 'string',
+                                                'x-decorator': 'FormItem',
+                                                'x-component': 'Radio.Group',
+                                                'x-component-props': {
+                                                  optionType: 'button',
                                                 },
-                                              ],
-                                            },
-                                            remove: {
-                                              type: 'void',
-                                              'x-decorator': 'FormItem',
-                                              'x-component':
-                                                'ArrayItems.Remove',
+                                                enum: [
+                                                  {
+                                                    label: t('ASC'),
+                                                    value: 'asc',
+                                                  },
+                                                  {
+                                                    label: t('DESC'),
+                                                    value: 'desc',
+                                                  },
+                                                ],
+                                              },
+                                              remove: {
+                                                type: 'void',
+                                                'x-decorator': 'FormItem',
+                                                'x-component':
+                                                  'ArrayItems.Remove',
+                                              },
                                             },
                                           },
                                         },
                                       },
-                                    },
-                                    properties: {
-                                      add: {
-                                        type: 'void',
-                                        title: '添加排序字段',
-                                        'x-component': 'ArrayItems.Addition',
+                                      properties: {
+                                        add: {
+                                          type: 'void',
+                                          title: t('Add sort field'),
+                                          'x-component': 'ArrayItems.Addition',
+                                        },
                                       },
                                     },
                                   },
-                                },
-                              }}
-                            />
-                          </FormLayout>
-                        );
-                      }).open({
+                                }}
+                              />
+                            </FormLayout>
+                          );
+                        },
+                      ).open({
                         initialValues: {
                           defaultSort,
                         },
@@ -2404,14 +2436,14 @@ Table.DesignableBar = observer((props) => {
                       console.log('defaultSort', sort);
                     }}
                   >
-                    设置默认排序
+                    {t('Set default sorting rules')}
                   </Menu.Item>
                 )}
                 <Menu.Item
                   key={'defaultFilter'}
                   onClick={async () => {
                     const { defaultFilter } = await FormDialog(
-                      '设置数据范围',
+                      t('Set the data scope'),
                       () => {
                         return (
                           <FormLayout layout={'vertical'}>
@@ -2443,40 +2475,47 @@ Table.DesignableBar = observer((props) => {
                     setVisible(false);
                   }}
                 >
-                  设置数据范围
+                  {t('Set the data scope')}
                 </Menu.Item>
                 <Menu.Item key={'defaultPageSize'}>
-                  每页默认显示{' '}
-                  <Select
-                    bordered={false}
-                    size={'small'}
-                    onChange={(value) => {
-                      const componentProps = schema['x-component-props'] || {};
-                      set(componentProps, 'pagination.defaultPageSize', value);
-                      set(componentProps, 'pagination.pageSize', value);
-                      schema['x-component-props'] = componentProps;
-                      field.componentProps.pagination.pageSize = value;
-                      field.componentProps.pagination.defaultPageSize = value;
-                      refresh();
-                      updateSchema(schema);
-                      setVisible(false);
-                    }}
-                    defaultValue={defaultPageSize}
-                  >
-                    <Select.Option value={10}>10</Select.Option>
-                    <Select.Option value={20}>20</Select.Option>
-                    <Select.Option value={50}>50</Select.Option>
-                    <Select.Option value={100}>100</Select.Option>
-                  </Select>{' '}
-                  条
+                  <Trans>
+                    {'Display '}
+                    <Select
+                      bordered={false}
+                      size={'small'}
+                      onChange={(value) => {
+                        const componentProps =
+                          schema['x-component-props'] || {};
+                        set(
+                          componentProps,
+                          'pagination.defaultPageSize',
+                          value,
+                        );
+                        set(componentProps, 'pagination.pageSize', value);
+                        schema['x-component-props'] = componentProps;
+                        field.componentProps.pagination.pageSize = value;
+                        field.componentProps.pagination.defaultPageSize = value;
+                        refresh();
+                        updateSchema(schema);
+                        setVisible(false);
+                      }}
+                      defaultValue={defaultPageSize}
+                    >
+                      <Select.Option value={10}>10</Select.Option>
+                      <Select.Option value={20}>20</Select.Option>
+                      <Select.Option value={50}>50</Select.Option>
+                      <Select.Option value={100}>100</Select.Option>
+                    </Select>
+                    {' items per page'}
+                  </Trans>
                 </Menu.Item>
                 <Menu.Divider />
                 <Menu.Item
                   key={'delete'}
                   onClick={async () => {
                     Modal.confirm({
-                      title: '删除区块',
-                      content: '删除后无法恢复，确定要删除吗？',
+                      title: t('Delete block'),
+                      content: t('Are you sure you want to delete it?'),
                       onOk: async () => {
                         const removed = deepRemove();
                         // console.log({ removed })
@@ -2487,7 +2526,7 @@ Table.DesignableBar = observer((props) => {
                     });
                   }}
                 >
-                  删除
+                  {t('Delete')}
                 </Menu.Item>
               </Menu>
             }

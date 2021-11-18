@@ -7,7 +7,7 @@ export const percent: FieldOptions = {
   type: 'object',
   group: 'basic',
   order: 6,
-  title: '百分比',
+  title: '{{t("Percent")}}',
   sortable: true,
   default: {
     dataType: 'float',
@@ -29,7 +29,7 @@ export const percent: FieldOptions = {
     ...defaultProps,
     'uiSchema.x-component-props.step': {
       type: 'string',
-      title: '精度',
+      title: '{{t("Precision")}}',
       'x-component': 'Select',
       'x-decorator': 'FormItem',
       default: '0',

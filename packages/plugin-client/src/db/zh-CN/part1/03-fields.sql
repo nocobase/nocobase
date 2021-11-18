@@ -34,7 +34,6 @@ INSERT INTO "fields" ("key", "name", "interface", "data_type", "privilege", "sta
 ('f_v3pog2zsalc',	'reset_token',	'password',	'string',	'undelete',	0,	'{"unique":true,"hidden":true}',	6,	'2021-09-02 15:07:57.059+00',	'2021-09-02 15:07:57.059+00',	NULL,	'users',	NULL,	NULL),
 ('f_6rhh0scyw9k',	'nickname',	'string',	'string',	NULL,	1,	'{}',	1,	'2021-09-02 15:07:56.974+00',	'2021-09-12 00:56:41.776+00',	NULL,	'users',	'dtu7erjj0q8',	NULL),
 ('f_j367murpzm9',	'password',	'password',	'password',	'undelete',	1,	'{}',	2,	'2021-09-02 15:07:57.029+00',	'2021-09-18 04:16:11.834+00',	NULL,	'users',	'a65exd8qcuo',	NULL),
-('6rm0lspbpeh',	'f_l6xhfn14zji',	'subTable',	'hasMany',	NULL,	1,	'{"target":"t_an8gnr603c0","foreignKey":"f_d57qfk4yfaz"}',	3,	'2021-09-12 00:56:41.818+00',	'2021-09-18 04:16:11.834+00',	NULL,	'users',	'412w3sy7u91',	NULL),
 ('lmls9t34zne',	'f_xmjn5cfl9co',	'textarea',	'text',	NULL,	1,	'{}',	10,	'2021-09-02 22:28:32.838+00',	'2021-09-02 22:28:32.855+00',	NULL,	NULL,	'hej1gpzthf3',	NULL),
 ('sq3hj75dnmk',	'f_jdlw4uf6vfv',	'number',	'float',	NULL,	1,	'{}',	9,	'2021-09-02 22:28:32.82+00',	'2021-09-02 22:28:32.83+00',	NULL,	NULL,	'e5t9w7t3rxu',	NULL),
 ('xwhnxsil7b1',	'f_n0snwtdes3r',	'chinaRegion',	'belongsToMany',	NULL,	1,	'{"target":"china_regions","targetKey":"code","through":"t_by1bsepp8p4","foreignKey":"f_vqbqkbjmucq","otherKey":"f_ux2lh2en547","sourceKey":"id"}',	8,	'2021-09-02 22:28:32.8+00',	'2021-09-02 22:28:32.814+00',	NULL,	NULL,	'4an73nd4bxh',	NULL),
@@ -48,8 +47,16 @@ INSERT INTO "fields" ("key", "name", "interface", "data_type", "privilege", "sta
 ('f_u5fajgprjha',	'action_logs',	'linkTo',	'hasMany',	NULL,	0,	'{"target":"action_logs","title":"数据动态","foreignKey":"index","scope":{"collection_name":"users"},"constraints":false}',	1,	'2021-09-02 15:07:56.957+00',	'2021-09-02 15:07:57.071+00',	NULL,	NULL,	NULL,	NULL),
 ('b818d9mhozu',	'8ly3cyiosfe',	'createdBy',	'belongsTo',	'undelete',	1,	'{"target":"users","foreignKey":"created_by_id"}',	2,	'2021-09-02 22:24:30.286+00',	'2021-09-18 04:16:11.834+00',	NULL,	NULL,	'32q17i8jcg9',	NULL),
 ('x3rcr6i0hy1',	'c9mtu486512',	'updatedBy',	'belongsTo',	'undelete',	1,	'{"target":"users","foreignKey":"updated_by_id"}',	3,	'2021-09-02 22:24:30.301+00',	'2021-09-18 04:16:11.834+00',	NULL,	NULL,	'1keis1kmsh9',	NULL),
-('qv7j30tzjcu',	'f_m04t8iyg9kc',	'textarea',	'text',	NULL,	1,	'{}',	2,	'2021-09-12 00:56:41.988+00',	'2021-09-12 00:56:42.003+00',	'6rm0lspbpeh',	NULL,	'0tq5fymokmh',	NULL),
-('v3hp0idmkuh',	'f_fo0l5irbdt5',	'string',	'string',	NULL,	1,	'{}',	1,	'2021-09-12 00:56:41.958+00',	'2021-09-12 00:56:41.976+00',	'6rm0lspbpeh',	NULL,	'u2m5d5e68n0',	NULL),
 ('t6knha71oq1',	'fcgtvpd3jr9',	'createdBy',	'belongsTo',	'undelete',	1,	'{"target":"users","foreignKey":"created_by_id"}',	2,	'2021-09-12 01:06:55.154+00',	'2021-09-18 04:16:11.834+00',	NULL,	NULL,	'ya58lec57fp',	NULL),
 ('drhtax7pxlw',	'nbxtd3jzbw1',	'updatedAt',	'date',	'undelete',	1,	'{"field":"updated_at"}',	2,	'2021-09-12 01:06:55.14+00',	'2021-09-12 01:06:55.149+00',	NULL,	NULL,	'1l9qav1f97v',	NULL),
 ('sbrf1cdkpb9',	'h1f9o1xvevb',	'createdAt',	'date',	'undelete',	1,	'{"field":"created_at"}',	1,	'2021-09-12 01:06:55.123+00',	'2021-09-12 01:06:55.133+00',	NULL,	NULL,	'oo7ejuze28i',	NULL);
+
+INSERT INTO "fields" ("key", "name", "interface", "data_type", "privilege", "state", "options", "sort", "created_at", "updated_at", "parent_key", "collection_name", "reverse_key", "ui_schema_key") VALUES
+('f_v3j9yv454ch',	'roles',	'linkTo',	'belongsToMany',	NULL,	1,	'{"target":"roles","foreignKey":"user_id","otherKey":"role_name","sourceKey":"id","targetKey":"name"}',	NULL,	'2021-11-16 08:32:08.033+00',	'2021-11-16 08:32:08.049+00',	NULL,	'users',	NULL,	'sarppf56eim'),
+('f_jd6k0hxqe91',	'title',	'string',	'string',	NULL,	1,	'{}',	NULL,	'2021-11-16 08:32:08.096+00',	'2021-11-16 08:32:08.113+00',	NULL,	'roles',	NULL,	'bhqy0xdfiog'),
+('f_9jeplea2nwz',	'name',	NULL,	'uid',	NULL,	0,	'{"unique":true,"prefix":"r_"}',	NULL,	'2021-11-16 08:32:08.121+00',	'2021-11-16 08:32:08.121+00',	NULL,	'roles',	NULL,	NULL),
+('f_no8fg9nvnuk',	'actionPermissions',	NULL,	'hasMany',	NULL,	0,	'{"target":"action_permissions"}',	NULL,	'2021-11-16 08:32:08.128+00',	'2021-11-16 08:32:08.128+00',	NULL,	'roles',	NULL,	NULL),
+('f_1786eilo0q0',	'users',	NULL,	'belongsToMany',	NULL,	0,	'{"target":"users","through":"roles_users"}',	NULL,	'2021-11-16 08:32:08.135+00',	'2021-11-16 08:32:08.135+00',	NULL,	'roles',	NULL,	NULL),
+('f_g0o9uh9soxb',	'ui_schemas',	NULL,	'belongsToMany',	NULL,	0,	'{"target":"ui_schemas","through":"roles_ui_schemas"}',	NULL,	'2021-11-16 08:32:08.142+00',	'2021-11-16 08:32:08.142+00',	NULL,	'roles',	NULL,	NULL),
+('f_d1ta9cp5308',	'createdBy',	NULL,	'createdBy',	NULL,	0,	'{"target":"users"}',	NULL,	'2021-11-16 08:32:08.148+00',	'2021-11-16 08:32:08.148+00',	NULL,	'roles',	NULL,	NULL),
+('f_2dmbnljurjx',	'updatedBy',	NULL,	'updatedBy',	NULL,	0,	'{"target":"users"}',	NULL,	'2021-11-16 08:32:08.154+00',	'2021-11-16 08:32:08.154+00',	NULL,	'roles',	NULL,	NULL);

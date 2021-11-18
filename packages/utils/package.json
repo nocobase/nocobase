@@ -1,6 +1,6 @@
 {
   "name": "@nocobase/utils",
-  "version": "0.5.0-alpha.25",
+  "version": "0.5.0-alpha.33",
   "main": "lib/index.js",
   "types": "./lib/index.d.ts",
   "license": "MIT",

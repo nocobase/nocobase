@@ -2,7 +2,7 @@ import { ISchema } from '@formily/react';
 
 export const dataType: ISchema = {
   type: 'string',
-  title: '数据类型',
+  title: '{{t("Storage type")}}',
   required: true,
   'x-disabled': true,
   'x-decorator': 'FormItem',
@@ -30,21 +30,21 @@ export const dataType: ISchema = {
 export const dateTimeProps: { [key: string]: ISchema } = {
   'uiSchema.x-component-props.dateFormat': {
     type: 'string',
-    title: '日期格式',
+    title: '{{t("Date format")}}',
     'x-component': 'Radio.Group',
     'x-decorator': 'FormItem',
     default: 'YYYY-MM-DD',
     enum: [
       {
-        label: '年/月/日',
+        label: '{{t("Year/Month/Day")}}',
         value: 'YYYY/MM/DD',
       },
       {
-        label: '年-月-日',
+        label: '{{t("Year-Month-Day")}}',
         value: 'YYYY-MM-DD',
       },
       {
-        label: '日/月/年',
+        label: '{{t("Day/Month/Year")}}',
         value: 'DD/MM/YYYY',
       },
     ],
@@ -53,7 +53,7 @@ export const dateTimeProps: { [key: string]: ISchema } = {
     type: 'boolean',
     'x-decorator': 'FormItem',
     'x-component': 'Checkbox',
-    'x-content': '显示时间',
+    'x-content': '{{t("Show time")}}',
     'x-reactions': [
       `{{(field) => {
         field.query('..[].timeFormat').take(f => {
@@ -64,18 +64,18 @@ export const dateTimeProps: { [key: string]: ISchema } = {
   },
   'uiSchema.x-component-props.timeFormat': {
     type: 'string',
-    title: '时间格式',
+    title: '{{t("Time format")}}',
     'x-component': 'Radio.Group',
     'x-decorator': 'FormItem',
     default: 'HH:mm:ss',
     enum: [
       {
-        label: '24小时制',
-        value: 'HH:mm:ss',
+        label: '{{t("12 hour")}}',
+        value: 'hh:mm:ss a',
       },
       {
-        label: '12小时制',
-        value: 'hh:mm:ss a',
+        label: '{{t("24 hour")}}',
+        value: 'HH:mm:ss',
       },
     ],
   },
@@ -83,7 +83,7 @@ export const dateTimeProps: { [key: string]: ISchema } = {
 
 export const dataSource: ISchema = {
   type: 'array',
-  title: '可选项',
+  title: '{{t("Options")}}',
   'x-decorator': 'FormItem',
   'x-component': 'ArrayTable',
   'x-component-props': {
@@ -107,7 +107,7 @@ export const dataSource: ISchema = {
       column2: {
         type: 'void',
         'x-component': 'ArrayTable.Column',
-        'x-component-props': { title: '选项值' },
+        'x-component-props': { title: '{{t("Option value")}}' },
         'x-hidden': true,
         properties: {
           value: {
@@ -120,7 +120,7 @@ export const dataSource: ISchema = {
       column3: {
         type: 'void',
         'x-component': 'ArrayTable.Column',
-        'x-component-props': { title: '选项' },
+        'x-component-props': { title: '{{t("Option label")}}' },
         properties: {
           label: {
             type: 'string',
@@ -132,7 +132,7 @@ export const dataSource: ISchema = {
       column4: {
         type: 'void',
         'x-component': 'ArrayTable.Column',
-        'x-component-props': { title: '颜色' },
+        'x-component-props': { title: '{{t("Color")}}' },
         properties: {
           color: {
             type: 'string',
@@ -171,7 +171,7 @@ export const dataSource: ISchema = {
       'x-component-props': {
         randomValue: true,
       },
-      title: '添加可选项',
+      title: "{{t('Add option')}}",
     },
   },
 };
@@ -179,19 +179,20 @@ export const dataSource: ISchema = {
 export const defaultProps = {
   'uiSchema.title': {
     type: 'string',
-    title: '字段名称',
+    title: '{{t("Field display name")}}',
     required: true,
     'x-decorator': 'FormItem',
     'x-component': 'Input',
   },
   name: {
     type: 'string',
-    title: '字段标识',
+    title: '{{t("Field name")}}',
     required: true,
     // 'x-disabled': true,
     'x-decorator': 'FormItem',
     'x-component': 'Input',
-    description: '随机生成，可修改。支持英文、数字和下划线，必须以英文字母开头',
+    description:
+      "{{t('Randomly generated and can be modified. Support letters, numbers and underscores, must start with an letter.')}}",
   },
   dataType,
   // 'uiSchema.required': {

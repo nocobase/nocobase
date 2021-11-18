@@ -8,10 +8,12 @@ import {
   IconPicker as Icon,
 } from '../../components/icon-picker';
 import { isValid } from '@formily/shared';
+import { useTranslation } from 'react-i18next';
 
 function IconField(props: any) {
   const { value, onChange } = props;
   const [visible, setVisible] = useState(false);
+  const { t } = useTranslation();
   return (
     <div>
       <Input.Group compact>
@@ -38,10 +40,10 @@ function IconField(props: any) {
               ))}
             </div>
           }
-          title="图标"
+          title={t('Icon')}
           trigger="click"
         >
-          <Button>{hasIcon(value) ? <Icon type={value} /> : '选择图标'}</Button>
+          <Button>{hasIcon(value) ? <Icon type={value} /> : t('Select icon')}</Button>
         </Popover>
         {value && (
           <Button

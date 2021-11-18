@@ -47,6 +47,7 @@ const api = new Server({
 });
 
 const plugins = [
+  // '@nocobase/plugin-multi-apps',
   '@nocobase/plugin-ui-router',
   '@nocobase/plugin-ui-schema',
   '@nocobase/plugin-collections',
@@ -70,6 +71,7 @@ for (const plugin of plugins) {
 api.plugin(
   require(`@nocobase/plugin-client/${libDir}/server`).default, {
   dist: path.resolve(process.cwd(), './dist'),
+  lang: process.env.APP_LANG,
   // importDemo: true,
 });
 

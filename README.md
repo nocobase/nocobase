@@ -1,10 +1,19 @@
 English | [简体中文](./README.zh-CN.md)
 
-![](https://www.nocobase.com/images/demo/11.png)  
+![](https://nocobase.oss-cn-beijing.aliyuncs.com/bbcedd403d31cd1ccc4e9709581f5c2f.png)  
 
 What is NocoBase
 ----------
 NocoBase is a scalability-first, open-source no-code development platform. No programming required, build your own collaboration platform, management system with NocoBase in minutes.
+
+Homepage:
+https://www.nocobase.com/  
+
+Online Demo:
+https://demo.nocobase.com/new
+
+Contact Us:
+hello@nocobase.com
 
 When to use NocoBase
 ----------
@@ -42,9 +51,6 @@ Note
 NocoBase is still in early development and is for preview purposes only and is not suitable for use in a production environment.  A relatively stable and well-documented public beta is expected to be released as early as the first quarter of 2022.
 If you are interested in NocoBase, please join us to discuss and develop it together.
 
-https://www.nocobase.com/  
-hello@nocobase.com
-
 Architecture
 ----------
 
@@ -69,7 +75,8 @@ Installation
 
 #### Quickstart
 ~~~shell
-yarn create nocobase-app my-nocobase-app --quickstart
+yarn create nocobase-app my-nocobase-app --quickstart --lang=en-US
+# `--lang=en-US` Language settings support `--lang=en-US` and `--lang=zh-CN`
 ~~~
 
 #### Step by step
@@ -81,7 +88,9 @@ yarn create nocobase-app my-nocobase-app
 cd my-nocobase-app
 
 # 3. create initialization data
-yarn nocobase init --import-demo
+yarn nocobase init --import-demo --lang=en-US
+# `--import-demo` Importing demo data
+# `--lang=en-US` Language settings support `--lang=en-US` and `--lang=zh-CN`
 
 # 4. start project
 yarn start

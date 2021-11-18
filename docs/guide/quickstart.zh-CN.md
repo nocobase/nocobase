@@ -37,7 +37,7 @@ $ yarn config set registry https://registry.npm.taobao.org/
 为了方便新人快速的安装并启动， NocoBase 提供了一行非常简单的命令：
 
 ```bash
-$ yarn create nocobase-app my-nocobase-app --quickstart
+$ yarn create nocobase-app my-nocobase-app --quickstart --lang=zh-CN
 ```
 
 上面这行命令会帮助你快速的下载、安装并启动 NocoBase 应用。如果你喜欢分步执行，也可以这样：
@@ -50,7 +50,7 @@ $ yarn create nocobase-app my-nocobase-app
 $ cd my-nocobase-app
 
 # 3. 初始化数据
-$ yarn nocobase init --import-demo
+$ yarn nocobase init --import-demo --lang=zh-CN
 
 # 4. 启动项目
 $ yarn start

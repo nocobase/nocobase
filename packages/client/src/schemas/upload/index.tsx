@@ -28,6 +28,7 @@ import DownloadOutlined from '@ant-design/icons/DownloadOutlined';
 import './style.less';
 import cls from 'classnames';
 import { saveAs } from 'file-saver';
+import { useTranslation } from 'react-i18next';
 
 const toArr = (value) => {
   if (!isValid(value)) {
@@ -301,6 +302,7 @@ Upload.Attachment = connect(
     const images = fileList;
     const [photoIndex, setPhotoIndex] = useState(0);
     const [visible, setVisible] = useState(false);
+    const { t } = useTranslation();
     useEffect(() => {
       if (sync) {
         setFileList(toFileList(value));
@@ -346,7 +348,7 @@ Upload.Attachment = connect(
                           onClick={handleClick}
                         >
                           {file.status === 'uploading'
-                            ? '上传中...'
+                            ? t('Uploading')
                             : file.title}
                         </a>
                       </span>
@@ -427,7 +429,7 @@ Upload.Attachment = connect(
                 {!disabled && (multiple || toArr(value).length < 1) && (
                   <span>
                     <PlusOutlined />
-                    <br /> 上传
+                    <br /> {t('Upload')}
                   </span>
                 )}
               </AntdUpload>

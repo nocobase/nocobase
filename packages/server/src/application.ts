@@ -6,10 +6,12 @@ import { PluginType, Plugin, PluginOptions } from './plugin';
 import { registerActions } from '@nocobase/actions';
 import {
   createCli,
+  createI18n,
   createDatabase,
   createResourcer,
   registerMiddlewares,
 } from './helper';
+import { i18n, InitOptions } from 'i18next';
 
 export interface ResourcerOptions {
   prefix?: string;
@@ -22,6 +24,7 @@ export interface ApplicationOptions {
   cors?: any;
   dataWrapping?: boolean;
   registerActions?: boolean;
+  i18n?: i18n | InitOptions;
 }
 
 interface DefaultState {
@@ -58,6 +61,8 @@ export class Application<
 
   public readonly cli: Command;
 
+  public readonly i18n: i18n;
+
   protected plugins = new Map<string, Plugin>();
 
   constructor(options: ApplicationOptions) {
@@ -66,6 +71,7 @@ export class Application<
     this.db = createDatabase(options);
     this.resourcer = createResourcer(options);
     this.cli = createCli(this, options);
+    this.i18n = createI18n(options);
 
     registerMiddlewares(this, options);
     if (options.registerActions !== false) {

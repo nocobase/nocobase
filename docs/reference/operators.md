@@ -2,16 +2,19 @@
 toc: menu
 ---
 
-# Operators
+# Operators <Badge>待完善</Badge>
 
 ## string
-- includes
-- notIncludes
+
 - eq
 - ne
-- null
-- notNull
+- includes
+- notInclude
+- empty
+- notEmpty
+
 ## number
+
 - eq
 - ne
 - gt
@@ -19,32 +22,39 @@ toc: menu
 - lt
 - lte
 - between
-- null
-- notNull
+- empty
+- notEmpty
+
 ## select
+
 - eq
 - ne
 - in
 - notIn
-- null
-- notNull
+- empty
+- notEmpty
+
 ## multipleSelect
+
 - match
 - notMatch
 - anyOf
 - noneOf
-- null
-- notNull
+- empty
+- notEmpty
+
 ## date
+
 - dateOn
 - dateNotOn
 - dateBefore
 - dateAfter
 - dateNotBefore
 - dateNotAfter
-- null
-- notNull
+- empty
+- notEmpty
+
 ## association
-- fieldName.$name
+
 - exists
 - notExists

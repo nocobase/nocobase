@@ -13,6 +13,8 @@ import {
 } from '../';
 import { UseRequestProvider } from 'ahooks';
 import { extend } from 'umi-request';
+import { I18nextProvider } from 'react-i18next';
+import i18n from '../i18n';
 
 const request = extend({
   prefix: process.env.API_URL,
