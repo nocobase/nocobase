@@ -33,6 +33,10 @@ describe('belongs to many', () => {
     await db.sync();
   });
 
+  afterEach(async () => {
+    await db.close();
+  });
+
   test('create with through values', async () => {
     const p1 = await Post.repository.create({
       values: {

@@ -43,4 +43,6 @@ test('collection with association', async () => {
   expect(
     User.model.associations['posts'].target.associations['comments'],
   ).toBeDefined();
+
+  await db.close();
 });

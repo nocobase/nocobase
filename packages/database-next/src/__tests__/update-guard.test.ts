@@ -1,9 +1,9 @@
-import Database from '@nocobase/database';
 import { Collection } from '../collection';
 import { mockDatabase } from './index';
 import { string } from '@nocobase/client/lib/schemas/database-field/interfaces/string';
 import { UpdateGuard } from '../update-guard';
 import lodash from 'lodash';
+import { Database } from '../database';
 
 describe('update-guard', () => {
   let db: Database;
@@ -12,7 +12,7 @@ describe('update-guard', () => {
   let Comment: Collection;
 
   beforeEach(async () => {
-    const db = mockDatabase();
+    db = mockDatabase();
 
     User = db.collection({
       name: 'users',
@@ -60,6 +60,10 @@ describe('update-guard', () => {
       { name: 'u2', age: 20, posts: [{ title: 'u2t1', comments: ['u2t1c1'] }] },
       { name: 'u3', age: 30, posts: [{ title: 'u3t1', comments: ['u3t1c1'] }] },
     ]);
+  });
+
+  afterEach(async () => {
+    await db.close();
   });
 
   test('white list', () => {

@@ -7,6 +7,10 @@ describe('has one repository', () => {
   let User;
   let Profile;
 
+  afterEach(async () => {
+    await db.close();
+  });
+
   beforeEach(async () => {
     db = mockDatabase();
 

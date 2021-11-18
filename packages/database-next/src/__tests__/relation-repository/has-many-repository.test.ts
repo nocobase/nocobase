@@ -9,6 +9,10 @@ describe('has many repository', () => {
   let Comment;
   let Tag;
 
+  afterEach(async () => {
+    await db.close();
+  });
+
   beforeEach(async () => {
     db = mockDatabase();
     User = db.collection({
