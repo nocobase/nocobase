@@ -24,7 +24,7 @@ async (ctx, next) {
 
 ## ctx.resourcer
 
-## ctx.action
+## ctx.action <Badge>待完善</Badge>
 
 ## ctx.i18n
 

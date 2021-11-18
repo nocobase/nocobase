@@ -53,6 +53,30 @@ export default {
       },
     },
     {
+      interface: 'linkTo',
+      type: 'belongsToMany',
+      name: 'roles',
+      target: 'roles',
+      foreignKey: 'user_id',
+      otherKey: 'role_name',
+      sourceKey: 'id',
+      targetKey: 'name',
+      uiSchema: {
+        type: 'array',
+        title: '{{t("Roles")}}',
+        'x-component': 'Select.Drawer',
+        'x-component-props': {
+          multiple: true,
+          fieldNames: {
+            label: 'title',
+            value: 'name',
+          },
+        },
+        'x-decorator': 'FormItem',
+        'x-designable-bar': 'Select.Drawer.DesignableBar',
+      },
+    },
+    {
       interface: 'select',
       type: 'string',
       name: 'appLang',

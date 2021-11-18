@@ -21,7 +21,7 @@ interface FindOptions extends Sequelize.FindOptions {
   // 输出结果显示哪些字段
   fields?: string[];
   // 输出结果不显示哪些字段
-  expect?: string[];
+  except?: string[];
   // 附加字段，用于控制关系字段的输出
   appends?: string[];
   // 排序，字段前面加上 “-” 表示降序
@@ -67,7 +67,7 @@ await repository.find({
   // 附加字段，主要用于附加关系字段
   appends: [],
   // 字段黑名单
-  expect: [],
+  except: [],
   // 排序
   sort: ['-createdAt', 'updatedAt'],
 });
@@ -194,7 +194,7 @@ await Post.repository.find({
 ###### fields 参数示例说明
 
 - `fields` 显示哪些字段
-- `expect` 不显示哪些字段
+- `except` 不显示哪些字段
 - `appends` 附加哪些字段
 
 如果并未指定 fields，输出所有 Attributes，Associations 字段并不输出
@@ -231,11 +231,11 @@ await Post.repository.find({
 // [{ id, name, tags: [{ name }] }]
 ```
 
-排除某些字段时，可以使用 expect
+排除某些字段时，可以使用 except
 
 ```ts
 await Post.repository.find({
-  expect: ['content'],
+  except: ['content'],
 });
 // [{ id, name, createdAt, updatedAt }]
 ```
@@ -271,7 +271,7 @@ await Post.repository.find({
 // [{ id, name, content, createdAt, updatedAt }]
 ```
 
-fields、appends、expect 同时出现时，优先处理 fields，再把 appends 的合并进来，最后处理 expect。
+fields、appends、except 同时出现时，优先处理 fields，再把 appends 的合并进来，最后处理 except。
 
 fields 和 appends 同时出现时：
 
@@ -287,45 +287,45 @@ fields 和 appends 同时出现时：
 // { id, name, tags: [ { id, name, createdAt, updatedAt } ] }
 ```
 
-fields 和 expect 同时出现时，如果 expect 的 key 在 fields 里，需要排除掉
+fields 和 except 同时出现时，如果 except 的 key 在 fields 里，需要排除掉
 
 ```ts
 {
   fields: ['id', 'name'],
-  expect: ['name'],
+  except: ['name'],
 }
 // { id }
 ```
 
-fields 取了多个关联字段的子字段，但是 expect 把整个关联字段都排除了
+fields 取了多个关联字段的子字段，但是 except 把整个关联字段都排除了
 
 ```ts
 {
   fields: ['id', 'name', 'tags.id', 'tags.name'],
-  expect: ['tags'],
+  except: ['tags'],
 }
 // tags 排除了，tags.id 和 tags.name 都不应该被输出
 // { id, name }
 ```
 
-fields 和 expect 同时出现时，如果 expect 的 key 不在 fields 里，不处理。
+fields 和 except 同时出现时，如果 except 的 key 不在 fields 里，不处理。
 
 ```ts
 {
   fields: ['id', 'name'],
-  expect: ['tags.createdAt', 'tags.updatedAt'],
+  except: ['tags.createdAt', 'tags.updatedAt'],
 }
 // { id, name }
 ```
 
 
-fields、appends、expect 同时出现时：
+fields、appends、except 同时出现时：
 
 ```ts
 {
   fields: ['id', 'name'],
   appends: ['tags'],
-  expect: ['tags.createdAt', 'tags.updatedAt'],
+  except: ['tags.createdAt', 'tags.updatedAt'],
 }
 // { id, name, tags: [ { id, name } ] }
 ```
@@ -347,7 +347,7 @@ interface FindAndCountOptions extends Sequelize.FindAndCountOptions {
   // 输出结果显示哪些字段
   fields?: string[];
   // 输出结果不显示哪些字段
-  expect?: string[];
+  except?: string[];
   // 附加字段，用于控制关系字段的输出
   appends?: string[];
   // 排序，字段前面加上 “-” 表示降序
@@ -397,7 +397,7 @@ interface FindOneOptions extends findOptions {
   // 输出结果显示哪些字段
   fields?: string[];
   // 输出结果不显示哪些字段
-  expect?: string[];
+  except?: string[];
   // 附加字段，用于控制关系字段的输出
   appends?: string[];
   // 排序，字段前面加上 “-” 表示降序
@@ -785,7 +785,7 @@ interface IHasOneRepository<M extends Sequelize.Model> {
 
 interface HasOneFindOptions {
   fields?: string[];
-  expect?: string[];
+  except?: string[];
   appends?: string[];
 }
 ```
@@ -801,7 +801,7 @@ const userProfileRepository = User.repository.relation<HasOneRepository>('profil
 const profile = await userProfileRepository.find({
   fields,
   appends,
-  expect,
+  except,
 });
 ```
 
@@ -827,7 +827,7 @@ interface IBelongsToRepository<M extends Sequelize.Model> {
 
 interface HasOneFindOptions {
   fields?: string[];
-  expect?: string[];
+  except?: string[];
   appends?: string[];
 }
 ```
@@ -843,7 +843,7 @@ const postUserRepository = Post.repository.relation<BelongsToRepository>('user')
 const user = await postUserRepository.find({
   fields,
   appends,
-  expect,
+  except,
 });
 ```
 

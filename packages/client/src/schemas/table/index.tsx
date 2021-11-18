@@ -2089,6 +2089,7 @@ Table.Column = observer((props: any) => {
 Table.Column.DesignableBar = () => {
   const field = useField();
   const { t } = useTranslation();
+  const compile = useCompile();
   const { service, refresh: refreshTable } = useTable();
   // const fieldSchema = useFieldSchema();
   const { schema, remove, refresh, insertAfter } = useDesignable();
@@ -2201,7 +2202,7 @@ Table.Column.DesignableBar = () => {
                         options={getFieldsByCollection(collectionField.target)
                           .filter((f) => f?.uiSchema?.title)
                           .map((field) => ({
-                            label: field?.uiSchema?.title || field.name,
+                            label: compile(field?.uiSchema?.title || field.name),
                             value: field.name,
                           }))}
                       />
