@@ -9,7 +9,7 @@ import {
   CreateOptions as SequelizeCreateOptions,
   UpdateOptions as SequelizeUpdateOptions,
 } from 'sequelize';
-import { flatten } from 'flat';
+
 import { Collection } from './collection';
 import _, { omit } from 'lodash';
 import { Database } from './database';
@@ -17,6 +17,11 @@ import { updateAssociations } from './update-associations';
 import { RelationField } from './fields';
 import FilterParser from './filterParser';
 import { OptionsParser } from './optionsParser';
+import { RelationRepository } from './relation-repository/relation-repository';
+import { HasOneRepository } from './relation-repository/hasone-repository';
+import { BelongsToRepository } from './relation-repository/belongs-to-repository';
+import { BelongsToManyRepository } from './relation-repository/belongs-to-many-repository';
+import { HasManyRepository } from './relation-repository/hasmany-repository';
 
 const debug = require('debug')('noco-database');
 
@@ -79,101 +84,28 @@ type Identity = string | number;
 
 type ID = Identity;
 
-class RelatedQuery {
-  options: RelatedQueryOptions;
-  sourceInstance: Model;
-
-  constructor(options: RelatedQueryOptions) {
-    this.options = options;
+class RelationRepositoryBuilder {
+  collection: Collection;
+  associationName: string;
+  constructor(collection: Collection, associationName: string) {
+    this.collection = collection;
+    this.associationName = associationName;
   }
+  of<R extends RelationRepository>(id: string | number): R {
+    const association =
+      this.collection.model.associations[this.associationName];
 
-  async getSourceInstance() {
-    if (this.sourceInstance) {
-      return this.sourceInstance;
-    }
-    const { idOrInstance, collection } = this.options.source;
-    if (idOrInstance instanceof Model) {
-      return (this.sourceInstance = idOrInstance);
-    }
-    this.sourceInstance = await collection.model.findByPk(idOrInstance);
-    return this.sourceInstance;
+    const builder = {
+      HasOne: () => HasOneRepository,
+      BelongsTo: () => BelongsToRepository,
+      BelongsToMany: () => BelongsToManyRepository,
+      HasMany: () => HasManyRepository,
+    };
+
+    const klass = builder[association.associationType]();
+    return new klass(this.collection, this.associationName, id);
   }
-
-  /**
-   * same as find
-   * @param options
-   */
-  async findMany(options?: any) {
-    const { collection } = this.options.target;
-    return await collection.repository.find(options);
-  }
-
-  async findOne(options?: any) {
-    const { collection } = this.options.target;
-    return await collection.repository.findOne(options);
-  }
-
-  async create(values?: any, options?: any) {
-    const { association } = this.options.target;
-    const createAccessor = association.accessors.create;
-    const source = await this.getSourceInstance();
-    const instance = await source[createAccessor](values, options);
-    if (!instance) {
-      return;
-    }
-    await updateAssociations(instance, values);
-    return instance;
-  }
-
-  async update(values: any, options?: Identity | Model | UpdateOptions) {
-    const { association, collection } = this.options.target;
-    if (options instanceof Model) {
-      return await collection.repository.update(values, options);
-    }
-    const { field } = this.options;
-    if (field.type === 'hasOne' || field.type === 'belongsTo') {
-      const getAccessor = association.accessors.get;
-      const source = await this.getSourceInstance();
-      const instance = await source[getAccessor]();
-      return await collection.repository.update(values, instance);
-    }
-    // TODO
-    return await collection.repository.update(values, options);
-  }
-
-  async destroy(options?: any) {
-    const { association, collection } = this.options.target;
-    const { field } = this.options;
-    if (field.type === 'hasOne' || field.type === 'belongsTo') {
-      const getAccessor = association.accessors.get;
-      const source = await this.getSourceInstance();
-      const instance = await source[getAccessor]();
-      if (!instance) {
-        return;
-      }
-      return await collection.repository.destroy(instance.id);
-    }
-    return await collection.repository.destroy(options);
-  }
-
-  async set(options?: any) {}
-
-  async add(options?: any) {}
-
-  async remove(options?: any) {}
-
-  async toggle(options?: any) {}
-
-  async sync(options?: any) {}
 }
-
-class HasOneQuery extends RelatedQuery {}
-
-class HasManyQuery extends RelatedQuery {}
-
-class BelongsToQuery extends RelatedQuery {}
-
-class BelongsToManyQuery extends RelatedQuery {}
 
 export class Repository<
   TModelAttributes extends {} = any,
@@ -356,36 +288,16 @@ export class Repository<
     return await this.model.destroy(opts);
   }
 
-  relatedQuery(name: string) {
-    return {
-      for: (sourceIdOrInstance: any) => {
-        const field = this.collection.getField(name) as RelationField;
-        const database = this.collection.context.database;
-        const collection = database.getCollection(field.target);
-        const options: RelatedQueryOptions = {
-          field,
-          database: database,
-          source: {
-            collection: this.collection,
-            idOrInstance: sourceIdOrInstance,
-          },
-          target: {
-            collection,
-            association: this.collection.model.associations[name] as any,
-          },
-        };
-        switch (field.type) {
-          case 'hasOne':
-            return new HasOneQuery(options);
-          case 'hasMany':
-            return new HasManyQuery(options);
-          case 'belongsTo':
-            return new BelongsToQuery(options);
-          case 'belongsToMany':
-            return new BelongsToManyQuery(options);
-        }
-      },
-    };
+  /**
+   * @param association target association
+   */
+  relation(association: string): RelationRepositoryBuilder {
+    const relationQueryBuilder = new RelationRepositoryBuilder(
+      this.collection,
+      association,
+    );
+
+    return relationQueryBuilder;
   }
 
   protected buildQueryOptions(options: any) {

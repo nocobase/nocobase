@@ -1,6 +1,7 @@
 import { Collection } from '../collection';
 import { Database } from '../database';
 import { mockDatabase } from './';
+import { HasManyRepository } from '../relation-repository/hasmany-repository';
 
 describe('repository.find', () => {
   let db: Database;
@@ -141,8 +142,6 @@ describe('repository.find', () => {
       filter: {
         'posts.comments.id': null,
       },
-      page: 1,
-      pageSize: 1,
     });
   });
 });
@@ -382,34 +381,27 @@ describe('repository.relatedQuery', () => {
   });
 
   it('create', async () => {
-    const user = await User.repository.create();
-    const post = await User.repository.relatedQuery('posts').for(user).create({
-      name: 'post1',
+    const user = await User.repository.create({});
+
+    const userPostRepository = await User.repository
+      .relation('posts')
+      .of<HasManyRepository>(<number>user.get('id'));
+
+    const post = await userPostRepository.create({
+      values: { name: 'post1' },
     });
+
     expect(post).toMatchObject({
       name: 'post1',
-      userId: user.id,
+      userId: user.get('id'),
     });
-    const post2 = await User.repository
-      .relatedQuery('posts')
-      .for(user.id)
-      .create({
-        name: 'post2',
-      });
+
+    const post2 = await userPostRepository.create({
+      values: { name: 'post2' },
+    });
     expect(post2).toMatchObject({
       name: 'post2',
-      userId: user.id,
-    });
-  });
-
-  it('update', async () => {
-    const post = await Post.repository.create({
-      user: {
-        name: 'user11',
-      },
-    });
-    await Post.repository.relatedQuery('user').for(post).update({
-      name: 'user12',
+      userId: user.get('id'),
     });
   });
 });

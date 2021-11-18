@@ -23,6 +23,6 @@ interface IBelongsToRepository<M extends Model> {
   remove(): Promise<void>;
 }
 
-class BelongsToRepository
+export class BelongsToRepository
   extends SingleRelationRepository
   implements IBelongsToRepository<any> {}

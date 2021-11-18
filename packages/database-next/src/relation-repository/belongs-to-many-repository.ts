@@ -5,8 +5,6 @@ import {
   updateModelByValues,
   updateThroughTableValue,
 } from '../update-associations';
-import { UpdateGuard } from '../update-guard';
-import { omit } from 'lodash';
 import { MultipleRelationRepository } from './multiple-relation-repository';
 
 type FindOptions = any;
