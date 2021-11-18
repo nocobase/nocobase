@@ -8,7 +8,7 @@ import {
   DestroyOptions as SequelizeDestroyOptions,
   CreateOptions as SequelizeCreateOptions,
   UpdateOptions as SequelizeUpdateOptions,
-  Sequelize,
+  FindAndCountOptions as SequelizeAndCountOptions,
 } from 'sequelize';
 
 import { Collection } from './collection';
@@ -64,8 +64,6 @@ interface CreateOptions {
   whitelist?: string[];
   // 字段黑名单
   blacklist?: string[];
-  // 关系数据默认会新建并建立关联处理，如果是已存在的数据只关联，但不更新关系数据
-  // 如果需要更新关联数据，可以通过 updateAssociationValues 指定
   updateAssociationValues?: string[];
 }
 
@@ -77,6 +75,20 @@ interface UpdateOptions extends SequelizeUpdateOptions {
 
 interface DestroyOptions extends SequelizeDestroyOptions {
   filter?: any;
+}
+
+interface FindAndCountOptions
+  extends Omit<SequelizeAndCountOptions, 'where' | 'include' | 'order'> {
+  // 数据过滤
+  filter?: Filter;
+  // 输出结果显示哪些字段
+  fields?: Fields;
+  // 输出结果不显示哪些字段
+  except?: Expect;
+  // 附加字段，用于控制关系字段的输出
+  appends?: Appends;
+  // 排序，字段前面加上 “-” 表示降序
+  sort?: Sort;
 }
 
 interface RelatedQueryOptions {
@@ -198,17 +210,16 @@ export class Repository<
    * find and count
    * @param options
    */
-  async findAndCount(options?: FindOptions) {
-    const model = this.collection.model;
-
-    const opts = {
-      subQuery: false,
+  async findAndCount(
+    options?: FindAndCountOptions,
+  ): Promise<[Model[], number]> {
+    const result = await this.collection.model.findAndCountAll({
       ...this.buildQueryOptions(options),
-    };
-
-    return await model.findAndCountAll({
-      ...opts,
+      subQuery: false,
+      distinct: true,
     });
+
+    return [result.rows, result.count];
   }
 
   /**

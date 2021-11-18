@@ -95,5 +95,25 @@ describe('count', () => {
         },
       }),
     ).toEqual(3);
+
+    let posts = await Post.repository.findAndCount();
+    expect(posts[1]).toEqual(3);
+
+    posts = await Post.repository.findAndCount({
+      filter: {
+        title: 'u1p1',
+      },
+    });
+
+    expect(posts[0][0]['tags']).toBeUndefined();
+
+    posts = await Post.repository.findAndCount({
+      filter: {
+        title: 'u1p1',
+      },
+      appends: ['tags'],
+    });
+
+    expect(posts[0][0]['tags']).toBeDefined();
   });
 });
