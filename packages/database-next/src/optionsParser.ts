@@ -58,9 +58,21 @@ export class OptionsParser {
 
     const orderParams = sort.map((sortKey: string) => {
       const direction = sortKey.startsWith('-') ? 'DESC' : 'ASC';
-      const sort = sortKey.replace('-', '').split('.');
-      sort.push(direction);
-      return sort;
+      const sortField: Array<any> = sortKey.replace('-', '').split('.');
+
+      // handle sort by association
+      if (sortField.length > 1) {
+        let associationModel = this.model;
+
+        for (let i = 0; i < sortField.length - 1; i++) {
+          const associationKey = sortField[i];
+          sortField[i] = associationModel.associations[associationKey].target;
+          associationModel = sortField[i];
+        }
+      }
+
+      sortField.push(direction);
+      return sortField;
     });
 
     if (orderParams.length > 0) {

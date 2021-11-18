@@ -27,14 +27,18 @@ describe('repository find', () => {
           type: 'belongsTo',
           name: 'user',
         },
+        {
+          type: 'hasMany',
+          name: 'comments',
+        },
       ],
     });
 
     Comment = db.collection({
-      name: 'comment',
+      name: 'comments',
       field: [
         { type: string, name: 'content' },
-        { type: 'belongsTo', name: 'post' },
+        { type: 'belongsTo', name: 'posts' },
       ],
     });
 
@@ -70,8 +74,8 @@ describe('repository find', () => {
       params = parser.toSequelizeParams();
       expect(params['order']).toEqual([
         ['id', 'ASC'],
-        ['posts', 'title', 'DESC'],
-        ['posts', 'comments', 'createdAt', 'ASC'],
+        [Post.model, 'title', 'DESC'],
+        [Post.model, Comment.model, 'createdAt', 'ASC'],
       ]);
     });
 
