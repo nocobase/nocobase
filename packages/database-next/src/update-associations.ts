@@ -59,6 +59,7 @@ type UpdateOptions = {
   updateAssociationValues?: string[];
   sanitized?: boolean;
   sourceModel?: Model;
+  transaction?: any;
 };
 
 export async function updateModelByValues(

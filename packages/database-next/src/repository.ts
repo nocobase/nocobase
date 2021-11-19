@@ -14,7 +14,7 @@ import {
 import { Collection } from './collection';
 import _, { omit } from 'lodash';
 import { Database } from './database';
-import { updateAssociations } from './update-associations';
+import { updateAssociations, updateModelByValues } from './update-associations';
 import { RelationField } from './fields';
 import FilterParser from './filterParser';
 import { OptionsParser } from './optionsParser';
@@ -67,10 +67,19 @@ interface CreateOptions {
   updateAssociationValues?: string[];
 }
 
-interface UpdateOptions extends SequelizeUpdateOptions {
+interface UpdateOptions {
+  filter?: Filter;
+  filterByPk?: number | string;
+  // 数据
   values?: any;
-  whitelist?: any;
-  blacklist?: any;
+  // 字段白名单
+  whitelist?: string[];
+  // 字段黑名单
+  blacklist?: string[];
+  // 关系数据默认会新建并建立关联处理，如果是已存在的数据只关联，但不更新关系数据
+  // 如果需要更新关联数据，可以通过 updateAssociationValues 指定
+  updateAssociationValues?: string[];
+  transaction?: any;
 }
 
 interface DestroyOptions extends SequelizeDestroyOptions {
@@ -213,13 +222,7 @@ export class Repository<
   async findAndCount(
     options?: FindAndCountOptions,
   ): Promise<[Model[], number]> {
-    const result = await this.collection.model.findAndCountAll({
-      ...this.buildQueryOptions(options),
-      subQuery: false,
-      distinct: true,
-    });
-
-    return [result.rows, result.count];
+    return [await this.find(options), await this.count(options)];
   }
 
   /**
@@ -285,25 +288,27 @@ export class Repository<
    * @param values
    * @param options
    */
-  async update(values: any, options: Identity | Model | UpdateOptions) {
-    if (options instanceof Model) {
-      await options.update(values);
-      await updateAssociations(options, values);
-      return options;
+  async update(options: UpdateOptions) {
+    const { transaction = await this.model.sequelize.transaction() } = options;
+    const guard = UpdateGuard.fromOptions(this.model, options);
+
+    const values = guard.sanitize(options.values);
+
+    const queryOptions = this.buildQueryOptions(options);
+
+    const instances = await this.find({
+      ...queryOptions,
+      transaction,
+    });
+
+    for (const instance of instances) {
+      await updateModelByValues(instance, values, {
+        sanitized: true,
+        transaction,
+      });
     }
 
-    let instance: Model;
-
-    if (typeof options === 'string' || typeof options === 'number') {
-      instance = await this.model.findByPk(options);
-    } else {
-      // @ts-ignore
-      instance = await this.findOne(options);
-    }
-
-    await instance.update(values);
-    await updateAssociations(instance, values);
-    return instance;
+    return true;
   }
 
   async destroy(options: Identity | Identity[] | DestroyOptions) {
