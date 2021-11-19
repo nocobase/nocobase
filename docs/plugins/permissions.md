@@ -1,3 +1,3 @@
-# @nocobase/plugin-permissions
+# permissions
 
 

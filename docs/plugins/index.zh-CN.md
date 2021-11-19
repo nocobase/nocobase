@@ -1,6 +1,5 @@
 ---
-title: 插件
-toc: menu
+title: 概述
 nav:
   title: 插件
   order: 4
@@ -8,7 +7,11 @@ nav:
 
 # 插件
 
-## 插件管理器
+## 插件管理器 <Badge>待完善</Badge>
+
+<Alert title="注意">
+暂时还不能通过 CLI 的方式管理插件，这部分还在设计开发中。
+</Alert>
 
 开发可以通过命令行下载、激活、禁用、移除插件，对应的命令行有：
 
@@ -25,66 +28,36 @@ yarn nocobase pm:remove <plugin-name>
 
 ## 已有的插件列表
 
-### @nocobase/plugin-collections 数据表配置
+核心插件
 
-提供 HTTP API 的方式管理数据表和字段
+- [@nocobase/plugin-collections](plugins/collections)  
+  提供 HTTP API 的方式管理数据表和字段
+- [@nocobase/plugin-permissions](plugins/permissions)  
+  权限模块（服务端）
+- [@nocobase/plugin-users](plugins/users)  
+  用户模块（服务端）
+- [@nocobase/plugin-client](plugins/client)  
+  客户端插件，为 server 提供 GUI，将 @nocobase/server 和 @nocobase/client 连接起来
+- [@nocobase/plugin-ui-schema](plugins/ui-schema)  
+  将客户端 SchemaComponent 的 Schema 存储在服务端，以实现按需动态输出
+- [@nocobase/plugin-ui-router](plugins/ui-router)  
+  客户端路由表，将客户端 route config 存储在服务端，以实现按需动态输出
 
-### @nocobase/plugin-permissions
+其他插件
 
-权限模块
-
-### @nocobase/plugin-users
-
-用户模块
-
-### @nocobase/plugin-system-settings
-
-站点信息配置
-
-### @nocobase/plugin-china-region
-
-字段扩展，中国行政区
-
-### @nocobase/plugin-file-manager
-
-字段扩展，附件字段
-
-### @nocobase/plugin-action-logs
-
-操作日志
-
-### @nocobase/plugin-multi-apps
-
-动态多应用，一个简易的 SaaS
-
-### @nocobase/plugin-export
-
-操作扩展，导出
-
-### @nocobase/plugin-notifications
-
-通知模块（半成品），暂时只支持邮件发送，没有可视化界面
-
-### @nocobase/plugin-automations
-
-自动化（暂不可用）
-
-### @nocobase/plugin-client
-
-客户端插件，为 nocobase 提供可视化配置的支持。依赖的插件有：
-
-- @nocobase/plugin-collections（必须）
-- @nocobase/plugin-permissions（必须）
-- @nocobase/plugin-users（必须）
-- @nocobase/plugin-system-settings（必须）
-- @nocobase/plugin-file-manager（必须）
-- @nocobase/plugin-china-region（可选）
-- @nocobase/plugin-action-logs（可选）
-
-包括几部分内容：
-
-- 将客户端 ui-schema 存储在服务端，以实现按需动态输出
-- 将客户端 ui-router 存储在服务端，以实现按需动态输出
-- 提供 app dist 的 static server 支持，可以配置 app 的 dist 路径
-- 为 nocobase 安装提供初始化 demo 数据导入的支持，可通过 importData 配置
-- 提供 collections 可视化支持
+- [@nocobase/plugin-action-logs](plugins/action-logs)  
+  操作日志
+- [@nocobase/plugin-file-manager](plugins/file-manager)  
+  文件管理器
+- [@nocobase/plugin-china-region](plugins/china-region)  
+  中国行政区，字段扩展
+- [@nocobase/plugin-export](plugins/export)  
+  导出插件
+- [@nocobase/plugin-system-settings](plugins/system-settings)  
+  系统信息配置
+- [@nocobase/plugin-multi-apps](plugins/multi-apps)  
+  动态多应用，简易的 SaaS 插件
+- [@nocobase/plugin-notifications](plugins/notifications)  
+  通知模块（半成品），暂时只支持邮件发送，没有可视化界面
+- [@nocobase/plugin-automations](plugins/automations)  
+  自动化模块（暂不可用）
