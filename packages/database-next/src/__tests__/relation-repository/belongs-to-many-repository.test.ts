@@ -340,4 +340,26 @@ describe('belongs to many', () => {
     await PostTagRepository.toggle(t1.id);
     expect(await PostTagRepository.findOne()).toBeNull();
   });
+
+  test('destroy', async () => {
+    let t1 = await Tag.repository.create({
+      values: {
+        name: 't1',
+      },
+    });
+
+    const t2 = await Tag.repository.create({
+      values: {
+        name: 't2',
+      },
+    });
+
+    const p1 = await Post.repository.create({
+      values: { title: 'p1' },
+    });
+
+    const PostTagRepository = new BelongsToManyRepository(Post, 'tags', p1.id);
+
+    await PostTagRepository.set([t1.id, t2.id]);
+  });
 });

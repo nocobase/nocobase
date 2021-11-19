@@ -1,15 +1,10 @@
-import { RelationRepository } from './relation-repository';
 import { BelongsToMany, HasMany, Model, Op, Sequelize } from 'sequelize';
-import { UpdateGuard } from '../update-guard';
-import {
-  updateAssociations,
-  updateModelByValues,
-} from '../update-associations';
-import lodash, { omit } from 'lodash';
+
 import {
   MultipleRelationRepository,
   UpdateOptions,
 } from './multiple-relation-repository';
+import { Filter, FilterAble, PK, TransactionAble } from '../repository';
 
 type FindOptions = any;
 type FindAndCountOptions = any;
@@ -27,6 +22,10 @@ type CreateOptions = {
 };
 
 type primaryKey = string | number;
+
+interface DestroyOptions {
+  filter?: any;
+}
 
 interface IHasManyRepository<M extends Model> {
   find(options?: FindOptions): Promise<M>;
@@ -46,12 +45,64 @@ interface IHasManyRepository<M extends Model> {
   remove(primaryKey: primaryKey | Array<primaryKey>): Promise<void>;
 }
 
+interface DestroyOptions extends TransactionAble {
+  filter?: Filter;
+  filterByPk?: PK;
+}
+
 export class HasManyRepository
   extends MultipleRelationRepository
   implements IHasManyRepository<any>
 {
-  destroy(options?: number | string | number[] | string[]): Promise<Boolean> {
-    return Promise.resolve(false);
+  async destroy(options?: PK | DestroyOptions): Promise<Boolean> {
+    const transaction = await this.getTransaction(options);
+
+    const sourceModel = await this.getSourceModel();
+
+    const where = [
+      {
+        [this.association.foreignKey]: sourceModel.get(
+          this.source.model.primaryKeyAttribute,
+        ),
+      },
+    ];
+
+    if (options && options['filter']) {
+      const filterResult = this.parseFilter(options['filter']);
+
+      if (filterResult.include && filterResult.include.length > 0) {
+        const instances = await this.find({
+          filter: options['filter'],
+          transaction,
+        });
+        return await this.destroy({
+          filterByPk: instances.map(
+            (instance) => instance[this.target.primaryKeyAttribute],
+          ),
+          transaction,
+        });
+      }
+
+      where.push(filterResult.where);
+    } else if (options) {
+      const targetInstances = (<any>this.association).toInstanceArray(options);
+
+      where.push({
+        [this.target.primaryKeyAttribute]: targetInstances.map(
+          (targetInstance) =>
+            targetInstance.get(this.target.primaryKeyAttribute),
+        ),
+      });
+    }
+
+    await this.target.destroy({
+      where: {
+        [Op.and]: where,
+      },
+      transaction,
+    });
+
+    return Promise.resolve(true);
   }
 
   async set(primaryKey: primaryKey | Array<primaryKey>): Promise<void> {

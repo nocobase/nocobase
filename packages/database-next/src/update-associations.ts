@@ -11,6 +11,7 @@ import {
   HasMany,
 } from 'sequelize';
 import { UpdateGuard } from './update-guard';
+import { TransactionAble } from './repository';
 
 function isUndefinedOrNull(value: any) {
   return typeof value === 'undefined' || value === null;
@@ -47,7 +48,7 @@ export function modelAssociationByKey(
 
 type UpdateValue = { [key: string]: any };
 
-type UpdateOptions = {
+interface UpdateOptions extends TransactionAble {
   filter?: any;
   filterByPk?: number | string;
   // 字段白名单
@@ -59,8 +60,7 @@ type UpdateOptions = {
   updateAssociationValues?: string[];
   sanitized?: boolean;
   sourceModel?: Model;
-  transaction?: any;
-};
+}
 
 export async function updateModelByValues(
   instance: Model,

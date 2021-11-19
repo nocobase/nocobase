@@ -9,7 +9,7 @@ import {
 } from 'sequelize';
 import { OptionsParser } from '../optionsParser';
 import { Collection } from '../collection';
-import { Filter, FindOptions } from '../repository';
+import { Filter, FindOptions, TransactionAble } from '../repository';
 import FilterParser from '../filterParser';
 import { UpdateGuard } from '../update-guard';
 import {
@@ -99,5 +99,22 @@ export abstract class RelationRepository {
     );
     const params = parser.toSequelizeParams();
     return { ...options, ...params };
+  }
+
+  protected parseFilter(filter: Filter) {
+    const parser = new FilterParser(
+      this.target,
+      this.source.context.database,
+      filter,
+    );
+    return parser.toSequelizeParams();
+  }
+
+  protected async getTransaction(options: any) {
+    if (options && typeof options === 'object' && options.transaction) {
+      return options.transaction;
+    }
+
+    return await this.source.model.sequelize.transaction();
   }
 }

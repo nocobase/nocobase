@@ -165,4 +165,59 @@ describe('has many repository', () => {
 
     expect(findAndCount[1]).toEqual(6);
   });
+
+  test('destroy by pk', async () => {
+    const u1 = await User.repository.create({
+      values: { name: 'u1' },
+    });
+
+    const UserPostRepository = new HasManyRepository(User, 'posts', u1.id);
+    const p1 = await UserPostRepository.create({
+      values: {
+        title: 't1',
+      },
+    });
+
+    await UserPostRepository.destroy(p1.id);
+
+    expect(await UserPostRepository.findOne()).toBeNull();
+  });
+
+  test('destroy', async () => {
+    const u1 = await User.repository.create({
+      values: { name: 'u1' },
+    });
+
+    const UserPostRepository = new HasManyRepository(User, 'posts', u1.id);
+    const p1 = await UserPostRepository.create({
+      values: {
+        title: 't1',
+      },
+    });
+
+    await UserPostRepository.destroy();
+
+    expect(await UserPostRepository.findOne()).toBeNull();
+  });
+
+  test('destroy by filter', async () => {
+    const u1 = await User.repository.create({
+      values: { name: 'u1' },
+    });
+
+    const UserPostRepository = new HasManyRepository(User, 'posts', u1.id);
+    const p1 = await UserPostRepository.create({
+      values: {
+        title: 't1',
+      },
+    });
+
+    await UserPostRepository.destroy({
+      filter: {
+        title: 't1',
+      },
+    });
+
+    expect(await UserPostRepository.findOne()).toBeNull();
+  });
 });

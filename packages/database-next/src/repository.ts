@@ -9,6 +9,7 @@ import {
   CreateOptions as SequelizeCreateOptions,
   UpdateOptions as SequelizeUpdateOptions,
   FindAndCountOptions as SequelizeAndCountOptions,
+  Transaction,
 } from 'sequelize';
 
 import { Collection } from './collection';
@@ -31,6 +32,16 @@ const debug = require('debug')('noco-database');
 export interface IRepository {}
 
 interface CreateManyOptions extends BulkCreateOptions {}
+
+export interface TransactionAble {
+  transaction?: Transaction;
+}
+
+export interface FilterAble {
+  filter: Filter;
+}
+
+export type PK = number | string | number[] | string[];
 
 export type Filter = any;
 export type Appends = string[];
@@ -122,22 +133,27 @@ type ID = Identity;
 class RelationRepositoryBuilder<R extends RelationRepository> {
   collection: Collection;
   associationName: string;
+  association: Association;
+
+  builderMap = {
+    HasOne: HasOneRepository,
+    BelongsTo: BelongsToRepository,
+    BelongsToMany: BelongsToManyRepository,
+    HasMany: HasManyRepository,
+  };
+
   constructor(collection: Collection, associationName: string) {
     this.collection = collection;
     this.associationName = associationName;
+    this.association = this.collection.model.associations[this.associationName];
   }
+
+  protected builder() {
+    return this.builderMap;
+  }
+
   of(id: string | number): R {
-    const association =
-      this.collection.model.associations[this.associationName];
-
-    const builder = {
-      HasOne: () => HasOneRepository,
-      BelongsTo: () => BelongsToRepository,
-      BelongsToMany: () => BelongsToManyRepository,
-      HasMany: () => HasManyRepository,
-    };
-
-    const klass = builder[association.associationType]();
+    const klass = this.builder()[this.association.associationType];
     return new klass(this.collection, this.associationName, id);
   }
 }
