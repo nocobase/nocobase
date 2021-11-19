@@ -1,4 +1,4 @@
-# @nocobase/plugin-collections
+# collections
 
 提供 HTTP API 的方式管理数据表和字段
 
