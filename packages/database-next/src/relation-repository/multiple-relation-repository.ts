@@ -1,9 +1,14 @@
 import { RelationRepository } from './relation-repository';
 import { omit } from 'lodash';
-import { MultiAssociationAccessors, Op, Sequelize } from 'sequelize';
+import {
+  MultiAssociationAccessors,
+  Op,
+  Sequelize,
+  Transaction,
+} from 'sequelize';
 import { UpdateGuard } from '../update-guard';
 import { updateModelByValues } from '../update-associations';
-import { TransactionAble } from '../repository';
+import { Filter, PK, TransactionAble } from '../repository';
 
 type FindOptions = any;
 type FindAndCountOptions = any;
@@ -24,16 +29,21 @@ export interface UpdateOptions extends TransactionAble {
   updateAssociationValues?: string[];
 }
 
+export interface DestroyOptions extends TransactionAble {
+  filter?: Filter;
+  filterByPk?: PK;
+}
+
 export abstract class MultipleRelationRepository extends RelationRepository {
   async find(options?: FindOptions): Promise<any> {
-    const transaction = options?.transaction;
+    const transaction = await this.getTransaction(options);
 
     const findOptions = this.buildQueryOptions({
       ...options,
     });
 
     const getAccessor = this.accessors().get;
-    const sourceModel = await this.getSourceModel();
+    const sourceModel = await this.getSourceModel(transaction);
 
     if (findOptions.include && findOptions.include.length > 0) {
       const ids = (
@@ -64,7 +74,17 @@ export abstract class MultipleRelationRepository extends RelationRepository {
   }
 
   async findAndCount(options?: FindAndCountOptions): Promise<[any[], number]> {
-    return [await this.find(options), await this.count(options)];
+    const transaction = await this.getTransaction(options, false);
+    return [
+      await this.find({
+        ...options,
+        transaction,
+      }),
+      await this.count({
+        ...options,
+        transaction,
+      }),
+    ];
   }
 
   async count(options: CountOptions) {
@@ -136,6 +156,27 @@ export abstract class MultipleRelationRepository extends RelationRepository {
     return true;
   }
 
+  async destroy(options?: PK | DestroyOptions): Promise<Boolean> {
+    return false;
+  }
+
+  protected async destroyByFilter(filter: Filter, transaction?: Transaction) {
+    const instances = await this.find({
+      filter: filter,
+      transaction,
+    });
+    return await this.destroy({
+      filterByPk: instances.map(
+        (instance) => instance[this.target.primaryKeyAttribute],
+      ),
+      transaction,
+    });
+  }
+
+  protected filterHasInclude(filter: Filter) {
+    const filterResult = this.parseFilter(filter);
+    return filterResult.include && filterResult.include.length > 0;
+  }
   protected accessors() {
     return <MultiAssociationAccessors>super.accessors();
   }

@@ -1,11 +1,20 @@
 import { RelationRepository } from './relation-repository';
-import { BelongsToMany, HasOne, Model, Op, Sequelize } from 'sequelize';
+import {
+  BelongsToMany,
+  HasOne,
+  Model,
+  Op,
+  Sequelize,
+  Transactionable,
+} from 'sequelize';
 import FilterParser from '../filterParser';
 import {
   updateModelByValues,
   updateThroughTableValue,
 } from '../update-associations';
 import { MultipleRelationRepository } from './multiple-relation-repository';
+import { PK } from '../repository';
+import { type } from 'os';
 
 type FindOptions = any;
 type FindAndCountOptions = any;
@@ -27,6 +36,21 @@ type UpdateOptions = {
 type DestroyOptions = any;
 type primaryKey = string | number;
 type primaryKeyWithThroughValues = [primaryKey, any];
+
+interface AssociatedOptions extends Transactionable {
+  pk?:
+    | primaryKey
+    | primaryKey[]
+    | primaryKeyWithThroughValues
+    | primaryKeyWithThroughValues[];
+}
+
+type setAssociationOptions =
+  | primaryKey
+  | primaryKey[]
+  | primaryKeyWithThroughValues
+  | primaryKeyWithThroughValues[]
+  | AssociatedOptions;
 
 interface IBelongsToManyRepository<M extends Model> {
   find(options?: FindOptions): Promise<M[]>;
@@ -54,68 +78,156 @@ export class BelongsToManyRepository
   implements IBelongsToManyRepository<any>
 {
   async create(options?: CreateBelongsToManyOptions): Promise<any> {
+    const transaction = await this.getTransaction(options);
+
     const createAccessor = this.accessors().create;
     const values = options.values;
 
-    const sourceModel = await this.getSourceModel();
+    const sourceModel = await this.getSourceModel(transaction);
 
     const createOptions = {
       through: values[this.throughName()],
+      transaction,
     };
 
     return sourceModel[createAccessor](values, createOptions);
   }
 
-  destroy(
-    options?: number | string | number[] | string[] | DestroyOptions,
-  ): Promise<Boolean> {
-    return Promise.resolve(false);
-  }
+  async destroy(options?: PK | DestroyOptions): Promise<Boolean> {
+    const transaction = await this.getTransaction(options);
+    const association = <BelongsToMany>this.association;
 
-  async setTargets(
-    call: 'add' | 'set',
-    primaryKey: primaryKey | primaryKey[] | primaryKeyWithThroughValues[],
-  ) {
-    if (!Array.isArray(primaryKey)) {
-      primaryKey = [primaryKey];
+    const instancesToIds = (instances) => {
+      return instances.map((instance) =>
+        instance.get(this.target.primaryKeyAttribute),
+      );
+    };
+
+    // Through Table
+    const throughTableWhere: Array<any> = [
+      {
+        [association.foreignKey]: this.sourceId,
+      },
+    ];
+
+    let ids;
+
+    if (options && options['filter']) {
+      const instances = await this.find({
+        filter: options['filter'],
+        transaction,
+      });
+
+      ids = instancesToIds(instances);
     }
 
-    const sourceModel = await this.getSourceModel();
-
-    // @ts-ignore
-    const setObj = primaryKey.reduce((carry, item) => {
-      if (Array.isArray(item)) {
-        carry[item[0]] = item[1];
-      } else {
-        carry[item] = true;
+    if (options) {
+      if (typeof options === 'object' && options['filterByPk']) {
+        options = options['filterByPk'];
       }
-      return carry;
-    }, {});
 
-    await sourceModel[this.accessors()[call]](Object.keys(setObj));
+      const instances = (<any>this.association).toInstanceArray(options);
+      ids = instancesToIds(instances);
+    }
+
+    if (!options) {
+      const sourceModel = await this.getSourceModel(transaction);
+
+      const instances = await sourceModel[this.accessors().get]({
+        transaction,
+      });
+
+      ids = instancesToIds(instances);
+    }
+
+    throughTableWhere.push({
+      [association.otherKey]: {
+        [Op.in]: ids,
+      },
+    });
+
+    // delete through table data
+    await this.throughModel().destroy({
+      where: throughTableWhere,
+      transaction,
+    });
+
+    await this.target.destroy({
+      where: {
+        [this.target.primaryKeyAttribute]: {
+          [Op.in]: ids,
+        },
+      },
+      transaction,
+    });
+
+    await transaction.commit();
+    return true;
+  }
+
+  async setTargets(call: 'add' | 'set', primaryKey: setAssociationOptions) {
+    let handleKeys: primaryKey[] | primaryKeyWithThroughValues[];
+
+    const transaction = await this.getTransaction(primaryKey);
+
+    if (
+      primaryKey !== null &&
+      typeof primaryKey === 'object' &&
+      !Array.isArray(primaryKey)
+    ) {
+      primaryKey = <AssociatedOptions>primaryKey.pk || [];
+    }
+
+    // if it is type primaryKey
+    if (!Array.isArray(primaryKey)) {
+      handleKeys = [<primaryKey>primaryKey];
+    } // if it is type primaryKeyWithThroughValues
+    else if (handleKeys?.length == 1 && typeof primaryKey[0][1] === 'object') {
+      handleKeys = [<primaryKeyWithThroughValues>handleKeys];
+    } else {
+      handleKeys = primaryKey;
+    }
+
+    const sourceModel = await this.getSourceModel(transaction);
+
+    const setObj = handleKeys
+      ? (<any>handleKeys).reduce((carry, item) => {
+          if (Array.isArray(item)) {
+            carry[item[0]] = item[1];
+          } else {
+            carry[item] = true;
+          }
+          return carry;
+        }, {})
+      : {};
+
+    await sourceModel[this.accessors()[call]](Object.keys(setObj), {
+      transaction,
+    });
 
     for (const [id, throughValues] of Object.entries(setObj)) {
       if (typeof throughValues === 'object') {
-        const instance = await this.target.findByPk(id);
+        const instance = await this.target.findByPk(id, {
+          transaction,
+        });
         await updateThroughTableValue(
           instance,
           this.throughName(),
           throughValues,
           sourceModel,
+          transaction,
         );
       }
     }
+
+    await transaction.commit();
   }
 
-  async add(
-    primaryKey: primaryKey | primaryKey[] | primaryKeyWithThroughValues[],
-  ): Promise<void> {
+  async add(primaryKey: setAssociationOptions): Promise<void> {
     await this.setTargets('add', primaryKey);
   }
 
-  async set(
-    primaryKey: primaryKey | primaryKey[] | primaryKeyWithThroughValues[],
-  ): Promise<void> {
+  async set(primaryKey: setAssociationOptions): Promise<void> {
     await this.setTargets('set', primaryKey);
   }
 
@@ -132,7 +244,10 @@ export class BelongsToManyRepository
   }
 
   throughName() {
-    // @ts-ignore
-    return this.association.through.model.name;
+    return this.throughModel().name;
+  }
+
+  throughModel() {
+    return (<any>this.association).through.model;
   }
 }

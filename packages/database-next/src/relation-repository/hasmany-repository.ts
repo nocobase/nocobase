@@ -1,10 +1,12 @@
 import { BelongsToMany, HasMany, Model, Op, Sequelize } from 'sequelize';
 
 import {
+  DestroyOptions,
   MultipleRelationRepository,
   UpdateOptions,
 } from './multiple-relation-repository';
 import { Filter, FilterAble, PK, TransactionAble } from '../repository';
+import { types } from 'util';
 
 type FindOptions = any;
 type FindAndCountOptions = any;
@@ -23,10 +25,6 @@ type CreateOptions = {
 
 type primaryKey = string | number;
 
-interface DestroyOptions {
-  filter?: any;
-}
-
 interface IHasManyRepository<M extends Model> {
   find(options?: FindOptions): Promise<M>;
   findAndCount(options?: FindAndCountOptions): Promise<[M[], number]>;
@@ -36,18 +34,13 @@ interface IHasManyRepository<M extends Model> {
   // 更新
   update(options?: UpdateOptions): Promise<M>;
   // 删除
-  destroy(options?: number | string | number[] | string[]): Promise<Boolean>;
+  destroy(options?: PK | DestroyOptions): Promise<Boolean>;
   // 建立关联
   set(primaryKey: primaryKey | Array<primaryKey>): Promise<void>;
   // 附加关联
   add(primaryKey: primaryKey | Array<primaryKey>): Promise<void>;
   // 移除关联
   remove(primaryKey: primaryKey | Array<primaryKey>): Promise<void>;
-}
-
-interface DestroyOptions extends TransactionAble {
-  filter?: Filter;
-  filterByPk?: PK;
 }
 
 export class HasManyRepository
@@ -71,20 +64,15 @@ export class HasManyRepository
       const filterResult = this.parseFilter(options['filter']);
 
       if (filterResult.include && filterResult.include.length > 0) {
-        const instances = await this.find({
-          filter: options['filter'],
-          transaction,
-        });
-        return await this.destroy({
-          filterByPk: instances.map(
-            (instance) => instance[this.target.primaryKeyAttribute],
-          ),
-          transaction,
-        });
+        return await this.destroyByFilter(options['filter']);
       }
 
       where.push(filterResult.where);
     } else if (options) {
+      if (typeof options === 'object' && options['filterByPk']) {
+        options = options['filterByPk'];
+      }
+
       const targetInstances = (<any>this.association).toInstanceArray(options);
 
       where.push({

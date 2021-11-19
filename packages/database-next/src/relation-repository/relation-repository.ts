@@ -6,6 +6,7 @@ import {
   HasOne,
   Model,
   ModelCtor,
+  Transaction,
 } from 'sequelize';
 import { OptionsParser } from '../optionsParser';
 import { Collection } from '../collection';
@@ -83,9 +84,11 @@ export abstract class RelationRepository {
     return instance;
   }
 
-  async getSourceModel() {
+  async getSourceModel(transaction?: any) {
     if (!this.sourceModel) {
-      this.sourceModel = await this.source.model.findByPk(this.sourceId);
+      this.sourceModel = await this.source.model.findByPk(this.sourceId, {
+        transaction,
+      });
     }
 
     return this.sourceModel;
@@ -110,11 +113,23 @@ export abstract class RelationRepository {
     return parser.toSequelizeParams();
   }
 
-  protected async getTransaction(options: any) {
-    if (options && typeof options === 'object' && options.transaction) {
+  protected async getTransaction(
+    options: any,
+    autoGen = true,
+  ): Promise<Transaction | null> {
+    if (
+      options &&
+      typeof options === 'object' &&
+      !Array.isArray(options) &&
+      options.transaction
+    ) {
       return options.transaction;
     }
 
-    return await this.source.model.sequelize.transaction();
+    if (autoGen) {
+      return await this.source.model.sequelize.transaction();
+    }
+
+    return null;
   }
 }

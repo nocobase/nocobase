@@ -30,7 +30,7 @@ describe('belongs to many', () => {
       ],
     });
 
-    await db.sync();
+    await db.sync({ force: true });
   });
 
   afterEach(async () => {
@@ -341,7 +341,7 @@ describe('belongs to many', () => {
     expect(await PostTagRepository.findOne()).toBeNull();
   });
 
-  test('destroy', async () => {
+  test('destroy all', async () => {
     let t1 = await Tag.repository.create({
       values: {
         name: 't1',
@@ -361,5 +361,37 @@ describe('belongs to many', () => {
     const PostTagRepository = new BelongsToManyRepository(Post, 'tags', p1.id);
 
     await PostTagRepository.set([t1.id, t2.id]);
+
+    await PostTagRepository.destroy();
+
+    const [_, count] = await PostTagRepository.findAndCount();
+    expect(count).toEqual(0);
+  });
+
+  test('destroy with id', async () => {
+    let t1 = await Tag.repository.create({
+      values: {
+        name: 't1',
+      },
+    });
+
+    const t2 = await Tag.repository.create({
+      values: {
+        name: 't2',
+      },
+    });
+
+    const p1 = await Post.repository.create({
+      values: { title: 'p1' },
+    });
+
+    const PostTagRepository = new BelongsToManyRepository(Post, 'tags', p1.id);
+
+    await PostTagRepository.set([t1.id, t2.id]);
+
+    await PostTagRepository.destroy(t2.id);
+
+    const result = await PostTagRepository.findAndCount();
+    expect(result[1]).toEqual(1);
   });
 });
