@@ -1,10 +1,3 @@
----
-nav:
-  title: API
-  order: 3
-toc: menu
----
-
 # Application
 
 ## `app.db`

@@ -170,7 +170,7 @@ export default {
   'Edit tab': '编辑标签页',
   'Relationship blocks': '关系数据区块',
   'Select record': '选择数据',
-  'Display name': 'Display name',
+  'Display name': '显示名称',
   'Select icon': '选择图标',
   'Custom column name': '自定义列名称',
   'Edit description': '编辑描述',
