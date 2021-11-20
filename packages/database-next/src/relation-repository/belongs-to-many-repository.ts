@@ -1,4 +1,4 @@
-import { RelationRepository } from './relation-repository';
+import { RelationRepository, transaction } from './relation-repository';
 import {
   BelongsToMany,
   HasOne,
@@ -165,10 +165,13 @@ export class BelongsToManyRepository
     return true;
   }
 
-  async setTargets(call: 'add' | 'set', primaryKey: setAssociationOptions) {
+  protected async setTargets(
+    call: 'add' | 'set',
+    primaryKey: setAssociationOptions,
+  ) {
     let handleKeys: primaryKey[] | primaryKeyWithThroughValues[];
 
-    const transaction = await this.getTransaction(primaryKey);
+    const transaction = await this.getTransaction(primaryKey, false);
 
     if (
       primaryKey !== null &&
@@ -219,14 +222,28 @@ export class BelongsToManyRepository
         );
       }
     }
-
-    await transaction.commit();
   }
 
+  @transaction((args, transaction) => {
+    return [
+      {
+        pk: args[0],
+        transaction,
+      },
+    ];
+  })
   async add(primaryKey: setAssociationOptions): Promise<void> {
     await this.setTargets('add', primaryKey);
   }
 
+  @transaction((args, transaction) => {
+    return [
+      {
+        pk: args[0],
+        transaction,
+      },
+    ];
+  })
   async set(primaryKey: setAssociationOptions): Promise<void> {
     await this.setTargets('set', primaryKey);
   }

@@ -43,6 +43,46 @@ export type UpdateOptions = {
   updateAssociationValues?: string[];
 };
 
+export function transaction(transactionInjector) {
+  return (target, name, descriptor) => {
+    const oldValue = descriptor.value;
+
+    descriptor.value = async function () {
+      let transaction;
+      let newTransaction = false;
+
+      if (arguments.length > 0 && typeof arguments[0] === 'object') {
+        transaction = arguments[0]['transaction'];
+      }
+
+      if (!transaction) {
+        transaction = await this.model.sequelize.transaction();
+        newTransaction = true;
+      }
+
+      // 需要将 newTransaction 注入到被装饰函数参数内
+      if (newTransaction) {
+        try {
+          const results = await oldValue.apply(
+            this,
+            transactionInjector(arguments, transaction),
+          );
+          await transaction.commit();
+
+          return results;
+        } catch (err) {
+          await transaction.rollback();
+          throw err;
+        }
+      } else {
+        return oldValue.apply(this, arguments);
+      }
+    };
+
+    return descriptor;
+  };
+}
+
 export abstract class RelationRepository {
   source: Collection;
   association: Association;

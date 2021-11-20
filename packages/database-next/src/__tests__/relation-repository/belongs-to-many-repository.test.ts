@@ -8,7 +8,7 @@ describe('belongs to many', () => {
   let PostTag;
 
   beforeEach(async () => {
-    db = mockDatabase();
+    db = mockDatabase({});
     PostTag = db.collection({
       name: 'posts_tags',
       fields: [{ type: 'string', name: 'tagged_at' }],
@@ -393,5 +393,34 @@ describe('belongs to many', () => {
 
     const result = await PostTagRepository.findAndCount();
     expect(result[1]).toEqual(1);
+  });
+
+  test('transaction', async () => {
+    let t1 = await Tag.repository.create({
+      values: {
+        name: 't1',
+      },
+    });
+
+    const t2 = await Tag.repository.create({
+      values: {
+        name: 't2',
+      },
+    });
+
+    const p1 = await Post.repository.create({
+      values: { title: 'p1' },
+    });
+
+    const transaction = await Tag.model.sequelize.transaction();
+
+    const PostTagRepository = new BelongsToManyRepository(Post, 'tags', p1.id);
+
+    await PostTagRepository.set({
+      pk: [t1.id, t2.id],
+      transaction,
+    });
+
+    await transaction.commit();
   });
 });
