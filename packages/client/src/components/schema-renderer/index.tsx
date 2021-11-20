@@ -707,6 +707,59 @@ export const SchemaRenderer = (props: SchemaRendererProps) => {
     }
     return new Schema(s);
   }, []);
+
+  const resource = useResourceRequest('china_regions');
+
+  const loadChinaRegionDataSource = function () {
+    return async (field: ArrayField) => {
+      if (field.readPretty) {
+        return [];
+      }
+      const maxLevel = field.componentProps.maxLevel || 3;
+      const { data } = await resource.list({
+        perPage: -1,
+        filter: {
+          level: 1,
+        },
+      });
+      console.log('loadChinaRegions', data, field.value);
+      return (
+        data?.map((item) => {
+          if (maxLevel !== 1) {
+            item.isLeaf = false;
+          }
+          return item;
+        }) || []
+      );
+    };
+  };
+
+  const loadChinaRegionData = function () {
+    return (selectedOptions: CascaderOptionType[], field: ArrayField) => {
+      const maxLevel = field.componentProps.maxLevel || 3;
+      const targetOption = selectedOptions[selectedOptions.length - 1];
+      targetOption.loading = true;
+      resource
+        .list({
+          perPage: -1,
+          filter: {
+            parent_code: targetOption['code'],
+          },
+        })
+        .then((data) => {
+          targetOption.loading = false;
+          targetOption.children =
+            data?.data?.map((item) => {
+              if (maxLevel > item.level) {
+                item.isLeaf = false;
+              }
+              return item;
+            }) || [];
+          field.dataSource = [...field.dataSource];
+        });
+    };
+  };
+
   // useEffect(() => {
   //   refresh(uid());
   // }, [designable]);
@@ -715,7 +768,14 @@ export const SchemaRenderer = (props: SchemaRendererProps) => {
     <FormProvider form={form}>
       <SchemaField
         components={props.components}
-        scope={props.scope}
+        scope={{
+          ...props.scope,
+          ChinaRegion: {
+            useFieldValue: useChinaRegionFieldValue,
+            loadData: loadChinaRegionData,
+            loadDataSource: loadChinaRegionDataSource,
+          },
+        }}
         schema={schema}
       />
       {props.debug && <CodePreview schema={schema} />}
