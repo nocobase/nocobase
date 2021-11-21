@@ -28,6 +28,10 @@ yarn nocobase pm:remove <plugin-name>
 
 ## 已有的插件列表
 
+<Alert title="注意">
+目前的插件都是服务端插件，客户端的扩展暂时都以 [组件](components) 的形式存在。怎么把前后端的东西动态的结合起来形成完整的插件，还待进一步思考。
+</Alert>
+
 核心插件
 
 - [@nocobase/plugin-collections](plugins/collections)  
