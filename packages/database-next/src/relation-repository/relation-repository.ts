@@ -43,16 +43,12 @@ export type UpdateOptions = {
   updateAssociationValues?: string[];
 };
 
+/**
+ * inject transaction to decorated function
+ *
+ * @param transactionInjector
+ */
 export function transaction(transactionInjector?) {
-  if (!transactionInjector) {
-    transactionInjector = (args, transaction) => {
-      return {
-        ...args[0],
-        transaction,
-      };
-    };
-  }
-
   return (target, name, descriptor) => {
     const oldValue = descriptor.value;
 
@@ -72,9 +68,23 @@ export function transaction(transactionInjector?) {
       // 需要将 newTransaction 注入到被装饰函数参数内
       if (newTransaction) {
         try {
-          const results = await oldValue.apply(this, [
-            transactionInjector(arguments, transaction),
-          ]);
+          let callArguments;
+          if (
+            typeof arguments[0] === 'object' &&
+            !Array.isArray(arguments[0]) &&
+            arguments[0] !== null
+          ) {
+            callArguments = {
+              ...arguments[0],
+              transaction,
+            };
+          } else if (transactionInjector) {
+            callArguments = transactionInjector(arguments, transaction);
+          } else {
+            callArguments = arguments;
+          }
+
+          const results = await oldValue.apply(this, [callArguments]);
 
           await transaction.commit();
 

@@ -50,6 +50,7 @@ export type setAssociationOptions =
   | primaryKeyWithThroughValues
   | primaryKeyWithThroughValues[]
   | AssociatedOptions;
+
 export abstract class MultipleRelationRepository extends RelationRepository {
   async find(options?: FindOptions): Promise<any> {
     const transaction = await this.getTransaction(options);
@@ -104,9 +105,9 @@ export abstract class MultipleRelationRepository extends RelationRepository {
   }
 
   async count(options: CountOptions) {
-    const transaction = options?.transaction;
+    const transaction = await this.getTransaction(options);
 
-    const sourceModel = await this.getSourceModel();
+    const sourceModel = await this.getSourceModel(transaction);
     const queryOptions = this.buildQueryOptions(options);
 
     const count = await sourceModel[this.accessors().get]({
@@ -136,7 +137,7 @@ export abstract class MultipleRelationRepository extends RelationRepository {
   }
 
   async findOne(options?: FindOneOptions): Promise<any> {
-    const transaction = this.getTransaction(options, false);
+    const transaction = await this.getTransaction(options, false);
     const rows = await this.find({ ...options, limit: 1, transaction });
     return rows.length == 1 ? rows[0] : null;
   }

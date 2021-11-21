@@ -7,6 +7,8 @@ import {
 } from './multiple-relation-repository';
 import { Filter, FilterAble, PK, TransactionAble } from '../repository';
 import { types } from 'util';
+import { transaction } from './relation-repository';
+import { type } from 'os';
 
 type FindOptions = any;
 type FindAndCountOptions = any;
@@ -47,10 +49,16 @@ export class HasManyRepository
   extends MultipleRelationRepository
   implements IHasManyRepository<any>
 {
+  @transaction((args, transaction) => {
+    return {
+      filterByPk: args[0],
+      transaction,
+    };
+  })
   async destroy(options?: PK | DestroyOptions): Promise<Boolean> {
     const transaction = await this.getTransaction(options);
 
-    const sourceModel = await this.getSourceModel();
+    const sourceModel = await this.getSourceModel(transaction);
 
     const where = [
       {
@@ -64,11 +72,11 @@ export class HasManyRepository
       const filterResult = this.parseFilter(options['filter']);
 
       if (filterResult.include && filterResult.include.length > 0) {
-        return await this.destroyByFilter(options['filter']);
+        return await this.destroyByFilter(options['filter'], transaction);
       }
 
       where.push(filterResult.where);
-    } else if (options) {
+    } else if (options && options['filterByPk']) {
       if (typeof options === 'object' && options['filterByPk']) {
         options = options['filterByPk'];
       }
@@ -90,25 +98,50 @@ export class HasManyRepository
       transaction,
     });
 
-    return Promise.resolve(true);
+    return true;
   }
 
+  handleKeyOfAdd(options) {
+    let handleKeys;
+
+    if (typeof options !== 'object' && !Array.isArray(options)) {
+      handleKeys = [options];
+    } else {
+      handleKeys = options['pk'];
+    }
+    return handleKeys;
+  }
+
+  @transaction((args, transaction) => {
+    return {
+      pk: args[0],
+      transaction,
+    };
+  })
   async set(primaryKey: primaryKey | Array<primaryKey>): Promise<void> {
-    if (!Array.isArray(primaryKey)) {
-      primaryKey = [primaryKey];
-    }
+    const transaction = await this.getTransaction(primaryKey);
 
-    const sourceModel = await this.getSourceModel();
-    await sourceModel[this.accessors().set](primaryKey);
+    const sourceModel = await this.getSourceModel(transaction);
+
+    await sourceModel[this.accessors().set](this.handleKeyOfAdd(primaryKey), {
+      transaction,
+    });
   }
 
+  @transaction((args, transaction) => {
+    return {
+      pk: args[0],
+      transaction,
+    };
+  })
   async add(primaryKey: primaryKey | Array<primaryKey>): Promise<void> {
-    if (!Array.isArray(primaryKey)) {
-      primaryKey = [primaryKey];
-    }
+    const transaction = await this.getTransaction(primaryKey);
 
-    const sourceModel = await this.getSourceModel();
-    await sourceModel[this.accessors().add](primaryKey);
+    const sourceModel = await this.getSourceModel(transaction);
+
+    await sourceModel[this.accessors().add](this.handleKeyOfAdd(primaryKey), {
+      transaction,
+    });
   }
 
   accessors() {

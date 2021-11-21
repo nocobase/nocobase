@@ -141,7 +141,8 @@ describe('has many repository', () => {
     });
 
     const UserPostRepository = new HasManyRepository(User, 'posts', u1.id);
-    await UserPostRepository.add([p1, p2, p3, p4, p5, p6].map((p) => p.id));
+    const ids = [p1, p2, p3, p4, p5, p6].map((p) => p.id);
+    await UserPostRepository.add(ids);
 
     const PostTagRepository = new BelongsToManyRepository(Post, 'tags', p1.id);
     await PostTagRepository.set([t1.id, t2.id, t3.id]);
@@ -201,6 +202,27 @@ describe('has many repository', () => {
   });
 
   test('destroy by filter', async () => {
+    const u1 = await User.repository.create({
+      values: { name: 'u1' },
+    });
+
+    const UserPostRepository = new HasManyRepository(User, 'posts', u1.id);
+    const p1 = await UserPostRepository.create({
+      values: {
+        title: 't1',
+      },
+    });
+
+    await UserPostRepository.destroy({
+      filter: {
+        title: 't1',
+      },
+    });
+
+    expect(await UserPostRepository.findOne()).toBeNull();
+  });
+
+  test('transaction', async () => {
     const u1 = await User.repository.create({
       values: { name: 'u1' },
     });
