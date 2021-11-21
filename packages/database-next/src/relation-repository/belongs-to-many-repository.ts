@@ -12,9 +12,15 @@ import {
   updateModelByValues,
   updateThroughTableValue,
 } from '../update-associations';
-import { MultipleRelationRepository } from './multiple-relation-repository';
+import {
+  AssociatedOptions,
+  primaryKey,
+  DestroyOptions,
+  MultipleRelationRepository,
+  primaryKeyWithThroughValues,
+  setAssociationOptions,
+} from './multiple-relation-repository';
 import { PK } from '../repository';
-import { type } from 'os';
 
 type FindOptions = any;
 type FindAndCountOptions = any;
@@ -32,25 +38,6 @@ type UpdateOptions = {
   // 如果需要更新关联数据，可以通过 updateAssociationValues 指定
   updateAssociationValues?: string[];
 };
-
-type DestroyOptions = any;
-type primaryKey = string | number;
-type primaryKeyWithThroughValues = [primaryKey, any];
-
-interface AssociatedOptions extends Transactionable {
-  pk?:
-    | primaryKey
-    | primaryKey[]
-    | primaryKeyWithThroughValues
-    | primaryKeyWithThroughValues[];
-}
-
-type setAssociationOptions =
-  | primaryKey
-  | primaryKey[]
-  | primaryKeyWithThroughValues
-  | primaryKeyWithThroughValues[]
-  | AssociatedOptions;
 
 interface IBelongsToManyRepository<M extends Model> {
   find(options?: FindOptions): Promise<M[]>;
@@ -77,6 +64,7 @@ export class BelongsToManyRepository
   extends MultipleRelationRepository
   implements IBelongsToManyRepository<any>
 {
+  @transaction()
   async create(options?: CreateBelongsToManyOptions): Promise<any> {
     const transaction = await this.getTransaction(options);
 
@@ -93,6 +81,12 @@ export class BelongsToManyRepository
     return sourceModel[createAccessor](values, createOptions);
   }
 
+  @transaction((args, transaction) => {
+    return {
+      filterByPk: args[0],
+      transaction,
+    };
+  })
   async destroy(options?: PK | DestroyOptions): Promise<Boolean> {
     const transaction = await this.getTransaction(options);
     const association = <BelongsToMany>this.association;
@@ -119,18 +113,12 @@ export class BelongsToManyRepository
       });
 
       ids = instancesToIds(instances);
-    }
-
-    if (options) {
-      if (typeof options === 'object' && options['filterByPk']) {
-        options = options['filterByPk'];
-      }
+    } else if (options && options['filterByPk']) {
+      options = options['filterByPk'];
 
       const instances = (<any>this.association).toInstanceArray(options);
       ids = instancesToIds(instances);
-    }
-
-    if (!options) {
+    } else if (options && !options['filterByPk']) {
       const sourceModel = await this.getSourceModel(transaction);
 
       const instances = await sourceModel[this.accessors().get]({
@@ -161,7 +149,6 @@ export class BelongsToManyRepository
       transaction,
     });
 
-    await transaction.commit();
     return true;
   }
 
@@ -193,16 +180,14 @@ export class BelongsToManyRepository
 
     const sourceModel = await this.getSourceModel(transaction);
 
-    const setObj = handleKeys
-      ? (<any>handleKeys).reduce((carry, item) => {
-          if (Array.isArray(item)) {
-            carry[item[0]] = item[1];
-          } else {
-            carry[item] = true;
-          }
-          return carry;
-        }, {})
-      : {};
+    const setObj = (<any>handleKeys).reduce((carry, item) => {
+      if (Array.isArray(item)) {
+        carry[item[0]] = item[1];
+      } else {
+        carry[item] = true;
+      }
+      return carry;
+    }, {});
 
     await sourceModel[this.accessors()[call]](Object.keys(setObj), {
       transaction,
@@ -225,38 +210,53 @@ export class BelongsToManyRepository
   }
 
   @transaction((args, transaction) => {
-    return [
-      {
-        pk: args[0],
-        transaction,
-      },
-    ];
+    return {
+      pk: args[0],
+      transaction,
+    };
   })
   async add(primaryKey: setAssociationOptions): Promise<void> {
     await this.setTargets('add', primaryKey);
   }
 
   @transaction((args, transaction) => {
-    return [
-      {
-        pk: args[0],
-        transaction,
-      },
-    ];
+    return {
+      pk: args[0],
+      transaction,
+    };
   })
   async set(primaryKey: setAssociationOptions): Promise<void> {
     await this.setTargets('set', primaryKey);
   }
 
-  async toggle(primaryKey: primaryKey): Promise<void> {
-    const sourceModel = await this.getSourceModel();
-    const has = await sourceModel[this.accessors().hasSingle](primaryKey);
+  @transaction((args, transaction) => {
+    return {
+      pk: args[0],
+      transaction,
+    };
+  })
+  async toggle(primaryKey: setAssociationOptions): Promise<void> {
+    const transaction = await this.getTransaction(primaryKey);
+    const sourceModel = await this.getSourceModel(transaction);
+    const has = await sourceModel[this.accessors().hasSingle](
+      primaryKey['pk'],
+      {
+        transaction,
+      },
+    );
 
     if (has) {
-      await this.remove(primaryKey);
+      await this.remove({
+        ...(<any>primaryKey),
+        transaction,
+      });
     } else {
-      await this.add(primaryKey);
+      await this.add({
+        ...(<any>primaryKey),
+        transaction,
+      });
     }
+
     return;
   }
 

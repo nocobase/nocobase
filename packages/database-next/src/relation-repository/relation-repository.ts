@@ -43,7 +43,16 @@ export type UpdateOptions = {
   updateAssociationValues?: string[];
 };
 
-export function transaction(transactionInjector) {
+export function transaction(transactionInjector?) {
+  if (!transactionInjector) {
+    transactionInjector = (args, transaction) => {
+      return {
+        ...args[0],
+        transaction,
+      };
+    };
+  }
+
   return (target, name, descriptor) => {
     const oldValue = descriptor.value;
 
@@ -56,17 +65,17 @@ export function transaction(transactionInjector) {
       }
 
       if (!transaction) {
-        transaction = await this.model.sequelize.transaction();
+        transaction = await this.source.model.sequelize.transaction();
         newTransaction = true;
       }
 
       // 需要将 newTransaction 注入到被装饰函数参数内
       if (newTransaction) {
         try {
-          const results = await oldValue.apply(
-            this,
+          const results = await oldValue.apply(this, [
             transactionInjector(arguments, transaction),
-          );
+          ]);
+
           await transaction.commit();
 
           return results;
@@ -155,7 +164,7 @@ export abstract class RelationRepository {
 
   protected async getTransaction(
     options: any,
-    autoGen = true,
+    autoGen = false,
   ): Promise<Transaction | null> {
     if (
       options &&

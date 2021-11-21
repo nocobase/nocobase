@@ -8,7 +8,7 @@ describe('belongs to many', () => {
   let PostTag;
 
   beforeEach(async () => {
-    db = mockDatabase({});
+    db = mockDatabase();
     PostTag = db.collection({
       name: 'posts_tags',
       fields: [{ type: 'string', name: 'tagged_at' }],
@@ -338,6 +338,24 @@ describe('belongs to many', () => {
     expect(await PostTagRepository.findOne()).not.toBeNull();
 
     await PostTagRepository.toggle(t1.id);
+    expect(await PostTagRepository.findOne()).toBeNull();
+  });
+
+  test('remove', async () => {
+    let t1 = await Tag.repository.create({
+      values: { name: 't1' },
+    });
+
+    const p1 = await Post.repository.create({
+      values: { title: 'p1' },
+    });
+
+    const PostTagRepository = new BelongsToManyRepository(Post, 'tags', p1.id);
+
+    await PostTagRepository.add(t1.id);
+    expect(await PostTagRepository.findOne()).not.toBeNull();
+
+    await PostTagRepository.remove(t1.id);
     expect(await PostTagRepository.findOne()).toBeNull();
   });
 

@@ -1,10 +1,11 @@
-import { RelationRepository } from './relation-repository';
+import { RelationRepository, transaction } from './relation-repository';
 import { omit } from 'lodash';
 import {
   MultiAssociationAccessors,
   Op,
   Sequelize,
   Transaction,
+  Transactionable,
 } from 'sequelize';
 import { UpdateGuard } from '../update-guard';
 import { updateModelByValues } from '../update-associations';
@@ -14,7 +15,6 @@ type FindOptions = any;
 type FindAndCountOptions = any;
 type FindOneOptions = any;
 type CountOptions = any;
-type primaryKey = string | number;
 
 export interface UpdateOptions extends TransactionAble {
   values: { [key: string]: any };
@@ -34,6 +34,22 @@ export interface DestroyOptions extends TransactionAble {
   filterByPk?: PK;
 }
 
+export type primaryKey = string | number;
+export type primaryKeyWithThroughValues = [primaryKey, any];
+export interface AssociatedOptions extends Transactionable {
+  pk?:
+    | primaryKey
+    | primaryKey[]
+    | primaryKeyWithThroughValues
+    | primaryKeyWithThroughValues[];
+}
+
+export type setAssociationOptions =
+  | primaryKey
+  | primaryKey[]
+  | primaryKeyWithThroughValues
+  | primaryKeyWithThroughValues[]
+  | AssociatedOptions;
 export abstract class MultipleRelationRepository extends RelationRepository {
   async find(options?: FindOptions): Promise<any> {
     const transaction = await this.getTransaction(options);
@@ -120,20 +136,33 @@ export abstract class MultipleRelationRepository extends RelationRepository {
   }
 
   async findOne(options?: FindOneOptions): Promise<any> {
-    const rows = await this.find({ ...options, limit: 1 });
+    const transaction = this.getTransaction(options, false);
+    const rows = await this.find({ ...options, limit: 1, transaction });
     return rows.length == 1 ? rows[0] : null;
   }
 
-  async remove(primaryKey: primaryKey | primaryKey[]): Promise<void> {
-    if (!Array.isArray(primaryKey)) {
-      primaryKey = [primaryKey];
+  @transaction((args, transaction) => {
+    return {
+      pk: args[0],
+      transaction,
+    };
+  })
+  async remove(primaryKey: setAssociationOptions): Promise<void> {
+    const transaction = await this.getTransaction(primaryKey);
+    let handleKeys = primaryKey['pk'];
+
+    if (!Array.isArray(handleKeys)) {
+      handleKeys = [handleKeys];
     }
 
-    const sourceModel = await this.getSourceModel();
-    await sourceModel[this.accessors().removeMultiple](primaryKey);
+    const sourceModel = await this.getSourceModel(transaction);
+    await sourceModel[this.accessors().removeMultiple](handleKeys, {
+      transaction,
+    });
     return;
   }
 
+  @transaction()
   async update(options?: UpdateOptions): Promise<any> {
     const transaction = await this.getTransaction(options);
 
