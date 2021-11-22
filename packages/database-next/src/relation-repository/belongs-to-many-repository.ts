@@ -1,43 +1,25 @@
-import { RelationRepository, transaction } from './relation-repository';
 import {
-  BelongsToMany,
-  HasOne,
-  Model,
-  Op,
-  Sequelize,
-  Transactionable,
-} from 'sequelize';
-import FilterParser from '../filterParser';
+  CreateOptions,
+  transaction,
+  UpdateOptions,
+} from './relation-repository';
+import { BelongsToMany, Model, Op, Transaction } from 'sequelize';
+import { updateThroughTableValue } from '../update-associations';
 import {
-  updateModelByValues,
-  updateThroughTableValue,
-} from '../update-associations';
+  DestroyOptions,
+  FindAndCountOptions,
+  FindOneOptions,
+  MultipleRelationRepository,
+} from './multiple-relation-repository';
+import { FindOptions } from '../repository';
 import {
   AssociatedOptions,
-  primaryKey,
-  DestroyOptions,
-  MultipleRelationRepository,
-  primaryKeyWithThroughValues,
-  setAssociationOptions,
-} from './multiple-relation-repository';
-import { PK } from '../repository';
+  PrimaryKey,
+  PrimaryKeyWithThroughValues,
+} from './types';
+import lodash from 'lodash';
 
-type FindOptions = any;
-type FindAndCountOptions = any;
-type FindOneOptions = any;
-type CreateBelongsToManyOptions = any;
-type UpdateOptions = {
-  values: { [key: string]: any };
-  filter?: any;
-  filterByPk?: number | string;
-  // 字段白名单
-  whitelist?: string[];
-  // 字段黑名单
-  blacklist?: string[];
-  // 关系数据默认会新建并建立关联处理，如果是已存在的数据只关联，但不更新关系数据
-  // 如果需要更新关联数据，可以通过 updateAssociationValues 指定
-  updateAssociationValues?: string[];
-};
+type CreateBelongsToManyOptions = CreateOptions;
 
 interface IBelongsToManyRepository<M extends Model> {
   find(options?: FindOptions): Promise<M[]>;
@@ -52,12 +34,14 @@ interface IBelongsToManyRepository<M extends Model> {
     options?: number | string | number[] | string[] | DestroyOptions,
   ): Promise<Boolean>;
   // 建立关联
-  set(primaryKey: primaryKey | primaryKey[]): Promise<void>;
+  set(options: PrimaryKey | PrimaryKey[] | AssociatedOptions): Promise<void>;
   // 附加关联，存在中间表数据
-  add(primaryKey: primaryKey | primaryKey[]): Promise<void>;
+  add(options: PrimaryKey | PrimaryKey[] | AssociatedOptions): Promise<void>;
   // 移除关联
-  remove(primaryKey: primaryKey | primaryKey[]): Promise<void>;
-  toggle(primaryKey: primaryKey): Promise<void>;
+  remove(options: PrimaryKey | PrimaryKey[] | AssociatedOptions): Promise<void>;
+  toggle(
+    options: PrimaryKey | { pk?: PrimaryKey; transaction?: Transaction },
+  ): Promise<void>;
 }
 
 export class BelongsToManyRepository
@@ -87,7 +71,9 @@ export class BelongsToManyRepository
       transaction,
     };
   })
-  async destroy(options?: PK | DestroyOptions): Promise<Boolean> {
+  async destroy(
+    options?: number | string | number[] | string[] | DestroyOptions,
+  ): Promise<Boolean> {
     const transaction = await this.getTransaction(options);
     const association = <BelongsToMany>this.association;
 
@@ -154,28 +140,32 @@ export class BelongsToManyRepository
 
   protected async setTargets(
     call: 'add' | 'set',
-    primaryKey: setAssociationOptions,
+    options:
+      | PrimaryKey
+      | PrimaryKey[]
+      | PrimaryKeyWithThroughValues
+      | PrimaryKeyWithThroughValues[]
+      | AssociatedOptions,
   ) {
-    let handleKeys: primaryKey[] | primaryKeyWithThroughValues[];
+    let handleKeys: PrimaryKey[] | PrimaryKeyWithThroughValues[];
 
-    const transaction = await this.getTransaction(primaryKey, false);
+    const transaction = await this.getTransaction(options, false);
 
-    if (
-      primaryKey !== null &&
-      typeof primaryKey === 'object' &&
-      !Array.isArray(primaryKey)
-    ) {
-      primaryKey = <AssociatedOptions>primaryKey.pk || [];
+    if (lodash.isPlainObject(options)) {
+      options = (<AssociatedOptions>options).pk || [];
     }
 
-    // if it is type primaryKey
-    if (!Array.isArray(primaryKey)) {
-      handleKeys = [<primaryKey>primaryKey];
+    if (lodash.isString(options) || lodash.isNumber(options)) {
+      handleKeys = [<PrimaryKey>options];
     } // if it is type primaryKeyWithThroughValues
-    else if (handleKeys?.length == 1 && typeof primaryKey[0][1] === 'object') {
-      handleKeys = [<primaryKeyWithThroughValues>handleKeys];
+    else if (
+      lodash.isArray(options) &&
+      options.length == 2 &&
+      lodash.isPlainObject(options[0][1])
+    ) {
+      handleKeys = [<PrimaryKeyWithThroughValues>options];
     } else {
-      handleKeys = primaryKey;
+      handleKeys = <PrimaryKey[] | PrimaryKeyWithThroughValues[]>options;
     }
 
     const sourceModel = await this.getSourceModel(transaction);
@@ -215,8 +205,15 @@ export class BelongsToManyRepository
       transaction,
     };
   })
-  async add(primaryKey: setAssociationOptions): Promise<void> {
-    await this.setTargets('add', primaryKey);
+  async add(
+    options:
+      | PrimaryKey
+      | PrimaryKey[]
+      | PrimaryKeyWithThroughValues
+      | PrimaryKeyWithThroughValues[]
+      | AssociatedOptions,
+  ): Promise<void> {
+    await this.setTargets('add', options);
   }
 
   @transaction((args, transaction) => {
@@ -225,8 +222,15 @@ export class BelongsToManyRepository
       transaction,
     };
   })
-  async set(primaryKey: setAssociationOptions): Promise<void> {
-    await this.setTargets('set', primaryKey);
+  async set(
+    options:
+      | PrimaryKey
+      | PrimaryKey[]
+      | PrimaryKeyWithThroughValues
+      | PrimaryKeyWithThroughValues[]
+      | AssociatedOptions,
+  ): Promise<void> {
+    await this.setTargets('set', options);
   }
 
   @transaction((args, transaction) => {
@@ -235,24 +239,23 @@ export class BelongsToManyRepository
       transaction,
     };
   })
-  async toggle(primaryKey: setAssociationOptions): Promise<void> {
-    const transaction = await this.getTransaction(primaryKey);
+  async toggle(
+    options: PrimaryKey | { pk?: PrimaryKey; transaction?: Transaction },
+  ): Promise<void> {
+    const transaction = await this.getTransaction(options);
     const sourceModel = await this.getSourceModel(transaction);
-    const has = await sourceModel[this.accessors().hasSingle](
-      primaryKey['pk'],
-      {
-        transaction,
-      },
-    );
+    const has = await sourceModel[this.accessors().hasSingle](options['pk'], {
+      transaction,
+    });
 
     if (has) {
       await this.remove({
-        ...(<any>primaryKey),
+        ...(<any>options),
         transaction,
       });
     } else {
       await this.add({
-        ...(<any>primaryKey),
+        ...(<any>options),
         transaction,
       });
     }

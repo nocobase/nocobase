@@ -10,13 +10,23 @@ import {
 } from 'sequelize';
 import { OptionsParser } from '../optionsParser';
 import { Collection } from '../collection';
-import { Filter, FindOptions, TransactionAble } from '../repository';
+import {
+  AssociationKeysToBeUpdate,
+  BlackList,
+  Filter,
+  FindOptions,
+  TransactionAble,
+  Values,
+  WhiteList,
+} from '../repository';
 import FilterParser from '../filterParser';
 import { UpdateGuard } from '../update-guard';
 import {
   updateAssociations,
   updateModelByValues,
 } from '../update-associations';
+import lodash from 'lodash';
+import { PrimaryKey } from './types';
 
 export type CreateOptions = {
   // 数据
@@ -30,18 +40,14 @@ export type CreateOptions = {
   updateAssociationValues?: string[];
 };
 
-export type UpdateOptions = {
-  values: { [key: string]: any };
-  filter?: any;
-  filterByPk?: number | string;
-  // 字段白名单
-  whitelist?: string[];
-  // 字段黑名单
-  blacklist?: string[];
-  // 关系数据默认会新建并建立关联处理，如果是已存在的数据只关联，但不更新关系数据
-  // 如果需要更新关联数据，可以通过 updateAssociationValues 指定
-  updateAssociationValues?: string[];
-};
+export interface UpdateOptions extends TransactionAble {
+  values: Values;
+  filter?: Filter;
+  filterByPk?: PrimaryKey;
+  whitelist?: WhiteList;
+  blacklist?: BlackList;
+  updateAssociationValues?: AssociationKeysToBeUpdate;
+}
 
 /**
  * inject transaction to decorated function
@@ -69,11 +75,7 @@ export function transaction(transactionInjector?) {
       if (newTransaction) {
         try {
           let callArguments;
-          if (
-            typeof arguments[0] === 'object' &&
-            !Array.isArray(arguments[0]) &&
-            arguments[0] !== null
-          ) {
+          if (lodash.isPlainObject(arguments[0])) {
             callArguments = {
               ...arguments[0],
               transaction,
@@ -81,7 +83,9 @@ export function transaction(transactionInjector?) {
           } else if (transactionInjector) {
             callArguments = transactionInjector(arguments, transaction);
           } else {
-            callArguments = arguments;
+            throw new Error(
+              `please provide transactionInjector for ${name} call`,
+            );
           }
 
           const results = await oldValue.apply(this, [callArguments]);

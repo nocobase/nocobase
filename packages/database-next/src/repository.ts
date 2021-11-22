@@ -26,6 +26,7 @@ import { BelongsToManyRepository } from './relation-repository/belongs-to-many-r
 import { HasManyRepository } from './relation-repository/hasmany-repository';
 import { UpdateGuard } from './update-guard';
 import lodash from 'lodash';
+import { PrimaryKey } from './relation-repository/types';
 
 const debug = require('debug')('noco-database');
 
@@ -41,29 +42,47 @@ export interface FilterAble {
   filter: Filter;
 }
 
-export type PK = number | string | number[] | string[];
-
 export type Filter = any;
 export type Appends = string[];
 export type Expect = string[];
 export type Fields = string[];
 export type Sort = string[];
 
-interface CountOptions
+export type WhiteList = string[];
+export type BlackList = string[];
+export type AssociationKeysToBeUpdate = string[];
+
+export type Values = {
+  [key: string]:
+    | string
+    | number
+    | Values
+    | Array<string>
+    | Array<number>
+    | Array<Values>;
+};
+
+export interface CountOptions
   extends Omit<SequelizeCreateOptions, 'distinct' | 'where' | 'include'> {
+  fields?: Fields;
   filter?: Filter;
 }
 
-interface CommonFindOptions {
+export interface FilterByPK {
+  filterByPk?: PrimaryKey;
+}
+
+export interface FindOptions
+  extends SequelizeFindOptions,
+    CommonFindOptions,
+    FilterByPK {}
+
+export interface CommonFindOptions {
   filter?: Filter;
   fields?: Fields;
   appends?: Appends;
   expect?: Expect;
   sort?: Sort;
-}
-
-export interface FindOptions extends SequelizeFindOptions, CommonFindOptions {
-  filterByPk?: string | number;
 }
 
 interface FindOneOptions extends FindOptions, CommonFindOptions {}

@@ -3,10 +3,7 @@ import lodash, { keys } from 'lodash';
 
 import { Collection } from './collection';
 import { BelongsTo, HasOne, Model, ModelCtor } from 'sequelize';
-
-type WhiteList = string[];
-type BlackList = string[];
-type AssociationKeysToBeUpdate = string[];
+import { AssociationKeysToBeUpdate, BlackList, WhiteList } from './repository';
 
 type UpdateValueItem = string | number | UpdateValues;
 
@@ -16,9 +13,9 @@ type UpdateValues = {
 
 export class UpdateGuard {
   model: ModelCtor<any>;
-  whiteList: WhiteList;
-  blackList: BlackList;
-  associationKeysToBeUpdate: AssociationKeysToBeUpdate;
+  private associationKeysToBeUpdate: AssociationKeysToBeUpdate;
+  private blackList: BlackList;
+  private whiteList: WhiteList;
 
   setModel(model: ModelCtor<any>) {
     this.model = model;

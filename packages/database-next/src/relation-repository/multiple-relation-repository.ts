@@ -1,4 +1,8 @@
-import { RelationRepository, transaction } from './relation-repository';
+import {
+  RelationRepository,
+  transaction,
+  UpdateOptions,
+} from './relation-repository';
 import { omit } from 'lodash';
 import {
   MultiAssociationAccessors,
@@ -9,47 +13,32 @@ import {
 } from 'sequelize';
 import { UpdateGuard } from '../update-guard';
 import { updateModelByValues } from '../update-associations';
-import { Filter, PK, TransactionAble } from '../repository';
+import {
+  AssociationKeysToBeUpdate,
+  BlackList,
+  CommonFindOptions,
+  CountOptions,
+  Filter,
+  FilterByPK,
+  FindOptions,
+  TransactionAble,
+  Values,
+  WhiteList,
+} from '../repository';
+import { PK, PrimaryKey } from './types';
 
-type FindOptions = any;
-type FindAndCountOptions = any;
-type FindOneOptions = any;
-type CountOptions = any;
+export interface FindAndCountOptions extends CommonFindOptions {}
 
-export interface UpdateOptions extends TransactionAble {
-  values: { [key: string]: any };
-  filter?: any;
-  filterByPk?: number | string;
-  // 字段白名单
-  whitelist?: string[];
-  // 字段黑名单
-  blacklist?: string[];
-  // 关系数据默认会新建并建立关联处理，如果是已存在的数据只关联，但不更新关系数据
-  // 如果需要更新关联数据，可以通过 updateAssociationValues 指定
-  updateAssociationValues?: string[];
-}
+export interface FindOneOptions extends CommonFindOptions, FilterByPK {}
 
 export interface DestroyOptions extends TransactionAble {
   filter?: Filter;
-  filterByPk?: PK;
+  filterByPk?: PrimaryKey;
 }
 
-export type primaryKey = string | number;
-export type primaryKeyWithThroughValues = [primaryKey, any];
-export interface AssociatedOptions extends Transactionable {
-  pk?:
-    | primaryKey
-    | primaryKey[]
-    | primaryKeyWithThroughValues
-    | primaryKeyWithThroughValues[];
+export interface AssociatedOptions extends TransactionAble {
+  pk?: PK;
 }
-
-export type setAssociationOptions =
-  | primaryKey
-  | primaryKey[]
-  | primaryKeyWithThroughValues
-  | primaryKeyWithThroughValues[]
-  | AssociatedOptions;
 
 export abstract class MultipleRelationRepository extends RelationRepository {
   async find(options?: FindOptions): Promise<any> {
@@ -148,9 +137,11 @@ export abstract class MultipleRelationRepository extends RelationRepository {
       transaction,
     };
   })
-  async remove(primaryKey: setAssociationOptions): Promise<void> {
-    const transaction = await this.getTransaction(primaryKey);
-    let handleKeys = primaryKey['pk'];
+  async remove(
+    options: PrimaryKey | PrimaryKey[] | AssociatedOptions,
+  ): Promise<void> {
+    const transaction = await this.getTransaction(options);
+    let handleKeys = options['pk'];
 
     if (!Array.isArray(handleKeys)) {
       handleKeys = [handleKeys];
