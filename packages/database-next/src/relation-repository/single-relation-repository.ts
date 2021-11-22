@@ -2,11 +2,12 @@ import { RelationRepository } from './relation-repository';
 import { BelongsTo, Model, SingleAssociationAccessors } from 'sequelize';
 import { updateModelByValues } from '../update-associations';
 import lodash from 'lodash';
+import { Appends, Expect, Fields } from '../repository';
 
-type SingleRelationFindOption = {
-  fields?: string[];
-  expect?: string[];
-  appends?: string[];
+export type SingleRelationFindOption = {
+  fields?: Fields;
+  expect?: Expect;
+  appends?: Appends;
 };
 
 export abstract class SingleRelationRepository extends RelationRepository {

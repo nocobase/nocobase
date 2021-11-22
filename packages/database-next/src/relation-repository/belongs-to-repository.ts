@@ -1,12 +1,12 @@
-import { RelationRepository } from './relation-repository';
-import { BelongsTo, HasOne, Model } from 'sequelize';
-import { updateModelByValues } from '../update-associations';
-import lodash from 'lodash';
-import { SingleRelationRepository } from './single-relation-repository';
+import { Model } from 'sequelize';
 
-type BelongsToFindOptions = any;
-type CreateOptions = any;
-type UpdateOptions = any;
+import {
+  SingleRelationFindOption,
+  SingleRelationRepository,
+} from './single-relation-repository';
+import { CreateOptions, UpdateOptions } from './relation-repository';
+
+interface BelongsToFindOptions extends SingleRelationFindOption {}
 
 interface IBelongsToRepository<M extends Model> {
   // 不需要 findOne，find 就是 findOne
