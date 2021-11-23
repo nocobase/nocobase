@@ -1,6 +1,6 @@
 import lodash from 'lodash';
 
-export function transactionWrapperBuilder(transactionGet) {
+export function transactionWrapperBuilder(transactionGenerator) {
   return function transaction(transactionInjector?) {
     return (target, name, descriptor) => {
       const oldValue = descriptor.value;
@@ -14,7 +14,7 @@ export function transactionWrapperBuilder(transactionGet) {
         }
 
         if (!transaction) {
-          transaction = await transactionGet.apply(this);
+          transaction = await transactionGenerator.apply(this);
           newTransaction = true;
         }
 

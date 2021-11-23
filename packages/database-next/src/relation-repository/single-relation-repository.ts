@@ -1,53 +1,94 @@
-import { RelationRepository } from './relation-repository';
+import { RelationRepository, transaction } from './relation-repository';
 import { BelongsTo, Model, SingleAssociationAccessors } from 'sequelize';
 import { updateModelByValues } from '../update-associations';
 import lodash from 'lodash';
-import { Appends, Expect, Fields } from '../repository';
+import {
+  Appends,
+  Expect,
+  Fields,
+  PrimaryKey,
+  TransactionAble,
+  UpdateOptions,
+} from '../repository';
+import { AssociatedOptions } from './types';
 
-export type SingleRelationFindOption = {
+interface SingleRelationFindOption extends TransactionAble {
   fields?: Fields;
   expect?: Expect;
   appends?: Appends;
-};
+}
+
+interface SetOption extends TransactionAble {
+  pk?: PrimaryKey;
+}
 
 export abstract class SingleRelationRepository extends RelationRepository {
-  async remove(): Promise<void> {
-    const sourceModel = await this.getSourceModel();
-    return await sourceModel[this.accessors().set](null);
+  async remove(options?: TransactionAble): Promise<void> {
+    const transaction = await this.getTransaction(options);
+    const sourceModel = await this.getSourceModel(transaction);
+    return await sourceModel[this.accessors().set](null, {
+      transaction,
+    });
   }
 
-  async set(primaryKey: any): Promise<void> {
-    const sourceModel = await this.getSourceModel();
-    return await sourceModel[this.accessors().set](primaryKey);
+  async set(options: PrimaryKey | SetOption): Promise<void> {
+    const transaction = await this.getTransaction(options);
+    let handleKey = lodash.isPlainObject(options)
+      ? (<SetOption>options).pk
+      : options;
+
+    const sourceModel = await this.getSourceModel(transaction);
+
+    return await sourceModel[this.accessors().set](handleKey, {
+      transaction,
+    });
   }
 
   async find(options?: SingleRelationFindOption): Promise<Model<any>> {
+    const transaction = await this.getTransaction(options);
     const findOptions = this.buildQueryOptions({
       ...options,
     });
 
     const getAccessor = this.accessors().get;
-    const sourceModel = await this.getSourceModel();
+    const sourceModel = await this.getSourceModel(transaction);
 
-    return await sourceModel[getAccessor](findOptions);
+    return await sourceModel[getAccessor]({
+      ...findOptions,
+      transaction,
+    });
   }
 
-  async destroy(): Promise<Boolean> {
-    const target = await this.find();
+  async destroy(options?: TransactionAble): Promise<Boolean> {
+    const transaction = await this.getTransaction(options);
 
-    await target.destroy();
+    const target = await this.find({
+      transaction,
+    });
+
+    await target.destroy({
+      transaction,
+    });
+
     return true;
   }
 
-  async update(options?): Promise<any> {
-    const target = await this.find();
-    await updateModelByValues(
-      target,
-      options?.values,
-      lodash.omit(options, 'values'),
-    );
+  @transaction()
+  async update(options: UpdateOptions): Promise<any> {
+    const transaction = await this.getTransaction(options);
+
+    const target = await this.find({
+      transaction,
+    });
+
+    await updateModelByValues(target, options?.values, {
+      ...lodash.omit(options, 'values'),
+      transaction,
+    });
+
     return target;
   }
+
   accessors() {
     return <SingleAssociationAccessors>super.accessors();
   }
