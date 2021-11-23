@@ -421,6 +421,31 @@ await repository.findOne({
 });
 ```
 
+## repository.count()
+
+
+##### Definition
+
+```ts
+interface count {
+  (options?: CountOptions): Promise<number>;
+}
+
+interface CountOptions extends Sequelize.CountOptions {
+  filter?: any;
+}
+// Sequelize.CountOptions 的参数说明
+// distinct 就不传了，自动处理，有关联数据时，distinct=true
+```
+
+##### Examples
+
+```ts
+repository.count({
+  filter: {},
+});
+```
+
 ## repository.create()
 
 创建数据
