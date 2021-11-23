@@ -29,7 +29,6 @@ export default {
           type: 'createdBy',
           name: typeof createdBy === 'string' ? createdBy : 'createdBy',
           target: 'users',
-          state: 0,
         });
       }
       if (updatedBy !== false) {
@@ -37,7 +36,6 @@ export default {
           type: 'updatedBy',
           name: typeof updatedBy === 'string' ? updatedBy : 'updatedBy',
           target: 'users',
-          state: 0,
         });
       }
     });
