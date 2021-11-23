@@ -10,101 +10,16 @@ import {
 } from 'sequelize';
 import { OptionsParser } from '../optionsParser';
 import { Collection } from '../collection';
-import {
-  AssociationKeysToBeUpdate,
-  BlackList,
-  Filter,
-  FindOptions,
-  TransactionAble,
-  Values,
-  WhiteList,
-} from '../repository';
+import { CreateOptions, Filter, FindOptions } from '../repository';
 import FilterParser from '../filterParser';
 import { UpdateGuard } from '../update-guard';
-import {
-  updateAssociations,
-  updateModelByValues,
-} from '../update-associations';
+import { updateAssociations } from '../update-associations';
 import lodash from 'lodash';
-import { PrimaryKey } from './types';
+import { transactionWrapperBuilder } from '../transaction-decorator';
 
-export type CreateOptions = {
-  // 数据
-  values?: any;
-  // 字段白名单
-  whitelist?: string[];
-  // 字段黑名单
-  blacklist?: string[];
-  // 关系数据默认会新建并建立关联处理，如果是已存在的数据只关联，但不更新关系数据
-  // 如果需要更新关联数据，可以通过 updateAssociationValues 指定
-  updateAssociationValues?: string[];
-};
-
-export interface UpdateOptions extends TransactionAble {
-  values: Values;
-  filter?: Filter;
-  filterByPk?: PrimaryKey;
-  whitelist?: WhiteList;
-  blacklist?: BlackList;
-  updateAssociationValues?: AssociationKeysToBeUpdate;
-}
-
-/**
- * inject transaction to decorated function
- *
- * @param transactionInjector
- */
-export function transaction(transactionInjector?) {
-  return (target, name, descriptor) => {
-    const oldValue = descriptor.value;
-
-    descriptor.value = async function () {
-      let transaction;
-      let newTransaction = false;
-
-      if (arguments.length > 0 && typeof arguments[0] === 'object') {
-        transaction = arguments[0]['transaction'];
-      }
-
-      if (!transaction) {
-        transaction = await this.source.model.sequelize.transaction();
-        newTransaction = true;
-      }
-
-      // 需要将 newTransaction 注入到被装饰函数参数内
-      if (newTransaction) {
-        try {
-          let callArguments;
-          if (lodash.isPlainObject(arguments[0])) {
-            callArguments = {
-              ...arguments[0],
-              transaction,
-            };
-          } else if (transactionInjector) {
-            callArguments = transactionInjector(arguments, transaction);
-          } else {
-            throw new Error(
-              `please provide transactionInjector for ${name} call`,
-            );
-          }
-
-          const results = await oldValue.apply(this, [callArguments]);
-
-          await transaction.commit();
-
-          return results;
-        } catch (err) {
-          await transaction.rollback();
-          throw err;
-        }
-      } else {
-        return oldValue.apply(this, arguments);
-      }
-    };
-
-    return descriptor;
-  };
-}
+export const transaction = transactionWrapperBuilder(function () {
+  return this.source.model.sequelize.transaction();
+});
 
 export abstract class RelationRepository {
   source: Collection;
@@ -180,12 +95,7 @@ export abstract class RelationRepository {
     options: any,
     autoGen = false,
   ): Promise<Transaction | null> {
-    if (
-      options &&
-      typeof options === 'object' &&
-      !Array.isArray(options) &&
-      options.transaction
-    ) {
+    if (lodash.isPlainObject(options) && options.transaction) {
       return options.transaction;
     }
 

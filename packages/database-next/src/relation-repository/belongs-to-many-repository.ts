@@ -1,8 +1,3 @@
-import {
-  CreateOptions,
-  transaction,
-  UpdateOptions,
-} from './relation-repository';
 import { BelongsToMany, Model, Op, Transaction } from 'sequelize';
 import { updateThroughTableValue } from '../update-associations';
 import {
@@ -11,13 +6,14 @@ import {
   FindOneOptions,
   MultipleRelationRepository,
 } from './multiple-relation-repository';
-import { FindOptions } from '../repository';
+import { CreateOptions, FindOptions, UpdateOptions } from '../repository';
 import {
   AssociatedOptions,
   PrimaryKey,
   PrimaryKeyWithThroughValues,
 } from './types';
 import lodash from 'lodash';
+import { transaction } from './relation-repository';
 
 type CreateBelongsToManyOptions = CreateOptions;
 

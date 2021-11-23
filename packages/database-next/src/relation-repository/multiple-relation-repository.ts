@@ -1,8 +1,4 @@
-import {
-  RelationRepository,
-  transaction,
-  UpdateOptions,
-} from './relation-repository';
+import { RelationRepository, transaction } from './relation-repository';
 import { omit } from 'lodash';
 import {
   MultiAssociationAccessors,
@@ -22,6 +18,7 @@ import {
   FilterByPK,
   FindOptions,
   TransactionAble,
+  UpdateOptions,
   Values,
   WhiteList,
 } from '../repository';

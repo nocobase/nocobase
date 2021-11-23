@@ -1,19 +1,18 @@
 import {
-  Op,
+  Association,
+  BulkCreateOptions,
+  CreateOptions as SequelizeCreateOptions,
+  DestroyOptions as SequelizeDestroyOptions,
+  FindAndCountOptions as SequelizeAndCountOptions,
+  FindOptions as SequelizeFindOptions,
   Model,
   ModelCtor,
-  Association,
-  FindOptions as SequelizeFindOptions,
-  BulkCreateOptions,
-  DestroyOptions as SequelizeDestroyOptions,
-  CreateOptions as SequelizeCreateOptions,
-  UpdateOptions as SequelizeUpdateOptions,
-  FindAndCountOptions as SequelizeAndCountOptions,
+  Op,
   Transaction,
 } from 'sequelize';
 
 import { Collection } from './collection';
-import _, { omit } from 'lodash';
+import lodash, { omit } from 'lodash';
 import { Database } from './database';
 import { updateAssociations, updateModelByValues } from './update-associations';
 import { RelationField } from './fields';
@@ -25,7 +24,6 @@ import { BelongsToRepository } from './relation-repository/belongs-to-repository
 import { BelongsToManyRepository } from './relation-repository/belongs-to-many-repository';
 import { HasManyRepository } from './relation-repository/hasmany-repository';
 import { UpdateGuard } from './update-guard';
-import lodash from 'lodash';
 import { PrimaryKey } from './relation-repository/types';
 
 const debug = require('debug')('noco-database');
@@ -63,7 +61,8 @@ export type Values = {
 };
 
 export interface CountOptions
-  extends Omit<SequelizeCreateOptions, 'distinct' | 'where' | 'include'> {
+  extends Omit<SequelizeCreateOptions, 'distinct' | 'where' | 'include'>,
+    TransactionAble {
   fields?: Fields;
   filter?: Filter;
 }
@@ -87,31 +86,6 @@ export interface CommonFindOptions {
 
 interface FindOneOptions extends FindOptions, CommonFindOptions {}
 
-interface CreateOptions {
-  // 数据
-  values?: any;
-  // 字段白名单
-  whitelist?: string[];
-  // 字段黑名单
-  blacklist?: string[];
-  updateAssociationValues?: string[];
-}
-
-interface UpdateOptions {
-  filter?: Filter;
-  filterByPk?: number | string;
-  // 数据
-  values?: any;
-  // 字段白名单
-  whitelist?: string[];
-  // 字段黑名单
-  blacklist?: string[];
-  // 关系数据默认会新建并建立关联处理，如果是已存在的数据只关联，但不更新关系数据
-  // 如果需要更新关联数据，可以通过 updateAssociationValues 指定
-  updateAssociationValues?: string[];
-  transaction?: any;
-}
-
 interface DestroyOptions extends SequelizeDestroyOptions {
   filter?: any;
 }
@@ -128,6 +102,22 @@ interface FindAndCountOptions
   appends?: Appends;
   // 排序，字段前面加上 “-” 表示降序
   sort?: Sort;
+}
+
+export interface CreateOptions extends TransactionAble {
+  values?: Values;
+  whitelist?: WhiteList;
+  blacklist?: BlackList;
+  updateAssociationValues?: AssociationKeysToBeUpdate;
+}
+
+export interface UpdateOptions extends TransactionAble {
+  values: Values;
+  filter?: Filter;
+  filterByPk?: PrimaryKey;
+  whitelist?: WhiteList;
+  blacklist?: BlackList;
+  updateAssociationValues?: AssociationKeysToBeUpdate;
 }
 
 interface RelatedQueryOptions {
@@ -285,16 +275,21 @@ export class Repository<
    * @param options
    */
   async create(options: CreateOptions): Promise<Model> {
+    const transaction = await this.getTransaction(options);
+
     const guard = UpdateGuard.fromOptions(this.model, options);
     const values = guard.sanitize(options.values);
 
-    const instance = await this.model.create<any>(values);
+    const instance = await this.model.create<any>(values, { transaction });
 
     if (!instance) {
       return;
     }
 
-    await updateAssociations(instance, values);
+    await updateAssociations(instance, values, {
+      transaction,
+    });
+
     return instance;
   }
 
@@ -393,5 +388,17 @@ export class Repository<
       filter,
     );
     return parser.toSequelizeParams();
+  }
+
+  protected async getTransaction(options: any, autoGen = false) {
+    if (lodash.isPlainObject(options) && options.transaction) {
+      return options.transaction;
+    }
+
+    if (autoGen) {
+      return await this.model.sequelize.transaction();
+    }
+
+    return null;
   }
 }

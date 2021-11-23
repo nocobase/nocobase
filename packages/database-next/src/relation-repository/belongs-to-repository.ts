@@ -4,7 +4,7 @@ import {
   SingleRelationFindOption,
   SingleRelationRepository,
 } from './single-relation-repository';
-import { CreateOptions, UpdateOptions } from './relation-repository';
+import { CreateOptions, UpdateOptions } from '../repository';
 
 interface BelongsToFindOptions extends SingleRelationFindOption {}
 

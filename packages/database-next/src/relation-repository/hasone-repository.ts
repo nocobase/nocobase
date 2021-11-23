@@ -1,9 +1,9 @@
-import { CreateOptions } from './relation-repository';
 import { Model } from 'sequelize';
 import {
   SingleRelationFindOption,
   SingleRelationRepository,
 } from './single-relation-repository';
+import { CreateOptions } from '../repository';
 
 interface HasOneFindOptions extends SingleRelationFindOption {}
 

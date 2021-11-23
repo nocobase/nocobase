@@ -124,7 +124,13 @@ export async function updateAssociations(
     return;
   }
 
-  const { transaction = await instance.sequelize.transaction() } = options;
+  let newTransaction = false;
+  let transaction = options.transaction;
+
+  if (!transaction) {
+    newTransaction = true;
+    transaction = await instance.sequelize.transaction();
+  }
 
   for (const key of Object.keys(modelAssociations(instance))) {
     if (values[key]) {
@@ -156,7 +162,7 @@ export async function updateAssociations(
     }
   }
 
-  if (!options.transaction) {
+  if (newTransaction) {
     await transaction.commit();
   }
 }
