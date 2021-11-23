@@ -29,98 +29,100 @@ describe('repository.find', () => {
       fields: [{ type: 'string', name: 'name' }],
     });
     await db.sync();
-    await User.repository.createMany([
-      {
-        name: 'user1',
-        posts: [
-          {
-            name: 'post11',
-            comments: [
-              { name: 'comment111' },
-              { name: 'comment112' },
-              { name: 'comment113' },
-            ],
-          },
-          {
-            name: 'post12',
-            comments: [
-              { name: 'comment121' },
-              { name: 'comment122' },
-              { name: 'comment123' },
-            ],
-          },
-          {
-            name: 'post13',
-            comments: [
-              { name: 'comment131' },
-              { name: 'comment132' },
-              { name: 'comment133' },
-            ],
-          },
-          {
-            name: 'post14',
-            comments: [
-              { name: 'comment141' },
-              { name: 'comment142' },
-              { name: 'comment143' },
-            ],
-          },
-        ],
-      },
-      {
-        name: 'user2',
-        posts: [
-          {
-            name: 'post21',
-            comments: [
-              { name: 'comment211' },
-              { name: 'comment212' },
-              { name: 'comment213' },
-            ],
-          },
-          {
-            name: 'post22',
-            comments: [
-              { name: 'comment221' },
-              { name: 'comment222' },
-              { name: 'comment223' },
-            ],
-          },
-          {
-            name: 'post23',
-            comments: [
-              { name: 'comment231' },
-              { name: 'comment232' },
-              { name: 'comment233' },
-            ],
-          },
-          { name: 'post24' },
-        ],
-      },
-      {
-        name: 'user3',
-        posts: [
-          {
-            name: 'post31',
-            comments: [
-              { name: 'comment311' },
-              { name: 'comment312' },
-              { name: 'comment313' },
-            ],
-          },
-          { name: 'post32' },
-          {
-            name: 'post33',
-            comments: [
-              { name: 'comment331' },
-              { name: 'comment332' },
-              { name: 'comment333' },
-            ],
-          },
-          { name: 'post34' },
-        ],
-      },
-    ]);
+    await User.repository.createMany({
+      records: [
+        {
+          name: 'user1',
+          posts: [
+            {
+              name: 'post11',
+              comments: [
+                { name: 'comment111' },
+                { name: 'comment112' },
+                { name: 'comment113' },
+              ],
+            },
+            {
+              name: 'post12',
+              comments: [
+                { name: 'comment121' },
+                { name: 'comment122' },
+                { name: 'comment123' },
+              ],
+            },
+            {
+              name: 'post13',
+              comments: [
+                { name: 'comment131' },
+                { name: 'comment132' },
+                { name: 'comment133' },
+              ],
+            },
+            {
+              name: 'post14',
+              comments: [
+                { name: 'comment141' },
+                { name: 'comment142' },
+                { name: 'comment143' },
+              ],
+            },
+          ],
+        },
+        {
+          name: 'user2',
+          posts: [
+            {
+              name: 'post21',
+              comments: [
+                { name: 'comment211' },
+                { name: 'comment212' },
+                { name: 'comment213' },
+              ],
+            },
+            {
+              name: 'post22',
+              comments: [
+                { name: 'comment221' },
+                { name: 'comment222' },
+                { name: 'comment223' },
+              ],
+            },
+            {
+              name: 'post23',
+              comments: [
+                { name: 'comment231' },
+                { name: 'comment232' },
+                { name: 'comment233' },
+              ],
+            },
+            { name: 'post24' },
+          ],
+        },
+        {
+          name: 'user3',
+          posts: [
+            {
+              name: 'post31',
+              comments: [
+                { name: 'comment311' },
+                { name: 'comment312' },
+                { name: 'comment313' },
+              ],
+            },
+            { name: 'post32' },
+            {
+              name: 'post33',
+              comments: [
+                { name: 'comment331' },
+                { name: 'comment332' },
+                { name: 'comment333' },
+              ],
+            },
+            { name: 'post34' },
+          ],
+        },
+      ],
+    });
   });
 
   afterEach(async () => {

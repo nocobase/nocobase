@@ -2,13 +2,18 @@ import { BelongsToMany, HasMany, Model, Op, Sequelize } from 'sequelize';
 
 import {
   AssociatedOptions,
-  DestroyOptions,
   FindAndCountOptions,
   FindOneOptions,
   MultipleRelationRepository,
 } from './multiple-relation-repository';
-import { CreateOptions, FindOptions, UpdateOptions } from '../repository';
-import { PK, PrimaryKey } from './types';
+import {
+  CreateOptions,
+  DestroyOptions,
+  FindOptions,
+  PK,
+  PrimaryKey,
+  UpdateOptions,
+} from '../repository';
 import { transaction } from './relation-repository';
 
 interface IHasManyRepository<M extends Model> {

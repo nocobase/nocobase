@@ -2,7 +2,6 @@ import {
   Association,
   BulkCreateOptions,
   CreateOptions as SequelizeCreateOptions,
-  DestroyOptions as SequelizeDestroyOptions,
   FindAndCountOptions as SequelizeAndCountOptions,
   FindOptions as SequelizeFindOptions,
   Model,
@@ -24,13 +23,15 @@ import { BelongsToRepository } from './relation-repository/belongs-to-repository
 import { BelongsToManyRepository } from './relation-repository/belongs-to-many-repository';
 import { HasManyRepository } from './relation-repository/hasmany-repository';
 import { UpdateGuard } from './update-guard';
-import { PrimaryKey } from './relation-repository/types';
+import { transactionWrapperBuilder } from './transaction-decorator';
 
 const debug = require('debug')('noco-database');
 
 export interface IRepository {}
 
-interface CreateManyOptions extends BulkCreateOptions {}
+interface CreateManyOptions extends BulkCreateOptions {
+  records: Values[];
+}
 
 export interface TransactionAble {
   transaction?: Transaction;
@@ -39,6 +40,9 @@ export interface TransactionAble {
 export interface FilterAble {
   filter: Filter;
 }
+
+export type PrimaryKey = string | number;
+export type PK = PrimaryKey | PrimaryKey[];
 
 export type Filter = any;
 export type Appends = string[];
@@ -86,8 +90,10 @@ export interface CommonFindOptions {
 
 interface FindOneOptions extends FindOptions, CommonFindOptions {}
 
-interface DestroyOptions extends SequelizeDestroyOptions {
-  filter?: any;
+export interface DestroyOptions extends TransactionAble {
+  filter?: Filter;
+  filterByPk?: PrimaryKey | PrimaryKey[];
+  truncate?: boolean;
 }
 
 interface FindAndCountOptions
@@ -135,9 +141,9 @@ interface RelatedQueryOptions {
   };
 }
 
-type Identity = string | number;
-
-type ID = Identity;
+const transaction = transactionWrapperBuilder(function () {
+  return (<Repository>this).collection.model.sequelize.transaction();
+});
 
 class RelationRepositoryBuilder<R extends RelationRepository> {
   collection: Collection;
@@ -188,6 +194,8 @@ export class Repository<
   async count(countOptions?: CountOptions) {
     let options = countOptions ? lodash.clone(countOptions) : {};
 
+    const transaction = await this.getTransaction(options);
+
     if (countOptions?.filter) {
       options = {
         ...options,
@@ -198,6 +206,7 @@ export class Repository<
     return await this.collection.model.count({
       ...options,
       distinct: true,
+      transaction,
     });
   }
 
@@ -207,7 +216,7 @@ export class Repository<
    */
   async find(options?: FindOptions) {
     const model = this.collection.model;
-
+    const transaction = await this.getTransaction(options);
     const opts = {
       subQuery: false,
       ...this.buildQueryOptions(options),
@@ -220,6 +229,7 @@ export class Repository<
           includeIgnoreAttributes: false,
           attributes: [model.primaryKeyAttribute],
           group: `${model.name}.${model.primaryKeyAttribute}`,
+          transaction,
         })
       ).map((row) => row.get(model.primaryKeyAttribute));
 
@@ -232,11 +242,13 @@ export class Repository<
       return await model.findAll({
         ...omit(opts, ['limit', 'offset']),
         where,
+        transaction,
       });
     }
 
     return await model.findAll({
       ...opts,
+      transaction,
     });
   }
 
@@ -247,6 +259,12 @@ export class Repository<
   async findAndCount(
     options?: FindAndCountOptions,
   ): Promise<[Model[], number]> {
+    const transaction = await this.getTransaction(options);
+    options = {
+      ...options,
+      transaction,
+    };
+
     return [await this.find(options), await this.count(options)];
   }
 
@@ -254,7 +272,7 @@ export class Repository<
    * Find By Id
    *
    */
-  findById(id: ID) {
+  findById(id: PrimaryKey) {
     return this.collection.model.findByPk(id);
   }
 
@@ -264,7 +282,9 @@ export class Repository<
    * @param options
    */
   async findOne(options?: FindOneOptions) {
-    const rows = await this.find({ ...options, limit: 1 });
+    const transaction = await this.getTransaction(options);
+
+    const rows = await this.find({ ...options, limit: 1, transaction });
     return rows.length == 1 ? rows[0] : null;
   }
 
@@ -274,6 +294,7 @@ export class Repository<
    * @param values
    * @param options
    */
+  @transaction()
   async create(options: CreateOptions): Promise<Model> {
     const transaction = await this.getTransaction(options);
 
@@ -299,14 +320,17 @@ export class Repository<
    * @param records
    * @param options
    */
-  async createMany(
-    records: TCreationAttributes[],
-    options?: CreateManyOptions,
-  ) {
-    const instances = await this.collection.model.bulkCreate(records, options);
+  @transaction()
+  async createMany(options: CreateManyOptions) {
+    const transaction = await this.getTransaction(options);
+    const { records } = options;
+    const instances = await this.collection.model.bulkCreate(records, {
+      ...options,
+      transaction,
+    });
 
     for (let i = 0; i < instances.length; i++) {
-      await updateAssociations(instances[i], records[i]);
+      await updateAssociations(instances[i], records[i], { transaction });
     }
 
     return instances;
@@ -318,8 +342,9 @@ export class Repository<
    * @param values
    * @param options
    */
+  @transaction()
   async update(options: UpdateOptions) {
-    const { transaction = await this.model.sequelize.transaction() } = options;
+    const transaction = await this.getTransaction(options);
     const guard = UpdateGuard.fromOptions(this.model, options);
 
     const values = guard.sanitize(options.values);
@@ -341,25 +366,54 @@ export class Repository<
     return true;
   }
 
-  async destroy(options: Identity | Identity[] | DestroyOptions) {
-    if (typeof options === 'number' || typeof options === 'string') {
-      return await this.model.destroy({
-        where: {
-          [this.model.primaryKeyAttribute]: options,
-        },
-      });
-    }
-    if (Array.isArray(options)) {
+  @transaction((args, transaction) => {
+    return {
+      filterByPk: args[0],
+      transaction,
+    };
+  })
+  async destroy(options?: PrimaryKey | PrimaryKey[] | DestroyOptions) {
+    const transaction = await this.getTransaction(options);
+
+    options = <DestroyOptions>options;
+
+    let filterByPk = options.filterByPk;
+
+    if (filterByPk) {
+      if (!Array.isArray(filterByPk)) {
+        filterByPk = [filterByPk];
+      }
+
       return await this.model.destroy({
         where: {
           [this.model.primaryKeyAttribute]: {
-            [Op.in]: options,
+            [Op.in]: filterByPk,
           },
         },
+        transaction,
       });
     }
-    const opts = this.buildQueryOptions(options);
-    return await this.model.destroy(opts);
+
+    if (options.filter) {
+      const instances = await this.find({
+        filter: options.filter,
+        transaction,
+      });
+
+      return await this.destroy({
+        filterByPk: instances.map(
+          (instance) => instance[this.model.primaryKeyAttribute],
+        ),
+        transaction,
+      });
+    }
+
+    if (options.truncate) {
+      return await this.model.destroy({
+        truncate: true,
+        transaction,
+      });
+    }
   }
 
   /**

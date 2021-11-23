@@ -1,17 +1,18 @@
 import { BelongsToMany, Model, Op, Transaction } from 'sequelize';
 import { updateThroughTableValue } from '../update-associations';
 import {
-  DestroyOptions,
   FindAndCountOptions,
   FindOneOptions,
   MultipleRelationRepository,
 } from './multiple-relation-repository';
-import { CreateOptions, FindOptions, UpdateOptions } from '../repository';
 import {
-  AssociatedOptions,
+  CreateOptions,
+  DestroyOptions,
+  FindOptions,
   PrimaryKey,
-  PrimaryKeyWithThroughValues,
-} from './types';
+  UpdateOptions,
+} from '../repository';
+import { AssociatedOptions, PrimaryKeyWithThroughValues } from './types';
 import lodash from 'lodash';
 import { transaction } from './relation-repository';
 
@@ -68,7 +69,7 @@ export class BelongsToManyRepository
     };
   })
   async destroy(
-    options?: number | string | number[] | string[] | DestroyOptions,
+    options?: PrimaryKey | PrimaryKey[] | DestroyOptions,
   ): Promise<Boolean> {
     const transaction = await this.getTransaction(options);
     const association = <BelongsToMany>this.association;

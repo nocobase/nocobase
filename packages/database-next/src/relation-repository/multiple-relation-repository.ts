@@ -5,33 +5,25 @@ import {
   Op,
   Sequelize,
   Transaction,
-  Transactionable,
 } from 'sequelize';
 import { UpdateGuard } from '../update-guard';
 import { updateModelByValues } from '../update-associations';
 import {
-  AssociationKeysToBeUpdate,
-  BlackList,
   CommonFindOptions,
   CountOptions,
+  DestroyOptions,
   Filter,
   FilterByPK,
   FindOptions,
+  PK,
+  PrimaryKey,
   TransactionAble,
   UpdateOptions,
-  Values,
-  WhiteList,
 } from '../repository';
-import { PK, PrimaryKey } from './types';
 
 export interface FindAndCountOptions extends CommonFindOptions {}
 
 export interface FindOneOptions extends CommonFindOptions, FilterByPK {}
-
-export interface DestroyOptions extends TransactionAble {
-  filter?: Filter;
-  filterByPk?: PrimaryKey;
-}
 
 export interface AssociatedOptions extends TransactionAble {
   pk?: PK;
