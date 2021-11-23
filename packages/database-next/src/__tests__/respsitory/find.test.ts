@@ -45,11 +45,25 @@ describe('repository find', () => {
     await db.sync();
     const repository = User.repository;
 
-    await repository.createMany([
-      { name: 'u1', age: 10, posts: [{ title: 'u1t1', comments: ['u1t1c1'] }] },
-      { name: 'u2', age: 20, posts: [{ title: 'u2t1', comments: ['u2t1c1'] }] },
-      { name: 'u3', age: 30, posts: [{ title: 'u3t1', comments: ['u3t1c1'] }] },
-    ]);
+    await repository.createMany({
+      records: [
+        {
+          name: 'u1',
+          age: 10,
+          posts: [{ title: 'u1t1', comments: ['u1t1c1'] }],
+        },
+        {
+          name: 'u2',
+          age: 20,
+          posts: [{ title: 'u2t1', comments: ['u2t1c1'] }],
+        },
+        {
+          name: 'u3',
+          age: 30,
+          posts: [{ title: 'u3t1', comments: ['u3t1c1'] }],
+        },
+      ],
+    });
   });
 
   describe('option parser', () => {

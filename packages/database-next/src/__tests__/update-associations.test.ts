@@ -279,34 +279,36 @@ describe('update associations', () => {
     });
 
     test('create many with nested associations', async () => {
-      await User.repository.createMany([
-        {
-          name: 'u1',
-          posts: [
-            {
-              name: 'u1p1',
-              comments: [
-                {
-                  name: 'u1p1c1',
-                },
-              ],
-            },
-          ],
-        },
-        {
-          name: 'u2',
-          posts: [
-            {
-              name: 'u2p1',
-              comments: [
-                {
-                  name: 'u2p1c1',
-                },
-              ],
-            },
-          ],
-        },
-      ]);
+      await User.repository.createMany({
+        records: [
+          {
+            name: 'u1',
+            posts: [
+              {
+                name: 'u1p1',
+                comments: [
+                  {
+                    name: 'u1p1c1',
+                  },
+                ],
+              },
+            ],
+          },
+          {
+            name: 'u2',
+            posts: [
+              {
+                name: 'u2p1',
+                comments: [
+                  {
+                    name: 'u2p1c1',
+                  },
+                ],
+              },
+            ],
+          },
+        ],
+      });
     });
 
     it('nested', async () => {
