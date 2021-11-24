@@ -29,6 +29,13 @@ export function transactionWrapperBuilder(transactionGenerator) {
               };
             } else if (transactionInjector) {
               callArguments = transactionInjector(arguments, transaction);
+            } else if (
+              lodash.isNull(arguments[0]) ||
+              lodash.isUndefined(arguments[0])
+            ) {
+              callArguments = {
+                transaction,
+              };
             } else {
               throw new Error(
                 `please provide transactionInjector for ${name} call`,
