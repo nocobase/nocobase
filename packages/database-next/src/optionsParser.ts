@@ -1,7 +1,7 @@
 import _, { filter } from 'lodash';
 
 import { Collection } from './collection';
-import { Appends, Expect, FindOptions } from './repository';
+import { Appends, Except, FindOptions } from './repository';
 import FilterParser from './filterParser';
 import { FindAttributeOptions, ModelCtor } from 'sequelize';
 import { Database } from './database';
@@ -87,7 +87,7 @@ export class OptionsParser {
 
   protected parseFields(filterParams: any) {
     const appends = this.options?.appends || [];
-    const expect = [];
+    const except = [];
 
     let attributes: FindAttributeOptions = {
       include: [],
@@ -109,41 +109,41 @@ export class OptionsParser {
       }
     }
 
-    if (this.options?.expect) {
-      for (const expectKey of this.options.expect) {
-        if (this.isAssociationPath(expectKey)) {
-          // expect association field
-          expect.push(expectKey);
+    if (this.options?.except) {
+      for (const exceptKey of this.options.except) {
+        if (this.isAssociationPath(exceptKey)) {
+          // except association field
+          except.push(exceptKey);
         } else {
-          // if attributes is array form, ignore expect
+          // if attributes is array form, ignore except
           if (Array.isArray(attributes)) continue;
-          attributes.exclude.push(expectKey);
+          attributes.exclude.push(exceptKey);
         }
       }
     }
 
     return {
       attributes,
-      ...this.parseExpect(expect, this.parseAppends(appends, filterParams)),
+      ...this.parseExcept(except, this.parseAppends(appends, filterParams)),
     };
   }
 
-  protected parseExpect(expect: Expect, filterParams: any) {
-    if (!expect) return filterParams;
-    const setExpect = (queryParams: any, expect: string) => {
-      // split expectKey to path form
+  protected parseExcept(except: Except, filterParams: any) {
+    if (!except) return filterParams;
+    const setExcept = (queryParams: any, except: string) => {
+      // split exceptKey to path form
       // posts.comments.content => ['posts', 'comments', 'content']
-      // then set expect on include attributes
-      const expectPath = expect.split('.');
-      const association = expectPath[0];
-      const lastLevel = expectPath.length <= 2;
+      // then set except on include attributes
+      const exceptPath = except.split('.');
+      const association = exceptPath[0];
+      const lastLevel = exceptPath.length <= 2;
 
       let existIncludeIndex = queryParams['include'].findIndex(
         (include) => include['association'] == association,
       );
 
       if (existIncludeIndex == -1) {
-        // if include not exists, ignore this expect
+        // if include not exists, ignore this except
         return;
       }
 
@@ -163,18 +163,18 @@ export class OptionsParser {
 
           queryParams['include'][existIncludeIndex]['attributes'][
             'exclude'
-          ].push(expectPath[1]);
+          ].push(exceptPath[1]);
         }
       } else {
-        setExpect(
+        setExcept(
           queryParams['include'][existIncludeIndex],
-          expectPath.filter((_, index) => index !== 0).join('.'),
+          exceptPath.filter((_, index) => index !== 0).join('.'),
         );
       }
     };
 
-    for (const expectKey of expect) {
-      setExpect(filterParams, expectKey);
+    for (const exceptKey of except) {
+      setExcept(filterParams, exceptKey);
     }
 
     return filterParams;

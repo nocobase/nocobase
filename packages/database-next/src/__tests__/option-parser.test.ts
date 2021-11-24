@@ -147,7 +147,7 @@ describe('option parser', () => {
 
     // fields with expect
     options = {
-      expect: ['id'],
+      except: ['id'],
     };
     parser = new OptionsParser(User.model, User.context.database, options);
     params = parser.toSequelizeParams();
@@ -156,7 +156,7 @@ describe('option parser', () => {
     // expect with association
     options = {
       fields: ['posts'],
-      expect: ['posts.id'],
+      except: ['posts.id'],
     };
 
     parser = new OptionsParser(User.model, User.context.database, options);

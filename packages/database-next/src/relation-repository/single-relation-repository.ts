@@ -4,7 +4,7 @@ import { updateModelByValues } from '../update-associations';
 import lodash from 'lodash';
 import {
   Appends,
-  Expect,
+  Except,
   Fields,
   PrimaryKey,
   TransactionAble,
@@ -13,7 +13,7 @@ import {
 
 interface SingleRelationFindOption extends TransactionAble {
   fields?: Fields;
-  expect?: Expect;
+  except?: Except;
   appends?: Appends;
 }
 

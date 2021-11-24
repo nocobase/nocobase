@@ -91,7 +91,7 @@ describe('repository find', () => {
         },
         fields: ['id'],
         appends: ['posts'],
-        expect: ['posts.id'],
+        except: ['posts.id'],
       });
 
       const data = user.toJSON();

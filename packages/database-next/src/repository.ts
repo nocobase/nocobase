@@ -46,7 +46,7 @@ export type PK = PrimaryKey | PrimaryKey[];
 
 export type Filter = any;
 export type Appends = string[];
-export type Expect = string[];
+export type Except = string[];
 export type Fields = string[];
 export type Sort = string[];
 
@@ -84,7 +84,7 @@ export interface CommonFindOptions {
   filter?: Filter;
   fields?: Fields;
   appends?: Appends;
-  expect?: Expect;
+  except?: Except;
   sort?: Sort;
 }
 
@@ -103,7 +103,7 @@ interface FindAndCountOptions
   // 输出结果显示哪些字段
   fields?: Fields;
   // 输出结果不显示哪些字段
-  except?: Expect;
+  except?: Except;
   // 附加字段，用于控制关系字段的输出
   appends?: Appends;
   // 排序，字段前面加上 “-” 表示降序
