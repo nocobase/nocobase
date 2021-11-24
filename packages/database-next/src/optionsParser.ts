@@ -233,9 +233,10 @@ export class OptionsParser {
         if (appendFields.length == 2) {
           if (!Array.isArray(attributes)) {
             attributes = [];
-            // push field to it
-            attributes.push(appendFields[1]);
           }
+
+          // push field to it
+          attributes.push(appendFields[1]);
         } else {
           // if attributes is empty array, change it to object
           if (Array.isArray(attributes) && attributes.length == 0) {

@@ -116,4 +116,62 @@ describe('count', () => {
 
     expect(posts[0][0]['tags']).toBeDefined();
   });
+
+  test('without filter params', async () => {
+    const repository = User.repository;
+
+    await repository.createMany({
+      records: [
+        {
+          name: 'u1',
+          age: 10,
+          posts: [{ title: 'u1t1', comments: ['u1t1c1'] }],
+        },
+        {
+          name: 'u2',
+          age: 20,
+          posts: [{ title: 'u2t1', comments: ['u2t1c1'] }],
+        },
+        {
+          name: 'u3',
+          age: 30,
+          posts: [{ title: 'u3t1', comments: ['u3t1c1'] }],
+        },
+      ],
+    });
+
+    expect(await User.repository.count()).toEqual(3);
+  });
+
+  test('with filter params', async () => {
+    const repository = User.repository;
+
+    await repository.createMany({
+      records: [
+        {
+          name: 'u1',
+          age: 10,
+          posts: [{ title: 'u1t1', comments: ['u1t1c1'] }],
+        },
+        {
+          name: 'u2',
+          age: 20,
+          posts: [{ title: 'u2t1', comments: ['u2t1c1'] }],
+        },
+        {
+          name: 'u3',
+          age: 30,
+          posts: [{ title: 'u3t1', comments: ['u3t1c1'] }],
+        },
+      ],
+    });
+
+    expect(
+      await User.repository.count({
+        filter: {
+          name: 'u1',
+        },
+      }),
+    ).toEqual(1);
+  });
 });
