@@ -1,5 +1,5 @@
 import { RelationRepository, transaction } from './relation-repository';
-import { BelongsTo, Model, SingleAssociationAccessors } from 'sequelize';
+import { Model, SingleAssociationAccessors } from 'sequelize';
 import { updateModelByValues } from '../update-associations';
 import lodash from 'lodash';
 import {
@@ -10,7 +10,6 @@ import {
   TransactionAble,
   UpdateOptions,
 } from '../repository';
-import { AssociatedOptions } from './types';
 
 interface SingleRelationFindOption extends TransactionAble {
   fields?: Fields;
@@ -23,6 +22,7 @@ interface SetOption extends TransactionAble {
 }
 
 export abstract class SingleRelationRepository extends RelationRepository {
+  @transaction()
   async remove(options?: TransactionAble): Promise<void> {
     const transaction = await this.getTransaction(options);
     const sourceModel = await this.getSourceModel(transaction);
@@ -31,6 +31,12 @@ export abstract class SingleRelationRepository extends RelationRepository {
     });
   }
 
+  @transaction((args, transaction) => {
+    return {
+      pk: args[0],
+      transaction,
+    };
+  })
   async set(options: PrimaryKey | SetOption): Promise<void> {
     const transaction = await this.getTransaction(options);
     let handleKey = lodash.isPlainObject(options)
@@ -59,6 +65,7 @@ export abstract class SingleRelationRepository extends RelationRepository {
     });
   }
 
+  @transaction()
   async destroy(options?: TransactionAble): Promise<Boolean> {
     const transaction = await this.getTransaction(options);
 
