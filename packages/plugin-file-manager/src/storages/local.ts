@@ -71,9 +71,7 @@ export function middleware(app) {
 export default (storage) => multer.diskStorage({
   destination: function (req, file, cb) {
     const destPath = getDocumentRoot(storage);
-    mkdirp(destPath).then(() => {
-      cb(null, destPath);
-    }).catch(cb);
+    mkdirp(destPath, (err: Error | null) => cb(err, destPath));
   },
   filename: getFilename
 });
