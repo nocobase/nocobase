@@ -1,3 +1,7 @@
+---
+toc: menu
+---
+
 # Application
 
 ## `app.db`
