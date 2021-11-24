@@ -105,7 +105,7 @@ await Post.repository.find({
 });
 ```
 
-支持多种 Operators，以 `$` 开头。[更多内容，查阅 Operators 章节](operators.md)
+支持多种 Operators，以 `$` 开头。[更多内容，查阅 Operators 章节](filter-operators.md)
 
 ```ts
 await Post.repository.find({

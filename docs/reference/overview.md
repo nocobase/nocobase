@@ -16,7 +16,7 @@ order: 0
 - [Collection](collection.md)
 - [Model](model.md)
 - [Field Types](field-types.md)
-- [Operators](operators.md)
+- [Filter Operators](filter-operators.md)
 
 ## Application
 

@@ -24,47 +24,22 @@ class Database {
 db.sequelize.close();
 ```
 
-## `db.constructor()`
+## `db.close()`
+
+断开数据库连接
 
 ##### Definition
 
 ```ts
 class Database {
-  constructor (options: DatabaseOptions) => void;
+  close(): Promise<void>;
 }
-
-type DatabaseOptions = Sequelize.Options | Sequelize;
 ```
 
 ##### Examples
 
-配置 options 与 Sequelize.Options 一致，如：
-
 ```ts
-const db = new Database({
-  dialect: 'sqlite',
-  storage: 'path/to/database.sqlite'
-});
-```
-
-也可以直接传 sequelize 实例
-
-```ts
-const sequelize = new Sequelize('sqlite::memory:');
-const db = new Database(sequelize);
-```
-
-注意，new Sequelize() 会有针对参数的 try catch 处理，Database 如果要捕获异常，也需要在 new 的时候 try catch，如：
-
-```ts
-try {
-  const db = new Database({
-    dialect: 'sqlite',
-    storage: 'path/to/database.sqlite'
-  });
-} catch(error) {
-
-}
+await db.close();
 ```
 
 ## `db.collection()`
@@ -110,76 +85,97 @@ const Post = db.collection({
 
 自定义 repository 见 [db.registerRepositories()](#dbregisterrepositories)
 
-## `db.sync()`
-
-将所有定义的 Collections 同步给数据库。
+## `db.constructor()`
 
 ##### Definition
 
 ```ts
 class Database {
-  sync(options?: Sequelize.SyncOptions): Promise<Database>;
+  constructor (options: DatabaseOptions) => void;
 }
+
+type DatabaseOptions = Sequelize.Options | Sequelize;
 ```
 
 ##### Examples
 
-```ts
-await db.sync();
-await db.sync({force: true});
-```
-
-## `db.close()`
-
-断开数据库连接
-
-##### Definition
+配置 options 与 Sequelize.Options 一致，如：
 
 ```ts
-class Database {
-  close(): Promise<void>;
-}
-```
-
-##### Examples
-
-```ts
-await db.close();
-```
-
-## `db.registerFieldTypes()`
-
-自定义字段存储类型，更多字段类型查看 [Field Types](field-types)
-
-##### Definition
-
-```ts
-class Database {
-  registerFieldTypes(types: RegisterFieldTypes): void;
-}
-
-interface RegisterFieldTypes {
-  [key: string]: Field;
-}
-```
-
-##### Examples
-
-```ts
-class CustomField extends Field {
-  get dataType() {
-    return DataTypes.STRING;
-  }
-}
-
-db.registerFieldTypes({ custom: CustomField });
-
-db.collection({
-  name: 'tests',
-  fields: [
-    { type: 'custom', name: 'customName' },
-  ],
+const db = new Database({
+  dialect: 'sqlite',
+  storage: 'path/to/database.sqlite'
 });
+```
+
+也可以直接传 sequelize 实例
+
+```ts
+const sequelize = new Sequelize('sqlite::memory:');
+const db = new Database(sequelize);
+```
+
+注意，new Sequelize() 会有针对参数的 try catch 处理，Database 如果要捕获异常，也需要在 new 的时候 try catch，如：
+
+```ts
+try {
+  const db = new Database({
+    dialect: 'sqlite',
+    storage: 'path/to/database.sqlite'
+  });
+} catch(error) {
+
+}
+```
+
+## `db.emit()`
+
+同步事件触发
+
+##### Definition
+
+##### Examples
+
+## `db.emitAsync()`
+
+异步事件触发
+
+##### Definition
+
+##### Examples
+
+## `db.getCollection()`
+
+##### Definition
+
+```ts
+class Database {
+  getCollection(name: string): Collection;
+}
+```
+
+##### Examples
+
+```ts
+const collection = db.getCollection('tests');
+```
+
+## `db.hasCollection()`
+
+##### Definition
+
+```ts
+class Database {
+  hasCollection(name: string): boolean;
+}
+```
+
+##### Examples
+
+```ts
+if (db.hasCollection('tests')) {
+
+}
 ```
 
 ## `db.import()`
@@ -217,21 +213,40 @@ db.import({
 
 ##### Examples
 
-## `db.emitAsync()`
+## `db.registerFieldTypes()`
 
-异步事件触发
-
-##### Definition
-
-##### Examples
-
-## `db.emit()`
-
-同步事件触发
+自定义字段存储类型，更多字段类型查看 [Field Types](field-types)
 
 ##### Definition
 
+```ts
+class Database {
+  registerFieldTypes(types: RegisterFieldTypes): void;
+}
+
+interface RegisterFieldTypes {
+  [key: string]: Field;
+}
+```
+
 ##### Examples
+
+```ts
+class CustomField extends Field {
+  get dataType() {
+    return DataTypes.STRING;
+  }
+}
+
+db.registerFieldTypes({ custom: CustomField });
+
+db.collection({
+  name: 'tests',
+  fields: [
+    { type: 'custom', name: 'customName' },
+  ],
+});
+```
 
 ## `db.registerModels()`
 
@@ -269,31 +284,6 @@ const Test = db.collection({
 
 const test = Test.model<CustomModel>.create();
 test.customMethod();
-```
-
-## `db.registerRepositories()`
-
-自定义 Repository
-
-##### Examples
-
-```ts
-class CustomRepository extends Repository {
-  customMethod() {
-    console.log('custom method');
-  }
-}
-
-db.registerModels({
-  CustomRepository,
-});
-
-const Test = db.collection({
-  name: 'tests',
-  repository: 'CustomRepository',
-});
-
-Test.repository<CustomRepository>.customMethod();
 ```
 
 ## `db.registerOperators()`
@@ -368,4 +358,66 @@ repository.find({
     'attr.$anyOf': ['val1', 'val2'],
   },
 });
+```
+
+## `db.registerRepositories()`
+
+自定义 Repository
+
+##### Examples
+
+```ts
+class CustomRepository extends Repository {
+  customMethod() {
+    console.log('custom method');
+  }
+}
+
+db.registerModels({
+  CustomRepository,
+});
+
+const Test = db.collection({
+  name: 'tests',
+  repository: 'CustomRepository',
+});
+
+Test.repository<CustomRepository>.customMethod();
+```
+
+## `db.removeCollection()`
+
+移除 collection
+
+##### Definition
+
+```ts
+class Database {
+  removeCollection(name: string): Collection;
+}
+```
+
+##### Examples
+
+```ts
+db.removeCollection('tests');
+```
+
+## `db.sync()`
+
+将所有定义的 Collections 同步给数据库。
+
+##### Definition
+
+```ts
+class Database {
+  sync(options?: Sequelize.SyncOptions): Promise<Database>;
+}
+```
+
+##### Examples
+
+```ts
+await db.sync();
+await db.sync({force: true});
 ```
