@@ -1,5 +1,5 @@
 import React, { useContext, useEffect } from 'react';
-import { Button, Dropdown, Menu, Select } from 'antd';
+import { Button, Dropdown, Menu, Select, message } from 'antd';
 import { useHistory } from 'react-router-dom';
 import { SchemaField } from '../../schemas';
 import { AuthContext, useCurrentUser } from './Auth';
@@ -93,6 +93,58 @@ export const UserInfo = () => {
                 ]}
               />
             </div>
+          </Menu.Item>
+          <Menu.Item
+            onClick={async () => {
+              setVisible(false);
+              const values = await FormDrawer(t('Change password'), () => {
+                return (
+                  <FormLayout layout={'vertical'}>
+                    <SchemaField
+                      schema={{
+                        type: 'object',
+                        properties: {
+                          oldPassword: {
+                            type: 'string',
+                            title: t('Old password'),
+                            'x-component': 'Password',
+                            'x-decorator': 'FormilyFormItem',
+                          },
+                          newPassword: {
+                            type: 'string',
+                            title: t('New password'),
+                            'x-component': 'Password',
+                            'x-decorator': 'FormilyFormItem',
+                          },
+                        },
+                      }}
+                    />
+                    <FormDrawer.Footer>
+                      <FormButtonGroup align="right">
+                        <Submit
+                          onSubmit={async (values) => {
+                            const { data } = await request(
+                              'users:changePassword',
+                              {
+                                method: 'post',
+                                data: values,
+                              },
+                            ).catch((e) => {
+                              message.error(e.data);
+                              throw e;
+                            });
+                          }}
+                        >
+                          {t('Submit')}
+                        </Submit>
+                      </FormButtonGroup>
+                    </FormDrawer.Footer>
+                  </FormLayout>
+                );
+              }).open();
+            }}
+          >
+            {t('Change password')}
           </Menu.Item>
           <Menu.Item>
             <div style={{ display: 'flex', justifyContent: 'space-between' }}>
