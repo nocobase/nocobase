@@ -5,6 +5,7 @@ import {
   onFieldChange,
   onFieldReact,
   onFormValuesChange,
+  onFormReset,
 } from '@formily/core';
 import {
   FormProvider,
@@ -14,6 +15,7 @@ import {
   SchemaOptionsContext,
   SchemaKey,
   RecursionField,
+  useForm,
 } from '@formily/react';
 import { Field } from '@formily/core/esm/models/Field';
 import { Form } from '@formily/core/esm/models/Form';
@@ -27,7 +29,7 @@ import {
 } from '@formily/antd';
 import { CloseCircleOutlined } from '@ant-design/icons';
 import { get } from 'lodash';
-import { isValid } from '@formily/shared';
+import { isValid, uid } from '@formily/shared';
 import { useEffect } from 'react';
 
 function useFilterColumns(): Map<SchemaKey, Schema> {
@@ -147,6 +149,7 @@ export const FilterItem = (props) => {
               return;
             }
             const fieldName = Object.keys(column.properties).shift();
+            debugger;
             if (operation?.noValue) {
               onChange({
                 [fieldName]: {
