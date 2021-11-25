@@ -219,9 +219,20 @@ await field.sync();
 interface updateOptions {
   (options: CollectionOptions): void;
 }
+
+interface CollectionOptions extends Sequelize.ModelOptions {
+  name: string;
+  tableName?: string;
+  fields?: any;
+  model?: string | Model;
+  repository?: string | Repository;
+  [key: string]: any;
+}
 ```
 
 ##### Examples
+
+可能的更新项详见 [Sequelize.ModelOptions](https://github.com/sequelize/sequelize/blob/f9dfaa7c533acad4ae88fd16b47c3a5805fb6e9b/types/lib/model.d.ts#L1390)
 
 ```ts
 const collection = db.collection({
@@ -229,9 +240,6 @@ const collection = db.collection({
 });
 
 collection.updateOptions({
-  createdAt: true,
-  updatedAt: true,
-  sortable: true,
-  fields: [],
+  
 });
 ```
