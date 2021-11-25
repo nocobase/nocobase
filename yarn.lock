@@ -1936,86 +1936,86 @@
   resolved "https://registry.npm.taobao.org/@formatjs/intl-utils/download/@formatjs/intl-utils-2.3.0.tgz#2dc8c57044de0340eb53a7ba602e59abf80dc799"
   integrity sha1-LcjFcETeA0DrU6e6YC5Zq/gNx5k=
 
-"@formily/antd@2.0.0-rc.19":
-  version "2.0.0-rc.19"
-  resolved "https://registry.npmmirror.com/@formily/antd/download/@formily/antd-2.0.0-rc.19.tgz#e327658aa5c6cb3692be691c94dd6991f0b97cc7"
-  integrity sha512-RNQ0pNVv4MHmMx2PbhjccYo+zo+m1mA9B4bGBtFHcwklfVt5/Q8Sza0f8drXpxrIYyKAdKiOfW8eoRRXAVDgVg==
+"@formily/antd@2.0.0":
+  version "2.0.0"
+  resolved "https://registry.npmmirror.com/@formily/antd/download/@formily/antd-2.0.0.tgz#93a539c146c3f435f10bf10da65c3fe4b2862ada"
+  integrity sha512-Kx1eVgUdGqPQlEVVYM9ULzqW2nl+Pxx1twcwAcT1PojUqongwHddpRn9WbotU7gdeKfpTgCrjW9wZbRfX6gkSw==
   dependencies:
     "@ant-design/icons" "^4.0.0"
-    "@formily/core" "2.0.0-rc.19"
-    "@formily/grid" "2.0.0-rc.19"
-    "@formily/json-schema" "2.0.0-rc.19"
-    "@formily/react" "2.0.0-rc.19"
-    "@formily/reactive" "2.0.0-rc.19"
-    "@formily/reactive-react" "2.0.0-rc.19"
-    "@formily/shared" "2.0.0-rc.19"
+    "@formily/core" "2.0.0"
+    "@formily/grid" "2.0.0"
+    "@formily/json-schema" "2.0.0"
+    "@formily/react" "2.0.0"
+    "@formily/reactive" "2.0.0"
+    "@formily/reactive-react" "2.0.0"
+    "@formily/shared" "2.0.0"
     "@juggle/resize-observer" "^3.3.1"
     classnames "^2.2.6"
     react-sortable-hoc "^1.11.0"
     react-sticky-box "^0.9.3"
 
-"@formily/core@2.0.0-rc.19":
-  version "2.0.0-rc.19"
-  resolved "https://registry.npmmirror.com/@formily/core/download/@formily/core-2.0.0-rc.19.tgz#e1579ecf14dd906689652e92f468bbd0f35694aa"
-  integrity sha512-V3UtzsAuy6NUC+SWD16IONKCwnfGjf86JQUhiedpLgLTxJp3MH5UAcfHsUHK5wPmadyUw0+Kp9dKs8hmfHdBRQ==
+"@formily/core@2.0.0":
+  version "2.0.0"
+  resolved "https://registry.npmmirror.com/@formily/core/download/@formily/core-2.0.0.tgz?cache=0&sync_timestamp=1637587213933&other_urls=https%3A%2F%2Fregistry.npmmirror.com%2F%40formily%2Fcore%2Fdownload%2F%40formily%2Fcore-2.0.0.tgz#e630cc9020f8b5c6d2a7f0fabde131cd07223249"
+  integrity sha512-7Mq0acHkooFjOOEUcKENZ/QcfrwTCONm6UBWAta5Yo6MGLczIU9JSEyK7DIZCRFGsnZaF0e55JAj6NCZlUbz8Q==
   dependencies:
-    "@formily/reactive" "2.0.0-rc.19"
-    "@formily/shared" "2.0.0-rc.19"
-    "@formily/validator" "2.0.0-rc.19"
+    "@formily/reactive" "2.0.0"
+    "@formily/shared" "2.0.0"
+    "@formily/validator" "2.0.0"
 
-"@formily/grid@2.0.0-rc.19":
-  version "2.0.0-rc.19"
-  resolved "https://registry.npmmirror.com/@formily/grid/download/@formily/grid-2.0.0-rc.19.tgz#2caf57192c89358c8db37314820396cf8faf36f0"
-  integrity sha512-9Dmo3me67Oy10lm9N5z9VubTuKz2wEuZJkZDfRYEma0UmgO+dAAne6ijO4FNu/7+HhfKp3c1C3b1Y2nqGChSBg==
+"@formily/grid@2.0.0":
+  version "2.0.0"
+  resolved "https://registry.npmmirror.com/@formily/grid/download/@formily/grid-2.0.0.tgz#400848625b93cd00391c004b44d3367683a342d1"
+  integrity sha512-MqqpbtHbQkw/hLobisawRf1uhJ/HZC8M7b3PEGsH94F2/5BFjxisI2p+s1INEu7oJ2QdjYbD1YCS45lZD+HIiw==
   dependencies:
-    "@formily/reactive" "2.0.0-rc.19"
+    "@formily/reactive" "2.0.0"
 
-"@formily/json-schema@2.0.0-rc.19":
-  version "2.0.0-rc.19"
-  resolved "https://registry.npmmirror.com/@formily/json-schema/download/@formily/json-schema-2.0.0-rc.19.tgz#6f3dbc11d34575ffbc88aca0eb7b78b25379b6d3"
-  integrity sha512-vblyDFtAtnDHJyFUPKbaKbrf6BvKSoyVSN43N6tJZzSQt2SdQKRUwI/SDWICPprqc+bnOqmBgpR+YuF8iJUfmg==
+"@formily/json-schema@2.0.0":
+  version "2.0.0"
+  resolved "https://registry.npmmirror.com/@formily/json-schema/download/@formily/json-schema-2.0.0.tgz#1971ade6105b39b707924a0e039abac122278b84"
+  integrity sha512-+AMsEtJBUnsNo7BapBvu0Iobrl0bWXOHpp5yV+/xq4GGz88mcOdGLKt7Xi8IeWhNporwmY3fDGNzSo0llxICrg==
   dependencies:
-    "@formily/core" "2.0.0-rc.19"
-    "@formily/reactive" "2.0.0-rc.19"
-    "@formily/shared" "2.0.0-rc.19"
+    "@formily/core" "2.0.0"
+    "@formily/reactive" "2.0.0"
+    "@formily/shared" "2.0.0"
 
-"@formily/path@2.0.0-rc.19":
-  version "2.0.0-rc.19"
-  resolved "https://registry.npmmirror.com/@formily/path/download/@formily/path-2.0.0-rc.19.tgz#98922d0694ca15a2d92272440594e13289594319"
-  integrity sha512-9KdtXzBEOfdJR9XSone3O5K8swShDwyamU/i3+K1mDPqOHgGWeQ83PZf8aOjZzsHGTdJ11z1QyN6QOs6WuF9gg==
+"@formily/path@2.0.0":
+  version "2.0.0"
+  resolved "https://registry.npmmirror.com/@formily/path/download/@formily/path-2.0.0.tgz#a28b3e0e6d31f79c5cbc19cc45d829f4ff0365d6"
+  integrity sha512-izAltPR9PyZTZT2eoZ6Y42gzz6FENevw3eeAc1Xs17+gWECfsvkkZwydhNM8udBklibOrLOa8TtL2F7IA1D5Rg==
 
-"@formily/react@2.0.0-rc.19":
-  version "2.0.0-rc.19"
-  resolved "https://registry.npmmirror.com/@formily/react/download/@formily/react-2.0.0-rc.19.tgz#fb79c0983563cd3011fbbcd449d5b026e1132597"
-  integrity sha512-9z4YN2oUfcXSftLgCbuczm/NXupRHz28NLXsxwLct8+gGWqiKavm47+TtitKElqq51gUCHFq8TxMFkSjfiQYBg==
+"@formily/react@2.0.0":
+  version "2.0.0"
+  resolved "https://registry.npmmirror.com/@formily/react/download/@formily/react-2.0.0.tgz?cache=0&sync_timestamp=1637587213958&other_urls=https%3A%2F%2Fregistry.npmmirror.com%2F%40formily%2Freact%2Fdownload%2F%40formily%2Freact-2.0.0.tgz#cdb4efc846891eaa5bebb62236406c393b2b0766"
+  integrity sha512-ifH8sJEaLhOUeA2hnM2H13TXbJKUMOIiNvGV53/UhPOEfl0tpcnMQsWi6LveVzCP7qORbPdg43FsBLG4qBWWeg==
   dependencies:
-    "@formily/core" "2.0.0-rc.19"
-    "@formily/json-schema" "2.0.0-rc.19"
-    "@formily/reactive" "2.0.0-rc.19"
-    "@formily/reactive-react" "2.0.0-rc.19"
-    "@formily/shared" "2.0.0-rc.19"
-    "@formily/validator" "2.0.0-rc.19"
+    "@formily/core" "2.0.0"
+    "@formily/json-schema" "2.0.0"
+    "@formily/reactive" "2.0.0"
+    "@formily/reactive-react" "2.0.0"
+    "@formily/shared" "2.0.0"
+    "@formily/validator" "2.0.0"
     hoist-non-react-statics "^3.3.2"
 
-"@formily/reactive-react@2.0.0-rc.19":
-  version "2.0.0-rc.19"
-  resolved "https://registry.npmmirror.com/@formily/reactive-react/download/@formily/reactive-react-2.0.0-rc.19.tgz#053e362ade56d41a1e2823b94b0a2081bef3a20c"
-  integrity sha512-zjHKd0nwruiI6afYzDFuGB3/SaVtlA9PdwEdAUQN4AjfHLv+8RQv/8LRwlKRko7c7yIBeQGEGnbfs9lKLNRnLA==
+"@formily/reactive-react@2.0.0":
+  version "2.0.0"
+  resolved "https://registry.npmmirror.com/@formily/reactive-react/download/@formily/reactive-react-2.0.0.tgz#6269e8d8c350b308fd400ea12f8a209277883bd4"
+  integrity sha512-g+/bwfW4mKgp/8/J/u66xG/b88kYzNPsX4dq2VdkepwyEyNF8o1em2aY5u+AyL66HF1fFJDzfXV4B1SGq5SqkQ==
   dependencies:
-    "@formily/reactive" "2.0.0-rc.19"
+    "@formily/reactive" "2.0.0"
     hoist-non-react-statics "^3.3.2"
 
-"@formily/reactive@2.0.0-rc.19":
-  version "2.0.0-rc.19"
-  resolved "https://registry.npmmirror.com/@formily/reactive/download/@formily/reactive-2.0.0-rc.19.tgz#0482783f87864dc321590618ba7509248bfe0223"
-  integrity sha512-+6Z0tfAVjN7Icw/CaB6kDMf/BPFqHcMkpMARV6A2rV/J2TfwhbCsDAAXHYa+fSDosKSCk3uMfeCIyYUjuF9hbA==
+"@formily/reactive@2.0.0":
+  version "2.0.0"
+  resolved "https://registry.npmmirror.com/@formily/reactive/download/@formily/reactive-2.0.0.tgz#6f381184fde8dd667ee70fb99ad0925eafe0544d"
+  integrity sha512-Ld5yLhpzyEEXgwQeLfMhxyLysmABNn+F7NK8lpW6MDKYriXbXK2+7sDqlH0/WGxGbSGkvUSW4fKVmmYNnEFOMA==
 
-"@formily/shared@2.0.0-rc.19":
-  version "2.0.0-rc.19"
-  resolved "https://registry.npmmirror.com/@formily/shared/download/@formily/shared-2.0.0-rc.19.tgz#c868f2ccedc2155d7fe84afdba43ff8bc49510d0"
-  integrity sha512-LLec+DHWX8IJz9kX6AqWW+Hcbo9Bp0bJ7bxoOk5CFlENvtVbvrrqwrVda/lz6Wk+pqpf3UdrGV09TYTMmcDfMw==
+"@formily/shared@2.0.0":
+  version "2.0.0"
+  resolved "https://registry.npmmirror.com/@formily/shared/download/@formily/shared-2.0.0.tgz?cache=0&sync_timestamp=1637587213364&other_urls=https%3A%2F%2Fregistry.npmmirror.com%2F%40formily%2Fshared%2Fdownload%2F%40formily%2Fshared-2.0.0.tgz#9e2ee3dab235369c7a385b278cbdc674d4fa2739"
+  integrity sha512-0OUGt7+beAc/qQJ+21Ig/TrGlTzsgggX/4uOUQI/+U6nZUEiu6jj6zLJIBiM8ZhbSFdSJcdXJj7BmQIVcZU3tQ==
   dependencies:
-    "@formily/path" "2.0.0-rc.19"
+    "@formily/path" "2.0.0"
     camel-case "^4.1.1"
     lower-case "^2.0.1"
     no-case "^3.0.4"
@@ -2023,12 +2023,12 @@
     pascal-case "^3.1.1"
     upper-case "^2.0.1"
 
-"@formily/validator@2.0.0-rc.19":
-  version "2.0.0-rc.19"
-  resolved "https://registry.npmmirror.com/@formily/validator/download/@formily/validator-2.0.0-rc.19.tgz#0586f36b7143c2ef026a98890e9084faf6d83b6d"
-  integrity sha512-MjdK/c4NIkkCP2K0cTJZqieL30xxe1gyI+xUXoBD2GY49YF8WrJ6Iuh9L4fpkU55tPt5lnQauH7YnX5GQcidXg==
+"@formily/validator@2.0.0":
+  version "2.0.0"
+  resolved "https://registry.npmmirror.com/@formily/validator/download/@formily/validator-2.0.0.tgz?cache=0&sync_timestamp=1637587213445&other_urls=https%3A%2F%2Fregistry.npmmirror.com%2F%40formily%2Fvalidator%2Fdownload%2F%40formily%2Fvalidator-2.0.0.tgz#1bf18ef20129e5cd43c5453b38ba059452b545d9"
+  integrity sha512-8pWw6S1U/GVZDzF6yF/19CU96/2nnKML/kjC9aJhkg0KUq2VrahDu5iHznQcPSD2UrKaJKRMAMlYErngfTtfJw==
   dependencies:
-    "@formily/shared" "2.0.0-rc.19"
+    "@formily/shared" "2.0.0"
 
 "@gulp-sourcemaps/identity-map@1.X":
   version "1.0.2"
@@ -3833,7 +3833,7 @@
 
 "@types/js-cookie@^2.2.6":
   version "2.2.7"
-  resolved "https://registry.npmmirror.com/@types/js-cookie/download/@types/js-cookie-2.2.7.tgz?cache=0&sync_timestamp=1633128364658&other_urls=https%3A%2F%2Fregistry.npmmirror.com%2F%40types%2Fjs-cookie%2Fdownload%2F%40types%2Fjs-cookie-2.2.7.tgz#226a9e31680835a6188e887f3988e60c04d3f6a3"
+  resolved "https://registry.npmmirror.com/@types/js-cookie/download/@types/js-cookie-2.2.7.tgz#226a9e31680835a6188e887f3988e60c04d3f6a3"
   integrity sha1-ImqeMWgINaYYjoh/OYjmDATT9qM=
 
 "@types/json-schema@^7.0.7", "@types/json-schema@^7.0.8":
@@ -4810,7 +4810,7 @@ agentkeepalive@^3.4.1:
 
 ahooks@^2.10.2:
   version "2.10.12"
-  resolved "https://registry.npmmirror.com/ahooks/download/ahooks-2.10.12.tgz?cache=0&sync_timestamp=1636600910135&other_urls=https%3A%2F%2Fregistry.npmmirror.com%2Fahooks%2Fdownload%2Fahooks-2.10.12.tgz#e8cab653039434279e69569a8342c602b3545dab"
+  resolved "https://registry.npmmirror.com/ahooks/download/ahooks-2.10.12.tgz#e8cab653039434279e69569a8342c602b3545dab"
   integrity sha1-6Mq2UwOUNCeeaVaag0LGArNUXas=
   dependencies:
     "@ahooksjs/use-request" "^2.8.13"

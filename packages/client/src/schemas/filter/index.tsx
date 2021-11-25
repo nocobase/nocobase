@@ -10,9 +10,10 @@ import {
   ArrayField,
   useField,
   FormProvider,
+  useForm,
 } from '@formily/react';
 import { LoadingOutlined } from '@ant-design/icons';
-import { useDynamicList, useMap } from 'ahooks';
+import { useDynamicList, useMap, useMount, useUnmount } from 'ahooks';
 import { Select } from 'antd';
 import { CloseCircleOutlined } from '@ant-design/icons';
 import { FilterItem } from './FilterItem';
@@ -22,7 +23,7 @@ import { cloneDeep } from 'lodash';
 import { uid, isValid } from '@formily/shared';
 import { SchemaField, SchemaRenderer } from '../../components/schema-renderer';
 import { useMemo } from 'react';
-import { createForm, onFormValuesChange } from '@formily/core';
+import { createForm, LifeCycleTypes, onFormReset } from '@formily/core';
 import deepmerge from 'deepmerge';
 import { Trans, useTranslation } from 'react-i18next';
 
@@ -54,7 +55,9 @@ const toValue = (value) => {
 export function FilterGroup(props) {
   const { bordered = true, onRemove, onChange } = props;
   const value = toValue(props.value);
+  const form = useForm();
   console.log('list', value);
+
   return (
     <div className={cls('nb-filter-group', { bordered })}>
       {onRemove && (
@@ -99,7 +102,7 @@ export function FilterGroup(props) {
 
 export function FilterList(props) {
   const { initialValue = [] } = props;
-
+  const form = useForm();
   const { t } = useTranslation();
 
   const [map, { set, setAll, remove, reset, get }] = useMap<string, any>(
@@ -107,7 +110,20 @@ export function FilterList(props) {
       return [`index-${index}`, item];
     }),
   );
-
+  useEffect(() => {
+    const id = uid();
+    form.addEffects(id, () => {
+      onFormReset((form) => {
+        setAll([]);
+        setTimeout(() => {
+          reset();
+        },0);
+      });
+      return () => {
+        form.removeEffects(id);
+      };
+    });
+  }, []);
   useEffect(() => {
     props.onChange && props.onChange([...map.values()]);
   }, [map]);
