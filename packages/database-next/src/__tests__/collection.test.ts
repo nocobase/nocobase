@@ -1,5 +1,29 @@
 import { mockDatabase } from './index';
-import { string } from '@nocobase/client/lib/schemas/database-field/interfaces/string';
+import { Collection } from '../collection';
+
+test('new collection', async () => {
+  const db = mockDatabase();
+  const collection = new Collection(
+    {
+      name: 'test',
+    },
+    { database: db },
+  );
+
+  expect(collection.name).toEqual('test');
+});
+
+test('collection create field', async () => {
+  const db = mockDatabase();
+  const collection = new Collection(
+    {
+      name: 'test',
+    },
+    { database: db },
+  );
+
+  collection.addField({});
+});
 
 test('collection with association', async () => {
   const db = mockDatabase();
@@ -31,8 +55,8 @@ test('collection with association', async () => {
   const Comment = db.collection({
     name: 'comments',
     field: [
-      { type: string, name: 'content' },
-      { type: string, name: 'comment_as' },
+      { type: 'string', name: 'content' },
+      { type: 'string', name: 'comment_as' },
       { type: 'belongsTo', name: 'post' },
     ],
   });

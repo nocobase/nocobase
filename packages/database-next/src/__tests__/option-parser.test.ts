@@ -1,7 +1,7 @@
-import Database from '@nocobase/database';
 import { Collection } from '../collection';
 import { mockDatabase } from './index';
 import { OptionsParser } from '../optionsParser';
+import { Database } from '../database';
 
 describe('option parser', () => {
   let db: Database;
