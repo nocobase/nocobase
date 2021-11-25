@@ -1,6 +1,5 @@
 import { Collection } from '../collection';
 import { mockDatabase } from './index';
-import { string } from '@nocobase/client/lib/schemas/database-field/interfaces/string';
 import { UpdateGuard } from '../update-guard';
 import lodash from 'lodash';
 import { Database } from '../database';
@@ -42,8 +41,8 @@ describe('update-guard', () => {
     Comment = db.collection({
       name: 'comments',
       field: [
-        { type: string, name: 'content' },
-        { type: string, name: 'comment_as' },
+        { type: 'string', name: 'content' },
+        { type: 'string', name: 'comment_as' },
         { type: 'belongsTo', name: 'post' },
       ],
     });

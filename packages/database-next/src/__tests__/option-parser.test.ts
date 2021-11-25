@@ -1,7 +1,6 @@
 import Database from '@nocobase/database';
 import { Collection } from '../collection';
 import { mockDatabase } from './index';
-import { string } from '@nocobase/client/lib/schemas/database-field/interfaces/string';
 import { OptionsParser } from '../optionsParser';
 
 describe('option parser', () => {
