@@ -1,9 +1,6 @@
 import { mockDatabase } from './index';
 import { Collection } from '../collection';
-import collections from '@nocobase/plugin-collections/src/collections/collections';
-import fields from '@nocobase/database/examples/plugins/db-driven/tables/fields';
 import { Database } from '../database';
-import { col } from 'sequelize';
 
 test('new collection', async () => {
   const db = mockDatabase();
