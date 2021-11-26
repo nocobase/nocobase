@@ -12,10 +12,16 @@ import { Collection, CollectionOptions } from './collection';
 import * as FieldTypes from './fields';
 import { FieldContext, RelationField } from './fields';
 import { Repository } from './repository';
+import lodash from 'lodash';
+import { ModelHooks, SequelizeHooks } from 'sequelize/types/lib/hooks';
 
 export interface PendingOptions {
   field: RelationField;
   model: ModelCtor<Model>;
+}
+
+interface MapOf<T> {
+  [key: string]: T;
 }
 
 export type DatabaseOptions = Options | Sequelize;
@@ -98,18 +104,20 @@ export class Database extends EventEmitter {
    * get exists collection by it's name
    * @param name
    */
-  getCollection(name: string) {
+  getCollection(name: string): Collection {
     return this.collections.get(name);
   }
 
-  hasCollection(name: string) {
+  hasCollection(name: string): boolean {
     return this.collections.has(name);
   }
 
   removeCollection(name: string) {
     const collection = this.collections.get(name);
     this.emit('beforeDefineCollection', collection);
+
     const result = this.collections.delete(name);
+
     if (result) {
       this.emit('afterDefineCollection', collection);
     }
@@ -137,13 +145,13 @@ export class Database extends EventEmitter {
     }
   }
 
-  registerModels(models: any) {
+  registerModels(models: MapOf<Model>) {
     for (const [type, schemaType] of Object.entries(models)) {
       this.models.set(type, schemaType);
     }
   }
 
-  registerRepositories(repositories: Repository[]) {
+  registerRepositories(repositories: MapOf<Repository>) {
     for (const [type, schemaType] of Object.entries(repositories)) {
       this.repositories.set(type, schemaType);
     }
@@ -178,6 +186,28 @@ export class Database extends EventEmitter {
 
   async close() {
     return this.sequelize.close();
+  }
+
+  on(event: string | symbol, listener: (...args: any[]) => void): this {
+    const isModelHook = (eventName) => {
+      if (lodash.isString(eventName) && eventName.split('.').length == 2) {
+        const [modelName, _eventName] = eventName.split('.');
+        if (this.sequelize.modelManager.getModel(modelName)) {
+          return true;
+        }
+      }
+
+      return false;
+    };
+
+    if (isModelHook(event)) {
+      const [modelName, eventName] = (<string>event).split('.');
+      const model = this.sequelize.models[modelName];
+      model.addHook(<any>eventName, listener);
+      return this;
+    }
+
+    return super.on(event, listener);
   }
 }
 

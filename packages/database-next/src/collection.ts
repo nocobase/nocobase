@@ -177,12 +177,16 @@ export class Collection<
   }
 
   updateOptions(options: CollectionOptions) {
+    this.context.database.emit('beforeUpdateCollection', this, options);
+
     const updateOptions = {
       ...this.options,
       ...options,
     };
 
     this.initByOptions(updateOptions, true);
+
+    this.context.database.emit('afterUpdateCollection', this);
   }
 
   updateField(name: string, options: FieldOptions) {
