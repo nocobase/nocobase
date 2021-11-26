@@ -1,7 +1,7 @@
 import { mockDatabase } from '../index';
 import Database from '@nocobase/database';
 import { Collection } from '../../collection';
-import { OptionsParser } from '../../optionsParser';
+import { OptionsParser } from '../../options-parser';
 
 describe('repository find', () => {
   let db: Database;

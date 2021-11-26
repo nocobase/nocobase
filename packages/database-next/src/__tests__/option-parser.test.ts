@@ -1,6 +1,6 @@
 import { Collection } from '../collection';
 import { mockDatabase } from './index';
-import { OptionsParser } from '../optionsParser';
+import { OptionsParser } from '../options-parser';
 import { Database } from '../database';
 
 describe('option parser', () => {

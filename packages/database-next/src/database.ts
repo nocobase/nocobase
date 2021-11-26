@@ -39,7 +39,7 @@ export class Database extends EventEmitter {
 
     this.collections = new Map();
 
-    this.on('collection.afterDefine', (collection) => {
+    this.on('afterDefineCollection', (collection) => {
       // after collection defined, call bind method on pending fields
       this.pendingFields.get(collection.name)?.forEach((field) => field.bind());
     });
@@ -90,7 +90,7 @@ export class Database extends EventEmitter {
       this.collections.set(collection.name, collection);
     }
 
-    this.emit('collection.afterDefine', collection);
+    this.emit('afterDefineCollection', collection);
 
     return collection as Collection<Attributes, CreateAttributes>;
   }
@@ -101,6 +101,19 @@ export class Database extends EventEmitter {
    */
   getCollection(name: string) {
     return this.collections.get(name);
+  }
+
+  hasCollection(name: string) {
+    return this.collections.has(name);
+  }
+
+  removeCollection(name: string) {
+    const collection = this.collections.get(name);
+    this.emit('beforeDefineCollection', collection);
+    const result = this.collections.delete(name);
+    if (result) {
+      this.emit('afterDefineCollection', collection);
+    }
   }
 
   addPendingField(field: RelationField) {
@@ -168,3 +181,5 @@ export class Database extends EventEmitter {
     return this.sequelize.close();
   }
 }
+
+export default Database;
