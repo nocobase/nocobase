@@ -154,6 +154,29 @@ describe('collection sync', () => {
   });
 });
 
+test('update collection field', async () => {
+  const db = mockDatabase();
+
+  const collection = new Collection(
+    {
+      name: 'posts',
+      fields: [{ type: 'string', name: 'title' }],
+    },
+    {
+      database: db,
+    },
+  );
+  expect(collection.hasField('title')).toBeTruthy();
+
+  collection.updateField('title', {
+    type: 'string',
+    name: 'content',
+  });
+
+  expect(collection.hasField('title')).toBeFalsy();
+  expect(collection.hasField('content')).toBeTruthy();
+});
+
 test('collection with association', async () => {
   const db = mockDatabase();
   const User = db.collection({

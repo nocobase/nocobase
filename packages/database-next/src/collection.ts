@@ -135,6 +135,16 @@ export class Collection<
     };
   }
 
+  updateField(name: string, options: FieldOptions) {
+    const existField = this.getField(name);
+    if (!existField) {
+      throw new Error(`field ${name} not exists`);
+    }
+
+    this.removeField(name);
+    this.addField(options.name, options);
+  }
+
   async sync(syncOptions?: SyncOptions) {
     await this.model.sync(syncOptions);
     const associations = this.model.associations;
