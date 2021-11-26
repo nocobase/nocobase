@@ -5,6 +5,7 @@ import { Field } from './fields';
 import _ from 'lodash';
 import { Repository } from './repository';
 import lodash from 'lodash';
+import { SyncOptions } from 'sequelize/types/lib/sequelize';
 
 export interface CollectionOptions {
   name: string;
@@ -112,7 +113,10 @@ export class Collection<
   }
 
   protected cleanFields() {
-    this.fields.clear();
+    const fieldNames = this.fields.keys();
+    for (const fieldName of fieldNames) {
+      this.removeField(fieldName);
+    }
   }
 
   removeField(name) {
@@ -131,5 +135,15 @@ export class Collection<
     };
   }
 
-  sync() {}
+  async sync(syncOptions?: SyncOptions) {
+    await this.model.sync(syncOptions);
+    const associations = this.model.associations;
+    for (const associationKey in associations) {
+      const association = associations[associationKey];
+      await association.target.sync(syncOptions);
+      if ((<any>association).through) {
+        await (<any>association).through.model.sync(syncOptions);
+      }
+    }
+  }
 }

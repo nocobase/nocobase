@@ -1,5 +1,9 @@
 import { mockDatabase } from './index';
 import { Collection } from '../collection';
+import collections from '@nocobase/plugin-collections/src/collections/collections';
+import fields from '@nocobase/database/examples/plugins/db-driven/tables/fields';
+import { Database } from '../database';
+import { col } from 'sequelize';
 
 test('new collection', async () => {
   const db = mockDatabase();
@@ -62,6 +66,95 @@ test('collection set fields', () => {
 
   collection.setFields([{ type: 'string', name: 'firstName' }]);
   expect(collection.hasField('firstName')).toBeTruthy();
+});
+
+describe('collection sync', () => {
+  let db: Database;
+
+  beforeEach(() => {
+    db = mockDatabase();
+  });
+
+  afterEach(async () => {
+    await db.close();
+  });
+
+  test('sync fields', async () => {
+    const collection = new Collection(
+      {
+        name: 'users',
+      },
+      { database: db },
+    );
+
+    collection.setFields([
+      { type: 'string', name: 'firstName' },
+      { type: 'string', name: 'lastName' },
+      { type: 'integer', name: 'age' },
+    ]);
+
+    await collection.sync();
+    const tableFields = await (<any>(
+      collection.model
+    )).queryInterface.describeTable('_database_next_collection_users');
+
+    expect(tableFields).toHaveProperty('firstName');
+    expect(tableFields).toHaveProperty('lastName');
+    expect(tableFields).toHaveProperty('age');
+  });
+
+  test('sync with association not exists', async () => {
+    const collection = new Collection(
+      {
+        name: 'posts',
+        fields: [
+          { type: 'string', name: 'title' },
+          { type: 'belongsTo', name: 'users' },
+        ],
+      },
+      { database: db },
+    );
+
+    await collection.sync();
+
+    const model = collection.model;
+    const tableFields = await (<any>model).queryInterface.describeTable(
+      '_database_next_collection_posts',
+    );
+
+    expect(tableFields['user_id']).toBeUndefined();
+  });
+
+  test('sync with association', async () => {
+    new Collection(
+      {
+        name: 'tags',
+        fields: [{ type: 'string', name: 'name' }],
+      },
+      { database: db },
+    );
+
+    const collection = new Collection(
+      {
+        name: 'posts',
+        fields: [
+          { type: 'string', name: 'title' },
+          { type: 'belongsToMany', name: 'tags' },
+        ],
+      },
+      {
+        database: db,
+      },
+    );
+
+    const model = collection.model;
+    await collection.sync();
+    const tableFields = await (<any>model).queryInterface.describeTable(
+      '_database_next_collection_posts_tags',
+    );
+    expect(tableFields['postId']).toBeDefined();
+    expect(tableFields['tagId']).toBeDefined();
+  });
 });
 
 test('collection with association', async () => {
