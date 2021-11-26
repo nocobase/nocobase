@@ -17,12 +17,51 @@ test('collection create field', async () => {
   const db = mockDatabase();
   const collection = new Collection(
     {
-      name: 'test',
+      name: 'user',
     },
     { database: db },
   );
 
-  collection.addField({});
+  collection.addField('age', {
+    type: 'integer',
+  });
+
+  const ageField = collection.getField('age');
+  expect(ageField).toBeDefined();
+  expect(collection.hasField('age')).toBeTruthy();
+  expect(collection.hasField('test')).toBeFalsy();
+
+  collection.removeField('age');
+  expect(collection.hasField('age')).toBeFalsy();
+});
+
+test('create unknown type field', () => {
+  const db = mockDatabase();
+  const collection = new Collection(
+    {
+      name: 'user',
+    },
+    { database: db },
+  );
+
+  expect(() => {
+    collection.addField('age', {
+      type: 'unknown_type',
+    });
+  }).toThrow(new Error('unsupported field type unknown_type'));
+});
+
+test('collection set fields', () => {
+  const db = mockDatabase();
+  const collection = new Collection(
+    {
+      name: 'user',
+    },
+    { database: db },
+  );
+
+  collection.setFields([{ type: 'string', name: 'firstName' }]);
+  expect(collection.hasField('firstName')).toBeTruthy();
 });
 
 test('collection with association', async () => {

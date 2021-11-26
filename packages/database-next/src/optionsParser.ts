@@ -1,6 +1,3 @@
-import _, { filter } from 'lodash';
-
-import { Collection } from './collection';
 import { Appends, Except, FindOptions } from './repository';
 import FilterParser from './filterParser';
 import { FindAttributeOptions, ModelCtor } from 'sequelize';

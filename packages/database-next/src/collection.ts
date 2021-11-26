@@ -1,15 +1,22 @@
-import { Sequelize, ModelCtor, Model, DataTypes, Utils } from 'sequelize';
+import { Sequelize, ModelCtor, Model } from 'sequelize';
 import { EventEmitter } from 'events';
 import { Database } from './database';
 import { Field } from './fields';
 import _ from 'lodash';
 import { Repository } from './repository';
-import { ModelAttributes } from 'sequelize/types/lib/model';
+import lodash from 'lodash';
 
 export interface CollectionOptions {
   name: string;
   tableName?: string;
   fields?: any;
+  [key: string]: any;
+}
+
+interface FieldOptions {
+  name: string;
+  type: any;
+
   [key: string]: any;
 }
 
@@ -40,7 +47,9 @@ export class Collection<
     this.bindFieldEventListener();
 
     // set collection fields
-    this.setFields(options.fields);
+    if (options.fields) {
+      this.setFields(options.fields);
+    }
 
     // add collection repository
     this.repository = new Repository(this);
@@ -78,14 +87,11 @@ export class Collection<
     return this.fields.get(name);
   }
 
-  addField(options) {
-    const { name, ...others } = options;
-    if (!name) {
-      return this;
-    }
+  addField(name: string, options: Omit<FieldOptions, 'name'>): Field {
     const { database } = this.context;
+
     const field = database.buildField(
-      { name, ...others },
+      { name, ...options },
       {
         ...this.context,
         collection: this,
@@ -94,26 +100,19 @@ export class Collection<
 
     this.fields.set(name, field);
     this.emit('field.afterAdd', field);
+    return field;
   }
 
-  setFields(fields: any, reset = true) {
-    if (!fields) {
-      return this;
-    }
+  setFields(options: FieldOptions[]) {
+    this.cleanFields();
 
-    if (reset) {
-      this.fields.clear();
+    for (const field of options) {
+      this.addField(field.name, lodash.omit(field, 'name'));
     }
+  }
 
-    if (Array.isArray(fields)) {
-      for (const field of fields) {
-        this.addField(field);
-      }
-    } else if (typeof fields === 'object') {
-      for (const [name, options] of Object.entries<any>(fields)) {
-        this.addField({ ...options, name });
-      }
-    }
+  protected cleanFields() {
+    this.fields.clear();
   }
 
   removeField(name) {
@@ -125,10 +124,11 @@ export class Collection<
     return bool;
   }
 
-  // TODO
-  extend(options) {
-    const { fields } = options;
-    this.setFields(fields);
+  updateOptions(options: CollectionOptions) {
+    this.options = {
+      ...this.options,
+      ...options,
+    };
   }
 
   sync() {}

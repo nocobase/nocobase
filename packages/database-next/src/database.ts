@@ -81,7 +81,7 @@ export class Database extends EventEmitter {
     let collection = this.collections.get(options.name);
 
     if (collection) {
-      collection.extend(options);
+      collection.updateOptions(options);
     } else {
       collection = new Collection<Attributes, CreateAttributes>(options, {
         database: this,
@@ -146,6 +146,9 @@ export class Database extends EventEmitter {
   buildField(options, context: FieldContext) {
     const { type } = options;
     const Field = this.fieldTypes.get(type);
+    if (!Field) {
+      throw Error(`unsupported field type ${type}`);
+    }
     return new Field(options, context);
   }
 
