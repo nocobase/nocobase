@@ -1,4 +1,4 @@
-import { Sequelize, ModelCtor, Model } from 'sequelize';
+import { Sequelize, ModelCtor, Model, ModelOptions } from 'sequelize';
 import { EventEmitter } from 'events';
 import { Database } from './database';
 import { Field } from './fields';
@@ -7,18 +7,19 @@ import { Repository } from './repository';
 import lodash from 'lodash';
 import { SyncOptions } from 'sequelize/types/lib/sequelize';
 
-export interface CollectionOptions {
-  name: string;
-  tableName?: string;
-  fields?: any;
-  [key: string]: any;
-}
-
 interface FieldOptions {
   name: string;
   type: any;
 
   [key: string]: any;
+}
+
+export interface CollectionOptions extends Omit<ModelOptions, 'name'> {
+  name: string;
+  tableName?: string;
+  fields?: FieldOptions[];
+  model?: string | Model;
+  repository?: string | Repository;
 }
 
 export interface CollectionContext {
@@ -41,24 +42,51 @@ export class Collection<
 
   constructor(options: CollectionOptions, context?: CollectionContext) {
     super();
-    this.options = options;
     this.context = context;
 
-    this.defineSequelizeModel();
     this.bindFieldEventListener();
+    this.initByOptions(options);
+  }
 
-    // set collection fields
+  initByOptions(options: CollectionOptions, reset: boolean = false) {
+    if (reset) {
+      this.repository = null;
+    }
+
+    const reDefineModel = (oldOptions, newOptions) => {
+      if (!this.model) {
+        return true;
+      }
+
+      if (lodash.get(oldOptions, 'name') !== lodash.get(newOptions, 'name')) {
+        return true;
+      }
+
+      return false;
+    };
+
+    const oldOptions = lodash.clone(this.options);
+
+    this.options = options;
+
+    if (options.model) {
+      let model: ModelCtor<any>;
+
+      if (typeof options.model == 'string') {
+        model = this.context.database.sequelize.model(options.model);
+      }
+      this.model = model;
+    }
+
+    if (reDefineModel(oldOptions, this.options)) {
+      this.defineSequelizeModel();
+    }
+
     if (options.fields) {
       this.setFields(options.fields);
     }
 
-    // add collection repository
-    this.repository = new Repository(this);
-  }
-
-  private bindFieldEventListener() {
-    this.on('field.afterAdd', (field: Field) => field.bind());
-    this.on('field.afterRemove', (field) => field.unbind());
+    this.setRepository(options.repository);
   }
 
   private defineSequelizeModel() {
@@ -70,6 +98,26 @@ export class Collection<
       ..._.omit(this.options, ['name', 'fields']),
       tableName: tableName || name,
     });
+  }
+
+  setRepository(repository?: Repository | string) {
+    if (typeof repository === 'string') {
+      repository = this.context.database.repositories.get(repository);
+    }
+
+    if (!this.repository && !repository) {
+      this.repository = new Repository(this);
+      return;
+    }
+
+    this.repository = repository;
+  }
+
+  private bindFieldEventListener() {
+    this.on('field.afterAdd', (field: Field) => {
+      field.bind();
+    });
+    this.on('field.afterRemove', (field) => field.unbind());
   }
 
   forEachField(callback: (field: Field) => void) {
@@ -129,10 +177,12 @@ export class Collection<
   }
 
   updateOptions(options: CollectionOptions) {
-    this.options = {
+    const updateOptions = {
       ...this.options,
       ...options,
     };
+
+    this.initByOptions(updateOptions, true);
   }
 
   updateField(name: string, options: FieldOptions) {

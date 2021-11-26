@@ -11,6 +11,7 @@ import { EventEmitter } from 'events';
 import { Collection, CollectionOptions } from './collection';
 import * as FieldTypes from './fields';
 import { FieldContext, RelationField } from './fields';
+import { Repository } from './repository';
 
 export interface PendingOptions {
   field: RelationField;
@@ -23,7 +24,7 @@ export class Database extends EventEmitter {
   sequelize: Sequelize;
   fieldTypes = new Map();
   models = new Map();
-  repositories = new Map();
+  repositories: Map<string, Repository> = new Map();
   operators = new Map();
   collections: Map<string, Collection>;
   pendingFields = new Map<string, RelationField[]>();
@@ -71,8 +72,6 @@ export class Database extends EventEmitter {
 
   /**
    * Add collection to database
-   *
-   *
    * @param options
    */
   collection<Attributes = any, CreateAttributes = Attributes>(
@@ -144,7 +143,7 @@ export class Database extends EventEmitter {
     }
   }
 
-  registerRepositories(repositories: any) {
+  registerRepositories(repositories: Repository[]) {
     for (const [type, schemaType] of Object.entries(repositories)) {
       this.repositories.set(type, schemaType);
     }

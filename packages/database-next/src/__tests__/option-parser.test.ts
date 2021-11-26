@@ -41,7 +41,7 @@ describe('option parser', () => {
 
     Comment = db.collection({
       name: 'comments',
-      field: [
+      fields: [
         { type: 'string', name: 'content' },
         { type: 'belongsTo', name: 'posts' },
       ],
@@ -49,7 +49,7 @@ describe('option parser', () => {
 
     Tag = db.collection({
       name: 'tags',
-      field: [{ type: 'string', name: 'name' }],
+      fields: [{ type: 'string', name: 'name' }],
     });
     await db.sync();
   });

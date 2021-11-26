@@ -1,11 +1,13 @@
 import { mockDatabase } from '../index';
 import { HasOneRepository } from '../../relation-repository/hasone-repository';
+import Database from '../../database';
+import { Collection } from '../../collection';
 
 describe('has one repository', () => {
-  let db;
+  let db: Database;
 
-  let User;
-  let Profile;
+  let User: Collection;
+  let Profile: Collection;
 
   afterEach(async () => {
     await db.close();
@@ -38,7 +40,7 @@ describe('has one repository', () => {
     const UserProfileRepository = new HasOneRepository(
       User,
       'profile',
-      user.id,
+      user['id'],
     );
 
     let userProfile = await UserProfileRepository.create({
@@ -64,9 +66,9 @@ describe('has one repository', () => {
       values: { avatar: 'new_avatar' },
     });
 
-    await UserProfileRepository.set(newProfile.id);
+    await UserProfileRepository.set(newProfile['id']);
     userProfile = await UserProfileRepository.find();
-    expect(userProfile['id']).toEqual(newProfile.id);
+    expect(userProfile['id']).toEqual(newProfile['id']);
 
     await UserProfileRepository.update({
       values: {

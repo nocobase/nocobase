@@ -115,6 +115,7 @@ describe('collection sync', () => {
     await collection.sync();
 
     const model = collection.model;
+
     const tableFields = await (<any>model).queryInterface.describeTable(
       `${generatePrefixByPath()}_posts`,
     );
@@ -177,6 +178,31 @@ test('update collection field', async () => {
   expect(collection.hasField('content')).toBeTruthy();
 });
 
+test('update collection options', async () => {
+  const db = mockDatabase();
+  const collection = new Collection(
+    {
+      name: 'posts',
+      fields: [{ type: 'string', name: 'title' }],
+    },
+    {
+      database: db,
+    },
+  );
+
+  expect(collection.model.getTableName()).toEqual(
+    `${generatePrefixByPath()}_posts`,
+  );
+
+  collection.updateOptions({
+    name: 'articles',
+  });
+
+  expect(collection.model.getTableName()).toEqual(
+    `${generatePrefixByPath()}_articles`,
+  );
+});
+
 test('collection with association', async () => {
   const db = mockDatabase();
   const User = db.collection({
@@ -206,7 +232,7 @@ test('collection with association', async () => {
 
   const Comment = db.collection({
     name: 'comments',
-    field: [
+    fields: [
       { type: 'string', name: 'content' },
       { type: 'string', name: 'comment_as' },
       { type: 'belongsTo', name: 'post' },

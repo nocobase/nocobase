@@ -3,7 +3,6 @@ import { Sequelize, ModelCtor, Model, DataTypes, Utils } from 'sequelize';
 import { RelationField } from './relation-field';
 
 export class BelongsToManyField extends RelationField {
-
   get through() {
     return (
       this.options.through ||
@@ -22,11 +21,13 @@ export class BelongsToManyField extends RelationField {
       return false;
     }
     const through = this.through;
+
     let Through =
       database.getCollection(through) ||
       database.collection({
         name: through,
       });
+
     const association = collection.model.belongsToMany(Target, {
       ...omit(this.options, ['name', 'type', 'target']),
       as: this.name,
@@ -34,6 +35,7 @@ export class BelongsToManyField extends RelationField {
     });
     // 建立关系之后从 pending 列表中删除
     database.removePendingField(this);
+
     if (!this.options.foreignKey) {
       this.options.foreignKey = association.foreignKey;
     }

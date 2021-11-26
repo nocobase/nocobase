@@ -40,7 +40,7 @@ describe('update-guard', () => {
 
     Comment = db.collection({
       name: 'comments',
-      field: [
+      fields: [
         { type: 'string', name: 'content' },
         { type: 'string', name: 'comment_as' },
         { type: 'belongsTo', name: 'post' },

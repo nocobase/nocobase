@@ -35,7 +35,7 @@ describe('repository find', () => {
 
     Comment = db.collection({
       name: 'comments',
-      field: [
+      fields: [
         { type: 'string', name: 'content' },
         { type: 'belongsTo', name: 'posts' },
       ],
