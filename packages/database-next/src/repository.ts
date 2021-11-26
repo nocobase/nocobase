@@ -15,8 +15,8 @@ import lodash, { omit } from 'lodash';
 import { Database } from './database';
 import { updateAssociations, updateModelByValues } from './update-associations';
 import { RelationField } from './fields';
-import FilterParser from './filterParser';
-import { OptionsParser } from './optionsParser';
+import FilterParser from './filter-parser';
+import { OptionsParser } from './options-parser';
 import { RelationRepository } from './relation-repository/relation-repository';
 import { HasOneRepository } from './relation-repository/hasone-repository';
 import { BelongsToRepository } from './relation-repository/belongs-to-repository';
@@ -191,7 +191,7 @@ export class Repository<
   /**
    * return count by filter
    */
-  async count(countOptions?: CountOptions) {
+  async count(countOptions?: CountOptions): Promise<number> {
     let options = countOptions ? lodash.clone(countOptions) : {};
 
     const transaction = await this.getTransaction(options);
@@ -203,11 +203,13 @@ export class Repository<
       };
     }
 
-    return await this.collection.model.count({
+    const count = await this.collection.model.count({
       ...options,
       distinct: true,
       transaction,
     });
+
+    return count as any;
   }
 
   /**

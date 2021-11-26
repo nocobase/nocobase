@@ -11,7 +11,7 @@ import {
   UpdateOptions,
 } from '../repository';
 
-interface SingleRelationFindOption extends TransactionAble {
+export interface SingleRelationFindOption extends TransactionAble {
   fields?: Fields;
   except?: Except;
   appends?: Appends;

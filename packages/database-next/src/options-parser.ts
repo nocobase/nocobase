@@ -1,5 +1,5 @@
 import { Appends, Except, FindOptions } from './repository';
-import FilterParser from './filterParser';
+import FilterParser from './filter-parser';
 import { FindAttributeOptions, ModelCtor } from 'sequelize';
 import { Database } from './database';
 

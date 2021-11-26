@@ -33,7 +33,7 @@ describe('string field', () => {
       fields: [{ type: 'string', name: 'name1' }],
     });
     await db.sync();
-    Test.addField({ type: 'string', name: 'name2' });
+    Test.addField('name2', { type: 'string', name: 'name2' });
     await db.sync({
       alter: true,
     });
@@ -61,7 +61,7 @@ describe('string field', () => {
         model.set(name, `${model.get(name)}111`);
       }
     });
-    collection.addField({ type: 'string', name: 'name2' });
+    collection.addField('name2', { type: 'string', name: 'name2' });
     await db.sync({
       alter: true,
     });

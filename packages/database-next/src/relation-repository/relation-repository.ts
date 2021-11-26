@@ -8,10 +8,10 @@ import {
   ModelCtor,
   Transaction,
 } from 'sequelize';
-import { OptionsParser } from '../optionsParser';
+import { OptionsParser } from '../options-parser';
 import { Collection } from '../collection';
 import { CreateOptions, Filter, FindOptions } from '../repository';
-import FilterParser from '../filterParser';
+import FilterParser from '../filter-parser';
 import { UpdateGuard } from '../update-guard';
 import { updateAssociations } from '../update-associations';
 import lodash from 'lodash';
