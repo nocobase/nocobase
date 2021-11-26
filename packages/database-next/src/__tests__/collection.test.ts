@@ -1,4 +1,4 @@
-import { mockDatabase } from './index';
+import { generatePrefixByPath, mockDatabase } from './index';
 import { Collection } from '../collection';
 import { Database } from '../database';
 
@@ -93,7 +93,7 @@ describe('collection sync', () => {
     await collection.sync();
     const tableFields = await (<any>(
       collection.model
-    )).queryInterface.describeTable('_database_next_collection_users');
+    )).queryInterface.describeTable(`${generatePrefixByPath()}_users`);
 
     expect(tableFields).toHaveProperty('firstName');
     expect(tableFields).toHaveProperty('lastName');
@@ -116,7 +116,7 @@ describe('collection sync', () => {
 
     const model = collection.model;
     const tableFields = await (<any>model).queryInterface.describeTable(
-      '_database_next_collection_posts',
+      `${generatePrefixByPath()}_posts`,
     );
 
     expect(tableFields['user_id']).toBeUndefined();
@@ -147,7 +147,7 @@ describe('collection sync', () => {
     const model = collection.model;
     await collection.sync();
     const tableFields = await (<any>model).queryInterface.describeTable(
-      '_database_next_collection_posts_tags',
+      `${generatePrefixByPath()}_posts_tags`,
     );
     expect(tableFields['postId']).toBeDefined();
     expect(tableFields['tagId']).toBeDefined();
