@@ -40,4 +40,16 @@ describe('define collection', () => {
     expect(PostCollection.model.associations.user).toBeDefined();
     expect(UserCollection.model.associations.posts).toBeDefined();
   });
+
+  test('get collection', async () => {
+    const db = mockDatabase();
+    expect(db.getCollection('test')).toBeUndefined();
+    expect(db.hasCollection('test')).toBeFalsy();
+    db.collection({
+      name: 'test',
+    });
+
+    expect(db.getCollection('test')).toBeDefined();
+    expect(db.hasCollection('test')).toBeTruthy();
+  });
 });

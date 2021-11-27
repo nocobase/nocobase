@@ -10,7 +10,7 @@ import {
 import { EventEmitter } from 'events';
 import { Collection, CollectionOptions } from './collection';
 import * as FieldTypes from './fields';
-import { FieldContext, RelationField } from './fields';
+import { Field, FieldContext, RelationField } from './fields';
 import { Repository } from './repository';
 import lodash from 'lodash';
 import { ModelHooks, SequelizeHooks } from 'sequelize/types/lib/hooks';
@@ -32,7 +32,7 @@ export class Database extends EventEmitter {
   models = new Map();
   repositories: Map<string, Repository> = new Map();
   operators = new Map();
-  collections: Map<string, Collection>;
+  collections: Map<string, Collection> = new Map();
   pendingFields = new Map<string, RelationField[]>();
 
   constructor(options: DatabaseOptions) {
@@ -97,7 +97,7 @@ export class Database extends EventEmitter {
 
     this.emit('afterDefineCollection', collection);
 
-    return collection as Collection<Attributes, CreateAttributes>;
+    return collection;
   }
 
   /**
@@ -139,7 +139,7 @@ export class Database extends EventEmitter {
     }
   }
 
-  registerFieldTypes(fieldTypes: any) {
+  registerFieldTypes(fieldTypes: MapOf<typeof Field>) {
     for (const [type, fieldType] of Object.entries(fieldTypes)) {
       this.fieldTypes.set(type, fieldType);
     }
