@@ -406,7 +406,7 @@ Upload.Attachment = connect(
                 multiple={multiple}
                 listType={'picture-card'}
                 fileList={fileList}
-                action={`${process.env.API_URL}attachments:upload`}
+                action={`${process.env.API_BASE_PATH}attachments:upload`}
                 onChange={(info) => {
                   setSync(false);
                   if (multiple) {

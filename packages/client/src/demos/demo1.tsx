@@ -17,7 +17,7 @@ import { I18nextProvider } from 'react-i18next';
 import i18n from '../i18n';
 
 const request = extend({
-  prefix: process.env.API_URL,
+  prefix: process.env.API_BASE_PATH,
   timeout: 30000,
 });
 
@@ -35,7 +35,7 @@ const client = new ClientSDK({
   request,
 });
 
-console.log('process.env.API_URL', process.env.API_URL);
+console.log('process.env.API_BASE_PATH', process.env.API_BASE_PATH);
 
 // console.log = () => {}
 

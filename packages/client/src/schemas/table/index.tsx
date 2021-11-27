@@ -116,7 +116,7 @@ function useTableFilterAction() {
   const form = useForm();
   return {
     async run() {
-      console.log('useTableFilterAction', form.values);
+      // console.log('useTableFilterAction', form.values);
       if (refreshRequestOnChange) {
         return service.run({
           ...service.params[0],
@@ -138,7 +138,7 @@ function useTableCreateAction() {
   const form = useForm();
   return {
     async run() {
-      console.log('refreshRequestOnChange', refreshRequestOnChange);
+      // console.log('refreshRequestOnChange', refreshRequestOnChange);
       if (refreshRequestOnChange) {
         await resource.create(form.values);
         await form.reset();
@@ -206,7 +206,7 @@ const useTableDestroyAction = () => {
         return service.refresh();
       }
       if (ctx) {
-        console.log('ctx.index', ctx.index);
+        // console.log('ctx.index', ctx.index);
         field.remove(ctx.index);
         refresh();
       }
@@ -278,7 +278,7 @@ const useTableIndex = () => {
   const { pagination, props } = useTable();
   const ctx = useContext(TableRowContext);
   const { pageSize, page = 1 } = pagination;
-  console.log({ pageSize, page }, ctx.index);
+  // console.log({ pageSize, page }, ctx.index);
   return ctx.index + (page - 1) * pageSize;
   if (pagination && !props.clientSidePagination) {
     const { pageSize, page = 1 } = pagination;
@@ -429,11 +429,11 @@ function AddColumn() {
                 checked={displayed.has(field.name)}
                 onChange={async (checked) => {
                   if (checked) {
-                    console.log(
-                      'SwitchMenuItem.field.name',
-                      field.dataType,
-                      service.params[0],
-                    );
+                    // console.log(
+                    //   'SwitchMenuItem.field.name',
+                    //   field.dataType,
+                    //   service.params[0],
+                    // );
                     const columnSchema: ISchema = {
                       type: 'void',
                       'x-component': 'Table.Column',
@@ -690,6 +690,7 @@ const TableMain = () => {
   const actionBars = useTableActionBars();
   const [html, setHtml] = useState('');
   const { type } = useRowSelection();
+
   return (
     <div className={'nb-table'}>
       <DndContext
@@ -705,7 +706,7 @@ const TableMain = () => {
               field.value,
               (item) => item[rowKey] === toId,
             );
-            console.log({ fromId, toId, fromIndex, toIndex });
+            // console.log({ fromId, toId, fromIndex, toIndex });
             field.move(fromIndex, toIndex);
             refresh();
             await resource.sort({
@@ -720,6 +721,7 @@ const TableMain = () => {
       >
         {actionBars.map((actionBar) => (
           <RecursionField
+            key={actionBar.key}
             schema={
               new Schema({
                 type: 'void',
@@ -859,7 +861,7 @@ const TableProvider = (props: any) => {
   const field = useField<Formily.Core.Models.ArrayField>();
   const [pagination, setPagination] = usePagination();
   const { selectedRowKeys, setSelectedRowKeys } = useSelectedRowKeys();
-  console.log('props.useSelectedRowKeys', selectedRowKeys);
+  // console.log('props.useSelectedRowKeys', selectedRowKeys);
   const [, refresh] = useState(uid());
   const { resource } = useResource();
   const { sortableField } = useCollectionContext();
@@ -880,7 +882,7 @@ const TableProvider = (props: any) => {
     if (props.defaultFilter) {
       defaultParams['defaultFilter'] = props.defaultFilter;
     }
-    console.log({ defaultParams });
+    // console.log({ defaultParams });
     return defaultParams;
   };
   const service = useRequest(
@@ -1361,7 +1363,7 @@ Table.ActionBar = observer((props: any) => {
           return;
         }
         if (!draggable) {
-          console.log('alignalignalignalign', align);
+          // console.log('alignalignalignalign', align);
           const p = findPropertyByPath(root, path1);
           if (!p) {
             return;
@@ -1465,7 +1467,7 @@ Table.Filter = observer((props: any) => {
   const { fields = [] } = useCollectionContext();
   const [visible, setVisible] = useState(false);
   const obj = flatten(form.values.filter || {});
-  console.log('flatten', obj, Object.values(obj));
+  // console.log('flatten', obj, Object.values(obj));
   const count = Object.values(obj).filter((i) =>
     Array.isArray(i) ? i.length : i,
   ).length;
@@ -1499,7 +1501,7 @@ Table.Filter = observer((props: any) => {
               <Submit
                 onSubmit={() => {
                   const { filter } = form.values;
-                  console.log('Table.Filter', form.values);
+                  // console.log('Table.Filter', form.values);
                   setVisible(false);
                   return service.run({
                     ...service.params[0],
@@ -1573,7 +1575,7 @@ Table.Filter.DesignableBar = () => {
                               fieldNames.splice(index, 1);
                             }
                           }
-                          console.log({ fieldNames, field });
+                          // console.log({ fieldNames, field });
                           schema['x-component-props']['fieldNames'] =
                             fieldNames;
                           field.componentProps.fieldNames = fieldNames;
@@ -1699,7 +1701,7 @@ Table.ExportActionDesignableBar = () => {
                             fieldNames.splice(index, 1);
                           }
                         }
-                        console.log({ fieldNames, field });
+                        // console.log({ fieldNames, field });
                         schema['x-component-props']['fieldNames'] = fieldNames;
                         field.componentProps.fieldNames = fieldNames;
                         updateSchema(schema);
@@ -2034,7 +2036,7 @@ Table.Cell = observer((props: any) => {
       arrayMerge: (t, s) => s,
     },
   );
-  console.log('Table.Cell', collectionField?.interface, componentProps);
+  // console.log('Table.Cell', collectionField?.interface, componentProps);
   return (
     <div className={`field-interface-${collectionField?.interface}`}>
       <RecursionField
@@ -2097,7 +2099,7 @@ Table.Column.DesignableBar = () => {
   const { getFieldsByCollection } = useCollectionsContext();
   const collectionField = useContext(CollectionFieldContext);
   const { createSchema, removeSchema, updateSchema } = useClient();
-  console.log('displayed.map', displayed.map);
+  // console.log('displayed.map', displayed.map);
   return (
     <div className={cls('designable-bar', { active: visible })}>
       <span
@@ -2258,7 +2260,7 @@ Table.DesignableBar = observer((props) => {
   const collectionName = field?.componentProps?.collectionName;
   const { collection, fields } = useCollection({ collectionName });
   const { createSchema, removeSchema, updateSchema } = useClient();
-  console.log({ collectionName });
+  // console.log({ collectionName });
   return (
     <div className={cls('designable-bar', { active: visible })}>
       <div className={'designable-info'}>
@@ -2433,7 +2435,7 @@ Table.DesignableBar = observer((props) => {
                       field.componentProps.defaultSort = sort;
                       await updateSchema(schema);
                       setVisible(false);
-                      console.log('defaultSort', sort);
+                      // console.log('defaultSort', sort);
                     }}
                   >
                     {t('Set default sorting rules')}
@@ -2564,14 +2566,14 @@ Table.useResource = ({ onSuccess, manual = true }) => {
     }, names);
     return names;
   };
-  console.log(
-    'collection?.name || props.collectionName',
-    collection?.name || props.collectionName,
-    // fieldFields(schema),
-  );
+  // console.log(
+  //   'collection?.name || props.collectionName',
+  //   collection?.name || props.collectionName,
+  //   // fieldFields(schema),
+  // );
   const service = useRequest(
     (params?: any) => {
-      console.log('Table.useResource', params);
+      // console.log('Table.useResource', params);
       return resource.get({ ...params, appends: fieldFields(schema) });
     },
     {
@@ -2621,7 +2623,7 @@ const useActionLogsResource = (options: any = {}) => {
 
   class ActionLogoResource extends Resource {
     list(options?: ListOptions) {
-      console.log({ options });
+      // console.log({ options });
       let defaultFilter = options?.defaultFilter;
       if (ctx?.record) {
         const extra = {

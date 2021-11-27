@@ -1,7 +1,7 @@
 import { defineConfig } from 'dumi';
 
-const baseUrl = `http://localhost:${process.env.API_PORT || '13001'}/`;
-console.log('baseUrl', baseUrl);
+const API_ORIGIN = `http://${process.env.API_HOSTNAME || 'localhost'}:${process.env.API_PORT || '13001'}`;
+console.log('API_ORIGIN', API_ORIGIN);
 
 process.env.MFSU_AD = 'none';
 
@@ -9,14 +9,14 @@ export default defineConfig({
   title: 'NocoBase',
   hash: true,
   define: {
-    'process.env.API_URL': process.env.API_URL || `${baseUrl}api/`,
+    'process.env.API_BASE_PATH': process.env.API_BASE_PATH || `/api/`,
     'process.env.API_HOSTNAME': process.env.API_HOSTNAME,
   },
   proxy: {
-    '/api/': {
-      target: baseUrl,
+    [process.env.API_BASE_PATH]: {
+      target: API_ORIGIN,
       changeOrigin: true,
-      pathRewrite: { '^/api/': '/api/' },
+      pathRewrite: { [`^${process.env.API_BASE_PATH}`]: process.env.API_BASE_PATH },
     },
   },
   resolve: {

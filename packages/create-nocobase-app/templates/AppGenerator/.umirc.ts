@@ -14,7 +14,7 @@ export default defineConfig({
     type: 'none',
   },
   define: {
-    'process.env.API_URL': process.env.API_URL || `/api/`,
+    'process.env.API_BASE_PATH': process.env.API_BASE_PATH || `/api/`,
     'process.env.API_PORT': process.env.API_PORT || '13001',
   },
   proxy: {

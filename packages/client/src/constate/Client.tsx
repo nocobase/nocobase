@@ -7,7 +7,7 @@ import { ClientSDK } from '../ClientSDK';
 import { extend } from 'umi-request';
 
 const request = extend({
-  prefix: process.env.API_URL,
+  prefix: process.env.API_BASE_PATH,
   timeout: 30000,
 });
 
