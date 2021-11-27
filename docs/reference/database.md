@@ -144,7 +144,7 @@ try {
 
 ##### Examples
 
-## `db.getCollection()`
+## `db.getCollection()` <Badge>待完善</Badge>
 
 ##### Definition
 
@@ -160,7 +160,7 @@ class Database {
 const collection = db.getCollection('tests');
 ```
 
-## `db.hasCollection()`
+## `db.hasCollection()` <Badge>待完善</Badge>
 
 ##### Definition
 
@@ -178,7 +178,7 @@ if (db.hasCollection('tests')) {
 }
 ```
 
-## `db.import()`
+## `db.import()` <Badge>待完善</Badge>
 
 ##### Definition
 
@@ -207,11 +207,48 @@ db.import({
 });
 ```
 
-## `db.on()`
+## `db.on()` <Badge>待完善</Badge>
 
 ##### Definition
 
+collection 的事件（都是同步的）
+
+- `beforeDefineCollection`
+- `afterDefineCollection`
+- `beforeUpdateCollection`
+- `afterUpdateCollection`
+- `beforeRemoveCollection`
+- `afterRemoveCollection`
+
+model 的事件（异步的）
+
+- `<modelName>.<hookType>`
+
 ##### Examples
+
+全局事件
+
+```ts
+db.on('beforeDefineCollection', (options: CollectionOptions) => {
+
+});
+
+db.on('afterDefineCollection', (collection: Collection) => {
+
+});
+
+db.on('afterCreate', async (model, options) => {
+
+});
+```
+
+特定 model 事件
+
+```ts
+db.on('posts.afterCreate', async (model, options) => {
+
+});
+```
 
 ## `db.registerFieldTypes()`
 
@@ -248,7 +285,7 @@ db.collection({
 });
 ```
 
-## `db.registerModels()`
+## `db.registerModels()` <Badge>待完善</Badge>
 
 自定义 Model
 
@@ -286,7 +323,7 @@ const test = Test.model<CustomModel>.create();
 test.customMethod();
 ```
 
-## `db.registerOperators()`
+## `db.registerOperators()` <Badge>待完善</Badge>
 
 自定义筛选条件
 
@@ -360,7 +397,7 @@ repository.find({
 });
 ```
 
-## `db.registerRepositories()`
+## `db.registerRepositories()` <Badge>待完善</Badge>
 
 自定义 Repository
 
@@ -385,7 +422,7 @@ const Test = db.collection({
 Test.repository<CustomRepository>.customMethod();
 ```
 
-## `db.removeCollection()`
+## `db.removeCollection()` <Badge>待完善</Badge>
 
 移除 collection
 

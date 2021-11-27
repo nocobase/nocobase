@@ -55,7 +55,7 @@ import {
 import { useResource as useGeneralResource } from '../../hooks/useResource';
 import SwitchMenuItem from '../../components/SwitchMenuItem';
 import { useMemo } from 'react';
-import { createForm } from '@formily/core';
+import { createForm,LifeCycleTypes } from '@formily/core';
 import {
   ColDraggableContext,
   SortableBodyCell,
@@ -1498,6 +1498,15 @@ Table.Filter = observer((props: any) => {
               }}
             />
             <FormButtonGroup align={'right'}>
+              <Button onClick={()=>{
+                setVisible(false);
+                form.reset();
+                const { filter } = form.values;
+                return service.run({
+                  ...service.params[0],
+                  filter,
+                });
+              }}>{t('Reset')}</Button>
               <Submit
                 onSubmit={() => {
                   const { filter } = form.values;
