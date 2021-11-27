@@ -26,13 +26,21 @@ interface MapOf<T> {
 
 export type DatabaseOptions = Options | Sequelize;
 
+interface RegisterOperatorsContext {
+  db?: Database;
+  path?: string;
+  field?: Field;
+}
+
+type OperatorFunc = (value: any, ctx?: RegisterOperatorsContext) => any;
+
 export class Database extends EventEmitter {
   sequelize: Sequelize;
   fieldTypes = new Map();
-  models = new Map();
-  repositories: Map<string, Repository> = new Map();
+  models = new Map<string, ModelCtor<any>>();
+  repositories = new Map<string, Repository>();
   operators = new Map();
-  collections: Map<string, Collection> = new Map();
+  collections = new Map<string, Collection>();
   pendingFields = new Map<string, RelationField[]>();
 
   constructor(options: DatabaseOptions) {
@@ -145,7 +153,7 @@ export class Database extends EventEmitter {
     }
   }
 
-  registerModels(models: MapOf<Model>) {
+  registerModels(models: MapOf<ModelCtor<any>>) {
     for (const [type, schemaType] of Object.entries(models)) {
       this.models.set(type, schemaType);
     }
@@ -157,7 +165,7 @@ export class Database extends EventEmitter {
     }
   }
 
-  registerOperators(operators) {
+  registerOperators(operators: MapOf<OperatorFunc>) {
     for (const [key, operator] of Object.entries(operators)) {
       this.operators.set(key, operator);
     }

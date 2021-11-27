@@ -73,7 +73,7 @@ export class Collection<
       let model: ModelCtor<any>;
 
       if (typeof options.model == 'string') {
-        model = this.context.database.sequelize.model(options.model);
+        model = this.context.database.models.get(options.model);
       }
       this.model = model;
     }

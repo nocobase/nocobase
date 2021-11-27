@@ -52,4 +52,26 @@ describe('define collection', () => {
     expect(db.getCollection('test')).toBeDefined();
     expect(db.hasCollection('test')).toBeTruthy();
   });
+
+  test('collection model event', async () => {
+    const db = mockDatabase();
+    const Post = db.collection({
+      name: 'posts',
+      fields: [{ type: 'string', name: 'title' }],
+    });
+
+    await db.sync();
+
+    const postAfterCreateListener = jest.fn();
+
+    db.on('posts.afterCreate', postAfterCreateListener);
+
+    await Post.repository.create({
+      values: {
+        title: 'test',
+      },
+    });
+
+    expect(postAfterCreateListener).toHaveBeenCalled();
+  });
 });
