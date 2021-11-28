@@ -17,6 +17,8 @@ import { Field, FieldContext, RelationField } from './fields';
 import { Repository } from './repository';
 import lodash from 'lodash';
 import { SequelizeHooks } from 'sequelize/types/lib/hooks';
+import { applyMixins } from '@nocobase/utils/src/mixin';
+import { AsyncEmitter } from '@nocobase/utils/src/mixin/AsyncEmitter';
 
 export interface PendingOptions {
   field: RelationField;
@@ -37,7 +39,7 @@ interface RegisterOperatorsContext {
 
 type OperatorFunc = (value: any, ctx?: RegisterOperatorsContext) => any;
 
-export class Database extends EventEmitter {
+export class Database extends EventEmitter implements AsyncEmitter {
   sequelize: Sequelize;
   fieldTypes = new Map();
   models = new Map<string, ModelCtor<any>>();
@@ -251,6 +253,10 @@ export class Database extends EventEmitter {
 
     return super.on(event, listener);
   }
+
+  emitAsync: (event: string | symbol, ...args: any[]) => Promise<boolean>;
 }
+
+applyMixins(Database, [AsyncEmitter]);
 
 export default Database;
