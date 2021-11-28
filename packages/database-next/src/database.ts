@@ -231,15 +231,15 @@ export class Database extends EventEmitter implements AsyncEmitter {
 
       const database = this;
 
-      function sequelizeHook(...args: any[]) {
+      async function sequelizeHook(...args: any[]) {
         const modelName = findModelName(args);
         if (modelName) {
           // emit model event
-          database.emit(`${modelName}.${eventName}`, ...args);
+          await database.emitAsync(`${modelName}.${eventName}`, ...args);
         }
 
         // emit sequelize global event
-        database.emit(eventName, ...args);
+        await database.emitAsync(eventName, ...args);
       }
 
       if (
