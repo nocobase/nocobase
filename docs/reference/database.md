@@ -222,7 +222,8 @@ collection 的事件（都是同步的）
 
 model 的事件（异步的）
 
-- `<modelName>.<hookType>`
+- `<modelHookType>`
+- `<modelName>.<modelHookType>`
 
 ##### Examples
 

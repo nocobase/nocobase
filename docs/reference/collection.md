@@ -194,7 +194,11 @@ await db.sequelize.models.posts_tags.sync();
 
 ```ts
 interface updateField {
-  (name: string, options: FieldOptions): Field;
+  (name: string, data: FieldOptions, options?: UpdateFieldOptions): Field;
+}
+
+interface UpdateFieldOptions {
+  force?: boolean;
 }
 ```
 

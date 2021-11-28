@@ -1,5 +1,6 @@
 node_modules/
 lib/
+esm/
 .env
 .DS_Store
 package-lock.json
