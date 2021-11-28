@@ -19,6 +19,9 @@ import lodash from 'lodash';
 import { SequelizeHooks } from 'sequelize/types/lib/hooks';
 import { applyMixins } from '@nocobase/utils/src/mixin';
 import { AsyncEmitter } from '@nocobase/utils/src/mixin/AsyncEmitter';
+import glob from 'glob';
+import * as fs from 'fs';
+import path from 'path';
 
 export interface PendingOptions {
   field: RelationField;
@@ -210,6 +213,7 @@ export class Database extends EventEmitter implements AsyncEmitter {
 
       return false;
     };
+
     const findModelName = (hookArgs) => {
       for (const arg of hookArgs) {
         if (arg instanceof Model) {
@@ -254,7 +258,44 @@ export class Database extends EventEmitter implements AsyncEmitter {
     return super.on(event, listener);
   }
 
+  async import(options: {
+    directory: string;
+    extensions?: string[];
+  }): Promise<Map<string, Collection>> {
+    const result = new Map<string, Collection>();
+
+    const { extensions = ['js', 'ts', 'json'], directory } = options;
+
+    const files = fs.readdirSync(directory, {
+      encoding: 'utf-8',
+    });
+
+    for (const fileName of files) {
+      const { ext } = path.parse(fileName);
+      if (extensions.includes(ext.replace('.', ''))) {
+        const collectionOptions = await requireModule(
+          path.join(directory, fileName),
+        );
+        const collection = this.collection(collectionOptions);
+        result[collection.name] = collection;
+      }
+    }
+
+    return result;
+  }
+
   emitAsync: (event: string | symbol, ...args: any[]) => Promise<boolean>;
+}
+
+async function requireModule(module: any) {
+  if (typeof module === 'string') {
+    module = await import(module);
+  }
+
+  if (typeof module !== 'object') {
+    return module;
+  }
+  return module.__esModule ? module.default : module;
 }
 
 applyMixins(Database, [AsyncEmitter]);

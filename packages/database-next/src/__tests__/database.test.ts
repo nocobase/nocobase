@@ -1,8 +1,20 @@
 import { Database } from '../database';
 import { mockDatabase } from './index';
 import { HasMany } from 'sequelize';
+import path from 'path';
 
-describe('define collection', () => {
+describe('database', () => {
+  test('import', async () => {
+    const db = mockDatabase();
+    const results = await db.import({
+      directory: path.resolve(__dirname, './fixtures/collections'),
+    });
+
+    expect(results).toHaveProperty('posts');
+    expect(results).toHaveProperty('users');
+    expect(results).toHaveProperty('tags');
+  });
+
   test('hasMany with inverse belongsTo relation', async () => {
     const db = mockDatabase();
     const UserCollection = db.collection({
