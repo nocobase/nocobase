@@ -208,7 +208,10 @@ export class Database extends EventEmitter implements AsyncEmitter {
   on(event: string | symbol, listener: (...args: any[]) => void): this {
     const isModelHook = (eventName) => {
       if (lodash.isString(eventName) && eventName.split('.').length == 2) {
-        return eventName.split('.');
+        const [moduleName, hookType] = eventName.split('.');
+        if (hooks[hookType]) {
+          return [moduleName, hookType];
+        }
       }
 
       return false;
