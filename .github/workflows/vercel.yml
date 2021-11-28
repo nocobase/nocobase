@@ -4,7 +4,6 @@ on:
   push:
     branches:
       - develop
-      - feature/docs
 
 jobs:
   deploy:
@@ -25,10 +24,10 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-node-
 
-      - run: npm install
-      - run: npm run bootstrap
+      - run: yarn install
+      - run: yarn bootstrap
       - run: echo "API_URL=${{ secrets.API_URL }}" >> .env
-      - run: npm run build-docs
+      - run: yarn build-docs
 
       - name: Deploy
         uses: amondnet/vercel-action@v19
