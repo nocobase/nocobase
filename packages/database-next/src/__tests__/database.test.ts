@@ -53,8 +53,12 @@ describe('define collection', () => {
     expect(db.hasCollection('test')).toBeTruthy();
   });
 
-  test('collection model event', async () => {
+  test('collection beforeBulkCreate event', async () => {
     const db = mockDatabase();
+    const listener = jest.fn();
+
+    db.on('posts.beforeBulkUpdate', listener);
+
     const Post = db.collection({
       name: 'posts',
       fields: [{ type: 'string', name: 'title' }],
@@ -62,9 +66,37 @@ describe('define collection', () => {
 
     await db.sync();
 
+    await Post.repository.create({
+      values: {
+        title: 'old',
+      },
+    });
+
+    await Post.model.update(
+      {
+        title: 'new',
+      },
+      {
+        where: {
+          title: 'old',
+        },
+      },
+    );
+    expect(listener).toHaveBeenCalled();
+  });
+
+  test('collection afterCreate model event', async () => {
+    const db = mockDatabase();
     const postAfterCreateListener = jest.fn();
 
     db.on('posts.afterCreate', postAfterCreateListener);
+
+    const Post = db.collection({
+      name: 'posts',
+      fields: [{ type: 'string', name: 'title' }],
+    });
+
+    await db.sync();
 
     await Post.repository.create({
       values: {
@@ -72,6 +104,21 @@ describe('define collection', () => {
       },
     });
 
+    await Post.repository.find();
+
     expect(postAfterCreateListener).toHaveBeenCalled();
+  });
+
+  test('collection event', async () => {
+    const db = mockDatabase();
+    const listener = jest.fn();
+    db.on('beforeDefineCollection', listener);
+
+    const Post = db.collection({
+      name: 'posts',
+      fields: [{ type: 'string', name: 'title' }],
+    });
+
+    expect(listener).toHaveBeenCalled();
   });
 });
