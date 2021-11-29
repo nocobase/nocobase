@@ -11,7 +11,6 @@ import { Button, Dropdown, Input as AntdInput, Menu, Modal, Space } from 'antd';
 import { InputProps, TextAreaProps } from 'antd/lib/input';
 import { Display } from '../display';
 import { LoadingOutlined, MenuOutlined, DragOutlined } from '@ant-design/icons';
-import micromark from 'micromark';
 import { useDesignable } from '../../components/schema-renderer';
 import { useContext, useState } from 'react';
 import AddNew from '../add-new';
@@ -23,6 +22,14 @@ import { isGridRowOrCol } from '../grid';
 import './style.less';
 import { DragHandle } from '../../components/Sortable';
 import { useTranslation } from 'react-i18next';
+import { marked } from 'marked';
+
+export function markdown(text) {
+  if (!text) {
+    return '';
+  }
+  return marked.parse(text);
+}
 
 export const Markdown: any = connect(
   AntdInput.TextArea,
@@ -45,7 +52,7 @@ export const Markdown: any = connect(
     let value = (
       <div
         className={'nb-markdown'}
-        dangerouslySetInnerHTML={{ __html: micromark(text || '') }}
+        dangerouslySetInnerHTML={{ __html: markdown(text) }}
       />
     );
     return <Display.TextArea {...props} text={text} value={value} />;
@@ -93,7 +100,7 @@ Markdown.Void = observer((props: any) => {
   let value = (
     <div
       className={'nb-markdown'}
-      dangerouslySetInnerHTML={{ __html: micromark(text || '') }}
+      dangerouslySetInnerHTML={{ __html: markdown(text) }}
     />
   );
   return field?.pattern !== 'readPretty' ? (

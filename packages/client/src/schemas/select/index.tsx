@@ -439,7 +439,7 @@ Select.Drawer = connect(
   mapReadPretty(
     observer((props: any) => {
       const collectionField = useContext(CollectionFieldContext);
-      const field = useField<Formily.Core.Models.Field>();
+      const field = useField<Field>();
       const { ...others } = props;
       const value = field.value || field.initialValue;
       const { schema } = useDesignable();

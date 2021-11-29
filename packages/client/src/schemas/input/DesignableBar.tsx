@@ -34,9 +34,7 @@ export const DesignableBar = (props) => {
       <Menu.Item onClick={() => {}}>
         <Switch
           onChange={(checked) => {
-            // field.query(key).take((target: Formily.Core.Models.Field) => {
-            //   target.required = checked;
-            // });
+            
           }}
           checkedChildren="必填"
           unCheckedChildren="非必填"

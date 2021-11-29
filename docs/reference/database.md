@@ -194,6 +194,8 @@ interface ImportOptions {
   // @default ['js', 'ts', 'json']
   extensions?: string[];
 }
+// 为了配合 db.import()，提供了一个 extend 方法，用于扩展已有 collection 配置
+function extend(collectionOptions: CollectionOptions, mergeOptions?: MergeOptions) {}
 ```
 
 ##### Examples
@@ -207,7 +209,89 @@ db.import({
 });
 ```
 
-## `db.on()` <Badge>待完善</Badge>
+db.import 的使用场景分析
+
+```ts
+// 假设在 A 插件里配置里 tests
+db.collection({
+  name: 'tests',
+  { type: 'string', name: 'name1' },
+  { type: 'string', name: 'name2' },
+  { type: 'string', name: 'name3' },
+});
+
+// 在 B 插件里可能想给 tests 新增字段
+const Test = db.getCollection('tests');
+Test.addField('name4', {});
+Test.addField('name5', {});
+Test.addField('name6', {});
+
+// 通过 db.import 的做法，文件不分先后，自动处理
+// 文件1里
+{
+  name: 'tests',
+  fields: [
+    { type: 'string', name: 'name1' },
+    { type: 'string', name: 'name2' },
+    { type: 'string', name: 'name3' },
+  ],
+}
+
+// 文件2里
+extend({
+  name: 'tests',
+  fields: [
+    { type: 'string', name: 'name4' },
+  ],
+});
+```
+
+extend 可以自定义 merge 规则（[deepmerge](https://www.npmjs.com/package/deepmerge#options)），如：
+
+```ts
+extend({
+  name: 'demos',
+  actions: [
+    {
+      name: 'list',
+    },
+  ],
+}, {
+  arrayMerge: (t, s) => t.concat(s),
+})
+```
+
+备注：extend 的 fields、hooks 等 array 参数，默认都是 concat 规则，string 参数是覆盖，如：
+
+```ts
+{
+  name: 'tests',
+  repository: 'TestRepository1',
+  fields: [
+    { type: 'string', name: 'name1' },
+  ],
+}
+
+extend({
+  name: 'tests',
+  repository: 'TestRepository2',
+  fields: [
+    { type: 'string', name: 'name2' },
+  ],
+});
+
+// 等同于
+{
+  name: 'tests',
+  repository: 'TestRepository2',
+  fields: [
+    { type: 'string', name: 'name1' },
+    { type: 'string', name: 'name2' },
+  ],
+}
+```
+
+## `db.on()`
 
 ##### Definition
 
@@ -222,7 +306,8 @@ collection 的事件（都是同步的）
 
 model 的事件（异步的）
 
-- `<modelName>.<hookType>`
+- `<modelHookType>`
+- `<modelName>.<modelHookType>`
 
 ##### Examples
 

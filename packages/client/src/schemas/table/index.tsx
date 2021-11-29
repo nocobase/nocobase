@@ -55,7 +55,7 @@ import {
 import { useResource as useGeneralResource } from '../../hooks/useResource';
 import SwitchMenuItem from '../../components/SwitchMenuItem';
 import { useMemo } from 'react';
-import { createForm,LifeCycleTypes } from '@formily/core';
+import { ArrayField, createForm,LifeCycleTypes } from '@formily/core';
 import {
   ColDraggableContext,
   SortableBodyCell,
@@ -78,7 +78,7 @@ import { useCompile } from '../../hooks/useCompile';
 
 export interface ITableContext {
   props: any;
-  field: Formily.Core.Models.ArrayField;
+  field: ArrayField;
   schema: Schema;
   service: BaseResult<any, any>;
   selectedRowKeys?: any;
@@ -813,7 +813,7 @@ const TableMain = () => {
 };
 
 const usePagination = () => {
-  const field = useField<Formily.Core.Models.ArrayField>();
+  const field = useField<ArrayField>();
   const paginationProps = field.componentProps.pagination;
 
   let pagination = paginationProps;
@@ -858,7 +858,7 @@ const TableProvider = (props: any) => {
     ...others
   } = props;
   const { schema } = useDesignable();
-  const field = useField<Formily.Core.Models.ArrayField>();
+  const field = useField<ArrayField>();
   const [pagination, setPagination] = usePagination();
   const { selectedRowKeys, setSelectedRowKeys } = useSelectedRowKeys();
   // console.log('props.useSelectedRowKeys', selectedRowKeys);
