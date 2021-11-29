@@ -207,7 +207,44 @@ db.import({
 });
 ```
 
-## `db.on()` <Badge>待完善</Badge>
+db.import 的使用场景分析
+
+```ts
+// 假设在 A 插件里配置里 tests
+db.collection({
+  name: 'tests',
+  { type: 'string', name: 'name1' },
+  { type: 'string', name: 'name2' },
+  { type: 'string', name: 'name3' },
+});
+
+// 在 B 插件里可能想给 tests 新增字段
+const Test = db.getCollection('tests');
+Test.addField('name4', {});
+Test.addField('name5', {});
+Test.addField('name6', {});
+
+// 通过 db.import 的做法，文件不分先后，自动处理
+// 文件1里
+{
+  name: 'tests',
+  fields: [
+    { type: 'string', name: 'name1' },
+    { type: 'string', name: 'name2' },
+    { type: 'string', name: 'name3' },
+  ],
+}
+
+// 文件2里
+extend({
+  name: 'tests',
+  fields: [
+    { type: 'string', name: 'name4' },
+  ],
+});
+```
+
+## `db.on()`
 
 ##### Definition
 
