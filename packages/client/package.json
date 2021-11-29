@@ -33,7 +33,7 @@
     "flat": "^5.0.2",
     "html-react-parser": "^1.2.7",
     "lodash": "^4.17.21",
-    "micromark": "~2.11.0",
+    "marked": "^4.0.5",
     "monaco-editor": "^0.25.2",
     "react-big-calendar": "^0.33.6",
     "react-helmet": "^6.1.0",
