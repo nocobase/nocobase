@@ -33,7 +33,7 @@ export default {
         title: '本地存储',
         name: `local`,
         type: 'local',
-        baseUrl: process.env.LOCAL_STORAGE_BASE_URL,
+        baseUrl: process.env.LOCAL_STORAGE_BASE_URL || `http://localhost:${process.env.API_PORT}/uploads`,
         default: process.env.STORAGE_TYPE === 'local',
       });
       await Storage.create({
