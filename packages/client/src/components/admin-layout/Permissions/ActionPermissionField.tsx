@@ -19,6 +19,7 @@ import Checkbox from 'antd/lib/checkbox/Checkbox';
 import { useState } from 'react';
 import { useCompile } from '../../../hooks/useCompile';
 import { useTranslation } from 'react-i18next';
+import { ArrayField } from '@formily/core';
 
 const actionTypeMap = new Map(
   Object.entries({
@@ -30,7 +31,7 @@ const actionTypeMap = new Map(
 );
 
 const useActionDataSource = () => {
-  const field = useField<Formily.Core.Models.ArrayField>();
+  const field = useField<ArrayField>();
   const dataSource = [];
   for (const [actionName, value] of actionTypeMap) {
     const item = field?.value?.find((item) => {
@@ -50,7 +51,7 @@ const useFieldPermissions = () => {
   const compile = useCompile();
   const role = useContext(RoleContext);
   const ctx = useContext(TableRowContext);
-  const field = useField<Formily.Core.Models.ArrayField>();
+  const field = useField<ArrayField>();
   const [dataSource, setDataSource] = useState([]);
   const findFieldKeys = (actionName): any[] => {
     const item = field?.value?.find((item) => {
@@ -189,7 +190,7 @@ export const ActionPermissionField = observer((props) => {
   const compile = useCompile();
   const role = useContext(RoleContext);
   const ctx = useContext(TableRowContext);
-  const field = useField<Formily.Core.Models.ArrayField>();
+  const field = useField<ArrayField>();
   const actionDataSource = useActionDataSource();
   const { columns, dataSource, service } = useFieldPermissions();
   console.log('actionPermissions', field?.value);
