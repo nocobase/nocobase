@@ -29,6 +29,7 @@ import './style.less';
 import cls from 'classnames';
 import { saveAs } from 'file-saver';
 import { useTranslation } from 'react-i18next';
+import { Field } from '@formily/core';
 
 const toArr = (value) => {
   if (!isValid(value)) {
@@ -140,7 +141,7 @@ const normalizeFileList = (fileList: UploadFile[]) => {
 };
 
 const useValidator = (validator: (value: any) => string) => {
-  const field = useField<Formily.Core.Models.Field>();
+  const field = useField<Field>();
   useEffect(() => {
     const dispose = reaction(
       () => field.value,
@@ -196,7 +197,7 @@ export const Upload: ComposedUpload = connect(
     value: 'fileList',
   }),
   mapReadPretty((props) => {
-    const field = useField<Formily.Core.Models.Field>();
+    const field = useField<Field>();
     console.log('field.value', field.value);
     return (field.value || []).map((item) => (
       <div>
@@ -474,7 +475,7 @@ Upload.Attachment = connect(
     );
   },
   mapReadPretty((props) => {
-    const field = useField<Formily.Core.Models.Field>();
+    const field = useField<Field>();
     const images = toImages(toArr(field.value));
     const [photoIndex, setPhotoIndex] = useState(0);
     const [visible, setVisible] = useState(false);
