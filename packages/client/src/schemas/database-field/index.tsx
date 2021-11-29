@@ -52,6 +52,7 @@ import {
 import { DndContext, DragOverlay } from '@dnd-kit/core';
 import { createPortal } from 'react-dom';
 import { useClient } from '../../constate';
+import { ArrayField } from '@formily/core';
 
 interface SelectOptionProps {
   id: any;
@@ -88,7 +89,7 @@ function SelectOption(props: SelectOptionProps) {
 }
 
 export const DatabaseCollection = observer((props) => {
-  const field = useField<Formily.Core.Models.ArrayField>();
+  const field = useField<ArrayField>();
   const [visible, setVisible] = useState(false);
   const [open, setOpen] = useState(false);
   const schema = useFieldSchema();
@@ -320,7 +321,7 @@ export const DatabaseCollection = observer((props) => {
 });
 
 export const DatabaseField: any = observer((props) => {
-  const field = useField<Formily.Core.Models.ArrayField>();
+  const field = useField<ArrayField>();
   useEffect(() => {
     if (!field.value) {
       field.setValue([]);

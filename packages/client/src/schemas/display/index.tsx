@@ -20,6 +20,7 @@ import {
 import { FullscreenOutlined } from '@ant-design/icons';
 import moment from 'moment';
 import { useCompile } from '../../hooks/useCompile';
+import { Field } from '@formily/core';
 
 const PlaceholderContext = createContext<string>('');
 
@@ -113,7 +114,7 @@ const TextArea: React.FC<any> = (props) => {
 };
 
 const Select: React.FC<SelectProps<any>> = observer((props) => {
-  const field = useField<Formily.Core.Models.Field>();
+  const field = useField<Field>();
   const prefixCls = usePrefixCls('description-select', props);
   const dataSource: any[] = field?.dataSource?.length
     ? field.dataSource
@@ -157,7 +158,7 @@ const Select: React.FC<SelectProps<any>> = observer((props) => {
 });
 
 const ObjectSelect: React.FC<SelectProps<any>> = observer((props) => {
-  const field = useField<Formily.Core.Models.Field>();
+  const field = useField<Field>();
   const prefixCls = usePrefixCls('description-select', props);
   const dataSource: any[] = field?.dataSource?.length
     ? field.dataSource
@@ -201,7 +202,7 @@ const ObjectSelect: React.FC<SelectProps<any>> = observer((props) => {
 });
 
 const TreeSelect: React.FC<TreeSelectProps<any>> = observer((props) => {
-  const field = useField<Formily.Core.Models.Field>();
+  const field = useField<Field>();
   const placeholder = usePlaceholder();
   const prefixCls = usePrefixCls('description-tree-select', props);
   const dataSource = field?.dataSource?.length
@@ -259,7 +260,7 @@ const TreeSelect: React.FC<TreeSelectProps<any>> = observer((props) => {
 });
 
 const Cascader: React.FC<CascaderProps> = observer((props) => {
-  const field = useField<Formily.Core.Models.Field>();
+  const field = useField<Field>();
   const placeholder = usePlaceholder();
   const prefixCls = usePrefixCls('description-cascader', props);
   const dataSource: any[] = field?.dataSource?.length
