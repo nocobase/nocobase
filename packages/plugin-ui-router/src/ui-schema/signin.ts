@@ -49,6 +49,7 @@ export const signin = {
     registerlink: {
       type: 'void',
       'x-component': 'Div',
+      'x-hidden': '{{allowSignUp !== true}}',
       properties: {
         link: {
           type: 'void',

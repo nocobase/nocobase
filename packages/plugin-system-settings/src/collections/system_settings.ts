@@ -12,6 +12,10 @@ export default {
       name: 'showLogoOnly',
     },
     {
+      type: 'boolean',
+      name: 'allowSignUp',
+    },
+    {
       type: 'belongsTo',
       name: 'logo',
       target: 'attachments',
