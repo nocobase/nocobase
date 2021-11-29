@@ -93,6 +93,13 @@ const schema: ISchema = {
                     { label: '简体中文', value: 'zh-CN' },
                   ],
                 },
+                allowSignUp: {
+                  type: 'string',
+                  title: '{{t("Allow sign up")}}',
+                  'x-component': 'Checkbox',
+                  'x-decorator': 'FormItem',
+                  default: true,
+                },
               },
             },
           },

@@ -40,6 +40,7 @@ export default {
   'Switch role': '切换角色',
   'Super admin': '超级管理员',
   'Language': '语言设置',
+  'Allow sign up': '允许注册',
   'Sign out': '注销',
   'Cancel': '取消',
   'Submit': '提交',

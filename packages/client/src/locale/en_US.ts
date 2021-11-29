@@ -39,6 +39,7 @@ export default {
   'Switch role': 'Switch role',
   'Super admin': 'Super admin',
   'Language': 'Language',
+  'Allow sign up': 'Allow sign up',
   'Sign out': 'Sign out',
   'Cancel': 'Cancel',
   'Submit': 'Submit',

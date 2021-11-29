@@ -69,7 +69,7 @@ export function RouteSchemaRenderer({ route }) {
     },
   );
   const compile = useCompile();
-  const { title } = useSystemSettings();
+  const { title, allowSignUp = true } = useSystemSettings();
   if (loading) {
     return <Spin size={'large'} className={'nb-spin-center'} />;
   }
@@ -82,7 +82,7 @@ export function RouteSchemaRenderer({ route }) {
       </Helmet>
       <SchemaRenderer
         components={{ Div }}
-        scope={{ useSignin, useSignup }}
+        scope={{ useSignin, useSignup, allowSignUp }}
         schema={data}
       />
     </div>
