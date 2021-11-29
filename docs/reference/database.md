@@ -194,6 +194,8 @@ interface ImportOptions {
   // @default ['js', 'ts', 'json']
   extensions?: string[];
 }
+// 为了配合 db.import()，提供了一个 extend 方法，用于扩展已有 collection 配置
+function extend(collectionOptions: CollectionOptions, mergeOptions?: MergeOptions) {}
 ```
 
 ##### Examples
@@ -242,6 +244,51 @@ extend({
     { type: 'string', name: 'name4' },
   ],
 });
+```
+
+extend 可以自定义 merge 规则（[deepmerge](https://www.npmjs.com/package/deepmerge#options)），如：
+
+```ts
+extend({
+  name: 'demos',
+  actions: [
+    {
+      name: 'list',
+    },
+  ],
+}, {
+  arrayMerge: (t, s) => t.concat(s),
+})
+```
+
+备注：extend 的 fields、hooks 等 array 参数，默认都是 concat 规则，string 参数是覆盖，如：
+
+```ts
+{
+  name: 'tests',
+  repository: 'TestRepository1',
+  fields: [
+    { type: 'string', name: 'name1' },
+  ],
+}
+
+extend({
+  name: 'tests',
+  repository: 'TestRepository2',
+  fields: [
+    { type: 'string', name: 'name2' },
+  ],
+});
+
+// 等同于
+{
+  name: 'tests',
+  repository: 'TestRepository2',
+  fields: [
+    { type: 'string', name: 'name1' },
+    { type: 'string', name: 'name2' },
+  ],
+}
 ```
 
 ## `db.on()`
