@@ -13,8 +13,6 @@
     "multer": "^1.4.2"
   },
   "devDependencies": {
-    "@nocobase/plugin-collections": "^0.5.0-alpha.34",
-    "@nocobase/test": "^0.5.0-alpha.34",
     "@types/multer": "^1.4.5"
   },
   "gitHead": "e7df1f93c4e23b9a666d99ee7372c02bdaec97c4"
