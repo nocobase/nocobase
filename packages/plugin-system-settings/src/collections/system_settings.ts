@@ -14,6 +14,7 @@ export default {
     {
       type: 'boolean',
       name: 'allowSignUp',
+      defaultValue: true,
     },
     {
       type: 'belongsTo',
