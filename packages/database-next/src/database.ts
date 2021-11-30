@@ -15,11 +15,8 @@ import { Collection, CollectionOptions } from './collection';
 import * as FieldTypes from './fields';
 import { Field, FieldContext, RelationField } from './fields';
 import { Repository } from './repository';
-import lodash from 'lodash';
-import { ModelHooks, SequelizeHooks } from 'sequelize/types/lib/hooks';
-import { applyMixins } from '@nocobase/utils/src/mixin';
-import { AsyncEmitter } from '@nocobase/utils/src/mixin/AsyncEmitter';
-import glob from 'glob';
+import { applyMixins, AsyncEmitter } from '@nocobase/utils';
+
 import * as fs from 'fs';
 import path from 'path';
 import merge from 'deepmerge';

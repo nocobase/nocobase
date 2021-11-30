@@ -12,8 +12,7 @@ import {
   registerMiddlewares,
 } from './helper';
 import { i18n, InitOptions } from 'i18next';
-import { AsyncEmitter } from '@nocobase/utils/src/mixin/AsyncEmitter';
-import { applyMixins } from '@nocobase/utils/src/mixin';
+import { applyMixins, AsyncEmitter } from '@nocobase/utils';
 
 export interface ResourcerOptions {
   prefix?: string;
