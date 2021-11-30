@@ -16,12 +16,16 @@ import * as FieldTypes from './fields';
 import { Field, FieldContext, RelationField } from './fields';
 import { Repository } from './repository';
 import lodash from 'lodash';
-import { SequelizeHooks } from 'sequelize/types/lib/hooks';
+import { ModelHooks, SequelizeHooks } from 'sequelize/types/lib/hooks';
 import { applyMixins } from '@nocobase/utils/src/mixin';
 import { AsyncEmitter } from '@nocobase/utils/src/mixin/AsyncEmitter';
 import glob from 'glob';
 import * as fs from 'fs';
 import path from 'path';
+import merge from 'deepmerge';
+import { ModelHook } from './model-hook';
+
+export interface MergeOptions extends merge.Options {}
 
 export interface PendingOptions {
   field: RelationField;
@@ -51,6 +55,8 @@ export class Database extends EventEmitter implements AsyncEmitter {
   collections = new Map<string, Collection>();
   pendingFields = new Map<string, RelationField[]>();
 
+  modelHook: ModelHook;
+
   constructor(options: DatabaseOptions) {
     super();
 
@@ -61,6 +67,7 @@ export class Database extends EventEmitter implements AsyncEmitter {
     }
 
     this.collections = new Map();
+    this.modelHook = new ModelHook(this);
 
     this.on('afterDefineCollection', (collection) => {
       // after collection defined, call bind method on pending fields
@@ -206,55 +213,18 @@ export class Database extends EventEmitter implements AsyncEmitter {
   }
 
   on(event: string | symbol, listener: (...args: any[]) => void): this {
-    const isModelHook = (eventName) => {
-      if (lodash.isString(eventName) && eventName.split('.').length == 2) {
-        const [moduleName, hookType] = eventName.split('.');
-        if (hooks[hookType]) {
-          return [moduleName, hookType];
-        }
-      }
-
-      return false;
-    };
-
-    const findModelName = (hookArgs) => {
-      for (const arg of hookArgs) {
-        if (arg instanceof Model) {
-          return (<Model>arg).constructor.name;
-        }
-
-        if (lodash.isPlainObject(arg) && arg['model']) {
-          return arg['model'].name;
-        }
-      }
-
-      return null;
-    };
-
-    const modelHook = isModelHook(event);
+    const modelHook = this.modelHook.isModelHook(event);
 
     if (Array.isArray(modelHook)) {
       const [_, eventName] = modelHook;
 
-      const database = this;
+      if (!this.modelHook.hasBindEvent(eventName)) {
+        this.sequelize.addHook(
+          <keyof SequelizeHooks>eventName,
+          this.modelHook.sequelizeHookBuilder(eventName),
+        );
 
-      async function sequelizeHook(...args: any[]) {
-        const modelName = findModelName(args);
-        if (modelName) {
-          // emit model event
-          await database.emitAsync(`${modelName}.${eventName}`, ...args);
-        }
-
-        // emit sequelize global event
-        await database.emitAsync(eventName, ...args);
-      }
-
-      if (
-        !(<any>this.sequelize).options['hooks'][eventName]?.includes(
-          sequelizeHook,
-        )
-      ) {
-        this.sequelize.addHook(<keyof SequelizeHooks>eventName, sequelizeHook);
+        this.modelHook.bindEvent(eventName);
       }
     }
 
