@@ -782,7 +782,7 @@ function EditFieldButton() {
             }}
             schema={{
               type: 'object',
-              properties: clone(schema.properties),
+              properties: clone(schema?.properties),
             }}
           />
         </FormProvider>
