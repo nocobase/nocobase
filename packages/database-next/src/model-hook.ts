@@ -13,10 +13,11 @@ export class ModelHook {
   }
 
   isModelHook(eventName: string | symbol) {
-    if (lodash.isString(eventName) && eventName.split('.').length == 2) {
-      const [moduleName, hookType] = eventName.split('.');
+    if (lodash.isString(eventName)) {
+      const hookType = eventName.split('.').pop();
+
       if (hooks[hookType]) {
-        return [moduleName, hookType];
+        return hookType;
       }
     }
 
