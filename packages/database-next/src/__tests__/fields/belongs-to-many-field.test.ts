@@ -12,7 +12,7 @@ describe('belongs to many field', () => {
     await db.close();
   });
 
-  it('association undefined', async () => {
+  test('association undefined', async () => {
     const Post = db.collection({
       name: 'posts',
       fields: [
@@ -34,10 +34,26 @@ describe('belongs to many field', () => {
 
     expect(Through.model.rawAttributes['postId']).toBeDefined();
     expect(Through.model.rawAttributes['tagId']).toBeDefined();
+  });
 
-    const PostTag = db.collection({
-      name: 'posts_tags',
+  test.skip('redefine collection', () => {
+    const Post = db.collection({
+      name: 'posts',
+      fields: [
+        { type: 'string', name: 'name' },
+        { type: 'belongsToMany', name: 'tags' },
+      ],
     });
+
+    expect(Post.model.associations.tags).toBeUndefined();
+    expect(db.getCollection('posts_tags')).toBeUndefined();
+
+    const Tag = db.collection({
+      name: 'tags',
+      fields: [{ type: 'string', name: 'name' }],
+    });
+
+    const PostTag = db.collection({ name: 'posts_tags' });
 
     expect(PostTag.model.rawAttributes['postId']).toBeDefined();
     expect(PostTag.model.rawAttributes['tagId']).toBeDefined();

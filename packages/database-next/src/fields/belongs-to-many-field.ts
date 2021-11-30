@@ -33,6 +33,7 @@ export class BelongsToManyField extends RelationField {
       as: this.name,
       through: Through.model,
     });
+
     // 建立关系之后从 pending 列表中删除
     database.removePendingField(this);
 
