@@ -27,18 +27,21 @@ export default {
       type: 'hasMany',
       name: 'actionPermissions',
       target: 'action_permissions',
+      state: 0,
     },
     {
       type: 'belongsToMany',
       name: 'users',
       target: 'users',
       through: 'roles_users',
+      state: 0,
     },
     {
       type: 'belongsToMany',
       name: 'ui_schemas',
       target: 'ui_schemas',
       through: 'roles_ui_schemas',
+      state: 0,
     },
   ],
 } as TableOptions;
