@@ -217,7 +217,7 @@ export class Database extends EventEmitter implements AsyncEmitter {
 
     if (modelEventName && !this.modelHook.hasBindEvent(modelEventName)) {
       this.sequelize.addHook(
-        <keyof SequelizeHooks>modelEventName,
+        modelEventName,
         this.modelHook.sequelizeHookBuilder(modelEventName),
       );
 

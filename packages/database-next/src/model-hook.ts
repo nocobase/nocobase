@@ -1,6 +1,7 @@
 import Database from './database';
 import lodash from 'lodash';
 import { Model } from 'sequelize';
+import { SequelizeHooks } from 'sequelize/types/lib/hooks';
 
 const { hooks } = require('sequelize/lib/hooks');
 
@@ -12,12 +13,12 @@ export class ModelHook {
     this.database = database;
   }
 
-  isModelHook(eventName: string | symbol) {
+  isModelHook(eventName: string | symbol): keyof SequelizeHooks | false {
     if (lodash.isString(eventName)) {
       const hookType = eventName.split('.').pop();
 
       if (hooks[hookType]) {
-        return hookType;
+        return <keyof SequelizeHooks>hookType;
       }
     }
 
