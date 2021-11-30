@@ -1,21 +1,29 @@
+import { promisify } from 'util';
 import { promises as fs } from 'fs';
 import path from 'path';
 
 import { generatePrefixByPath } from '@nocobase/test';
 
 import { FILE_FIELD_NAME, STORAGE_TYPE_LOCAL } from '../constants';
-import { getApp } from '.';
+import { getApp, requestFile } from '.';
 
-const DEFAULT_LOCAL_BASE_URL = process.env.LOCAL_STORAGE_BASE_URL || `http://localhost:${process.env.API_PORT}/uploads`;
+const {
+  API_PORT,
+  LOCAL_STORAGE_BASE_URL
+} = process.env;
+
+const DEFAULT_LOCAL_BASE_URL = LOCAL_STORAGE_BASE_URL || `http://localhost:${API_PORT}/uploads`;
 
 describe('action', () => {
   let app;
   let agent;
   let db;
+  let http;
 
   beforeEach(async () => {
     app = await getApp();
     agent = app.agent();
+    http = app.listen(API_PORT);
     db = app.db;
 
     const Storage = db.getModel('storages');
@@ -25,16 +33,12 @@ describe('action', () => {
       baseUrl: DEFAULT_LOCAL_BASE_URL,
       default: true
     });
-    await Storage.create({
-      name: `local2_${generatePrefixByPath()}`,
-      type: STORAGE_TYPE_LOCAL,
-      path: 'test/path',
-      baseUrl: DEFAULT_LOCAL_BASE_URL,
-      default: true
-    })
   });
 
-  afterEach(() => db.close());
+  afterEach(async () => {
+    await promisify(cb => http.close(cb))();
+    await db.close();
+  });
 
   describe('direct attachment', () => {
     it('upload file should be ok', async () => {
@@ -83,15 +87,10 @@ describe('action', () => {
       // 文件是否保存到指定路径
       expect(file.toString()).toBe('Hello world!\n');
 
-      const content = await agent.get(`${attachment.path}/${attachment.filename}`);
       // 通过 url 是否能正确访问
-      // TODO(bug)
+      const content = await requestFile(attachment.url, agent);
       expect(content.text).toBe('Hello world!\n');
     });
-
-    // it('upload to storage with path should be ok', async () => {
-      
-    // });
   });
 
   describe('belongsTo attachment', () => {
@@ -135,6 +134,37 @@ describe('action', () => {
       });
       // 外键更新正常
       expect(updatedUser.get('avatar').id).toBe(body.data.id);
+    });
+
+    it('upload to assoiciated field and storage with full base url should be ok', async () => {
+      const BASE_URL = `http://localhost:${process.env.API_PORT}/another-uploads`;
+      const storageName = 'local_private';
+      const urlPath = 'test/path';
+      const Storage = db.getModel('storages');
+      // 动态添加 storage
+      await Storage.create({
+        name: storageName,
+        type: STORAGE_TYPE_LOCAL,
+        path: urlPath,
+        baseUrl: BASE_URL,
+        options: {
+          documentRoot: 'uploads/another'
+        }
+      });
+
+      const User = db.getModel('users');
+      const user = await User.create();
+      const { body } = await agent.resource('users.pubkeys').upload({
+        associatedKey: user.id,
+        file: path.resolve(__dirname, './files/text.txt'),
+        values: {}
+      });
+
+      // 文件的 url 是否正常生成
+      expect(body.data.url).toBe(`${BASE_URL}/${urlPath}/${body.data.filename}`);
+      console.log(body.data.url);
+      const content = await requestFile(body.data.url, agent);
+      expect(content.text).toBe('Hello world!\n');
     });
 
     // TODO(bug): 没有 associatedKey 时路径解析资源名称不对，无法进入 action

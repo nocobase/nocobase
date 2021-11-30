@@ -9,7 +9,17 @@ import {
 } from './actions/upload';
 import {
   middleware as localMiddleware,
+  update
 } from './storages/local';
+import { STORAGE_TYPE_ALI_OSS, STORAGE_TYPE_LOCAL } from './constants';
+
+function createLocalServerUpdateHook(app) {
+  return async function (row) {
+    if (row.get('type') === STORAGE_TYPE_LOCAL) {
+      await update(app);
+    }
+  }
+}
 
 export default {
   name: 'file-manager',
@@ -24,21 +34,25 @@ export default {
     // 暂时中间件只能通过 use 加进来
     resourcer.use(uploadMiddleware);
     resourcer.registerActionHandler('upload', uploadAction);
-    localMiddleware(this.app);
+    await localMiddleware(this.app);
   
     const Storage = database.getModel('storages');
-  
+    const localServerUpdateHook = createLocalServerUpdateHook(this.app);
+    Storage.addHook('afterCreate', localServerUpdateHook);
+    Storage.addHook('afterUpdate', localServerUpdateHook);
+    Storage.addHook('afterDestroy', localServerUpdateHook);
+
     this.app.on('db.init', async () => {
       await Storage.create({
         title: '本地存储',
         name: `local`,
-        type: 'local',
+        type: STORAGE_TYPE_LOCAL,
         baseUrl: process.env.LOCAL_STORAGE_BASE_URL || `http://localhost:${process.env.API_PORT}/uploads`,
-        default: process.env.STORAGE_TYPE === 'local',
+        default: process.env.STORAGE_TYPE === STORAGE_TYPE_LOCAL,
       });
       await Storage.create({
         name: `ali-oss`,
-        type: 'ali-oss',
+        type: STORAGE_TYPE_ALI_OSS,
         baseUrl: process.env.ALI_OSS_STORAGE_BASE_URL,
         options: {
           region: process.env.ALI_OSS_REGION,

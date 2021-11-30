@@ -3,43 +3,44 @@ import { URL } from 'url';
 import mkdirp from 'mkdirp';
 import multer from 'multer';
 import serve from 'koa-static';
-import mount from 'koa-mount';
 import { STORAGE_TYPE_LOCAL } from '../constants';
 import { getFilename } from '../utils';
+
+const LOCALHOST = `http://localhost:${process.env.API_PORT}`;
+
+const storages = new Map<string, any>();
+
+// use koa-mount match logic
+function match(basePath: string, pathname: string): boolean {
+  if (!pathname.startsWith(basePath)) {
+    return false;
+  }
+
+  const newPath = pathname.replace(basePath, '') || '/';
+  if (basePath.slice(-1) === '/') {
+    return true;
+  }
+
+  return newPath[0] === '/';
+}
 
 export function getDocumentRoot(storage): string {
   const { documentRoot = 'uploads' } = storage.options || {};
   // TODO(feature): 后面考虑以字符串模板的方式使用，可注入 req/action 相关变量，以便于区分文件夹
   return path.resolve(path.isAbsolute(documentRoot)
     ? documentRoot
-    : path.join(process.cwd(), documentRoot), storage.path);
+    : path.join(process.cwd(), documentRoot));
 }
 
-// TODO(optimize): 初始化的时机不应该放在中间件里
-export function middleware(app) {
+export async function middleware(app, options?) {
   if (process.env.NOCOBASE_ENV === 'production') {
     return;
   }
 
-  const storages = new Map<string, any>();
-  const StorageModel = app.db.getModel('storages');
+  await update(app);
 
-  return app.use(async function (ctx, next) {
-    const items = await StorageModel.findAll({
-      where: {
-        type: STORAGE_TYPE_LOCAL,
-      }
-    });
-
-    const primaryKey = StorageModel.primaryKeyAttribute;
-
-    for (const storage of items) {
-
-      // TODO：未解决 storage 更新问题
-      if (storages.has(storage[primaryKey])) {
-        continue;
-      }
-
+  app.use(async function (ctx, next) {
+    for (const storage of storages.values()) {
       const baseUrl = storage.get('baseUrl');
 
       let url;
@@ -47,30 +48,55 @@ export function middleware(app) {
         url = new URL(baseUrl);
       } catch (e) {
         url = {
-          protocol: 'http:',
-          hostname: 'localhost',
-          port: process.env.API_PORT,
           pathname: baseUrl
         };
       }
 
       // 以下情况才认为当前进程所应该提供静态服务
       // 否则都忽略，交给其他 server 来提供（如 nginx/cdn 等）
-      // TODO(bug): https、端口 80 默认值和其他本地 ip/hostname 的情况未考虑
-      // TODO 实际应该用 NOCOBASE_ENV 来判断，或者抛给 env 处理
-      if (process.env.LOCAL_STORAGE_USE_STATIC_SERVER) {
-        const basePath = url.pathname.startsWith('/') ? url.pathname : `/${url.pathname}`;
-        app.use(mount(basePath, serve(getDocumentRoot(storage))));
+      if (!process.env.LOCAL_STORAGE_USE_STATIC_SERVER
+        || (url.origin && url.origin !== LOCALHOST)) {
+        continue;
       }
-      storages.set(storage.primaryKey, storage);
+
+      const basePath = url.pathname.startsWith('/') ? url.pathname : `/${url.pathname}`;
+      if (!match(basePath, ctx.path)) {
+        continue;
+      }
+
+      return serve(getDocumentRoot(storage), {
+        // for handle files after any api handlers
+        defer: true
+      })(ctx, async () => {
+        ctx.path = ctx.path.replace(basePath, '');
+        await next();
+      });
     }
+
     await next();
   });
 }
 
+export async function update(app) {
+  const StorageModel = app.db.getModel('storages');
+
+  const items = await StorageModel.findAll({
+    where: {
+      type: STORAGE_TYPE_LOCAL,
+    }
+  });
+
+  const primaryKey = StorageModel.primaryKeyAttribute;
+
+  storages.clear();
+  for (const storage of items) {
+    storages.set(storage[primaryKey], storage);
+  }
+}
+
 export default (storage) => multer.diskStorage({
   destination: function (req, file, cb) {
-    const destPath = getDocumentRoot(storage);
+    const destPath = path.join(getDocumentRoot(storage), storage.path);
     mkdirp(destPath, (err: Error | null) => cb(err, destPath));
   },
   filename: getFilename

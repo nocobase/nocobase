@@ -4,10 +4,10 @@
   "main": "lib/index.js",
   "license": "MIT",
   "dependencies": {
+    "@koa/cors": "^3.1.0",
     "@koa/multer": "^3.0.0",
     "@nocobase/server": "^0.5.0-alpha.34",
     "ali-oss": "^6.12.0",
-    "koa-mount": "^4.0.0",
     "koa-static": "^5.0.0",
     "mime-match": "^1.0.2",
     "multer": "^1.4.2"

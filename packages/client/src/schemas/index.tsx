@@ -27,7 +27,7 @@ export function useDefaultAction() {
 }
 
 export const request = extend({
-  prefix: process.env.API_BASE_PATH,
+  prefix: process.env.API_BASE_URL,
   timeout: 30000,
 });
 
@@ -39,8 +39,6 @@ request.use(async (ctx, next) => {
   }
   await next();
 });
-
-console.log('process.env.API_BASE_PATH', process.env.API_BASE_PATH);
 
 export async function createOrUpdateCollection(data: any) {
   return await request('collections:createOrUpdate', {

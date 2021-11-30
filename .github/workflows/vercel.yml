@@ -24,10 +24,13 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-node-
 
-      - run: yarn install
-      - run: yarn bootstrap
-      - run: echo "API_BASE_PATH=${{ secrets.API_BASE_PATH }}" >> .env
-      - run: yarn build-docs
+      - name: Build
+        env:
+          API_BASE_URL: ${{ secrets.API_ORIGIN }}${{ secrets.API_BASE_PATH }}
+        run: |
+          yarn install
+          yarn bootstrap
+          yarn build-docs
 
       - name: Deploy
         uses: amondnet/vercel-action@v19

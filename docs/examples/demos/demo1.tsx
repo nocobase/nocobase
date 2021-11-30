@@ -15,7 +15,7 @@ import { UseRequestProvider } from 'ahooks';
 import { extend } from 'umi-request';
 
 const request = extend({
-  prefix: process.env.API_BASE_PATH,
+  prefix: process.env.API_BASE_URL,
   timeout: 30000,
 });
 
@@ -32,10 +32,6 @@ request.use(async (ctx, next) => {
 const client = new ClientSDK({
   request,
 });
-
-console.log('process.env.API_BASE_PATH', process.env.API_BASE_PATH);
-
-// console.log = () => {}
 
 const RouteSwitch = createRouteSwitch({
   components: {

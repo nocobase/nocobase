@@ -19,7 +19,7 @@ export default {
     this.app.on('beforeStart', async () => {
       await database.getModel('collections').load({
         // TODO(bug): quick fix just comment out
-        // skipExisting: true,
+        skipExisting: true,
       });
     });
 

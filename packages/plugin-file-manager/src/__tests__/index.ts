@@ -1,14 +1,12 @@
 import path from 'path';
-import { mockDatabase, mockServer } from '@nocobase/test';
+import cors from '@koa/cors';
+import supertest from 'supertest';
+import { MockServer, mockServer } from '@nocobase/test';
 
 import plugin from '../server';
 
-export function getDatabase() {
-  return mockDatabase();
-};
-
-export async function getApp() {
-  const app = mockServer();
+export async function getApp(options?): Promise<MockServer> {
+  const app = mockServer(options);
   app.plugin(require('@nocobase/plugin-collections/src/server').default);
   app.plugin(plugin);
   await app.load();
@@ -20,6 +18,16 @@ export async function getApp() {
   } catch (error) {
     console.error(error);
   }
+  app.use(cors({
+    origin: '*'
+  }));
   
   return app;
+}
+
+// because the app in supertest is using a random port
+export function requestFile(url, agent) {
+  return path.isAbsolute(url)
+    ? agent.get(url)
+    : supertest.agent(url).get('');
 }
