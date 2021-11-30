@@ -67,13 +67,6 @@ export class Collection<
 
     if (!this.model) {
       this.defineSequelizeModel();
-    } else {
-      // @ts-ignore
-
-      this.model.init(null, {
-        ...this.sequelizeModelOptions(),
-        sequelize: this.model.sequelize,
-      });
     }
 
     if (options.fields) {
