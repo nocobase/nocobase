@@ -53,20 +53,6 @@ export class Collection<
       this.repository = null;
     }
 
-    const reDefineModel = (oldOptions, newOptions) => {
-      if (!this.model) {
-        return true;
-      }
-
-      if (lodash.get(oldOptions, 'name') !== lodash.get(newOptions, 'name')) {
-        return true;
-      }
-
-      return false;
-    };
-
-    const oldOptions = lodash.clone(this.options);
-
     this.options = options;
 
     if (options.model) {
@@ -75,11 +61,19 @@ export class Collection<
       if (typeof options.model == 'string') {
         model = this.context.database.models.get(options.model);
       }
+
       this.model = model;
     }
 
-    if (reDefineModel(oldOptions, this.options)) {
+    if (!this.model) {
       this.defineSequelizeModel();
+    } else {
+      // @ts-ignore
+
+      this.model.init(null, {
+        ...this.sequelizeModelOptions(),
+        sequelize: this.model.sequelize,
+      });
     }
 
     if (options.fields) {
@@ -89,15 +83,22 @@ export class Collection<
     this.setRepository(options.repository);
   }
 
-  private defineSequelizeModel() {
-    // define sequelize model
+  private sequelizeModelOptions() {
     const { name, tableName } = this.options;
-
-    // we will set model fields using setField, not here
-    this.model = this.context.database.sequelize.define(name, null, {
+    return {
       ..._.omit(this.options, ['name', 'fields']),
       tableName: tableName || name,
-    });
+    };
+  }
+
+  private defineSequelizeModel() {
+    const { name } = this.options;
+    // we will set model fields using setField, not here
+    this.model = this.context.database.sequelize.define(
+      name,
+      null,
+      this.sequelizeModelOptions(),
+    );
   }
 
   setRepository(repository?: Repository | string) {
