@@ -7,6 +7,8 @@ dotenv.config({
   path: path.resolve(__dirname, '../../.env'),
 });
 
+process.env.MFSU_AD = 'none';
+
 const umiConfig = getUmiConfig();
 
 export default defineConfig({
