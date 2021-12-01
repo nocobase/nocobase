@@ -42,7 +42,7 @@ const api = new Server({
     },
   },
   resourcer: {
-    prefix: process.env.API_BASE_PATH,
+    prefix: process.env.API_BASE_PATH || '/api/',
   },
 });
 

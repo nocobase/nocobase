@@ -1,12 +1,16 @@
 import path from 'path';
-import cors from '@koa/cors';
 import supertest from 'supertest';
 import { MockServer, mockServer } from '@nocobase/test';
 
 import plugin from '../server';
 
-export async function getApp(options?): Promise<MockServer> {
-  const app = mockServer(options);
+export async function getApp(options = {}): Promise<MockServer> {
+  const app = mockServer({
+    ...options,
+    cors: {
+      origin: '*'
+    }
+  });
   app.plugin(require('@nocobase/plugin-collections/src/server').default);
   app.plugin(plugin);
   await app.load();
@@ -18,9 +22,6 @@ export async function getApp(options?): Promise<MockServer> {
   } catch (error) {
     console.error(error);
   }
-  app.use(cors({
-    origin: '*'
-  }));
   
   return app;
 }
