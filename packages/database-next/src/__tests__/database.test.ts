@@ -16,6 +16,7 @@ describe('database', () => {
 
     // extend field
     expect(tagCollection.fields.has('color')).toBeTruthy();
+    expect(tagCollection.fields.has('color2')).toBeTruthy();
     expect(tagCollection.fields.has('name')).toBeTruthy();
 
     // delay extend
@@ -32,6 +33,7 @@ describe('database', () => {
     expect(imageCollection).toBeDefined();
     expect(imageCollection.fields.has('name')).toBeTruthy();
     expect(imageCollection.fields.has('url')).toBeTruthy();
+    expect(imageCollection.fields.has('url2')).toBeTruthy();
   });
 
   test('hasMany with inverse belongsTo relation', async () => {
