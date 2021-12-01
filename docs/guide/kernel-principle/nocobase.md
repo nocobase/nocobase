@@ -108,3 +108,117 @@ SchemaComponent（只列三个特殊的存在扩展的组件）
     - `nocobase pm:enable <plugin-name>`
     - `nocobase pm:disable <plugin-name>`
     - `nocobase pm:remove <plugin-name>`
+
+## Events & Middlewares
+
+在上面列举的几类扩展中，Events 和 Middlewares 需要考虑优先级问题。以 Events 为例，假设有个 `tests.beforeCreate` 事件：
+
+A 插件：
+
+```ts
+db.on('tests.beforeCreate', (model) => {
+  model.set('x', 'a1');
+});
+```
+
+B 插件：
+
+```ts
+db.on('tests.beforeCreate', (model) => {
+  model.set('x', 'b1');
+});
+```
+
+如果是按照 A、B 顺序加载，model.x 的结果为 b1，如果是按照 B、A 的顺序加载，model.x 的结果为 a1。A、B 的加载顺序对结果会有影响，但这个影响并不是插件的依赖关系，所以并不能通过插件依赖来解决。较好的思路，可以给事件的 listener 加个 priority，如：
+
+A 插件：
+
+```ts
+db.on('tests.beforeCreate', (model) => {
+  model.set('x', 'a1');
+}, {
+  priority: 100,
+});
+
+db.on('tests.beforeCreate', (model) => {
+  model.set('y', 'a2');
+}, {
+  priority: 400,
+});
+```
+
+B 插件：
+
+```ts
+db.on('tests.beforeCreate', (model) => {
+  model.set('x', 'b1');
+}, {
+  priority: 200,
+});
+
+db.on('tests.beforeCreate', (model) => {
+  model.set('y', 'b2');
+}, {
+  priority: 300,
+});
+```
+
+有了 priority，不管插件通过什么顺序加载，最终的 model.x 的值都是 b1， model.y 的值都是 a2。进一步整理，可以给 priority 设定一些常量，比如：
+
+- highest：200
+- higher：300
+- high：400
+- normal：500（默认值）
+- low：600
+- lower：700
+- lowest：800
+
+这个思路能够解决大部分优先级问题。不过，钻牛角尖来说，如果想把 C 的事件放在 A、B 中间呢？如：
+
+```ts
+// A 插件
+db.on('tests.beforeCreate', (model) => {
+  
+}, {
+  priority: 500,
+});
+
+// C 插件
+db.on('tests.beforeCreate', (model) => {
+  
+}, {
+  priority: 500,
+});
+
+// B 插件
+db.on('tests.beforeCreate', (model) => {
+  
+}, {
+  priority: 500,
+});
+```
+
+上述例子是个非常极端的情况，一般不用考虑这么细，如果想要支持精确插入，可以考虑加个 name 参数，再配合 insertAfter 或 insertBefore 指定插入位置，如：
+
+```ts
+// A 插件
+db.on('tests.beforeCreate', (model) => {
+  
+});
+
+// B 插件
+db.on('tests.beforeCreate', (model) => {
+  
+}, {
+  name: 'b1'
+});
+
+// C 插件
+db.on('tests.beforeCreate', (model) => {
+  
+}, {
+  name: 'c1',
+  insertBefore: 'b1', // 虽然写在最后，但是要插入在 b1 前面，
+  // insertAfter: 'a1',
+});
+```
