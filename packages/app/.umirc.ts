@@ -9,7 +9,7 @@ dotenv.config({
 
 const {
   API_ORIGIN = '',
-  API_ORIGIN_DEV,
+  API_ORIGIN_DEV = 'http://localhost:13002',
   API_BASE_PATH = '/api/'
 } = process.env;
 

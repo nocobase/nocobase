@@ -1,7 +1,7 @@
 import { URL } from 'url';
 
 const {
-  API_ORIGIN_DEV,
+  API_ORIGIN_DEV = 'http://localhost:13002',
   LOCAL_STORAGE_USE_STATIC_SERVER,
   LOCAL_STORAGE_BASE_URL
 } = process.env;
