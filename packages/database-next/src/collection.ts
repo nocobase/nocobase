@@ -194,7 +194,7 @@ export class Collection<
       throw new Error(`field ${name} not exists`);
     }
 
-    if (options.name !== name) {
+    if (options.name && options.name !== name) {
       this.removeField(name);
     }
 
