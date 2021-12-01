@@ -8,10 +8,8 @@ import {
   Utils,
 } from 'sequelize';
 
-const { hooks } = require('sequelize/lib/hooks');
-
 import { EventEmitter } from 'events';
-import { Collection, CollectionOptions } from './collection';
+import { Collection, CollectionOptions, RepositoryType } from './collection';
 import * as FieldTypes from './fields';
 import { Field, FieldContext, RelationField } from './fields';
 import { Repository } from './repository';
@@ -51,7 +49,7 @@ export class Database extends EventEmitter implements AsyncEmitter {
   sequelize: Sequelize;
   fieldTypes = new Map();
   models = new Map<string, ModelCtor<any>>();
-  repositories = new Map<string, Repository>();
+  repositories = new Map<string, RepositoryType>();
   operators = new Map();
   collections = new Map<string, Collection>();
   pendingFields = new Map<string, RelationField[]>();
@@ -108,28 +106,22 @@ export class Database extends EventEmitter implements AsyncEmitter {
   collection<Attributes = any, CreateAttributes = Attributes>(
     options: CollectionOptions,
   ): Collection<Attributes, CreateAttributes> {
-    let collection = this.collections.get(options.name);
+    this.emit('beforeDefineCollection', options);
 
-    if (collection) {
-      collection.updateOptions(options);
-    } else {
-      this.emit('beforeDefineCollection', options);
+    const delayCollectionDefinition = this.delayCollectionDefinition.get(
+      options.name,
+    );
 
-      const delayCollectionDefinition = this.delayCollectionDefinition.get(
-        options.name,
-      );
-
-      if (delayCollectionDefinition) {
-        delayCollectionDefinition.setRoot(options);
-        options = delayCollectionDefinition.finalDefinition();
-      }
-
-      collection = new Collection<Attributes, CreateAttributes>(options, {
-        database: this,
-      });
-
-      this.collections.set(collection.name, collection);
+    if (delayCollectionDefinition) {
+      delayCollectionDefinition.setRoot(options);
+      options = delayCollectionDefinition.finalDefinition();
     }
+
+    const collection = new Collection<Attributes, CreateAttributes>(options, {
+      database: this,
+    });
+
+    this.collections.set(collection.name, collection);
 
     this.emit('afterDefineCollection', collection);
 
@@ -187,7 +179,7 @@ export class Database extends EventEmitter implements AsyncEmitter {
     }
   }
 
-  registerRepositories(repositories: MapOf<Repository>) {
+  registerRepositories(repositories: MapOf<RepositoryType>) {
     for (const [type, schemaType] of Object.entries(repositories)) {
       this.repositories.set(type, schemaType);
     }

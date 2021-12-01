@@ -5,13 +5,8 @@
     "sourceMap": true,
     "target": "ES6",
     "paths": {
-      "@nocobase/*": [
-        "./packages/*/src"
-      ]
+      "@nocobase/*": ["./packages/*/src"]
     }
   },
-  "exclude": [
-    "./packages/*/esm",
-    "./packages/*/lib"
-  ]
+  "exclude": ["./packages/*/esm", "./packages/*/lib"]
 }

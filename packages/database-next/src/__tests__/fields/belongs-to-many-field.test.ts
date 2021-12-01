@@ -36,7 +36,7 @@ describe('belongs to many field', () => {
     expect(Through.model.rawAttributes['tagId']).toBeDefined();
   });
 
-  test.skip('redefine collection', () => {
+  test('redefine collection', () => {
     const Post = db.collection({
       name: 'posts',
       fields: [

@@ -1,5 +1,6 @@
 import { omit } from 'lodash';
 import { Sequelize, ModelCtor, Model, DataTypes, Utils } from 'sequelize';
+import { Collection } from '../collection';
 import { RelationField } from './relation-field';
 
 export class BelongsToManyField extends RelationField {
@@ -22,11 +23,16 @@ export class BelongsToManyField extends RelationField {
     }
     const through = this.through;
 
-    let Through =
-      database.getCollection(through) ||
-      database.collection({
+    let Through: Collection;
+
+    if (database.hasCollection(through)) {
+      Through = database.getCollection(through);
+    } else {
+      Through = database.collection({
         name: through,
       });
+      Object.defineProperty(Through.model, 'isThrough', { value: true });
+    }
 
     const association = collection.model.belongsToMany(Target, {
       ...omit(this.options, ['name', 'type', 'target']),

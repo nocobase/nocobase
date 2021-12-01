@@ -4,7 +4,6 @@ import { Database } from './database';
 import { Field } from './fields';
 import _ from 'lodash';
 import { Repository } from './repository';
-import lodash from 'lodash';
 import { SyncOptions } from 'sequelize/types/lib/sequelize';
 
 interface FieldOptions {
@@ -14,12 +13,14 @@ interface FieldOptions {
   [key: string]: any;
 }
 
+export type RepositoryType = typeof Repository;
+
 export interface CollectionOptions extends Omit<ModelOptions, 'name'> {
   name: string;
   tableName?: string;
   fields?: FieldOptions[];
-  model?: string | Model;
-  repository?: string | Repository;
+  model?: string | ModelCtor<Model>;
+  repository?: string | RepositoryType;
 }
 
 export interface CollectionContext {
@@ -32,6 +33,7 @@ export class Collection<
 > extends EventEmitter {
   options: CollectionOptions;
   context: CollectionContext;
+  isThrough?: boolean;
   fields: Map<string, any> = new Map<string, any>();
   model: ModelCtor<Model<TModelAttributes, TCreationAttributes>>;
   repository: Repository<TModelAttributes, TCreationAttributes>;
@@ -43,36 +45,10 @@ export class Collection<
   constructor(options: CollectionOptions, context?: CollectionContext) {
     super();
     this.context = context;
-
-    this.bindFieldEventListener();
-    this.initByOptions(options);
-  }
-
-  initByOptions(options: CollectionOptions, reset: boolean = false) {
-    if (reset) {
-      this.repository = null;
-    }
-
     this.options = options;
-
-    if (options.model) {
-      let model: ModelCtor<any>;
-
-      if (typeof options.model == 'string') {
-        model = this.context.database.models.get(options.model);
-      }
-
-      this.model = model;
-    }
-
-    if (!this.model) {
-      this.defineSequelizeModel();
-    }
-
-    if (options.fields) {
-      this.setFields(options.fields);
-    }
-
+    this.bindFieldEventListener();
+    this.modelInit();
+    this.setFields(options.fields);
     this.setRepository(options.repository);
   }
 
@@ -80,31 +56,43 @@ export class Collection<
     const { name, tableName } = this.options;
     return {
       ..._.omit(this.options, ['name', 'fields']),
+      modelName: name,
+      sequelize: this.context.database.sequelize,
       tableName: tableName || name,
     };
   }
 
-  private defineSequelizeModel() {
-    const { name } = this.options;
-    // we will set model fields using setField, not here
-    this.model = this.context.database.sequelize.define(
-      name,
-      null,
-      this.sequelizeModelOptions(),
-    );
-  }
-
-  setRepository(repository?: Repository | string) {
-    if (typeof repository === 'string') {
-      repository = this.context.database.repositories.get(repository);
-    }
-
-    if (!this.repository && !repository) {
-      this.repository = new Repository(this);
+  /**
+   * TODO
+   */
+  modelInit() {
+    if (this.model) {
       return;
     }
+    const { name, model } = this.options;
+    let M = Model;
+    if (this.context.database.sequelize.isDefined(name)) {
+      const m = this.context.database.sequelize.model(name);
+      if ((m as any).isThrough) {
+        this.model = m;
+        return;
+      }
+    }
+    if (typeof model === 'string') {
+      M = this.context.database.models.get(model) || Model;
+    } else if (model) {
+      M = model;
+    }
+    this.model = class extends M {};
+    this.model.init(null, this.sequelizeModelOptions());
+  }
 
-    this.repository = repository;
+  setRepository(repository?: RepositoryType | string) {
+    let repo = Repository;
+    if (typeof repository === 'string') {
+      repo = this.context.database.repositories.get(repository) || Repository;
+    }
+    this.repository = new repo(this);
   }
 
   private bindFieldEventListener() {
@@ -150,15 +138,21 @@ export class Collection<
     return field;
   }
 
-  setFields(options: FieldOptions[]) {
-    this.cleanFields();
+  setFields(fields: FieldOptions[], resetFields = true) {
+    if (!Array.isArray(fields)) {
+      return;
+    }
 
-    for (const field of options) {
-      this.addField(field.name, lodash.omit(field, 'name'));
+    if (resetFields) {
+      this.resetFields();
+    }
+
+    for (const { name, ...options } of fields) {
+      this.addField(name, options);
     }
   }
 
-  protected cleanFields() {
+  resetFields() {
     const fieldNames = this.fields.keys();
     for (const fieldName of fieldNames) {
       this.removeField(fieldName);
@@ -174,27 +168,37 @@ export class Collection<
     return bool;
   }
 
-  updateOptions(options: CollectionOptions) {
+  /**
+   * TODO
+   * 
+   * @param name 
+   * @param options 
+   */
+  updateOptions(options: CollectionOptions, mergeOptions?: any) {
     this.context.database.emit('beforeUpdateCollection', this, options);
 
-    const updateOptions = {
-      ...this.options,
-      ...options,
-    };
-
-    this.initByOptions(updateOptions, true);
+    this.setFields(options.fields, false);
+    this.setRepository(options.repository);
 
     this.context.database.emit('afterUpdateCollection', this);
   }
 
+  /**
+   * TODO
+   * 
+   * @param name 
+   * @param options 
+   */
   updateField(name: string, options: FieldOptions) {
-    const existField = this.getField(name);
-    if (!existField) {
+    if (!this.hasField(name)) {
       throw new Error(`field ${name} not exists`);
     }
 
-    this.removeField(name);
-    this.addField(options.name, options);
+    if (options.name !== name) {
+      this.removeField(name);
+    }
+
+    this.setField(options.name || name, options);
   }
 
   async sync(syncOptions?: SyncOptions) {
