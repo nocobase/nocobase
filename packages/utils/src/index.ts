@@ -1,2 +1,2 @@
 export * from './merge';
-export * from './getLocalStorageProxy';
+export * from './umiConfig';

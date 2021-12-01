@@ -1,32 +1,21 @@
 import { defineConfig } from 'dumi';
-import { getLocalStorageProxy } from '@nocobase/utils';
+import { getUmiConfig } from '@nocobase/utils';
 
 process.env.MFSU_AD = 'none';
 
-const {
-  API_ORIGIN = '',
-  API_ORIGIN_DEV = 'http://localhost:13002',
-  API_BASE_PATH = '/api/'
-} = process.env;
+const umiConfig = getUmiConfig();
 
 export default defineConfig({
   title: 'NocoBase',
   hash: true,
   define: {
-    'process.env.API_BASE_URL': `${API_ORIGIN}${API_BASE_PATH}`
+    ...umiConfig.define,
   },
   // only proxy when using `umi dev`
   // if the assets are built, will not proxy
-  proxy: !API_ORIGIN
-    ? {
-      [API_BASE_PATH]: {
-        target: API_ORIGIN_DEV,
-        changeOrigin: true,
-        pathRewrite: { [`^${API_BASE_PATH}`]: API_BASE_PATH },
-      },
-      // for local storage
-      ...getLocalStorageProxy()
-    } : {},
+  proxy: {
+    ...umiConfig.proxy,
+  },
   resolve: {
     includes: ['docs', 'packages/client/src/schemas'],
   },
