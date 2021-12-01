@@ -17,10 +17,14 @@ import { Field, FieldContext, RelationField } from './fields';
 import { Repository } from './repository';
 import { applyMixins, AsyncEmitter } from '@nocobase/utils';
 
-import * as fs from 'fs';
-import path from 'path';
 import merge from 'deepmerge';
 import { ModelHook } from './model-hook';
+import {
+  CollectionDefinition,
+  CollectionImporter,
+  ImporterReader,
+  ImportFileExtension,
+} from './collection-importer';
 
 export interface MergeOptions extends merge.Options {}
 
@@ -53,6 +57,7 @@ export class Database extends EventEmitter implements AsyncEmitter {
   pendingFields = new Map<string, RelationField[]>();
 
   modelHook: ModelHook;
+  delayCollectionDefinition = new Map<string, CollectionDefinition>();
 
   constructor(options: DatabaseOptions) {
     super();
@@ -109,6 +114,16 @@ export class Database extends EventEmitter implements AsyncEmitter {
       collection.updateOptions(options);
     } else {
       this.emit('beforeDefineCollection', options);
+
+      const delayCollectionDefinition = this.delayCollectionDefinition.get(
+        options.name,
+      );
+
+      if (delayCollectionDefinition) {
+        delayCollectionDefinition.setRoot(options);
+        options = delayCollectionDefinition.finalDefinition();
+      }
+
       collection = new Collection<Attributes, CreateAttributes>(options, {
         database: this,
       });
@@ -226,24 +241,25 @@ export class Database extends EventEmitter implements AsyncEmitter {
 
   async import(options: {
     directory: string;
-    extensions?: string[];
+    extensions?: ImportFileExtension[];
   }): Promise<Map<string, Collection>> {
+    const reader = new ImporterReader(options.directory, options.extensions);
+    const importer = new CollectionImporter(reader, this);
+    const importResultMap = await importer.import();
+
     const result = new Map<string, Collection>();
 
-    const { extensions = ['js', 'ts', 'json'], directory } = options;
+    for (const collectionKey of importResultMap.keys()) {
+      const collectionDefinition = importResultMap.get(collectionKey);
 
-    const files = fs.readdirSync(directory, {
-      encoding: 'utf-8',
-    });
-
-    for (const fileName of files) {
-      const { ext } = path.parse(fileName);
-      if (extensions.includes(ext.replace('.', ''))) {
-        const collectionOptions = await requireModule(
-          path.join(directory, fileName),
+      if (collectionDefinition.hasRoot()) {
+        const collection = this.collection(
+          collectionDefinition.finalDefinition(),
         );
-        const collection = this.collection(collectionOptions);
-        result[collection.name] = collection;
+
+        result.set(collectionKey, collection);
+      } else {
+        this.delayCollectionDefinition.set(collectionKey, collectionDefinition);
       }
     }
 
@@ -253,15 +269,15 @@ export class Database extends EventEmitter implements AsyncEmitter {
   emitAsync: (event: string | symbol, ...args: any[]) => Promise<boolean>;
 }
 
-async function requireModule(module: any) {
-  if (typeof module === 'string') {
-    module = await import(module);
-  }
-
-  if (typeof module !== 'object') {
-    return module;
-  }
-  return module.__esModule ? module.default : module;
+export function extend(
+  collectionOptions: CollectionOptions,
+  mergeOptions?: MergeOptions,
+) {
+  return {
+    collectionOptions,
+    mergeOptions,
+    extend: true,
+  };
 }
 
 applyMixins(Database, [AsyncEmitter]);

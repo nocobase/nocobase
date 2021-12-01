@@ -1,18 +1,37 @@
-import { Database } from '../database';
 import { mockDatabase } from './index';
-import { HasMany } from 'sequelize';
 import path from 'path';
 
 describe('database', () => {
   test('import', async () => {
     const db = mockDatabase();
-    const results = await db.import({
+    await db.import({
       directory: path.resolve(__dirname, './fixtures/collections'),
     });
 
-    expect(results).toHaveProperty('posts');
-    expect(results).toHaveProperty('users');
-    expect(results).toHaveProperty('tags');
+    expect(db.getCollection('posts')).toBeDefined();
+    expect(db.getCollection('users')).toBeDefined();
+    expect(db.getCollection('tags')).toBeDefined();
+
+    const tagCollection = db.getCollection('tags');
+
+    // extend field
+    expect(tagCollection.fields.has('color')).toBeTruthy();
+    expect(tagCollection.fields.has('name')).toBeTruthy();
+
+    // delay extend
+    expect(db.getCollection('images')).toBeUndefined();
+    expect(db.delayCollectionDefinition.has('images')).toBeTruthy();
+
+    db.collection({
+      name: 'images',
+      fields: [{ type: 'string', name: 'name' }],
+    });
+
+    const imageCollection = db.getCollection('images');
+
+    expect(imageCollection).toBeDefined();
+    expect(imageCollection.fields.has('name')).toBeTruthy();
+    expect(imageCollection.fields.has('url')).toBeTruthy();
   });
 
   test('hasMany with inverse belongsTo relation', async () => {

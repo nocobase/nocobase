@@ -131,6 +131,10 @@ export class Collection<
   }
 
   addField(name: string, options: Omit<FieldOptions, 'name'>): Field {
+    return this.setField(name, options);
+  }
+
+  setField(name: string, options: Omit<FieldOptions, 'name'>): Field {
     const { database } = this.context;
 
     const field = database.buildField(
