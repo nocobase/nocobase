@@ -240,8 +240,9 @@ export class Collection<
 
     const syncModels = Array.from(models.keys());
     syncModels.sort((a, b) => models.get(a) - models.get(b));
-    await Promise.all(
-      syncModels.map(async (syncModel) => await syncModel.sync(syncOptions)),
-    );
+
+    for (const syncModel of syncModels) {
+      await syncModel.sync(syncOptions);
+    }
   }
 }
