@@ -7,7 +7,7 @@ const start = Date.now();
 const api = new Application({
   database: dbConfig[process.env.DB_DIALECT || 'sqlite'],
   resourcer: {
-    prefix: '/api',
+    prefix: process.env.API_BASE_PATH || '/api/',
   },
 });
 

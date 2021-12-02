@@ -46,10 +46,10 @@ export async function middleware(ctx: Context, next: Next) {
     // 如果没有包含关联，则直接按默认文件上传至默认存储引擎
     storage = await StorageModel.findOne({ where: { default: true } });
   } else {
-    const fieldOptions = resourceField.getOptions();
+    const { attachment = {} } = resourceField.getOptions();
     storage = await StorageModel.findOne({
-      where: fieldOptions.defaultValue
-        ? { [StorageModel.primaryKeyAttribute]: fieldOptions.defaultValue }
+      where: attachment.storage
+        ? { name: attachment.storage }
         : { default: true }
     });
   }
@@ -75,8 +75,8 @@ export async function middleware(ctx: Context, next: Next) {
     },
     storage: makeStorage(storage),
   };
-  const upload = multer(multerOptions);
-  return upload.single(FILE_FIELD_NAME)(ctx, next);
+  const uploader = multer(multerOptions);
+  return uploader.single(FILE_FIELD_NAME)(ctx, next);
 };
 
 export async function action(ctx: Context, next: Next) {
@@ -86,6 +86,11 @@ export async function action(ctx: Context, next: Next) {
   }
   const { associatedName, associatedKey, resourceField } = ctx.action.params;
   const extname = path.extname(file.filename);
+  const urlPath = storage.path
+    ? (storage.path.startsWith('/')
+      ? storage.path
+      : `/${storage.path}`)
+    : '';
   const data = {
     title: file.originalname.replace(extname, ''),
     filename: file.filename,
@@ -94,7 +99,7 @@ export async function action(ctx: Context, next: Next) {
     path: storage.path,
     size: file.size,
     // 直接缓存起来
-    url: `${storage.baseUrl}${storage.path}/${file.filename}`,
+    url: `${storage.baseUrl}${urlPath}/${file.filename}`,
     mimetype: file.mimetype,
     // @ts-ignore
     meta: ctx.request.body
