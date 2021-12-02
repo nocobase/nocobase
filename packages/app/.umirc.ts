@@ -34,4 +34,8 @@ export default defineConfig({
     baseNavigator: false,
     baseSeparator: '-',
   },
+  chainWebpack(config) {
+    config.module.rules.get('ts-in-node_modules').include.add(path.resolve(__dirname, '../client/src'));
+    config.resolve.alias.set('@nocobase/client', path.resolve(__dirname, '../client/src'));
+  },
 });
