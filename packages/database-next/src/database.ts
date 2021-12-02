@@ -17,12 +17,7 @@ import { applyMixins, AsyncEmitter } from '@nocobase/utils';
 
 import merge from 'deepmerge';
 import { ModelHook } from './model-hook';
-import {
-  CollectionDefinition,
-  CollectionImporter,
-  ImporterReader,
-  ImportFileExtension,
-} from './collection-importer';
+import { ImporterReader, ImportFileExtension } from './collection-importer';
 
 export interface MergeOptions extends merge.Options {}
 
@@ -55,7 +50,11 @@ export class Database extends EventEmitter implements AsyncEmitter {
   pendingFields = new Map<string, RelationField[]>();
 
   modelHook: ModelHook;
-  delayCollectionDefinition = new Map<string, CollectionDefinition>();
+
+  delayCollectionExtend = new Map<
+    string,
+    { collectionOptions: CollectionOptions; mergeOptions?: any }[]
+  >();
 
   constructor(options: DatabaseOptions) {
     super();
@@ -69,9 +68,17 @@ export class Database extends EventEmitter implements AsyncEmitter {
     this.collections = new Map();
     this.modelHook = new ModelHook(this);
 
-    this.on('afterDefineCollection', (collection) => {
+    this.on('afterDefineCollection', (collection: Collection) => {
       // after collection defined, call bind method on pending fields
       this.pendingFields.get(collection.name)?.forEach((field) => field.bind());
+      this.delayCollectionExtend
+        .get(collection.name)
+        ?.forEach((collectionExtend) => {
+          collection.updateOptions(
+            collectionExtend.collectionOptions,
+            collectionExtend.mergeOptions,
+          );
+        });
     });
 
     // register database field types
@@ -107,15 +114,6 @@ export class Database extends EventEmitter implements AsyncEmitter {
     options: CollectionOptions,
   ): Collection<Attributes, CreateAttributes> {
     this.emit('beforeDefineCollection', options);
-
-    const delayCollectionDefinition = this.delayCollectionDefinition.get(
-      options.name,
-    );
-
-    if (delayCollectionDefinition) {
-      delayCollectionDefinition.setRoot(options);
-      options = delayCollectionDefinition.finalDefinition();
-    }
 
     const collection = new Collection<Attributes, CreateAttributes>(options, {
       database: this,
@@ -236,22 +234,30 @@ export class Database extends EventEmitter implements AsyncEmitter {
     extensions?: ImportFileExtension[];
   }): Promise<Map<string, Collection>> {
     const reader = new ImporterReader(options.directory, options.extensions);
-    const importer = new CollectionImporter(reader, this);
-    const importResultMap = await importer.import();
-
+    const modules = await reader.read();
     const result = new Map<string, Collection>();
 
-    for (const collectionKey of importResultMap.keys()) {
-      const collectionDefinition = importResultMap.get(collectionKey);
+    for (const module of modules) {
+      if (module.extend) {
+        const collectionName = module.collectionOptions.name;
+        const existCollection = this.getCollection(collectionName);
+        if (existCollection) {
+          existCollection.updateOptions(
+            module.collectionOptions,
+            module.mergeOptions,
+          );
+        } else {
+          const existDelayExtends =
+            this.delayCollectionExtend.get(collectionName) || [];
 
-      if (collectionDefinition.hasRoot()) {
-        const collection = this.collection(
-          collectionDefinition.finalDefinition(),
-        );
-
-        result.set(collectionKey, collection);
+          this.delayCollectionExtend.set(collectionName, [
+            ...existDelayExtends,
+            module,
+          ]);
+        }
       } else {
-        this.delayCollectionDefinition.set(collectionKey, collectionDefinition);
+        const collection = this.collection(module);
+        result.set(collection.name, collection);
       }
     }
 

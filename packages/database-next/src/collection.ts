@@ -5,6 +5,9 @@ import { Field } from './fields';
 import _ from 'lodash';
 import { Repository } from './repository';
 import { SyncOptions } from 'sequelize/types/lib/sequelize';
+import lodash from 'lodash';
+import merge from 'deepmerge';
+const { hooks } = require('sequelize/lib/hooks');
 
 interface FieldOptions {
   name: string;
@@ -170,24 +173,35 @@ export class Collection<
 
   /**
    * TODO
-   * 
-   * @param name 
-   * @param options 
+   *
+   * @param name
+   * @param options
    */
   updateOptions(options: CollectionOptions, mergeOptions?: any) {
-    this.context.database.emit('beforeUpdateCollection', this, options);
+    let newOptions = lodash.cloneDeep(options);
+    newOptions = merge(this.options, newOptions, mergeOptions);
+
+    this.context.database.emit('beforeUpdateCollection', this, newOptions);
 
     this.setFields(options.fields, false);
     this.setRepository(options.repository);
 
+    if (newOptions.hooks) {
+      this.setUpHooks(newOptions.hooks);
+    }
+
     this.context.database.emit('afterUpdateCollection', this);
+  }
+
+  setUpHooks(bindHooks) {
+    (<any>this.model)._setupHooks(bindHooks);
   }
 
   /**
    * TODO
-   * 
-   * @param name 
-   * @param options 
+   *
+   * @param name
+   * @param options
    */
   updateField(name: string, options: FieldOptions) {
     if (!this.hasField(name)) {

@@ -13,8 +13,11 @@ describe('database', () => {
     await db.import({
       directory: path.resolve(__dirname, './fixtures/c2'),
     });
+
     const test = db.getCollection('tests');
 
-    console.log(test.options.fields);
+    expect(test.getField('n0')).toBeDefined();
+    expect(test.getField('n1')).toBeDefined();
+    expect(test.getField('n2')).toBeDefined();
   });
 });

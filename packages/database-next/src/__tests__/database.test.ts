@@ -21,7 +21,6 @@ describe('database', () => {
 
     // delay extend
     expect(db.getCollection('images')).toBeUndefined();
-    expect(db.delayCollectionDefinition.has('images')).toBeTruthy();
 
     db.collection({
       name: 'images',
