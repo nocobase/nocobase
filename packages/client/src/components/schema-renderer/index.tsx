@@ -52,8 +52,11 @@ import { Menu } from '../../schemas/menu';
 import { Password } from '../../schemas/password';
 import { Radio } from '../../schemas/radio';
 import { Select } from '../../schemas/select';
-import { Table } from '../../schemas/table';
-import { CollectionFieldContext, TableRowContext } from '../../schemas/table/context';
+import {
+  CollectionFieldContext,
+  Table,
+  TableRowContext,
+} from '../../schemas/table';
 import { Tabs } from '../../schemas/tabs';
 import { TimePicker } from '../../schemas/time-picker';
 import { Upload } from '../../schemas/upload';
