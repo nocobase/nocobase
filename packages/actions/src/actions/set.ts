@@ -33,14 +33,14 @@ export async function set(ctx: Context, next: Next) {
     throw new Error(`${associatedName} associated model invalid`);
   }
   const { set: setAccessor } = resourceField.getAccessors();
-  const { resourceKey, resourceKeyAttribute, fields = [] } = ctx.action.params;
+  const { resourceIndex, resourceIndexAttribute, fields = [] } = ctx.action.params;
   const TargetModel = ctx.db.getModel(resourceField.getTarget());
   // const options = TargetModel.parseApiJson({
   //   fields,
   // });
   const model = await TargetModel.findOne({
     where: {
-      [resourceKeyAttribute || resourceField.options.targetKey || TargetModel.primaryKeyAttribute]: resourceKey,
+      [resourceIndexAttribute || resourceField.options.targetKey || TargetModel.primaryKeyAttribute]: resourceIndex,
     },
     // @ts-ignore
     context: ctx,

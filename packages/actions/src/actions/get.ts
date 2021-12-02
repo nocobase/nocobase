@@ -20,8 +20,8 @@ export async function get(ctx: Context, next: Next) {
     resourceField,
     associatedName,
     resourceName,
-    resourceKey,
-    resourceKeyAttribute,
+    resourceIndex,
+    resourceIndexAttribute,
     fields = []
   } = ctx.action.params;
   if (associated && resourceField) {
@@ -50,7 +50,7 @@ export async function get(ctx: Context, next: Next) {
       const [model]: Model[] = await associated[getAccessor]({
         ...options,
         where: {
-          [resourceKeyAttribute || resourceField.options.targetKey || TargetModel.primaryKeyAttribute]: resourceKey,
+          [resourceIndexAttribute || resourceField.options.targetKey || TargetModel.primaryKeyAttribute]: resourceIndex,
         },
         context: ctx,
       });
@@ -64,7 +64,7 @@ export async function get(ctx: Context, next: Next) {
     const data = await Model.findOne({
       ...options,
       where: {
-        [resourceKeyAttribute || Model.primaryKeyAttribute]: resourceKey,
+        [resourceIndexAttribute || Model.primaryKeyAttribute]: resourceIndex,
       },
       // @ts-ignore hooks 里添加 context
       context: ctx,

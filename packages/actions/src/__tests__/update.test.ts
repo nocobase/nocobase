@@ -32,8 +32,8 @@ describe('update', () => {
   it('update', async () => {
     const Post = api.db.getModel('posts');
     const post = await Post.create();
-    await api.resource('posts').update({
-      resourceKey: post.id,
+    await api.agent().resource('posts').update({
+      resourceIndex: post.id,
       values: {
         title: 't1',
       },
@@ -51,9 +51,9 @@ describe('update', () => {
     await post.updateAssociations({
       comments: [comment]
     });
-    await api.resource('posts.comments').update({
-      resourceKey: comment.id,
-      associatedKey: post.id,
+    await api.agent().resource('posts.comments').update({
+      resourceIndex: comment.id,
+      associatedIndex: post.id,
       values: {
         content: 'c2',
       },

@@ -111,7 +111,7 @@ describe('utils', () => {
         path: '/posts/1',
         method: 'GET',
       });
-      expect(params).toEqual({ resourceName: 'posts', resourceKey: '1', actionName: 'get' });
+      expect(params).toEqual({ resourceName: 'posts', resourceIndex: '1', actionName: 'get' });
     });
 
     it('update action', () => {
@@ -119,7 +119,7 @@ describe('utils', () => {
         path: '/posts/1',
         method: 'PUT',
       });
-      expect(params).toEqual({ resourceName: 'posts', resourceKey: '1', actionName: 'update' });
+      expect(params).toEqual({ resourceName: 'posts', resourceIndex: '1', actionName: 'update' });
     });
 
     it('update action', () => {
@@ -127,7 +127,7 @@ describe('utils', () => {
         path: '/posts/1',
         method: 'PATCH',
       });
-      expect(params).toEqual({ resourceName: 'posts', resourceKey: '1', actionName: 'update' });
+      expect(params).toEqual({ resourceName: 'posts', resourceIndex: '1', actionName: 'update' });
     });
 
     it('delete action', () => {
@@ -135,7 +135,7 @@ describe('utils', () => {
         path: '/posts/1',
         method: 'delete',
       });
-      expect(params).toEqual({ resourceName: 'posts', resourceKey: '1', actionName: 'destroy' });
+      expect(params).toEqual({ resourceName: 'posts', resourceIndex: '1', actionName: 'destroy' });
     });
 
     it('delete action', () => {
@@ -143,7 +143,7 @@ describe('utils', () => {
         path: '/posts/1,2,3,4,5,6',
         method: 'delete',
       });
-      expect(params).toEqual({ resourceName: 'posts', resourceKey: '1,2,3,4,5,6', actionName: 'destroy' });
+      expect(params).toEqual({ resourceName: 'posts', resourceIndex: '1,2,3,4,5,6', actionName: 'destroy' });
     });
 
     it('index action', () => {
@@ -151,7 +151,7 @@ describe('utils', () => {
         path: '/posts/1/comments',
         method: 'GET',
       });
-      expect(params).toEqual({ resourceName: 'comments', associatedName: 'posts', associatedKey: '1', actionName: 'list' });
+      expect(params).toEqual({ resourceName: 'comments', associatedName: 'posts', associatedIndex: '1', actionName: 'list' });
     });
 
     it('store action', () => {
@@ -159,7 +159,7 @@ describe('utils', () => {
         path: '/posts/1/comments',
         method: 'POST',
       });
-      expect(params).toEqual({ resourceName: 'comments', associatedName: 'posts', associatedKey: '1', actionName: 'create' });
+      expect(params).toEqual({ resourceName: 'comments', associatedName: 'posts', associatedIndex: '1', actionName: 'create' });
     });
 
     it('get action', () => {
@@ -167,7 +167,7 @@ describe('utils', () => {
         path: '/posts/1/comments/1',
         method: 'GET',
       });
-      expect(params).toEqual({ resourceName: 'comments', resourceKey: '1', associatedName: 'posts', associatedKey: '1', actionName: 'get' });
+      expect(params).toEqual({ resourceName: 'comments', resourceIndex: '1', associatedName: 'posts', associatedIndex: '1', actionName: 'get' });
     });
 
     it('update action', () => {
@@ -175,7 +175,7 @@ describe('utils', () => {
         path: '/posts/1/comments/1',
         method: 'PUT',
       });
-      expect(params).toEqual({ resourceName: 'comments', resourceKey: '1', associatedName: 'posts', associatedKey: '1', actionName: 'update' });
+      expect(params).toEqual({ resourceName: 'comments', resourceIndex: '1', associatedName: 'posts', associatedIndex: '1', actionName: 'update' });
     });
 
     it('update action', () => {
@@ -183,7 +183,7 @@ describe('utils', () => {
         path: '/posts/1/comments/1',
         method: 'PATCH',
       });
-      expect(params).toEqual({ resourceName: 'comments', resourceKey: '1', associatedName: 'posts', associatedKey: '1', actionName: 'update' });
+      expect(params).toEqual({ resourceName: 'comments', resourceIndex: '1', associatedName: 'posts', associatedIndex: '1', actionName: 'update' });
     });
 
     it('get action', () => {
@@ -191,7 +191,7 @@ describe('utils', () => {
         path: '/posts/1/comments/1',
         method: 'delete',
       });
-      expect(params).toEqual({ resourceName: 'comments', resourceKey: '1', associatedName: 'posts', associatedKey: '1', actionName: 'destroy' });
+      expect(params).toEqual({ resourceName: 'comments', resourceIndex: '1', associatedName: 'posts', associatedIndex: '1', actionName: 'destroy' });
     });
 
     it('export action', () => {
@@ -215,7 +215,7 @@ describe('utils', () => {
         path: '/posts:export/1',
         method: 'POST',
       });
-      expect(params).toEqual({ resourceName: 'posts', resourceKey: '1', actionName: 'export' });
+      expect(params).toEqual({ resourceName: 'posts', resourceIndex: '1', actionName: 'export' });
     });
 
     it('attach action', () => {
@@ -225,8 +225,8 @@ describe('utils', () => {
       });
       expect(params).toEqual({
         resourceName: 'tags',
-        resourceKey: '2',
-        associatedKey: '1',
+        resourceIndex: '2',
+        associatedIndex: '1',
         associatedName: 'posts',
         actionName: 'attach',
       });

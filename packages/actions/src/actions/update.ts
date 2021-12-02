@@ -24,9 +24,9 @@ export async function update(ctx: Context, next: Next) {
     associatedName,
     resourceField,
     resourceName,
-    resourceKey,
+    resourceIndex,
     // TODO(question): 这个属性从哪设置的？
-    resourceKeyAttribute,
+    resourceIndexAttribute,
     fields,
     values: data
   } = ctx.action.params;
@@ -53,7 +53,7 @@ export async function update(ctx: Context, next: Next) {
       const [model]: Model[] = await associated[getAccessor]({
         ...options,
         where: {
-          [resourceKeyAttribute || resourceField.options.targetKey || TargetModel.primaryKeyAttribute]: resourceKey,
+          [resourceIndexAttribute || resourceField.options.targetKey || TargetModel.primaryKeyAttribute]: resourceIndex,
         }
       });
 
@@ -66,7 +66,7 @@ export async function update(ctx: Context, next: Next) {
           const through = await ThroughModel.findOne({
             where: {
               [foreignKey]: associated[sourceKey],
-              [otherKey]: resourceKey,
+              [otherKey]: resourceIndex,
             },
             transaction
           });
@@ -88,7 +88,7 @@ export async function update(ctx: Context, next: Next) {
     const model = await Model.findOne({
       ...options,
       where: {
-        [resourceKeyAttribute || Model.primaryKeyAttribute]: resourceKey,
+        [resourceIndexAttribute || Model.primaryKeyAttribute]: resourceIndex,
       }
     });
     // @ts-ignore
