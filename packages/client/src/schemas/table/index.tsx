@@ -26,6 +26,7 @@ import { TableColumn } from './TableColumn';
 import { TableActionDesignableBar } from './TableActionDesignableBar';
 import { TableOperationDesignableBar } from './TableOperationDesignableBar';
 import { TableProvider } from './TableProvider';
+import { TableIndex } from './TableIndex';
 
 export const Table: any = observer((props: any) => {
   const [visible, setVisible] = useState(false);
@@ -53,6 +54,7 @@ Table.Column = TableColumn;
 Table.SortHandle = TableSortHandle;
 Table.DesignableBar = TableDesignableBar;
 Table.SimpleDesignableBar = SimpleDesignableBar;
+Table.Index = TableIndex;
 
 Table.useResource = useResource;
 Table.useActionLogDetailsResource = useActionLogDetailsResource;
