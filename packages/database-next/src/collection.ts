@@ -216,33 +216,28 @@ export class Collection<
   }
 
   async sync(syncOptions?: SyncOptions) {
-    const models = new Map<ModelCtor<any>, number>();
-    models.set(this.model, 0);
+    const modelNames = [this.model.name];
 
     const associations = this.model.associations;
 
     for (const associationKey in associations) {
       const association = associations[associationKey];
-      models.set(association.target, 0);
+      modelNames.push(association.target.name);
       if ((<any>association).through) {
-        models.set((<any>association).through.model, 0);
+        modelNames.push((<any>association).through.model.name);
       }
     }
 
-    let index = 0;
+    const models: ModelCtor<Model>[] = [];
     // @ts-ignore
     this.context.database.sequelize.modelManager.forEachModel((model) => {
-      if (model && models.has(model)) {
-        models.set(model, index);
-        index++;
+      if (modelNames.includes(model.name)) {
+        models.push(model);
       }
     });
 
-    const syncModels = Array.from(models.keys());
-    syncModels.sort((a, b) => models.get(a) - models.get(b));
-
-    for (const syncModel of syncModels) {
-      await syncModel.sync(syncOptions);
+    for (const model of models) {
+      await model.sync(syncOptions);
     }
   }
 }
