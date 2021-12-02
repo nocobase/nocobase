@@ -74,7 +74,7 @@ export class MockServer extends Application {
                   if (resourceKey) {
                     url += `/${resourceKey}`;
                   }
-                  console.log('request url: ' + url);
+
                   switch (method) {
                     case 'upload':
                       return agent

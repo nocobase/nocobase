@@ -6,10 +6,6 @@ import serve from 'koa-static';
 import { STORAGE_TYPE_LOCAL } from '../constants';
 import { getFilename } from '../utils';
 
-const LOCALHOST = `http://localhost:${process.env.API_PORT}`;
-
-const storages = new Map<string, any>();
-
 // use koa-mount match logic
 function match(basePath: string, pathname: string): boolean {
   if (!pathname.startsWith(basePath)) {
@@ -24,6 +20,31 @@ function match(basePath: string, pathname: string): boolean {
   return newPath[0] === '/';
 }
 
+async function update(app, storages) {
+  const StorageModel = app.db.getModel('storages');
+
+  const items = await StorageModel.findAll({
+    where: {
+      type: STORAGE_TYPE_LOCAL,
+    }
+  });
+
+  const primaryKey = StorageModel.primaryKeyAttribute;
+
+  storages.clear();
+  for (const storage of items) {
+    storages.set(storage[primaryKey], storage);
+  }
+}
+
+function createLocalServerUpdateHook(app, storages) {
+  return async function (row) {
+    if (row.get('type') === STORAGE_TYPE_LOCAL) {
+      await update(app, storages);
+    }
+  }
+}
+
 export function getDocumentRoot(storage): string {
   const { documentRoot = 'uploads' } = storage.options || {};
   // TODO(feature): 后面考虑以字符串模板的方式使用，可注入 req/action 相关变量，以便于区分文件夹
@@ -33,11 +54,17 @@ export function getDocumentRoot(storage): string {
 }
 
 export async function middleware(app, options?) {
-  if (process.env.NOCOBASE_ENV === 'production') {
-    return;
-  }
+  const LOCALHOST = `http://localhost:${process.env.API_PORT}`;
 
-  await update(app);
+  const StorageModel = app.db.getModel('storages');
+  const storages = new Map<string, any>();
+
+  const localServerUpdateHook = createLocalServerUpdateHook(app, storages);
+  StorageModel.addHook('afterCreate', localServerUpdateHook);
+  StorageModel.addHook('afterUpdate', localServerUpdateHook);
+  StorageModel.addHook('afterDestroy', localServerUpdateHook);
+
+  await update(app, storages);
 
   app.use(async function (ctx, next) {
     for (const storage of storages.values()) {
@@ -54,8 +81,7 @@ export async function middleware(app, options?) {
 
       // 以下情况才认为当前进程所应该提供静态服务
       // 否则都忽略，交给其他 server 来提供（如 nginx/cdn 等）
-      if (!process.env.LOCAL_STORAGE_USE_STATIC_SERVER
-        || (url.origin && url.origin !== LOCALHOST)) {
+      if (url.origin && url.origin !== LOCALHOST) {
         continue;
       }
 
@@ -68,30 +94,15 @@ export async function middleware(app, options?) {
         // for handle files after any api handlers
         defer: true
       })(ctx, async () => {
-        ctx.path = ctx.path.replace(basePath, '');
+        if (ctx.path.startsWith(basePath)) {
+          ctx.path = ctx.path.replace(basePath, '');
+        }
         await next();
       });
     }
 
     await next();
   });
-}
-
-export async function update(app) {
-  const StorageModel = app.db.getModel('storages');
-
-  const items = await StorageModel.findAll({
-    where: {
-      type: STORAGE_TYPE_LOCAL,
-    }
-  });
-
-  const primaryKey = StorageModel.primaryKeyAttribute;
-
-  storages.clear();
-  for (const storage of items) {
-    storages.set(storage[primaryKey], storage);
-  }
 }
 
 export default (storage) => multer.diskStorage({

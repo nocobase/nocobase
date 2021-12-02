@@ -8,18 +8,9 @@ import {
   middleware as uploadMiddleware,
 } from './actions/upload';
 import {
-  middleware as localMiddleware,
-  update
+  middleware as localMiddleware
 } from './storages/local';
 import { STORAGE_TYPE_ALI_OSS, STORAGE_TYPE_LOCAL } from './constants';
-
-function createLocalServerUpdateHook(app) {
-  return async function (row) {
-    if (row.get('type') === STORAGE_TYPE_LOCAL) {
-      await update(app);
-    }
-  }
-}
 
 export default {
   name: 'file-manager',
@@ -34,13 +25,13 @@ export default {
     // 暂时中间件只能通过 use 加进来
     resourcer.use(uploadMiddleware);
     resourcer.registerActionHandler('upload', uploadAction);
-    await localMiddleware(this.app);
+
+    if (process.env.NOCOBASE_ENV !== 'production'
+      && process.env.LOCAL_STORAGE_USE_STATIC_SERVER) {
+      await localMiddleware(this.app);
+    }
   
     const Storage = database.getModel('storages');
-    const localServerUpdateHook = createLocalServerUpdateHook(this.app);
-    Storage.addHook('afterCreate', localServerUpdateHook);
-    Storage.addHook('afterUpdate', localServerUpdateHook);
-    Storage.addHook('afterDestroy', localServerUpdateHook);
 
     this.app.on('db.init', async () => {
       await Storage.create({
