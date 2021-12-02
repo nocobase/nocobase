@@ -2,7 +2,7 @@ import React, { useContext } from 'react';
 import { observer, RecursionField, Schema } from '@formily/react';
 import { cloneDeepWith, set } from 'lodash';
 import { uid, merge } from '@formily/shared';
-import { CollectionFieldContext,TableRowContext } from './context';
+import { CollectionFieldContext, TableRowContext } from './context';
 import { Table } from './Table';
 
 export const TableCell = observer((props: any) => {

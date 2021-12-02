@@ -3,10 +3,7 @@ import { range } from 'lodash';
 import { ISchema } from '@formily/react';
 import { SchemaRenderer } from '../..';
 import { uid } from '@formily/shared';
-import {
-  CollectionsProvider,
-  DesignableSwitchProvider,
-} from '@nocobase/client/src/constate';
+import { CollectionsProvider, DesignableSwitchProvider } from '@nocobase/client/src/constate';
 
 const schema = {
   name: 'table1',

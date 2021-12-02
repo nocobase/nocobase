@@ -7,7 +7,7 @@ import { useDesignable, ISchema } from '..';
 import { useDisplayedMapContext, useClient } from '../../constate';
 import SwitchMenuItem from '../../components/SwitchMenuItem';
 import { getSchemaPath } from '../../components/schema-renderer';
-import {generateActionSchema} from './utils';
+import { generateActionSchema } from './utils';
 
 export const AddActionButton = () => {
   const { t } = useTranslation();
@@ -74,4 +74,3 @@ export const AddActionButton = () => {
     </Dropdown>
   );
 };
-

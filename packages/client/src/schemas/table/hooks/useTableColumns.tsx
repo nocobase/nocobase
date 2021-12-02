@@ -1,14 +1,14 @@
-import React,{ createContext } from 'react';
+import React, { createContext } from 'react';
 import { findIndex } from 'lodash';
 import { RecursionField, Schema } from '@formily/react';
 import { useDesignable } from '../..';
 import { useTable } from './useTable';
-import {TableRowContext} from '../context';
+import { TableRowContext } from '../context';
 import { useCollectionContext } from '../../../constate';
-import {Table,  } from '../Table';
-import {isColumn} from '../utils'
-import {AddColumn } from '../AddColumn';
-import {CollectionFieldContext}from '../context';
+import { Table } from '../Table';
+import { isColumn } from '../utils';
+import { AddColumn } from '../AddColumn';
+import { CollectionFieldContext } from '../context';
 
 export const useTableColumns = () => {
   const {
