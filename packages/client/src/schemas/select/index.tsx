@@ -24,7 +24,7 @@ import { Action } from '../action';
 import { BlockSchemaContext, VisibleContext } from '../../context';
 import { SchemaRenderer } from '../../components/schema-renderer';
 import { uid } from '@formily/shared';
-import { CollectionFieldContext } from '../table';
+import { CollectionFieldContext } from '../table/context';
 import {
   CollectionProvider,
   useCollectionContext,
