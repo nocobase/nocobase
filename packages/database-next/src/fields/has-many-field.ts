@@ -10,6 +10,7 @@ import {
   Utils,
 } from 'sequelize';
 import { RelationField } from './relation-field';
+import { BaseFieldOptions } from './field';
 
 export interface HasManyFieldOptions extends HasManyOptions {
   /**
@@ -141,4 +142,8 @@ export class HasManyField extends RelationField {
     // @ts-ignore
     collection.model.refreshAttributes();
   }
+}
+
+export interface HasManyFieldOptions extends BaseFieldOptions {
+  type: 'hasMany';
 }

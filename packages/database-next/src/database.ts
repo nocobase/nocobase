@@ -11,7 +11,13 @@ import {
 import { EventEmitter } from 'events';
 import { Collection, CollectionOptions, RepositoryType } from './collection';
 import * as FieldTypes from './fields';
-import { Field, FieldContext, RelationField } from './fields';
+import {
+  BaseFieldOptions,
+  Field,
+  FieldContext,
+  FieldOptions,
+  RelationField,
+} from './fields';
 import { Repository } from './repository';
 import { applyMixins, AsyncEmitter } from '@nocobase/utils';
 
@@ -115,7 +121,7 @@ export class Database extends EventEmitter implements AsyncEmitter {
   ): Collection<Attributes, CreateAttributes> {
     this.emit('beforeDefineCollection', options);
 
-    const collection = new Collection<Attributes, CreateAttributes>(options, {
+    const collection = new Collection(options, {
       database: this,
     });
 

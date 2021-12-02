@@ -2,6 +2,7 @@ import { omit } from 'lodash';
 import { Sequelize, ModelCtor, Model, DataTypes, Utils } from 'sequelize';
 import { Collection } from '../collection';
 import { RelationField } from './relation-field';
+import { BaseFieldOptions } from './field';
 
 export class BelongsToManyField extends RelationField {
   get through() {
@@ -59,4 +60,8 @@ export class BelongsToManyField extends RelationField {
     // 删掉 model 的关联字段
     delete collection.model.associations[this.name];
   }
+}
+
+export interface BelongsToManyFieldOptions extends BaseFieldOptions {
+  type: 'belongsToMany';
 }

@@ -10,6 +10,7 @@ import {
   Utils,
 } from 'sequelize';
 import { RelationField } from './relation-field';
+import { BaseFieldOptions } from './field';
 
 export interface HasOneFieldOptions extends HasOneOptions {
   /**
@@ -73,7 +74,6 @@ export interface HasOneFieldOptions extends HasOneOptions {
 }
 
 export class HasOneField extends RelationField {
-
   get target() {
     const { target, name } = this.options;
     return target || Utils.pluralize(name);
@@ -85,10 +85,7 @@ export class HasOneField extends RelationField {
     }
     const { model } = this.context.collection;
     return Utils.camelize(
-      [
-        model.options.name.singular,
-        model.primaryKeyAttribute
-      ].join('_')
+      [model.options.name.singular, model.primaryKeyAttribute].join('_'),
     );
   }
 
@@ -137,4 +134,8 @@ export class HasOneField extends RelationField {
     // @ts-ignore
     collection.model.refreshAttributes();
   }
+}
+
+export interface HasOneFieldOptions extends BaseFieldOptions {
+  type: 'hasOne';
 }

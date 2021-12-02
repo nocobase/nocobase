@@ -1,8 +1,12 @@
 import { DataTypes } from 'sequelize';
-import { Field } from './field';
+import { BaseFieldOptions, Field } from './field';
 
 export class TextField extends Field {
   get dataType() {
     return DataTypes.TEXT;
   }
+}
+
+export interface TextFieldOptions extends BaseFieldOptions {
+  type: 'text';
 }

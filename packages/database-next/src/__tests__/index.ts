@@ -1,5 +1,6 @@
 import merge from 'deepmerge';
 import { Database, DatabaseOptions } from '../database';
+import { FieldOptions } from '../fields';
 
 export function generatePrefixByPath() {
   const { id } = require.main;

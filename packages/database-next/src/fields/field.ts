@@ -9,6 +9,10 @@ export interface FieldContext {
   collection: Collection;
 }
 
+export interface BaseFieldOptions {
+  name: string;
+}
+
 export abstract class Field {
   options: any;
   context: FieldContext;

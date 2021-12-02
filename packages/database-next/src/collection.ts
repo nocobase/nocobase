@@ -1,20 +1,14 @@
 import { Sequelize, ModelCtor, Model, ModelOptions } from 'sequelize';
 import { EventEmitter } from 'events';
 import { Database } from './database';
-import { Field } from './fields';
+import { Field, FieldOptions } from './fields';
+
 import _ from 'lodash';
 import { Repository } from './repository';
 import { SyncOptions } from 'sequelize/types/lib/sequelize';
 import lodash from 'lodash';
 import merge from 'deepmerge';
 const { hooks } = require('sequelize/lib/hooks');
-
-interface FieldOptions {
-  name: string;
-  type: any;
-
-  [key: string]: any;
-}
 
 export type RepositoryType = typeof Repository;
 

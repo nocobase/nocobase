@@ -2,7 +2,7 @@ import { omit } from 'lodash';
 import { Sequelize, ModelCtor, Model, DataTypes, Utils } from 'sequelize';
 import { RelationField } from './relation-field';
 import { HasInverseField } from './has-inverse-field';
-import { Field } from './field';
+import { BaseFieldOptions, Field } from './field';
 import { HasManyField } from './has-many-field';
 
 export class BelongsToField extends RelationField {
@@ -71,4 +71,8 @@ export class BelongsToField extends RelationField {
     // @ts-ignore
     collection.model.refreshAttributes();
   }
+}
+
+export interface BelongsToFieldOptions extends BaseFieldOptions {
+  type: 'belongsTo';
 }
