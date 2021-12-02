@@ -13,7 +13,7 @@ import { useDefaultRowSelection } from './hooks/useDefaultRowSelection';
 import { useTable } from './hooks/useTable';
 import { useTableActionBars } from './hooks/useTableActionBars';
 import { useTableColumns } from './hooks/useTableColumns';
-import { Table } from '.';
+import { Table } from './Table';
 
 export const TableMain = () => {
   const {

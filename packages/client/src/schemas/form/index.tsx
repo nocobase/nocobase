@@ -44,7 +44,7 @@ import {
 import { useResource as useGeneralResource } from '../../hooks/useResource';
 import { Resource } from '../../resource';
 import { BaseResult } from '@ahooksjs/use-request/lib/types';
-import { CollectionFieldContext } from '../table/context';
+import { CollectionFieldContext } from '../table';
 import { useTranslation } from 'react-i18next';
 
 export interface DescriptionsContextProps {

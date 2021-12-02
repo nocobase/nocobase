@@ -33,7 +33,7 @@ import { useEffect } from 'react';
 import { uid } from '@formily/shared';
 import { getSchemaPath } from '../../components/schema-renderer';
 import { useCollection, useCollectionContext } from '../../constate';
-import { useTable } from '../table/hooks/useTable';
+import { useTable } from '../table';
 import { DragHandle } from '../../components/Sortable';
 import { fieldsToFilterColumns } from '../calendar';
 import { useTranslation } from 'react-i18next';

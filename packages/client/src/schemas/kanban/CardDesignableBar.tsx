@@ -31,7 +31,7 @@ import {
   useDisplayedMapContext,
   useClient,
 } from '../../constate';
-import { useTable } from '../table/hooks/useTable';
+import { useTable } from '../table';
 import SwitchMenuItem from '../../components/SwitchMenuItem';
 import { useKanban } from '.';
 import { isAssociation } from '../database-field/interfaces';

@@ -5,7 +5,7 @@ import { useDesignable } from '../..';
 import { useTable } from './useTable';
 import {TableRowContext} from '../context';
 import { useCollectionContext } from '../../../constate';
-import {Table,  } from '..';
+import {Table,  } from '../Table';
 import {isColumn} from '../utils'
 import {AddColumn } from '../AddColumn';
 import {CollectionFieldContext}from '../context';

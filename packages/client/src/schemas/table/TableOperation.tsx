@@ -2,7 +2,7 @@ import React from 'react';
 import { observer } from '@formily/react';
 import { useTranslation } from 'react-i18next';
 import { useDesignable } from '..';
-import { Table } from '.';
+import { Table } from './Table';
 
 export const TableOperation = observer((props: any) => {
   const { designable, schema } = useDesignable();
