@@ -216,14 +216,32 @@ export class Collection<
   }
 
   async sync(syncOptions?: SyncOptions) {
-    await this.model.sync(syncOptions);
+    const models = new Map<ModelCtor<any>, number>();
+    models.set(this.model, 0);
+
     const associations = this.model.associations;
+
     for (const associationKey in associations) {
       const association = associations[associationKey];
-      await association.target.sync(syncOptions);
+      models.set(association.target, 0);
       if ((<any>association).through) {
-        await (<any>association).through.model.sync(syncOptions);
+        models.set((<any>association).through.model, 0);
       }
     }
+
+    let index = 0;
+    // @ts-ignore
+    this.context.database.sequelize.modelManager.forEachModel((model) => {
+      if (model && models.has(model)) {
+        models.set(model, index);
+        index++;
+      }
+    });
+
+    const syncModels = Array.from(models.keys());
+    syncModels.sort((a, b) => models.get(a) - models.get(b));
+    await Promise.all(
+      syncModels.map(async (syncModel) => await syncModel.sync(syncOptions)),
+    );
   }
 }
