@@ -434,6 +434,7 @@ export class Repository<
       options,
     );
     const params = parser.toSequelizeParams();
+    debug('sequelize query params %o', params);
     return { ...options, ...params };
   }
 

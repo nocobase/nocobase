@@ -85,6 +85,7 @@ describe('filter by related', () => {
     );
 
     const filterParams = filterParser.toSequelizeParams();
+
     expect(filterParams.where['$posts.title$'][Op.iLike]).toEqual('%hello%');
     expect(filterParams.include[0]['association']).toEqual('posts');
   });
@@ -101,6 +102,7 @@ describe('filter by related', () => {
     );
 
     const filterParams = filterParser.toSequelizeParams();
+
     expect(filterParams.where['$posts.comments.content$'][Op.iLike]).toEqual(
       '%hello%',
     );

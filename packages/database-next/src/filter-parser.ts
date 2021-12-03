@@ -1,8 +1,8 @@
 import { Model, ModelCtor } from 'sequelize';
 import _ from 'lodash';
 import { flatten } from 'flat';
-import { Collection } from './collection';
 import { Database } from './database';
+import lodash from 'lodash';
 
 const debug = require('debug')('noco-database');
 
@@ -38,7 +38,7 @@ class FilterParser {
 
     const include = {};
     const where = {};
-    const filter2 = { ...flattenedFilter };
+    const filter2 = lodash.cloneDeep(flattenedFilter);
 
     let skipPrefix = null;
     const associations = model.associations;
@@ -79,7 +79,9 @@ class FilterParser {
               continue;
             } else if (typeof opKey === 'function') {
               skipPrefix = origins.join('.');
-              value = opKey(_.get(filter2, origins));
+              value = opKey(value, {
+                db: this.database,
+              });
               break;
             }
           } else {

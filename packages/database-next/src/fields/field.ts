@@ -1,5 +1,3 @@
-import { Sequelize, ModelCtor, Model, DataTypes, Utils } from 'sequelize';
-import { EventEmitter } from 'events';
 import { Collection } from '../collection';
 import { Database } from '../database';
 import _ from 'lodash';

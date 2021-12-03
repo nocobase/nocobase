@@ -31,6 +31,7 @@ export * from './json-field';
 export * from './sort-field';
 export * from './number-field';
 export * from './uid-field';
+export * from './date-field';
 
 export type FieldOptions =
   | StringFieldOptions

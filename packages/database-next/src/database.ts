@@ -18,12 +18,13 @@ import {
   FieldOptions,
   RelationField,
 } from './fields';
-import { Repository } from './repository';
 import { applyMixins, AsyncEmitter } from '@nocobase/utils';
 
 import merge from 'deepmerge';
 import { ModelHook } from './model-hook';
 import { ImporterReader, ImportFileExtension } from './collection-importer';
+
+import dateOperators from './operators/date';
 
 export interface MergeOptions extends merge.Options {}
 
@@ -99,17 +100,7 @@ export class Database extends EventEmitter implements AsyncEmitter {
       });
     }
 
-    const operators = new Map();
-
-    // Sequelize 内置
-    for (const key in Op) {
-      operators.set('$' + key, Op[key]);
-      const val = Utils.underscoredIf(key, true);
-      operators.set('$' + val, Op[key]);
-      operators.set('$' + val.replace(/_/g, ''), Op[key]);
-    }
-
-    this.operators = operators;
+    this.initOperators();
   }
 
   /**
@@ -187,6 +178,24 @@ export class Database extends EventEmitter implements AsyncEmitter {
     for (const [type, schemaType] of Object.entries(repositories)) {
       this.repositories.set(type, schemaType);
     }
+  }
+
+  initOperators() {
+    const operators = new Map();
+
+    // Sequelize 内置
+    for (const key in Op) {
+      operators.set('$' + key, Op[key]);
+      const val = Utils.underscoredIf(key, true);
+      operators.set('$' + val, Op[key]);
+      operators.set('$' + val.replace(/_/g, ''), Op[key]);
+    }
+
+    this.operators = operators;
+
+    this.registerOperators({
+      $dateOn: dateOperators.dateOn,
+    });
   }
 
   registerOperators(operators: MapOf<OperatorFunc>) {
