@@ -26,9 +26,11 @@ export async function getApp(options = {}): Promise<MockServer> {
   return app;
 }
 
-// because the app in supertest is using a random port
+// because the app in supertest will use a random port
 export function requestFile(url, agent) {
-  return path.isAbsolute(url)
+  // url starts with double slash "//" will be considered as http or https
+  // url starts with single slash "/" will be considered from local server
+  return (url[0] === '/' && url[1] !== '/'
     ? agent.get(url)
-    : supertest.agent(url).get('');
+    : supertest.agent(url).get(''));
 }

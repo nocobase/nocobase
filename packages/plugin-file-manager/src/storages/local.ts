@@ -45,7 +45,7 @@ function createLocalServerUpdateHook(app, storages) {
   }
 }
 
-export function getDocumentRoot(storage): string {
+function getDocumentRoot(storage): string {
   const { documentRoot = 'uploads' } = storage.options || {};
   // TODO(feature): 后面考虑以字符串模板的方式使用，可注入 req/action 相关变量，以便于区分文件夹
   return path.resolve(path.isAbsolute(documentRoot)
@@ -53,7 +53,7 @@ export function getDocumentRoot(storage): string {
     : path.join(process.cwd(), documentRoot));
 }
 
-export async function middleware(app, options?) {
+async function middleware(app, options?) {
   const LOCALHOST = `http://localhost:${process.env.API_PORT}`;
 
   const StorageModel = app.db.getModel('storages');
@@ -105,10 +105,23 @@ export async function middleware(app, options?) {
   });
 }
 
-export default (storage) => multer.diskStorage({
-  destination: function (req, file, cb) {
-    const destPath = path.join(getDocumentRoot(storage), storage.path);
-    mkdirp(destPath, (err: Error | null) => cb(err, destPath));
+export default {
+  middleware,
+  make(storage) {
+    return multer.diskStorage({
+      destination: function (req, file, cb) {
+        const destPath = path.join(getDocumentRoot(storage), storage.path);
+        mkdirp(destPath, (err: Error | null) => cb(err, destPath));
+      },
+      filename: getFilename
+    });
   },
-  filename: getFilename
-});
+  defaults() {
+    return {
+      title: '本地存储',
+      type: STORAGE_TYPE_LOCAL,
+      name: `local`,
+      baseUrl: process.env.LOCAL_STORAGE_BASE_URL || `http://localhost:${process.env.API_PORT}/uploads`
+    };
+  }
+};
