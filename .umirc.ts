@@ -1,5 +1,5 @@
 import { defineConfig } from 'dumi';
-import { getUmiConfig } from '@nocobase/utils';
+import { getUmiConfig } from './packages/utils/src/umiConfig';
 
 process.env.MFSU_AD = 'none';
 
