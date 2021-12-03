@@ -3,10 +3,10 @@ import path from 'path';
 import { generatePrefixByPath } from '@nocobase/test';
 
 import s3Storage from '../../storages/s3';
-import { FILE_FIELD_NAME, STORAGE_TYPE_S3 } from '../../constants';
+import { FILE_FIELD_NAME } from '../../constants';
 import { getApp, requestFile } from '..';
 
-const itif = process.env.DEFAULT_STORAGE_TYPE === STORAGE_TYPE_S3 ? it : it.skip;
+const itif = process.env.AWS_SECRET_ACCESS_KEY ? it : it.skip;
 
 describe('storage:s3', () => {
   let app;

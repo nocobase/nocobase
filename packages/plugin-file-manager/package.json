@@ -5,7 +5,6 @@
   "license": "MIT",
   "dependencies": {
     "@koa/multer": "^3.0.0",
-    "@nocobase/server": "^0.5.0-alpha.34",
     "aws-sdk": "^2.2.32",
     "koa-static": "^5.0.0",
     "mime-match": "^1.0.2",

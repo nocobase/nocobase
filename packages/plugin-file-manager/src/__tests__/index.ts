@@ -11,9 +11,11 @@ export async function getApp(options = {}): Promise<MockServer> {
       origin: '*'
     }
   });
-  app.plugin(require('@nocobase/plugin-collections/src/server').default);
+
   app.plugin(plugin);
+
   await app.load();
+
   app.db.import({
     directory: path.resolve(__dirname, './tables')
   });

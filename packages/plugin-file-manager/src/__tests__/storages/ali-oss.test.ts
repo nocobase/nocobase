@@ -3,10 +3,10 @@ import path from 'path';
 import { generatePrefixByPath } from '@nocobase/test';
 
 import aliossStorage from '../../storages/ali-oss';
-import { FILE_FIELD_NAME, STORAGE_TYPE_ALI_OSS } from '../../constants';
+import { FILE_FIELD_NAME } from '../../constants';
 import { getApp, requestFile } from '..';
 
-const itif = process.env.DEFAULT_STORAGE_TYPE === STORAGE_TYPE_ALI_OSS ? it : it.skip;
+const itif = process.env.ALI_OSS_ACCESS_KEY_SECRET ? it : it.skip;
 
 describe('storage:ali-oss', () => {
   let app;
