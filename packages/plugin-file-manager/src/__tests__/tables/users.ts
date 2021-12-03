@@ -21,6 +21,17 @@ export default {
     },
     {
       type: 'belongsToMany',
+      name: 'pubkeys',
+      target: 'attachments',
+      attachment: {
+        storage: 'local_private',
+        rules: {
+          mimetype: ['text/*']
+        }
+      }
+    },
+    {
+      type: 'belongsToMany',
       name: 'photos',
       target: 'attachments',
       attachment: {

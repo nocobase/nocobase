@@ -42,7 +42,7 @@ const api = new Server({
     },
   },
   resourcer: {
-    prefix: '/api',
+    prefix: process.env.API_BASE_PATH || '/api/',
   },
 });
 
@@ -70,7 +70,7 @@ for (const plugin of plugins) {
 
 api.plugin(
   require(`@nocobase/plugin-client/${libDir}/server`).default, {
-  dist: path.resolve(process.cwd(), './dist'),
+  dist: process.env.APP_DIST || path.resolve(process.cwd(), './dist'),
   lang: process.env.APP_LANG,
   // importDemo: true,
 });

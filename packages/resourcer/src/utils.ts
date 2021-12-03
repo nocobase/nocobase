@@ -144,7 +144,7 @@ export function parseRequest(request: ParseRequest, options: ParseOptions = {}):
 
   const params: ParsedParams = {};
 
-  let prefix = (options.prefix || '').trim();
+  let prefix = (options.prefix || '').trim().replace(/\/$/, '');
 
   if (prefix && !prefix.startsWith('/')) {
     prefix = `/${prefix}`;

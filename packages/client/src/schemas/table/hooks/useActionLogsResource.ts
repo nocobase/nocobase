@@ -1,4 +1,4 @@
-import React, { useContext, createContext, useEffect, useState } from 'react';
+import { useContext, createContext, useEffect, useState } from 'react';
 import { useTable } from './useTable';
 import { ListOptions, Resource } from '../../../resource';
 import { TableRowContext } from '../context';

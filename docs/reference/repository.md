@@ -61,6 +61,8 @@ await repository.find({
     'nested.someAttribute': {
       // 同上
     },
+    // scope 的情况
+    scopeName: 'val1',
   },
   // 字段白名单
   fields: [],
@@ -158,6 +160,42 @@ await Post.repository.find({
       { 'tags.name.$includes': 'tag1' },
       { 'tags.name.$includes': 'tag2' },
     ],
+  },
+});
+```
+
+也支持 [scopes](https://sequelize.org/master/manual/scopes.html)
+
+```ts
+Post.model.addScope('published', () => {
+  return {
+    where: {
+      status: 'published',
+    },
+  }
+});
+
+await Post.repository.find({
+  filter: {
+    published: true,
+  },
+});
+```
+
+如果 scope name 和 field name 冲突时，scope 优先级更高
+
+```ts
+Post.model.addScope('level', (value) => {
+  return {
+    where: {
+      level: { [Op.gte]: value }
+    },
+  }
+});
+
+await Post.repository.find({
+  filter: {
+    level: 1,
   },
 });
 ```

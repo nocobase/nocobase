@@ -4,11 +4,12 @@ import { join } from 'path';
 // utils must build before core
 // runtime must build before renderer-react
 const headPkgs = [
+  'utils',
   'database',
   'resourcer',
   'actions',
   'client',
-  'server'
+  'server',
 ];
 const tailPkgs = [];
 const otherPkgs = readdirSync(join(__dirname, 'packages')).filter(

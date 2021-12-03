@@ -22,6 +22,18 @@ DB_STORAGE=db.sqlite
 # set to 'on' to enable log
 DB_LOG_SQL=
 
+# API & APP
+
+NOCOBASE_ENV=
+
+# api server access point will be proxied from app(web when `umi dev`)
+API_ORIGIN_DEV=http://localhost:13002
+# api server access point for app(web when build)
+API_ORIGIN=
+
+# api base path endpoint for app(web)
+API_BASE_PATH=/api/
+
 # ADMIN USER (Initialization only)
 
 ADMIN_EMAIL=admin@nocobase.com

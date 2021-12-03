@@ -12,7 +12,7 @@ import { DragHandle } from '../../components/Sortable';
 import { useDesignable } from '..';
 import { useCompile } from '../../hooks/useCompile';
 import { useTable } from './hooks/useTable';
-import { CollectionFieldContext } from './hooks/useTableColumns';
+import { CollectionFieldContext } from './context';
 
 export const TableColumnDesignableBar = () => {
   const field = useField();

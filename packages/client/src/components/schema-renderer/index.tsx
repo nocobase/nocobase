@@ -19,12 +19,7 @@ import { useMemo } from 'react';
 import { CodeOutlined } from '@ant-design/icons';
 import Editor from '@monaco-editor/react';
 
-import {
-  ArrayItems,
-  ArrayCollapse,
-  FormLayout,
-  FormItem as FormilyFormItem,
-} from '@formily/antd';
+import { ArrayItems, ArrayCollapse, FormLayout, FormItem as FormilyFormItem } from '@formily/antd';
 
 import { Space, Card, Modal, Spin } from 'antd';
 import { ArrayTable } from '../../schemas/array-table';
@@ -34,10 +29,7 @@ import { Calendar } from '../../schemas/calendar';
 import { Cascader } from '../../schemas/cascader';
 import { Checkbox } from '../../schemas/checkbox';
 import { ColorSelect } from '../../schemas/color-select';
-import {
-  DatabaseField,
-  DatabaseCollection,
-} from '../../schemas/database-field';
+import { DatabaseField, DatabaseCollection } from '../../schemas/database-field';
 import { DatePicker } from '../../schemas/date-picker';
 import { Filter } from '../../schemas/filter';
 import { Form } from '../../schemas/form';
@@ -53,7 +45,7 @@ import { Password } from '../../schemas/password';
 import { Radio } from '../../schemas/radio';
 import { Select } from '../../schemas/select';
 import { Table } from '../../schemas/table';
-import { CollectionFieldContext, TableRowContext } from '../../schemas/table/context';
+import { CollectionFieldContext, TableRowContext } from '../../schemas/table';
 import { Tabs } from '../../schemas/tabs';
 import { TimePicker } from '../../schemas/time-picker';
 import { Upload } from '../../schemas/upload';
@@ -70,11 +62,7 @@ import { ISchema, FormilyISchema } from '../../schemas';
 import { Resource } from '../../resource';
 import { useRequest } from 'ahooks';
 import { CascaderOptionType } from 'antd/lib/cascader';
-import {
-  useClient,
-  useCollectionContext,
-  useResourceRequest,
-} from '../../constate';
+import { useClient, useCollectionContext, useResourceRequest } from '../../constate';
 import { i18n } from '../../i18n';
 
 export const BlockContext = createContext({ dragRef: null });
@@ -165,12 +153,7 @@ const useAssociationResource = (options) => {
   const { collection } = useCollectionContext();
   const ctx = useContext(TableRowContext);
   const associatedKey = ctx?.record?.id;
-  console.log(
-    'useAssociationResource',
-    collection,
-    collectionField,
-    schema['x-component-props'],
-  );
+  console.log('useAssociationResource', collection, collectionField, schema['x-component-props']);
   const { associatedName, resourceName } = schema['x-component-props'] || {};
   const resource = useResourceRequest({
     associatedName,
@@ -292,10 +275,7 @@ export function findPropertyByPath(schema: Schema, path?: any): Schema {
   return property;
 }
 
-export function addPropertyBefore(
-  target: Schema,
-  data: ISchema | FormilyISchema,
-) {
+export function addPropertyBefore(target: Schema, data: ISchema | FormilyISchema) {
   Object.keys(target.parent.properties).forEach((name) => {
     if (name === target.name) {
       target.parent.addProperty(data.name, data);
@@ -306,10 +286,7 @@ export function addPropertyBefore(
   });
 }
 
-export function addPropertyAfter(
-  target: Schema,
-  data: ISchema | FormilyISchema,
-) {
+export function addPropertyAfter(target: Schema, data: ISchema | FormilyISchema) {
   Object.keys(target.parent.properties).forEach((name) => {
     const property = target.parent.properties[name];
     property.parent.removeProperty(property.name);
@@ -346,8 +323,7 @@ export function useDesignable(path?: any) {
   const schemaPath = path || useSchemaPath();
   const fieldSchema = useFieldSchema();
   let current;
-  let currentSchema = (current =
-    findPropertyByPath(schema, schemaPath) || ({} as Schema));
+  let currentSchema = (current = findPropertyByPath(schema, schemaPath) || ({} as Schema));
   if (!currentSchema) {
     currentSchema = fieldSchema;
   }
@@ -356,10 +332,8 @@ export function useDesignable(path?: any) {
   }
   // console.log('useDesignable', { schema, schemaPath, currentSchema });
   const options = useContext(SchemaOptionsContext);
-  let DesignableBar = get(
-    options.components,
-    currentSchema['x-designable-bar'],
-  );
+  let DesignableBar = get(options.components, currentSchema['x-designable-bar']);
+  debugger;
   if (!designable) {
     DesignableBar = () => null;
   }
@@ -405,10 +379,7 @@ export function useDesignable(path?: any) {
       refresh();
       return target.properties[property.name];
     },
-    appendChild: (
-      property: ISchema | FormilyISchema,
-      targetPath?: any,
-    ): Schema => {
+    appendChild: (property: ISchema | FormilyISchema, targetPath?: any): Schema => {
       let target = currentSchema;
       if (targetPath) {
         target = findPropertyByPath(schema, targetPath);
@@ -435,10 +406,7 @@ export function useDesignable(path?: any) {
       refresh();
       return target.properties[property.name];
     },
-    insertAfter: (
-      property: ISchema | FormilyISchema,
-      targetPath?: any,
-    ): Schema => {
+    insertAfter: (property: ISchema | FormilyISchema, targetPath?: any): Schema => {
       let target = currentSchema;
       if (targetPath) {
         target = findPropertyByPath(schema, targetPath);
@@ -626,17 +594,8 @@ const FormValues = () => {
   return (
     <>
       <CodeOutlined onClick={() => setVisible(true)} />
-      <Modal
-        width={'50%'}
-        onOk={() => setVisible(false)}
-        onCancel={() => setVisible(false)}
-        visible={visible}
-      >
-        <Editor
-          height="60vh"
-          defaultLanguage="json"
-          value={JSON.stringify(form.values, null, 2)}
-        />
+      <Modal width={'50%'} onOk={() => setVisible(false)} onCancel={() => setVisible(false)} visible={visible}>
+        <Editor height="60vh" defaultLanguage="json" value={JSON.stringify(form.values, null, 2)} />
         {/* <pre>{JSON.stringify(schema.toJSON(), null, 2)}</pre> */}
       </Modal>
     </>
@@ -647,21 +606,9 @@ const CodePreview = ({ schema }) => {
   const [visible, setVisible] = useState(false);
   return (
     <>
-      <CodeOutlined
-        style={{ position: 'relative', zIndex: 100 }}
-        onClick={() => setVisible(true)}
-      />
-      <Modal
-        width={'50%'}
-        onOk={() => setVisible(false)}
-        onCancel={() => setVisible(false)}
-        visible={visible}
-      >
-        <Editor
-          height="60vh"
-          defaultLanguage="json"
-          value={JSON.stringify(schema.toJSON(), null, 2)}
-        />
+      <CodeOutlined style={{ position: 'relative', zIndex: 100 }} onClick={() => setVisible(true)} />
+      <Modal width={'50%'} onOk={() => setVisible(false)} onCancel={() => setVisible(false)} visible={visible}>
+        <Editor height="60vh" defaultLanguage="json" value={JSON.stringify(schema.toJSON(), null, 2)} />
         {/* <pre>{JSON.stringify(schema.toJSON(), null, 2)}</pre> */}
       </Modal>
     </>
@@ -789,9 +736,7 @@ export const SchemaRenderer = (props: SchemaRendererProps) => {
         },
       }}
     >
-      <DesignableContext.Consumer>
-        {props.render || defaultRender}
-      </DesignableContext.Consumer>
+      <DesignableContext.Consumer>{props.render || defaultRender}</DesignableContext.Consumer>
     </DesignableContext.Provider>
   );
 };

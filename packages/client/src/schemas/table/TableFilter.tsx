@@ -1,17 +1,18 @@
 import React, { useMemo, useState } from 'react';
-import {  Popover, Button,  } from 'antd';
+import { Popover, Button } from 'antd';
 import { useTranslation } from 'react-i18next';
 import flatten from 'flat';
 import { createForm } from '@formily/core';
 import { FormProvider, observer } from '@formily/react';
-import { FormButtonGroup,  Submit } from '@formily/antd';
+import { FormButtonGroup, Submit } from '@formily/antd';
 import { interfaces } from '../database-field/interfaces';
 import { useDesignable } from '..';
-import { useCollectionContext,  } from '../../constate';
+import { useCollectionContext } from '../../constate';
 import { SchemaField } from '../../components/schema-renderer';
 import { useTable } from './hooks/useTable';
 import { useCompile } from '../../hooks/useCompile';
 import IconPicker from '../../components/icon-picker';
+import { fieldsToFilterColumns } from './utils';
 
 export const TableFilter = observer((props: any) => {
   const { service } = useTable();

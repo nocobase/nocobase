@@ -49,7 +49,7 @@ export class MockServer extends Application {
   agent(): SuperAgentTest & { resource: (name: string) => Resource } {
     const agent = supertest.agent(this.callback());
     const prefix = this.resourcer.options.prefix;
-    const proxy = new Proxy({}, {
+    const proxy = new Proxy(agent, {
       get(target, method: string, receiver) {
         if (method === 'resource') {
           return (name: string) => {
@@ -74,7 +74,7 @@ export class MockServer extends Application {
                   if (resourceKey) {
                     url += `/${resourceKey}`;
                   }
-                  console.log('request url: ' + url);
+
                   switch (method) {
                     case 'upload':
                       return agent

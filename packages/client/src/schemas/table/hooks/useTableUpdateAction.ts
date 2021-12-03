@@ -1,7 +1,7 @@
-import { useForm } from "@formily/react";
-import { useContext } from "react";
-import { useTable } from "./useTable";
-import { TableRowContext } from "../context";
+import { useForm } from '@formily/react';
+import { useContext } from 'react';
+import { useTable } from './useTable';
+import { TableRowContext } from '../context';
 import { DescriptionsContext } from '../../form';
 
 export const useTableUpdateAction = () => {

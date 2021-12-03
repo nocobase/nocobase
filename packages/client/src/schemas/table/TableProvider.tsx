@@ -10,8 +10,8 @@ import { useCollectionContext } from '../../constate';
 import { useDefaultSelectedRowKeys } from './hooks/useDefaultSelectedRowKeys';
 import { usePagination } from './hooks/usePagination';
 import { useCollectionFields } from './hooks/useCollectionFields';
-import {TableContext} from './context';
-import {TableMain} from './TableMain';
+import { TableContext } from './context';
+import { TableMain } from './TableMain';
 
 export const TableProvider = (props: any) => {
   const {
