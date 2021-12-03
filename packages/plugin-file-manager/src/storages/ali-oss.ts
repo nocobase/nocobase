@@ -1,42 +1,26 @@
-import AliOss from 'ali-oss';
-import { getFilename } from '../utils';
+import { STORAGE_TYPE_ALI_OSS } from '../constants';
+import { cloudFilenameGetter } from '../utils';
 
-export class AliOssStorage {
-
-  private client: AliOss;
-
-  private getFilename: Function;
-
-  constructor(opts) {
-    this.client = new AliOss(opts.config);
-    this.getFilename = opts.filename || getFilename;
-  }
-
-  _handleFile(req, file, cb) {
-    if (!this.client) {
-      console.error('oss client undefined');
-      return cb({ message: 'oss client undefined' });
-    }
-    this.getFilename(req, file, (err, filename) => {
-      if (err) return cb(err)
-      this.client.putStream(filename, file.stream).then(
-        result => cb(null, {
-          filename: result.name,
-          url: result.url
-        })
-      ).catch(cb);
+export default {
+  make(storage) {
+    const createAliOssStorage = require('multer-aliyun-oss');
+    return new createAliOssStorage({
+      config: storage.options,
+      filename: cloudFilenameGetter(storage)
     });
-  }
-
-  _removeFile(req, file, cb) {
-    if (!this.client) {
-      console.error('oss client undefined');
-      return cb({ message: 'oss client undefined' });
+  },
+  defaults() {
+    return {
+      title: '阿里云对象存储',
+      type: STORAGE_TYPE_ALI_OSS,
+      name: 'ali-oss-1',
+      baseUrl: process.env.ALI_OSS_STORAGE_BASE_URL,
+      options: {
+        region: process.env.ALI_OSS_REGION,
+        accessKeyId: process.env.ALI_OSS_ACCESS_KEY_ID,
+        accessKeySecret: process.env.ALI_OSS_ACCESS_KEY_SECRET,
+        bucket: process.env.ALI_OSS_BUCKET,
+      }
     }
-    this.client.delete(file.filename).then(
-      result => cb(null, result)
-    ).catch(cb);
   }
 }
-
-export default (storage) => new AliOssStorage({ config: storage.options });
