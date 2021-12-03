@@ -17,7 +17,7 @@ import { I18nextProvider } from 'react-i18next';
 import i18n from '../i18n';
 
 const request = extend({
-  prefix: process.env.API_URL,
+  prefix: process.env.API_BASE_URL,
   timeout: 30000,
 });
 
@@ -26,7 +26,7 @@ request.use(async (ctx, next) => {
   const token = localStorage.getItem('NOCOBASE_TOKEN');
   if (token) {
     headers['Authorization'] = `Bearer ${token}`;
-    headers['X-Hostname'] = process.env.API_HOSTNAME;
+    headers['X-Hostname'] = window.location.hostname;
   }
   await next();
 });
@@ -34,8 +34,6 @@ request.use(async (ctx, next) => {
 const client = new ClientSDK({
   request,
 });
-
-console.log('process.env.API_URL', process.env.API_URL);
 
 // console.log = () => {}
 

@@ -1,23 +1,20 @@
 import { defineConfig } from 'dumi';
-
-const baseUrl = `http://localhost:${process.env.API_PORT || '13001'}/`;
-console.log('baseUrl', baseUrl);
+import { getUmiConfig } from '@nocobase/utils';
 
 process.env.MFSU_AD = 'none';
+
+const umiConfig = getUmiConfig();
 
 export default defineConfig({
   title: 'NocoBase',
   hash: true,
   define: {
-    'process.env.API_URL': process.env.API_URL || `${baseUrl}api/`,
-    'process.env.API_HOSTNAME': process.env.API_HOSTNAME,
+    ...umiConfig.define,
   },
+  // only proxy when using `umi dev`
+  // if the assets are built, will not proxy
   proxy: {
-    '/api/': {
-      target: baseUrl,
-      changeOrigin: true,
-      pathRewrite: { '^/api/': '/api/' },
-    },
+    ...umiConfig.proxy,
   },
   resolve: {
     includes: ['docs', 'packages/client/src/schemas'],

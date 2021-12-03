@@ -1,5 +1,5 @@
-import {createContext} from 'react';
-import {ITableContext,ITableRowContext} from './types';
+import { createContext } from 'react';
+import { ITableContext, ITableRowContext } from './types';
 
 export const TableContext = createContext<ITableContext>({} as any);
 export const CollectionFieldContext = createContext(null);

@@ -12580,14 +12580,6 @@ koa-is-json@^1.0.0:
   resolved "https://registry.npm.taobao.org/koa-is-json/download/koa-is-json-1.0.0.tgz#273c07edcdcb8df6a2c1ab7d59ee76491451ec14"
   integrity sha1-JzwH7c3Ljfaiwat9We52SRRR7BQ=
 
-koa-mount@^4.0.0:
-  version "4.0.0"
-  resolved "https://registry.npm.taobao.org/koa-mount/download/koa-mount-4.0.0.tgz#e0265e58198e1a14ef889514c607254ff386329c"
-  integrity sha1-4CZeWBmOGhTviJUUxgclT/OGMpw=
-  dependencies:
-    debug "^4.0.1"
-    koa-compose "^4.1.0"
-
 koa-send@^5.0.0:
   version "5.0.1"
   resolved "https://registry.npm.taobao.org/koa-send/download/koa-send-5.0.1.tgz#39dceebfafb395d0d60beaffba3a70b4f543fe79"
