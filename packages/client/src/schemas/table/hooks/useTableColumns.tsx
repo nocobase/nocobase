@@ -45,6 +45,7 @@ export const useTableColumns = () => {
         ),
         dataIndex: column.name,
         ...columnProps,
+        ellipsis: { showTitle: true },
         render: (_: any, record: any) => {
           const index = findIndex(field.value, (item) => item[rowKey] === record[rowKey]);
           return (
