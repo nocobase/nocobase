@@ -482,6 +482,86 @@ repository.find({
 });
 ```
 
+更多例子：
+
+```ts
+db.collection({
+  name: 'users',
+  fields: [
+    { type: 'date', name: 'birthday' },
+  ],
+});
+
+db.collection({
+  name: 'posts',
+  fields: [
+    { type: 'belongsTo', name: 'user' },
+  ],
+});
+
+repository.find({
+  filter: {
+    'birthday.$dateOn': '1999-01-02',
+  },
+});
+
+db.registerOperators({
+  dateOn: (value, ctx) => {
+    console.log(value) // 1999-01-02
+    console.log(ctx.path) // birthday
+  }
+});
+
+repository.find({
+  filter: {
+    $and: [
+      { 'birthday.$dateOn': '1999-01-02' },
+    ]
+  },
+});
+
+db.registerOperators({
+  dateOn: (value, ctx) => {
+    console.log(value) // 1999-01-02
+    console.log(ctx.path) // birthday
+  },
+});
+
+repository.find({
+  filter: {
+    $and: [
+      { 'user.birthday.$dateOn': '1999-01-02' },
+    ]
+  },
+});
+
+db.registerOperators({
+  dateOn: (value, ctx) => {
+    console.log(value) // 1999-01-02
+    console.log(ctx.path) // user.birthday
+  },
+});
+
+repository.find({
+  filter: {
+    $or: [
+      {
+        $and: [
+          {'user.birthday.$dateOn': '1999-01-02'}
+        ],
+      },
+    ],
+  },
+});
+
+db.registerOperators({
+  dateOn: (value, ctx) => {
+    console.log(value) // 1999-01-02
+    console.log(ctx.path) // user.birthday
+  }
+});
+```
+
 ## `db.registerRepositories()` <Badge>待完善</Badge>
 
 自定义 Repository
