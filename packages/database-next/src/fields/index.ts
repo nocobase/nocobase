@@ -18,6 +18,7 @@ import { TextFieldOptions } from './text-field';
 import { VirtualFieldOptions } from './virtual-field';
 import { TimeFieldOptions } from './time-field';
 import { DateFieldOptions } from './date-field';
+import { ArrayFieldOptions } from './array-field';
 
 export * from './field';
 export * from './string-field';
@@ -32,6 +33,7 @@ export * from './sort-field';
 export * from './number-field';
 export * from './uid-field';
 export * from './date-field';
+export * from './array-field';
 
 export type FieldOptions =
   | StringFieldOptions
@@ -46,6 +48,7 @@ export type FieldOptions =
   | SortFieldOptions
   | TextFieldOptions
   | VirtualFieldOptions
+  | ArrayFieldOptions
   | TimeFieldOptions
   | DateFieldOptions
   | BelongsToFieldOptions

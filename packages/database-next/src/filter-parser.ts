@@ -32,6 +32,8 @@ class FilterParser {
     // supported operators
     const operators = this.database.operators;
 
+    const originalFiler = lodash.cloneDeep(filter || {});
+
     const flattenedFilter = flatten(filter || {});
 
     debug('flattened filter %o', flattenedFilter);
@@ -79,8 +81,10 @@ class FilterParser {
               continue;
             } else if (typeof opKey === 'function') {
               skipPrefix = origins.join('.');
-              value = opKey(value, {
+
+              value = opKey(originalFiler[skipPrefix], {
                 db: this.database,
+                path: skipPrefix,
               });
               break;
             }

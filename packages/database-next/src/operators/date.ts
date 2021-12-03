@@ -1,7 +1,7 @@
 import { Op } from 'sequelize';
 
 export default {
-  dateOn: (value) => {
+  $dateOn: (value) => {
     return {
       [Op.eq]: value,
     };
