@@ -4884,10 +4884,10 @@ ajv@^8.0.1:
     require-from-string "^2.0.2"
     uri-js "^4.2.2"
 
-ali-oss@^6.12.0:
+ali-oss@^6.8.0:
   version "6.16.0"
-  resolved "https://registry.nlark.com/ali-oss/download/ali-oss-6.16.0.tgz?cache=0&sync_timestamp=1626077110646&other_urls=https%3A%2F%2Fregistry.nlark.com%2Fali-oss%2Fdownload%2Fali-oss-6.16.0.tgz#3b7fbe10f13fbd535478fc31c7d05aaf4280269b"
-  integrity sha1-O3++EPE/vVNUePwxx9Bar0KAJps=
+  resolved "https://registry.yarnpkg.com/ali-oss/-/ali-oss-6.16.0.tgz#3b7fbe10f13fbd535478fc31c7d05aaf4280269b"
+  integrity sha512-tK/+yEKtBBD+kMoHABxg6lCgC+Ad9HNjCln7qdL6LRYbUm+FFTKJubC4hT2FIooMBDb9tnI7My4MVreKnbJQRg==
   dependencies:
     address "^1.0.0"
     agentkeepalive "^3.4.1"
@@ -5481,6 +5481,21 @@ autoprefixer@^9.6.1:
     postcss "^7.0.32"
     postcss-value-parser "^4.1.0"
 
+aws-sdk@^2.2.32:
+  version "2.1042.0"
+  resolved "https://registry.yarnpkg.com/aws-sdk/-/aws-sdk-2.1042.0.tgz#c3385bf6cbb8f97c2cde427c0ab3d9720fa4b82a"
+  integrity sha512-JWjs6+Zhuo990WYH1iQR1njGOvoCFzaf2azX/zh3JdL7QNwzdqczoODMj0wb22831/7EoPDGaXHqp7aQwDsxwA==
+  dependencies:
+    buffer "4.9.2"
+    events "1.1.1"
+    ieee754 "1.1.13"
+    jmespath "0.15.0"
+    querystring "0.2.0"
+    sax "1.2.1"
+    url "0.10.3"
+    uuid "3.3.2"
+    xml2js "0.4.19"
+
 aws-sign2@~0.7.0:
   version "0.7.0"
   resolved "https://registry.nlark.com/aws-sign2/download/aws-sign2-0.7.0.tgz#b46e890934a9591f2d2f6f86d7e6a9f1b3fe76a8"
@@ -6025,7 +6040,7 @@ buffer-xor@^1.0.3:
   resolved "https://registry.npm.taobao.org/buffer-xor/download/buffer-xor-1.0.3.tgz#26e61ed1422fb70dd42e6e36729ed51d855fe8d9"
   integrity sha1-JuYe0UIvtw3ULm42cp7VHYVf6Nk=
 
-buffer@^4.3.0:
+buffer@4.9.2, buffer@^4.3.0:
   version "4.9.2"
   resolved "https://registry.npm.taobao.org/buffer/download/buffer-4.9.2.tgz#230ead344002988644841ab0244af8c44bbe3ef8"
   integrity sha1-Iw6tNEACmIZEhBqwJEr4xEu+Pvg=
@@ -8821,6 +8836,11 @@ eventemitter3@^4.0.4:
   resolved "https://registry.nlark.com/eventemitter3/download/eventemitter3-4.0.7.tgz?cache=0&sync_timestamp=1622604485818&other_urls=https%3A%2F%2Fregistry.nlark.com%2Feventemitter3%2Fdownload%2Feventemitter3-4.0.7.tgz#2de9b68f6528d5644ef5c59526a1b4a07306169f"
   integrity sha1-Lem2j2Uo1WRO9cWVJqG0oHMGFp8=
 
+events@1.1.1:
+  version "1.1.1"
+  resolved "https://registry.yarnpkg.com/events/-/events-1.1.1.tgz#9ebdb7635ad099c70dcc4c2a1f5004288e8bd924"
+  integrity sha1-nr23Y1rQmccNzEwqH1AEKI6L2SQ=
+
 events@^3.0.0:
   version "3.3.0"
   resolved "https://registry.npmmirror.com/events/download/events-3.3.0.tgz?cache=0&sync_timestamp=1636449286836&other_urls=https%3A%2F%2Fregistry.npmmirror.com%2Fevents%2Fdownload%2Fevents-3.3.0.tgz#31a95ad0a924e2d2c419a813aeb2c4e878ea7400"
@@ -9159,6 +9179,11 @@ file-saver@^2.0.5:
   version "2.0.5"
   resolved "https://registry.npm.taobao.org/file-saver/download/file-saver-2.0.5.tgz?cache=0&sync_timestamp=1605790980036&other_urls=https%3A%2F%2Fregistry.npm.taobao.org%2Ffile-saver%2Fdownload%2Ffile-saver-2.0.5.tgz#d61cfe2ce059f414d899e9dd6d4107ee25670c38"
   integrity sha1-1hz+LOBZ9BTYmendbUEH7iVnDDg=
+
+file-type@^3.3.0:
+  version "3.9.0"
+  resolved "https://registry.yarnpkg.com/file-type/-/file-type-3.9.0.tgz#257a078384d1db8087bc449d107d52a52672b9e9"
+  integrity sha1-JXoHg4TR24CHvESdEH1SpSZyuek=
 
 file-uri-to-path@1.0.0:
   version "1.0.0"
@@ -10275,6 +10300,11 @@ hsla-regex@^1.0.0:
   resolved "https://registry.npm.taobao.org/hsla-regex/download/hsla-regex-1.0.0.tgz#c1ce7a3168c8c6614033a4b5f7877f3b225f9c38"
   integrity sha1-wc56MWjIxmFAM6S194d/OyJfnDg=
 
+html-comment-regex@^1.1.2:
+  version "1.1.2"
+  resolved "https://registry.yarnpkg.com/html-comment-regex/-/html-comment-regex-1.1.2.tgz#97d4688aeb5c81886a364faa0cad1dda14d433a7"
+  integrity sha512-P+M65QY2JQ5Y0G9KKdlDpo0zK+/OHptU5AaBwUfAIDJZk1MYf32Frm84EcOytfJE0t5JvkAnKlmjsXDnWzCJmQ==
+
 html-dom-parser@1.0.2:
   version "1.0.2"
   resolved "https://registry.nlark.com/html-dom-parser/download/html-dom-parser-1.0.2.tgz#bb5ff844f214657d899aa4fb7b0a9e7d15607e96"
@@ -10493,6 +10523,11 @@ identity-obj-proxy@3.0.0:
   integrity sha1-lNK9qWCERT7zb7xarsN+D3nx/BQ=
   dependencies:
     harmony-reflect "^1.4.6"
+
+ieee754@1.1.13:
+  version "1.1.13"
+  resolved "https://registry.yarnpkg.com/ieee754/-/ieee754-1.1.13.tgz#ec168558e95aa181fd87d37f55c32bbcb6708b84"
+  integrity sha512-4vf7I2LYV/HaWerSo3XmlMkp5eZ83i+/CDluXi/IGTs/O1sejBNhTtnxzmRZfvOUqj7lZjqHkeTvpgSFDlWZTg==
 
 ieee754@^1.1.13, ieee754@^1.1.4:
   version "1.2.1"
@@ -12210,10 +12245,15 @@ jest@^26.6.3:
     import-local "^3.0.2"
     jest-cli "^26.6.3"
 
+jmespath@0.15.0:
+  version "0.15.0"
+  resolved "https://registry.yarnpkg.com/jmespath/-/jmespath-0.15.0.tgz#a3f222a9aae9f966f5d27c796510e28091764217"
+  integrity sha1-o/Iiqarp+Wb10nx5ZRDigJF2Qhc=
+
 js-base64@^2.5.2:
   version "2.6.4"
-  resolved "https://registry.npmmirror.com/js-base64/download/js-base64-2.6.4.tgz#f4e686c5de1ea1f867dbcad3d46d969428df98c4"
-  integrity sha1-9OaGxd4eofhn28rT1G2WlCjfmMQ=
+  resolved "https://registry.yarnpkg.com/js-base64/-/js-base64-2.6.4.tgz#f4e686c5de1ea1f867dbcad3d46d969428df98c4"
+  integrity sha512-pZe//GGmwJndub7ZghVHz7vjb2LgC1m8B07Au3eYqeqv9emhESByMXxaEgkUkEqJe87oBbSniGYoQNIBklc7IQ==
 
 js-cookie@^2.2.1:
   version "2.2.1"
@@ -12538,8 +12578,8 @@ kleur@^3.0.3:
 
 ko-sleep@^1.0.3:
   version "1.1.4"
-  resolved "https://registry.npmmirror.com/ko-sleep/download/ko-sleep-1.1.4.tgz?cache=0&sync_timestamp=1633002399948&other_urls=https%3A%2F%2Fregistry.npmmirror.com%2Fko-sleep%2Fdownload%2Fko-sleep-1.1.4.tgz#56462fba835e07bb8c26cfa083f9893a3fde5469"
-  integrity sha1-VkYvuoNeB7uMJs+gg/mJOj/eVGk=
+  resolved "https://registry.yarnpkg.com/ko-sleep/-/ko-sleep-1.1.4.tgz#56462fba835e07bb8c26cfa083f9893a3fde5469"
+  integrity sha512-s05WGpvvzyTuRlRE8fM7ru2Z3O+InbJuBcckTWKg2W+2c1k6SnFa3IfiSSt0/peFrlYAXgNoxuJWWVNmWh+K/A==
   dependencies:
     ms "*"
 
@@ -13778,6 +13818,22 @@ ms@2.1.2:
   resolved "https://registry.npmmirror.com/ms/download/ms-2.1.2.tgz#d09d1f357b443f493382a8eb3ccd183872ae6009"
   integrity sha1-0J0fNXtEP0kzgqjrPM0YOHKuYAk=
 
+multer-aliyun-oss@1.1.1:
+  version "1.1.1"
+  resolved "https://registry.yarnpkg.com/multer-aliyun-oss/-/multer-aliyun-oss-1.1.1.tgz#7d6c22989b8755205edbc4bcc233e08e5d13e2e1"
+  integrity sha512-BcXibwKeHs2amI10ciIAGYWUQUZAX3sFJ3LIZJJsD0AN1xpF+ko2ruZQe01i47czL5sJaIxtRvRpYsVRTQmBaQ==
+  dependencies:
+    ali-oss "^6.8.0"
+
+multer-s3@^2.10.0:
+  version "2.10.0"
+  resolved "https://registry.yarnpkg.com/multer-s3/-/multer-s3-2.10.0.tgz#95c5a51ad0d165bcabdfd54572ded76a25b54754"
+  integrity sha512-RZsiqG19C9gE82lB7v8duJ+TMIf70fWYHlIwuNcsanOH1ePBoPXZvboEQxEow9jUkk7WQsuyVA2TgriOuDrVrw==
+  dependencies:
+    file-type "^3.3.0"
+    html-comment-regex "^1.1.2"
+    run-parallel "^1.1.6"
+
 multer@^1.4.2:
   version "1.4.3"
   resolved "https://registry.nlark.com/multer/download/multer-1.4.3.tgz?cache=0&sync_timestamp=1628499005677&other_urls=https%3A%2F%2Fregistry.nlark.com%2Fmulter%2Fdownload%2Fmulter-1.4.3.tgz#4db352d6992e028ac0eacf7be45c6efd0264297b"
@@ -13828,8 +13884,8 @@ mysql2@^2.1.0:
 
 mz-modules@^2.1.0:
   version "2.1.0"
-  resolved "https://registry.npm.taobao.org/mz-modules/download/mz-modules-2.1.0.tgz#7f529877afd0d42f409a7463b96986d61cfbcf96"
-  integrity sha1-f1KYd6/Q1C9AmnRjuWmG1hz7z5Y=
+  resolved "https://registry.yarnpkg.com/mz-modules/-/mz-modules-2.1.0.tgz#7f529877afd0d42f409a7463b96986d61cfbcf96"
+  integrity sha512-sjk8lcRW3vrVYnZ+W+67L/2rL+jbO5K/N6PFGIcLWTiYytNr22Ah9FDXFs+AQntTM1boZcoHi5qS+CV1seuPog==
   dependencies:
     glob "^7.1.2"
     ko-sleep "^1.0.3"
@@ -18174,7 +18230,7 @@ run-async@^2.2.0:
   resolved "https://registry.npm.taobao.org/run-async/download/run-async-2.4.1.tgz#8440eccf99ea3e70bd409d49aab88e10c189a455"
   integrity sha1-hEDsz5nqPnC9QJ1JqriOEMGJpFU=
 
-run-parallel@^1.1.9:
+run-parallel@^1.1.6, run-parallel@^1.1.9:
   version "1.2.0"
   resolved "https://registry.npm.taobao.org/run-parallel/download/run-parallel-1.2.0.tgz#66d1368da7bdf921eb9d95bd1a9229e7f21a43ee"
   integrity sha1-ZtE2jae9+SHrnZW9GpIp5/IaQ+4=
@@ -18246,6 +18302,11 @@ sane@^4.0.3:
     micromatch "^3.1.4"
     minimist "^1.1.1"
     walker "~1.0.5"
+
+sax@1.2.1:
+  version "1.2.1"
+  resolved "https://registry.yarnpkg.com/sax/-/sax-1.2.1.tgz#7b8e656190b228e81a66aea748480d828cd2d37a"
+  integrity sha1-e45lYZCyKOgaZq6nSEgNgozS03o=
 
 sax@>=0.6.0, sax@^1.2.4, sax@~1.2.4:
   version "1.2.4"
@@ -18934,8 +18995,8 @@ stream-each@^1.1.0:
 
 stream-http@2.8.2:
   version "2.8.2"
-  resolved "https://registry.npm.taobao.org/stream-http/download/stream-http-2.8.2.tgz#4126e8c6b107004465918aa2fc35549e77402c87"
-  integrity sha1-QSboxrEHAERlkYqi/DVUnndALIc=
+  resolved "https://registry.yarnpkg.com/stream-http/-/stream-http-2.8.2.tgz#4126e8c6b107004465918aa2fc35549e77402c87"
+  integrity sha512-QllfrBhqF1DPcz46WxKTs6Mz1Bpc+8Qm6vbqOpVav5odAXwbyzwnEczoWqtxrsmlO+cJqtPrp/8gWKWjaKLLlA==
   dependencies:
     builtin-status-codes "^3.0.0"
     inherits "^2.0.1"
@@ -20431,6 +20492,14 @@ url-parse-lax@^3.0.0:
   dependencies:
     prepend-http "^2.0.0"
 
+url@0.10.3:
+  version "0.10.3"
+  resolved "https://registry.yarnpkg.com/url/-/url-0.10.3.tgz#021e4d9c7705f21bbf37d03ceb58767402774c64"
+  integrity sha1-Ah5NnHcF8hu/N9A861h2dAJ3TGQ=
+  dependencies:
+    punycode "1.3.2"
+    querystring "0.2.0"
+
 url@^0.11.0:
   version "0.11.0"
   resolved "https://registry.npm.taobao.org/url/download/url-0.11.0.tgz#3838e97cfc60521eb73c525a8e55bfdd9e2e28f1"
@@ -20440,9 +20509,9 @@ url@^0.11.0:
     querystring "0.2.0"
 
 urllib@^2.33.1:
-  version "2.37.4"
-  resolved "https://registry.nlark.com/urllib/download/urllib-2.37.4.tgz#004d4d0c2567e3e5448fe7a580801510ec449362"
-  integrity sha1-AE1NDCVn4+VEj+elgIAVEOxEk2I=
+  version "2.38.0"
+  resolved "https://registry.yarnpkg.com/urllib/-/urllib-2.38.0.tgz#5c0088f42091ef1cef07bb2547677487170414f5"
+  integrity sha512-8nim/hlS5GXtWe2BJ6usPimKx5VE3nenXgcG26ip5Ru+MKPddINH8uLpZ948n6ADhlus6A0AYj8xTYNmGQi8yA==
   dependencies:
     any-promise "^1.3.0"
     content-type "^1.0.2"
@@ -20544,6 +20613,11 @@ utility@^1.16.1, utility@^1.8.0:
     mkdirp "^0.5.1"
     mz "^2.7.0"
     unescape "^1.0.1"
+
+uuid@3.3.2:
+  version "3.3.2"
+  resolved "https://registry.yarnpkg.com/uuid/-/uuid-3.3.2.tgz#1b4af4955eb3077c501c23872fc6513811587131"
+  integrity sha512-yXJmeNaw3DnnKAOKJE51sL/ZaYfWJRl1pK9dr19YFCu0ObS231AB1/LbqTKRAQ5kw8A90rA6fr4riOUpTZvQZA==
 
 uuid@^3.0.1, uuid@^3.2.1, uuid@^3.3.2:
   version "3.4.0"
@@ -21121,6 +21195,14 @@ xml-name-validator@^3.0.0:
   resolved "https://registry.nlark.com/xml-name-validator/download/xml-name-validator-3.0.0.tgz?cache=0&other_urls=https%3A%2F%2Fregistry.nlark.com%2Fxml-name-validator%2Fdownload%2Fxml-name-validator-3.0.0.tgz#6ae73e06de4d8c6e47f9fb181f78d648ad457c6a"
   integrity sha1-auc+Bt5NjG5H+fsYH3jWSK1FfGo=
 
+xml2js@0.4.19:
+  version "0.4.19"
+  resolved "https://registry.yarnpkg.com/xml2js/-/xml2js-0.4.19.tgz#686c20f213209e94abf0d1bcf1efaa291c7827a7"
+  integrity sha512-esZnJZJOiJR9wWKMyuvSE1y6Dq5LCuJanqhxslH2bxM6duahNZ+HMpCLhBQGZkbX6xRf8x1Y2eJlgt2q3qo49Q==
+  dependencies:
+    sax ">=0.6.0"
+    xmlbuilder "~9.0.1"
+
 xml2js@^0.4.16:
   version "0.4.23"
   resolved "https://registry.npm.taobao.org/xml2js/download/xml2js-0.4.23.tgz?cache=0&sync_timestamp=1576776179444&other_urls=https%3A%2F%2Fregistry.npm.taobao.org%2Fxml2js%2Fdownload%2Fxml2js-0.4.23.tgz#a0c69516752421eb2ac758ee4d4ccf58843eac66"
@@ -21133,6 +21215,11 @@ xmlbuilder@~11.0.0:
   version "11.0.1"
   resolved "https://registry.npm.taobao.org/xmlbuilder/download/xmlbuilder-11.0.1.tgz?cache=0&sync_timestamp=1586386503877&other_urls=https%3A%2F%2Fregistry.npm.taobao.org%2Fxmlbuilder%2Fdownload%2Fxmlbuilder-11.0.1.tgz#be9bae1c8a046e76b31127726347d0ad7002beb3"
   integrity sha1-vpuuHIoEbnazESdyY0fQrXACvrM=
+
+xmlbuilder@~9.0.1:
+  version "9.0.7"
+  resolved "https://registry.yarnpkg.com/xmlbuilder/-/xmlbuilder-9.0.7.tgz#132ee63d2ec5565c557e20f4c22df9aca686b10d"
+  integrity sha1-Ey7mPS7FVlxVfiD0wi35rKaGsQ0=
 
 xmlchars@^2.1.1, xmlchars@^2.2.0:
   version "2.2.0"

@@ -1,7 +1,7 @@
 import path from 'path';
 import multer from '@koa/multer';
 import { Context, Next } from '@nocobase/actions';
-import storageMakers from '../storages';
+import { getStorageConfig } from '../storages';
 import * as Rules from '../rules';
 import { FILE_FIELD_NAME, LIMIT_FILES, LIMIT_MAX_FILE_SIZE } from '../constants';
 
@@ -61,8 +61,8 @@ export async function middleware(ctx: Context, next: Next) {
   // 传递已取得的存储引擎，避免重查
   ctx.storage = storage;
 
-  const makeStorage = storageMakers.get(storage.type);
-  if (!makeStorage) {
+  const storageConfig = getStorageConfig(storage.type);
+  if (!storageConfig) {
     console.error(`[file-manager] storage type "${storage.type}" is not defined`);
     return ctx.throw(500);
   }
@@ -73,10 +73,10 @@ export async function middleware(ctx: Context, next: Next) {
       // 每次只允许提交一个文件
       files: LIMIT_FILES
     },
-    storage: makeStorage(storage),
+    storage: storageConfig.make(storage),
   };
-  const uploader = multer(multerOptions);
-  return uploader.single(FILE_FIELD_NAME)(ctx, next);
+  const upload = multer(multerOptions).single(FILE_FIELD_NAME);
+  return upload(ctx, next);
 };
 
 export async function action(ctx: Context, next: Next) {
@@ -84,31 +84,36 @@ export async function action(ctx: Context, next: Next) {
   if (!file) {
     return ctx.throw(400, 'file validation failed');
   }
-  const { associatedName, associatedKey, resourceField } = ctx.action.params;
-  const extname = path.extname(file.filename);
+
+  const storageConfig = getStorageConfig(storage.type);
+  const { [storageConfig.filenameKey || 'filename']: name } = file;
+  // make compatible filename across cloud service (with path)
+  const filename = path.basename(name);
+  const extname = path.extname(filename);
   const urlPath = storage.path
-    ? (storage.path.startsWith('/')
-      ? storage.path
-      : `/${storage.path}`)
+    ? storage.path.replace(/^([^\/])/, '/$1')
     : '';
+
   const data = {
     title: file.originalname.replace(extname, ''),
-    filename: file.filename,
+    filename,
     extname,
     // TODO(feature): 暂时两者相同，后面 storage.path 模版化以后，这里只是 file 实际的 path
     path: storage.path,
     size: file.size,
     // 直接缓存起来
-    url: `${storage.baseUrl}${urlPath}/${file.filename}`,
+    url: `${storage.baseUrl}${urlPath}/${filename}`,
     mimetype: file.mimetype,
     // @ts-ignore
-    meta: ctx.request.body
-  }
-
+    meta: ctx.request.body,
+    ...(storageConfig.getFileData ? storageConfig.getFileData(file) : {})
+  };
+  
   const attachment = await ctx.db.sequelize.transaction(async transaction => {
     // TODO(optimize): 应使用关联 accessors 获取
     const result = await storage.createAttachment(data, { transaction });
-
+    
+    const { associatedName, associatedKey, resourceField } = ctx.action.params;
     if (associatedKey && resourceField) {
       const Attachment = ctx.db.getModel('attachments');
       const SourceModel = ctx.db.getModel(associatedName);
