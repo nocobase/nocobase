@@ -509,6 +509,7 @@ db.registerOperators({
   dateOn: (value, ctx) => {
     console.log(value) // 1999-01-02
     console.log(ctx.path) // birthday
+    console.log(ctx.field) // ctx.field instanceof DateField
   }
 });
 
@@ -524,6 +525,7 @@ db.registerOperators({
   dateOn: (value, ctx) => {
     console.log(value) // 1999-01-02
     console.log(ctx.path) // birthday
+    console.log(ctx.field) // ctx.field instanceof DateField
   },
 });
 
@@ -539,6 +541,7 @@ db.registerOperators({
   dateOn: (value, ctx) => {
     console.log(value) // 1999-01-02
     console.log(ctx.path) // user.birthday
+    console.log(ctx.field) // ctx.field instanceof DateField
   },
 });
 
@@ -558,6 +561,7 @@ db.registerOperators({
   dateOn: (value, ctx) => {
     console.log(value) // 1999-01-02
     console.log(ctx.path) // user.birthday
+    console.log(ctx.field) // ctx.field instanceof DateField
   }
 });
 ```
