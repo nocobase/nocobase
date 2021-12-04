@@ -33,7 +33,7 @@ const Input: React.FC<InputProps & { ellipsis: any }> = (props) => {
   const [ellipsis, setEllipsis] = useState(false);
   const content = compile(usePlaceholder(props.value));
   const ellipsisContent = (
-    <Popover content={usePlaceholder(props.value)}>
+    <Popover content={usePlaceholder(props.value)} style={{ width: 100 }}>
       <div className={'input-ellipsis'}>{content}</div>
     </Popover>
   );
