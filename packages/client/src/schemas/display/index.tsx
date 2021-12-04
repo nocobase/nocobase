@@ -1,4 +1,4 @@
-import React, { createContext, useContext } from 'react';
+import React, { createContext, useContext, useEffect, useState } from 'react';
 import { isArr, isValid } from '@formily/shared';
 import { observer, useField } from '@formily/react';
 import { InputProps } from 'antd/lib/input';
@@ -6,21 +6,16 @@ import { InputNumberProps } from 'antd/lib/input-number';
 import { SelectProps } from 'antd/lib/select';
 import { TreeSelectProps } from 'antd/lib/tree-select';
 import { CascaderProps } from 'antd/lib/cascader';
-import {
-  DatePickerProps,
-  RangePickerProps as DateRangePickerProps,
-} from 'antd/lib/date-picker';
+import { DatePickerProps, RangePickerProps as DateRangePickerProps } from 'antd/lib/date-picker';
 import { TimePickerProps, TimeRangePickerProps } from 'antd/lib/time-picker';
 import { Tag, Space, Popover } from 'antd';
 import cls from 'classnames';
-import {
-  formatMomentValue,
-  usePrefixCls,
-} from '@formily/antd/esm/__builtins__';
+import { formatMomentValue, usePrefixCls } from '@formily/antd/esm/__builtins__';
 import { FullscreenOutlined } from '@ant-design/icons';
 import moment from 'moment';
 import { useCompile } from '../../hooks/useCompile';
 import { Field } from '@formily/core';
+import './index.less';
 
 const PlaceholderContext = createContext<string>('');
 
@@ -31,14 +26,27 @@ const usePlaceholder = (value?: any) => {
   return isValid(value) && value !== '' ? value : placeholder;
 };
 
-const Input: React.FC<InputProps> = (props) => {
+const Input: React.FC<InputProps & { ellipsis: any }> = (props) => {
   const prefixCls = usePrefixCls('description-input', props);
+  const domRef = React.useRef<HTMLInputElement>(null);
   const compile = useCompile();
+  const [ellipsis, setEllipsis] = useState(false);
+  const content = compile(usePlaceholder(props.value));
+  const ellipsisContent = (
+    <Popover content={usePlaceholder(props.value)} style={{ width: 100 }}>
+      <div className={'input-ellipsis'}>{content}</div>
+    </Popover>
+  );
+  useEffect(() => {
+    if (props.ellipsis && domRef.current?.scrollWidth > domRef.current?.clientWidth) {
+      setEllipsis(true);
+    }
+  }, []);
   return (
     <div className={cls(prefixCls, props.className)} style={props.style}>
       {props.addonBefore}
       {props.prefix}
-      {compile(usePlaceholder(props.value))}
+      <div ref={domRef}>{ellipsis ? ellipsisContent : content}</div>
       {props.suffix}
       {props.addonAfter}
     </div>
@@ -79,34 +87,32 @@ const InputNumber: React.FC<InputProps & InputNumberProps> = (props) => {
 
 const TextArea: React.FC<any> = (props) => {
   const prefixCls = usePrefixCls('description-textarea', props);
-  const ellipsis = props.ellipsis === true ? {} : props.ellipsis;
-  const content = props.ellipsis ? (
-    <div>
-      <Popover content={usePlaceholder(props.value)}>
-        <div
-          style={{
-            display: 'inline-block',
-            textOverflow: 'ellipsis',
-            overflow: 'hidden',
-            whiteSpace: 'nowrap',
-            width: 100,
-            verticalAlign: 'middle',
-            marginRight: 10,
-            ...ellipsis,
-          }}
-        >
-          {usePlaceholder(props.text || props.value)}
-        </div>
-      </Popover>
-    </div>
-  ) : (
-    usePlaceholder(props.value)
+  const domRef = React.useRef<HTMLInputElement>(null);
+  const [ellipsis, setEllipsis] = useState(false);
+  const ellipsisProp = props.ellipsis === true ? {} : props.ellipsis;
+  const content = usePlaceholder(props.value);
+  const ellipsisContent = (
+    <Popover content={usePlaceholder(props.value)}>
+      <div
+        className={'input-ellipsis'}
+        style={{
+          ...ellipsisProp,
+        }}
+      >
+        {usePlaceholder(props.text || props.value)}
+      </div>
+    </Popover>
   );
+  useEffect(() => {
+    if (props.ellipsis && domRef.current?.scrollWidth > domRef.current?.clientWidth) {
+      setEllipsis(true);
+    }
+  }, []);
   return (
     <div className={cls(prefixCls, props.className)} style={props.style}>
       {props.addonBefore}
       {props.prefix}
-      {content}
+      <div ref={domRef}>{ellipsis ? ellipsisContent : content}</div>
       {props.suffix}
       {props.addonAfter}
     </div>
@@ -116,11 +122,7 @@ const TextArea: React.FC<any> = (props) => {
 const Select: React.FC<SelectProps<any>> = observer((props) => {
   const field = useField<Field>();
   const prefixCls = usePrefixCls('description-select', props);
-  const dataSource: any[] = field?.dataSource?.length
-    ? field.dataSource
-    : props?.options?.length
-    ? props.options
-    : [];
+  const dataSource: any[] = field?.dataSource?.length ? field.dataSource : props?.options?.length ? props.options : [];
   const placeholder = usePlaceholder();
   const getSelected = () => {
     const value = props.value;
@@ -128,9 +130,7 @@ const Select: React.FC<SelectProps<any>> = observer((props) => {
       if (props.labelInValue) {
         return isArr(value) ? value : [];
       } else {
-        return isArr(value)
-          ? value.map((val) => ({ label: val, value: val }))
-          : [];
+        return isArr(value) ? value.map((val) => ({ label: val, value: val })) : [];
       }
     } else {
       if (props.labelInValue) {
@@ -145,8 +145,7 @@ const Select: React.FC<SelectProps<any>> = observer((props) => {
     const selected = getSelected();
     if (!selected.length) return <Tag>{placeholder}</Tag>;
     return selected.map(({ value, label }, key) => {
-      const text =
-        dataSource?.find((item) => item.value == value)?.label || label;
+      const text = dataSource?.find((item) => item.value == value)?.label || label;
       return <Tag key={key}>{text || placeholder}</Tag>;
     });
   };
@@ -160,11 +159,7 @@ const Select: React.FC<SelectProps<any>> = observer((props) => {
 const ObjectSelect: React.FC<SelectProps<any>> = observer((props) => {
   const field = useField<Field>();
   const prefixCls = usePrefixCls('description-select', props);
-  const dataSource: any[] = field?.dataSource?.length
-    ? field.dataSource
-    : props?.options?.length
-    ? props.options
-    : [];
+  const dataSource: any[] = field?.dataSource?.length ? field.dataSource : props?.options?.length ? props.options : [];
   const placeholder = usePlaceholder();
   const getSelected = () => {
     const value = props.value;
@@ -172,9 +167,7 @@ const ObjectSelect: React.FC<SelectProps<any>> = observer((props) => {
       if (props.labelInValue) {
         return isArr(value) ? value : [];
       } else {
-        return isArr(value)
-          ? value.map((val) => ({ label: val, value: val }))
-          : [];
+        return isArr(value) ? value.map((val) => ({ label: val, value: val })) : [];
       }
     } else {
       if (props.labelInValue) {
@@ -189,8 +182,7 @@ const ObjectSelect: React.FC<SelectProps<any>> = observer((props) => {
     const selected = getSelected();
     if (!selected.length) return <Tag>{placeholder}</Tag>;
     return selected.map(({ value, label }, key) => {
-      const text =
-        dataSource?.find((item) => item.value == value)?.label || label;
+      const text = dataSource?.find((item) => item.value == value)?.label || label;
       return <Tag key={key}>{text || placeholder}</Tag>;
     });
   };
@@ -205,20 +197,14 @@ const TreeSelect: React.FC<TreeSelectProps<any>> = observer((props) => {
   const field = useField<Field>();
   const placeholder = usePlaceholder();
   const prefixCls = usePrefixCls('description-tree-select', props);
-  const dataSource = field?.dataSource?.length
-    ? field.dataSource
-    : props?.options?.length
-    ? props.options
-    : [];
+  const dataSource = field?.dataSource?.length ? field.dataSource : props?.options?.length ? props.options : [];
   const getSelected = () => {
     const value = props.value;
     if (props.multiple) {
       if (props.labelInValue) {
         return isArr(value) ? value : [];
       } else {
-        return isArr(value)
-          ? value.map((val) => ({ label: val, value: val }))
-          : [];
+        return isArr(value) ? value.map((val) => ({ label: val, value: val })) : [];
       }
     } else {
       if (props.labelInValue) {
@@ -245,11 +231,7 @@ const TreeSelect: React.FC<TreeSelectProps<any>> = observer((props) => {
     const selected = getSelected();
     if (!selected?.length) return <Tag>{placeholder}</Tag>;
     return selected.map(({ value, label }, key) => {
-      return (
-        <Tag key={key}>
-          {findLabel(value, dataSource) || label || placeholder}
-        </Tag>
-      );
+      return <Tag key={key}>{findLabel(value, dataSource) || label || placeholder}</Tag>;
     });
   };
   return (
@@ -263,11 +245,7 @@ const Cascader: React.FC<CascaderProps> = observer((props) => {
   const field = useField<Field>();
   const placeholder = usePlaceholder();
   const prefixCls = usePrefixCls('description-cascader', props);
-  const dataSource: any[] = field?.dataSource?.length
-    ? field.dataSource
-    : props?.options?.length
-    ? props.options
-    : [];
+  const dataSource: any[] = field?.dataSource?.length ? field.dataSource : props?.options?.length ? props.options : [];
   const getSelected = () => {
     return isArr(props.value) ? props.value : [];
   };
@@ -316,11 +294,7 @@ const DatePicker: React.FC<DatePickerProps> = (props: any) => {
   };
   const getLabels = () => {
     const d = moment(props.value);
-    const labels = formatMomentValue(
-      d.isValid() ? d : null,
-      getDefaultFormat(),
-      placeholder,
-    );
+    const labels = formatMomentValue(d.isValid() ? d : null, getDefaultFormat(), placeholder);
     return isArr(labels) ? labels.join('~') : labels;
   };
   return <div className={cls(prefixCls, props.className)}>{getLabels()}</div>;

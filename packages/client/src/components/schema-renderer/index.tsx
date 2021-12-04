@@ -333,7 +333,6 @@ export function useDesignable(path?: any) {
   // console.log('useDesignable', { schema, schemaPath, currentSchema });
   const options = useContext(SchemaOptionsContext);
   let DesignableBar = get(options.components, currentSchema['x-designable-bar']);
-  debugger;
   if (!designable) {
     DesignableBar = () => null;
   }

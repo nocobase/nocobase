@@ -1,12 +1,6 @@
 import React, { useContext, useMemo, useState } from 'react';
 import { ISchema, SchemaField } from '..';
-import {
-  createForm,
-  onFieldChange,
-  onFieldReact,
-  onFormValuesChange,
-  onFormReset,
-} from '@formily/core';
+import { createForm, onFieldChange, onFieldReact, onFormValuesChange, onFormReset } from '@formily/core';
 import {
   FormProvider,
   FormConsumer,
@@ -19,14 +13,7 @@ import {
 } from '@formily/react';
 import { Field } from '@formily/core/esm/models/Field';
 import { Form } from '@formily/core/esm/models/Form';
-import {
-  Input,
-  FormItem,
-  FormLayout,
-  FormButtonGroup,
-  Submit,
-  Space,
-} from '@formily/antd';
+import { Input, FormItem, FormLayout, FormButtonGroup, Submit, Space } from '@formily/antd';
 import { CloseCircleOutlined } from '@ant-design/icons';
 import { get } from 'lodash';
 import { isValid, uid } from '@formily/shared';
@@ -75,9 +62,7 @@ export const FilterItem = (props) => {
     }
     const operationValue = Object.keys(nested).shift();
     console.log('toValues', { operationValue });
-    const operation = operations.find(
-      (operation) => operation.value === operationValue,
-    );
+    const operation = operations.find((operation) => operation.value === operationValue);
     console.log('toValues', { operation });
     if (!operation) {
       return {
@@ -121,8 +106,7 @@ export const FilterItem = (props) => {
         effects: (form) => {
           onFieldChange('column', (field: Field, form: Form) => {
             const column = (field.value || {}) as ISchema;
-            const operations =
-              column?.['x-component-props']?.['operations'] || [];
+            const operations = column?.['x-component-props']?.['operations'] || [];
             field.query('operation').take((f: Field) => {
               f.setDataSource(operations);
               f.value = get(operations, [0]);
@@ -149,7 +133,6 @@ export const FilterItem = (props) => {
               return;
             }
             const fieldName = Object.keys(column.properties).shift();
-            debugger;
             if (operation?.noValue) {
               onChange({
                 [fieldName]: {
@@ -174,9 +157,7 @@ export const FilterItem = (props) => {
     [],
   );
 
-  const columnEnum: any = [...columns.values()].map((column) =>
-    column.toJSON(),
-  );
+  const columnEnum: any = [...columns.values()].map((column) => column.toJSON());
 
   return (
     <FormProvider form={form}>
