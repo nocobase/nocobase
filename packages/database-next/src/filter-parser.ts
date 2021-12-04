@@ -68,6 +68,8 @@ class FilterParser {
         const firstKey = keys.shift();
         origins.push(firstKey);
 
+        debug('origins: %o', origins);
+
         if (firstKey.startsWith('$')) {
           if (operators.has(firstKey)) {
             debug('%s is operator', firstKey);
@@ -85,6 +87,7 @@ class FilterParser {
               value = opKey(originalFiler[skipPrefix], {
                 db: this.database,
                 path: skipPrefix,
+                fieldName: skipPrefix.replace(`.${firstKey}`, ''),
               });
               break;
             }
@@ -124,7 +127,7 @@ class FilterParser {
 
         while (target) {
           const attr = keys.shift();
-
+          origins.push(attr);
           // if it is target model attribute
           if (target.rawAttributes[attr]) {
             associationKeys.push(attr);

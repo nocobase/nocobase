@@ -1,8 +1,7 @@
 import { Op, Sequelize } from 'sequelize';
 
 const getFieldName = (ctx) => {
-  const paths = ctx.path.split('.');
-  const fieldName = paths[paths.length - 2];
+  const fieldName = ctx.fieldName;
   return fieldName;
 };
 

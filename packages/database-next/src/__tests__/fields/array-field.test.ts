@@ -1,7 +1,8 @@
 import { mockDatabase } from '../index';
+import Database from '../../database';
 
 describe('array field', function () {
-  let db;
+  let db: Database;
   let Test;
 
   let t1;
@@ -37,6 +38,49 @@ describe('array field', function () {
         name: 't2',
       },
     });
+  });
+
+  test('nested array field', async () => {
+    const User = db.collection({
+      name: 'users',
+      fields: [
+        { type: 'hasMany', name: 'posts' },
+        { type: 'string', name: 'name' },
+      ],
+    });
+
+    const Post = db.collection({
+      name: 'posts',
+      fields: [
+        { type: 'belongsTo', name: 'user' },
+        { type: 'string', name: 'title' },
+        { type: 'array', name: 'tags' },
+      ],
+    });
+
+    await db.sync();
+
+    await User.repository.createMany({
+      records: [
+        {
+          name: 'u0',
+          posts: [{ title: 'u0p1' }],
+        },
+        {
+          name: 'u1',
+          posts: [{ title: 'u1p1', tags: ['t1', 't2'] }],
+        },
+      ],
+    });
+
+    const result = await User.repository.find({
+      filter: {
+        'posts.tags.$anyOf': ['t1'],
+      },
+    });
+
+    expect(result.length).toEqual(1);
+    expect(result[0].get('name')).toEqual('u1');
   });
 
   test('$match', async () => {
