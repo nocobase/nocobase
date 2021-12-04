@@ -1,3 +1,4 @@
+import './index.less';
 export * from './components/router-config';
 export * from './components/admin-layout';
 export * from './components/auth-layout';
