@@ -20,7 +20,7 @@ export const TableCell = observer((props: any) => {
   const componentProps = merge(uiSchema?.['x-component-props'] || {}, schema?.['x-component-props'] || {}, {
     arrayMerge: (t, s) => s,
   });
-  console.log('Table.Cell', collectionField?.interface, componentProps);
+  console.log('Table.Cell', collectionField?.interface, componentProps, uiSchema);
   return (
     <div className={`field-interface-${collectionField?.interface}`}>
       <RecursionField
@@ -38,7 +38,7 @@ export const TableCell = observer((props: any) => {
                       feedbackLayout: 'popover',
                     },
                     'x-decorator': 'FormilyFormItem',
-                    'x-component-props': componentProps,
+                    'x-component-props': { ...componentProps },
                     properties: {
                       ...schema?.properties,
                     },
