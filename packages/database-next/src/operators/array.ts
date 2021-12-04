@@ -18,10 +18,7 @@ const sqliteExistQuery = (value, ctx) => {
     .map((v) => JSON.stringify(v.toString()))
     .join(', ')})`;
 
-  const subQuery = `exists (select * from json_each(${fieldName}) where json_each.value in ${escape(
-    sqlArray,
-    ctx,
-  )})`;
+  const subQuery = `exists (select * from json_each(${fieldName}) where json_each.value in ${sqlArray})`;
 
   return subQuery;
 };
@@ -58,7 +55,8 @@ const isMySQL = (ctx) => {
 
 export default {
   $match(value, ctx) {
-    value = escape(JSON.stringify(value), ctx);
+    value = escape(JSON.stringify(value.sort()), ctx);
+
     const fieldName = getFieldName(ctx);
     if (isPg(ctx)) {
       return {
@@ -74,7 +72,7 @@ export default {
     }
 
     return {
-      [Op.eq]: Sequelize.fn('json', value),
+      [Op.eq]: Sequelize.literal(`json(${value})`),
     };
   },
 
@@ -97,7 +95,7 @@ export default {
       );
     }
     return {
-      [Op.ne]: Sequelize.fn('json', JSON.stringify(escape(value, ctx))),
+      [Op.ne]: Sequelize.literal(`json(${value})`),
     };
   },
 
@@ -117,9 +115,7 @@ export default {
 
     const subQuery = sqliteExistQuery(value, ctx);
 
-    return {
-      [Op.and]: [Sequelize.literal(subQuery)],
-    };
+    return Sequelize.literal(subQuery);
   },
 
   $noneOf(value, ctx) {

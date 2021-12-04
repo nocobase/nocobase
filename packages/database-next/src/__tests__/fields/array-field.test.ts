@@ -7,10 +7,12 @@ describe('array field', function () {
   let t1;
   let t2;
 
+  afterEach(async () => {
+    await db.close();
+  });
+
   beforeEach(async () => {
-    db = mockDatabase({
-      logging: console.log,
-    });
+    db = mockDatabase();
 
     Test = db.collection({
       name: 'test',
@@ -20,7 +22,7 @@ describe('array field', function () {
       ],
     });
 
-    await db.sync();
+    await db.sync({ force: true });
 
     t1 = await Test.repository.create({
       values: {
@@ -40,7 +42,7 @@ describe('array field', function () {
   test('$match', async () => {
     const filter1 = await Test.repository.find({
       filter: {
-        'selected.$match': [1, 2, 'a', 'b'],
+        'selected.$match': [2, 1, 'a', 'b'],
       },
     });
 

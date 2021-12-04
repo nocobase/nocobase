@@ -69,4 +69,8 @@ export abstract class Field {
     }
     return opts;
   }
+
+  isSqlite() {
+    return this.database.sequelize.getDialect() === 'sqlite';
+  }
 }
