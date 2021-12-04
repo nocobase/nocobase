@@ -1,9 +1,13 @@
 import { Op, Sequelize } from 'sequelize';
-import { filter } from 'lodash';
 
-const sqliteExistQuery = (value, ctx) => {
+const getFieldName = (ctx) => {
   const paths = ctx.path.split('.');
   const fieldName = paths[paths.length - 2];
+  return fieldName;
+};
+
+const sqliteExistQuery = (value, ctx) => {
+  const fieldName = getFieldName(ctx);
 
   const sqlArray = `(${value
     .map((v) => JSON.stringify(v.toString()))
@@ -18,20 +22,58 @@ const sqliteEmptyQuery = (ctx, operator: '=' | '>') => {
   const paths = ctx.path.split('.');
   const fieldName = paths[paths.length - 2];
 
-  return `(select IFNULL(json_array_length(${fieldName}), 0) ${operator} 0)`;
+  let funcName = 'json_array_length';
+  let ifNull = 'IFNULL';
+
+  if (isPg(ctx)) {
+    funcName = 'jsonb_array_length';
+    ifNull = 'coalesce';
+  }
+
+  return `(select ${ifNull}(${funcName}(${fieldName}), 0) ${operator} 0)`;
+};
+
+const getDialect = (ctx) => {
+  return ctx.db.sequelize.getDialect();
+};
+
+const isPg = (ctx) => {
+  return getDialect(ctx) === 'postgres';
 };
 
 export default {
   $match(value, ctx) {
+    if (isPg(ctx)) {
+      return {
+        [Op.contained]: value,
+        [Op.contains]: value,
+      };
+    }
+
     return { [Op.eq]: Sequelize.fn('json', JSON.stringify(value)) };
   },
 
   $notMatch(value, ctx) {
+    if (isPg(ctx)) {
+      const fieldName = getFieldName(ctx);
+      // pg single quote
+      const queryValue = JSON.stringify(value).replace("'", "''");
+      return Sequelize.literal(
+        `not (${fieldName} <@ '${queryValue}'::JSONB and ${fieldName} @> '${queryValue}'::JSONB)`,
+      );
+    }
+
     return { [Op.ne]: Sequelize.fn('json', JSON.stringify(value)) };
   },
 
   // TODO sql injection
   $anyOf(value, ctx) {
+    if (isPg(ctx)) {
+      return {
+        [Op.contains]: value,
+      };
+    }
+
     const subQuery = sqliteExistQuery(value, ctx);
 
     return {
@@ -40,6 +82,13 @@ export default {
   },
 
   $noneOf(value, ctx) {
+    if (isPg(ctx)) {
+      const fieldName = getFieldName(ctx);
+      // pg single quote
+      const queryValue = JSON.stringify(value).replace("'", "''");
+      return Sequelize.literal(`not (${fieldName} @> '${queryValue}'::JSONB)`);
+    }
+
     const subQuery = sqliteExistQuery(value, ctx);
 
     return {
