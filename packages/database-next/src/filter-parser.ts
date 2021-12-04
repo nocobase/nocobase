@@ -1,6 +1,6 @@
 import { Model, ModelCtor } from 'sequelize';
 import _ from 'lodash';
-import { flatten } from 'flat';
+import { flatten, unflatten } from 'flat';
 import { Database } from './database';
 import lodash from 'lodash';
 
@@ -15,8 +15,33 @@ class FilterParser {
 
   constructor(model: ModelCtor<any>, database: Database, filter: FilterType) {
     this.model = model;
-    this.filter = filter;
+    this.filter = this.prepareFilter(filter);
     this.database = database;
+  }
+
+  prepareFilter(filter: FilterType) {
+    if (lodash.isPlainObject(filter)) {
+      const renamedKey = {};
+
+      for (const key of Object.keys(filter)) {
+        if (key.endsWith('.$exists') || key.endsWith('.$notExists')) {
+          const keyArr = key.split('.');
+          if (keyArr[keyArr.length - 2] == 'id') {
+            continue;
+          }
+          keyArr.splice(keyArr.length - 1, 0, 'id');
+          renamedKey[key] = keyArr.join('.');
+        }
+      }
+
+      for (const [oldKey, newKey] of Object.entries(renamedKey)) {
+        // @ts-ignore
+        filter[newKey] = filter[oldKey];
+        delete filter[oldKey];
+      }
+    }
+
+    return filter;
   }
 
   toSequelizeParams() {
@@ -27,6 +52,7 @@ class FilterParser {
     }
 
     const filter = this.filter;
+
     const model = this.model;
 
     // supported operators

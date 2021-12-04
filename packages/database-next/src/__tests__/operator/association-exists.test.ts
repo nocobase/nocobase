@@ -72,10 +72,6 @@ describe('association operator', () => {
     });
   });
 
-  afterEach(async () => {
-    await db.close();
-  });
-
   test('nested association', async () => {
     const u1 = await User.repository.create({
       values: {
@@ -114,6 +110,15 @@ describe('association operator', () => {
     });
 
     let result = await User.repository.find({
+      filter: {
+        'posts.tags.$exists': true,
+      },
+    });
+
+    expect(result.length).toEqual(1);
+    expect(result[0].get('id')).toEqual(u2.get('id'));
+
+    result = await User.repository.find({
       filter: {
         'posts.tags.id.$exists': true,
       },
