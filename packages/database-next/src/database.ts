@@ -25,7 +25,8 @@ import { ModelHook } from './model-hook';
 import { ImporterReader, ImportFileExtension } from './collection-importer';
 
 import dateOperators from './operators/date';
-import multipleSelect from './operators/multiple-select';
+import multipleSelect from './operators/array';
+import associationOperator from './operators/association';
 
 export interface MergeOptions extends merge.Options {}
 
@@ -197,6 +198,7 @@ export class Database extends EventEmitter implements AsyncEmitter {
     this.registerOperators({
       ...dateOperators,
       ...multipleSelect,
+      ...associationOperator,
     });
   }
 

@@ -161,6 +161,7 @@ class FilterParser {
       }
 
       debug('where %o, paths %o, value, %o', where, paths, value);
+
       const values = _.get(where, paths);
 
       if (
