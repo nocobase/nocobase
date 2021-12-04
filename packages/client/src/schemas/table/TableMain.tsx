@@ -43,7 +43,7 @@ export const TableMain = () => {
             field.move(fromIndex, toIndex);
             refresh();
             await resource.sort({
-              resourceKey: fromId,
+              resourceIndex: fromId,
               target: {
                 [rowKey]: toId,
               },

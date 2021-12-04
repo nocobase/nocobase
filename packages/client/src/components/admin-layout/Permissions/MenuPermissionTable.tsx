@@ -33,7 +33,7 @@ export const MenuPermissionTable = observer((props) => {
   console.log('allUiSchemaKyes', allUiSchemaKyes);
   const resource = useResourceRequest({
     associatedName: 'roles',
-    associatedKey: role.name,
+    associatedIndex: role.name,
     resourceName: 'ui_schemas',
   });
   useRequest(() => resource.list(), {
@@ -44,7 +44,7 @@ export const MenuPermissionTable = observer((props) => {
   });
   const resource2 = useResourceRequest({
     resourceName: 'roles',
-    resourceKey: role.name,
+    resourceIndex: role.name,
   });
   if (loading) {
     return <Spin size={'large'} className={'nb-spin-center'} />;
@@ -106,7 +106,7 @@ export const MenuPermissionTable = observer((props) => {
                       return [...prevUiSchemaKeys];
                     });
                     await resource.toggle({
-                      resourceKey: value,
+                      resourceIndex: value,
                     });
                   }}
                 />

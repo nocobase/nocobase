@@ -25,8 +25,8 @@ export const create = async (ctx: Context, next: Next) => {
     const body = ctx.body;
     ctx.action.mergeParams(
       {
-        associatedKey: values.parentKey,
-        resourceKey: body.key,
+        associatedIndex: values.parentKey,
+        resourceIndex: body.key,
         ...(sticky
           ? {
               sticky: true,
@@ -70,8 +70,8 @@ export const update = async (ctx: Context, next: Next) => {
     const body = ctx.body;
     ctx.action.mergeParams(
       {
-        associatedKey: values.parentKey,
-        resourceKey: body.key,
+        associatedIndex: values.parentKey,
+        resourceIndex: body.key,
         ...(sticky
           ? {
               sticky: true,
@@ -95,10 +95,10 @@ export const update = async (ctx: Context, next: Next) => {
 };
 
 export const getTree = async (ctx: Context, next: Next) => {
-  const { resourceKey, filter } = ctx.action.params;
+  const { resourceIndex, filter } = ctx.action.params;
   const UISchema = ctx.db.getModel('ui_schemas');
-  if (resourceKey) {
-    const schema = await UISchema.findByPk(resourceKey);
+  if (resourceIndex) {
+    const schema = await UISchema.findByPk(resourceIndex);
     const property = schema.toProperty();
     const properties = await schema.getProperties();
     if (Object.keys(properties).length) {

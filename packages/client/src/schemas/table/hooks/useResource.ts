@@ -12,7 +12,7 @@ export const useResource = ({ onSuccess, manual = true }) => {
   const ctx = useContext(TableRowContext);
   const resource = useResourceRequest({
     resourceName: collection?.name || props.collectionName,
-    resourceKey: ctx.record[props.rowKey],
+    resourceIndex: ctx.record[props.rowKey],
   });
   const { schema } = useDesignable();
   const fieldFields = (schema: Schema) => {

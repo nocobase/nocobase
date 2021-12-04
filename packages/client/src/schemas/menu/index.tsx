@@ -1006,7 +1006,7 @@ Menu.DesignableBar = (props) => {
                     };
                     const resource = Resource.make({
                       associatedName: 'ui_schemas',
-                      associatedKey: schema['key'],
+                      associatedIndex: schema['key'],
                       resourceName: 'roles',
                     });
                     const uiSchemasRoles = await resource.list();
@@ -1043,7 +1043,7 @@ Menu.DesignableBar = (props) => {
                     });
                     await Resource.make({
                       resourceName: 'ui_schemas',
-                      resourceKey: schema['key'],
+                      resourceIndex: schema['key'],
                     }).save(values);
                   }}
                 >
