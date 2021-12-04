@@ -24,20 +24,20 @@ export async function toggle(ctx: Context, next: Next) {
     throw new Error(`${associatedName} associated model invalid`);
   }
   const { get: getAccessor, remove: removeAccessor, set: setAccessor, add: addAccessor } = resourceField.getAccessors();
-  const { resourceKey, resourceKeyAttribute, fields = [] } = ctx.action.params;
+  const { resourceIndex, resourceIndexAttribute, fields = [] } = ctx.action.params;
   const TargetModel = ctx.db.getModel(resourceField.getTarget());
   const options = TargetModel.parseApiJson({
     fields,
   });
   if (resourceField instanceof HASONE || resourceField instanceof BELONGSTO) {
     const m1 = await associated[getAccessor]();
-    if (m1 && m1[resourceKeyAttribute || resourceField.options.targetKey || TargetModel.primaryKeyAttribute] == resourceKey) {
+    if (m1 && m1[resourceIndexAttribute || resourceField.options.targetKey || TargetModel.primaryKeyAttribute] == resourceIndex) {
       ctx.body = await associated[setAccessor](null);
     } else {
       const m2 = await TargetModel.findOne({
         // ...options,
         where: {
-          [resourceKeyAttribute || resourceField.options.targetKey || TargetModel.primaryKeyAttribute]: resourceKey,
+          [resourceIndexAttribute || resourceField.options.targetKey || TargetModel.primaryKeyAttribute]: resourceIndex,
         },
         // @ts-ignore
         context: ctx,
@@ -48,7 +48,7 @@ export async function toggle(ctx: Context, next: Next) {
     const [model]: Model[] = await associated[getAccessor]({
       ...options,
       where: {
-        [resourceKeyAttribute || resourceField.options.targetKey || TargetModel.primaryKeyAttribute]: resourceKey,
+        [resourceIndexAttribute || resourceField.options.targetKey || TargetModel.primaryKeyAttribute]: resourceIndex,
       },
       context: ctx,
     });
@@ -58,7 +58,7 @@ export async function toggle(ctx: Context, next: Next) {
       const m2 = await TargetModel.findOne({
         // ...options,
         where: {
-          [resourceKeyAttribute || resourceField.options.targetKey || TargetModel.primaryKeyAttribute]: resourceKey,
+          [resourceIndexAttribute || resourceField.options.targetKey || TargetModel.primaryKeyAttribute]: resourceIndex,
         },
         // @ts-ignore
         context: ctx,

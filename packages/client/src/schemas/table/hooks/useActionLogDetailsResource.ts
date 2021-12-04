@@ -11,7 +11,7 @@ export const useActionLogDetailsResource = ({ onSuccess }) => {
   const ctx = useContext(TableRowContext);
   const resource = useResourceRequest({
     resourceName: 'action_logs',
-    resourceKey: ctx.record[props.rowKey],
+    resourceIndex: ctx.record[props.rowKey],
   });
   const service = useRequest(
     (params?: any) => {

@@ -59,7 +59,7 @@ const useActionPermissionSubmit = () => {
   const role = useContext(RoleContext);
   const resource = useResourceRequest({
     resourceName: 'roles',
-    resourceKey: role.name,
+    resourceIndex: role.name,
   });
   return {
     async run() {
@@ -127,7 +127,7 @@ const useDetailsResource = ({ onSuccess }) => {
   const ctx = useContext(TableRowContext);
   const resource = useResourceRequest({
     resourceName: 'roles',
-    resourceKey: ctx.record[props.rowKey],
+    resourceIndex: ctx.record[props.rowKey],
   });
   const service = useRequest(
     (params?: any) => {

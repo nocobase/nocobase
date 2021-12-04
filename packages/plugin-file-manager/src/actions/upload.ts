@@ -113,11 +113,11 @@ export async function action(ctx: Context, next: Next) {
     // TODO(optimize): 应使用关联 accessors 获取
     const result = await storage.createAttachment(data, { transaction });
     
-    const { associatedName, associatedKey, resourceField } = ctx.action.params;
-    if (associatedKey && resourceField) {
+    const { associatedName, associatedIndex, resourceField } = ctx.action.params;
+    if (associatedIndex && resourceField) {
       const Attachment = ctx.db.getModel('attachments');
       const SourceModel = ctx.db.getModel(associatedName);
-      const source = await SourceModel.findByPk(associatedKey, { transaction });
+      const source = await SourceModel.findByPk(associatedIndex, { transaction });
       await source[resourceField.getAccessors().set](result[Attachment.primaryKeyAttribute], { transaction });
     }
 

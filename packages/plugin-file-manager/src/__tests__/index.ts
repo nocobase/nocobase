@@ -2,7 +2,7 @@ import path from 'path';
 import supertest from 'supertest';
 import { MockServer, mockServer } from '@nocobase/test';
 
-import plugin from '../server';
+import plugin from '../';
 
 export async function getApp(options = {}): Promise<MockServer> {
   const app = mockServer({

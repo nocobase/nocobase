@@ -3,19 +3,19 @@ import { request as req } from './schemas';
 
 export interface ResourceOptions {
   resourceName: string;
-  associatedKey?: any;
+  associatedIndex?: any;
   associatedName?: string;
-  resourceKey?: any;
+  resourceIndex?: any;
 }
 
 export interface GetOptions {
-  resourceKey?: any;
+  resourceIndex?: any;
   defaultAppends?: any[];
   appends?: string[];
 }
 
 export interface SaveOptions {
-  resourceKey?: any;
+  resourceIndex?: any;
 }
 
 export interface ListOptions {
@@ -42,8 +42,8 @@ export class Resource {
 
   sort(options) {
     const { resourceName } = this.options;
-    const { resourceKey, target, field = 'sort' } = options;
-    return this.request(`${resourceName}:sort/${resourceKey}`, {
+    const { resourceIndex, target, field = 'sort' } = options;
+    return this.request(`${resourceName}:sort/${resourceIndex}`, {
       method: 'post',
       data: {
         target,
@@ -61,10 +61,10 @@ export class Resource {
       pageSize,
       ...others
     } = options;
-    const { associatedKey, associatedName, resourceName } = this.options;
+    const { associatedIndex, associatedName, resourceName } = this.options;
     let url = `${resourceName}:list`;
-    if (associatedName && associatedKey) {
-      url = `${associatedName}/${associatedKey}/${resourceName}:list`;
+    if (associatedName && associatedIndex) {
+      url = `${associatedName}/${associatedIndex}/${resourceName}:list`;
     }
     return this.request(url, {
       method: 'get',
@@ -80,13 +80,13 @@ export class Resource {
   }
 
   get(options: GetOptions = {}) {
-    const resourceKey = options.resourceKey || this.options.resourceKey;
+    const resourceIndex = options.resourceIndex || this.options.resourceIndex;
     const { resourceName } = this.options;
-    if (!resourceKey) {
+    if (!resourceIndex) {
       return Promise.resolve({ data: {} });
     }
     const { defaultAppends = [], appends = [], ...others } = options;
-    return this.request(`${resourceName}:get/${resourceKey}`, {
+    return this.request(`${resourceName}:get/${resourceIndex}`, {
       params: {
         ...others,
         'fields[appends]': defaultAppends.concat(appends).join(','),
@@ -95,10 +95,10 @@ export class Resource {
   }
 
   create(values: any) {
-    const { associatedKey, associatedName, resourceName } = this.options;
+    const { associatedIndex, associatedName, resourceName } = this.options;
     let url = `${resourceName}:create`;
-    if (associatedKey && associatedName) {
-      url = `${associatedName}/${associatedKey}/${url}`;
+    if (associatedIndex && associatedName) {
+      url = `${associatedName}/${associatedIndex}/${url}`;
     }
     return this.request(url, {
       method: 'post',
@@ -107,13 +107,13 @@ export class Resource {
   }
 
   save(values: any, options: SaveOptions = {}) {
-    const resourceKey = options.resourceKey || this.options.resourceKey;
-    const { associatedKey, associatedName, resourceName } = this.options;
+    const resourceIndex = options.resourceIndex || this.options.resourceIndex;
+    const { associatedIndex, associatedName, resourceName } = this.options;
     let url = `${resourceName}:${
-      resourceKey ? `update/${resourceKey}` : 'create'
+      resourceIndex ? `update/${resourceIndex}` : 'create'
     }`;
-    if (associatedKey && associatedName) {
-      url = `${associatedName}/${associatedKey}/${url}`;
+    if (associatedIndex && associatedName) {
+      url = `${associatedName}/${associatedIndex}/${url}`;
     }
     return this.request(url, {
       method: 'post',
@@ -171,9 +171,9 @@ export class Resource {
   }
 
   toggle(options?: any) {
-    const { associatedKey, associatedName, resourceName } = this.options;
-    const { resourceKey } = options;
-    let url = `${associatedName}/${associatedKey}/${resourceName}:toggle/${resourceKey}`;
+    const { associatedIndex, associatedName, resourceName } = this.options;
+    const { resourceIndex } = options;
+    let url = `${associatedName}/${associatedIndex}/${resourceName}:toggle/${resourceIndex}`;
     return this.request(url, {
       method: 'post',
     });

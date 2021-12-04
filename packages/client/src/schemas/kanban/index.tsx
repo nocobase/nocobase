@@ -294,11 +294,11 @@ const InternalKanban = observer((props: any) => {
                 [groupField.name]: overColumnId,
               },
               {
-                resourceKey: activeId,
+                resourceIndex: activeId,
               },
             );
             await resource.sort({
-              resourceKey: activeId,
+              resourceIndex: activeId,
               field: 'sort',
               target: lastId
                 ? {
@@ -331,11 +331,11 @@ const InternalKanban = observer((props: any) => {
                 [groupField.name]: overColumnId,
               },
               {
-                resourceKey: activeId,
+                resourceIndex: activeId,
               },
             );
             await resource.sort({
-              resourceKey: activeId,
+              resourceIndex: activeId,
               field: 'sort',
               target: {
                 id: overId,
@@ -347,11 +347,11 @@ const InternalKanban = observer((props: any) => {
                 [groupField.name]: overId,
               },
               {
-                resourceKey: activeId,
+                resourceIndex: activeId,
               },
             );
             await resource.sort({
-              resourceKey: activeId,
+              resourceIndex: activeId,
               field: 'sort',
               target: lastId
                 ? {
@@ -468,7 +468,7 @@ Kanban.useUpdateAction = () => {
   return {
     async run() {
       await resource.save(omit(form.values, ['sort']), {
-        resourceKey: ctx.record.id,
+        resourceIndex: ctx.record.id,
       });
       setVisible(false);
       await service.refresh();
@@ -482,7 +482,7 @@ Kanban.useRowResource = ({ onSuccess }) => {
   const ctx = useContext(KanbanCardContext);
   const resource = useResourceRequest({
     resourceName: collection?.name || props.collectionName,
-    resourceKey: ctx?.record?.id,
+    resourceIndex: ctx?.record?.id,
   });
   const service = useRequest(
     (params?: any) => {
@@ -524,7 +524,7 @@ Kanban.useSingleResource = ({ onSuccess }) => {
 
   const resource = useResourceRequest({
     resourceName: collection?.name || props.collectionName,
-    resourceKey: ctx?.record?.id,
+    resourceIndex: ctx?.record?.id,
   });
   const service = useRequest(
     (params?: any) => {

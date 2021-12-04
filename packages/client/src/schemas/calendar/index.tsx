@@ -279,7 +279,7 @@ Calendar.useResource = ({ onSuccess }) => {
   const record = useContext(RecordContext);
   const resource = useResourceRequest({
     resourceName: collection?.name || props.collectionName,
-    resourceKey: record['id'],
+    resourceIndex: record['id'],
   });
   console.log(
     'collection?.name || props.collectionName',
