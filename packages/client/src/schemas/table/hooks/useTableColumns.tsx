@@ -22,6 +22,10 @@ export const useTableColumns = () => {
 
   const columnSchemas = schema.reduceProperties((columns, current) => {
     if (isColumn(current)) {
+      if (!current['x-component-props']) {
+        current['x-component-props'] = {};
+      }
+      current['x-component-props']['ellipsis'] = true;
       if (current['x-hidden']) {
         return columns;
       }
@@ -45,6 +49,7 @@ export const useTableColumns = () => {
         ),
         dataIndex: column.name,
         ...columnProps,
+        ellipsis: true,
         render: (_: any, record: any) => {
           const index = findIndex(field.value, (item) => item[rowKey] === record[rowKey]);
           return (
