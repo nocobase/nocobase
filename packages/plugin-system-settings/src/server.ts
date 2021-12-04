@@ -14,14 +14,14 @@ export default {
     const SystemSetting = database.getModel('system_settings');
   
     resourcer.use(async (ctx, next) => {
-      const { actionName, resourceName, resourceKey } = ctx.action.params;
+      const { actionName, resourceName, resourceIndex } = ctx.action.params;
       if (resourceName === 'system_settings' && actionName === 'get') {
         let model = await SystemSetting.findOne();
         if (!model) {
           model = await SystemSetting.create();
         }
         ctx.action.mergeParams({
-          resourceKey: model.id,
+          resourceIndex: model.id,
         });
       }
       await next();

@@ -9,14 +9,14 @@ describe('destroy', () => {
       dataWrapping: false,
     });
     registerActions(api);
-    api.db.table({
+    api.collection({
       name: 'posts',
       fields: [
         { type: 'string', name: 'title' },
         { type: 'hasMany', name: 'comments' },
       ],
     });
-    api.db.table({
+    api.collection({
       name: 'comments',
       fields: [{ type: 'string', name: 'content' }],
     });
@@ -35,8 +35,8 @@ describe('destroy', () => {
         where: { id: post.id },
       }),
     ).toBe(1);
-    await api.resource('posts').destroy({
-      resourceKey: post.id,
+    await api.agent().resource('posts').destroy({
+      resourceIndex: post.id,
     });
     expect(
       await Post.count({
@@ -52,9 +52,9 @@ describe('destroy', () => {
     await post.updateAssociations({
       comments: [comment],
     });
-    await api.resource('posts.comments').destroy({
-      resourceKey: comment.id,
-      associatedKey: post.id,
+    await api.agent().resource('posts.comments').destroy({
+      resourceIndex: comment.id,
+      associatedIndex: post.id,
     });
     const comment2 = await Comment.findByPk(comment.id);
     expect(comment2).toBeNull();

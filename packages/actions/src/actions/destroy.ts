@@ -27,8 +27,8 @@ export async function destroy(ctx: Context, next: Next) {
     resourceField,
     associatedName,
     resourceName,
-    resourceKey,
-    resourceKeyAttribute,
+    resourceIndex,
+    resourceIndexAttribute,
     filter,
   } = ctx.action.params;
   const transaction = await ctx.db.sequelize.transaction();
@@ -58,11 +58,11 @@ export async function destroy(ctx: Context, next: Next) {
       resourceField instanceof BELONGSTOMANY
     ) {
       const primaryKey =
-        resourceKeyAttribute ||
+        resourceIndexAttribute ||
         resourceField.options.targetKey ||
         TargetModel.primaryKeyAttribute;
       const models: Model[] = await associated[getAccessor]({
-        where: resourceKey ? { [primaryKey]: resourceKey } : where,
+        where: resourceIndex ? { [primaryKey]: resourceIndex } : where,
         ...commonOptions,
       });
       // TODO：不能程序上解除关系，直接通过 onDelete 触发，或者通过 afterDestroy 处理
@@ -79,9 +79,9 @@ export async function destroy(ctx: Context, next: Next) {
   } else {
     const Model = ctx.db.getModel(resourceName);
     const { where } = Model.parseApiJson({ filter, context: ctx });
-    const primaryKey = resourceKeyAttribute || Model.primaryKeyAttribute;
+    const primaryKey = resourceIndexAttribute || Model.primaryKeyAttribute;
     count = await Model.destroy({
-      where: resourceKey ? { [primaryKey]: resourceKey } : where,
+      where: resourceIndex ? { [primaryKey]: resourceIndex } : where,
       // @ts-ignore hooks 里添加 context
       ...commonOptions,
       individualHooks: true,

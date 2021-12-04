@@ -152,13 +152,13 @@ const useAssociationResource = (options) => {
   const collectionField = useContext(CollectionFieldContext);
   const { collection } = useCollectionContext();
   const ctx = useContext(TableRowContext);
-  const associatedKey = ctx?.record?.id;
+  const associatedIndex = ctx?.record?.id;
   console.log('useAssociationResource', collection, collectionField, schema['x-component-props']);
   const { associatedName, resourceName } = schema['x-component-props'] || {};
   const resource = useResourceRequest({
     associatedName,
     resourceName,
-    associatedKey,
+    associatedIndex,
   });
   const service = useRequest((params) => resource.list(params), {
     manual: schema['x-component'] === 'Form',

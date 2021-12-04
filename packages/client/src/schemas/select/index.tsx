@@ -489,7 +489,7 @@ Select.Drawer.useResource = ({ onSuccess }) => {
   const ctx = useContext(OptionTagContext);
   const resource = useResourceRequest({
     resourceName: collection?.name,
-    resourceKey: ctx.data.id,
+    resourceIndex: ctx.data.id,
   });
   console.log('OptionTagContext', ctx.data.id);
   const { schema } = useDesignable();

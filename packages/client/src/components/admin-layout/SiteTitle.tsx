@@ -10,12 +10,12 @@ export const SystemSettingsContext = createContext(null);
 export function SystemSettingsProvider(props) {
   const resource = useResourceRequest({
     resourceName: 'system_settings',
-    resourceKey: 1,
+    resourceIndex: 1,
   });
   const service = useRequest(
     () =>
       resource.get({
-        resourceKey: 1,
+        resourceIndex: 1,
         appends: ['logo'],
       }),
     {

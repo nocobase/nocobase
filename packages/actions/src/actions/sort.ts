@@ -18,10 +18,10 @@ import {
 export async function sort(ctx: Context, next: Next) {
   const {
     resourceName,
-    resourceKey,
+    resourceIndex,
     resourceField,
     associatedName,
-    associatedKey,
+    associatedIndex,
     associated,
     values = {},
     ...others
@@ -41,7 +41,7 @@ export async function sort(ctx: Context, next: Next) {
   const table = ctx.db.getTable(resourceName);
   const { primaryKeyAttribute } = Model;
 
-  const sourceId = others.sourceId || resourceKey;
+  const sourceId = others.sourceId || resourceIndex;
   const field = others.sortField || values?.sortField || values?.field || 'sort';
   const targetId = others.targetId || values?.targetId || values?.target?.[primaryKeyAttribute];
   const method = others.method || values?.method;
@@ -70,7 +70,7 @@ export async function sort(ctx: Context, next: Next) {
   const where = {};
 
   if (associated && resourceField instanceof HASMANY) {
-    where[resourceField.options.foreignKey] = associatedKey;
+    where[resourceField.options.foreignKey] = associatedIndex;
   }
 
   // 找到操作对象

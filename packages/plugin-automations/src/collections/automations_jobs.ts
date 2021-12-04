@@ -84,7 +84,7 @@ export default {
             // condition: "{{ $self.value }}",
             schema: {
               "x-component-props": {
-                "associatedKey": "{{ typeof $self.value === 'string' ? $self.value : $form.values.collection_name }}",
+                "associatedIndex": "{{ typeof $self.value === 'string' ? $self.value : $form.values.collection_name }}",
                 "sourceName": "{{ $form.values.automation ? $form.values.automation.collection_name : null }}"
               },
             },
@@ -95,7 +95,7 @@ export default {
             // condition: "{{ $self.value }}",
             schema: {
               "x-component-props": {
-                "associatedKey": "{{ typeof $self.value === 'string' ? $self.value : $form.values.collection_name }}",
+                "associatedIndex": "{{ typeof $self.value === 'string' ? $self.value : $form.values.collection_name }}",
                 "sourceName": "{{ $form.values.automation ? $form.values.automation.collection_name : null }}"
               },
             },

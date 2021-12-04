@@ -20,7 +20,7 @@ export const useTableUpdateAction = () => {
     async run() {
       if (refreshRequestOnChange) {
         await resource.save(form.values, {
-          resourceKey: ctx.record[rowKey],
+          resourceIndex: ctx.record[rowKey],
         });
         if (formService) {
           await formService.refresh();

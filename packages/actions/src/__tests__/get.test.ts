@@ -32,8 +32,8 @@ describe('get', () => {
   it('get', async () => {
     const Post = api.db.getModel('posts');
     const post = await Post.create({ title: 't1' });
-    const response = await api.resource('posts').get({
-      resourceKey: post.id,
+    const response = await api.agent().resource('posts').get({
+      resourceIndex: post.id,
       fields: ['id', 'title']
     });
     expect(post.toJSON()).toMatchObject(response.body);
@@ -46,9 +46,9 @@ describe('get', () => {
     await post.updateAssociations({
       comments: [comment]
     });
-    const response = await api.resource('posts.comments').get({
-      resourceKey: comment.id,
-      associatedKey: post.id,
+    const response = await api.agent().resource('posts.comments').get({
+      resourceIndex: comment.id,
+      associatedIndex: post.id,
       fields: ['id', 'post_id', 'content']
     });
     const comment2 = await Comment.findByPk(comment.id);

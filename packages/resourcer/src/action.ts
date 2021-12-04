@@ -149,7 +149,7 @@ export interface ActionParams {
   /**
    * 资源标识符
    */
-  resourceKey?: string;
+  resourceIndex?: string;
   /**
    * 资源的从属关系
    */
@@ -157,7 +157,7 @@ export interface ActionParams {
   /**
    * 从属关系的标识符
    */
-  associatedKey?: string;
+  associatedIndex?: string;
   /**
    * 从属关系的当前实例
    */

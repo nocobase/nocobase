@@ -66,7 +66,7 @@ const useFieldPermissions = () => {
   };
   const resource = useResourceRequest({
     associatedName: 'collections',
-    associatedKey: ctx.record.name,
+    associatedIndex: ctx.record.name,
     resourceName: 'fields',
   });
   const service = useRequest(

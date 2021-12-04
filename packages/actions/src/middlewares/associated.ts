@@ -7,9 +7,9 @@ export async function associated(ctx: Context, next: Next) {
     return next();
   }
 
-  const { associated, associatedName, associatedKey, resourceName } = ctx.action.params;
+  const { associated, associatedName, associatedIndex, resourceName } = ctx.action.params;
 
-  if (!associatedName || !associatedKey) {
+  if (!associatedName || !associatedIndex) {
     return next();
   }
 
@@ -37,7 +37,7 @@ export async function associated(ctx: Context, next: Next) {
   if (key) {
     const model = await Model.findOne({
       where: {
-        [key]: associatedKey,
+        [key]: associatedIndex,
       }
     });
     if (model) {

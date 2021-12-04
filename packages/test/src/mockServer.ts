@@ -15,17 +15,17 @@ interface ActionParams {
   perPage?: number;
   values?: any;
   resourceName?: string;
-  resourceKey?: string;
+  resourceIndex?: string;
   associatedName?: string;
-  associatedKey?: string;
+  associatedIndex?: string;
   [key: string]: any;
 }
 
 interface SortActionParams {
   resourceName?: string;
-  resourceKey?: any;
+  resourceIndex?: any;
   associatedName?: string;
-  associatedKey?: any;
+  associatedIndex?: any;
   sourceId?: any;
   targetId?: any;
   sortField?: string;
@@ -58,21 +58,21 @@ export class MockServer extends Application {
               get(target, method: string, receiver) {
                 return (params: ActionParams = {}) => {
                   const {
-                    associatedKey,
-                    resourceKey,
+                    associatedIndex,
+                    resourceIndex,
                     values = {},
                     file,
                     ...restParams
                   } = params;
                   let url = prefix;
                   if (keys.length > 1) {
-                    url = `/${keys[0]}/${associatedKey}/${keys[1]}`
+                    url = `/${keys[0]}/${associatedIndex}/${keys[1]}`
                   } else {
                     url = `/${name}`;
                   }
                   url += `:${method as string}`;
-                  if (resourceKey) {
-                    url += `/${resourceKey}`;
+                  if (resourceIndex) {
+                    url += `/${resourceIndex}`;
                   }
 
                   switch (method) {

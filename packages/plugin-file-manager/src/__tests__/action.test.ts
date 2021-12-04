@@ -94,21 +94,21 @@ describe('action', () => {
   });
 
   describe('belongsTo attachment', () => {
-    it('upload with associatedKey, fail as 400 because file mimetype does not match', async () => {
+    it('upload with associatedIndex, fail as 400 because file mimetype does not match', async () => {
       const User = db.getModel('users');
       const user = await User.create();
       const response = await agent.resource('users.avatar').upload({
-        associatedKey: user.id,
+        associatedIndex: user.id,
         file: path.resolve(__dirname, './files/text.txt')
       });
       expect(response.status).toBe(400);
     });
 
-    it('upload with associatedKey', async () => {
+    it('upload with associatedIndex', async () => {
       const User = db.getModel('users');
       const user = await User.create();
       const { body } = await agent.resource('users.avatar').upload({
-        associatedKey: user.id,
+        associatedIndex: user.id,
         file: path.resolve(__dirname, './files/image.png'),
         values: { width: 100, height: 100 }
       });
@@ -155,7 +155,7 @@ describe('action', () => {
       const User = db.getModel('users');
       const user = await User.create();
       const { body } = await agent.resource('users.pubkeys').upload({
-        associatedKey: user.id,
+        associatedIndex: user.id,
         file: path.resolve(__dirname, './files/text.txt'),
         values: {}
       });
@@ -167,8 +167,8 @@ describe('action', () => {
       expect(content.text).toBe('Hello world!\n');
     });
 
-    // TODO(bug): 没有 associatedKey 时路径解析资源名称不对，无法进入 action
-    it.skip('upload without associatedKey', async () => {
+    // TODO(bug): 没有 associatedIndex 时路径解析资源名称不对，无法进入 action
+    it.skip('upload without associatedIndex', async () => {
       const { body } = await agent.resource('users.avatar').upload({
         file: path.resolve(__dirname, './files/image.png'),
         values: { width: 100, height: 100 }

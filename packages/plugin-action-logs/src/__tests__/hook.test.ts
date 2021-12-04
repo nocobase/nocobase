@@ -1,5 +1,4 @@
 import Database from '@nocobase/database';
-import { registerActions } from '@nocobase/actions';
 import { mockServer, MockServer } from '@nocobase/test';
 import logPlugin from '../server';
 
@@ -9,13 +8,9 @@ describe('hook', () => {
 
   beforeEach(async () => {
     api = mockServer();
-    api.registerPlugin({
-      collections: require('@nocobase/plugin-collections/src/server').default,
-      users: require('@nocobase/plugin-users/src/server').default,
-      logs: logPlugin,
-    });
-    registerActions(api);
-    await api.loadPlugins();
+    api.plugin(require('@nocobase/plugin-users').default);
+    api.plugin(logPlugin);
+    await api.load();
     db = api.db;
     db.table({
       name: 'posts',
@@ -34,8 +29,7 @@ describe('hook', () => {
     });
     await db.sync();
     const User = db.getModel('users');
-    const user = await User.create({ nickname: 'a', token: 'token1' });
-    api.agent().set('Authorization', `Bearer ${user.token}`);
+    await User.create({ nickname: 'a', token: 'token1' });
   });
 
   afterEach(async () => {
@@ -53,15 +47,17 @@ describe('hook', () => {
   });
 
   it('resource', async () => {
-    const response = await api.resource('posts').create({
+    const agent = api.agent()
+    agent.set('Authorization', `Bearer token1`);
+    const response = await agent.resource('posts').create({
       values: { title: 't1' },
     });
-    await api.resource('posts').update({
-      resourceKey: response.body.data.id,
+    await agent.resource('posts').update({
+      resourceIndex: response.body.data.id,
       values: { title: 't2' },
     });
-    await api.resource('posts').destroy({
-      resourceKey: response.body.data.id,
+    await agent.resource('posts').destroy({
+      resourceIndex: response.body.data.id,
     });
     const ActionLog = db.getModel('action_logs');
     const count = await ActionLog.count();
