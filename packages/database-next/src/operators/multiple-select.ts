@@ -6,6 +6,11 @@ const getFieldName = (ctx) => {
   return fieldName;
 };
 
+const escape = (value, ctx) => {
+  const sequelize: Sequelize = ctx.db.sequelize;
+  return sequelize.escape(value);
+};
+
 const sqliteExistQuery = (value, ctx) => {
   const fieldName = getFieldName(ctx);
 
@@ -13,14 +18,16 @@ const sqliteExistQuery = (value, ctx) => {
     .map((v) => JSON.stringify(v.toString()))
     .join(', ')})`;
 
-  const subQuery = `exists (select * from json_each(${fieldName}) where json_each.value in ${sqlArray})`;
+  const subQuery = `exists (select * from json_each(${fieldName}) where json_each.value in ${escape(
+    sqlArray,
+    ctx,
+  )})`;
 
   return subQuery;
 };
 
 const sqliteEmptyQuery = (ctx, operator: '=' | '>') => {
-  const paths = ctx.path.split('.');
-  const fieldName = paths[paths.length - 2];
+  const fieldName = getFieldName(ctx);
 
   let funcName = 'json_array_length';
   let ifNull = 'IFNULL';
@@ -50,7 +57,9 @@ export default {
       };
     }
 
-    return { [Op.eq]: Sequelize.fn('json', JSON.stringify(value)) };
+    return {
+      [Op.eq]: Sequelize.fn('json', escape(JSON.stringify(value), ctx)),
+    };
   },
 
   $notMatch(value, ctx) {
@@ -59,11 +68,16 @@ export default {
       // pg single quote
       const queryValue = JSON.stringify(value).replace("'", "''");
       return Sequelize.literal(
-        `not (${fieldName} <@ '${queryValue}'::JSONB and ${fieldName} @> '${queryValue}'::JSONB)`,
+        `not (${fieldName} <@ ${escape(
+          queryValue,
+          ctx,
+        )}::JSONB and ${fieldName} @> ${escape(queryValue, ctx)}::JSONB)`,
       );
     }
 
-    return { [Op.ne]: Sequelize.fn('json', JSON.stringify(value)) };
+    return {
+      [Op.ne]: Sequelize.fn('json', JSON.stringify(escape(value, ctx))),
+    };
   },
 
   // TODO sql injection
@@ -86,7 +100,9 @@ export default {
       const fieldName = getFieldName(ctx);
       // pg single quote
       const queryValue = JSON.stringify(value).replace("'", "''");
-      return Sequelize.literal(`not (${fieldName} @> '${queryValue}'::JSONB)`);
+      return Sequelize.literal(
+        `not (${fieldName} @> ${escape(queryValue, ctx)}::JSONB)`,
+      );
     }
 
     const subQuery = sqliteExistQuery(value, ctx);
