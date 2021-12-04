@@ -22,6 +22,9 @@ export const useTableColumns = () => {
 
   const columnSchemas = schema.reduceProperties((columns, current) => {
     if (isColumn(current)) {
+      if (!current['x-component-props']) {
+        current['x-component-props'] = {};
+      }
       current['x-component-props']['ellipsis'] = true;
       if (current['x-hidden']) {
         return columns;
