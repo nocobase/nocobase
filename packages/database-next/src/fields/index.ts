@@ -20,20 +20,23 @@ import { TimeFieldOptions } from './time-field';
 import { DateFieldOptions } from './date-field';
 import { ArrayFieldOptions } from './array-field';
 
-export * from './field';
-export * from './string-field';
-export * from './relation-field';
+export * from './array-field';
 export * from './belongs-to-field';
 export * from './belongs-to-many-field';
 export * from './boolean-field';
-export * from './has-one-field';
-export * from './has-many-field';
-export * from './json-field';
-export * from './sort-field';
-export * from './number-field';
-export * from './uid-field';
 export * from './date-field';
-export * from './array-field';
+export * from './has-many-field';
+export * from './has-one-field';
+export * from './json-field';
+export * from './number-field';
+export * from './relation-field';
+export * from './sort-field';
+export * from './string-field';
+export * from './text-field';
+export * from './time-field';
+export * from './uid-field';
+export * from './virtual-field';
+export * from './field';
 
 export type FieldOptions =
   | StringFieldOptions
