@@ -43,4 +43,16 @@ export default {
   $dateNotAfter(value) {
     return { [Op.lt]: getNextDay(value) };
   },
+
+  $empty() {
+    return {
+      [Op.is]: null,
+    };
+  },
+
+  $notEmpty() {
+    return {
+      [Op.not]: null,
+    };
+  },
 };
