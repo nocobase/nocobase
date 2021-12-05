@@ -22,7 +22,7 @@ const sqliteExistQuery = (value, ctx) => {
   return subQuery;
 };
 
-const sqliteEmptyQuery = (ctx, operator: '=' | '>') => {
+const emptyQuery = (ctx, operator: '=' | '>') => {
   const fieldName = getFieldName(ctx);
 
   let funcName = 'json_array_length';
@@ -141,7 +141,7 @@ export default {
   },
 
   $arrayEmpty(value, ctx) {
-    const subQuery = sqliteEmptyQuery(ctx, '=');
+    const subQuery = emptyQuery(ctx, '=');
 
     return {
       [Op.and]: [Sequelize.literal(`${subQuery}`)],
@@ -149,7 +149,7 @@ export default {
   },
 
   $arrayNotEmpty(value, ctx) {
-    const subQuery = sqliteEmptyQuery(ctx, '>');
+    const subQuery = emptyQuery(ctx, '>');
 
     return {
       [Op.and]: [Sequelize.literal(`${subQuery}`)],
