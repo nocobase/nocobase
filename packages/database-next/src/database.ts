@@ -124,7 +124,7 @@ export class Database extends EventEmitter implements AsyncEmitter {
   }
 
   /**
-   * get exists collection by it's name
+   * get exists collection by its name
    * @param name
    */
   getCollection(name: string): Collection {

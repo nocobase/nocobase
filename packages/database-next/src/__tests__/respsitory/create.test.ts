@@ -1,7 +1,8 @@
 import { mockDatabase } from '../index';
+import Database from '../../database';
 
 describe('create', () => {
-  let db;
+  let db: Database;
   let User;
   let Post;
 
