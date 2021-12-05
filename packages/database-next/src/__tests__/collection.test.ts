@@ -36,22 +36,6 @@ test('collection create field', async () => {
   expect(collection.hasField('age')).toBeFalsy();
 });
 
-test('create unknown type field', () => {
-  const db = mockDatabase();
-  const collection = new Collection(
-    {
-      name: 'user',
-    },
-    { database: db },
-  );
-
-  expect(() => {
-    collection.addField('age', {
-      type: 'unknown_type',
-    });
-  }).toThrow(new Error('unsupported field type unknown_type'));
-});
-
 test('collection set fields', () => {
   const db = mockDatabase();
   const collection = new Collection(
