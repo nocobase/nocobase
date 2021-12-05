@@ -25,7 +25,7 @@ toc: menu
 - empty
 - notEmpty
 
-## select
+## enum
 
 - eq
 - ne
@@ -34,7 +34,7 @@ toc: menu
 - empty
 - notEmpty
 
-## multipleSelect
+## array
 
 - match
 - notMatch
