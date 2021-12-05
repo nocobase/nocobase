@@ -19,9 +19,7 @@ class Application {
 ##### Examples
 
 ```ts
-app.db.on('xxx', () => {
-
-});
+app.db.close();
 ```
 
 ## app.resourcer
@@ -92,13 +90,22 @@ app.i18n.t('Hello');
 
 等同于 app.resourcer.registerActions()
 
+```ts
+app.actions({
+  async test(ctx, next) {
+    ctx.body = 'hello world';
+    await next();
+  },
+});
+```
+
 ## app.resource() <Badge>待完善</Badge>
 
 等同于 app.resourcer.define()
 
 ## app.parse()
 
-等同于 app.cli.parse()
+等同于 app.cli.parseAsync()
 
 ## app.load() <Badge>待完善</Badge>
 
