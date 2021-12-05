@@ -8,9 +8,7 @@ async function _export(ctx: Context, next: Next) {
     columns = JSON.parse(columns);
   }
   ctx.action.mergeParams({
-    'fields[appends]': columns.map((column: any) => column.name).join(','),
-  }, {
-    payload: 'replace',
+    'appends': columns.map((column: any) => column.name).join(','),
   });
   console.log({ columns });
   await actions.list(ctx, async () => {

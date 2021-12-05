@@ -22,7 +22,9 @@ export async function get(ctx: Context, next: Next) {
     resourceName,
     resourceIndex,
     resourceIndexAttribute,
-    fields = []
+    fields = [],
+    appends = [],
+    except = [],
   } = ctx.action.params;
   if (associated && resourceField) {
     const AssociatedModel = ctx.db.getModel(associatedName);
@@ -33,6 +35,8 @@ export async function get(ctx: Context, next: Next) {
     const TargetModel = ctx.db.getModel(resourceField.getTarget());
     const options = TargetModel.parseApiJson({
       fields,
+      appends,
+      except,
     });
     if (resourceField instanceof HASONE || resourceField instanceof BELONGSTO) {
       let model: Model = await associated[getAccessor]({ context: ctx });
@@ -60,6 +64,8 @@ export async function get(ctx: Context, next: Next) {
     const Model = ctx.db.getModel(resourceName);
     const options = Model.parseApiJson({
       fields,
+      appends,
+      except,
     });
     const data = await Model.findOne({
       ...options,

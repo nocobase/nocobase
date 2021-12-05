@@ -5,17 +5,10 @@ export const create = async (ctx: Context, next: Next) => {
   const values = cloneDeep(ctx.action.params.values);
   ctx.action.mergeParams(
     {
-      values: cloneDeep(
-        omit(values, [
-          '__insertAfter__',
-          '__insertBefore__',
-          '__prepend__',
-          '_isJSONSchemaObject',
-        ]),
-      ),
+      values: cloneDeep(omit(values, ['__insertAfter__', '__insertBefore__', '__prepend__', '_isJSONSchemaObject'])),
     },
     {
-      payload: 'replace',
+      values: 'overwrite',
     },
   );
   await actions.create(ctx, async () => {});
@@ -23,23 +16,18 @@ export const create = async (ctx: Context, next: Next) => {
   const targetKey = values['__insertAfter__'] || values['__insertBefore__'];
   if (sticky || targetKey) {
     const body = ctx.body;
-    ctx.action.mergeParams(
-      {
-        associatedIndex: values.parentKey,
-        resourceIndex: body.key,
-        ...(sticky
-          ? {
-              sticky: true,
-            }
-          : {
-              method: values['__insertAfter__'] ? 'insertAfter' : null,
-              targetId: targetKey,
-            }),
-      },
-      {
-        payload: 'replace',
-      },
-    );
+    ctx.action.mergeParams({
+      associatedIndex: values.parentKey,
+      resourceIndex: body.key,
+      ...(sticky
+        ? {
+            sticky: true,
+          }
+        : {
+            method: values['__insertAfter__'] ? 'insertAfter' : null,
+            targetId: targetKey,
+          }),
+    });
     await middlewares.associated(ctx, async () => {});
     await actions.sort(ctx, async () => {});
   }
@@ -50,17 +38,10 @@ export const update = async (ctx: Context, next: Next) => {
   const values = cloneDeep(ctx.action.params.values);
   ctx.action.mergeParams(
     {
-      values: cloneDeep(
-        omit(values, [
-          '__insertAfter__',
-          '__insertBefore__',
-          '__prepend__',
-          '_isJSONSchemaObject',
-        ]),
-      ),
+      values: cloneDeep(omit(values, ['__insertAfter__', '__insertBefore__', '__prepend__', '_isJSONSchemaObject'])),
     },
     {
-      payload: 'replace',
+      values: 'overwrite',
     },
   );
   await actions.update(ctx, async () => {});
@@ -68,24 +49,19 @@ export const update = async (ctx: Context, next: Next) => {
   const targetKey = values['__insertAfter__'] || values['__insertBefore__'];
   if (sticky || targetKey) {
     const body = ctx.body;
-    ctx.action.mergeParams(
-      {
-        associatedIndex: values.parentKey,
-        resourceIndex: body.key,
-        ...(sticky
-          ? {
-              sticky: true,
-            }
-          : {
-              method: values['__insertAfter__'] ? 'insertAfter' : null,
-              // insertAfter: !!values['__insertAfter__'],
-              targetId: targetKey,
-            }),
-      },
-      {
-        payload: 'replace',
-      },
-    );
+    ctx.action.mergeParams({
+      associatedIndex: values.parentKey,
+      resourceIndex: body.key,
+      ...(sticky
+        ? {
+            sticky: true,
+          }
+        : {
+            method: values['__insertAfter__'] ? 'insertAfter' : null,
+            // insertAfter: !!values['__insertAfter__'],
+            targetId: targetKey,
+          }),
+    });
     // console.log(ctx.action.params.values);
     await middlewares.associated(ctx, async () => {});
     await actions.sort(ctx, async () => {});

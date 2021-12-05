@@ -5,6 +5,8 @@ import { requireModule } from './utils';
 import { HandlerType } from './resourcer';
 import Middleware, { MiddlewareType } from './middleware';
 import { ActionParameterTypes, ActionParameter, UnknownParameter, PageParameter } from './parameter';
+import deepmerge from 'deepmerge';
+import { assign, MergeStrategies } from './assign';
 
 export type ActionType = string | HandlerType | ActionOptions;
 
@@ -17,19 +19,22 @@ export interface ActionContext {
   [key: string]: any;
 }
 
-export type FieldsOptions = string[] | {
-  only?: string[];
-  appends?: string[];
-} | {
-  except?: string[];
-  appends?: string[];
-};
+export type FieldsOptions =
+  | string[]
+  | {
+      only?: string[];
+      appends?: string[];
+    }
+  | {
+      except?: string[];
+      appends?: string[];
+    };
 
 export type FieldsOptionsFn = (ctx: ActionContext) => FieldsOptions | Promise<FieldsOptions>;
 
 /**
  * 过滤参数
- * 
+ *
  * TODO：细节待定
  */
 export interface FilterOptions {
@@ -47,21 +52,30 @@ export interface ActionOptions {
   values?: any;
   /**
    * 字段
-   * 
+   *
    * 示例一：
    * ['col1', 'col2', 'relation.col1'];
-   * 
+   *
    * 示例二：
    * {
    *  only: ['col1'],
    * }
-   * 
+   *
    * 示例三：
    * {
    *  except: ['col1'],
    * }
    */
-  fields?: FieldsOptions;
+  fields?: string[];
+
+  appends?: string[];
+
+  except?: string[];
+
+  whitelist?: string[];
+
+  blacklist?: string[];
+
   /**
    * 过滤
    */
@@ -69,7 +83,7 @@ export interface ActionOptions {
   /**
    * 排序
    */
-  sort?: string | string[];
+  sort?: string[];
   /**
    * 当前页码
    */
@@ -88,13 +102,13 @@ export interface ActionOptions {
   middleware?: MiddlewareType;
   /**
    * 中间件
-   * 
+   *
    * 与 middleware 用法相同
    */
   middlewares?: MiddlewareType;
   /**
    * 当前 Action 待执行的方法
-   * 
+   *
    * 支持 Function 和 require 调用
    */
   handler?: HandlerType;
@@ -112,21 +126,26 @@ export interface ActionOptions {
 export interface ActionParams {
   /**
    * 输出哪些字段
-   * 
+   *
    * 与 ActionOptions 的不同，这里的 fields 是 object，提供 only，except，appends 三种情况
    */
-  fields?: {
-    only?: string[];
-    except?: string[];
-    appends?: string[];
-  };
+  fields?: string[];
+
+  appends?: string[];
+
+  except?: string[];
+
+  whitelist?: string[];
+
+  blacklist?: string[];
+
   /**
    * 过滤
    */
   filter?: FilterOptions;
   /**
    * 排序
-   * 
+   *
    * 与 ActionOptions 的不同，这里的 sort 只有一种 array 类型
    */
   sort?: string[];
@@ -173,7 +192,6 @@ export interface ActionParams {
 }
 
 export class Action {
-
   protected handler: any;
 
   protected resource: Resource;
@@ -182,9 +200,9 @@ export class Action {
 
   protected options: ActionOptions;
 
-  protected parameters: Map<string, ActionParameter | UnknownParameter> = new Map();
-
   protected context: ActionContext = {};
+
+  public params: ActionParams = {};
 
   public readonly middlewares: Array<Middleware> = [];
 
@@ -193,24 +211,11 @@ export class Action {
     if (typeof options === 'function') {
       options = { handler: options };
     }
-    const {
-      middleware,
-      middlewares = [],
-      handler,
-      ...params
-    } = options;
+    const { middleware, middlewares = [], handler, ...params } = options;
     this.middlewares = Middleware.toInstanceArray(middleware || middlewares);
     this.handler = handler;
     this.options = options;
-    this.mergeParams(params, {});
-  }
-
-  get params(): ActionParams {
-    const result = this.parameters.get('_').get();
-    for (const paramType of this.parameters.values()) {
-      Object.assign(result, paramType.get());
-    }
-    return result;
+    this.mergeParams(params);
   }
 
   clone() {
@@ -228,36 +233,17 @@ export class Action {
     this.context = context;
   }
 
-  async mergeParams(params, strategies = {}) {
-    const typeKeys = new Set<string>();
-    Object.keys(params).forEach(key => {
-      for (const typeKey of ActionParameterTypes.getAllKeys()) {
-        if (typeof params[key] !== 'undefined' && key in ActionParameterTypes.get(typeKey).picking) {
-          typeKeys.add(typeKey);
-        }
-      }
+  mergeParams(params: ActionParams, strategies: MergeStrategies = {}) {
+    assign(this.params, params, {
+      filter: 'andMerge',
+      fields: 'intersect',
+      appends: 'union',
+      except: 'union',
+      whitelist: 'intersect',
+      blacklist: 'intersect',
+      sort: 'overwrite',
+      ...strategies,
     });
-    let type;
-    for (const key of typeKeys) {
-      const strategy = strategies[key];
-      type = this.parameters.get(key);
-      if (!type) {
-        const Type = ActionParameterTypes.get(key);
-        if (!Type) {
-          throw new Error(`parameter type ${key} is unregistered`);
-        }
-        // @ts-ignore
-        type = new Type(params);
-        this.parameters.set(key, type);
-      }
-      type.merge(params, strategy);
-    }
-    type = this.parameters.get('_');
-    if (!type) {
-      type = new UnknownParameter(params);
-      this.parameters.set('_', type);
-    }
-    type.merge(params, strategies['_']);
   }
 
   setResource(resource: Resource) {
@@ -284,8 +270,8 @@ export class Action {
 
   getMiddlewareHandlers() {
     return this.middlewares
-      .filter(middleware => middleware.canAccess(this.name))
-      .map(middleware => middleware.getHandler());
+      .filter((middleware) => middleware.canAccess(this.name))
+      .map((middleware) => middleware.getHandler());
   }
 
   getHandler() {
@@ -297,7 +283,9 @@ export class Action {
   }
 
   getHandlers() {
-    return [...this.resource.resourcer.getMiddlewares(), ...this.getMiddlewareHandlers(), this.getHandler()].filter(Boolean);
+    return [...this.resource.resourcer.getMiddlewares(), ...this.getMiddlewareHandlers(), this.getHandler()].filter(
+      Boolean,
+    );
   }
 
   async execute(context: any, next?: any) {
@@ -305,18 +293,20 @@ export class Action {
   }
 
   static toInstanceMap(actions: object, resource?: Resource) {
-    return new Map(Object.entries(actions).map(([key, options]) => {
-      let action: Action;
-      if (options instanceof Action) {
-        action = options;
-      } else {
-        action = new Action(options);
-      }
-      action.setName(key);
-      action.setResource(resource);
-      resource && action.middlewares.unshift(...resource.middlewares);
-      return [key, action];
-    }));
+    return new Map(
+      Object.entries(actions).map(([key, options]) => {
+        let action: Action;
+        if (options instanceof Action) {
+          action = options;
+        } else {
+          action = new Action(options);
+        }
+        action.setName(key);
+        action.setResource(resource);
+        resource && action.middlewares.unshift(...resource.middlewares);
+        return [key, action];
+      }),
+    );
   }
 }
 

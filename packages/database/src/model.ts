@@ -1,19 +1,6 @@
-import {
-  Model as SequelizeModel,
-  Op,
-  Sequelize,
-  ProjectionAlias,
-  Utils,
-  SaveOptions,
-} from 'sequelize';
+import { Model as SequelizeModel, Op, Sequelize, ProjectionAlias, Utils, SaveOptions } from 'sequelize';
 import Database from './database';
-import {
-  getDataTypeKey,
-  HASONE,
-  HASMANY,
-  BELONGSTO,
-  BELONGSTOMANY,
-} from './fields';
+import { getDataTypeKey, HASONE, HASMANY, BELONGSTO, BELONGSTOMANY } from './fields';
 import { toInclude } from './utils';
 
 export interface ApiJsonOptions {
@@ -181,20 +168,12 @@ export abstract class Model extends SequelizeModel {
    *
    * @param options
    */
-  static withCountAttribute(
-    options?: string | WithCountAttributeOptions,
-  ): string | ProjectionAlias {
+  static withCountAttribute(options?: string | WithCountAttributeOptions): string | ProjectionAlias {
     if (typeof options === 'string') {
       options = { association: options };
     }
 
-    const {
-      sourceAlias,
-      association,
-      where = {},
-      alias,
-      ...restOptions
-    } = options;
+    const { sourceAlias, association, where = {}, alias, ...restOptions } = options;
     const associator = this.associations[association];
     const table = this.database.getTable(this.name);
     const field = table.getField(association);
@@ -211,9 +190,7 @@ export abstract class Model extends SequelizeModel {
             attributes: [otherKey],
             where: {
               [foreignKey]: {
-                [Op.eq]: Sequelize.col(
-                  `${sourceAlias || this.name}.${sourceKey}`,
-                ),
+                [Op.eq]: Sequelize.col(`${sourceAlias || this.name}.${sourceKey}`),
               },
               // @ts-ignore
               ...(associator.through.scope || {}),
@@ -242,11 +219,10 @@ export abstract class Model extends SequelizeModel {
           },
         })})`,
       ),
-      alias ||
-        Utils.underscoredIf(`${association}Count`, this.options.underscored),
+      alias || Utils.underscoredIf(`${association}Count`, this.options.underscored),
     ].filter(Boolean);
 
-    return (attribute as unknown) as ProjectionAlias;
+    return attribute as unknown as ProjectionAlias;
   }
 
   /**
@@ -256,13 +232,25 @@ export abstract class Model extends SequelizeModel {
    */
   static selectQuery(options = {}): string {
     // @ts-ignore
-    return this.queryGenerator
-      .selectQuery(this.getTableName(), options, this)
-      .replace(/;$/, '');
+    return this.queryGenerator.selectQuery(this.getTableName(), options, this).replace(/;$/, '');
   }
 
   static parseApiJson(options: ApiJsonOptions) {
-    const { fields, filter, sort, context, page, perPage } = options;
+    const { filter, sort, context, page, perPage } = options;
+    let fields = {};
+    if (options.fields) {
+      if (Array.isArray(options.fields) && options.fields.length) {
+        fields['only'] = options.fields;
+      } else {
+        fields = options.fields;
+      }
+    }
+    if (Array.isArray(options.except) && options.except.length) {
+      fields['except'] = options.except;
+    }
+    if (Array.isArray(options.appends) && options.appends.length) {
+      fields['appends'] = options.appends;
+    }
     const data = toInclude(
       { fields, filter, sort },
       {
@@ -274,10 +262,7 @@ export abstract class Model extends SequelizeModel {
       },
     );
     if (page || perPage) {
-      data.limit =
-        perPage === -1
-          ? MAX_LIMIT
-          : Math.min(perPage || DEFAULT_LIMIT, MAX_LIMIT);
+      data.limit = perPage === -1 ? MAX_LIMIT : Math.min(perPage || DEFAULT_LIMIT, MAX_LIMIT);
       data.offset = data.limit * (page > 0 ? page - 1 : DEFAULT_OFFSET);
     }
     if (data.attributes && data.attributes.length === 0) {
@@ -293,10 +278,7 @@ export abstract class Model extends SequelizeModel {
     const where = {};
     scope.forEach((col) => {
       const association = associations.get(col);
-      const dataKey =
-        association && association instanceof BELONGSTO
-          ? association.options.foreignKey
-          : col;
+      const dataKey = association && association instanceof BELONGSTO ? association.options.foreignKey : col;
       if (!Model.rawAttributes[dataKey]) {
         return;
       }
@@ -308,16 +290,8 @@ export abstract class Model extends SequelizeModel {
     return where;
   }
 
-  async updateSingleAssociation(
-    key: string,
-    data: any,
-    options: UpdateAssociationOptions = {},
-  ) {
-    const {
-      fields,
-      transaction = await this.sequelize.transaction(),
-      ...opts
-    } = options;
+  async updateSingleAssociation(key: string, data: any, options: UpdateAssociationOptions = {}) {
+    const { fields, transaction = await this.sequelize.transaction(), ...opts } = options;
     Object.assign(opts, { transaction });
 
     const table = this.database.getTable(this.constructor.name);
@@ -329,18 +303,12 @@ export abstract class Model extends SequelizeModel {
       return;
     }
 
-    if (
-      typeof data === 'number' ||
-      typeof data === 'string' ||
-      data instanceof SequelizeModel
-    ) {
+    if (typeof data === 'number' || typeof data === 'string' || data instanceof SequelizeModel) {
       await this[accessors.set](data, opts);
     } else if (typeof data === 'object') {
       const Target = association.getTargetModel();
       const targetAttribute =
-        association instanceof BELONGSTO
-          ? association.options.targetKey
-          : association.options.sourceKey;
+        association instanceof BELONGSTO ? association.options.targetKey : association.options.sourceKey;
       if (data[targetAttribute]) {
         if (Object.keys(data).length > 0) {
           const target = await Target.findOne({
@@ -369,18 +337,10 @@ export abstract class Model extends SequelizeModel {
     }
   }
 
-  async updateMultipleAssociation(
-    associationName: string,
-    data: any,
-    options: UpdateAssociationOptions = {},
-  ) {
+  async updateMultipleAssociation(associationName: string, data: any, options: UpdateAssociationOptions = {}) {
     const items = Array.isArray(data) ? data : data == null ? [] : [data];
 
-    const {
-      fields,
-      transaction = await this.sequelize.transaction(),
-      ...opts
-    } = options;
+    const { fields, transaction = await this.sequelize.transaction(), ...opts } = options;
     Object.assign(opts, { transaction });
 
     const table = this.database.getTable(this.constructor.name);
@@ -417,18 +377,14 @@ export abstract class Model extends SequelizeModel {
         return;
       }
       if (typeof item === 'number' || typeof item === 'string') {
-        let targetKeyType = getDataTypeKey(
-          Target.rawAttributes[targetKey].type,
-        ).toLocaleLowerCase();
+        let targetKeyType = getDataTypeKey(Target.rawAttributes[targetKey].type).toLocaleLowerCase();
         if (targetKeyType === 'integer') {
           targetKeyType = 'number';
         }
         // 如果传值类型与之前在 Model 上定义的 targetKey 不同，则报错。
         // 不应兼容定义的 targetKey 不是 primaryKey 却传了 primaryKey 的值的情况。
         if (typeof item !== targetKeyType) {
-          throw new Error(
-            `target key type [${typeof item}] does not match to [${targetKeyType}]`,
-          );
+          throw new Error(`target key type [${typeof item}] does not match to [${targetKeyType}]`);
         }
         if (targetKeyIsPk) {
           toSetPks.add(item);
@@ -541,11 +497,7 @@ export abstract class Model extends SequelizeModel {
     }
   }
 
-  async updateAssociation(
-    key: string,
-    data: any,
-    options: UpdateAssociationOptions = {},
-  ) {
+  async updateAssociation(key: string, data: any, options: UpdateAssociationOptions = {}) {
     const table = this.database.getTable(this.constructor.name);
     const association = table.getAssociations().get(key);
     switch (true) {

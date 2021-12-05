@@ -160,6 +160,8 @@ export async function list(ctx: Context, next: Next) {
     perPage = PageParameter.DEFAULT_PER_PAGE,
     sort = [],
     fields = [],
+    appends = [],
+    except = [],
     filter = {},
     associated,
     associatedName,
@@ -178,6 +180,8 @@ export async function list(ctx: Context, next: Next) {
       perPage,
       filter,
       fields,
+      appends,
+      except,
       context: ctx,
     });
     if (!(associated instanceof AssociatedModel)) {
@@ -209,6 +213,8 @@ export async function list(ctx: Context, next: Next) {
       perPage,
       filter,
       fields,
+      appends,
+      except,
       context: ctx,
     });
     data = await Model.scope(options.scopes || []).findAndCountAll({
