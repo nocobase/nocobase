@@ -295,7 +295,7 @@ export class Repository<
     const transaction = await this.getTransaction(options);
 
     const guard = UpdateGuard.fromOptions(this.model, options);
-    const values = guard.sanitize(options.values);
+    const values = guard.sanitize(options.values || {});
 
     const instance = await this.model.create<any>(values, { transaction });
 

@@ -1,7 +1,7 @@
 import { mockDatabase } from '../index';
 import Database from '../../database';
 
-describe('array field', function () {
+describe('array field operator', function () {
   let db: Database;
   let Test;
 

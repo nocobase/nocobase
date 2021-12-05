@@ -29,6 +29,7 @@ class FilterParser {
           if (keyArr[keyArr.length - 2] == 'id') {
             continue;
           }
+
           keyArr.splice(keyArr.length - 1, 0, 'id');
           renamedKey[key] = keyArr.join('.');
         }
@@ -114,6 +115,7 @@ class FilterParser {
                 db: this.database,
                 path: skipPrefix,
                 fieldName: skipPrefix.replace(`.${firstKey}`, ''),
+                model: this.model,
               });
               break;
             }
