@@ -1,5 +1,5 @@
 import { DataTypes } from 'sequelize';
-import { BaseFieldOptions, Field } from './field';
+import { BaseColumnFieldOptions, Field } from './field';
 
 export class BooleanField extends Field {
   get dataType() {
@@ -7,6 +7,6 @@ export class BooleanField extends Field {
   }
 }
 
-export interface BooleanFieldOptions extends BaseFieldOptions {
+export interface BooleanFieldOptions extends BaseColumnFieldOptions {
   type: 'boolean';
 }

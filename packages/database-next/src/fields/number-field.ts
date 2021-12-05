@@ -1,5 +1,5 @@
 import { DataTypes } from 'sequelize';
-import { BaseFieldOptions, Field } from './field';
+import { BaseColumnFieldOptions, Field } from './field';
 
 export class IntegerField extends Field {
   get dataType() {
@@ -7,7 +7,7 @@ export class IntegerField extends Field {
   }
 }
 
-export interface IntegerFieldOptions extends BaseFieldOptions {
+export interface IntegerFieldOptions extends BaseColumnFieldOptions {
   type: 'integer';
 }
 
@@ -17,7 +17,7 @@ export class FloatField extends Field {
   }
 }
 
-export interface FloatFieldOptions extends BaseFieldOptions {
+export interface FloatFieldOptions extends BaseColumnFieldOptions {
   type: 'float';
 }
 
@@ -27,7 +27,7 @@ export class DoubleField extends Field {
   }
 }
 
-export interface DoubleFieldOptions extends BaseFieldOptions {
+export interface DoubleFieldOptions extends BaseColumnFieldOptions {
   type: 'double';
 }
 
@@ -37,7 +37,7 @@ export class RealField extends Field {
   }
 }
 
-export interface RealFieldOptions extends BaseFieldOptions {
+export interface RealFieldOptions extends BaseColumnFieldOptions {
   type: 'real';
 }
 
@@ -47,6 +47,6 @@ export class DecimalField extends Field {
   }
 }
 
-export interface DecimalFieldOptions extends BaseFieldOptions {
+export interface DecimalFieldOptions extends BaseColumnFieldOptions {
   type: 'decimal';
 }

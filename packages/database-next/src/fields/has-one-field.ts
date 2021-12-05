@@ -9,8 +9,9 @@ import {
   HasOneOptions,
   Utils,
 } from 'sequelize';
-import { RelationField } from './relation-field';
-import { BaseFieldOptions } from './field';
+import { BaseRelationFieldOptions, RelationField } from './relation-field';
+import { BaseColumnFieldOptions } from './field';
+import { HasOneOptions as SequelizeHasOneOptions } from 'sequelize/types/lib/associations/has-one';
 
 export interface HasOneFieldOptions extends HasOneOptions {
   /**
@@ -136,6 +137,8 @@ export class HasOneField extends RelationField {
   }
 }
 
-export interface HasOneFieldOptions extends BaseFieldOptions {
+export interface HasOneFieldOptions
+  extends BaseRelationFieldOptions,
+    SequelizeHasOneOptions {
   type: 'hasOne';
 }

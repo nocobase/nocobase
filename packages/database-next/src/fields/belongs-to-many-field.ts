@@ -1,8 +1,9 @@
 import { omit } from 'lodash';
 import { Sequelize, ModelCtor, Model, DataTypes, Utils } from 'sequelize';
 import { Collection } from '../collection';
-import { RelationField } from './relation-field';
-import { BaseFieldOptions } from './field';
+import { BaseRelationFieldOptions, RelationField } from './relation-field';
+import { BaseColumnFieldOptions } from './field';
+import { BelongsToManyOptions as SequelizeBelongsToManyOptions } from 'sequelize/types/lib/associations/belongs-to-many';
 
 export class BelongsToManyField extends RelationField {
   get through() {
@@ -62,6 +63,9 @@ export class BelongsToManyField extends RelationField {
   }
 }
 
-export interface BelongsToManyFieldOptions extends BaseFieldOptions {
+export interface BelongsToManyFieldOptions
+  extends BaseRelationFieldOptions,
+    Omit<SequelizeBelongsToManyOptions, 'through'> {
   type: 'belongsToMany';
+  through?: string;
 }

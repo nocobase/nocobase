@@ -1,5 +1,5 @@
 import { DataTypes } from 'sequelize';
-import { BaseFieldOptions, Field } from './field';
+import { BaseColumnFieldOptions, Field } from './field';
 
 export class TextField extends Field {
   get dataType() {
@@ -7,6 +7,6 @@ export class TextField extends Field {
   }
 }
 
-export interface TextFieldOptions extends BaseFieldOptions {
+export interface TextFieldOptions extends BaseColumnFieldOptions {
   type: 'text';
 }

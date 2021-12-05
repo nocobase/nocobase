@@ -1,4 +1,4 @@
-import { BaseFieldOptions, Field } from './field';
+import { BaseColumnFieldOptions, Field } from './field';
 import { DataTypes } from 'sequelize';
 
 export class ArrayField extends Field {
@@ -38,6 +38,6 @@ export class ArrayField extends Field {
   }
 }
 
-export interface ArrayFieldOptions extends BaseFieldOptions {
+export interface ArrayFieldOptions extends BaseColumnFieldOptions {
   type: 'array';
 }

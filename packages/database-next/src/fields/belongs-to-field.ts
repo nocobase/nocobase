@@ -1,9 +1,10 @@
 import { omit } from 'lodash';
 import { Sequelize, ModelCtor, Model, DataTypes, Utils } from 'sequelize';
-import { RelationField } from './relation-field';
+import { BaseRelationFieldOptions, RelationField } from './relation-field';
 import { HasInverseField } from './has-inverse-field';
-import { BaseFieldOptions, Field } from './field';
+import { BaseColumnFieldOptions, Field } from './field';
 import { HasManyField } from './has-many-field';
+import { BelongsToOptions as SequelizeBelongsToOptions } from 'sequelize/types/lib/associations/belongs-to';
 
 export class BelongsToField extends RelationField {
   static type = 'belongsTo';
@@ -73,6 +74,8 @@ export class BelongsToField extends RelationField {
   }
 }
 
-export interface BelongsToFieldOptions extends BaseFieldOptions {
+export interface BelongsToFieldOptions
+  extends BaseRelationFieldOptions,
+    SequelizeBelongsToOptions {
   type: 'belongsTo';
 }

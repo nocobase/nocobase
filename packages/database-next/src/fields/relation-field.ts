@@ -1,4 +1,6 @@
-import { Field } from './field';
+import { BaseFieldOptions, Field } from './field';
+
+export interface BaseRelationFieldOptions extends BaseFieldOptions {}
 
 export abstract class RelationField extends Field {
   /**

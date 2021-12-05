@@ -1,5 +1,5 @@
 import { DataTypes } from 'sequelize';
-import { BaseFieldOptions, Field } from './field';
+import { BaseColumnFieldOptions, Field } from './field';
 
 export class VirtualField extends Field {
   get dataType() {
@@ -7,6 +7,6 @@ export class VirtualField extends Field {
   }
 }
 
-export interface VirtualFieldOptions extends BaseFieldOptions {
+export interface VirtualFieldOptions extends BaseColumnFieldOptions {
   type: 'virtual';
 }

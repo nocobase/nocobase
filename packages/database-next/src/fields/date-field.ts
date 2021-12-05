@@ -1,5 +1,5 @@
 import { DataTypes } from 'sequelize';
-import { BaseFieldOptions, Field } from './field';
+import { BaseColumnFieldOptions, Field } from './field';
 
 export class DateField extends Field {
   get dataType() {
@@ -7,6 +7,6 @@ export class DateField extends Field {
   }
 }
 
-export interface DateFieldOptions extends BaseFieldOptions {
+export interface DateFieldOptions extends BaseColumnFieldOptions {
   type: 'date';
 }

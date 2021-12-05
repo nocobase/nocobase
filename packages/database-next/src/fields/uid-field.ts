@@ -1,6 +1,6 @@
 import { DataTypes } from 'sequelize';
 import { uid } from '../utils';
-import { BaseFieldOptions, Field } from './field';
+import { BaseColumnFieldOptions, Field } from './field';
 
 export class UidField extends Field {
   get dataType() {
@@ -18,6 +18,6 @@ export class UidField extends Field {
   }
 }
 
-export interface UidFieldOptions extends BaseFieldOptions {
+export interface UidFieldOptions extends BaseColumnFieldOptions {
   type: 'uid';
 }

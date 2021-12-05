@@ -9,8 +9,9 @@ import {
   HasManyOptions,
   Utils,
 } from 'sequelize';
-import { RelationField } from './relation-field';
-import { BaseFieldOptions } from './field';
+import { BaseRelationFieldOptions, RelationField } from './relation-field';
+import { BaseColumnFieldOptions } from './field';
+import { HasManyOptions as SequelizeHasManyOptions } from 'sequelize/types/lib/associations/has-many';
 
 export interface HasManyFieldOptions extends HasManyOptions {
   /**
@@ -144,6 +145,8 @@ export class HasManyField extends RelationField {
   }
 }
 
-export interface HasManyFieldOptions extends BaseFieldOptions {
+export interface HasManyFieldOptions
+  extends BaseRelationFieldOptions,
+    SequelizeHasManyOptions {
   type: 'hasMany';
 }
