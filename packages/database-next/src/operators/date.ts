@@ -30,6 +30,7 @@ export default {
   $dateBefore(value) {
     return { [Op.lt]: stringToDate(value) };
   },
+
   $dateNotBefore(value) {
     return {
       [Op.gte]: stringToDate(value),
