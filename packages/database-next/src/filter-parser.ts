@@ -8,7 +8,7 @@ const debug = require('debug')('noco-database');
 
 type FilterType = any;
 
-class FilterParser {
+export default class FilterParser {
   database: Database;
   model: ModelCtor<Model>;
   filter: FilterType;
@@ -218,5 +218,3 @@ class FilterParser {
     return { where, include: toInclude(include) };
   }
 }
-
-export default FilterParser;

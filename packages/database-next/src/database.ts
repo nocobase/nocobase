@@ -55,6 +55,7 @@ export class Database extends EventEmitter implements AsyncEmitter {
   operators = new Map();
   collections = new Map<string, Collection>();
   pendingFields = new Map<string, RelationField[]>();
+  modelCollection = new Map<ModelCtor<any>, Collection>();
 
   modelHook: ModelHook;
 
@@ -117,6 +118,7 @@ export class Database extends EventEmitter implements AsyncEmitter {
     });
 
     this.collections.set(collection.name, collection);
+    this.modelCollection.set(collection.model, collection);
 
     this.emit('afterDefineCollection', collection);
 

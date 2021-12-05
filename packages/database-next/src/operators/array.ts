@@ -140,7 +140,7 @@ export default {
     };
   },
 
-  $empty(value, ctx) {
+  $arrayEmpty(value, ctx) {
     const subQuery = sqliteEmptyQuery(ctx, '=');
 
     return {
@@ -148,7 +148,7 @@ export default {
     };
   },
 
-  $notEmpty(value, ctx) {
+  $arrayNotEmpty(value, ctx) {
     const subQuery = sqliteEmptyQuery(ctx, '>');
 
     return {

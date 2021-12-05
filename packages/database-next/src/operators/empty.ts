@@ -1,30 +1,44 @@
 import { DataTypes, Op } from 'sequelize';
+import { ArrayField, StringField } from '../fields';
+import arrayOperators from './array';
 
 const findFilterFieldType = (ctx) => {
-  let path = ctx.path.split('.');
-  path.splice(path.length - 1, 1);
+  const db = ctx.db;
 
-  const fieldName = path.splice(path.length - 1, 1);
+  let path = ctx.path.split('.');
+
+  // remove operators
+  path.pop();
+
+  const fieldName = path.pop();
 
   let model = ctx.model;
+
   const associationPath = path;
+
   for (const association of associationPath) {
-    model = model[association].target;
+    model = model.associations[association].target;
   }
 
-  return model.rawAttributes[fieldName];
+  const collection = db.modelCollection.get(model);
+
+  return collection.getField(fieldName);
 };
 export default {
   $empty(_, ctx) {
     const field = findFilterFieldType(ctx);
 
-    if (field.type instanceof DataTypes.STRING) {
+    if (field instanceof StringField) {
       return {
         [Op.or]: {
           [Op.is]: null,
           [Op.eq]: '',
         },
       };
+    }
+
+    if (field instanceof ArrayField) {
+      return arrayOperators.$arrayEmpty(_, ctx);
     }
 
     return {
@@ -35,13 +49,17 @@ export default {
   $notEmpty(_, ctx) {
     const field = findFilterFieldType(ctx);
 
-    if (field.type instanceof DataTypes.STRING) {
+    if (field instanceof StringField) {
       return {
         [Op.and]: {
           [Op.not]: null,
           [Op.ne]: '',
         },
       };
+    }
+
+    if (field instanceof ArrayField) {
+      return arrayOperators.$arrayNotEmpty(_, ctx);
     }
 
     return {

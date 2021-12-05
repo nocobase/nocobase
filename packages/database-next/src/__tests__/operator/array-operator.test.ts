@@ -73,7 +73,15 @@ describe('array field operator', function () {
       ],
     });
 
-    const result = await User.repository.find({
+    let result = await User.repository.find({
+      filter: {
+        'posts.tags.$empty': true,
+      },
+    });
+
+    expect(result.length).toEqual(1);
+    expect(result[0].get('name')).toEqual('u0');
+    result = await User.repository.find({
       filter: {
         'posts.tags.$anyOf': ['t1'],
       },
@@ -131,6 +139,7 @@ describe('array field operator', function () {
     const t3 = await Test.repository.create({
       values: {
         name: 't3',
+        selected: [],
       },
     });
 
@@ -147,6 +156,7 @@ describe('array field operator', function () {
     const t3 = await Test.repository.create({
       values: {
         name: 't3',
+        selected: [],
       },
     });
 
@@ -155,6 +165,7 @@ describe('array field operator', function () {
         'selected.$notEmpty': true,
       },
     });
+
     expect(filter.length).toEqual(2);
   });
 });
