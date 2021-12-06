@@ -30,7 +30,9 @@ export default {
       && DEFAULT_STORAGE_TYPE === STORAGE_TYPE_LOCAL
       && process.env.LOCAL_STORAGE_USE_STATIC_SERVER
     ) {
-      await getStorageConfig(STORAGE_TYPE_LOCAL).middleware(this.app);
+      this.app.on('beforeStart', async () => {
+        await getStorageConfig(STORAGE_TYPE_LOCAL).middleware(this.app);
+      });
     }
     
     this.app.on('db.init', async () => {
