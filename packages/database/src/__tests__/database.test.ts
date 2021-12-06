@@ -1,88 +1,206 @@
-import { getDatabase } from '.';
-import Database, { Field } from '../';
-import Table from '../table';
+import { mockDatabase } from './index';
+import path from 'path';
 
-let db: Database;
-
-beforeEach(async () => {
-  db = getDatabase();
-});
-
-afterEach(async () => {
-  await db.close();
-});
-
-describe('database.addHook()', () => {
-  it('beforeTableInit', async () => {
-    db.addHook('beforeTableInit', (options) => {
-      options.title = 'abc';
+describe('database', () => {
+  test('import', async () => {
+    const db = mockDatabase();
+    await db.import({
+      directory: path.resolve(__dirname, './fixtures/collections'),
     });
-    const table = db.table({
-      name: 'testHook',
-      createdBy: true,
-      fields: [
-        {
-          type: 'json',
-          name: 'arr',
-          defaultValue: [],
-        },
-      ],
+
+    expect(db.getCollection('posts')).toBeDefined();
+    expect(db.getCollection('users')).toBeDefined();
+    expect(db.getCollection('tags')).toBeDefined();
+
+    const tagCollection = db.getCollection('tags');
+
+    // extend field
+    expect(tagCollection.fields.has('color')).toBeTruthy();
+    expect(tagCollection.fields.has('color2')).toBeTruthy();
+    expect(tagCollection.fields.has('name')).toBeTruthy();
+
+    // delay extend
+    expect(db.getCollection('images')).toBeUndefined();
+
+    db.collection({
+      name: 'images',
+      fields: [{ type: 'string', name: 'name' }],
     });
-    expect(table.getOptions().title).toBe('abc');
+
+    const imageCollection = db.getCollection('images');
+
+    expect(imageCollection).toBeDefined();
+    expect(imageCollection.fields.has('name')).toBeTruthy();
+    expect(imageCollection.fields.has('url')).toBeTruthy();
+    expect(imageCollection.fields.has('url2')).toBeTruthy();
   });
-  it('afterTableInit', async () => {
-    db.addHook('afterTableInit', (table: Table) => {
-      table.addField({
-        type: 'string',
-        name: 'abc',
-      });
-    });
-    const table = db.table({
-      name: 'testHook',
-      createdBy: true,
+
+  test('hasMany with inverse belongsTo relation', async () => {
+    const db = mockDatabase();
+    const UserCollection = db.collection({
+      name: 'users',
       fields: [
-        {
-          type: 'json',
-          name: 'arr',
-          defaultValue: [],
-        },
+        { type: 'string', name: 'name' },
+        { type: 'hasMany', name: 'posts' },
       ],
     });
-    expect(table.getField('abc')).toBeTruthy();
+
+    const PostCollection = db.collection({
+      name: 'posts',
+      fields: [{ type: 'string', name: 'title' }],
+    });
+
+    expect(UserCollection.model.associations.posts).toBeDefined();
+    expect(PostCollection.model.associations.user).toBeDefined();
   });
-  it('beforeAddField', async () => {
-    db.addHook('beforeAddField', (options) => {
-      options.title = 'f1';
+
+  test('belongsTo with inverse hasMany relation', async () => {
+    const db = mockDatabase();
+    const UserCollection = db.collection({
+      name: 'users',
+      fields: [{ type: 'string', name: 'name' }],
     });
-    const table = db.table({
-      name: 'testHook',
-      createdBy: true,
+
+    const PostCollection = db.collection({
+      name: 'posts',
       fields: [
-        {
-          type: 'string',
-          name: 'name',
-        },
+        { type: 'string', name: 'title' },
+        { type: 'belongsTo', name: 'user' },
       ],
     });
-    expect(table.getField('name').options.title).toBe('f1');
+
+    expect(PostCollection.model.associations.user).toBeDefined();
+    expect(UserCollection.model.associations.posts).toBeDefined();
   });
-  it('afterAddField', async () => {
-    db.addHook('afterAddField', (field: Field, table: Table) => {
-      if (field.options.name === 'name') {
-        const options = { ...field.options, name: `${field.options.name}123` }
-        table.addField(options);
-      }
+
+  test('get collection', async () => {
+    const db = mockDatabase();
+    expect(db.getCollection('test')).toBeUndefined();
+    expect(db.hasCollection('test')).toBeFalsy();
+    db.collection({
+      name: 'test',
     });
-    const table = db.table({
-      name: 'testHook',
-      createdBy: true,
-      fields: [
-        {
-          type: 'string',
-          name: 'name',
+
+    expect(db.getCollection('test')).toBeDefined();
+    expect(db.hasCollection('test')).toBeTruthy();
+  });
+
+  test('collection beforeBulkCreate event', async () => {
+    const db = mockDatabase();
+    const listener = jest.fn();
+
+    db.on('posts.beforeBulkUpdate', listener);
+
+    const Post = db.collection({
+      name: 'posts',
+      fields: [{ type: 'string', name: 'title' }],
+    });
+
+    await db.sync();
+
+    await Post.repository.create({
+      values: {
+        title: 'old',
+      },
+    });
+
+    await Post.model.update(
+      {
+        title: 'new',
+      },
+      {
+        where: {
+          title: 'old',
         },
-      ],
+      },
+    );
+    expect(listener).toHaveBeenCalled();
+  });
+
+  test('global model event', async () => {
+    const db = mockDatabase();
+    const listener = jest.fn();
+    const listener2 = jest.fn();
+
+    const Post = db.collection({
+      name: 'posts',
+      fields: [{ type: 'string', name: 'title' }],
     });
-    expect(table.getField('name123')).toBeTruthy();
+
+    await db.sync();
+
+    db.on('afterCreate', listener);
+    db.on('posts.afterCreate', listener2);
+
+    await Post.repository.create({
+      values: {
+        title: 'test',
+      },
+    });
+
+    expect(listener).toHaveBeenCalledTimes(1);
+    expect(listener2).toHaveBeenCalledTimes(1);
+  });
+
+  test('collection multiple model event', async () => {
+    const db = mockDatabase();
+    const listener = jest.fn();
+    const listener2 = jest.fn();
+
+    const Post = db.collection({
+      name: 'posts',
+      fields: [{ type: 'string', name: 'title' }],
+    });
+
+    await db.sync();
+
+    db.on('posts.afterCreate', listener);
+    db.on('posts.afterCreate', listener2);
+
+    await Post.repository.create({
+      values: {
+        title: 'test',
+      },
+    });
+
+    expect(listener).toHaveBeenCalledTimes(1);
+    expect(listener2).toHaveBeenCalledTimes(1);
+  });
+
+  test('collection afterCreate model event', async () => {
+    const db = mockDatabase();
+    const postAfterCreateListener = jest.fn();
+
+    db.on('posts.afterCreate', postAfterCreateListener);
+
+    const Post = db.collection({
+      name: 'posts',
+      fields: [{ type: 'string', name: 'title' }],
+    });
+
+    await db.sync();
+
+    await Post.repository.create({
+      values: {
+        title: 'test',
+      },
+    });
+
+    await Post.repository.find();
+
+    expect(postAfterCreateListener).toHaveBeenCalled();
+  });
+
+  test('collection event', async () => {
+    const db = mockDatabase();
+    const listener = jest.fn();
+    db.on('beforeDefineCollection', listener);
+
+    const Post = db.collection({
+      name: 'posts',
+      fields: [{ type: 'string', name: 'title' }],
+    });
+
+    expect(listener).toHaveBeenCalled();
   });
 });

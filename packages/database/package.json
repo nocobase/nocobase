@@ -1,14 +1,21 @@
 {
   "name": "@nocobase/database",
-  "version": "0.5.0-alpha.34",
+  "version": "0.6.0-alpha.0",
+  "private": true,
   "description": "",
   "main": "./lib/index.js",
   "types": "./lib/index.d.ts",
   "license": "MIT",
-  "scripts": {},
+  "scripts": {
+    "build": "rimraf -rf lib esm dist && npm run build:cjs && npm run build:esm",
+    "build:cjs": "tsc --project tsconfig.build.json",
+    "build:esm": "tsc --project tsconfig.build.json --module es2015 --outDir esm"
+  },
   "dependencies": {
+    "@nocobase/utils": "^0.6.0-alpha.0",
     "bcrypt": "^5.0.0",
     "deepmerge": "^4.2.2",
+    "flat": "^5.0.2",
     "glob": "^7.1.6",
     "sequelize": "^6.9.0"
   },
@@ -17,5 +24,5 @@
     "url": "git+https://github.com/nocobase/nocobase.git",
     "directory": "packages/database"
   },
-  "gitHead": "e7df1f93c4e23b9a666d99ee7372c02bdaec97c4"
+  "gitHead": "f0b335ac30f29f25c95d7d137655fa64d8d67f1e"
 }

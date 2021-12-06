@@ -14,7 +14,6 @@ export interface ResourcerContext {
 }
 
 export interface KoaMiddlewareOptions {
-
   /**
    * 前缀
    */
@@ -22,16 +21,16 @@ export interface KoaMiddlewareOptions {
 
   /**
    * 自定义 resource name 的获取规则
-   * 
+   *
    * 默认规则 relatedTable ? relatedTable.table : table
    */
   nameRule?: (params: ParsedParams) => string;
 
   /**
    * 自定义 action name
-   * 
+   *
    * 默认为
-   * 
+   *
    * - list 查看列表
    * - create 新增数据
    * - get 查看数据详情
@@ -39,7 +38,6 @@ export interface KoaMiddlewareOptions {
    * - delete 删除数据
    */
   accessors?: {
-
     /**
      * 查看列表
      */
@@ -68,7 +66,6 @@ export interface KoaMiddlewareOptions {
 }
 
 export interface ResourcerOptions {
-
   /**
    * 前缀
    */
@@ -76,9 +73,9 @@ export interface ResourcerOptions {
 
   /**
    * 自定义 action name
-   * 
+   *
    * 默认为
-   * 
+   *
    * - list 查看列表
    * - create 新增数据
    * - get 查看数据详情
@@ -86,7 +83,6 @@ export interface ResourcerOptions {
    * - delete 删除数据
    */
   accessors?: {
-
     /**
      * 查看列表
      */
@@ -115,7 +111,6 @@ export interface ResourcerOptions {
 }
 
 export interface ExecuteOptions {
-
   /**
    * 资源名称
    */
@@ -123,7 +118,7 @@ export interface ExecuteOptions {
 
   /**
    * 自定义 action name
-   * 
+   *
    * 默认
    * - list 查看列表
    * - create 新增数据
@@ -141,7 +136,6 @@ export interface Handlers {
 }
 
 export interface ImportOptions {
-
   /**
    * 指定配置所在路径
    */
@@ -154,7 +148,6 @@ export interface ImportOptions {
 }
 
 export class Resourcer {
-
   protected resources = new Map<string, Resource>();
 
   /**
@@ -176,9 +169,9 @@ export class Resourcer {
 
   /**
    * 载入指定目录下的 resource 配置（配置的文件驱动）
-   * 
+   *
    * TODO: 配置的文件驱动现在会全部初始化，大数据时可能存在性能瓶颈，后续可以加入动态加载
-   * 
+   *
    * @param {object}   [options]
    * @param {string}   [options.directory] 指定配置所在路径
    * @param {array}    [options.extensions = ['js', 'ts', 'json']] 文件后缀
@@ -187,9 +180,7 @@ export class Resourcer {
     const { extensions = ['js', 'ts', 'json'], directory } = options;
     const patten = `${directory}/*.{${extensions.join(',')}}`;
     const files = glob.sync(patten, {
-      ignore: [
-        '**/*.d.ts'
-      ]
+      ignore: ['**/*.d.ts'],
     });
     const resources = new Map<string, Resource>();
     files.forEach((file: string) => {
@@ -202,9 +193,9 @@ export class Resourcer {
 
   /**
    * resource 配置
-   * 
-   * @param name 
-   * @param options 
+   *
+   * @param name
+   * @param options
    */
   define(options: ResourceOptions) {
     const { name } = options;
@@ -227,8 +218,8 @@ export class Resourcer {
 
   /**
    * 注册全局的 action handlers
-   * 
-   * @param handlers 
+   *
+   * @param handlers
    */
   registerActionHandlers(handlers: Handlers) {
     for (const [name, handler] of Object.entries(handlers)) {
@@ -279,13 +270,16 @@ export class Resourcer {
     const { prefix, accessors } = options;
     const restApiMiddleware = async (ctx: ResourcerContext, next: () => Promise<any>) => {
       ctx.resourcer = this;
-      let params = parseRequest({
-        path: ctx.request.path,
-        method: ctx.request.method,
-      }, {
-        prefix: this.options.prefix || prefix,
-        accessors: this.options.accessors || accessors,
-      });
+      let params = parseRequest(
+        {
+          path: ctx.request.path,
+          method: ctx.request.method,
+        },
+        {
+          prefix: this.options.prefix || prefix,
+          accessors: this.options.accessors || accessors,
+        },
+      );
       if (!params) {
         return next();
       }
@@ -293,14 +287,17 @@ export class Resourcer {
         const resource = this.getResource(getNameByParams(params));
         // 为关系资源时，暂时需要再执行一遍 parseRequest
         if (resource.options.type && resource.options.type !== 'single') {
-          params = parseRequest({
-            path: ctx.request.path,
-            method: ctx.request.method,
-            type: resource.options.type,
-          }, {
-            prefix: this.options.prefix || prefix,
-            accessors: this.options.accessors || accessors,
-          });
+          params = parseRequest(
+            {
+              path: ctx.request.path,
+              method: ctx.request.method,
+              type: resource.options.type,
+            },
+            {
+              prefix: this.options.prefix || prefix,
+              accessors: this.options.accessors || accessors,
+            },
+          );
           if (!params) {
             return next();
           }
@@ -336,10 +333,10 @@ export class Resourcer {
 
   /**
    * 实验性 API
-   * 
-   * @param options 
-   * @param context 
-   * @param next 
+   *
+   * @param options
+   * @param context
+   * @param next
    */
   async execute(options: ExecuteOptions, context: ResourcerContext = {}, next?: any) {
     const { resource, action } = options;

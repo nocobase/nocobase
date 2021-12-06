@@ -1,30 +1,33 @@
-const path = require('path');
 const { pathsToModuleNameMapper } = require('ts-jest/utils');
 const { compilerOptions } = require('./tsconfig.jest.json');
 
 module.exports = {
+  collectCoverage: true,
+  verbose: true,
+  testEnvironment: 'jsdom',
   preset: 'ts-jest',
-  testEnvironment: 'node',
+  testMatch: ['**/__tests__/**/*.test.[jt]s?(x)'],
   setupFilesAfterEnv: [
-    path.resolve(__dirname, 'dotenv.js'),
-  ],
-  testMatch: [
-    // '**/__tests__/**/*.[jt]s?(x)',
-    '**/?(*.)+(spec|test).[jt]s?(x)'
+    require.resolve('jest-dom/extend-expect'),
+    './jest.setup.ts',
   ],
   moduleNameMapper: pathsToModuleNameMapper(compilerOptions.paths, {
     prefix: '<rootDir>/',
   }),
-  modulePathIgnorePatterns: [
-    "<rootDir>/.dumi/",
-    "<rootDir>/packages/father-build/",
-    "<rootDir>/packages/client/lib/"
-  ],
   globals: {
     'ts-jest': {
-      babelConfig: true,
-      tsconfig: 'tsconfig.jest.json',
+      babelConfig: false,
+      tsconfig: './tsconfig.jest.json',
       diagnostics: false,
     },
   },
-};
+  coveragePathIgnorePatterns: [
+    '/node_modules/',
+    '/__tests__/',
+    '/esm/',
+    '/lib/',
+    'package.json',
+    '/demo/',
+    'package-lock.json',
+  ],
+}

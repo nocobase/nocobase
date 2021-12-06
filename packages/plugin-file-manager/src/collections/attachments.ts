@@ -1,4 +1,4 @@
-import { TableOptions } from '@nocobase/database';
+import { CollectionOptions } from '@nocobase/database';
 
 export default {
   name: 'attachments',
@@ -12,7 +12,7 @@ export default {
     {
       comment: '系统文件名（含扩展名）',
       type: 'string',
-      name: 'filename'
+      name: 'filename',
     },
     {
       comment: '扩展名（含“.”）',
@@ -48,13 +48,13 @@ export default {
       comment: '其他文件信息（如图片的宽高）',
       type: 'jsonb',
       name: 'meta',
-      defaultValue: {}
+      defaultValue: {},
     },
     {
       comment: '网络访问地址',
       type: 'string',
       name: 'url',
       // formula: '{{ storage.baseUrl }}{{ path }}/{{ filename }}'
-    }
+    },
   ],
-} as TableOptions;
+} as CollectionOptions;

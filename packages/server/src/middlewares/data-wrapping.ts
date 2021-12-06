@@ -26,7 +26,7 @@ export function dataWrapping() {
         data: ctx.body,
       };
     }
-  }
+  };
 }
 
 export default dataWrapping;

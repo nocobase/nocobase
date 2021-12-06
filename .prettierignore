@@ -6,3 +6,6 @@ package.json
 .umi
 .umi-production
 .umi-test
+packages/**/lib/**
+packages/**/esm/**
+packages/**/node_modules/**

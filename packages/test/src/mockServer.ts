@@ -4,11 +4,13 @@ import Application, { ApplicationOptions } from '@nocobase/server';
 import { getConfig } from './mockDatabase';
 
 interface ActionParams {
-  fields?: string[] | {
-    only?: string[];
-    except?: string[];
-    appends?: string[];
-  };
+  fields?:
+    | string[]
+    | {
+        only?: string[];
+        except?: string[];
+        appends?: string[];
+      };
   filter?: any;
   sort?: string[];
   page?: number;
@@ -54,51 +56,46 @@ export class MockServer extends Application {
         if (method === 'resource') {
           return (name: string) => {
             const keys = name.split('.');
-            const proxy = new Proxy({}, {
-              get(target, method: string, receiver) {
-                return (params: ActionParams = {}) => {
-                  const {
-                    associatedIndex,
-                    resourceIndex,
-                    values = {},
-                    file,
-                    ...restParams
-                  } = params;
-                  let url = prefix;
-                  if (keys.length > 1) {
-                    url = `/${keys[0]}/${associatedIndex}/${keys[1]}`
-                  } else {
-                    url = `/${name}`;
-                  }
-                  url += `:${method as string}`;
-                  if (resourceIndex) {
-                    url += `/${resourceIndex}`;
-                  }
+            const proxy = new Proxy(
+              {},
+              {
+                get(target, method: string, receiver) {
+                  return (params: ActionParams = {}) => {
+                    const { associatedIndex, resourceIndex, values = {}, file, ...restParams } = params;
+                    let url = prefix;
+                    if (keys.length > 1) {
+                      url = `/${keys[0]}/${associatedIndex}/${keys[1]}`;
+                    } else {
+                      url = `/${name}`;
+                    }
+                    url += `:${method as string}`;
+                    if (resourceIndex) {
+                      url += `/${resourceIndex}`;
+                    }
 
-                  switch (method) {
-                    case 'upload':
-                      return agent
-                        .post(`${url}?${qs.stringify(restParams)}`)
-                        .attach('file', file)
-                        .field(values);
-                    case 'list':
-                    case 'get':
-                      return agent.get(`${url}?${qs.stringify(restParams)}`);
-                    default:
-                      return agent
-                        .post(`${url}?${qs.stringify(restParams)}`)
-                        .send(values);
-                  }
-                };
+                    switch (method) {
+                      case 'upload':
+                        return agent
+                          .post(`${url}?${qs.stringify(restParams)}`)
+                          .attach('file', file)
+                          .field(values);
+                      case 'list':
+                      case 'get':
+                        return agent.get(`${url}?${qs.stringify(restParams)}`);
+                      default:
+                        return agent.post(`${url}?${qs.stringify(restParams)}`).send(values);
+                    }
+                  };
+                },
               },
-            });
+            );
             return proxy;
-          }
+          };
         }
         return (...args: any[]) => {
           return agent[method](...args);
         };
-      }
+      },
     });
     return proxy as any;
   }

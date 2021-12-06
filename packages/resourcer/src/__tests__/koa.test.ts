@@ -22,9 +22,11 @@ describe('koa middleware', () => {
       },
     });
 
-    app.use(resourcer.middleware({
-      prefix: '/api',
-    }));
+    app.use(
+      resourcer.middleware({
+        prefix: '/api',
+      }),
+    );
 
     app.use(async (ctx, next) => {
       if (ctx.path === '/api/test') {
@@ -59,12 +61,14 @@ describe('koa middleware', () => {
       name: 'test',
     });
 
-    app.use(resourcer.middleware({
-      prefix: '/api',
-      accessors: {
-        list: 'index',
-      },
-    }));
+    app.use(
+      resourcer.middleware({
+        prefix: '/api',
+        accessors: {
+          list: 'index',
+        },
+      }),
+    );
 
     app.use(async (ctx, next) => {
       if (ctx.path === '/api/test') {
@@ -107,12 +111,14 @@ describe('koa middleware', () => {
       },
     });
 
-    app.use(resourcer.middleware({
-      prefix: '/api',
-      accessors: {
-        list: 'index',
-      },
-    }));
+    app.use(
+      resourcer.middleware({
+        prefix: '/api',
+        accessors: {
+          list: 'index',
+        },
+      }),
+    );
 
     app.use(async (ctx, next) => {
       if (ctx.path === '/api/test') {
@@ -143,7 +149,7 @@ describe('koa middleware', () => {
           await next();
           ctx.body.arr.push(4);
         },
-      }
+      },
     });
 
     app.use(resourcer.middleware());
@@ -191,28 +197,26 @@ describe('koa middleware', () => {
           },
         },
       });
-      const response = await agent
-        .get('/tests')
-        .query({
-          filter: {
-            col2: '&val2',
-            col3: 'val3',
-          },
-          other: 'other1',
-          sort: '-id',
-        });
+      const response = await agent.get('/tests').query({
+        filter: {
+          col2: '&val2',
+          col3: 'val3',
+        },
+        other: 'other1',
+        sort: '-id',
+      });
       expect(response.body).toEqual({
         sort: '-id',
         filter: {
-          and: [
+          $and: [
             { col1: 'val1', col2: 'val2' },
-            { col2: '&val2', col3: 'val3' }
-          ]
+            { col2: '&val2', col3: 'val3' },
+          ],
         },
-        fields: { only: ['id'], appends: [] },
+        fields: ['id'],
         other: 'other1',
         actionName: 'list',
-        resourceName: 'tests'
+        resourceName: 'tests',
       });
     });
     it('options2', async () => {
@@ -226,13 +230,11 @@ describe('koa middleware', () => {
           },
         },
       });
-      const response = await agent
-        .post('/tests')
-        .send({ 'aa': 'aa' });
+      const response = await agent.post('/tests').send({ aa: 'aa' });
       expect(response.body).toEqual({
         actionName: 'create',
         resourceName: 'tests',
-        values: { col1: 'val1', aa: 'aa' }
+        values: { col1: 'val1', aa: 'aa' },
       });
     });
     it('options3', async () => {
@@ -246,15 +248,13 @@ describe('koa middleware', () => {
           },
         },
       });
-      const response = await agent
-        .post('/resourcer/tests:create')
-        .send({
-          values: { 'aa': 'aa' }
-        });
+      const response = await agent.post('/resourcer/tests:create').send({
+        values: { aa: 'aa' },
+      });
       expect(response.body).toEqual({
         actionName: 'create',
         resourceName: 'tests',
-        values: { col1: 'val1', aa: 'aa' }
+        values: { col1: 'val1', aa: 'aa' },
       });
     });
     it('options4', async () => {
@@ -268,17 +268,15 @@ describe('koa middleware', () => {
           },
         },
       });
-      const response = await agent
-        .post('/resourcer/tests:update')
-        .send({
-          resourceIndex: 1,
-          values: { 'aa': 'aa' }
-        });
+      const response = await agent.post('/resourcer/tests:update').send({
+        resourceIndex: 1,
+        values: { aa: 'aa' },
+      });
       expect(response.body).toEqual({
         resourceIndex: 1,
         actionName: 'update',
         resourceName: 'tests',
-        values: { col1: 'val1', aa: 'aa' }
+        values: { col1: 'val1', aa: 'aa' },
       });
     });
     describe('hasOne', () => {
@@ -289,33 +287,30 @@ describe('koa middleware', () => {
         });
       });
       it('get', async () => {
-        const response = await agent
-          .get('/users/1/settings');
+        const response = await agent.get('/users/1/settings');
         expect(response.body).toEqual({
           associatedName: 'users',
           associatedIndex: '1',
           resourceName: 'settings',
-          actionName: 'get'
+          actionName: 'get',
         });
       });
       it('update', async () => {
-        const response = await agent
-          .post('/users/1/settings');
+        const response = await agent.post('/users/1/settings');
         expect(response.body).toEqual({
           associatedName: 'users',
           associatedIndex: '1',
           resourceName: 'settings',
-          actionName: 'update'
+          actionName: 'update',
         });
       });
       it('destroy', async () => {
-        const response = await agent
-          .delete('/users/1/settings');
+        const response = await agent.delete('/users/1/settings');
         expect(response.body).toEqual({
           associatedName: 'users',
           associatedIndex: '1',
           resourceName: 'settings',
-          actionName: 'destroy'
+          actionName: 'destroy',
         });
       });
     });
@@ -327,56 +322,51 @@ describe('koa middleware', () => {
         });
       });
       it('list', async () => {
-        const response = await agent
-          .get('/users/1/posts');
+        const response = await agent.get('/users/1/posts');
         expect(response.body).toEqual({
           associatedName: 'users',
           associatedIndex: '1',
           resourceName: 'posts',
-          actionName: 'list'
+          actionName: 'list',
         });
       });
       it('get', async () => {
-        const response = await agent
-          .get('/users/1/posts/1');
+        const response = await agent.get('/users/1/posts/1');
         expect(response.body).toEqual({
           associatedName: 'users',
           associatedIndex: '1',
           resourceName: 'posts',
           resourceIndex: '1',
-          actionName: 'get'
+          actionName: 'get',
         });
       });
       it('create', async () => {
-        const response = await agent
-          .post('/users/1/posts');
+        const response = await agent.post('/users/1/posts');
         expect(response.body).toEqual({
           associatedName: 'users',
           associatedIndex: '1',
           resourceName: 'posts',
-          actionName: 'create'
+          actionName: 'create',
         });
       });
       it('update', async () => {
-        const response = await agent
-          .put('/users/1/posts/1');
+        const response = await agent.put('/users/1/posts/1');
         expect(response.body).toEqual({
           associatedName: 'users',
           associatedIndex: '1',
           resourceName: 'posts',
           resourceIndex: '1',
-          actionName: 'update'
+          actionName: 'update',
         });
       });
       it('destroy', async () => {
-        const response = await agent
-          .delete('/users/1/posts/1');
+        const response = await agent.delete('/users/1/posts/1');
         expect(response.body).toEqual({
           associatedName: 'users',
           associatedIndex: '1',
           resourceName: 'posts',
           resourceIndex: '1',
-          actionName: 'destroy'
+          actionName: 'destroy',
         });
       });
     });
@@ -388,34 +378,31 @@ describe('koa middleware', () => {
         });
       });
       it('get', async () => {
-        const response = await agent
-          .get('/posts/1/user');
+        const response = await agent.get('/posts/1/user');
         expect(response.body).toEqual({
           associatedName: 'posts',
           associatedIndex: '1',
           resourceName: 'user',
-          actionName: 'get'
+          actionName: 'get',
         });
       });
       it('set', async () => {
-        const response = await agent
-          .post('/posts/1/user/1');
+        const response = await agent.post('/posts/1/user/1');
         expect(response.body).toEqual({
           associatedName: 'posts',
           associatedIndex: '1',
           resourceName: 'user',
           resourceIndex: '1',
-          actionName: 'set'
+          actionName: 'set',
         });
       });
       it('remove', async () => {
-        const response = await agent
-          .delete('/posts/1/user');
+        const response = await agent.delete('/posts/1/user');
         expect(response.body).toEqual({
           associatedName: 'posts',
           associatedIndex: '1',
           resourceName: 'user',
-          actionName: 'remove'
+          actionName: 'remove',
         });
       });
     });
@@ -427,67 +414,61 @@ describe('koa middleware', () => {
         });
       });
       it('list', async () => {
-        const response = await agent
-          .get('/posts/1/tags');
+        const response = await agent.get('/posts/1/tags');
         expect(response.body).toEqual({
           associatedName: 'posts',
           associatedIndex: '1',
           resourceName: 'tags',
-          actionName: 'list'
+          actionName: 'list',
         });
       });
       it('get', async () => {
-        const response = await agent
-          .get('/posts/1/tags/1');
+        const response = await agent.get('/posts/1/tags/1');
         expect(response.body).toEqual({
           associatedName: 'posts',
           associatedIndex: '1',
           resourceName: 'tags',
           resourceIndex: '1',
-          actionName: 'get'
+          actionName: 'get',
         });
       });
       it('set', async () => {
-        const response = await agent
-          .post('/posts/1/tags');
+        const response = await agent.post('/posts/1/tags');
         expect(response.body).toEqual({
           associatedName: 'posts',
           associatedIndex: '1',
           resourceName: 'tags',
-          actionName: 'set'
+          actionName: 'set',
         });
       });
       it('add', async () => {
-        const response = await agent
-          .post('/posts/1/tags/1');
+        const response = await agent.post('/posts/1/tags/1');
         expect(response.body).toEqual({
           associatedName: 'posts',
           associatedIndex: '1',
           resourceName: 'tags',
           resourceIndex: '1',
-          actionName: 'add'
+          actionName: 'add',
         });
       });
       it('update', async () => {
-        const response = await agent
-          .put('/posts/1/tags/1');
+        const response = await agent.put('/posts/1/tags/1');
         expect(response.body).toEqual({
           associatedName: 'posts',
           associatedIndex: '1',
           resourceName: 'tags',
           resourceIndex: '1',
-          actionName: 'update'
+          actionName: 'update',
         });
       });
       it('remove', async () => {
-        const response = await agent
-          .delete('/posts/1/tags/1');
+        const response = await agent.delete('/posts/1/tags/1');
         expect(response.body).toEqual({
           associatedName: 'posts',
           associatedIndex: '1',
           resourceName: 'tags',
           resourceIndex: '1',
-          actionName: 'remove'
+          actionName: 'remove',
         });
       });
     });
@@ -498,15 +479,13 @@ describe('koa middleware', () => {
           list: {},
         },
       });
-      const response = await agent
-        .get('/test1')
-        .query({
-          fields: ['id', 'col1'],
-        });
+      const response = await agent.get('/test1').query({
+        fields: ['id', 'col1'],
+      });
       expect(response.body).toEqual({
         actionName: 'list',
         resourceName: 'test1',
-        fields: { only: ['id', 'col1'], appends: [] }
+        fields: ['id', 'col1'],
       });
     });
     it('fields2', async () => {
@@ -518,15 +497,13 @@ describe('koa middleware', () => {
           },
         },
       });
-      const response = await agent
-        .get('/test1')
-        .query({
-          fields: ['id', 'col1'],
-        });
+      const response = await agent.get('/test1').query({
+        fields: ['id', 'col1'],
+      });
       expect(response.body).toEqual({
         actionName: 'list',
         resourceName: 'test1',
-        fields: { only: ['id'], appends: [] }
+        fields: ['id'],
       });
     });
     it('fields3', async () => {
@@ -534,21 +511,18 @@ describe('koa middleware', () => {
         name: 'test1',
         actions: {
           list: {
-            fields: {
-              except: ['password'],
-            },
+            except: ['password'],
           },
         },
       });
-      const response = await agent
-        .get('/test1')
-        .query({
-          fields: ['id', 'col1', 'password'],
-        });
+      const response = await agent.get('/test1').query({
+        fields: ['id', 'col1', 'password'],
+      });
       expect(response.body).toEqual({
         actionName: 'list',
         resourceName: 'test1',
-        fields: { only: ['id', 'col1'], appends: [] }
+        fields: ['id', 'col1', 'password'],
+        except: ['password'],
       });
     });
     it('fields4', async () => {
@@ -556,22 +530,20 @@ describe('koa middleware', () => {
         name: 'test1',
         actions: {
           list: {
-            fields: {
-              except: ['password'],
-              appends: ['col2'],
-            },
+            except: ['password'],
+            appends: ['col2'],
           },
         },
       });
-      const response = await agent
-        .get('/test1')
-        .query({
-          fields: ['id', 'col1', 'password', 'col2'],
-        });
+      const response = await agent.get('/test1').query({
+        fields: ['id', 'col1', 'password', 'col2'],
+      });
       expect(response.body).toEqual({
         actionName: 'list',
         resourceName: 'test1',
-        fields: { only: ['id', 'col1', 'col2'], appends: [] }
+        fields: ['id', 'col1', 'password', 'col2'],
+        except: ['password'],
+        appends: ['col2'],
       });
     });
     it('fields5', async () => {
@@ -579,59 +551,53 @@ describe('koa middleware', () => {
         name: 'test1',
         actions: {
           list: {
-            fields: {
-              except: ['password'],
-              appends: ['col2'],
-            },
+            except: ['password'],
+            appends: ['col2'],
           },
         },
       });
-      const response = await agent
-        .get('/test1').query({
-          fields: {
-            appends: ['relation1'],
-          }
-        });
+      const response = await agent.get('/test1').query({
+        appends: ['relation1'],
+      });
       expect(response.body).toEqual({
         actionName: 'list',
         resourceName: 'test1',
-        fields: { except: ['password'], appends: ['relation1', 'col2'] }
+        except: ['password'],
+        appends: ['col2', 'relation1'],
       });
     });
     it('fields6', async () => {
       resourcer.define({
         name: 'test1',
         actions: {
-          list: {}
+          list: {},
         },
       });
-      const response = await agent
-        .get('/test1').query({
-          'fields[appends]': 'rel1,rel2',
-        });
+      const response = await agent.get('/test1').query({
+        appends: 'rel1,rel2',
+      });
       expect(response.body).toEqual({
         actionName: 'list',
         resourceName: 'test1',
-        fields: { appends: ['rel1', 'rel2'] }
+        appends: ['rel1', 'rel2'],
       });
     });
     it('fields7', async () => {
       resourcer.define({
         name: 'users.posts',
         actions: {
-          list: {}
+          list: {},
         },
       });
-      const response = await agent
-        .get('/users/name/posts').query({
-          'fields[appends]': 'rel1,rel2',
-        });
+      const response = await agent.get('/users/name/posts').query({
+        appends: 'rel1,rel2',
+      });
       expect(response.body).toEqual({
         associatedName: 'users',
         associatedIndex: 'name',
         resourceName: 'posts',
         actionName: 'list',
-        fields: { appends: ['rel1', 'rel2'] }
+        appends: ['rel1', 'rel2'],
       });
     });
     it('fields8', async () => {
@@ -644,10 +610,9 @@ describe('koa middleware', () => {
               await next();
             },
           },
-        }
+        },
       });
-      const response = await agent
-        .get('/users/name/posts');
+      const response = await agent.get('/users/name/posts');
       expect(response.body).toEqual({
         associatedName: 'users',
         associatedIndex: 'name',
@@ -662,22 +627,19 @@ describe('koa middleware', () => {
         actions: {
           list: {
             async middleware(ctx, next) {
-              ctx.action.mergeParams({ fields: { only: [ctx.action.params.associatedIndex] } }, { fields: 'append' });
+              ctx.action.mergeParams({ fields: [ctx.action.params.associatedIndex] });
               await next();
             },
           },
-        }
+        },
       });
-      const response = await agent
-        .get('/users/name/posts');
+      const response = await agent.get('/users/name/posts');
       expect(response.body).toEqual({
         associatedName: 'users',
         associatedIndex: 'name',
         resourceName: 'posts',
         actionName: 'list',
-        fields: {
-          only: ['name'],
-        },
+        fields: ['name'],
       });
     });
   });

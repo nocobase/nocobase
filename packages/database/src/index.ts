@@ -1,10 +1,8 @@
-import Database from './database';
-
 export * from './database';
-export * from './model';
-export * from './table';
-export * from './fields';
+export * from './collection';
 export * from './utils';
-export { default as Operator } from './op';
-
-export default Database;
+export { Database as default } from './database';
+export * from './relation-repository/belongs-to-many-repository';
+export * from './relation-repository/belongs-to-repository';
+export { Model } from 'sequelize';
+export * from './fields';

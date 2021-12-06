@@ -1,4 +1,4 @@
-import { mockServer, MockServer } from "../";
+import { mockServer, MockServer } from '../';
 
 describe('mock server', () => {
   let api: MockServer;

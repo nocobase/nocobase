@@ -1,112 +1,111 @@
-English | [简体中文](./README.zh-CN.md)
+# NocoBase 事件
 
-![](https://nocobase.oss-cn-beijing.aliyuncs.com/bbcedd403d31cd1ccc4e9709581f5c2f.png)  
+事件是被动的，由执行某个方法触发的一种行为。
 
-What is NocoBase
-----------
-NocoBase is a scalability-first, open-source no-code development platform. No programming required, build your own collaboration platform, management system with NocoBase in minutes.
+Application 的安装、启动、停止触发的事件，挂在 app.on 下，有：
 
-Homepage:
-https://www.nocobase.com/  
+- init
+- start
+- stop
+- error（Koa 内置）
 
-Online Demo:
-https://demo.nocobase.com/new
+不区分前后？
 
-Contact Us:
-hello@nocobase.com
+全局的 resource action，也是 app.on 层面的事件
 
-When to use NocoBase
-----------
-- **SMEs and organizations build business platforms and management systems for themselves or for their industry**
-	- Want the price to be low enough or even free
-	- Can be flexibly customized without programming knowledge
-	- Need full control of source code and data
-	- Can freely distribute and sell as their own products
-- **Service providers and outsourcing teams develop collaboration platforms and management systems for their clients**
-	- Want to keep development costs as low as possible
-	- Need the most user-friendly secondary development experience
-	- Must be deployed privately as a standalone product for the client
-	- Can be freely distributed and sold by the client
+- users.login
 
-Why choose NocoBase
-----------
-- **Open source and free**
-	- Unrestricted commercial use under the MIT license
-	- Full code ownership, private deployment, private and secure data
-	- Free to expand and develop for actual needs
-	- Good ecological support
-- **Strong no-code capability**
-	- WYSIWYG visual configuration
-	- Separation of data structure configuration from interface configuration
-	- Rich combination of blocks and operations
-	- Role-based access control
-- **Developer-friendly**
-	- Microkernel architecture, flexible and easy to extend, with a robust plug-in system
-	- Node.js-based, with popular frameworks and technologies, including Koa, Sequelize, React, Formily, Ant Design, etc.
-	- Progressive development, easy for getting-started, friendly to newcomers
-	- No binding, no strong dependencies, can be used in any combination or extensions, can be used in existing projects
+配置 collection，db.on 层面的事件
 
-Note
-----------
-NocoBase is still in early development and is for preview purposes only and is not suitable for use in a production environment.  A relatively stable and well-documented public beta is expected to be released as early as the first quarter of 2022.
-If you are interested in NocoBase, please join us to discuss and develop it together.
+- afterDefineCollection
+- afterUpdateCollection
+- afterRemoveCollection
+- afterAddField
+- afterRemoveField
 
-Architecture
-----------
 
-![](https://docs.nocobase.com/static/NocoBase.c9542b1f.png)
+app.on
 
-Requirements
-----------
+application 的安装、启动、停止等
 
-Node:
+- init
+- start
+- stop
+- error（Koa 内置）
 
-- Node.js 12.20+
+resource 的 actions
 
-Database:
+- `<actionHookType>`
+- `<resourceName>.<actionHookType>`
 
-- PostgreSQL 10.x+
-- Sqlite 3+
+db.on
 
-Installation
-----------
+- afterDefineCollection
+- afterUpdateCollection
+- afterRemoveCollection
+- afterAddField
+- afterUpdateField
+- afterRemoveField
+- `<modelHookType>`
+- `<modelName>.<modelHookType>`
 
-### Create a project with `create-nocobase-app`
+collection.on
 
-#### Quickstart
-~~~shell
-yarn create nocobase-app my-nocobase-app --quickstart --lang=en-US
-# `--lang=en-US` Language settings support `--lang=en-US` and `--lang=zh-CN`
-~~~
+- afterAddField
+- afterUpdateField
+- afterRemoveField
 
-#### Step by step
-~~~shell
-# 1. create project
-yarn create nocobase-app my-nocobase-app
 
-# 2. switch to the project directory
-cd my-nocobase-app
 
-# 3. create initialization data
-yarn nocobase init --import-demo --lang=en-US
-# `--import-demo` Importing demo data
-# `--lang=en-US` Language settings support `--lang=en-US` and `--lang=zh-CN`
 
-# 4. start project
-yarn start
-~~~
 
-Open http://localhost:8000 in a web browser.
+1. 初始化 app.constructor
+2. 注册插件 app.plugin
+3. 加载配置 app.load
+4. 安装 app.init
+5. 启动 app.start
+6. 停止 app.stop
 
-### Installing from Docker
 
-```bash
-docker run --name my-nocobase-app -p 8000:13002 -d nocobase/nocobase
-docker logs my-nocobase-app
-```
+生产环境需要：
 
-Open http://localhost:8000 in a web browser.
 
-## Contributing
+DB_DIALECT=sqlite
+DB_STORAGE=db.sqlite
+# DB_DIALECT=mysql
+# DB_HOST=localhost
+# DB_PORT=13306
+# DB_DATABASE=nocobase
+# DB_USER=nocobase
+# DB_PASSWORD=nocobase
+DB_LOG_SQL=
 
-https://docs.nocobase.com/guide/contributing
+
+## APP_LANG <Badge>server</Badge>
+
+zh-CN 和 en-US，初始化时使用
+
+## NOCOBASE_ENV <Badge>server</Badge>
+
+production 和 development
+
+## API_PORT <Badge>server</Badge>
+
+用于设定 API 端口
+
+## API_BASE_PATH <Badge>server</Badge>
+
+resourcer 的 api prefix，默认值 /api/
+
+## API_BASE_URL <Badge>client</Badge>
+
+缺失时，使用 API_BASE_PATH 补齐
+
+## ~~API_HOSTNAME <Badge>client</Badge>~~
+
+可以去掉
+
+## PROXY_TARGET <Badge>client</Badge>
+
+本地开发时有用，默认为 http://localhost:${API_PORT}，如果是远程的 API 时才需要修改
+

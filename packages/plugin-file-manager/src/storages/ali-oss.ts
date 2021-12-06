@@ -6,7 +6,7 @@ export default {
     const createAliOssStorage = require('multer-aliyun-oss');
     return new createAliOssStorage({
       config: storage.options,
-      filename: cloudFilenameGetter(storage)
+      filename: cloudFilenameGetter(storage),
     });
   },
   defaults() {
@@ -20,7 +20,7 @@ export default {
         accessKeyId: process.env.ALI_OSS_ACCESS_KEY_ID,
         accessKeySecret: process.env.ALI_OSS_ACCESS_KEY_SECRET,
         bucket: process.env.ALI_OSS_BUCKET,
-      }
-    }
-  }
-}
+      },
+    };
+  },
+};

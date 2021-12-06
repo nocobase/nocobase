@@ -1,4 +1,4 @@
-import { TableOptions } from "@nocobase/database";
+import { CollectionOptions } from '@nocobase/database';
 
 export default {
   name: 'users',
@@ -15,9 +15,9 @@ export default {
         // storage 为配置的默认引擎
         rules: {
           size: 1024 * 10,
-          mimetype: ['image/png']
-        }
-      }
+          mimetype: ['image/png'],
+        },
+      },
     },
     {
       type: 'belongsToMany',
@@ -26,9 +26,9 @@ export default {
       attachment: {
         storage: 'local_private',
         rules: {
-          mimetype: ['text/*']
-        }
-      }
+          mimetype: ['text/*'],
+        },
+      },
     },
     {
       type: 'belongsToMany',
@@ -37,9 +37,9 @@ export default {
       attachment: {
         rules: {
           size: 1024 * 100,
-          mimetype: ['image/*']
-        }
-      }
+          mimetype: ['image/*'],
+        },
+      },
     },
   ],
-} as TableOptions;
+} as CollectionOptions;

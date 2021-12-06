@@ -1,4 +1,4 @@
-import { TableOptions } from '@nocobase/database';
+import { CollectionOptions } from '@nocobase/database';
 
 export default {
   name: 'storages',
@@ -26,36 +26,36 @@ export default {
       comment: '配置项',
       type: 'jsonb',
       name: 'options',
-      defaultValue: {}
+      defaultValue: {},
     },
     {
       comment: '文件规则',
       type: 'jsonb',
       name: 'rules',
-      defaultValue: {}
+      defaultValue: {},
     },
     {
       comment: '存储相对路径模板',
       type: 'string',
       name: 'path',
-      defaultValue: ''
+      defaultValue: '',
     },
     {
       comment: '访问地址前缀',
       type: 'string',
       name: 'baseUrl',
-      defaultValue: ''
+      defaultValue: '',
     },
     // TODO(feature): 需要使用一个实现了可设置默认值的字段
     {
       comment: '默认引擎',
       type: 'boolean',
       name: 'default',
-      defaultValue: false
+      defaultValue: false,
     },
     {
       type: 'hasMany',
-      name: 'attachments'
-    }
-  ]
-} as TableOptions;
+      name: 'attachments',
+    },
+  ],
+} as CollectionOptions;

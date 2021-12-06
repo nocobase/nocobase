@@ -1,18 +1,13 @@
 {
-  "packages": [
-    "packages/*"
-  ],
-  "version": "independent",
+  "version": "0.6.0-alpha.0",
   "npmClient": "yarn",
   "useWorkspaces": true,
-  "npmClientArgs": [
-    "--ignore-engines"
-  ],
+  "npmClientArgs": ["--ignore-engines"],
   "command": {
-    "publish": {
-      "ignoreChanges": [
-        "*.md"
-      ]
+    "version": {
+      "forcePublish": true,
+      "exact": true,
+      "message": "chore(versions): 😊 publish %s"
     }
   }
 }

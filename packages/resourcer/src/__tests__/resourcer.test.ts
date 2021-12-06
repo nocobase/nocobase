@@ -1,10 +1,8 @@
 import Resourcer, { ResourcerContext, Action } from '..';
 import Resource from '../resource';
 import path from 'path';
-import { resourceUsage } from 'process';
 
 describe('resourcer', () => {
-
   it('action', async () => {
     const resourcer = new Resourcer();
 
@@ -23,10 +21,13 @@ describe('resourcer', () => {
       arr: [],
     };
 
-    await resourcer.execute({
-      resource: 'test',
-      action: 'list',
-    }, context);
+    await resourcer.execute(
+      {
+        resource: 'test',
+        action: 'list',
+      },
+      context,
+    );
 
     expect(context.arr).toStrictEqual([1, 2]);
     expect(context.resourcer).toBeInstanceOf(Resourcer);
@@ -59,10 +60,13 @@ describe('resourcer', () => {
       arr: [],
     };
 
-    await resourcer.execute({
-      resource: 'test',
-      action: 'list',
-    }, context);
+    await resourcer.execute(
+      {
+        resource: 'test',
+        action: 'list',
+      },
+      context,
+    );
 
     expect(context.arr).toStrictEqual([1, 2]);
 
@@ -70,10 +74,13 @@ describe('resourcer', () => {
       arr: [],
     };
 
-    await resourcer.execute({
-      resource: 'test',
-      action: 'test',
-    }, context);
+    await resourcer.execute(
+      {
+        resource: 'test',
+        action: 'test',
+      },
+      context,
+    );
 
     expect(context.arr).toStrictEqual([11, 22]);
   });
@@ -104,10 +111,13 @@ describe('resourcer', () => {
       arr: [],
     };
 
-    await resourcer.execute({
-      resource: 'test',
-      action: 'list',
-    }, context);
+    await resourcer.execute(
+      {
+        resource: 'test',
+        action: 'list',
+      },
+      context,
+    );
 
     expect(context.arr).toStrictEqual([1, 2]);
 
@@ -115,10 +125,13 @@ describe('resourcer', () => {
       arr: [],
     };
 
-    await resourcer.execute({
-      resource: 'test',
-      action: 'test',
-    }, context);
+    await resourcer.execute(
+      {
+        resource: 'test',
+        action: 'test',
+      },
+      context,
+    );
 
     expect(context.arr).toStrictEqual([11, 22]);
   });
@@ -132,7 +145,7 @@ describe('resourcer', () => {
         await next();
         ctx.arr.push(2);
       },
-      'list': async (ctx, next) => {
+      list: async (ctx, next) => {
         ctx.arr.push(11);
         await next();
         ctx.arr.push(22);
@@ -151,10 +164,13 @@ describe('resourcer', () => {
       arr: [],
     };
 
-    await resourcer.execute({
-      resource: 'test',
-      action: 'list',
-    }, context);
+    await resourcer.execute(
+      {
+        resource: 'test',
+        action: 'list',
+      },
+      context,
+    );
 
     expect(context.arr).toStrictEqual([1, 2]);
 
@@ -162,10 +178,13 @@ describe('resourcer', () => {
       arr: [],
     };
 
-    await resourcer.execute({
-      resource: 'test2',
-      action: 'list',
-    }, context);
+    await resourcer.execute(
+      {
+        resource: 'test2',
+        action: 'list',
+      },
+      context,
+    );
 
     expect(context.arr).toStrictEqual([11, 22]);
   });
@@ -174,7 +193,7 @@ describe('resourcer', () => {
     const resourcer = new Resourcer();
 
     resourcer.registerActionHandlers({
-      'list': async (ctx, next) => {
+      list: async (ctx, next) => {
         ctx.arr.push(11);
         await next();
         ctx.arr.push(22);
@@ -182,7 +201,7 @@ describe('resourcer', () => {
     });
 
     resourcer.registerActionHandlers({
-      'get': async (ctx, next) => {
+      get: async (ctx, next) => {
         ctx.arr.push(33);
         await next();
         ctx.arr.push(44);
@@ -197,10 +216,13 @@ describe('resourcer', () => {
       arr: [],
     };
 
-    await resourcer.execute({
-      resource: 'test',
-      action: 'list',
-    }, context);
+    await resourcer.execute(
+      {
+        resource: 'test',
+        action: 'list',
+      },
+      context,
+    );
 
     expect(context.arr).toStrictEqual([11, 22]);
 
@@ -208,10 +230,13 @@ describe('resourcer', () => {
       arr: [],
     };
 
-    await resourcer.execute({
-      resource: 'test',
-      action: 'get',
-    }, context);
+    await resourcer.execute(
+      {
+        resource: 'test',
+        action: 'get',
+      },
+      context,
+    );
 
     expect(context.arr).toStrictEqual([33, 44]);
   });
@@ -241,10 +266,13 @@ describe('resourcer', () => {
       arr: [],
     };
 
-    await resourcer.execute({
-      resource: 'test',
-      action: 'list',
-    }, context);
+    await resourcer.execute(
+      {
+        resource: 'test',
+        action: 'list',
+      },
+      context,
+    );
 
     expect(context.arr).toStrictEqual([1, 2]);
 
@@ -253,10 +281,13 @@ describe('resourcer', () => {
     };
 
     await expect(async () => {
-      await resourcer.execute({
-        resource: 'test',
-        action: 'test',
-      }, context);
+      await resourcer.execute(
+        {
+          resource: 'test',
+          action: 'test',
+        },
+        context,
+      );
     }).rejects.toThrow('test action is not allowed');
   });
 
@@ -285,10 +316,13 @@ describe('resourcer', () => {
       arr: [],
     };
 
-    await resourcer.execute({
-      resource: 'test',
-      action: 'list',
-    }, context);
+    await resourcer.execute(
+      {
+        resource: 'test',
+        action: 'list',
+      },
+      context,
+    );
 
     expect(context.arr).toStrictEqual([1, 2]);
 
@@ -297,10 +331,13 @@ describe('resourcer', () => {
     };
 
     await expect(async () => {
-      await resourcer.execute({
-        resource: 'test',
-        action: 'test',
-      }, context);
+      await resourcer.execute(
+        {
+          resource: 'test',
+          action: 'test',
+        },
+        context,
+      );
     }).rejects.toThrow('test action is not allowed');
   });
 
@@ -334,10 +371,13 @@ describe('resourcer', () => {
       arr: [],
     };
 
-    await resourcer.execute({
-      resource: 'test',
-      action: 'list',
-    }, context);
+    await resourcer.execute(
+      {
+        resource: 'test',
+        action: 'list',
+      },
+      context,
+    );
 
     expect(context.arr).toStrictEqual([1, 2, 3, 4, 5, 6]);
   });
@@ -378,10 +418,13 @@ describe('resourcer', () => {
       arr: [],
     };
 
-    await resourcer.execute({
-      resource: 'test',
-      action: 'list',
-    }, context);
+    await resourcer.execute(
+      {
+        resource: 'test',
+        action: 'list',
+      },
+      context,
+    );
 
     expect(context.arr).toStrictEqual([7, 1, 2, 3, 4, 5, 6, 8]);
   });
@@ -427,10 +470,13 @@ describe('resourcer', () => {
       arr: [],
     };
 
-    await resourcer.execute({
-      resource: 'test',
-      action: 'list',
-    }, context);
+    await resourcer.execute(
+      {
+        resource: 'test',
+        action: 'list',
+      },
+      context,
+    );
 
     expect(context.arr).toStrictEqual([1, 3, 4, 6]);
 
@@ -438,10 +484,13 @@ describe('resourcer', () => {
       arr: [],
     };
 
-    await resourcer.execute({
-      resource: 'test',
-      action: 'create',
-    }, context);
+    await resourcer.execute(
+      {
+        resource: 'test',
+        action: 'create',
+      },
+      context,
+    );
 
     expect(context.arr).toStrictEqual([2, 7, 8, 5]);
   });
@@ -487,10 +536,13 @@ describe('resourcer', () => {
       arr: [],
     };
 
-    await resourcer.execute({
-      resource: 'test',
-      action: 'list',
-    }, context);
+    await resourcer.execute(
+      {
+        resource: 'test',
+        action: 'list',
+      },
+      context,
+    );
 
     expect(context.arr).toStrictEqual([1, 3, 4, 6]);
 
@@ -498,10 +550,13 @@ describe('resourcer', () => {
       arr: [],
     };
 
-    await resourcer.execute({
-      resource: 'test',
-      action: 'create',
-    }, context);
+    await resourcer.execute(
+      {
+        resource: 'test',
+        action: 'create',
+      },
+      context,
+    );
 
     expect(context.arr).toStrictEqual([2, 7, 8, 5]);
   });
@@ -514,10 +569,13 @@ describe('resourcer', () => {
     let context = {
       arr: [],
     };
-    await resourcer.execute({
-      resource: 'demo',
-      action: 'list',
-    }, context);
+    await resourcer.execute(
+      {
+        resource: 'demo',
+        action: 'list',
+      },
+      context,
+    );
     expect(context.arr).toEqual([1, 2]);
   });
 
@@ -556,16 +614,19 @@ describe('resourcer', () => {
             await next();
             ctx.arr.push(4);
           },
-        }
+        },
       },
     });
     let context = {
       arr: [],
     };
-    await resourcer.execute({
-      resource: 'test',
-      action: 'list',
-    }, context);
+    await resourcer.execute(
+      {
+        resource: 'test',
+        action: 'list',
+      },
+      context,
+    );
     expect(context.arr).toEqual([5, 7, 1, 9, 3, 4, 10, 2, 8, 6]);
   });
 
@@ -584,10 +645,13 @@ describe('resourcer', () => {
       arr: [],
     };
 
-    await resourcer.execute({
-      resource: 'test',
-      action: 'list',
-    }, context);
+    await resourcer.execute(
+      {
+        resource: 'test',
+        action: 'list',
+      },
+      context,
+    );
 
     expect(context.arr).toEqual([1, 7, 8, 2]);
   });
@@ -607,10 +671,13 @@ describe('resourcer', () => {
       arr: [],
     };
 
-    await resourcer.execute({
-      resource: 'test',
-      action: 'list',
-    }, context);
+    await resourcer.execute(
+      {
+        resource: 'test',
+        action: 'list',
+      },
+      context,
+    );
 
     expect(context.arr).toEqual([2, 9, 10, 3]);
   });
@@ -632,10 +699,13 @@ describe('resourcer', () => {
       arr: [],
     };
 
-    await resourcer.execute({
-      resource: 'test',
-      action: 'list',
-    }, context);
+    await resourcer.execute(
+      {
+        resource: 'test',
+        action: 'list',
+      },
+      context,
+    );
 
     expect(context.arr).toEqual([2, 9, 10, 3]);
   });

@@ -7,10 +7,7 @@ import { generatePrefixByPath } from '@nocobase/test';
 import { FILE_FIELD_NAME, STORAGE_TYPE_LOCAL } from '../constants';
 import { getApp, requestFile } from '.';
 
-const {
-  API_PORT,
-  LOCAL_STORAGE_BASE_URL
-} = process.env;
+const { LOCAL_STORAGE_BASE_URL, API_PORT = '13002' } = process.env;
 
 const DEFAULT_LOCAL_BASE_URL = LOCAL_STORAGE_BASE_URL || `http://localhost:${API_PORT}/uploads`;
 
@@ -18,35 +15,30 @@ describe('action', () => {
   let app;
   let agent;
   let db;
-  let http;
 
   beforeEach(async () => {
     app = await getApp();
     agent = app.agent();
-    http = app.listen(API_PORT);
     db = app.db;
 
-    const Storage = db.getModel('storages');
+    const Storage = db.getCollection('storages').model;
     await Storage.create({
       name: `local1_${generatePrefixByPath()}`,
       type: STORAGE_TYPE_LOCAL,
       baseUrl: DEFAULT_LOCAL_BASE_URL,
-      default: true
+      default: true,
     });
   });
 
   afterEach(async () => {
-    await promisify(cb => http.close(cb))();
     await db.close();
   });
 
   describe('direct attachment', () => {
     it('upload file should be ok', async () => {
-      const { body } = await agent
-        .resource('attachments')
-        .upload({
-          [FILE_FIELD_NAME]: path.resolve(__dirname, './files/text.txt')
-        });
+      const { body } = await agent.resource('attachments').upload({
+        [FILE_FIELD_NAME]: path.resolve(__dirname, './files/text.txt'),
+      });
 
       const matcher = {
         title: 'text',
@@ -55,7 +47,7 @@ describe('action', () => {
         size: 13,
         mimetype: 'text/plain',
         meta: {},
-        storage_id: 1,
+        storageId: 1,
       };
 
       // 文件上传和解析是否正常
@@ -63,10 +55,10 @@ describe('action', () => {
       // 文件的 url 是否正常生成
       expect(body.data.url).toBe(`${DEFAULT_LOCAL_BASE_URL}${body.data.path}/${body.data.filename}`);
 
-      const Attachment = db.getModel('attachments');
+      const Attachment = db.getCollection('attachments').model;
       const attachment = await Attachment.findOne({
         where: { id: body.data.id },
-        include: ['storage']
+        include: ['storage'],
       });
       const storage = attachment.get('storage');
       // 文件的数据是否正常保存
@@ -82,35 +74,39 @@ describe('action', () => {
       });
 
       const { documentRoot = 'uploads' } = storage.options || {};
-      const destPath = path.resolve(path.isAbsolute(documentRoot) ? documentRoot : path.join(process.env.PWD, documentRoot), storage.path);
+      const destPath = path.resolve(
+        path.isAbsolute(documentRoot) ? documentRoot : path.join(process.env.PWD, documentRoot),
+        storage.path,
+      );
       const file = await fs.readFile(`${destPath}/${attachment.filename}`);
       // 文件是否保存到指定路径
       expect(file.toString()).toBe('Hello world!\n');
 
       // 通过 url 是否能正确访问
-      const content = await requestFile(attachment.url, agent);
+      const url = attachment.url.replace(`http://localhost:${API_PORT}`, '');
+      const content = await agent.get(url);
       expect(content.text).toBe('Hello world!\n');
     });
   });
 
   describe('belongsTo attachment', () => {
     it('upload with associatedIndex, fail as 400 because file mimetype does not match', async () => {
-      const User = db.getModel('users');
+      const User = db.getCollection('users').model;
       const user = await User.create();
       const response = await agent.resource('users.avatar').upload({
         associatedIndex: user.id,
-        file: path.resolve(__dirname, './files/text.txt')
+        file: path.resolve(__dirname, './files/text.txt'),
       });
       expect(response.status).toBe(400);
     });
 
     it('upload with associatedIndex', async () => {
-      const User = db.getModel('users');
+      const User = db.getCollection('users').model;
       const user = await User.create();
       const { body } = await agent.resource('users.avatar').upload({
         associatedIndex: user.id,
         file: path.resolve(__dirname, './files/image.png'),
-        values: { width: 100, height: 100 }
+        values: { width: 100, height: 100 },
       });
       const matcher = {
         title: 'image',
@@ -122,7 +118,7 @@ describe('action', () => {
         // see: https://github.com/ljharb/qs/issues/91
         // 或考虑使用 query-string 库的 parseNumbers 等配置项
         meta: { width: '100', height: '100' },
-        storage_id: 1,
+        storageId: 1,
       };
       // 上传正常返回
       expect(body.data).toMatchObject(matcher);
@@ -130,17 +126,17 @@ describe('action', () => {
       // 由于初始没有外键，无法获取
       // await user.getAvatar()
       const updatedUser = await User.findByPk(user.id, {
-        include: ['avatar']
+        include: ['avatar'],
       });
       // 外键更新正常
       expect(updatedUser.get('avatar').id).toBe(body.data.id);
     });
 
     it('upload to assoiciated field and storage with full base url should be ok', async () => {
-      const BASE_URL = `http://localhost:${process.env.API_PORT}/another-uploads`;
+      const BASE_URL = `http://localhost:${API_PORT}/another-uploads`;
       const storageName = 'local_private';
       const urlPath = 'test/path';
-      const Storage = db.getModel('storages');
+      const Storage = db.getCollection('storages').model;
       // 动态添加 storage
       await Storage.create({
         name: storageName,
@@ -148,22 +144,23 @@ describe('action', () => {
         path: urlPath,
         baseUrl: BASE_URL,
         options: {
-          documentRoot: 'uploads/another'
-        }
+          documentRoot: 'uploads/another',
+        },
       });
 
-      const User = db.getModel('users');
+      const User = db.getCollection('users').model;
       const user = await User.create();
       const { body } = await agent.resource('users.pubkeys').upload({
         associatedIndex: user.id,
         file: path.resolve(__dirname, './files/text.txt'),
-        values: {}
+        values: {},
       });
 
       // 文件的 url 是否正常生成
       expect(body.data.url).toBe(`${BASE_URL}/${urlPath}/${body.data.filename}`);
       console.log(body.data.url);
-      const content = await requestFile(body.data.url, agent);
+      const url = body.data.url.replace(`http://localhost:${API_PORT}`, '');
+      const content = await agent.get(url);
       expect(content.text).toBe('Hello world!\n');
     });
 
@@ -171,7 +168,7 @@ describe('action', () => {
     it.skip('upload without associatedIndex', async () => {
       const { body } = await agent.resource('users.avatar').upload({
         file: path.resolve(__dirname, './files/image.png'),
-        values: { width: 100, height: 100 }
+        values: { width: 100, height: 100 },
       });
       const matcher = {
         title: 'image',

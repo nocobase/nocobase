@@ -2,8 +2,17 @@
   "compilerOptions": {
     "esModuleInterop": true,
     "moduleResolution": "node",
-    "allowJs": true,
+    "jsx": "react",
     "module": "commonjs",
-    "target": "ES6"
+    "target": "es6",
+    "allowJs": false,
+    "noUnusedLocals": false,
+    "preserveConstEnums": true,
+    "skipLibCheck": true,
+    "sourceMap": true,
+    "inlineSources": true,
+    "declaration": true,
+    "experimentalDecorators": true,
+    "downlevelIteration": true,
   }
 }
