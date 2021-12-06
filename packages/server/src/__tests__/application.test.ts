@@ -60,7 +60,7 @@ describe('application', () => {
   });
 
   it('db.table', async () => {
-    app.db.table({
+    app.collection({
       name: 'tests',
     });
     const response = await agent.get('/api/tests');
@@ -68,10 +68,10 @@ describe('application', () => {
   });
 
   it('db.association', async () => {
-    app.db.table({
+    app.collection({
       name: 'bars',
     });
-    app.db.table({
+    app.collection({
       name: 'foos',
       fields: [
         {
@@ -87,7 +87,7 @@ describe('application', () => {
   it('db.middleware', async () => {
     const index = app.middleware.findIndex((m) => m.name === 'table2resource');
     app.middleware.splice(index, 0, async (ctx, next) => {
-      app.db.table({
+      app.collection({
         name: 'tests',
       });
       await next();
@@ -99,10 +99,10 @@ describe('application', () => {
   it('db.middleware', async () => {
     const index = app.middleware.findIndex((m) => m.name === 'table2resource');
     app.middleware.splice(index, 0, async (ctx, next) => {
-      app.db.table({
+      app.collection({
         name: 'bars',
       });
-      app.db.table({
+      app.collection({
         name: 'foos',
         fields: [
           {

@@ -4,13 +4,14 @@ import { Context, Next } from '@nocobase/actions';
 import { getStorageConfig } from '../storages';
 import * as Rules from '../rules';
 import { FILE_FIELD_NAME, LIMIT_FILES, LIMIT_MAX_FILE_SIZE } from '../constants';
+import { BelongsToManyRepository, BelongsToRepository } from '@nocobase/database';
 
 function getRules(ctx: Context) {
-  const { resourceField } = ctx.action.params;
+  const { resourceField } = ctx;
   if (!resourceField) {
     return ctx.storage.rules;
   }
-  const { rules = {} } = resourceField.getOptions().attachment || {};
+  const { rules = {} } = resourceField.options.attachment || {};
   return Object.assign({}, ctx.storage.rules, rules);
 }
 
@@ -20,15 +21,15 @@ function getFileFilter(ctx: Context) {
     // size 交给 limits 处理
     const { size, ...rules } = getRules(ctx);
     const ruleKeys = Object.keys(rules);
-    const result = !ruleKeys.length || !ruleKeys
-      .some(key => typeof Rules[key] !== 'function'
-        || !Rules[key](file, rules[key], ctx));
+    const result =
+      !ruleKeys.length ||
+      !ruleKeys.some((key) => typeof Rules[key] !== 'function' || !Rules[key](file, rules[key], ctx));
     cb(null, result);
-  }
+  };
 }
 
 export async function middleware(ctx: Context, next: Next) {
-  const { resourceName, actionName, resourceField } = ctx.action.params;
+  const { resourceName, actionName, associatedName } = ctx.action.params;
   if (actionName !== 'upload') {
     return next();
   }
@@ -39,18 +40,19 @@ export async function middleware(ctx: Context, next: Next) {
   // 3. 无字段时按 storages 表的默认项
   // 4. 插件初始化后应提示用户添加至少一个存储引擎并设为默认
 
-  const StorageModel = ctx.db.getModel('storages');
+  const Storage = ctx.db.getCollection('storages');
   let storage;
 
   if (resourceName === 'attachments') {
     // 如果没有包含关联，则直接按默认文件上传至默认存储引擎
-    storage = await StorageModel.findOne({ where: { default: true } });
-  } else {
-    const { attachment = {} } = resourceField.getOptions();
-    storage = await StorageModel.findOne({
-      where: attachment.storage
-        ? { name: attachment.storage }
-        : { default: true }
+    storage = await Storage.repository.findOne({ filter: { default: true } });
+  } else if (associatedName) {
+    const AssociatedCollection = ctx.db.getCollection(associatedName);
+    const resourceField = AssociatedCollection.getField(resourceName);
+    ctx.resourceField = resourceField;
+    const { attachment = {} } = resourceField.options;
+    storage = await Storage.repository.findOne({
+      filter: attachment.storage ? { name: attachment.storage } : { default: true },
     });
   }
 
@@ -71,13 +73,13 @@ export async function middleware(ctx: Context, next: Next) {
     limits: {
       fileSize: Math.min(getRules(ctx).size || LIMIT_MAX_FILE_SIZE, LIMIT_MAX_FILE_SIZE),
       // 每次只允许提交一个文件
-      files: LIMIT_FILES
+      files: LIMIT_FILES,
     },
     storage: storageConfig.make(storage),
   };
   const upload = multer(multerOptions).single(FILE_FIELD_NAME);
   return upload(ctx, next);
-};
+}
 
 export async function action(ctx: Context, next: Next) {
   const { [FILE_FIELD_NAME]: file, storage } = ctx;
@@ -90,9 +92,7 @@ export async function action(ctx: Context, next: Next) {
   // make compatible filename across cloud service (with path)
   const filename = path.basename(name);
   const extname = path.extname(filename);
-  const urlPath = storage.path
-    ? storage.path.replace(/^([^\/])/, '/$1')
-    : '';
+  const urlPath = storage.path ? storage.path.replace(/^([^\/])/, '/$1') : '';
 
   const data = {
     title: file.originalname.replace(extname, ''),
@@ -106,19 +106,28 @@ export async function action(ctx: Context, next: Next) {
     mimetype: file.mimetype,
     // @ts-ignore
     meta: ctx.request.body,
-    ...(storageConfig.getFileData ? storageConfig.getFileData(file) : {})
+    ...(storageConfig.getFileData ? storageConfig.getFileData(file) : {}),
   };
-  
-  const attachment = await ctx.db.sequelize.transaction(async transaction => {
+
+  const attachment = await ctx.db.sequelize.transaction(async (transaction) => {
     // TODO(optimize): 应使用关联 accessors 获取
     const result = await storage.createAttachment(data, { transaction });
-    
-    const { associatedName, associatedIndex, resourceField } = ctx.action.params;
-    if (associatedIndex && resourceField) {
-      const Attachment = ctx.db.getModel('attachments');
-      const SourceModel = ctx.db.getModel(associatedName);
-      const source = await SourceModel.findByPk(associatedIndex, { transaction });
-      await source[resourceField.getAccessors().set](result[Attachment.primaryKeyAttribute], { transaction });
+
+    const { associatedName, associatedIndex, resourceName } = ctx.action.params;
+    const AssociatedCollection = ctx.db.getCollection(associatedName);
+
+    if (AssociatedCollection && associatedIndex && resourceName) {
+      const Repo = AssociatedCollection.repository.relation(resourceName).of(associatedIndex);
+      const Attachment = ctx.db.getCollection('attachments').model;
+      const opts = {
+        pk: result[Attachment.primaryKeyAttribute],
+        transaction,
+      };
+      if (Repo instanceof BelongsToManyRepository) {
+        await Repo.add(opts);
+      } else if (Repo instanceof BelongsToRepository) {
+        await Repo.set(opts);
+      }
     }
 
     return result;
@@ -129,4 +138,4 @@ export async function action(ctx: Context, next: Next) {
   ctx.body = attachment;
 
   await next();
-};
+}

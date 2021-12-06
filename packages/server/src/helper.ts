@@ -63,8 +63,8 @@ export function createCli(app: Application, options: ApplicationOptions) {
         if (tables.includes('collections')) {
           console.log('NocoBase is already installed. To reinstall, please execute:');
           console.log();
-          let command = 'yarn nocobase init --force'
-          for (const [key, value] of Object.entries(opts||{})) {
+          let command = 'yarn nocobase init --force';
+          for (const [key, value] of Object.entries(opts || {})) {
             command += value === true ? ` --${key}` : ` --${key}=${value}`;
           }
           console.log(command);
@@ -92,10 +92,7 @@ export function createCli(app: Application, options: ApplicationOptions) {
   return cli;
 }
 
-export function registerMiddlewares(
-  app: Application,
-  options: ApplicationOptions,
-) {
+export function registerMiddlewares(app: Application, options: ApplicationOptions) {
   if (options.bodyParser !== false) {
     app.use(
       bodyParser({
@@ -114,10 +111,10 @@ export function registerMiddlewares(
   app.use<DefaultState, DefaultContext>(async (ctx, next) => {
     ctx.db = app.db;
     ctx.resourcer = app.resourcer;
-    const i18n = app.i18n.cloneInstance({ initImmediate: false })
+    const i18n = app.i18n.cloneInstance({ initImmediate: false });
     ctx.i18n = i18n;
     ctx.t = i18n.t.bind(i18n);
-    const lng = ctx.request.query.locale as string || ctx.acceptsLanguages().shift();
+    const lng = (ctx.request.query.locale as string) || ctx.acceptsLanguages().shift();
     if (lng !== '*' && lng) {
       i18n.changeLanguage(lng);
     }

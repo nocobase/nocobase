@@ -1,29 +1,28 @@
 import path from 'path';
-
-import { generatePrefixByPath } from '@nocobase/test';
-
+import { generatePrefixByPath, MockServer } from '@nocobase/test';
 import s3Storage from '../../storages/s3';
 import { FILE_FIELD_NAME } from '../../constants';
 import { getApp, requestFile } from '..';
+import Database from '@nocobase/database';
 
 const itif = process.env.AWS_SECRET_ACCESS_KEY ? it : it.skip;
 
 describe('storage:s3', () => {
-  let app;
+  let app: MockServer;
   let agent;
-  let db;
+  let db: Database;
 
   beforeEach(async () => {
     app = await getApp();
     agent = app.agent();
     db = app.db;
 
-    const Storage = db.getModel('storages');
+    const Storage = db.getCollection('storages').model;
     await Storage.create({
       ...s3Storage.defaults(),
       name: `s3_${generatePrefixByPath()}`,
       default: true,
-      path: 'test/path'
+      path: 'test/path',
     });
   });
 
@@ -33,16 +32,14 @@ describe('storage:s3', () => {
 
   describe('direct attachment', () => {
     itif('upload file should be ok', async () => {
-      const { body } = await agent
-        .resource('attachments')
-        .upload({
-          [FILE_FIELD_NAME]: path.resolve(__dirname, '../files/text.txt')
-        });
+      const { body } = await agent.resource('attachments').upload({
+        [FILE_FIELD_NAME]: path.resolve(__dirname, '../files/text.txt'),
+      });
 
-      const Attachment = db.getModel('attachments');
-      const attachment = await Attachment.findOne({
+      const Attachment = db.getCollection('attachments').model;
+      const attachment = await Attachment.findOne<any>({
         where: { id: body.data.id },
-        include: ['storage']
+        include: ['storage'],
       });
 
       const matcher = {

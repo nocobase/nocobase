@@ -8,3 +8,9 @@ website
 gh-pages
 weex
 build.ts
+packages/vue
+packages/element
+esm
+doc-site
+public
+package

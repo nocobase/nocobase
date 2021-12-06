@@ -1,17 +1,18 @@
 {
   "name": "@nocobase/actions",
-  "version": "0.5.0-alpha.34",
+  "version": "0.6.0-alpha.0",
   "description": "",
   "license": "MIT",
   "main": "./lib/index.js",
   "types": "./lib/index.d.ts",
-  "scripts": {},
-  "dependencies": {
-    "@nocobase/database": "^0.5.0-alpha.34",
-    "@nocobase/resourcer": "^0.5.0-alpha.34"
+  "scripts": {
+    "build": "rimraf -rf lib esm dist && npm run build:cjs && npm run build:esm",
+    "build:cjs": "tsc --project tsconfig.build.json",
+    "build:esm": "tsc --project tsconfig.build.json --module es2015 --outDir esm"
   },
-  "devDependencies": {
-    "@nocobase/test": "^0.5.0-alpha.34"
+  "dependencies": {
+    "@nocobase/database": "^0.6.0-alpha.0",
+    "@nocobase/resourcer": "^0.6.0-alpha.0"
   },
   "repository": {
     "type": "git",

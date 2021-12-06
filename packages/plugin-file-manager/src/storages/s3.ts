@@ -6,19 +6,13 @@ export default {
   make(storage) {
     const S3Client = require('aws-sdk/clients/s3');
     const multerS3 = require('multer-s3');
-    const {
-      accessKeyId,
-      secretAccessKey,
-      bucket,
-      acl = 'public-read',
-      ...options
-    } = storage.options;
+    const { accessKeyId, secretAccessKey, bucket, acl = 'public-read', ...options } = storage.options;
     const s3 = new S3Client({
       ...options,
       credentials: {
         accessKeyId,
-        secretAccessKey
-      }
+        secretAccessKey,
+      },
     });
 
     return multerS3({
@@ -30,10 +24,10 @@ export default {
           cb(null, file.mimetype);
           return;
         }
-      
+
         multerS3.AUTO_CONTENT_TYPE(req, file, cb);
       },
-      key: cloudFilenameGetter(storage)
+      key: cloudFilenameGetter(storage),
     });
   },
   defaults() {
@@ -47,7 +41,7 @@ export default {
         accessKeyId: process.env.AWS_ACCESS_KEY_ID,
         secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
         bucket: process.env.AWS_S3_BUCKET,
-      }
-    }
-  }
-}
+      },
+    };
+  },
+};

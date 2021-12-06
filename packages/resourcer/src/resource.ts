@@ -6,7 +6,6 @@ import Action, { ActionName, ActionType } from './action';
 export type ResourceType = 'single' | 'hasOne' | 'hasMany' | 'belongsTo' | 'belongsToMany';
 
 export interface ResourceOptions {
-
   /**
    * 资源名称
    */
@@ -22,7 +21,7 @@ export interface ResourceOptions {
    */
   actions?: {
     [key: string]: ActionType;
-  },
+  };
 
   /**
    * actions 白名单，默认有 list、get、create、update、delete
@@ -51,7 +50,6 @@ export interface ResourceOptions {
 }
 
 export class Resource {
-
   public readonly resourcer: Resourcer;
 
   public readonly middlewares: Middleware[];
@@ -77,7 +75,7 @@ export class Resource {
     if (except.length > 0) {
       excludes = except;
     } else if (only.length > 0) {
-      excludes = Object.keys(actions).filter(name => !only.includes(name));
+      excludes = Object.keys(actions).filter((name) => !only.includes(name));
     }
     this.except = excludes;
     this.actions = Action.toInstanceMap(_.omit(actions, excludes), this);

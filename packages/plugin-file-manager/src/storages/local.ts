@@ -5,6 +5,7 @@ import multer from 'multer';
 import serve from 'koa-static';
 import { STORAGE_TYPE_LOCAL } from '../constants';
 import { getFilename } from '../utils';
+import Application from '@nocobase/server';
 
 // use koa-mount match logic
 function match(basePath: string, pathname: string): boolean {
@@ -20,16 +21,16 @@ function match(basePath: string, pathname: string): boolean {
   return newPath[0] === '/';
 }
 
-async function update(app, storages) {
-  const StorageModel = app.db.getModel('storages');
+async function update(app: Application, storages) {
+  const Storage = app.db.getCollection('storages');
 
-  const items = await StorageModel.findAll({
-    where: {
+  const items = await Storage.repository.find({
+    filter: {
       type: STORAGE_TYPE_LOCAL,
-    }
+    },
   });
 
-  const primaryKey = StorageModel.primaryKeyAttribute;
+  const primaryKey = Storage.model.primaryKeyAttribute;
 
   storages.clear();
   for (const storage of items) {
@@ -42,29 +43,29 @@ function createLocalServerUpdateHook(app, storages) {
     if (row.get('type') === STORAGE_TYPE_LOCAL) {
       await update(app, storages);
     }
-  }
+  };
 }
 
 function getDocumentRoot(storage): string {
   const { documentRoot = 'uploads' } = storage.options || {};
   // TODO(feature): 后面考虑以字符串模板的方式使用，可注入 req/action 相关变量，以便于区分文件夹
-  return path.resolve(path.isAbsolute(documentRoot)
-    ? documentRoot
-    : path.join(process.cwd(), documentRoot));
+  return path.resolve(path.isAbsolute(documentRoot) ? documentRoot : path.join(process.cwd(), documentRoot));
 }
 
-async function middleware(app, options?) {
-  const LOCALHOST = `http://localhost:${process.env.API_PORT}`;
+async function middleware(app: Application, options?) {
+  const LOCALHOST = `http://localhost:${process.env.API_PORT || '13002'}`;
 
-  const StorageModel = app.db.getModel('storages');
+  const Storage = app.db.getCollection('storages');
   const storages = new Map<string, any>();
 
   const localServerUpdateHook = createLocalServerUpdateHook(app, storages);
-  StorageModel.addHook('afterCreate', localServerUpdateHook);
-  StorageModel.addHook('afterUpdate', localServerUpdateHook);
-  StorageModel.addHook('afterDestroy', localServerUpdateHook);
+  Storage.model.addHook('afterCreate', localServerUpdateHook);
+  Storage.model.addHook('afterUpdate', localServerUpdateHook);
+  Storage.model.addHook('afterDestroy', localServerUpdateHook);
 
-  await update(app, storages);
+  app.on('beforeStart', async () => {
+    await update(app, storages);
+  });
 
   app.use(async function (ctx, next) {
     for (const storage of storages.values()) {
@@ -75,7 +76,7 @@ async function middleware(app, options?) {
         url = new URL(baseUrl);
       } catch (e) {
         url = {
-          pathname: baseUrl
+          pathname: baseUrl,
         };
       }
 
@@ -92,7 +93,7 @@ async function middleware(app, options?) {
 
       return serve(getDocumentRoot(storage), {
         // for handle files after any api handlers
-        defer: true
+        defer: true,
       })(ctx, async () => {
         if (ctx.path.startsWith(basePath)) {
           ctx.path = ctx.path.replace(basePath, '');
@@ -113,7 +114,7 @@ export default {
         const destPath = path.join(getDocumentRoot(storage), storage.path);
         mkdirp(destPath, (err: Error | null) => cb(err, destPath));
       },
-      filename: getFilename
+      filename: getFilename,
     });
   },
   defaults() {
@@ -121,7 +122,7 @@ export default {
       title: '本地存储',
       type: STORAGE_TYPE_LOCAL,
       name: `local`,
-      baseUrl: process.env.LOCAL_STORAGE_BASE_URL || `http://localhost:${process.env.API_PORT}/uploads`
+      baseUrl: process.env.LOCAL_STORAGE_BASE_URL || `http://localhost:${process.env.API_PORT || '13002'}/uploads`,
     };
-  }
+  },
 };

@@ -94,7 +94,7 @@ describe('plugin', () => {
         });
       });
       await app.load();
-      const Test = app.db.getModel('tests');
+      const Test = app.db.getCollection('tests');
       expect(Test).toBeDefined();
     });
 
@@ -104,10 +104,10 @@ describe('plugin', () => {
           app.collection({
             name: 'tests',
           });
-        }
+        },
       });
       await app.load();
-      const Test = app.db.getModel('tests');
+      const Test = app.db.getCollection('tests');
       expect(Test).toBeDefined();
     });
 
@@ -117,44 +117,46 @@ describe('plugin', () => {
           app.collection({
             name: 'tests',
           });
-        }
+        },
       });
       await app.load();
-      const Test = app.db.getModel('tests');
+      const Test = app.db.getCollection('tests');
       expect(Test).toBeDefined();
     });
 
     it('plugin load', async () => {
-      app.plugin(class MyPlugin extends Plugin {
-        async load() {
-          this.app.collection({
-            name: 'tests',
-          });
-        }
-      });
+      app.plugin(
+        class MyPlugin extends Plugin {
+          async load() {
+            this.app.collection({
+              name: 'tests',
+            });
+          }
+        },
+      );
       await app.load();
-      const Test = app.db.getModel('tests');
+      const Test = app.db.getCollection('tests');
       expect(Test).toBeDefined();
     });
 
     it('plugin load', async () => {
       app.plugin(path.resolve(__dirname, './plugins/plugin1'));
       await app.load();
-      const Test = app.db.getModel('tests');
+      const Test = app.db.getCollection('tests');
       expect(Test).toBeDefined();
     });
 
     it('plugin load', async () => {
       app.plugin(path.resolve(__dirname, './plugins/plugin2'));
       await app.load();
-      const Test = app.db.getModel('tests');
+      const Test = app.db.getCollection('tests');
       expect(Test).toBeDefined();
     });
 
     it('plugin load', async () => {
       app.plugin(path.resolve(__dirname, './plugins/plugin3'));
       await app.load();
-      const Test = app.db.getModel('tests');
+      const Test = app.db.getCollection('tests');
       expect(Test).toBeDefined();
     });
   });

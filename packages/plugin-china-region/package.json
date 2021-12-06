@@ -1,11 +1,15 @@
 {
   "name": "@nocobase/plugin-china-region",
-  "version": "0.5.0-alpha.34",
+  "version": "0.6.0-alpha.0",
   "main": "lib/index.js",
   "license": "MIT",
+  "scripts": {
+    "build": "rimraf -rf lib esm dist && npm run build:cjs && npm run build:esm",
+    "build:cjs": "tsc --project tsconfig.build.json",
+    "build:esm": "tsc --project tsconfig.build.json --module es2015 --outDir esm"
+  },
   "dependencies": {
-    "@nocobase/server": "^0.5.0-alpha.34",
-    "china-division": "2.3.1"
+    "china-division": "^2.4.0"
   },
   "gitHead": "e7df1f93c4e23b9a666d99ee7372c02bdaec97c4"
 }

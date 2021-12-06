@@ -1,4 +1,4 @@
-import { TableOptions } from '@nocobase/database';
+import { CollectionOptions } from '@nocobase/database';
 
 export default {
   name: 'system_settings',
@@ -26,4 +26,4 @@ export default {
       name: 'appLang',
     },
   ],
-} as TableOptions;
+} as CollectionOptions;

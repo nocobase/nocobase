@@ -2,11 +2,9 @@ import { ActionName } from './action';
 import { requireModule } from './utils';
 import { HandlerType } from './resourcer';
 
-export type MiddlewareType = string | string[] | HandlerType | HandlerType[]
-  | MiddlewareOptions | MiddlewareOptions[];
+export type MiddlewareType = string | string[] | HandlerType | HandlerType[] | MiddlewareOptions | MiddlewareOptions[];
 
 export interface MiddlewareOptions {
-
   /**
    * actions 白名单，默认有 list、get、create、update、delete
    */
@@ -23,7 +21,6 @@ export interface MiddlewareOptions {
 }
 
 export class Middleware {
-
   protected options: MiddlewareOptions;
 
   constructor(options: MiddlewareOptions | Function) {
@@ -61,7 +58,7 @@ export class Middleware {
     if (!Array.isArray(middlewares)) {
       middlewares = [middlewares];
     }
-    return middlewares.map(middleware => {
+    return middlewares.map((middleware) => {
       if (middleware instanceof Middleware) {
         return middleware;
       }

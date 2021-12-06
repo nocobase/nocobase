@@ -10,14 +10,14 @@ describe('utils', () => {
         null: null,
         array: [5],
         object: {
-          member: {}
+          member: {},
         },
-        undefined: undefined
+        undefined: undefined,
       };
       const json = JSON.stringify(object);
       expect(parseQuery(`filter=${encodeURIComponent(json)}&sort=-col`)).toEqual({
         filter: object,
-        sort: '-col'
+        sort: '-col',
       });
     });
   });
@@ -25,25 +25,25 @@ describe('utils', () => {
   describe('parseFields', () => {
     it('plain string fields equal to only', () => {
       expect(parseFields('name,age')).toEqual({
-        only: ['name', 'age']
+        only: ['name', 'age'],
       });
     });
 
     it('plain array fields equal to only', () => {
       expect(parseFields(['name', 'age'])).toEqual({
-        only: ['name', 'age']
+        only: ['name', 'age'],
       });
     });
 
     it('only string fields equal to only', () => {
       expect(parseFields({ only: 'name,age' })).toEqual({
-        only: ['name', 'age']
+        only: ['name', 'age'],
       });
     });
 
     it('only array fields equal to only', () => {
       expect(parseFields({ only: ['name', 'age'] })).toEqual({
-        only: ['name', 'age']
+        only: ['name', 'age'],
       });
     });
 
@@ -52,7 +52,7 @@ describe('utils', () => {
       const result = parseFields(['title', { only: 'content' }, { except: ['status', 'created_at'] }]);
       expect(result).toEqual({
         only: ['title', 'content'],
-        except: ['status', 'created_at']
+        except: ['status', 'created_at'],
       });
     });
   });
@@ -60,31 +60,33 @@ describe('utils', () => {
   describe('mergeFields', () => {
     describe('empty default', () => {
       it('always contains "appends"', async () => {
-        expect(mergeFields({}, { only: ['col'] }))
-          .toEqual({ appends: [], only: ['col'] });
+        expect(mergeFields({}, { only: ['col'] })).toEqual({ appends: [], only: ['col'] });
       });
 
       it('appends', async () => {
-        expect(mergeFields({}, { only: ['col1'], appends: ['col2'] }))
-          .toEqual({ only: ['col1'], appends: ['col2'] });
+        expect(mergeFields({}, { only: ['col1'], appends: ['col2'] })).toEqual({ only: ['col1'], appends: ['col2'] });
       });
     });
 
     describe('options provided', () => {
       it('defaults provided: only, except, appends', () => {
-        expect(mergeFields({
-          only: ['col1', 'col2'],
-          except: ['col3'],
-          appends: ['col4']
-        }, {
-          only: ['col1', 'col3', 'col4'],
-          except: ['col5'],
-          appends: ['col6']
-        }))
-          .toEqual({
-            only: ['col1'],
-            appends: ['col6', 'col4']
-          });
+        expect(
+          mergeFields(
+            {
+              only: ['col1', 'col2'],
+              except: ['col3'],
+              appends: ['col4'],
+            },
+            {
+              only: ['col1', 'col3', 'col4'],
+              except: ['col5'],
+              appends: ['col6'],
+            },
+          ),
+        ).toEqual({
+          only: ['col1'],
+          appends: ['col6', 'col4'],
+        });
       });
     });
   });
@@ -151,7 +153,12 @@ describe('utils', () => {
         path: '/posts/1/comments',
         method: 'GET',
       });
-      expect(params).toEqual({ resourceName: 'comments', associatedName: 'posts', associatedIndex: '1', actionName: 'list' });
+      expect(params).toEqual({
+        resourceName: 'comments',
+        associatedName: 'posts',
+        associatedIndex: '1',
+        actionName: 'list',
+      });
     });
 
     it('store action', () => {
@@ -159,7 +166,12 @@ describe('utils', () => {
         path: '/posts/1/comments',
         method: 'POST',
       });
-      expect(params).toEqual({ resourceName: 'comments', associatedName: 'posts', associatedIndex: '1', actionName: 'create' });
+      expect(params).toEqual({
+        resourceName: 'comments',
+        associatedName: 'posts',
+        associatedIndex: '1',
+        actionName: 'create',
+      });
     });
 
     it('get action', () => {
@@ -167,7 +179,13 @@ describe('utils', () => {
         path: '/posts/1/comments/1',
         method: 'GET',
       });
-      expect(params).toEqual({ resourceName: 'comments', resourceIndex: '1', associatedName: 'posts', associatedIndex: '1', actionName: 'get' });
+      expect(params).toEqual({
+        resourceName: 'comments',
+        resourceIndex: '1',
+        associatedName: 'posts',
+        associatedIndex: '1',
+        actionName: 'get',
+      });
     });
 
     it('update action', () => {
@@ -175,7 +193,13 @@ describe('utils', () => {
         path: '/posts/1/comments/1',
         method: 'PUT',
       });
-      expect(params).toEqual({ resourceName: 'comments', resourceIndex: '1', associatedName: 'posts', associatedIndex: '1', actionName: 'update' });
+      expect(params).toEqual({
+        resourceName: 'comments',
+        resourceIndex: '1',
+        associatedName: 'posts',
+        associatedIndex: '1',
+        actionName: 'update',
+      });
     });
 
     it('update action', () => {
@@ -183,7 +207,13 @@ describe('utils', () => {
         path: '/posts/1/comments/1',
         method: 'PATCH',
       });
-      expect(params).toEqual({ resourceName: 'comments', resourceIndex: '1', associatedName: 'posts', associatedIndex: '1', actionName: 'update' });
+      expect(params).toEqual({
+        resourceName: 'comments',
+        resourceIndex: '1',
+        associatedName: 'posts',
+        associatedIndex: '1',
+        actionName: 'update',
+      });
     });
 
     it('get action', () => {
@@ -191,7 +221,13 @@ describe('utils', () => {
         path: '/posts/1/comments/1',
         method: 'delete',
       });
-      expect(params).toEqual({ resourceName: 'comments', resourceIndex: '1', associatedName: 'posts', associatedIndex: '1', actionName: 'destroy' });
+      expect(params).toEqual({
+        resourceName: 'comments',
+        resourceIndex: '1',
+        associatedName: 'posts',
+        associatedIndex: '1',
+        actionName: 'destroy',
+      });
     });
 
     it('export action', () => {
@@ -233,34 +269,43 @@ describe('utils', () => {
     });
 
     it('prefix options', () => {
-      const params = parseRequest({
-        path: '/api/posts',
-        method: 'GET',
-      }, {
-        prefix: '/api'
-      });
+      const params = parseRequest(
+        {
+          path: '/api/posts',
+          method: 'GET',
+        },
+        {
+          prefix: '/api',
+        },
+      );
       expect(params).toEqual({ resourceName: 'posts', actionName: 'list' });
     });
 
     it('prefix options', () => {
-      const params = parseRequest({
-        path: '/posts',
-        method: 'GET',
-      }, {
-        prefix: '/api'
-      });
+      const params = parseRequest(
+        {
+          path: '/posts',
+          method: 'GET',
+        },
+        {
+          prefix: '/api',
+        },
+      );
       expect(params).toBeFalsy();
     });
 
     it('actions options', () => {
-      const params = parseRequest({
-        path: '/posts',
-        method: 'GET',
-      }, {
-        accessors: {
-          list: 'query'
-        }
-      });
+      const params = parseRequest(
+        {
+          path: '/posts',
+          method: 'GET',
+        },
+        {
+          accessors: {
+            list: 'query',
+          },
+        },
+      );
       expect(params).toEqual({ resourceName: 'posts', actionName: 'query' });
     });
 

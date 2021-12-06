@@ -1,15 +1,13 @@
-import { mockDatabase } from "../";
+import { mockDatabase } from '../';
 
 describe('mock databasea', () => {
   it('mock databasea', async () => {
     const db = mockDatabase();
-    db.table({
+    db.collection({
       name: 'tests',
-      fields: [
-        { type: 'string', name: 'name' },
-      ],
+      fields: [{ type: 'string', name: 'name' }],
     });
-    expect(db.getModel('tests').getTableName()).toBe('_test_mockDatabase_tests');
+    expect(db.getCollection('tests').model.getTableName()).toBe('_test_mockDatabase_tests');
     await db.sync();
     await db.close();
   });
