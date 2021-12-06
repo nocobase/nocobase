@@ -26,14 +26,12 @@ export default {
 
     const { DEFAULT_STORAGE_TYPE } = process.env;
 
-    if (process.env.NOCOBASE_ENV !== 'production'
-      && process.env.LOCAL_STORAGE_USE_STATIC_SERVER
-    ) {
+    if (process.env.NOCOBASE_ENV !== 'production') {
       this.app.on('beforeStart', async () => {
         await getStorageConfig(STORAGE_TYPE_LOCAL).middleware(this.app);
       });
     }
-    
+
     this.app.on('db.init', async () => {
       const defaultStorageConfig = getStorageConfig(DEFAULT_STORAGE_TYPE);
       if (defaultStorageConfig) {

@@ -1,5 +1,5 @@
 INSERT INTO "storages" ("id", "title", "name", "type", "options", "rules", "path", "base_url", "default", "created_at", "updated_at", "created_by_id", "updated_by_id") VALUES
-(2,	NULL,	'ali-oss',	'ali-oss',	'{"bucket": "nocobase", "region": "oss-cn-beijing", "accessKeyId": "", "accessKeySecret": ""}',	'{}',	'',	'https://nocobase.oss-cn-beijing.aliyuncs.com',	'1',	'2021-11-18 18:07:04.162+00',	'2021-11-18 18:07:04.162+00',	NULL,	NULL);
+(2,	NULL,	'ali-oss',	'ali-oss',	'{"bucket": "nocobase", "region": "oss-cn-beijing", "accessKeyId": "", "accessKeySecret": ""}',	'{}',	'',	'https://nocobase.oss-cn-beijing.aliyuncs.com',	'0',	'2021-11-18 18:07:04.162+00',	'2021-11-18 18:07:04.162+00',	NULL,	NULL);
 -- DELETE FROM "attachments";
 INSERT INTO "attachments" ("id", "title", "filename", "extname", "size", "mimetype", "path", "meta", "url", "created_at", "updated_at", "created_by_id", "updated_by_id", "storage_id") VALUES
 (2,	'Nocobase',	'dac1165de10a3373a87ae4e5da9788ab.png',	'.png',	NULL,	'image/png',	'',	'{}',	'https://nocobase.oss-cn-beijing.aliyuncs.com/dac1165de10a3373a87ae4e5da9788ab.png',	'2021-09-04 01:33:38.878+00',	'2021-09-04 01:33:38.878+00',	NULL,	NULL,	2),
