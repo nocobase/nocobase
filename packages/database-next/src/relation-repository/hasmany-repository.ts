@@ -1,0 +1,143 @@
+import { BelongsToMany, HasMany, Model, Op, Sequelize } from 'sequelize';
+
+import {
+  AssociatedOptions,
+  FindAndCountOptions,
+  FindOneOptions,
+  MultipleRelationRepository,
+} from './multiple-relation-repository';
+import {
+  CreateOptions,
+  DestroyOptions,
+  FindOptions,
+  PK,
+  PrimaryKey,
+  UpdateOptions,
+} from '../repository';
+import { transaction } from './relation-repository';
+
+interface IHasManyRepository<M extends Model> {
+  find(options?: FindOptions): Promise<M>;
+  findAndCount(options?: FindAndCountOptions): Promise<[M[], number]>;
+  findOne(options?: FindOneOptions): Promise<M>;
+  // 新增并关联
+  create(options?: CreateOptions): Promise<M>;
+  // 更新
+  update(options?: UpdateOptions): Promise<M>;
+  // 删除
+  destroy(options?: PK | DestroyOptions): Promise<Boolean>;
+  // 建立关联
+  set(options: PrimaryKey | PrimaryKey[] | AssociatedOptions): Promise<void>;
+  // 附加关联
+  add(options: PrimaryKey | PrimaryKey[] | AssociatedOptions): Promise<void>;
+  // 移除关联
+  remove(options: PrimaryKey | PrimaryKey[] | AssociatedOptions): Promise<void>;
+}
+
+export class HasManyRepository
+  extends MultipleRelationRepository
+  implements IHasManyRepository<any>
+{
+  @transaction((args, transaction) => {
+    return {
+      filterByPk: args[0],
+      transaction,
+    };
+  })
+  async destroy(options?: PK | DestroyOptions): Promise<Boolean> {
+    const transaction = await this.getTransaction(options);
+
+    const sourceModel = await this.getSourceModel(transaction);
+
+    const where = [
+      {
+        [this.association.foreignKey]: sourceModel.get(
+          this.source.model.primaryKeyAttribute,
+        ),
+      },
+    ];
+
+    if (options && options['filter']) {
+      const filterResult = this.parseFilter(options['filter']);
+
+      if (filterResult.include && filterResult.include.length > 0) {
+        return await this.destroyByFilter(options['filter'], transaction);
+      }
+
+      where.push(filterResult.where);
+    } else if (options && options['filterByPk']) {
+      if (typeof options === 'object' && options['filterByPk']) {
+        options = options['filterByPk'];
+      }
+
+      const targetInstances = (<any>this.association).toInstanceArray(options);
+
+      where.push({
+        [this.target.primaryKeyAttribute]: targetInstances.map(
+          (targetInstance) =>
+            targetInstance.get(this.target.primaryKeyAttribute),
+        ),
+      });
+    }
+
+    await this.target.destroy({
+      where: {
+        [Op.and]: where,
+      },
+      transaction,
+    });
+
+    return true;
+  }
+
+  handleKeyOfAdd(options) {
+    let handleKeys;
+
+    if (typeof options !== 'object' && !Array.isArray(options)) {
+      handleKeys = [options];
+    } else {
+      handleKeys = options['pk'];
+    }
+    return handleKeys;
+  }
+
+  @transaction((args, transaction) => {
+    return {
+      pk: args[0],
+      transaction,
+    };
+  })
+  async set(
+    options: PrimaryKey | PrimaryKey[] | AssociatedOptions,
+  ): Promise<void> {
+    const transaction = await this.getTransaction(options);
+
+    const sourceModel = await this.getSourceModel(transaction);
+
+    await sourceModel[this.accessors().set](this.handleKeyOfAdd(options), {
+      transaction,
+    });
+  }
+
+  @transaction((args, transaction) => {
+    return {
+      pk: args[0],
+      transaction,
+    };
+  })
+  async add(
+    options: PrimaryKey | PrimaryKey[] | AssociatedOptions,
+  ): Promise<void> {
+    const transaction = await this.getTransaction(options);
+
+    const sourceModel = await this.getSourceModel(transaction);
+
+    await sourceModel[this.accessors().add](this.handleKeyOfAdd(options), {
+      transaction,
+    });
+  }
+
+  accessors() {
+    return (<HasMany>this.association).accessors;
+  }
+}

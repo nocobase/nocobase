@@ -31,9 +31,7 @@ describe('belongs to field', () => {
     expect(Comment.model.associations.post).toBeUndefined();
     const Post = db.collection({
       name: 'posts',
-      fields: [
-        { type: 'string', name: 'title' },
-      ],
+      fields: [{ type: 'string', name: 'title' }],
     });
     const association = Comment.model.associations.post;
     expect(Comment.model.associations.post).toBeDefined();
@@ -51,7 +49,7 @@ describe('belongs to field', () => {
       title: 'title222',
     });
     const post = await Post.model.create<any>({
-      title: 'title111'
+      title: 'title111',
     });
     await comment.setPost(post);
     const post2 = await comment.getPost();
@@ -63,9 +61,7 @@ describe('belongs to field', () => {
   it('custom targetKey and foreignKey', async () => {
     const Post = db.collection({
       name: 'posts',
-      fields: [
-        { type: 'string', name: 'key', unique: true },
-      ],
+      fields: [{ type: 'string', name: 'key', unique: true }],
     });
     const Comment = db.collection({
       name: 'comments',
@@ -103,9 +99,7 @@ describe('belongs to field', () => {
     expect(Comment.model.associations.article).toBeUndefined();
     const Post = db.collection({
       name: 'posts',
-      fields: [
-        { type: 'string', name: 'key', unique: true },
-      ],
+      fields: [{ type: 'string', name: 'key', unique: true }],
     });
     const association = Comment.model.associations.article;
     expect(Comment.model.associations.article).toBeDefined();
@@ -123,7 +117,7 @@ describe('belongs to field', () => {
       key: 'title222',
     });
     const post = await Post.model.create<any>({
-      key: 'title111'
+      key: 'title111',
     });
     await comment.setArticle(post);
     const post2 = await comment.getArticle();
@@ -147,5 +141,22 @@ describe('belongs to field', () => {
     expect(Comment.model.rawAttributes.postId).toBeDefined();
     Post.removeField('comments');
     expect(Comment.model.rawAttributes.postId).toBeUndefined();
+  });
+
+  it('has inverse field', async () => {
+    const Post = db.collection({
+      name: 'posts',
+      fields: [{ type: 'hasMany', name: 'comments' }],
+    });
+
+    const Comment = db.collection({
+      name: 'comments',
+      fields: [{ type: 'belongsTo', name: 'post' }],
+    });
+
+    const belongsToField = Comment.fields.get('post');
+    expect(belongsToField).toBeDefined();
+    const association = Post.model.associations;
+    expect(association['comments']).toBeDefined();
   });
 });

@@ -8,7 +8,7 @@ describe('string field', () => {
   beforeEach(() => {
     db = mockDatabase();
     db.registerFieldTypes({
-      sort: SortField
+      sort: SortField,
     });
   });
 
@@ -19,9 +19,7 @@ describe('string field', () => {
   it('sort', async () => {
     const Test = db.collection({
       name: 'tests',
-      fields: [
-        { type: 'sort', name: 'sort' },
-      ],
+      fields: [{ type: 'sort', name: 'sort' }],
     });
     await db.sync();
     const test1 = await Test.model.create<any>();
@@ -35,9 +33,7 @@ describe('string field', () => {
   it('skip if sort value not empty', async () => {
     const Test = db.collection({
       name: 'tests',
-      fields: [
-        { type: 'sort', name: 'sort' },
-      ],
+      fields: [{ type: 'sort', name: 'sort' }],
     });
     await db.sync();
     const test1 = await Test.model.create<any>({ sort: 3 });
@@ -66,5 +62,4 @@ describe('string field', () => {
     expect(t3.get('sort')).toBe(1);
     expect(t4.get('sort')).toBe(2);
   });
-
 });

@@ -1,9 +1,11 @@
 import { omit } from 'lodash';
 import { Sequelize, ModelCtor, Model, DataTypes, Utils } from 'sequelize';
-import { RelationField } from './relation-field';
+import { Collection } from '../collection';
+import { BaseRelationFieldOptions, RelationField } from './relation-field';
+import { BaseColumnFieldOptions } from './field';
+import { BelongsToManyOptions as SequelizeBelongsToManyOptions } from 'sequelize/types/lib/associations/belongs-to-many';
 
 export class BelongsToManyField extends RelationField {
-
   get through() {
     return (
       this.options.through ||
@@ -22,18 +24,27 @@ export class BelongsToManyField extends RelationField {
       return false;
     }
     const through = this.through;
-    let Through =
-      database.getCollection(through) ||
-      database.collection({
+
+    let Through: Collection;
+
+    if (database.hasCollection(through)) {
+      Through = database.getCollection(through);
+    } else {
+      Through = database.collection({
         name: through,
       });
+      Object.defineProperty(Through.model, 'isThrough', { value: true });
+    }
+
     const association = collection.model.belongsToMany(Target, {
       ...omit(this.options, ['name', 'type', 'target']),
       as: this.name,
       through: Through.model,
     });
+
     // 建立关系之后从 pending 列表中删除
     database.removePendingField(this);
+
     if (!this.options.foreignKey) {
       this.options.foreignKey = association.foreignKey;
     }
@@ -50,4 +61,11 @@ export class BelongsToManyField extends RelationField {
     // 删掉 model 的关联字段
     delete collection.model.associations[this.name];
   }
+}
+
+export interface BelongsToManyFieldOptions
+  extends BaseRelationFieldOptions,
+    Omit<SequelizeBelongsToManyOptions, 'through'> {
+  type: 'belongsToMany';
+  through?: string;
 }

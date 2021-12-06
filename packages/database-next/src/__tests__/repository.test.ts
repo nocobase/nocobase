@@ -29,98 +29,100 @@ describe('repository.find', () => {
       fields: [{ type: 'string', name: 'name' }],
     });
     await db.sync();
-    await User.repository.createMany([
-      {
-        name: 'user1',
-        posts: [
-          {
-            name: 'post11',
-            comments: [
-              { name: 'comment111' },
-              { name: 'comment112' },
-              { name: 'comment113' },
-            ],
-          },
-          {
-            name: 'post12',
-            comments: [
-              { name: 'comment121' },
-              { name: 'comment122' },
-              { name: 'comment123' },
-            ],
-          },
-          {
-            name: 'post13',
-            comments: [
-              { name: 'comment131' },
-              { name: 'comment132' },
-              { name: 'comment133' },
-            ],
-          },
-          {
-            name: 'post14',
-            comments: [
-              { name: 'comment141' },
-              { name: 'comment142' },
-              { name: 'comment143' },
-            ],
-          },
-        ],
-      },
-      {
-        name: 'user2',
-        posts: [
-          {
-            name: 'post21',
-            comments: [
-              { name: 'comment211' },
-              { name: 'comment212' },
-              { name: 'comment213' },
-            ],
-          },
-          {
-            name: 'post22',
-            comments: [
-              { name: 'comment221' },
-              { name: 'comment222' },
-              { name: 'comment223' },
-            ],
-          },
-          {
-            name: 'post23',
-            comments: [
-              { name: 'comment231' },
-              { name: 'comment232' },
-              { name: 'comment233' },
-            ],
-          },
-          { name: 'post24' },
-        ],
-      },
-      {
-        name: 'user3',
-        posts: [
-          {
-            name: 'post31',
-            comments: [
-              { name: 'comment311' },
-              { name: 'comment312' },
-              { name: 'comment313' },
-            ],
-          },
-          { name: 'post32' },
-          {
-            name: 'post33',
-            comments: [
-              { name: 'comment331' },
-              { name: 'comment332' },
-              { name: 'comment333' },
-            ],
-          },
-          { name: 'post34' },
-        ],
-      },
-    ]);
+    await User.repository.createMany({
+      records: [
+        {
+          name: 'user1',
+          posts: [
+            {
+              name: 'post11',
+              comments: [
+                { name: 'comment111' },
+                { name: 'comment112' },
+                { name: 'comment113' },
+              ],
+            },
+            {
+              name: 'post12',
+              comments: [
+                { name: 'comment121' },
+                { name: 'comment122' },
+                { name: 'comment123' },
+              ],
+            },
+            {
+              name: 'post13',
+              comments: [
+                { name: 'comment131' },
+                { name: 'comment132' },
+                { name: 'comment133' },
+              ],
+            },
+            {
+              name: 'post14',
+              comments: [
+                { name: 'comment141' },
+                { name: 'comment142' },
+                { name: 'comment143' },
+              ],
+            },
+          ],
+        },
+        {
+          name: 'user2',
+          posts: [
+            {
+              name: 'post21',
+              comments: [
+                { name: 'comment211' },
+                { name: 'comment212' },
+                { name: 'comment213' },
+              ],
+            },
+            {
+              name: 'post22',
+              comments: [
+                { name: 'comment221' },
+                { name: 'comment222' },
+                { name: 'comment223' },
+              ],
+            },
+            {
+              name: 'post23',
+              comments: [
+                { name: 'comment231' },
+                { name: 'comment232' },
+                { name: 'comment233' },
+              ],
+            },
+            { name: 'post24' },
+          ],
+        },
+        {
+          name: 'user3',
+          posts: [
+            {
+              name: 'post31',
+              comments: [
+                { name: 'comment311' },
+                { name: 'comment312' },
+                { name: 'comment313' },
+              ],
+            },
+            { name: 'post32' },
+            {
+              name: 'post33',
+              comments: [
+                { name: 'comment331' },
+                { name: 'comment332' },
+                { name: 'comment333' },
+              ],
+            },
+            { name: 'post34' },
+          ],
+        },
+      ],
+    });
   });
 
   afterEach(async () => {
@@ -136,25 +138,12 @@ describe('repository.find', () => {
     console.log(data);
   });
 
-  it('findMany', async () => {
-    const data = await User.repository.findMany({
+  it('find item', async () => {
+    const data = await User.repository.find({
       filter: {
         'posts.comments.id': null,
       },
-      page: 1,
-      pageSize: 1,
     });
-    console.log(
-      data.count,
-      JSON.stringify(
-        data.rows.map((row) => row.toJSON()),
-        null,
-        2,
-      ),
-    );
-    // expect(data.toJSON()).toMatchObject({
-    //   name: 'user3',
-    // });
   });
 });
 
@@ -193,17 +182,19 @@ describe('repository.create', () => {
 
   it('create', async () => {
     const user = await User.repository.create({
-      name: 'user1',
-      posts: [
-        {
-          name: 'post11',
-          comments: [
-            { name: 'comment111' },
-            { name: 'comment112' },
-            { name: 'comment113' },
-          ],
-        },
-      ],
+      values: {
+        name: 'user1',
+        posts: [
+          {
+            name: 'post11',
+            comments: [
+              { name: 'comment111' },
+              { name: 'comment112' },
+              { name: 'comment113' },
+            ],
+          },
+        ],
+      },
     });
     const post = await Post.model.findOne();
     expect(post).toMatchObject({
@@ -256,22 +247,25 @@ describe('repository.update', () => {
     const user = await User.model.create<any>({
       name: 'user1',
     });
-    await User.repository.update(
-      {
+    await User.repository.update({
+      filterByPk: user.id,
+      values: {
         name: 'user11',
         posts: [{ name: 'post1' }],
       },
-      user,
-    );
+    });
+
     const updated = await User.model.findByPk(user.id);
     expect(updated).toMatchObject({
       name: 'user11',
     });
+
     const post = await Post.model.findOne({
       where: {
         name: 'post1',
       },
     });
+
     expect(post).toMatchObject({
       name: 'post1',
       userId: user.id,
@@ -283,13 +277,13 @@ describe('repository.update', () => {
       name: 'user1',
       posts: [{ name: 'post1' }],
     });
-    await User.repository.update(
-      {
+    await User.repository.update({
+      filterByPk: user.id,
+      values: {
         name: 'user11',
         posts: [{ name: 'post1' }],
       },
-      user.id,
-    );
+    });
     const updated = await User.model.findByPk(user.id);
     expect(updated).toMatchObject({
       name: 'user11',
@@ -393,34 +387,31 @@ describe('repository.relatedQuery', () => {
   });
 
   it('create', async () => {
-    const user = await User.repository.create();
-    const post = await User.repository.relatedQuery('posts').for(user).create({
-      name: 'post1',
+    const user = await User.repository.create({
+      values: {
+        name: 'u1',
+      },
     });
+
+    const userPostRepository = await User.repository
+      .relation('posts')
+      .of(<number>user.get('id'));
+
+    const post = await userPostRepository.create({
+      values: { name: 'post1' },
+    });
+
     expect(post).toMatchObject({
       name: 'post1',
-      userId: user.id,
+      userId: user.get('id'),
     });
-    const post2 = await User.repository
-      .relatedQuery('posts')
-      .for(user.id)
-      .create({
-        name: 'post2',
-      });
+
+    const post2 = await userPostRepository.create({
+      values: { name: 'post2' },
+    });
     expect(post2).toMatchObject({
       name: 'post2',
-      userId: user.id,
-    });
-  });
-
-  it('update', async () => {
-    const post = await Post.repository.create({
-      user: {
-        name: 'user11',
-      }
-    });
-    await Post.repository.relatedQuery('user').for(post).update({
-      name: 'user12',
+      userId: user.get('id'),
     });
   });
 });

@@ -1,12 +1,26 @@
-import { Sequelize, ModelCtor, Model, DataTypes, Utils } from 'sequelize';
-import { EventEmitter } from 'events';
 import { Collection } from '../collection';
 import { Database } from '../database';
 import _ from 'lodash';
+import {
+  DataType,
+  ModelAttributeColumnOptions,
+  ModelIndexesOptions,
+} from 'sequelize';
 
 export interface FieldContext {
   database: Database;
   collection: Collection;
+}
+
+export interface BaseFieldOptions {
+  name: string;
+}
+
+export interface BaseColumnFieldOptions
+  extends BaseFieldOptions,
+    Omit<ModelAttributeColumnOptions, 'type'> {
+  dataType?: DataType;
+  index?: boolean | ModelIndexesOptions;
 }
 
 export abstract class Field {
@@ -66,5 +80,9 @@ export abstract class Field {
       Object.assign(opts, { type: this.dataType });
     }
     return opts;
+  }
+
+  isSqlite() {
+    return this.database.sequelize.getDialect() === 'sqlite';
   }
 }
