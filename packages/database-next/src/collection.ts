@@ -1,27 +1,39 @@
-import { Sequelize, ModelCtor, Model, DataTypes, Utils } from 'sequelize';
+import { Sequelize, ModelCtor, Model, ModelOptions } from 'sequelize';
 import { EventEmitter } from 'events';
 import { Database } from './database';
-import { Field } from './fields';
+import { Field, FieldOptions } from './fields';
+
 import _ from 'lodash';
 import { Repository } from './repository';
+import { SyncOptions } from 'sequelize/types/lib/sequelize';
+import lodash from 'lodash';
+import merge from 'deepmerge';
+const { hooks } = require('sequelize/lib/hooks');
 
-export interface CollectionOptions {
+export type RepositoryType = typeof Repository;
+
+export interface CollectionOptions extends Omit<ModelOptions, 'name'> {
   name: string;
   tableName?: string;
-  fields?: any;
-  [key: string]: any;
+  fields?: FieldOptions[];
+  model?: string | ModelCtor<Model>;
+  repository?: string | RepositoryType;
 }
 
 export interface CollectionContext {
   database: Database;
 }
 
-export class Collection extends EventEmitter {
+export class Collection<
+  TModelAttributes extends {} = any,
+  TCreationAttributes extends {} = TModelAttributes,
+> extends EventEmitter {
   options: CollectionOptions;
   context: CollectionContext;
-  fields: Map<string, any>;
-  model: ModelCtor<Model>;
-  repository: Repository;
+  isThrough?: boolean;
+  fields: Map<string, any> = new Map<string, any>();
+  model: ModelCtor<Model<TModelAttributes, TCreationAttributes>>;
+  repository: Repository<TModelAttributes, TCreationAttributes>;
 
   get name() {
     return this.options.name;
@@ -29,23 +41,62 @@ export class Collection extends EventEmitter {
 
   constructor(options: CollectionOptions, context?: CollectionContext) {
     super();
-    this.options = options;
     this.context = context;
-    this.fields = new Map<string, any>();
-    this.model = class extends Model<any, any> {};
-    const attributes = {};
-    const { name, tableName } = options;
-    // TODO: 不能重复 model.init，如果有涉及 InitOptions 参数修改，需要另外处理。
-    this.model.init(attributes, {
-      ..._.omit(options, ['name', 'fields']),
-      sequelize: context.database.sequelize,
-      modelName: name,
-      tableName: tableName || name,
-    });
-    this.on('field.afterAdd', (field) => field.bind());
-    this.on('field.afterRemove', (field) => field.unbind());
+    this.options = options;
+    this.bindFieldEventListener();
+    this.modelInit();
     this.setFields(options.fields);
-    this.repository = new Repository(this);
+    this.setRepository(options.repository);
+  }
+
+  private sequelizeModelOptions() {
+    const { name, tableName } = this.options;
+    return {
+      ..._.omit(this.options, ['name', 'fields']),
+      modelName: name,
+      sequelize: this.context.database.sequelize,
+      tableName: tableName || name,
+    };
+  }
+
+  /**
+   * TODO
+   */
+  modelInit() {
+    if (this.model) {
+      return;
+    }
+    const { name, model } = this.options;
+    let M = Model;
+    if (this.context.database.sequelize.isDefined(name)) {
+      const m = this.context.database.sequelize.model(name);
+      if ((m as any).isThrough) {
+        this.model = m;
+        return;
+      }
+    }
+    if (typeof model === 'string') {
+      M = this.context.database.models.get(model) || Model;
+    } else if (model) {
+      M = model;
+    }
+    this.model = class extends M {};
+    this.model.init(null, this.sequelizeModelOptions());
+  }
+
+  setRepository(repository?: RepositoryType | string) {
+    let repo = Repository;
+    if (typeof repository === 'string') {
+      repo = this.context.database.repositories.get(repository) || Repository;
+    }
+    this.repository = new repo(this);
+  }
+
+  private bindFieldEventListener() {
+    this.on('field.afterAdd', (field: Field) => {
+      field.bind();
+    });
+    this.on('field.afterRemove', (field) => field.unbind());
   }
 
   forEachField(callback: (field: Field) => void) {
@@ -64,36 +115,44 @@ export class Collection extends EventEmitter {
     return this.fields.get(name);
   }
 
-  addField(options) {
-    const { name, ...others } = options;
-    if (!name) {
-      return this;
-    }
-    const { database } = this.context;
-    const field = database.buildField({ name, ...others }, {
-      ...this.context,
-      collection: this,
-      model: this.model,
-    });
-    this.fields.set(name, field);
-    this.emit('field.afterAdd', field);
+  addField(name: string, options: Omit<FieldOptions, 'name'>): Field {
+    return this.setField(name, options);
   }
 
-  setFields(fields: any, reset = true) {
-    if (!fields) {
-      return this;
+  setField(name: string, options: Omit<FieldOptions, 'name'>): Field {
+    const { database } = this.context;
+
+    const field = database.buildField(
+      { name, ...options },
+      {
+        ...this.context,
+        collection: this,
+      },
+    );
+
+    this.fields.set(name, field);
+    this.emit('field.afterAdd', field);
+    return field;
+  }
+
+  setFields(fields: FieldOptions[], resetFields = true) {
+    if (!Array.isArray(fields)) {
+      return;
     }
-    if (reset) {
-      this.fields.clear();
+
+    if (resetFields) {
+      this.resetFields();
     }
-    if (Array.isArray(fields)) {
-      for (const field of fields) {
-        this.addField(field);
-      }
-    } else if (typeof fields === 'object') {
-      for (const [name, options] of Object.entries<any>(fields)) {
-        this.addField({...options, name});
-      }
+
+    for (const { name, ...options } of fields) {
+      this.addField(name, options);
+    }
+  }
+
+  resetFields() {
+    const fieldNames = this.fields.keys();
+    for (const fieldName of fieldNames) {
+      this.removeField(fieldName);
     }
   }
 
@@ -106,13 +165,73 @@ export class Collection extends EventEmitter {
     return bool;
   }
 
-  // TODO
-  extend(options) {
-    const { fields } = options;
-    this.setFields(fields);
+  /**
+   * TODO
+   *
+   * @param name
+   * @param options
+   */
+  updateOptions(options: CollectionOptions, mergeOptions?: any) {
+    let newOptions = lodash.cloneDeep(options);
+    newOptions = merge(this.options, newOptions, mergeOptions);
+
+    this.context.database.emit('beforeUpdateCollection', this, newOptions);
+
+    this.setFields(options.fields, false);
+    this.setRepository(options.repository);
+
+    if (newOptions.hooks) {
+      this.setUpHooks(newOptions.hooks);
+    }
+
+    this.context.database.emit('afterUpdateCollection', this);
   }
 
-  sync() {
-    
+  setUpHooks(bindHooks) {
+    (<any>this.model)._setupHooks(bindHooks);
+  }
+
+  /**
+   * TODO
+   *
+   * @param name
+   * @param options
+   */
+  updateField(name: string, options: FieldOptions) {
+    if (!this.hasField(name)) {
+      throw new Error(`field ${name} not exists`);
+    }
+
+    if (options.name && options.name !== name) {
+      this.removeField(name);
+    }
+
+    this.setField(options.name || name, options);
+  }
+
+  async sync(syncOptions?: SyncOptions) {
+    const modelNames = [this.model.name];
+
+    const associations = this.model.associations;
+
+    for (const associationKey in associations) {
+      const association = associations[associationKey];
+      modelNames.push(association.target.name);
+      if ((<any>association).through) {
+        modelNames.push((<any>association).through.model.name);
+      }
+    }
+
+    const models: ModelCtor<Model>[] = [];
+    // @ts-ignore
+    this.context.database.sequelize.modelManager.forEachModel((model) => {
+      if (modelNames.includes(model.name)) {
+        models.push(model);
+      }
+    });
+
+    for (const model of models) {
+      await model.sync(syncOptions);
+    }
   }
 }

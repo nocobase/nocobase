@@ -1,10 +1,14 @@
 import { DataTypes } from 'sequelize';
-import { Field } from './field';
+import { BaseColumnFieldOptions, Field } from './field';
 
 export class JsonField extends Field {
   get dataType() {
     return DataTypes.JSON;
   }
+}
+
+export interface JsonFieldOptions extends BaseColumnFieldOptions {
+  type: 'json';
 }
 
 export class JsonbField extends Field {
@@ -15,4 +19,7 @@ export class JsonbField extends Field {
     }
     return DataTypes.JSON;
   }
+}
+export interface JsonbFieldOptions extends BaseColumnFieldOptions {
+  type: 'jsonb';
 }

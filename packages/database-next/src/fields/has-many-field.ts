@@ -9,7 +9,9 @@ import {
   HasManyOptions,
   Utils,
 } from 'sequelize';
-import { RelationField } from './relation-field';
+import { BaseRelationFieldOptions, RelationField } from './relation-field';
+import { BaseColumnFieldOptions } from './field';
+import { HasManyOptions as SequelizeHasManyOptions } from 'sequelize/types/lib/associations/has-many';
 
 export interface HasManyFieldOptions extends HasManyOptions {
   /**
@@ -73,7 +75,6 @@ export interface HasManyFieldOptions extends HasManyOptions {
 }
 
 export class HasManyField extends RelationField {
-
   get foreignKey() {
     if (this.options.foreignKey) {
       return this.options.foreignKey;
@@ -82,8 +83,8 @@ export class HasManyField extends RelationField {
     return Utils.camelize(
       [
         model.options.name.singular,
-        this.sourceKey || model.primaryKeyAttribute
-      ].join('_')
+        this.sourceKey || model.primaryKeyAttribute,
+      ].join('_'),
     );
   }
 
@@ -94,13 +95,23 @@ export class HasManyField extends RelationField {
       database.addPendingField(this);
       return false;
     }
+
+    if (collection.model.associations[this.name]) {
+      delete collection.model.associations[this.name];
+    }
+
     const association = collection.model.hasMany(Target, {
       as: this.name,
       foreignKey: this.foreignKey,
       ...omit(this.options, ['name', 'type', 'target']),
     });
+
+    // inverse relation
+    this.TargetModel.belongsTo(collection.model);
+
     // 建立关系之后从 pending 列表中删除
     database.removePendingField(this);
+
     if (!this.options.foreignKey) {
       this.options.foreignKey = association.foreignKey;
     }
@@ -132,4 +143,10 @@ export class HasManyField extends RelationField {
     // @ts-ignore
     collection.model.refreshAttributes();
   }
+}
+
+export interface HasManyFieldOptions
+  extends BaseRelationFieldOptions,
+    SequelizeHasManyOptions {
+  type: 'hasMany';
 }

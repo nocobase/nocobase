@@ -1,6 +1,6 @@
 import { isNumber } from 'lodash';
 import { DataTypes } from 'sequelize';
-import { Field } from './field';
+import { BaseColumnFieldOptions, Field } from './field';
 
 export class SortField extends Field {
   get dataType() {
@@ -22,4 +22,9 @@ export class SortField extends Field {
       instance.set(name, (max || 0) + 1);
     });
   }
+}
+
+export interface SortFieldOptions extends BaseColumnFieldOptions {
+  type: 'sort';
+  scopeKey?: string;
 }

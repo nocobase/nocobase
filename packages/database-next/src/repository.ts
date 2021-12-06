@@ -1,57 +1,123 @@
 import {
-  Op,
+  Association,
+  BulkCreateOptions,
+  CreateOptions as SequelizeCreateOptions,
+  FindAndCountOptions as SequelizeAndCountOptions,
+  FindOptions as SequelizeFindOptions,
   Model,
   ModelCtor,
-  Association,
-  FindOptions,
-  BulkCreateOptions,
-  DestroyOptions as SequelizeDestroyOptions,
-  CreateOptions as SequelizeCreateOptions,
-  UpdateOptions as SequelizeUpdateOptions,
+  Op,
+  Transaction,
 } from 'sequelize';
-import { flatten } from 'flat';
+
 import { Collection } from './collection';
-import _ from 'lodash';
+import lodash, { omit } from 'lodash';
 import { Database } from './database';
-import { updateAssociations } from './update-associations';
+import { updateAssociations, updateModelByValues } from './update-associations';
 import { RelationField } from './fields';
+import FilterParser from './filter-parser';
+import { OptionsParser } from './options-parser';
+import { RelationRepository } from './relation-repository/relation-repository';
+import { HasOneRepository } from './relation-repository/hasone-repository';
+import { BelongsToRepository } from './relation-repository/belongs-to-repository';
+import { BelongsToManyRepository } from './relation-repository/belongs-to-many-repository';
+import { HasManyRepository } from './relation-repository/hasmany-repository';
+import { UpdateGuard } from './update-guard';
+import { transactionWrapperBuilder } from './transaction-decorator';
+
+const debug = require('debug')('noco-database');
 
 export interface IRepository {}
 
-interface CreateManyOptions extends BulkCreateOptions {}
-
-interface FindManyOptions extends FindOptions {
-  filter?: any;
-  fields?: any;
-  appends?: any;
-  expect?: any;
-  page?: any;
-  pageSize?: any;
-  sort?: any;
+interface CreateManyOptions extends BulkCreateOptions {
+  records: Values[];
 }
 
-interface FindOneOptions extends FindOptions {
-  filter?: any;
-  fields?: any;
-  appends?: any;
-  expect?: any;
-  sort?: any;
+export interface TransactionAble {
+  transaction?: Transaction;
 }
 
-interface CreateOptions extends SequelizeCreateOptions {
-  values?: any;
-  whitelist?: any;
-  blacklist?: any;
+export interface FilterAble {
+  filter: Filter;
 }
 
-interface UpdateOptions extends SequelizeUpdateOptions {
-  values?: any;
-  whitelist?: any;
-  blacklist?: any;
+export type PrimaryKey = string | number;
+export type PK = PrimaryKey | PrimaryKey[];
+
+export type Filter = any;
+export type Appends = string[];
+export type Except = string[];
+export type Fields = string[];
+export type Sort = string[];
+
+export type WhiteList = string[];
+export type BlackList = string[];
+export type AssociationKeysToBeUpdate = string[];
+
+export type Values = {
+  [key: string]: string | number | Values | Array<number | string | Values>;
+};
+
+export interface CountOptions
+  extends Omit<SequelizeCreateOptions, 'distinct' | 'where' | 'include'>,
+    TransactionAble {
+  fields?: Fields;
+  filter?: Filter;
 }
 
-interface DestroyOptions extends SequelizeDestroyOptions {
-  filter?: any;
+export interface FilterByPK {
+  filterByPk?: PrimaryKey;
+}
+
+export interface FindOptions
+  extends SequelizeFindOptions,
+    CommonFindOptions,
+    FilterByPK {}
+
+export interface CommonFindOptions {
+  filter?: Filter;
+  fields?: Fields;
+  appends?: Appends;
+  except?: Except;
+  sort?: Sort;
+}
+
+interface FindOneOptions extends FindOptions, CommonFindOptions {}
+
+export interface DestroyOptions extends TransactionAble {
+  filter?: Filter;
+  filterByPk?: PrimaryKey | PrimaryKey[];
+  truncate?: boolean;
+}
+
+interface FindAndCountOptions
+  extends Omit<SequelizeAndCountOptions, 'where' | 'include' | 'order'> {
+  // 数据过滤
+  filter?: Filter;
+  // 输出结果显示哪些字段
+  fields?: Fields;
+  // 输出结果不显示哪些字段
+  except?: Except;
+  // 附加字段，用于控制关系字段的输出
+  appends?: Appends;
+  // 排序，字段前面加上 “-” 表示降序
+  sort?: Sort;
+}
+
+export interface CreateOptions extends TransactionAble {
+  values?: Values;
+  whitelist?: WhiteList;
+  blacklist?: BlackList;
+  updateAssociationValues?: AssociationKeysToBeUpdate;
+}
+
+export interface UpdateOptions extends TransactionAble {
+  values: Values;
+  filter?: Filter;
+  filterByPk?: PrimaryKey;
+  whitelist?: WhiteList;
+  blacklist?: BlackList;
+  updateAssociationValues?: AssociationKeysToBeUpdate;
 }
 
 interface RelatedQueryOptions {
@@ -69,101 +135,43 @@ interface RelatedQueryOptions {
   };
 }
 
-type Identity = string | number;
+const transaction = transactionWrapperBuilder(function () {
+  return (<Repository>this).collection.model.sequelize.transaction();
+});
 
-class RelatedQuery {
-  options: RelatedQueryOptions;
-  sourceInstance: Model;
+class RelationRepositoryBuilder<R extends RelationRepository> {
+  collection: Collection;
+  associationName: string;
+  association: Association;
 
-  constructor(options: RelatedQueryOptions) {
-    this.options = options;
+  builderMap = {
+    HasOne: HasOneRepository,
+    BelongsTo: BelongsToRepository,
+    BelongsToMany: BelongsToManyRepository,
+    HasMany: HasManyRepository,
+  };
+
+  constructor(collection: Collection, associationName: string) {
+    this.collection = collection;
+    this.associationName = associationName;
+    this.association = this.collection.model.associations[this.associationName];
   }
 
-  async getSourceInstance() {
-    if (this.sourceInstance) {
-      return this.sourceInstance;
-    }
-    const { idOrInstance, collection } = this.options.source;
-    if (idOrInstance instanceof Model) {
-      return (this.sourceInstance = idOrInstance);
-    }
-    this.sourceInstance = await collection.model.findByPk(idOrInstance);
-    return this.sourceInstance;
+  protected builder() {
+    return this.builderMap;
   }
 
-  async findMany(options?: any) {
-    const { collection } = this.options.target;
-    return await collection.repository.findMany(options);
+  of(id: string | number): R {
+    const klass = this.builder()[this.association.associationType];
+    return new klass(this.collection, this.associationName, id);
   }
-
-  async findOne(options?: any) {
-    const { collection } = this.options.target;
-    return await collection.repository.findOne(options);
-  }
-
-  async create(values?: any, options?: any) {
-    const { association } = this.options.target;
-    const createAccessor = association.accessors.create;
-    const source = await this.getSourceInstance();
-    const instance = await source[createAccessor](values, options);
-    if (!instance) {
-      return;
-    }
-    await updateAssociations(instance, values);
-    return instance;
-  }
-
-  async update(values: any, options?: Identity | Model | UpdateOptions) {
-    const { association, collection } = this.options.target;
-    if (options instanceof Model) {
-      return await collection.repository.update(values, options);
-    }
-    const { field } = this.options;
-    if (field.type === 'hasOne' || field.type === 'belongsTo') {
-      const getAccessor = association.accessors.get;
-      const source = await this.getSourceInstance();
-      const instance = await source[getAccessor]();
-      return await collection.repository.update(values, instance);
-    }
-    // TODO
-    return await collection.repository.update(values, options);
-  }
-
-  async destroy(options?: any) {
-    const { association, collection } = this.options.target;
-    const { field } = this.options;
-    if (field.type === 'hasOne' || field.type === 'belongsTo') {
-      const getAccessor = association.accessors.get;
-      const source = await this.getSourceInstance();
-      const instance = await source[getAccessor]();
-      if (!instance) {
-        return;
-      }
-      return await collection.repository.destroy(instance.id);
-    }
-    return await collection.repository.destroy(options);
-  }
-
-  async set(options?: any) {}
-
-  async add(options?: any) {}
-
-  async remove(options?: any) {}
-
-  async toggle(options?: any) {}
-
-  async sync(options?: any) {}
 }
 
-class HasOneQuery extends RelatedQuery {}
-
-class HasManyQuery extends RelatedQuery {}
-
-class BelongsToQuery extends RelatedQuery {}
-
-class BelongsToManyQuery extends RelatedQuery {}
-
-export class Repository implements IRepository {
+export class Repository<
+  TModelAttributes extends {} = any,
+  TCreationAttributes extends {} = TModelAttributes,
+> implements IRepository
+{
   database: Database;
   collection: Collection;
   model: ModelCtor<Model>;
@@ -174,280 +182,274 @@ export class Repository implements IRepository {
     this.model = collection.model;
   }
 
-  async findMany(options?: FindManyOptions) {
+  /**
+   * return count by filter
+   */
+  async count(countOptions?: CountOptions): Promise<number> {
+    let options = countOptions ? lodash.clone(countOptions) : {};
+
+    const transaction = await this.getTransaction(options);
+
+    if (countOptions?.filter) {
+      options = {
+        ...options,
+        ...this.parseFilter(countOptions.filter),
+      };
+    }
+
+    const count = await this.collection.model.count({
+      ...options,
+      distinct: true,
+      transaction,
+    });
+
+    return count as any;
+  }
+
+  /**
+   * find
+   * @param options
+   */
+  async find(options?: FindOptions) {
     const model = this.collection.model;
+    const transaction = await this.getTransaction(options);
     const opts = {
       subQuery: false,
       ...this.buildQueryOptions(options),
     };
-    let rows = [];
-    if (opts.include) {
+
+    if (opts.include && opts.include.length > 0) {
       const ids = (
         await model.findAll({
           ...opts,
           includeIgnoreAttributes: false,
           attributes: [model.primaryKeyAttribute],
           group: `${model.name}.${model.primaryKeyAttribute}`,
+          transaction,
         })
-      ).map((item) => item[model.primaryKeyAttribute]);
-      if (ids.length > 0) {
-        rows = await model.findAll({
-          ...opts,
-          where: {
-            [model.primaryKeyAttribute]: {
-              [Op.in]: ids,
-            },
-          },
-        });
-      }
-    } else {
-      rows = await model.findAll({
-        ...opts,
+      ).map((row) => row.get(model.primaryKeyAttribute));
+
+      const where = {
+        [model.primaryKeyAttribute]: {
+          [Op.in]: ids,
+        },
+      };
+
+      return await model.findAll({
+        ...omit(opts, ['limit', 'offset']),
+        where,
+        transaction,
       });
     }
-    const count = await model.count({
+
+    return await model.findAll({
       ...opts,
-      distinct: opts.include ? true : undefined,
+      transaction,
     });
-    return { count, rows };
   }
 
-  async findOne(options?: FindOneOptions) {
-    const model = this.collection.model;
-    const opts = {
-      subQuery: false,
-      ...this.buildQueryOptions(options),
+  /**
+   * find and count
+   * @param options
+   */
+  async findAndCount(
+    options?: FindAndCountOptions,
+  ): Promise<[Model[], number]> {
+    const transaction = await this.getTransaction(options);
+    options = {
+      ...options,
+      transaction,
     };
-    let data: Model;
-    if (opts.include) {
-      const item = await model.findOne({
-        ...opts,
-        includeIgnoreAttributes: false,
-        attributes: [model.primaryKeyAttribute],
-        group: `${model.name}.${model.primaryKeyAttribute}`,
-      });
-      if (!item) {
-        return;
-      }
-      data = await model.findOne({
-        ...opts,
-        where: item.toJSON(),
-      });
-    } else {
-      data = await model.findOne({
-        ...opts,
-      });
-    }
-    return data;
+
+    return [await this.find(options), await this.count(options)];
   }
 
-  async create(values?: any, options?: CreateOptions) {
-    const instance = await this.model.create<any>(values, options);
+  /**
+   * Find By Id
+   *
+   */
+  findById(id: PrimaryKey) {
+    return this.collection.model.findByPk(id);
+  }
+
+  /**
+   * Find one record from database
+   *
+   * @param options
+   */
+  async findOne(options?: FindOneOptions) {
+    const transaction = await this.getTransaction(options);
+
+    const rows = await this.find({ ...options, limit: 1, transaction });
+    return rows.length == 1 ? rows[0] : null;
+  }
+
+  /**
+   * Save instance to database
+   *
+   * @param values
+   * @param options
+   */
+  @transaction()
+  async create(options: CreateOptions): Promise<Model> {
+    const transaction = await this.getTransaction(options);
+
+    const guard = UpdateGuard.fromOptions(this.model, options);
+    const values = guard.sanitize(options.values || {});
+
+    const instance = await this.model.create<any>(values, { transaction });
+
     if (!instance) {
       return;
     }
-    await updateAssociations(instance, values, options);
-    return instance;
-  }
 
-  async createMany(records: any[], options?: CreateManyOptions) {
-    const instances = await this.collection.model.bulkCreate(records, options);
-    const promises = instances.map((instance, index) => {
-      return updateAssociations(instance, records[index]);
+    await updateAssociations(instance, values, {
+      transaction,
     });
-    return Promise.all(promises);
-  }
 
-  async update(values: any, options: Identity | Model | UpdateOptions) {
-    if (options instanceof Model) {
-      await options.update(values);
-      await updateAssociations(options, values);
-      return options;
-    }
-    let instance: Model;
-    if (typeof options === 'string' || typeof options === 'number') {
-      instance = await this.model.findByPk(options);
-    } else {
-      // TODO
-      instance = await this.findOne(options);
-    }
-    await instance.update(values);
-    await updateAssociations(instance, values);
     return instance;
   }
 
-  async destroy(options: Identity | Identity[] | DestroyOptions) {
-    if (typeof options === 'number' || typeof options === 'string') {
-      return await this.model.destroy({
-        where: {
-          [this.model.primaryKeyAttribute]: options,
-        },
+  /**
+   * Save Many instances to database
+   *
+   * @param records
+   * @param options
+   */
+  @transaction()
+  async createMany(options: CreateManyOptions) {
+    const transaction = await this.getTransaction(options);
+    const { records } = options;
+    const instances = await this.collection.model.bulkCreate(records, {
+      ...options,
+      transaction,
+    });
+
+    for (let i = 0; i < instances.length; i++) {
+      await updateAssociations(instances[i], records[i], { transaction });
+    }
+
+    return instances;
+  }
+
+  /**
+   * Update model value
+   *
+   * @param values
+   * @param options
+   */
+  @transaction()
+  async update(options: UpdateOptions) {
+    const transaction = await this.getTransaction(options);
+    const guard = UpdateGuard.fromOptions(this.model, options);
+
+    const values = guard.sanitize(options.values);
+
+    const queryOptions = this.buildQueryOptions(options);
+
+    const instances = await this.find({
+      ...queryOptions,
+      transaction,
+    });
+
+    for (const instance of instances) {
+      await updateModelByValues(instance, values, {
+        sanitized: true,
+        transaction,
       });
     }
-    if (Array.isArray(options)) {
+
+    return true;
+  }
+
+  @transaction((args, transaction) => {
+    return {
+      filterByPk: args[0],
+      transaction,
+    };
+  })
+  async destroy(options?: PrimaryKey | PrimaryKey[] | DestroyOptions) {
+    const transaction = await this.getTransaction(options);
+
+    options = <DestroyOptions>options;
+
+    let filterByPk = options.filterByPk;
+
+    if (filterByPk) {
+      if (!Array.isArray(filterByPk)) {
+        filterByPk = [filterByPk];
+      }
+
       return await this.model.destroy({
         where: {
           [this.model.primaryKeyAttribute]: {
-            [Op.in]: options,
+            [Op.in]: filterByPk,
           },
         },
+        transaction,
       });
     }
-    const opts = this.buildQueryOptions(options);
-    return await this.model.destroy(opts);
-  }
 
-  // TODO
-  async sort() {}
-
-  relatedQuery(name: string) {
-    return {
-      for: (sourceIdOrInstance: any) => {
-        const field = this.collection.getField(name) as RelationField;
-        const database = this.collection.context.database;
-        const collection = database.getCollection(field.target);
-        const options: RelatedQueryOptions = {
-          field,
-          database: database,
-          source: {
-            collection: this.collection,
-            idOrInstance: sourceIdOrInstance,
-          },
-          target: {
-            collection,
-            association: this.collection.model.associations[name] as any,
-          },
-        };
-        switch (field.type) {
-          case 'hasOne':
-            return new HasOneQuery(options);
-          case 'hasMany':
-            return new HasManyQuery(options);
-          case 'belongsTo':
-            return new BelongsToQuery(options);
-          case 'belongsToMany':
-            return new BelongsToManyQuery(options);
-        }
-      },
-    };
-  }
-
-  buildQueryOptions(options: any) {
-    const opts = this.parseFilter(options.filter);
-    return { ...options, ...opts };
-  }
-
-  parseFilter(filter?: any) {
-    if (!filter) {
-      return {};
-    }
-    const model = this.collection.model;
-    if (typeof filter === 'number' || typeof filter === 'string') {
-      return {
-        where: {
-          [model.primaryKeyAttribute]: filter,
-        },
-      };
-    }
-    const operators = this.database.operators;
-    const obj = flatten(filter || {});
-    const include = {};
-    const where = {};
-    let skipPrefix = null;
-    const filter2 = {};
-    for (const [key, value] of Object.entries(obj)) {
-      _.set(filter2, key, value);
-    }
-    for (let [key, value] of Object.entries(obj)) {
-      if (skipPrefix && key.startsWith(skipPrefix)) {
-        continue;
-      }
-      let keys = key.split('.');
-      const associations = model.associations;
-      const paths = [];
-      const origins = [];
-      while (keys.length) {
-        const k = keys.shift();
-        origins.push(k);
-        if (k.startsWith('$')) {
-          if (operators.has(k)) {
-            const opKey = operators.get(k);
-            if (typeof opKey === 'symbol') {
-              paths.push(opKey);
-              continue;
-            } else if (typeof opKey === 'function') {
-              skipPrefix = origins.join('.');
-              // console.log({ skipPrefix }, filter2, _.get(filter2, origins));
-              value = opKey(_.get(filter2, origins));
-              break;
-            }
-          } else {
-            paths.push(k);
-            continue;
-          }
-        }
-        if (/\d+/.test(k)) {
-          paths.push(k);
-          continue;
-        }
-        if (!associations[k]) {
-          paths.push(k);
-          continue;
-        }
-        const associationKeys = [];
-        associationKeys.push(k);
-        _.set(include, k, {
-          association: k,
-          attributes: [],
-        });
-        let target = associations[k].target;
-        while (target) {
-          const attr = keys.shift();
-          if (target.rawAttributes[attr]) {
-            associationKeys.push(attr);
-            target = null;
-          } else if (target.associations[attr]) {
-            associationKeys.push(attr);
-            const assoc = [];
-            associationKeys.forEach((associationKey, index) => {
-              if (index > 0) {
-                assoc.push('include');
-              }
-              assoc.push(associationKey);
-            });
-            _.set(include, assoc, {
-              association: attr,
-              attributes: [],
-            });
-            target = target.associations[attr].target;
-          }
-        }
-        if (associationKeys.length > 1) {
-          paths.push(`$${associationKeys.join('.')}$`);
-        } else {
-          paths.push(k);
-        }
-      }
-      console.log(paths, value);
-      const values = _.get(where, paths);
-      if (
-        values &&
-        typeof values === 'object' &&
-        value &&
-        typeof value === 'object'
-      ) {
-        value = { ...value, ...values };
-      }
-      _.set(where, paths, value);
-    }
-    const toInclude = (items) => {
-      return Object.values(items).map((item: any) => {
-        if (item.include) {
-          item.include = toInclude(item.include);
-        }
-        return item;
+    if (options.filter) {
+      const instances = await this.find({
+        filter: options.filter,
+        transaction,
       });
-    };
-    return { where, include: toInclude(include) };
+
+      return await this.destroy({
+        filterByPk: instances.map(
+          (instance) => instance[this.model.primaryKeyAttribute],
+        ),
+        transaction,
+      });
+    }
+
+    if (options.truncate) {
+      return await this.model.destroy({
+        truncate: true,
+        transaction,
+      });
+    }
+  }
+
+  /**
+   * @param association target association
+   */
+  relation<R extends RelationRepository>(
+    association: string,
+  ): RelationRepositoryBuilder<R> {
+    return new RelationRepositoryBuilder<R>(this.collection, association);
+  }
+
+  protected buildQueryOptions(options: any) {
+    const parser = new OptionsParser(
+      this.collection.model,
+      this.collection.context.database,
+      options,
+    );
+    const params = parser.toSequelizeParams();
+    debug('sequelize query params %o', params);
+    return { ...options, ...params };
+  }
+
+  protected parseFilter(filter: Filter) {
+    const parser = new FilterParser(
+      this.collection.model,
+      this.collection.context.database,
+      filter,
+    );
+    return parser.toSequelizeParams();
+  }
+
+  protected async getTransaction(options: any, autoGen = false) {
+    if (lodash.isPlainObject(options) && options.transaction) {
+      return options.transaction;
+    }
+
+    if (autoGen) {
+      return await this.model.sequelize.transaction();
+    }
+
+    return null;
   }
 }

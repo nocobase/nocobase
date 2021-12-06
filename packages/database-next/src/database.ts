@@ -7,26 +7,62 @@ import {
   Op,
   Utils,
 } from 'sequelize';
+
 import { EventEmitter } from 'events';
-import { Collection, CollectionOptions } from './collection';
+import { Collection, CollectionOptions, RepositoryType } from './collection';
 import * as FieldTypes from './fields';
-import { RelationField } from './fields';
+import {
+  BaseFieldOptions,
+  Field,
+  FieldContext,
+  FieldOptions,
+  RelationField,
+} from './fields';
+import { applyMixins, AsyncEmitter } from '@nocobase/utils';
+
+import merge from 'deepmerge';
+import { ModelHook } from './model-hook';
+import { ImporterReader, ImportFileExtension } from './collection-importer';
+
+import extendOperators from './operators';
+
+export interface MergeOptions extends merge.Options {}
 
 export interface PendingOptions {
   field: RelationField;
   model: ModelCtor<Model>;
 }
 
+interface MapOf<T> {
+  [key: string]: T;
+}
+
 export type DatabaseOptions = Options | Sequelize;
 
-export class Database extends EventEmitter {
+interface RegisterOperatorsContext {
+  db?: Database;
+  path?: string;
+  field?: Field;
+}
+
+type OperatorFunc = (value: any, ctx?: RegisterOperatorsContext) => any;
+
+export class Database extends EventEmitter implements AsyncEmitter {
   sequelize: Sequelize;
   fieldTypes = new Map();
-  models = new Map();
-  repositories = new Map();
+  models = new Map<string, ModelCtor<any>>();
+  repositories = new Map<string, RepositoryType>();
   operators = new Map();
-  collections: Map<string, Collection>;
+  collections = new Map<string, Collection>();
   pendingFields = new Map<string, RelationField[]>();
+  modelCollection = new Map<ModelCtor<any>, Collection>();
+
+  modelHook: ModelHook;
+
+  delayCollectionExtend = new Map<
+    string,
+    { collectionOptions: CollectionOptions; mergeOptions?: any }[]
+  >();
 
   constructor(options: DatabaseOptions) {
     super();
@@ -38,14 +74,22 @@ export class Database extends EventEmitter {
     }
 
     this.collections = new Map();
+    this.modelHook = new ModelHook(this);
 
-    this.on('collection.afterDefine', (collection) => {
-      const items = this.pendingFields.get(collection.name);
-      for (const field of items || []) {
-        field.bind();
-      }
+    this.on('afterDefineCollection', (collection: Collection) => {
+      // after collection defined, call bind method on pending fields
+      this.pendingFields.get(collection.name)?.forEach((field) => field.bind());
+      this.delayCollectionExtend
+        .get(collection.name)
+        ?.forEach((collectionExtend) => {
+          collection.updateOptions(
+            collectionExtend.collectionOptions,
+            collectionExtend.mergeOptions,
+          );
+        });
     });
 
+    // register database field types
     for (const [name, field] of Object.entries(FieldTypes)) {
       if (['Field', 'RelationField'].includes(name)) {
         continue;
@@ -57,33 +101,51 @@ export class Database extends EventEmitter {
       });
     }
 
-    const operators = new Map();
-
-    // Sequelize 内置
-    for (const key in Op) {
-      operators.set('$' + key, Op[key]);
-      const val = Utils.underscoredIf(key, true);
-      operators.set('$' + val, Op[key]);
-      operators.set('$' + val.replace(/_/g, ''), Op[key]);
-    }
-
-    this.operators = operators;
+    this.initOperators();
   }
 
-  collection(options: CollectionOptions) {
-    let collection = this.collections.get(options.name);
-    if (collection) {
-      collection.extend(options);
-    } else {
-      collection = new Collection(options, { database: this });
-    }
+  /**
+   * Add collection to database
+   * @param options
+   */
+  collection<Attributes = any, CreateAttributes = Attributes>(
+    options: CollectionOptions,
+  ): Collection<Attributes, CreateAttributes> {
+    this.emit('beforeDefineCollection', options);
+
+    const collection = new Collection(options, {
+      database: this,
+    });
+
     this.collections.set(collection.name, collection);
-    this.emit('collection.afterDefine', collection);
+    this.modelCollection.set(collection.model, collection);
+
+    this.emit('afterDefineCollection', collection);
+
     return collection;
   }
 
-  getCollection(name: string) {
+  /**
+   * get exists collection by its name
+   * @param name
+   */
+  getCollection(name: string): Collection {
     return this.collections.get(name);
+  }
+
+  hasCollection(name: string): boolean {
+    return this.collections.has(name);
+  }
+
+  removeCollection(name: string) {
+    const collection = this.collections.get(name);
+    this.emit('beforeRemoveCollection', collection);
+
+    const result = this.collections.delete(name);
+
+    if (result) {
+      this.emit('afterRemoveCollection', collection);
+    }
   }
 
   addPendingField(field: RelationField) {
@@ -102,33 +164,54 @@ export class Database extends EventEmitter {
     }
   }
 
-  registerFieldTypes(fieldTypes: any) {
+  registerFieldTypes(fieldTypes: MapOf<typeof Field>) {
     for (const [type, fieldType] of Object.entries(fieldTypes)) {
       this.fieldTypes.set(type, fieldType);
     }
   }
 
-  registerModels(models: any) {
+  registerModels(models: MapOf<ModelCtor<any>>) {
     for (const [type, schemaType] of Object.entries(models)) {
       this.models.set(type, schemaType);
     }
   }
 
-  registerRepositories(repositories: any) {
+  registerRepositories(repositories: MapOf<RepositoryType>) {
     for (const [type, schemaType] of Object.entries(repositories)) {
       this.repositories.set(type, schemaType);
     }
   }
 
-  registerOperators(operators) {
+  initOperators() {
+    const operators = new Map();
+
+    // Sequelize 内置
+    for (const key in Op) {
+      operators.set('$' + key, Op[key]);
+      const val = Utils.underscoredIf(key, true);
+      operators.set('$' + val, Op[key]);
+      operators.set('$' + val.replace(/_/g, ''), Op[key]);
+    }
+
+    this.operators = operators;
+
+    this.registerOperators({
+      ...extendOperators,
+    });
+  }
+
+  registerOperators(operators: MapOf<OperatorFunc>) {
     for (const [key, operator] of Object.entries(operators)) {
       this.operators.set(key, operator);
     }
   }
 
-  buildField(options, context) {
+  buildField(options, context: FieldContext) {
     const { type } = options;
     const Field = this.fieldTypes.get(type);
+    if (!Field) {
+      throw Error(`unsupported field type ${type}`);
+    }
     return new Field(options, context);
   }
 
@@ -147,4 +230,71 @@ export class Database extends EventEmitter {
   async close() {
     return this.sequelize.close();
   }
+
+  on(event: string | symbol, listener: (...args: any[]) => void): this {
+    const modelEventName = this.modelHook.isModelHook(event);
+
+    if (modelEventName && !this.modelHook.hasBindEvent(modelEventName)) {
+      this.sequelize.addHook(
+        modelEventName,
+        this.modelHook.sequelizeHookBuilder(modelEventName),
+      );
+
+      this.modelHook.bindEvent(modelEventName);
+    }
+
+    return super.on(event, listener);
+  }
+
+  async import(options: {
+    directory: string;
+    extensions?: ImportFileExtension[];
+  }): Promise<Map<string, Collection>> {
+    const reader = new ImporterReader(options.directory, options.extensions);
+    const modules = await reader.read();
+    const result = new Map<string, Collection>();
+
+    for (const module of modules) {
+      if (module.extend) {
+        const collectionName = module.collectionOptions.name;
+        const existCollection = this.getCollection(collectionName);
+        if (existCollection) {
+          existCollection.updateOptions(
+            module.collectionOptions,
+            module.mergeOptions,
+          );
+        } else {
+          const existDelayExtends =
+            this.delayCollectionExtend.get(collectionName) || [];
+
+          this.delayCollectionExtend.set(collectionName, [
+            ...existDelayExtends,
+            module,
+          ]);
+        }
+      } else {
+        const collection = this.collection(module);
+        result.set(collection.name, collection);
+      }
+    }
+
+    return result;
+  }
+
+  emitAsync: (event: string | symbol, ...args: any[]) => Promise<boolean>;
 }
+
+export function extend(
+  collectionOptions: CollectionOptions,
+  mergeOptions?: MergeOptions,
+) {
+  return {
+    collectionOptions,
+    mergeOptions,
+    extend: true,
+  };
+}
+
+applyMixins(Database, [AsyncEmitter]);
+
+export default Database;

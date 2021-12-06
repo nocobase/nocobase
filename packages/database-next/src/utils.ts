@@ -1,18 +1,10 @@
-export default {
-  fiter: {
-    and: [
-      { a: 'a' },
-      { b: 'b' },
-      { c: 'c' },
-      { 'assoc.a': 'abc1' },
-      { 'assoc.b': 'abc2' },
-      { 'assoc.c': 'abc3' },
-      {
-        and: [
-          { 'assoc.a': 'abc1' },
-          { 'assoc.b': 'abc2' },
-        ],
-      },
-    ],
-  },
-};
+let IDX = 36,
+  HEX = '';
+while (IDX--) HEX += IDX.toString(36);
+
+export function uid(len?: number) {
+  let str = '',
+    num = len || 11;
+  while (num--) str += HEX[(Math.random() * 36) | 0];
+  return str;
+}
