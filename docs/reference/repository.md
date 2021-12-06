@@ -61,6 +61,8 @@ await repository.find({
     'nested.someAttribute': {
       // 同上
     },
+    // scope 的情况
+    scopeName: 'val1',
   },
   // 字段白名单
   fields: [],
@@ -105,7 +107,7 @@ await Post.repository.find({
 });
 ```
 
-支持多种 Operators，以 `$` 开头。[更多内容，查阅 Operators 章节](operators.md)
+支持多种 Operators，以 `$` 开头。[更多内容，查阅 Operators 章节](filter-operators.md)
 
 ```ts
 await Post.repository.find({
@@ -158,6 +160,42 @@ await Post.repository.find({
       { 'tags.name.$includes': 'tag1' },
       { 'tags.name.$includes': 'tag2' },
     ],
+  },
+});
+```
+
+也支持 [scopes](https://sequelize.org/master/manual/scopes.html)
+
+```ts
+Post.model.addScope('published', () => {
+  return {
+    where: {
+      status: 'published',
+    },
+  }
+});
+
+await Post.repository.find({
+  filter: {
+    published: true,
+  },
+});
+```
+
+如果 scope name 和 field name 冲突时，scope 优先级更高
+
+```ts
+Post.model.addScope('level', (value) => {
+  return {
+    where: {
+      level: { [Op.gte]: value }
+    },
+  }
+});
+
+await Post.repository.find({
+  filter: {
+    level: 1,
   },
 });
 ```
@@ -418,6 +456,31 @@ await repository.findOne({
   filter: {
     [Model.primaryKeyAttribute]: 1,
   }
+});
+```
+
+## repository.count()
+
+
+##### Definition
+
+```ts
+interface count {
+  (options?: CountOptions): Promise<number>;
+}
+
+interface CountOptions extends Sequelize.CountOptions {
+  filter?: any;
+}
+// Sequelize.CountOptions 的参数说明
+// distinct 就不传了，自动处理，有关联数据时，distinct=true
+```
+
+##### Examples
+
+```ts
+repository.count({
+  filter: {},
 });
 ```
 
@@ -713,6 +776,8 @@ interface destroy {
 
 interface DestroyOptions {
   filter?: any;
+  filterByPk?: number | string | number[] | string[];
+  transaction?: Sequelize.Transaction;
 }
 ```
 
@@ -778,9 +843,9 @@ interface IHasOneRepository<M extends Sequelize.Model> {
   // 删除
   destroy(): Promise<Boolean>;
   // 建立关联
-  set(primaryKey: any): Promise<void>;
+  set(options: PrimaryKey | AssociatedOptions): Promise<void>;
   // 移除关联
-  remove(): Promise<void>;
+  remove(options?: AssociatedOptions): Promise<void>;
 }
 
 interface HasOneFindOptions {
@@ -820,9 +885,15 @@ interface IBelongsToRepository<M extends Sequelize.Model> {
   // 删除
   destroy(): Promise<Boolean>;
   // 建立关联
-  set(primaryKey: any): Promise<void>;
+  set(options: PrimaryKey | AssociatedOptions): Promise<void>;
   // 移除关联
-  remove(): Promise<void>;
+  remove(options?: AssociatedOptions): Promise<void>;
+}
+
+type PrimaryKey = string | number;
+
+interface AssociatedOptions {
+  transaction?: Sequelize.Transaction;
 }
 
 interface HasOneFindOptions {
@@ -863,11 +934,18 @@ interface IHasManyRepository<M extends Sequelize.Model> {
   // 删除
   destroy(options?: number | string | number[] | string[] | DestroyOptions): Promise<Boolean>;
   // 建立关联
-  set(primaryKey: any | primaryKeys: any[]): Promise<void>;
+  set(options: PrimaryKey | PrimaryKey[] | AssociatedOptions): Promise<void>;
   // 附加关联
-  add(primaryKey: any | primaryKeys: any[]): Promise<void>;
+  add(options: PrimaryKey | PrimaryKey[] | AssociatedOptions): Promise<void>;
   // 移除关联
-  remove(primaryKey: any | primaryKeys: any[]): Promise<void>;
+  remove(options: PrimaryKey | PrimaryKey[] | AssociatedOptions): Promise<void>;
+}
+
+type PrimaryKey = string | number;
+
+interface AssociatedOptions {
+  pk?: PrimaryKey | PrimaryKey[];
+  transaction?: Sequelize.Transaction;
 }
 ```
 
@@ -903,12 +981,19 @@ interface IBelongsToManyRepository<M extends Sequelize.Model> {
   // 删除
   destroy(options?: number | string | number[] | string[] | DestroyOptions): Promise<Boolean>;
   // 建立关联
-  set(primaryKey: any | primaryKeys: any[]): Promise<void>;
+  set(options: PrimaryKey | PrimaryKey[] | ThroughValues | ThroughValues[] | AssociatedOptions): Promise<void>;
   // 附加关联，存在中间表数据
-  add(primaryKey: any | primaryKeys: any[]): Promise<void>;
+  add(options: PrimaryKey | PrimaryKey[] | ThroughValues | ThroughValues[] | AssociatedOptions): Promise<void>;
   // 移除关联
-  remove(primaryKey: any | primaryKeys: any[]): Promise<void>;
-  toggle(primaryKey: any): Promise<void>;
+  remove(options: PrimaryKey | PrimaryKey[] | AssociatedOptions): Promise<void>;
+  toggle(options: PrimaryKey | AssociatedOptions): Promise<void>;
+}
+
+type PrimaryKey = string | number;
+
+interface AssociatedOptions {
+  pk?: PrimaryKey | PrimaryKey[];
+  transaction?: Sequelize.Transaction;
 }
 ```
 
@@ -917,7 +1002,17 @@ interface IBelongsToManyRepository<M extends Sequelize.Model> {
 多对多关系多了中间表的处理
 
 ```ts
+repository.add(1);
+repository.add([1, {/* 中间表数据 */}]);
+repository.add([1,2,3]);
+repository.add([
+  [1, {/* 中间表数据 */}],
+  [2, {/* 中间表数据 */}],
+  [3, {/* 中间表数据 */}],
+]);
+
 repository.set(1);
+repository.set([1, {/* 中间表数据 */}]);
 repository.set([1,2,3]);
 repository.set([
   [1, {/* 中间表数据 */}],

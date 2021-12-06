@@ -80,10 +80,10 @@ export async function getApp() {
 }
 
 interface ActionParams {
-  resourceKey?: string | number;
+  resourceIndex?: string | number;
   // resourceName?: string;
   // associatedName?: string;
-  associatedKey?: string | number;
+  associatedIndex?: string | number;
   fields?: any;
   filter?: any;
   values?: any;
@@ -110,14 +110,14 @@ export function getAgent(app: Application): Agent {
       return new Proxy({}, {
         get(target, method, receiver) {
           return (params: ActionParams = {}) => {
-            const { associatedKey, resourceKey, values = {}, ...restParams } = params;
+            const { associatedIndex, resourceIndex, values = {}, ...restParams } = params;
             let url = `/api/${name}`;
-            if (associatedKey) {
-              url = `/api/${name.split('.').join(`/${associatedKey}/`)}`;
+            if (associatedIndex) {
+              url = `/api/${name.split('.').join(`/${associatedIndex}/`)}`;
             }
             url += `:${method as string}`;
-            if (resourceKey) {
-              url += `/${resourceKey}`;
+            if (resourceIndex) {
+              url += `/${resourceIndex}`;
             }
             console.log(url);
             if (['list', 'get'].indexOf(method as string) !== -1) {

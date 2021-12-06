@@ -40,7 +40,7 @@ describe('list', () => {
 
   describe('fields', () => {
     it('fields', async () => {
-      const response = await api.resource('posts').list({
+      const response = await api.agent().resource('posts').list({
         fields: ['title'],
         filter: {
           title: 't1',
@@ -55,7 +55,7 @@ describe('list', () => {
     });
 
     it('fields#appends', async () => {
-      const response = await api.resource('posts').list({
+      const response = await api.agent().resource('posts').list({
         fields: {
           appends: ['comments'],
         },
@@ -89,7 +89,7 @@ describe('list', () => {
 
   describe('filter', () => {
     it('and', async () => {
-      const response = await api.resource('posts').list({
+      const response = await api.agent().resource('posts').list({
         filter: {
           and: [
             { title: 't1' },
@@ -109,7 +109,7 @@ describe('list', () => {
       });
     });
     it('or', async () => {
-      const response = await api.resource('posts').list({
+      const response = await api.agent().resource('posts').list({
         filter: {
           or: [
             { title: 't1' },

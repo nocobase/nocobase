@@ -8,7 +8,8 @@ import { LockOutlined } from '@ant-design/icons';
 import cls from 'classnames';
 import { uid } from '@formily/shared';
 import { Resource } from '../../../resource';
-import { TableRowContext, useTable } from '../../../schemas/table';
+import { TableRowContext } from '../../../schemas/table';
+import { useTable } from '../../../schemas/table';
 import { useRequest } from 'ahooks';
 import { VisibleContext } from '../../../context';
 import { connect, ISchema, observer, useField } from '@formily/react';
@@ -19,6 +20,7 @@ import Checkbox from 'antd/lib/checkbox/Checkbox';
 import { useState } from 'react';
 import { useCompile } from '../../../hooks/useCompile';
 import { useTranslation } from 'react-i18next';
+import { ArrayField } from '@formily/core';
 
 const actionTypeMap = new Map(
   Object.entries({
@@ -30,7 +32,7 @@ const actionTypeMap = new Map(
 );
 
 const useActionDataSource = () => {
-  const field = useField<Formily.Core.Models.ArrayField>();
+  const field = useField<ArrayField>();
   const dataSource = [];
   for (const [actionName, value] of actionTypeMap) {
     const item = field?.value?.find((item) => {
@@ -50,7 +52,7 @@ const useFieldPermissions = () => {
   const compile = useCompile();
   const role = useContext(RoleContext);
   const ctx = useContext(TableRowContext);
-  const field = useField<Formily.Core.Models.ArrayField>();
+  const field = useField<ArrayField>();
   const [dataSource, setDataSource] = useState([]);
   const findFieldKeys = (actionName): any[] => {
     const item = field?.value?.find((item) => {
@@ -64,7 +66,7 @@ const useFieldPermissions = () => {
   };
   const resource = useResourceRequest({
     associatedName: 'collections',
-    associatedKey: ctx.record.name,
+    associatedIndex: ctx.record.name,
     resourceName: 'fields',
   });
   const service = useRequest(
@@ -189,7 +191,7 @@ export const ActionPermissionField = observer((props) => {
   const compile = useCompile();
   const role = useContext(RoleContext);
   const ctx = useContext(TableRowContext);
-  const field = useField<Formily.Core.Models.ArrayField>();
+  const field = useField<ArrayField>();
   const actionDataSource = useActionDataSource();
   const { columns, dataSource, service } = useFieldPermissions();
   console.log('actionPermissions', field?.value);

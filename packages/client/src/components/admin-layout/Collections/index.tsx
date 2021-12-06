@@ -66,7 +66,7 @@ const useActionPermissionSubmit = () => {
   const role = useContext(RoleContext);
   const resource = useResourceRequest({
     resourceName: 'roles',
-    resourceKey: role.name,
+    resourceIndex: role.name,
   });
   return {
     async run() {
@@ -134,7 +134,7 @@ const useDetailsResource = ({ onSuccess }) => {
   const ctx = useContext(TableRowContext);
   const resource = useResourceRequest({
     resourceName: 'collections',
-    resourceKey: ctx.record[props.rowKey],
+    resourceIndex: ctx.record[props.rowKey],
   });
   const service = useRequest(
     (params?: any) => {
@@ -762,7 +762,7 @@ function EditFieldButton() {
                 const fieldInterface = interfaces.get(form.values?.interface);
                 fieldInterface?.initialize && fieldInterface?.initialize(form.values);
                 await resource.save(form.values, {
-                  resourceKey: ctx.record.key,
+                  resourceIndex: ctx.record.key,
                 });
                 setVisible(false);
                 await service.refresh();
@@ -782,7 +782,7 @@ function EditFieldButton() {
             }}
             schema={{
               type: 'object',
-              properties: clone(schema.properties),
+              properties: clone(schema?.properties),
             }}
           />
         </FormProvider>

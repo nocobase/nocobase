@@ -129,3 +129,26 @@ export async function updateProfile(ctx: Context, next: Next) {
   ctx.body = ctx.state.currentUser;
   await next();
 }
+
+export async function changePassword(ctx: Context, next: Next) {
+  const {
+    values: { oldPassword, newPassword },
+  } = ctx.action.params;
+  if (!ctx.state.currentUser) {
+    ctx.throw(401, 'Unauthorized');
+  }
+  const User = ctx.db.getModel('users');
+  const user = await User.scope('withPassword').findOne({
+    where: {
+      email: ctx.state.currentUser.email,
+    },
+  });
+  const isValid = await PASSWORD.verify(oldPassword, user.password);
+  if (!isValid) {
+    ctx.throw(401, '密码错误，请您重新输入');
+  }
+  user.password = newPassword;
+  user.save();
+  ctx.body = ctx.state.currentUser.toJSON();
+  await next();
+}

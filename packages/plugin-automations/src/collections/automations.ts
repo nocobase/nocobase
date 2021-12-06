@@ -243,7 +243,7 @@ export default {
             // condition: "{{ $self.value }}",
             schema: {
               "x-component-props": {
-                "associatedKey": "{{ typeof $self.value === 'string' ? $self.value : $form.values.collection_name }}"
+                "associatedIndex": "{{ typeof $self.value === 'string' ? $self.value : $form.values.collection_name }}"
               },
             },
           },
@@ -253,7 +253,7 @@ export default {
             // condition: "{{ $self.value }}",
             schema: {
               "x-component-props": {
-                "associatedKey": "{{ typeof $self.value === 'string' ? $self.value : $form.values.collection_name }}"
+                "associatedIndex": "{{ typeof $self.value === 'string' ? $self.value : $form.values.collection_name }}"
               },
             },
           },
@@ -263,7 +263,7 @@ export default {
             // condition: "{{ $self.value }}",
             schema: {
               "x-component-props": {
-                "associatedKey": "{{ typeof $self.value === 'string' ? $self.value : $form.values.collection_name }}"
+                "associatedIndex": "{{ typeof $self.value === 'string' ? $self.value : $form.values.collection_name }}"
               },
             },
           },
@@ -273,7 +273,7 @@ export default {
             // condition: "{{ $self.value }}",
             schema: {
               "x-component-props": {
-                "associatedKey": "{{ typeof $self.value === 'string' ? $self.value : $form.values.collection_name }}"
+                "associatedIndex": "{{ typeof $self.value === 'string' ? $self.value : $form.values.collection_name }}"
               },
             },
           },
@@ -406,7 +406,7 @@ export default {
             condition: "{{ ($form.values.collection_name || $form.values.collection) && $self.value === 'customField' }}",
             schema: {
               "x-component-props": {
-                "associatedKey": "{{ $form.values.collection_name || $form.values.collection }}"
+                "associatedIndex": "{{ $form.values.collection_name || $form.values.collection }}"
               },
             },
           },

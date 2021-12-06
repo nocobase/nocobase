@@ -26,9 +26,9 @@ export interface ParseOptions {
 export interface ParsedParams {
   actionName?: string;
   resourceName?: string;
-  resourceKey?: string;
+  resourceIndex?: string;
   associatedName?: string;
-  associatedKey?: string;
+  associatedIndex?: string;
   // table: string;
   // tableKey?: string | number;
   // relatedTable?: string;
@@ -76,18 +76,18 @@ export function parseRequest(request: ParseRequest, options: ParseOptions = {}):
         post: accessors.create,
         delete: accessors.delete
       },
-      '/:resourceName/:resourceKey': {
+      '/:resourceName/:resourceIndex': {
         get: accessors.get,
         put: accessors.update,
         patch: accessors.update,
         delete: accessors.delete,
       },
-      '/:associatedName/:associatedKey/:resourceName': {
+      '/:associatedName/:associatedIndex/:resourceName': {
         get: accessors.list,
         post: accessors.create,
         delete: accessors.delete,
       },
-      '/:associatedName/:associatedKey/:resourceName/:resourceKey': {
+      '/:associatedName/:associatedIndex/:resourceName/:resourceIndex': {
         get: accessors.get,
         post: accessors.create,
         put: accessors.update,
@@ -96,7 +96,7 @@ export function parseRequest(request: ParseRequest, options: ParseOptions = {}):
       },
     },
     hasOne: {
-      '/:associatedName/:associatedKey/:resourceName': {
+      '/:associatedName/:associatedIndex/:resourceName': {
         get: accessors.get,
         post: accessors.update,
         put: accessors.update,
@@ -105,12 +105,12 @@ export function parseRequest(request: ParseRequest, options: ParseOptions = {}):
       },
     },
     hasMany: {
-      '/:associatedName/:associatedKey/:resourceName': {
+      '/:associatedName/:associatedIndex/:resourceName': {
         get: accessors.list,
         post: accessors.create,
         delete: accessors.delete,
       },
-      '/:associatedName/:associatedKey/:resourceName/:resourceKey': {
+      '/:associatedName/:associatedIndex/:resourceName/:resourceIndex': {
         get: accessors.get,
         post: accessors.create,
         put: accessors.update,
@@ -119,20 +119,20 @@ export function parseRequest(request: ParseRequest, options: ParseOptions = {}):
       },
     },
     belongsTo: {
-      '/:associatedName/:associatedKey/:resourceName': {
+      '/:associatedName/:associatedIndex/:resourceName': {
         get: accessors.get,
         delete: accessors.remove,
       },
-      '/:associatedName/:associatedKey/:resourceName/:resourceKey': {
+      '/:associatedName/:associatedIndex/:resourceName/:resourceIndex': {
         post: accessors.set,
       },
     },
     belongsToMany: {
-      '/:associatedName/:associatedKey/:resourceName': {
+      '/:associatedName/:associatedIndex/:resourceName': {
         get: accessors.list,
         post: accessors.set,
       },
-      '/:associatedName/:associatedKey/:resourceName/:resourceKey': {
+      '/:associatedName/:associatedIndex/:resourceName/:resourceIndex': {
         get: accessors.get,
         post: accessors.add,
         put: accessors.update, // Many to Many 的 update 是针对 through
@@ -144,7 +144,7 @@ export function parseRequest(request: ParseRequest, options: ParseOptions = {}):
 
   const params: ParsedParams = {};
 
-  let prefix = (options.prefix || '').trim();
+  let prefix = (options.prefix || '').trim().replace(/\/$/, '');
 
   if (prefix && !prefix.startsWith('/')) {
     prefix = `/${prefix}`;

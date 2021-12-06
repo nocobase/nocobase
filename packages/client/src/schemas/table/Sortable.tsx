@@ -1,42 +1,15 @@
-import React, { forwardRef, useState } from 'react';
-import {
-  SortableContext,
-  useSortable,
-  horizontalListSortingStrategy,
-  verticalListSortingStrategy,
-  sortableKeyboardCoordinates,
-} from '@dnd-kit/sortable';
+import React, { createContext, useContext, forwardRef, useState } from 'react';
+import { SortableContext, useSortable, horizontalListSortingStrategy } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { Table } from 'antd';
-import { createContext } from 'react';
-import { useContext } from 'react';
-import { range } from 'lodash';
-import parse from 'html-react-parser';
 import cls from 'classnames';
+import { DndContext, DragOverlay, useDroppable, useDraggable } from '@dnd-kit/core';
 import { MenuOutlined } from '@ant-design/icons';
-
-import {
-  DndContext,
-  DragOverlay,
-  closestCenter,
-  KeyboardSensor,
-  PointerSensor,
-  useSensor,
-  useSensors,
-  useDroppable,
-  useDraggable,
-} from '@dnd-kit/core';
 import { createPortal } from 'react-dom';
-import { useRef } from 'react';
 import { SortableItem } from '../../components/Sortable';
-import {
-  findPropertyByPath,
-  getSchemaPath,
-  useDesignable,
-} from '../../components/schema-renderer';
+import { findPropertyByPath, getSchemaPath, useDesignable } from '../../components/schema-renderer';
 import { updateSchema } from '..';
 import { Schema } from '@formily/react';
-import { isColumn, isColumnComponent } from '.';
+import { isColumn } from './utils';
 
 export const RowDraggableContext = createContext({});
 export const ColDraggableContext = createContext(null);
@@ -68,9 +41,7 @@ export function SortableColumn(props) {
       ref={setDroppableNodeRef}
       // {...attributes}
     >
-      <ColDraggableContext.Provider
-        value={{ setDraggableNodeRef, attributes, listeners }}
-      >
+      <ColDraggableContext.Provider value={{ setDraggableNodeRef, attributes, listeners }}>
         {props.children}
       </ColDraggableContext.Provider>
       {/* <span ref={setDraggableNodeRef} {...attributes} {...listeners}>
@@ -81,22 +52,9 @@ export function SortableColumn(props) {
 }
 
 export function SortableBodyRow(props: any) {
-  const {
-    className,
-    style: prevStyle,
-    ['data-row-key']: dataRowKey,
-    ...others
-  } = props;
-  const {
-    isDragging,
-    attributes,
-    listeners,
-    setNodeRef,
-    setDraggableNodeRef,
-    overIndex,
-    transform,
-    transition,
-  } = useSortable({ id: dataRowKey });
+  const { className, style: prevStyle, ['data-row-key']: dataRowKey, ...others } = props;
+  const { isDragging, attributes, listeners, setNodeRef, setDraggableNodeRef, overIndex, transform, transition } =
+    useSortable({ id: dataRowKey });
 
   const style = {
     ...prevStyle,
@@ -105,15 +63,9 @@ export function SortableBodyRow(props: any) {
   };
 
   return (
-    <RowDraggableContext.Provider
-      value={{ listeners, setDraggableNodeRef, attributes }}
-    >
+    <RowDraggableContext.Provider value={{ listeners, setDraggableNodeRef, attributes }}>
       <tr
-        className={cls(
-          { isDragging },
-          props.className,
-          `droppable-${props['data-row-key']}`,
-        )}
+        className={cls({ isDragging }, props.className, `droppable-${props['data-row-key']}`)}
         // className={cls(className)}
         ref={setNodeRef}
         {...others}
@@ -127,9 +79,7 @@ export function SortableBodyRow(props: any) {
           })}
         >
           {React.Children.map(props.children, (child, index) => (
-            <CellContext.Provider value={`td${child.key}`}>
-              {child}
-            </CellContext.Provider>
+            <CellContext.Provider value={`td${child.key}`}>{child}</CellContext.Provider>
           ))}
         </SortableContext>
       </tr>
@@ -264,8 +214,7 @@ export function SortableBodyCell(props) {
 
 export function SortableRowHandle(props) {
   const { className, ...others } = props;
-  const { setDraggableNodeRef, attributes, listeners } =
-    useContext<any>(RowDraggableContext);
+  const { setDraggableNodeRef, attributes, listeners } = useContext<any>(RowDraggableContext);
   return setDraggableNodeRef ? (
     <MenuOutlined
       {...others}

@@ -8,7 +8,8 @@ import { LockOutlined } from '@ant-design/icons';
 import cls from 'classnames';
 import { uid, isValid } from '@formily/shared';
 import { Resource } from '../../../resource';
-import { TableRowContext, useTable } from '../../../schemas/table';
+import { TableRowContext } from '../../../schemas/table';
+import { useTable } from '../../../schemas/table';
 import { useRequest } from 'ahooks';
 import { VisibleContext } from '../../../context';
 import { connect, observer, useForm } from '@formily/react';
@@ -58,7 +59,7 @@ const useActionPermissionSubmit = () => {
   const role = useContext(RoleContext);
   const resource = useResourceRequest({
     resourceName: 'roles',
-    resourceKey: role.name,
+    resourceIndex: role.name,
   });
   return {
     async run() {
@@ -126,7 +127,7 @@ const useDetailsResource = ({ onSuccess }) => {
   const ctx = useContext(TableRowContext);
   const resource = useResourceRequest({
     resourceName: 'roles',
-    resourceKey: ctx.record[props.rowKey],
+    resourceIndex: ctx.record[props.rowKey],
   });
   const service = useRequest(
     (params?: any) => {

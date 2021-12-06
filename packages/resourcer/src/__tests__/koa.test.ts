@@ -271,11 +271,11 @@ describe('koa middleware', () => {
       const response = await agent
         .post('/resourcer/tests:update')
         .send({
-          resourceKey: 1,
+          resourceIndex: 1,
           values: { 'aa': 'aa' }
         });
       expect(response.body).toEqual({
-        resourceKey: 1,
+        resourceIndex: 1,
         actionName: 'update',
         resourceName: 'tests',
         values: { col1: 'val1', aa: 'aa' }
@@ -293,7 +293,7 @@ describe('koa middleware', () => {
           .get('/users/1/settings');
         expect(response.body).toEqual({
           associatedName: 'users',
-          associatedKey: '1',
+          associatedIndex: '1',
           resourceName: 'settings',
           actionName: 'get'
         });
@@ -303,7 +303,7 @@ describe('koa middleware', () => {
           .post('/users/1/settings');
         expect(response.body).toEqual({
           associatedName: 'users',
-          associatedKey: '1',
+          associatedIndex: '1',
           resourceName: 'settings',
           actionName: 'update'
         });
@@ -313,7 +313,7 @@ describe('koa middleware', () => {
           .delete('/users/1/settings');
         expect(response.body).toEqual({
           associatedName: 'users',
-          associatedKey: '1',
+          associatedIndex: '1',
           resourceName: 'settings',
           actionName: 'destroy'
         });
@@ -331,7 +331,7 @@ describe('koa middleware', () => {
           .get('/users/1/posts');
         expect(response.body).toEqual({
           associatedName: 'users',
-          associatedKey: '1',
+          associatedIndex: '1',
           resourceName: 'posts',
           actionName: 'list'
         });
@@ -341,9 +341,9 @@ describe('koa middleware', () => {
           .get('/users/1/posts/1');
         expect(response.body).toEqual({
           associatedName: 'users',
-          associatedKey: '1',
+          associatedIndex: '1',
           resourceName: 'posts',
-          resourceKey: '1',
+          resourceIndex: '1',
           actionName: 'get'
         });
       });
@@ -352,7 +352,7 @@ describe('koa middleware', () => {
           .post('/users/1/posts');
         expect(response.body).toEqual({
           associatedName: 'users',
-          associatedKey: '1',
+          associatedIndex: '1',
           resourceName: 'posts',
           actionName: 'create'
         });
@@ -362,9 +362,9 @@ describe('koa middleware', () => {
           .put('/users/1/posts/1');
         expect(response.body).toEqual({
           associatedName: 'users',
-          associatedKey: '1',
+          associatedIndex: '1',
           resourceName: 'posts',
-          resourceKey: '1',
+          resourceIndex: '1',
           actionName: 'update'
         });
       });
@@ -373,9 +373,9 @@ describe('koa middleware', () => {
           .delete('/users/1/posts/1');
         expect(response.body).toEqual({
           associatedName: 'users',
-          associatedKey: '1',
+          associatedIndex: '1',
           resourceName: 'posts',
-          resourceKey: '1',
+          resourceIndex: '1',
           actionName: 'destroy'
         });
       });
@@ -392,7 +392,7 @@ describe('koa middleware', () => {
           .get('/posts/1/user');
         expect(response.body).toEqual({
           associatedName: 'posts',
-          associatedKey: '1',
+          associatedIndex: '1',
           resourceName: 'user',
           actionName: 'get'
         });
@@ -402,9 +402,9 @@ describe('koa middleware', () => {
           .post('/posts/1/user/1');
         expect(response.body).toEqual({
           associatedName: 'posts',
-          associatedKey: '1',
+          associatedIndex: '1',
           resourceName: 'user',
-          resourceKey: '1',
+          resourceIndex: '1',
           actionName: 'set'
         });
       });
@@ -413,7 +413,7 @@ describe('koa middleware', () => {
           .delete('/posts/1/user');
         expect(response.body).toEqual({
           associatedName: 'posts',
-          associatedKey: '1',
+          associatedIndex: '1',
           resourceName: 'user',
           actionName: 'remove'
         });
@@ -431,7 +431,7 @@ describe('koa middleware', () => {
           .get('/posts/1/tags');
         expect(response.body).toEqual({
           associatedName: 'posts',
-          associatedKey: '1',
+          associatedIndex: '1',
           resourceName: 'tags',
           actionName: 'list'
         });
@@ -441,9 +441,9 @@ describe('koa middleware', () => {
           .get('/posts/1/tags/1');
         expect(response.body).toEqual({
           associatedName: 'posts',
-          associatedKey: '1',
+          associatedIndex: '1',
           resourceName: 'tags',
-          resourceKey: '1',
+          resourceIndex: '1',
           actionName: 'get'
         });
       });
@@ -452,7 +452,7 @@ describe('koa middleware', () => {
           .post('/posts/1/tags');
         expect(response.body).toEqual({
           associatedName: 'posts',
-          associatedKey: '1',
+          associatedIndex: '1',
           resourceName: 'tags',
           actionName: 'set'
         });
@@ -462,9 +462,9 @@ describe('koa middleware', () => {
           .post('/posts/1/tags/1');
         expect(response.body).toEqual({
           associatedName: 'posts',
-          associatedKey: '1',
+          associatedIndex: '1',
           resourceName: 'tags',
-          resourceKey: '1',
+          resourceIndex: '1',
           actionName: 'add'
         });
       });
@@ -473,9 +473,9 @@ describe('koa middleware', () => {
           .put('/posts/1/tags/1');
         expect(response.body).toEqual({
           associatedName: 'posts',
-          associatedKey: '1',
+          associatedIndex: '1',
           resourceName: 'tags',
-          resourceKey: '1',
+          resourceIndex: '1',
           actionName: 'update'
         });
       });
@@ -484,9 +484,9 @@ describe('koa middleware', () => {
           .delete('/posts/1/tags/1');
         expect(response.body).toEqual({
           associatedName: 'posts',
-          associatedKey: '1',
+          associatedIndex: '1',
           resourceName: 'tags',
-          resourceKey: '1',
+          resourceIndex: '1',
           actionName: 'remove'
         });
       });
@@ -628,7 +628,7 @@ describe('koa middleware', () => {
         });
       expect(response.body).toEqual({
         associatedName: 'users',
-        associatedKey: 'name',
+        associatedIndex: 'name',
         resourceName: 'posts',
         actionName: 'list',
         fields: { appends: ['rel1', 'rel2'] }
@@ -640,7 +640,7 @@ describe('koa middleware', () => {
         actions: {
           list: {
             async middleware(ctx, next) {
-              ctx.action.mergeParams({ filter: { user_name: ctx.action.params.associatedKey } });
+              ctx.action.mergeParams({ filter: { user_name: ctx.action.params.associatedIndex } });
               await next();
             },
           },
@@ -650,7 +650,7 @@ describe('koa middleware', () => {
         .get('/users/name/posts');
       expect(response.body).toEqual({
         associatedName: 'users',
-        associatedKey: 'name',
+        associatedIndex: 'name',
         resourceName: 'posts',
         actionName: 'list',
         filter: { user_name: 'name' },
@@ -662,7 +662,7 @@ describe('koa middleware', () => {
         actions: {
           list: {
             async middleware(ctx, next) {
-              ctx.action.mergeParams({ fields: { only: [ctx.action.params.associatedKey] } }, { fields: 'append' });
+              ctx.action.mergeParams({ fields: { only: [ctx.action.params.associatedIndex] } }, { fields: 'append' });
               await next();
             },
           },
@@ -672,7 +672,7 @@ describe('koa middleware', () => {
         .get('/users/name/posts');
       expect(response.body).toEqual({
         associatedName: 'users',
-        associatedKey: 'name',
+        associatedIndex: 'name',
         resourceName: 'posts',
         actionName: 'list',
         fields: {

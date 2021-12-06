@@ -1,10 +1,13 @@
 import { defineConfig } from 'umi';
 import dotenv from 'dotenv';
 import path from 'path';
+import { getUmiConfig } from '@nocobase/utils';
 
 dotenv.config({
   path: path.resolve(__dirname, './.env'),
 });
+
+const umiConfig = getUmiConfig();
 
 process.env.MFSU_AD = 'none';
 
@@ -14,15 +17,12 @@ export default defineConfig({
     type: 'none',
   },
   define: {
-    'process.env.API_URL': process.env.API_URL || `/api/`,
-    'process.env.API_PORT': process.env.API_PORT || '13001',
+    ...umiConfig.define,
   },
+  // only proxy when using `umi dev`
+  // if the assets are built, will not proxy
   proxy: {
-    '/api': {
-      target: `http://localhost:${process.env.API_PORT || '13001'}/`,
-      changeOrigin: true,
-      pathRewrite: { '^/api': '/api' },
-    },
+    ...umiConfig.proxy,
   },
   routes: [{ path: '/', exact: false, component: '@/pages/index' }],
   fastRefresh: {},

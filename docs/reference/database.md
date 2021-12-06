@@ -24,47 +24,22 @@ class Database {
 db.sequelize.close();
 ```
 
-## `db.constructor()`
+## `db.close()`
+
+断开数据库连接
 
 ##### Definition
 
 ```ts
 class Database {
-  constructor (options: DatabaseOptions) => void;
+  close(): Promise<void>;
 }
-
-type DatabaseOptions = Sequelize.Options | Sequelize;
 ```
 
 ##### Examples
 
-配置 options 与 Sequelize.Options 一致，如：
-
 ```ts
-const db = new Database({
-  dialect: 'sqlite',
-  storage: 'path/to/database.sqlite'
-});
-```
-
-也可以直接传 sequelize 实例
-
-```ts
-const sequelize = new Sequelize('sqlite::memory:');
-const db = new Database(sequelize);
-```
-
-注意，new Sequelize() 会有针对参数的 try catch 处理，Database 如果要捕获异常，也需要在 new 的时候 try catch，如：
-
-```ts
-try {
-  const db = new Database({
-    dialect: 'sqlite',
-    storage: 'path/to/database.sqlite'
-  });
-} catch(error) {
-
-}
+await db.close();
 ```
 
 ## `db.collection()`
@@ -110,41 +85,254 @@ const Post = db.collection({
 
 自定义 repository 见 [db.registerRepositories()](#dbregisterrepositories)
 
-## `db.sync()`
-
-将所有定义的 Collections 同步给数据库。
+## `db.constructor()`
 
 ##### Definition
 
 ```ts
 class Database {
-  sync(options?: Sequelize.SyncOptions): Promise<Database>;
+  constructor (options: DatabaseOptions) => void;
+}
+
+type DatabaseOptions = Sequelize.Options | Sequelize;
+```
+
+##### Examples
+
+配置 options 与 Sequelize.Options 一致，如：
+
+```ts
+const db = new Database({
+  dialect: 'sqlite',
+  storage: 'path/to/database.sqlite'
+});
+```
+
+也可以直接传 sequelize 实例
+
+```ts
+const sequelize = new Sequelize('sqlite::memory:');
+const db = new Database(sequelize);
+```
+
+注意，new Sequelize() 会有针对参数的 try catch 处理，Database 如果要捕获异常，也需要在 new 的时候 try catch，如：
+
+```ts
+try {
+  const db = new Database({
+    dialect: 'sqlite',
+    storage: 'path/to/database.sqlite'
+  });
+} catch(error) {
+
+}
+```
+
+## `db.emit()`
+
+同步事件触发
+
+##### Definition
+
+##### Examples
+
+## `db.emitAsync()`
+
+异步事件触发
+
+##### Definition
+
+##### Examples
+
+## `db.getCollection()` <Badge>待完善</Badge>
+
+##### Definition
+
+```ts
+class Database {
+  getCollection(name: string): Collection;
 }
 ```
 
 ##### Examples
 
 ```ts
-await db.sync();
-await db.sync({force: true});
+const collection = db.getCollection('tests');
 ```
 
-## `db.close()`
-
-断开数据库连接
+## `db.hasCollection()` <Badge>待完善</Badge>
 
 ##### Definition
 
 ```ts
 class Database {
-  close(): Promise<void>;
+  hasCollection(name: string): boolean;
 }
 ```
 
 ##### Examples
 
 ```ts
-await db.close();
+if (db.hasCollection('tests')) {
+
+}
+```
+
+## `db.import()` <Badge>待完善</Badge>
+
+##### Definition
+
+```ts
+class Database {
+  import(options: ImportOptions): Map<string, Collection>;
+}
+
+interface ImportOptions {
+  // 配置所在文件夹
+  directory: string;
+  // 配置后置
+  // @default ['js', 'ts', 'json']
+  extensions?: string[];
+}
+// 为了配合 db.import()，提供了一个 extend 方法，用于扩展已有 collection 配置
+function extend(collectionOptions: CollectionOptions, mergeOptions?: MergeOptions) {}
+```
+
+##### Examples
+
+导入某文件夹下的所有 Collection 配置
+
+```ts
+db.import({
+  directory: '/path/to/collections',
+  extensions: ['js', 'ts', 'json'],
+});
+```
+
+db.import 的使用场景分析
+
+```ts
+// 假设在 A 插件里配置里 tests
+db.collection({
+  name: 'tests',
+  { type: 'string', name: 'name1' },
+  { type: 'string', name: 'name2' },
+  { type: 'string', name: 'name3' },
+});
+
+// 在 B 插件里可能想给 tests 新增字段
+const Test = db.getCollection('tests');
+Test.addField('name4', {});
+Test.addField('name5', {});
+Test.addField('name6', {});
+
+// 通过 db.import 的做法，文件不分先后，自动处理
+// 文件1里
+{
+  name: 'tests',
+  fields: [
+    { type: 'string', name: 'name1' },
+    { type: 'string', name: 'name2' },
+    { type: 'string', name: 'name3' },
+  ],
+}
+
+// 文件2里
+extend({
+  name: 'tests',
+  fields: [
+    { type: 'string', name: 'name4' },
+  ],
+});
+```
+
+extend 可以自定义 merge 规则（[deepmerge](https://www.npmjs.com/package/deepmerge#options)），如：
+
+```ts
+extend({
+  name: 'demos',
+  actions: [
+    {
+      name: 'list',
+    },
+  ],
+}, {
+  arrayMerge: (t, s) => t.concat(s),
+})
+```
+
+备注：extend 的 fields、hooks 等 array 参数，默认都是 concat 规则，string 参数是覆盖，如：
+
+```ts
+{
+  name: 'tests',
+  repository: 'TestRepository1',
+  fields: [
+    { type: 'string', name: 'name1' },
+  ],
+}
+
+extend({
+  name: 'tests',
+  repository: 'TestRepository2',
+  fields: [
+    { type: 'string', name: 'name2' },
+  ],
+});
+
+// 等同于
+{
+  name: 'tests',
+  repository: 'TestRepository2',
+  fields: [
+    { type: 'string', name: 'name1' },
+    { type: 'string', name: 'name2' },
+  ],
+}
+```
+
+## `db.on()`
+
+##### Definition
+
+collection 的事件（都是同步的）
+
+- `beforeDefineCollection`
+- `afterDefineCollection`
+- `beforeUpdateCollection`
+- `afterUpdateCollection`
+- `beforeRemoveCollection`
+- `afterRemoveCollection`
+
+model 的事件（异步的）
+
+- `<modelHookType>`
+- `<modelName>.<modelHookType>`
+
+##### Examples
+
+全局事件
+
+```ts
+db.on('beforeDefineCollection', (options: CollectionOptions) => {
+
+});
+
+db.on('afterDefineCollection', (collection: Collection) => {
+
+});
+
+db.on('afterCreate', async (model, options) => {
+
+});
+```
+
+特定 model 事件
+
+```ts
+db.on('posts.afterCreate', async (model, options) => {
+
+});
 ```
 
 ## `db.registerFieldTypes()`
@@ -182,58 +370,7 @@ db.collection({
 });
 ```
 
-## `db.import()`
-
-##### Definition
-
-```ts
-class Database {
-  import(options: ImportOptions): Map<string, Collection>;
-}
-
-interface ImportOptions {
-  // 配置所在文件夹
-  directory: string;
-  // 配置后置
-  // @default ['js', 'ts', 'json']
-  extensions?: string[];
-}
-```
-
-##### Examples
-
-导入某文件夹下的所有 Collection 配置
-
-```ts
-db.import({
-  directory: '/path/to/collections',
-  extensions: ['js', 'ts', 'json'],
-});
-```
-
-## `db.on()`
-
-##### Definition
-
-##### Examples
-
-## `db.emitAsync()`
-
-异步事件触发
-
-##### Definition
-
-##### Examples
-
-## `db.emit()`
-
-同步事件触发
-
-##### Definition
-
-##### Examples
-
-## `db.registerModels()`
+## `db.registerModels()` <Badge>待完善</Badge>
 
 自定义 Model
 
@@ -271,32 +408,7 @@ const test = Test.model<CustomModel>.create();
 test.customMethod();
 ```
 
-## `db.registerRepositories()`
-
-自定义 Repository
-
-##### Examples
-
-```ts
-class CustomRepository extends Repository {
-  customMethod() {
-    console.log('custom method');
-  }
-}
-
-db.registerModels({
-  CustomRepository,
-});
-
-const Test = db.collection({
-  name: 'tests',
-  repository: 'CustomRepository',
-});
-
-Test.repository<CustomRepository>.customMethod();
-```
-
-## `db.registerOperators()`
+## `db.registerOperators()` <Badge>待完善</Badge>
 
 自定义筛选条件
 
@@ -368,4 +480,150 @@ repository.find({
     'attr.$anyOf': ['val1', 'val2'],
   },
 });
+```
+
+更多例子：
+
+```ts
+db.collection({
+  name: 'users',
+  fields: [
+    { type: 'date', name: 'birthday' },
+  ],
+});
+
+db.collection({
+  name: 'posts',
+  fields: [
+    { type: 'belongsTo', name: 'user' },
+  ],
+});
+
+repository.find({
+  filter: {
+    'birthday.$dateOn': '1999-01-02',
+  },
+});
+
+db.registerOperators({
+  dateOn: (value, ctx) => {
+    console.log(value) // 1999-01-02
+    console.log(ctx.path) // birthday
+    console.log(ctx.field) // ctx.field instanceof DateField
+  }
+});
+
+repository.find({
+  filter: {
+    $and: [
+      { 'birthday.$dateOn': '1999-01-02' },
+    ]
+  },
+});
+
+db.registerOperators({
+  dateOn: (value, ctx) => {
+    console.log(value) // 1999-01-02
+    console.log(ctx.path) // birthday
+    console.log(ctx.field) // ctx.field instanceof DateField
+  },
+});
+
+repository.find({
+  filter: {
+    $and: [
+      { 'user.birthday.$dateOn': '1999-01-02' },
+    ]
+  },
+});
+
+db.registerOperators({
+  dateOn: (value, ctx) => {
+    console.log(value) // 1999-01-02
+    console.log(ctx.path) // user.birthday
+    console.log(ctx.field) // ctx.field instanceof DateField
+  },
+});
+
+repository.find({
+  filter: {
+    $or: [
+      {
+        $and: [
+          {'user.birthday.$dateOn': '1999-01-02'}
+        ],
+      },
+    ],
+  },
+});
+
+db.registerOperators({
+  dateOn: (value, ctx) => {
+    console.log(value) // 1999-01-02
+    console.log(ctx.path) // user.birthday
+    console.log(ctx.field) // ctx.field instanceof DateField
+  }
+});
+```
+
+## `db.registerRepositories()` <Badge>待完善</Badge>
+
+自定义 Repository
+
+##### Examples
+
+```ts
+class CustomRepository extends Repository {
+  customMethod() {
+    console.log('custom method');
+  }
+}
+
+db.registerModels({
+  CustomRepository,
+});
+
+const Test = db.collection({
+  name: 'tests',
+  repository: 'CustomRepository',
+});
+
+Test.repository<CustomRepository>.customMethod();
+```
+
+## `db.removeCollection()` <Badge>待完善</Badge>
+
+移除 collection
+
+##### Definition
+
+```ts
+class Database {
+  removeCollection(name: string): Collection;
+}
+```
+
+##### Examples
+
+```ts
+db.removeCollection('tests');
+```
+
+## `db.sync()`
+
+将所有定义的 Collections 同步给数据库。
+
+##### Definition
+
+```ts
+class Database {
+  sync(options?: Sequelize.SyncOptions): Promise<Database>;
+}
+```
+
+##### Examples
+
+```ts
+await db.sync();
+await db.sync({force: true});
 ```

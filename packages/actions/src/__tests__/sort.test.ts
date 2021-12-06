@@ -31,11 +31,11 @@ describe('sort', () => {
     });
 
     it('targetId', async () => {
-      await api.resource('tests').sort({
+      await api.agent().resource('tests').sort({
         sourceId: 1,
         targetId: 3,
       });
-      const response = await api.resource('tests').list({
+      const response = await api.agent().resource('tests').list({
         sort: ['sort'],
       });
       expect(response.body).toMatchObject({
@@ -61,11 +61,11 @@ describe('sort', () => {
     });
 
     it('targetId', async () => {
-      await api.resource('tests').sort({
+      await api.agent().resource('tests').sort({
         sourceId: 3,
         targetId: 1,
       });
-      const response = await api.resource('tests').list({
+      const response = await api.agent().resource('tests').list({
         sort: ['sort'],
       });
       expect(response.body).toMatchObject({
@@ -91,12 +91,12 @@ describe('sort', () => {
     });
 
     it('sortField', async () => {
-      await api.resource('tests').sort({
+      await api.agent().resource('tests').sort({
         sortField: 'sort2',
         sourceId: 1,
         targetId: 3,
       });
-      const response = await api.resource('tests').list({
+      const response = await api.agent().resource('tests').list({
         sort: ['sort2'],
       });
       expect(response.body).toMatchObject({
@@ -122,11 +122,11 @@ describe('sort', () => {
     });
 
     it('sticky', async () => {
-      await api.resource('tests').sort({
+      await api.agent().resource('tests').sort({
         sourceId: 3,
         sticky: true,
       });
-      const response = await api.resource('tests').list({
+      const response = await api.agent().resource('tests').list({
         sort: ['sort'],
       });
       expect(response.body).toMatchObject({
@@ -183,11 +183,11 @@ describe('sort', () => {
     });
 
     it('targetId/1->6', async () => {
-      await api.resource('tests').sort({
+      await api.agent().resource('tests').sort({
         sourceId: 1,
         targetId: 6,
       });
-      let response = await api.resource('tests').list({
+      let response = await api.agent().resource('tests').list({
         sort: ['sort'],
         filter: { state: 1 },
       });
@@ -207,7 +207,7 @@ describe('sort', () => {
           },
         ],
       });
-      response = await api.resource('tests').list({
+      response = await api.agent().resource('tests').list({
         sort: ['sort'],
         filter: { state: 2 },
       });
@@ -238,12 +238,12 @@ describe('sort', () => {
     });
 
     it('targetId/1->6 - method=insertAfter', async () => {
-      await api.resource('tests').sort({
+      await api.agent().resource('tests').sort({
         sourceId: 1,
         targetId: 6,
         method: 'insertAfter',
       });
-      let response = await api.resource('tests').list({
+      let response = await api.agent().resource('tests').list({
         sort: ['sort'],
         filter: { state: 1 },
       });
@@ -263,7 +263,7 @@ describe('sort', () => {
           },
         ],
       });
-      response = await api.resource('tests').list({
+      response = await api.agent().resource('tests').list({
         sort: ['sort'],
         filter: { state: 2 },
       });
@@ -294,11 +294,11 @@ describe('sort', () => {
     });
 
     it('targetId/6->2', async () => {
-      await api.resource('tests').sort({
+      await api.agent().resource('tests').sort({
         sourceId: 6,
         targetId: 2,
       });
-      let response = await api.resource('tests').list({
+      let response = await api.agent().resource('tests').list({
         sort: ['sort'],
         filter: { state: 1 },
       });
@@ -326,7 +326,7 @@ describe('sort', () => {
           },
         ],
       });
-      response = await api.resource('tests').list({
+      response = await api.agent().resource('tests').list({
         sort: ['sort'],
         filter: { state: 2 },
       });
@@ -349,12 +349,12 @@ describe('sort', () => {
     });
 
     it('targetId/6->2 - method=insertAfter', async () => {
-      await api.resource('tests').sort({
+      await api.agent().resource('tests').sort({
         sourceId: 6,
         targetId: 2,
         method: 'insertAfter',
       });
-      let response = await api.resource('tests').list({
+      let response = await api.agent().resource('tests').list({
         sort: ['sort'],
         filter: { state: 1 },
       });
@@ -382,7 +382,7 @@ describe('sort', () => {
           },
         ],
       });
-      response = await api.resource('tests').list({
+      response = await api.agent().resource('tests').list({
         sort: ['sort'],
         filter: { state: 2 },
       });
@@ -405,13 +405,13 @@ describe('sort', () => {
     });
 
     it('targetScope', async () => {
-      await api.resource('tests').sort({
+      await api.agent().resource('tests').sort({
         sourceId: 1,
         targetScope: {
           state: 2,
         },
       });
-      let response = await api.resource('tests').list({
+      let response = await api.agent().resource('tests').list({
         sort: ['sort'],
         filter: { state: 1 },
       });
@@ -431,7 +431,7 @@ describe('sort', () => {
           },
         ],
       });
-      response = await api.resource('tests').list({
+      response = await api.agent().resource('tests').list({
         sort: ['sort'],
         filter: { state: 2 },
       });
@@ -462,14 +462,14 @@ describe('sort', () => {
     });
 
     it('targetScope - method=prepend', async () => {
-      await api.resource('tests').sort({
+      await api.agent().resource('tests').sort({
         sourceId: 1,
         targetScope: {
           state: 2,
         },
         method: 'prepend',
       });
-      let response = await api.resource('tests').list({
+      let response = await api.agent().resource('tests').list({
         sort: ['sort'],
         filter: { state: 1 },
       });
@@ -486,7 +486,7 @@ describe('sort', () => {
           },
         ],
       });
-      response = await api.resource('tests').list({
+      response = await api.agent().resource('tests').list({
         sort: ['sort'],
         filter: { state: 2 },
       });

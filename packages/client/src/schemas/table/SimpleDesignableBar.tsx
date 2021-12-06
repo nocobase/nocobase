@@ -1,24 +1,7 @@
 import React, { useContext, useMemo, useRef, useState } from 'react';
 import { createForm } from '@formily/core';
-import {
-  SchemaOptionsContext,
-  Schema,
-  useFieldSchema,
-  observer,
-  SchemaExpressionScopeContext,
-  FormProvider,
-  ISchema,
-  useField,
-  useForm,
-  RecursionField,
-} from '@formily/react';
-import {
-  useSchemaPath,
-  SchemaField,
-  useDesignable,
-  removeSchema,
-  updateSchema,
-} from '../';
+import { observer, useField } from '@formily/react';
+import { useSchemaPath, SchemaField, useDesignable, removeSchema, updateSchema } from '../';
 import get from 'lodash/get';
 import { Button, Dropdown, Menu, Modal, Select, Space } from 'antd';
 import { MenuOutlined, DragOutlined } from '@ant-design/icons';
@@ -45,8 +28,7 @@ export const SimpleDesignableBar = observer((props) => {
   if (!designable) {
     return null;
   }
-  const defaultPageSize =
-    field?.componentProps?.pagination?.defaultPageSize || 10;
+  const defaultPageSize = field?.componentProps?.pagination?.defaultPageSize || 10;
   return (
     <div className={cls('designable-bar', { active: visible })}>
       <span
@@ -69,109 +51,104 @@ export const SimpleDesignableBar = observer((props) => {
                 <Menu.Item
                   key={'defaultFilter'}
                   onClick={async () => {
-                    const { defaultFilter } = await FormDialog(
-                      t('Set the data scope'),
-                      () => {
-                        return (
-                          <FormLayout layout={'vertical'}>
-                            <SchemaField
-                              schema={{
-                                type: 'object',
-                                properties: {
-                                  defaultFilter: {
-                                    type: 'object',
-                                    'x-component': 'Filter',
-                                    properties: {
-                                      column1: {
-                                        type: 'void',
-                                        title: t('Action type'),
-                                        'x-component': 'Filter.Column',
-                                        'x-component-props': {
-                                          operations: [
-                                            {
-                                              label: '{{t("is")}}',
-                                              value: 'eq',
-                                              selected: true,
-                                              schema: {
-                                                'x-component': 'Select',
+                    const { defaultFilter } = await FormDialog(t('Set the data scope'), () => {
+                      return (
+                        <FormLayout layout={'vertical'}>
+                          <SchemaField
+                            schema={{
+                              type: 'object',
+                              properties: {
+                                defaultFilter: {
+                                  type: 'object',
+                                  'x-component': 'Filter',
+                                  properties: {
+                                    column1: {
+                                      type: 'void',
+                                      title: t('Action type'),
+                                      'x-component': 'Filter.Column',
+                                      'x-component-props': {
+                                        operations: [
+                                          {
+                                            label: '{{t("is")}}',
+                                            value: 'eq',
+                                            selected: true,
+                                            schema: {
+                                              'x-component': 'Select',
+                                            },
+                                          },
+                                          {
+                                            label: '{{t("is not")}}',
+                                            value: 'ne',
+                                            schema: {
+                                              'x-component': 'Select',
+                                            },
+                                          },
+                                          {
+                                            label: '{{t("contains")}}',
+                                            value: 'in',
+                                            schema: {
+                                              'x-component': 'Select',
+                                              'x-component-props': {
+                                                mode: 'tags',
                                               },
                                             },
-                                            {
-                                              label: '{{t("is not")}}',
-                                              value: 'ne',
-                                              schema: {
-                                                'x-component': 'Select',
+                                          },
+                                          {
+                                            label: '{{t("does not contain")}}',
+                                            value: 'notIn',
+                                            schema: {
+                                              'x-component': 'Select',
+                                              'x-component-props': {
+                                                mode: 'tags',
                                               },
                                             },
+                                          },
+                                          {
+                                            label: '{{t("is empty")}}',
+                                            value: '$null',
+                                            noValue: true,
+                                          },
+                                          {
+                                            label: '{{t("is not empty")}}',
+                                            value: '$notNull',
+                                            noValue: true,
+                                          },
+                                        ],
+                                      },
+                                      properties: {
+                                        type: {
+                                          type: 'string',
+                                          'x-component': 'Select',
+                                          enum: [
                                             {
-                                              label: '{{t("contains")}}',
-                                              value: 'in',
-                                              schema: {
-                                                'x-component': 'Select',
-                                                'x-component-props': {
-                                                  mode: 'tags',
-                                                },
-                                              },
+                                              label: '{{t("Insert")}}',
+                                              value: 'create',
                                             },
                                             {
-                                              label: '{{t("does not contain")}}',
-                                              value: 'notIn',
-                                              schema: {
-                                                'x-component': 'Select',
-                                                'x-component-props': {
-                                                  mode: 'tags',
-                                                },
-                                              },
+                                              label: '{{t("Update")}}',
+                                              value: 'update',
                                             },
                                             {
-                                              label: '{{t("is empty")}}',
-                                              value: '$null',
-                                              noValue: true,
-                                            },
-                                            {
-                                              label: '{{t("is not empty")}}',
-                                              value: '$notNull',
-                                              noValue: true,
+                                              label: '{{t("Delete")}}',
+                                              value: 'destroy',
                                             },
                                           ],
-                                        },
-                                        properties: {
-                                          type: {
-                                            type: 'string',
-                                            'x-component': 'Select',
-                                            enum: [
-                                              {
-                                                label: '{{t("Insert")}}',
-                                                value: 'create',
-                                              },
-                                              {
-                                                label: '{{t("Update")}}',
-                                                value: 'update',
-                                              },
-                                              {
-                                                label: '{{t("Delete")}}',
-                                                value: 'destroy',
-                                              },
-                                            ],
-                                          },
                                         },
                                       },
                                     },
                                   },
                                 },
-                              }}
-                            />
-                          </FormLayout>
-                        );
-                      },
-                    ).open({
+                              },
+                            }}
+                          />
+                        </FormLayout>
+                      );
+                    }).open({
                       initialValues: {
-                        defaultFilter:
-                          field?.componentProps?.defaultFilter || {},
+                        defaultFilter: field?.componentProps?.defaultFilter || {},
                       },
                     });
-                    schema['x-component-props']['defaultFilter'] =
-                      defaultFilter;
+                    schema['x-component-props']['defaultFilter'] = defaultFilter;
                     field.componentProps.defaultFilter = defaultFilter;
                     await updateSchema(schema);
                     setVisible(false);

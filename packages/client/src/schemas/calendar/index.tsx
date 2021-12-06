@@ -39,7 +39,7 @@ import { useContext } from 'react';
 import { SchemaField, useDesignable } from '../../components/schema-renderer';
 import { ActionBar } from './ActionBar';
 import { ActionDesignableBar } from './Action';
-import { createForm } from '@formily/core';
+import { ArrayField, createForm } from '@formily/core';
 import { get } from 'lodash';
 import flatten from 'flat';
 import {
@@ -145,7 +145,7 @@ const toEvents = (data: any[], fieldNames: any) => {
 
 export const Calendar: any = observer((props: any) => {
   const { t } = useTranslation();
-  const field = useField<Formily.Core.Models.ArrayField>();
+  const field = useField<ArrayField>();
   const { collectionName, fieldNames = {} } = props;
   console.log('Calendar', props);
   const { schema } = useDesignable();
@@ -279,7 +279,7 @@ Calendar.useResource = ({ onSuccess }) => {
   const record = useContext(RecordContext);
   const resource = useResourceRequest({
     resourceName: collection?.name || props.collectionName,
-    resourceKey: record['id'],
+    resourceIndex: record['id'],
   });
   console.log(
     'collection?.name || props.collectionName',

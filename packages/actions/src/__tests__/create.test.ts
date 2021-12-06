@@ -23,7 +23,7 @@ describe('create', () => {
       ],
     });
     await api.db.sync();
-    const response = await api.resource('tests').create({
+    const response = await api.agent().resource('tests').create({
       values: { name: 'n1' },
     });
     expect(response.body.name).toBe('n1');
@@ -45,7 +45,7 @@ describe('create', () => {
     });
     await api.db.sync();
     const [Post, Comment] = api.db.getModels(['posts', 'comments']);
-    const response = await api.resource('posts').create({
+    const response = await api.agent().resource('posts').create({
       values: {
         title: 't1',
         comments: [
@@ -56,8 +56,8 @@ describe('create', () => {
     });
     expect(await Post.count()).toBe(1);
     expect(await Comment.count()).toBe(2);
-    await api.resource('posts.comments').create({
-      associatedKey: response.body.id,
+    await api.agent().resource('posts.comments').create({
+      associatedIndex: response.body.id,
       values: { content: 'c1' },
     });
     expect(await Comment.count()).toBe(3);
