@@ -1,6 +1,6 @@
 {
   "name": "@nocobase/client",
-  "version": "0.5.0-alpha.35",
+  "version": "0.5.0-alpha.37",
   "main": "lib/index.js",
   "typings": "lib/index.d.ts",
   "license": "MIT",

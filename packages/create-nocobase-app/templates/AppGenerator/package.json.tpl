@@ -40,7 +40,8 @@
     "@nocobase/plugin-ui-router": "^{{{ version }}}",
     "@nocobase/plugin-ui-schema": "^{{{ version }}}",
     "@nocobase/plugin-users": "^{{{ version }}}",
-    "@nocobase/server": "^{{{ version }}}"
+    "@nocobase/server": "^{{{ version }}}",
+    "@nocobase/utils": "^{{{ version }}}"
   },
   "devDependencies": {
     "@nocobase/client": "^{{{ version }}}",

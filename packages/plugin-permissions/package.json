@@ -1,10 +1,10 @@
 {
   "name": "@nocobase/plugin-permissions",
-  "version": "0.5.0-alpha.35",
+  "version": "0.5.0-alpha.37",
   "main": "lib/index.js",
   "license": "MIT",
   "dependencies": {
-    "@nocobase/server": "^0.5.0-alpha.35"
+    "@nocobase/server": "^0.5.0-alpha.37"
   },
   "gitHead": "e7df1f93c4e23b9a666d99ee7372c02bdaec97c4"
 }

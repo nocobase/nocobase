@@ -1,6 +1,6 @@
 {
   "name": "create-nocobase-app",
-  "version": "0.5.0-alpha.35",
+  "version": "0.5.0-alpha.37",
   "main": "lib/index.js",
   "types": "lib/index.d.ts",
   "files": [
@@ -15,7 +15,7 @@
   },
   "license": "MIT",
   "dependencies": {
-    "@nocobase/utils": "^0.5.0-alpha.35",
+    "@nocobase/utils": "^0.5.0-alpha.37",
     "@umijs/utils": "3.5.17",
     "commander": "^8.2.0",
     "execa": "^5.1.1",
