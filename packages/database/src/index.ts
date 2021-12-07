@@ -7,3 +7,4 @@ export * from './relation-repository/belongs-to-repository';
 export { Model } from 'sequelize';
 export * from './fields';
 export * from './update-associations';
+export * from './repository';
