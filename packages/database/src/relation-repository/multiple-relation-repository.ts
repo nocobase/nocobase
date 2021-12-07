@@ -139,19 +139,20 @@ export abstract class MultipleRelationRepository extends RelationRepository {
 
     const values = guard.sanitize(options.values);
 
-    const queryOptions = this.buildQueryOptions(options);
+    const queryOptions = this.buildQueryOptions(options as any);
 
     const instances = await this.find(queryOptions);
 
     for (const instance of instances) {
       await updateModelByValues(instance, values, {
+        ...options,
         sanitized: true,
         sourceModel: this.sourceModel,
         transaction,
       });
     }
 
-    return true;
+    return instances;
   }
 
   async destroy(options?: PK | DestroyOptions): Promise<Boolean> {
