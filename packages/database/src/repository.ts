@@ -56,9 +56,7 @@ export type WhiteList = string[];
 export type BlackList = string[];
 export type AssociationKeysToBeUpdate = string[];
 
-export type Values = {
-  [key: string]: string | number | Values | Array<number | string | Values>;
-};
+export type Values = any;
 
 export interface CountOptions extends Omit<SequelizeCreateOptions, 'distinct' | 'where' | 'include'>, TransactionAble {
   fields?: Fields;
