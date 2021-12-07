@@ -73,6 +73,7 @@ export class Collection<
       const m = this.context.database.sequelize.model(name);
       if ((m as any).isThrough) {
         this.model = m;
+        Object.defineProperty(this.model, 'database', { value: this.context.database });
         return;
       }
     }
@@ -83,6 +84,7 @@ export class Collection<
     }
     this.model = class extends M {};
     this.model.init(null, this.sequelizeModelOptions());
+    Object.defineProperty(this.model, 'database', { value: this.context.database });
   }
 
   setRepository(repository?: RepositoryType | string) {
