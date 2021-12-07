@@ -145,13 +145,14 @@ export abstract class MultipleRelationRepository extends RelationRepository {
 
     for (const instance of instances) {
       await updateModelByValues(instance, values, {
+        ...options,
         sanitized: true,
         sourceModel: this.sourceModel,
         transaction,
       });
     }
 
-    return true;
+    return instances;
   }
 
   async destroy(options?: PK | DestroyOptions): Promise<Boolean> {

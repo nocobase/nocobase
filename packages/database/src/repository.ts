@@ -356,7 +356,7 @@ export class Repository<TModelAttributes extends {} = any, TCreationAttributes e
       });
     }
 
-    return true;
+    return instances;
   }
 
   @transaction((args, transaction) => {
