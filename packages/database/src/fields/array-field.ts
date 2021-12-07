@@ -12,6 +12,7 @@ export class ArrayField extends Field {
 
   sortValue(model) {
     const oldValue = model.get(this.options.name);
+    console.log({oldValue})
     if (oldValue) {
       const newValue = oldValue.sort();
       model.set(this.options.name, newValue);
@@ -21,16 +22,13 @@ export class ArrayField extends Field {
   bind() {
     super.bind();
 
-    if (this.isSqlite()) {
-      this.collection.model.addHook('beforeCreate', 'array-field-sort', this.sortValue.bind(this));
-    }
+    this.on('beforeSave', this.sortValue.bind(this));
+
   }
 
   unbind() {
     super.unbind();
-    if (this.isSqlite()) {
-      this.collection.model.removeHook('beforeCreate', 'array-field-sort');
-    }
+    this.off('beforeSave', this.sortValue.bind(this));
   }
 }
 
