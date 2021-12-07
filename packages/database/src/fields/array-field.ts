@@ -12,7 +12,6 @@ export class ArrayField extends Field {
 
   sortValue(model) {
     const oldValue = model.get(this.options.name);
-    console.log({oldValue})
     if (oldValue) {
       const newValue = oldValue.sort();
       model.set(this.options.name, newValue);
@@ -21,9 +20,7 @@ export class ArrayField extends Field {
 
   bind() {
     super.bind();
-
     this.on('beforeSave', this.sortValue.bind(this));
-
   }
 
   unbind() {
