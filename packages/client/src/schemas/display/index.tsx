@@ -34,11 +34,11 @@ const Input: React.FC<InputProps & { ellipsis: any }> = (props) => {
   const content = compile(usePlaceholder(props.value));
   const ellipsisContent = (
     <Popover content={usePlaceholder(props.value)} style={{ width: 100 }}>
-      <div className={'input-ellipsis'}>{content}</div>
+      <span className={'input-ellipsis'}>{content}</span>
     </Popover>
   );
   useEffect(() => {
-    if (props.ellipsis && domRef.current?.scrollWidth > domRef.current?.clientWidth) {
+    if (domRef.current?.scrollWidth > domRef.current?.clientWidth) {
       setEllipsis(true);
     }
   }, []);
@@ -46,7 +46,7 @@ const Input: React.FC<InputProps & { ellipsis: any }> = (props) => {
     <div className={cls(prefixCls, props.className)} style={props.style}>
       {props.addonBefore}
       {props.prefix}
-      <div ref={domRef}>{ellipsis ? ellipsisContent : content}</div>
+      <span ref={domRef}>{ellipsis ? ellipsisContent : content}</span>
       {props.suffix}
       {props.addonAfter}
     </div>
@@ -93,18 +93,18 @@ const TextArea: React.FC<any> = (props) => {
   const content = usePlaceholder(props.value);
   const ellipsisContent = (
     <Popover content={usePlaceholder(props.value)}>
-      <div
+      <span
         className={'input-ellipsis'}
         style={{
           ...ellipsisProp,
         }}
       >
         {usePlaceholder(props.text || props.value)}
-      </div>
+      </span>
     </Popover>
   );
   useEffect(() => {
-    if (props.ellipsis && domRef.current?.scrollWidth > domRef.current?.clientWidth) {
+    if (domRef.current?.scrollWidth > domRef.current?.clientWidth) {
       setEllipsis(true);
     }
   }, []);
@@ -112,7 +112,7 @@ const TextArea: React.FC<any> = (props) => {
     <div className={cls(prefixCls, props.className)} style={props.style}>
       {props.addonBefore}
       {props.prefix}
-      <div ref={domRef}>{ellipsis ? ellipsisContent : content}</div>
+      <span ref={domRef}>{ellipsis ? ellipsisContent : content}</span>
       {props.suffix}
       {props.addonAfter}
     </div>
