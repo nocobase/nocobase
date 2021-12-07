@@ -19,6 +19,9 @@
     "glob": "^7.1.6",
     "sequelize": "^6.9.0"
   },
+  "devDependencies": {
+    "@types/bcrypt": "^5.0.0"
+  },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/nocobase/nocobase.git",

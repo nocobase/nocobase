@@ -2,7 +2,7 @@ const { pathsToModuleNameMapper } = require('ts-jest/utils');
 const { compilerOptions } = require('./tsconfig.jest.json');
 
 module.exports = {
-  collectCoverage: true,
+  collectCoverage: false,
   verbose: true,
   testEnvironment: 'jsdom',
   preset: 'ts-jest',

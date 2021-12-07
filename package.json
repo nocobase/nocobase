@@ -9,7 +9,7 @@
     "bootstrap": "lerna bootstrap",
     "clean": "rimraf -rf packages/*/{lib,esm,dist} && lerna clean",
     "build": "lerna run build",
-    "test": "jest --coverage",
+    "test": "jest",
     "lint": "eslint ."
   },
   "resolutions": {
@@ -17,13 +17,10 @@
     "@types/react-dom": "^17.0.0"
   },
   "devDependencies": {
-    "@types/bcrypt": "^5.0.0",
     "@types/jest": "^26.0.0",
     "@types/koa": "^2.13.4",
     "@types/koa-bodyparser": "^4.3.4",
-    "@types/koa-multer": "^1.0.1",
     "@types/lodash": "^4.14.177",
-    "@types/multer": "^1.4.5",
     "@types/node": "^12.6.8",
     "@types/react": "^17.0.0",
     "@types/react-dom": "^17.0.0",
