@@ -38,6 +38,7 @@ export class BelongsToManyRepository extends MultipleRelationRepository implemen
     const sourceModel = await this.getSourceModel(transaction);
 
     const createOptions = {
+      ...options,
       through: values[this.throughName()],
       transaction,
     };

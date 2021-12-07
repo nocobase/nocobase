@@ -68,7 +68,7 @@ export async function updateModelByValues(instance: Model, values: UpdateValue, 
     values = guard.sanitize(values);
   }
 
-  await instance.update(values);
+  await instance.update(values, options);
   await updateAssociations(instance, values, options);
 }
 

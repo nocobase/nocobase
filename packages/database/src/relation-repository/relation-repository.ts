@@ -39,7 +39,7 @@ export abstract class RelationRepository {
 
     const sourceModel = await this.getSourceModel();
 
-    const instance = await sourceModel[createAccessor](guard.sanitize(options.values));
+    const instance = await sourceModel[createAccessor](guard.sanitize(options.values), options);
 
     await updateAssociations(instance, values, options);
 

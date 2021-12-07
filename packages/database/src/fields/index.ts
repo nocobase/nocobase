@@ -21,6 +21,7 @@ import { DateFieldOptions } from './date-field';
 import { ArrayFieldOptions } from './array-field';
 import { BaseFieldOptions } from './field';
 import { PasswordFieldOptions } from './password-field';
+import { ContextFieldOptions } from './context-field';
 
 export * from './array-field';
 export * from './belongs-to-field';
@@ -39,6 +40,7 @@ export * from './time-field';
 export * from './uid-field';
 export * from './virtual-field';
 export * from './password-field';
+export * from './context-field';
 export * from './field';
 
 export type FieldOptions =
@@ -59,6 +61,7 @@ export type FieldOptions =
   | TimeFieldOptions
   | DateFieldOptions
   | PasswordFieldOptions
+  | ContextFieldOptions
   | BelongsToFieldOptions
   | HasOneFieldOptions
   | HasManyFieldOptions
