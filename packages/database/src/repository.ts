@@ -108,7 +108,7 @@ export interface CreateOptions extends SequelizeCreateOptions {
   context?: any;
 }
 
-export interface UpdateOptions extends SequelizeUpdateOptions {
+export interface UpdateOptions extends Omit<SequelizeUpdateOptions, 'where'> {
   values: Values;
   filter?: Filter;
   filterByPk?: PrimaryKey;
