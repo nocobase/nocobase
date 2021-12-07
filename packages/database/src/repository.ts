@@ -2,7 +2,9 @@ import {
   Association,
   BulkCreateOptions,
   CreateOptions as SequelizeCreateOptions,
+  UpdateOptions as SequelizeUpdateOptions,
   FindAndCountOptions as SequelizeAndCountOptions,
+  DestroyOptions as SequelizeDestroyOptions,
   FindOptions as SequelizeFindOptions,
   Model,
   ModelCtor,
@@ -79,7 +81,7 @@ export interface CommonFindOptions {
 
 interface FindOneOptions extends FindOptions, CommonFindOptions {}
 
-export interface DestroyOptions extends TransactionAble {
+export interface DestroyOptions extends SequelizeDestroyOptions {
   filter?: Filter;
   filterByPk?: PrimaryKey | PrimaryKey[];
   truncate?: boolean;
@@ -98,20 +100,22 @@ interface FindAndCountOptions extends Omit<SequelizeAndCountOptions, 'where' | '
   sort?: Sort;
 }
 
-export interface CreateOptions extends TransactionAble {
+export interface CreateOptions extends SequelizeCreateOptions {
   values?: Values;
   whitelist?: WhiteList;
   blacklist?: BlackList;
   updateAssociationValues?: AssociationKeysToBeUpdate;
+  context?: any;
 }
 
-export interface UpdateOptions extends TransactionAble {
+export interface UpdateOptions extends SequelizeUpdateOptions {
   values: Values;
   filter?: Filter;
   filterByPk?: PrimaryKey;
   whitelist?: WhiteList;
   blacklist?: BlackList;
   updateAssociationValues?: AssociationKeysToBeUpdate;
+  context?: any;
 }
 
 interface RelatedQueryOptions {
@@ -287,13 +291,17 @@ export class Repository<TModelAttributes extends {} = any, TCreationAttributes e
     const guard = UpdateGuard.fromOptions(this.model, options);
     const values = guard.sanitize(options.values || {});
 
-    const instance = await this.model.create<any>(values, { transaction });
+    const instance = await this.model.create<any>(values, {
+      ...options,
+      transaction,
+    });
 
     if (!instance) {
       return;
     }
 
     await updateAssociations(instance, values, {
+      ...options,
       transaction,
     });
 
@@ -316,7 +324,7 @@ export class Repository<TModelAttributes extends {} = any, TCreationAttributes e
     });
 
     for (let i = 0; i < instances.length; i++) {
-      await updateAssociations(instances[i], records[i], { transaction });
+      await updateAssociations(instances[i], records[i], { ...options, transaction });
     }
 
     return instances;
@@ -344,6 +352,7 @@ export class Repository<TModelAttributes extends {} = any, TCreationAttributes e
 
     for (const instance of instances) {
       await updateModelByValues(instance, values, {
+        ...options,
         sanitized: true,
         transaction,
       });
