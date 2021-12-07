@@ -12,6 +12,7 @@
     "nodemailer": "^6.6.1"
   },
   "devDependencies": {
+    "@nocobase/test": "^0.6.0-alpha.0",
     "@types/nodemailer": "6.4.4",
     "nodemailer-mock": "^1.5.11"
   },

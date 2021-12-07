@@ -139,7 +139,7 @@ export abstract class MultipleRelationRepository extends RelationRepository {
 
     const values = guard.sanitize(options.values);
 
-    const queryOptions = this.buildQueryOptions(options);
+    const queryOptions = this.buildQueryOptions(options as any);
 
     const instances = await this.find(queryOptions);
 
