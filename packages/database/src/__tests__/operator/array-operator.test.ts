@@ -40,6 +40,50 @@ describe('array field operator', function () {
     });
   });
 
+  test('array field update', async () => {
+    const Post = db.collection({
+      name: 'posts',
+      fields: [
+        { type: 'array', name: 'tags' },
+      ],
+    });
+
+
+    await db.sync({force: true})
+
+    await Post.repository.create({})
+    const p1 = await Post.repository.create({
+      values: {
+        tags: ['t1', 't2']
+      }
+    })
+
+
+    let result = await Post.repository.findOne({
+      filter: {
+        'tags.$match': ['t2', 't1']
+      }
+    })
+
+    expect(result.get('id')).toEqual(p1.get('id'))
+
+    await Post.repository.update({
+      filterByPk: <number>p1.get('id'),
+      values: {
+        tags: ['t3', 't2']
+      }
+    })
+
+    result = await Post.repository.findOne({
+      filter: {
+        'tags.$match': ['t3', 't2']
+      }
+    })
+
+
+    expect(result.get('id')).toEqual(p1.get('id'))
+  });
+
   test('nested array field', async () => {
     const User = db.collection({
       name: 'users',
