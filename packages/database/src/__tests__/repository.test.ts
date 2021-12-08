@@ -21,12 +21,16 @@ describe('repository.find', () => {
       name: 'posts',
       fields: [
         { type: 'string', name: 'name' },
+        { type: 'belongsTo', name: 'user' },
         { type: 'hasMany', name: 'comments' },
       ],
     });
     Comment = db.collection({
       name: 'comments',
-      fields: [{ type: 'string', name: 'name' }],
+      fields: [
+        { type: 'string', name: 'name' },
+        { type: 'belongsTo', name: 'post' },
+      ],
     });
     await db.sync();
     await User.repository.createMany({

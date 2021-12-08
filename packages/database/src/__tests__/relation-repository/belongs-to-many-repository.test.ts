@@ -1,8 +1,10 @@
 import { mockDatabase } from '../index';
 import { BelongsToManyRepository } from '../../relation-repository/belongs-to-many-repository';
+import Database from '../../database';
 
 describe('belongs to many', () => {
-  let db;
+  let db: Database;
+  let User;
   let Post;
   let Tag;
   let PostTag;
@@ -14,11 +16,29 @@ describe('belongs to many', () => {
       fields: [{ type: 'string', name: 'tagged_at' }],
     });
 
+    User = db.collection({
+      name: 'users',
+      fields: [
+        {
+          type: 'string',
+          name: 'name',
+        },
+        {
+          type: 'hasMany',
+          name: 'posts',
+        },
+      ],
+    });
+
     Post = db.collection({
       name: 'posts',
       fields: [
         { type: 'belongsToMany', name: 'tags', through: 'posts_tags' },
         { type: 'string', name: 'title' },
+        {
+          type: 'belongsTo',
+          name: 'user',
+        },
       ],
     });
 
@@ -246,6 +266,50 @@ describe('belongs to many', () => {
     await p2Tag.reload();
     // p2-tag1 still not change
     expect(p2Tag.posts_tags.tagged_at).toBeNull();
+  });
+
+  test('update association values', async () => {
+    const u1 = await User.repository.create({
+      values: {
+        name: 'u1',
+      },
+    });
+
+    const p1 = await Post.repository.create({
+      values: {
+        title: 'p1',
+        tags: [{ name: 't1' }, { name: 't2' }],
+        user: u1.id,
+      },
+    });
+
+    const tag = await Tag.repository.findOne();
+    const tagPostsRepository = new BelongsToManyRepository(Tag, 'posts', tag.id);
+
+    await tagPostsRepository.update({
+      values: {
+        user: {
+          id: u1.get('id'),
+          name: 'u0',
+        },
+      },
+    });
+
+    await u1.reload();
+    expect(u1.get('name')).toEqual('u1');
+
+    await tagPostsRepository.update({
+      values: {
+        user: {
+          id: u1.get('id'),
+          name: 'u0',
+        },
+      },
+      updateAssociationValues: ['user'],
+    });
+
+    await u1.reload();
+    expect(u1.get('name')).toEqual('u0');
   });
 
   test('add', async () => {

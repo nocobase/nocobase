@@ -35,44 +35,6 @@ describe('database', () => {
     expect(imageCollection.fields.has('url2')).toBeTruthy();
   });
 
-  test('hasMany with inverse belongsTo relation', async () => {
-    const db = mockDatabase();
-    const UserCollection = db.collection({
-      name: 'users',
-      fields: [
-        { type: 'string', name: 'name' },
-        { type: 'hasMany', name: 'posts' },
-      ],
-    });
-
-    const PostCollection = db.collection({
-      name: 'posts',
-      fields: [{ type: 'string', name: 'title' }],
-    });
-
-    expect(UserCollection.model.associations.posts).toBeDefined();
-    expect(PostCollection.model.associations.user).toBeDefined();
-  });
-
-  test('belongsTo with inverse hasMany relation', async () => {
-    const db = mockDatabase();
-    const UserCollection = db.collection({
-      name: 'users',
-      fields: [{ type: 'string', name: 'name' }],
-    });
-
-    const PostCollection = db.collection({
-      name: 'posts',
-      fields: [
-        { type: 'string', name: 'title' },
-        { type: 'belongsTo', name: 'user' },
-      ],
-    });
-
-    expect(PostCollection.model.associations.user).toBeDefined();
-    expect(UserCollection.model.associations.posts).toBeDefined();
-  });
-
   test('get collection', async () => {
     const db = mockDatabase();
     expect(db.getCollection('test')).toBeUndefined();

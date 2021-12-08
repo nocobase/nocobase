@@ -17,6 +17,7 @@ describe('option parser', () => {
       fields: [
         { type: 'string', name: 'name' },
         { type: 'integer', name: 'age' },
+        { type: 'hasMany', name: 'posts' },
       ],
     });
 
