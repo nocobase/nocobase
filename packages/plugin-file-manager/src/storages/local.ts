@@ -97,6 +97,7 @@ async function middleware(app, options?) {
         if (ctx.path.startsWith(basePath)) {
           ctx.path = ctx.path.replace(basePath, '');
         }
+        // console.log('file request:', `${basePath}${ctx.path}`);
         await next();
       });
     }

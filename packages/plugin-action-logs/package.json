@@ -1,13 +1,13 @@
 {
   "name": "@nocobase/plugin-action-logs",
-  "version": "0.5.0-alpha.34",
+  "version": "0.5.0-alpha.37",
   "main": "lib/index.js",
   "license": "MIT",
   "dependencies": {
-    "@nocobase/server": "^0.5.0-alpha.34"
+    "@nocobase/server": "^0.5.0-alpha.37"
   },
   "devDependencies": {
-    "@nocobase/test": "^0.5.0-alpha.34"
+    "@nocobase/test": "^0.5.0-alpha.37"
   },
   "gitHead": "e7df1f93c4e23b9a666d99ee7372c02bdaec97c4"
 }

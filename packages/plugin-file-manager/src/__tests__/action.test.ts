@@ -23,6 +23,7 @@ describe('action', () => {
   beforeEach(async () => {
     app = await getApp();
     agent = app.agent();
+    await app.emitAsync('beforeStart');
     http = app.listen(API_PORT);
     db = app.db;
 
@@ -162,7 +163,6 @@ describe('action', () => {
 
       // 文件的 url 是否正常生成
       expect(body.data.url).toBe(`${BASE_URL}/${urlPath}/${body.data.filename}`);
-      console.log(body.data.url);
       const content = await requestFile(body.data.url, agent);
       expect(content.text).toBe('Hello world!\n');
     });
