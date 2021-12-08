@@ -1,6 +1,7 @@
 {
-  "name": "@nocobase/database",
+  "name": "@nocobase/database-next",
   "version": "0.5.0-alpha.34",
+  "private": true,
   "description": "",
   "main": "./lib/index.js",
   "types": "./lib/index.d.ts",
@@ -17,5 +18,5 @@
     "url": "git+https://github.com/nocobase/nocobase.git",
     "directory": "packages/database"
   },
-  "gitHead": "e7df1f93c4e23b9a666d99ee7372c02bdaec97c4"
+  "gitHead": "f0b335ac30f29f25c95d7d137655fa64d8d67f1e"
 }
