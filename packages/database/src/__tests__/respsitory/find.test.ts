@@ -15,6 +15,7 @@ describe('repository find', () => {
       fields: [
         { type: 'string', name: 'name' },
         { type: 'integer', name: 'age' },
+        { type: 'hasMany', name: 'posts' },
       ],
     });
 

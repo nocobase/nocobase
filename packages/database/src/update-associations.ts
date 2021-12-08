@@ -9,6 +9,8 @@ import {
   BelongsTo,
   BelongsToMany,
   HasMany,
+  Transactionable,
+  Hookable,
 } from 'sequelize';
 import { UpdateGuard } from './update-guard';
 import { TransactionAble } from './repository';
@@ -19,6 +21,10 @@ function isUndefinedOrNull(value: any) {
 
 function isStringOrNumber(value: any) {
   return typeof value === 'string' || typeof value === 'number';
+}
+
+function getKeysByPrefix(keys: string[], prefix: string) {
+  return keys.filter((key) => key.startsWith(`${prefix}.`)).map((key) => key.substring(prefix.length + 1));
 }
 
 export function modelAssociations(instance: Model) {
@@ -54,6 +60,11 @@ interface UpdateOptions extends TransactionAble {
   // 如果需要更新关联数据，可以通过 updateAssociationValues 指定
   updateAssociationValues?: string[];
   sanitized?: boolean;
+  sourceModel?: Model;
+}
+
+interface UpdateAssociationOptions extends Transactionable, Hookable {
+  updateAssociationValues?: string[];
   sourceModel?: Model;
 }
 
@@ -105,7 +116,7 @@ export async function updateThroughTableValue(
  * @param values
  * @param options
  */
-export async function updateAssociations(instance: Model, values: any, options: any = {}) {
+export async function updateAssociations(instance: Model, values: any, options: UpdateAssociationOptions = {}) {
   // if no values set, return
   if (!values) {
     return;
@@ -119,8 +130,10 @@ export async function updateAssociations(instance: Model, values: any, options: 
     transaction = await instance.sequelize.transaction();
   }
 
+  const keys = Object.keys(values);
+
   for (const key of Object.keys(modelAssociations(instance))) {
-    if (values[key]) {
+    if (keys.includes(key)) {
       await updateAssociation(instance, key, values[key], {
         ...options,
         transaction,
@@ -159,7 +172,12 @@ export async function updateAssociations(instance: Model, values: any, options: 
  * @param value
  * @param options
  */
-export async function updateAssociation(instance: Model, key: string, value: any, options: any = {}) {
+export async function updateAssociation(
+  instance: Model,
+  key: string,
+  value: any,
+  options: UpdateAssociationOptions = {},
+) {
   const association = modelAssociationByKey(instance, key);
 
   if (!association) {
@@ -183,7 +201,12 @@ export async function updateAssociation(instance: Model, key: string, value: any
  * @param value
  * @param options
  */
-export async function updateSingleAssociation(model: Model, key: string, value: any, options: any = {}) {
+export async function updateSingleAssociation(
+  model: Model,
+  key: string,
+  value: any,
+  options: UpdateAssociationOptions = {},
+) {
   const association = <HasOne | BelongsTo>modelAssociationByKey(model, key);
 
   if (!association) {
@@ -194,7 +217,8 @@ export async function updateSingleAssociation(model: Model, key: string, value: 
     return false;
   }
 
-  const { transaction = await model.sequelize.transaction() } = options;
+  const { updateAssociationValues = [], transaction = await model.sequelize.transaction() } = options;
+  const keys = getKeysByPrefix(updateAssociationValues, key);
 
   try {
     // set method of association
@@ -220,6 +244,7 @@ export async function updateSingleAssociation(model: Model, key: string, value: 
       }
       return true;
     }
+
     if (value instanceof Model) {
       await model[setAccessor](value);
       model.setDataValue(key, value);
@@ -248,9 +273,15 @@ export async function updateSingleAssociation(model: Model, key: string, value: 
         },
         transaction,
       });
+
       if (instance) {
         await model[setAccessor](instance);
-        await updateAssociations(instance, value, { transaction, ...options });
+
+        if (updateAssociationValues.includes(key)) {
+          await instance.update(value, { ...options, transaction });
+        }
+
+        await updateAssociations(instance, value, { ...options, transaction, updateAssociationValues: keys });
         model.setDataValue(key, instance);
         if (!options.transaction) {
           await transaction.commit();
@@ -259,12 +290,8 @@ export async function updateSingleAssociation(model: Model, key: string, value: 
       }
     }
 
-    if (value[dataKey] === null) {
-      return await removeAssociation();
-    }
-
     const instance = await model[createAccessor](value, { transaction });
-    await updateAssociations(instance, value, { transaction, ...options });
+    await updateAssociations(instance, value, { ...options, transaction, updateAssociationValues: keys });
     model.setDataValue(key, instance);
     // @ts-ignore
     if (association.targetKey) {
@@ -288,7 +315,12 @@ export async function updateSingleAssociation(model: Model, key: string, value: 
  * @param value
  * @param options
  */
-export async function updateMultipleAssociation(model: Model, key: string, value: any, options: any = {}) {
+export async function updateMultipleAssociation(
+  model: Model,
+  key: string,
+  value: any,
+  options: UpdateAssociationOptions = {},
+) {
   const association = <BelongsToMany | HasMany>modelAssociationByKey(model, key);
 
   if (!association) {
@@ -299,7 +331,8 @@ export async function updateMultipleAssociation(model: Model, key: string, value
     return false;
   }
 
-  const { transaction = await model.sequelize.transaction() } = options;
+  const { updateAssociationValues = [], transaction = await model.sequelize.transaction() } = options;
+  const keys = getKeysByPrefix(updateAssociationValues, key);
 
   try {
     const setAccessor = association.accessors.set;
@@ -359,7 +392,7 @@ export async function updateMultipleAssociation(model: Model, key: string, value
       if (isUndefinedOrNull(item[pk])) {
         // create new record
         const instance = await model[createAccessor](item, accessorOptions);
-        await updateAssociations(instance, item, { transaction, ...options });
+        await updateAssociations(instance, item, { ...options, transaction, updateAssociationValues: keys });
         list3.push(instance);
       } else {
         // set & update record
@@ -369,7 +402,10 @@ export async function updateMultipleAssociation(model: Model, key: string, value
         const addAccessor = association.accessors.add;
 
         await model[addAccessor](item[pk], accessorOptions);
-        await updateAssociations(instance, item, { transaction, ...options });
+        if (updateAssociationValues.includes(key)) {
+          await instance.update(item, { ...options, transaction });
+        }
+        await updateAssociations(instance, item, { ...options, transaction, updateAssociationValues: keys });
         list3.push(instance);
       }
     }
