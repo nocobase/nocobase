@@ -6,7 +6,7 @@ export default {
   async load() {
     const database = this.app.db;
 
-    database.import({
+    await database.import({
       directory: path.resolve(__dirname, 'collections'),
     });
 

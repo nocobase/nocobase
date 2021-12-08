@@ -283,7 +283,7 @@ export class Repository<TModelAttributes extends {} = any, TCreationAttributes e
    * @param options
    */
   @transaction()
-  async create(options: CreateOptions): Promise<Model> {
+  async create<M extends Model>(options: CreateOptions): Promise<M> {
     const transaction = await this.getTransaction(options);
 
     const guard = UpdateGuard.fromOptions(this.model, options);

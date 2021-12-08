@@ -36,7 +36,7 @@ export class BelongsToField extends RelationField {
     });
 
     // inverse relation
-    this.TargetModel.hasMany(collection.model);
+    // this.TargetModel.hasMany(collection.model);
 
     // 建立关系之后从 pending 列表中删除
     database.removePendingField(this);
@@ -76,4 +76,5 @@ export class BelongsToField extends RelationField {
 
 export interface BelongsToFieldOptions extends BaseRelationFieldOptions, SequelizeBelongsToOptions {
   type: 'belongsTo';
+  target?: string;
 }
