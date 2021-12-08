@@ -102,7 +102,7 @@ export class HasManyField extends RelationField {
     });
 
     // inverse relation
-    this.TargetModel.belongsTo(collection.model);
+    // this.TargetModel.belongsTo(collection.model);
 
     // 建立关系之后从 pending 列表中删除
     database.removePendingField(this);
