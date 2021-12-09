@@ -102,6 +102,12 @@ export class MockServer extends Koa {
     super();
     this.db = mockDatabase({
       logging: console.log,
+      sync: {
+        force: true,
+        alter: {
+          drop: true,
+        },
+      },
     });
     this.resourcer = new Resourcer({
       prefix: '/api',
