@@ -1,43 +1,9 @@
-import React, {
-  Children,
-  createContext,
-  useContext,
-  useEffect,
-  useRef,
-  useState,
-  forwardRef,
-} from 'react';
-import {
-  connect,
-  observer,
-  mapProps,
-  mapReadPretty,
-  useField,
-  useFieldSchema,
-  RecursionField,
-  Schema,
-  SchemaOptionsContext,
-  FormProvider,
-  useForm,
-} from '@formily/react';
-import {
-  Menu as AntdMenu,
-  MenuProps,
-  MenuItemProps,
-  SubMenuProps,
-  DividerProps,
-  Dropdown,
-  Modal,
-  Button,
-  Space,
-} from 'antd';
+import React, { createContext, useContext, useEffect, useRef, useState, forwardRef } from 'react';
+import { observer, useField, useFieldSchema, RecursionField, Schema } from '@formily/react';
+import { Menu as AntdMenu, Dropdown, Modal, Button, Space } from 'antd';
 import { uid } from '@formily/shared';
 import cls from 'classnames';
-import {
-  SchemaField,
-  SchemaRenderer,
-  useDesignable,
-} from '../../components/schema-renderer';
+import { SchemaField, SchemaRenderer, useDesignable } from '../../components/schema-renderer';
 import {
   MenuOutlined,
   PlusOutlined,
@@ -49,7 +15,6 @@ import {
   ArrowDownOutlined,
   ArrowRightOutlined,
   DragOutlined,
-  LockOutlined,
 } from '@ant-design/icons';
 import { IconPicker } from '../../components/icon-picker';
 import { useDefaultAction } from '..';
@@ -62,14 +27,9 @@ import { FormDialog, FormItem, FormLayout, Input } from '@formily/antd';
 import deepmerge from 'deepmerge';
 import { onFieldChange } from '@formily/core';
 import { VisibleContext } from '../../context';
-import {
-  DragHandle,
-  SortableItem,
-  SortableItemContext,
-} from '../../components/Sortable';
+import { DragHandle, SortableItem, SortableItemContext } from '../../components/Sortable';
 import { DndContext, DragOverlay } from '@dnd-kit/core';
 import { createPortal } from 'react-dom';
-import { Resource } from '../../resource';
 import { useClient } from '../../constate';
 import { useTranslation } from 'react-i18next';
 import { useCompile } from '../../hooks/useCompile';
@@ -97,7 +57,7 @@ const SideMenu = (props: any) => {
   if (!child || child['x-component'] !== 'Menu.SubMenu') {
     return null;
   }
-
+  debugger;
   return (
     <MenuModeContext.Provider value={'inline'}>
       <AntdMenu
@@ -128,15 +88,7 @@ const SideMenu = (props: any) => {
 export const MenuSelectedKeysContext = createContext<any>([]);
 
 export const Menu: any = observer((props: any) => {
-  const {
-    mode,
-    onSelect,
-    sideMenuRef,
-    defaultSelectedKeys: keys,
-    getSelectedKeys,
-    onRemove,
-    ...others
-  } = props;
+  const { mode, onSelect, sideMenuRef, defaultSelectedKeys: keys, getSelectedKeys, onRemove, ...others } = props;
   const defaultSelectedKeys = useContext(MenuSelectedKeysContext);
   const { root, schema, insertAfter, remove } = useDesignable();
   const moveToAfter = (path1, path2) => {
@@ -155,9 +107,7 @@ export const Menu: any = observer((props: any) => {
   };
   const fieldSchema = useFieldSchema();
   console.log('Menu.schema', schema, fieldSchema);
-  const [selectedKey, setSelectedKey] = useState(
-    defaultSelectedKeys[0] || null,
-  );
+  const [selectedKey, setSelectedKey] = useState(defaultSelectedKeys[0] || null);
   const path = useSchemaPath();
   const child = schema.properties && schema.properties[selectedKey];
   const isSubMenu = child && child['x-component'] === 'Menu.SubMenu';
@@ -165,7 +115,7 @@ export const Menu: any = observer((props: any) => {
   const { t } = useTranslation();
 
   useEffect(() => {
-    const sideMenuElement = sideMenuRef && (sideMenuRef.current as HTMLElement);
+    const sideMenuElement = sideMenuRef?.current as HTMLElement;
     if (!sideMenuElement) {
       return;
     }
@@ -205,15 +155,21 @@ export const Menu: any = observer((props: any) => {
           <AntdMenu
             defaultOpenKeys={defaultSelectedKeys}
             defaultSelectedKeys={defaultSelectedKeys}
+            selectedKeys={[selectedKey]}
             {...others}
             mode={mode === 'mix' ? 'horizontal' : mode}
             onSelect={(info) => {
+              console.log('onSelect', defaultSelectedKeys);
+              const selectedSchema = schema.properties[info.key];
+              if (selectedSchema?.['x-component'] === 'Menu.URL') {
+                setSelectedKey(selectedKey);
+                return;
+              }
               if (mode === 'mix') {
                 setSelectedKey(info.key);
               }
-              const selectedSchema = schema.properties[info.key];
               console.log({ selectedSchema });
-              onSelect && onSelect({ ...info, schema: selectedSchema });
+              onSelect?.({ ...info, schema: selectedSchema });
             }}
           >
             <RecursionField schema={schema} onlyRenderProperties />
@@ -240,8 +196,11 @@ export const Menu: any = observer((props: any) => {
                   const keyPath = [selectedKey, ...[...info.keyPath].reverse()];
                   const selectedSchema = findPropertyByPath(schema, keyPath);
                   console.log('keyPath', keyPath, selectedSchema);
-                  onSelect &&
-                    onSelect({ ...info, keyPath, schema: selectedSchema });
+                  if (selectedSchema?.['x-component'] === 'Menu.URL') {
+                    setSelectedKey(selectedKey);
+                  } else {
+                    onSelect?.({ ...info, keyPath, schema: selectedSchema });
+                  }
                 }}
                 defaultSelectedKeys={defaultSelectedKeys || []}
                 selectedKey={selectedKey}
@@ -263,12 +222,7 @@ Menu.Item = observer((props: any) => {
   const compile = useCompile();
   const title = compile(schema.title);
   return (
-    <AntdMenu.Item
-      {...props}
-      icon={null}
-      eventKey={schema.name}
-      key={schema.name}
-    >
+    <AntdMenu.Item {...props} icon={null} eventKey={schema.name} key={schema.name}>
       <SortableItem
         id={schema.name}
         data={{
@@ -294,12 +248,7 @@ Menu.Link = observer((props: any) => {
   const compile = useCompile();
   const title = compile(schema.title);
   return (
-    <AntdMenu.Item
-      {...props}
-      icon={null}
-      eventKey={schema.name}
-      key={schema.name}
-    >
+    <AntdMenu.Item {...props} icon={null} eventKey={schema.name} key={schema.name}>
       <SortableItem
         id={schema.name}
         data={{
@@ -682,15 +631,7 @@ Menu.DesignableBar = (props) => {
 
   const field = useField();
   const [visible, setVisible] = useState(false);
-  const {
-    designable,
-    schema,
-    remove,
-    refresh,
-    insertAfter,
-    insertBefore,
-    appendChild,
-  } = useDesignable();
+  const { designable, schema, remove, refresh, insertAfter, insertBefore, appendChild } = useDesignable();
   const formConfig = schemas[schema['x-component']];
   const isSubMenu = schema['x-component'] === 'Menu.SubMenu';
   const ctx = useContext(MenuContext);
@@ -759,11 +700,9 @@ Menu.DesignableBar = (props) => {
                   key={'update'}
                   onClick={async () => {
                     const initialValues = {};
-                    Object.keys(formConfig.schema.properties).forEach(
-                      (name) => {
-                        _.set(initialValues, name, get(schema, name));
-                      },
-                    );
+                    Object.keys(formConfig.schema.properties).forEach((name) => {
+                      _.set(initialValues, name, get(schema, name));
+                    });
                     const values = await FormDialog(t('Edit menu item'), () => {
                       return (
                         <FormLayout layout={'vertical'}>
@@ -776,10 +715,8 @@ Menu.DesignableBar = (props) => {
                     if (values.title) {
                       schema.title = values.title;
                     }
-                    const icon =
-                      _.get(values, 'x-component-props.icon') || null;
-                    schema['x-component-props'] =
-                      schema['x-component-props'] || {};
+                    const icon = _.get(values, 'x-component-props.icon') || null;
+                    schema['x-component-props'] = schema['x-component-props'] || {};
                     schema['x-component-props']['icon'] = icon;
                     field.componentProps['icon'] = icon;
                     refresh();
@@ -807,11 +744,7 @@ Menu.DesignableBar = (props) => {
                       const items = [];
                       Object.keys(s.properties || {}).forEach((name) => {
                         const current = s.properties[name];
-                        if (
-                          !(current['x-component'] as string).startsWith(
-                            'Menu.',
-                          )
-                        ) {
+                        if (!(current['x-component'] as string).startsWith('Menu.')) {
                           return;
                         }
                         // if (current.name === schema.name) {
@@ -830,46 +763,43 @@ Menu.DesignableBar = (props) => {
 
                     const dataSource = toTreeData(menuSchema);
 
-                    const values = await FormDialog(
-                      t(`Move {{title}} to`, { title: schema.title }),
-                      () => {
-                        return (
-                          <FormLayout layout={'vertical'}>
-                            <SchemaField
-                              schema={{
-                                type: 'object',
-                                properties: {
-                                  path: {
-                                    type: 'string',
-                                    title: t('Target position'),
-                                    enum: dataSource,
-                                    required: true,
-                                    'x-decorator': 'FormItem',
-                                    'x-component': 'TreeSelect',
-                                  },
-                                  method: {
-                                    type: 'string',
-                                    default: 'insertAfter',
-                                    enum: [
-                                      {
-                                        label: t('After'),
-                                        value: 'insertAfter',
-                                      },
-                                      {
-                                        label: t('Before'),
-                                        value: 'insertBefore',
-                                      },
-                                    ],
-                                    'x-decorator': 'FormItem',
-                                    'x-component': 'Radio.Group',
-                                  },
+                    const values = await FormDialog(t(`Move {{title}} to`, { title: schema.title }), () => {
+                      return (
+                        <FormLayout layout={'vertical'}>
+                          <SchemaField
+                            schema={{
+                              type: 'object',
+                              properties: {
+                                path: {
+                                  type: 'string',
+                                  title: t('Target position'),
+                                  enum: dataSource,
+                                  required: true,
+                                  'x-decorator': 'FormItem',
+                                  'x-component': 'TreeSelect',
                                 },
-                              }}
-                            />
-                          </FormLayout>
-                        );
-                      },
-                    ).open({
+                                method: {
+                                  type: 'string',
+                                  default: 'insertAfter',
+                                  enum: [
+                                    {
+                                      label: t('After'),
+                                      value: 'insertAfter',
+                                    },
+                                    {
+                                      label: t('Before'),
+                                      value: 'insertBefore',
+                                    },
+                                  ],
+                                  'x-decorator': 'FormItem',
+                                  'x-component': 'Radio.Group',
+                                },
+                              },
+                            }}
+                          />
+                        </FormLayout>
+                      );
+                    }).open({
                       effects(form) {
                         onFieldChange('path', (field) => {
                           const target = findPropertyByPath(
@@ -922,22 +852,13 @@ Menu.DesignableBar = (props) => {
                   icon={<ArrowUpOutlined />}
                   title={t(`Insert ${mode == 'inline' ? 'above' : 'left'}`)}
                 >
-                  <AntdMenu.Item
-                    key={'insertBefore.Menu.SubMenu'}
-                    icon={<GroupOutlined />}
-                  >
+                  <AntdMenu.Item key={'insertBefore.Menu.SubMenu'} icon={<GroupOutlined />}>
                     {t('Group')}
                   </AntdMenu.Item>
-                  <AntdMenu.Item
-                    key={'insertBefore.Menu.Link'}
-                    icon={<MenuOutlined />}
-                  >
+                  <AntdMenu.Item key={'insertBefore.Menu.Link'} icon={<MenuOutlined />}>
                     {t('Page')}
                   </AntdMenu.Item>
-                  <AntdMenu.Item
-                    key={'insertBefore.Menu.URL'}
-                    icon={<LinkOutlined />}
-                  >
+                  <AntdMenu.Item key={'insertBefore.Menu.URL'} icon={<LinkOutlined />}>
                     {t('Link')}
                   </AntdMenu.Item>
                 </AntdMenu.SubMenu>
@@ -946,47 +867,25 @@ Menu.DesignableBar = (props) => {
                   icon={<ArrowDownOutlined />}
                   title={t(`Insert ${mode == 'inline' ? 'below' : 'right'}`)}
                 >
-                  <AntdMenu.Item
-                    key={'insertAfter.Menu.SubMenu'}
-                    icon={<GroupOutlined />}
-                  >
+                  <AntdMenu.Item key={'insertAfter.Menu.SubMenu'} icon={<GroupOutlined />}>
                     {t('Group')}
                   </AntdMenu.Item>
-                  <AntdMenu.Item
-                    key={'insertAfter.Menu.Link'}
-                    icon={<MenuOutlined />}
-                  >
+                  <AntdMenu.Item key={'insertAfter.Menu.Link'} icon={<MenuOutlined />}>
                     {t('Page')}
                   </AntdMenu.Item>
-                  <AntdMenu.Item
-                    key={'insertAfter.Menu.URL'}
-                    icon={<LinkOutlined />}
-                  >
+                  <AntdMenu.Item key={'insertAfter.Menu.URL'} icon={<LinkOutlined />}>
                     {t('Link')}
                   </AntdMenu.Item>
                 </AntdMenu.SubMenu>
                 {isSubMenu && (
-                  <AntdMenu.SubMenu
-                    key={'appendChild'}
-                    icon={<ArrowRightOutlined />}
-                    title={t('Insert inner')}
-                  >
-                    <AntdMenu.Item
-                      key={'appendChild.Menu.SubMenu'}
-                      icon={<GroupOutlined />}
-                    >
+                  <AntdMenu.SubMenu key={'appendChild'} icon={<ArrowRightOutlined />} title={t('Insert inner')}>
+                    <AntdMenu.Item key={'appendChild.Menu.SubMenu'} icon={<GroupOutlined />}>
                       {t('Group')}
                     </AntdMenu.Item>
-                    <AntdMenu.Item
-                      key={'appendChild.Menu.Link'}
-                      icon={<MenuOutlined />}
-                    >
+                    <AntdMenu.Item key={'appendChild.Menu.Link'} icon={<MenuOutlined />}>
                       {t('Page')}
                     </AntdMenu.Item>
-                    <AntdMenu.Item
-                      key={'appendChild.Menu.URL'}
-                      icon={<LinkOutlined />}
-                    >
+                    <AntdMenu.Item key={'appendChild.Menu.URL'} icon={<LinkOutlined />}>
                       {t('Link')}
                     </AntdMenu.Item>
                   </AntdMenu.SubMenu>
