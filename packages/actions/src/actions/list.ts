@@ -35,7 +35,6 @@ export default async function list(ctx: Context, next) {
     sort,
     associatedName,
     associatedIndex,
-    associated,
   } = ctx.action.params;
 
   let repository: MultipleRelationRepository | Repository;

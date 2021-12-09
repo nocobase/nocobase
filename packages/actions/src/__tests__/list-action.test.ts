@@ -59,7 +59,7 @@ describe('list action', () => {
     const p1 = await Post.repository.create({
       values: {
         title: 'pt1',
-        tags: [t1.get('id')],
+        tags: [t1.get('id'), t2.get('id')],
       },
     });
 
@@ -101,10 +101,13 @@ describe('list action', () => {
 
   test('list by association', async () => {
     // tags with posts id eq 1
-    const response = await app.agent().resource('posts.tags').list({ associatedIndex: 1 });
+    const response = await app
+      .agent()
+      .resource('posts.tags')
+      .list({ associatedIndex: 1, fields: ['id', 'posts_tags.createdAt'], sort: ['id'] });
 
     const body = response.body;
-    expect(body.count).toEqual(1);
-    expect(body.rows[0]['name']).toEqual('t1');
+    expect(body.count).toEqual(2);
+    expect(body.rows).toEqual([{ id: 1 }, { id: 2 }]);
   });
 });

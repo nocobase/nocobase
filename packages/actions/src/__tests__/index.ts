@@ -31,9 +31,6 @@ export function getConfig(config = {}, options?: any): DatabaseOptions {
       logging: process.env.DB_LOG_SQL === 'on',
       sync: {
         force: true,
-        alter: {
-          drop: true,
-        },
       },
       hooks: {
         beforeDefine(model, options) {
@@ -104,9 +101,6 @@ export class MockServer extends Koa {
       logging: console.log,
       sync: {
         force: true,
-        alter: {
-          drop: true,
-        },
       },
     });
     this.resourcer = new Resourcer({

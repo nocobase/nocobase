@@ -228,6 +228,14 @@ export class BelongsToManyRepository extends MultipleRelationRepository implemen
     return;
   }
 
+  extendFindOptions(findOptions) {
+    const joinTableAttributes = [];
+    return {
+      ...findOptions,
+      joinTableAttributes,
+    };
+  }
+
   throughName() {
     return this.throughModel().name;
   }

@@ -124,7 +124,9 @@ describe('belongs to many', () => {
     });
 
     const PostTagRepository = new BelongsToManyRepository(Post, 'tags', p1.id);
-    let [findResult, count] = await PostTagRepository.findAndCount();
+    let [findResult, count] = await PostTagRepository.findAndCount({
+      fields: ['id'],
+    });
 
     expect(count).toEqual(2);
 

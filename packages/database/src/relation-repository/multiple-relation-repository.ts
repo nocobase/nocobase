@@ -25,12 +25,18 @@ export interface AssociatedOptions extends TransactionAble {
 }
 
 export abstract class MultipleRelationRepository extends RelationRepository {
+  extendFindOptions(findOptions) {
+    return findOptions;
+  }
+
   async find(options?: FindOptions): Promise<any> {
     const transaction = await this.getTransaction(options);
 
-    const findOptions = this.buildQueryOptions({
-      ...options,
-    });
+    const findOptions = this.extendFindOptions(
+      this.buildQueryOptions({
+        ...options,
+      }),
+    );
 
     const getAccessor = this.accessors().get;
     const sourceModel = await this.getSourceModel(transaction);
