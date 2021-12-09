@@ -2,6 +2,7 @@
   "extends": "../../tsconfig.json",
   "compilerOptions": {
     "outDir": "./lib",
-    "target": "ES6"
+    "target": "ES6",
+    "lib": ["ES2015"]
   }
 }

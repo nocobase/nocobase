@@ -1,17 +1,7 @@
 import React, { useEffect } from 'react';
-import {
-  connect,
-  mapProps,
-  mapReadPretty,
-  observer,
-  useField,
-} from '@formily/react';
+import { connect, mapProps, mapReadPretty, observer, useField } from '@formily/react';
 import { Button, Progress, Space, Upload as AntdUpload } from 'antd';
-import {
-  UploadChangeParam,
-  UploadProps as AntdUploadProps,
-  DraggerProps as AntdDraggerProps,
-} from 'antd/lib/upload';
+import { UploadChangeParam, UploadProps as AntdUploadProps, DraggerProps as AntdDraggerProps } from 'antd/lib/upload';
 import { reaction } from '@formily/reactive';
 import { UploadFile } from 'antd/lib/upload/interface';
 import { isArr, toArr as toArray, isValid } from '@formily/shared';
@@ -63,10 +53,7 @@ type IUploadProps = {
   onChange?: (...args: any) => void;
 };
 
-const testOpts = (
-  ext: RegExp,
-  options: { exclude?: string[]; include?: string[] },
-) => {
+const testOpts = (ext: RegExp, options: { exclude?: string[]; include?: string[] }) => {
   if (options && isArr(options.include)) {
     return options.include.some((url) => ext.test(url));
   }
@@ -80,27 +67,33 @@ const testOpts = (
 
 const getImageByUrl = (url: string, options: any) => {
   for (let i = 0; i < UPLOAD_PLACEHOLDER.length; i++) {
-    if (
-      UPLOAD_PLACEHOLDER[i].ext.test(url) &&
-      testOpts(UPLOAD_PLACEHOLDER[i].ext, options)
-    ) {
+    if (UPLOAD_PLACEHOLDER[i].ext.test(url) && testOpts(UPLOAD_PLACEHOLDER[i].ext, options)) {
       return UPLOAD_PLACEHOLDER[i].icon || url;
     }
   }
-
   return url;
+};
+const isImage = (extName: string) => {
+  var reg = /\.(png|jpg|gif|jpeg|webp)$/;
+  return reg.test(extName);
+};
+
+const downloadFile = (url) => {
+  //下载文件
+  var a = document.createElement('a');
+  a.setAttribute('href', url);
+  a.setAttribute('target', '_blank');
+  a.setAttribute('download', '');
+  let clickEvent = document.createEvent('MouseEvents');
+  clickEvent.initEvent('click', true, true);
+  a.dispatchEvent(clickEvent);
 };
 
 const getURL = (target: any) => {
   return target?.['url'] || target?.['downloadURL'] || target?.['imgURL'];
 };
 const getThumbURL = (target: any) => {
-  return (
-    target?.['thumbUrl'] ||
-    target?.['url'] ||
-    target?.['downloadURL'] ||
-    target?.['imgURL']
-  );
+  return target?.['thumbUrl'] || target?.['url'] || target?.['downloadURL'] || target?.['imgURL'];
 };
 
 const getErrorMessage = (target: any) => {
@@ -128,12 +121,9 @@ const normalizeFileList = (fileList: UploadFile[]) => {
         uid: file.uid || `${index}`,
         status: getState(file.response) || getState(file),
         url: getURL(file) || getURL(file?.response),
-        thumbUrl: getImageByUrl(
-          getThumbURL(file) || getThumbURL(file?.response),
-          {
-            exclude: ['.png', '.jpg', '.jpeg', '.gif'],
-          },
-        ),
+        thumbUrl: getImageByUrl(getThumbURL(file) || getThumbURL(file?.response), {
+          exclude: ['.png', '.jpg', '.jpeg', '.gif'],
+        }),
       };
     });
   }
@@ -165,20 +155,13 @@ const useUploadValidator = (serviceErrorMessage = 'Upload Service Error') => {
     const list = toArr(value);
     for (let i = 0; i < list.length; i++) {
       if (list[i]?.status === 'error') {
-        return (
-          getErrorMessage(list[i]?.response) ||
-          getErrorMessage(list[i]) ||
-          serviceErrorMessage
-        );
+        return getErrorMessage(list[i]?.response) || getErrorMessage(list[i]) || serviceErrorMessage;
       }
     }
   });
 };
 
-function useUploadProps<T extends IUploadProps = UploadProps>({
-  serviceErrorMessage,
-  ...props
-}: T) {
+function useUploadProps<T extends IUploadProps = UploadProps>({ serviceErrorMessage, ...props }: T) {
   useUploadValidator(serviceErrorMessage);
   const onChange = (param: UploadChangeParam<UploadFile>) => {
     props.onChange?.(normalizeFileList([...param.fileList]));
@@ -333,11 +316,7 @@ Upload.Attachment = connect(
                           onClick={handleClick}
                         >
                           {file.imageUrl && (
-                            <img
-                              src={file.imageUrl}
-                              alt={file.title}
-                              className="ant-upload-list-item-image"
-                            />
+                            <img src={file.imageUrl} alt={file.title} className="ant-upload-list-item-image" />
                           )}
                         </a>
                         <a
@@ -348,9 +327,7 @@ Upload.Attachment = connect(
                           href={file.url}
                           onClick={handleClick}
                         >
-                          {file.status === 'uploading'
-                            ? t('Uploading')
-                            : file.title}
+                          {file.status === 'uploading' ? t('Uploading') : file.title}
                         </a>
                       </span>
                     </div>
@@ -388,12 +365,7 @@ Upload.Attachment = connect(
                     </span>
                     {file.status === 'uploading' && (
                       <div className={'ant-upload-list-item-progress'}>
-                        <Progress
-                          strokeWidth={2}
-                          type={'line'}
-                          showInfo={false}
-                          percent={file.percent}
-                        />
+                        <Progress strokeWidth={2} type={'line'} showInfo={false} percent={file.percent} />
                       </div>
                     )}
                   </div>
@@ -442,16 +414,10 @@ Upload.Attachment = connect(
             // discourageDownloads={true}
             mainSrc={images[photoIndex]?.imageUrl}
             nextSrc={images[(photoIndex + 1) % images.length]?.imageUrl}
-            prevSrc={
-              images[(photoIndex + images.length - 1) % images.length]?.imageUrl
-            }
+            prevSrc={images[(photoIndex + images.length - 1) % images.length]?.imageUrl}
             onCloseRequest={() => setVisible(false)}
-            onMovePrevRequest={() =>
-              setPhotoIndex((photoIndex + images.length - 1) % images.length)
-            }
-            onMoveNextRequest={() =>
-              setPhotoIndex((photoIndex + 1) % images.length)
-            }
+            onMovePrevRequest={() => setPhotoIndex((photoIndex + images.length - 1) % images.length)}
+            onMoveNextRequest={() => setPhotoIndex((photoIndex + 1) % images.length)}
             imageTitle={images[photoIndex]?.title}
             toolbarButtons={[
               <button
@@ -483,20 +449,19 @@ Upload.Attachment = connect(
     console.log('field.value', field.value, images);
     return (
       <div>
-        <div
-          className={cls(
-            'ant-upload-picture-card-wrapper nb-upload',
-            size ? `nb-upload-${size}` : null,
-          )}
-        >
+        <div className={cls('ant-upload-picture-card-wrapper nb-upload', size ? `nb-upload-${size}` : null)}>
           <div className={'ant-upload-list ant-upload-list-picture-card'}>
             {images.map((file) => {
               const handleClick = (e) => {
                 e.preventDefault();
                 e.stopPropagation();
                 const index = images.indexOf(file);
-                setVisible(true);
-                setPhotoIndex(index);
+                if (isImage(file.extname)) {
+                  setVisible(true);
+                  setPhotoIndex(index);
+                } else {
+                  downloadFile(file.url);
+                }
               };
               return (
                 <div className={'ant-upload-list-picture-card-container'}>
@@ -557,21 +522,15 @@ Upload.Attachment = connect(
             // discourageDownloads={true}
             mainSrc={images[photoIndex]?.imageUrl}
             nextSrc={images[(photoIndex + 1) % images.length]?.imageUrl}
-            prevSrc={
-              images[(photoIndex + images.length - 1) % images.length]?.imageUrl
-            }
+            prevSrc={images[(photoIndex + images.length - 1) % images.length]?.imageUrl}
             // @ts-ignore
             onCloseRequest={(e) => {
               e.preventDefault();
               e.stopPropagation();
               setVisible(false);
             }}
-            onMovePrevRequest={() =>
-              setPhotoIndex((photoIndex + images.length - 1) % images.length)
-            }
-            onMoveNextRequest={() =>
-              setPhotoIndex((photoIndex + 1) % images.length)
-            }
+            onMovePrevRequest={() => setPhotoIndex((photoIndex + images.length - 1) % images.length)}
+            onMoveNextRequest={() => setPhotoIndex((photoIndex + 1) % images.length)}
             imageTitle={images[photoIndex]?.title}
             toolbarButtons={[
               <button

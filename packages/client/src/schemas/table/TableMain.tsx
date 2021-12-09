@@ -27,8 +27,7 @@ export const TableMain = () => {
   } = useTable();
   const columns = useTableColumns();
   const dataSource = useDataSource();
-  const actionBars = useTableActionBars();
-  const [html, setHtml] = useState('');
+  const actionBars: any = useTableActionBars();
   const { type } = useRowSelection();
   return (
     <div className={'nb-table'}>
@@ -36,20 +35,21 @@ export const TableMain = () => {
         onDragEnd={async (event) => {
           const fromId = event.active?.id as any;
           const toId = event.over?.id as any;
-          if (isValid(fromId) && isValid(toId)) {
-            const fromIndex = findIndex(field.value, (item) => item[rowKey] === fromId);
-            const toIndex = findIndex(field.value, (item) => item[rowKey] === toId);
-            console.log({ fromId, toId, fromIndex, toIndex });
-            field.move(fromIndex, toIndex);
-            refresh();
-            await resource.sort({
-              resourceIndex: fromId,
-              target: {
-                [rowKey]: toId,
-              },
-            });
-            await service.refresh();
+          if (!isValid(fromId) || !isValid(toId)) {
+            return null;
           }
+          const fromIndex = findIndex(field.value, (item) => item[rowKey] === fromId);
+          const toIndex = findIndex(field.value, (item) => item[rowKey] === toId);
+          console.log({ fromId, toId, fromIndex, toIndex });
+          field.move(fromIndex, toIndex);
+          refresh();
+          await resource.sort({
+            resourceIndex: fromId,
+            target: {
+              [rowKey]: toId,
+            },
+          });
+          return await service.refresh();
         }}
       >
         {actionBars.map((actionBar) => (

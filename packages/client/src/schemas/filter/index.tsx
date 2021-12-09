@@ -71,10 +71,9 @@ export function FilterGroup(props) {
           <Select
             style={{ width: 80 }}
             onChange={(logical) => {
-              onChange &&
-                onChange({
-                  [logical]: value.list,
-                });
+              onChange?.({
+                [logical]: value.list,
+              });
             }}
             defaultValue={value.logical}
           >
@@ -90,9 +89,7 @@ export function FilterGroup(props) {
           console.log('list9999', list);
           onChange &&
             onChange({
-              [value.logical]: list.filter(
-                (item) => isValid(item) && Object.keys(item).length,
-              ),
+              [value.logical]: list.filter((item) => isValid(item) && Object.keys(item).length),
             });
         }}
       />
@@ -105,7 +102,7 @@ export function FilterList(props) {
   const form = useForm();
   const { t } = useTranslation();
 
-  const [map, { set, setAll, remove, reset, get }] = useMap<string, any>(
+  const [map, { set, setAll, remove, reset }] = useMap<string, any>(
     initialValue.map((item, index) => {
       return [`index-${index}`, item];
     }),
@@ -117,7 +114,7 @@ export function FilterList(props) {
         setAll([]);
         setTimeout(() => {
           reset();
-        },0);
+        }, 0);
       });
       return () => {
         form.removeEffects(id);
@@ -187,15 +184,7 @@ export const Filter: any = connect(
   mapProps((props, field) => {
     return {
       ...props,
-      suffix: (
-        <span>
-          {field?.['loading'] || field?.['validating'] ? (
-            <LoadingOutlined />
-          ) : (
-            props.suffix
-          )}
-        </span>
-      ),
+      suffix: <span>{field?.['loading'] || field?.['validating'] ? <LoadingOutlined /> : props.suffix}</span>,
     };
   }),
   mapReadPretty((props) => {
