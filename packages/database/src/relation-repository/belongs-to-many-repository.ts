@@ -229,7 +229,11 @@ export class BelongsToManyRepository extends MultipleRelationRepository implemen
   }
 
   extendFindOptions(findOptions) {
-    const joinTableAttributes = [];
+    let joinTableAttributes;
+    if (lodash.get(findOptions, 'fields')) {
+      joinTableAttributes = [];
+    }
+
     return {
       ...findOptions,
       joinTableAttributes,
