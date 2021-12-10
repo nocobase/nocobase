@@ -26,6 +26,154 @@ export const FormItem = observer((props: any) => {
   const { createSchema, removeSchema } = useClient();
   const { t } = useTranslation();
 
+  const fieldChangeHandler = async (checked: boolean, field: any) => {
+    if (!checked) {
+      const s: any = displayed.get(field.name);
+      const p = getSchemaPath(s);
+      const removed = deepRemove(p);
+      if (!removed) {
+        console.log('getSchemaPath', p, removed);
+        return;
+      }
+      const last = removed.pop();
+      displayed.remove(field.name);
+      if (isGridRowOrCol(last)) {
+        await removeSchema(last);
+      }
+      return;
+    }
+    let data: ISchema = {
+      key: uid(),
+      type: 'void',
+      'x-decorator': 'Form.Field.Item',
+      'x-designable-bar': 'Form.Field.DesignableBar',
+      'x-component': 'Form.Field',
+      'x-component-props': {
+        fieldName: field.name,
+      },
+    };
+    if (field.interface === 'linkTo') {
+      data.properties = {
+        options: {
+          type: 'void',
+          'x-decorator': 'Form',
+          'x-component': 'Select.Options.Drawer',
+          'x-component-props': {
+            useOkAction: '{{ Select.useOkAction }}',
+          },
+          title: "{{t('Select record')}}",
+          properties: {
+            table: {
+              type: 'array',
+              'x-designable-bar': 'Table.DesignableBar',
+              'x-decorator': 'BlockItem',
+              'x-decorator-props': {
+                draggable: false,
+              },
+              'x-component': 'Table',
+              default: [],
+              'x-component-props': {
+                rowKey: 'id',
+                useSelectedRowKeys: '{{ Select.useSelectedRowKeys }}',
+                onSelect: '{{ Select.useSelect() }}',
+                useRowSelection: '{{ Select.useRowSelection }}',
+                collectionName: field.target,
+                // dragSort: true,
+                // showIndex: true,
+                refreshRequestOnChange: true,
+                pagination: {
+                  pageSize: 10,
+                },
+              },
+              properties: {
+                [uid()]: {
+                  type: 'void',
+                  'x-component': 'Table.ActionBar',
+                  'x-designable-bar': 'Table.ActionBar.DesignableBar',
+                  properties: {
+                    [uid()]: {
+                      type: 'void',
+                      title: "{{t('Filter')}}",
+                      'x-decorator': 'AddNew.Displayed',
+                      'x-decorator-props': {
+                        displayName: 'filter',
+                      },
+                      'x-align': 'left',
+                      'x-component': 'Table.Filter',
+                      'x-designable-bar': 'Table.Filter.DesignableBar',
+                      'x-component-props': {
+                        fieldNames: [],
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+        option: {
+          type: 'void',
+          'x-component': 'Select.OptionTag',
+          properties: {
+            [uid()]: {
+              type: 'void',
+              title: "{{ t('View record') }}",
+              'x-component': 'Action.Drawer',
+              'x-component-props': {
+                bodyStyle: {
+                  background: '#f0f2f5',
+                },
+              },
+              properties: {
+                [uid()]: {
+                  type: 'void',
+                  'x-component': 'Tabs',
+                  'x-designable-bar': 'Tabs.DesignableBar',
+                  properties: {
+                    [uid()]: {
+                      type: 'void',
+                      title: "{{t('Details')}}",
+                      'x-designable-bar': 'Tabs.TabPane.DesignableBar',
+                      'x-component': 'Tabs.TabPane',
+                      'x-component-props': {},
+                      properties: {
+                        [uid()]: {
+                          type: 'void',
+                          'x-component': 'Grid',
+                          'x-component-props': {
+                            addNewComponent: 'AddNew.PaneItem',
+                          },
+                        },
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+      };
+    }
+    if (isGridBlock(schema)) {
+      path.pop();
+      path.pop();
+      data = generateGridBlock(data);
+    } else if (isGrid(schema)) {
+      data = generateGridBlock(data);
+    }
+    if (data) {
+      let s;
+      if (isGrid(schema)) {
+        s = appendChild(data, [...path]);
+      } else if (defaultAction === 'insertAfter') {
+        s = insertAfter(data, [...path]);
+      } else {
+        s = insertBefore(data, [...path]);
+      }
+      await createSchema(s);
+    }
+  };
+
   return (
     <Dropdown
       trigger={['hover']}
@@ -42,153 +190,7 @@ export const FormItem = observer((props: any) => {
                 key={field.key}
                 title={field?.uiSchema?.title}
                 checked={displayed.has(field.name)}
-                onChange={async (checked) => {
-                  if (!checked) {
-                    const s: any = displayed.get(field.name);
-                    const p = getSchemaPath(s);
-                    const removed = deepRemove(p);
-                    if (!removed) {
-                      console.log('getSchemaPath', p, removed);
-                      return;
-                    }
-                    const last = removed.pop();
-                    displayed.remove(field.name);
-                    if (isGridRowOrCol(last)) {
-                      await removeSchema(last);
-                    }
-                    return;
-                  }
-                  let data: ISchema = {
-                    key: uid(),
-                    type: 'void',
-                    'x-decorator': 'Form.Field.Item',
-                    'x-designable-bar': 'Form.Field.DesignableBar',
-                    'x-component': 'Form.Field',
-                    'x-component-props': {
-                      fieldName: field.name,
-                    },
-                  };
-                  if (field.interface === 'linkTo') {
-                    data.properties = {
-                      options: {
-                        type: 'void',
-                        'x-decorator': 'Form',
-                        'x-component': 'Select.Options.Drawer',
-                        'x-component-props': {
-                          useOkAction: '{{ Select.useOkAction }}',
-                        },
-                        title: "{{t('Select record')}}",
-                        properties: {
-                          table: {
-                            type: 'array',
-                            'x-designable-bar': 'Table.DesignableBar',
-                            'x-decorator': 'BlockItem',
-                            'x-decorator-props': {
-                              draggable: false,
-                            },
-                            'x-component': 'Table',
-                            default: [],
-                            'x-component-props': {
-                              rowKey: 'id',
-                              useSelectedRowKeys: '{{ Select.useSelectedRowKeys }}',
-                              onSelect: '{{ Select.useSelect() }}',
-                              useRowSelection: '{{ Select.useRowSelection }}',
-                              collectionName: field.target,
-                              // dragSort: true,
-                              // showIndex: true,
-                              refreshRequestOnChange: true,
-                              pagination: {
-                                pageSize: 10,
-                              },
-                            },
-                            properties: {
-                              [uid()]: {
-                                type: 'void',
-                                'x-component': 'Table.ActionBar',
-                                'x-designable-bar': 'Table.ActionBar.DesignableBar',
-                                properties: {
-                                  [uid()]: {
-                                    type: 'void',
-                                    title: "{{t('Filter')}}",
-                                    'x-decorator': 'AddNew.Displayed',
-                                    'x-decorator-props': {
-                                      displayName: 'filter',
-                                    },
-                                    'x-align': 'left',
-                                    'x-component': 'Table.Filter',
-                                    'x-designable-bar': 'Table.Filter.DesignableBar',
-                                    'x-component-props': {
-                                      fieldNames: [],
-                                    },
-                                  },
-                                },
-                              },
-                            },
-                          },
-                        },
-                      },
-                      option: {
-                        type: 'void',
-                        'x-component': 'Select.OptionTag',
-                        properties: {
-                          [uid()]: {
-                            type: 'void',
-                            title: "{{ t('View record') }}",
-                            'x-component': 'Action.Drawer',
-                            'x-component-props': {
-                              bodyStyle: {
-                                background: '#f0f2f5',
-                              },
-                            },
-                            properties: {
-                              [uid()]: {
-                                type: 'void',
-                                'x-component': 'Tabs',
-                                'x-designable-bar': 'Tabs.DesignableBar',
-                                properties: {
-                                  [uid()]: {
-                                    type: 'void',
-                                    title: "{{t('Details')}}",
-                                    'x-designable-bar': 'Tabs.TabPane.DesignableBar',
-                                    'x-component': 'Tabs.TabPane',
-                                    'x-component-props': {},
-                                    properties: {
-                                      [uid()]: {
-                                        type: 'void',
-                                        'x-component': 'Grid',
-                                        'x-component-props': {
-                                          addNewComponent: 'AddNew.PaneItem',
-                                        },
-                                      },
-                                    },
-                                  },
-                                },
-                              },
-                            },
-                          },
-                        },
-                      },
-                    };
-                  }
-                  if (isGridBlock(schema)) {
-                    path.pop();
-                    path.pop();
-                    data = generateGridBlock(data);
-                  } else if (isGrid(schema)) {
-                    data = generateGridBlock(data);
-                  }
-                  if (data) {
-                    let s;
-                    if (isGrid(schema)) {
-                      s = appendChild(data, [...path]);
-                    } else if (defaultAction === 'insertAfter') {
-                      s = insertAfter(data, [...path]);
-                    } else {
-                      s = insertBefore(data, [...path]);
-                    }
-                    await createSchema(s);
-                  }
-                }}
+                onChange={(checked) => fieldChangeHandler(checked, field)}
               />
             ))}
           </Menu.ItemGroup>
