@@ -7,4 +7,6 @@ export default async function create(ctx: Context, next) {
     values: ctx.action.params.values,
   });
   ctx.body = instance;
+
+  await next();
 }
