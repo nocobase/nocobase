@@ -1,6 +1,5 @@
 import { MultipleRelationRepository } from '@nocobase/database/src/relation-repository/multiple-relation-repository';
 import { Repository } from '@nocobase/database/src/repository';
-import { ActionParams } from '@nocobase/resourcer';
 import { Context } from '..';
 
 export function getRepositoryFromParams(ctx: Context) {
