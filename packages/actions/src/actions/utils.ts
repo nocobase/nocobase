@@ -3,12 +3,7 @@ import { Repository } from '@nocobase/database/src/repository';
 import { Context } from '..';
 
 export function getRepositoryFromParams(ctx: Context) {
-  const {
-    resourceName,
-
-    associatedName,
-    associatedIndex,
-  } = ctx.action.params;
+  const { resourceName, associatedName, associatedIndex } = ctx.action.params;
 
   let repository: MultipleRelationRepository | Repository;
 
