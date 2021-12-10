@@ -7,6 +7,7 @@ describe('update action', () => {
   let Comment;
   let Tag;
   let PostTag;
+  let Profile;
 
   beforeEach(async () => {
     app = mockServer();
@@ -22,8 +23,17 @@ describe('update action', () => {
       fields: [
         { type: 'string', name: 'title' },
         { type: 'hasMany', name: 'comments' },
+        { type: 'hasOne', name: 'profile' },
         { type: 'belongsToMany', name: 'tags', through: 'posts_tags' },
         { type: 'string', name: 'status', defaultValue: 'draft' },
+      ],
+    });
+
+    Profile = app.collection({
+      name: 'profiles',
+      fields: [
+        { type: 'string', name: 'post_profile' },
+        { type: 'belongsTo', name: 'post' },
       ],
     });
 
@@ -128,5 +138,31 @@ describe('update action', () => {
 
     await p1t1.reload();
     expect(p1t1.posts_tags.tagged_at).toEqual('test');
+  });
+
+  test('update has one', async () => {
+    const p1 = await Post.repository.create({
+      values: {
+        title: 'p1',
+        profile: {
+          post_profile: 'test',
+        },
+      },
+    });
+
+    const postProfile = await Profile.repository.findOne();
+
+    const response = await app
+      .agent()
+      .resource('posts.profile')
+      .update({
+        associatedIndex: p1.get('id'),
+        values: {
+          post_profile: 'test0',
+        },
+      });
+
+    await postProfile.reload();
+    expect(postProfile.get('post_profile')).toEqual('test0');
   });
 });
