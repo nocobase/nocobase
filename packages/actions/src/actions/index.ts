@@ -5,5 +5,6 @@ import destroy from './destroy';
 import get from './get';
 import add from './add';
 import set from './set';
+import remove from './remove';
 
-export default { list, create, update, destroy, get, add, set };
+export default { list, create, update, destroy, get, add, set, remove };
