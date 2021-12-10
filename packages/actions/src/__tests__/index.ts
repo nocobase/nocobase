@@ -98,7 +98,6 @@ export class MockServer extends Koa {
   constructor() {
     super();
     this.db = mockDatabase({
-      logging: console.log,
       sync: {
         force: true,
       },

@@ -1,7 +1,7 @@
 import { Context } from '..';
 import { getRepositoryFromParams } from './utils';
 
-export default async function update(ctx: Context, next) {
+export async function update(ctx: Context, next) {
   const repository = getRepositoryFromParams(ctx);
 
   const instance = await repository.update({

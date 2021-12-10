@@ -1,6 +1,4 @@
 import { Context } from '..';
-import { Repository } from '@nocobase/database/src/repository';
-import { MultipleRelationRepository } from '@nocobase/database/src/relation-repository/multiple-relation-repository';
 import { getRepositoryFromParams } from './utils';
 
 export const DEFAULT_PAGE = 1;
@@ -23,7 +21,7 @@ function totalPage(total, perPage): number {
   return Math.ceil(total / perPage);
 }
 
-export default async function list(ctx: Context, next) {
+export async function list(ctx: Context, next) {
   const { page = DEFAULT_PAGE, perPage = DEFAULT_PER_PAGE, fields, filter, appends, except, sort } = ctx.action.params;
 
   const repository = getRepositoryFromParams(ctx);

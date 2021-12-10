@@ -2,7 +2,7 @@ import { Context } from '..';
 import { getRepositoryFromParams } from './utils';
 import { BelongsToManyRepository } from '@nocobase/database';
 
-export default async function add(ctx: Context, next) {
+export async function toggle(ctx: Context, next) {
   const repository = getRepositoryFromParams(ctx);
 
   if (!(repository instanceof BelongsToManyRepository)) {

@@ -1,3 +1,2 @@
 import { RelationRepositoryActionBuilder } from './utils';
-const removeAction = RelationRepositoryActionBuilder('remove');
-export default removeAction;
+export const remove = RelationRepositoryActionBuilder('remove');

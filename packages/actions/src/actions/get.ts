@@ -2,7 +2,7 @@ import { Context } from '..';
 import { getRepositoryFromParams } from './utils';
 import { SingleRelationRepository } from '@nocobase/database';
 
-export default async function get(ctx: Context, next) {
+export async function get(ctx: Context, next) {
   const repository = getRepositoryFromParams(ctx);
 
   const { fields, appends, except } = ctx.action.params;
