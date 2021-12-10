@@ -1,5 +1,6 @@
 export * from './database';
 export * from './collection';
+export * from './repository';
 export * from './utils';
 export { Database as default } from './database';
 export * from './relation-repository/belongs-to-many-repository';

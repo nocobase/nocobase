@@ -1,7 +1,5 @@
-import { MultipleRelationRepository } from '@nocobase/database/src/relation-repository/multiple-relation-repository';
-import { Repository } from '@nocobase/database/src/repository';
+import { MultipleRelationRepository, Repository } from '@nocobase/database';
 import { Context } from '..';
-import { BelongsToManyRepository, HasManyRepository } from '@nocobase/database';
 
 export function getRepositoryFromParams(ctx: Context) {
   const { resourceName, associatedName, associatedIndex } = ctx.action.params;

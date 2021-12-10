@@ -6,5 +6,6 @@ import get from './get';
 import add from './add';
 import set from './set';
 import remove from './remove';
+import toggle from './toggle';
 
-export default { list, create, update, destroy, get, add, set, remove };
+export default { list, create, update, destroy, get, add, set, remove, toggle };

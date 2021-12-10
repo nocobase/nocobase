@@ -1,7 +1,6 @@
 import { Context } from '..';
 import { getRepositoryFromParams } from './utils';
-import { BelongsToManyRepository, MultipleRelationRepository } from '@nocobase/database';
-import { HasManyRepository } from '@nocobase/database/src/relation-repository/hasmany-repository';
+import { BelongsToManyRepository, MultipleRelationRepository, HasManyRepository } from '@nocobase/database';
 
 export default async function add(ctx: Context, next) {
   const repository = getRepositoryFromParams(ctx);
