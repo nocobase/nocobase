@@ -57,7 +57,6 @@ const SideMenu = (props: any) => {
   if (!child || child['x-component'] !== 'Menu.SubMenu') {
     return null;
   }
-  debugger;
   return (
     <MenuModeContext.Provider value={'inline'}>
       <AntdMenu

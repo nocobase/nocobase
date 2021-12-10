@@ -25,11 +25,7 @@ import { BlockSchemaContext, VisibleContext } from '../../context';
 import { SchemaRenderer } from '../../components/schema-renderer';
 import { uid } from '@formily/shared';
 import { CollectionFieldContext } from '../table';
-import {
-  CollectionProvider,
-  useCollectionContext,
-  useResourceRequest,
-} from '../../constate';
+import { CollectionProvider, useCollectionContext, useResourceRequest } from '../../constate';
 import { Resource } from '../../resource';
 import { useRequest } from 'ahooks';
 import constate from 'constate';
@@ -73,12 +69,7 @@ export const Select: any = connect(
     (props, field) => {
       return {
         ...props,
-        suffixIcon:
-          field?.['loading'] || field?.['validating'] ? (
-            <LoadingOutlined />
-          ) : (
-            props.suffixIcon
-          ),
+        suffixIcon: field?.['loading'] || field?.['validating'] ? <LoadingOutlined /> : props.suffixIcon,
       };
     },
   ),
@@ -181,11 +172,7 @@ Select.Object = connect(
             onChange(Object.values(values));
           } else {
             // 这里不能用 undefined，需要用 null
-            onChange(
-              options.find(
-                (option) => option[fieldNames.value] === selectValue.value,
-              ),
-            );
+            onChange(options.find((option) => option[fieldNames.value] === selectValue.value));
           }
         }}
         options={options.map((option) => {
@@ -206,22 +193,13 @@ Select.Object = connect(
       return {
         ...props,
         options: field?.['dataSource'],
-        suffixIcon:
-          field?.['loading'] || field?.['validating'] ? (
-            <LoadingOutlined />
-          ) : (
-            props.suffixIcon
-          ),
+        suffixIcon: field?.['loading'] || field?.['validating'] ? <LoadingOutlined /> : props.suffixIcon,
       };
     },
   ),
   mapReadPretty(
     observer((props: any) => {
-      const {
-        value,
-        fieldNames = { label: 'label', color: 'color' },
-        ...others
-      } = props;
+      const { value, fieldNames = { label: 'label', color: 'color' }, ...others } = props;
       if (!value) {
         return null;
       }
@@ -276,9 +254,7 @@ Select.useSelect = () => {
 
 export const useSelectedRowKeys = () => {
   const { rowKey, selectedRows } = useContext(SelectedRowsContext);
-  const [selectedRowKeys, setSelectedRowKeys] = useState<any>(
-    selectedRows.map((row) => row[rowKey]),
-  );
+  const [selectedRowKeys, setSelectedRowKeys] = useState<any>(selectedRows.map((row) => row[rowKey]));
   useEffect(() => {
     setSelectedRowKeys(selectedRows.map((row) => row[rowKey]));
   }, [selectedRows]);
@@ -362,9 +338,7 @@ Select.Drawer = connect(
         onChange(Object.values(values));
       } else {
         // 这里不能用 undefined，需要用 null
-        onChange(
-          options.find((option) => option[fieldNames.value] === selectValue),
-        );
+        onChange(options.find((option) => option[fieldNames.value] === selectValue));
       }
       // setSelectedRows(toArr(field.value));
     };
@@ -427,12 +401,7 @@ Select.Drawer = connect(
       return {
         ...props,
         options: field?.['dataSource'],
-        suffixIcon:
-          field?.['loading'] || field?.['validating'] ? (
-            <LoadingOutlined />
-          ) : (
-            props.suffixIcon
-          ),
+        suffixIcon: field?.['loading'] || field?.['validating'] ? <LoadingOutlined /> : props.suffixIcon,
       };
     },
   ),
@@ -465,14 +434,8 @@ Select.Drawer = connect(
             <CollectionProvider collectionName={collectionField?.target}>
               {values.map((data, index) => {
                 return (
-                  <OptionTagContext.Provider
-                    value={{ index, data, fieldNames }}
-                  >
-                    {s ? (
-                      <RecursionField name={s.name} schema={s} />
-                    ) : (
-                      data[fieldNames.label]
-                    )}
+                  <OptionTagContext.Provider value={{ index, data, fieldNames }}>
+                    {s ? <RecursionField name={s.name} schema={s} /> : data[fieldNames.label]}
                   </OptionTagContext.Provider>
                 );
               })}

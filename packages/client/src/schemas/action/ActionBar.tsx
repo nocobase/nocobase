@@ -2,11 +2,7 @@ import { DndContext, DragOverlay } from '@dnd-kit/core';
 import { observer, RecursionField, Schema } from '@formily/react';
 import React, { useState } from 'react';
 import { ISchema } from '..';
-import {
-  findPropertyByPath,
-  getSchemaPath,
-  useDesignable,
-} from '../../components/schema-renderer';
+import { findPropertyByPath, getSchemaPath, useDesignable } from '../../components/schema-renderer';
 import { DisplayedMapProvider, useDisplayedMapContext } from '../../constate';
 import cls from 'classnames';
 import { Button, Dropdown, Menu, Space } from 'antd';

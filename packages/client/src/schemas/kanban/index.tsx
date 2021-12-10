@@ -9,19 +9,9 @@ import {
   closestCenter,
   closestCorners,
 } from '@dnd-kit/core';
-import {
-  SortableContext,
-  useSortable,
-  verticalListSortingStrategy,
-} from '@dnd-kit/sortable';
+import { SortableContext, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { ArrayField } from '@formily/core';
-import {
-  observer,
-  RecursionField,
-  Schema,
-  useField,
-  useForm,
-} from '@formily/react';
+import { observer, RecursionField, Schema, useField, useForm } from '@formily/react';
 import { Card, Spin, Tag } from 'antd';
 import { groupBy, omit } from 'lodash';
 import React, { createContext, useContext, useEffect, useRef } from 'react';
@@ -29,11 +19,7 @@ import { useState } from 'react';
 import { CSS } from '@dnd-kit/utilities';
 import cls from 'classnames';
 import './style.less';
-import {
-  CollectionProvider,
-  useCollectionContext,
-  useResourceRequest,
-} from '../../constate';
+import { CollectionProvider, useCollectionContext, useResourceRequest } from '../../constate';
 import { Resource } from '../../resource';
 import { useRequest } from 'ahooks';
 import { Action } from '../action';
@@ -57,14 +43,7 @@ function Droppable(props) {
 function SortableItem(props) {
   const { id, data, className, ...others } = props;
   const nodeRef = useRef<any>();
-  const {
-    isDragging,
-    attributes,
-    listeners,
-    setNodeRef,
-    transform,
-    transition,
-  } = useSortable({
+  const { isDragging, attributes, listeners, setNodeRef, transform, transition } = useSortable({
     id,
     data: { ...data, nodeRef },
   });
@@ -109,8 +88,7 @@ interface KanbanColumnContextProps {
 }
 
 export const KanbanContext = createContext<KanbanContextProps>(null);
-export const KanbanColumnContext =
-  createContext<KanbanColumnContextProps>(null);
+export const KanbanColumnContext = createContext<KanbanColumnContextProps>(null);
 export const KanbanCardContext = createContext<KanbanCardContextProps>(null);
 
 export const useKanban = () => {
@@ -137,14 +115,9 @@ const KanbanColumn = (props) => {
               id={item.id}
               data={{ type: 'card', columnId: option.value }}
             >
-              <KanbanCardContext.Provider
-                value={{ index, schemas, record: item }}
-              >
+              <KanbanCardContext.Provider value={{ index, schemas, record: item }}>
                 {/* <Card bordered={false}>{item.id}</Card> */}
-                <RecursionField
-                  name={index}
-                  schema={schemas.get('Kanban.Card')}
-                />
+                <RecursionField name={index} schema={schemas.get('Kanban.Card')} />
               </KanbanCardContext.Provider>
             </SortableItem>
           );
@@ -220,16 +193,13 @@ const InternalKanban = observer((props: any) => {
   const [lastId, setLastId] = useState(null);
   console.log('field.value', schemas);
   return (
-    <KanbanContext.Provider
-      value={{ field, resource, service, schemas, props }}
-    >
+    <KanbanContext.Provider value={{ field, resource, service, schemas, props }}>
       <DndContext
         autoScroll
         sensors={sensors}
         collisionDetection={rectIntersection}
         onDragStart={(event) => {
-          const el = event?.active?.data?.current?.nodeRef
-            ?.current as HTMLElement;
+          const el = event?.active?.data?.current?.nodeRef?.current as HTMLElement;
           setDragOverlayContent(el?.outerHTML);
         }}
         onDragMove={({ active, over }) => {
@@ -251,12 +221,8 @@ const InternalKanban = observer((props: any) => {
             if (len > 0) {
               const last = groups?.[overId]?.[len - 1];
               setLastId(last.id);
-              const activeIndex = field.value.findIndex(
-                (item) => item.id === activeId,
-              );
-              const overIndex = field.value.findIndex(
-                (item) => item.id === last.id,
-              );
+              const activeIndex = field.value.findIndex((item) => item.id === activeId);
+              const overIndex = field.value.findIndex((item) => item.id === last.id);
               console.log({ overId, last, overIndex, activeIndex });
               field.move(activeIndex, overIndex);
             }
@@ -269,12 +235,8 @@ const InternalKanban = observer((props: any) => {
             }
             if (overColumnId !== activeColumnId) {
               activeItem[groupField.name] = overColumnId;
-              const activeIndex = field.value.findIndex(
-                (item) => item.id === activeId,
-              );
-              const overIndex = field.value.findIndex(
-                (item) => item.id === overId,
-              );
+              const activeIndex = field.value.findIndex((item) => item.id === activeId);
+              const overIndex = field.value.findIndex((item) => item.id === overId);
               console.log({ overId, overIndex, activeIndex });
               field.move(activeIndex, overIndex);
             }
@@ -319,12 +281,8 @@ const InternalKanban = observer((props: any) => {
             if (overColumnId !== activeColumnId) {
               return;
             }
-            const activeIndex = field.value.findIndex(
-              (item) => item.id === activeId,
-            );
-            const overIndex = field.value.findIndex(
-              (item) => item.id === overId,
-            );
+            const activeIndex = field.value.findIndex((item) => item.id === activeId);
+            const overIndex = field.value.findIndex((item) => item.id === overId);
             field.move(activeIndex, overIndex);
             await resource.save(
               {
@@ -364,10 +322,7 @@ const InternalKanban = observer((props: any) => {
         }}
       >
         <DragOverlay>
-          <div
-            className={'nb-kanban-drag-overlay'}
-            dangerouslySetInnerHTML={{ __html: dragOverlayContent }}
-          />
+          <div className={'nb-kanban-drag-overlay'} dangerouslySetInnerHTML={{ __html: dragOverlayContent }} />
         </DragOverlay>
         <Spin spinning={service.loading}>
           <div
@@ -380,9 +335,7 @@ const InternalKanban = observer((props: any) => {
           >
             <div className={'nb-kanban-container'}>
               {groupField?.enum?.map((option) => {
-                const items = field.value?.filter(
-                  (item) => item?.[groupField.name] === option.value,
-                );
+                const items = field.value?.filter((item) => item?.[groupField.name] === option.value);
                 return (
                   <Droppable
                     id={option.value}
@@ -396,10 +349,7 @@ const InternalKanban = observer((props: any) => {
                         <Tag color={option.color}>{option.label}</Tag>
                       </div>
                       <KanbanColumn items={items} />
-                      <RecursionField
-                        name={addNewCardSchema.name}
-                        schema={addNewCardSchema}
-                      />
+                      <RecursionField name={addNewCardSchema.name} schema={addNewCardSchema} />
                     </KanbanColumnContext.Provider>
                   </Droppable>
                 );
