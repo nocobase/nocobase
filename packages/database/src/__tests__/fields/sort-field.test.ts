@@ -22,12 +22,31 @@ describe('string field', () => {
       fields: [{ type: 'sort', name: 'sort' }],
     });
     await db.sync();
+
     const test1 = await Test.model.create<any>();
     expect(test1.sort).toBe(1);
     const test2 = await Test.model.create<any>();
     expect(test2.sort).toBe(2);
     const test3 = await Test.model.create<any>();
     expect(test3.sort).toBe(3);
+  });
+
+  test('simultaneously create ', async () => {
+    const Test = db.collection({
+      name: 'tests',
+      fields: [{ type: 'sort', name: 'sort' }],
+    });
+    await db.sync();
+
+    const promise = [];
+    for (let i = 0; i < 3; i++) {
+      promise.push(Test.model.create());
+    }
+
+    await Promise.all(promise);
+    const tests = await Test.model.findAll();
+    const sortValues = tests.map((t) => t.get('sort')).sort();
+    expect(sortValues).toEqual([1, 2, 3]);
   });
 
   it('skip if sort value not empty', async () => {

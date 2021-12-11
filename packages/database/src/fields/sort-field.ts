@@ -1,3 +1,4 @@
+import { Mutex, Semaphore, withTimeout } from 'async-mutex';
 import { isNumber } from 'lodash';
 import { DataTypes } from 'sequelize';
 import { BaseColumnFieldOptions, Field } from './field';
@@ -10,6 +11,8 @@ export class SortField extends Field {
   init() {
     const { name, scopeKey } = this.options;
     const { model } = this.context.collection;
+    const mutex = new Mutex();
+
     model.beforeCreate(async (instance, options) => {
       if (isNumber(instance.get(name))) {
         return;
@@ -18,8 +21,11 @@ export class SortField extends Field {
       if (scopeKey) {
         where[scopeKey] = instance.get(scopeKey);
       }
-      const max = await model.max<number, any>(name, { ...options, where });
-      instance.set(name, (max || 0) + 1);
+
+      await mutex.runExclusive(async () => {
+        const max = await model.max<number, any>(name, { ...options, where });
+        instance.set(name, (max || 0) + 1);
+      });
     });
   }
 }
