@@ -1,13 +1,13 @@
 import React, { useContext } from 'react';
 import { useForm, observer } from '@formily/react';
-import { Button, Space, Drawer as AntdDrawer } from 'antd';
-import { useDesignable, useDefaultAction } from '..';
-
-import { FormLayout } from '@formily/antd';
-import { VisibleContext } from '../../context';
 import { createPortal } from 'react-dom';
 import { useTranslation } from 'react-i18next';
+import { Button, Space, Drawer as AntdDrawer } from 'antd';
+import { FormLayout } from '@formily/antd';
+import { useDesignable, useDefaultAction } from '..';
+import { VisibleContext } from '../../context';
 import { useCompile } from '../../hooks/useCompile';
+import { TitleDesignableBar } from './TitleDesignableBar';
 
 export const Drawer = observer((props: any) => {
   const { t } = useTranslation();
@@ -25,7 +25,12 @@ export const Drawer = observer((props: any) => {
       {createPortal(
         <AntdDrawer
           width={'50%'}
-          title={compile(schema.title)}
+          title={
+            <>
+              {compile(schema.title)}
+              <TitleDesignableBar />
+            </>
+          }
           maskClosable
           destroyOnClose
           footer={

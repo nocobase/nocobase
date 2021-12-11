@@ -730,7 +730,7 @@ export const SchemaRenderer = (props: SchemaRendererProps) => {
       value={{
         schema,
         refresh: () => {
-          props.onRefresh && props.onRefresh(schema);
+          props.onRefresh?.(schema);
           refresh(uid());
         },
       }}

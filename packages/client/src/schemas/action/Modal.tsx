@@ -5,6 +5,7 @@ import { useDesignable, useDefaultAction } from '..';
 import { FormLayout } from '@formily/antd';
 import { VisibleContext } from '../../context';
 import { useTranslation } from 'react-i18next';
+import { TitleDesignableBar } from './TitleDesignableBar';
 import { useCompile } from '../../hooks/useCompile';
 
 export const Modal = observer((props: any) => {
@@ -21,7 +22,12 @@ export const Modal = observer((props: any) => {
   console.log('Action.Modal.field', schema['x-read-pretty']);
   return (
     <AntdModal
-      title={compile(schema.title)}
+      title={
+        <>
+          {compile(schema.title)}
+          <TitleDesignableBar />
+        </>
+      }
       destroyOnClose
       maskClosable
       width={'50%'}
