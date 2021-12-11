@@ -72,13 +72,21 @@ describe('string field', () => {
       ],
     });
     await db.sync();
+
     const t1 = await Test.model.create({ status: 'publish' });
     const t2 = await Test.model.create({ status: 'publish' });
     const t3 = await Test.model.create({ status: 'draft' });
     const t4 = await Test.model.create({ status: 'draft' });
+
     expect(t1.get('sort')).toBe(1);
     expect(t2.get('sort')).toBe(2);
     expect(t3.get('sort')).toBe(1);
     expect(t4.get('sort')).toBe(2);
+
+    t1.set('status', 'draft');
+    await t1.save();
+
+    await t1.reload();
+    expect(t1.get('sort')).toBe(3);
   });
 });

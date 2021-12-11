@@ -10,24 +10,43 @@ export class SortField extends Field {
     return DataTypes.INTEGER;
   }
 
-  init() {
+  async setSortValue(instance, options) {
     const { name, scopeKey } = this.options;
     const { model } = this.context.collection;
 
-    model.beforeCreate(async (instance, options) => {
-      if (isNumber(instance.get(name))) {
-        return;
-      }
-      const where = {};
-      if (scopeKey) {
-        where[scopeKey] = instance.get(scopeKey);
-      }
+    if (isNumber(instance.get(name)) && instance._previousDataValues[scopeKey] == instance[scopeKey]) {
+      return;
+    }
 
-      await sortFieldMutex.runExclusive(async () => {
-        const max = await model.max<number, any>(name, { ...options, where });
-        instance.set(name, (max || 0) + 1);
-      });
+    const where = {};
+
+    if (scopeKey) {
+      where[scopeKey] = instance.get(scopeKey);
+    }
+
+    await sortFieldMutex.runExclusive(async () => {
+      const max = await model.max<number, any>(name, { ...options, where });
+      const newValue = (max || 0) + 1;
+      instance.set(name, newValue);
     });
+  }
+
+  async onScopeChange(instance, options) {
+    const { name, scopeKey } = this.options;
+    if (!instance.isNewRecord && instance._previousDataValues[scopeKey] != instance[scopeKey]) {
+      await this.setSortValue(instance, options);
+    }
+  }
+
+  bind() {
+    super.bind();
+    this.on('beforeUpdate', this.onScopeChange.bind(this));
+    this.on('beforeCreate', this.setSortValue.bind(this));
+  }
+
+  unbind() {
+    super.unbind();
+    this.off('beforeCreate', this.setSortValue.bind(this));
   }
 }
 
