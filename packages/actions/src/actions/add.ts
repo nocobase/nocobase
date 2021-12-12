@@ -5,7 +5,7 @@ import { BelongsToManyRepository, MultipleRelationRepository, HasManyRepository 
 export async function add(ctx: Context, next) {
   const repository = getRepositoryFromParams(ctx);
 
-  if (!(repository instanceof MultipleRelationRepository)) {
+  if (!(repository instanceof MultipleRelationRepository || repository instanceof HasManyRepository)) {
     return await next();
   }
 
