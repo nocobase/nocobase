@@ -32,8 +32,8 @@ export class SortField extends Field {
   }
 
   async onScopeChange(instance, options) {
-    const { name, scopeKey } = this.options;
-    if (!instance.isNewRecord && instance._previousDataValues[scopeKey] != instance[scopeKey]) {
+    const { scopeKey } = this.options;
+    if (scopeKey && !instance.isNewRecord && instance._previousDataValues[scopeKey] != instance[scopeKey]) {
       await this.setSortValue(instance, options);
     }
   }
@@ -46,6 +46,7 @@ export class SortField extends Field {
 
   unbind() {
     super.unbind();
+    this.off('beforeUpdate', this.onScopeChange.bind(this));
     this.off('beforeCreate', this.setSortValue.bind(this));
   }
 }

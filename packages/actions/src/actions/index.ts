@@ -7,3 +7,4 @@ export * from './add';
 export * from './set';
 export * from './remove';
 export * from './toggle';
+export * from './sort';

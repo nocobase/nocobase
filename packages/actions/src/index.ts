@@ -14,7 +14,9 @@ export interface Context extends Koa.Context {
 }
 
 export function registerActions(api: any) {
-  api.actions(lodash.pick(actions, ['add', 'create', 'destroy', 'get', 'list', 'remove', 'set', 'toggle', 'update']));
+  api.actions(
+    lodash.pick(actions, ['add', 'create', 'destroy', 'get', 'list', 'remove', 'set', 'toggle', 'update', 'sort']),
+  );
 }
 
 export default {};
