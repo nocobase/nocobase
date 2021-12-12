@@ -1,6 +1,6 @@
 import { Appends, Except, FindOptions } from './repository';
 import FilterParser from './filter-parser';
-import { FindAttributeOptions, ModelCtor } from 'sequelize';
+import { FindAttributeOptions, ModelCtor, Op } from 'sequelize';
 import { Database } from './database';
 
 const debug = require('debug')('noco-database');
@@ -39,8 +39,20 @@ export class OptionsParser {
   }
 
   toSequelizeParams() {
-    const filterParams = this.options?.filterByPk ? this.parseFilterByPk() : this.filterParser.toSequelizeParams();
-    return this.parseSort(this.parseFields(filterParams));
+    const queryParams = this.filterParser.toSequelizeParams();
+
+    if (this.options?.filterByPk) {
+      queryParams.where = {
+        [Op.and]: [
+          queryParams.where,
+          {
+            [this.model.primaryKeyAttribute]: this.options.filterByPk,
+          },
+        ],
+      };
+    }
+
+    return this.parseSort(this.parseFields(queryParams));
   }
 
   /**

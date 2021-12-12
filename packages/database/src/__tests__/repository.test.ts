@@ -97,6 +97,34 @@ describe('repository.find', () => {
     await db.close();
   });
 
+  test('find pk with filter', async () => {
+    const Test = db.collection({
+      name: 'tests',
+      fields: [
+        { type: 'string', name: 'name' },
+        { type: 'string', name: 'status' },
+      ],
+    });
+
+    await db.sync();
+
+    const t1 = await Test.repository.create({
+      values: {
+        name: 't1',
+        status: 'draft',
+      },
+    });
+
+    const result = await Test.repository.findOne({
+      filterByPk: <number>t1.get('id'),
+      filter: {
+        status: 'published',
+      },
+    });
+
+    expect(result).toBeNull();
+  });
+
   it('findOne', async () => {
     const data = await User.repository.findOne({
       filter: {
