@@ -3,29 +3,28 @@ import { Op, Model } from 'sequelize';
 import { Context } from '..';
 import { Collection, PrimaryKey, Repository, SortField } from '@nocobase/database';
 import { getRepositoryFromParams } from './utils';
-import lodash from 'lodash';
 
-export async function sort(ctx: Context, next) {
+export async function move(ctx: Context, next) {
   const repository = getRepositoryFromParams(ctx);
 
   const { sourceId, targetId, sortField, targetScope, sticky, method } = ctx.action.params;
 
   if (repository instanceof Repository) {
-    const sortCollection = new SortCollection(repository.collection, sortField);
+    const sortAbleCollection = new SortAbleCollection(repository.collection, sortField);
 
     if (sourceId && targetId) {
-      await sortCollection.move(sourceId, targetId, {
+      await sortAbleCollection.move(sourceId, targetId, {
         insertAfter: method === 'insertAfter',
       });
     }
 
     // change scope
     if (sourceId && targetScope) {
-      await sortCollection.changeScope(sourceId, targetScope, method);
+      await sortAbleCollection.changeScope(sourceId, targetScope, method);
     }
 
     if (sourceId && sticky) {
-      await sortCollection.sticky(sourceId);
+      await sortAbleCollection.sticky(sourceId);
     }
   }
 
@@ -41,7 +40,7 @@ interface MoveOptions {
   insertAfter?: boolean;
 }
 
-export class SortCollection {
+export class SortAbleCollection {
   collection: Collection;
   field: SortField;
   scopeKey: string;

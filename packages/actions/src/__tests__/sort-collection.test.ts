@@ -1,5 +1,5 @@
 import { mockServer } from './index';
-import { SortCollection } from '../actions';
+import { SortAbleCollection } from '../actions';
 import lodash from 'lodash';
 
 describe('sort collections', () => {
@@ -49,7 +49,7 @@ describe('sort collections', () => {
           title: 't4',
         },
       });
-      const sortCollection = new SortCollection(Post);
+      const sortCollection = new SortAbleCollection(Post);
 
       await sortCollection.move(t2.get('id'), t4.get('id'));
 
@@ -82,7 +82,7 @@ describe('sort collections', () => {
           title: 't4',
         },
       });
-      const sortCollection = new SortCollection(Post);
+      const sortCollection = new SortAbleCollection(Post);
 
       await sortCollection.move(t4.get('id'), t2.get('id'));
 
@@ -160,7 +160,7 @@ describe('sort collections', () => {
         },
       });
 
-      const sortCollection = new SortCollection(Post);
+      const sortCollection = new SortAbleCollection(Post);
       await sortCollection.move(s1t2.get('id'), s1t4.get('id'));
       const results = (
         await Post.repository.find({
@@ -232,7 +232,7 @@ describe('sort collections', () => {
         },
       });
 
-      const sortCollection = new SortCollection(Post);
+      const sortCollection = new SortAbleCollection(Post);
 
       await sortCollection.move(s1t1.get('id'), s2t3.get('id'));
 

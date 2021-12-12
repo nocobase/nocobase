@@ -30,7 +30,7 @@ describe('sort action', () => {
     });
 
     it('targetId', async () => {
-      await api.agent().resource('tests').sort({
+      await api.agent().resource('tests').move({
         sourceId: 1,
         targetId: 3,
       });
@@ -65,7 +65,7 @@ describe('sort action', () => {
     });
 
     it('targetId', async () => {
-      await api.agent().resource('tests').sort({
+      await api.agent().resource('tests').move({
         sourceId: 3,
         targetId: 1,
       });
@@ -100,7 +100,7 @@ describe('sort action', () => {
     });
 
     it('sortField', async () => {
-      await api.agent().resource('tests').sort({
+      await api.agent().resource('tests').move({
         sortField: 'sort2',
         sourceId: 1,
         targetId: 3,
@@ -135,7 +135,7 @@ describe('sort action', () => {
     });
 
     it('sticky', async () => {
-      await api.agent().resource('tests').sort({
+      await api.agent().resource('tests').move({
         sourceId: 3,
         sticky: true,
       });
@@ -199,7 +199,7 @@ describe('sort action', () => {
     });
 
     it('targetId/1->6', async () => {
-      await api.agent().resource('tests').sort({
+      await api.agent().resource('tests').move({
         sourceId: 1,
         targetId: 6,
       });
@@ -265,7 +265,7 @@ describe('sort action', () => {
     });
 
     it('targetId/1->6 - method=insertAfter', async () => {
-      await api.agent().resource('tests').sort({
+      await api.agent().resource('tests').move({
         sourceId: 1,
         targetId: 6,
         method: 'insertAfter',
@@ -329,7 +329,7 @@ describe('sort action', () => {
     });
 
     it('targetId/6->2', async () => {
-      await api.agent().resource('tests').sort({
+      await api.agent().resource('tests').move({
         sourceId: 6,
         targetId: 2,
       });
@@ -390,7 +390,7 @@ describe('sort action', () => {
     });
 
     it('targetId/6->2 - method=insertAfter', async () => {
-      await api.agent().resource('tests').sort({
+      await api.agent().resource('tests').move({
         sourceId: 6,
         targetId: 2,
         method: 'insertAfter',
@@ -455,7 +455,7 @@ describe('sort action', () => {
       await api
         .agent()
         .resource('tests')
-        .sort({
+        .move({
           sourceId: 1,
           targetScope: {
             state: 2,
@@ -521,7 +521,7 @@ describe('sort action', () => {
       await api
         .agent()
         .resource('tests')
-        .sort({
+        .move({
           sourceId: 1,
           targetScope: {
             state: 2,
