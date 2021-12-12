@@ -54,6 +54,34 @@ await Collection.repository.load({
 });
 ```
 
+### CollectionRepository.import()
+
+导入配置
+
+##### Definition
+
+```ts
+class CollectionRepository extends Repository {
+  async import(data: CollectionOptions, options?: ImportOptions): void;
+}
+
+interface ImportOptions {
+  migrate?: boolean;
+}
+```
+
+##### Examples
+
+```ts
+const Collection = db.getCollection('collections');
+await Collection.repository.import({
+  name: 'tests',
+  fields: [
+    { type: 'string', name: 'name' },
+  ],
+});
+```
+
 ## Model API
 
 ### CollectionModel.migrate()
