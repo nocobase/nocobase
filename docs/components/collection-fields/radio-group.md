@@ -10,7 +10,7 @@ export const radioGroup: FieldOptions = {
   order: 4,
   title: '单选框',
   default: {
-    dataType: 'string',
+    type: 'string',
     // name,
     uiSchema: {
       type: 'string',

@@ -10,7 +10,7 @@ export const select: FieldOptions = {
   order: 2,
   title: '下拉选择（单选）',
   default: {
-    dataType: 'string',
+    type: 'string',
     // name,
     uiSchema: {
       type: 'string',

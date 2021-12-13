@@ -11,7 +11,7 @@ export const number: FieldOptions = {
   title: '数字',
   sortable: true,
   default: {
-    dataType: 'float',
+    type: 'float',
     // name,
     uiSchema: {
       type: 'number',

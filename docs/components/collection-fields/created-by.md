@@ -1,4 +1,4 @@
-# createdBy - 添加人
+# CreatedBy - 添加人
 
 ## Interface
 
@@ -11,7 +11,7 @@ export const createdBy: FieldOptions = {
   title: '添加人',
   isAssociation: true,
   default: {
-    dataType: 'belongsTo',
+    type: 'belongsTo',
     target: 'users',
     foreignKey: 'created_by_id',
     // name,

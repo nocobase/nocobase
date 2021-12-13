@@ -12,7 +12,7 @@ export const subTable: FieldOptions = {
   isAssociation: true,
   disabled: true,
   default: {
-    dataType: 'hasMany',
+    type: 'hasMany',
     // name,
     uiSchema: {
       type: 'array',

@@ -11,7 +11,7 @@ export const email: FieldOptions = {
   title: '电子邮箱',
   sortable: true,
   default: {
-    dataType: 'string',
+    type: 'string',
     // name,
     uiSchema: {
       type: 'string',

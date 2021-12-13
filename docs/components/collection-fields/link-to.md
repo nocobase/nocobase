@@ -11,7 +11,7 @@ export const linkTo: FieldOptions = {
   title: '关联字段',
   isAssociation: true,
   default: {
-    dataType: 'belongsToMany',
+    type: 'belongsToMany',
     // name,
     uiSchema: {
       type: 'array',
@@ -23,7 +23,7 @@ export const linkTo: FieldOptions = {
     },
   },
   initialize: (values: any) => {
-    if (values.dataType === 'belongsToMany') {
+    if (values.type === 'belongsToMany') {
       if (!values.through) {
         values.through = `t_${uid()}`;
       }
