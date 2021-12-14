@@ -33,7 +33,7 @@ DELETE  /api/collections/<collectionName>/fields/<fieldName>
 
 ## Repository API
 
-### CollectionRepository.load()
+### `CollectionRepository.load()`
 
 将符合条件的 collections 配置导入 db.collections
 
@@ -54,37 +54,11 @@ await Collection.repository.load({
 });
 ```
 
-### CollectionRepository.import()
-
-导入配置
-
-##### Definition
-
-```ts
-class CollectionRepository extends Repository {
-  async import(data: CollectionOptions, options?: ImportOptions): void;
-}
-
-interface ImportOptions {
-  migrate?: boolean;
-}
-```
-
-##### Examples
-
-```ts
-const Collection = db.getCollection('collections');
-await Collection.repository.import({
-  name: 'tests',
-  fields: [
-    { type: 'string', name: 'name' },
-  ],
-});
-```
-
 ## Model API
 
-### CollectionModel.migrate()
+### `CollectionModel.migrate()`
+
+将配置导入 db.collections，并执行 collection.sync()
 
 ##### Definition
 
@@ -103,7 +77,9 @@ const collection = await Collection.repository.create({
 await collection.migrate();
 ```
 
-### FieldModel.migrate()
+### `FieldModel.migrate()`
+
+将 field 配置导入对应 db.collection，并执行 collection.sync()
 
 ##### Definition
 
@@ -125,12 +101,69 @@ const field = await Field.repository.create({
 await field.migrate();
 ```
 
-## plugin-collections 和 db.collection() 的区别
+<Alert title="注意">
+数据表里的 collections & fields 配置并不直接同步给 db，而是在需要的时候通过执行 migrate 方法处理。
+</Alert>
+
+## FAQs
+
+### plugin-collections vs db.collection()
 
 - plugin-collections 增加了绑定组件的相关参数：interface、uiSchema
 - plugin-collections 的配置存储在数据表里，再同步给 db.collection()
 - db.collection() 适用于配置较固定的系统表
-- plugin-collections 适用于配置业务表
+- plugin-collections 适用于配置动态的业务表
+
+## 参数说明
+
+CollectionOptions 与 Database 提供的略有不同，多了一些扩展参数（数据库里也无法直接存对象和函数类型）。
+
+```ts
+interface CollectionOptions {
+  // 数据表名（英文）、标识，具备唯一性，缺失时，随机生成
+  name: string;
+  // 数据表标题
+  title?: string;
+  fields?: FieldOptions[];
+  // 是否可以排序，默认为 true，会自动隐式生成一个 sort 字段
+  sortable?: true | SortableType;
+  // 操作日志记录，有 action-logs 插件提供，默认为 true
+  logging?: boolean;
+  // 是否记录创建人信息，由 users 插件提供，默认为 true
+  createdBy?: boolean;
+  // 是否记录最后修改人信息，由 users 插件提供，默认为 true
+  updatedBy?: boolean;
+
+  // 其他可能用到的 Sequelize ModelOptions 参数
+  scopes?: any;
+  defaultScope?: any;
+  timestamps?: boolean;
+  paranoid?: boolean;
+  createdAt?: string | boolean;
+  deletedAt?: string | boolean;
+  updatedAt?: string | boolean;
+}
+```
+
+FieldOptions 与 Database 提供的略有不同，多了一些扩展参数
+
+```ts
+interface FieldOptions {
+  // 字段唯一标识，PK 字段，非 name
+  key: string;
+  // 字段名（英文标识），缺失时随机生成，只在某 collectionName 下是唯一的
+  name: string;
+  // 属于哪个表
+  collectionName: string;
+  // 前端组件模板
+  interface?: string;
+  // Formily Schema
+  uiSchema?: ISchema;
+  // 子字段，如子表格字段
+  children?: FieldOptions[];
+  // ... 其他参数与 Database 的 Field Types 的一致
+}
+```
 
 ## Examples
 

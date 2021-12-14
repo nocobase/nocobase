@@ -17,7 +17,7 @@ export const attachment: FieldOptions = {
   title: '附件',
   isAssociation: true,
   default: {
-    dataType: 'belongsToMany',
+    type: 'belongsToMany',
     target: 'attachments',
     // name,
     uiSchema: {

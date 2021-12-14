@@ -11,7 +11,7 @@ export const updatedBy: FieldOptions = {
   title: '最后修改人',
   isAssociation: true,
   default: {
-    dataType: 'belongsTo',
+    type: 'belongsTo',
     target: 'users',
     foreignKey: 'updated_by_id',
     // name,

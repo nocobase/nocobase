@@ -11,7 +11,7 @@ export const time: FieldOptions = {
   title: '时间',
   sortable: true,
   default: {
-    dataType: 'time',
+    type: 'time',
     // name,
     uiSchema: {
       type: 'string',

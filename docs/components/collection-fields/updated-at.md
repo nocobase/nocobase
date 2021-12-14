@@ -11,7 +11,7 @@ export const updatedAt: FieldOptions = {
   title: '最后更新时间',
   sortable: true,
   default: {
-    dataType: 'date',
+    type: 'date',
     field: 'updated_at',
     // name,
     uiSchema: {

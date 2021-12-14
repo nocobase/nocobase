@@ -11,7 +11,7 @@ export const checkboxGroup: FieldOptions = {
   title: '复选框',
   default: {
     interface: 'checkboxGroup',
-    dataType: 'json',
+    type: 'json',
     // name,
     uiSchema: {
       type: 'string',

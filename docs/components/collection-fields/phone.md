@@ -11,7 +11,7 @@ export const phone: FieldOptions = {
   title: '手机号码',
   sortable: true,
   default: {
-    dataType: 'string',
+    type: 'string',
     // name,
     uiSchema: {
       type: 'string',

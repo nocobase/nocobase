@@ -9,7 +9,7 @@ export const markdown: FieldOptions = {
   title: 'Markdown',
   group: 'media',
   default: {
-    dataType: 'text',
+    type: 'text',
     // name,
     uiSchema: {
       type: 'string',

@@ -12,7 +12,7 @@ export const string: FieldOptions = {
   sortable: true,
   default: {
     interface: 'string',
-    dataType: 'string',
+    type: 'string',
     // name,
     uiSchema: {
       type: 'string',

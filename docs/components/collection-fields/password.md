@@ -10,7 +10,7 @@ export const password: FieldOptions = {
   order: 7,
   title: '密码',
   default: {
-    dataType: 'password',
+    type: 'password',
     // name,
     uiSchema: {
       type: 'string',
