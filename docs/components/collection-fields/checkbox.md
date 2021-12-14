@@ -10,7 +10,7 @@ export const checkbox: FieldOptions = {
   order: 1,
   title: '勾选',
   default: {
-    type: 'boolean',
+    dataType: 'boolean',
     // name,
     uiSchema: {
       type: 'boolean',

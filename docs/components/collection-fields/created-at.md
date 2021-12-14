@@ -11,7 +11,7 @@ export const createdAt: FieldOptions = {
   title: '添加时间',
   sortable: true,
   default: {
-    type: 'date',
+    dataType: 'date',
     field: 'created_at',
     // name,
     uiSchema: {

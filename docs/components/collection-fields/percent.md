@@ -11,7 +11,7 @@ export const percent: FieldOptions = {
   title: '百分比',
   sortable: true,
   default: {
-    type: 'float',
+    dataType: 'float',
     // name,
     uiSchema: {
       type: 'string',

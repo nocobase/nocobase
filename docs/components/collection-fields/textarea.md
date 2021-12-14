@@ -10,7 +10,7 @@ export const textarea: FieldOptions = {
   order: 2,
   title: '多行文本',
   default: {
-    type: 'text',
+    dataType: 'text',
     // name,
     uiSchema: {
       type: 'string',

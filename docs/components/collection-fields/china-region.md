@@ -11,7 +11,7 @@ export const chinaRegion: FieldOptions = {
   title: '中国行政区划',
   isAssociation: true,
   default: {
-    type: 'belongsToMany',
+    dataType: 'belongsToMany',
     target: 'china_regions',
     targetKey: 'code',
     // name,

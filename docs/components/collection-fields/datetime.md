@@ -11,7 +11,7 @@ export const datetime: FieldOptions = {
   title: '日期',
   sortable: true,
   default: {
-    type: 'date',
+    dataType: 'date',
     // name,
     uiSchema: {
       type: 'datetime',

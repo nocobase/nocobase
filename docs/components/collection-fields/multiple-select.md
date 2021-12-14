@@ -10,7 +10,7 @@ export const multipleSelect: FieldOptions = {
   order: 3,
   title: '下拉选择（多选）',
   default: {
-    type: 'json',
+    dataType: 'json',
     // name,
     uiSchema: {
       type: 'array',

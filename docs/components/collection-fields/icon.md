@@ -10,7 +10,7 @@ export const icon: FieldOptions = {
   order: 8,
   title: '图标',
   default: {
-    type: 'string',
+    dataType: 'string',
     // name,
     uiSchema: {
       type: 'string',
