@@ -83,7 +83,7 @@ export abstract class MultipleRelationRepository extends RelationRepository {
     ];
   }
 
-  async count(options: CountOptions) {
+  async count(options?: CountOptions) {
     const transaction = await this.getTransaction(options);
 
     const sourceModel = await this.getSourceModel(transaction);
