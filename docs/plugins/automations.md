@@ -1,5 +1,40 @@
 # Automations
 
+## HTTP API
+
+```bash
+# 自动化列表
+GET     /api/automations
+# 添加自动化
+POST    /api/automations
+# 获取某一条自动化配置详情
+GET     /api/automations/<automationId>?appends=on,nodes
+# 修改
+PUT     /api/automations/<automationId>
+# 删除
+DELETE  /api/automations/<automationId>
+
+# 创建触发器
+POST    /api/automations/<automationId>/on
+# 触发器详情
+GET     /api/automations/<automationId>/on
+# 修改触发器配置
+PUT     /api/automations/<automationId>/on
+# 删除触发器配置
+DELETE  /api/automations/<automationId>/on
+
+# 节点列表（递归）
+GET    /api/automations/<automationId>/nodes
+# 新增节点
+POST    /api/automations/<automationId>/nodes
+# 节点详情
+GET     /api/automations/<automationId>/nodes/<nodeId>
+# 修改节点
+PUT     /api/automations/<automationId>/nodes/<nodeId>
+# 删除节点
+DELETE  /api/automations/<automationId>/nodes/<nodeId>
+```
+
 ## 参数说明
 
 ```ts
