@@ -371,14 +371,14 @@ export class Repository<TModelAttributes extends {} = any, TCreationAttributes e
 
     options = <DestroyOptions>options;
 
-    let filterByPk = options.filterByPk;
+    const filterByPk: PrimaryKey[] | undefined =
+      options.filterByPk && !lodash.isArray(options.filterByPk)
+        ? [options.filterByPk]
+        : (options.filterByPk as PrimaryKey[] | undefined);
 
-    if (filterByPk) {
-      if (!Array.isArray(filterByPk)) {
-        filterByPk = [filterByPk];
-      }
-
+    if (filterByPk && !options.filter) {
       return await this.model.destroy({
+        ...options,
         where: {
           [this.model.primaryKeyAttribute]: {
             [Op.in]: filterByPk,
@@ -389,19 +389,27 @@ export class Repository<TModelAttributes extends {} = any, TCreationAttributes e
     }
 
     if (options.filter) {
-      const instances = await this.find({
-        filter: options.filter,
-        transaction,
-      });
+      let pks = (
+        await this.find({
+          filter: options.filter,
+          transaction,
+        })
+      ).map((instance) => instance[this.model.primaryKeyAttribute]);
+
+      if (filterByPk) {
+        pks = lodash.intersection(pks, filterByPk);
+      }
 
       return await this.destroy({
-        filterByPk: instances.map((instance) => instance[this.model.primaryKeyAttribute]),
+        context: options.context,
+        filterByPk: pks,
         transaction,
       });
     }
 
     if (options.truncate) {
       return await this.model.destroy({
+        ...options,
         truncate: true,
         transaction,
       });

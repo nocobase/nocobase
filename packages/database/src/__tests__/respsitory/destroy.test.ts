@@ -20,10 +20,29 @@ describe('destroy', () => {
       name: 'posts',
       fields: [
         { type: 'string', name: 'title' },
+        { type: 'string', name: 'status' },
         { type: 'belongsTo', name: 'user' },
       ],
     });
     await db.sync();
+  });
+
+  test('destroy with filter and filterByPk', async () => {
+    const p1 = await Post.repository.create({
+      values: {
+        name: 'u1',
+        status: 'published',
+      },
+    });
+
+    await Post.repository.destroy({
+      filterByPk: p1.get('id') as number,
+      filter: {
+        status: 'draft',
+      },
+    });
+
+    expect(await Post.repository.count()).toEqual(1);
   });
 
   test('destroy all', async () => {
