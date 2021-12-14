@@ -2,12 +2,13 @@ import { RelationRepository, transaction } from './relation-repository';
 import { Model, SingleAssociationAccessors } from 'sequelize';
 import { updateModelByValues } from '../update-associations';
 import lodash from 'lodash';
-import { Appends, Except, Fields, PrimaryKey, TransactionAble, UpdateOptions } from '../repository';
+import { Appends, Except, Fields, Filter, PrimaryKey, TransactionAble, UpdateOptions } from '../repository';
 
 export interface SingleRelationFindOption extends TransactionAble {
   fields?: Fields;
   except?: Except;
   appends?: Appends;
+  filter?: Filter;
 }
 
 interface SetOption extends TransactionAble {

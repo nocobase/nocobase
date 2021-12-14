@@ -83,6 +83,7 @@ export interface DestroyOptions extends SequelizeDestroyOptions {
   filter?: Filter;
   filterByPk?: PrimaryKey | PrimaryKey[];
   truncate?: boolean;
+  context?: any;
 }
 
 interface FindAndCountOptions extends Omit<SequelizeAndCountOptions, 'where' | 'include' | 'order'> {

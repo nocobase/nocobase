@@ -5,7 +5,7 @@ import { SingleRelationRepository } from '@nocobase/database';
 export async function get(ctx: Context, next) {
   const repository = getRepositoryFromParams(ctx);
 
-  const { fields, appends, except } = ctx.action.params;
+  const { fields, appends, except, filter } = ctx.action.params;
 
   let callMethod;
   if (repository instanceof SingleRelationRepository) {
@@ -19,6 +19,7 @@ export async function get(ctx: Context, next) {
     fields,
     appends,
     except,
+    filter,
   });
 
   ctx.body = instance;
