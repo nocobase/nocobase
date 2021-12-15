@@ -8,6 +8,7 @@ import { useDesignable, useDefaultAction } from '..';
 import { VisibleContext } from '../../context';
 import { useCompile } from '../../hooks/useCompile';
 import { TitleDesignableBar } from './TitleDesignableBar';
+import { useDesignableSwitchContext } from '../../constate';
 
 export const Drawer = observer((props: any) => {
   const { t } = useTranslation();
@@ -15,6 +16,7 @@ export const Drawer = observer((props: any) => {
   const { useOkAction = useDefaultAction, useCancelAction = useDefaultAction, ...others } = props;
   const { schema } = useDesignable();
   const [visible, setVisible] = useContext(VisibleContext);
+  const { designable, setDesignable } = useDesignableSwitchContext();
   const form = useForm();
   const { run: runOk } = useOkAction();
   const { run: runCancel } = useCancelAction();
@@ -28,7 +30,7 @@ export const Drawer = observer((props: any) => {
           title={
             <>
               {compile(schema.title)}
-              <TitleDesignableBar />
+              {designable && <TitleDesignableBar />}
             </>
           }
           maskClosable
