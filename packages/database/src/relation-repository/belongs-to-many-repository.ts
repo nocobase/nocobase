@@ -76,12 +76,14 @@ export class BelongsToManyRepository extends MultipleRelationRepository implemen
       });
 
       ids = instancesToIds(instances);
-    } else if (options && options['filterByPk']) {
-      options = options['filterByPk'];
+    }
 
-      const instances = (<any>this.association).toInstanceArray(options);
-      ids = instancesToIds(instances);
-    } else if (options && !options['filterByPk']) {
+    if (options && options['filterByPk']) {
+      const instances = (<any>this.association).toInstanceArray(options['filterByPk']);
+      ids = ids ? lodash.intersection(ids, instancesToIds(instances)) : instancesToIds(instances);
+    }
+
+    if (options && !options['filterByPk'] && !options['filter']) {
       const sourceModel = await this.getSourceModel(transaction);
 
       const instances = await sourceModel[this.accessors().get]({

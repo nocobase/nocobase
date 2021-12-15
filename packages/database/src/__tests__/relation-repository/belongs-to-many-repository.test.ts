@@ -47,6 +47,7 @@ describe('belongs to many', () => {
       fields: [
         { type: 'belongsToMany', name: 'posts', through: 'posts_tags' },
         { type: 'string', name: 'name' },
+        { type: 'string', name: 'status' },
       ],
     });
 
@@ -450,6 +451,43 @@ describe('belongs to many', () => {
 
     const [_, count] = await PostTagRepository.findAndCount();
     expect(count).toEqual(0);
+  });
+
+  test('destroy by id and filter', async () => {
+    let t1 = await Tag.repository.create({
+      values: {
+        name: 't1',
+        status: 'published',
+      },
+    });
+
+    const t2 = await Tag.repository.create({
+      values: {
+        name: 't2',
+        status: 'draft',
+      },
+    });
+
+    const p1 = await Post.repository.create({
+      values: { title: 'p1' },
+    });
+
+    const PostTagRepository = new BelongsToManyRepository(Post, 'tags', p1.id);
+
+    await PostTagRepository.set([t1.id, t2.id]);
+
+    let [_, count] = await PostTagRepository.findAndCount();
+    expect(count).toEqual(2);
+
+    await PostTagRepository.destroy({
+      filterByPk: t1.get('id') as number,
+      filter: {
+        status: 'draft',
+      },
+    });
+
+    [_, count] = await PostTagRepository.findAndCount();
+    expect(count).toEqual(2);
   });
 
   test('destroy with id', async () => {
