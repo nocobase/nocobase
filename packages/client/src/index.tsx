@@ -1,5 +1,2 @@
-import React from 'react';
-
-export function Hello() {
-  return <div>aaa</div>;
-}
+export * from './i18n';
+export * from './components';
