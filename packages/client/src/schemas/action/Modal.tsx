@@ -7,7 +7,6 @@ import { VisibleContext } from '../../context';
 import { useTranslation } from 'react-i18next';
 import { TitleDesignableBar } from './TitleDesignableBar';
 import { useCompile } from '../../hooks/useCompile';
-import { useDesignableSwitchContext } from '../../constate';
 
 export const Modal = observer((props: any) => {
   const { t } = useTranslation();
@@ -15,7 +14,6 @@ export const Modal = observer((props: any) => {
   const { useOkAction = useDefaultAction, useCancelAction = useDefaultAction, ...others } = props;
   const { schema } = useDesignable();
   const [visible, setVisible] = useContext(VisibleContext);
-  const { designable, setDesignable } = useDesignableSwitchContext();
   const form = useForm();
   const { run: runOk } = useOkAction();
   const { run: runCancel } = useCancelAction();
@@ -27,7 +25,7 @@ export const Modal = observer((props: any) => {
       title={
         <>
           {compile(schema.title)}
-          {designable && <TitleDesignableBar />}
+          {<TitleDesignableBar />}
         </>
       }
       destroyOnClose

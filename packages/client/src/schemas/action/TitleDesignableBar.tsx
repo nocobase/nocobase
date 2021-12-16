@@ -8,8 +8,13 @@ import { FormDialog, FormLayout } from '@formily/antd';
 import { SchemaField } from '../../components/schema-renderer';
 import { useTranslation } from 'react-i18next';
 import { useCompile } from '../../hooks/useCompile';
+import { useDesignableSwitchContext } from '../../constate';
 
 export const TitleDesignableBar = (props: any) => {
+  const { designable } = useDesignableSwitchContext();
+  if (!designable) {
+    return null;
+  }
   const { t } = useTranslation();
   const { schema, remove, refresh, insertAfter } = useDesignable();
   const [visible, setVisible] = useState(false);

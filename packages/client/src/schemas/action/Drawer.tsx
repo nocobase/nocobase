@@ -30,7 +30,7 @@ export const Drawer = observer((props: any) => {
           title={
             <>
               {compile(schema.title)}
-              {designable && <TitleDesignableBar />}
+              {<TitleDesignableBar />}
             </>
           }
           maskClosable
