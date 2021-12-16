@@ -6,7 +6,8 @@ interface HasOneFindOptions extends SingleRelationFindOption {}
 
 interface IHasOneRepository<M extends Model> {
   // 不需要 findOne，find 就是 findOne
-  find(options?: HasOneFindOptions): Promise<Model<any>>;
+  find(options?: HasOneFindOptions): Promise<M>;
+  findOne(options?: HasOneFindOptions): Promise<M>;
   // 新增并关联，如果存在关联，解除之后，与新数据建立关联
   create(options?: CreateOptions): Promise<M>;
   // 更新
@@ -19,4 +20,4 @@ interface IHasOneRepository<M extends Model> {
   remove(): Promise<void>;
 }
 
-export class HasOneRepository<M extends Model> extends SingleRelationRepository implements IHasOneRepository<M> {}
+export class HasOneRepository extends SingleRelationRepository implements IHasOneRepository<any> {}

@@ -57,6 +57,10 @@ export abstract class SingleRelationRepository extends RelationRepository {
     });
   }
 
+  async findOne(options?: SingleRelationFindOption): Promise<Model<any>> {
+    return this.find(options);
+  }
+
   @transaction()
   async destroy(options?: TransactionAble): Promise<Boolean> {
     const transaction = await this.getTransaction(options);

@@ -3,11 +3,11 @@ import { getRepositoryFromParams } from './utils';
 
 export async function update(ctx: Context, next) {
   const repository = getRepositoryFromParams(ctx);
-  const { whitelist, blacklist, filter, updateAssociationValues } = ctx.action.params;
+  const { resourceIndex, values, whitelist, blacklist, filter, updateAssociationValues } = ctx.action.params;
 
   const instance = await repository.update({
-    filterByPk: ctx.action.params.resourceIndex,
-    values: ctx.action.params.values,
+    filterByPk: resourceIndex,
+    values,
     whitelist,
     blacklist,
     filter,
