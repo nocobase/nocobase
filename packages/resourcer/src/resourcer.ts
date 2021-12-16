@@ -1,4 +1,3 @@
-import qs from 'qs';
 import glob from 'glob';
 import compose from 'koa-compose';
 import Action, { ActionName } from './action';
@@ -280,6 +279,7 @@ export class Resourcer {
           accessors: this.options.accessors || accessors,
         },
       );
+
       if (!params) {
         return next();
       }
