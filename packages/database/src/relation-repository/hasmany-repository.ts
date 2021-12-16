@@ -53,7 +53,8 @@ export class HasManyRepository extends MultipleRelationRepository implements IHa
       }
 
       where.push(filterResult.where);
-    } else if (options && options['filterByPk']) {
+    }
+    if (options && options['filterByPk']) {
       if (typeof options === 'object' && options['filterByPk']) {
         options = options['filterByPk'];
       }
