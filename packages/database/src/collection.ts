@@ -18,6 +18,7 @@ export interface CollectionOptions extends Omit<ModelOptions, 'name'> {
   fields?: FieldOptions[];
   model?: string | ModelCtor<Model>;
   repository?: string | RepositoryType;
+  autoGenId?: boolean;
   [key: string]: any;
 }
 
@@ -67,7 +68,7 @@ export class Collection<
     if (this.model) {
       return;
     }
-    const { name, model } = this.options;
+    const { name, model, autoGenId = true } = this.options;
     let M = Model;
     if (this.context.database.sequelize.isDefined(name)) {
       const m = this.context.database.sequelize.model(name);
@@ -84,6 +85,11 @@ export class Collection<
     }
     this.model = class extends M {};
     this.model.init(null, this.sequelizeModelOptions());
+
+    if (!autoGenId) {
+      this.model.removeAttribute('id');
+    }
+
     Object.defineProperty(this.model, 'database', { value: this.context.database });
   }
 
