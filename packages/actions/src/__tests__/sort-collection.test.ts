@@ -10,6 +10,10 @@ describe('sort collections', () => {
     app = mockServer();
   });
 
+  afterEach(async () => {
+    await app.destroy();
+  });
+
   describe('sort collection', () => {
     beforeEach(async () => {
       Post = app.db.collection({

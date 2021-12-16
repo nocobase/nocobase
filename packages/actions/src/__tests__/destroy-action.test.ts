@@ -56,6 +56,10 @@ describe('destroy action', () => {
     await app.db.sync();
   });
 
+  afterEach(async () => {
+    await app.destroy();
+  });
+
   test('destroy resource', async () => {
     const p1 = await Post.repository.create({
       values: {

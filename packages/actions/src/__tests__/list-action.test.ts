@@ -78,7 +78,7 @@ describe('list action', () => {
   });
 
   afterEach(async () => {
-    await app.db.close();
+    await app.destroy();
   });
 
   test('list with pagination', async () => {

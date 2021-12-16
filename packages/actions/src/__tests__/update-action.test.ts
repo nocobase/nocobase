@@ -56,6 +56,10 @@ describe('update action', () => {
     await app.db.sync();
   });
 
+  afterEach(async () => {
+    await app.destroy();
+  });
+
   test('update resource', async () => {
     const p1 = await Post.repository.create({
       values: {

@@ -56,6 +56,10 @@ describe('remove action', () => {
     await app.db.sync();
   });
 
+  afterEach(async () => {
+    await app.destroy();
+  });
+
   test('remove belongs to many', async () => {
     const p1 = await Post.repository.create({
       values: {

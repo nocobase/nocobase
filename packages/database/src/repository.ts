@@ -198,7 +198,7 @@ export class Repository<TModelAttributes extends {} = any, TCreationAttributes e
       transaction,
     });
 
-    return count as any;
+    return count;
   }
 
   /**

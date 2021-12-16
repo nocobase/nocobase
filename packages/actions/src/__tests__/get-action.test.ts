@@ -56,6 +56,10 @@ describe('get action', () => {
     await app.db.sync();
   });
 
+  afterEach(async () => {
+    await app.destroy();
+  });
+
   test('get resource', async () => {
     await Post.repository.create({
       values: {

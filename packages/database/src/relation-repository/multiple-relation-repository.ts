@@ -107,7 +107,7 @@ export abstract class MultipleRelationRepository extends RelationRepository {
       transaction,
     });
 
-    return count.count;
+    return parseInt(count.count);
   }
 
   async findOne(options?: FindOneOptions): Promise<any> {

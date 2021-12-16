@@ -39,6 +39,10 @@ describe('create action', () => {
     await app.db.sync();
   });
 
+  afterEach(async () => {
+    await app.destroy();
+  });
+
   test('create resource', async () => {
     expect(await Post.repository.findOne()).toBeNull();
     const response = await app

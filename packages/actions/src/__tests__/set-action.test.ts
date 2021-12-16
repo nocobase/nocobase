@@ -47,6 +47,10 @@ describe('set action', () => {
     await app.db.sync();
   });
 
+  afterEach(async () => {
+    await app.destroy();
+  });
+
   test('set belongs to many', async () => {
     const p1 = await Post.repository.create({
       values: {
