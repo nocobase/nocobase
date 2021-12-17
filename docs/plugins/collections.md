@@ -126,7 +126,7 @@ interface CollectionOptions {
   title?: string;
   fields?: FieldOptions[];
   // 是否可以排序，默认为 true，会自动隐式生成一个 sort 字段
-  sortable?: SortableType;
+  sortable?: true | SortableType;
   // 操作日志记录，有 action-logs 插件提供，默认为 true
   logging?: boolean;
   // 是否记录创建人信息，由 users 插件提供，默认为 true
@@ -143,8 +143,6 @@ interface CollectionOptions {
   deletedAt?: string | boolean;
   updatedAt?: string | boolean;
 }
-
-type SortableType = Boolean | string | SortFieldOptions;
 ```
 
 FieldOptions 与 Database 提供的略有不同，多了一些扩展参数
@@ -173,94 +171,26 @@ interface FieldOptions {
 例子待补充
 </Alert>
 
-### 常规字段
+简单的配置
 
-```bash
-POST /api/collections/examples/fields
-
-{
-  interface: 'input',
-  type: 'string',
-  # name, 如果没提供随机生成
-  uiSchema: {
-    type: 'string',
-    title: '单行文本字段',
-    'x-component': 'Input',
-    'x-decorator': 'FormItem',
-  },
-}
-```
-
-### 无组件字段
-
-无 interface、uiSchema 参数
-
-```bash
-POST /api/collections/examples/fields
-
-{
-  type: 'string',
-  # name, 如果没提供随机生成
-}
-```
-
-### 关联字段
-
-```bash
-POST /api/collections/examples/fields
-
-{
-  interface: 'linkTo',
-  type: 'belongsToMany', # 必填，默认为多对多，也可以是其他关系
-  # 这些参数可缺失，是由前端补齐提交还是后端自动生成待定
-  # name,
-  # targetKey,
-  # otherKey,
-  # sourceKey,
-  # foreignKey,
-  target: 'bars', # 关联表，必填
-  uiSchema: {
-    type: 'array',
-    title: '这是一个关联字段',
-    'x-component': 'RecordPicker',
-    'x-component-props': {},
-    'x-decorator': 'FormItem',
-  },
-}
-```
-
-### 子表格字段
-
-```bash
-POST /api/collections/examples/fields
-
-{
-  interface: 'subTable',
-  type: 'hasMany',
-  # 这些参数可缺失，是由前端补齐提交还是后端自动生成待定
-  # name, 如果没提供随机生成
-  # target, 如果没提供随机生成
-  # sourceKey,
-  # foreignKey,
-  uiSchema: {
-    type: 'array',
-    title: '这是一个子表格字段',
-    'x-decorator': 'FormItem',
-    'x-component': 'Table',
-    'x-component-props': {},
-  },
-  children: [
-    {
-      interface: 'input',
-      type: 'string',
-      # name, 如果没提供随机生成
-      uiSchema: {
-        type: 'string',
-        title: '这是一个单行文本字段',
-        'x-component': 'Input',
-        'x-decorator': 'FormItem',
-      }
-    }
+```ts
+Collection.repository.create({
+  name: 'tests',
+  fields: [
+    { type: 'string', name: 'title' },
+    { type: 'text', name: 'content' },
   ],
-}
+});
+```
+
+带 uiSchema 的配置
+
+```ts
+Collection.repository.create({
+  name: 'tests',
+  fields: [
+    { type: 'string', name: 'title' },
+    { type: 'text', name: 'content', uiSchema: {}, interface: 'markdown' },
+  ],
+});
 ```
