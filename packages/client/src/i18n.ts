@@ -1,6 +1,8 @@
 import i18next from 'i18next';
 import { initReactI18next } from 'react-i18next';
+// @ts-ignore
 import zhCN from './locale/zh_CN';
+// @ts-ignore
 import enUS from './locale/en_US';
 import moment from 'moment';
 
