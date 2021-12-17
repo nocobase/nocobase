@@ -5,7 +5,7 @@ describe('belongs to field', () => {
   let db: Database;
 
   beforeEach(() => {
-    db = mockDatabase();
+    db = mockDatabase({ logging: console.log });
   });
 
   afterEach(async () => {

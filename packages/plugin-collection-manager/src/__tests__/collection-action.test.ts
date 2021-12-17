@@ -1,26 +1,35 @@
 import { MockServer, mockServer } from '@nocobase/test';
-
-describe('collection action', () => {
+import { collectionResource } from '../actions/collection';
+import { Database } from '@nocobase/database';
+import PluginCollectionManager from '../server';
+describe('collection  resource', () => {
   let app: MockServer;
+  let db: Database;
+
   beforeEach(async () => {
-    app = mockServer();
+    app = mockServer({
+      database: {
+        logging: console.log,
+      },
+    });
+    app.plugin(PluginCollectionManager);
+    await app.load();
+    db = app.db;
+
+    app.resourcer.define(collectionResource);
   });
 
-  test('create collection', async () => {
-    app.resourcer.registerActionHandler('collections:create', async (ctx, next) => {
-      ctx.body = 'hello';
-      await next();
-    });
-
+  test('create action', async () => {
     const response = await app
       .agent()
       .resource('collections')
       .create({
         values: {
-          name: 'test',
+          name: 'tests',
         },
       });
 
     expect(response.statusCode).toEqual(200);
+    expect(db.getCollection('tests')).toBeDefined();
   });
 });
