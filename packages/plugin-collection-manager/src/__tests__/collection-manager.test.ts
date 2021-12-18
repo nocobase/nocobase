@@ -17,8 +17,9 @@ describe('collection manager', () => {
 
   it('should import collection schema', async () => {
     const db = server.db;
+    await CollectionManager.import(db);
+
     const collectionManager = new CollectionManager(db);
-    await collectionManager.import();
 
     expect(db.getCollection('collections')).toBeDefined();
     expect(db.getCollection('fields')).toBeDefined();
@@ -30,18 +31,17 @@ describe('collection manager', () => {
 
     beforeEach(async () => {
       db = server.db;
+      await CollectionManager.import(db);
       collectionManager = new CollectionManager(db);
-      await collectionManager.import();
     });
 
     test('create new collection', async () => {
-      const collection = await collectionManager.createCollection({
+      const collectionModel = await collectionManager.createCollection({
         name: 'tests',
       });
 
       expect(db.getCollection('tests')).toBeUndefined();
 
-      const collectionModel = new CollectionModel(collection, db);
       await collectionModel.load();
 
       const testCollection = db.getCollection('tests');
@@ -49,11 +49,9 @@ describe('collection manager', () => {
     });
 
     test('create collection with fields', async () => {
-      const collection = await collectionManager.createCollection({
+      const collectionModel = await collectionManager.createCollection({
         name: 'users',
       });
-
-      const collectionModel = new CollectionModel(collection, db);
 
       await collectionModel.addField({
         type: 'string',

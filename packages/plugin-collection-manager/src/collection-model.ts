@@ -8,23 +8,28 @@ export class CollectionModel {
   db: Database;
 
   options: MetaCollectionOptions;
+
   constructor(model: Model, db: Database) {
     this.model = model;
     this.db = db;
     this.options = new MetaCollectionOptions(model.get('options'));
   }
 
+  // load collection to database
   async load() {
     const fields = await this.getFields();
 
     return this.db.collection({
-      name: this.options.name,
+      name: this.getName(),
       fields: fields.map((field) => {
         return { type: field.type, name: field.name };
       }),
     });
   }
 
+  getName() {
+    return this.model.get('name') as string;
+  }
   // add field to meta collection
   async addField(fieldSchema: FieldOptions) {
     // @ts-ignore

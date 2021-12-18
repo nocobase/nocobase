@@ -15,7 +15,6 @@ export default {
       type: 'string',
       name: 'name',
       unique: true,
-      allowNull: false,
     },
     {
       type: 'string',

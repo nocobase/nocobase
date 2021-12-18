@@ -25,7 +25,7 @@ export interface CollectionOptions {
 }
 
 export interface FieldOptions {
-  name: string; // Field Name
+  name?: string; // Field Name
   collectionName?: string; // Collection Name
   collectionKey?: string; // Collection Key
   interface?: string; // Component template of React
@@ -36,7 +36,6 @@ export interface FieldOptions {
 
 export class CollectionManager {
   db: Database;
-  schemaDirectory: string;
 
   /**
    *
@@ -44,7 +43,6 @@ export class CollectionManager {
    */
   constructor(db: Database) {
     this.db = db;
-    this.schemaDirectory = SchemaDirectory;
   }
 
   metaCollection() {
