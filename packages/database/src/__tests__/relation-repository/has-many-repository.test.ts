@@ -29,6 +29,7 @@ describe('has many repository', () => {
         { type: 'string', name: 'title' },
         { type: 'belongsToMany', name: 'tags', through: 'posts_tags' },
         { type: 'hasMany', name: 'comments' },
+        { type: 'string', name: 'status' },
       ],
     });
 
@@ -165,6 +166,56 @@ describe('has many repository', () => {
     });
 
     expect(findAndCount[1]).toEqual(6);
+  });
+
+  test('destroy by pk and filter', async () => {
+    const u1 = await User.repository.create({
+      values: { name: 'u1' },
+    });
+
+    const UserPostRepository = new HasManyRepository(User, 'posts', u1.id);
+
+    const p1 = await UserPostRepository.create({
+      values: {
+        title: 't1',
+        status: 'published',
+      },
+    });
+
+    const p2 = await UserPostRepository.create({
+      values: {
+        title: 't2',
+        status: 'draft',
+      },
+    });
+
+    await UserPostRepository.destroy({
+      filterByPk: p1.id,
+      filter: {
+        status: 'draft',
+      },
+    });
+
+    expect(await UserPostRepository.count()).toEqual(2);
+
+    await UserPostRepository.destroy({
+      filterByPk: p1.id,
+      filter: {
+        status: 'published',
+      },
+    });
+
+    expect(
+      await UserPostRepository.findOne({
+        filterByPk: p1.id,
+      }),
+    ).toBeNull();
+
+    expect(
+      await UserPostRepository.findOne({
+        filterByPk: p2.id,
+      }),
+    ).not.toBeNull();
   });
 
   test('destroy by pk', async () => {
