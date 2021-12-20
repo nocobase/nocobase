@@ -1,8 +1,8 @@
-import React, { useContext, createContext } from 'react';
+import React, { createContext, useContext } from 'react';
 import { Switch, Route, Redirect } from 'react-router';
 import get from 'lodash/get';
 
-export interface RedirectProps {
+interface RedirectProps {
   type: 'redirect';
   to: any;
   path?: string;
@@ -13,7 +13,7 @@ export interface RedirectProps {
   [key: string]: any;
 }
 
-export interface RouteProps {
+interface RouteProps {
   type: 'route';
   path?: string | string[];
   exact?: boolean;
@@ -26,78 +26,89 @@ export interface RouteProps {
 
 export type RouteRedirectProps = RedirectProps | RouteProps;
 
-export interface RouteSwitchOptions {
-  routes?: RouteRedirectProps[];
-  components?: any;
-}
-
 export interface RouteSwitchProps {
   routes?: RouteRedirectProps[];
   components?: any;
 }
 
-export const RouteComponentsContext = createContext(null);
+export const RouteSwitchContext = createContext({
+  components: {},
+});
 
-export function useComponent(route: RouteProps) {
-  const components = useContext(RouteComponentsContext);
-  if (typeof route.component === 'string') {
-    const component = get(components, route.component);
-    return component;
+export const RouteContext = createContext(null);
+
+export function useRouteComponent(name?: string) {
+  if (!name) {
+    return () => null;
   }
-  return route.component || (() => null);
+  const { components } = useContext(RouteSwitchContext);
+  return get(components, name) || (() => null);
 }
 
-export function createRouteSwitch(options: RouteSwitchOptions) {
-  function ComponentRenderer(props) {
-    const Component = useComponent(props.route);
-    return (
-      <Component {...props}>
-        <RouteSwitch routes={props.route.routes} />
-      </Component>
-    );
-  }
+export function useRoute() {
+  return useContext(RouteContext);
+}
 
-  function RouteSwitch(props: RouteSwitchProps) {
-    const { routes = [] } = props;
-    if (!routes.length) {
-      return null;
-    }
-    return (
-      <RouteComponentsContext.Provider value={{ ...options.components, ...props.components }}>
-        <Switch>
-          {routes.map((route, index) => {
-            if (route.type == 'redirect') {
-              return (
-                <Redirect
-                  key={index}
-                  to={route.to}
-                  push={route.push}
-                  from={route.from}
-                  path={route.path}
-                  exact={route.exact}
-                  strict={route.strict}
-                />
-              );
-            }
-            if (!route.path && Array.isArray(route.routes)) {
-              route.path = route.routes.map((r) => r.path) as any;
-            }
-            return (
-              <Route
-                key={index}
-                path={route.path}
-                exact={route.exact}
-                strict={route.strict}
-                sensitive={route.sensitive}
-                render={(props) => {
-                  return <ComponentRenderer {...props} route={route} />;
-                }}
-              />
-            );
-          })}
-        </Switch>
-      </RouteComponentsContext.Provider>
-    );
+interface RouteSwitchProviderProps {
+  components?: any;
+  children?: any;
+}
+
+export function RouteSwitchProvider(props: RouteSwitchProviderProps) {
+  const { children, components } = props;
+  return <RouteSwitchContext.Provider value={{ components }}>{children}</RouteSwitchContext.Provider>;
+}
+
+function ComponentRenderer(props) {
+  const Component = useRouteComponent(props?.route?.component);
+  return (
+    <Component {...props}>
+      <RouteSwitch routes={props.route.routes} />
+    </Component>
+  );
+}
+
+export function RouteSwitch(props: RouteSwitchProps) {
+  const { routes = [] } = props;
+  if (!routes.length) {
+    return null;
   }
-  return RouteSwitch;
+  return (
+    <Switch>
+      {routes.map((route, index) => {
+        if (route.type == 'redirect') {
+          return (
+            <Redirect
+              key={index}
+              to={route.to}
+              push={route.push}
+              from={route.from}
+              path={route.path}
+              exact={route.exact}
+              strict={route.strict}
+            />
+          );
+        }
+        if (!route.path && Array.isArray(route.routes)) {
+          route.path = route.routes.map((r) => r.path) as any;
+        }
+        return (
+          <Route
+            key={index}
+            path={route.path}
+            exact={route.exact}
+            strict={route.strict}
+            sensitive={route.sensitive}
+            render={(props) => {
+              return (
+                <RouteContext.Provider value={route}>
+                  <ComponentRenderer {...props} route={route} />
+                </RouteContext.Provider>
+              );
+            }}
+          />
+        );
+      })}
+    </Switch>
+  );
 }
