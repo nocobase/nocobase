@@ -98,7 +98,7 @@ yarn nocobase init --import-demo --lang=zh-CN
 yarn start
 ~~~
 
-使用浏览器打开 http://localhost:8000
+使用浏览器打开 [http://localhost:8000](http://localhost:8000)，初始的账号和密码为 `admin@nocobase.com` 和 `admin123`。
 
 ### 使用 docker
 

@@ -96,7 +96,7 @@ yarn nocobase init --import-demo --lang=en-US
 yarn start
 ~~~
 
-Open http://localhost:8000 in a web browser.
+Open [http://localhost:8000](http://localhost:8000) in a web browser. The initial account and password are `admin@nocobase.com` and `admin123`.
 
 ### Installing from Docker
 
