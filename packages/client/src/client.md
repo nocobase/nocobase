@@ -96,7 +96,7 @@ export default () => {
 };
 ```
 
-- components 由开发编写，以 Layout 或 Template 的方式提供给大家使用。有限的 Layout、Template 可以创造出无数的应用场景。
+- components 还是交由开发编写，以 Layout 或 Template 的方式提供给大家使用。有限的 Layout、Template 可以创造出无数的应用场景。
 - routes 转化成了 json 的方式，方便存储，也可以进一步提供配置 route 的界面，以方便后续无代码的支持。
 
 ## SchemaComponent

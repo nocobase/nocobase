@@ -1,18 +1,38 @@
 import React, { createContext, useContext, useMemo, useState } from 'react';
 import { uid } from '@formily/shared';
-import { createForm } from '@formily/core';
+import { createForm, Form } from '@formily/core';
 import {
   createSchemaField,
   FormProvider,
+  IRecursionFieldProps,
+  ISchemaFieldProps,
+  ISchemaFieldReactFactoryOptions,
   RecursionField,
   Schema,
   SchemaExpressionScopeContext,
   SchemaOptionsContext,
+  SchemaReactComponents,
 } from '@formily/react';
+import { useCookieState } from 'ahooks';
 
-export const SchemaComponentContext = createContext<any>({});
+export interface ISchemaComponentContext {
+  scope?: any;
+  components?: SchemaReactComponents;
+  refresh?: () => void;
+  designable?: boolean;
+  setDesignable?: (value: boolean) => void;
+  SchemaField?: React.FC<ISchemaFieldProps>;
+}
 
-export function SchemaComponentProvider(props) {
+export interface ISchemaComponentProvider {
+  form?: Form;
+  scope?: any;
+  components?: SchemaReactComponents;
+}
+
+export const SchemaComponentContext = createContext<ISchemaComponentContext>({});
+
+export const SchemaComponentProvider: React.FC<ISchemaComponentProvider> = (props) => {
   const { components, scope, children } = props;
   const [, setUid] = useState(uid());
   const form = props.form || useMemo(() => createForm(), []);
@@ -24,6 +44,7 @@ export function SchemaComponentProvider(props) {
       }),
     [],
   );
+  const [active, setActive] = useCookieState('useCookieDesignable');
   return (
     <SchemaComponentContext.Provider
       value={{
@@ -31,14 +52,23 @@ export function SchemaComponentProvider(props) {
         components,
         scope,
         refresh: () => setUid(uid()),
+        designable: active === 'true',
+        setDesignable(value) {
+          setActive(value ? 'true' : 'false');
+        },
       }}
     >
       <FormProvider form={form}>{children}</FormProvider>
     </SchemaComponentContext.Provider>
   );
+};
+
+interface IRecursionComponentProps extends IRecursionFieldProps {
+  scope?: any;
+  components?: SchemaReactComponents;
 }
 
-export function RecursionComponent(props) {
+export const RecursionComponent: React.FC<IRecursionComponentProps> = (props) => {
   const { components, scope } = useContext(SchemaComponentContext);
   return (
     <SchemaOptionsContext.Provider
@@ -52,9 +82,9 @@ export function RecursionComponent(props) {
       </SchemaExpressionScopeContext.Provider>
     </SchemaOptionsContext.Provider>
   );
-}
+};
 
-function toSchema(schema) {
+function toSchema(schema?: any) {
   if (Schema.isSchemaInstance(schema)) {
     return schema;
   }
@@ -71,11 +101,11 @@ function toSchema(schema) {
 
 // TODO
 export function useDesignable() {
-  const { refresh } = useContext(SchemaComponentContext);
-  return { refresh };
+  const { designable, refresh } = useContext(SchemaComponentContext);
+  return { designable, refresh };
 }
 
-export function SchemaComponent(props) {
+export function SchemaComponent(props: ISchemaFieldProps) {
   const { schema: defaultSchema, ...others } = props;
   const { SchemaField } = useContext(SchemaComponentContext);
   const schema = useMemo(() => toSchema(defaultSchema), []);
