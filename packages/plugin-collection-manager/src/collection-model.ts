@@ -32,15 +32,12 @@ export class CollectionModel {
       return carry;
     }, {});
 
-    const existCollection = this.db.getCollection(this.getName());
+    let existCollection = this.db.getCollection(this.getName());
 
     if (!existCollection) {
       // create new collection
-      return this.db.collection({
+      existCollection = this.db.collection({
         name: this.getName(),
-        fields: newFields.map((field) => {
-          return { type: field.type, name: field.name };
-        }),
       });
     }
 
@@ -103,9 +100,7 @@ export class CollectionModel {
         newFieldValues['reverseField'] = options.reverseField;
       }
 
-      const isSubTableField =
-        options.type == 'hasMany' && lodash.isArray(options.children) && options.children.length > 0;
-
+      const isSubTableField = FieldModel.isSubTableOptions(options);
       // sub table
       if (isSubTableField) {
         // create new collection
@@ -116,10 +111,8 @@ export class CollectionModel {
           transaction,
         });
 
-        newFieldValues['options'] = {
-          ...newFieldValues['options'],
-          target: subTableCollection.get('name'),
-        };
+        // set hasMany relation target attribute
+        newFieldValues['options']['target'] = subTableCollection.get('name');
       }
 
       const fieldRelationRepository = <HasManyRepository>(

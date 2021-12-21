@@ -1,6 +1,8 @@
 import { Database } from '@nocobase/database';
 import { Model } from 'sequelize';
 import lodash from 'lodash';
+import { FieldOptions } from './collection-manager';
+import { CollectionModel } from './collection-model';
 
 export class FieldModel {
   model: Model;
@@ -66,6 +68,22 @@ export class FieldModel {
 
   async load() {
     const fieldOptions = this.asFieldOption();
+
+    const fieldModelOptions = this.model.get('options');
+
+    if (FieldModel.isSubTableOptions(fieldModelOptions)) {
+      // if it is a subField, load subField collection first
+      const subTableName = fieldOptions['target'];
+      const collectionInstance = await this.db.getCollection('collections').repository.findOne({
+        filter: {
+          name: subTableName,
+        },
+      });
+
+      const collectionModel = new CollectionModel(collectionInstance, this.db);
+      await collectionModel.load();
+    }
+
     const collection = await this.collection();
     collection.addField(this.model.get('name') as string, fieldOptions);
   }
@@ -91,6 +109,10 @@ export class FieldModel {
     const relationTypes = ['hasOne', 'hasMany', 'belongsTo', 'belongsToMany'];
 
     return relationTypes.includes(type);
+  }
+
+  static isSubTableOptions(options: FieldOptions) {
+    return options.type == 'hasMany' && lodash.isArray(options.children) && options.children.length > 0;
   }
 
   static reverseRelationType(type: string) {

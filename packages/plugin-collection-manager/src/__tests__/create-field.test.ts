@@ -1,5 +1,5 @@
 import { mockServer, MockServer } from '@nocobase/test';
-import { BelongsToManyField, Database } from '@nocobase/database';
+import { BelongsToManyField, Database, HasManyField } from '@nocobase/database';
 import { mockUiSchema } from './mockUiSchema';
 import PluginCollectionManager from '../server';
 import { CollectionManager, FieldOptions } from '../collection-manager';
@@ -236,6 +236,7 @@ describe('create field', () => {
         {
           interface: 'input',
           type: 'string',
+          name: 'count',
           uiSchema: {
             type: 'string',
             title: '商品数量',
@@ -246,6 +247,7 @@ describe('create field', () => {
         {
           interface: 'input',
           type: 'decimal',
+          name: 'price',
           uiSchema: {
             type: 'number',
             title: '商品金额',
@@ -256,9 +258,20 @@ describe('create field', () => {
       ],
     };
 
-    const fieldModel = await collectionManger.createField(options);
-    expect(fieldModel).toBeDefined();
+    const fieldInstance = await collectionManger.createField(options);
+    expect(fieldInstance).toBeDefined();
 
-    expect(await fieldModel.countChildren()).toEqual(2);
+    expect(await fieldInstance.countChildren()).toEqual(2);
+
+    const fieldModel = new FieldModel(fieldInstance, db);
+    await fieldModel.load();
+
+    const ordersCollection = db.getCollection('orders');
+    const field = <HasManyField>ordersCollection.getField(fieldInstance.get('name'));
+    expect(field).toBeDefined();
+
+    const Target = field.TargetModel;
+    expect(Target.rawAttributes['count']).toBeDefined();
+    expect(Target.rawAttributes['price']).toBeDefined();
   });
 });
