@@ -158,9 +158,9 @@ class RelationRepositoryBuilder<R extends RelationRepository> {
     return this.builderMap;
   }
 
-  of(id: string | number): R {
+  of(id: string | number, associatedKey?: string): R {
     const klass = this.builder()[this.association.associationType];
-    return new klass(this.collection, this.associationName, id);
+    return new klass(this.collection, this.associationName, id, associatedKey);
   }
 }
 

@@ -18,12 +18,14 @@ export abstract class RelationRepository {
   target: ModelCtor<any>;
   sourceId: string | number;
   sourceModel: Model;
+  sourceKey: string;
 
-  constructor(source: Collection, association: string, sourceId: string | number) {
+  constructor(source: Collection, association: string, sourceId: string | number, sourceKey?: string) {
     this.source = source;
     this.sourceId = sourceId;
     this.association = this.source.model.associations[association];
 
+    this.sourceKey = sourceKey;
     this.target = this.association.target;
   }
 
@@ -48,7 +50,10 @@ export abstract class RelationRepository {
 
   async getSourceModel(transaction?: any) {
     if (!this.sourceModel) {
-      this.sourceModel = await this.source.model.findByPk(this.sourceId, {
+      this.sourceModel = await this.source.model.findOne({
+        where: {
+          [this.sourceKey ? this.sourceKey : this.source.model.primaryKeyAttribute]: this.sourceId,
+        },
         transaction,
       });
     }

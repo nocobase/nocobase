@@ -3,6 +3,8 @@ import { CollectionManager } from './collection-manager';
 import { collectionsActions } from './actions/collection';
 import lodash from 'lodash';
 import { CollectionModel } from './collection-model';
+import { FieldModel } from './field-model';
+import { fieldActions } from './actions/fields';
 
 export default class PluginCollectionManager extends Plugin {
   name() {
@@ -15,6 +17,7 @@ export default class PluginCollectionManager extends Plugin {
     await CollectionManager.import(db);
 
     this.app.resourcer.registerActionHandler('collections:create', collectionsActions.create);
+    this.app.resourcer.registerActionHandler('collections.fields:create', fieldActions.create);
 
     db.on('collections.beforeSave', async (model) => {
       if (!model.get('name')) {
@@ -39,13 +42,30 @@ export default class PluginCollectionManager extends Plugin {
 
         if (sortOptions && !existSortField) {
           // add sort field
-          const collectionModel = new CollectionModel(model, db);
-          await collectionModel.addField({
-            type: 'sort',
-            name: 'auto-sort',
-          });
+          await CollectionModel.addField(
+            {
+              type: 'sort',
+              name: 'auto-sort',
+            },
+            db,
+          );
         }
       }
+    });
+
+    db.on('fields.beforeCreate', async (model) => {
+      if (!model.get('name')) {
+        model.set('name', model.get('key'));
+      }
+
+      const fieldModel = new FieldModel(model, db);
+      fieldModel.validate();
+    });
+
+    db.on('fields.afterSave', async (model) => {
+      const collection = await model.getCollection();
+      const collectionModel = new CollectionModel(collection, db);
+      await collectionModel.migrate();
     });
   }
 }

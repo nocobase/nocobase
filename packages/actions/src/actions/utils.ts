@@ -2,13 +2,13 @@ import { MultipleRelationRepository, Repository } from '@nocobase/database';
 import { Context } from '..';
 
 export function getRepositoryFromParams(ctx: Context) {
-  const { resourceName, associatedName, associatedIndex } = ctx.action.params;
+  const { resourceName, associatedName, associatedIndex, associatedKey } = ctx.action.params;
 
   let repository: MultipleRelationRepository | Repository;
 
   if (associatedName) {
     repository = <MultipleRelationRepository>(
-      ctx.db.getCollection(associatedName).repository.relation(resourceName).of(associatedIndex)
+      ctx.db.getCollection(associatedName).repository.relation(resourceName).of(associatedIndex, associatedKey)
     );
   } else {
     repository = <Repository>ctx.db.getCollection(resourceName).repository;

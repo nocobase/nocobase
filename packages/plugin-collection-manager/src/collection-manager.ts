@@ -26,12 +26,11 @@ export interface CollectionOptions {
 
 export interface FieldOptions {
   name?: string; // Field Name
-  collectionName?: string; // Collection Name
-  collectionKey?: string; // Collection Key
+  collectionName?: string; // Collection Key
   interface?: string; // Component template of React
   uiSchema?: any; // Formily Schema
   children?: FieldOptions[]; // Children Field
-  [key: string]: any;
+  [key: string]: any; // other options
 }
 
 export class CollectionManager {
@@ -71,5 +70,19 @@ export class CollectionManager {
     });
 
     return new CollectionModel(collectionInstance, this.db);
+  }
+
+  async createField(fieldOptions: FieldOptions) {
+    const collectionInstance = await this.metaCollection().repository.findOne({
+      filter: {
+        name: fieldOptions.collectionName,
+      },
+    });
+
+    if (!collectionInstance) {
+      throw new Error(`${fieldOptions.collectionName} collection not exist`);
+    }
+
+    return await CollectionModel.addField(fieldOptions, this.db);
   }
 }

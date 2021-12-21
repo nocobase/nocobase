@@ -7,7 +7,8 @@ const collectionsActions = {
 
     const collectionManager = new CollectionManager(ctx.db);
     const collectionModel = await collectionManager.createCollection(values);
-    await collectionModel.load();
+    await collectionModel.migrate();
   },
 };
+
 export { collectionsActions };
