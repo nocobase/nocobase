@@ -1,4 +1,4 @@
-import { Model } from 'sequelize';
+import { Model, Transaction } from 'sequelize';
 import { MetaCollectionOptions } from './meta-collection-options';
 import { Collection, Database, HasManyRepository } from '@nocobase/database';
 import { FieldOptions } from './collection-manager';
@@ -76,98 +76,111 @@ export class CollectionModel {
    * @param db
    * @param transaction
    */
-  static async addField(options: FieldOptions, db: Database, transaction?: any) {
+  static async addField(options: FieldOptions, db: Database, transaction?: Transaction) {
+    let handleTransaction = false;
+
     if (!transaction) {
       transaction = await db.sequelize.transaction();
-    }
-    const metaCollection = db.getCollection('collections');
-
-    const newFieldValues = {
-      name: options.name,
-      type: options.type,
-      interface: options.interface,
-      uiSchema: options.uiSchema,
-      options: options,
-    };
-
-    if (options.reverseKey) {
-      newFieldValues['reverseKey'] = options.reverseKey;
+      handleTransaction = true;
     }
 
-    if (options.reverseField) {
-      newFieldValues['reverseField'] = options.reverseField;
-    }
+    try {
+      const metaCollection = db.getCollection('collections');
 
-    const isSubTableField =
-      options.type == 'hasMany' && lodash.isArray(options.children) && options.children.length > 0;
-
-    // sub table
-    if (isSubTableField) {
-      // create new collection
-      const subTableCollection = await metaCollection.repository.create({
-        values: {
-          name: `sub-table${lodash.random(111111, 999999)}`,
-        },
-        transaction,
-      });
-
-      newFieldValues['options'] = {
-        ...newFieldValues['options'],
-        target: subTableCollection.get('name'),
+      const newFieldValues = {
+        name: options.name,
+        type: options.type,
+        interface: options.interface,
+        uiSchema: options.uiSchema,
+        options: options,
       };
-    }
 
-    const fieldRelationRepository = <HasManyRepository>(
-      metaCollection.repository.relation('fields').of(options.collectionName, 'name')
-    );
+      if (options.reverseKey) {
+        newFieldValues['reverseKey'] = options.reverseKey;
+      }
 
-    const fieldInstance = await fieldRelationRepository.create({
-      values: newFieldValues,
-      transaction,
-    });
+      if (options.reverseField) {
+        newFieldValues['reverseField'] = options.reverseField;
+      }
 
-    if (isSubTableField) {
-      // add subfield in sub table collection
-      const subFields = [];
-      for (const childrenField of options.children) {
-        const child = await this.addField(
-          {
-            collectionName: newFieldValues['options'].target,
-            ...childrenField,
+      const isSubTableField =
+        options.type == 'hasMany' && lodash.isArray(options.children) && options.children.length > 0;
+
+      // sub table
+      if (isSubTableField) {
+        // create new collection
+        const subTableCollection = await metaCollection.repository.create({
+          values: {
+            name: `sub-table${lodash.random(111111, 999999)}`,
           },
-          db,
           transaction,
-        );
-        subFields.push(child);
+        });
+
+        newFieldValues['options'] = {
+          ...newFieldValues['options'],
+          target: subTableCollection.get('name'),
+        };
       }
 
-      await fieldInstance.setChildren(subFields, { transaction });
-    }
+      const fieldRelationRepository = <HasManyRepository>(
+        metaCollection.repository.relation('fields').of(options.collectionName, 'name')
+      );
 
-    if (FieldModel.isRelationFieldType(options.type) && !fieldInstance.get('reverseKey')) {
-      // create reverse field
-      const reverseFieldType = lodash.get(options, 'reverseField.type')
-        ? lodash.get(options, 'reverseField.type')
-        : FieldModel.reverseRelationType(options.type);
-
-      if (!reverseFieldType) {
-        throw new Error('can not set reverse field: unknown reverse field type');
-      }
-
-      const reverseFieldOptions: FieldOptions = {
-        type: reverseFieldType,
-        reverseKey: fieldInstance.get('key'),
-        collectionName: newFieldValues.options.target,
-        target: options.collectionName,
-      };
-
-      const reverseFieldInstance = await this.addField(reverseFieldOptions, db, transaction);
-      await fieldInstance.setReverseField(reverseFieldInstance, {
+      const fieldInstance = await fieldRelationRepository.create({
+        values: newFieldValues,
         transaction,
       });
-    }
 
-    return fieldInstance;
+      if (isSubTableField) {
+        // add subfield in sub table collection
+        const subFields = [];
+        for (const childrenField of options.children) {
+          const child = await this.addField(
+            {
+              collectionName: newFieldValues['options'].target,
+              ...childrenField,
+            },
+            db,
+            transaction,
+          );
+          subFields.push(child);
+        }
+
+        await fieldInstance.setChildren(subFields, { transaction });
+      }
+
+      if (FieldModel.isRelationFieldType(options.type) && !fieldInstance.get('reverseKey')) {
+        // create reverse field
+        const reverseFieldType = lodash.get(options, 'reverseField.type')
+          ? lodash.get(options, 'reverseField.type')
+          : FieldModel.reverseRelationType(options.type);
+
+        if (!reverseFieldType) {
+          throw new Error('can not set reverse field: unknown reverse field type');
+        }
+
+        const reverseFieldOptions: FieldOptions = {
+          type: reverseFieldType,
+          reverseKey: fieldInstance.get('key'),
+          collectionName: newFieldValues.options.target,
+          target: options.collectionName,
+        };
+
+        const reverseFieldInstance = await this.addField(reverseFieldOptions, db, transaction);
+        await fieldInstance.setReverseField(reverseFieldInstance, {
+          transaction,
+        });
+      }
+
+      if (handleTransaction) {
+        await transaction.commit();
+      }
+
+      return fieldInstance;
+    } catch (err) {
+      await transaction.rollback();
+      throw err;
+    }
   }
 
   async getFields() {

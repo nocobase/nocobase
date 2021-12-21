@@ -63,9 +63,9 @@ export default class PluginCollectionManager extends Plugin {
     });
 
     db.on('fields.afterSave', async (model) => {
-      const collection = await model.getCollection();
-      const collectionModel = new CollectionModel(collection, db);
-      await collectionModel.migrate();
+      // const collection = await model.getCollection();
+      // const collectionModel = new CollectionModel(collection, db);
+      // await collectionModel.migrate();
     });
   }
 }

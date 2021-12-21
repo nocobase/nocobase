@@ -1,10 +1,11 @@
 import { mockServer, MockServer } from '@nocobase/test';
-import { Database } from '@nocobase/database';
+import { BelongsToManyField, Database } from '@nocobase/database';
 import { mockUiSchema } from './mockUiSchema';
 import PluginCollectionManager from '../server';
 import { CollectionManager, FieldOptions } from '../collection-manager';
 import { before, has } from 'lodash';
 import { CollectionModel } from '../collection-model';
+import { FieldModel } from '../field-model';
 
 describe('create field', () => {
   let app: MockServer;
@@ -97,7 +98,117 @@ describe('create field', () => {
     });
   });
 
-  describe('create belongsToMany Field', () => {});
+  describe('create belongsToMany Field', () => {
+    let collectionManager: CollectionManager;
+    let postCollectionModel: CollectionModel;
+    let tagsCollectionModel: CollectionModel;
+
+    beforeEach(async () => {
+      collectionManager = new CollectionManager(db);
+      postCollectionModel = await collectionManager.createCollection({
+        name: 'posts',
+      });
+
+      await postCollectionModel.migrate();
+
+      tagsCollectionModel = await collectionManager.createCollection({
+        name: 'tags',
+      });
+
+      await tagsCollectionModel.migrate();
+    });
+
+    it('should create belongsToMany field', async () => {
+      const options: FieldOptions = {
+        interface: 'linkTo',
+        type: 'belongsToMany',
+        collectionName: 'posts',
+        target: 'tags',
+        uiSchema: {
+          type: 'array',
+          title: '这是一个关联字段',
+          'x-component': 'RecordPicker',
+          'x-component-props': {},
+          'x-decorator': 'FormItem',
+        },
+      };
+
+      const fieldInstance = await collectionManager.createField(options);
+      expect(fieldInstance).not.toBeNull();
+
+      const postsCollection = db.getCollection('posts');
+
+      expect(postsCollection.getField(fieldInstance.get('name'))).not.toBeDefined();
+
+      const fieldModel = new FieldModel(fieldInstance, db);
+      await fieldModel.load();
+
+      const field = <BelongsToManyField>postsCollection.getField(fieldInstance.get('name'));
+      expect(field).toBeDefined();
+
+      // through table name
+      expect(field.through).toEqual('posts_tags');
+      const TargetModel = field.TargetModel;
+
+      // target model
+      expect(TargetModel.name).toEqual('tags');
+    });
+
+    it('should create belongsToMany with field options', async () => {
+      await collectionManager.createField({
+        interface: 'test',
+        type: 'string',
+        collectionName: 'posts',
+        name: 'unique-title',
+      });
+
+      await collectionManager.createField({
+        interface: 'test',
+        type: 'string',
+        collectionName: 'tags',
+        name: 'unique-name',
+      });
+
+      await postCollectionModel.migrate();
+      await tagsCollectionModel.migrate();
+
+      // posts belongsToMany tags
+      const options: FieldOptions = {
+        interface: 'linkTo',
+        type: 'belongsToMany',
+        collectionName: 'posts',
+
+        sourceKey: 'unique-title',
+        targetKey: 'unique-name',
+        otherKey: 'unique-name',
+        foreignKey: 'unique-title',
+
+        through: 'test-through-table',
+
+        target: 'tags',
+        uiSchema: {
+          type: 'array',
+          title: '这是一个关联字段',
+          'x-component': 'RecordPicker',
+          'x-component-props': {},
+          'x-decorator': 'FormItem',
+        },
+      };
+
+      const fieldInstance = await collectionManager.createField(options);
+
+      const fieldModel = new FieldModel(fieldInstance, db);
+      await fieldModel.load();
+
+      const postsCollection = db.getCollection('posts');
+
+      const field = <BelongsToManyField>postsCollection.getField(fieldInstance.get('name'));
+      expect(field).toBeDefined();
+
+      // through table name
+      expect(field.through).toEqual(options.through);
+    });
+  });
 
   it('should create subTable fields', async () => {
     const collectionManger = new CollectionManager(db);
