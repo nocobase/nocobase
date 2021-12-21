@@ -182,7 +182,6 @@ describe('create field', () => {
         targetKey: 'unique-name',
         otherKey: 'unique-name',
         foreignKey: 'unique-title',
-
         through: 'test-through-table',
 
         target: 'tags',
@@ -207,6 +206,9 @@ describe('create field', () => {
 
       // through table name
       expect(field.through).toEqual(options.through);
+      const ThroughModel = db.sequelize.model(field.through);
+      expect(ThroughModel.rawAttributes['unique-title']).toBeDefined();
+      expect(ThroughModel.rawAttributes['unique-name']).toBeDefined();
     });
   });
 
