@@ -24,6 +24,40 @@ describe('create field', () => {
     await app.load();
   });
 
+  describe('create normal field', () => {
+    it('should sync collection', async () => {
+      const collectionManager = new CollectionManager(db);
+
+      const userCollectionModel = await collectionManager.createCollection({
+        name: 'users',
+      });
+
+      await userCollectionModel.migrate();
+      const usersCollection = db.getCollection('users');
+
+      await collectionManager.createField({
+        interface: 'test',
+        type: 'string',
+        collectionName: 'users',
+        name: 'name',
+      });
+
+      expect(usersCollection.model.rawAttributes['name']).not.toBeDefined();
+      await userCollectionModel.migrate();
+      expect(usersCollection.model.rawAttributes['name']).toBeDefined();
+
+      await collectionManager.createField({
+        interface: 'test',
+        type: 'integer',
+        collectionName: 'users',
+        name: 'age',
+      });
+      await userCollectionModel.migrate();
+
+      expect(usersCollection.model.rawAttributes['age']).toBeDefined();
+    });
+  });
+
   describe('create hasMany Field', () => {
     let collectionManager: CollectionManager;
     let postCollectionModel: CollectionModel;
@@ -253,6 +287,21 @@ describe('create field', () => {
       await fieldModel.load();
 
       expect(profileCollection.model.rawAttributes['userId']).toBeDefined();
+
+      await userCollectionModel.migrate();
+
+      const userCollection = db.getCollection('users');
+
+      const association = userCollection.model.associations[fieldInstance.get('name')];
+      expect(association).toBeDefined();
+      expect(association.associationType).toEqual('HasOne');
+
+      await profileCollectionModel.migrate();
+      const reverseField = await fieldInstance.getReverseField();
+      // reverse association
+      const reverseAssociation = profileCollection.model.associations[reverseField.get('name')];
+      expect(reverseAssociation).toBeDefined();
+      expect(reverseAssociation.associationType).toEqual('BelongsTo');
     });
 
     it('should create hasOne field with custom foreignKey', async () => {
@@ -281,13 +330,22 @@ describe('create field', () => {
       const profileCollection = db.getCollection('profiles');
 
       const fieldModel = new FieldModel(fieldInstance, db);
+
       await fieldModel.load();
+
+      await profileCollection.sync({ logging: console.log, alter: true });
 
       const userNameAttribute = profileCollection.model.rawAttributes['user-name'];
       expect(userNameAttribute).toBeDefined();
       expect(userNameAttribute.references['key']).toEqual('unique-name');
+
+      // expect reverse association exists
+      const associations = profileCollection.model.associations;
+      console.log(associations);
     });
   });
+
+  describe('create belongsTo field', () => {});
 
   it('should create subTable fields', async () => {
     const collectionManger = new CollectionManager(db);

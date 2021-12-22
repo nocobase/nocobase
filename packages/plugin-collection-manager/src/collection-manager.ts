@@ -72,6 +72,10 @@ export class CollectionManager {
     return new CollectionModel(collectionInstance, this.db);
   }
 
+  /**
+   * save field to field table only
+   * @param fieldOptions
+   */
   async createField(fieldOptions: FieldOptions) {
     const collectionInstance = await this.metaCollection().repository.findOne({
       filter: {

@@ -20,6 +20,7 @@ export class CollectionModel {
   async migrate() {
     const collection = await this.load();
     await collection.sync({
+      logging: console.log,
       alter: true,
     });
   }
