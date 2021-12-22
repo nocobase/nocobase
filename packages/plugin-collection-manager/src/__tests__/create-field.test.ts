@@ -1,5 +1,5 @@
 import { mockServer, MockServer } from '@nocobase/test';
-import { BelongsToManyField, Database, HasManyField } from '@nocobase/database';
+import { BelongsToManyField, Database, HasManyField, HasOneField } from '@nocobase/database';
 import { mockUiSchema } from './mockUiSchema';
 import PluginCollectionManager from '../server';
 import { CollectionManager, FieldOptions } from '../collection-manager';
@@ -209,6 +209,83 @@ describe('create field', () => {
       const ThroughModel = db.sequelize.model(field.through);
       expect(ThroughModel.rawAttributes['unique-title']).toBeDefined();
       expect(ThroughModel.rawAttributes['unique-name']).toBeDefined();
+    });
+  });
+
+  describe('create hasOne field', () => {
+    let collectionManager: CollectionManager;
+    let userCollectionModel: CollectionModel;
+    let profileCollectionModel: CollectionModel;
+
+    beforeEach(async () => {
+      collectionManager = new CollectionManager(db);
+
+      userCollectionModel = await collectionManager.createCollection({
+        name: 'users',
+      });
+
+      await userCollectionModel.migrate();
+
+      profileCollectionModel = await collectionManager.createCollection({
+        name: 'profiles',
+      });
+
+      await profileCollectionModel.migrate();
+    });
+
+    it('should create hasOne field', async () => {
+      const options: FieldOptions = {
+        interface: 'test',
+        type: 'hasOne',
+        collectionName: 'users',
+        target: 'profiles',
+        uiSchema: {
+          test: 'test',
+        },
+      };
+
+      const fieldInstance = await collectionManager.createField(options);
+      const profileCollection = db.getCollection('profiles');
+
+      expect(profileCollection.model.rawAttributes['userId']).toBeUndefined();
+
+      const fieldModel = new FieldModel(fieldInstance, db);
+      await fieldModel.load();
+
+      expect(profileCollection.model.rawAttributes['userId']).toBeDefined();
+    });
+
+    it('should create hasOne field with custom foreignKey', async () => {
+      await collectionManager.createField({
+        interface: 'test',
+        type: 'string',
+        collectionName: 'users',
+        name: 'unique-name',
+      });
+
+      await userCollectionModel.migrate();
+
+      const options: FieldOptions = {
+        interface: 'test',
+        type: 'hasOne',
+        collectionName: 'users',
+        foreignKey: 'user-name',
+        sourceKey: 'unique-name',
+        target: 'profiles',
+        uiSchema: {
+          test: 'test',
+        },
+      };
+
+      const fieldInstance = await collectionManager.createField(options);
+      const profileCollection = db.getCollection('profiles');
+
+      const fieldModel = new FieldModel(fieldInstance, db);
+      await fieldModel.load();
+
+      const userNameAttribute = profileCollection.model.rawAttributes['user-name'];
+      expect(userNameAttribute).toBeDefined();
+      expect(userNameAttribute.references['key']).toEqual('unique-name');
     });
   });
 

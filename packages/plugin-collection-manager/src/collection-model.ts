@@ -171,6 +171,7 @@ export class CollectionModel {
 
       return fieldInstance;
     } catch (err) {
+      console.log({ err });
       await transaction.rollback();
       throw err;
     }

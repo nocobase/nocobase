@@ -52,6 +52,7 @@ export class FieldModel {
 
     const allowOptions = {
       belongsToMany: ['through', 'sourceKey', 'targetKey', 'otherKey', 'foreignKey'],
+      hasOne: ['sourceKey', 'foreignKey'],
     }[type];
 
     if (allowOptions) {
@@ -96,12 +97,6 @@ export class FieldModel {
       if (!target) {
         throw new Error(`cant save relation field without target`);
       }
-      //
-      // const targetCollection = this.db.getCollection(target);
-      //
-      // if (!targetCollection) {
-      //   throw new Error(`${target} collection not exists`);
-      // }
     }
   }
 
