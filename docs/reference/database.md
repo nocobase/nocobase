@@ -159,7 +159,9 @@ await User.repository.findByName('San', 'Zhang');
 
 ##### Model 和 Repository 选择哪一个？
 
-从模式来说，Active Record 和 Data Mapper 是两种不一样的策略。Active Record 比较简单，适用于简单场景，Data Mapper 在复杂的场景里更适合。
+单纯从模式来说，Active Record 和 Data Mapper 是两种不一样的策略。Active Record 比较简单，适用于简单场景，Data Mapper 在复杂的场景里更适合。
+
+实际情况，Repository 的 CRUD API 做了很多细节改进，更适用于 NocoBase 的设计，这部分的 API 会一直保持兼容。而 Model 就只是原生的 Sequelize Model，并未做任何处理。
 
 ## `db.constructor()`
 
