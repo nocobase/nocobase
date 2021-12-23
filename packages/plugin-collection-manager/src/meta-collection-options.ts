@@ -8,6 +8,10 @@ export class MetaCollectionOptions {
     this.options = lodash.cloneDeep(options || {});
   }
 
+  get name() {
+    return this.options.name;
+  }
+
   get collectionValues() {
     return {
       name: this.options.name,

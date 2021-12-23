@@ -40,6 +40,11 @@ export class FieldModel {
         ...options,
         ...relationOptions,
       };
+    } else {
+      options = {
+        ...options,
+        ...(this.model.get('options') as any),
+      };
     }
 
     return options;

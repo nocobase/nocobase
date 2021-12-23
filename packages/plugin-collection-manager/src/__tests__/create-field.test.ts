@@ -11,6 +11,10 @@ describe('create field', () => {
   let app: MockServer;
   let db: Database;
 
+  afterEach(async () => {
+    await app.destroy();
+  });
+
   beforeEach(async () => {
     app = mockServer({
       registerActions: true,
@@ -310,9 +314,15 @@ describe('create field', () => {
         type: 'string',
         collectionName: 'users',
         name: 'unique-name',
+        unique: true,
       });
 
       await userCollectionModel.migrate();
+
+      const userCollection = db.getCollection('users');
+
+      const rawUniqueNameAttribute = userCollection.model.rawAttributes['unique-name'];
+      expect(rawUniqueNameAttribute).toBeDefined();
 
       const options: FieldOptions = {
         interface: 'test',
@@ -333,15 +343,17 @@ describe('create field', () => {
 
       await fieldModel.load();
 
-      await profileCollection.sync({ logging: console.log, alter: true });
+      await profileCollectionModel.migrate();
 
       const userNameAttribute = profileCollection.model.rawAttributes['user-name'];
       expect(userNameAttribute).toBeDefined();
       expect(userNameAttribute.references['key']).toEqual('unique-name');
 
       // expect reverse association exists
-      const associations = profileCollection.model.associations;
-      console.log(associations);
+      const reverseField = await fieldInstance.getReverseField();
+      const reverseAssociation = profileCollection.model.associations[reverseField.get('name')];
+      expect(reverseAssociation).toBeDefined();
+      expect(reverseAssociation.associationType).toEqual('BelongsTo');
     });
   });
 
