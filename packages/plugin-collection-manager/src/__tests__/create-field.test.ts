@@ -357,7 +357,101 @@ describe('create field', () => {
     });
   });
 
-  describe('create belongsTo field', () => {});
+  describe('create belongsTo field', () => {
+    let collectionManager: CollectionManager;
+    let userCollectionModel: CollectionModel;
+    let profileCollectionModel: CollectionModel;
+    let postCollectionModel: CollectionModel;
+
+    beforeEach(async () => {
+      collectionManager = new CollectionManager(db);
+
+      userCollectionModel = await collectionManager.createCollection({
+        name: 'users',
+      });
+
+      await userCollectionModel.migrate();
+
+      profileCollectionModel = await collectionManager.createCollection({
+        name: 'profiles',
+      });
+
+      await profileCollectionModel.migrate();
+
+      postCollectionModel = await collectionManager.createCollection({
+        name: 'posts',
+      });
+    });
+
+    it('should not create belongsTo without revereField', async () => {
+      const options: FieldOptions = {
+        interface: 'linkTo',
+        type: 'belongsTo',
+        collectionName: 'profiles',
+        target: 'users',
+        uiSchema: {
+          test: 'schema',
+        },
+      };
+
+      await expect(async () => {
+        await collectionManager.createField(options);
+      }).rejects.toThrow(Error);
+    });
+
+    it('should create belongsTo with hasOne reverseField', async () => {
+      const options: FieldOptions = {
+        interface: 'linkTo',
+        type: 'belongsTo',
+        collectionName: 'profiles',
+        target: 'users',
+        name: 'user',
+        reverseField: {
+          name: 'profile',
+          type: 'hasOne',
+        },
+        uiSchema: {
+          test: 'schema',
+        },
+      };
+
+      await collectionManager.createField(options);
+      await userCollectionModel.migrate();
+      await profileCollectionModel.migrate();
+
+      expect(db.getCollection('users').model.associations['profile']).toBeDefined();
+      expect(db.getCollection('users').model.associations['profile'].associationType).toEqual('HasOne');
+      expect(db.getCollection('profiles').model.associations['user']).toBeDefined();
+      expect(db.getCollection('profiles').model.associations['user'].associationType).toEqual('BelongsTo');
+    });
+
+    it('should create belongsTo with hasMany reverseField', async () => {
+      const options: FieldOptions = {
+        interface: 'linkTo',
+        type: 'belongsTo',
+        collectionName: 'posts',
+        target: 'users',
+        name: 'user',
+        reverseField: {
+          name: 'posts',
+          type: 'hasMany',
+        },
+        uiSchema: {
+          test: 'schema',
+        },
+      };
+
+      await collectionManager.createField(options);
+      await userCollectionModel.migrate();
+      await postCollectionModel.migrate();
+
+      expect(db.getCollection('users').model.associations['posts']).toBeDefined();
+      expect(db.getCollection('users').model.associations['posts'].associationType).toEqual('HasMany');
+
+      expect(db.getCollection('posts').model.associations['user']).toBeDefined();
+      expect(db.getCollection('posts').model.associations['user'].associationType).toEqual('BelongsTo');
+    });
+  });
 
   it('should create subTable fields', async () => {
     const collectionManger = new CollectionManager(db);

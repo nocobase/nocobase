@@ -100,10 +100,6 @@ export class CollectionModel {
         newFieldValues['reverseKey'] = options.reverseKey;
       }
 
-      if (options.reverseField) {
-        newFieldValues['reverseField'] = options.reverseField;
-      }
-
       const isSubTableField = FieldModel.isSubTableOptions(options);
       // sub table
       if (isSubTableField) {
@@ -158,9 +154,11 @@ export class CollectionModel {
 
         const reverseFieldOptions: FieldOptions = {
           type: reverseFieldType,
+          name: lodash.get(options, 'reverseField.name'),
           reverseKey: fieldInstance.get('key'),
           collectionName: newFieldValues.options.target,
           target: options.collectionName,
+          uiSchema: lodash.get(options, 'reverseField.uiSchema'),
         };
 
         const reverseFieldInstance = await this.addField(reverseFieldOptions, db, transaction);
