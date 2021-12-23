@@ -1,6 +1,6 @@
 import { mockDatabase } from './index';
 import path from 'path';
-import { Model } from '..';
+import { Model, Repository } from '..';
 
 describe('database', () => {
   test('import', async () => {
@@ -173,23 +173,50 @@ describe('database', () => {
         this.setDataValue('abc', 'abc');
       }
     }
-
     const db = mockDatabase();
 
+    //
     db.registerModels({
       CustomModel,
     });
 
+    //
     const Test = db.collection({
       name: 'tests',
       model: 'CustomModel',
     });
 
+    //
     await Test.sync();
 
-    const test = await Test.model.create<any>();
+    const test = await Test.repository.create<CustomModel>({});
     test.customMethod();
+
     expect(test.get('abc')).toBe('abc');
   });
 
+  test('custom repository', async () => {
+    const mockFn = jest.fn();
+
+    class CustomRepository extends Repository {
+      customMethod() {
+        mockFn();
+      }
+    }
+
+    const db = mockDatabase();
+
+    db.registerRepositories({
+      CustomRepository,
+    });
+
+    const Test = db.collection({
+      name: 'tests',
+      repository: 'CustomRepository',
+    });
+
+    // @ts-ignore
+    Test.repository.customMethod();
+    expect(mockFn).toBeCalled();
+  });
 });
