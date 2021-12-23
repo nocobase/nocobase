@@ -81,9 +81,85 @@ const Post = db.collection({
 });
 ```
 
-自定义 model 见 [db.registerModels()](#dbregistermodels)
+##### Model 和 Repository
 
-自定义 repository 见 [db.registerRepositories()](#dbregisterrepositories)
+Database 中，内置了 Active Record 模式的 Model 与 Data Mapper 模式的 Repository 来解决数据的 CRUD。但实际场景中，内置的 CRUD 并不能完全满足需求，我们可能需要为某些 Collection 提供自定义的数据操作方法。
+
+假设我们要为用户创建一个按 first name 和 last name 返回用户的函数。如：
+
+```ts
+const User = db.collection({
+  name: 'users',
+  fields: [
+    { type: 'string', name: 'firstName' },
+    { type: 'string', name: 'lastName' },
+  ],
+});
+```
+
+##### Active Record 模式的 Model
+
+```ts
+class UserModel extends Model {
+  static findByName(firstName: string, lastName: string): UserModel {
+    return this.findOne({
+      where: {
+        firstName,
+        lastName,
+      },
+    });
+  }
+}
+
+db.registerModels({
+  UserModel,
+});
+
+const User = db.collection({
+  name: 'users',
+  model: 'UserModel',
+  fields: [
+    { type: 'string', name: 'firstName' },
+    { type: 'string', name: 'lastName' },
+  ],
+});
+
+await User.model.findByName('San', 'Zhang');
+```
+
+##### Data Mapper 模式的 Repository
+
+```ts
+class UserRepository extends Repository {
+  static findByName(firstName: string, lastName: string): Model {
+    return this.findOne({
+      where: {
+        firstName,
+        lastName,
+      },
+    });
+  }
+}
+
+db.registerRepositories({
+  UserRepository,
+});
+
+const User = db.collection({
+  name: 'users',
+  model: 'UserRepository',
+  fields: [
+    { type: 'string', name: 'firstName' },
+    { type: 'string', name: 'lastName' },
+  ],
+});
+
+await User.repository.findByName('San', 'Zhang');
+```
+
+##### Model 和 Repository 选择哪一个？
+
+从模式来说，Active Record 和 Data Mapper 是两种不一样的策略。Active Record 比较简单，适用于简单场景，Data Mapper 在复杂的场景里更适合。
 
 ## `db.constructor()`
 
