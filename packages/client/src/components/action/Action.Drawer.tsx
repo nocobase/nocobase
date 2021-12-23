@@ -1,49 +1,11 @@
-import React, { createContext, useContext, useMemo, useState } from 'react';
+import React, { useContext } from 'react';
 import { createPortal } from 'react-dom';
+import { Drawer } from 'antd';
+import { VisibleContext } from './context';
+import { ComposedActionDrawer } from './types';
 import { observer, RecursionField, useField, useFieldSchema } from '@formily/react';
-import { Button, Drawer } from 'antd';
 
-export const VisibleContext = createContext(null);
-
-const useA = () => {
-  return {
-    async run() {},
-  };
-};
-
-export function useCloseAction() {
-  const [, setVisible] = useContext(VisibleContext);
-  return {
-    async run() {
-      setVisible(false);
-    },
-  };
-}
-
-export const Action: any = observer((props: any) => {
-  const { useAction = useA, onClick, ...others } = props;
-  const [visible, setVisible] = useState(false);
-  const schema = useFieldSchema();
-  const field = useField();
-  const { run } = useAction();
-  return (
-    <VisibleContext.Provider value={[visible, setVisible]}>
-      <Button
-        {...others}
-        onClick={() => {
-          onClick && onClick();
-          setVisible(true);
-          run();
-        }}
-      >
-        {schema.title}
-      </Button>
-      <RecursionField basePath={field.address} schema={schema} onlyRenderProperties />
-    </VisibleContext.Provider>
-  );
-});
-
-Action.Drawer = observer((props: any) => {
+export const ActionDrawer: ComposedActionDrawer = observer((props) => {
   const [visible, setVisible] = useContext(VisibleContext);
   const schema = useFieldSchema();
   const field = useField();
@@ -52,6 +14,8 @@ Action.Drawer = observer((props: any) => {
       {createPortal(
         <Drawer
           title={schema.title}
+          {...props}
+          destroyOnClose
           visible={visible}
           onClose={() => setVisible(false)}
           footer={
@@ -80,8 +44,10 @@ Action.Drawer = observer((props: any) => {
   );
 });
 
-Action.Drawer.Footer = observer((props: any) => {
+ActionDrawer.Footer = observer(() => {
   const field = useField();
   const schema = useFieldSchema();
   return <RecursionField basePath={field.address} schema={schema} onlyRenderProperties />;
 });
+
+export default ActionDrawer;

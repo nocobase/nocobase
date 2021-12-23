@@ -1,19 +1,19 @@
 import React, { createContext, useContext, useMemo, useState } from 'react';
 import { uid } from '@formily/shared';
 import { createForm, Form } from '@formily/core';
+import { useCookieState } from 'ahooks';
+import { useTranslation } from 'react-i18next';
 import {
-  createSchemaField,
+  Schema,
   FormProvider,
+  RecursionField,
+  createSchemaField,
   IRecursionFieldProps,
   ISchemaFieldProps,
-  ISchemaFieldReactFactoryOptions,
-  RecursionField,
-  Schema,
-  SchemaExpressionScopeContext,
   SchemaOptionsContext,
   SchemaReactComponents,
+  SchemaExpressionScopeContext,
 } from '@formily/react';
-import { useCookieState } from 'ahooks';
 
 export interface ISchemaComponentContext {
   scope?: any;
@@ -33,9 +33,11 @@ export interface ISchemaComponentProvider {
 export const SchemaComponentContext = createContext<ISchemaComponentContext>({});
 
 export const SchemaComponentProvider: React.FC<ISchemaComponentProvider> = (props) => {
-  const { components, scope, children } = props;
+  const { components, children } = props;
   const [, setUid] = useState(uid());
   const form = props.form || useMemo(() => createForm(), []);
+  const { t } = useTranslation();
+  const scope = { ...props.scope, t };
   const SchemaField = useMemo(
     () =>
       createSchemaField({
@@ -68,13 +70,27 @@ interface IRecursionComponentProps extends IRecursionFieldProps {
   components?: SchemaReactComponents;
 }
 
+export const SchemaOptionsExpressionScopeProvider: React.FC = (props) => {
+  const { components, scope } = useContext(SchemaComponentContext);
+  return (
+    <SchemaOptionsContext.Provider
+      value={{
+        scope,
+        components,
+      }}
+    >
+      <SchemaExpressionScopeContext.Provider value={{ scope }}>{props.children}</SchemaExpressionScopeContext.Provider>
+    </SchemaOptionsContext.Provider>
+  );
+};
+
 export const RecursionComponent: React.FC<IRecursionComponentProps> = (props) => {
   const { components, scope } = useContext(SchemaComponentContext);
   return (
     <SchemaOptionsContext.Provider
       value={{
-        components: { ...props.components, ...components },
         scope: { ...props.scope, ...scope },
+        components: { ...props.components, ...components },
       }}
     >
       <SchemaExpressionScopeContext.Provider value={{ scope }}>

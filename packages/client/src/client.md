@@ -274,8 +274,8 @@ export default function App() {
 
 这个例子讲述了怎么将组件转换为可 Schema 配置，虽然达成了某种效果，但并不是一个很好的示例。
 
-- 一个 property 就是一个 Schema 节点，Drawer 的 Schema 由平行的两个 schema 节点组成；
-- 需要额外的自定义 scope 支持 drawer 组件 visible 的状态管理，这里自定义的 scope 复用性差；
+- 一个 property 就是一个 Schema 节点，Drawer 的 Schema 由平行的两个 schema 节点组成，不利于管理；
+- 需要额外的自定义 scope 支持 drawer 组件 visible 的状态管理，而且这里自定义的 scope 复用性差；
 - footer 需要特殊处理。在 x-component-props 里加了个 footerSchema 参数。但这个 footerSchema 并不是一个常规的 schema 节点，因为不是在 properties 里，不利于后端 schema 存储的统一规划；
 - 删除 drawer，需要删除两个 schema 节点；
 - 后端如何输出 drawer 这部分的 schema 也非常不方便，因为 drawer 由平行的两个节点组成。
@@ -463,3 +463,4 @@ export default function App() {
   );
 }
 ```
+
