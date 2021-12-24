@@ -118,6 +118,7 @@ export class CollectionModel extends Model {
         metaCollection.repository.relation('fields').of(options.collectionName, 'name')
       );
 
+      // create field instance of collection
       const fieldInstance = await fieldRelationRepository.create({
         values: newFieldValues,
         transaction,

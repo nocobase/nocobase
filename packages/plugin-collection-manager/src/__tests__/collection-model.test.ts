@@ -121,6 +121,7 @@ describe('collection model', () => {
         collectionName: postCollectionModel.getName(),
         interface: 'someInterface',
         type: 'hasMany',
+        name: 'test-hasMany',
         target: commentCollectionModel.getName(),
         uiSchema: {
           title: 'some ui schema',
@@ -143,14 +144,16 @@ describe('collection model', () => {
       expect(hasManyFieldInstance.get('type')).toEqual(options.type);
       expect((await hasManyFieldInstance.getCollection()).get('key')).toEqual(postCollectionModel.getKey());
       expect(hasManyFieldInstance.get('options')).toEqual(options);
-
       // uiSchema Saved
       expect(await hasManyFieldInstance.getUiSchema()).not.toBeNull();
-
       const reverseField = await hasManyFieldInstance.getReverseField();
-
       // reverse key exists
       expect(reverseField).not.toBeNull();
+
+      await postCollectionModel.migrate();
+      const fields = await queryTable(db.getCollection('comments').model, 'comments');
+
+      expect(fields['postId']).toBeDefined();
     });
   });
 
@@ -509,6 +512,7 @@ describe('collection model', () => {
       interface: 'subTable',
       type: 'hasMany',
       collectionName: 'orders',
+      name: 'order-items',
       uiSchema: {
         type: 'array',
         title: '订单详情',
@@ -547,7 +551,6 @@ describe('collection model', () => {
 
     // @ts-ignore
     expect(await fieldInstance.countChildren()).toEqual(2);
-
     await fieldInstance.load();
 
     const ordersCollection = db.getCollection('orders');
@@ -557,5 +560,11 @@ describe('collection model', () => {
     const Target = field.TargetModel;
     expect(Target.rawAttributes['count']).toBeDefined();
     expect(Target.rawAttributes['price']).toBeDefined();
+
+    await orderCollectionModel.migrate();
+
+    const fields = await queryTable(ordersCollection.model, Target.tableName);
+    expect(fields['count']).toBeDefined();
+    expect(fields['price']).toBeDefined();
   });
 });

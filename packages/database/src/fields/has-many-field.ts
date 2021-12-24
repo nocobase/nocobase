@@ -95,11 +95,14 @@ export class HasManyField extends RelationField {
       delete collection.model.associations[this.name];
     }
 
-    const association = collection.model.hasMany(Target, {
+    const options = {
       as: this.name,
       foreignKey: this.foreignKey,
       ...omit(this.options, ['name', 'type', 'target']),
-    });
+    };
+
+    console.log({ options });
+    const association = collection.model.hasMany(Target, options);
 
     // inverse relation
     // this.TargetModel.belongsTo(collection.model);

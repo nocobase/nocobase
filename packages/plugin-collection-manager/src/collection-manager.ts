@@ -40,7 +40,12 @@ export class CollectionManager {
     });
 
     // sync meta collection to database
-    await db.getCollection('collections').sync();
+    await db.getCollection('collections').sync({
+      force: false,
+      alter: {
+        drop: false,
+      },
+    });
   }
 
   static async createCollection(collectionOptions: CollectionOptions, db: Database): Promise<CollectionModel> {
