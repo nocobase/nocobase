@@ -33,7 +33,11 @@ export default class PluginCollectionManager extends Plugin {
     await CollectionManager.import(db);
 
     this.app.resourcer.registerActionHandler('collections:create', collectionsActions.create);
+    this.app.resourcer.registerActionHandler('collections:get', collectionsActions.get);
+
     this.app.resourcer.registerActionHandler('collections.fields:create', fieldActions.create);
+    this.app.resourcer.registerActionHandler('collections.fields:get', fieldActions.get);
+    this.app.resourcer.registerActionHandler('collections.fields:list', fieldActions.list);
 
     db.on('collections.beforeSave', async (model) => {
       if (!model.get('name')) {
@@ -41,47 +45,10 @@ export default class PluginCollectionManager extends Plugin {
       }
     });
 
-    // db.on('collections.afterSave', async (model) => {
-    //   // handle sortable option
-    //   const previousSortOptions = lodash.get(model._previousDataValues, 'sortable');
-    //   const sortOptions = lodash.get(model.get('options'), 'sortable');
-    //
-    //   if (previousSortOptions != sortOptions) {
-    //     const existSortField = await db.getCollection('fields').repository.findOne({
-    //       filter: {
-    //         collectionKey: model.get('key'),
-    //         type: 'sort',
-    //         name: 'auto-sort',
-    //         // additional json query (options.autoSortField = true)
-    //       },
-    //     });
-    //
-    //     if (sortOptions && !existSortField) {
-    //       // add sort field
-    //       await CollectionModel.addField(
-    //         {
-    //           type: 'sort',
-    //           name: 'auto-sort',
-    //         },
-    //         db,
-    //       );
-    //     }
-    //   }
-    // });
-
     db.on('fields.beforeCreate', async (model) => {
       if (!model.get('name')) {
         model.set('name', model.get('key'));
       }
-
-      // const fieldModel = new FieldModel(model, db);
-      // fieldModel.validate();
-    });
-
-    db.on('fields.afterSave', async (model) => {
-      // const collection = await model.getCollection();
-      // const collectionModel = new CollectionModel(collection, db);
-      // await collectionModel.migrate();
     });
   }
 }

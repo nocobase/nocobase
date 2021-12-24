@@ -9,6 +9,10 @@ describe('collection manager', () => {
   let app: MockServer;
   let db: Database;
 
+  afterEach(async () => {
+    await app.destroy();
+  });
+
   beforeEach(async () => {
     app = mockServer({
       registerActions: true,
@@ -16,9 +20,10 @@ describe('collection manager', () => {
         logging: console.log,
       },
     });
+
     db = app.db;
 
-    mockUiSchema(db);
+    await mockUiSchema(db);
     app.plugin(PluginCollectionManager);
 
     await app.load();
@@ -53,5 +58,23 @@ describe('collection manager', () => {
 
     const tableFields = await queryTable(model, 'tests');
     expect(tableFields['id']).toBeDefined();
+  });
+
+  it('can create collection with fields', async () => {
+    await CollectionManager.createCollection(
+      {
+        name: 'tests',
+        fields: [
+          {
+            type: 'string',
+            name: 'name',
+          },
+        ],
+      },
+      db,
+    );
+
+    console.log(await db.getCollection('fields').repository.find());
+    expect(await db.getCollection('fields').repository.count()).toEqual(1);
   });
 });

@@ -3,6 +3,7 @@ import { Database } from '@nocobase/database';
 import { Action } from '@nocobase/resourcer';
 import lodash from 'lodash';
 import * as actions from './actions';
+export * from './actions';
 
 export type Next = () => Promise<any>;
 

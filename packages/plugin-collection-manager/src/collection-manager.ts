@@ -74,6 +74,21 @@ export class CollectionManager {
         );
       }
 
+      const fields = lodash.get(collectionOptions, 'fields');
+
+      if (lodash.isArray(fields)) {
+        for (const fieldOption of fields) {
+          await CollectionModel.addField(
+            {
+              collectionName: collectionInstance.getName(),
+              ...fieldOption,
+            },
+            db,
+            transaction,
+          );
+        }
+      }
+
       await transaction.commit();
       return collectionInstance;
     } catch (err) {

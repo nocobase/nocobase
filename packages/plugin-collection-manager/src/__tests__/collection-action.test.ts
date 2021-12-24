@@ -1,7 +1,8 @@
 import { MockServer, mockServer } from '@nocobase/test';
-import { Database } from '@nocobase/database';
+import { Database, HasManyRepository } from '@nocobase/database';
 import PluginCollectionManager from '../server';
 import { mockUiSchema } from './mockUiSchema';
+import objectContaining = jasmine.objectContaining;
 
 describe('collection resource', () => {
   let app: MockServer;
@@ -14,11 +15,7 @@ describe('collection resource', () => {
   beforeEach(async () => {
     app = mockServer({
       registerActions: true,
-      database: {
-        dialect: 'postgres',
-        database: 'nocobase_test',
-        username: 'chareice',
-      },
+      database: {},
     });
     db = app.db;
 
@@ -32,232 +29,287 @@ describe('collection resource', () => {
     await app.load();
   });
 
-  test('create collection', async () => {
-    const response = await app
-      .agent()
-      .resource('collections')
-      .create({
-        values: {
+  describe('create action', () => {
+    test('create collection', async () => {
+      const response = await app
+        .agent()
+        .resource('collections')
+        .create({
+          values: {
+            name: 'tests',
+          },
+        });
+
+      expect(response.statusCode).toEqual(200);
+      const metaCollection = db.getCollection('collections');
+
+      const testCollectionModel = await metaCollection.repository.findOne({
+        filter: {
           name: 'tests',
         },
       });
 
-    expect(response.statusCode).toEqual(200);
-    const metaCollection = db.getCollection('collections');
+      expect(testCollectionModel).toBeDefined();
+      expect(testCollectionModel.get('key')).toBeDefined();
+      expect(testCollectionModel.get('name')).toEqual('tests');
 
-    const testCollectionModel = await metaCollection.repository.findOne({
-      filter: {
-        name: 'tests',
-      },
+      expect(db.getCollection('tests')).toBeDefined();
     });
 
-    expect(testCollectionModel).toBeDefined();
-    expect(testCollectionModel.get('key')).toBeDefined();
-    expect(testCollectionModel.get('name')).toEqual('tests');
+    test('create collection without name', async () => {
+      const response = await app.agent().resource('collections').create({
+        values: {},
+      });
 
-    expect(db.getCollection('tests')).toBeDefined();
-  });
+      expect(response.statusCode).toEqual(200);
+      const metaCollection = db.getCollection('collections');
 
-  test('create collection without name', async () => {
-    const response = await app.agent().resource('collections').create({
-      values: {},
+      const testCollectionModel = await metaCollection.repository.findOne();
+      expect(testCollectionModel).toBeDefined();
+      expect(testCollectionModel.get('name')).toBeDefined();
+      expect(testCollectionModel.get('name')).toEqual(testCollectionModel.get('key'));
     });
 
-    expect(response.statusCode).toEqual(200);
-    const metaCollection = db.getCollection('collections');
+    test('create collection with sort field', async () => {
+      const response = await app
+        .agent()
+        .resource('collections')
+        .create({
+          values: {
+            name: 'tests',
+            sortable: true,
+          },
+        });
 
-    const testCollectionModel = await metaCollection.repository.findOne();
-    expect(testCollectionModel).toBeDefined();
-    expect(testCollectionModel.get('name')).toBeDefined();
-    expect(testCollectionModel.get('name')).toEqual(testCollectionModel.get('key'));
-  });
+      expect(response.statusCode).toEqual(200);
 
-  test('create collection with sort field', async () => {
-    const response = await app
-      .agent()
-      .resource('collections')
-      .create({
-        values: {
+      const testCollectionModel = await db.getCollection('collections').repository.findOne({
+        filter: {
           name: 'tests',
-          sortable: true,
         },
       });
 
-    expect(response.statusCode).toEqual(200);
-
-    const testCollectionModel = await db.getCollection('collections').repository.findOne({
-      filter: {
-        name: 'tests',
-      },
+      const fieldCollection = db.getCollection('fields');
+      const sortField = await fieldCollection.repository.findOne();
+      expect(sortField).toBeDefined();
+      expect(sortField.get('type')).toEqual('sort');
     });
 
-    const fieldCollection = db.getCollection('fields');
-    const sortField = await fieldCollection.repository.findOne();
-    expect(sortField).toBeDefined();
-    expect(sortField.get('type')).toEqual('sort');
-  });
+    test('create collection with fields', async () => {
+      await app
+        .agent()
+        .resource('collections')
+        .create({
+          values: {
+            name: 'users',
+          },
+        });
 
-  test('create collection with fields', async () => {
-    await app
-      .agent()
-      .resource('collections')
-      .create({
-        values: {
+      const userCollectionModel = await db.getCollection('collections').repository.findOne({
+        filter: {
           name: 'users',
         },
       });
 
-    const userCollectionModel = await db.getCollection('collections').repository.findOne({
-      filter: {
-        name: 'users',
-      },
+      expect(userCollectionModel).toBeDefined();
+
+      const response = await app
+        .agent()
+        .resource('collections.fields')
+        .create({
+          associatedIndex: 'users',
+          values: {
+            name: 'name',
+            type: 'string',
+          },
+        });
+
+      expect(response.statusCode).toEqual(200);
+
+      // @ts-ignore
+      const fields = await userCollectionModel.getFields();
+      expect(fields[0]).toBeDefined();
+      expect(fields[0].get('name')).toEqual('name');
+      expect(fields[0].get('type')).toEqual('string');
+
+      const collections = db.getCollection('users');
+      expect(collections.getField('name')).toBeDefined();
     });
 
-    expect(userCollectionModel).toBeDefined();
+    test('create collection with subTable field', async () => {
+      await app
+        .agent()
+        .resource('collections')
+        .create({
+          values: { name: 'orders' },
+        });
 
-    const response = await app
-      .agent()
-      .resource('collections.fields')
-      .create({
-        associatedIndex: 'users',
-        values: {
-          name: 'name',
-          type: 'string',
-        },
-      });
-
-    expect(response.statusCode).toEqual(200);
-
-    // @ts-ignore
-    const fields = await userCollectionModel.getFields();
-    expect(fields[0]).toBeDefined();
-    expect(fields[0].get('name')).toEqual('name');
-    expect(fields[0].get('type')).toEqual('string');
-
-    const collections = db.getCollection('users');
-    expect(collections.getField('name')).toBeDefined();
-  });
-
-  test('create collection with subTable field', async () => {
-    await app
-      .agent()
-      .resource('collections')
-      .create({
-        values: { name: 'orders' },
-      });
-
-    const response = await app
-      .agent()
-      .resource('collections.fields')
-      .create({
-        associatedIndex: 'orders',
-        values: {
-          interface: 'subTable',
-          type: 'hasMany',
-          uiSchema: {
-            type: 'array',
-            title: '这是一个子表格字段',
-            'x-decorator': 'FormItem',
-            'x-component': 'Table',
-            'x-component-props': {},
-          },
-          children: [
-            {
-              interface: 'input',
-              type: 'string',
-              uiSchema: {
-                type: 'string',
-                title: '这是一个单行文本字段',
-                'x-component': 'Input',
-                'x-decorator': 'FormItem',
-              },
+      const response = await app
+        .agent()
+        .resource('collections.fields')
+        .create({
+          associatedIndex: 'orders',
+          values: {
+            interface: 'subTable',
+            type: 'hasMany',
+            uiSchema: {
+              type: 'array',
+              title: '这是一个子表格字段',
+              'x-decorator': 'FormItem',
+              'x-component': 'Table',
+              'x-component-props': {},
             },
-          ],
+            children: [
+              {
+                interface: 'input',
+                type: 'string',
+                uiSchema: {
+                  type: 'string',
+                  title: '这是一个单行文本字段',
+                  'x-component': 'Input',
+                  'x-decorator': 'FormItem',
+                },
+              },
+            ],
+          },
+        });
+
+      expect(response.statusCode).toEqual(200);
+    });
+
+    test('create collection with belongsToMany field', async () => {
+      await app
+        .agent()
+        .resource('collections')
+        .create({
+          values: { name: 'posts' },
+        });
+
+      expect(db.getCollection('posts')).toBeDefined();
+      await app
+        .agent()
+        .resource('collections')
+        .create({
+          values: { name: 'tags' },
+        });
+
+      expect(db.getCollection('tags')).toBeDefined();
+
+      const postCollectionModel = await db.getCollection('collections').repository.findOne({
+        filter: {
+          name: 'posts',
         },
       });
 
-    expect(response.statusCode).toEqual(200);
+      await app
+        .agent()
+        .resource('collections.fields')
+        .create({
+          associatedIndex: 'posts',
+          values: {
+            interface: 'linkTo',
+            name: 'tags',
+            type: 'belongsToMany',
+            target: 'tags',
+            uiSchema: {
+              type: 'array',
+              title: '这是一个关联字段',
+              'x-component': 'RecordPicker',
+              'x-component-props': {},
+              'x-decorator': 'FormItem',
+            },
+          },
+        });
+
+      const fieldCollection = db.getCollection('fields');
+      const belongsToManyField = await fieldCollection.repository.findOne({
+        filter: {
+          type: 'belongsToMany',
+        },
+      });
+
+      // field model exists
+      expect(belongsToManyField).toBeDefined();
+
+      // field exists in collection
+      const postsCollection = db.getCollection('posts');
+      const tagsAssociation = postsCollection.getField('tags');
+      expect(tagsAssociation).toBeDefined();
+
+      // @ts-ignore
+      await db.getCollection('collections').repository.load();
+
+      // reverse association exists
+      const reverseKey = (
+        await db.getCollection('fields').repository.findOne({
+          filter: {
+            name: 'tags',
+          },
+        })
+      ).get('reverseKey');
+
+      const reverseField = await db.getCollection('fields').repository.findOne({
+        filter: {
+          name: reverseKey,
+        },
+      });
+
+      const tagCollection = db.getCollection('tags');
+      const postAssociation = tagCollection.getField(reverseField.get('name') as string);
+      expect(postAssociation).toBeDefined();
+    });
+
+    test('delete collection', async () => {});
   });
 
-  test('create collection with belongsToMany field', async () => {
-    await app
-      .agent()
-      .resource('collections')
-      .create({
-        values: { name: 'posts' },
-      });
-
-    expect(db.getCollection('posts')).toBeDefined();
-    await app
-      .agent()
-      .resource('collections')
-      .create({
-        values: { name: 'tags' },
-      });
-
-    expect(db.getCollection('tags')).toBeDefined();
-
-    const postCollectionModel = await db.getCollection('collections').repository.findOne({
-      filter: {
-        name: 'posts',
-      },
-    });
-
-    await app
-      .agent()
-      .resource('collections.fields')
-      .create({
-        associatedIndex: 'posts',
-        values: {
-          interface: 'linkTo',
-          name: 'tags',
-          type: 'belongsToMany',
-          target: 'tags',
-          uiSchema: {
-            type: 'array',
-            title: '这是一个关联字段',
-            'x-component': 'RecordPicker',
-            'x-component-props': {},
-            'x-decorator': 'FormItem',
+  describe('get action', () => {
+    test('get collection', async () => {
+      await app
+        .agent()
+        .resource('collections')
+        .create({
+          values: {
+            name: 'tests',
           },
-        },
+        });
+
+      const response = await app.agent().resource('collections').get({
+        resourceIndex: 'tests',
       });
 
-    const fieldCollection = db.getCollection('fields');
-    const belongsToManyField = await fieldCollection.repository.findOne({
-      filter: {
-        type: 'belongsToMany',
-      },
+      expect(response.statusCode).toEqual(200);
+      expect(response.body.data.name).toEqual('tests');
     });
 
-    // field model exists
-    expect(belongsToManyField).toBeDefined();
+    test('get collection fields', async () => {
+      await app
+        .agent()
+        .resource('collections')
+        .create({
+          values: {
+            name: 'users',
+            fields: [
+              {
+                type: 'string',
+                name: 'name',
+              },
+            ],
+          },
+        });
 
-    // field exists in collection
-    const postsCollection = db.getCollection('posts');
-    const tagsAssociation = postsCollection.getField('tags');
-    expect(tagsAssociation).toBeDefined();
+      let response = await app.agent().resource('collections.fields').list({
+        associatedIndex: 'users',
+      });
 
-    // @ts-ignore
-    await db.getCollection('collections').repository.load();
+      expect(response.statusCode).toEqual(200);
+      expect(response.body.meta.count).toEqual(1);
 
-    // reverse association exists
-    const reverseKey = (
-      await db.getCollection('fields').repository.findOne({
-        filter: {
-          name: 'tags',
-        },
-      })
-    ).get('reverseKey');
+      response = await app.agent().resource('collections.fields').get({
+        associatedIndex: 'users',
+        resourceIndex: 'name',
+      });
 
-    const reverseField = await db.getCollection('fields').repository.findOne({
-      filter: {
-        name: reverseKey,
-      },
+      expect(response.statusCode).toEqual(200);
     });
-
-    const tagCollection = db.getCollection('tags');
-    const postAssociation = tagCollection.getField(reverseField.get('name') as string);
-    expect(postAssociation).toBeDefined();
   });
 });
