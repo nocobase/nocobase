@@ -4,6 +4,8 @@ import { mockUiSchema } from './mockUiSchema';
 import PluginCollectionManager from '../server';
 import { CollectionManager, FieldOptions } from '../collection-manager';
 import { CollectionModel } from '../models/collection-model';
+import { CollectionRepository } from '../repositories/collection-repository';
+import { queryTable } from './helper';
 
 describe('collection model', () => {
   let app: MockServer;
@@ -16,7 +18,11 @@ describe('collection model', () => {
   beforeEach(async () => {
     app = mockServer({
       registerActions: true,
-      database: {},
+      database: {
+        // dialect: 'postgres',
+        // database: 'nocobase_test',
+        // username: 'chareice',
+      },
     });
     db = app.db;
 
@@ -266,6 +272,11 @@ describe('collection model', () => {
       const ThroughModel = db.sequelize.model(field.through);
       expect(ThroughModel.rawAttributes['unique-title']).toBeDefined();
       expect(ThroughModel.rawAttributes['unique-name']).toBeDefined();
+
+      await postCollectionModel.migrate();
+      const fields = await queryTable(postsCollection.model, field.through);
+      expect(fields['unique-title']).toBeDefined();
+      expect(fields['unique-name']).toBeDefined();
     });
   });
 
@@ -338,7 +349,7 @@ describe('collection model', () => {
           type: 'string',
           collectionName: 'users',
           name: 'unique-name',
-          unique: true,
+          allowNull: false,
         },
         db,
       );

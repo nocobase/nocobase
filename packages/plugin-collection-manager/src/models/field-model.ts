@@ -4,7 +4,23 @@ import lodash from 'lodash';
 import { CollectionModel } from './collection-model';
 
 export class FieldModel extends Model {
-  migrate() {}
+  async migrate() {
+    await this.load();
+
+    const collectionModel = await this.getCollectionModel();
+    await collectionModel.migrate();
+  }
+
+  async getCollectionModel(): Promise<CollectionModel> {
+    // @ts-ignore
+    const db: Database = this.constructor.database;
+
+    return (await db.getCollection('collections').repository.findOne({
+      filter: {
+        key: this.get('collectionKey') as string,
+      },
+    })) as CollectionModel;
+  }
 
   async load() {
     // @ts-ignore
@@ -27,11 +43,7 @@ export class FieldModel extends Model {
     let collection = db.getCollection(this.get('collectionName') as string);
 
     if (!collection) {
-      const collectionInstance = (await db.getCollection('collections').repository.findOne({
-        filter: {
-          key: this.get('collectionKey') as string,
-        },
-      })) as CollectionModel;
+      const collectionInstance = await this.getCollectionModel();
 
       collection = await collectionInstance.load({ loadField: false });
     }

@@ -54,7 +54,14 @@ export class CollectionModel extends Model {
   }
 
   async migrate() {
-    await this.load();
+    const collection = await this.load();
+
+    await collection.sync({
+      force: false,
+      alter: {
+        drop: false,
+      },
+    });
   }
 
   asCollectionOptions() {

@@ -47,7 +47,7 @@ export class CollectionManager {
     const options = new MetaCollectionOptions(collectionOptions);
 
     const collectionInstance = await db.getCollection('collections').repository.create<CollectionModel>({
-      values: options.collectionValues,
+      values: options.asCollectionOptions(),
     });
 
     return collectionInstance;

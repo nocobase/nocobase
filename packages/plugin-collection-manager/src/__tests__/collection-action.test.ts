@@ -2,6 +2,7 @@ import { MockServer, mockServer } from '@nocobase/test';
 import { Database } from '@nocobase/database';
 import PluginCollectionManager from '../server';
 import { mockUiSchema } from './mockUiSchema';
+
 describe('collection resource', () => {
   let app: MockServer;
   let db: Database;

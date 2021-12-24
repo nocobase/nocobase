@@ -12,8 +12,9 @@ export class MetaCollectionOptions {
     return this.options.name;
   }
 
-  get collectionValues() {
+  asCollectionOptions() {
     return {
+      ...this.options,
       name: this.options.name,
       title: this.options.title,
       options: this.options,
