@@ -1,9 +1,7 @@
 import { MockServer, mockServer } from '@nocobase/test';
-import { Database, HasManyRepository } from '@nocobase/database';
+import { Database } from '@nocobase/database';
 import PluginCollectionManager from '../server';
 import { mockUiSchema } from './mockUiSchema';
-import objectContaining = jasmine.objectContaining;
-import { destroy, remove } from '@nocobase/actions';
 
 describe('collection resource', () => {
   let app: MockServer;

@@ -11,12 +11,14 @@ const collectionsActions = {
     await next();
   },
 
-  get: getActionBuilder((action: Action) => {
-    return {
-      filter: {
-        name: action.params.resourceIndex,
-      },
-    };
+  get: getActionBuilder({
+    filterArgBuilder(action: Action) {
+      return {
+        filter: {
+          name: action.params.resourceIndex,
+        },
+      };
+    },
   }),
 };
 
