@@ -50,6 +50,12 @@ export class CollectionModel extends Model {
       await fieldModel.load();
     }
 
+    const deleteNames = lodash.difference(Array.from(existsFields.keys()), Object.keys(fieldsAsObject));
+
+    for (const deleteName of deleteNames) {
+      collection.removeField(deleteName);
+    }
+
     return collection;
   }
 

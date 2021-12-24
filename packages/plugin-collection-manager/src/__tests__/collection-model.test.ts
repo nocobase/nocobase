@@ -4,7 +4,6 @@ import { mockUiSchema } from './mockUiSchema';
 import PluginCollectionManager from '../server';
 import { CollectionManager, FieldOptions } from '../collection-manager';
 import { CollectionModel } from '../models/collection-model';
-import { CollectionRepository } from '../repositories/collection-repository';
 import { queryTable } from './helper';
 
 describe('collection model', () => {
@@ -495,6 +494,41 @@ describe('collection model', () => {
 
       expect(db.getCollection('posts').model.associations['user']).toBeDefined();
       expect(db.getCollection('posts').model.associations['user'].associationType).toEqual('BelongsTo');
+    });
+  });
+
+  describe('delete field', () => {
+    it('should delete field', async () => {
+      const UserModel = await CollectionManager.createCollection(
+        {
+          name: 'users',
+          fields: [
+            {
+              type: 'integer',
+              name: 'age',
+            },
+            {
+              type: 'string',
+              name: 'firstName',
+            },
+          ],
+        },
+        db,
+      );
+
+      const userCollection = await UserModel.load();
+
+      expect(userCollection.getField('age')).toBeDefined();
+
+      await db.getCollection('fields').repository.destroy({
+        filter: {
+          name: 'age',
+        },
+      });
+
+      await UserModel.load();
+
+      expect(userCollection.getField('age')).not.toBeDefined();
     });
   });
 
