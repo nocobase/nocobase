@@ -3,6 +3,7 @@ import { CollectionOptions } from '@nocobase/database';
 export default {
   name: 'fields',
   title: '字段配置',
+  model: 'FieldModel',
   autoGenId: false,
   sortable: {
     type: 'sort',

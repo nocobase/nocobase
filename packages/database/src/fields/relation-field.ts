@@ -20,7 +20,7 @@ export abstract class RelationField extends Field {
   }
 
   /**
-   * get target model from database by it's name
+   * get target model from database by its name
    * @constructor
    */
   get TargetModel() {

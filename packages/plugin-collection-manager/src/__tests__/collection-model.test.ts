@@ -3,11 +3,9 @@ import { BelongsToManyField, Database, HasManyField, HasOneField } from '@nocoba
 import { mockUiSchema } from './mockUiSchema';
 import PluginCollectionManager from '../server';
 import { CollectionManager, FieldOptions } from '../collection-manager';
-import { before, has } from 'lodash';
-import { CollectionModel } from '../collection-model';
-import { FieldModel } from '../field-model';
+import { CollectionModel } from '../models/collection-model';
 
-describe('create field', () => {
+describe('collection model', () => {
   let app: MockServer;
   let db: Database;
 
@@ -30,32 +28,40 @@ describe('create field', () => {
 
   describe('create normal field', () => {
     it('should sync collection', async () => {
-      const collectionManager = new CollectionManager(db);
-
-      const userCollectionModel = await collectionManager.createCollection({
-        name: 'users',
-      });
+      const userCollectionModel = await CollectionManager.createCollection(
+        {
+          name: 'users',
+        },
+        db,
+      );
 
       await userCollectionModel.migrate();
+
       const usersCollection = db.getCollection('users');
 
-      await collectionManager.createField({
-        interface: 'test',
-        type: 'string',
-        collectionName: 'users',
-        name: 'name',
-      });
+      await CollectionManager.createField(
+        {
+          interface: 'test',
+          type: 'string',
+          collectionName: 'users',
+          name: 'name',
+        },
+        db,
+      );
 
       expect(usersCollection.model.rawAttributes['name']).not.toBeDefined();
       await userCollectionModel.migrate();
       expect(usersCollection.model.rawAttributes['name']).toBeDefined();
 
-      await collectionManager.createField({
-        interface: 'test',
-        type: 'integer',
-        collectionName: 'users',
-        name: 'age',
-      });
+      await CollectionManager.createField(
+        {
+          interface: 'test',
+          type: 'integer',
+          collectionName: 'users',
+          name: 'age',
+        },
+        db,
+      );
       await userCollectionModel.migrate();
 
       expect(usersCollection.model.rawAttributes['age']).toBeDefined();
@@ -63,21 +69,25 @@ describe('create field', () => {
   });
 
   describe('create hasMany Field', () => {
-    let collectionManager: CollectionManager;
     let postCollectionModel: CollectionModel;
     let commentCollectionModel: CollectionModel;
 
     beforeEach(async () => {
-      collectionManager = new CollectionManager(db);
-      postCollectionModel = await collectionManager.createCollection({
-        name: 'posts',
-      });
+      postCollectionModel = await CollectionManager.createCollection(
+        {
+          name: 'posts',
+        },
+        db,
+      );
 
       await postCollectionModel.migrate();
 
-      commentCollectionModel = await collectionManager.createCollection({
-        name: 'comments',
-      });
+      commentCollectionModel = await CollectionManager.createCollection(
+        {
+          name: 'comments',
+        },
+        db,
+      );
 
       await commentCollectionModel.migrate();
     });
@@ -96,7 +106,7 @@ describe('create field', () => {
       };
 
       await expect(async () => {
-        await collectionManager.createField(options);
+        await CollectionManager.createField(options, db);
       }).rejects.toThrow(Error);
     });
 
@@ -114,7 +124,9 @@ describe('create field', () => {
         },
       };
 
-      await collectionManager.createField(options);
+      await CollectionManager.createField(options, db);
+
+      // @ts-ignore
       const hasManyFieldInstance = (await postCollectionModel.getFields())[0];
 
       // field name exists
@@ -137,21 +149,25 @@ describe('create field', () => {
   });
 
   describe('create belongsToMany Field', () => {
-    let collectionManager: CollectionManager;
     let postCollectionModel: CollectionModel;
     let tagsCollectionModel: CollectionModel;
 
     beforeEach(async () => {
-      collectionManager = new CollectionManager(db);
-      postCollectionModel = await collectionManager.createCollection({
-        name: 'posts',
-      });
+      postCollectionModel = await CollectionManager.createCollection(
+        {
+          name: 'posts',
+        },
+        db,
+      );
 
       await postCollectionModel.migrate();
 
-      tagsCollectionModel = await collectionManager.createCollection({
-        name: 'tags',
-      });
+      tagsCollectionModel = await CollectionManager.createCollection(
+        {
+          name: 'tags',
+        },
+        db,
+      );
 
       await tagsCollectionModel.migrate();
     });
@@ -171,17 +187,16 @@ describe('create field', () => {
         },
       };
 
-      const fieldInstance = await collectionManager.createField(options);
+      const fieldInstance = await CollectionManager.createField(options, db);
       expect(fieldInstance).not.toBeNull();
 
       const postsCollection = db.getCollection('posts');
 
-      expect(postsCollection.getField(fieldInstance.get('name'))).not.toBeDefined();
+      expect(postsCollection.getField(fieldInstance.get('name') as string)).not.toBeDefined();
 
-      const fieldModel = new FieldModel(fieldInstance, db);
-      await fieldModel.load();
+      await fieldInstance.load();
 
-      const field = <BelongsToManyField>postsCollection.getField(fieldInstance.get('name'));
+      const field = <BelongsToManyField>postsCollection.getField(fieldInstance.get('name') as string);
       expect(field).toBeDefined();
 
       // through table name
@@ -193,19 +208,25 @@ describe('create field', () => {
     });
 
     it('should create belongsToMany with field options', async () => {
-      await collectionManager.createField({
-        interface: 'test',
-        type: 'string',
-        collectionName: 'posts',
-        name: 'unique-title',
-      });
+      await CollectionManager.createField(
+        {
+          interface: 'test',
+          type: 'string',
+          collectionName: 'posts',
+          name: 'unique-title',
+        },
+        db,
+      );
 
-      await collectionManager.createField({
-        interface: 'test',
-        type: 'string',
-        collectionName: 'tags',
-        name: 'unique-name',
-      });
+      await CollectionManager.createField(
+        {
+          interface: 'test',
+          type: 'string',
+          collectionName: 'tags',
+          name: 'unique-name',
+        },
+        db,
+      );
 
       await postCollectionModel.migrate();
       await tagsCollectionModel.migrate();
@@ -232,14 +253,12 @@ describe('create field', () => {
         },
       };
 
-      const fieldInstance = await collectionManager.createField(options);
-
-      const fieldModel = new FieldModel(fieldInstance, db);
-      await fieldModel.load();
+      const fieldInstance = await CollectionManager.createField(options, db);
+      await fieldInstance.load();
 
       const postsCollection = db.getCollection('posts');
 
-      const field = <BelongsToManyField>postsCollection.getField(fieldInstance.get('name'));
+      const field = <BelongsToManyField>postsCollection.getField(fieldInstance.get('name') as string);
       expect(field).toBeDefined();
 
       // through table name
@@ -251,22 +270,25 @@ describe('create field', () => {
   });
 
   describe('create hasOne field', () => {
-    let collectionManager: CollectionManager;
     let userCollectionModel: CollectionModel;
     let profileCollectionModel: CollectionModel;
 
     beforeEach(async () => {
-      collectionManager = new CollectionManager(db);
-
-      userCollectionModel = await collectionManager.createCollection({
-        name: 'users',
-      });
+      userCollectionModel = await CollectionManager.createCollection(
+        {
+          name: 'users',
+        },
+        db,
+      );
 
       await userCollectionModel.migrate();
 
-      profileCollectionModel = await collectionManager.createCollection({
-        name: 'profiles',
-      });
+      profileCollectionModel = await CollectionManager.createCollection(
+        {
+          name: 'profiles',
+        },
+        db,
+      );
 
       await profileCollectionModel.migrate();
     });
@@ -282,13 +304,12 @@ describe('create field', () => {
         },
       };
 
-      const fieldInstance = await collectionManager.createField(options);
+      const fieldInstance = await CollectionManager.createField(options, db);
       const profileCollection = db.getCollection('profiles');
 
       expect(profileCollection.model.rawAttributes['userId']).toBeUndefined();
 
-      const fieldModel = new FieldModel(fieldInstance, db);
-      await fieldModel.load();
+      await fieldInstance.load();
 
       expect(profileCollection.model.rawAttributes['userId']).toBeDefined();
 
@@ -296,11 +317,13 @@ describe('create field', () => {
 
       const userCollection = db.getCollection('users');
 
-      const association = userCollection.model.associations[fieldInstance.get('name')];
+      const association = userCollection.model.associations[fieldInstance.get('name') as string];
       expect(association).toBeDefined();
       expect(association.associationType).toEqual('HasOne');
 
       await profileCollectionModel.migrate();
+
+      // @ts-ignore
       const reverseField = await fieldInstance.getReverseField();
       // reverse association
       const reverseAssociation = profileCollection.model.associations[reverseField.get('name')];
@@ -309,13 +332,16 @@ describe('create field', () => {
     });
 
     it('should create hasOne field with custom foreignKey', async () => {
-      await collectionManager.createField({
-        interface: 'test',
-        type: 'string',
-        collectionName: 'users',
-        name: 'unique-name',
-        unique: true,
-      });
+      await CollectionManager.createField(
+        {
+          interface: 'test',
+          type: 'string',
+          collectionName: 'users',
+          name: 'unique-name',
+          unique: true,
+        },
+        db,
+      );
 
       await userCollectionModel.migrate();
 
@@ -336,12 +362,10 @@ describe('create field', () => {
         },
       };
 
-      const fieldInstance = await collectionManager.createField(options);
+      const fieldInstance = await CollectionManager.createField(options, db);
       const profileCollection = db.getCollection('profiles');
 
-      const fieldModel = new FieldModel(fieldInstance, db);
-
-      await fieldModel.load();
+      await fieldInstance.load();
 
       await profileCollectionModel.migrate();
 
@@ -350,6 +374,7 @@ describe('create field', () => {
       expect(userNameAttribute.references['key']).toEqual('unique-name');
 
       // expect reverse association exists
+      // @ts-ignore
       const reverseField = await fieldInstance.getReverseField();
       const reverseAssociation = profileCollection.model.associations[reverseField.get('name')];
       expect(reverseAssociation).toBeDefined();
@@ -358,29 +383,35 @@ describe('create field', () => {
   });
 
   describe('create belongsTo field', () => {
-    let collectionManager: CollectionManager;
     let userCollectionModel: CollectionModel;
     let profileCollectionModel: CollectionModel;
     let postCollectionModel: CollectionModel;
 
     beforeEach(async () => {
-      collectionManager = new CollectionManager(db);
-
-      userCollectionModel = await collectionManager.createCollection({
-        name: 'users',
-      });
+      userCollectionModel = await CollectionManager.createCollection(
+        {
+          name: 'users',
+        },
+        db,
+      );
 
       await userCollectionModel.migrate();
 
-      profileCollectionModel = await collectionManager.createCollection({
-        name: 'profiles',
-      });
+      profileCollectionModel = await CollectionManager.createCollection(
+        {
+          name: 'profiles',
+        },
+        db,
+      );
 
       await profileCollectionModel.migrate();
 
-      postCollectionModel = await collectionManager.createCollection({
-        name: 'posts',
-      });
+      postCollectionModel = await CollectionManager.createCollection(
+        {
+          name: 'posts',
+        },
+        db,
+      );
     });
 
     it('should not create belongsTo without revereField', async () => {
@@ -395,7 +426,7 @@ describe('create field', () => {
       };
 
       await expect(async () => {
-        await collectionManager.createField(options);
+        await CollectionManager.createField(options, db);
       }).rejects.toThrow(Error);
     });
 
@@ -415,7 +446,7 @@ describe('create field', () => {
         },
       };
 
-      await collectionManager.createField(options);
+      await CollectionManager.createField(options, db);
       await userCollectionModel.migrate();
       await profileCollectionModel.migrate();
 
@@ -441,7 +472,7 @@ describe('create field', () => {
         },
       };
 
-      await collectionManager.createField(options);
+      await CollectionManager.createField(options, db);
       await userCollectionModel.migrate();
       await postCollectionModel.migrate();
 
@@ -454,11 +485,12 @@ describe('create field', () => {
   });
 
   it('should create subTable fields', async () => {
-    const collectionManger = new CollectionManager(db);
-
-    const orderCollectionModel = await collectionManger.createCollection({
-      name: 'orders',
-    });
+    const orderCollectionModel = await CollectionManager.createCollection(
+      {
+        name: 'orders',
+      },
+      db,
+    );
 
     await orderCollectionModel.migrate();
 
@@ -499,16 +531,16 @@ describe('create field', () => {
       ],
     };
 
-    const fieldInstance = await collectionManger.createField(options);
+    const fieldInstance = await CollectionManager.createField(options, db);
     expect(fieldInstance).toBeDefined();
 
+    // @ts-ignore
     expect(await fieldInstance.countChildren()).toEqual(2);
 
-    const fieldModel = new FieldModel(fieldInstance, db);
-    await fieldModel.load();
+    await fieldInstance.load();
 
     const ordersCollection = db.getCollection('orders');
-    const field = <HasManyField>ordersCollection.getField(fieldInstance.get('name'));
+    const field = <HasManyField>ordersCollection.getField(fieldInstance.get('name') as string);
     expect(field).toBeDefined();
 
     const Target = field.TargetModel;

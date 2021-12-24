@@ -5,6 +5,8 @@ export default {
   title: '数据表配置',
   sortable: 'sort',
   autoGenId: false,
+  repository: 'CollectionRepository',
+  model: 'CollectionModel',
   fields: [
     {
       type: 'uid',

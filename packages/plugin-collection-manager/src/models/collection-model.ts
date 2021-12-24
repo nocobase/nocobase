@@ -1,74 +1,66 @@
-import { Model, Transaction } from 'sequelize';
-import { MetaCollectionOptions } from './meta-collection-options';
-import { Collection, Database, HasManyRepository } from '@nocobase/database';
-import { FieldOptions } from './collection-manager';
-import lodash, { random } from 'lodash';
+import { Collection, Database, HasManyRepository, Model } from '@nocobase/database';
+import { FieldOptions } from '../collection-manager';
 import { FieldModel } from './field-model';
+import lodash from 'lodash';
+import { Transaction } from 'sequelize';
 
-export class CollectionModel {
-  model: Model;
-  db: Database;
-
-  options: MetaCollectionOptions;
-
-  constructor(model: Model, db: Database) {
-    this.model = model;
-    this.db = db;
-    this.options = new MetaCollectionOptions(model.get('options'));
-  }
-
-  async migrate() {
-    const collection = await this.load();
-    await collection.sync({
-      force: true,
-      // force: false,
-      // alter: {
-      //   drop: false,
-      // },
-    });
-  }
-
-  // load collection to database
-  async load(): Promise<Collection> {
-    const newFields = await this.getFields();
-    const newFieldsAsObject = newFields.reduce((carry, field) => {
-      carry[field.get('name')] = field;
-      return carry;
-    }, {});
-
-    let existCollection = this.db.getCollection(this.getName());
-
-    if (!existCollection) {
-      // create new collection
-      existCollection = this.db.collection({
-        name: this.getName(),
-      });
-    }
-
-    const existsFields = existCollection.fields;
-
-    // add field
-    const addFieldNames = lodash.difference(Object.keys(newFieldsAsObject), Array.from(existsFields.keys()));
-
-    addFieldNames.forEach((addFieldName) => {
-      const fieldModel = new FieldModel(newFieldsAsObject[addFieldName], this.db);
-      existCollection.addField(addFieldName, fieldModel.asFieldOption());
-    });
-
-    // delete field
-    return existCollection;
+export class CollectionModel extends Model {
+  getKey() {
+    return this.get('key') as string;
   }
 
   getName() {
-    return this.model.get('name') as string;
+    return this.get('name') as string;
   }
 
-  getKey() {
-    return this.model.get('key') as string;
+  async load(loadOptions?: { loadField: boolean }): Promise<Collection> {
+    const instance = this;
+
+    // @ts-ignore
+    const db: Database = this.constructor.database;
+
+    const options = instance.asCollectionOptions();
+
+    // @ts-ignore
+    const collectionFields: FieldModel[] = await instance.getFields();
+
+    const fieldsAsObject: { [key: string]: FieldModel } = collectionFields.reduce((carry, field) => {
+      carry[field.get('name') as string] = field;
+      return carry;
+    }, {});
+
+    let collection = db.getCollection(options.name);
+
+    if (!collection) {
+      // create new collection
+      collection = db.collection(options);
+    }
+
+    if (lodash.get(loadOptions, 'loadField', true) == false) {
+      return collection;
+    }
+
+    const existsFields = collection.fields;
+
+    // add field
+    const addFieldNames = lodash.difference(Object.keys(fieldsAsObject), Array.from(existsFields.keys()));
+
+    for (const addFieldName of addFieldNames) {
+      const fieldModel = fieldsAsObject[addFieldName];
+      await fieldModel.load();
+    }
+
+    return collection;
   }
 
-  metaCollection() {
-    return this.db.getCollection('collections');
+  async migrate() {
+    await this.load();
+  }
+
+  asCollectionOptions() {
+    return {
+      name: this.get('name') as string,
+    };
   }
 
   /**
@@ -77,7 +69,7 @@ export class CollectionModel {
    * @param db
    * @param transaction
    */
-  static async addField(options: FieldOptions, db: Database, transaction?: Transaction) {
+  static async addField(options: FieldOptions, db: Database, transaction?: Transaction): Promise<FieldModel> {
     let handleTransaction = false;
 
     if (!transaction) {
@@ -103,7 +95,7 @@ export class CollectionModel {
       const isSubTableField = FieldModel.isSubTableOptions(options);
       // sub table
       if (isSubTableField) {
-        // create new collection
+        // create new collection as subTable
         const subTableCollection = await metaCollection.repository.create({
           values: {
             name: `sub-table${lodash.random(111111, 999999)}`,
@@ -176,10 +168,5 @@ export class CollectionModel {
       await transaction.rollback();
       throw err;
     }
-  }
-
-  async getFields() {
-    // @ts-ignore
-    return await this.model.getFields();
   }
 }
