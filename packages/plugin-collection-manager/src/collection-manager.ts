@@ -1,7 +1,8 @@
-import { Database, FieldOptions as DBFieldOptions } from '@nocobase/database';
+import { Collection, Database, FieldOptions as DBFieldOptions } from '@nocobase/database';
 import path from 'path';
 import { MetaCollectionOptions } from './meta-collection-options';
 import { CollectionModel } from './models/collection-model';
+import lodash from 'lodash';
 
 const SchemaDirectory = path.join(__dirname, './schema');
 
@@ -49,13 +50,36 @@ export class CollectionManager {
   }
 
   static async createCollection(collectionOptions: CollectionOptions, db: Database): Promise<CollectionModel> {
-    const options = new MetaCollectionOptions(collectionOptions);
+    const transaction = await db.sequelize.transaction();
 
-    const collectionInstance = await db.getCollection('collections').repository.create<CollectionModel>({
-      values: options.asCollectionOptions(),
-    });
+    try {
+      const options = new MetaCollectionOptions(collectionOptions);
 
-    return collectionInstance;
+      const collectionSaveValues = options.asCollectionOptions();
+
+      const collectionInstance = await db.getCollection('collections').repository.create<CollectionModel>({
+        values: collectionSaveValues,
+        transaction,
+      });
+
+      if (lodash.get(collectionOptions, 'sortable')) {
+        await CollectionModel.addField(
+          {
+            collectionName: collectionInstance.getName(),
+            name: 'sort',
+            type: 'sort',
+          },
+          db,
+          transaction,
+        );
+      }
+
+      await transaction.commit();
+      return collectionInstance;
+    } catch (err) {
+      await transaction.rollback();
+      throw err;
+    }
   }
 
   /**

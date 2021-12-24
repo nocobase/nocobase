@@ -7,14 +7,26 @@ describe('collection resource', () => {
   let app: MockServer;
   let db: Database;
 
+  afterEach(async () => {
+    await app.destroy();
+  });
+
   beforeEach(async () => {
     app = mockServer({
       registerActions: true,
-      database: {},
+      database: {
+        dialect: 'postgres',
+        database: 'nocobase_test',
+        username: 'chareice',
+      },
     });
     db = app.db;
 
-    mockUiSchema(db);
+    const queryInterface = db.sequelize.getQueryInterface();
+    await queryInterface.dropAllTables();
+
+    await mockUiSchema(db);
+
     app.plugin(PluginCollectionManager);
 
     await app.load();
@@ -102,6 +114,7 @@ describe('collection resource', () => {
     });
 
     expect(userCollectionModel).toBeDefined();
+
     const response = await app
       .agent()
       .resource('collections.fields')
@@ -133,32 +146,37 @@ describe('collection resource', () => {
         values: { name: 'orders' },
       });
 
-    await app
+    const response = await app
       .agent()
       .resource('collections.fields')
       .create({
-        interface: 'subTable',
-        type: 'hasMany',
-        uiSchema: {
-          type: 'array',
-          title: '这是一个子表格字段',
-          'x-decorator': 'FormItem',
-          'x-component': 'Table',
-          'x-component-props': {},
-        },
-        children: [
-          {
-            interface: 'input',
-            type: 'string',
-            uiSchema: {
-              type: 'string',
-              title: '这是一个单行文本字段',
-              'x-component': 'Input',
-              'x-decorator': 'FormItem',
-            },
+        associatedIndex: 'orders',
+        values: {
+          interface: 'subTable',
+          type: 'hasMany',
+          uiSchema: {
+            type: 'array',
+            title: '这是一个子表格字段',
+            'x-decorator': 'FormItem',
+            'x-component': 'Table',
+            'x-component-props': {},
           },
-        ],
+          children: [
+            {
+              interface: 'input',
+              type: 'string',
+              uiSchema: {
+                type: 'string',
+                title: '这是一个单行文本字段',
+                'x-component': 'Input',
+                'x-decorator': 'FormItem',
+              },
+            },
+          ],
+        },
       });
+
+    expect(response.statusCode).toEqual(200);
   });
 
   test('create collection with belongsToMany field', async () => {
@@ -220,9 +238,26 @@ describe('collection resource', () => {
     const tagsAssociation = postsCollection.getField('tags');
     expect(tagsAssociation).toBeDefined();
 
+    // @ts-ignore
+    await db.getCollection('collections').repository.load();
+
     // reverse association exists
+    const reverseKey = (
+      await db.getCollection('fields').repository.findOne({
+        filter: {
+          name: 'tags',
+        },
+      })
+    ).get('reverseKey');
+
+    const reverseField = await db.getCollection('fields').repository.findOne({
+      filter: {
+        name: reverseKey,
+      },
+    });
+
     const tagCollection = db.getCollection('tags');
-    const postAssociation = tagCollection.getField('posts');
+    const postAssociation = tagCollection.getField(reverseField.get('name') as string);
     expect(postAssociation).toBeDefined();
   });
 });

@@ -173,7 +173,9 @@ export class CollectionModel extends Model {
 
       return fieldInstance;
     } catch (err) {
-      await transaction.rollback();
+      if (handleTransaction) {
+        await transaction.rollback();
+      }
       throw err;
     }
   }

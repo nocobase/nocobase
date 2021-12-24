@@ -1,20 +1,18 @@
 import { Context } from '@nocobase/actions';
-import { FieldSchemaOptions } from '../field-schema-options';
+import { CollectionManager } from '../collection-manager';
 
 const fieldActions = {
   async create(ctx: Context, next) {
     const { resourceName, associatedName, associatedIndex, values } = ctx.action.params;
 
-    const fieldRepository = ctx.db
-      .getCollection(associatedName)
-      .repository.relation(resourceName)
-      .of(associatedIndex, 'name');
+    const options = {
+      ...values,
+      collectionName: associatedIndex,
+    };
 
-    const saveValues = new FieldSchemaOptions(values).saveValues;
+    const collectionModel = await CollectionManager.createField(options, ctx.db);
 
-    await fieldRepository.create({
-      values: saveValues,
-    });
+    await collectionModel.migrate();
   },
 };
 export { fieldActions };
