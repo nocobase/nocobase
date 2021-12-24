@@ -1,6 +1,7 @@
-import { Context, getActionBuilder, listActionBuilder } from '@nocobase/actions';
+import { Context, destroyActionBuilder, getActionBuilder, listActionBuilder } from '@nocobase/actions';
 import { CollectionManager } from '../collection-manager';
 import { Action } from '@nocobase/resourcer';
+import { CollectionModel } from '../models/collection-model';
 
 const fieldActions = {
   async create(ctx: Context, next) {
@@ -29,6 +30,27 @@ const fieldActions = {
 
   list: listActionBuilder({
     defaultAssociatedKey: 'name',
+  }),
+
+  destroy: destroyActionBuilder({
+    filterArgBuilder(action: Action) {
+      return {
+        filter: {
+          name: action.params.resourceIndex,
+        },
+      };
+    },
+    defaultAssociatedKey: 'name',
+    async afterDestroy(ctx) {
+      const db = ctx.db;
+      const collectionModel = (await db.getCollection('collections').repository.findOne({
+        filter: {
+          name: ctx.action.params.associatedIndex,
+        },
+      })) as CollectionModel;
+
+      await collectionModel.load();
+    },
   }),
 };
 export { fieldActions };

@@ -37,6 +37,7 @@ export default class PluginCollectionManager extends Plugin {
 
     this.app.resourcer.registerActionHandler('collections.fields:create', fieldActions.create);
     this.app.resourcer.registerActionHandler('collections.fields:get', fieldActions.get);
+    this.app.resourcer.registerActionHandler('collections.fields:destroy', fieldActions.destroy);
     this.app.resourcer.registerActionHandler('collections.fields:list', fieldActions.list);
 
     db.on('collections.beforeSave', async (model) => {

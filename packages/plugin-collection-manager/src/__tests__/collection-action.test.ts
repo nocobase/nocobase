@@ -3,6 +3,7 @@ import { Database, HasManyRepository } from '@nocobase/database';
 import PluginCollectionManager from '../server';
 import { mockUiSchema } from './mockUiSchema';
 import objectContaining = jasmine.objectContaining;
+import { destroy, remove } from '@nocobase/actions';
 
 describe('collection resource', () => {
   let app: MockServer;
@@ -310,6 +311,36 @@ describe('collection resource', () => {
       });
 
       expect(response.statusCode).toEqual(200);
+    });
+  });
+
+  describe('delete action', () => {
+    test('delete field', async () => {
+      await app
+        .agent()
+        .resource('collections')
+        .create({
+          values: {
+            name: 'users',
+            fields: [
+              {
+                type: 'integer',
+                name: 'age',
+              },
+            ],
+          },
+        });
+
+      // delete age field
+      let response = await app.agent().resource('collections.fields').destroy({
+        associatedIndex: 'users',
+        resourceIndex: 'age',
+      });
+
+      expect(response.statusCode).toEqual(200);
+
+      const userCollection = db.getCollection('users');
+      expect(userCollection.getField('age')).not.toBeDefined();
     });
   });
 });
