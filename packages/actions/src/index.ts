@@ -1,6 +1,8 @@
 import Koa from 'koa';
 import { Database } from '@nocobase/database';
 import { Action } from '@nocobase/resourcer';
+import lodash from 'lodash';
+import * as actions from './actions';
 
 export type Next = () => Promise<any>;
 
@@ -11,6 +13,10 @@ export interface Context extends Koa.Context {
   [key: string]: any;
 }
 
-export function registerActions(api: any) {}
+export function registerActions(api: any) {
+  api.actions(
+    lodash.pick(actions, ['add', 'create', 'destroy', 'get', 'list', 'remove', 'set', 'toggle', 'update', 'move']),
+  );
+}
 
 export default {};

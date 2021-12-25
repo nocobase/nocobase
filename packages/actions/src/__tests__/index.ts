@@ -27,12 +27,10 @@ export function getConfig(config = {}, options?: any): DatabaseOptions {
       host: process.env.DB_HOST,
       port: process.env.DB_PORT,
       dialect: process.env.DB_DIALECT,
+      storage: process.env.DB_STORAGE,
       logging: process.env.DB_LOG_SQL === 'on',
       sync: {
         force: true,
-        alter: {
-          drop: true,
-        },
       },
       hooks: {
         beforeDefine(model, options) {
@@ -99,7 +97,11 @@ export class MockServer extends Koa {
 
   constructor() {
     super();
-    this.db = mockDatabase();
+    this.db = mockDatabase({
+      sync: {
+        force: true,
+      },
+    });
     this.resourcer = new Resourcer({
       prefix: '/api',
     });
@@ -118,7 +120,7 @@ export class MockServer extends Koa {
   }
 
   collection(options: CollectionOptions) {
-    this.db.collection(options);
+    return this.db.collection(options);
   }
 
   resource(options: ResourceOptions) {
@@ -157,8 +159,6 @@ export class MockServer extends Koa {
                     if (resourceIndex) {
                       url += `/${resourceIndex}`;
                     }
-
-                    console.log(url);
 
                     switch (method) {
                       case 'upload':
