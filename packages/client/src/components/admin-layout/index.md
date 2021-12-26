@@ -1,7 +1,7 @@
 ---
 group:
-  title: Client
-  path: /client
+  title: Route Components
+  path: /route-components
 ---
 
 # AdminLayout

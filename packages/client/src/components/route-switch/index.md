@@ -5,3 +5,5 @@ group:
 ---
 
 # RouteSwitch
+
+<code src="./demos/demo1.tsx" />

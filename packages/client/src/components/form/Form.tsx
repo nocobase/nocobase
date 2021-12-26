@@ -11,8 +11,7 @@ import {
   useField,
   useFieldSchema,
 } from '@formily/react';
-import { useAttach } from './useAttach';
-import { SchemaComponent } from '../schema-component';
+import { SchemaComponent, useAttach } from '../schema-component';
 
 type ComposedForm = React.FC<any> & {
   __NOCOBASE_FORM?: boolean;

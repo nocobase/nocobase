@@ -8,6 +8,11 @@ export const useA = () => {
   };
 };
 
+export const useActionVisible = () => {
+  const [visible, setVisible] = useContext(VisibleContext);
+  return { visible, setVisible };
+};
+
 export const useCloseAction = () => {
   const [, setVisible] = useContext(VisibleContext);
   const form = useForm();

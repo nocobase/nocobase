@@ -1,8 +1,8 @@
 import React from 'react';
 import { observer, ISchema } from '@formily/react';
 import { SchemaComponent, SchemaComponentProvider, Form, Action, useCloseAction } from '@nocobase/client';
-import 'antd/dist/antd.css';
 import { FormItem, Input } from '@formily/antd';
+import 'antd/dist/antd.css';
 
 export default observer(() => {
   const schema: ISchema = {
@@ -46,7 +46,6 @@ export default observer(() => {
       },
     },
   };
-
   return (
     <SchemaComponentProvider scope={{ useCloseAction }} components={{ Form, Action, Input, FormItem }}>
       <SchemaComponent schema={schema} />

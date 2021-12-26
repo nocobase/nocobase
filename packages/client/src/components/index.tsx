@@ -12,3 +12,4 @@ export * from './schema-component';
 export * from './system-settings';
 export * from './action';
 export * from './form';
+export * from './form-item';
