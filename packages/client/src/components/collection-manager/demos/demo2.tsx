@@ -107,14 +107,16 @@ export default observer(() => {
     const form = useForm();
     return {
       async run() {
-        console.log(form.values);
+        form.submit(() => {
+          console.log(form.values);
+        });
       },
     };
   };
 
   return (
     <SchemaComponentProvider scope={{ useSubmit }} components={{ Action, Form, Collection, Input, FormItem }}>
-      <CollectionProvider {...collection}>
+      <CollectionProvider collection={collection}>
         <SchemaComponent schema={schema} />
       </CollectionProvider>
     </SchemaComponentProvider>

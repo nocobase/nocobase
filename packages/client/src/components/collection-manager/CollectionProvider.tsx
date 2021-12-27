@@ -4,11 +4,11 @@ import { useCollectionManager } from './hooks';
 import { CollectionOptions } from './types';
 import { CollectionContext } from './context';
 
-export const CollectionProvider: React.FC<CollectionOptions> = (props) => {
-  const { name, children, ...others } = props;
+export const CollectionProvider: React.FC<{ name?: string; collection: CollectionOptions }> = (props) => {
+  const { name, collection, children } = props;
   const { get } = useCollectionManager();
   return (
-    <CollectionContext.Provider value={merge(get(name) || {}, { name, ...others })}>
+    <CollectionContext.Provider value={collection || get(collection?.name || name)}>
       {children}
     </CollectionContext.Provider>
   );

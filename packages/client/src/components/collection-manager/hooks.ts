@@ -1,6 +1,7 @@
 import { useContext } from 'react';
 import { CollectionFieldOptions } from './types';
 import { CollectionFieldContext, CollectionContext, CollectionManagerContext } from './context';
+import { SchemaKey } from '@formily/react';
 
 export const useCollectionManager = () => {
   const { collections } = useContext(CollectionManagerContext);
@@ -15,7 +16,7 @@ export const useCollection = () => {
   const collection = useContext(CollectionContext);
   return {
     ...collection,
-    getField(name: string): CollectionFieldOptions {
+    getField(name: SchemaKey): CollectionFieldOptions {
       return collection?.fields?.find((field) => field.name === name);
     },
   };
