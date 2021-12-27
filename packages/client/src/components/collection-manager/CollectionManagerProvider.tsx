@@ -1,8 +1,6 @@
 import React from 'react';
-import { merge } from '@formily/shared';
-import { useCollection, useCollectionManager } from './hooks';
-import { CollectionOptions, CollectionFieldOptions, CollectionManagerOptions } from './types';
-import { CollectionContext, CollectionFieldContext, CollectionManagerContext } from './context';
+import { CollectionManagerOptions } from './types';
+import { CollectionManagerContext } from './context';
 
 export const CollectionManagerProvider: React.FC<CollectionManagerOptions> = (props) => {
   const { interfaces, collections } = props;

@@ -41,19 +41,33 @@ const fields = [
 </CollectionProvider>
 ```
 
-### CollectionField
+### Collection.FormItem
 
-仅支持在 Schema 场景使用
+title、description 属性只在 decorator 里有效，可以在表单和详情里使用。使用 Collection.FormItem 时，x-component 无效。
 
 ```ts
 {
-  'x-decorator': 'FormItem',
+  'x-decorator': 'Collection.FormItem',
   'x-decorator-props': {},
-  'x-component': 'CollectionField',
   'x-component-props': {},
   properties: {},
 }
 ```
+
+### Collection.Field
+
+```ts
+{
+  'x-component': 'Collection.Field',
+  'x-component-props': {},
+  properties: {},
+}
+```
+
+<Alert title="Collection.FormItem 和 Collection.Field 的区别">
+Collection.FormItem 是 decorator，Collection.Field 是 component。title、description 属性由 FormItem 管理。
+在表单和详情视图和需要 FormItem 的场景里，需要用 Collection.FormItem 替换原来的 FormItem。
+</Alert>
 
 ## Hooks
 
@@ -66,15 +80,13 @@ const { collections, get } = useCollectionManager();
 ### useCollection()
 
 ```jsx | pure
-const { collection, getField, findField } = useCollection();
+const { name, fields, getField, findField } = useCollection();
 ```
 
 ### useCollectionField()
 
 ```jsx | pure
-const { name, collectionField, uiSchema } = useCollectionField();
+const { name, uiSchema } = useCollectionField();
 ```
-
-<code src="./demos/demo1.tsx"/>
 
 <code src="./demos/demo2.tsx"/>

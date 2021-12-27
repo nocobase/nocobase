@@ -20,11 +20,12 @@ export default observer(() => {
         name: 'title1',
         interface: 'input',
         uiSchema: {
-          title: 'Title',
+          title: 'Title1',
           type: 'string',
           'x-component': 'Input',
           required: true,
-        },
+          description: 'description1',
+        } as ISchema,
       },
       {
         type: 'string',
@@ -34,6 +35,8 @@ export default observer(() => {
           title: 'Title2',
           type: 'string',
           'x-component': 'Input',
+          description: 'description',
+          default: 'ttt',
         },
       },
       {
@@ -54,6 +57,7 @@ export default observer(() => {
           title1: {
             'x-component': 'Collection.Field',
             'x-decorator': 'Collection.FormItem',
+            default: '111'
           },
           // 等同于
           // title1: {
@@ -66,8 +70,9 @@ export default observer(() => {
           title2: {
             'x-component': 'Collection.Field',
             'x-decorator': 'Collection.FormItem',
-            title: 'Title22', // 覆盖全局已定义的 Title2
+            title: 'Title4', // 覆盖全局已定义的 Title2
             required: true, // 扩展的配置参数
+            description: 'description4',
           },
           // 等同于
           // title2: {
@@ -89,6 +94,7 @@ export default observer(() => {
             'x-component': 'Action',
             title: 'Submit',
             'x-component-props': {
+              type: 'primary',
               useAction: '{{ useSubmit }}',
             },
           },

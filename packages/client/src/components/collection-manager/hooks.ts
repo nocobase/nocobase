@@ -1,7 +1,6 @@
-import { Schema } from '@formily/react';
 import { useContext } from 'react';
-import { CollectionFieldContext } from '.';
-import { CollectionContext, CollectionManagerContext } from './context';
+import { CollectionFieldOptions } from './types';
+import { CollectionFieldContext, CollectionContext, CollectionManagerContext } from './context';
 
 export const useCollectionManager = () => {
   const { collections } = useContext(CollectionManagerContext);
@@ -14,16 +13,14 @@ export const useCollectionManager = () => {
 
 export const useCollection = () => {
   const collection = useContext(CollectionContext);
-  console.log({ collection });
   return {
-    getField(name: string) {
+    ...collection,
+    getField(name: string): CollectionFieldOptions {
       return collection?.fields?.find((field) => field.name === name);
     },
   };
 };
 
 export const useCollectionField = () => {
-  const { uiSchema, ...others } = useContext(CollectionFieldContext);
-  const fieldSchema = new Schema(uiSchema);
-  return { ...others, fieldSchema };
+  return useContext(CollectionFieldContext);
 };
