@@ -95,24 +95,16 @@ const collection = {
 </CollectionProvider>
 ```
 
-### Collection.FormItem
+### CollectionField
 
-title、description 属性只在 decorator 里有效，在表单和详情视图和需要 FormItem 的场景里，需要用 Collection.FormItem 替换原来的 FormItem。使用 Collection.FormItem 时，x-component 无效。
+万能字段组件，需要与 `<CollectionProvider/>` 搭配使用，仅限于在 Schema 场景使用。从 CollectionProvider 里取对应 name 的 field schema。可通过 CollectionField 所在的 schema 扩展配置。
 
 ```ts
 {
-  'x-decorator': 'Collection.FormItem',
+  name: 'title',
+  'x-decorator': 'FormItem',
   'x-decorator-props': {},
-  'x-component-props': {},
-  properties: {},
-}
-```
-
-### Collection.Field
-
-```ts
-{
-  'x-component': 'Collection.Field',
+  'x-component': 'CollectionField',
   'x-component-props': {},
   properties: {},
 }
@@ -122,7 +114,7 @@ title、description 属性只在 decorator 里有效，在表单和详情视图�
 
 ### useCollectionManager()
 
-与 `<CollectionManagerProvider/>` 结合使用
+与 `<CollectionManagerProvider/>` 搭配使用
 
 ```jsx | pure
 const { collections, get } = useCollectionManager();
@@ -130,7 +122,7 @@ const { collections, get } = useCollectionManager();
 
 ### useCollection()
 
-与 `<CollectionProvider/>` 结合使用
+与 `<CollectionProvider/>` 搭配使用
 
 ```jsx | pure
 const { name, fields, getField, findField } = useCollection();
@@ -138,7 +130,7 @@ const { name, fields, getField, findField } = useCollection();
 
 ### useCollectionField()
 
-与 `<CollectionFieldProvider/>` 结合使用
+与 `<CollectionFieldProvider/>` 搭配使用
 
 ```jsx | pure
 const { name, uiSchema } = useCollectionField();

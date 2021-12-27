@@ -4,4 +4,4 @@ export * from './CollectionProvider';
 export * from './context';
 export * from './hooks';
 export * from './types';
-export * from './Collection';
+export * from './CollectionField';

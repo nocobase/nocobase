@@ -6,7 +6,7 @@ import {
   Form,
   Action,
   CollectionProvider,
-  Collection,
+  CollectionField,
 } from '@nocobase/client';
 import 'antd/dist/antd.css';
 import { FormItem, Input } from '@formily/antd';
@@ -55,9 +55,9 @@ export default observer(() => {
         properties: {
           // 字段 title1 直接使用全局提供的 uiSchema
           title1: {
-            'x-component': 'Collection.Field',
-            'x-decorator': 'Collection.FormItem',
-            default: '111'
+            'x-component': 'CollectionField',
+            'x-decorator': 'FormItem',
+            default: '111',
           },
           // 等同于
           // title1: {
@@ -68,8 +68,8 @@ export default observer(() => {
           //   'x-decorator': 'FormItem',
           // },
           title2: {
-            'x-component': 'Collection.Field',
-            'x-decorator': 'Collection.FormItem',
+            'x-component': 'CollectionField',
+            'x-decorator': 'FormItem',
             title: 'Title4', // 覆盖全局已定义的 Title2
             required: true, // 扩展的配置参数
             description: 'description4',
@@ -115,7 +115,7 @@ export default observer(() => {
   };
 
   return (
-    <SchemaComponentProvider scope={{ useSubmit }} components={{ Action, Form, Collection, Input, FormItem }}>
+    <SchemaComponentProvider scope={{ useSubmit }} components={{ Action, Form, CollectionField, Input, FormItem }}>
       <CollectionProvider collection={collection}>
         <SchemaComponent schema={schema} />
       </CollectionProvider>
