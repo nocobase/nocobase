@@ -4,12 +4,13 @@ import moment from 'moment';
 
 const zhCN = require('./locale/zh_CN');
 const enUS = require('./locale/en_US');
+const log = require('debug')('i18next');
 
 export const i18n = i18next.createInstance();
 
 i18n.use(initReactI18next).init({
   lng: localStorage.getItem('locale') || 'en-US',
-  debug: true,
+  debug: false,
   defaultNS: 'client',
   // parseMissingKeyHandler: (key) => {
   //   console.log('parseMissingKeyHandler', `'${key}': '${key}',`);
@@ -37,7 +38,7 @@ const momentLngs = {
 
 function setMomentLng(language) {
   const lng = momentLngs[language || 'en-US'] || 'en';
-  console.log("localStorage.getItem('locale')", lng);
+  log(lng);
   moment.locale(lng);
 }
 

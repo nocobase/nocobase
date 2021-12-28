@@ -1,7 +1,7 @@
-import React, { createContext, useContext, useMemo, useState } from 'react';
+import React, { createContext, useContext, useEffect, useMemo, useState } from 'react';
 import { uid } from '@formily/shared';
 import { createForm, Form } from '@formily/core';
-import { useCookieState } from 'ahooks';
+import { useCookieState, useUpdateEffect } from 'ahooks';
 import { useTranslation } from 'react-i18next';
 import {
   Schema,
@@ -17,10 +17,13 @@ import {
 import { IRecursionComponentProps, ISchemaComponentProvider } from './types';
 import { SchemaComponentContext } from './context';
 
+const log = require('debug')('schema-component');
+
 export const SchemaComponentProvider: React.FC<ISchemaComponentProvider> = (props) => {
   const { components, children } = props;
   const [, setUid] = useState(uid());
-  const form = props.form || useMemo(() => createForm(), []);
+  const [formId, setFormId] = useState(uid());
+  const form = props.form || useMemo(() => createForm(), [formId]);
   const { t } = useTranslation();
   const scope = { ...props.scope, t };
   const SchemaField = useMemo(
@@ -38,6 +41,7 @@ export const SchemaComponentProvider: React.FC<ISchemaComponentProvider> = (prop
         SchemaField,
         components,
         scope,
+        refreshFormId: () => setFormId(uid()),
         refresh: () => setUid(uid()),
         designable: active === 'true',
         setDesignable(value) {
@@ -97,7 +101,14 @@ function toSchema(schema?: any) {
 
 export function SchemaComponent(props: ISchemaFieldProps) {
   const { schema: defaultSchema, ...others } = props;
-  const { SchemaField } = useContext(SchemaComponentContext);
+  const { refreshFormId, SchemaField } = useContext(SchemaComponentContext);
   const schema = useMemo(() => toSchema(defaultSchema), []);
+  // @ts-ignore
+  console.log('defaultSchema', JSON.stringify(schema.toJSON()));
+  // TODO
+  useEffect(() => {
+    // log('defaultSchema', JSON.stringify(defaultSchema));
+    refreshFormId();
+  }, [JSON.stringify(defaultSchema)]);
   return <SchemaField {...others} schema={schema} />;
 }

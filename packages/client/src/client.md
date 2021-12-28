@@ -464,3 +464,222 @@ export default function App() {
 }
 ```
 
+## RouteSwitch + SchemaComponent
+
+当路由和组件都可以配置之后，可以进一步将二者结合，例子如下：
+
+```tsx
+/**
+ * defaultShowCode: true
+ * title: RouteSwitch + SchemaComponent
+ */
+import React, { useMemo } from 'react';
+import { Link, MemoryRouter as Router } from 'react-router-dom';
+import {
+  RouteRedirectProps,
+  RouteSwitchProvider,
+  RouteSwitch,
+  useRoute,
+  SchemaComponentProvider,
+  SchemaComponent,
+  useDesignable,
+} from '@nocobase/client';
+import { Spin, Button } from 'antd';
+import { observer, Schema } from '@formily/react';
+
+const Hello = observer(({ name }) => {
+  const { patch, remove } = useDesignable();
+  return (
+    <div>
+      <h1>Hello {name}!</h1>
+      <Button
+        onClick={() => {
+          patch('x-component-props.name', Math.random());
+        }}
+      >更新</Button>
+    </div>
+  )
+});
+
+const RouteSchemaComponent = (props) => {
+  const route = useRoute();
+  return <SchemaComponent schema={route.schema}/>
+}
+
+const routes: RouteRedirectProps[] = [
+  {
+    type: 'route',
+    path: '/',
+    exact: true,
+    component: 'RouteSchemaComponent',
+    schema: {
+      name: 'home',
+      'x-component': 'Hello',
+      'x-component-props': {
+        name: 'Home',
+      },
+    },
+  },
+  {
+    type: 'route',
+    path: '/about',
+    component: 'RouteSchemaComponent',
+    schema: {
+      name: 'home',
+      'x-component': 'Hello',
+      'x-component-props': {
+        name: 'About',
+      },
+    },
+  },
+];
+
+export default () => {
+  return (
+    <SchemaComponentProvider components={{ Hello }}>
+      <RouteSwitchProvider components={{ RouteSchemaComponent }}>
+        <Router initialEntries={['/']}>
+          <Link to={'/'}>Home</Link>, <Link to={'/about'}>About</Link>
+          <RouteSwitch routes={routes} />
+        </Router>
+      </RouteSwitchProvider>
+    </SchemaComponentProvider>
+  );
+};
+```
+
+以上例子实现了路由和组件层面的配置化，在开发层面配置了两个组件：
+
+- `<RouteSchemaComponent/>` 简易的可以在路由里配置 schema 的方案
+- `<Hello/>` 自定义的 Schema 组件
+
+为了让大家更加能感受到 Schema 组件的不一样之处，例子添加了一个简易的随机更新 `x-component-props.name` 值的按钮，当路由切换后，更新后的 name 并不会被重置。这也是 Schema 组件的 Designable 的能力，可以任意的动态更新 schema 配置，实时更新，实时渲染。
+
+## Designable
+
+SchemaComponent 基于 Formily 的 SchemaField，Formily 提供了 [Designable](https://github.com/alibaba/designable) 来解决 Schema 的配置问题，但是这套方案：
+
+- 需要维护两套代码，以 antd 为例，需要同时维护 @formily/antd 和 @designable/formily-antd 两套代码
+- 使用和设计分离，在设计器界面表单无法正常工作
+
+另辟蹊径，NocoBase 构想了一种更为便捷的配置方案，使用和配置也可以兼顾，只需要维护一套代码。为此，提炼了一个简易的 `useDesignable()` Hook，可用于任意 Schema 组件中，动态配置 Schema，实时更新，实时渲染。
+
+Hook API：
+
+```ts
+const {
+  prepend,
+  append,
+  insertBefore,
+  insertAfter,
+  patch,
+  remove,
+} = useDesignable();
+```
+
+相关例子如下：
+
+```tsx
+import React from 'react';
+import { SchemaComponentProvider, SchemaComponent, useDesignable } from '@nocobase/client';
+import { observer, Schema, useFieldSchema } from '@formily/react';
+import { Button, Space } from 'antd';
+import { uid } from '@formily/shared';
+
+const Hello = () => {
+  const { patch, insertBefore, insertAfter, remove } = useDesignable();
+  const fieldSchema = useFieldSchema();
+  return (
+    <div>
+      <h1>{fieldSchema.name} {fieldSchema.title}</h1>
+      <Space>
+        <Button
+          onClick={() => {
+            patch({
+              title: uid(),
+            });
+          }}
+        >
+          patch
+        </Button>
+        <Button
+          onClick={() => {
+            insertBefore({
+              name: uid(),
+              'x-component': 'Hello',
+            });
+          }}
+        >
+          insertBefore
+        </Button>
+        <Button
+          onClick={() => {
+            insertAfter({
+              name: uid(),
+              'x-component': 'Hello',
+            });
+          }}
+        >
+          insertAfter
+        </Button>
+        <Button onClick={() => remove()}>remove</Button>
+      </Space>
+    </div>
+  );
+};
+
+const Page = observer((props) => {
+  const { append, prepend } = useDesignable();
+  return (
+    <div>
+      <div>
+        <Space>
+          <Button
+            onClick={() => {
+              prepend({
+                name: uid(),
+                'x-component': 'Hello',
+              });
+            }}
+          >
+            prepend
+          </Button>
+          <Button
+            onClick={() => {
+              append({
+                name: uid(),
+                'x-component': 'Hello',
+              });
+            }}
+          >
+            append
+          </Button>
+        </Space>
+      </div>
+      <div>{props.children}</div>
+    </div>
+  );
+});
+
+export default function App() {
+  return (
+    <SchemaComponentProvider components={{ Page, Hello }}>
+      <SchemaComponent
+        schema={{
+          type: 'void',
+          name: 'page',
+          'x-component': 'Page',
+          properties: {
+            hello1: {
+              'x-component': 'Hello',
+            },
+            hello2: {
+              'x-component': 'Hello',
+            },
+          },
+        }}
+      />
+    </SchemaComponentProvider>
+  );
+}
+```
