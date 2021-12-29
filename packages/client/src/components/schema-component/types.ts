@@ -20,6 +20,7 @@ export interface ISchemaComponentContext {
   components?: SchemaReactComponents;
   refresh?: () => void;
   refreshFormId?: () => void;
+  reset?: () => void;
   designable?: boolean;
   setDesignable?: (value: boolean) => void;
   SchemaField?: React.FC<ISchemaFieldProps>;

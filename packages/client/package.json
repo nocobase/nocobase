@@ -17,10 +17,12 @@
     "npm": ">=3.0.0"
   },
   "dependencies": {
+    "@dnd-kit/core": "^4.0.3",
+    "@dnd-kit/sortable": "^5.1.0",
     "@emotion/css": "^11.7.1",
-    "@formily/antd": "^2.0.6",
-    "@formily/core": "^2.0.6",
-    "@formily/react": "^2.0.6",
+    "@formily/antd": "^2.0.7",
+    "@formily/core": "^2.0.7",
+    "@formily/react": "^2.0.7",
     "ahooks": "^3.0.5",
     "i18next": "^21.6.0",
     "react-i18next": "^11.15.1"

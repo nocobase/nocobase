@@ -4,8 +4,8 @@ import { observer, Schema, useFieldSchema } from '@formily/react';
 import { Button, Space } from 'antd';
 import { uid } from '@formily/shared';
 
-const Hello = () => {
-  const { patch, insertBefore, insertAfter, remove } = useDesignable();
+const Hello = observer((props) => {
+  const { on, insertAdjacent } = useDesignable();
   const fieldSchema = useFieldSchema();
   return (
     <div>
@@ -13,70 +13,54 @@ const Hello = () => {
       <Space>
         <Button
           onClick={() => {
-            patch({
-              title: uid(),
+            insertAdjacent('beforebegin', {
+              'x-component': 'Hello',
+              properties: {
+                [uid()]: {
+                  type: 'void',
+                  'x-component': 'Hello',
+                },
+              },
             });
           }}
         >
-          patch
+          beforebegin
         </Button>
         <Button
           onClick={() => {
-            insertBefore({
-              name: uid(),
+            insertAdjacent('afterbegin', {
               'x-component': 'Hello',
             });
           }}
         >
-          insertBefore
+          afterbegin
         </Button>
         <Button
           onClick={() => {
-            insertAfter({
-              name: uid(),
+            insertAdjacent('beforeend', {
               'x-component': 'Hello',
             });
           }}
         >
-          insertAfter
+          beforeend
         </Button>
-        <Button onClick={() => remove()}>remove</Button>
+        <Button
+          onClick={() => {
+            insertAdjacent('afterend', {
+              'x-component': 'Hello',
+            });
+          }}
+        >
+          afterend
+        </Button>
       </Space>
+      <div style={{ margin: 50 }}>{props.children}</div>
     </div>
   );
-};
+});
 
 const Page = observer((props) => {
-  const { append, prepend } = useDesignable();
-  return (
-    <div>
-      <div>
-        <Space>
-          <Button
-            onClick={() => {
-              append({
-                name: uid(),
-                'x-component': 'Hello',
-              });
-            }}
-          >
-            append
-          </Button>
-          <Button
-            onClick={() => {
-              prepend({
-                name: uid(),
-                'x-component': 'Hello',
-              });
-            }}
-          >
-            prepend
-          </Button>
-        </Space>
-      </div>
-      <div>{props.children}</div>
-    </div>
-  );
+  return <div>{props.children}</div>;
 });
 
 export default function App() {
@@ -86,12 +70,12 @@ export default function App() {
         schema={{
           type: 'void',
           name: 'page',
+          'x-uid': uid(),
           'x-component': 'Page',
           properties: {
             hello1: {
-              'x-component': 'Hello',
-            },
-            hello2: {
+              type: 'void',
+              'x-uid': uid(),
               'x-component': 'Hello',
             },
           },

@@ -9,5 +9,6 @@ export default defineConfig({
   resolve: {
     includes: ['docs', 'packages/client/src'],
   },
+  hash: true,
   // more config: https://d.umijs.org/config
 });

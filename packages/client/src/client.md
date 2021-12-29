@@ -6,7 +6,7 @@ order: 2
 
 ## Hello World
 
-NocoBase 的客户端内核实质上是一个 React 应用。
+NocoBase 的客户端是一个 React 应用，比如最经典的 Hello World 的例子。
 
 ```jsx
 /**
@@ -568,13 +568,54 @@ Hook API：
 
 ```ts
 const {
-  prepend,
-  append,
-  insertBefore,
-  insertAfter,
-  patch,
-  remove,
+  designable,         // 是否可以配置
+  patch,              // 更新当前节点配置
+  remove,             // 移除当前节点
+  insertAdjacent,     // 在某位置插入
+  insertBeforeBegin,  // 在当前节点的前面插入
+  insertAfterBegin,   // 在当前节点的第一个子节点前面插入
+  insertBeforeEnd,    // 在当前节点的最后一个子节点后面
+  insertAfterEnd,     // 在当前节点的后面
 } = useDesignable();
+
+const schema = {
+  name: uid(),
+  'x-component': 'Hello',
+};
+
+// 在当前节点的前面插入
+insertBeforeBegin(schema);
+// 等同于
+insertAdjacent('beforebegin', schema);
+
+// 在当前节点的第一个子节点前面插入
+insertAfterBegin(schema);
+// 等同于
+insertAdjacent('afterbegin', schema);
+
+// 在当前节点的最后一个子节点后面
+insertBeforeEnd(schema);
+// 等同于
+insertAdjacent('beforeend', schema);
+
+// 在当前节点的后面
+insertAfterEnd(schema);
+// 等同于
+insertAdjacent('afterend', schema);
+```
+
+并不是所有场景都能使用 hook，所以提供了 `createDesignable()` 的方法（实际上 `useDesignable()` 也是基于它来实现）：
+
+```ts
+const dn = createDesignable({
+  current: schema,
+});
+
+dn.on('insertAdjacent', (position, schema) => {
+
+});
+
+dn.insertAfterEnd(schema);
 ```
 
 相关例子如下：
@@ -586,79 +627,57 @@ import { observer, Schema, useFieldSchema } from '@formily/react';
 import { Button, Space } from 'antd';
 import { uid } from '@formily/shared';
 
-const Hello = () => {
-  const { patch, insertBefore, insertAfter, remove } = useDesignable();
+const Hello = observer((props) => {
+  const { insertAdjacent } = useDesignable();
   const fieldSchema = useFieldSchema();
   return (
     <div>
-      <h1>{fieldSchema.name} {fieldSchema.title}</h1>
+      <h1>{fieldSchema.name}</h1>
       <Space>
         <Button
           onClick={() => {
-            patch({
-              title: uid(),
-            });
-          }}
-        >
-          patch
-        </Button>
-        <Button
-          onClick={() => {
-            insertBefore({
-              name: uid(),
+            insertAdjacent('beforebegin', {
               'x-component': 'Hello',
             });
           }}
         >
-          insertBefore
+          beforebegin
         </Button>
         <Button
           onClick={() => {
-            insertAfter({
-              name: uid(),
+            insertAdjacent('afterbegin', {
               'x-component': 'Hello',
             });
           }}
         >
-          insertAfter
+          afterbegin
         </Button>
-        <Button onClick={() => remove()}>remove</Button>
+        <Button
+          onClick={() => {
+            insertAdjacent('beforeend', {
+              'x-component': 'Hello',
+            });
+          }}
+        >
+          beforeend
+        </Button>
+        <Button
+          onClick={() => {
+            insertAdjacent('afterend', {
+              'x-component': 'Hello',
+            });
+          }}
+        >
+          afterend
+        </Button>
       </Space>
+      <div style={{ margin: 50 }}>{props.children}</div>
     </div>
   );
-};
+});
 
 const Page = observer((props) => {
-  const { append, prepend } = useDesignable();
-  return (
-    <div>
-      <div>
-        <Space>
-          <Button
-            onClick={() => {
-              prepend({
-                name: uid(),
-                'x-component': 'Hello',
-              });
-            }}
-          >
-            prepend
-          </Button>
-          <Button
-            onClick={() => {
-              append({
-                name: uid(),
-                'x-component': 'Hello',
-              });
-            }}
-          >
-            append
-          </Button>
-        </Space>
-      </div>
-      <div>{props.children}</div>
-    </div>
-  );
+  return <div>{props.children}</div>;
 });
 
 export default function App() {
@@ -671,9 +690,7 @@ export default function App() {
           'x-component': 'Page',
           properties: {
             hello1: {
-              'x-component': 'Hello',
-            },
-            hello2: {
+              type: 'void',
               'x-component': 'Hello',
             },
           },
@@ -683,3 +700,7 @@ export default function App() {
   );
 }
 ```
+
+## API Client
+
+## Providers
