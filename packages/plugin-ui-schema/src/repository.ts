@@ -89,7 +89,7 @@ WHERE TreePath.ancestor = :ancestor  AND (NodeInfo.async  = false or TreePath.de
     const rawSql = `
 SELECT Schema.uid as uid, Schema.name as name, Schema.schema as schema ,
 TreePath.depth as depth,
-NodeInfo.type as type, NodeInfo.async as async,  ParentPath.ancestor as parent
+NodeInfo.type as type, NodeInfo.async as async,  ParentPath.ancestor as parent, ParentPath.sort as sort
 FROM ${this.model.tableName} as Schema
 JOIN ${treeCollection.model.tableName} as TreePath ON TreePath.descendant = Schema.uid
 JOIN ${
@@ -99,11 +99,7 @@ JOIN ${this.model.tableName} as ParentSchema ON (TreePath.descendant = ParentSch
 LEFT OUTER JOIN ${
       treeCollection.model.tableName
     } as ParentPath ON (ParentPath.descendant = ParentSchema.uid AND ParentPath.depth = 1)
-WHERE TreePath.ancestor = :ancestor  ${
-      options?.includeAsyncNode
-        ? 'AND NodeInfo.async != true  AND ParentPath.depth <= 1 '
-        : 'AND (NodeInfo.async != true )'
-    }
+WHERE TreePath.ancestor = :ancestor  ${options?.includeAsyncNode ? '' : 'AND (NodeInfo.async != true )'}
       `;
 
     const nodes = await db.sequelize.query(rawSql, {
@@ -123,6 +119,7 @@ WHERE TreePath.ancestor = :ancestor  ${
         ...lodash.pick(node, [...nodeKeys, 'name']),
         ['x-uid']: node.uid,
         ['x-async']: !!node.async,
+        ['x-index']: node.sort,
       };
 
       return schema;
@@ -153,7 +150,7 @@ WHERE TreePath.ancestor = :ancestor  ${
     return buildTree(nodes.find((node) => node.parent == null));
   }
 
-  async insertAfterStart(targetUid: string, schema: any) {}
+  async insertBeforeBegin(targetUid: string, schema: any) {}
 
   async insert(schema: any) {
     const transaction = await this.database.sequelize.transaction();
