@@ -1,6 +1,6 @@
 import React from 'react';
 import { uid } from '@formily/shared';
-import { observer, useFieldSchema } from '@formily/react';
+import { observer, useField, useFieldSchema } from '@formily/react';
 import { useDraggable, useDroppable } from '@dnd-kit/core';
 import { SchemaComponent, SchemaComponentProvider, BlockItem, DndContext } from '@nocobase/client';
 
@@ -40,11 +40,12 @@ function Droppable(props) {
 
 const Block = observer((props) => {
   const fieldSchema = useFieldSchema();
+  const field = useField();
   return (
-    <Droppable id={fieldSchema.name} data={{ schema: fieldSchema }}>
+    <Droppable id={field.address.toString()} data={{ schema: fieldSchema }}>
       <div style={{ marginBottom: 20, padding: '0 20px', height: 50, lineHeight: '50px', background: '#f1f1f1' }}>
         Block {fieldSchema.name}
-        <Draggable id={fieldSchema.name} data={{ schema: fieldSchema }}>
+        <Draggable id={field.address.toString()} data={{ schema: fieldSchema }}>
           Drag
         </Draggable>
       </div>

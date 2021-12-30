@@ -15,7 +15,7 @@ export function createDesignable(options: CreateDesignableProps) {
 /**
  *
  */
-type Position = 'beforebegin' | 'afterbegin' | 'beforeend' | 'afterend';
+type Position = 'beforeBegin' | 'afterBegin' | 'beforeEnd' | 'afterEnd';
 
 const generateUid = (s: ISchema) => {
   if (!s['x-uid']) {
@@ -52,14 +52,14 @@ export class Designable {
     generateUid(schema);
   }
 
-  on(name: 'removed' | 'insertAdjacent', listener: any) {
+  on(name: 'afterInsertAdjacent' | 'afterRemove', listener: any) {
     if (!this.events[name]) {
       this.events[name] = [];
     }
     this.events[name].push(listener);
   }
 
-  emit(name: string, ...args) {
+  emit(name: 'afterInsertAdjacent' | 'afterRemove', ...args) {
     if (!this.events[name]) {
       return;
     }
@@ -68,20 +68,20 @@ export class Designable {
 
   insertAdjacent(position: Position, schema: ISchema) {
     switch (position) {
-      case 'beforebegin':
+      case 'beforeBegin':
         return this.insertBeforeBegin(schema);
-      case 'afterbegin':
+      case 'afterBegin':
         return this.insertAfterBegin(schema);
-      case 'beforeend':
+      case 'beforeEnd':
         return this.insertBeforeEnd(schema);
-      case 'afterend':
+      case 'afterEnd':
         return this.insertAfterEnd(schema);
     }
   }
 
   remove() {
     const s = this.current.parent.removeProperty(this.current.name);
-    this.emit('removed', s);
+    this.emit('afterRemove', s);
   }
 
   insertBeforeBeginOrAfterEnd(schema: ISchema) {
@@ -135,7 +135,7 @@ export class Designable {
     this.prepareProperty(schema);
     const s = this.current.parent.addProperty(schema.name, schema);
     this.current.parent.setProperties(properties);
-    this.emit('insertAdjacent', 'beforebegin', s);
+    this.emit('afterInsertAdjacent', 'beforeBegin', s);
   }
 
   /**
@@ -160,7 +160,7 @@ export class Designable {
     this.prepareProperty(schema);
     const s = this.current.addProperty(schema.name, schema);
     this.current.setProperties(properties);
-    this.emit('insertAdjacent', 'afterbegin', s);
+    this.emit('afterInsertAdjacent', 'afterBegin', s);
   }
 
   /**
@@ -179,7 +179,7 @@ export class Designable {
     }
     this.prepareProperty(schema);
     const s = this.current.addProperty(schema.name || uid(), schema);
-    this.emit('insertAdjacent', 'beforeend', s);
+    this.emit('afterInsertAdjacent', 'beforeEnd', s);
   }
 
   /**
@@ -210,7 +210,7 @@ export class Designable {
     this.prepareProperty(schema);
     const s = this.current.parent.addProperty(schema.name || uid(), schema);
     this.current.parent.setProperties(properties);
-    this.emit('insertAdjacent', 'afterend', s);
+    this.emit('afterInsertAdjacent', 'afterEnd', s);
   }
 }
 
@@ -223,7 +223,8 @@ export function useDesignable() {
   const field = useField();
   const fieldSchema = useFieldSchema();
   const dn = createDesignable({ current: fieldSchema });
-  dn.on('insertAdjacent', refresh);
+  dn.on('afterInsertAdjacent', refresh);
+  dn.on('afterRemove', refresh);
   return {
     designable,
     reset,
@@ -257,7 +258,6 @@ export function useDesignable() {
     },
     remove() {
       dn.remove();
-      refresh();
     },
     insertAdjacent(position: Position, schema: ISchema) {
       dn.insertAdjacent(position, schema);

@@ -19,7 +19,7 @@ const useDragEnd = () => {
       current: overSchema,
     });
 
-    dn.on('insertAdjacent', refresh);
+    dn.on('afterInsertAdjacent', refresh);
     dn.insertBeforeBeginOrAfterEnd(activeSchema);
   };
 };

@@ -1,3 +1,6 @@
+/**
+ * title: Insert Adjacent
+ */
 import React from 'react';
 import { SchemaComponentProvider, SchemaComponent, useDesignable } from '@nocobase/client';
 import { observer, Schema, useFieldSchema } from '@formily/react';
@@ -5,7 +8,7 @@ import { Button, Space } from 'antd';
 import { uid } from '@formily/shared';
 
 const Hello = observer((props) => {
-  const { on, insertAdjacent } = useDesignable();
+  const { insertAdjacent } = useDesignable();
   const fieldSchema = useFieldSchema();
   return (
     <div>
@@ -13,45 +16,39 @@ const Hello = observer((props) => {
       <Space>
         <Button
           onClick={() => {
-            insertAdjacent('beforebegin', {
+            insertAdjacent('beforeBegin', {
               'x-component': 'Hello',
-              properties: {
-                [uid()]: {
-                  type: 'void',
-                  'x-component': 'Hello',
-                },
-              },
             });
           }}
         >
-          beforebegin
+          before begin
         </Button>
         <Button
           onClick={() => {
-            insertAdjacent('afterbegin', {
+            insertAdjacent('afterBegin', {
               'x-component': 'Hello',
             });
           }}
         >
-          afterbegin
+          after begin
         </Button>
         <Button
           onClick={() => {
-            insertAdjacent('beforeend', {
+            insertAdjacent('beforeEnd', {
               'x-component': 'Hello',
             });
           }}
         >
-          beforeend
+          before end
         </Button>
         <Button
           onClick={() => {
-            insertAdjacent('afterend', {
+            insertAdjacent('afterEnd', {
               'x-component': 'Hello',
             });
           }}
         >
-          afterend
+          after end
         </Button>
       </Space>
       <div style={{ margin: 50 }}>{props.children}</div>

@@ -4,25 +4,17 @@ order: 2
 
 # 客户端内核
 
-## Hello World
+NocoBase 的客户端是一个 React 应用，核心主要包括：
 
-NocoBase 的客户端是一个 React 应用，比如最经典的 Hello World 的例子。
+- RouteSwitch
+- SchemaComponent
+- Designable
+- APIClient
+- ProviderManager
 
-```jsx
-/**
- * defaultShowCode: true
- * title: Hello World
- */
-import React from 'react';
+## RouteSwitch
 
-export default function App() {
-  return <h1>Hello, world!</h1>;
-};
-```
-
-## Router
-
-上述例子有些简单，考虑到实际大多数应用都会用到路由，所以加了 react-router，如：
+稍微复杂的应用都会用到路由来管理前端的页面，如下：
 
 ```jsx
 /**
@@ -52,11 +44,7 @@ const App = () => (
 export default App;
 ```
 
-这个例子中，组件经由路由转发，`/` 转发给 `Home`，`/about` 转发给 `About`。
-
-## RouteSwitch
-
-JSX 的写法，对于熟悉 JSX 的开发来说，十分便捷，但需要开发来编写和维护，不符合 NocoBase 低代码、无代码的设计理念。所以将 Route 做了封装和配置化改造，如下：
+上述例子，组件经由路由转发，`/` 转发给 `Home`，`/about` 转发给 `About`。这种 JSX 的写法，对于熟悉 JSX 的开发来说，十分便捷，但需要开发来编写和维护，不符合 NocoBase 低代码、无代码的设计理念。所以将 Route 做了封装和配置化改造，如下：
 
 ```tsx
 /**
@@ -96,12 +84,12 @@ export default () => {
 };
 ```
 
-- components 还是交由开发编写，以 Layout 或 Template 的方式提供给大家使用。有限的 Layout、Template 可以创造出无数的应用场景。
-- routes 转化成了 json 的方式，方便存储，也可以进一步提供配置 route 的界面，以方便后续无代码的支持。
+- 由 RouteSwitchProvider 配置 components，由开发编写，以 Layout 或 Template 的方式提供给 RouteSwitch 使用。
+- 由 RouteSwitch 配置 routes，JSON 的方式，可以由后端获取，方便后续的动态化、无代码的支持。
 
 ## SchemaComponent
 
-路由配置化之后，可以注册诸多可供路由使用的组件模板，以方便各种场景支持，但是这些组件还是需要开发编写和维护，所以进一步将组件抽象，转换成配置化的方式。如：
+路由可以通过 JSON 的方式配置，可以注册诸多可供路由使用的组件模板，以方便各种场景支持，但是这些组件还是需要开发编写和维护，所以进一步将组件抽象，转换成配置化的方式。如：
 
 ```tsx
 /**
@@ -141,9 +129,9 @@ export default function App() {
 
 - Schema 是一个树结构，多个节点以树形结构连接起来，其中的一个 property 表示的就是其中的一个 Schema 节点。
 - 单 Schema 节点（不包括 properties）由核心 `x-component`、包装器 `x-decorator`、设计器 `x-designable` 三个组件构成。
-  - `x-component` 核心组件参数
+  - `x-component` 核心组件
   - `x-decorator` 包装器，不同场景中，同一个核心组件，可能使用不同的包装器，如 FormItem、CardItem、BlockItem、Editable 等
-  - `x-designable` NocoBase 的扩展参数，提供可以配置当前节点 schema 的表单。与 Formily 提供的 Designable 解决方案不同，`x-designable` 直接作用于当前 schema 节点，使用和配置不分离。
+  - `x-designable` 节点设计器（NocoBase 的扩展参数），一般为当前 schema 节点的配置表单。与 Formily 提供的 Designable 解决方案不同，`x-designable` 直接作用于当前 schema 节点，使用和配置不分离。
 
 理论上，很多现有组件都可以直接转为 schema 组件，但是并不一定好用。以 Drawer 为例，常规 JSX 的写法一般是这样的：
 
@@ -571,7 +559,7 @@ const {
   designable,         // 是否可以配置
   patch,              // 更新当前节点配置
   remove,             // 移除当前节点
-  insertAdjacent,     // 在某位置插入
+  insertAdjacent,     // 在当前节点的相邻位置插入，四个位置：beforeBegin、afterBegin、beforeEnd、afterEnd
   insertBeforeBegin,  // 在当前节点的前面插入
   insertAfterBegin,   // 在当前节点的第一个子节点前面插入
   insertBeforeEnd,    // 在当前节点的最后一个子节点后面
@@ -579,39 +567,56 @@ const {
 } = useDesignable();
 
 const schema = {
-  name: uid(),
   'x-component': 'Hello',
 };
 
 // 在当前节点的前面插入
 insertBeforeBegin(schema);
 // 等同于
-insertAdjacent('beforebegin', schema);
+insertAdjacent('beforeBegin', schema);
 
 // 在当前节点的第一个子节点前面插入
 insertAfterBegin(schema);
 // 等同于
-insertAdjacent('afterbegin', schema);
+insertAdjacent('afterBegin', schema);
 
 // 在当前节点的最后一个子节点后面
 insertBeforeEnd(schema);
 // 等同于
-insertAdjacent('beforeend', schema);
+insertAdjacent('beforeEnd', schema);
 
 // 在当前节点的后面
 insertAfterEnd(schema);
 // 等同于
-insertAdjacent('afterend', schema);
+insertAdjacent('afterEnd', schema);
 ```
 
-并不是所有场景都能使用 hook，所以提供了 `createDesignable()` 的方法（实际上 `useDesignable()` 也是基于它来实现）：
+insertAdjacent 的几个插入的位置：
+
+```ts
+{
+  properties: {
+    // beforeBegin 在当前节点的前面插入
+    node1: {
+      properties: {
+        // afterBegin 在当前节点的第一个子节点前面插入
+        // ...
+        // beforeEnd 在当前节点的最后一个子节点后面
+      },
+    },
+    // afterEnd 在当前节点的后面
+  },
+}
+```
+
+并不是所有场景都能使用 hook，所以提供了 `createDesignable()` 方法（实际上 `useDesignable()` 也是基于它来实现）：
 
 ```ts
 const dn = createDesignable({
   current: schema,
 });
 
-dn.on('insertAdjacent', (position, schema) => {
+dn.on('afterInsertAdjacent', (position, schema) => {
 
 });
 
@@ -620,78 +625,110 @@ dn.insertAfterEnd(schema);
 
 相关例子如下：
 
-```tsx
-import React from 'react';
-import { SchemaComponentProvider, SchemaComponent, useDesignable } from '@nocobase/client';
-import { observer, Schema, useFieldSchema } from '@formily/react';
-import { Button, Space } from 'antd';
-import { uid } from '@formily/shared';
+<code src="./components/schema-component/demos/demo1.tsx" />
 
-const Hello = observer((props) => {
-  const { insertAdjacent } = useDesignable();
-  const fieldSchema = useFieldSchema();
-  return (
-    <div>
-      <h1>{fieldSchema.name}</h1>
-      <Space>
-        <Button
-          onClick={() => {
-            insertAdjacent('beforebegin', {
-              'x-component': 'Hello',
-            });
-          }}
-        >
-          beforebegin
-        </Button>
-        <Button
-          onClick={() => {
-            insertAdjacent('afterbegin', {
-              'x-component': 'Hello',
-            });
-          }}
-        >
-          afterbegin
-        </Button>
-        <Button
-          onClick={() => {
-            insertAdjacent('beforeend', {
-              'x-component': 'Hello',
-            });
-          }}
-        >
-          beforeend
-        </Button>
-        <Button
-          onClick={() => {
-            insertAdjacent('afterend', {
-              'x-component': 'Hello',
-            });
-          }}
-        >
-          afterend
-        </Button>
-      </Space>
-      <div style={{ margin: 50 }}>{props.children}</div>
-    </div>
-  );
-});
+insertAdjacent 操作不仅可以用于新增节点，也可以用于现有节点的位置移动，如以下拖拽排序的例子：
+
+```tsx
+/**
+ * title: 拖拽排序
+ */
+import React from 'react';
+import { uid } from '@formily/shared';
+import { observer, useField, useFieldSchema } from '@formily/react';
+import { DndContext, DragEndEvent, useDraggable, useDroppable } from '@dnd-kit/core';
+import { SchemaComponent, SchemaComponentProvider, createDesignable, useDesignable } from '@nocobase/client';
+
+const useDragEnd = () => {
+  const { refresh } = useDesignable();
+
+  return ({ active, over }: DragEndEvent) => {
+    const activeSchema = active?.data?.current?.schema;
+    const overSchema = over?.data?.current?.schema;
+
+    if (!activeSchema || !overSchema) {
+      return;
+    }
+
+    const dn = createDesignable({
+      current: overSchema,
+    });
+
+    dn.on('afterInsertAdjacent', refresh);
+    dn.insertBeforeBeginOrAfterEnd(activeSchema);
+  };
+};
 
 const Page = observer((props) => {
-  return <div>{props.children}</div>;
+  return <DndContext onDragEnd={useDragEnd()}>{props.children}</DndContext>;
+});
+
+function Draggable(props) {
+  const { attributes, listeners, setNodeRef, transform } = useDraggable({
+    id: props.id,
+    data: props.data,
+  });
+  const style = transform
+    ? {
+        transform: `translate3d(${transform.x}px, ${transform.y}px, 0)`,
+      }
+    : undefined;
+
+  return (
+    <button ref={setNodeRef} style={style} {...listeners} {...attributes}>
+      {props.children}
+    </button>
+  );
+}
+
+function Droppable(props) {
+  const { isOver, setNodeRef } = useDroppable({
+    id: props.id,
+    data: props.data,
+  });
+  const style = {
+    color: isOver ? 'green' : undefined,
+  };
+
+  return (
+    <div ref={setNodeRef} style={style}>
+      {props.children}
+    </div>
+  );
+}
+
+const Block = observer((props) => {
+  const field = useField();
+  const fieldSchema = useFieldSchema();
+  return (
+    <Droppable id={field.address.toString()} data={{ schema: fieldSchema }}>
+      <div style={{ marginBottom: 20, padding: '20px', background: '#f1f1f1' }}>
+        Block {fieldSchema.name}{' '}
+        <Draggable id={field.address.toString()} data={{ schema: fieldSchema }}>
+          Drag
+        </Draggable>
+      </div>
+    </Droppable>
+  );
 });
 
 export default function App() {
   return (
-    <SchemaComponentProvider components={{ Page, Hello }}>
+    <SchemaComponentProvider components={{ Page, Block }}>
       <SchemaComponent
         schema={{
           type: 'void',
           name: 'page',
           'x-component': 'Page',
           properties: {
-            hello1: {
-              type: 'void',
-              'x-component': 'Hello',
+            block1: {
+              'x-component': 'Block',
+            },
+            block2: {
+              'x-component': 'Block',
+            },
+            block3: {
+              'x-component': 'Block',
             },
           },
         }}
@@ -701,6 +738,105 @@ export default function App() {
 }
 ```
 
-## API Client
+## APIClient
+
+在 WEB 应用里，客户端请求无处不在。为了便于客户端请求，提供的 API 有：
+
+- APIClient：客户端 SDK
+- APIClientProvider：提供 APIClient 实例的 Context，全局共享
+- useRequest()：需要结合 APIClientProvider 来使用
+- useApiClient()：获取到当前配置的 apiClient 实例
+
+```tsx | pure
+const api = new APIClient({
+  request, // 将 request 抛出去，方便各种自定义适配
+});
+api.request(options);
+api.resource(name);
+
+<APIClientProvider apiClient={api}>
+  {/* children */}
+</APIClientProvider>
+```
+
+useRequest() 需要结合 APIClientProvider 一起使用，是对 ahooks 的 useRequest 的封装，支持 resource 请求。
+
+```ts
+const { data, loading } = useRequest();
+```
+
 
 ## Providers
+
+客户端的扩展以 Providers 的形式存在，提供各种可供组件使用的 Context，可全局也可以局部使用。上文我们已经介绍了核心的三个 Providers：
+
+- RouteSwitchProvider，提供配置路由所需的 Layout 和 Template 组件
+- SchemaComponentProvider，提供配置 Schema 所需的各种组件
+- ApiClientProvider，提供客户端 SDK
+
+除此之外，还有：
+
+- Router，实际也是 Provider，提供 History 的 Context，对应的有 BrowserRouter，HashRouter、MemoryRouter、NativeRouter、StaticRouter 几种可选方案
+- AntdConfigProvider，为 antd 组件提供统一的全局化配置
+- I18nextProvider，提供国际化解决方案
+- ACLProvider，提供权限配置，plugin-acl 的前端模块
+- CollectionManagerProvider，提供全局的数据表配置，plugin-collection-manager 的前端模块
+- SystemSettingsProvider，提供系统设置，plugin-system-settings 的前端模块
+- 其他扩展
+
+多个 Providers 需要嵌套使用：
+
+```tsx | pure
+<ApiClientProvider>
+  <SchemaComponentProvider>
+    <RouteSwitchProvider>
+      {...}
+    </RouteSwitchProvider>
+  </SchemaComponentProvider>
+</ApiClientProvider>
+```
+
+但是这样的方式不利于 Providers 的管理和扩展，为此提炼了 `compose()` 函数用于配置多个 providers，如下：
+
+<code defaultShowCode="true" titile="compose" src="./components/compose/demos/demo1.tsx"/>
+
+## Application
+
+上文例子的 Providers 还是差点意思，再进一步封装改造：
+
+```tsx | pure
+const app = new Application({});
+
+app.use(ApiClientProvider);
+app.use([SchemaComponentProvider, { components: { Hello } }]);
+app.use((props) => {
+  return (
+    <div>
+      <Link to={'/'}>Home</Link>,<Link to={'/about'}>About</Link>
+      <RouteSwitch routes={routes} />
+    </div>
+  );
+});
+
+app.mount('#root');
+// 等于
+ReactDOM.render(<App/>, document.getElementById('root'));
+```
+
+对比 NocoBase Server Application 中间件的核心实现：
+
+```ts
+app.use((ctx, next) => {});
+const ctx = this.createContext(req, res)
+await compose(app.middleware)(ctx);
+await respond(ctx);
+```
+
+通过 app.use() 方法注册各种中间件插件，最后由 compose 来处理中间件，如果有需要也可以往 app.context 里添加各种东西待用。前端在处理 Provider 时也是类似的机制，这也是为什么客户端的扩展是以 Provider 的形式存在的原因。
+
+从例子来看，以 Provider 的形式扩展是个不错的方案，但是还有两个问题没有解决：
+
+- Provider 的顺序怎么处理
+- 如何动态的加载前端模块
+
+未完待续...

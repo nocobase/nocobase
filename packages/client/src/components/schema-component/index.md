@@ -25,7 +25,7 @@ const {
   designable,         // 是否可以配置
   patch,              // 更新当前节点配置
   remove,             // 移除当前节点
-  insertAdjacent,     // 在某位置插入
+  insertAdjacent,     // 在某位置插入，四个位置：beforeBegin、afterBegin、beforeEnd、afterEnd
   insertBeforeBegin,  // 在当前节点的前面插入
   insertAfterBegin,   // 在当前节点的第一个子节点前面插入
   insertBeforeEnd,    // 在当前节点的最后一个子节点后面
@@ -40,22 +40,22 @@ const schema = {
 // 在当前节点的前面插入
 insertBeforeBegin(schema);
 // 等同于
-insertAdjacent('beforebegin', schema);
+insertAdjacent('beforeBegin', schema);
 
 // 在当前节点的第一个子节点前面插入
 insertAfterBegin(schema);
 // 等同于
-insertAdjacent('afterbegin', schema);
+insertAdjacent('afterBegin', schema);
 
 // 在当前节点的最后一个子节点后面
 insertBeforeEnd(schema);
 // 等同于
-insertAdjacent('beforeend', schema);
+insertAdjacent('beforeEnd', schema);
 
 // 在当前节点的后面
 insertAfterEnd(schema);
 // 等同于
-insertAdjacent('afterend', schema);
+insertAdjacent('afterEnd', schema);
 ```
 
 几个插入的位置：
@@ -63,15 +63,15 @@ insertAdjacent('afterend', schema);
 ```ts
 {
   properties: {
-    // beforebegin 在当前节点的前面插入
+    // beforeBegin 在当前节点的前面插入
     node1: {
       properties: {
-        // afterbegin 在当前节点的第一个子节点前面插入
+        // afterBegin 在当前节点的第一个子节点前面插入
         // ...
-        // beforeend 在当前节点的最后一个子节点后面
+        // beforeEnd 在当前节点的最后一个子节点后面
       },
     },
-    // afterend 在当前节点的后面
+    // afterEnd 在当前节点的后面
   },
 }
 ```
