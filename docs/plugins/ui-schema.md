@@ -295,11 +295,11 @@ schema === null
 
 ### `repository.insertAdjacent()`
 
-在某节点相邻位置插入，四个位置：beforeBegin、afterBegin、beforeEnd、afterEnd
+在某节点相邻位置插入，四个位置：beforeBegin、afterBegin、beforeEnd、afterEnd。不仅可以用于新增节点，也可以用于现有节点的位置移动。
 
 ```ts
 class UISchemaRepository {
-  insertAdjacent(node1: NodeType, position: Position, node2: NodeType): Promise<Schema>;
+  insertAdjacent(position: Position, node1: NodeType, node2: NodeType): Promise<Schema>;
 }
 
 type UID = string;
