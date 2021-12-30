@@ -77,7 +77,7 @@ WHERE TreePath.ancestor = :ancestor  AND (NodeInfo.async  = false or TreePath.de
       },
     });
 
-    const schema = this.nodesToSchema(nodes[0]);
+    const schema = this.nodesToSchema(nodes[0], uid);
     return lodash.pick(schema, ['type', 'properties']);
   }
 
@@ -85,19 +85,16 @@ WHERE TreePath.ancestor = :ancestor  AND (NodeInfo.async  = false or TreePath.de
     const db = this.database;
     const treeCollection = db.getCollection('ui_schema_tree_path');
 
+    const treeTable = treeCollection.model.tableName;
+
     const rawSql = `
 SELECT Schema.uid as uid, Schema.name as name, Schema.schema as schema ,
 TreePath.depth as depth,
 NodeInfo.type as type, NodeInfo.async as async,  ParentPath.ancestor as parent, ParentPath.sort as sort
-FROM ${this.model.tableName} as Schema
-JOIN ${treeCollection.model.tableName} as TreePath ON TreePath.descendant = Schema.uid
-JOIN ${
-      treeCollection.model.tableName
-    } as NodeInfo ON NodeInfo.descendant = Schema.uid and NodeInfo.descendant = NodeInfo.ancestor and NodeInfo.depth = 0
-JOIN ${this.model.tableName} as ParentSchema ON (TreePath.descendant = ParentSchema.uid)
-LEFT OUTER JOIN ${
-      treeCollection.model.tableName
-    } as ParentPath ON (ParentPath.descendant = ParentSchema.uid AND ParentPath.depth = 1)
+FROM ${treeTable} as TreePath
+LEFT JOIN ${this.model.tableName} as Schema ON Schema.uid =  TreePath.descendant
+LEFT JOIN ${treeTable} as NodeInfo ON NodeInfo.descendant = Schema.uid and NodeInfo.descendant = NodeInfo.ancestor and NodeInfo.depth = 0
+LEFT JOIN ${treeTable} as ParentPath ON (ParentPath.descendant = Schema.uid AND ParentPath.depth = 1)
 WHERE TreePath.ancestor = :ancestor  ${options?.includeAsyncNode ? '' : 'AND (NodeInfo.async != true )'}
       `;
 
@@ -107,11 +104,11 @@ WHERE TreePath.ancestor = :ancestor  ${options?.includeAsyncNode ? '' : 'AND (No
       },
     });
 
-    const schema = this.nodesToSchema(nodes[0]);
+    const schema = this.nodesToSchema(nodes[0], uid);
     return schema;
   }
 
-  nodesToSchema(nodes) {
+  nodesToSchema(nodes, rootUid) {
     const nodeAttributeSanitize = (node) => {
       const schema = {
         ...(lodash.isPlainObject(node.schema) ? node.schema : JSON.parse(node.schema)),
@@ -147,11 +144,27 @@ WHERE TreePath.ancestor = :ancestor  ${options?.includeAsyncNode ? '' : 'AND (No
       return nodeAttributeSanitize(rootNode);
     };
 
-    return buildTree(nodes.find((node) => node.parent == null));
+    return buildTree(nodes.find((node) => node.uid == rootUid));
   }
 
   treeCollection() {
     return this.database.getCollection('ui_schema_tree_path');
+  }
+
+  async remove(uid: string) {
+    await this.database.sequelize.query(
+      `
+    DELETE FROM ${this.treeCollection().model.tableName}
+WHERE descendant IN (
+SELECT descendant                     
+FROM ${this.treeCollection().model.tableName}                     
+WHERE ancestor = :uid)`,
+      {
+        replacements: {
+          uid,
+        },
+      },
+    );
   }
 
   async insertBeside(targetUid: string, schema: any, side: 'before' | 'after') {
@@ -226,14 +239,7 @@ WHERE TreePath.ancestor = :ancestor  ${options?.includeAsyncNode ? '' : 'AND (No
     await this.insertNodes(nodes);
   }
 
-  async insertSingleNode(schema: SchemaNode, transaction?: Transaction) {
-    let handleTransaction = false;
-
-    if (!transaction) {
-      transaction = await this.database.sequelize.transaction();
-      handleTransaction = true;
-    }
-
+  async insertSingleNode(schema: SchemaNode, transaction: Transaction) {
     const db = this.database;
     const treeCollection = db.getCollection('ui_schema_tree_path');
 
@@ -387,7 +393,7 @@ SELECT t.ancestor, :modelKey, depth + 1 FROM ${treeCollection.model.tableName} A
         const maxSort = await db.sequelize.query(
           `SELECT ${
             this.database.sequelize.getDialect() === 'postgres' ? 'coalesce' : 'ifnull'
-          }(MAX(sort), 0) as maxSort FROM ${treeCollection.model.tableName} WHERE depth = 1 AND ancestor = :ancestor`,
+          }(MAX(sort), 0) as maxsort FROM ${treeCollection.model.tableName} WHERE depth = 1 AND ancestor = :ancestor`,
           {
             type: 'SELECT',
             replacements: {
@@ -397,7 +403,7 @@ SELECT t.ancestor, :modelKey, depth + 1 FROM ${treeCollection.model.tableName} A
           },
         );
 
-        sort = parseInt(maxSort[0]['maxSort']) + 1;
+        sort = parseInt(maxSort[0]['maxsort']) + 1;
       }
 
       if (lodash.isPlainObject(nodePosition)) {
@@ -457,10 +463,6 @@ SELECT t.ancestor, :modelKey, depth + 1 FROM ${treeCollection.model.tableName} A
           transaction,
         },
       );
-    }
-
-    if (handleTransaction) {
-      await transaction.commit();
     }
   }
 }

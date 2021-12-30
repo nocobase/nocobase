@@ -11,12 +11,19 @@ describe('ui_schema repository', () => {
 
   let treePathCollection: Collection;
 
+  afterEach(async () => {
+    await app.destroy();
+  });
+
   beforeEach(async () => {
     app = mockServer({
       registerActions: true,
     });
 
     db = app.db;
+
+    const queryInterface = db.sequelize.getQueryInterface();
+    await queryInterface.dropAllTables();
 
     app.plugin(PluginUiSchema);
 
@@ -42,8 +49,10 @@ describe('ui_schema repository', () => {
       schema: {},
     };
 
-    await repository.insertSingleNode(singleNode);
+    const transaction = await db.sequelize.transaction();
+    await repository.insertSingleNode(singleNode, transaction);
 
+    await transaction.commit();
     // it should save in ui schema tables
     const testNode = await repository.findOne({
       filter: {
@@ -65,7 +74,9 @@ describe('ui_schema repository', () => {
       schema: {},
     };
 
-    await repository.insertSingleNode(singleNode);
+    const transaction = await db.sequelize.transaction();
+
+    await repository.insertSingleNode(singleNode, transaction);
 
     const child1: SchemaNode = {
       name: 'child1',
@@ -77,7 +88,7 @@ describe('ui_schema repository', () => {
       },
     };
 
-    await repository.insertSingleNode(child1);
+    await repository.insertSingleNode(child1, transaction);
 
     const child11: SchemaNode = {
       name: 'child11',
@@ -88,8 +99,9 @@ describe('ui_schema repository', () => {
         type: 'test',
       },
     };
-    await repository.insertSingleNode(child11);
+    await repository.insertSingleNode(child11, transaction);
 
+    await transaction.commit();
     expect(
       (
         await treePathCollection.repository.findOne({
@@ -282,6 +294,27 @@ describe('ui_schema repository', () => {
         },
         name: 'root',
       });
+    });
+
+    it('should getJsonSchema by subTree', async () => {
+      await repository.insert({
+        'x-uid': 'n1',
+        name: 'a',
+        type: 'object',
+        properties: {
+          b: {
+            'x-uid': 'n2',
+            type: 'object',
+            properties: {
+              c: { 'x-uid': 'n3' },
+            },
+          },
+          d: { 'x-uid': 'n4' },
+        },
+      });
+
+      const schema = await repository.getJsonSchema('n2');
+      expect(schema).toBeDefined();
     });
 
     it('should getProperties', async () => {
@@ -496,6 +529,53 @@ describe('ui_schema repository', () => {
       await repository.insertAfterBegin('n2', 'n4');
       const schema = await repository.getJsonSchema('n1');
       expect(schema.properties.b.properties.d['x-uid']).toEqual('n4');
+    });
+  });
+
+  describe('remove', () => {
+    it('should remove node', async () => {
+      await repository.insert({
+        'x-uid': 'n1',
+        name: 'a',
+        type: 'object',
+        properties: {
+          b: {
+            'x-uid': 'n2',
+            type: 'object',
+            properties: {
+              c: { 'x-uid': 'n3' },
+            },
+          },
+          d: { 'x-uid': 'n4' },
+        },
+      });
+
+      await repository.remove('n4');
+      const schema = await repository.getJsonSchema('n1');
+      expect(schema.properties['d']).not.toBeDefined();
+    });
+
+    it('should remove tree', async () => {
+      await repository.insert({
+        'x-uid': 'n1',
+        name: 'a',
+        type: 'object',
+        properties: {
+          b: {
+            'x-uid': 'n2',
+            type: 'object',
+            properties: {
+              c: { 'x-uid': 'n3' },
+            },
+          },
+          d: { 'x-uid': 'n4' },
+        },
+      });
+
+      await repository.remove('n2');
+      const schema = await repository.getJsonSchema('n1');
+      expect(schema.properties['b']).not.toBeDefined();
+      expect(schema.properties['d']).toBeDefined();
     });
   });
 });
