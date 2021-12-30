@@ -14,6 +14,7 @@ interface GetJsonSchemaOptions {
 }
 
 const nodeKeys = ['properties', 'patternProperties', 'additionalProperties'];
+
 export default class UiSchemaRepository extends Repository {
   static schemaToSingleNodes(schema: any, carry: SchemaNode[] = [], childOptions: ChildOptions = null): SchemaNode[] {
     const node = schema;
@@ -152,12 +153,13 @@ WHERE TreePath.ancestor = :ancestor  ${
     return buildTree(nodes.find((node) => node.parent == null));
   }
 
+  async insertAfterStart(targetUid: string, schema: any) {}
+
   async insert(schema: any) {
     const transaction = await this.database.sequelize.transaction();
 
     try {
       const nodes = UiSchemaRepository.schemaToSingleNodes(schema);
-
       for (const node of nodes) {
         await this.insertSingleNode(node, transaction);
       }
@@ -171,6 +173,7 @@ WHERE TreePath.ancestor = :ancestor  ${
 
   async insertSingleNode(schema: SchemaNode, transaction?: Transaction) {
     let handleTransaction = false;
+
     if (!transaction) {
       transaction = await this.database.sequelize.transaction();
       handleTransaction = true;
@@ -230,16 +233,19 @@ SELECT t.ancestor, :modelKey, depth + 1 FROM ${treeCollection.model.tableName} A
       );
 
       // update order
-      // await db.sequelize.query(
-      //   `UPDATE ${treeCollection.model.tableName} SET  WHERE depth = 1 AND ancestor = :ancestor AND descendant = :descendant`,
-      //   {
-      //     type: 'UPDATE',
-      //     replacements: {
-      //       ancestor: childOptions.parentUid,
-      //       descendant: uid,
-      //     },
-      //   },
-      // );
+      const updateSql = `UPDATE ${treeCollection.model.tableName} SET sort = (SELECT ${
+        this.database.sequelize.getDialect() === 'postgres' ? 'coalesce' : 'ifnull'
+      }(MAX(sort), 0) + 1 FROM ${
+        treeCollection.model.tableName
+      } WHERE depth = 1 AND ancestor = :ancestor) WHERE depth = 1 AND ancestor = :ancestor AND descendant = :descendant`;
+      await db.sequelize.query(updateSql, {
+        type: 'UPDATE',
+        replacements: {
+          ancestor: childOptions.parentUid,
+          descendant: uid,
+        },
+        transaction,
+      });
     } else {
       // insert root node path
       await db.sequelize.query(

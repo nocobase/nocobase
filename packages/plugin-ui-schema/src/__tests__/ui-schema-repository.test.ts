@@ -179,6 +179,87 @@ describe('ui_schema repository', () => {
       expect(await repository.count()).toEqual(5);
     });
 
+    it('should save schema with sort', async () => {
+      await repository.insert(schema);
+
+      const root = await repository.findOne({
+        filter: {
+          name: 'root',
+        },
+      });
+      const a1 = await repository.findOne({
+        filter: {
+          name: 'a1',
+        },
+      });
+
+      const b1 = await repository.findOne({
+        filter: {
+          name: 'b1',
+        },
+      });
+
+      const c1 = await repository.findOne({
+        filter: {
+          name: 'c1',
+        },
+      });
+
+      const d1 = await repository.findOne({
+        filter: {
+          name: 'd1',
+        },
+      });
+
+      expect(
+        (
+          await treePathCollection.repository.findOne({
+            filter: {
+              ancestor: root.get('uid'),
+              descendant: a1.get('uid'),
+              depth: 1,
+            },
+          })
+        ).get('sort'),
+      ).toEqual(1);
+
+      expect(
+        (
+          await treePathCollection.repository.findOne({
+            filter: {
+              ancestor: root.get('uid'),
+              descendant: b1.get('uid'),
+              depth: 1,
+            },
+          })
+        ).get('sort'),
+      ).toEqual(2);
+
+      expect(
+        (
+          await treePathCollection.repository.findOne({
+            filter: {
+              ancestor: b1.get('uid'),
+              descendant: c1.get('uid'),
+              depth: 1,
+            },
+          })
+        ).get('sort'),
+      ).toEqual(1);
+
+      expect(
+        (
+          await treePathCollection.repository.findOne({
+            filter: {
+              ancestor: b1.get('uid'),
+              descendant: d1.get('uid'),
+              depth: 1,
+            },
+          })
+        ).get('sort'),
+      ).toEqual(2);
+    });
+
     it('should getJsonSchema', async () => {
       await repository.insert(schema);
       const rootNode = await repository.findOne({
@@ -225,6 +306,25 @@ describe('ui_schema repository', () => {
           },
         },
       });
+    });
+  });
+
+  describe('insert', () => {
+    it('should insert sub schema', async () => {
+      const root = {
+        type: 'object',
+        title: 'title',
+        name: 'root',
+      };
+
+      await repository.insert(root);
+
+      const B = {
+        title: 'node-B',
+      };
+
+      await repository.insert(B);
+      console.log(await treePathCollection.repository.find());
     });
   });
 });

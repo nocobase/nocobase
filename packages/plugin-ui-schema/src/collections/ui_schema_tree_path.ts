@@ -26,5 +26,10 @@ export default {
       name: 'type',
       comment: 'type of node',
     },
+    {
+      type: 'integer',
+      name: 'sort',
+      comment: 'sort of node in adjacency',
+    },
   ],
 };
