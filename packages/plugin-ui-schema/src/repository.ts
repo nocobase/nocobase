@@ -318,7 +318,6 @@ SELECT t.ancestor, :modelKey, depth + 1 FROM ${treeCollection.model.tableName} A
         sort = parseInt(maxSort[0]['maxSort']) + 1;
       }
 
-      // before a element
       if (lodash.isPlainObject(nodePosition)) {
         const targetPosition = nodePosition as TargetPositon;
         const target = targetPosition.target;
@@ -347,11 +346,9 @@ SELECT t.ancestor, :modelKey, depth + 1 FROM ${treeCollection.model.tableName} A
               ancestor: childOptions.parentUid,
               sort,
             },
+            transaction,
           },
         );
-      }
-
-      if (nodePosition['after']) {
       }
 
       // update order
