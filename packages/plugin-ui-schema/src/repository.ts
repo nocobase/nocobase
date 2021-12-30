@@ -12,7 +12,11 @@ const nodeKeys = ['properties', 'patternProperties', 'additionalProperties'];
 
 export default class UiSchemaRepository extends Repository {
   static schemaToSingleNodes(schema: any, carry: SchemaNode[] = [], childOptions: ChildOptions = null): SchemaNode[] {
-    const node = schema;
+    const node = lodash.isString(schema)
+      ? {
+          'x-uid': schema,
+        }
+      : schema;
 
     if (!lodash.get(node, 'name')) {
       node.name = uid();
@@ -129,6 +133,7 @@ WHERE TreePath.ancestor = :ancestor  ${options?.includeAsyncNode ? '' : 'AND (No
         for (const childType of Object.keys(childrenGroupByType)) {
           const properties = childrenGroupByType[childType]
             .map((child) => buildTree(child))
+            .sort((a, b) => a['x-index'] - b['x-index'])
             .reduce((carry, item) => {
               carry[item.name] = item;
               delete item['name'];
@@ -242,45 +247,122 @@ WHERE TreePath.ancestor = :ancestor  ${options?.includeAsyncNode ? '' : 'AND (No
     delete schema['name'];
     delete schema['childOptions'];
 
-    const savedNode = await this.create({
-      values: {
-        name,
+    let savedNode;
+
+    // check node exists or not
+    const existsNode = await this.findOne({
+      filter: {
         uid,
-        schema,
       },
       transaction,
     });
 
+    if (existsNode) {
+      savedNode = existsNode;
+    } else {
+      savedNode = await this.create({
+        values: {
+          name,
+          uid,
+          schema,
+        },
+        transaction,
+      });
+    }
+
     if (childOptions) {
       const parentUid = childOptions.parentUid;
 
-      // insert tree path
-      await db.sequelize.query(
-        `INSERT INTO ${treeCollection.model.tableName} (ancestor, descendant, depth)
-SELECT t.ancestor, :modelKey, depth + 1 FROM ${treeCollection.model.tableName} AS t  WHERE t.descendant = :modelParentKey `,
+      const treeTable = treeCollection.model.tableName;
+      const isTreeQuery = await db.sequelize.query(
+        `SELECT COUNT(*) as childrenCount from ${treeTable} WHERE ancestor = :ancestor AND descendant != ancestor`,
         {
-          type: 'INSERT',
-          transaction,
+          type: 'SELECT',
           replacements: {
-            modelKey: savedNode.get('uid'),
-            modelParentKey: parentUid,
+            ancestor: uid,
           },
+          transaction,
         },
       );
 
-      // insert type && async
-      await db.sequelize.query(
-        `INSERT INTO ${treeCollection.model.tableName}(ancestor, descendant, depth, type, async) VALUES (:modelKey, :modelKey, 0, :type, :async )`,
-        {
-          type: 'INSERT',
-          replacements: {
-            modelKey: savedNode.get('uid'),
-            type: childOptions.type,
-            async,
+      const isTree = isTreeQuery[0]['childrenCount'];
+
+      // if node is a tree root move tree to new path
+      if (isTree) {
+        await db.sequelize.query(
+          `DELETE FROM ${treeTable} 
+WHERE descendant IN (SELECT descendant FROM ${treeTable} WHERE ancestor = :uid)
+AND ancestor IN (SELECT ancestor FROM  ${treeTable} WHERE descendant = :uid AND ancestor != descendant)
+`,
+          {
+            type: 'DELETE',
+            replacements: {
+              uid,
+            },
+            transaction,
           },
-          transaction,
-        },
-      );
+        );
+
+        await db.sequelize.query(
+          `INSERT INTO ${treeTable} (ancestor, descendant, depth)
+  SELECT supertree.ancestor, subtree.descendant, supertree.depth + subtree.depth + 1
+  FROM ${treeTable} AS supertree
+    CROSS JOIN ${treeTable} AS subtree
+  WHERE supertree.descendant = :parentUid
+    AND subtree.ancestor = :uid;`,
+          {
+            type: 'INSERT',
+            replacements: {
+              uid,
+              parentUid,
+            },
+            transaction,
+          },
+        );
+      }
+
+      if (!isTree) {
+        if (existsNode) {
+          // remove old path
+          await db.sequelize.query(`DELETE FROM ${treeTable} WHERE descendant = :uid AND ancestor != descendant`, {
+            type: 'DELETE',
+            replacements: {
+              uid,
+            },
+            transaction,
+          });
+        }
+
+        // insert tree path
+        await db.sequelize.query(
+          `INSERT INTO ${treeCollection.model.tableName} (ancestor, descendant, depth)
+SELECT t.ancestor, :modelKey, depth + 1 FROM ${treeCollection.model.tableName} AS t  WHERE t.descendant = :modelParentKey `,
+          {
+            type: 'INSERT',
+            transaction,
+            replacements: {
+              modelKey: savedNode.get('uid'),
+              modelParentKey: parentUid,
+            },
+          },
+        );
+      }
+
+      if (!existsNode) {
+        // insert type && async
+        await db.sequelize.query(
+          `INSERT INTO ${treeCollection.model.tableName}(ancestor, descendant, depth, type, async) VALUES (:modelKey, :modelKey, 0, :type, :async )`,
+          {
+            type: 'INSERT',
+            replacements: {
+              modelKey: savedNode.get('uid'),
+              type: childOptions.type,
+              async,
+            },
+            transaction,
+          },
+        );
+      }
 
       const nodePosition = childOptions.position || 'last';
 

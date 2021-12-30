@@ -433,4 +433,69 @@ describe('ui_schema repository', () => {
       expect(schema.properties.b1['x-index']).toEqual(2);
     });
   });
+
+  describe('insert with x-uid', () => {
+    it('should insertAfterBegin by tree', async () => {
+      await repository.insert({
+        'x-uid': 'n1',
+        name: 'a',
+        type: 'object',
+        properties: {
+          b: {
+            'x-uid': 'n2',
+            type: 'object',
+            properties: {
+              c: { 'x-uid': 'n3' },
+            },
+          },
+          d: {
+            'x-uid': 'n4',
+            properties: {
+              e: {
+                'x-uid': 'n5',
+              },
+            },
+          },
+        },
+      });
+
+      await repository.insertAfterBegin('n1', {
+        name: 'f',
+        'x-uid': 'n6',
+        properties: {
+          g: {
+            'x-uid': 'n7',
+            properties: {
+              d: { 'x-uid': 'n4' },
+            },
+          },
+        },
+      });
+
+      const schema = await repository.getJsonSchema('n1');
+      expect(schema.properties.f.properties.g.properties.d.properties.e['x-uid']).toEqual('n5');
+    });
+
+    it('should insertAfterBegin by node', async () => {
+      await repository.insert({
+        'x-uid': 'n1',
+        name: 'a',
+        type: 'object',
+        properties: {
+          b: {
+            'x-uid': 'n2',
+            type: 'object',
+            properties: {
+              c: { 'x-uid': 'n3' },
+            },
+          },
+          d: { 'x-uid': 'n4' },
+        },
+      });
+
+      await repository.insertAfterBegin('n2', 'n4');
+      const schema = await repository.getJsonSchema('n1');
+      expect(schema.properties.b.properties.d['x-uid']).toEqual('n4');
+    });
+  });
 });
