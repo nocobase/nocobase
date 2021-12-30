@@ -5,15 +5,16 @@
 ## HTTP API
 
 ```bash
-GET   /ui_schemas:getJsonSchema/<x-uid>
-GET   /ui_schemas:getProperties/<x-uid>
 POST  /ui_schemas:insert
+POST  /ui_schemas:insertAdjacent/<uid>?position=<position>
+POST  /ui_schemas:insertBeforeBegin/<uid>
+POST  /ui_schemas:insertAfterBegin/<uid>
+POST  /ui_schemas:insertBeforeEnd/<uid>
+POST  /ui_schemas:insertAfterEnd/<uid>
+GET   /ui_schemas:getJsonSchema/<uid>
+GET   /ui_schemas:getProperties/<uid>
 POST  /ui_schemas:patch
-POST  /ui_schemas:remove/<x-uid>
-POST  /ui_schemas:prepend/<x-uid>
-POST  /ui_schemas:append/<x-uid>
-POST  /ui_schemas:insertBefore/<x-uid>
-POST  /ui_schemas:insertAfter/<x-uid>
+POST  /ui_schemas:remove/<uid>
 ```
 
 例子参考下文的 UISchemaRepository  API
@@ -37,14 +38,14 @@ class UISchemaRepository {
   insert(schema: ISchema): Promise<Schema>;
 }
 interface ISchema extends FormilyISchema {
-  ['x-uid']: string;
+  ['x-uid']: string; // 基于 Formily 的 Schema 扩展了 x-uid 属性
 }
 ```
 
 <Alert title="注意">
 
 - 在 Formily 的 ISchema 协议基础上扩展 `x-uid` 用于记录单 schema 节点的 pk 值，这个值只用于后端 schema 节点的查询。
-- `name` 和 `x-uid` 缺失时，随机生成，如果提供了，按照提供的处理。
+- `name` 和 `x-uid` 并无联系，缺失时，都随机生成，如果提供了，按照提供的处理。
 
 </Alert>
 
@@ -226,7 +227,7 @@ const schema = await repository.getProperties('momkt16x7mx');
 
 ### `repository.patch()`
 
-更新节点（部分更新），deepmerge 操作
+更新节点（部分更新），deepmerge 操作，也可以处理子节点的更新
 
 ```ts
 class UISchemaRepository {
@@ -240,7 +241,7 @@ class UISchemaRepository {
 await repository.patch({
   'x-uid': 'momkt16x7mx',
   title: 'title1111',
-  properties: {
+  properties: { // 也可以处理子节点的更新
     a1: {
       title: 'A1111',
     },
@@ -292,25 +293,74 @@ const schema = await repository.getJsonSchema('k3s7zqvqmom');
 schema === null
 ```
 
-### `repository.prepend()`
+### `repository.insertAdjacent()`
+
+在某节点相邻位置插入，四个位置：beforeBegin、afterBegin、beforeEnd、afterEnd
 
 ```ts
 class UISchemaRepository {
-  prepend(node1: ISchema | PrimaryKey, node2: ISchema | PrimaryKey): Promise<void>;
+  insertAdjacent(node1: NodeType, position: Position, node2: NodeType): Promise<Schema>;
+}
+
+type UID = string;
+type NodeType = UID | ISchema;
+type Position = 'beforeBegin' | 'afterBegin' | 'beforeEnd' | 'afterEnd';
+```
+
+几个插入的位置：
+
+```ts
+{
+  properties: {
+    // beforeBegin 在当前节点的前面插入
+    node1: {
+      properties: {
+        // afterBegin 在当前节点的第一个子节点前面插入
+        // ...
+        // beforeEnd 在当前节点的最后一个子节点后面
+      },
+    },
+    // afterEnd 在当前节点的后面
+  },
 }
 ```
 
-将 node2 插入到 node1 的所有相邻子节点最前面。
+待插入的节点 node2 如果已存在，为位移操作；如果不存在，有两种情况：
 
-- 如果 node2 为 PrimaryKey 时，为位移操作，node2 的整个节点树都移动到 node1 下
-- 如果 node2 为 JSON 时（ISchema 格式），node2 可能为单个节点或者是多个节点组成的节点树
-  - 如果 node2 节点存在，只是位移操作
-  - 如果 node2 节点不存在，创建节点
-  - 如果是 node2(新)->node3(新)->node4(旧) 的节点树，新建 node2->node3 节点，并将旧的 node4 节点移至 node3 里
+- node2(新)->node3(新)...(新) 节点树全部是新节点，全部新建之后并插入在 node1 相邻位置；
+- node2(新)->node3(新)->node4(旧)->node5(旧)...(旧) 节点树的上游节点为新节点，下游为已存在节点。上游新节点新建之后插入在 node1 相邻位置，下游节点位移至新节点树指定位置。
+
+insertAdjacent 需要提供 position，你也可以使用快捷的相邻位置插入的方法：
+
+```ts
+// 在当前节点的前面插入
+repository.insertBeforeBegin(node1, node2);
+// 等同于
+repository.insertAdjacent('beforeBegin', node1, node2);
+
+// 在当前节点的第一个子节点前面插入
+repository.insertAfterBegin(node1, node2);
+// 等同于
+repository.insertAdjacent('afterBegin', node1, node2);
+
+// 在当前节点的最后一个子节点后面
+repository.insertBeforeEnd(node1, node2);
+// 等同于
+repository.insertAdjacent('beforeEnd', node1, node2);
+
+// 在当前节点的后面
+repository.insertAfterEnd(node1, node2);
+// 等同于
+repository.insertAdjacent('afterEnd', node1, node2);
+```
+
+<Alert title="注意">
+根节点只能插入子节点，所以只有 afterBegin 和 beforeEnd 两个相邻位置可以插入
+</Alert>
 
 ##### Examples
 
-将 n4 放到 n2 里（最前面）
+将 n4 放到 n2 第一个子节点的前面
 
 ```ts
 await repository.insert({
@@ -328,7 +378,7 @@ await repository.insert({
     d: {'x-uid': 'n4'},
   },
 });
-await repository.prepend('n2', 'n4');
+await repository.insertAfterBegin('n2', 'n4');
 // 结果为：
 {
   'x-uid': 'n1',
@@ -347,7 +397,7 @@ await repository.prepend('n2', 'n4');
 }
 ```
 
-新建一个 n5 节点并放到 n2 里（最前面）
+新建一个 n5 放到 n2 第一个子节点的前面
 
 ```ts
 await repository.insert({
@@ -365,7 +415,7 @@ await repository.insert({
     d: {'x-uid': 'n4'},
   },
 });
-await repository.prepend('n2', {
+await repository.insertAfterBegin('n2', {
   name: 'e',
   'x-uid': 'n5',
 });
@@ -379,8 +429,8 @@ await repository.prepend('n2', {
       'x-uid': 'n2',
       type: 'object',
       properties: {
-        c: {'x-uid': 'n3'},
         e: {'x-uid': 'n5'},
+        c: {'x-uid': 'n3'},
       },
     },
     d: {'x-uid': 'n4'},
@@ -388,7 +438,7 @@ await repository.prepend('n2', {
 }
 ```
 
-将 n5(新)->n4(旧) 节点树，放到 n1 里（最前面）
+将 n5(新)->n4(旧) 节点树，放到 n1 第一个子节点的前面
 
 ```ts
 await repository.insert({
@@ -406,7 +456,7 @@ await repository.insert({
     d: {'x-uid': 'n4'},
   },
 });
-await repository.prepend('n1', {
+await repository.insertAfterBegin('n1', {
   name: 'e',
   'x-uid': 'n5',
   properties: {
@@ -436,7 +486,7 @@ await repository.prepend('n1', {
 }
 ```
 
-将 n5(新)->n6(新)->n4(旧) 放到 n1 里（最前面）
+将 n5(新)->n6(新)->n4(旧) 放到 n1 第一个子节点的前面
 
 ```ts
 await repository.insert({
@@ -454,7 +504,7 @@ await repository.insert({
     d: {'x-uid': 'n4'},
   },
 });
-await repository.prepend('n1', {
+await repository.insertAfterBegin('n1', {
   name: 'e',
   'x-uid': 'n5',
   properties: {
@@ -494,149 +544,19 @@ await repository.prepend('n1', {
 }
 ```
 
-### `repository.append()`
+### `repository.insertBeforeBegin()`
 
-```ts
-class UISchemaRepository {
-  append(node1: ISchema | PrimaryKey, node2: ISchema | PrimaryKey): Promise<void>;
-}
-```
+等同于 `repository.insertAdjacent('beforeBegin', node1, node2)`
 
-将 node2 插入到 node1 的所有相邻子节点最后面。
+### `repository.insertAfterBegin()`
 
-##### Examples
+等同于 `repository.insertAdjacent('afterBegin', node1, node2)`
 
-例子参考 repository.prepend() 操作。
+### `repository.insertBeforeEnd()`
 
-### `repository.insertBefore()`
+等同于 `repository.insertAdjacent('beforeEnd', node1, node2)`
 
-```ts
-class UISchemaRepository {
-  insertBefore(node1: ISchema | PrimaryKey, node2: ISchema | PrimaryKey): Promise<void>;
-}
-```
+### `repository.insertAfterEnd()`
 
-将 node2 插入到 node1 之前。
+等同于 `repository.insertAdjacent('afterEnd', node1, node2)`
 
-##### Examples
-
-- 如果 node2 为 PrimaryKey 时，为位移操作，node2 的整个节点树都移动到 node1 之前
-- 如果 node2 为 JSON 时（ISchema 格式），node2 可能为单个节点或者是多个节点组成的节点树
-  - 如果 node2 节点存在，只是位移操作
-  - 如果 node2 节点不存在，创建节点
-  - 如果是 node2(新)->node3(新)->node4(旧) 的节点树，新建 node2->node3 节点，并将旧的 node4 节点移至 node3 里
-
-##### Examples
-
-新建 n5 并放到 n2 前面
-
-```ts
-await repository.insert({
-  'x-uid': 'n1',
-  name: 'a',
-  type: 'object',
-  properties: {
-    b: {
-      'x-uid': 'n2',
-      type: 'object',
-      properties: {
-        c: {'x-uid': 'n3'},
-      },
-    },
-    d: {'x-uid': 'n4'},
-  },
-});
-await repository.prepend('n2', {
-  name: 'e',
-  'x-uid': 'n5',
-});
-// 结果为：
-{
-  'x-uid': 'u1',
-  name: 'a',
-  type: 'object',
-  properties: {
-    e: {'x-uid': 'n5'},
-    b: {
-      'x-uid': 'n2',
-      type: 'object',
-      properties: {
-        c: {'x-uid': 'n3'},
-      },
-    },
-    d: {'x-uid': 'n4'},
-  },
-}
-```
-
-将 n5(新)->n6(新)->n4(旧) 放到 n2 前面
-
-```ts
-await repository.insert({
-  'x-uid': 'n1',
-  name: 'a',
-  type: 'object',
-  properties: {
-    b: {
-      'x-uid': 'n2',
-      type: 'object',
-      properties: {
-        c: {'x-uid': 'n3'},
-      },
-    },
-    d: {'x-uid': 'n4'},
-  },
-});
-await repository.prepend('n1', {
-  name: 'e',
-  'x-uid': 'n5',
-  properties: {
-    f: {
-      'x-uid': 'n6',
-      properties: {
-        d: {'x-uid': 'n4'}, // n4 节点移至这里了
-      },
-    },
-  },
-});
-// 结果为：
-{
-  'x-uid': 'u1',
-  name: 'a',
-  type: 'object',
-  properties: {
-    e: {
-      'x-uid': 'n5',
-      properties: {
-        f: {
-          'x-uid': 'n6',
-          properties: {
-            d: {'x-uid': 'n4'}, // n4 节点移至这里了
-          },
-        },
-      },
-    },
-    b: {
-      'x-uid': 'n2',
-      type: 'object',
-      properties: {
-        c: {'x-uid': 'n3'},
-      },
-    },
-  },
-}
-```
-
-### `repository.insertAfter()`
-
-```ts
-class UISchemaRepository {
-  insertAfter(node1: ISchema | PrimaryKey, node2: ISchema | PrimaryKey): Promise<void>;
-}
-```
-
-将 node2 插入到 node2 之后。
-
-##### Examples
-
-例子参考 repository.insertBefore() 操作。
