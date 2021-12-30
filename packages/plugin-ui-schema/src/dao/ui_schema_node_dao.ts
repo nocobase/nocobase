@@ -1,11 +1,11 @@
-export interface TargetPositon {
+export interface TargetPosition {
   type: 'before' | 'after';
   target: string;
 }
 export interface ChildOptions {
   parentUid: string;
   type: string;
-  position?: 'first' | 'last' | TargetPositon;
+  position?: 'first' | 'last' | TargetPosition;
 }
 
 export interface SchemaNode {

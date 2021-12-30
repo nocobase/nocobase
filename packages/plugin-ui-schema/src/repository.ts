@@ -1,6 +1,6 @@
 import { Repository } from '@nocobase/database';
 import lodash from 'lodash';
-import { ChildOptions, SchemaNode, TargetPositon, UiSchemaNodeDAO } from './dao/ui_schema_node_dao';
+import { ChildOptions, SchemaNode, TargetPosition, UiSchemaNodeDAO } from './dao/ui_schema_node_dao';
 import { uid } from '@nocobase/utils';
 import { Transaction } from 'sequelize';
 
@@ -319,7 +319,7 @@ SELECT t.ancestor, :modelKey, depth + 1 FROM ${treeCollection.model.tableName} A
       }
 
       if (lodash.isPlainObject(nodePosition)) {
-        const targetPosition = nodePosition as TargetPositon;
+        const targetPosition = nodePosition as TargetPosition;
         const target = targetPosition.target;
         const targetSort = await db.sequelize.query(
           `SELECT sort FROM ${treeCollection.model.tableName} WHERE depth = 1 AND ancestor = :ancestor AND descendant = :descendant`,
