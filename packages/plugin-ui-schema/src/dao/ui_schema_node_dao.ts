@@ -1,4 +1,12 @@
-import { ChildOptions } from '../repository';
+export interface TargetPositon {
+  type: 'before' | 'after';
+  target: string;
+}
+export interface ChildOptions {
+  parentUid: string;
+  type: string;
+  position?: 'first' | 'last' | TargetPositon;
+}
 
 export interface SchemaNode {
   name: string;

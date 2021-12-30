@@ -1,13 +1,8 @@
 import { Repository } from '@nocobase/database';
 import lodash from 'lodash';
-import { SchemaNode, UiSchemaNodeDAO } from './dao/ui_schema_node_dao';
+import { ChildOptions, SchemaNode, TargetPositon, UiSchemaNodeDAO } from './dao/ui_schema_node_dao';
 import { uid } from '@nocobase/utils';
 import { Transaction } from 'sequelize';
-
-export interface ChildOptions {
-  parentUid: string;
-  type: string;
-}
 
 interface GetJsonSchemaOptions {
   includeAsyncNode?: boolean;
@@ -150,13 +145,66 @@ WHERE TreePath.ancestor = :ancestor  ${options?.includeAsyncNode ? '' : 'AND (No
     return buildTree(nodes.find((node) => node.parent == null));
   }
 
-  async insertBeforeBegin(targetUid: string, schema: any) {}
+  treeCollection() {
+    return this.database.getCollection('ui_schema_tree_path');
+  }
 
-  async insert(schema: any) {
+  async insertBeside(targetUid: string, schema: any, side: 'before' | 'after') {
+    const targetParent = await this.treeCollection().repository.findOne({
+      filter: {
+        descendant: targetUid,
+        depth: 1,
+      },
+    });
+
+    const nodes = UiSchemaRepository.schemaToSingleNodes(schema);
+
+    const rootNode = nodes[0];
+
+    rootNode.childOptions = {
+      parentUid: targetParent.get('ancestor') as string,
+      type: 'properties',
+      position: {
+        type: side,
+        target: targetUid,
+      },
+    };
+
+    await this.insertNodes(nodes);
+  }
+
+  async insertInner(targetUid: string, schema: any, position: 'first' | 'last') {
+    const nodes = UiSchemaRepository.schemaToSingleNodes(schema);
+    const rootNode = nodes[0];
+    rootNode.childOptions = {
+      parentUid: targetUid,
+      type: 'properties',
+      position,
+    };
+
+    await this.insertNodes(nodes);
+  }
+
+  async insertAfterBegin(targetUid: string, schema: any) {
+    await this.insertInner(targetUid, schema, 'first');
+  }
+
+  async insertBeforeEnd(targetUid: string, schema: any) {
+    await this.insertInner(targetUid, schema, 'last');
+  }
+
+  async insertBeforeBegin(targetUid: string, schema: any) {
+    await this.insertBeside(targetUid, schema, 'before');
+  }
+
+  async insertAfterEnd(targetUid: string, schema: any) {
+    await this.insertBeside(targetUid, schema, 'after');
+  }
+
+  async insertNodes(nodes: SchemaNode[]) {
     const transaction = await this.database.sequelize.transaction();
 
     try {
-      const nodes = UiSchemaRepository.schemaToSingleNodes(schema);
       for (const node of nodes) {
         await this.insertSingleNode(node, transaction);
       }
@@ -166,6 +214,11 @@ WHERE TreePath.ancestor = :ancestor  ${options?.includeAsyncNode ? '' : 'AND (No
       await transaction.rollback();
       throw err;
     }
+  }
+
+  async insert(schema: any) {
+    const nodes = UiSchemaRepository.schemaToSingleNodes(schema);
+    await this.insertNodes(nodes);
   }
 
   async insertSingleNode(schema: SchemaNode, transaction?: Transaction) {
@@ -229,16 +282,85 @@ SELECT t.ancestor, :modelKey, depth + 1 FROM ${treeCollection.model.tableName} A
         },
       );
 
+      const nodePosition = childOptions.position || 'last';
+
+      let sort;
+
+      // insert at first
+      if (nodePosition === 'first') {
+        sort = 1;
+        // move all child last index
+        await db.sequelize.query(
+          `UPDATE ${treeCollection.model.tableName} SET sort = sort + 1 WHERE depth = 1 AND  ancestor = :ancestor`,
+          {
+            replacements: {
+              ancestor: childOptions.parentUid,
+            },
+            transaction,
+          },
+        );
+      }
+
+      if (nodePosition === 'last') {
+        const maxSort = await db.sequelize.query(
+          `SELECT ${
+            this.database.sequelize.getDialect() === 'postgres' ? 'coalesce' : 'ifnull'
+          }(MAX(sort), 0) as maxSort FROM ${treeCollection.model.tableName} WHERE depth = 1 AND ancestor = :ancestor`,
+          {
+            type: 'SELECT',
+            replacements: {
+              ancestor: childOptions.parentUid,
+            },
+            transaction,
+          },
+        );
+
+        sort = parseInt(maxSort[0]['maxSort']) + 1;
+      }
+
+      // before a element
+      if (lodash.isPlainObject(nodePosition)) {
+        const targetPosition = nodePosition as TargetPositon;
+        const target = targetPosition.target;
+        const targetSort = await db.sequelize.query(
+          `SELECT sort FROM ${treeCollection.model.tableName} WHERE depth = 1 AND ancestor = :ancestor AND descendant = :descendant`,
+          {
+            type: 'SELECT',
+            replacements: {
+              ancestor: childOptions.parentUid,
+              descendant: target,
+            },
+            transaction,
+          },
+        );
+
+        sort = targetSort[0].sort;
+
+        if (targetPosition.type == 'after') {
+          sort += 1;
+        }
+
+        await db.sequelize.query(
+          `UPDATE  ${treeCollection.model.tableName} SET sort = sort + 1 WHERE depth = 1 AND ancestor = :ancestor and sort >= :sort`,
+          {
+            replacements: {
+              ancestor: childOptions.parentUid,
+              sort,
+            },
+          },
+        );
+      }
+
+      if (nodePosition['after']) {
+      }
+
       // update order
-      const updateSql = `UPDATE ${treeCollection.model.tableName} SET sort = (SELECT ${
-        this.database.sequelize.getDialect() === 'postgres' ? 'coalesce' : 'ifnull'
-      }(MAX(sort), 0) + 1 FROM ${
-        treeCollection.model.tableName
-      } WHERE depth = 1 AND ancestor = :ancestor) WHERE depth = 1 AND ancestor = :ancestor AND descendant = :descendant`;
+      const updateSql = `UPDATE ${treeCollection.model.tableName} SET sort = :sort WHERE depth = 1 AND ancestor = :ancestor AND descendant = :descendant`;
       await db.sequelize.query(updateSql, {
         type: 'UPDATE',
         replacements: {
           ancestor: childOptions.parentUid,
+          sort,
           descendant: uid,
         },
         transaction,

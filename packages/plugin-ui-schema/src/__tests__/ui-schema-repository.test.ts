@@ -310,21 +310,127 @@ describe('ui_schema repository', () => {
   });
 
   describe('insert', () => {
-    it('should insert sub schema', async () => {
+    let rootNode;
+    let rootUid: string;
+
+    beforeEach(async () => {
       const root = {
         type: 'object',
         title: 'title',
         name: 'root',
+        properties: {
+          a1: {
+            type: 'string',
+            title: 'A1',
+            'x-component': 'Input',
+          },
+          b1: {
+            type: 'string',
+            title: 'B1',
+            properties: {
+              c1: {
+                type: 'string',
+                title: 'C1',
+              },
+              d1: {
+                type: 'string',
+                title: 'D1',
+              },
+            },
+          },
+        },
       };
 
       await repository.insert(root);
 
-      const B = {
-        title: 'node-B',
+      rootNode = await repository.findOne({
+        filter: {
+          name: 'root',
+        },
+      });
+
+      rootUid = rootNode.get('uid') as string;
+    });
+
+    it('should insertAfterBegin', async () => {
+      const newNode = {
+        name: 'newNode',
       };
 
-      await repository.insert(B);
-      console.log(await treePathCollection.repository.find());
+      await repository.insertAfterBegin(rootUid, newNode);
+      const schema = await repository.getJsonSchema(rootUid);
+      expect(schema.properties['newNode']['x-index']).toEqual(1);
+      expect(schema.properties.a1['x-index']).toEqual(2);
+      expect(schema.properties.b1['x-index']).toEqual(3);
+    });
+
+    it('should insertBeforeEnd', async () => {
+      const newNode = {
+        name: 'newNode',
+      };
+
+      await repository.insertBeforeEnd(rootUid, newNode);
+      const schema = await repository.getJsonSchema(rootUid);
+      expect(schema.properties['newNode']['x-index']).toEqual(3);
+      expect(schema.properties.a1['x-index']).toEqual(1);
+      expect(schema.properties.b1['x-index']).toEqual(2);
+    });
+
+    it('should insertBeforeBegin', async () => {
+      const newNode = {
+        name: 'newNode',
+      };
+
+      const b1Node = await repository.findOne({
+        filter: {
+          name: 'b1',
+        },
+      });
+
+      await repository.insertBeforeBegin(b1Node.get('uid') as string, newNode);
+
+      const schema = await repository.getJsonSchema(rootUid);
+      expect(schema.properties['newNode']['x-index']).toEqual(2);
+      expect(schema.properties.a1['x-index']).toEqual(1);
+      expect(schema.properties.b1['x-index']).toEqual(3);
+    });
+
+    it('should insertAfterEnd a1', async () => {
+      const newNode = {
+        name: 'newNode',
+      };
+
+      const a1Node = await repository.findOne({
+        filter: {
+          name: 'a1',
+        },
+      });
+
+      await repository.insertAfterEnd(a1Node.get('uid') as string, newNode);
+
+      const schema = await repository.getJsonSchema(rootUid);
+      expect(schema.properties['newNode']['x-index']).toEqual(2);
+      expect(schema.properties.a1['x-index']).toEqual(1);
+      expect(schema.properties.b1['x-index']).toEqual(3);
+    });
+
+    it('should insertAfterEnd b1', async () => {
+      const newNode = {
+        name: 'newNode',
+      };
+
+      const b1Node = await repository.findOne({
+        filter: {
+          name: 'b1',
+        },
+      });
+
+      await repository.insertAfterEnd(b1Node.get('uid') as string, newNode);
+
+      const schema = await repository.getJsonSchema(rootUid);
+      expect(schema.properties['newNode']['x-index']).toEqual(3);
+      expect(schema.properties.a1['x-index']).toEqual(1);
+      expect(schema.properties.b1['x-index']).toEqual(2);
     });
   });
 });
