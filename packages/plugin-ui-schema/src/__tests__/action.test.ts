@@ -13,6 +13,9 @@ describe('action test', () => {
 
     db = app.db;
 
+    const queryInterface = db.sequelize.getQueryInterface();
+    await queryInterface.dropAllTables();
+
     app.plugin(PluginUiSchema);
 
     await app.load();

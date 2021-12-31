@@ -62,13 +62,13 @@ export default class UiSchemaRepository extends Repository {
     const treeCollection = db.getCollection('ui_schema_tree_path');
 
     const rawSql = `
-SELECT Schema.uid as uid, Schema.name as name, Schema.schema as schema ,
+SELECT SchemaTable.uid as uid, SchemaTable.name as name, SchemaTable.schema as 'schema' ,
 TreePath.depth as depth,
 NodeInfo.type as type, NodeInfo.async as async,  ParentPath.ancestor as parent
 FROM ${treeCollection.model.tableName} as TreePath 
-LEFT JOIN ${this.model.tableName} as Schema ON Schema.uid =  TreePath.descendant
-LEFT JOIN ${treeCollection.model.tableName} as NodeInfo ON NodeInfo.descendant = Schema.uid and NodeInfo.descendant = NodeInfo.ancestor and NodeInfo.depth = 0
-LEFT JOIN ${treeCollection.model.tableName} as ParentPath ON (ParentPath.descendant = Schema.uid AND ParentPath.depth = 1)
+LEFT JOIN ${this.model.tableName} as SchemaTable ON SchemaTable.uid =  TreePath.descendant
+LEFT JOIN ${treeCollection.model.tableName} as NodeInfo ON NodeInfo.descendant = SchemaTable.uid and NodeInfo.descendant = NodeInfo.ancestor and NodeInfo.depth = 0
+LEFT JOIN ${treeCollection.model.tableName} as ParentPath ON (ParentPath.descendant = SchemaTable.uid AND ParentPath.depth = 1)
 WHERE TreePath.ancestor = :ancestor  AND (NodeInfo.async  = false or TreePath.depth = 1)`;
 
     const nodes = await db.sequelize.query(rawSql, {
@@ -88,13 +88,13 @@ WHERE TreePath.ancestor = :ancestor  AND (NodeInfo.async  = false or TreePath.de
     const treeTable = treeCollection.model.tableName;
 
     const rawSql = `
-SELECT Schema.uid as uid, Schema.name as name, Schema.schema as schema ,
+SELECT SchemaTable.uid as uid, SchemaTable.name as name, SchemaTable.schema as 'schema' ,
 TreePath.depth as depth,
 NodeInfo.type as type, NodeInfo.async as async,  ParentPath.ancestor as parent, ParentPath.sort as sort
 FROM ${treeTable} as TreePath
-LEFT JOIN ${this.model.tableName} as Schema ON Schema.uid =  TreePath.descendant
-LEFT JOIN ${treeTable} as NodeInfo ON NodeInfo.descendant = Schema.uid and NodeInfo.descendant = NodeInfo.ancestor and NodeInfo.depth = 0
-LEFT JOIN ${treeTable} as ParentPath ON (ParentPath.descendant = Schema.uid AND ParentPath.depth = 1)
+LEFT JOIN ${this.model.tableName} as SchemaTable ON SchemaTable.uid =  TreePath.descendant
+LEFT JOIN ${treeTable} as NodeInfo ON NodeInfo.descendant = SchemaTable.uid and NodeInfo.descendant = NodeInfo.ancestor and NodeInfo.depth = 0
+LEFT JOIN ${treeTable} as ParentPath ON (ParentPath.descendant = SchemaTable.uid AND ParentPath.depth = 1)
 WHERE TreePath.ancestor = :ancestor  ${options?.includeAsyncNode ? '' : 'AND (NodeInfo.async != true )'}
       `;
 
@@ -152,13 +152,16 @@ WHERE TreePath.ancestor = :ancestor  ${options?.includeAsyncNode ? '' : 'AND (No
   }
 
   async remove(uid: string) {
+    const treePathTable = this.treeCollection().model.tableName;
+
     await this.database.sequelize.query(
       `
-    DELETE FROM ${this.treeCollection().model.tableName}
+    DELETE FROM ${treePathTable}
 WHERE descendant IN (
-SELECT descendant                     
-FROM ${this.treeCollection().model.tableName}                     
-WHERE ancestor = :uid)`,
+    select descendant FROM
+(SELECT descendant                     
+FROM ${treePathTable}                     
+WHERE ancestor = :uid)as descendantTable) `,
       {
         replacements: {
           uid,
@@ -300,10 +303,10 @@ WHERE ancestor = :uid)`,
       // if node is a tree root move tree to new path
       if (isTree) {
         await db.sequelize.query(
-          `DELETE FROM ${treeTable} 
-WHERE descendant IN (SELECT descendant FROM ${treeTable} WHERE ancestor = :uid)
-AND ancestor IN (SELECT ancestor FROM  ${treeTable} WHERE descendant = :uid AND ancestor != descendant)
-`,
+          `DELETE FROM ${treeTable}
+           WHERE descendant IN (SELECT descendant FROM (SELECT descendant FROM ${treeTable} WHERE ancestor = :uid) as descendantTable )
+             AND ancestor IN (SELECT ancestor FROM (SELECT ancestor FROM  ${treeTable} WHERE descendant = :uid AND ancestor != descendant) as ancestorTable)
+          `,
           {
             type: 'DELETE',
             replacements: {
