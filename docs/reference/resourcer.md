@@ -95,6 +95,8 @@ api.resource('posts.comments', 1).create();
 class Action {
   // 资源名称
   resourceName: string;
+  // 资源参数
+  resourceArgs: any[]; // api.resource() 的参数
   // 操作方法的名称
   name: string;
   // 操作方法的参数
@@ -103,6 +105,31 @@ class Action {
   get firstArg() {
     return this.args[0] || {};
   }
+}
+
+api.resource('posts').customMethod(1, {a: 'a'}, 2);
+// ctx.action 主要参数的情况
+{
+  // 资源名称
+  resourceName: 'posts',
+  resourceArgs: ['posts'],
+  name: 'customMethod',
+  args: [1, {a: 'a'}, 2],
+  // 额外的适配 db.collections 使用的参数
+  collectionName: 'posts',
+}
+
+api.resource('posts.comments', 1).customMethod(1, {a: 'a'}, 2);
+// ctx.action 主要参数的情况
+{
+  // 资源名称
+  resourceName: 'posts.comments',
+  resourceArgs: ['posts.comments', 1],
+  name: 'customMethod',
+  args: [1, {a: 'a'}, 2],
+  // 额外的适配 db.collections 使用的参数
+  collectionName: 'posts',
+  associationName: 'comments',
 }
 ```
 
