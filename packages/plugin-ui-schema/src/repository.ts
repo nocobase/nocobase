@@ -203,6 +203,10 @@ WHERE ancestor = :uid)`,
     await this.insertNodes(nodes);
   }
 
+  async insertAdjacent(position: 'beforeBegin' | 'afterBegin' | 'beforeEnd' | 'afterEnd', target: string, schema: any) {
+    await this[`insert${lodash.upperFirst(position)}`](target, schema);
+  }
+
   async insertAfterBegin(targetUid: string, schema: any) {
     await this.insertInner(targetUid, schema, 'first');
   }

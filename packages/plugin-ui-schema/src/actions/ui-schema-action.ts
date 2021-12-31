@@ -1,60 +1,76 @@
 import { Context } from '@nocobase/actions';
+import UiSchemaRepository from '../repository';
+import { values } from 'lodash';
+
+const getRepositoryFromCtx = (ctx: Context) => {
+  return ctx.db.getCollection('ui_schemas').repository as UiSchemaRepository;
+};
 
 export const uiSchemaActions = {
-  async insert(ctx: Context, next) {
-    const { db } = ctx;
-    const { values } = ctx.action.params;
+  async getJsonSchema(ctx: Context, next) {
+    const { resourceIndex } = ctx.action.params;
+    const repository = getRepositoryFromCtx(ctx);
+    ctx.body = await repository.getJsonSchema(resourceIndex);
+    await next();
   },
 
-  async create(ctx: Context, next) {
-    const { db } = ctx;
+  async getProperties(ctx: Context, next) {
+    const { resourceIndex } = ctx.action.params;
+    const repository = getRepositoryFromCtx(ctx);
+    ctx.body = await repository.getProperties(resourceIndex);
+    await next();
+  },
+
+  async insert(ctx: Context, next) {
     const { values } = ctx.action.params;
+    const repository = getRepositoryFromCtx(ctx);
+    await repository.insert(values);
 
-    const transaction = await db.sequelize.transaction();
-
-    try {
-      const repository = db.getCollection('ui_schemas').repository;
-      const model = await repository.create({
-        values,
-        transaction,
-      });
-
-      // insert tree path
-      const modelKey = model.get('key') as string;
-      const modelParentKey = model.get('parentKey') as string;
-      const treeCollection = db.getCollection('ui_schema_tree_path');
-
-      if (modelParentKey) {
-        await db.sequelize.query(
-          `INSERT INTO ${treeCollection.model.tableName} (ancestor, descendant)
-SELECT t.ancestor, :modelKey FROM ${treeCollection.model.tableName} AS t  WHERE t.descendant = :modelParentKey UNION ALL  SELECT :modelKey, :modelKey`,
-          {
-            type: 'INSERT',
-            transaction,
-            replacements: {
-              modelKey,
-              modelParentKey,
-            },
-          },
-        );
-      } else {
-        await db.sequelize.query(
-          `INSERT INTO ${treeCollection.model.tableName}(ancestor, descendant) VALUES (:modelKey, :modelKey)`,
-          {
-            type: 'INSERT',
-            replacements: {
-              modelKey,
-            },
-            transaction,
-          },
-        );
-      }
-
-      await transaction.commit();
-    } catch (err) {
-      throw err;
-    }
+    ctx.body = {
+      result: 'ok',
+    };
 
     await next();
   },
+
+  async remove(ctx: Context, next) {
+    const { resourceIndex } = ctx.action.params;
+    const repository = getRepositoryFromCtx(ctx);
+    await repository.remove(resourceIndex);
+
+    ctx.body = {
+      result: 'ok',
+    };
+
+    await next();
+  },
+
+  async insertAdjacent(ctx: Context, next) {
+    const { resourceIndex, position, values } = ctx.action.params;
+    const repository = getRepositoryFromCtx(ctx);
+    await repository.insertAdjacent(position, resourceIndex, values);
+
+    ctx.body = {
+      result: 'ok',
+    };
+
+    await next();
+  },
+  insertBeforeBegin: insertPositionActionBuilder('beforeBegin'),
+  insertAfterBegin: insertPositionActionBuilder('afterBegin'),
+  insertBeforeEnd: insertPositionActionBuilder('beforeEnd'),
+  insertAfterEnd: insertPositionActionBuilder('afterEnd'),
 };
+
+function insertPositionActionBuilder(position: 'beforeBegin' | 'afterBegin' | 'beforeEnd' | 'afterEnd') {
+  return async function (ctx: Context, next) {
+    const { resourceIndex, values } = ctx.action.params;
+    const repository = getRepositoryFromCtx(ctx);
+    await repository.insertAdjacent(position, resourceIndex, values);
+    ctx.body = {
+      result: 'ok',
+    };
+
+    await next();
+  };
+}

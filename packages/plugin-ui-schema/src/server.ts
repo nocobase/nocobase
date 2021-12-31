@@ -19,6 +19,9 @@ export default class PluginUiSchema extends Plugin {
       directory: path.resolve(__dirname, 'collections'),
     });
 
-    this.app.resourcer.registerActionHandler('ui_schemas:create', uiSchemaActions.create);
+    this.app.resourcer.define({
+      name: 'ui_schemas',
+      actions: uiSchemaActions,
+    });
   }
 }

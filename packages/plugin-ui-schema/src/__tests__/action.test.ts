@@ -9,147 +9,156 @@ describe('action test', () => {
   beforeEach(async () => {
     app = mockServer({
       registerActions: true,
-      database: {
-        logging: console.log,
-      },
     });
+
     db = app.db;
 
     app.plugin(PluginUiSchema);
 
     await app.load();
-    await db.sync();
+    await db.sync({
+      force: false,
+      alter: {
+        drop: false,
+      },
+    });
   });
 
-  it('should have ui schema collection', async () => {
-    expect(db.getCollection('ui_schemas')).toBeDefined();
-    expect(db.getCollection('ui_schema_tree_path')).toBeDefined();
+  afterEach(async () => {
+    await app.destroy();
   });
 
-  it('should create ui_schema object', async () => {
+  test('insert action', async () => {
     const response = await app
       .agent()
       .resource('ui_schemas')
-      .create({
+      .insert({
         values: {
-          name: 'rootSchema',
+          'x-uid': 'n1',
+          name: 'a',
+          type: 'object',
+          properties: {
+            b: {
+              'x-uid': 'n2',
+              type: 'object',
+              properties: {
+                c: { 'x-uid': 'n3' },
+              },
+            },
+            d: { 'x-uid': 'n4' },
+          },
         },
       });
 
     expect(response.statusCode).toEqual(200);
-
-    const repository = db.getCollection('ui_schemas').repository;
-    const object = await repository.findOne();
-    expect(object.get('name')).toEqual('rootSchema');
-
-    // it save tree path
-    const treeRepository = db.getCollection('ui_schema_tree_path').repository;
-    const path1 = await treeRepository.findOne();
-
-    expect(path1.get('ancestor')).toEqual(object.get('key'));
-    expect(path1.get('descendant')).toEqual(object.get('key'));
   });
 
-  it('should create child ui_schema', async () => {
+  test('getJsonSchema', async () => {
     await app
       .agent()
       .resource('ui_schemas')
-      .create({
+      .insert({
         values: {
-          name: 'rootSchema',
+          'x-uid': 'n1',
+          name: 'a',
+          type: 'object',
+          properties: {
+            b: {
+              'x-uid': 'n2',
+              type: 'object',
+              properties: {
+                c: { 'x-uid': 'n3' },
+              },
+            },
+            d: { 'x-uid': 'n4' },
+          },
         },
       });
 
-    const repository = db.getCollection('ui_schemas').repository;
-    const rootSchema = await repository.findOne({
-      filter: {
-        name: 'rootSchema',
-      },
+    const response = await app.agent().resource('ui_schemas').getJsonSchema({
+      resourceIndex: 'n1',
     });
 
-    await app
-      .agent()
-      .resource('ui_schemas')
-      .create({
-        values: {
-          name: 'child1',
-          parentKey: rootSchema.get('key'),
-        },
-      });
-
-    const child1 = await repository.findOne({
-      filter: {
-        name: 'child1',
-      },
-    });
-
-    expect(child1).toBeDefined();
-
-    const results = await db.getCollection('ui_schema_tree_path').repository.find();
-    expect(results.length).toEqual(3);
+    const { data } = response.body;
+    expect(data.properties.b.properties.c['x-uid']).toEqual('n3');
   });
 
-  it('should query children', async () => {
+  test('remove', async () => {
     await app
       .agent()
       .resource('ui_schemas')
-      .create({
+      .insert({
         values: {
-          name: 'root',
+          'x-uid': 'n1',
+          name: 'a',
+          type: 'object',
+          properties: {
+            b: {
+              'x-uid': 'n2',
+              type: 'object',
+              properties: {
+                c: { 'x-uid': 'n3' },
+              },
+            },
+            d: { 'x-uid': 'n4' },
+          },
         },
       });
 
-    const repository = db.getCollection('ui_schemas').repository;
-    const rootSchema = await repository.findOne({
-      filter: {
-        name: 'root',
-      },
+    let response = await app.agent().resource('ui_schemas').remove({
+      resourceIndex: 'n2',
     });
 
-    await app
-      .agent()
-      .resource('ui_schemas')
-      .create({
-        values: {
-          name: 'child-1',
-          parentKey: rootSchema.get('key'),
-        },
-      });
+    expect(response.statusCode).toEqual(200);
 
-    await app
-      .agent()
-      .resource('ui_schemas')
-      .create({
-        values: {
-          name: 'child-2',
-          parentKey: rootSchema.get('key'),
-        },
-      });
-
-    const child1 = await repository.findOne({
-      filter: {
-        name: 'child-1',
-      },
+    response = await app.agent().resource('ui_schemas').getJsonSchema({
+      resourceIndex: 'n1',
     });
 
+    const { data } = response.body;
+    expect(data.properties.b).not.toBeDefined();
+  });
+
+  test('insert adjacent', async () => {
     await app
       .agent()
       .resource('ui_schemas')
-      .create({
+      .insert({
         values: {
-          name: 'child-1-1',
-          parentKey: child1.get('key'),
+          'x-uid': 'n1',
+          name: 'a',
+          type: 'object',
+          properties: {
+            b: {
+              'x-uid': 'n2',
+              type: 'object',
+              properties: {
+                c: { 'x-uid': 'n3' },
+              },
+            },
+            d: { 'x-uid': 'n4' },
+          },
         },
       });
 
-    await app
+    let response = await app
       .agent()
       .resource('ui_schemas')
-      .create({
+      .insertAdjacent({
+        resourceIndex: 'n2',
+        position: 'beforeBegin',
         values: {
-          name: 'child-1-2',
-          parentKey: child1.get('key'),
+          'x-uid': 'n5',
+          name: 'e',
         },
       });
+
+    expect(response.statusCode).toEqual(200);
+    response = await app.agent().resource('ui_schemas').getJsonSchema({
+      resourceIndex: 'n1',
+    });
+
+    const { data } = response.body;
+    expect(data.properties.e['x-uid']).toEqual('n5');
   });
 });
