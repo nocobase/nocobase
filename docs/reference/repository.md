@@ -440,18 +440,18 @@ interface FindOneOptions extends findOptions {
   appends?: string[];
   // 排序，字段前面加上 “-” 表示降序
   sort?: string[];
-  // 通过 pk 过滤
-  filterByPk?: number | string;
+  // 通过 targetKey 过滤
+  filterByTk?: number | string;
 }
 ```
 
 ##### Examples
 
-大部分参数与 [repository.find()](#repositoryfind) 一致。这里只列举 filterByPk 的例子。
+大部分参数与 [repository.find()](#repositoryfind) 一致。这里只列举 filterByTk 的例子。
 
 ```ts
 await repository.findOne({
-  filterByPk: 1,
+  filterByTk: 1,
   // 等同于
   filter: {
     [Model.primaryKeyAttribute]: 1,
@@ -668,7 +668,7 @@ interface update<M extends Sequelize.Model> {
 
 interface UpdateOptions {
   filter?: any;
-  filterByPk?: number | string;
+  filterByTk?: number | string;
   // 数据
   values?: any;
   // 字段白名单
@@ -697,7 +697,7 @@ await repository.update({
 
 ```ts
 await repository.update({
-  filterByPk: 1,
+  filterByTk: 1,
   values: {
     a: 'b'
   },
@@ -736,7 +736,7 @@ values 也可以是关系数据，参数与 create 的 values 一致：
 
 ```ts
 await repository.update({
-  filterByPk: 1,
+  filterByTk: 1,
   values: {
     a: 'a',
     // 快速建立关联
@@ -776,7 +776,7 @@ interface destroy {
 
 interface DestroyOptions {
   filter?: any;
-  filterByPk?: number | string | number[] | string[];
+  filterByTk?: number | string | number[] | string[];
   transaction?: Sequelize.Transaction;
 }
 ```
@@ -843,7 +843,7 @@ interface IHasOneRepository<M extends Sequelize.Model> {
   // 删除
   destroy(): Promise<Boolean>;
   // 建立关联
-  set(options: PrimaryKey | AssociatedOptions): Promise<void>;
+  set(options: TargetKey | AssociatedOptions): Promise<void>;
   // 移除关联
   remove(options?: AssociatedOptions): Promise<void>;
 }
@@ -885,12 +885,12 @@ interface IBelongsToRepository<M extends Sequelize.Model> {
   // 删除
   destroy(): Promise<Boolean>;
   // 建立关联
-  set(options: PrimaryKey | AssociatedOptions): Promise<void>;
+  set(options: TargetKey | AssociatedOptions): Promise<void>;
   // 移除关联
   remove(options?: AssociatedOptions): Promise<void>;
 }
 
-type PrimaryKey = string | number;
+type TargetKey = string | number;
 
 interface AssociatedOptions {
   transaction?: Sequelize.Transaction;
@@ -934,17 +934,17 @@ interface IHasManyRepository<M extends Sequelize.Model> {
   // 删除
   destroy(options?: number | string | number[] | string[] | DestroyOptions): Promise<Boolean>;
   // 建立关联
-  set(options: PrimaryKey | PrimaryKey[] | AssociatedOptions): Promise<void>;
+  set(options: TargetKey | TargetKey[] | AssociatedOptions): Promise<void>;
   // 附加关联
-  add(options: PrimaryKey | PrimaryKey[] | AssociatedOptions): Promise<void>;
+  add(options: TargetKey | TargetKey[] | AssociatedOptions): Promise<void>;
   // 移除关联
-  remove(options: PrimaryKey | PrimaryKey[] | AssociatedOptions): Promise<void>;
+  remove(options: TargetKey | TargetKey[] | AssociatedOptions): Promise<void>;
 }
 
-type PrimaryKey = string | number;
+type TargetKey = string | number;
 
 interface AssociatedOptions {
-  pk?: PrimaryKey | PrimaryKey[];
+  tk?: TargetKey | TargetKey[];
   transaction?: Sequelize.Transaction;
 }
 ```
@@ -955,7 +955,7 @@ interface AssociatedOptions {
 repository.find();
 repository.create();
 repository.update({
-  filterByPk: 1,
+  filterByTk: 1,
   values: {},
 });
 repository.set(1);
@@ -981,18 +981,18 @@ interface IBelongsToManyRepository<M extends Sequelize.Model> {
   // 删除
   destroy(options?: number | string | number[] | string[] | DestroyOptions): Promise<Boolean>;
   // 建立关联
-  set(options: PrimaryKey | PrimaryKey[] | ThroughValues | ThroughValues[] | AssociatedOptions): Promise<void>;
+  set(options: TargetKey | TargetKey[] | ThroughValues | ThroughValues[] | AssociatedOptions): Promise<void>;
   // 附加关联，存在中间表数据
-  add(options: PrimaryKey | PrimaryKey[] | ThroughValues | ThroughValues[] | AssociatedOptions): Promise<void>;
+  add(options: TargetKey | TargetKey[] | ThroughValues | ThroughValues[] | AssociatedOptions): Promise<void>;
   // 移除关联
-  remove(options: PrimaryKey | PrimaryKey[] | AssociatedOptions): Promise<void>;
-  toggle(options: PrimaryKey | AssociatedOptions): Promise<void>;
+  remove(options: TargetKey | TargetKey[] | AssociatedOptions): Promise<void>;
+  toggle(options: TargetKey | AssociatedOptions): Promise<void>;
 }
 
-type PrimaryKey = string | number;
+type TargetKey = string | number;
 
 interface AssociatedOptions {
-  pk?: PrimaryKey | PrimaryKey[];
+  tk?: TargetKey | TargetKey[];
   transaction?: Sequelize.Transaction;
 }
 ```
@@ -1019,4 +1019,79 @@ repository.set([
   [2, {/* 中间表数据 */}],
   [3, {/* 中间表数据 */}],
 ]);
+```
+
+filterByTk 的查询
+
+```ts
+const User = db.collection({
+  name: 'users',
+  targetKeyForFilter: 'id', // 默认为 Primary Key，单表查询时使用
+  fields: [
+    {
+      name: 'posts',
+      type: 'hasMany',
+      foreignKey: 'userId',
+      sourceKey: 'id',
+      targetKey: 'id',
+    },
+    {
+      name: 'tags',
+      type: 'belongsToMany',
+      foreignKey: 'postId',
+      otherKey: 'tagId',
+      sourceKey: 'id',
+      targetKey: 'id',
+    },
+  ]
+});
+
+User.repository.findOne({
+  filterByTk: 1,
+});
+
+User.repository.relation('posts').of(2).findOne({
+  filterByTk: 1,
+});
+
+User.repository.relation('tags').of(2).findOne({
+  filterByTk: 1,
+});
+```
+
+如 collection-manager 插件的 collections 和 fields 查询为非常规的 pk 时，配置如下：
+
+```ts
+const Collection = db.collection({
+  name: 'collections',
+  targetKeyForFilter: 'name', // collections 的 targetKeyForFilter 改为了 name
+  fields: [
+    {
+      type: 'uid',
+      name: 'key',
+      primaryKey: true,
+    },
+    {
+      type: 'string',
+      name: 'name',
+      unique: true,
+    },
+    {
+      type: 'hasMany',
+      name: 'fields',
+      target: 'fields',
+      sourceKey: 'name', // collections 表的 name 字段
+      foreignKey: 'collectionName',
+      targetKey: 'name', // fields 表的 name 字段，fields 的 filterByTk 为 name
+    }
+  ]
+});
+
+Collection.repository.findOne({
+  filterByTk: 'tests',
+});
+
+Collection.repository.relation('fields').of('tests').findOne({
+  filterByTk: 'title',
+});
 ```
