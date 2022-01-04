@@ -108,6 +108,10 @@ export class FieldModel extends Model {
     return options.type == 'hasMany' && lodash.isArray(options.children) && options.children.length > 0;
   }
 
+  isSubTableField() {
+    return FieldModel.isSubTableOptions(this.get('options'));
+  }
+
   static reverseRelationType(type: string) {
     return {
       hasOne: 'belongsTo',

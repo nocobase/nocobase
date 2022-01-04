@@ -1,10 +1,12 @@
 import { mockServer, MockServer } from '@nocobase/test';
-import { Database } from '@nocobase/database';
+import { Database, HasManyField } from '@nocobase/database';
 import { mockUiSchema } from './mockUiSchema';
 import PluginCollectionManager from '../server';
 import { CollectionRepository } from '../repositories/collection-repository';
 import { CollectionModel } from '../models/collection-model';
 import { FieldModel } from '../models/field-model';
+import { CollectionManager } from '../collection-manager';
+import { queryTable } from './helper';
 
 describe('collection repository', () => {
   let app: MockServer;
@@ -111,5 +113,79 @@ describe('collection repository', () => {
     expect(collectionModel).not.toBeNull();
 
     expect(await db.getCollection('fields').repository.count()).toEqual(1);
+  });
+
+  it('should create subTable fields', async () => {
+    const fieldRepository = db.getCollection('fields').repository;
+
+    const orderCollectionModel = (await collectionRepository.create({
+      values: {
+        name: 'orders',
+      },
+    })) as CollectionModel;
+
+    await orderCollectionModel.migrate();
+
+    const options = {
+      interface: 'subTable',
+      type: 'hasMany',
+      collectionName: 'orders',
+      name: 'order-items',
+      uiSchema: {
+        type: 'array',
+        title: '订单详情',
+        'x-decorator': 'FormItem',
+        'x-component': 'Table',
+        'x-component-props': {},
+      },
+      children: [
+        {
+          interface: 'input',
+          type: 'string',
+          name: 'count',
+          uiSchema: {
+            type: 'string',
+            title: '商品数量',
+            'x-component': 'Input',
+            'x-decorator': 'FormItem',
+          },
+        },
+        {
+          interface: 'input',
+          type: 'decimal',
+          name: 'price',
+          uiSchema: {
+            type: 'number',
+            title: '商品金额',
+            'x-component': 'Input',
+            'x-decorator': 'FormItem',
+          },
+        },
+      ],
+    };
+
+    const fieldInstance = (await fieldRepository.create({
+      values: options,
+    })) as FieldModel;
+
+    expect(fieldInstance).toBeDefined();
+
+    // @ts-ignore
+    expect(await fieldInstance.countChildren()).toEqual(2);
+    await fieldInstance.load();
+
+    const ordersCollection = db.getCollection('orders');
+    const field = <HasManyField>ordersCollection.getField(fieldInstance.get('name') as string);
+    expect(field).toBeDefined();
+
+    const Target = field.TargetModel;
+    expect(Target.rawAttributes['count']).toBeDefined();
+    expect(Target.rawAttributes['price']).toBeDefined();
+
+    await orderCollectionModel.migrate();
+
+    const fields = await queryTable(ordersCollection.model, Target.tableName);
+    expect(fields['count']).toBeDefined();
+    expect(fields['price']).toBeDefined();
   });
 });

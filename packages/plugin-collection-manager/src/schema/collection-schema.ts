@@ -14,7 +14,7 @@ export default {
       primaryKey: true,
     },
     {
-      type: 'string',
+      type: 'uid',
       name: 'name',
       unique: true,
     },

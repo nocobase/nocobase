@@ -4,6 +4,7 @@ export default {
   name: 'fields',
   title: '字段配置',
   model: 'FieldModel',
+  repository: 'FieldRepository',
   autoGenId: false,
   sortable: {
     type: 'sort',
@@ -18,7 +19,7 @@ export default {
       prefix: 'f_',
     },
     {
-      type: 'string',
+      type: 'uid',
       name: 'name',
     },
     {
