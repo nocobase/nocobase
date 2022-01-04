@@ -14,7 +14,6 @@ describe('collection resource', () => {
   beforeEach(async () => {
     app = mockServer({
       registerActions: true,
-      database: {},
     });
     db = app.db;
 
@@ -66,7 +65,7 @@ describe('collection resource', () => {
       const testCollectionModel = await metaCollection.repository.findOne();
       expect(testCollectionModel).toBeDefined();
       expect(testCollectionModel.get('name')).toBeDefined();
-      expect(testCollectionModel.get('name')).toEqual(testCollectionModel.get('key'));
+      expect(testCollectionModel.get('name')).toEqual(testCollectionModel.get('name'));
     });
 
     test('create collection with sort field', async () => {
@@ -81,12 +80,6 @@ describe('collection resource', () => {
         });
 
       expect(response.statusCode).toEqual(200);
-
-      const testCollectionModel = await db.getCollection('collections').repository.findOne({
-        filter: {
-          name: 'tests',
-        },
-      });
 
       const fieldCollection = db.getCollection('fields');
       const sortField = await fieldCollection.repository.findOne();
@@ -249,7 +242,7 @@ describe('collection resource', () => {
 
       const reverseField = await db.getCollection('fields').repository.findOne({
         filter: {
-          name: reverseKey,
+          key: reverseKey,
         },
       });
 

@@ -20,30 +20,28 @@ export class CollectionRepository extends Repository {
       values: collectionSaveValues,
     })) as CollectionModel;
 
-    if (lodash.get(collectionOptions, 'sortable')) {
-      await CollectionModel.addField(
-        {
+    if (lodash.get(collectionOptions, 'options.sortable')) {
+      await this.database.getCollection('fields').repository.create({
+        values: {
           collectionName: collectionModel.getName(),
           name: 'sort',
           type: 'sort',
         },
-        this.database,
         transaction,
-      );
+      });
     }
 
     const fields = lodash.get(options, 'values.fields');
 
     if (lodash.isArray(fields)) {
       for (const fieldOption of fields) {
-        await CollectionModel.addField(
-          {
+        await this.database.getCollection('fields').repository.create({
+          values: {
             collectionName: collectionModel.getName(),
             ...fieldOption,
           },
-          this.database,
           transaction,
-        );
+        });
       }
     }
 

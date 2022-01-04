@@ -2,17 +2,18 @@ import { Context, destroyActionBuilder, getActionBuilder, listActionBuilder } fr
 import { CollectionManager } from '../collection-manager';
 import { Action } from '@nocobase/resourcer';
 import { CollectionModel } from '../models/collection-model';
+import { FieldModel } from '../models/field-model';
 
 const fieldActions = {
   async create(ctx: Context, next) {
     const { resourceName, associatedName, associatedIndex, values } = ctx.action.params;
 
-    const options = {
-      ...values,
-      collectionName: associatedIndex,
-    };
-
-    const collectionModel = await CollectionManager.createField(options, ctx.db);
+    const collectionModel = (await ctx.db.getCollection('fields').repository.create({
+      values: {
+        ...values,
+        collectionName: associatedIndex,
+      },
+    })) as FieldModel;
 
     await collectionModel.migrate();
   },
