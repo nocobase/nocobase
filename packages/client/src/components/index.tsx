@@ -17,3 +17,4 @@ export * from './block-item';
 export * from './dnd-context';
 export * from './grid';
 export * from './compose';
+export * from './record-provider';
