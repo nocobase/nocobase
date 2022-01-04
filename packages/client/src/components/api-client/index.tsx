@@ -1,12 +1,25 @@
 import React, { createContext, useContext } from 'react';
 import { default as useReq } from 'ahooks/lib/useRequest';
 
-export const APIClientContext = createContext(null);
+export interface IResource {
+  list?: () => Promise<any>;
+  get?: () => Promise<any>;
+  create?: () => Promise<any>;
+  update?: () => Promise<any>;
+  destroy?: () => Promise<any>;
+}
 
 export class APIClient {
-  request() {}
-  resource() {}
+  async request(options?: any) {
+    return {};
+  }
+
+  resource(name: string, of?: any): IResource {
+    return {};
+  }
 }
+
+export const APIClientContext = createContext<APIClient>(null);
 
 export interface APIClientProviderProps {
   apiClient: APIClient;
@@ -18,7 +31,16 @@ export function APIClientProvider(props: APIClientProviderProps) {
   return <APIClientContext.Provider value={apiClient}>{children}</APIClientContext.Provider>;
 }
 
+export function useAPIClient() {
+  return useContext(APIClientContext);
+}
+
 export function useRequest(service: any, options?: any) {
   const apiClient = useContext(APIClientContext);
-  return useReq(apiClient.request(service), options);
+  return useReq(() => apiClient.request(service), options);
+}
+
+export function useResource(name: any, of?: any) {
+  const apiClient = useContext(APIClientContext);
+  return apiClient.resource(name, of);
 }

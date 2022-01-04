@@ -10,4 +10,8 @@ group:
 
 ## APIClientProvider
 
+## useAPIClient
+
 ## useRequest
+
+## useResource
