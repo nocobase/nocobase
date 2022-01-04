@@ -1,4 +1,4 @@
-import { ISchema } from "@formily/react";
+import { ISchema } from '@formily/react';
 
 export interface CollectionManagerOptions {
   interfaces?: any;
@@ -17,5 +17,6 @@ export interface ICollectionProviderProps {
 
 export interface CollectionFieldOptions {
   name?: any;
+  sourceKey?: string; // association field
   uiSchema?: ISchema;
 }

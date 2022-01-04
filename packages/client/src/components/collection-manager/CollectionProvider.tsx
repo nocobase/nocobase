@@ -1,5 +1,4 @@
 import React from 'react';
-import { merge } from '@formily/shared';
 import { useCollectionManager } from './hooks';
 import { CollectionOptions } from './types';
 import { CollectionContext } from './context';

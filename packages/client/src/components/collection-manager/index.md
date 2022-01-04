@@ -125,7 +125,7 @@ const { collections, get } = useCollectionManager();
 与 `<CollectionProvider/>` 搭配使用
 
 ```jsx | pure
-const { name, fields, getField, findField } = useCollection();
+const { name, fields, getField, findField, resource } = useCollection();
 ```
 
 ### useCollectionField()
@@ -133,7 +133,7 @@ const { name, fields, getField, findField } = useCollection();
 与 `<CollectionFieldProvider/>` 搭配使用
 
 ```jsx | pure
-const { name, uiSchema } = useCollectionField();
+const { name, uiSchema, resource } = useCollectionField();
 ```
 
 ## Examples
