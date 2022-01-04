@@ -15,15 +15,15 @@ export class CollectionRepository extends Repository {
 
     const collectionSaveValues = collectionOptions.asCollectionOptions();
 
-    const collectionModel: CollectionModel = (await super.create<CollectionModel>({
+    const collectionModel = await super.create<M>({
       ...options,
       values: collectionSaveValues,
-    })) as CollectionModel;
+    });
 
     if (lodash.get(collectionOptions, 'options.sortable')) {
       await this.database.getCollection('fields').repository.create({
         values: {
-          collectionName: collectionModel.getName(),
+          collectionName: collectionModel.get('name'),
           name: 'sort',
           type: 'sort',
         },
@@ -37,7 +37,7 @@ export class CollectionRepository extends Repository {
       for (const fieldOption of fields) {
         await this.database.getCollection('fields').repository.create({
           values: {
-            collectionName: collectionModel.getName(),
+            collectionName: collectionModel.get('name'),
             ...fieldOption,
           },
           transaction,
@@ -45,7 +45,6 @@ export class CollectionRepository extends Repository {
       }
     }
 
-    // @ts-ignore
     return collectionModel;
   }
 
