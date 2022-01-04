@@ -9,6 +9,7 @@ import { FieldModel } from '../models/field-model';
 describe('collection repository', () => {
   let app: MockServer;
   let db: Database;
+  let collectionRepository: CollectionRepository;
 
   afterEach(async () => {
     await app.destroy();
@@ -17,14 +18,23 @@ describe('collection repository', () => {
   beforeEach(async () => {
     app = mockServer({
       registerActions: true,
-      database: {},
+      database: {
+        dialect: 'postgres',
+        database: 'nocobase_test',
+        username: 'chareice',
+        logging: console.log,
+      },
     });
     db = app.db;
+
+    await db.sequelize.getQueryInterface().dropAllTables();
 
     await mockUiSchema(db);
     app.plugin(PluginCollectionManager);
 
     await app.load();
+
+    collectionRepository = db.getCollection('collections').repository as CollectionRepository;
   });
 
   it('should use custom repository', async () => {
@@ -55,8 +65,6 @@ describe('collection repository', () => {
   });
 
   it('should load collection', async () => {
-    const collectionRepository = db.getCollection('collections').repository as CollectionRepository;
-
     await collectionRepository.create({
       values: {
         name: 'tests',
@@ -68,5 +76,40 @@ describe('collection repository', () => {
     await collectionRepository.load();
 
     expect(db.getCollection('tests')).toBeDefined();
+  });
+
+  it('should create collection', async () => {
+    const collectionOptions = {
+      name: 'tests',
+      fields: [
+        {
+          type: 'string',
+          name: 'name',
+        },
+      ],
+      logging: true,
+      paranoid: true,
+    };
+
+    await collectionRepository.create({
+      values: collectionOptions,
+    });
+
+    const collectionModel = await collectionRepository.findOne({
+      filter: {
+        name: 'tests',
+      },
+    });
+
+    const options = collectionModel.get('options');
+
+    expect(options).toMatchObject({
+      logging: true,
+      paranoid: true,
+    });
+
+    expect(collectionModel).not.toBeNull();
+
+    expect(await db.getCollection('fields').repository.count()).toEqual(1);
   });
 });

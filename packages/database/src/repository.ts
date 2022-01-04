@@ -136,6 +136,8 @@ const transaction = transactionWrapperBuilder(function () {
   return (<Repository>this).collection.model.sequelize.transaction();
 });
 
+export const transactionDecorator = transaction;
+
 class RelationRepositoryBuilder<R extends RelationRepository> {
   collection: Collection;
   associationName: string;

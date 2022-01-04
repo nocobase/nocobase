@@ -1,4 +1,4 @@
-import { RelationRepository, transaction } from './relation-repository';
+import { RelationRepository, relationTransactionDecorator as transaction } from './relation-repository';
 import { omit } from 'lodash';
 import { MultiAssociationAccessors, Op, Sequelize, Transaction } from 'sequelize';
 import { UpdateGuard } from '../update-guard';

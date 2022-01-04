@@ -1,4 +1,4 @@
-import { RelationRepository, transaction } from './relation-repository';
+import { RelationRepository, relationTransactionDecorator as transaction } from './relation-repository';
 import { Model, SingleAssociationAccessors } from 'sequelize';
 import { updateModelByValues } from '../update-associations';
 import lodash from 'lodash';

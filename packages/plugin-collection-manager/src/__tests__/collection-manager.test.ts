@@ -74,7 +74,6 @@ describe('collection manager', () => {
       db,
     );
 
-    console.log(await db.getCollection('fields').repository.find());
     expect(await db.getCollection('fields').repository.count()).toEqual(1);
   });
 });

@@ -7,7 +7,7 @@ import {
   MultipleRelationRepository,
 } from './multiple-relation-repository';
 import { CreateOptions, DestroyOptions, FindOptions, PK, PrimaryKey, UpdateOptions } from '../repository';
-import { transaction } from './relation-repository';
+import { relationTransactionDecorator as transaction } from './relation-repository';
 
 interface IHasManyRepository<M extends Model> {
   find(options?: FindOptions): Promise<M>;

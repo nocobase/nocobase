@@ -8,9 +8,11 @@ import { updateAssociations } from '../update-associations';
 import lodash from 'lodash';
 import { transactionWrapperBuilder } from '../transaction-decorator';
 
-export const transaction = transactionWrapperBuilder(function () {
+const transaction = transactionWrapperBuilder(function () {
   return this.source.model.sequelize.transaction();
 });
+
+export const relationTransactionDecorator = transaction;
 
 export abstract class RelationRepository {
   source: Collection;
@@ -33,13 +35,14 @@ export abstract class RelationRepository {
     return (<BelongsTo | HasOne | HasMany | BelongsToMany>this.association).accessors;
   }
 
+  @transaction()
   async create(options?: CreateOptions): Promise<any> {
     const createAccessor = this.accessors().create;
 
     const guard = UpdateGuard.fromOptions(this.target, options);
     const values = options.values;
 
-    const sourceModel = await this.getSourceModel();
+    const sourceModel = await this.getSourceModel(options.transaction);
 
     const instance = await sourceModel[createAccessor](guard.sanitize(options.values), options);
 

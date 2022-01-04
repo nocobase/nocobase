@@ -4,7 +4,7 @@ import { FindAndCountOptions, FindOneOptions, MultipleRelationRepository } from 
 import { CreateOptions, DestroyOptions, FindOptions, PrimaryKey, UpdateOptions } from '../repository';
 import { AssociatedOptions, PrimaryKeyWithThroughValues } from './types';
 import lodash from 'lodash';
-import { transaction } from './relation-repository';
+import { relationTransactionDecorator as transaction } from './relation-repository';
 
 type CreateBelongsToManyOptions = CreateOptions;
 

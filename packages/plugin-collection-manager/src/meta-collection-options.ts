@@ -14,7 +14,6 @@ export class MetaCollectionOptions {
 
   asCollectionOptions() {
     return {
-      ...lodash.omit(this.options, 'fields'),
       name: this.options.name,
       title: this.options.title,
       options: this.options,
