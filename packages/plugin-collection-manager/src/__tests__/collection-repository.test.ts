@@ -5,7 +5,6 @@ import PluginCollectionManager from '../server';
 import { CollectionRepository } from '../repositories/collection-repository';
 import { CollectionModel } from '../models/collection-model';
 import { FieldModel } from '../models/field-model';
-import { CollectionManager } from '../collection-manager';
 import { queryTable } from './helper';
 
 describe('collection repository', () => {
@@ -20,12 +19,6 @@ describe('collection repository', () => {
   beforeEach(async () => {
     app = mockServer({
       registerActions: true,
-      database: {
-        dialect: 'postgres',
-        database: 'nocobase_test',
-        username: 'chareice',
-        logging: console.log,
-      },
     });
     db = app.db;
 
@@ -59,7 +52,7 @@ describe('collection repository', () => {
 
     const field = await db.getCollection('fields').repository.create({
       values: {
-        collectionKey: testCollection.get('key'),
+        collectionName: testCollection.get('name'),
       },
     });
 
@@ -78,6 +71,31 @@ describe('collection repository', () => {
     await collectionRepository.load();
 
     expect(db.getCollection('tests')).toBeDefined();
+  });
+
+  it('should migrate collection', async () => {
+    const collectionModel = (await collectionRepository.create({
+      values: {
+        name: 'tests',
+      },
+    })) as CollectionModel;
+
+    expect(await db.getCollection('collections').repository.count()).toEqual(1);
+
+    await collectionModel.load();
+    const collection = db.getCollection('tests');
+    expect(collection).toBeDefined();
+
+    const model = collection.model;
+
+    await expect(async () => {
+      await queryTable(model, 'tests');
+    }).rejects.toThrowError();
+
+    await collectionModel.migrate();
+
+    const tableFields = await queryTable(model, 'tests');
+    expect(tableFields['id']).toBeDefined();
   });
 
   it('should create collection', async () => {

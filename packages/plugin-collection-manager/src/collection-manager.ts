@@ -1,9 +1,5 @@
 import { Collection, Database, FieldOptions as DBFieldOptions } from '@nocobase/database';
 import path from 'path';
-import { MetaCollectionOptions } from './meta-collection-options';
-import { CollectionModel } from './models/collection-model';
-import lodash from 'lodash';
-
 const SchemaDirectory = path.join(__dirname, './schema');
 
 export interface CollectionOptions {
@@ -47,71 +43,5 @@ export class CollectionManager {
         drop: false,
       },
     });
-  }
-
-  static async createCollection(collectionOptions: CollectionOptions, db: Database): Promise<CollectionModel> {
-    const transaction = await db.sequelize.transaction();
-
-    try {
-      const options = new MetaCollectionOptions(collectionOptions);
-
-      const collectionSaveValues = options.asCollectionOptions();
-
-      const collectionInstance = await db.getCollection('collections').repository.create<CollectionModel>({
-        values: collectionSaveValues,
-        transaction,
-      });
-
-      if (lodash.get(collectionOptions, 'sortable')) {
-        await CollectionModel.addField(
-          {
-            collectionName: collectionInstance.getName(),
-            name: 'sort',
-            type: 'sort',
-          },
-          db,
-          transaction,
-        );
-      }
-
-      const fields = lodash.get(collectionOptions, 'fields');
-
-      if (lodash.isArray(fields)) {
-        for (const fieldOption of fields) {
-          await CollectionModel.addField(
-            {
-              collectionName: collectionInstance.getName(),
-              ...fieldOption,
-            },
-            db,
-            transaction,
-          );
-        }
-      }
-
-      await transaction.commit();
-      return collectionInstance;
-    } catch (err) {
-      await transaction.rollback();
-      throw err;
-    }
-  }
-
-  /**
-   * save field to field table only
-   * @param fieldOptions
-   */
-  static async createField(fieldOptions: FieldOptions, db: Database) {
-    const collectionInstance = await db.getCollection('collections').repository.findOne({
-      filter: {
-        name: fieldOptions.collectionName,
-      },
-    });
-
-    if (!collectionInstance) {
-      throw new Error(`${fieldOptions.collectionName} collection not exist`);
-    }
-
-    return await CollectionModel.addField(fieldOptions, db);
   }
 }
