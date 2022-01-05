@@ -16,3 +16,5 @@ group:
 ## useRequest
 
 ## useResource
+
+<code src="./demos/demo1.tsx" />

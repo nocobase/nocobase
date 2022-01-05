@@ -24,6 +24,7 @@
     "@formily/core": "^2.0.7",
     "@formily/react": "^2.0.7",
     "ahooks": "^3.0.5",
+    "axios": "^0.24.0",
     "i18next": "^21.6.0",
     "react-i18next": "^11.15.1"
   },
@@ -40,5 +41,8 @@
     "build": "rimraf -rf lib esm dist && npm run build:cjs && npm run build:esm",
     "build:cjs": "tsc --project tsconfig.build.json",
     "build:esm": "tsc --project tsconfig.build.json --module es2015 --outDir esm"
+  },
+  "devDependencies": {
+    "axios-mock-adapter": "^1.20.0"
   }
 }
