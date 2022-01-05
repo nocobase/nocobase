@@ -7,7 +7,7 @@ export default defineConfig({
   outputPath: 'docs-dist',
   mode: 'site',
   resolve: {
-    includes: ['docs', 'packages/client/src'],
+    includes: ['docs', 'packages/client'],
   },
   hash: true,
   // more config: https://d.umijs.org/config
