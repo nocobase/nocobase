@@ -2,7 +2,7 @@ import { mockServer, MockServer } from '@nocobase/test';
 import { BelongsToManyField, Database } from '@nocobase/database';
 import { mockUiSchema } from './mockUiSchema';
 import PluginCollectionManager from '../server';
-import { FieldOptions } from '../collection-manager';
+import { CollectionOptions, FieldOptions } from '../collection-manager';
 import { CollectionModel } from '../models/collection-model';
 import { queryTable } from './helper';
 import { CollectionRepository } from '../repositories/collection-repository';
@@ -98,7 +98,7 @@ describe('collection model', () => {
 
     it('should failed when target collection not exists', async () => {
       const options: FieldOptions = {
-        collectionName: postCollectionModel.getName(),
+        collectionName: postCollectionModel.get('name'),
         interface: 'someInterface',
         type: 'hasMany',
         uiSchema: {
@@ -118,11 +118,11 @@ describe('collection model', () => {
 
     it('should create hasMany field', async () => {
       const options: FieldOptions = {
-        collectionName: postCollectionModel.getName(),
+        collectionName: postCollectionModel.get('name'),
         interface: 'someInterface',
         type: 'hasMany',
         name: 'test-hasMany',
-        target: commentCollectionModel.getName(),
+        target: commentCollectionModel.get('name'),
         uiSchema: {
           title: 'some ui schema',
           'x-decorator': 'FormItem',
@@ -144,7 +144,7 @@ describe('collection model', () => {
       expect(hasManyFieldInstance.get('interface')).toEqual(options.interface);
       // type exists
       expect(hasManyFieldInstance.get('type')).toEqual(options.type);
-      expect((await hasManyFieldInstance.getCollection()).get('key')).toEqual(postCollectionModel.getKey());
+      expect((await hasManyFieldInstance.getCollection()).get('key')).toEqual(postCollectionModel.get('key'));
       expect(hasManyFieldInstance.get('options')).toEqual(options);
       // uiSchema Saved
       expect(await hasManyFieldInstance.getUiSchema()).not.toBeNull();
@@ -536,6 +536,63 @@ describe('collection model', () => {
       await UserModel.load();
 
       expect(userCollection.getField('age')).not.toBeDefined();
+    });
+  });
+
+  describe('model attributes', () => {
+    it('should save options to options attribute', async () => {
+      const rawOptions = {
+        name: '123',
+        abc: { aa: 'aa' },
+        'abc.bb': 'bb',
+        component: {
+          a: 'a',
+        },
+        'component.b': 'b',
+        options: {
+          bcd: 'bbb',
+        },
+        arr: [{ a: 'a' }, { b: 'b' }],
+      } as CollectionOptions;
+
+      const collectionModel = (await collectionRepository.create({
+        values: rawOptions,
+      })) as CollectionModel;
+
+      expect(collectionModel.get()).toMatchObject({
+        abc: { aa: 'aa', bb: 'bb' },
+        bcd: 'bbb',
+        name: '123',
+        component: { a: 'a', b: 'b' },
+        arr: [{ a: 'a' }, { b: 'b' }],
+      });
+    });
+
+    it('should merge options', async () => {
+      const collectionModel = await collectionRepository.create({
+        values: {
+          title: 'aa',
+          'x-component-props': { key1: 'val1', arr1: [1, 2, 3], arr2: [4, 5] },
+        },
+      });
+
+      collectionModel.set({
+        'x-component-props': { key2: 'val2', arr1: [3, 4] },
+        'x-decorator-props': { key1: 'val1' },
+      });
+
+      collectionModel.set('x-component-props', { arr2: [1, 2, 3] });
+
+      expect(collectionModel.get()).toMatchObject({
+        title: 'aa',
+        'x-component-props': {
+          key1: 'val1',
+          key2: 'val2',
+          arr1: [3, 4],
+          arr2: [1, 2, 3],
+        },
+        'x-decorator-props': { key1: 'val1' },
+      });
     });
   });
 });

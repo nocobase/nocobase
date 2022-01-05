@@ -206,4 +206,30 @@ describe('collection repository', () => {
     expect(fields['count']).toBeDefined();
     expect(fields['price']).toBeDefined();
   });
+
+  it('should delete collection', async () => {
+    const collectionOptions = {
+      name: 'tests',
+      fields: [
+        {
+          type: 'string',
+          name: 'name',
+        },
+      ],
+      logging: true,
+      paranoid: true,
+    };
+
+    await collectionRepository.create({
+      values: collectionOptions,
+    });
+
+    const collectionModel = await collectionRepository.findOne({
+      filter: {
+        name: 'tests',
+      },
+    });
+
+    console.log(collectionModel.get());
+  });
 });
