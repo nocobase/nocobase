@@ -1,7 +1,7 @@
 import React from 'react';
-import { APIClientProvider, useRequest, APIClient } from '@nocobase/client';
 import axios from 'axios';
 import MockAdapter from 'axios-mock-adapter';
+import { useRequest, APIClient, APIClientProvider } from '@nocobase/client';
 
 const instance = axios.create({
   baseURL: 'http://localhost/api/',
@@ -25,7 +25,7 @@ function Hello() {
     action: 'get',
     params: {},
   });
-  return <div>{data?.data?.name}</div>;
+  return <div>{data?.name}</div>;
 }
 
 export default () => {
