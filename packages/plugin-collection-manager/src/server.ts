@@ -44,6 +44,17 @@ export default class PluginCollectionManager extends Plugin {
     this.app.resourcer.registerActionHandler('collections.fields:destroy', fieldActions.destroy);
     this.app.resourcer.registerActionHandler('collections.fields:list', fieldActions.list);
 
+    db.on('collections.beforeDestroy', async (model: FieldModel, options) => {
+      const transaction = options.transaction;
+
+      await db.getCollection('fields').repository.destroy({
+        filter: {
+          collectionKey: model.get('key'),
+        },
+        transaction,
+      });
+    });
+
     db.on('fields.afterCreate', async (model: FieldModel, options) => {
       const transaction = options.transaction;
 

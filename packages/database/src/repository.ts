@@ -210,6 +210,7 @@ export class Repository<TModelAttributes extends {} = any, TCreationAttributes e
   async find(options?: FindOptions) {
     const model = this.collection.model;
     const transaction = await this.getTransaction(options);
+
     const opts = {
       subQuery: false,
       ...this.buildQueryOptions(options),
@@ -381,6 +382,7 @@ export class Repository<TModelAttributes extends {} = any, TCreationAttributes e
     if (filterByPk && !options.filter) {
       return await this.model.destroy({
         ...options,
+        individualHooks: true,
         where: {
           [this.model.primaryKeyAttribute]: {
             [Op.in]: filterByPk,
@@ -391,12 +393,13 @@ export class Repository<TModelAttributes extends {} = any, TCreationAttributes e
     }
 
     if (options.filter) {
-      let pks = (
-        await this.find({
-          filter: options.filter,
-          transaction,
-        })
-      ).map((instance) => instance[this.model.primaryKeyAttribute]);
+      const instances = await this.find({
+        filter: options.filter,
+        transaction,
+      });
+
+      console.log({ instances });
+      let pks = instances.map((instance) => instance[this.model.primaryKeyAttribute]);
 
       if (filterByPk) {
         pks = lodash.intersection(pks, filterByPk);

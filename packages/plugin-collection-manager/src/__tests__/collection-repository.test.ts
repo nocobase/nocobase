@@ -19,6 +19,12 @@ describe('collection repository', () => {
   beforeEach(async () => {
     app = mockServer({
       registerActions: true,
+      database: {
+        dialect: 'postgres',
+        username: 'chareice',
+        database: 'nocobase_test',
+        logging: console.log,
+      },
     });
     db = app.db;
 
@@ -230,6 +236,15 @@ describe('collection repository', () => {
       },
     });
 
-    console.log(collectionModel.get());
+    expect(collectionModel).toEqual(expect.anything());
+    expect(await db.getCollection('fields').repository.count()).toEqual(1);
+
+    await collectionRepository.destroy({
+      filter: {
+        name: 'tests',
+      },
+    });
+
+    expect(await db.getCollection('fields').repository.count()).toEqual(0);
   });
 });
