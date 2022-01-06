@@ -12,11 +12,13 @@ const nodeKeys = ['properties', 'patternProperties', 'additionalProperties'];
 
 export default class UiSchemaRepository extends Repository {
   static schemaToSingleNodes(schema: any, carry: SchemaNode[] = [], childOptions: ChildOptions = null): SchemaNode[] {
-    const node = lodash.isString(schema)
-      ? {
-          'x-uid': schema,
-        }
-      : schema;
+    const node = lodash.cloneDeep(
+      lodash.isString(schema)
+        ? {
+            'x-uid': schema,
+          }
+        : schema,
+    );
 
     if (!lodash.get(node, 'name')) {
       node.name = uid();
@@ -62,7 +64,7 @@ export default class UiSchemaRepository extends Repository {
     const treeCollection = db.getCollection('ui_schema_tree_path');
 
     const rawSql = `
-SELECT SchemaTable.uid as uid, SchemaTable.name as name, SchemaTable.schema as 'schema' ,
+SELECT SchemaTable.uid as uid, SchemaTable.name as name, SchemaTable.schema as "schema",
 TreePath.depth as depth,
 NodeInfo.type as type, NodeInfo.async as async,  ParentPath.ancestor as parent
 FROM ${treeCollection.model.tableName} as TreePath 
@@ -88,7 +90,7 @@ WHERE TreePath.ancestor = :ancestor  AND (NodeInfo.async  = false or TreePath.de
     const treeTable = treeCollection.model.tableName;
 
     const rawSql = `
-SELECT SchemaTable.uid as uid, SchemaTable.name as name, SchemaTable.schema as 'schema' ,
+SELECT SchemaTable.uid as uid, SchemaTable.name as name, SchemaTable.schema as "schema" ,
 TreePath.depth as depth,
 NodeInfo.type as type, NodeInfo.async as async,  ParentPath.ancestor as parent, ParentPath.sort as sort
 FROM ${treeTable} as TreePath
@@ -149,6 +151,64 @@ WHERE TreePath.ancestor = :ancestor  ${options?.includeAsyncNode ? '' : 'AND (No
 
   treeCollection() {
     return this.database.getCollection('ui_schema_tree_path');
+  }
+
+  async patch(newSchema: any, options?) {
+    let handleTransaction = true;
+    let transaction;
+    if (options?.transaction) {
+      handleTransaction = false;
+      transaction = options.transaction;
+    } else {
+      transaction = await this.database.sequelize.transaction();
+    }
+
+    const rootUid = newSchema['x-uid'];
+    const oldTree = await this.getJsonSchema(rootUid);
+
+    const traverSchemaTree = async (schema, path = []) => {
+      const node = schema;
+      const oldNode = path.length == 0 ? oldTree : lodash.get(oldTree, path);
+      const oldNodeUid = oldNode['x-uid'];
+
+      await this.updateNode(oldNodeUid, node, transaction);
+
+      const properties = node.properties;
+      if (lodash.isPlainObject(properties)) {
+        for (const name of Object.keys(properties)) {
+          await traverSchemaTree(properties[name], [...path, 'properties', name]);
+        }
+      }
+    };
+
+    try {
+      await traverSchemaTree(newSchema);
+
+      handleTransaction && (await transaction.commit());
+    } catch (err) {
+      handleTransaction && (await transaction.rollback());
+      throw err;
+    }
+  }
+
+  async updateNode(uid: string, schema: any, transaction?: Transaction) {
+    const nodeModel = await this.findOne({
+      filter: {
+        uid,
+      },
+    });
+
+    await nodeModel.update(
+      {
+        schema: {
+          ...(nodeModel.get('schema') as any),
+          ...lodash.omit(schema, ['x-async', 'name', 'x-uid', 'properties']),
+        },
+      },
+      {
+        transaction,
+      },
+    );
   }
 
   async remove(uid: string, options?) {

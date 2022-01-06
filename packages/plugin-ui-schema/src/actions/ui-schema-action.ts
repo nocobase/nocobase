@@ -44,6 +44,18 @@ export const uiSchemaActions = {
     await next();
   },
 
+  async patch(ctx: Context, next) {
+    const { values } = ctx.action.params;
+    const repository = getRepositoryFromCtx(ctx);
+    await repository.patch(values);
+
+    ctx.body = {
+      result: 'ok',
+    };
+
+    await next();
+  },
+
   async insertAdjacent(ctx: Context, next) {
     const { resourceIndex, position, values } = ctx.action.params;
     const repository = getRepositoryFromCtx(ctx);
