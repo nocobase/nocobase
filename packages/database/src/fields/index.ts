@@ -1,7 +1,7 @@
 import * as Fields from './field-types';
 import { IField, IFields } from './field-types';
 import { FieldOptions } from './option-types';
-import { ABSTRACT } from 'sequelize/lib/data-types';
+import { Sequelize } from 'sequelize';
 
 /**
  * 字段统一都叫 Field，分 Column 和 Relation 两大类
@@ -80,8 +80,8 @@ export function getDataTypeKey(type: any): string {
   if (Object.prototype.hasOwnProperty.call(type, 'key')) {
     return type.key.toUpperCase();
   }
-
-  if (type instanceof ABSTRACT) {
+  // @ts-ignore
+  if (type instanceof Sequelize.DataTypes.ABSTRACT) {
     return type.constructor.name.toUpperCase();
   }
 
@@ -96,7 +96,8 @@ export function getDataTypeKey(type: any): string {
  */
 export function buildField(options: FieldOptions, context: Fields.FieldContext) {
   let { type } = options;
-  if (type instanceof ABSTRACT) {
+  // @ts-ignore
+  if (type instanceof Sequelize.DataTypes.ABSTRACT) {
     options = { ...type.options, ...options };
   }
   const dataType = getDataTypeKey(type);
