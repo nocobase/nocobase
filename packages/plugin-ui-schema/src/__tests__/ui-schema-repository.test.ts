@@ -578,4 +578,66 @@ describe('ui_schema repository', () => {
       expect(schema.properties['d']).toBeDefined();
     });
   });
+
+  describe('patch', function () {
+    let rootNode;
+    let rootUid: string;
+
+    beforeEach(async () => {
+      const root = {
+        type: 'object',
+        title: 'title',
+        name: 'root',
+        properties: {
+          a1: {
+            type: 'string',
+            title: 'A1',
+            'x-component': 'Input',
+          },
+          b1: {
+            type: 'string',
+            title: 'B1',
+            properties: {
+              c1: {
+                type: 'string',
+                title: 'C1',
+              },
+              d1: {
+                type: 'string',
+                title: 'D1',
+              },
+            },
+          },
+        },
+      };
+
+      await repository.insert(root);
+
+      rootNode = await repository.findOne({
+        filter: {
+          name: 'root',
+        },
+      });
+
+      rootUid = rootNode.get('uid') as string;
+    });
+
+    it('should patch root ui schema', async () => {
+      await repository.patch({
+        'x-uid': rootUid,
+        title: 'test-title',
+        properties: {
+          a1: {
+            type: 'string',
+            title: 'new a1 title',
+            'x-component': 'Input',
+          },
+        },
+      });
+
+      const newTree = await repository.getJsonSchema(rootUid);
+      expect(newTree.title).toEqual('test-title');
+      expect(newTree.properties.a1.title).toEqual('new a1 title');
+    });
+  });
 });
