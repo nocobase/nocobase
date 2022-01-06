@@ -74,6 +74,22 @@ export default class PluginCollectionManager extends Plugin {
       });
     });
 
+    db.on('fields.beforeDestroy', async (model: FieldModel, options) => {
+      const transaction = options.transaction;
+
+      if (model.isSubTableField()) {
+        const targetName = model.get('options')['target'];
+
+        // destroy subTable collection
+        await db.getCollection('collections').repository.destroy({
+          filter: {
+            name: targetName,
+          },
+          transaction,
+        });
+      }
+    });
+
     db.on('fields.afterCreate', async (model: FieldModel, options) => {
       const transaction = options.transaction;
 

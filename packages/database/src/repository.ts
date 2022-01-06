@@ -398,7 +398,6 @@ export class Repository<TModelAttributes extends {} = any, TCreationAttributes e
         transaction,
       });
 
-      console.log({ instances });
       let pks = instances.map((instance) => instance[this.model.primaryKeyAttribute]);
 
       if (filterByPk) {

@@ -19,12 +19,6 @@ describe('collection repository', () => {
   beforeEach(async () => {
     app = mockServer({
       registerActions: true,
-      database: {
-        dialect: 'postgres',
-        username: 'chareice',
-        database: 'nocobase_test',
-        logging: console.log,
-      },
     });
     db = app.db;
 
@@ -274,6 +268,72 @@ describe('collection repository', () => {
     await collectionRepository.destroy({
       filter: {
         name: 'users',
+      },
+    });
+
+    expect(await db.getCollection('fields').repository.count()).toEqual(0);
+  });
+
+  it('should delete subTable collection', async () => {
+    const fieldRepository = db.getCollection('fields').repository;
+
+    const orderCollectionModel = (await collectionRepository.create({
+      values: {
+        name: 'orders',
+      },
+    })) as CollectionModel;
+
+    await orderCollectionModel.migrate();
+
+    const options = {
+      interface: 'subTable',
+      type: 'hasMany',
+      collectionName: 'orders',
+      name: 'order-items',
+      uiSchema: {
+        type: 'array',
+        title: '订单详情',
+        'x-decorator': 'FormItem',
+        'x-component': 'Table',
+        'x-component-props': {},
+      },
+      children: [
+        {
+          interface: 'input',
+          type: 'string',
+          name: 'count',
+          uiSchema: {
+            type: 'string',
+            title: '商品数量',
+            'x-component': 'Input',
+            'x-decorator': 'FormItem',
+          },
+        },
+        {
+          interface: 'input',
+          type: 'decimal',
+          name: 'price',
+          uiSchema: {
+            type: 'number',
+            title: '商品金额',
+            'x-component': 'Input',
+            'x-decorator': 'FormItem',
+          },
+        },
+      ],
+    };
+
+    const fieldInstance = (await fieldRepository.create({
+      values: options,
+    })) as FieldModel;
+
+    await fieldInstance.migrate();
+
+    expect(await db.getCollection('fields').repository.count()).toEqual(4);
+
+    await collectionRepository.destroy({
+      filter: {
+        name: 'orders',
       },
     });
 
