@@ -247,4 +247,36 @@ describe('collection repository', () => {
 
     expect(await db.getCollection('fields').repository.count()).toEqual(0);
   });
+
+  it('should delete collection with reverseField', async () => {
+    await collectionRepository.create({
+      values: {
+        name: 'users',
+      },
+    });
+
+    await collectionRepository.create({
+      values: {
+        name: 'posts',
+      },
+    });
+
+    await db.getCollection('fields').repository.create({
+      values: {
+        collectionName: 'users',
+        type: 'hasMany',
+        target: 'posts',
+      },
+    });
+
+    expect(await db.getCollection('fields').repository.count()).toEqual(2);
+
+    await collectionRepository.destroy({
+      filter: {
+        name: 'users',
+      },
+    });
+
+    expect(await db.getCollection('fields').repository.count()).toEqual(0);
+  });
 });

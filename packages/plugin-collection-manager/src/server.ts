@@ -47,6 +47,25 @@ export default class PluginCollectionManager extends Plugin {
     db.on('collections.beforeDestroy', async (model: FieldModel, options) => {
       const transaction = options.transaction;
 
+      // fields keys
+      const fields = await db.getCollection('fields').repository.find({
+        filter: {
+          collectionKey: model.get('key'),
+        },
+        transaction,
+      });
+
+      const fieldKeys = fields.map((field) => field.get('key'));
+
+      // destroy reverse fields
+      await db.getCollection('fields').repository.destroy({
+        filter: {
+          reverseKey: fieldKeys,
+        },
+        transaction,
+      });
+
+      // destroy fields
       await db.getCollection('fields').repository.destroy({
         filter: {
           collectionKey: model.get('key'),
