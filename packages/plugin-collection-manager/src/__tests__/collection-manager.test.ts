@@ -1,9 +1,9 @@
 import { MockServer, mockServer } from '@nocobase/test';
 import { CollectionManager } from '../collection-manager';
 import { Database } from '@nocobase/database';
-import { mockUiSchema } from './mockUiSchema';
 import PluginCollectionManager from '../server';
 import { queryTable } from './helper';
+import PluginUiSchema from '@nocobase/plugin-ui-schema';
 
 describe('collection manager', () => {
   let app: MockServer;
@@ -23,7 +23,7 @@ describe('collection manager', () => {
 
     db = app.db;
 
-    await mockUiSchema(db);
+    app.plugin(PluginUiSchema);
     app.plugin(PluginCollectionManager);
 
     await app.load();

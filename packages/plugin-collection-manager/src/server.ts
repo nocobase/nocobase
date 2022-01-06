@@ -157,17 +157,19 @@ export default class PluginCollectionManager extends Plugin {
 
       const uiSchemaOptions = model.get('options')['uiSchema'];
 
-      const uiSchemaRepository = db.getCollection('ui_schemas').repository as UiSchemaRepository;
-      const insertedNodes = await uiSchemaRepository.insert(uiSchemaOptions, {
-        transaction,
-      });
+      if (uiSchemaOptions) {
+        const uiSchemaRepository = db.getCollection('ui_schemas').repository as UiSchemaRepository;
+        const insertedNodes = await uiSchemaRepository.insert(uiSchemaOptions, {
+          transaction,
+        });
 
-      const rootNode = insertedNodes[0];
+        const rootNode = insertedNodes[0];
 
-      // @ts-ignore
-      await model.setUiSchema(rootNode, {
-        transaction,
-      });
+        // @ts-ignore
+        await model.setUiSchema(rootNode, {
+          transaction,
+        });
+      }
     });
   }
 }

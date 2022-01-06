@@ -20,11 +20,6 @@ describe('collection repository', () => {
   beforeEach(async () => {
     app = mockServer({
       registerActions: true,
-      database: {
-        dialect: 'postgres',
-        username: 'chareice',
-        database: 'nocobase_test',
-      },
     });
 
     db = app.db;

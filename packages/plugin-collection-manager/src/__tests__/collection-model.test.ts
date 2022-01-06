@@ -1,6 +1,5 @@
 import { mockServer, MockServer } from '@nocobase/test';
 import { BelongsToManyField, Database } from '@nocobase/database';
-import { mockUiSchema } from './mockUiSchema';
 import PluginCollectionManager from '../server';
 import { CollectionOptions, FieldOptions } from '../collection-manager';
 import { CollectionModel } from '../models/collection-model';
@@ -8,6 +7,7 @@ import { queryTable } from './helper';
 import { CollectionRepository } from '../repositories/collection-repository';
 import { FieldRepository } from '../repositories/field-repository';
 import { FieldModel } from '../models/field-model';
+import PluginUiSchema from '@nocobase/plugin-ui-schema';
 
 describe('collection model', () => {
   let app: MockServer;
@@ -26,7 +26,7 @@ describe('collection model', () => {
     });
     db = app.db;
 
-    await mockUiSchema(db);
+    app.plugin(PluginUiSchema);
     app.plugin(PluginCollectionManager);
 
     await app.load();

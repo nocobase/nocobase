@@ -1,7 +1,7 @@
 import { MockServer, mockServer } from '@nocobase/test';
 import { Database } from '@nocobase/database';
 import PluginCollectionManager from '../server';
-import { mockUiSchema } from './mockUiSchema';
+import PluginUiSchema from '@nocobase/plugin-ui-schema';
 
 describe('collection resource', () => {
   let app: MockServer;
@@ -20,8 +20,7 @@ describe('collection resource', () => {
     const queryInterface = db.sequelize.getQueryInterface();
     await queryInterface.dropAllTables();
 
-    await mockUiSchema(db);
-
+    app.plugin(PluginUiSchema);
     app.plugin(PluginCollectionManager);
 
     await app.load();
