@@ -7,6 +7,7 @@ export class FieldRepository extends Repository {
   @transactionDecorator()
   async create<M extends Model>(options: CreateOptions): Promise<M> {
     const { values, transaction } = options;
+    console.log({ values });
     const newValues = {
       name: values.name,
       type: values.type,

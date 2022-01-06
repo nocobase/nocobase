@@ -11,7 +11,10 @@ export class CollectionRepository extends Repository {
   async create<M extends Model>(options: CreateOptions): Promise<M> {
     const transaction = options.transaction;
 
-    const collectionModel = await super.create<M>(options);
+    const collectionModel = await super.create<M>({
+      ...options,
+      values: lodash.omit(options.values, 'fields'),
+    });
 
     if (collectionModel.get('sortable')) {
       await this.database.getCollection('fields').repository.create({
@@ -24,7 +27,7 @@ export class CollectionRepository extends Repository {
       });
     }
 
-    const fields = lodash.get(collectionModel.get('options'), 'fields');
+    const fields = lodash.get(options, 'values.fields');
 
     if (lodash.isArray(fields)) {
       for (const fieldOption of fields) {

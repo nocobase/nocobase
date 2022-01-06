@@ -385,4 +385,30 @@ describe('collection repository', () => {
 
     expect(await db.getCollection('ui_schemas').repository.count()).toEqual(0);
   });
+
+  test('self association collection', async () => {
+    await collectionRepository.create({
+      values: {
+        name: 'tests',
+        fields: [
+          {
+            type: 'belongsToMany',
+            target: 'tests',
+            name: 'children',
+            uiSchema: {
+              type: 'children',
+            },
+            reverseField: {
+              type: 'belongsToMany',
+              target: 'tests',
+              name: 'parents',
+              uiSchema: {
+                type: 'parents',
+              },
+            },
+          },
+        ],
+      },
+    });
+  });
 });
