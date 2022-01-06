@@ -1,11 +1,12 @@
 import { mockServer, MockServer } from '@nocobase/test';
 import { Database, HasManyField } from '@nocobase/database';
-import { mockUiSchema } from './mockUiSchema';
 import PluginCollectionManager from '../server';
+import PluginUiSchema from '@nocobase/plugin-ui-schema';
 import { CollectionRepository } from '../repositories/collection-repository';
 import { CollectionModel } from '../models/collection-model';
 import { FieldModel } from '../models/field-model';
 import { queryTable } from './helper';
+import { FieldRepository } from '../repositories/field-repository';
 
 describe('collection repository', () => {
   let app: MockServer;
@@ -19,12 +20,18 @@ describe('collection repository', () => {
   beforeEach(async () => {
     app = mockServer({
       registerActions: true,
+      database: {
+        dialect: 'postgres',
+        username: 'chareice',
+        database: 'nocobase_test',
+      },
     });
+
     db = app.db;
 
     await db.sequelize.getQueryInterface().dropAllTables();
 
-    await mockUiSchema(db);
+    app.plugin(PluginUiSchema);
     app.plugin(PluginCollectionManager);
 
     await app.load();
@@ -338,5 +345,49 @@ describe('collection repository', () => {
     });
 
     expect(await db.getCollection('fields').repository.count()).toEqual(0);
+  });
+
+  it('should delete collection with uiSchema', async () => {
+    const fieldRepository = db.getCollection('fields').repository as FieldRepository;
+
+    const orderCollectionModel = (await collectionRepository.create({
+      values: {
+        name: 'orders',
+      },
+    })) as CollectionModel;
+
+    await fieldRepository.create({
+      values: {
+        collectionName: 'orders',
+        interface: 'someInterface',
+        type: 'string',
+
+        uiSchema: {
+          type: 'string',
+          title: 'B1',
+          name: 'order-field',
+          properties: {
+            c1: {
+              type: 'string',
+              title: 'C1',
+            },
+            d1: {
+              type: 'string',
+              title: 'D1',
+            },
+          },
+        },
+      },
+    });
+
+    expect(await db.getCollection('ui_schemas').repository.count()).toEqual(3);
+
+    await collectionRepository.destroy({
+      filter: {
+        name: 'orders',
+      },
+    });
+
+    expect(await db.getCollection('ui_schemas').repository.count()).toEqual(0);
   });
 });

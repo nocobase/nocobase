@@ -1,4 +1,5 @@
 import { Plugin } from '@nocobase/server';
+import { UiSchemaRepository } from '@nocobase/plugin-ui-schema';
 import { CollectionManager, FieldOptions } from './collection-manager';
 import { collectionsActions } from './actions/collection';
 import { fieldActions } from './actions/fields';
@@ -88,6 +89,14 @@ export default class PluginCollectionManager extends Plugin {
           transaction,
         });
       }
+
+      if (model.get('uiSchemaUid')) {
+        const uiSchemaRepository = db.getCollection('ui_schemas').repository as UiSchemaRepository;
+
+        await uiSchemaRepository.remove(model.get('uiSchemaUid') as string, {
+          transaction,
+        });
+      }
     });
 
     db.on('fields.afterCreate', async (model: FieldModel, options) => {
@@ -141,6 +150,24 @@ export default class PluginCollectionManager extends Plugin {
           transaction,
         });
       }
+    });
+
+    db.on('fields.afterCreate', async function insertUiSchema(model: FieldModel, options) {
+      const transaction = options.transaction;
+
+      const uiSchemaOptions = model.get('options')['uiSchema'];
+
+      const uiSchemaRepository = db.getCollection('ui_schemas').repository as UiSchemaRepository;
+      const insertedNodes = await uiSchemaRepository.insert(uiSchemaOptions, {
+        transaction,
+      });
+
+      const rootNode = insertedNodes[0];
+
+      // @ts-ignore
+      await model.setUiSchema(rootNode, {
+        transaction,
+      });
     });
   }
 }

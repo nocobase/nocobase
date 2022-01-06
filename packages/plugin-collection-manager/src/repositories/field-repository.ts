@@ -1,7 +1,7 @@
-import { CreateOptions, Repository, transactionDecorator, uid } from '@nocobase/database';
+import { CreateOptions, Repository, transactionDecorator } from '@nocobase/database';
 import { Model } from 'sequelize';
 import { FieldModel } from '../models/field-model';
-import lodash from 'lodash';
+import { uid } from '@nocobase/utils';
 
 export class FieldRepository extends Repository {
   @transactionDecorator()
@@ -11,7 +11,6 @@ export class FieldRepository extends Repository {
       name: values.name,
       type: values.type,
       interface: values.interface,
-      uiSchema: values.uiSchema,
       options: values,
     };
 
@@ -37,6 +36,7 @@ export class FieldRepository extends Repository {
         values: {
           name: `sub-table${uid()}`,
         },
+        blacklist: ['uiSchema'],
         transaction,
       });
 

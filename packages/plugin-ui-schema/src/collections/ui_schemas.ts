@@ -5,6 +5,7 @@ export default {
   title: '字段配置',
   autoGenId: false,
   timestamps: false,
+  model: 'UiSchemaModel',
   repository: 'UiSchemaRepository',
   fields: [
     {

@@ -151,23 +151,57 @@ WHERE TreePath.ancestor = :ancestor  ${options?.includeAsyncNode ? '' : 'AND (No
     return this.database.getCollection('ui_schema_tree_path');
   }
 
-  async remove(uid: string) {
+  async remove(uid: string, options?) {
+    let handleTransaction: boolean = true;
+    let transaction;
+
+    if (options?.transaction) {
+      transaction = options.transaction;
+      handleTransaction = false;
+    } else {
+      transaction = await this.database.sequelize.transaction();
+    }
+
     const treePathTable = this.treeCollection().model.tableName;
 
-    await this.database.sequelize.query(
-      `
-    DELETE FROM ${treePathTable}
-WHERE descendant IN (
-    select descendant FROM
-(SELECT descendant                     
-FROM ${treePathTable}                     
-WHERE ancestor = :uid)as descendantTable) `,
-      {
-        replacements: {
-          uid,
+    try {
+      await this.database.sequelize.query(
+        `DELETE FROM ${this.model.tableName} WHERE uid IN (
+          SELECT descendant FROM ${treePathTable} WHERE ancestor = :uid
+          )
+      `,
+        {
+          replacements: {
+            uid,
+          },
+          transaction,
         },
-      },
-    );
+      );
+      await this.database.sequelize.query(
+        `
+            DELETE FROM ${treePathTable}
+            WHERE descendant IN (
+                select descendant FROM
+                    (SELECT descendant
+                     FROM ${treePathTable}
+                     WHERE ancestor = :uid)as descendantTable) `,
+        {
+          replacements: {
+            uid,
+          },
+          transaction,
+        },
+      );
+
+      if (handleTransaction) {
+        await transaction.commit();
+      }
+    } catch (err) {
+      if (handleTransaction) {
+        await transaction.rollback();
+      }
+      throw err;
+    }
   }
 
   async insertBeside(targetUid: string, schema: any, side: 'before' | 'after') {
@@ -226,24 +260,39 @@ WHERE ancestor = :uid)as descendantTable) `,
     await this.insertBeside(targetUid, schema, 'after');
   }
 
-  async insertNodes(nodes: SchemaNode[]) {
-    const transaction = await this.database.sequelize.transaction();
+  async insertNodes(nodes: SchemaNode[], options?) {
+    let handleTransaction: boolean = true;
+    let transaction;
+
+    if (options?.transaction) {
+      transaction = options.transaction;
+      handleTransaction = false;
+    } else {
+      transaction = await this.database.sequelize.transaction();
+    }
+
+    const insertedNodes = [];
 
     try {
       for (const node of nodes) {
-        await this.insertSingleNode(node, transaction);
+        insertedNodes.push(await this.insertSingleNode(node, transaction));
       }
 
-      await transaction.commit();
+      if (handleTransaction) {
+        await transaction.commit();
+      }
+      return insertedNodes;
     } catch (err) {
-      await transaction.rollback();
+      if (handleTransaction) {
+        await transaction.rollback();
+      }
       throw err;
     }
   }
 
-  async insert(schema: any) {
+  async insert(schema: any, options?) {
     const nodes = UiSchemaRepository.schemaToSingleNodes(schema);
-    await this.insertNodes(nodes);
+    return await this.insertNodes(nodes, options);
   }
 
   async insertSingleNode(schema: SchemaNode, transaction: Transaction) {
@@ -471,5 +520,7 @@ SELECT t.ancestor, :modelKey, depth + 1 FROM ${treeCollection.model.tableName} A
         },
       );
     }
+
+    return savedNode;
   }
 }
