@@ -19,6 +19,20 @@ export default class PluginUiSchema extends Plugin {
       directory: path.resolve(__dirname, 'collections'),
     });
 
+    await db.getCollection('ui_schemas').sync({
+      force: false,
+      alter: {
+        drop: false,
+      },
+    });
+
+    await db.getCollection('ui_schema_tree_path').sync({
+      force: false,
+      alter: {
+        drop: false,
+      },
+    });
+
     this.app.resourcer.define({
       name: 'ui_schemas',
       actions: uiSchemaActions,

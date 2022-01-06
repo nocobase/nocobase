@@ -1,6 +1,5 @@
 import { Context } from '@nocobase/actions';
 import UiSchemaRepository from '../repository';
-import { values } from 'lodash';
 
 const getRepositoryFromCtx = (ctx: Context) => {
   return ctx.db.getCollection('ui_schemas').repository as UiSchemaRepository;
