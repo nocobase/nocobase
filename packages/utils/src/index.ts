@@ -10,3 +10,4 @@ export function merge(obj1: any, obj2: any) {
 
 export * from './mixin';
 export * from './mixin/AsyncEmitter';
+export * from './uid';
