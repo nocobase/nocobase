@@ -1,3 +1,3 @@
-import { MagicModel } from '@nocobase/database';
+import { MagicAttributeModel } from '@nocobase/database';
 
-export class FieldModel extends MagicModel {}
+export class FieldModel extends MagicAttributeModel {}
