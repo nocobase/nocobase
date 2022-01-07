@@ -117,11 +117,7 @@ describe('belongs to many', () => {
   let PostTag;
 
   beforeEach(async () => {
-    db = mockDatabase({
-      database: 'nocobase_test',
-      username: 'chareice',
-      dialect: 'postgres',
-    });
+    db = mockDatabase();
     PostTag = db.collection({
       name: 'posts_tags',
       fields: [{ type: 'string', name: 'tagged_at' }],
