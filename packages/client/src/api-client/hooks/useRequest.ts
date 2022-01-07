@@ -4,9 +4,9 @@ import { Options } from 'ahooks/lib/useRequest/src/types';
 import { default as useReq } from 'ahooks/lib/useRequest';
 import { APIClientContext } from '../context';
 
-type Service = (...args: any[]) => Promise<any>;
+type FunctionService = (...args: any[]) => Promise<any>;
 
-type ResourceOptions<P = any> = {
+type ResourceActionOptions<P = any> = {
   resource?: string;
   resourceOf?: any;
   action?: string;
@@ -14,7 +14,7 @@ type ResourceOptions<P = any> = {
 };
 
 export function useRequest<P>(
-  service: AxiosRequestConfig<P> | ResourceOptions<P> | Service,
+  service: AxiosRequestConfig<P> | ResourceActionOptions<P> | FunctionService,
   options?: Options<any, any>,
 ) {
   const api = useContext(APIClientContext);

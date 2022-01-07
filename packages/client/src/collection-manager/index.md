@@ -111,6 +111,8 @@ const collection = {
 }
 ```
 
+<code src="./demos/demo2.tsx"/>
+
 ## Hooks
 
 ### useCollectionManager()
@@ -137,6 +139,6 @@ const { name, fields, getField, findField, resource } = useCollection();
 const { name, uiSchema, resource } = useCollectionField();
 ```
 
-## Examples
+resource 需要与 `<RecordProvider/>` 搭配使用，用于提供当前数据表行记录的上下文。如：
 
-<code src="./demos/demo2.tsx"/>
+<code src="./demos/demo3.tsx"/>

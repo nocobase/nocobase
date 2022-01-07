@@ -12,19 +12,19 @@ group:
 ```tsx | pure
 const actions = {
   // 表单可选操作
-  Form: [],
+  FormAction: [],
   // 抽屉表单可选操作
-  DrawerForm: [],
+  DrawerFormAction: [],
   // 对话框表单可选操作
-  ModalForm: [],
+  ModalFormAction: [],
   // 详情区块可选操作
-  Details: [],
+  DetailsAction: [],
   // 表格区块可选操作
-  Table: [],
+  TableAction: [],
   // 表格行可选操作
-  TableRow: [],
+  TableRowAction: [],
   // 日历可选操作
-  Calendar: [],
+  CalendarAction: [],
 };
 
 const blocks = {

@@ -4,7 +4,7 @@ import React, { createContext, useContext } from 'react';
 export const RecordContext = createContext({});
 export const AsyncRecordContext = createContext<any>({});
 
-export const RecordProvider: React.FC<any> = (props) => {
+export const RecordProvider: React.FC<{record: any}> = (props) => {
   const { record, children } = props;
   return <RecordContext.Provider value={record}>{children}</RecordContext.Provider>;
 };
