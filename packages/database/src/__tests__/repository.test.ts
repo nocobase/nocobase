@@ -8,7 +8,7 @@ describe('find by targetKey', function () {
 
     const User = db.collection({
       name: 'users',
-      targetKeyForFilter: 'name',
+      filterTargetKey: 'name',
       autoGenId: false,
       fields: [
         {

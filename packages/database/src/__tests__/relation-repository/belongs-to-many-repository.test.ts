@@ -12,7 +12,7 @@ describe('belongs to many with target key', function () {
 
     Post = db.collection({
       name: 'posts',
-      targetKeyForFilter: 'title',
+      filterTargetKey: 'title',
       autoGenId: false,
       fields: [
         { type: 'string', name: 'title', primaryKey: true },
@@ -29,7 +29,7 @@ describe('belongs to many with target key', function () {
 
     Tag = db.collection({
       name: 'tags',
-      targetKeyForFilter: 'name',
+      filterTargetKey: 'name',
       autoGenId: false,
       fields: [
         { type: 'string', name: 'name', primaryKey: true },

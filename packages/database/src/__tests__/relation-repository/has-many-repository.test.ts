@@ -7,7 +7,7 @@ describe('has many with target key', function () {
     const db = mockDatabase();
     const User = db.collection<{ id: number; name: string }, { name: string }>({
       name: 'users',
-      targetKeyForFilter: 'name',
+      filterTargetKey: 'name',
       autoGenId: false,
       fields: [
         { type: 'string', name: 'name', unique: true },
@@ -18,7 +18,7 @@ describe('has many with target key', function () {
 
     const Post = db.collection({
       name: 'posts',
-      targetKeyForFilter: 'title',
+      filterTargetKey: 'title',
       autoGenId: false,
       fields: [
         { type: 'string', name: 'title', unique: true },

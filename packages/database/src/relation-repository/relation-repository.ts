@@ -54,7 +54,7 @@ export abstract class RelationRepository {
     if (!this.sourceModel) {
       this.sourceModel = await this.source.model.findOne({
         where: {
-          [this.source.filterTargetKey]: this.sourceKeyValue,
+          [this.associationField().sourceKey]: this.sourceKeyValue,
         },
       });
     }
