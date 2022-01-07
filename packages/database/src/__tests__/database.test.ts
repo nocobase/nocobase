@@ -1,5 +1,6 @@
 import { mockDatabase } from './index';
 import path from 'path';
+import { Model } from '..';
 
 describe('database', () => {
   test('import', async () => {
@@ -165,4 +166,30 @@ describe('database', () => {
 
     expect(listener).toHaveBeenCalled();
   });
+
+  test('custom model', async () => {
+    class CustomModel extends Model {
+      customMethod() {
+        this.setDataValue('abc', 'abc');
+      }
+    }
+
+    const db = mockDatabase();
+
+    db.registerModels({
+      CustomModel,
+    });
+
+    const Test = db.collection({
+      name: 'tests',
+      model: 'CustomModel',
+    });
+
+    await Test.sync();
+
+    const test = await Test.model.create<any>();
+    test.customMethod();
+    expect(test.get('abc')).toBe('abc');
+  });
+
 });

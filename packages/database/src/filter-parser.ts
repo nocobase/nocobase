@@ -3,20 +3,30 @@ import _ from 'lodash';
 import { flatten, unflatten } from 'flat';
 import { Database } from './database';
 import lodash from 'lodash';
+import { Collection } from './collection';
 
 const debug = require('debug')('noco-database');
 
 type FilterType = any;
 
+interface FilterParserContext {
+  collection: Collection;
+}
+
 export default class FilterParser {
+  collection: Collection;
   database: Database;
   model: ModelCtor<Model>;
   filter: FilterType;
+  context: FilterParserContext;
 
-  constructor(model: ModelCtor<any>, database: Database, filter: FilterType) {
-    this.model = model;
+  constructor(filter: FilterType, context: FilterParserContext) {
+    const { collection } = context;
+    this.collection = collection;
+    this.context = context;
+    this.model = collection.model;
     this.filter = this.prepareFilter(filter);
-    this.database = database;
+    this.database = collection.context.database;
   }
 
   prepareFilter(filter: FilterType) {

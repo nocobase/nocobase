@@ -6,8 +6,9 @@ import {
   FindOneOptions,
   MultipleRelationRepository,
 } from './multiple-relation-repository';
-import { CreateOptions, DestroyOptions, FindOptions, PK, PrimaryKey, UpdateOptions } from '../repository';
+import { CreateOptions, DestroyOptions, FindOptions, TK, TargetKey, UpdateOptions } from '../repository';
 import { transaction } from './relation-repository';
+import lodash from 'lodash';
 
 interface IHasManyRepository<M extends Model> {
   find(options?: FindOptions): Promise<M>;
@@ -18,30 +19,30 @@ interface IHasManyRepository<M extends Model> {
   // 更新
   update(options?: UpdateOptions): Promise<M>;
   // 删除
-  destroy(options?: PK | DestroyOptions): Promise<Boolean>;
+  destroy(options?: TK | DestroyOptions): Promise<Boolean>;
   // 建立关联
-  set(options: PrimaryKey | PrimaryKey[] | AssociatedOptions): Promise<void>;
+  set(options: TargetKey | TargetKey[] | AssociatedOptions): Promise<void>;
   // 附加关联
-  add(options: PrimaryKey | PrimaryKey[] | AssociatedOptions): Promise<void>;
+  add(options: TargetKey | TargetKey[] | AssociatedOptions): Promise<void>;
   // 移除关联
-  remove(options: PrimaryKey | PrimaryKey[] | AssociatedOptions): Promise<void>;
+  remove(options: TargetKey | TargetKey[] | AssociatedOptions): Promise<void>;
 }
 
 export class HasManyRepository extends MultipleRelationRepository implements IHasManyRepository<any> {
   @transaction((args, transaction) => {
     return {
-      filterByPk: args[0],
+      filterByTk: args[0],
       transaction,
     };
   })
-  async destroy(options?: PK | DestroyOptions): Promise<Boolean> {
+  async destroy(options?: TK | DestroyOptions): Promise<Boolean> {
     const transaction = await this.getTransaction(options);
 
     const sourceModel = await this.getSourceModel(transaction);
 
     const where = [
       {
-        [this.association.foreignKey]: sourceModel.get(this.source.model.primaryKeyAttribute),
+        [this.association.foreignKey]: sourceModel.get((this.association as any).sourceKey),
       },
     ];
 
@@ -54,21 +55,18 @@ export class HasManyRepository extends MultipleRelationRepository implements IHa
 
       where.push(filterResult.where);
     }
-    if (options && options['filterByPk']) {
-      if (typeof options === 'object' && options['filterByPk']) {
-        options = options['filterByPk'];
+
+    if (options && options['filterByTk']) {
+      if (typeof options === 'object' && options['filterByTk']) {
+        options = options['filterByTk'];
       }
 
-      const targetInstances = (<any>this.association).toInstanceArray(options);
-
       where.push({
-        [this.target.primaryKeyAttribute]: targetInstances.map((targetInstance) =>
-          targetInstance.get(this.target.primaryKeyAttribute),
-        ),
+        [this.targetKey()]: options,
       });
     }
 
-    await this.target.destroy({
+    await this.targetModel.destroy({
       where: {
         [Op.and]: where,
       },
@@ -95,7 +93,7 @@ export class HasManyRepository extends MultipleRelationRepository implements IHa
       transaction,
     };
   })
-  async set(options: PrimaryKey | PrimaryKey[] | AssociatedOptions): Promise<void> {
+  async set(options: TargetKey | TargetKey[] | AssociatedOptions): Promise<void> {
     const transaction = await this.getTransaction(options);
 
     const sourceModel = await this.getSourceModel(transaction);
@@ -111,7 +109,7 @@ export class HasManyRepository extends MultipleRelationRepository implements IHa
       transaction,
     };
   })
-  async add(options: PrimaryKey | PrimaryKey[] | AssociatedOptions): Promise<void> {
+  async add(options: TargetKey | TargetKey[] | AssociatedOptions): Promise<void> {
     const transaction = await this.getTransaction(options);
 
     const sourceModel = await this.getSourceModel(transaction);
