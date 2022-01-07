@@ -29,18 +29,6 @@ export class OptionsParser {
     return this.isAssociation(path.split('.')[0]);
   }
 
-  parseFilterByPk() {
-    if (this.options?.filterByTk) {
-      return {
-        where: {
-          [this.collection.filterTargetKey]: this.options.filterByTk,
-        },
-      };
-    }
-
-    return null;
-  }
-
   toSequelizeParams() {
     const queryParams = this.filterParser.toSequelizeParams();
 

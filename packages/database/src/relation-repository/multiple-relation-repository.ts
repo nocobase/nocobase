@@ -8,7 +8,7 @@ import {
   CountOptions,
   DestroyOptions,
   Filter,
-  FilterByPK,
+  FilterByTk,
   FindOptions,
   PK,
   PrimaryKey,
@@ -18,7 +18,7 @@ import {
 
 export interface FindAndCountOptions extends CommonFindOptions {}
 
-export interface FindOneOptions extends CommonFindOptions, FilterByPK {}
+export interface FindOneOptions extends CommonFindOptions, FilterByTk {}
 
 export interface AssociatedOptions extends TransactionAble {
   pk?: PK;

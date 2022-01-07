@@ -63,11 +63,11 @@ export interface CountOptions extends Omit<SequelizeCreateOptions, 'distinct' | 
   filter?: Filter;
 }
 
-export interface FilterByPK {
+export interface FilterByTk {
   filterByTk?: PrimaryKey;
 }
 
-export interface FindOptions extends SequelizeFindOptions, CommonFindOptions, FilterByPK {}
+export interface FindOptions extends SequelizeFindOptions, CommonFindOptions, FilterByTk {}
 
 export interface CommonFindOptions {
   filter?: Filter;
