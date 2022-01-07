@@ -7,24 +7,36 @@ import { UpdateGuard } from '../update-guard';
 import { updateAssociations } from '../update-associations';
 import lodash from 'lodash';
 import { transactionWrapperBuilder } from '../transaction-decorator';
+import { Field, RelationField } from '@nocobase/database';
 
 export const transaction = transactionWrapperBuilder(function () {
-  return this.source.model.sequelize.transaction();
+  return this.sourceCollection.model.sequelize.transaction();
 });
 
 export abstract class RelationRepository {
-  source: Collection;
+  sourceCollection: Collection;
   association: Association;
-  target: ModelCtor<any>;
-  sourceId: string | number;
-  sourceModel: Model;
+  targetModel: ModelCtor<any>;
+  targetCollection: Collection;
+  associationName: string;
+  associationField: RelationField;
+  sourceKeyValue: string | number;
+  sourceInstance: Model;
 
-  constructor(source: Collection, association: string, sourceId: string | number) {
-    this.source = source;
-    this.sourceId = sourceId;
-    this.association = this.source.model.associations[association];
+  constructor(sourceCollection: Collection, association: string, sourceKeyValue: string | number) {
+    this.sourceCollection = sourceCollection;
+    this.sourceKeyValue = sourceKeyValue;
+    this.associationName = association;
+    this.association = this.sourceCollection.model.associations[association];
 
-    this.target = this.association.target;
+    this.associationField = this.sourceCollection.getField(association);
+
+    this.targetModel = this.association.target;
+    this.targetCollection = this.sourceCollection.context.database.modelCollection.get(this.targetModel);
+  }
+
+  targetKey() {
+    return this.associationField.targetKey;
   }
 
   protected accessors() {
@@ -34,7 +46,7 @@ export abstract class RelationRepository {
   async create(options?: CreateOptions): Promise<any> {
     const createAccessor = this.accessors().create;
 
-    const guard = UpdateGuard.fromOptions(this.target, options);
+    const guard = UpdateGuard.fromOptions(this.targetModel, options);
     const values = options.values;
 
     const sourceModel = await this.getSourceModel();
@@ -47,23 +59,30 @@ export abstract class RelationRepository {
   }
 
   async getSourceModel(transaction?: any) {
-    if (!this.sourceModel) {
-      this.sourceModel = await this.source.model.findByPk(this.sourceId, {
-        transaction,
+    if (!this.sourceInstance) {
+      this.sourceInstance = await this.sourceCollection.model.findOne({
+        where: {
+          [this.associationField.sourceKey]: this.sourceKeyValue,
+        },
       });
     }
 
-    return this.sourceModel;
+    return this.sourceInstance;
   }
 
   protected buildQueryOptions(options: FindOptions) {
-    const parser = new OptionsParser(this.target, this.source.context.database, options);
+    const parser = new OptionsParser(options, {
+      collection: this.targetCollection,
+      targetKey: this.targetKey(),
+    });
     const params = parser.toSequelizeParams();
     return { ...options, ...params };
   }
 
   protected parseFilter(filter: Filter) {
-    const parser = new FilterParser(this.target, this.source.context.database, filter);
+    const parser = new FilterParser(filter, {
+      collection: this.targetCollection,
+    });
     return parser.toSequelizeParams();
   }
 
@@ -73,7 +92,7 @@ export abstract class RelationRepository {
     }
 
     if (autoGen) {
-      return await this.source.model.sequelize.transaction();
+      return await this.sourceCollection.model.sequelize.transaction();
     }
 
     return null;

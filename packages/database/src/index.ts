@@ -11,3 +11,4 @@ export * from './relation-repository/multiple-relation-repository';
 export { Model, ModelCtor } from 'sequelize';
 export * from './fields';
 export * from './update-associations';
+export * from './magic-attribute-model';

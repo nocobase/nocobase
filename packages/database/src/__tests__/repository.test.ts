@@ -2,6 +2,45 @@ import { Collection } from '../collection';
 import { Database } from '../database';
 import { mockDatabase } from './';
 
+describe('find by targetKey', function () {
+  it('can filter by target key', async () => {
+    const db = mockDatabase({});
+
+    const User = db.collection({
+      name: 'users',
+      filterTargetKey: 'name',
+      autoGenId: false,
+      fields: [
+        {
+          type: 'string',
+          name: 'name',
+          unique: true,
+        },
+      ],
+    });
+
+    await db.sync();
+
+    await User.repository.create({
+      values: {
+        name: 'user1',
+      },
+    });
+
+    await User.repository.create({
+      values: {
+        name: 'user2',
+      },
+    });
+
+    const user2 = await User.repository.findOne({
+      filterByTk: 'user2',
+    });
+
+    expect(user2.get('name')).toEqual('user2');
+  });
+});
+
 describe('repository.find', () => {
   let db: Database;
   let User: Collection;
@@ -116,7 +155,7 @@ describe('repository.find', () => {
     });
 
     const result = await Test.repository.findOne({
-      filterByPk: <number>t1.get('id'),
+      filterByTk: <number>t1.get('id'),
       filter: {
         status: 'published',
       },
@@ -236,7 +275,7 @@ describe('repository.update', () => {
       name: 'user1',
     });
     await User.repository.update({
-      filterByPk: user.id,
+      filterByTk: user.id,
       values: {
         name: 'user11',
         posts: [{ name: 'post1' }],
@@ -263,28 +302,25 @@ describe('repository.update', () => {
   it('update2', async () => {
     const user = await User.model.create<any>({
       name: 'user1',
-      posts: [{ name: 'post1' }],
     });
+
+    const user2 = await User.model.create<any>({
+      name: 'user2',
+    });
+
     await User.repository.update({
-      filterByPk: user.id,
+      filterByTk: user.id,
       values: {
         name: 'user11',
-        posts: [{ name: 'post1' }],
       },
     });
+
     const updated = await User.model.findByPk(user.id);
-    expect(updated).toMatchObject({
-      name: 'user11',
-    });
-    const post = await Post.model.findOne({
-      where: {
-        name: 'post1',
-      },
-    });
-    expect(post).toMatchObject({
-      name: 'post1',
-      userId: user.id,
-    });
+
+    expect(updated.get('name')).toEqual('user11');
+
+    const u2 = await User.model.findByPk(user2.id);
+    expect(u2.get('name')).toEqual('user2');
   });
 });
 

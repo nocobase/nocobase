@@ -87,7 +87,7 @@ describe('context field', () => {
       });
       expect(t1.get('clientIp')).toBe('11.22.33.44');
       const [t2] = await Test.repository.update({
-        filterByPk: t1.get('id') as any,
+        filterByTk: t1.get('id') as any,
         values: {},
         context: {
           request: {
@@ -124,7 +124,7 @@ describe('context field', () => {
       });
       expect(t1.get('clientIp')).toBe('11.22.33.44');
       const [t2] = await Test.repository.update({
-        filterByPk: t1.get('id') as any,
+        filterByTk: t1.get('id') as any,
         values: {},
         context: {
           request: {
