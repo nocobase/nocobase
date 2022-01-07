@@ -1,0 +1,45 @@
+name: Node.js CI
+
+on: [push]
+
+jobs:
+  test:
+    strategy:
+      matrix:
+        node_version: ['12']
+
+    runs-on: ubuntu-latest
+    container: node:${{ matrix.node_version }}
+    services:
+      # Label used to access the service container
+      postgres:
+        # Docker Hub image
+        image: postgres:10
+        # Provide the password for postgres
+        env:
+          POSTGRES_USER: nocobase
+          POSTGRES_PASSWORD: password
+        # Set health checks to wait until postgres has started
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - uses: actions/checkout@v2
+      - name: Use Node.js ${{ matrix.node_version }}
+        uses: actions/setup-node@v2
+        with:
+          node-version: ${{ matrix.node_version }}
+          cache: 'yarn'
+      - run: yarn install
+      - name: Test
+        run: yarn test -i
+        env:
+          DB_DIALECT: postgres
+          DB_HOST: postgres
+          DB_PORT: 5432
+          DB_USER: nocobase
+          DB_PASSWORD: password
+          DB_DATABASE: nocobase
