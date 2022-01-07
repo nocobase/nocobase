@@ -1,7 +1,7 @@
 import { BelongsToMany, Model, Op, Transaction } from 'sequelize';
 import { updateThroughTableValue } from '../update-associations';
 import { FindAndCountOptions, FindOneOptions, MultipleRelationRepository } from './multiple-relation-repository';
-import { CreateOptions, DestroyOptions, FindOptions, PrimaryKey, UpdateOptions } from '../repository';
+import { CreateOptions, DestroyOptions, FindOptions, TargetKey, UpdateOptions } from '../repository';
 import { AssociatedOptions, PrimaryKeyWithThroughValues } from './types';
 import lodash from 'lodash';
 import { transaction } from './relation-repository';
@@ -19,12 +19,12 @@ interface IBelongsToManyRepository<M extends Model> {
   // 删除
   destroy(options?: number | string | number[] | string[] | DestroyOptions): Promise<Boolean>;
   // 建立关联
-  set(options: PrimaryKey | PrimaryKey[] | AssociatedOptions): Promise<void>;
+  set(options: TargetKey | TargetKey[] | AssociatedOptions): Promise<void>;
   // 附加关联，存在中间表数据
-  add(options: PrimaryKey | PrimaryKey[] | AssociatedOptions): Promise<void>;
+  add(options: TargetKey | TargetKey[] | AssociatedOptions): Promise<void>;
   // 移除关联
-  remove(options: PrimaryKey | PrimaryKey[] | AssociatedOptions): Promise<void>;
-  toggle(options: PrimaryKey | { pk?: PrimaryKey; transaction?: Transaction }): Promise<void>;
+  remove(options: TargetKey | TargetKey[] | AssociatedOptions): Promise<void>;
+  toggle(options: TargetKey | { pk?: TargetKey; transaction?: Transaction }): Promise<void>;
 }
 
 export class BelongsToManyRepository extends MultipleRelationRepository implements IBelongsToManyRepository<any> {
@@ -52,7 +52,7 @@ export class BelongsToManyRepository extends MultipleRelationRepository implemen
       transaction,
     };
   })
-  async destroy(options?: PrimaryKey | PrimaryKey[] | DestroyOptions): Promise<Boolean> {
+  async destroy(options?: TargetKey | TargetKey[] | DestroyOptions): Promise<Boolean> {
     const transaction = await this.getTransaction(options);
     const association = <BelongsToMany>this.association;
 
@@ -119,14 +119,9 @@ export class BelongsToManyRepository extends MultipleRelationRepository implemen
 
   protected async setTargets(
     call: 'add' | 'set',
-    options:
-      | PrimaryKey
-      | PrimaryKey[]
-      | PrimaryKeyWithThroughValues
-      | PrimaryKeyWithThroughValues[]
-      | AssociatedOptions,
+    options: TargetKey | TargetKey[] | PrimaryKeyWithThroughValues | PrimaryKeyWithThroughValues[] | AssociatedOptions,
   ) {
-    let handleKeys: PrimaryKey[] | PrimaryKeyWithThroughValues[];
+    let handleKeys: TargetKey[] | PrimaryKeyWithThroughValues[];
 
     const transaction = await this.getTransaction(options, false);
 
@@ -135,12 +130,12 @@ export class BelongsToManyRepository extends MultipleRelationRepository implemen
     }
 
     if (lodash.isString(options) || lodash.isNumber(options)) {
-      handleKeys = [<PrimaryKey>options];
+      handleKeys = [<TargetKey>options];
     } // if it is type primaryKeyWithThroughValues
     else if (lodash.isArray(options) && options.length == 2 && lodash.isPlainObject(options[0][1])) {
       handleKeys = [<PrimaryKeyWithThroughValues>options];
     } else {
-      handleKeys = <PrimaryKey[] | PrimaryKeyWithThroughValues[]>options;
+      handleKeys = <TargetKey[] | PrimaryKeyWithThroughValues[]>options;
     }
 
     const sourceModel = await this.getSourceModel(transaction);
@@ -175,12 +170,7 @@ export class BelongsToManyRepository extends MultipleRelationRepository implemen
     };
   })
   async add(
-    options:
-      | PrimaryKey
-      | PrimaryKey[]
-      | PrimaryKeyWithThroughValues
-      | PrimaryKeyWithThroughValues[]
-      | AssociatedOptions,
+    options: TargetKey | TargetKey[] | PrimaryKeyWithThroughValues | PrimaryKeyWithThroughValues[] | AssociatedOptions,
   ): Promise<void> {
     await this.setTargets('add', options);
   }
@@ -192,12 +182,7 @@ export class BelongsToManyRepository extends MultipleRelationRepository implemen
     };
   })
   async set(
-    options:
-      | PrimaryKey
-      | PrimaryKey[]
-      | PrimaryKeyWithThroughValues
-      | PrimaryKeyWithThroughValues[]
-      | AssociatedOptions,
+    options: TargetKey | TargetKey[] | PrimaryKeyWithThroughValues | PrimaryKeyWithThroughValues[] | AssociatedOptions,
   ): Promise<void> {
     await this.setTargets('set', options);
   }
@@ -208,7 +193,7 @@ export class BelongsToManyRepository extends MultipleRelationRepository implemen
       transaction,
     };
   })
-  async toggle(options: PrimaryKey | { pk?: PrimaryKey; transaction?: Transaction }): Promise<void> {
+  async toggle(options: TargetKey | { pk?: TargetKey; transaction?: Transaction }): Promise<void> {
     const transaction = await this.getTransaction(options);
     const sourceModel = await this.getSourceModel(transaction);
     const has = await sourceModel[this.accessors().hasSingle](options['pk'], {

@@ -21,7 +21,7 @@ export interface FindAndCountOptions extends CommonFindOptions {}
 export interface FindOneOptions extends CommonFindOptions, FilterByTk {}
 
 export interface AssociatedOptions extends TransactionAble {
-  pk?: PK;
+  tk?: PK;
 }
 
 export abstract class MultipleRelationRepository extends RelationRepository {

@@ -43,8 +43,8 @@ export interface FilterAble {
   filter: Filter;
 }
 
-export type PrimaryKey = string | number;
-export type PK = PrimaryKey | PrimaryKey[];
+export type TargetKey = string | number;
+export type TK = TargetKey | TargetKey[];
 
 export type Filter = any;
 export type Appends = string[];
@@ -64,7 +64,7 @@ export interface CountOptions extends Omit<SequelizeCreateOptions, 'distinct' | 
 }
 
 export interface FilterByTk {
-  filterByTk?: PrimaryKey;
+  filterByTk?: TargetKey;
 }
 
 export interface FindOptions extends SequelizeFindOptions, CommonFindOptions, FilterByTk {}
@@ -81,7 +81,7 @@ interface FindOneOptions extends FindOptions, CommonFindOptions {}
 
 export interface DestroyOptions extends SequelizeDestroyOptions {
   filter?: Filter;
-  filterByTk?: PrimaryKey | PrimaryKey[];
+  filterByTk?: TargetKey | TargetKey[];
   truncate?: boolean;
   context?: any;
 }
@@ -110,7 +110,7 @@ export interface CreateOptions extends SequelizeCreateOptions {
 export interface UpdateOptions extends Omit<SequelizeUpdateOptions, 'where'> {
   values: Values;
   filter?: Filter;
-  filterByTk?: PrimaryKey;
+  filterByTk?: TargetKey;
   whitelist?: WhiteList;
   blacklist?: BlackList;
   updateAssociationValues?: AssociationKeysToBeUpdate;
@@ -261,7 +261,7 @@ export class Repository<TModelAttributes extends {} = any, TCreationAttributes e
    * Find By Id
    *
    */
-  findById(id: PrimaryKey) {
+  findById(id: string | number) {
     return this.collection.model.findByPk(id);
   }
 
@@ -366,17 +366,17 @@ export class Repository<TModelAttributes extends {} = any, TCreationAttributes e
       transaction,
     };
   })
-  async destroy(options?: PrimaryKey | PrimaryKey[] | DestroyOptions) {
+  async destroy(options?: TargetKey | TargetKey[] | DestroyOptions) {
     const transaction = await this.getTransaction(options);
 
     const modelFilterKey = this.collection.filterTargetKey;
 
     options = <DestroyOptions>options;
 
-    const filterByTk: PrimaryKey[] | undefined =
+    const filterByTk: TargetKey[] | undefined =
       options.filterByTk && !lodash.isArray(options.filterByTk)
         ? [options.filterByTk]
-        : (options.filterByTk as PrimaryKey[] | undefined);
+        : (options.filterByTk as TargetKey[] | undefined);
 
     if (filterByTk && !options.filter) {
       return await this.model.destroy({
@@ -396,7 +396,7 @@ export class Repository<TModelAttributes extends {} = any, TCreationAttributes e
           filter: options.filter,
           transaction,
         })
-      ).map((instance) => instance.get(modelFilterKey) as PrimaryKey);
+      ).map((instance) => instance.get(modelFilterKey) as TargetKey);
 
       if (filterByTk) {
         pks = lodash.intersection(pks, filterByTk);
