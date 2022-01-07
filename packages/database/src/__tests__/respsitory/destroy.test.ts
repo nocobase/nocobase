@@ -1,5 +1,80 @@
 import { mockDatabase } from '../index';
 import { Collection } from '../../collection';
+import { Database } from '@nocobase/database';
+
+describe('destroy with targetKey', function () {
+  let db: Database;
+  let User: Collection;
+  let u1;
+  let u2;
+  afterEach(async () => {
+    await db.close();
+  });
+
+  beforeEach(async () => {
+    db = mockDatabase();
+
+    User = db.collection({
+      name: 'users',
+      autoGenId: false,
+      fields: [
+        { type: 'string', name: 'name', primaryKey: true },
+        { type: 'string', name: 'status' },
+      ],
+    });
+
+    await db.sync({
+      force: true,
+    });
+
+    u1 = await User.repository.create({
+      values: {
+        name: 'u1',
+        status: 'published',
+      },
+    });
+
+    u2 = await User.repository.create({
+      values: {
+        name: 'u2',
+        status: 'draft',
+      },
+    });
+  });
+
+  it('should destroy all', async () => {
+    expect(await User.repository.count()).toEqual(2);
+    await User.repository.destroy({ truncate: true });
+    expect(await User.repository.count()).toEqual(0);
+  });
+
+  it('should destroy by target key', async () => {
+    await User.repository.destroy({
+      filterByTk: 'u2',
+    });
+
+    expect(await User.repository.count()).toEqual(1);
+  });
+
+  it('should destroy by target key and filter', async () => {
+    await User.repository.destroy({
+      filterByTk: 'u1',
+      filter: {
+        status: 'draft',
+      },
+    });
+
+    expect(await User.repository.count()).toEqual(2);
+
+    await User.repository.destroy({
+      filterByTk: 'u2',
+      filter: {
+        status: 'draft',
+      },
+    });
+    expect(await User.repository.count()).toEqual(1);
+  });
+});
 
 describe('destroy', () => {
   let db;
@@ -36,7 +111,7 @@ describe('destroy', () => {
     });
 
     await Post.repository.destroy({
-      filterByPk: p1.get('id') as number,
+      filterByTk: p1.get('id') as number,
       filter: {
         status: 'draft',
       },

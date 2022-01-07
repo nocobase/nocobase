@@ -15,6 +15,7 @@ export type RepositoryType = typeof Repository;
 export interface CollectionOptions extends Omit<ModelOptions, 'name'> {
   name: string;
   tableName?: string;
+  filterTargetKey?: string;
   fields?: FieldOptions[];
   model?: string | ModelCtor<Model>;
   repository?: string | RepositoryType;
@@ -37,6 +38,10 @@ export class Collection<
   model: ModelCtor<Model<TModelAttributes, TCreationAttributes>>;
   repository: Repository<TModelAttributes, TCreationAttributes>;
 
+  get filterTargetKey() {
+    return lodash.get(this.options, 'filterTargetKey', this.model.primaryKeyAttribute);
+  }
+
   get name() {
     return this.options.name;
   }
@@ -54,7 +59,7 @@ export class Collection<
   private sequelizeModelOptions() {
     const { name, tableName } = this.options;
     return {
-      ..._.omit(this.options, ['name', 'fields']),
+      ..._.omit(this.options, ['name', 'fields', 'model']),
       modelName: name,
       sequelize: this.context.database.sequelize,
       tableName: tableName || name,

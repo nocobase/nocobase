@@ -51,7 +51,7 @@ type UpdateValue = { [key: string]: any };
 
 interface UpdateOptions extends TransactionAble {
   filter?: any;
-  filterByPk?: number | string;
+  filterByTk?: number | string;
   // 字段白名单
   whitelist?: string[];
   // 字段黑名单

@@ -60,7 +60,10 @@ describe('option parser', () => {
       fields: ['id', 'name', 'tags.id', 'tags.name'],
     };
 
-    const parser = new OptionsParser(Post.model, Post.context.database, options);
+    const parser = new OptionsParser(options, {
+      collection: Post,
+    });
+
     const params = parser.toSequelizeParams();
 
     expect(params).toEqual({
@@ -78,7 +81,9 @@ describe('option parser', () => {
       sort: ['id'],
     };
 
-    let parser = new OptionsParser(User.model, User.context.database, options);
+    let parser = new OptionsParser(options, {
+      collection: User,
+    });
     let params = parser.toSequelizeParams();
     expect(params['order']).toEqual([['id', 'ASC']]);
 
@@ -86,7 +91,9 @@ describe('option parser', () => {
       sort: ['id', '-posts.title', 'posts.comments.createdAt'],
     };
 
-    parser = new OptionsParser(User.model, User.context.database, options);
+    parser = new OptionsParser(options, {
+      collection: User,
+    });
     params = parser.toSequelizeParams();
     expect(params['order']).toEqual([
       ['id', 'ASC'],
@@ -100,7 +107,9 @@ describe('option parser', () => {
       fields: ['id', 'posts'],
     };
     // 转换为 attributes: ['id'], include: [{association: 'posts'}]
-    let parser = new OptionsParser(User.model, User.context.database, options);
+    let parser = new OptionsParser(options, {
+      collection: User,
+    });
     let params = parser.toSequelizeParams();
 
     expect(params['attributes']).toContain('id');
@@ -111,7 +120,9 @@ describe('option parser', () => {
       appends: ['posts'],
     };
 
-    parser = new OptionsParser(User.model, User.context.database, options);
+    parser = new OptionsParser(options, {
+      collection: User,
+    });
     params = parser.toSequelizeParams();
     expect(params['attributes']['include']).toEqual([]);
     expect(params['include'][0]['association']).toEqual('posts');
@@ -121,7 +132,9 @@ describe('option parser', () => {
       fields: ['id', 'posts.title'],
     };
 
-    parser = new OptionsParser(User.model, User.context.database, options);
+    parser = new OptionsParser(options, {
+      collection: User,
+    });
     params = parser.toSequelizeParams();
     expect(params['attributes']).toContain('id');
     expect(params['include'][0]['association']).toEqual('posts');
@@ -132,7 +145,9 @@ describe('option parser', () => {
       fields: ['id', 'posts', 'posts.comments.content'],
     };
 
-    parser = new OptionsParser(User.model, User.context.database, options);
+    parser = new OptionsParser(options, {
+      collection: User,
+    });
     params = parser.toSequelizeParams();
     expect(params['attributes']).toContain('id');
     expect(params['include'][0]['association']).toEqual('posts');
@@ -143,7 +158,9 @@ describe('option parser', () => {
     options = {
       except: ['id'],
     };
-    parser = new OptionsParser(User.model, User.context.database, options);
+    parser = new OptionsParser(options, {
+      collection: User,
+    });
     params = parser.toSequelizeParams();
     expect(params['attributes']['exclude']).toContain('id');
 
@@ -153,7 +170,9 @@ describe('option parser', () => {
       except: ['posts.id'],
     };
 
-    parser = new OptionsParser(User.model, User.context.database, options);
+    parser = new OptionsParser(options, {
+      collection: User,
+    });
     params = parser.toSequelizeParams();
 
     expect(params['include'][0]['attributes']['exclude']).toContain('id');

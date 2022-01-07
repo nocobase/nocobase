@@ -43,8 +43,8 @@ export interface FilterAble {
   filter: Filter;
 }
 
-export type PrimaryKey = string | number;
-export type PK = PrimaryKey | PrimaryKey[];
+export type TargetKey = string | number;
+export type TK = TargetKey | TargetKey[];
 
 export type Filter = any;
 export type Appends = string[];
@@ -63,11 +63,11 @@ export interface CountOptions extends Omit<SequelizeCreateOptions, 'distinct' | 
   filter?: Filter;
 }
 
-export interface FilterByPK {
-  filterByPk?: PrimaryKey;
+export interface FilterByTk {
+  filterByTk?: TargetKey;
 }
 
-export interface FindOptions extends SequelizeFindOptions, CommonFindOptions, FilterByPK {}
+export interface FindOptions extends SequelizeFindOptions, CommonFindOptions, FilterByTk {}
 
 export interface CommonFindOptions {
   filter?: Filter;
@@ -81,7 +81,7 @@ interface FindOneOptions extends FindOptions, CommonFindOptions {}
 
 export interface DestroyOptions extends SequelizeDestroyOptions {
   filter?: Filter;
-  filterByPk?: PrimaryKey | PrimaryKey[];
+  filterByTk?: TargetKey | TargetKey[];
   truncate?: boolean;
   context?: any;
 }
@@ -110,7 +110,7 @@ export interface CreateOptions extends SequelizeCreateOptions {
 export interface UpdateOptions extends Omit<SequelizeUpdateOptions, 'where'> {
   values: Values;
   filter?: Filter;
-  filterByPk?: PrimaryKey;
+  filterByTk?: TargetKey;
   whitelist?: WhiteList;
   blacklist?: BlackList;
   updateAssociationValues?: AssociationKeysToBeUpdate;
@@ -261,7 +261,7 @@ export class Repository<TModelAttributes extends {} = any, TCreationAttributes e
    * Find By Id
    *
    */
-  findById(id: PrimaryKey) {
+  findById(id: string | number) {
     return this.collection.model.findByPk(id);
   }
 
@@ -362,26 +362,28 @@ export class Repository<TModelAttributes extends {} = any, TCreationAttributes e
 
   @transaction((args, transaction) => {
     return {
-      filterByPk: args[0],
+      filterByTk: args[0],
       transaction,
     };
   })
-  async destroy(options?: PrimaryKey | PrimaryKey[] | DestroyOptions) {
+  async destroy(options?: TargetKey | TargetKey[] | DestroyOptions) {
     const transaction = await this.getTransaction(options);
+
+    const modelFilterKey = this.collection.filterTargetKey;
 
     options = <DestroyOptions>options;
 
-    const filterByPk: PrimaryKey[] | undefined =
-      options.filterByPk && !lodash.isArray(options.filterByPk)
-        ? [options.filterByPk]
-        : (options.filterByPk as PrimaryKey[] | undefined);
+    const filterByTk: TargetKey[] | undefined =
+      options.filterByTk && !lodash.isArray(options.filterByTk)
+        ? [options.filterByTk]
+        : (options.filterByTk as TargetKey[] | undefined);
 
-    if (filterByPk && !options.filter) {
+    if (filterByTk && !options.filter) {
       return await this.model.destroy({
         ...options,
         where: {
-          [this.model.primaryKeyAttribute]: {
-            [Op.in]: filterByPk,
+          [modelFilterKey]: {
+            [Op.in]: filterByTk,
           },
         },
         transaction,
@@ -394,15 +396,15 @@ export class Repository<TModelAttributes extends {} = any, TCreationAttributes e
           filter: options.filter,
           transaction,
         })
-      ).map((instance) => instance[this.model.primaryKeyAttribute]);
+      ).map((instance) => instance.get(modelFilterKey) as TargetKey);
 
-      if (filterByPk) {
-        pks = lodash.intersection(pks, filterByPk);
+      if (filterByTk) {
+        pks = lodash.intersection(pks, filterByTk);
       }
 
       return await this.destroy({
         context: options.context,
-        filterByPk: pks,
+        filterByTk: pks,
         transaction,
       });
     }
@@ -424,14 +426,19 @@ export class Repository<TModelAttributes extends {} = any, TCreationAttributes e
   }
 
   protected buildQueryOptions(options: any) {
-    const parser = new OptionsParser(this.collection.model, this.collection.context.database, options);
+    const parser = new OptionsParser(options, {
+      collection: this.collection,
+    });
+
     const params = parser.toSequelizeParams();
     debug('sequelize query params %o', params);
     return { ...options, ...params };
   }
 
   protected parseFilter(filter: Filter) {
-    const parser = new FilterParser(this.collection.model, this.collection.context.database, filter);
+    const parser = new FilterParser(filter, {
+      collection: this.collection,
+    });
     return parser.toSequelizeParams();
   }
 

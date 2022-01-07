@@ -2,7 +2,7 @@ import { RelationRepository, transaction } from './relation-repository';
 import { Model, SingleAssociationAccessors } from 'sequelize';
 import { updateModelByValues } from '../update-associations';
 import lodash from 'lodash';
-import { Appends, Except, Fields, Filter, PrimaryKey, TransactionAble, UpdateOptions } from '../repository';
+import { Appends, Except, Fields, Filter, TargetKey, TransactionAble, UpdateOptions } from '../repository';
 
 export interface SingleRelationFindOption extends TransactionAble {
   fields?: Fields;
@@ -12,7 +12,7 @@ export interface SingleRelationFindOption extends TransactionAble {
 }
 
 interface SetOption extends TransactionAble {
-  pk?: PrimaryKey;
+  tk?: TargetKey;
 }
 
 export abstract class SingleRelationRepository extends RelationRepository {
@@ -27,13 +27,13 @@ export abstract class SingleRelationRepository extends RelationRepository {
 
   @transaction((args, transaction) => {
     return {
-      pk: args[0],
+      tk: args[0],
       transaction,
     };
   })
-  async set(options: PrimaryKey | SetOption): Promise<void> {
+  async set(options: TargetKey | SetOption): Promise<void> {
     const transaction = await this.getTransaction(options);
-    let handleKey = lodash.isPlainObject(options) ? (<SetOption>options).pk : options;
+    let handleKey = lodash.isPlainObject(options) ? (<SetOption>options).tk : options;
 
     const sourceModel = await this.getSourceModel(transaction);
 
