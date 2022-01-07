@@ -1,3 +1,4 @@
+import { MagicAttributeModel } from '@nocobase/database';
 import { Plugin } from '@nocobase/server';
 import path from 'path';
 import { uiSchemaActions } from './actions/ui-schema-action';
@@ -12,6 +13,8 @@ export default class PluginUiSchema extends Plugin {
 
   async load() {
     const db = this.app.db;
+
+    this.app.db.registerModels({ MagicAttributeModel });
 
     this.registerRepository();
 
