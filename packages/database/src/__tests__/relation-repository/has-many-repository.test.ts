@@ -3,6 +3,36 @@ import { HasManyRepository } from '../../relation-repository/hasmany-repository'
 import { BelongsToManyRepository } from '../../relation-repository/belongs-to-many-repository';
 
 describe('has many with target key', function () {
+  test('target key with filterTargetKey', async () => {
+    const db = mockDatabase();
+    const User = db.collection<{ id: number; name: string }, { name: string }>({
+      name: 'users',
+      filterTargetKey: 'name',
+      autoGenId: false,
+      fields: [
+        { type: 'string', name: 'name', unique: true },
+        { type: 'integer', name: 'age' },
+        { type: 'hasMany', name: 'posts', sourceKey: 'name', foreignKey: 'userName', targetKey: 'title' },
+      ],
+    });
+
+    const Post = db.collection({
+      name: 'posts',
+      filterTargetKey: 'title',
+      autoGenId: false,
+      fields: [
+        { type: 'string', name: 'title', unique: true },
+        { type: 'string', name: 'status' },
+        {
+          type: 'belongsTo',
+          name: 'user',
+          targetKey: 'name',
+          foreignKey: 'userName',
+        },
+      ],
+    });
+  });
+
   test('destroy by target key and filter', async () => {
     const db = mockDatabase();
     const User = db.collection<{ id: number; name: string }, { name: string }>({

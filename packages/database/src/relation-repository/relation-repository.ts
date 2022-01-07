@@ -7,6 +7,7 @@ import { UpdateGuard } from '../update-guard';
 import { updateAssociations } from '../update-associations';
 import lodash from 'lodash';
 import { transactionWrapperBuilder } from '../transaction-decorator';
+import { Field, RelationField } from '@nocobase/database';
 
 export const transaction = transactionWrapperBuilder(function () {
   return this.sourceCollection.model.sequelize.transaction();
@@ -18,6 +19,7 @@ export abstract class RelationRepository {
   targetModel: ModelCtor<any>;
   targetCollection: Collection;
   associationName: string;
+  associationField: RelationField;
   sourceKeyValue: string | number;
   sourceInstance: Model;
 
@@ -27,8 +29,14 @@ export abstract class RelationRepository {
     this.associationName = association;
     this.association = this.sourceCollection.model.associations[association];
 
+    this.associationField = this.sourceCollection.getField(association);
+
     this.targetModel = this.association.target;
     this.targetCollection = this.sourceCollection.context.database.modelCollection.get(this.targetModel);
+  }
+
+  targetKey() {
+    return this.associationField.targetKey;
   }
 
   protected accessors() {
@@ -54,7 +62,7 @@ export abstract class RelationRepository {
     if (!this.sourceInstance) {
       this.sourceInstance = await this.sourceCollection.model.findOne({
         where: {
-          [this.associationField().sourceKey]: this.sourceKeyValue,
+          [this.associationField.sourceKey]: this.sourceKeyValue,
         },
       });
     }
@@ -62,16 +70,10 @@ export abstract class RelationRepository {
     return this.sourceInstance;
   }
 
-  protected associationField() {
-    return this.sourceCollection.fields.get(this.associationName);
-  }
-
   protected buildQueryOptions(options: FindOptions) {
-    const parser = new OptionsParser(
-      this.sourceCollection.context.database.modelCollection.get(this.targetModel),
-      this.sourceCollection.context.database,
-      options,
-    );
+    const parser = new OptionsParser(options, {
+      collection: this.targetCollection,
+    });
     const params = parser.toSequelizeParams();
     return { ...options, ...params };
   }

@@ -19,6 +19,10 @@ export abstract class RelationField extends Field {
     return this.options.sourceKey;
   }
 
+  get targetKey() {
+    return this.options.targetKey || this.TargetModel.primaryKeyAttribute;
+  }
+
   /**
    * get target model from database by it's name
    * @constructor

@@ -25,10 +25,6 @@ export interface AssociatedOptions extends TransactionAble {
 }
 
 export abstract class MultipleRelationRepository extends RelationRepository {
-  targetKey() {
-    return lodash.get(this.associationField(), 'options.targetKey', this.targetModel.primaryKeyAttribute);
-  }
-
   extendFindOptions(findOptions) {
     return findOptions;
   }

@@ -6,6 +6,10 @@ import { Collection } from './collection';
 
 const debug = require('debug')('noco-database');
 
+interface OptionsParserContext {
+  collection: Collection;
+}
+
 export class OptionsParser {
   options: FindOptions;
   database: Database;
@@ -13,11 +17,13 @@ export class OptionsParser {
   model: ModelCtor<any>;
   filterParser: FilterParser;
 
-  constructor(collection: Collection, database: Database, options: FindOptions) {
+  constructor(options: FindOptions, context: OptionsParserContext) {
+    const { collection } = context;
+
     this.collection = collection;
     this.model = collection.model;
     this.options = options;
-    this.database = database;
+    this.database = collection.context.database;
     this.filterParser = new FilterParser(this.model, this.database, options?.filter);
   }
 

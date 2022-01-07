@@ -426,7 +426,10 @@ export class Repository<TModelAttributes extends {} = any, TCreationAttributes e
   }
 
   protected buildQueryOptions(options: any) {
-    const parser = new OptionsParser(this.collection, this.collection.context.database, options);
+    const parser = new OptionsParser(options, {
+      collection: this.collection,
+    });
+
     const params = parser.toSequelizeParams();
     debug('sequelize query params %o', params);
     return { ...options, ...params };
