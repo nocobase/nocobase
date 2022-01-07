@@ -8,6 +8,7 @@ const debug = require('debug')('noco-database');
 
 interface OptionsParserContext {
   collection: Collection;
+  targetKey?: string;
 }
 
 export class OptionsParser {
@@ -16,6 +17,7 @@ export class OptionsParser {
   collection: Collection;
   model: ModelCtor<any>;
   filterParser: FilterParser;
+  context: OptionsParserContext;
 
   constructor(options: FindOptions, context: OptionsParserContext) {
     const { collection } = context;
@@ -25,6 +27,7 @@ export class OptionsParser {
     this.options = options;
     this.database = collection.context.database;
     this.filterParser = new FilterParser(this.model, this.database, options?.filter);
+    this.context = context;
   }
 
   isAssociation(key: string) {
@@ -43,7 +46,7 @@ export class OptionsParser {
         [Op.and]: [
           queryParams.where,
           {
-            [this.collection.filterTargetKey]: this.options.filterByTk,
+            [this.context.targetKey || this.collection.filterTargetKey]: this.options.filterByTk,
           },
         ],
       };

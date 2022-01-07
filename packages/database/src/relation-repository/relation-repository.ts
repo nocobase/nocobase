@@ -73,6 +73,7 @@ export abstract class RelationRepository {
   protected buildQueryOptions(options: FindOptions) {
     const parser = new OptionsParser(options, {
       collection: this.targetCollection,
+      targetKey: this.targetKey(),
     });
     const params = parser.toSequelizeParams();
     return { ...options, ...params };
