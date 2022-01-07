@@ -18,6 +18,7 @@
     "@types/react-dom": "^17.0.0"
   },
   "devDependencies": {
+    "@testing-library/react": "^12.1.2",
     "@types/jest": "^26.0.0",
     "@types/koa": "^2.13.4",
     "@types/koa-bodyparser": "^4.3.4",
