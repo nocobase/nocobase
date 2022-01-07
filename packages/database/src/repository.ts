@@ -436,7 +436,9 @@ export class Repository<TModelAttributes extends {} = any, TCreationAttributes e
   }
 
   protected parseFilter(filter: Filter) {
-    const parser = new FilterParser(this.collection.model, this.collection.context.database, filter);
+    const parser = new FilterParser(filter, {
+      collection: this.collection,
+    });
     return parser.toSequelizeParams();
   }
 

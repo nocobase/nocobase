@@ -80,7 +80,9 @@ export abstract class RelationRepository {
   }
 
   protected parseFilter(filter: Filter) {
-    const parser = new FilterParser(this.targetModel, this.sourceCollection.context.database, filter);
+    const parser = new FilterParser(filter, {
+      collection: this.targetCollection,
+    });
     return parser.toSequelizeParams();
   }
 

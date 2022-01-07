@@ -12,9 +12,14 @@ test('filter item by string', async () => {
 
   await database.sync();
 
-  const filterParser = new FilterParser(UserCollection.model, UserCollection.context.database, {
-    name: 'hello',
-  });
+  const filterParser = new FilterParser(
+    {
+      name: 'hello',
+    },
+    {
+      collection: UserCollection,
+    },
+  );
 
   const filterParams = filterParser.toSequelizeParams();
 
@@ -74,11 +79,9 @@ describe('filter by related', () => {
       'posts.title.$iLike': '%hello%',
     };
 
-    const filterParser = new FilterParser(
-      db.getCollection('users').model,
-      db.getCollection('users').context.database,
-      filter,
-    );
+    const filterParser = new FilterParser(filter, {
+      collection: db.getCollection('users'),
+    });
 
     const filterParams = filterParser.toSequelizeParams();
 
@@ -91,11 +94,9 @@ describe('filter by related', () => {
       'posts.comments.content.$iLike': '%hello%',
     };
 
-    const filterParser = new FilterParser(
-      db.getCollection('users').model,
-      db.getCollection('users').context.database,
-      filter,
-    );
+    const filterParser = new FilterParser(filter, {
+      collection: db.getCollection('users'),
+    });
 
     const filterParams = filterParser.toSequelizeParams();
 
