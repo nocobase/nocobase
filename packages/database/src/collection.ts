@@ -19,7 +19,14 @@ export interface CollectionOptions extends Omit<ModelOptions, 'name'> {
   fields?: FieldOptions[];
   model?: string | ModelCtor<Model>;
   repository?: string | RepositoryType;
+  /**
+   * @default true
+   */
   autoGenId?: boolean;
+  /**
+   * @default 'options'
+   */
+  magicAttribute?: string;
   [key: string]: any;
 }
 
