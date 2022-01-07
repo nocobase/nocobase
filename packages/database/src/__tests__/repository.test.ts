@@ -275,7 +275,7 @@ describe('repository.update', () => {
       name: 'user1',
     });
     await User.repository.update({
-      filterByPk: user.id,
+      filterByTk: user.id,
       values: {
         name: 'user11',
         posts: [{ name: 'post1' }],
@@ -302,28 +302,25 @@ describe('repository.update', () => {
   it('update2', async () => {
     const user = await User.model.create<any>({
       name: 'user1',
-      posts: [{ name: 'post1' }],
     });
+
+    const user2 = await User.model.create<any>({
+      name: 'user2',
+    });
+
     await User.repository.update({
-      filterByPk: user.id,
+      filterByTk: user.id,
       values: {
         name: 'user11',
-        posts: [{ name: 'post1' }],
       },
     });
+
     const updated = await User.model.findByPk(user.id);
-    expect(updated).toMatchObject({
-      name: 'user11',
-    });
-    const post = await Post.model.findOne({
-      where: {
-        name: 'post1',
-      },
-    });
-    expect(post).toMatchObject({
-      name: 'post1',
-      userId: user.id,
-    });
+
+    expect(updated.get('name')).toEqual('user11');
+
+    const u2 = await User.model.findByPk(user2.id);
+    expect(u2.get('name')).toEqual('user2');
   });
 });
 
