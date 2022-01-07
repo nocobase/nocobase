@@ -48,7 +48,7 @@ export class BelongsToManyRepository extends MultipleRelationRepository implemen
 
   @transaction((args, transaction) => {
     return {
-      filterByPk: args[0],
+      filterByTk: args[0],
       transaction,
     };
   })
@@ -57,13 +57,13 @@ export class BelongsToManyRepository extends MultipleRelationRepository implemen
     const association = <BelongsToMany>this.association;
 
     const instancesToIds = (instances) => {
-      return instances.map((instance) => instance.get(this.target.primaryKeyAttribute));
+      return instances.map((instance) => instance.get(this.targetKey()));
     };
 
     // Through Table
     const throughTableWhere: Array<any> = [
       {
-        [association.foreignKey]: this.sourceId,
+        [association.foreignKey]: this.sourceKeyValue,
       },
     ];
 
@@ -78,12 +78,12 @@ export class BelongsToManyRepository extends MultipleRelationRepository implemen
       ids = instancesToIds(instances);
     }
 
-    if (options && options['filterByPk']) {
-      const instances = (<any>this.association).toInstanceArray(options['filterByPk']);
+    if (options && options['filterByTk']) {
+      const instances = (<any>this.association).toInstanceArray(options['filterByTk']);
       ids = ids ? lodash.intersection(ids, instancesToIds(instances)) : instancesToIds(instances);
     }
 
-    if (options && !options['filterByPk'] && !options['filter']) {
+    if (options && !options['filterByTk'] && !options['filter']) {
       const sourceModel = await this.getSourceModel(transaction);
 
       const instances = await sourceModel[this.accessors().get]({
@@ -107,7 +107,7 @@ export class BelongsToManyRepository extends MultipleRelationRepository implemen
 
     await this.target.destroy({
       where: {
-        [this.target.primaryKeyAttribute]: {
+        [this.targetKey()]: {
           [Op.in]: ids,
         },
       },

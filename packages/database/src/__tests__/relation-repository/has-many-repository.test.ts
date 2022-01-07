@@ -2,6 +2,86 @@ import { mockDatabase } from '../index';
 import { HasManyRepository } from '../../relation-repository/hasmany-repository';
 import { BelongsToManyRepository } from '../../relation-repository/belongs-to-many-repository';
 
+describe('has many with target key', function () {
+  test('destroy by target key and filter', async () => {
+    const db = mockDatabase();
+    const User = db.collection<{ id: number; name: string }, { name: string }>({
+      name: 'users',
+      targetKeyForFilter: 'name',
+      autoGenId: false,
+      fields: [
+        { type: 'string', name: 'name', unique: true },
+        { type: 'integer', name: 'age' },
+        { type: 'hasMany', name: 'posts', sourceKey: 'name', foreignKey: 'userName', targetKey: 'title' },
+      ],
+    });
+
+    const Post = db.collection({
+      name: 'posts',
+      targetKeyForFilter: 'title',
+      autoGenId: false,
+      fields: [
+        { type: 'string', name: 'title', unique: true },
+        { type: 'string', name: 'status' },
+        {
+          type: 'belongsTo',
+          name: 'user',
+          targetKey: 'name',
+          foreignKey: 'userName',
+        },
+      ],
+    });
+
+    await db.sync({ force: true });
+
+    const u1 = await User.repository.create({
+      values: { name: 'u1' },
+    });
+
+    const UserPostRepository = new HasManyRepository(User, 'posts', u1.get('name') as string);
+
+    const p1 = await UserPostRepository.create({
+      values: {
+        title: 't1',
+        status: 'published',
+      },
+    });
+
+    const p2 = await UserPostRepository.create({
+      values: {
+        title: 't2',
+        status: 'draft',
+      },
+    });
+
+    await UserPostRepository.destroy({
+      filterByTk: p1.title,
+      filter: { status: 'draft' },
+    });
+
+    expect(await UserPostRepository.count()).toEqual(2);
+
+    await UserPostRepository.destroy({
+      filterByTk: p1.title,
+      filter: {
+        status: 'published',
+      },
+    });
+
+    expect(
+      await UserPostRepository.findOne({
+        filterByTk: p1.title,
+      }),
+    ).toBeNull();
+
+    expect(
+      await UserPostRepository.findOne({
+        filterByTk: p2.id,
+      }),
+    ).not.toBeNull();
+  });
+});
+
 describe('has many repository', () => {
   let db;
   let User;
@@ -190,7 +270,7 @@ describe('has many repository', () => {
     });
 
     await UserPostRepository.destroy({
-      filterByPk: p1.id,
+      filterByTk: p1.id,
       filter: {
         status: 'draft',
       },
@@ -199,7 +279,7 @@ describe('has many repository', () => {
     expect(await UserPostRepository.count()).toEqual(2);
 
     await UserPostRepository.destroy({
-      filterByPk: p1.id,
+      filterByTk: p1.id,
       filter: {
         status: 'published',
       },
@@ -207,13 +287,13 @@ describe('has many repository', () => {
 
     expect(
       await UserPostRepository.findOne({
-        filterByPk: p1.id,
+        filterByTk: p1.id,
       }),
     ).toBeNull();
 
     expect(
       await UserPostRepository.findOne({
-        filterByPk: p2.id,
+        filterByTk: p2.id,
       }),
     ).not.toBeNull();
   });

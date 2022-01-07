@@ -8,6 +8,7 @@ import {
 } from './multiple-relation-repository';
 import { CreateOptions, DestroyOptions, FindOptions, PK, PrimaryKey, UpdateOptions } from '../repository';
 import { transaction } from './relation-repository';
+import lodash from 'lodash';
 
 interface IHasManyRepository<M extends Model> {
   find(options?: FindOptions): Promise<M>;
@@ -30,7 +31,7 @@ interface IHasManyRepository<M extends Model> {
 export class HasManyRepository extends MultipleRelationRepository implements IHasManyRepository<any> {
   @transaction((args, transaction) => {
     return {
-      filterByPk: args[0],
+      filterByTk: args[0],
       transaction,
     };
   })
@@ -41,7 +42,7 @@ export class HasManyRepository extends MultipleRelationRepository implements IHa
 
     const where = [
       {
-        [this.association.foreignKey]: sourceModel.get(this.source.model.primaryKeyAttribute),
+        [this.association.foreignKey]: sourceModel.get((this.association as any).sourceKey),
       },
     ];
 
@@ -54,17 +55,14 @@ export class HasManyRepository extends MultipleRelationRepository implements IHa
 
       where.push(filterResult.where);
     }
-    if (options && options['filterByPk']) {
-      if (typeof options === 'object' && options['filterByPk']) {
-        options = options['filterByPk'];
+
+    if (options && options['filterByTk']) {
+      if (typeof options === 'object' && options['filterByTk']) {
+        options = options['filterByTk'];
       }
 
-      const targetInstances = (<any>this.association).toInstanceArray(options);
-
       where.push({
-        [this.target.primaryKeyAttribute]: targetInstances.map((targetInstance) =>
-          targetInstance.get(this.target.primaryKeyAttribute),
-        ),
+        [this.targetKey()]: options,
       });
     }
 

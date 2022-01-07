@@ -13,9 +13,7 @@ describe('array field operator', function () {
   });
 
   beforeEach(async () => {
-    db = mockDatabase({
-      logging: console.log,
-    });
+    db = mockDatabase({});
 
     Test = db.collection({
       name: 'test',
@@ -66,7 +64,7 @@ describe('array field operator', function () {
     expect(result.get('id')).toEqual(p1.get('id'));
 
     await Post.repository.update({
-      filterByPk: <any>p1.get('id'),
+      filterByTk: <any>p1.get('id'),
       values: {
         tags: ['t3', 't2'],
       },

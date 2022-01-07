@@ -1,5 +1,5 @@
 import { RelationRepository, transaction } from './relation-repository';
-import { omit } from 'lodash';
+import lodash, { omit } from 'lodash';
 import { MultiAssociationAccessors, Op, Sequelize, Transaction } from 'sequelize';
 import { UpdateGuard } from '../update-guard';
 import { updateModelByValues } from '../update-associations';
@@ -25,6 +25,10 @@ export interface AssociatedOptions extends TransactionAble {
 }
 
 export abstract class MultipleRelationRepository extends RelationRepository {
+  targetKey() {
+    return lodash.get(this.associationField(), 'options.targetKey', this.target.primaryKeyAttribute);
+  }
+
   extendFindOptions(findOptions) {
     return findOptions;
   }
@@ -46,16 +50,16 @@ export abstract class MultipleRelationRepository extends RelationRepository {
         await sourceModel[getAccessor]({
           ...findOptions,
           includeIgnoreAttributes: false,
-          attributes: [this.target.primaryKeyAttribute],
-          group: `${this.target.name}.${this.target.primaryKeyAttribute}`,
+          attributes: [this.targetKey()],
+          group: `${this.target.name}.${this.targetKey()}`,
           transaction,
         })
-      ).map((row) => row.get(this.target.primaryKeyAttribute));
+      ).map((row) => row.get(this.targetKey()));
 
       return await sourceModel[getAccessor]({
         ...omit(findOptions, ['limit', 'offset']),
         where: {
-          [this.target.primaryKeyAttribute]: {
+          [this.targetKey()]: {
             [Op.in]: ids,
           },
         },
@@ -95,10 +99,7 @@ export abstract class MultipleRelationRepository extends RelationRepository {
       includeIgnoreAttributes: false,
       attributes: [
         [
-          Sequelize.fn(
-            'COUNT',
-            Sequelize.fn('DISTINCT', Sequelize.col(`${this.target.name}.${this.target.primaryKeyAttribute}`)),
-          ),
+          Sequelize.fn('COUNT', Sequelize.fn('DISTINCT', Sequelize.col(`${this.target.name}.${this.targetKey()}`))),
           'count',
         ],
       ],
@@ -170,8 +171,9 @@ export abstract class MultipleRelationRepository extends RelationRepository {
       filter: filter,
       transaction,
     });
+
     return await this.destroy({
-      filterByPk: instances.map((instance) => instance[this.target.primaryKeyAttribute]),
+      filterByTk: instances.map((instance) => instance.get(this.targetCollection.filterTargetKey)),
       transaction,
     });
   }

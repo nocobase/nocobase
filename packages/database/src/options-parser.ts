@@ -2,20 +2,23 @@ import { Appends, Except, FindOptions } from './repository';
 import FilterParser from './filter-parser';
 import { FindAttributeOptions, ModelCtor, Op } from 'sequelize';
 import { Database } from './database';
+import { Collection } from './collection';
 
 const debug = require('debug')('noco-database');
 
 export class OptionsParser {
   options: FindOptions;
   database: Database;
+  collection: Collection;
   model: ModelCtor<any>;
   filterParser: FilterParser;
 
-  constructor(model: ModelCtor<any>, database: Database, options: FindOptions) {
-    this.model = model;
+  constructor(collection: Collection, database: Database, options: FindOptions) {
+    this.collection = collection;
+    this.model = collection.model;
     this.options = options;
     this.database = database;
-    this.filterParser = new FilterParser(model, this.database, options?.filter);
+    this.filterParser = new FilterParser(this.model, this.database, options?.filter);
   }
 
   isAssociation(key: string) {
@@ -27,10 +30,10 @@ export class OptionsParser {
   }
 
   parseFilterByPk() {
-    if (this.options?.filterByPk) {
+    if (this.options?.filterByTk) {
       return {
         where: {
-          [this.model.primaryKeyAttribute]: this.options.filterByPk,
+          [this.collection.filterTargetKey]: this.options.filterByTk,
         },
       };
     }
@@ -41,12 +44,12 @@ export class OptionsParser {
   toSequelizeParams() {
     const queryParams = this.filterParser.toSequelizeParams();
 
-    if (this.options?.filterByPk) {
+    if (this.options?.filterByTk) {
       queryParams.where = {
         [Op.and]: [
           queryParams.where,
           {
-            [this.model.primaryKeyAttribute]: this.options.filterByPk,
+            [this.collection.filterTargetKey]: this.options.filterByTk,
           },
         ],
       };

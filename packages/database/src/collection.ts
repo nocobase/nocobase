@@ -15,6 +15,7 @@ export type RepositoryType = typeof Repository;
 export interface CollectionOptions extends Omit<ModelOptions, 'name'> {
   name: string;
   tableName?: string;
+  targetKeyForFilter?: string;
   fields?: FieldOptions[];
   model?: string | ModelCtor<Model>;
   repository?: string | RepositoryType;
@@ -36,6 +37,10 @@ export class Collection<
   fields: Map<string, any> = new Map<string, any>();
   model: ModelCtor<Model<TModelAttributes, TCreationAttributes>>;
   repository: Repository<TModelAttributes, TCreationAttributes>;
+
+  get filterTargetKey() {
+    return lodash.get(this.options, 'targetKeyForFilter', this.model.primaryKeyAttribute);
+  }
 
   get name() {
     return this.options.name;

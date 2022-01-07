@@ -1,6 +1,113 @@
 import { mockDatabase } from '../index';
 import { BelongsToManyRepository } from '../../relation-repository/belongs-to-many-repository';
 import Database from '../../database';
+import { Collection, HasManyRepository } from '@nocobase/database';
+
+describe('belongs to many with target key', function () {
+  let db: Database;
+  let Tag: Collection;
+  let Post: Collection;
+  beforeEach(async () => {
+    db = mockDatabase();
+
+    Post = db.collection({
+      name: 'posts',
+      targetKeyForFilter: 'title',
+      autoGenId: false,
+      fields: [
+        { type: 'string', name: 'title', primaryKey: true },
+        {
+          type: 'belongsToMany',
+          name: 'tags',
+          sourceKey: 'title',
+          foreignKey: 'postTitle',
+          targetKey: 'name',
+          otherKey: 'tagName',
+        },
+      ],
+    });
+
+    Tag = db.collection({
+      name: 'tags',
+      targetKeyForFilter: 'name',
+      autoGenId: false,
+      fields: [
+        { type: 'string', name: 'name', primaryKey: true },
+        { type: 'string', name: 'status' },
+      ],
+    });
+
+    await db.sync({ force: true });
+  });
+
+  afterEach(async () => {
+    await db.close();
+  });
+
+  test('destroy by target key', async () => {
+    const t1 = await Tag.repository.create({
+      values: {
+        name: 't1',
+      },
+    });
+
+    const t2 = await Tag.repository.create({
+      values: {
+        name: 't2',
+      },
+    });
+
+    const p1 = await Post.repository.create({
+      values: { title: 'p1' },
+    });
+
+    const PostTagRepository = new BelongsToManyRepository(Post, 'tags', p1.get('title') as string);
+
+    await PostTagRepository.set([t1.get('name') as string, t2.get('name')]);
+
+    await PostTagRepository.destroy();
+
+    const [_, count] = await PostTagRepository.findAndCount();
+    expect(count).toEqual(0);
+  });
+
+  test('destroy with target key and filter', async () => {
+    let t1 = await Tag.repository.create({
+      values: {
+        name: 't1',
+        status: 'published',
+      },
+    });
+
+    const t2 = await Tag.repository.create({
+      values: {
+        name: 't2',
+        status: 'draft',
+      },
+    });
+
+    const p1 = await Post.repository.create({
+      values: { title: 'p1' },
+    });
+
+    const PostTagRepository = new BelongsToManyRepository(Post, 'tags', p1.get('title') as string);
+
+    await PostTagRepository.set([t1.get('name') as string, t2.get('name') as string]);
+
+    let [_, count] = await PostTagRepository.findAndCount();
+    expect(count).toEqual(2);
+
+    await PostTagRepository.destroy({
+      filterByTk: t1.get('name') as string,
+      filter: {
+        status: 'draft',
+      },
+    });
+
+    [_, count] = await PostTagRepository.findAndCount();
+    expect(count).toEqual(2);
+  });
+});
 
 describe('belongs to many', () => {
   let db: Database;
@@ -10,7 +117,11 @@ describe('belongs to many', () => {
   let PostTag;
 
   beforeEach(async () => {
-    db = mockDatabase();
+    db = mockDatabase({
+      database: 'nocobase_test',
+      username: 'chareice',
+      dialect: 'postgres',
+    });
     PostTag = db.collection({
       name: 'posts_tags',
       fields: [{ type: 'string', name: 'tagged_at' }],
@@ -51,6 +162,7 @@ describe('belongs to many', () => {
       ],
     });
 
+    await db.sequelize.getQueryInterface().dropAllTables();
     await db.sync({ force: true });
   });
 
@@ -384,7 +496,7 @@ describe('belongs to many', () => {
     await PostTagRepository.set([t1.id, t2.id]);
 
     const findByPkResult = await PostTagRepository.findOne({
-      filterByPk: t2.id,
+      filterByTk: t2.id,
     });
 
     expect(findByPkResult.name).toEqual('t2');
@@ -480,7 +592,7 @@ describe('belongs to many', () => {
     expect(count).toEqual(2);
 
     await PostTagRepository.destroy({
-      filterByPk: t1.get('id') as number,
+      filterByTk: t1.get('id') as number,
       filter: {
         status: 'draft',
       },
@@ -511,10 +623,11 @@ describe('belongs to many', () => {
 
     await PostTagRepository.set([t1.id, t2.id]);
 
+    expect(await PostTagRepository.count()).toEqual(2);
+
     await PostTagRepository.destroy(t2.id);
 
-    const result = await PostTagRepository.findAndCount();
-    expect(result[1]).toEqual(1);
+    expect(await PostTagRepository.count()).toEqual(1);
   });
 
   test('transaction', async () => {

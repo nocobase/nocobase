@@ -2,6 +2,45 @@ import { Collection } from '../collection';
 import { Database } from '../database';
 import { mockDatabase } from './';
 
+describe('find by targetKey', function () {
+  it('can filter by target key', async () => {
+    const db = mockDatabase({});
+
+    const User = db.collection({
+      name: 'users',
+      targetKeyForFilter: 'name',
+      autoGenId: false,
+      fields: [
+        {
+          type: 'string',
+          name: 'name',
+          unique: true,
+        },
+      ],
+    });
+
+    await db.sync();
+
+    await User.repository.create({
+      values: {
+        name: 'user1',
+      },
+    });
+
+    await User.repository.create({
+      values: {
+        name: 'user2',
+      },
+    });
+
+    const user2 = await User.repository.findOne({
+      filterByTk: 'user2',
+    });
+
+    expect(user2.get('name')).toEqual('user2');
+  });
+});
+
 describe('repository.find', () => {
   let db: Database;
   let User: Collection;
@@ -116,7 +155,7 @@ describe('repository.find', () => {
     });
 
     const result = await Test.repository.findOne({
-      filterByPk: <number>t1.get('id'),
+      filterByTk: <number>t1.get('id'),
       filter: {
         status: 'published',
       },
