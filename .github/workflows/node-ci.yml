@@ -33,9 +33,9 @@ jobs:
         with:
           node-version: ${{ matrix.node_version }}
           cache: 'yarn'
+      - run: yarn install
       - run: yarn bootstrap
       - run: yarn build
-      - run: yarn install
       - name: Test
         run: yarn test -i
         env:
