@@ -1,4 +1,4 @@
-name: Node.js CI
+name: Nocobase test
 
 on: [push]
 
@@ -25,6 +25,8 @@ jobs:
           --health-interval 10s
           --health-timeout 5s
           --health-retries 5
+      mysql:
+        image: mysql:8
 
     steps:
       - uses: actions/checkout@v2
@@ -36,7 +38,7 @@ jobs:
       - run: yarn install
       - run: yarn bootstrap
       - run: yarn build
-      - name: Test
+      - name: Test with postgres
         run: yarn test -i
         env:
           DB_DIALECT: postgres
@@ -45,3 +47,7 @@ jobs:
           DB_USER: nocobase
           DB_PASSWORD: password
           DB_DATABASE: nocobase
+      - name: Test with Sqlite
+        run: yarn test -i
+      - name: Test with MySQL
+        run: yarn test -i

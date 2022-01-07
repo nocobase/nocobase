@@ -118,13 +118,13 @@ export abstract class MultipleRelationRepository extends RelationRepository {
 
   @transaction((args, transaction) => {
     return {
-      pk: args[0],
+      tk: args[0],
       transaction,
     };
   })
   async remove(options: TargetKey | TargetKey[] | AssociatedOptions): Promise<void> {
     const transaction = await this.getTransaction(options);
-    let handleKeys = options['pk'];
+    let handleKeys = options['tk'];
 
     if (!Array.isArray(handleKeys)) {
       handleKeys = [handleKeys];

@@ -4,7 +4,7 @@ import { Transactionable } from 'sequelize';
 export type PrimaryKeyWithThroughValues = [TargetKey, Values];
 
 export interface AssociatedOptions extends Transactionable {
-  pk?: TargetKey | TargetKey[] | PrimaryKeyWithThroughValues | PrimaryKeyWithThroughValues[];
+  tk?: TargetKey | TargetKey[] | PrimaryKeyWithThroughValues | PrimaryKeyWithThroughValues[];
 }
 
 export type setAssociationOptions =
