@@ -120,9 +120,10 @@ export async function action(ctx: Context, next: Next) {
       const Repo = AssociatedCollection.repository.relation(resourceName).of(associatedIndex);
       const Attachment = ctx.db.getCollection('attachments').model;
       const opts = {
-        pk: result[Attachment.primaryKeyAttribute],
+        tk: result[Attachment.primaryKeyAttribute],
         transaction,
       };
+
       if (Repo instanceof BelongsToManyRepository) {
         await Repo.add(opts);
       } else if (Repo instanceof BelongsToRepository) {
