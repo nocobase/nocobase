@@ -105,7 +105,7 @@ export class BelongsToManyRepository extends MultipleRelationRepository implemen
       transaction,
     });
 
-    await this.target.destroy({
+    await this.targetModel.destroy({
       where: {
         [this.targetKey()]: {
           [Op.in]: ids,
@@ -155,7 +155,7 @@ export class BelongsToManyRepository extends MultipleRelationRepository implemen
 
     for (const [id, throughValues] of Object.entries(setObj)) {
       if (typeof throughValues === 'object') {
-        const instance = await this.target.findByPk(id, {
+        const instance = await this.targetModel.findByPk(id, {
           transaction,
         });
         await updateThroughTableValue(instance, this.throughName(), throughValues, sourceModel, transaction);

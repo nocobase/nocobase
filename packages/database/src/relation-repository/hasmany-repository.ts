@@ -66,7 +66,7 @@ export class HasManyRepository extends MultipleRelationRepository implements IHa
       });
     }
 
-    await this.target.destroy({
+    await this.targetModel.destroy({
       where: {
         [Op.and]: where,
       },

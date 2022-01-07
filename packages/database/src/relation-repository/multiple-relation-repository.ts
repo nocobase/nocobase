@@ -10,8 +10,8 @@ import {
   Filter,
   FilterByTk,
   FindOptions,
-  PK,
-  PrimaryKey,
+  TK,
+  TargetKey,
   TransactionAble,
   UpdateOptions,
 } from '../repository';
@@ -21,12 +21,12 @@ export interface FindAndCountOptions extends CommonFindOptions {}
 export interface FindOneOptions extends CommonFindOptions, FilterByTk {}
 
 export interface AssociatedOptions extends TransactionAble {
-  tk?: PK;
+  tk?: TK;
 }
 
 export abstract class MultipleRelationRepository extends RelationRepository {
   targetKey() {
-    return lodash.get(this.associationField(), 'options.targetKey', this.target.primaryKeyAttribute);
+    return lodash.get(this.associationField(), 'options.targetKey', this.targetModel.primaryKeyAttribute);
   }
 
   extendFindOptions(findOptions) {
@@ -51,7 +51,7 @@ export abstract class MultipleRelationRepository extends RelationRepository {
           ...findOptions,
           includeIgnoreAttributes: false,
           attributes: [this.targetKey()],
-          group: `${this.target.name}.${this.targetKey()}`,
+          group: `${this.targetModel.name}.${this.targetKey()}`,
           transaction,
         })
       ).map((row) => row.get(this.targetKey()));
@@ -99,7 +99,10 @@ export abstract class MultipleRelationRepository extends RelationRepository {
       includeIgnoreAttributes: false,
       attributes: [
         [
-          Sequelize.fn('COUNT', Sequelize.fn('DISTINCT', Sequelize.col(`${this.target.name}.${this.targetKey()}`))),
+          Sequelize.fn(
+            'COUNT',
+            Sequelize.fn('DISTINCT', Sequelize.col(`${this.targetModel.name}.${this.targetKey()}`)),
+          ),
           'count',
         ],
       ],
@@ -123,7 +126,7 @@ export abstract class MultipleRelationRepository extends RelationRepository {
       transaction,
     };
   })
-  async remove(options: PrimaryKey | PrimaryKey[] | AssociatedOptions): Promise<void> {
+  async remove(options: TargetKey | TargetKey[] | AssociatedOptions): Promise<void> {
     const transaction = await this.getTransaction(options);
     let handleKeys = options['pk'];
 
@@ -142,7 +145,7 @@ export abstract class MultipleRelationRepository extends RelationRepository {
   async update(options?: UpdateOptions): Promise<any> {
     const transaction = await this.getTransaction(options);
 
-    const guard = UpdateGuard.fromOptions(this.target, options);
+    const guard = UpdateGuard.fromOptions(this.targetModel, options);
 
     const values = guard.sanitize(options.values);
 
@@ -154,7 +157,7 @@ export abstract class MultipleRelationRepository extends RelationRepository {
       await updateModelByValues(instance, values, {
         ...options,
         sanitized: true,
-        sourceModel: this.sourceModel,
+        sourceModel: this.sourceInstance,
         transaction,
       });
     }
@@ -162,7 +165,7 @@ export abstract class MultipleRelationRepository extends RelationRepository {
     return instances;
   }
 
-  async destroy(options?: PK | DestroyOptions): Promise<Boolean> {
+  async destroy(options?: TK | DestroyOptions): Promise<Boolean> {
     return false;
   }
 

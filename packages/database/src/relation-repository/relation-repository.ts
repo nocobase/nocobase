@@ -9,26 +9,26 @@ import lodash from 'lodash';
 import { transactionWrapperBuilder } from '../transaction-decorator';
 
 export const transaction = transactionWrapperBuilder(function () {
-  return this.source.model.sequelize.transaction();
+  return this.sourceCollection.model.sequelize.transaction();
 });
 
 export abstract class RelationRepository {
-  source: Collection;
+  sourceCollection: Collection;
   association: Association;
-  target: ModelCtor<any>;
+  targetModel: ModelCtor<any>;
   targetCollection: Collection;
   associationName: string;
   sourceKeyValue: string | number;
-  sourceModel: Model;
+  sourceInstance: Model;
 
-  constructor(source: Collection, association: string, sourceKeyValue: string | number) {
-    this.source = source;
+  constructor(sourceCollection: Collection, association: string, sourceKeyValue: string | number) {
+    this.sourceCollection = sourceCollection;
     this.sourceKeyValue = sourceKeyValue;
     this.associationName = association;
-    this.association = this.source.model.associations[association];
+    this.association = this.sourceCollection.model.associations[association];
 
-    this.target = this.association.target;
-    this.targetCollection = this.source.context.database.modelCollection.get(this.target);
+    this.targetModel = this.association.target;
+    this.targetCollection = this.sourceCollection.context.database.modelCollection.get(this.targetModel);
   }
 
   protected accessors() {
@@ -38,7 +38,7 @@ export abstract class RelationRepository {
   async create(options?: CreateOptions): Promise<any> {
     const createAccessor = this.accessors().create;
 
-    const guard = UpdateGuard.fromOptions(this.target, options);
+    const guard = UpdateGuard.fromOptions(this.targetModel, options);
     const values = options.values;
 
     const sourceModel = await this.getSourceModel();
@@ -51,25 +51,25 @@ export abstract class RelationRepository {
   }
 
   async getSourceModel(transaction?: any) {
-    if (!this.sourceModel) {
-      this.sourceModel = await this.source.model.findOne({
+    if (!this.sourceInstance) {
+      this.sourceInstance = await this.sourceCollection.model.findOne({
         where: {
           [this.associationField().sourceKey]: this.sourceKeyValue,
         },
       });
     }
 
-    return this.sourceModel;
+    return this.sourceInstance;
   }
 
   protected associationField() {
-    return this.source.fields.get(this.associationName);
+    return this.sourceCollection.fields.get(this.associationName);
   }
 
   protected buildQueryOptions(options: FindOptions) {
     const parser = new OptionsParser(
-      this.source.context.database.modelCollection.get(this.target),
-      this.source.context.database,
+      this.sourceCollection.context.database.modelCollection.get(this.targetModel),
+      this.sourceCollection.context.database,
       options,
     );
     const params = parser.toSequelizeParams();
@@ -77,7 +77,7 @@ export abstract class RelationRepository {
   }
 
   protected parseFilter(filter: Filter) {
-    const parser = new FilterParser(this.target, this.source.context.database, filter);
+    const parser = new FilterParser(this.targetModel, this.sourceCollection.context.database, filter);
     return parser.toSequelizeParams();
   }
 
@@ -87,7 +87,7 @@ export abstract class RelationRepository {
     }
 
     if (autoGen) {
-      return await this.source.model.sequelize.transaction();
+      return await this.sourceCollection.model.sequelize.transaction();
     }
 
     return null;
