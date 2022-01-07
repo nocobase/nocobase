@@ -27,6 +27,10 @@ jobs:
           --health-retries 5
       mysql:
         image: mysql:8
+        env:
+          MYSQL_ROOT_PASSWORD: password
+          MYSQL_DATABASE: nocobase
+        options: --health-cmd="mysqladmin ping" --health-interval=10s --health-timeout=5s --health-retries=3
 
     steps:
       - uses: actions/checkout@v2
@@ -49,5 +53,15 @@ jobs:
           DB_DATABASE: nocobase
       - name: Test with Sqlite
         run: yarn test -i
+        env:
+          DB_DIALECT: sqlite
+          DB_STORAGE: ":memory:"
       - name: Test with MySQL
         run: yarn test -i
+        env:
+          DB_DIALECT: mysql
+          DB_HOST: mysql
+          DB_PORT: 3306
+          DB_USER: root
+          DB_PASSWORD: password
+          DB_DATABASE: nocobase
