@@ -7,6 +7,7 @@ export default {
   autoGenId: false,
   model: 'CollectionModel',
   timestamps: false,
+  filterTargetKey: 'name',
   fields: [
     {
       type: 'uid',
