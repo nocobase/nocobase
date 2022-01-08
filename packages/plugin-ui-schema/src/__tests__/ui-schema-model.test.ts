@@ -15,9 +15,6 @@ describe('ui schema model', () => {
   beforeEach(async () => {
     app = mockServer({
       registerActions: true,
-      database: {
-        logging: console.log,
-      },
     });
 
     db = app.db;
@@ -40,7 +37,7 @@ describe('ui schema model', () => {
       ],
     });
 
-    await db.sync({ force: true });
+    await db.sync({ force: true, alter: { drop: false } });
   });
 
   it('should create schema tree after ui_schema created', async () => {
