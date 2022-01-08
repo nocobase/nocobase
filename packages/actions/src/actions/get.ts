@@ -1,6 +1,5 @@
 import { Context } from '..';
 import { getRepositoryFromParams } from './utils';
-import { SingleRelationRepository } from '@nocobase/database';
 
 export async function get(ctx: Context, next) {
   const repository = getRepositoryFromParams(ctx);
@@ -8,7 +7,7 @@ export async function get(ctx: Context, next) {
   const { resourceIndex, fields, appends, except, filter } = ctx.action.params;
 
   const instance = await repository.findOne({
-    filterByPk: resourceIndex,
+    filterByTk: resourceIndex,
     fields,
     appends,
     except,
