@@ -11,7 +11,14 @@ export default {
   fields: [
     {
       type: 'uid',
+      name: 'x-uid',
+      field: 'uid',
+      primaryKey: true,
+    },
+    {
+      type: 'string',
       name: 'uid',
+      field: 'uid',
       primaryKey: true,
     },
     {

@@ -22,6 +22,10 @@ export default class PluginUiSchema extends Plugin {
       directory: path.resolve(__dirname, 'collections'),
     });
 
+    db.on('ui_schemas.beforeCreate', (model) => {
+      model.set('uid', model.get('x-uid'));
+    });
+
     await db.getCollection('ui_schemas').sync({
       force: false,
       alter: {

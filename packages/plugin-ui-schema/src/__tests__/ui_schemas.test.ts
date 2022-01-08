@@ -1,11 +1,12 @@
 import { MockServer, mockServer } from '@nocobase/test';
-import { Database } from '@nocobase/database';
+import { Collection, Database } from '@nocobase/database';
 import PluginUiSchema from '../server';
 import { uid } from '@nocobase/utils';
 
 describe('ui_schemas', () => {
   let app: MockServer;
   let db: Database;
+  let Field: Collection;
 
   beforeEach(async () => {
     app = mockServer({
@@ -20,6 +21,20 @@ describe('ui_schemas', () => {
     app.plugin(PluginUiSchema);
 
     await app.load();
+
+    Field = db.collection({
+      name: 'fields',
+      fields: [
+        {
+          type: 'belongsTo',
+          name: 'uiSchema',
+          target: 'ui_schemas',
+          foreignKey: 'uiSchemaUid',
+          targetKey: 'x-uid',
+        },
+      ],
+    });
+
     await db.sync({
       force: false,
       alter: {
@@ -32,11 +47,123 @@ describe('ui_schemas', () => {
     await app.destroy();
   });
 
-  test('create', async () => {
-    const UISchema = db.getCollection('ui_schemas');
-    const schema = await UISchema.model.create({
-      'x-uid': uid(),
+  describe('create', () => {
+    test('create', async () => {
+      // db.on('ui_schemas.afterCreate', (model) => {
+      //   console.log(model.get());
+      // });
+      const id = uid();
+      await Field.repository.create({
+        values: {
+          uiSchema: {
+            'x-uid': id,
+            name: 'aa',
+            properties: {
+              a: 'a',
+            },
+          },
+        },
+        updateAssociationValues: ['uiSchema'],
+      });
+      console.log(id);
     });
-    console.log(schema.toJSON(), UISchema.model.rawAttributes);
+  });
+
+  describe('update', () => {
+    let field;
+    beforeEach(async () => {
+      field = await Field.repository.create({
+        values: {
+          uiSchema: {
+            'x-uid': uid(),
+            name: 'abc',
+            'x-component-props': {
+              b: 'b1',
+            },
+            properties: {
+              a: 'abc',
+            },
+          },
+        },
+        updateAssociationValues: ['uiSchema'],
+      });
+    });
+
+    test('model update', async () => {
+      const UISchema = db.getCollection('ui_schemas');
+      const id = uid();
+      const schema = await UISchema.model.create({
+        'x-uid': id,
+        name: 'abc',
+        'x-component-props': {
+          b: 'b1',
+        },
+        properties: {
+          a: 'abc',
+        },
+      });
+
+      await schema.update({
+        name: 'aabbcc',
+        'x-component-props': {
+          b: 'b2',
+        },
+        properties: {
+          a: 'aabbcc',
+        },
+      });
+
+      const s = await UISchema.model.findByPk(id);
+
+      expect(s.toJSON()).toMatchObject({
+        name: 'aabbcc',
+        'x-component-props': {
+          b: 'b2',
+        },
+        properties: {
+          a: 'aabbcc',
+        },
+      });
+    });
+
+    test.only('repository update', async () => {
+      db.on('ui_schemas.beforeUpdate', (model) => {
+        model.set({ ...model.get() });
+        // console.log(model, model.get());
+      });
+      db.on('ui_schemas.afterUpdate', (model) => {
+        console.log(model.dataValues);
+      });
+      // 数据库里的并没有被修改
+      await Field.repository.update({
+        filterByTk: field.id,
+        updateAssociationValues: ['uiSchema'],
+        values: {
+          uiSchema: {
+            'x-uid': field.uiSchemaUid,
+            name: 'aabbcc',
+            'x-component-props': {
+              b: 'b2',
+            },
+            properties: {
+              a: 'aabbcc',
+            },
+          },
+        },
+      });
+
+      const UISchema = db.getCollection('ui_schemas');
+      const s = await UISchema.model.findByPk(field.uiSchemaUid);
+
+      expect(s.toJSON()).toMatchObject({
+        name: 'aabbcc',
+        'x-component-props': {
+          b: 'b2',
+        },
+        properties: {
+          a: 'aabbcc',
+        },
+      });
+    });
   });
 });
