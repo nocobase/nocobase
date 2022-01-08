@@ -1,15 +1,15 @@
-import { PrimaryKey, Values } from '../repository';
+import { TargetKey, Values } from '../repository';
 import { Transactionable } from 'sequelize';
 
-export type PrimaryKeyWithThroughValues = [PrimaryKey, Values];
+export type PrimaryKeyWithThroughValues = [TargetKey, Values];
 
 export interface AssociatedOptions extends Transactionable {
-  pk?: PrimaryKey | PrimaryKey[] | PrimaryKeyWithThroughValues | PrimaryKeyWithThroughValues[];
+  tk?: TargetKey | TargetKey[] | PrimaryKeyWithThroughValues | PrimaryKeyWithThroughValues[];
 }
 
 export type setAssociationOptions =
-  | PrimaryKey
-  | PrimaryKey[]
+  | TargetKey
+  | TargetKey[]
   | PrimaryKeyWithThroughValues
   | PrimaryKeyWithThroughValues[]
   | AssociatedOptions;

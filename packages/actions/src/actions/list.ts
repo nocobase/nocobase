@@ -32,7 +32,7 @@ export async function list(ctx: Context, next) {
     appends,
     except,
     sort,
-    ...pageArgsToLimitArgs(page, perPage),
+    ...pageArgsToLimitArgs(parseInt(String(page)), parseInt(String(perPage))),
   });
 
   ctx.body = {

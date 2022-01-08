@@ -17,7 +17,11 @@ describe('action', () => {
   let db;
 
   beforeEach(async () => {
-    app = await getApp();
+    app = await getApp({
+      database: {
+        logging: console.log,
+      },
+    });
     agent = app.agent();
     db = app.db;
 
@@ -103,11 +107,13 @@ describe('action', () => {
     it('upload with associatedIndex', async () => {
       const User = db.getCollection('users').model;
       const user = await User.create();
+
       const { body } = await agent.resource('users.avatar').upload({
         associatedIndex: user.id,
         file: path.resolve(__dirname, './files/image.png'),
         values: { width: 100, height: 100 },
       });
+
       const matcher = {
         title: 'image',
         extname: '.png',
