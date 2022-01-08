@@ -16,7 +16,7 @@ export abstract class RelationField extends Field {
   }
 
   get sourceKey() {
-    return this.options.sourceKey;
+    return this.options.sourceKey || this.collection.model.primaryKeyAttribute;
   }
 
   get targetKey() {
