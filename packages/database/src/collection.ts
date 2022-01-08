@@ -188,9 +188,6 @@ export class Collection<
 
   /**
    * TODO
-   *
-   * @param name
-   * @param options
    */
   updateOptions(options: CollectionOptions, mergeOptions?: any) {
     let newOptions = lodash.cloneDeep(options);
@@ -206,6 +203,8 @@ export class Collection<
     }
 
     this.context.database.emit('afterUpdateCollection', this);
+
+    return this;
   }
 
   setUpHooks(bindHooks) {

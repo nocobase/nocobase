@@ -58,7 +58,7 @@ describe('collections repository', () => {
       timestamps: true,
     });
     const [updated] = await Collection.repository.update({
-      filterByPk: data.get('key') as any,
+      filterByTk: data.get('key') as any,
       values: {
         createdBy: false,
         updatedBy: false,
