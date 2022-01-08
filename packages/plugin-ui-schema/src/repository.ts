@@ -389,6 +389,7 @@ WHERE TreePath.ancestor = :ancestor  ${options?.includeAsyncNode ? '' : 'AND (No
           schema,
         },
         transaction,
+        hooks: false,
       });
     }
 

@@ -26,6 +26,15 @@ export default class PluginUiSchema extends Plugin {
       model.set('uid', model.get('x-uid'));
     });
 
+    db.on('ui_schemas.afterCreate', async (model, options) => {
+      const { transaction } = options;
+      const uiSchemaRepository = db.getCollection('ui_schemas').repository as UiSchemaRepository;
+
+      await uiSchemaRepository.insert(model.toJSON(), {
+        transaction,
+      });
+    });
+
     await db.getCollection('ui_schemas').sync({
       force: false,
       alter: {

@@ -168,7 +168,7 @@ describe('ui_schemas', () => {
       });
     });
 
-    test.only('uiSchema repository update', async () => {
+    test('uiSchema repository update', async () => {
       const UISchema = db.getCollection('ui_schemas');
       const id = uid();
       await UISchema.repository.create({
