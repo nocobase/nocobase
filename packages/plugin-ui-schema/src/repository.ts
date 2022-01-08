@@ -206,6 +206,7 @@ WHERE TreePath.ancestor = :ancestor  ${options?.includeAsyncNode ? '' : 'AND (No
         },
       },
       {
+        hooks: false,
         transaction,
       },
     );

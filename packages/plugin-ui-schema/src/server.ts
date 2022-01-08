@@ -35,6 +35,15 @@ export default class PluginUiSchema extends Plugin {
       });
     });
 
+    db.on('ui_schemas.afterUpdate', async (model, options) => {
+      const { transaction } = options;
+      const uiSchemaRepository = db.getCollection('ui_schemas').repository as UiSchemaRepository;
+
+      await uiSchemaRepository.patch(model.toJSON(), {
+        transaction,
+      });
+    });
+
     await db.getCollection('ui_schemas').sync({
       force: false,
       alter: {
