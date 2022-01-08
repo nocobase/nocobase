@@ -1,4 +1,4 @@
-import { uid } from '@nocobase/database';
+import { uid } from '@nocobase/utils';
 import { Application } from './application';
 import _ from 'lodash';
 
