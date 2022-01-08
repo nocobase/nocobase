@@ -126,7 +126,7 @@ export class BelongsToManyRepository extends MultipleRelationRepository implemen
     const transaction = await this.getTransaction(options, false);
 
     if (lodash.isPlainObject(options)) {
-      options = (<AssociatedOptions>options).pk || [];
+      options = (<AssociatedOptions>options).tk || [];
     }
 
     if (lodash.isString(options) || lodash.isNumber(options)) {
@@ -165,7 +165,7 @@ export class BelongsToManyRepository extends MultipleRelationRepository implemen
 
   @transaction((args, transaction) => {
     return {
-      pk: args[0],
+      tk: args[0],
       transaction,
     };
   })
@@ -177,7 +177,7 @@ export class BelongsToManyRepository extends MultipleRelationRepository implemen
 
   @transaction((args, transaction) => {
     return {
-      pk: args[0],
+      tk: args[0],
       transaction,
     };
   })
@@ -189,14 +189,15 @@ export class BelongsToManyRepository extends MultipleRelationRepository implemen
 
   @transaction((args, transaction) => {
     return {
-      pk: args[0],
+      tk: args[0],
       transaction,
     };
   })
-  async toggle(options: TargetKey | { pk?: TargetKey; transaction?: Transaction }): Promise<void> {
+  async toggle(options: TargetKey | { tk?: TargetKey; transaction?: Transaction }): Promise<void> {
     const transaction = await this.getTransaction(options);
     const sourceModel = await this.getSourceModel(transaction);
-    const has = await sourceModel[this.accessors().hasSingle](options['pk'], {
+
+    const has = await sourceModel[this.accessors().hasSingle](options['tk'], {
       transaction,
     });
 

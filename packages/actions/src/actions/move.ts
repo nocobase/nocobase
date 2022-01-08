@@ -1,7 +1,7 @@
 import { Op, Model } from 'sequelize';
 
 import { Context } from '..';
-import { Collection, PrimaryKey, Repository, SortField } from '@nocobase/database';
+import { Collection, TargetKey, Repository, SortField } from '@nocobase/database';
 import { getRepositoryFromParams } from './utils';
 
 export async function move(ctx: Context, next) {
@@ -33,7 +33,7 @@ export async function move(ctx: Context, next) {
 
 interface SortPosition {
   scope?: string;
-  id: PrimaryKey;
+  id: TargetKey;
 }
 
 interface MoveOptions {
@@ -57,7 +57,7 @@ export class SortAbleCollection {
   }
 
   // insert source position to target position
-  async move(sourceInstanceId: PrimaryKey, targetInstanceId: PrimaryKey, options: MoveOptions = {}) {
+  async move(sourceInstanceId: TargetKey, targetInstanceId: TargetKey, options: MoveOptions = {}) {
     const sourceInstance = await this.collection.repository.findById(sourceInstanceId);
     const targetInstance = await this.collection.repository.findById(targetInstanceId);
 
@@ -69,7 +69,7 @@ export class SortAbleCollection {
     await this.sameScopeMove(sourceInstance, targetInstance, options);
   }
 
-  async changeScope(sourceInstanceId: PrimaryKey, targetScope: any, method?: string) {
+  async changeScope(sourceInstanceId: TargetKey, targetScope: any, method?: string) {
     const sourceInstance = await this.collection.repository.findById(sourceInstanceId);
     const targetScopeValue = targetScope[this.scopeKey];
 
@@ -83,7 +83,7 @@ export class SortAbleCollection {
     }
   }
 
-  async sticky(sourceInstanceId: PrimaryKey) {
+  async sticky(sourceInstanceId: TargetKey) {
     const sourceInstance = await this.collection.repository.findById(sourceInstanceId);
     sourceInstance.set(this.field.get('name'), 0);
     await sourceInstance.save();

@@ -7,7 +7,7 @@ import { UpdateGuard } from '../update-guard';
 import { updateAssociations } from '../update-associations';
 import lodash from 'lodash';
 import { transactionWrapperBuilder } from '../transaction-decorator';
-import { Field, RelationField } from '@nocobase/database';
+import { RelationField } from '../fields/relation-field';
 
 export const transaction = transactionWrapperBuilder(function () {
   return this.sourceCollection.model.sequelize.transaction();

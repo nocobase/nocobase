@@ -648,7 +648,7 @@ describe('belongs to many', () => {
     const PostTagRepository = new BelongsToManyRepository(Post, 'tags', p1.id);
 
     await PostTagRepository.set({
-      pk: [t1.id, t2.id],
+      tk: [t1.id, t2.id],
       transaction,
     });
 

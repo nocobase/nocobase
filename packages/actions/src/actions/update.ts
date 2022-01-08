@@ -6,7 +6,7 @@ export async function update(ctx: Context, next) {
   const { resourceIndex, values, whitelist, blacklist, filter, updateAssociationValues } = ctx.action.params;
 
   const instance = await repository.update({
-    filterByPk: resourceIndex,
+    filterByTk: resourceIndex,
     values,
     whitelist,
     blacklist,

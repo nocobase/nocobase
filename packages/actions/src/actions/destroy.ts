@@ -8,7 +8,7 @@ export async function destroy(ctx: Context, next) {
 
   const instance = await repository.destroy({
     filter,
-    filterByPk: resourceIndex,
+    filterByTk: resourceIndex,
     context: ctx,
   });
 
