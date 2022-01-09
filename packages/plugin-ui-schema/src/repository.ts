@@ -286,13 +286,22 @@ export default class UiSchemaRepository extends Repository {
       },
     });
 
+    const db = this.database;
+    const treeTable = this.treeCollection().model.tableName;
+    const typeQuery = await db.sequelize.query(`SELECT type from ${treeTable} WHERE ancestor = :uid AND depth = 0;`, {
+      type: 'SELECT',
+      replacements: {
+        uid: targetUid,
+      },
+    });
+
     const nodes = UiSchemaRepository.schemaToSingleNodes(schema);
 
     const rootNode = nodes[0];
 
     rootNode.childOptions = {
       parentUid: targetParent.get('ancestor') as string,
-      type: 'properties',
+      type: typeQuery[0]['type'],
       position: {
         type: side,
         target: targetUid,
@@ -307,7 +316,7 @@ export default class UiSchemaRepository extends Repository {
     const rootNode = nodes[0];
     rootNode.childOptions = {
       parentUid: targetUid,
-      type: 'properties',
+      type: lodash.get(schema, 'x-node-type', 'properties'),
       position,
     };
 
@@ -400,15 +409,6 @@ export default class UiSchemaRepository extends Repository {
 
     if (existsNode) {
       savedNode = existsNode;
-      const typeQuery = await db.sequelize.query(`SELECT type from ${treeTable} WHERE ancestor = :uid AND depth = 0;`, {
-        type: 'SELECT',
-        replacements: {
-          uid: savedNode.get('uid'),
-        },
-        transaction,
-      });
-
-      childOptions.type = typeQuery[0]['type'];
     } else {
       savedNode = await this.create({
         values: {
