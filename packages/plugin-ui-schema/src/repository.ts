@@ -396,8 +396,19 @@ export default class UiSchemaRepository extends Repository {
       transaction,
     });
 
+    const treeTable = treeCollection.model.tableName;
+
     if (existsNode) {
       savedNode = existsNode;
+      const typeQuery = await db.sequelize.query(`SELECT type from ${treeTable} WHERE ancestor = :uid AND depth = 0;`, {
+        type: 'SELECT',
+        replacements: {
+          uid: savedNode.get('uid'),
+        },
+        transaction,
+      });
+
+      childOptions.type = typeQuery[0]['type'];
     } else {
       savedNode = await this.create({
         values: {
@@ -410,7 +421,6 @@ export default class UiSchemaRepository extends Repository {
       });
     }
 
-    const treeTable = treeCollection.model.tableName;
     if (childOptions) {
       const parentUid = childOptions.parentUid;
 
@@ -552,6 +562,7 @@ export default class UiSchemaRepository extends Repository {
       if (lodash.isPlainObject(nodePosition)) {
         const targetPosition = nodePosition as TargetPosition;
         const target = targetPosition.target;
+
         const targetSort = await db.sequelize.query(
           `SELECT TreeTable.sort  as sort FROM ${treeTable} as TreeTable
                                  LEFT JOIN ${treeTable} as NodeInfo

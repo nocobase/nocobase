@@ -18,6 +18,8 @@ describe('ui_schema repository', () => {
   beforeEach(async () => {
     app = mockServer({
       registerActions: true,
+
+      database: {},
     });
 
     db = app.db;
@@ -390,6 +392,42 @@ describe('ui_schema repository', () => {
           },
         },
       });
+    });
+  });
+
+  describe('insert with items', () => {
+    test('insert with items', async () => {
+      const schema = {
+        name: 'root-name',
+        'x-uid': 'root',
+        properties: {
+          p1: {
+            'x-uid': 'p1',
+          },
+          p2: {
+            'x-uid': 'p2',
+          },
+        },
+        items: [
+          {
+            name: 'i1',
+            'x-uid': 'i1',
+          },
+          {
+            name: 'i2',
+            'x-uid': 'i2',
+          },
+        ],
+      };
+
+      await repository.insert(schema);
+      await repository.insertBeforeBegin('i1', {
+        'x-uid': 'i2',
+      });
+
+      const results = await repository.getJsonSchema('root');
+      expect(results['items'][0]['name']).toEqual('i2');
+      expect(results['items'][1]['name']).toEqual('i1');
     });
   });
 
