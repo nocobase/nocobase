@@ -147,7 +147,9 @@ export default class UiSchemaRepository extends Repository {
 
           rootNode[childType] =
             childType == 'items'
-              ? properties
+              ? properties.length == 1
+                ? properties[0]
+                : properties
               : properties.reduce((carry, item) => {
                   carry[item.name] = item;
                   delete item['name'];
