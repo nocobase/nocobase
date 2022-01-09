@@ -1,6 +1,33 @@
 import { ISchema } from '@formily/json-schema';
+import { mockServer, MockServer } from '@nocobase/test';
+import { Collection, Database } from '@nocobase/database';
+import PluginUiSchema, { UiSchemaRepository } from '@nocobase/plugin-ui-schema';
 
 describe('ui-schema', () => {
+  let app: MockServer;
+  let db: Database;
+
+  let uiSchemaRepository: UiSchemaRepository;
+
+  afterEach(async () => {
+    await app.destroy();
+  });
+
+  beforeEach(async () => {
+    app = mockServer({
+      registerActions: true,
+    });
+
+    db = app.db;
+
+    await db.sequelize.getQueryInterface().dropAllTables();
+
+    app.plugin(PluginUiSchema);
+
+    await app.load();
+    uiSchemaRepository = db.getCollection('ui_schemas').repository as UiSchemaRepository;
+  });
+
   type SchemaProperties = Record<string, ISchema>;
   // properties、patternProperties、definitions 都是这种类型的
   describe('SchemaProperties', () => {
@@ -16,13 +43,13 @@ describe('ui-schema', () => {
           properties: 'aaa', // 无效，跳过并警告
         },
         {
-          properties: [],  // 无效，跳过并警告
+          properties: [], // 无效，跳过并警告
         },
         {
-          properties: 1,  // 无效，跳过并警告
+          properties: 1, // 无效，跳过并警告
         },
         {
-          properties: true,  // 无效，跳过并警告
+          properties: true, // 无效，跳过并警告
         },
       ];
     });
@@ -52,7 +79,107 @@ describe('ui-schema', () => {
   });
 
   type SchemaItems = ISchema | ISchema[];
+
   describe('items', () => {
+    it('should insert items node', async () => {
+      const schema = {
+        type: 'object',
+        properties: {
+          string_array: {
+            type: 'array',
+            'x-component': 'ArrayCards',
+            maxItems: 3,
+            'x-decorator': 'FormItem',
+            'x-component-props': {
+              title: 'String array',
+            },
+            items: {
+              type: 'void',
+              properties: {
+                index: {
+                  type: 'void',
+                  'x-component': 'ArrayCards.Index',
+                },
+                input: {
+                  type: 'string',
+                  'x-decorator': 'FormItem',
+                  title: 'Input',
+                  required: true,
+                  'x-component': 'Input',
+                },
+                remove: {
+                  type: 'void',
+                  'x-component': 'ArrayCards.Remove',
+                },
+                moveUp: {
+                  type: 'void',
+                  'x-component': 'ArrayCards.MoveUp',
+                },
+                moveDown: {
+                  type: 'void',
+                  'x-component': 'ArrayCards.MoveDown',
+                },
+              },
+            },
+            properties: {
+              addition: {
+                type: 'void',
+                title: 'Add entry',
+                'x-component': 'ArrayCards.Addition',
+              },
+            },
+          },
+          array: {
+            type: 'array',
+            'x-component': 'ArrayCards',
+            maxItems: 3,
+            'x-decorator': 'FormItem',
+            'x-component-props': {
+              title: 'Object array',
+            },
+            items: {
+              type: 'object',
+              properties: {
+                index: {
+                  type: 'void',
+                  'x-component': 'ArrayCards.Index',
+                },
+                input: {
+                  type: 'string',
+                  'x-decorator': 'FormItem',
+                  title: 'Input',
+                  required: true,
+                  'x-component': 'Input',
+                },
+                remove: {
+                  type: 'void',
+                  'x-component': 'ArrayCards.Remove',
+                },
+                moveUp: {
+                  type: 'void',
+                  'x-component': 'ArrayCards.MoveUp',
+                },
+                moveDown: {
+                  type: 'void',
+                  'x-component': 'ArrayCards.MoveDown',
+                },
+              },
+            },
+            properties: {
+              addition: {
+                type: 'void',
+                title: 'Add entry',
+                'x-component': 'ArrayCards.Addition',
+              },
+            },
+          },
+        },
+      };
+
+      const result = await uiSchemaRepository.insert(schema);
+      console.log(JSON.stringify(result, null, 2));
+    });
+
     it('items is array or plain object', () => {
       const examples = [
         {
@@ -77,7 +204,7 @@ describe('ui-schema', () => {
           null, // 无效，跳过并警告
           'aa', // 无效，跳过并警告
         ],
-      }
+      };
     });
   });
   describe('additionalProperties & additionalItems', () => {
@@ -204,6 +331,6 @@ describe('ui-schema', () => {
           type: 'void',
         },
       },
-    }
+    };
   });
 });

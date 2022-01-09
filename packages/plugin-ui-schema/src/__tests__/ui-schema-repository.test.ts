@@ -147,6 +147,57 @@ describe('ui_schema repository', () => {
     ).toEqual(1);
   });
 
+  it('should insert child node with difference type', async () => {
+    const schema = {
+      name: 'root-name',
+      'x-uid': 'root',
+      properties: {
+        p1: {
+          'x-uid': 'p1',
+        },
+        p2: {
+          'x-uid': 'p2',
+        },
+      },
+      items: [
+        {
+          name: 'i1',
+          'x-uid': 'i1',
+        },
+        {
+          name: 'i2',
+          'x-uid': 'i2',
+        },
+      ],
+    };
+
+    const tree = await repository.insert(schema);
+    expect(tree).toMatchObject({
+      items: [
+        {
+          name: 'i1',
+          'x-uid': 'i1',
+          'x-async': false,
+          'x-index': 1,
+        },
+        {
+          name: 'i2',
+          'x-uid': 'i2',
+          'x-async': false,
+          'x-index': 2,
+        },
+      ],
+      properties: {
+        p1: { 'x-uid': 'p1', 'x-async': false, 'x-index': 1 },
+        p2: { 'x-uid': 'p2', 'x-async': false, 'x-index': 2 },
+      },
+      name: 'root-name',
+      'x-uid': 'root',
+      'x-async': false,
+      'x-index': null,
+    });
+  });
+
   describe('schema', () => {
     let schema;
     beforeEach(() => {
