@@ -70,11 +70,7 @@ function insertPositionActionBuilder(position: 'beforeBegin' | 'afterBegin' | 'b
   return async function (ctx: Context, next) {
     const { resourceIndex, values } = ctx.action.params;
     const repository = getRepositoryFromCtx(ctx);
-    await repository.insertAdjacent(position, resourceIndex, values);
-    ctx.body = {
-      result: 'ok',
-    };
-
+    ctx.body = await repository.insertAdjacent(position, resourceIndex, values);
     await next();
   };
 }
