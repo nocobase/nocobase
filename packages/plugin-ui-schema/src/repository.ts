@@ -310,7 +310,8 @@ export default class UiSchemaRepository extends Repository {
       },
     };
 
-    await this.insertNodes(nodes);
+    const insertedNodes = await this.insertNodes(nodes);
+    return await this.getJsonSchema(insertedNodes[0].get('uid'));
   }
 
   async insertInner(targetUid: string, schema: any, position: 'first' | 'last') {
@@ -322,27 +323,28 @@ export default class UiSchemaRepository extends Repository {
       position,
     };
 
-    await this.insertNodes(nodes);
+    const insertedNodes = await this.insertNodes(nodes);
+    return await this.getJsonSchema(insertedNodes[0].get('uid'));
   }
 
   async insertAdjacent(position: 'beforeBegin' | 'afterBegin' | 'beforeEnd' | 'afterEnd', target: string, schema: any) {
-    await this[`insert${lodash.upperFirst(position)}`](target, schema);
+    return await this[`insert${lodash.upperFirst(position)}`](target, schema);
   }
 
   async insertAfterBegin(targetUid: string, schema: any) {
-    await this.insertInner(targetUid, schema, 'first');
+    return await this.insertInner(targetUid, schema, 'first');
   }
 
   async insertBeforeEnd(targetUid: string, schema: any) {
-    await this.insertInner(targetUid, schema, 'last');
+    return await this.insertInner(targetUid, schema, 'last');
   }
 
   async insertBeforeBegin(targetUid: string, schema: any) {
-    await this.insertBeside(targetUid, schema, 'before');
+    return await this.insertBeside(targetUid, schema, 'before');
   }
 
   async insertAfterEnd(targetUid: string, schema: any) {
-    await this.insertBeside(targetUid, schema, 'after');
+    return await this.insertBeside(targetUid, schema, 'after');
   }
 
   async insertNodes(nodes: SchemaNode[], options?) {

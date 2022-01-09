@@ -23,12 +23,8 @@ export const uiSchemaActions = {
   async insert(ctx: Context, next) {
     const { values } = ctx.action.params;
     const repository = getRepositoryFromCtx(ctx);
-    await repository.insert(values);
 
-    ctx.body = {
-      result: 'ok',
-    };
-
+    ctx.body = await repository.insert(values);
     await next();
   },
 
@@ -59,11 +55,8 @@ export const uiSchemaActions = {
   async insertAdjacent(ctx: Context, next) {
     const { resourceIndex, position, values } = ctx.action.params;
     const repository = getRepositoryFromCtx(ctx);
-    await repository.insertAdjacent(position, resourceIndex, values);
 
-    ctx.body = {
-      result: 'ok',
-    };
+    ctx.body = await repository.insertAdjacent(position, resourceIndex, values);
 
     await next();
   },
