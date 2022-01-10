@@ -9,6 +9,7 @@
     "bootstrap": "lerna bootstrap",
     "clean": "rimraf -rf packages/*/{lib,esm,dist} && lerna clean",
     "build": "lerna run build",
+    "build-docs": "dumi build",
     "test": "jest",
     "lint": "eslint ."
   },
@@ -17,6 +18,7 @@
     "@types/react-dom": "^17.0.0"
   },
   "devDependencies": {
+    "@testing-library/react": "^12.1.2",
     "@types/jest": "^26.0.0",
     "@types/koa": "^2.13.4",
     "@types/koa-bodyparser": "^4.3.4",
@@ -26,6 +28,7 @@
     "@types/react-dom": "^17.0.0",
     "@typescript-eslint/eslint-plugin": "^4.9.1",
     "@typescript-eslint/parser": "^4.8.2",
+    "antd": "^4.16.11",
     "cross-env": "^5.2.0",
     "dotenv": "^10.0.0",
     "dumi": "^1.1.33",
