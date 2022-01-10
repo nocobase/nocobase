@@ -5,4 +5,4 @@ group:
   path: /schema-components
 ---
 
-# Chart
+# Chart <Badge>待定</Badge>

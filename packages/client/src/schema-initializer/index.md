@@ -5,7 +5,7 @@ group:
   path: /client
 ---
 
-# SchemaInitializer
+# SchemaInitializer <Badge>待定</Badge>
 
 用于配置各种 schema 的初始化
 

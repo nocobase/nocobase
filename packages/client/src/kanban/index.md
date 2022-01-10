@@ -5,4 +5,4 @@ group:
   path: /schema-components
 ---
 
-# Kanban
+# Kanban <Badge>待定</Badge>

@@ -6,3 +6,6 @@ group:
 ---
 
 # Tabs
+
+- Tabs
+- Tabs.TabPane

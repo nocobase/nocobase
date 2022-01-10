@@ -9,7 +9,6 @@ export * from './api-client';
 export * from './auth-layout';
 export * from './collection-manager';
 export * from './current-user';
-export * from './designable';
 export * from './document-title';
 export * from './route-switch';
 export * from './schema-component';

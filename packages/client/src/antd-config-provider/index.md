@@ -7,4 +7,4 @@ group:
 
 # AntdConfigProvider
 
-antd 配置
+为 antd 组件提供统一的全局化配置

@@ -5,7 +5,7 @@ group:
   path: /client
 ---
 
-# SystemSettings
+# SystemSettings <Badge>待定</Badge>
 
 ## SystemSettingsProvider
 

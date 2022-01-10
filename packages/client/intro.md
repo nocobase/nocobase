@@ -4,13 +4,25 @@ order: 1
 
 # 客户端内核
 
-NocoBase 的客户端是一个 React 应用，核心主要包括：
+<img src="https://nocobase.oss-cn-beijing.aliyuncs.com/5be7ebc2f47effef85be7a0c75cf76f9.png" style="max-width: 800px;" />
 
-- RouteSwitch
-- SchemaComponent
-- Designable
-- APIClient
-- ProviderManager
+示例：
+
+```tsx | pure
+const app = new Application();
+
+app.use([MemoryRouter, { initialEntries: ['/'] }]);
+
+app.use(({ children }) => {
+  const location = useLocation();
+  if (location.pathname === '/hello') {
+    return <div>Hello NocoBase!</div>;
+  }
+  return children;
+});
+
+export default app.compose();
+```
 
 ## RouteSwitch
 
