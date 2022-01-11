@@ -6,3 +6,13 @@ group:
 ---
 
 # Checkbox
+
+## Examples
+
+### 勾选
+
+<code src="./demos/demo1.tsx" />
+
+### 组
+
+<code src="./demos/demo2.tsx" />
