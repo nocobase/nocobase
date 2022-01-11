@@ -7,6 +7,7 @@ export * from './admin-layout';
 export * from './antd-config-provider';
 export * from './api-client';
 export * from './auth-layout';
+export * from './checkbox';
 export * from './collection-manager';
 export * from './current-user';
 export * from './document-title';
