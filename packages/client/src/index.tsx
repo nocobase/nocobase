@@ -22,3 +22,4 @@ export * from './dnd-context';
 export * from './grid';
 export * from './application';
 export * from './record-provider';
+export * from './async-data-provider';
