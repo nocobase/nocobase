@@ -11,6 +11,8 @@ import { ModelHook } from './model-hook';
 import { ImporterReader, ImportFileExtension } from './collection-importer';
 
 import extendOperators from './operators';
+import { Repository } from './repository';
+import { RelationRepository } from './relation-repository/relation-repository';
 
 export interface MergeOptions extends merge.Options {}
 
@@ -124,6 +126,18 @@ export class Database extends EventEmitter implements AsyncEmitter {
     if (result) {
       this.emit('afterRemoveCollection', collection);
     }
+  }
+
+  getRepository(name: string): Repository;
+  getRepository(name: string, relationId: string | number): RelationRepository;
+
+  getRepository(name: string, relationId?: string | number): Repository | RelationRepository {
+    if (relationId) {
+      const [collection, relation] = name.split('.');
+      return this.getRepository(collection).relation(relation).of(relationId);
+    }
+
+    return this.getCollection(name).repository;
   }
 
   addPendingField(field: RelationField) {
