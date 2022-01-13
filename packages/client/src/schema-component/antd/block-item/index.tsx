@@ -1,5 +1,5 @@
 import React from 'react';
-import { useDesignable } from '../schema-component';
+import { useDesignable } from '../..';
 
 export const BlockItem: React.FC<any> = (props) => {
   const { DesignableBar } = useDesignable();
