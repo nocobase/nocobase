@@ -5,3 +5,4 @@ export * from './form-item';
 export * from './block-item';
 export * from './dnd-context';
 export * from './grid';
+export * from './record-picker';
