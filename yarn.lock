@@ -9265,6 +9265,11 @@ markdown-table@^2.0.0:
   dependencies:
     repeat-string "^1.0.0"
 
+marked@^4.0.5:
+  version "4.0.10"
+  resolved "https://registry.npmmirror.com/marked/download/marked-4.0.10.tgz#423e295385cc0c3a70fa495e0df68b007b879423"
+  integrity sha512-+QvuFj0nGgO970fySghXGmuw+Fd0gD2x3+MqCWLIPf5oxdv1Ka6b2q+z9RP01P/IaKPMEramy+7cNy/Lw8c3hw==
+
 mathjax-full@^3.0.0:
   version "3.2.0"
   resolved "https://registry.npmjs.org/mathjax-full/-/mathjax-full-3.2.0.tgz#e53269842a943d4df10502937518991268996c5c"
