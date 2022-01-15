@@ -1,10 +1,9 @@
 /**
  * title: 勾选
  */
-import React from 'react';
-import { SchemaComponentProvider, SchemaComponent } from '@nocobase/client';
-import { Checkbox } from '..';
 import { FormItem } from '@formily/antd';
+import { Checkbox, SchemaComponent, SchemaComponentProvider } from '@nocobase/client';
+import React from 'react';
 
 const schema = {
   type: 'object',
