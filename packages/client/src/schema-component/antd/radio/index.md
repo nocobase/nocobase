@@ -9,14 +9,14 @@ group:
 
 ## Examples
 
-### 选中
+### checked
 
 <code src="./demos/demo1.tsx" />
 
-### 组
+### group
 
 <code src="./demos/demo2.tsx" />
 
-### 选中的项带有背景颜色
+### checked radio in group and take background color
 
 <code src="./demos/demo3.tsx" />
