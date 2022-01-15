@@ -6,3 +6,6 @@ export * from './block-item';
 export * from './dnd-context';
 export * from './grid';
 export * from './record-picker';
+export * from './array-table';
+export * from './void-table';
+export * from './row-selection';

@@ -39,3 +39,7 @@ ArrayTable 的 props 与 antd 的 [Table](https://ant.design/components/table/#A
   },
 }
 ```
+
+## Examples
+
+<code src="./demos/demo1.tsx"/>
