@@ -9,6 +9,6 @@ group:
 
 ## Examples
 
-### 勾选
+### Cascader usage 
 
 <code src="./demos/demo1.tsx" />
