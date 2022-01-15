@@ -10,7 +10,7 @@ interface AclActionOptions {
 interface AclStrategyOptions {
   displayName: string;
   actions: StrategyValue;
-  resource?: StrategyValue;
+  resource: StrategyValue;
 }
 
 function strategyValueMatched(strategy: StrategyValue, value: string) {
@@ -60,9 +60,13 @@ class AclResource {
   allowAll: boolean;
   denyAll: boolean;
 
-  actions = new Map<string, ResourceAction>();
+  actions = new Map<string, ResourceActionParams>();
 
-  constructor(options: AclResourceOptions) {
+  constructor(options?: AclResourceOptions) {
+    if (!options) {
+      options = { actions: {} };
+    }
+
     if (options.actions === false) {
       this.denyAll = true;
     } else if (options.actions === '*') {
@@ -74,11 +78,27 @@ class AclResource {
       }
     }
   }
+
+  getAction(name: string) {
+    return this.actions.get(name);
+  }
+
+  setAction(name: string, params: ResourceActionParams) {
+    this.actions.set(name, params || {});
+  }
 }
 
 export class AclRole {
   strategy: string;
   resources = new Map<string, AclResource>();
+
+  getResource(name: string): AclResource | undefined {
+    return this.resources.get(name);
+  }
+
+  setResource(name: string, resource: AclResource) {
+    this.resources.set(name, resource);
+  }
 }
 
 interface StrategyOptions {
@@ -93,16 +113,23 @@ interface CanResult {
   params?: any;
 }
 
-interface ResourceAction {
+interface ResourceActionParams {
   filter?: any;
 }
 
-type ResourceActions = { [key: string]: ResourceAction };
+type ResourceActions = { [key: string]: ResourceActionParams };
 
 interface AddResourceOptions {
   role: string;
   resource: string;
   actions: AclResourceActionsOption;
+}
+
+interface SetResourceOptions {
+  role: string;
+  resource: string;
+  action: string;
+  params?: ResourceActionParams;
 }
 
 export class ACL {
@@ -121,8 +148,27 @@ export class ACL {
     this.strategies.set(name, strategy);
   }
 
+  addRole(name: string) {
+    return this.roles.set(name, new AclRole());
+  }
+
+  getRole(name: string) {
+    return this.roles.get(name);
+  }
+
+  setResourceAction(options: SetResourceOptions) {
+    const role: AclRole | undefined = this.getRole(options.role);
+    let roleResource: AclResource = role.getResource(options.resource);
+    if (!roleResource) {
+      roleResource = new AclResource();
+      role.setResource(options.resource, roleResource);
+    }
+
+    roleResource.setAction(options.action, options.params);
+  }
+
   addResource(options: AddResourceOptions) {
-    const role = this.roles.get(options.role);
+    const role = this.getRole(options.role);
 
     const aclResource = new AclResource({
       actions: options.actions,

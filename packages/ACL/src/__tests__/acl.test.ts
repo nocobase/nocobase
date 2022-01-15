@@ -6,6 +6,30 @@ describe('acl', () => {
     acl = new ACL();
   });
 
+  it('should set resource action', function () {
+    acl.addRole('admin');
+    acl.addStrategy('s1', {
+      displayName: 'test',
+      actions: false,
+      resource: '*',
+    });
+
+    acl.strategy({
+      role: 'admin',
+      strategy: 's1',
+    });
+
+    expect(acl.can('admin', 'posts', 'create')).toBeNull();
+
+    acl.setResourceAction({
+      role: 'admin',
+      resource: 'posts',
+      action: 'create',
+    });
+
+    expect(acl.can('admin', 'posts', 'create')).not.toBeNull();
+  });
+
   describe('role', () => {
     it('should set strategy of role', () => {
       acl.addStrategy('s1', {
@@ -92,7 +116,7 @@ describe('acl', () => {
 
       acl.addStrategy('denyAll', {
         displayName: 'Deny all',
-        actions: '*',
+        actions: false,
         resource: '*',
       });
 
@@ -101,7 +125,7 @@ describe('acl', () => {
         strategy: 'denyAll',
       });
 
-      expect(acl.can('admin', 'posts', 'create')).toBe(expect.anything());
+      expect(acl.can('admin', 'posts', 'create')).toBeNull();
     });
 
     it('should return null when deny all', () => {
