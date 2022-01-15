@@ -2,9 +2,8 @@
  * title: 勾选
  */
 import { FormItem } from '@formily/antd';
-import { SchemaComponent, SchemaComponentProvider } from '@nocobase/client';
+import { Radio, SchemaComponent, SchemaComponentProvider } from '@nocobase/client';
 import React from 'react';
-import { Radio } from '..';
 
 const schema = {
   type: 'object',
