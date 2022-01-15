@@ -52,13 +52,26 @@ describe('acl', () => {
     });
 
     it('should set acl actions', () => {
-      acl.actions.set('create', {
-        type: 'new-data', // 对新数据的操作
-        displayName: '创建',
+      acl.setAction('view', {
+        type: 'old-data', // 对新数据的操作
+        displayName: 'view',
+        aliases: ['list', 'get'],
       });
 
-      acl.roles.set('admin', new AclRole());
-      const adminRole = acl.roles.get('admin');
+      acl.addRole('admin');
+
+      expect(acl.resolveActionAlias('list')).toEqual('view');
+
+      acl.addResource({
+        role: 'admin',
+        resource: 'posts',
+        actions: {
+          view: {},
+        },
+      });
+
+      expect(acl.can('admin', 'posts', 'list')).not.toBeNull();
+      expect(acl.can('admin', 'posts', 'get')).not.toBeNull();
     });
   });
 

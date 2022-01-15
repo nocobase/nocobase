@@ -5,6 +5,14 @@ type StrategyValue = false | '*' | string | string[];
 interface AclActionOptions {
   displayName: string;
   type: 'new-data' | 'old-data';
+  aliases?: string | string[];
+}
+
+class AclAction {
+  options: AclActionOptions;
+  constructor(options: AclActionOptions) {
+    this.options = options;
+  }
 }
 
 interface AclStrategyOptions {
@@ -133,9 +141,26 @@ interface SetResourceOptions {
 }
 
 export class ACL {
-  actions = new Map<string, AclActionOptions>();
+  actions = new Map<string, AclAction>();
   strategies = new Map<string, AclStrategy>();
   roles = new Map<string, AclRole>();
+
+  actionAlias = new Map<string, string>();
+
+  setAction(name: string, options: AclActionOptions) {
+    this.actions.set(name, new AclAction(options));
+
+    if (options.aliases) {
+      const aliases = lodash.isArray(options.aliases) ? options.aliases : [options.aliases];
+      for (const alias of aliases) {
+        this.actionAlias.set(alias, name);
+      }
+    }
+  }
+
+  getAction(name: string) {
+    return this.actions.get(name);
+  }
 
   strategy(options: StrategyOptions) {
     const role = this.roles.get(options.role);
@@ -177,9 +202,13 @@ export class ACL {
     role.resources.set(options.resource, aclResource);
   }
 
+  resolveActionAlias(action: string) {
+    return this.actionAlias.get(action) ? this.actionAlias.get(action) : action;
+  }
+
   can(role: string, resource: string, action: string): CanResult | null {
     const aclRole = this.roles.get(role);
-    const aclResource = aclRole.resources.get(resource);
+    const aclResource = aclRole.getResource(resource);
 
     if (aclResource) {
       if (aclResource.denyAll) {
@@ -190,7 +219,8 @@ export class ACL {
         return { role, resource, action };
       }
 
-      const aclActionConfig = aclResource.actions.get(action);
+      const aclActionConfig = aclResource.actions.get(this.resolveActionAlias(action));
+
       if (aclActionConfig) {
         // handle single action config
         return {
