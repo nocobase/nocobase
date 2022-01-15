@@ -38,4 +38,8 @@ export class AclResource {
   setAction(name: string, params: ResourceActionParams) {
     this.actions.set(name, params || {});
   }
+
+  removeAction(name: string) {
+    this.actions.delete(name);
+  }
 }

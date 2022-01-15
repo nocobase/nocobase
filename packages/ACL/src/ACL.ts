@@ -30,6 +30,12 @@ interface SetResourceOptions {
   params?: ResourceActionParams;
 }
 
+interface RemoveResourceOptions {
+  role: string;
+  resource: string;
+  action: string;
+}
+
 export class ACL {
   actions = new Map<string, AclAction>();
   strategies = new Map<string, AclStrategy>();
@@ -80,6 +86,14 @@ export class ACL {
     }
 
     roleResource.setAction(options.action, options.params);
+  }
+
+  removeResourceAction(options: RemoveResourceOptions) {
+    const role: AclRole = this.getRole(options.role);
+    const roleResource: AclResource = role.getResource(options.resource);
+    if (roleResource) {
+      roleResource.removeAction(options.action);
+    }
   }
 
   addResource(options: AddResourceOptions) {
