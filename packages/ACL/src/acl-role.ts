@@ -1,4 +1,4 @@
-import { AclResource } from './AclResource';
+import { AclResource } from './acl-resource';
 
 export class AclRole {
   strategy: string;

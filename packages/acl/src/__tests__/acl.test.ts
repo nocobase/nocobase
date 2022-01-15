@@ -1,4 +1,4 @@
-import { ACL, AclRole } from '@nocobase/ACL';
+import { ACL, AclRole } from '..';
 
 describe('acl', () => {
   let acl: ACL;

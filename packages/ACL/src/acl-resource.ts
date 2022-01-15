@@ -1,4 +1,4 @@
-import { ResourceActionParams } from './AclResourceAction';
+import { ResourceActionParams } from './acl-resource-action';
 
 export type ResourceActions = { [key: string]: ResourceActionParams };
 

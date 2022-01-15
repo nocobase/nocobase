@@ -1,9 +1,9 @@
 import lodash from 'lodash';
-import { AclResource, AclResourceActionsOption } from './AclResource';
-import { ResourceActionParams } from './AclResourceAction';
-import { AclAction, AclActionOptions } from './AclAction';
-import { AclStrategy, AclStrategyOptions } from './AclStrategy';
-import { AclRole } from './AclRole';
+import { AclResource, AclResourceActionsOption } from './acl-resource';
+import { ResourceActionParams } from './acl-resource-action';
+import { AclAction, AclActionOptions } from './acl-action';
+import { AclStrategy, AclStrategyOptions } from './acl-strategy';
+import { AclRole } from './acl-role';
 
 interface StrategyOptions {
   role: string;
