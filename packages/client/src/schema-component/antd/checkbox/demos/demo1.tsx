@@ -2,16 +2,14 @@
  * title: 勾选
  */
 import React from 'react';
-import { SchemaComponentProvider, SchemaComponent } from '@nocobase/client';
-import { Checkbox } from '..';
+import { SchemaComponentProvider, SchemaComponent, Checkbox } from '@nocobase/client';
 import { FormItem } from '@formily/antd';
 
 const schema = {
   type: 'object',
   properties: {
     input: {
-      interface: 'string',
-      type: 'string',
+      type: 'boolean',
       title: `编辑模式`,
       'x-decorator': 'FormItem',
       'x-component': 'Checkbox',
@@ -25,8 +23,7 @@ const schema = {
       },
     },
     read: {
-      interface: 'string',
-      type: 'string',
+      type: 'boolean',
       title: `阅读模式`,
       'x-read-pretty': true,
       'x-decorator': 'FormItem',

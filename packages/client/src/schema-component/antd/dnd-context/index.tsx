@@ -1,7 +1,7 @@
 import { DndContext as DndKitContext, DragEndEvent } from '@dnd-kit/core';
 import { observer } from '@formily/react';
 import React from 'react';
-import { createDesignable, useDesignable } from '../schema-component';
+import { createDesignable, useDesignable } from '../..';
 
 const useDragEnd = () => {
   const { refresh } = useDesignable();
