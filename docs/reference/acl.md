@@ -55,6 +55,44 @@ acl.setAvailableAction('view', {
 });
 ```
 
+```ts
+acl.setAvailableStrategy('s1', {
+  displayName: '可以管理所有数据',
+  actions: '*',
+  resource: '*',
+});
+
+acl.setAvailableAction('view', {
+  type: 'old-data',
+  displayName: '查看',
+  aliases: ['get', 'list'], 
+});
+
+acl.define({
+  role: 'admin',
+  strategy: 's1', // 可以管理所有数据
+});
+
+const result = acl.can({
+  role: 'admin',
+  resource: 'posts',
+  action: 'create', // create 未在 availableActions 里，所有返回空
+});
+// result === null
+
+const result = acl.can({
+  role: 'admin',
+  resource: 'posts',
+  action: 'get', // get 为 view 的别名
+});
+// 返回结果
+{
+  role: 'admin',
+  resource: 'posts',
+  action: 'get',
+}
+```
+
 ### `acl.setAvailableStrategy()`
 
 设置可供角色选择的权限策略
