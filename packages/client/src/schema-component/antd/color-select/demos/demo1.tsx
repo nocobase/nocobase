@@ -2,7 +2,7 @@
  * title: 勾选
  */
 import { FormItem } from '@formily/antd';
-import { Checkbox, SchemaComponent, SchemaComponentProvider } from '@nocobase/client';
+import { ColorSelect, SchemaComponent, SchemaComponentProvider } from '@nocobase/client';
 import React from 'react';
 
 const schema = {
@@ -12,7 +12,7 @@ const schema = {
       type: 'boolean',
       title: `编辑模式`,
       'x-decorator': 'FormItem',
-      'x-component': 'Checkbox',
+      'x-component': 'ColorSelect',
       'x-reactions': {
         target: 'read',
         fulfill: {
@@ -27,14 +27,14 @@ const schema = {
       title: `阅读模式`,
       'x-read-pretty': true,
       'x-decorator': 'FormItem',
-      'x-component': 'Checkbox',
+      'x-component': 'ColorSelect',
     },
   },
 };
 
 export default () => {
   return (
-    <SchemaComponentProvider components={{ Checkbox, FormItem }}>
+    <SchemaComponentProvider components={{ ColorSelect, FormItem }}>
       <SchemaComponent schema={schema} />
     </SchemaComponentProvider>
   );
