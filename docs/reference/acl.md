@@ -8,9 +8,9 @@ toc: menu
 
 ```ts
 class ACL {
-  // 可以被配置权限的 actions
+  // 有效的 actions，在 define 配置时，无效的 action 应该报错
   protected availableActions;
-  // 可供角色选择的权限策略
+  // 有效的，可供角色选择的权限策略，在 define 配置时，无效的 strategy 应该报错
   protected availableStrategies;
   // 核心，基于角色的权限设计
   protected roles;
@@ -147,6 +147,10 @@ interface DefineOptions {
 interface ActionParams {
   fields?: string[];
   filter?: any;
+  own?: boolean;
+  whitelist?: string[];
+  blacklist?: string[];
+  [key: string]: any;
 }
 ```
 
@@ -166,18 +170,13 @@ const role = acl.define({
   actions: {
     'posts:create': {},
     'posts.comments:create': {},
-  },
-  // 直接配置 resources
-  resources: {
-    posts: {
-      create: {},
-    },
-    'posts.comments': {
-      create: {},
-    },
-    comments: {
-      // 不确定是否需要，感觉不是很好，容易杂糅不清，又增加了复杂度
-      '*': {}, // 通配符，所有的 actions 统一配置，表示 availableActions 的都允许
+    'posts:list': {
+      // 自己的数据
+      own: true,
+      // 自己的数据等价于
+      filter: {
+        createdById: '{{ ctx.state.currentUser.id }}',
+      },
     },
   },
   // 以后可能的扩展
@@ -477,7 +476,7 @@ class ACLResource {
 class ACLResource {
   public setActions(actions: { [key: string]: ActionParams }) {
     for (let key in actions) {
-      this.addAction(key, actions[key]);
+      this.setAction(key, actions[key]);
     }
   }
 }
