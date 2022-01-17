@@ -6,3 +6,9 @@ group:
 ---
 
 # Password
+
+## Examples
+
+### Password Component
+
+<code src="./demos/demo1.tsx" />
