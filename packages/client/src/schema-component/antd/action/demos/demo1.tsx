@@ -2,7 +2,6 @@ import React from 'react';
 import { observer, ISchema, useForm } from '@formily/react';
 import { SchemaComponent, SchemaComponentProvider, Form, Action, useActionVisible } from '@nocobase/client';
 import { FormItem, Input } from '@formily/antd';
-import 'antd/dist/antd.css';
 
 const useCloseAction = () => {
   const { setVisible } = useActionVisible();
