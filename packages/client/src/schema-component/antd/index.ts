@@ -7,3 +7,4 @@ export * from './form';
 export * from './form-item';
 export * from './grid';
 export * from './input';
+export * from './radio';
