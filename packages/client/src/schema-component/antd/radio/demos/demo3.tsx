@@ -1,5 +1,5 @@
 /**
- * title: 组
+ * title: Radio Group with color
  */
 import { FormItem } from '@formily/antd';
 import { Radio, SchemaComponent, SchemaComponentProvider } from '@nocobase/client';
@@ -22,7 +22,7 @@ const schema = {
   type: 'object',
   properties: {
     input: {
-      type: 'array',
+      type: 'number',
       title: `编辑模式`,
       enum: options,
       'x-decorator': 'FormItem',
@@ -37,7 +37,7 @@ const schema = {
       },
     },
     read: {
-      type: 'array',
+      type: 'number',
       title: `阅读模式`,
       enum: options,
       'x-read-pretty': true,

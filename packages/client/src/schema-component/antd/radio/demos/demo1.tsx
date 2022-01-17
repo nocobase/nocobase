@@ -1,5 +1,6 @@
 /**
- * title: 勾选
+ * title: Basic
+ * desc: The simplest use.
  */
 import { FormItem } from '@formily/antd';
 import { Radio, SchemaComponent, SchemaComponentProvider } from '@nocobase/client';
@@ -9,7 +10,7 @@ const schema = {
   type: 'object',
   properties: {
     input: {
-      type: 'boolean',
+      type: 'string',
       title: `编辑模式`,
       'x-decorator': 'FormItem',
       'x-component': 'Radio',
@@ -23,7 +24,7 @@ const schema = {
       },
     },
     read: {
-      type: 'boolean',
+      type: 'string',
       title: `阅读模式`,
       'x-read-pretty': true,
       'x-decorator': 'FormItem',

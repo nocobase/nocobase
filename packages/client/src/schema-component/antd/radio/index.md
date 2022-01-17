@@ -9,14 +9,14 @@ group:
 
 ## Examples
 
-### checked
+### Basic
 
 <code src="./demos/demo1.tsx" />
 
-### group
+### Radio Group
 
 <code src="./demos/demo2.tsx" />
 
-### checked radio in group and take background color
+### Radio Group with color
 
 <code src="./demos/demo3.tsx" />
