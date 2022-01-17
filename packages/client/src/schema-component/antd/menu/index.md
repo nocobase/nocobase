@@ -17,3 +17,11 @@ group:
 - Menu.URL
 - Menu.Link
 - Menu.Action
+
+## Examples
+
+<code src="./demos/demo1.tsx"/>
+
+<code src="./demos/demo2.tsx"/>
+
+<code src="./demos/demo3.tsx"/>
