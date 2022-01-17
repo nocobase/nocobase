@@ -1,5 +1,5 @@
 /**
- * title: Input
+ * title: URL
  */
 import { FormItem } from '@formily/antd';
 import { Input, SchemaComponent, SchemaComponentProvider } from '@nocobase/client';
@@ -9,10 +9,11 @@ const schema = {
   type: 'object',
   properties: {
     input: {
-      type: 'boolean',
+      type: 'string',
       title: `Editable`,
       'x-decorator': 'FormItem',
-      'x-component': 'Input',
+      'x-component': 'Input.URL',
+      'x-validator': 'url',
       'x-reactions': {
         target: 'read',
         fulfill: {
@@ -23,11 +24,12 @@ const schema = {
       },
     },
     read: {
-      type: 'boolean',
+      type: 'string',
       title: `Read pretty`,
       'x-read-pretty': true,
       'x-decorator': 'FormItem',
-      'x-component': 'Input',
+      'x-component': 'Input.URL',
+      'x-validator': 'url',
     },
   },
 };

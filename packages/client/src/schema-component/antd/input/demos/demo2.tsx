@@ -1,5 +1,5 @@
 /**
- * title: Input
+ * title: Textarea
  */
 import { FormItem } from '@formily/antd';
 import { Input, SchemaComponent, SchemaComponentProvider } from '@nocobase/client';
@@ -9,12 +9,14 @@ const schema = {
   type: 'object',
   properties: {
     input: {
-      type: 'boolean',
+      interface: 'string',
+      type: 'string',
       title: `Editable`,
+      name: 'name1',
       'x-decorator': 'FormItem',
-      'x-component': 'Input',
+      'x-component': 'Input.TextArea',
       'x-reactions': {
-        target: 'read',
+        target: '*(read1,read2)',
         fulfill: {
           state: {
             value: '{{$self.value}}',
@@ -22,12 +24,24 @@ const schema = {
         },
       },
     },
-    read: {
-      type: 'boolean',
+    read1: {
+      interface: 'string',
+      type: 'string',
       title: `Read pretty`,
       'x-read-pretty': true,
       'x-decorator': 'FormItem',
-      'x-component': 'Input',
+      'x-component': 'Input.TextArea',
+    },
+    read2: {
+      interface: 'string',
+      type: 'string',
+      title: `Read pretty(ellipsis)`,
+      'x-read-pretty': true,
+      'x-decorator': 'FormItem',
+      'x-component': 'Input.TextArea',
+      'x-component-props': {
+        ellipsis: true,
+      },
     },
   },
 };
