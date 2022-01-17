@@ -1,7 +1,6 @@
 import React from 'react';
 import { observer, ISchema, useForm } from '@formily/react';
 import { SchemaComponent, SchemaComponentProvider, Form, Action } from '@nocobase/client';
-import 'antd/dist/antd.css';
 import { FormItem, Input } from '@formily/antd';
 
 export default observer(() => {
