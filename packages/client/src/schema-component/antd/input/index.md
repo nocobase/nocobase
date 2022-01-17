@@ -6,3 +6,9 @@ group:
 ---
 
 # Input
+
+## Examples
+
+### Input usage
+
+<code src="./demos/demo1.tsx" />
