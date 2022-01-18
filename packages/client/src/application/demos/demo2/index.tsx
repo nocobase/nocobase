@@ -18,8 +18,8 @@ import { Spin } from 'antd';
 import apiClient from './apiClient';
 
 const providers = [
-  [HashRouter],
-  // [MemoryRouter, { initialEntries: ['/'] }],
+  // [HashRouter],
+  [MemoryRouter, { initialEntries: ['/'] }],
   [APIClientProvider, { apiClient }],
   [I18nextProvider, { i18n }],
   [AntdConfigProvider, { remoteLocale: true }],

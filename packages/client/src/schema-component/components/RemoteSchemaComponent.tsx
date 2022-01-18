@@ -7,13 +7,16 @@ import { Schema } from '@formily/react';
 export interface RemoteSchemaComponentProps {
   scope?: any;
   uid?: string;
-  transform?: (schema: Schema) => Schema;
+  onSuccess?: any;
+  schemaTransform?: (schema: Schema) => Schema;
+  render?: any;
+  hidden?: any;
 }
 
 const defaultTransform = (s: Schema) => s;
 
 export const RemoteSchemaComponent: React.FC<RemoteSchemaComponentProps> = (props) => {
-  const { scope, uid, transform = defaultTransform } = props;
+  const { hidden, scope, uid, onSuccess, schemaTransform = defaultTransform } = props;
   if (!uid) {
     return null;
   }
@@ -23,10 +26,14 @@ export const RemoteSchemaComponent: React.FC<RemoteSchemaComponentProps> = (prop
     },
     {
       refreshDeps: [uid],
+      onSuccess,
     },
   );
   if (loading) {
     return <Spin />;
   }
-  return <SchemaComponent scope={scope} schema={transform(data?.data || {})} />;
+  if (hidden) {
+    return <Spin />;
+  }
+  return <SchemaComponent scope={scope} schema={schemaTransform(data?.data || {})} />;
 };
