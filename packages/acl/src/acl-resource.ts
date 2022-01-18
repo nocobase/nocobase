@@ -1,42 +1,57 @@
-import { ResourceActionParams } from './acl-resource-action';
+import { ACLRole, RoleActionParams } from './acl-role';
+import { ACL, ListenerContext } from './acl';
 
-export type ResourceActions = { [key: string]: ResourceActionParams };
-
-export type AclResourceActionsOption = false | '*' | ResourceActions;
+export type ResourceActions = { [key: string]: RoleActionParams };
 
 interface AclResourceOptions {
-  actions: AclResourceActionsOption;
+  name: string;
+  role: ACLRole;
+  actions?: ResourceActions;
 }
 
-export class AclResource {
-  allowAll: boolean;
-  denyAll: boolean;
+export class ACLResource {
+  actions = new Map<string, RoleActionParams>();
+  acl: ACL;
+  role: ACLRole;
+  name: string;
 
-  actions = new Map<string, ResourceActionParams>();
+  constructor(options: AclResourceOptions) {
+    this.acl = options.role.acl;
 
-  constructor(options?: AclResourceOptions) {
-    if (!options) {
-      options = { actions: {} };
+    this.role = options.role;
+    this.name = options.name;
+
+    const actionsOption: ResourceActions = options.actions || {};
+    for (const actionName of Object.keys(actionsOption)) {
+      this.actions.set(actionName, actionsOption[actionName]);
     }
+  }
 
-    if (options.actions === false) {
-      this.denyAll = true;
-    } else if (options.actions === '*') {
-      this.allowAll = true;
-    } else {
-      const actionsOption: ResourceActions = options.actions;
-      for (const actionName of Object.keys(actionsOption)) {
-        this.actions.set(actionName, actionsOption[actionName]);
-      }
-    }
+  getActions() {
+    return Array.from(this.actions.keys()).reduce((carry, key) => {
+      carry[key] = this.actions.get(key);
+      return carry;
+    }, {});
   }
 
   getAction(name: string) {
     return this.actions.get(name);
   }
 
-  setAction(name: string, params: ResourceActionParams) {
-    this.actions.set(name, params || {});
+  setAction(name: string, params: RoleActionParams) {
+    const beforeGrantActionListeners = this.acl.listeners(`${this.name}:${name}.beforeGrantAction`);
+
+    const context: ListenerContext = {
+      role: this.role,
+      acl: this.role.acl,
+      params: params || {},
+    };
+
+    for (const listener of beforeGrantActionListeners) {
+      listener.call(null, context);
+    }
+
+    this.actions.set(name, context.params);
   }
 
   removeAction(name: string) {

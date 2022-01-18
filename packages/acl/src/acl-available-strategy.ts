@@ -1,10 +1,10 @@
 import lodash from 'lodash';
 type StrategyValue = false | '*' | string | string[];
 
-export interface AclStrategyOptions {
-  displayName: string;
-  actions: StrategyValue;
-  resource: StrategyValue;
+export interface AvailableStrategyOptions {
+  displayName?: string;
+  actions: false | string | string[];
+  resource?: '*';
 }
 
 export function strategyValueMatched(strategy: StrategyValue, value: string) {
@@ -23,16 +23,11 @@ export function strategyValueMatched(strategy: StrategyValue, value: string) {
   return false;
 }
 
-export class AclStrategy {
-  options: AclStrategyOptions;
-  allowAll: boolean;
-  denyAll: boolean;
-  constructor(options: AclStrategyOptions) {
-    this.options = options;
-  }
+export class ACLAvailableStrategy {
+  options: AvailableStrategyOptions;
 
-  matchResource(resourceName: string) {
-    return strategyValueMatched(this.options.resource, resourceName);
+  constructor(options: AvailableStrategyOptions) {
+    this.options = options;
   }
 
   matchAction(actionName: string) {
@@ -40,6 +35,6 @@ export class AclStrategy {
   }
 
   allow(resourceName: string, actionName: string) {
-    return this.matchResource(resourceName) && this.matchAction(actionName);
+    return this.matchAction(actionName);
   }
 }

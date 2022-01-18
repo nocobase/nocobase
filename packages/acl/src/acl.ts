@@ -1,9 +1,8 @@
 import lodash from 'lodash';
-import { AclResource, AclResourceActionsOption } from './acl-resource';
-import { ResourceActionParams } from './acl-resource-action';
-import { AclAction, AclActionOptions } from './acl-action';
-import { AclStrategy, AclStrategyOptions } from './acl-strategy';
-import { AclRole } from './acl-role';
+import { ACLAvailableStrategy, AvailableStrategyOptions } from './acl-available-strategy';
+import { ACLRole, RoleActionParams } from './acl-role';
+import { AclAvailableAction, AvailableActionOptions } from './acl-available-action';
+import EventEmitter from 'events';
 
 interface StrategyOptions {
   role: string;
@@ -17,34 +16,56 @@ interface CanResult {
   params?: any;
 }
 
-interface AddResourceOptions {
+interface DefineOptions {
   role: string;
-  resource: string;
-  actions: AclResourceActionsOption;
+  strategy?: string | AvailableStrategyOptions;
+  actions?: {
+    [key: string]: RoleActionParams;
+  };
+  routes?: any;
 }
 
-interface SetResourceOptions {
-  role: string;
-  resource: string;
-  action: string;
-  params?: ResourceActionParams;
+export interface ListenerContext {
+  acl: ACL;
+  role: ACLRole;
+  params: RoleActionParams;
 }
 
-interface RemoveResourceOptions {
-  role: string;
-  resource: string;
-  action: string;
-}
+type Listener = (ctx: ListenerContext) => void;
 
-export class ACL {
-  actions = new Map<string, AclAction>();
-  strategies = new Map<string, AclStrategy>();
-  roles = new Map<string, AclRole>();
+export class ACL extends EventEmitter {
+  protected availableActions = new Map<string, AclAvailableAction>();
+  protected availableStrategy = new Map<string, ACLAvailableStrategy>();
+
+  roles = new Map<string, ACLRole>();
 
   actionAlias = new Map<string, string>();
 
-  setAction(name: string, options: AclActionOptions) {
-    this.actions.set(name, new AclAction(options));
+  define(options: DefineOptions): ACLRole {
+    const roleName = options.role;
+    const role = new ACLRole(this);
+
+    if (options.strategy) {
+      role.strategy = options.strategy;
+    }
+
+    const actions = options.actions || {};
+
+    for (const [actionName, actionParams] of Object.entries(actions)) {
+      role.grantAction(actionName, actionParams);
+    }
+
+    this.roles.set(roleName, role);
+
+    return role;
+  }
+
+  getRole(name: string): ACLRole {
+    return this.roles.get(name);
+  }
+
+  setAvailableAction(name: string, options: AvailableActionOptions) {
+    this.availableActions.set(name, new AclAvailableAction(name, options));
 
     if (options.aliases) {
       const aliases = lodash.isArray(options.aliases) ? options.aliases : [options.aliases];
@@ -54,75 +75,25 @@ export class ACL {
     }
   }
 
-  getAction(name: string) {
-    return this.actions.get(name);
+  setAvailableStrategy(name: string, options: AvailableStrategyOptions) {
+    this.availableStrategy.set(name, new ACLAvailableStrategy(options));
   }
 
-  strategy(options: StrategyOptions) {
-    const role = this.roles.get(options.role);
-    const strategy = this.strategies.get(options.strategy);
-    role.strategy = options.strategy;
+  beforeGrantAction(path: string, listener?: Listener) {
+    this.addListener(`${path}.beforeGrantAction`, listener);
   }
 
-  addStrategy(name: string, options: AclStrategyOptions) {
-    const strategy = new AclStrategy(options);
-    this.strategies.set(name, strategy);
-  }
+  can({ role, resource, action }: { role: string; resource: string; action: string }): CanResult | null {
+    action = this.resolveActionAlias(action);
 
-  addRole(name: string) {
-    return this.roles.set(name, new AclRole());
-  }
-
-  getRole(name: string) {
-    return this.roles.get(name);
-  }
-
-  setResourceAction(options: SetResourceOptions) {
-    const role: AclRole | undefined = this.getRole(options.role);
-    let roleResource: AclResource = role.getResource(options.resource);
-    if (!roleResource) {
-      roleResource = new AclResource();
-      role.setResource(options.resource, roleResource);
+    if (!this.isAvailableAction(action)) {
+      return null;
     }
 
-    roleResource.setAction(options.action, options.params);
-  }
-
-  removeResourceAction(options: RemoveResourceOptions) {
-    const role: AclRole = this.getRole(options.role);
-    const roleResource: AclResource = role.getResource(options.resource);
-    if (roleResource) {
-      roleResource.removeAction(options.action);
-    }
-  }
-
-  addResource(options: AddResourceOptions) {
-    const role = this.getRole(options.role);
-
-    const aclResource = new AclResource({
-      actions: options.actions,
-    });
-
-    role.resources.set(options.resource, aclResource);
-  }
-
-  resolveActionAlias(action: string) {
-    return this.actionAlias.get(action) ? this.actionAlias.get(action) : action;
-  }
-
-  can(role: string, resource: string, action: string): CanResult | null {
     const aclRole = this.roles.get(role);
     const aclResource = aclRole.getResource(resource);
 
     if (aclResource) {
-      if (aclResource.denyAll) {
-        return null;
-      }
-
-      if (aclResource.allowAll) {
-        return { role, resource, action };
-      }
-
       const aclActionConfig = aclResource.actions.get(this.resolveActionAlias(action));
 
       if (aclActionConfig) {
@@ -136,7 +107,9 @@ export class ACL {
       }
     }
 
-    const roleStrategy = this.strategies.get(aclRole.strategy);
+    const roleStrategy = lodash.isString(aclRole.strategy)
+      ? this.availableStrategy.get(aclRole.strategy)
+      : new ACLAvailableStrategy(aclRole.strategy);
 
     if (!roleStrategy) {
       return null;
@@ -147,5 +120,13 @@ export class ACL {
     }
 
     return null;
+  }
+
+  protected isAvailableAction(actionName: string) {
+    return this.availableActions.has(actionName);
+  }
+
+  protected resolveActionAlias(action: string) {
+    return this.actionAlias.get(action) ? this.actionAlias.get(action) : action;
   }
 }

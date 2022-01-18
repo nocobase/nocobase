@@ -1,4 +1,4 @@
-import { ACL, AclRole } from '..';
+import { ACL } from '..';
 
 describe('acl', () => {
   let acl: ACL;
@@ -6,214 +6,250 @@ describe('acl', () => {
     acl = new ACL();
   });
 
-  it('should set resource action', function () {
-    acl.addRole('admin');
-    acl.addStrategy('s1', {
-      displayName: 'test',
-      actions: false,
-      resource: '*',
+  it('should allow all', () => {
+    acl.setAvailableAction('create', {
+      type: 'new-data',
     });
 
-    acl.strategy({
+    acl.setAvailableAction('edit', {
+      type: 'old-data',
+    });
+
+    acl.setAvailableStrategy('s1', {
+      displayName: 's1',
+      actions: '*',
+    });
+
+    acl.define({
       role: 'admin',
       strategy: 's1',
     });
 
-    expect(acl.can('admin', 'posts', 'create')).toBeNull();
+    expect(acl.can({ role: 'admin', resource: 'posts', action: 'create' })).not.toBeNull();
+  });
 
-    acl.setResourceAction({
+  it('should deny all', () => {
+    acl.setAvailableStrategy('s1', {
+      displayName: 'test',
+      actions: false,
+    });
+
+    acl.define({
       role: 'admin',
-      resource: 'posts',
-      action: 'create',
+      strategy: 's1',
     });
 
-    expect(acl.can('admin', 'posts', 'create')).not.toBeNull();
+    expect(acl.can({ role: 'admin', resource: 'posts', action: 'create' })).toBeNull();
   });
 
-  describe('role', () => {
-    it('should set strategy of role', () => {
-      acl.addStrategy('s1', {
-        displayName: '可以管理所有数据',
-        actions: '*',
-        resource: '*',
-      });
-
-      acl.roles.set('admin', new AclRole());
-
-      const adminRole = acl.roles.get('admin');
-      expect(adminRole).toEqual(expect.anything());
-
-      acl.strategy({
-        role: 'admin',
-        strategy: 's1',
-      });
-
-      expect(adminRole.strategy).toEqual('s1');
+  it('should deny when action is not available action', () => {
+    acl.setAvailableStrategy('s1', {
+      displayName: 'test',
+      actions: false,
     });
 
-    it('should set acl actions', () => {
-      acl.setAction('view', {
-        type: 'old-data', // 对新数据的操作
-        displayName: 'view',
-        aliases: ['list', 'get'],
-      });
-
-      acl.addRole('admin');
-
-      expect(acl.resolveActionAlias('list')).toEqual('view');
-
-      acl.addResource({
-        role: 'admin',
-        resource: 'posts',
-        actions: {
-          view: {},
-        },
-      });
-
-      expect(acl.can('admin', 'posts', 'list')).not.toBeNull();
-      expect(acl.can('admin', 'posts', 'get')).not.toBeNull();
+    const role = acl.define({
+      role: 'admin',
+      strategy: 's1',
     });
+
+    expect(acl.can({ role: 'admin', resource: 'posts', action: 'create' })).toBeNull();
+
+    role.grantAction('posts:create', {});
+
+    expect(acl.can({ role: 'admin', resource: 'posts', action: 'create' })).toBeNull();
   });
 
-  describe('can', () => {
-    it('should deny all actions in resource', () => {
-      acl.roles.set('admin', new AclRole());
-
-      acl.addStrategy('allowAll', {
-        displayName: 'Allow all',
-        actions: '*',
-        resource: '*',
-      });
-
-      acl.strategy({
-        role: 'admin',
-        strategy: 'allowAll',
-      });
-
-      acl.addResource({
-        role: 'admin',
-        resource: 'posts',
-        actions: false,
-      });
-
-      expect(acl.can('admin', 'posts', 'create')).toBeNull();
-      expect(acl.can('admin', 'users', 'create')).toEqual(expect.anything());
+  it('should grant action when define role', () => {
+    acl.setAvailableAction('create', {
+      displayName: 'create',
+      type: 'new-data',
     });
 
-    it('should allow all actions in resource', () => {
-      acl.roles.set('admin', new AclRole());
-
-      acl.addStrategy('denyAll', {
-        displayName: 'Deny all',
-        actions: false,
-        resource: '*',
-      });
-
-      acl.strategy({
-        role: 'admin',
-        strategy: 'denyAll',
-      });
-
-      acl.addResource({
-        role: 'admin',
-        resource: 'posts',
-        actions: '*',
-      });
-
-      expect(acl.can('admin', 'posts', 'create')).toEqual(expect.anything());
-      expect(acl.can('admin', 'users', 'create')).toBeNull();
+    acl.setAvailableStrategy('s1', {
+      displayName: 'test',
+      actions: false,
     });
 
-    it('should deny all', () => {
-      acl.roles.set('admin', new AclRole());
-
-      acl.addStrategy('denyAll', {
-        displayName: 'Deny all',
-        actions: false,
-        resource: '*',
-      });
-
-      acl.strategy({
-        role: 'admin',
-        strategy: 'denyAll',
-      });
-
-      expect(acl.can('admin', 'posts', 'create')).toBeNull();
+    const role = acl.define({
+      role: 'admin',
+      strategy: 's1',
+      actions: {
+        'posts:create': {},
+      },
     });
 
-    it('should return null when deny all', () => {
-      acl.roles.set('admin', new AclRole());
-
-      acl.addStrategy('denyAll', {
-        displayName: 'Deny all',
-        actions: false,
-        resource: '*',
-      });
-
-      expect(acl.can('admin', 'posts', 'create')).toBeNull();
+    expect(acl.can({ role: 'admin', resource: 'posts', action: 'create' })).not.toBeNull();
+  });
+  it('should grant action', function () {
+    acl.setAvailableAction('create', {
+      displayName: 'create',
+      type: 'new-data',
     });
 
-    it('should return null when access other resource action', () => {
-      acl.roles.set('admin', new AclRole());
-
-      acl.addStrategy('allowAll', {
-        displayName: 'allow all',
-        actions: '*',
-        resource: '*',
-      });
-
-      acl.addResource({
-        role: 'admin',
-        resource: 'posts',
-        actions: {
-          view: {},
-        },
-      });
-
-      const canResult = acl.can('admin', 'posts', 'view');
-      expect(canResult).toEqual(expect.anything());
-
-      expect(acl.can('admin', 'posts', 'create')).toBeNull();
+    acl.setAvailableStrategy('s1', {
+      displayName: 'test',
+      actions: false,
     });
 
-    it('should return action config', async () => {
-      acl.roles.set('admin', new AclRole());
+    const role = acl.define({
+      role: 'admin',
+      strategy: 's1',
+    });
 
-      acl.addStrategy('s2', {
-        displayName: '只能查看、添加、修改数据',
-        actions: ['view', 'create', 'update'],
-        resource: '*',
-      });
+    expect(acl.can({ role: 'admin', resource: 'posts', action: 'create' })).toBeNull();
 
-      acl.strategy({
-        role: 'admin',
-        strategy: 's2',
-      });
+    role.grantAction('posts:create', {});
 
-      acl.addResource({
-        role: 'admin',
-        resource: 'posts',
-        actions: {
-          view: {
-            filter: {
-              createdById: '{{ ctx.state.currentUser.id }}',
-            },
-          },
-        },
-      });
+    expect(acl.can({ role: 'admin', resource: 'posts', action: 'create' })).not.toBeNull();
+  });
 
-      const canResult = acl.can('admin', 'posts', 'view');
+  it('should works with alias action', () => {
+    acl.setAvailableAction('view', {
+      displayName: 'view',
+      type: 'new-data',
+      aliases: ['get', 'list'],
+    });
 
-      expect(canResult).toMatchObject({
-        role: 'admin',
-        resource: 'posts',
-        action: 'view',
-        params: {
+    acl.setAvailableStrategy('s1', {
+      displayName: 'test',
+      actions: ['view'],
+    });
+
+    const role = acl.define({
+      role: 'admin',
+      strategy: 's1',
+    });
+
+    expect(acl.can({ role: 'admin', resource: 'posts', action: 'get' })).not.toBeNull();
+    expect(acl.can({ role: 'admin', resource: 'posts', action: 'list' })).not.toBeNull();
+  });
+
+  it('should return action params when check permission', () => {
+    acl.setAvailableStrategy('s2', {
+      displayName: 'view create update',
+      actions: ['view', 'create', 'update'],
+    });
+
+    acl.setAvailableAction('view', { type: 'new-data' });
+    acl.setAvailableAction('create', { type: 'new-data' });
+    acl.setAvailableAction('update', { type: 'new-data' });
+
+    acl.define({
+      role: 'admin',
+      strategy: 's2',
+      actions: {
+        'posts:view': {
           filter: {
             createdById: '{{ ctx.state.currentUser.id }}',
           },
         },
-      });
+      },
+    });
+
+    const canResult = acl.can({ role: 'admin', resource: 'posts', action: 'view' });
+
+    expect(canResult).toMatchObject({
+      role: 'admin',
+      resource: 'posts',
+      action: 'view',
+      params: {
+        filter: {
+          createdById: '{{ ctx.state.currentUser.id }}',
+        },
+      },
+    });
+  });
+
+  it('should getActionParams', () => {
+    acl.setAvailableStrategy('s2', {
+      displayName: 'view create update',
+      actions: ['view', 'create', 'update'],
+    });
+
+    acl.setAvailableAction('view', { type: 'new-data' });
+    acl.setAvailableAction('create', { type: 'new-data' });
+    acl.setAvailableAction('update', { type: 'new-data' });
+
+    const role = acl.define({
+      role: 'admin',
+      strategy: 's2',
+      actions: {
+        'posts:view': {
+          filter: {
+            createdById: '{{ ctx.state.currentUser.id }}',
+          },
+        },
+      },
+    });
+
+    const params = role.getActionParams('posts:view');
+
+    expect(params).toMatchObject({
+      filter: {
+        createdById: '{{ ctx.state.currentUser.id }}',
+      },
+    });
+  });
+
+  it('should revoke action', () => {
+    acl.setAvailableAction('create', {
+      displayName: 'create',
+      type: 'new-data',
+    });
+
+    acl.setAvailableStrategy('s1', {
+      displayName: 'test',
+      actions: false,
+    });
+
+    const role = acl.define({
+      role: 'admin',
+      strategy: 's1',
+    });
+
+    role.grantAction('posts:create', {});
+
+    expect(acl.can({ role: 'admin', resource: 'posts', action: 'create' })).not.toBeNull();
+
+    role.revokeAction('posts:create');
+
+    expect(acl.can({ role: 'admin', resource: 'posts', action: 'create' })).toBeNull();
+  });
+
+  it('should call beforeGrantAction', () => {
+    acl.setAvailableAction('create', {
+      type: 'old-data',
+    });
+
+    acl.beforeGrantAction('posts:create', (ctx) => {
+      ctx.params = {
+        filter: {
+          status: 'publish',
+        },
+      };
+    });
+
+    expect(acl.listenerCount('posts:create.beforeGrantAction')).toEqual(1);
+
+    acl.define({
+      role: 'admin',
+      actions: {
+        'posts:create': {},
+      },
+    });
+
+    const results = acl.can({ role: 'admin', resource: 'posts', action: 'create' });
+
+    expect(results).toMatchObject({
+      role: 'admin',
+      resource: 'posts',
+      action: 'create',
+      params: {
+        filter: {
+          status: 'publish',
+        },
+      },
     });
   });
 });
