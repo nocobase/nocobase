@@ -2,6 +2,7 @@ import { ACL } from '..';
 
 describe('acl', () => {
   let acl: ACL;
+
   beforeEach(() => {
     acl = new ACL();
   });
@@ -25,7 +26,11 @@ describe('acl', () => {
       strategy: 's1',
     });
 
-    expect(acl.can({ role: 'admin', resource: 'posts', action: 'create' })).not.toBeNull();
+    expect(acl.can({ role: 'admin', resource: 'posts', action: 'create' })).toMatchObject({
+      role: 'admin',
+      resource: 'posts',
+      action: 'create',
+    });
   });
 
   it('should deny all', () => {
@@ -79,8 +84,13 @@ describe('acl', () => {
       },
     });
 
-    expect(acl.can({ role: 'admin', resource: 'posts', action: 'create' })).not.toBeNull();
+    expect(acl.can({ role: 'admin', resource: 'posts', action: 'create' })).toMatchObject({
+      role: 'admin',
+      resource: 'posts',
+      action: 'create',
+    });
   });
+
   it('should grant action', function () {
     acl.setAvailableAction('create', {
       displayName: 'create',
@@ -101,7 +111,11 @@ describe('acl', () => {
 
     role.grantAction('posts:create', {});
 
-    expect(acl.can({ role: 'admin', resource: 'posts', action: 'create' })).not.toBeNull();
+    expect(acl.can({ role: 'admin', resource: 'posts', action: 'create' })).toMatchObject({
+      role: 'admin',
+      resource: 'posts',
+      action: 'create',
+    });
   });
 
   it('should works with alias action', () => {
@@ -121,8 +135,16 @@ describe('acl', () => {
       strategy: 's1',
     });
 
-    expect(acl.can({ role: 'admin', resource: 'posts', action: 'get' })).not.toBeNull();
-    expect(acl.can({ role: 'admin', resource: 'posts', action: 'list' })).not.toBeNull();
+    expect(acl.can({ role: 'admin', resource: 'posts', action: 'get' })).toMatchObject({
+      role: 'admin',
+      resource: 'posts',
+      action: 'get',
+    });
+    expect(acl.can({ role: 'admin', resource: 'posts', action: 'list' })).toMatchObject({
+      role: 'admin',
+      resource: 'posts',
+      action: 'list',
+    });
   });
 
   it('should return action params when check permission', () => {
@@ -210,7 +232,11 @@ describe('acl', () => {
 
     role.grantAction('posts:create', {});
 
-    expect(acl.can({ role: 'admin', resource: 'posts', action: 'create' })).not.toBeNull();
+    expect(acl.can({ role: 'admin', resource: 'posts', action: 'create' })).toMatchObject({
+      role: 'admin',
+      resource: 'posts',
+      action: 'create',
+    });
 
     role.revokeAction('posts:create');
 
