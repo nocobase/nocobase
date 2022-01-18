@@ -1,7 +1,9 @@
 import lodash from 'lodash';
+import { ACL } from './acl';
 type StrategyValue = false | '*' | string | string[];
 
 export interface AvailableStrategyOptions {
+  acl: ACL;
   displayName?: string;
   actions: false | string | string[];
   resource?: '*';
@@ -35,6 +37,6 @@ export class ACLAvailableStrategy {
   }
 
   allow(resourceName: string, actionName: string) {
-    return this.matchAction(actionName);
+    return this.matchAction(this.options.acl.resolveActionAlias(actionName));
   }
 }

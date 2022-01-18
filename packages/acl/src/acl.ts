@@ -75,8 +75,14 @@ export class ACL extends EventEmitter {
     }
   }
 
-  setAvailableStrategy(name: string, options: AvailableStrategyOptions) {
-    this.availableStrategy.set(name, new ACLAvailableStrategy(options));
+  setAvailableStrategy(name: string, options: Omit<AvailableStrategyOptions, 'acl'>) {
+    this.availableStrategy.set(
+      name,
+      new ACLAvailableStrategy({
+        ...options,
+        acl: this,
+      }),
+    );
   }
 
   beforeGrantAction(path: string, listener?: Listener) {
@@ -84,8 +90,6 @@ export class ACL extends EventEmitter {
   }
 
   can({ role, resource, action }: { role: string; resource: string; action: string }): CanResult | null {
-    action = this.resolveActionAlias(action);
-
     if (!this.isAvailableAction(action)) {
       return null;
     }
@@ -94,15 +98,15 @@ export class ACL extends EventEmitter {
     const aclResource = aclRole.getResource(resource);
 
     if (aclResource) {
-      const aclActionConfig = aclResource.actions.get(this.resolveActionAlias(action));
+      const actionParams = aclResource.getAction(action);
 
-      if (aclActionConfig) {
+      if (actionParams) {
         // handle single action config
         return {
           role,
           resource,
           action,
-          params: aclActionConfig,
+          params: actionParams,
         };
       }
     }
@@ -115,7 +119,7 @@ export class ACL extends EventEmitter {
       return null;
     }
 
-    if (roleStrategy.allow(resource, action)) {
+    if (roleStrategy.allow(resource, this.resolveActionAlias(action))) {
       return { role, resource, action };
     }
 
@@ -123,10 +127,10 @@ export class ACL extends EventEmitter {
   }
 
   protected isAvailableAction(actionName: string) {
-    return this.availableActions.has(actionName);
+    return this.availableActions.has(this.resolveActionAlias(actionName));
   }
 
-  protected resolveActionAlias(action: string) {
+  public resolveActionAlias(action: string) {
     return this.actionAlias.get(action) ? this.actionAlias.get(action) : action;
   }
 }
