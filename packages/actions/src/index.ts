@@ -19,4 +19,4 @@ export function registerActions(api: any) {
   );
 }
 
-export default {};
+export default actions;
