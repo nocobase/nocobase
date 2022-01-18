@@ -13,6 +13,22 @@ function findByUid(schema: Schema, uid: string) {
   }, null);
 }
 
+export function findMenuItem(schema: Schema) {
+  if (!Schema.isSchemaInstance(schema)) {
+    schema = new Schema(schema);
+  }
+  for (const { schema: s } of Schema.getOrderProperties(schema)) {
+    if (s['x-component'] === 'Menu.Item') {
+      return s;
+    }
+    const ss = findMenuItem(s);
+    if (ss) {
+      return ss;
+    }
+  };
+  return null;
+}
+
 function findKeys(schema: Schema) {
   if (!schema) {
     return;

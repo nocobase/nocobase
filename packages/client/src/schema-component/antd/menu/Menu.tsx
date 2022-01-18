@@ -1,9 +1,9 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import { Menu as AntdMenu } from 'antd';
-import { Schema, observer, useFieldSchema, useField, RecursionField } from '@formily/react';
-import { DesktopOutlined } from '@ant-design/icons';
-import { findKeysByUid } from './util';
 import { createPortal } from 'react-dom';
+import { Menu as AntdMenu } from 'antd';
+import { Schema, observer, useFieldSchema, RecursionField } from '@formily/react';
+import { DesktopOutlined } from '@ant-design/icons';
+import { findKeysByUid, findMenuItem } from './util';
 
 type ComposedMenu = React.FC<any> & {
   Item?: React.FC<any>;
@@ -13,14 +13,32 @@ type ComposedMenu = React.FC<any> & {
 const MenuModeContext = createContext(null);
 
 export const Menu: ComposedMenu = observer((props) => {
-  let { onSelect, sideMenuRef, mode, defaultSelectedUid, defaultSelectedKeys, defaultOpenKeys, ...others } = props;
+  let {
+    onSelect,
+    sideMenuRef,
+    mode,
+    defaultSelectedUid,
+    defaultSelectedKeys: dSelectedKeys,
+    defaultOpenKeys: dOpenKeys,
+    ...others
+  } = props;
   const schema = useFieldSchema();
-  if (defaultSelectedUid) {
-    defaultSelectedKeys = findKeysByUid(schema, defaultSelectedUid);
-    if (['inline', 'mix'].includes(mode)) {
-      defaultOpenKeys = defaultSelectedKeys;
+  const [defaultSelectedKeys, setDefaultSelectedKeys] = useState(() => {
+    if (dSelectedKeys) {
+      return dSelectedKeys;
     }
-  }
+    if (defaultSelectedUid) {
+      return findKeysByUid(schema, defaultSelectedUid);
+    }
+    return [];
+  });
+  const [loading, setLoading] = useState(false);
+  const [defaultOpenKeys, setDefaultOpenKeys] = useState(() => {
+    if (['inline', 'mix'].includes(mode)) {
+      return dOpenKeys || defaultSelectedKeys;
+    }
+    return dOpenKeys;
+  });
   const [sideMenuSchema, setSideMenuSchema] = useState<Schema>(() => {
     if (mode === 'mix' && defaultSelectedKeys[0]) {
       const s = schema.properties?.[defaultSelectedKeys[0]];
@@ -31,23 +49,52 @@ export const Menu: ComposedMenu = observer((props) => {
     return null;
   });
   useEffect(() => {
+    if (['inline', 'mix'].includes(mode)) {
+      setDefaultOpenKeys(defaultSelectedKeys);
+    }
+  }, [defaultSelectedKeys]);
+  useEffect(() => {
     const sideMenuElement = sideMenuRef?.current as HTMLElement;
     if (!sideMenuElement) {
       return;
     }
     sideMenuElement.style.display = sideMenuSchema?.properties ? 'block' : 'none';
   }, [sideMenuSchema?.properties, sideMenuRef]);
-  console.log({ sideMenuRef, defaultSelectedKeys, sideMenuSchema });
   return (
     <MenuModeContext.Provider value={mode}>
       <AntdMenu
         {...others}
-        onSelect={(info) => {
+        onSelect={(info: any) => {
           const s = schema.properties[info.key];
           if (mode === 'mix') {
             setSideMenuSchema(s);
+            if (!s?.properties) {
+              onSelect && onSelect(info);
+            } else {
+              const menuItemSchema = findMenuItem(s);
+              if (!menuItemSchema) {
+                return;
+              }
+              // TODO
+              setLoading(true);
+              const keys = findKeysByUid(schema, menuItemSchema['x-uid']);
+              setDefaultSelectedKeys(keys);
+              setTimeout(() => {
+                setLoading(false);
+              }, 100);
+              onSelect &&
+                onSelect({
+                  key: menuItemSchema.name,
+                  item: {
+                    props: {
+                      schema: menuItemSchema,
+                    },
+                  },
+                });
+            }
+          } else {
+            onSelect && onSelect(info);
           }
-          onSelect && onSelect(info);
         }}
         mode={mode === 'mix' ? 'horizontal' : mode}
         defaultOpenKeys={defaultOpenKeys}
@@ -55,17 +102,26 @@ export const Menu: ComposedMenu = observer((props) => {
       >
         <RecursionField schema={schema} onlyRenderProperties />
       </AntdMenu>
-      {mode === 'mix' &&
-        sideMenuSchema.properties &&
-        sideMenuRef.current?.firstChild &&
-        createPortal(
-          <MenuModeContext.Provider value={'inline'}>
-            <AntdMenu mode={'inline'} defaultOpenKeys={defaultOpenKeys} defaultSelectedKeys={defaultSelectedKeys}>
-              <RecursionField schema={sideMenuSchema} onlyRenderProperties />
-            </AntdMenu>
-          </MenuModeContext.Provider>,
-          sideMenuRef.current.firstChild,
-        )}
+      {loading
+        ? null
+        : mode === 'mix' &&
+          sideMenuSchema?.properties &&
+          sideMenuRef.current?.firstChild &&
+          createPortal(
+            <MenuModeContext.Provider value={'inline'}>
+              <AntdMenu
+                mode={'inline'}
+                defaultOpenKeys={defaultOpenKeys}
+                defaultSelectedKeys={defaultSelectedKeys}
+                onSelect={(info) => {
+                  onSelect && onSelect(info);
+                }}
+              >
+                <RecursionField schema={sideMenuSchema} onlyRenderProperties />
+              </AntdMenu>
+            </MenuModeContext.Provider>,
+            sideMenuRef.current.firstChild,
+          )}
     </MenuModeContext.Provider>
   );
 });
