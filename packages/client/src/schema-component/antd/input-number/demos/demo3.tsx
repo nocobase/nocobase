@@ -1,5 +1,5 @@
 /**
- * title: addonBefore/addonAfter
+ * title: stringMode
  */
 import { FormItem } from '@formily/antd';
 import { InputNumber, SchemaComponent, SchemaComponentProvider } from '@nocobase/client';
@@ -14,8 +14,9 @@ const schema = {
       'x-decorator': 'FormItem',
       'x-component': 'InputNumber',
       'x-component-props': {
-        addonBefore: '¥',
-        addonAfter: '万元',
+        stringMode: true,
+        step: '0.01',
+        addonAfter: '%',
       },
       'x-reactions': {
         target: 'read',
@@ -33,8 +34,9 @@ const schema = {
       'x-decorator': 'FormItem',
       'x-component': 'InputNumber',
       'x-component-props': {
-        addonBefore: '¥',
-        addonAfter: '万元',
+        stringMode: true,
+        step: '0.01',
+        addonAfter: '%',
       },
     },
   },

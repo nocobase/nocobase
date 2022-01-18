@@ -9,10 +9,14 @@ group:
 
 ## Examples
 
-### InputNumber usage
+### InputNumber
 
 <code src="./demos/demo1.tsx" />
 
-### InputNumber addon usage
+### addonBefore/addonAfter
 
 <code src="./demos/demo2.tsx" />
+
+### High precision decimals
+
+<code src="./demos/demo3.tsx" />
