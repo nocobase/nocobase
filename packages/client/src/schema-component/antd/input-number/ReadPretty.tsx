@@ -1,0 +1,21 @@
+import { isValid } from '@formily/shared';
+import type { InputProps } from 'antd/lib/input';
+import type { InputNumberProps } from 'antd/lib/input-number';
+import { toFixed } from 'rc-input-number/lib/utils/MiniDecimal';
+import { getNumberPrecision } from 'rc-input-number/lib/utils/numberUtil';
+import React from 'react';
+
+export const ReadPretty: React.FC<InputProps & InputNumberProps> = (props: any) => {
+  const { step, value, addonBefore, addonAfter } = props;
+  if (!isValid(props.value)) {
+    return <div></div>;
+  }
+  const precision = Math.max(getNumberPrecision(String(value)), getNumberPrecision(step));
+  return (
+    <div>
+      {addonBefore}
+      {toFixed(String(value), '.', precision)}
+      {addonAfter}
+    </div>
+  );
+};
