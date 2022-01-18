@@ -13,6 +13,10 @@ const schema = {
       title: `Editable`,
       'x-decorator': 'FormItem',
       'x-component': 'DatePicker',
+      'x-component-props': {
+        dateFormat: 'YYYY/MM/DD',
+        // showTime: true,
+      },
       'x-reactions': {
         target: 'read',
         fulfill: {
@@ -28,6 +32,10 @@ const schema = {
       'x-read-pretty': true,
       'x-decorator': 'FormItem',
       'x-component': 'DatePicker',
+      'x-component-props': {
+        dateFormat: 'YYYY/MM/DD',
+        // showTime: true,
+      },
     },
   },
 };

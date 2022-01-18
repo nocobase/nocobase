@@ -1,5 +1,5 @@
 /**
- * title: DatePicker RangePicker
+ * title: DatePicker.RangePicker
  */
 import { FormItem } from '@formily/antd';
 import { DatePicker, SchemaComponent, SchemaComponentProvider } from '@nocobase/client';

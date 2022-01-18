@@ -7,6 +7,7 @@ import type {
 import cls from 'classnames';
 import moment from 'moment';
 import React from 'react';
+import { getDefaultFormat } from './util';
 
 type Composed = {
   DatePicker: React.FC<AntdDatePickerProps>;
@@ -20,17 +21,9 @@ ReadPretty.DatePicker = (props: any) => {
     return <div></div>;
   }
   const prefixCls = usePrefixCls('description-date-picker', props);
-  const getDefaultFormat = () => {
-    const { dateFormat, showTime, timeFormat } = props;
-    let format = dateFormat;
-    if (showTime) {
-      format += ` ${timeFormat}`;
-    }
-    return format || props.format;
-  };
   const getLabels = () => {
     const d = moment(props.value);
-    const labels = formatMomentValue(d.isValid() ? d : null, getDefaultFormat(), props.placeholder);
+    const labels = formatMomentValue(d.isValid() ? d : null, getDefaultFormat(props), props.placeholder);
     return isArr(labels) ? labels.join('~') : labels;
   };
   return <div className={cls(prefixCls, props.className)}>{getLabels()}</div>;
