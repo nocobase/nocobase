@@ -25,7 +25,7 @@ export const Password = connect(
       <span className={className}>
         <Input.Password {...others} value={value} />
         {checkStrength && (
-          <PasswordStrength value={String(value)}>
+          <PasswordStrength value={value}>
             {(score) => {
               return (
                 <div
@@ -59,7 +59,7 @@ export const Password = connect(
     );
   },
   mapReadPretty((props) => {
-    if (!isValid(props.value)) {
+    if (!props.value) {
       return <div></div>;
     }
     return <div>********</div>;

@@ -4,7 +4,7 @@ import React, { Fragment } from 'react';
 type ReactRenderPropsChildren<T = any> = React.ReactNode | ((props: T) => React.ReactElement);
 
 interface IPasswordStrengthProps {
-  value?: React.ReactText;
+  value?: any;
   children?: ReactRenderPropsChildren<number>;
 }
 
@@ -155,7 +155,7 @@ const getStrength = (val) => {
 
 export const PasswordStrength: React.FC<IPasswordStrengthProps> = (props) => {
   if (isFn(props.children)) {
-    return props.children(getStrength(String(props.value)));
+    return props.children(getStrength(String(props.value || '')));
   } else {
     return <Fragment>{props.children}</Fragment>;
   }
