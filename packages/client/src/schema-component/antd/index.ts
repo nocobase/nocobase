@@ -8,6 +8,7 @@ export * from './form';
 export * from './form-item';
 export * from './grid';
 export * from './input';
+export * from './input-number';
 export * from './password';
 export * from './radio';
 export * from './menu';
