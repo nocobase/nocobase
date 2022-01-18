@@ -1,5 +1,5 @@
 import React from 'react';
-import { HashRouter } from 'react-router-dom';
+import { HashRouter, MemoryRouter } from 'react-router-dom';
 import {
   i18n,
   compose,
@@ -11,17 +11,19 @@ import {
   RouteSwitchProvider,
   AntdConfigProvider,
   SchemaComponentProvider,
+  Menu,
 } from '@nocobase/client';
 import { I18nextProvider } from 'react-i18next';
 import { Spin } from 'antd';
 import apiClient from './apiClient';
 
 const providers = [
-  [HashRouter, {}],
+  [HashRouter],
+  // [MemoryRouter, { initialEntries: ['/'] }],
   [APIClientProvider, { apiClient }],
   [I18nextProvider, { i18n }],
   [AntdConfigProvider, { remoteLocale: true }],
-  [SchemaComponentProvider, { components: {} }],
+  [SchemaComponentProvider, { components: { Menu } }],
   [RouteSwitchProvider, { components: { AuthLayout, AdminLayout } }],
 ];
 
