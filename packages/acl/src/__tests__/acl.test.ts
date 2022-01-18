@@ -252,4 +252,36 @@ describe('acl', () => {
       },
     });
   });
+
+  it('should to JSON', () => {
+    acl.setAvailableAction('create', {
+      displayName: 'create',
+      type: 'new-data',
+    });
+
+    acl.setAvailableStrategy('s1', {
+      displayName: 'test',
+      actions: false,
+    });
+
+    const role = acl.define({
+      role: 'admin',
+      strategy: 's1',
+      actions: {
+        'posts:create': {
+          filter: { a: 'b' },
+        },
+      },
+    });
+
+    const roleJSON = role.toJSON();
+
+    expect(roleJSON).toMatchObject({
+      role: 'admin',
+      strategy: 's1',
+      actions: {
+        'posts:create': {},
+      },
+    });
+  });
 });

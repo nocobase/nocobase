@@ -1,6 +1,6 @@
 import { ACLResource } from './acl-resource';
 import { AvailableStrategyOptions } from './acl-available-strategy';
-import { ACL } from './acl';
+import { ACL, DefineOptions } from './acl';
 
 export interface RoleActionParams {
   fields?: string[];
@@ -19,7 +19,7 @@ export class ACLRole {
   strategy: string | AvailableStrategyOptions;
   resources = new Map<string, ACLResource>();
 
-  constructor(public acl: ACL) {}
+  constructor(public acl: ACL, public name: string) {}
 
   getResource(name: string): ACLResource | undefined {
     return this.resources.get(name);
@@ -78,6 +78,23 @@ export class ACLRole {
   public revokeAction(path: string) {
     const { resource, actionName } = this.getResourceActionFromPath(path);
     resource.removeAction(actionName);
+  }
+
+  public toJSON(): DefineOptions {
+    const actions = {};
+
+    for (const resourceName of this.resources.keys()) {
+      const resourceActions = this.getResourceActionsParams(resourceName);
+      for (const actionName of Object.keys(resourceActions)) {
+        actions[`${resourceName}:${actionName}`] = resourceActions[actionName];
+      }
+    }
+
+    return {
+      role: this.name,
+      strategy: this.strategy,
+      actions,
+    };
   }
 
   protected getResourceActionFromPath(path: string) {

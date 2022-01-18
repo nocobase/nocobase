@@ -16,7 +16,7 @@ interface CanResult {
   params?: any;
 }
 
-interface DefineOptions {
+export interface DefineOptions {
   role: string;
   strategy?: string | AvailableStrategyOptions;
   actions?: {
@@ -43,7 +43,7 @@ export class ACL extends EventEmitter {
 
   define(options: DefineOptions): ACLRole {
     const roleName = options.role;
-    const role = new ACLRole(this);
+    const role = new ACLRole(this, roleName);
 
     if (options.strategy) {
       role.strategy = options.strategy;
