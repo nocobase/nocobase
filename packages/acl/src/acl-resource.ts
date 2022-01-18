@@ -39,17 +39,13 @@ export class ACLResource {
   }
 
   setAction(name: string, params: RoleActionParams) {
-    const beforeGrantActionListeners = this.acl.listeners(`${this.name}:${name}.beforeGrantAction`);
-
     const context: ListenerContext = {
       role: this.role,
       acl: this.role.acl,
       params: params || {},
     };
 
-    for (const listener of beforeGrantActionListeners) {
-      listener.call(null, context);
-    }
+    this.acl.emit(`${this.name}:${name}.beforeGrantAction`, context);
 
     this.actions.set(name, context.params);
   }
