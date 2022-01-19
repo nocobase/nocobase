@@ -5,7 +5,7 @@ import Database from './database';
 
 export class MagicAttributeModel extends Model {
   get magicAttribute() {
-    const db: Database = (this.constructor as any).database;
+    const db: Database = (<any>this.constructor).database;
     const collection = db.getCollection(this.constructor.name);
     return collection.options.magicAttribute || 'options';
   }
@@ -49,5 +49,11 @@ export class MagicAttributeModel extends Model {
       ..._.omit(data, this.magicAttribute),
       ...data[this.magicAttribute],
     };
+  }
+
+  async update(values?: any, options?: any) {
+    // @ts-ignore
+    this._changed = new Set();
+    return super.update(values, options);
   }
 }
