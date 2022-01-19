@@ -1,6 +1,6 @@
 import { DataTypes } from 'sequelize';
-import { uid } from '../utils';
 import { BaseColumnFieldOptions, Field } from './field';
+import { uid } from '@nocobase/utils';
 
 export class UidField extends Field {
   get dataType() {
