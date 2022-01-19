@@ -14,12 +14,12 @@ group:
 - Layout.Header
   - SiteTitle
   - Menu（SchemaComponent）
-  - PluginActionBar
-    - Designable.Action（引用）
-    - CollectionManager.Action（引用）
-    - ACL.Action（引用）
-    - SystemSettings.Action（引用）
-  - CurrentUser.Dropdown（引用）
+  - PluginManager.Toolbar
+    - DesignableAction
+    - CollectionManager.Action
+    - ACL.Action
+    - SystemSettings.Action
+    - CurrentUser.Dropdown
 - Layout.Sider
   - SideMenu（随 Menu 联动的）
 - Layout.Content

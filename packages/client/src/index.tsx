@@ -14,3 +14,4 @@ export * from './system-settings';
 export * from './application';
 export * from './record-provider';
 export * from './async-data-provider';
+export * from './plugin-manager';
