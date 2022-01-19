@@ -1,5 +1,5 @@
 {
-  "name": "@nocobase/plugin-ui-schema",
+  "name": "@nocobase/plugin-ui-schema-storage",
   "version": "0.6.0-alpha.0",
   "main": "lib/index.js",
   "license": "MIT",
