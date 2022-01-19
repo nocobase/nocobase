@@ -216,7 +216,7 @@ export class Designable {
 
 // TODO
 export function useDesignable() {
-  const { designable, refresh, reset } = useContext(SchemaComponentContext);
+  const { designable, setDesignable, refresh, reset } = useContext(SchemaComponentContext);
   const DesignableBar = () => {
     return <></>;
   };
@@ -229,6 +229,7 @@ export function useDesignable() {
     designable,
     reset,
     refresh,
+    setDesignable,
     DesignableBar,
     on: dn.on.bind(dn),
     // TODO

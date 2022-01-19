@@ -12,6 +12,7 @@ import {
   AntdConfigProvider,
   SchemaComponentProvider,
   Menu,
+  Action,
 } from '@nocobase/client';
 import { I18nextProvider } from 'react-i18next';
 import { Spin } from 'antd';
@@ -23,7 +24,7 @@ const providers = [
   [APIClientProvider, { apiClient }],
   [I18nextProvider, { i18n }],
   [AntdConfigProvider, { remoteLocale: true }],
-  [SchemaComponentProvider, { components: { Menu } }],
+  [SchemaComponentProvider, { components: { Menu, Action } }],
   [RouteSwitchProvider, { components: { AuthLayout, AdminLayout } }],
 ];
 
