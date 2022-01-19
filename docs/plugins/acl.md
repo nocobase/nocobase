@@ -14,6 +14,10 @@ PUT     /api/roles:update/:name
 # 删除
 DELETE  /api/roles:destroy/:name
 
+# 角色可配置权限的数据表列表，如果已经配置的要有所标记
+GET    /api/roles/:name/collections:list
+# 已经配置权限的列表
+GET    /api/roles/:name/resources:list
 # 配置权限
 POST    /api/roles/:name/resources:create
 # 资源权限列表
