@@ -1,7 +1,7 @@
 import { Collection } from '../collection';
 import { Database } from '../database';
 import _ from 'lodash';
-import { DataType, ModelAttributeColumnOptions, ModelIndexesOptions } from 'sequelize';
+import { DataType, ModelAttributeColumnOptions, ModelIndexesOptions, SyncOptions } from 'sequelize';
 
 export interface FieldContext {
   database: Database;
@@ -43,6 +43,17 @@ export abstract class Field {
     this.collection = context.collection;
     this.options = options || {};
     this.init();
+  }
+
+  // TODO
+  async sync(syncOptions: SyncOptions) {
+    await this.collection.sync({
+      ...syncOptions,
+      force: false,
+      alter: {
+        drop: false,
+      },
+    });
   }
 
   init() {

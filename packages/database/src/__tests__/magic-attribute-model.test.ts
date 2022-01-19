@@ -29,6 +29,8 @@ describe('magic-attribute-model', () => {
 
     test.set('x-component-props', { arr2: [1, 2, 3] });
 
+    await test.save();
+
     expect(test.toJSON()).toMatchObject({
       title: 'aa',
       'x-component-props': {
@@ -39,6 +41,8 @@ describe('magic-attribute-model', () => {
       },
       'x-decorator-props': { key1: 'val1' },
     });
+
+    await db.close();
   });
 
   it('case 2', async () => {
@@ -57,7 +61,7 @@ describe('magic-attribute-model', () => {
 
     await db.sync();
 
-    const test = await Test.model.create({
+    let test = await Test.model.create({
       title: 'aa',
       'x-component-props': { key1: 'val1', arr1: [1, 2, 3], arr2: [4, 5] },
     });
@@ -69,15 +73,27 @@ describe('magic-attribute-model', () => {
 
     test.set('x-component-props', { arr2: [1, 2, 3] });
 
+    await test.save();
+
+    test = await Test.model.findByPk(test.get('id') as string);
+
+    await test.update({
+      'x-component-props': { arr2: [1, 2, 3, 4] }
+    });
+
+    test = await Test.model.findByPk(test.get('id') as string);
+
     expect(test.toJSON()).toMatchObject({
       title: 'aa',
       'x-component-props': {
         key1: 'val1',
         key2: 'val2',
         arr1: [3, 4],
-        arr2: [1, 2, 3],
+        arr2: [1, 2, 3, 4],
       },
       'x-decorator-props': { key1: 'val1' },
     });
+
+    await db.close();
   });
 });
