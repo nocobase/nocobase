@@ -7,49 +7,53 @@ group:
 
 # PluginManager
 
+## PluginManagerProvider
+
+## PluginManager.Toolbar
+
+插件管理器的工具栏，用于便捷的展示所有插件，不常用的可折叠显示。
+
+<code src="./demos/demo1.tsx"/>
+
+## PluginManager.Toolbar.Item
+
+工具栏项，各个插件都可以配置自己的 `PluginManager.Toolbar.Item`
+
+- `icon` pin 时，只显示 icon
+- `title` pin 时，title 以 tooltip 的方式显示
+
+最简单的示例
+
 ```tsx | pure
-<PluginManager.Provider components={{
-  CurrentUser,
-  DesignableSwitch,
-  CollectionManagerAction,
-  ACLAction,
-  SystemSettings,
-}}>
-  <PluginManager.Toolbar items={[
-    {
-      action: 'DesignableSwitch',
-      pin: true,
-    },
-    {
-      action: 'CollectionManagerAction',
-      pin: true,
-    },
-    {
-      action: 'ACLAction',
-      pin: true,
-    },
-    {
-      action: 'SystemSettings.Action',
-    },
-  ]}/>
-</PluginManager.Provider>
+Plugin1.ToolbarItem = () => {
+  return (
+    <PluginManager.Toolbar.Item
+      icon={<DatabaseOutlined />}
+      title={'Plugin1'}
+      onClick={() => {
+        alert('Plugin1');
+      }}
+    />
+  );
+};
 ```
 
-## 扩展
-
-如何扩展插件的 `PluginManager.Toolbar.Item`
+弹出抽屉
 
 ```tsx | pure
-import React from 'react';
-import { Button, Menu } from 'antd';
-import { HighlightOutlined } from '@ant-design/icons';
-
-export const DesignableSwitch = () => {
-  const { designable, setDesignable } = useDesignable();
+Plugin2.ToolbarItem = () => {
+  const [visible, setVisible] = useState(false);
   return (
-    <Menu.Item key={'DesignableSwitch'} eventKey={'DesignableSwitch'}>
-      <HighlightOutlined />
-    </Menu.Item>
+    <VisibleContext.Provider value={[visible, setVisible]}>
+      <PluginManager.Toolbar.Item
+        icon={<VerifiedOutlined />}
+        title={'Plugin2'}
+        onClick={() => {
+          setVisible(true);
+        }}
+      />
+      <SchemaComponent scope={{ useCloseAction }} schema={schema} />
+    </VisibleContext.Provider>
   );
 };
 ```
