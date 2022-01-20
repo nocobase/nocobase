@@ -1,10 +1,8 @@
 import * as antIcons from '@ant-design/icons';
-import { createFromIconfontCN } from '@ant-design/icons';
+import AntdIcon, { createFromIconfontCN } from '@ant-design/icons';
 import React from 'react';
 
-export const IconFont = createFromIconfontCN({
-  scriptUrl: ['//at.alicdn.com/t/font_2261954_u9jzwc44ug.js'],
-});
+let IconFont: any;
 
 export const icons = new Map<string, any>();
 
@@ -33,19 +31,31 @@ Object.keys(antIcons).forEach((name) => {
 
 interface IconProps {
   type: string;
+  component?: any;
   [key: string]: any;
 }
 
-export function Icon(props: IconProps) {
-  const { type = '', ...restProps } = props;
+export const Icon = (props: IconProps) => {
+  const { type = '', component, ...restProps } = props;
+  if (component) {
+    return <AntdIcon component={component} {...restProps} />;
+  }
   if (type && icons.has(type.toLowerCase())) {
     const IconComponent = icons.get(type.toLowerCase());
-    if (IconComponent === IconFont) {
-      return <IconFont type={type} />;
-    }
     return <IconComponent {...restProps} />;
   }
+  if (type && IconFont) {
+    return <IconFont type={type} />;
+  }
   return null;
-}
+};
+
+Icon.createFromIconfontCN = (options) => {
+  IconFont = createFromIconfontCN(options);
+};
+
+Icon.register = (icons?: any) => {
+  registerIcons(icons);
+};
 
 export default Icon;

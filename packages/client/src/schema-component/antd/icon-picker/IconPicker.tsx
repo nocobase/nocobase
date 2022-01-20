@@ -4,7 +4,7 @@ import { isValid } from '@formily/shared';
 import { Button, Input, Popover } from 'antd';
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { hasIcon, Icon, icons } from '../../../components/icon';
+import { hasIcon, Icon, icons } from '../../../icon';
 
 function IconField(props: any) {
   const { value, onChange } = props;
