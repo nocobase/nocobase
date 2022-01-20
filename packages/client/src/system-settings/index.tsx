@@ -1,3 +1,1 @@
-export function SystemSettings() {
-  
-}
+export * from './SystemSettingsShortcut';

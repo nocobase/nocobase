@@ -5,4 +5,17 @@ group:
   path: /client
 ---
 
-# DocumentTitle <Badge>待定</Badge>
+# DocumentTitle
+
+## DocumentTitleProvider
+
+```tsx | pure
+<DocumentTitleProvider addonBefore={'!!'} addonAfter={'NocoBase'}>
+</DocumentTitleProvider>
+```
+
+## useDocumentTitle
+
+```ts
+const { title, setTitle } = useDocumentTitle();
+```

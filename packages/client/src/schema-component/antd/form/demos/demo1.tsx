@@ -2,7 +2,6 @@ import React from 'react';
 import { observer, ISchema } from '@formily/react';
 import { SchemaComponent, SchemaComponentProvider, Form, Action, useCloseAction } from '@nocobase/client';
 import { FormItem, Input } from '@formily/antd';
-import 'antd/dist/antd.css';
 
 export default observer(() => {
   const schema: ISchema = {

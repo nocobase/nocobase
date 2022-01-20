@@ -11,18 +11,28 @@ type UpdateValues = {
   [key: string]: UpdateValueItem | Array<UpdateValueItem>;
 };
 
+type UpdateAction = 'create' | 'update';
 export class UpdateGuard {
   model: ModelCtor<any>;
+  action: UpdateAction;
   private associationKeysToBeUpdate: AssociationKeysToBeUpdate;
   private blackList: BlackList;
   private whiteList: WhiteList;
+
+  setAction(action: UpdateAction) {
+    this.action = action;
+  }
 
   setModel(model: ModelCtor<any>) {
     this.model = model;
   }
 
   setAssociationKeysToBeUpdate(associationKeysToBeUpdate: AssociationKeysToBeUpdate) {
-    this.associationKeysToBeUpdate = associationKeysToBeUpdate;
+    if (this.action == 'create') {
+      this.associationKeysToBeUpdate = Object.keys(this.model.associations);
+    } else {
+      this.associationKeysToBeUpdate = associationKeysToBeUpdate;
+    }
   }
 
   setWhiteList(whiteList: WhiteList) {
@@ -148,8 +158,8 @@ export class UpdateGuard {
     guard.setModel(model);
     guard.setWhiteList(options.whitelist);
     guard.setBlackList(options.blacklist);
+    guard.setAction(lodash.get(options, 'action', 'update'));
     guard.setAssociationKeysToBeUpdate(options.updateAssociationValues);
-
     return guard;
   }
 }

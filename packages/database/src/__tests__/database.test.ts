@@ -3,6 +3,23 @@ import path from 'path';
 import { Model } from '..';
 
 describe('database', () => {
+  test('get repository', async () => {
+    const db = mockDatabase();
+    db.collection({
+      name: 'tests',
+      fields: [{ type: 'hasMany', name: 'relations' }],
+    });
+
+    db.collection({
+      name: 'relations',
+    });
+
+    expect(db.getRepository('tests')).toEqual(db.getCollection('tests').repository);
+    expect(db.getRepository('tests.relations', '1')).toEqual(
+      db.getCollection('tests').repository.relation('relations').of('1'),
+    );
+  });
+
   test('import', async () => {
     const db = mockDatabase();
     await db.import({
@@ -191,5 +208,4 @@ describe('database', () => {
     test.customMethod();
     expect(test.get('abc')).toBe('abc');
   });
-
 });

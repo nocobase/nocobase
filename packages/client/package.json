@@ -26,6 +26,7 @@
     "ahooks": "^3.0.5",
     "axios": "^0.24.0",
     "i18next": "^21.6.0",
+    "react-helmet": "^6.1.0",
     "react-i18next": "^11.15.1"
   },
   "peerDependencies": {

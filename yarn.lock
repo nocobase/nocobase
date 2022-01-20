@@ -1219,6 +1219,15 @@
     "@formily/shared" "2.0.7"
     "@formily/validator" "2.0.7"
 
+"@formily/core@2.0.8":
+  version "2.0.8"
+  resolved "https://registry.npmjs.org/@formily/core/-/core-2.0.8.tgz#992b907fa5e8776d10ea5b421e35b5ffa1f49245"
+  integrity sha512-CiZntugbBE7KGxxrlqPpZl2UTZ/Dyd+ocW23EervUt087FmtsHp0932jII0Zzz1wGU3l+f62KXmgr4d1Oxx+Ag==
+  dependencies:
+    "@formily/reactive" "2.0.8"
+    "@formily/shared" "2.0.8"
+    "@formily/validator" "2.0.8"
+
 "@formily/grid@2.0.7":
   version "2.0.7"
   resolved "https://registry.npmjs.org/@formily/grid/-/grid-2.0.7.tgz#e7f8d9a16754a9b3539f3a66c6a7f8bcec4ba224"
@@ -1236,10 +1245,24 @@
     "@formily/reactive" "2.0.7"
     "@formily/shared" "2.0.7"
 
+"@formily/json-schema@^2.0.6":
+  version "2.0.8"
+  resolved "https://registry.npmjs.org/@formily/json-schema/-/json-schema-2.0.8.tgz#1fa87bc78f588a8a175e88d2a978a976abcf71e3"
+  integrity sha512-sPivmCNYJTBC4dQfnZEFuvBm3WUlrHBEj4hf1qj4lJXaqmp0zdfNuVwu8D8bciFnHe94Yg9+hwSZU6zDoTw9+w==
+  dependencies:
+    "@formily/core" "2.0.8"
+    "@formily/reactive" "2.0.8"
+    "@formily/shared" "2.0.8"
+
 "@formily/path@2.0.7":
   version "2.0.7"
   resolved "https://registry.npmjs.org/@formily/path/-/path-2.0.7.tgz#43985e696fdd03e302db781a12c555e27a90a289"
   integrity sha512-78iiB+Ct8gM71uXH+loekN1ivJ1UxyNNP0wm1RhVd/BKVosvyPrdPZYbVoev/iw3xKfHTu94d8vFdHSd5eTdGA==
+
+"@formily/path@2.0.8":
+  version "2.0.8"
+  resolved "https://registry.npmjs.org/@formily/path/-/path-2.0.8.tgz#9279b27a76819bf4c38862e2d98c23c62f9c6e92"
+  integrity sha512-HJ0+zTEFr5QVWK08z8+QATFx1q8yxO9MOY9KKiu7qeWWoTsVn+cNzuKcFcKifVRuQDuwyUx5O+0eYGBmNVriNA==
 
 "@formily/react@2.0.7", "@formily/react@^2.0.7":
   version "2.0.7"
@@ -1267,6 +1290,11 @@
   resolved "https://registry.npmjs.org/@formily/reactive/-/reactive-2.0.7.tgz#3ca3e4dedfabfce98885bbc8ec15eb2fba3364a0"
   integrity sha512-cXUhcfBGWRCoPrziCCXVRsw3+lJ93fhPDJ2eGFPXMcMXYZ7XpeqQd+9wq+L8GJLYVLAR0k6P93ojc7d9lnS5Vw==
 
+"@formily/reactive@2.0.8":
+  version "2.0.8"
+  resolved "https://registry.npmjs.org/@formily/reactive/-/reactive-2.0.8.tgz#335bca5707e764ccb3829e7afd06e37b93e564cd"
+  integrity sha512-bPsa8Pyd2A8ZT2nIdohLXHAzhMvR6saDD+FQnnD9Abssf5CwMiHHMVBQWGDc5HmtVb4JeEsCQLA2PYJDKi1zGg==
+
 "@formily/shared@2.0.7":
   version "2.0.7"
   resolved "https://registry.npmjs.org/@formily/shared/-/shared-2.0.7.tgz#1e62d91accde8f86f48473304f65c3ec386310bd"
@@ -1280,12 +1308,32 @@
     pascal-case "^3.1.1"
     upper-case "^2.0.1"
 
+"@formily/shared@2.0.8":
+  version "2.0.8"
+  resolved "https://registry.npmjs.org/@formily/shared/-/shared-2.0.8.tgz#d0f15e823b7098867640010c5f40ff49a41e39da"
+  integrity sha512-XCLvx31x1sH5S5Eugq2gDPhrCa02OczFOMLSJTrGRco7I64Mg01vq0Yj6dudIQYPUfLfVGIoT5O87GeqhKDKvg==
+  dependencies:
+    "@formily/path" "2.0.8"
+    camel-case "^4.1.1"
+    lower-case "^2.0.1"
+    no-case "^3.0.4"
+    param-case "^3.0.4"
+    pascal-case "^3.1.1"
+    upper-case "^2.0.1"
+
 "@formily/validator@2.0.7":
   version "2.0.7"
   resolved "https://registry.npmjs.org/@formily/validator/-/validator-2.0.7.tgz#9390ed6b65b55760713c18d187db90b47ab7804d"
   integrity sha512-y/+fzGAiqsLotfvUuOggpZbat3e9AREAofnmiCGrik9SMVeRZYZ2LXFJ3ZDqazGFObq4kHHuXEZRFWJnFY3izg==
   dependencies:
     "@formily/shared" "2.0.7"
+
+"@formily/validator@2.0.8":
+  version "2.0.8"
+  resolved "https://registry.npmjs.org/@formily/validator/-/validator-2.0.8.tgz#d7402b9cc2e74995301b9f0fc03116e7b6632f0c"
+  integrity sha512-UcfIy89iBwkesZ5u8z5ehwCtoYpWtfdBqSAMG9KCEGGZMpGwqm/EwF1lCGkrl0jzbEZ0rc2heMASf7X+5xDIQg==
+  dependencies:
+    "@formily/shared" "2.0.8"
 
 "@gar/promisify@^1.0.1":
   version "1.1.2"
@@ -12234,6 +12282,21 @@ react-dom@^17.0.1:
     object-assign "^4.1.1"
     scheduler "^0.20.2"
 
+react-fast-compare@^3.1.1:
+  version "3.2.0"
+  resolved "https://registry.npmjs.org/react-fast-compare/-/react-fast-compare-3.2.0.tgz#641a9da81b6a6320f270e89724fb45a0b39e43bb"
+  integrity sha512-rtGImPZ0YyLrscKI9xTpV8psd6I8VAtjKCzQDlzyDvqJA8XOW78TXYQwNRNd8g8JZnDu8q9Fu/1v4HPAVwVdHA==
+
+react-helmet@^6.1.0:
+  version "6.1.0"
+  resolved "https://registry.npmjs.org/react-helmet/-/react-helmet-6.1.0.tgz#a750d5165cb13cf213e44747502652e794468726"
+  integrity sha512-4uMzEY9nlDlgxr61NL3XbKRy1hEkXmKNXhjbAIOVw5vcFrsdYbH2FEwcNyWvWinl103nXgzYNlns9ca+8kFiWw==
+  dependencies:
+    object-assign "^4.1.1"
+    prop-types "^15.7.2"
+    react-fast-compare "^3.1.1"
+    react-side-effect "^2.1.0"
+
 react-i18next@^11.15.1:
   version "11.15.1"
   resolved "https://registry.npmjs.org/react-i18next/-/react-i18next-11.15.1.tgz#1dec5f2bf2cf7bc5043e9fcb391c9d6e24bb9bfe"
@@ -12293,6 +12356,11 @@ react-router@5.2.0:
     react-is "^16.6.0"
     tiny-invariant "^1.0.2"
     tiny-warning "^1.0.0"
+
+react-side-effect@^2.1.0:
+  version "2.1.1"
+  resolved "https://registry.npmjs.org/react-side-effect/-/react-side-effect-2.1.1.tgz#66c5701c3e7560ab4822a4ee2742dee215d72eb3"
+  integrity sha512-2FoTQzRNTncBVtnzxFOk2mCpcfxQpenBMbk5kSVBg5UcPqV9fRbgY2zhb7GTWWOlpFmAxhClBDlIq8Rsubz1yQ==
 
 react-sortable-hoc@^1.11.0:
   version "1.11.0"

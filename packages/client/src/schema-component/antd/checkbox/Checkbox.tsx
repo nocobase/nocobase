@@ -1,10 +1,10 @@
-import React from 'react';
-import { connect, mapProps, mapReadPretty, useField } from '@formily/react';
-import { Checkbox as AntdCheckbox, Tag } from 'antd';
-import { CheckboxProps, CheckboxGroupProps } from 'antd/lib/checkbox';
-import uniq from 'lodash/uniq';
 import { CheckOutlined, CloseOutlined } from '@ant-design/icons';
+import { connect, mapProps, mapReadPretty, useField } from '@formily/react';
 import { isValid } from '@formily/shared';
+import { Checkbox as AntdCheckbox, Tag } from 'antd';
+import type { CheckboxGroupProps, CheckboxProps } from 'antd/lib/checkbox';
+import uniq from 'lodash/uniq';
+import React from 'react';
 
 type ComposedCheckbox = React.FC<CheckboxProps> & {
   Group?: React.FC<CheckboxGroupProps>;
