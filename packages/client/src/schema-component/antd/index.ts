@@ -14,3 +14,4 @@ export * from './menu';
 export * from './page';
 export * from './password';
 export * from './radio';
+export * from './select';
