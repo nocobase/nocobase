@@ -6,3 +6,9 @@ group:
 ---
 
 # Filter
+
+## Examples
+
+### Filter usage
+
+<code src="./demos/demo1.tsx" />
