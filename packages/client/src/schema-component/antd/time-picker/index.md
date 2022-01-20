@@ -6,3 +6,9 @@ group:
 ---
 
 # TimePicker
+
+## Examples
+
+### TimePicker usage
+
+<code src="./demos/demo1.tsx" />
