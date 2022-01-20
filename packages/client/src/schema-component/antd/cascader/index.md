@@ -9,14 +9,10 @@ group:
 
 ## Examples
 
-### Cascader usage 
+### Cascader  
 
 <code src="./demos/demo1.tsx" />
 
-### Cascader usage 
+### Cascader China Region
 
 <code src="./demos/demo2.tsx" />
-
-### Cascader district usage 
-
-<code src="./demos/demo3.tsx" />
