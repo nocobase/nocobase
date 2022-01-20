@@ -9,6 +9,7 @@ export * from './checkbox';
 export * from './color-select';
 export * from './date-picker';
 export * from './dnd-context';
+export * from './filter';
 export * from './form';
 export * from './form-item';
 export * from './grid';

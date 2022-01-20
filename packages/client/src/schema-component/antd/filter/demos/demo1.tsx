@@ -1,0 +1,71 @@
+/**
+ * title: Filter
+ */
+import { FormItem } from '@formily/antd';
+import { Filter, SchemaComponent, SchemaComponentProvider } from '@nocobase/client';
+import React from 'react';
+
+const schema = {
+  name: 'filter',
+  type: 'object',
+  'x-component': 'Filter',
+  default: {
+    and: [
+      {
+        field1: {
+          eq: 'aa',
+        },
+      },
+      {
+        field1: {
+          eq: 'bbb',
+        },
+      },
+    ],
+  },
+  properties: {
+    column1: {
+      type: 'void',
+      title: '字段1',
+      'x-component': 'Filter.Column',
+      'x-component-props': {
+        operations: [
+          { label: '等于', value: 'eq' },
+          { label: '不等于', value: 'ne' },
+        ],
+      },
+      properties: {
+        field1: {
+          type: 'string',
+          'x-component': 'Input',
+        },
+      },
+    },
+    column2: {
+      type: 'void',
+      title: '字段2',
+      'x-component': 'Filter.Column',
+      'x-component-props': {
+        operations: [
+          { label: '大于', value: 'gt' },
+          { label: '小于', value: 'lt' },
+          { label: '非空', value: 'notNull', noValue: true },
+        ],
+      },
+      properties: {
+        field2: {
+          type: 'number',
+          'x-component': 'InputNumber',
+        },
+      },
+    },
+  },
+};
+
+export default () => {
+  return (
+    <SchemaComponentProvider components={{ Filter, FormItem }}>
+      <SchemaComponent schema={schema} />
+    </SchemaComponentProvider>
+  );
+};
