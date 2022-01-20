@@ -1,18 +1,41 @@
 import React, { createContext, useContext } from 'react';
-import { Menu, Space, Tooltip } from 'antd';
+import { Menu, Space, Tooltip, MenuItemProps } from 'antd';
 import { SettingOutlined, MoreOutlined, DesktopOutlined } from '@ant-design/icons';
-import { CurrentUser, DesignableSwitch, CollectionManagerAction, ACLAction, SystemSettings } from '../';
 import { get } from 'lodash';
-import { PluginManagerContext, PluginManagerProvider } from '.';
+import { PluginManagerContext } from './context';
+import cls from 'classnames';
+import { ConfigProvider } from 'antd';
 
-// TODO
-export const PluginManager: any = () => null;
+export const usePrefixCls = (
+  tag?: string,
+  props?: {
+    prefixCls?: string;
+  },
+) => {
+  const { getPrefixCls } = useContext(ConfigProvider.ConfigContext);
+  return getPrefixCls(tag, props?.prefixCls);
+};
 
-PluginManager.Provider = PluginManagerProvider;
+type PluginManagerType = {
+  Toolbar?: React.FC<ToolbarProps> & {
+    Item?: React.FC<MenuItemProps & { selected?: boolean }>;
+  };
+};
 
-const ToolbarItemContext = createContext(null);
+export const PluginManager: PluginManagerType = () => null;
 
-PluginManager.Toolbar = (props: any) => {
+const ToolbarItemContext = createContext<ToolbarItemProps>(null);
+
+interface ToolbarProps {
+  items?: ToolbarItemProps[];
+}
+
+interface ToolbarItemProps {
+  component: string;
+  pin?: boolean;
+}
+
+PluginManager.Toolbar = (props: ToolbarProps) => {
   const { components } = useContext(PluginManagerContext);
   const { items = [] } = props;
   return (
@@ -44,7 +67,9 @@ PluginManager.Toolbar = (props: any) => {
               );
             })}
           <Menu.Divider></Menu.Divider>
-          <Menu.Item icon={<SettingOutlined />}>管理插件</Menu.Item>
+          <Menu.Item disabled icon={<SettingOutlined />}>
+            管理插件
+          </Menu.Item>
         </Menu.SubMenu>
       </Menu>
     </div>
@@ -53,18 +78,20 @@ PluginManager.Toolbar = (props: any) => {
 
 PluginManager.Toolbar.Item = (props) => {
   const item = useContext(ToolbarItemContext);
-  const { icon, title, ...others } = props;
+  const { selected, icon, title, ...others } = props;
+  const prefix = usePrefixCls();
+  const className = cls({ [`${prefix}-menu-item-selected`]: selected });
   if (item.pin) {
     return (
       <Tooltip title={title}>
-        <Menu.Item {...others} eventKey={item.component}>
+        <Menu.Item {...others} className={className} eventKey={item.component}>
           {icon}
         </Menu.Item>
       </Tooltip>
     );
   }
   return (
-    <Menu.Item {...others} eventKey={item.component} icon={icon}>
+    <Menu.Item {...others} className={className} eventKey={item.component} icon={icon}>
       {title}
     </Menu.Item>
   );
