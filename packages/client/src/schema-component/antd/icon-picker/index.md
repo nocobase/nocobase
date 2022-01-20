@@ -9,6 +9,6 @@ group:
 
 ## Examples
 
-### IconPicker usage
+### IconPicker
 
 <code src="./demos/demo1.tsx" />
