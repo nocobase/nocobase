@@ -112,8 +112,7 @@ export default (apiClient: APIClient) => {
         type: 'void',
         name: name,
         'x-uid': name,
-        'x-component': 'div',
-        'x-content': name,
+        'x-component': 'Page',
       },
     };
     return [200, response];

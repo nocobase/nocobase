@@ -12,3 +12,4 @@ export * from './input-number';
 export * from './password';
 export * from './radio';
 export * from './menu';
+export * from './page';
