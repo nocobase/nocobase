@@ -6,3 +6,9 @@ group:
 ---
 
 # IconPicker
+
+## Examples
+
+### IconPicker
+
+<code src="./demos/demo1.tsx" />

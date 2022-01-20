@@ -1,4 +1,5 @@
 export * from './action';
+export * from './array-table';
 export * from './block-item';
 export * from './checkbox';
 export * from './color-select';
@@ -7,13 +8,14 @@ export * from './dnd-context';
 export * from './form';
 export * from './form-item';
 export * from './grid';
+export * from './icon-picker';
 export * from './input';
 export * from './input-number';
-export * from './password';
-export * from './radio';
 export * from './menu';
 export * from './page';
-export * from './array-table';
-export * from './void-table';
+export * from './password';
+export * from './radio';
 export * from './record-picker';
 export * from './row-selection';
+export * from './void-table';
+
