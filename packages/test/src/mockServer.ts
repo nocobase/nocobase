@@ -48,6 +48,20 @@ interface Resource {
 }
 
 export class MockServer extends Application {
+  async loadAndSync() {
+    await this.load();
+    await this.db.sync({
+      force: false,
+      alter: {
+        drop: false,
+      },
+    });
+  }
+
+  async cleanDb() {
+    await this.db.sequelize.getQueryInterface().dropAllTables();
+  }
+
   agent(): SuperAgentTest & { resource: (name: string) => Resource } {
     const agent = supertest.agent(this.callback());
     const prefix = this.resourcer.options.prefix;
@@ -107,5 +121,7 @@ export function mockServer(options?: ApplicationOptions) {
     database: getConfig(options?.database),
   });
 }
+
+export function createMockServer() {}
 
 export default mockServer;

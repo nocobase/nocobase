@@ -75,6 +75,10 @@ export class ACL extends EventEmitter {
     }
   }
 
+  getAvailableActions() {
+    return this.availableActions;
+  }
+
   setAvailableStrategy(name: string, options: Omit<AvailableStrategyOptions, 'acl'>) {
     this.availableStrategy.set(
       name,
