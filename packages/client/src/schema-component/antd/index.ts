@@ -11,6 +11,7 @@ export * from './grid';
 export * from './icon-picker';
 export * from './input';
 export * from './input-number';
+export * from './markdown';
 export * from './menu';
 export * from './page';
 export * from './password';

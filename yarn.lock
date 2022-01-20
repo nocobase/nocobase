@@ -2957,6 +2957,11 @@
   resolved "https://registry.npmjs.org/@types/lodash/-/lodash-4.14.177.tgz#f70c0d19c30fab101cad46b52be60363c43c4578"
   integrity sha512-0fDwydE2clKe9MNfvXHBHF9WEahRuj+msTuQqOmAApNORFvhMYZKNGGJdCzuhheVjMps/ti0Ak/iJPACMaevvw==
 
+"@types/marked@^4.0.1":
+  version "4.0.1"
+  resolved "https://registry.npmmirror.com/@types/marked/download/@types/marked-4.0.1.tgz#d588a7bbc4d6551c5e75249bc106ffda96ae33c5"
+  integrity sha512-ZigEmCWdNUU7IjZEuQ/iaimYdDHWHfTe3kg8ORfKjyGYd9RWumPoOJRQXB0bO+XLkNwzCthW3wUIQtANaEZ1ag==
+
 "@types/mathjax@^0.0.36":
   version "0.0.36"
   resolved "https://registry.npmjs.org/@types/mathjax/-/mathjax-0.0.36.tgz#18cf766f88ac0cd4e7ee8282b1286049bb6aa682"
@@ -9713,6 +9718,11 @@ markdown-table@^2.0.0:
   integrity sha512-Ezda85ToJUBhM6WGaG6veasyym+Tbs3cMAw/ZhOPqXiYsr0jgocBV3j3nx+4lk47plLlIqjwuTm/ywVI+zjJ/A==
   dependencies:
     repeat-string "^1.0.0"
+
+marked@^4.0.10:
+  version "4.0.10"
+  resolved "https://registry.npmmirror.com/marked/download/marked-4.0.10.tgz#423e295385cc0c3a70fa495e0df68b007b879423"
+  integrity sha512-+QvuFj0nGgO970fySghXGmuw+Fd0gD2x3+MqCWLIPf5oxdv1Ka6b2q+z9RP01P/IaKPMEramy+7cNy/Lw8c3hw==
 
 mathjax-full@^3.0.0:
   version "3.2.0"
