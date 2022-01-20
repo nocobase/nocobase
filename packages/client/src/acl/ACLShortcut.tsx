@@ -1,8 +1,8 @@
-import { Menu } from 'antd';
 import React, { useState } from 'react';
 import { LockOutlined } from '@ant-design/icons';
 import { SchemaComponent, useActionVisible, VisibleContext } from '../schema-component';
 import { ISchema, useForm } from '@formily/react';
+import { PluginManager } from '../plugin-manager';
 
 const useCloseAction = () => {
   const { setVisible } = useActionVisible();
@@ -47,18 +47,17 @@ const schema: ISchema = {
   },
 };
 
-export const ACLAction = () => {
+export const ACLShortcut = () => {
   const [visible, setVisible] = useState(false);
   return (
     <VisibleContext.Provider value={[visible, setVisible]}>
-      <Menu.Item
-        eventKey={'ACLAction'}
+      <PluginManager.Toolbar.Item
+        icon={<LockOutlined />}
+        title={'角色和权限'}
         onClick={() => {
           setVisible(true);
         }}
-      >
-        <LockOutlined />
-      </Menu.Item>
+      />
       <SchemaComponent scope={{ useCloseAction }} schema={schema} />
     </VisibleContext.Provider>
   );

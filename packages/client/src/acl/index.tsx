@@ -1,3 +1,3 @@
 export * from './ACLProvider';
 export * from './RolePermissionManager';
-export * from './ACLAction';
+export * from './ACLShortcut';

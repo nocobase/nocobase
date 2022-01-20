@@ -1,8 +1,8 @@
 import React, { useRef, useState } from 'react';
-import { Layout } from 'antd';
+import { Button, Layout } from 'antd';
 import { useRoute } from '../../hooks';
 import { useHistory, useRouteMatch } from 'react-router-dom';
-import { findMenuItem, RemoteSchemaComponent, PluginManager } from '../../../';
+import { findMenuItem, RemoteSchemaComponent, PluginManager, CurrentUser } from '../../../';
 
 export function AdminLayout(props: any) {
   const route = useRoute();
@@ -44,7 +44,15 @@ export function AdminLayout(props: any) {
           />
         </div>
         <div style={{ position: 'absolute', top: 0, right: 0 }}>
-          <PluginManager.Toolbar />
+          <PluginManager.Toolbar
+            items={[
+              { component: 'DesignableSwitch', pin: true },
+              { component: 'CollectionManagerShortcut', pin: true },
+              { component: 'ACLShortcut', pin: true },
+              { component: 'SystemSettingsShortcut' },
+            ]}
+          />
+          <CurrentUser.Dropdown/>
         </div>
       </Layout.Header>
       <Layout>

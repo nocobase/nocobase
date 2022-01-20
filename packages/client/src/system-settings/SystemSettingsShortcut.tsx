@@ -1,8 +1,9 @@
 import { Menu } from 'antd';
 import React, { useState } from 'react';
-import { DatabaseOutlined } from '@ant-design/icons';
+import { SettingOutlined } from '@ant-design/icons';
 import { SchemaComponent, useActionVisible, VisibleContext } from '../schema-component';
 import { ISchema, useForm } from '@formily/react';
+import { PluginManager } from '..';
 
 const useCloseAction = () => {
   const { setVisible } = useActionVisible();
@@ -47,18 +48,18 @@ const schema: ISchema = {
   },
 };
 
-export const CollectionManagerAction = () => {
+export const SystemSettingsShortcut = () => {
   const [visible, setVisible] = useState(false);
   return (
     <VisibleContext.Provider value={[visible, setVisible]}>
-      <Menu.Item
-        eventKey={'CollectionManagerAction'}
+      <PluginManager.Toolbar.Item
+        eventKey={'ACLAction'}
         onClick={() => {
           setVisible(true);
         }}
-      >
-        <DatabaseOutlined />
-      </Menu.Item>
+        icon={<SettingOutlined />}
+        title={'系统设置'}
+      />
       <SchemaComponent scope={{ useCloseAction }} schema={schema} />
     </VisibleContext.Provider>
   );

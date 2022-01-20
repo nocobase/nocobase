@@ -13,6 +13,11 @@ import {
   SchemaComponentProvider,
   Menu,
   Action,
+  PluginManagerProvider,
+  DesignableSwitch,
+  CollectionManagerShortcut,
+  ACLShortcut,
+  SystemSettingsShortcut,
 } from '@nocobase/client';
 import { I18nextProvider } from 'react-i18next';
 import { Spin } from 'antd';
@@ -24,6 +29,10 @@ const providers = [
   [APIClientProvider, { apiClient }],
   [I18nextProvider, { i18n }],
   [AntdConfigProvider, { remoteLocale: true }],
+  [
+    PluginManagerProvider,
+    { components: { ACLShortcut, DesignableSwitch, CollectionManagerShortcut, SystemSettingsShortcut } },
+  ],
   [SchemaComponentProvider, { components: { Menu, Action } }],
   [RouteSwitchProvider, { components: { AuthLayout, AdminLayout } }],
 ];
