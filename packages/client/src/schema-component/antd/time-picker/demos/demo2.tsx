@@ -1,5 +1,5 @@
 /**
- * title: TimePicker
+ * title: TimePicker.RangePicker
  */
  import { FormItem } from '@formily/antd';
 import { SchemaComponent, SchemaComponentProvider, TimePicker } from '@nocobase/client';
