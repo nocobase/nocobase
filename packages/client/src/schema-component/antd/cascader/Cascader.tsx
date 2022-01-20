@@ -5,42 +5,8 @@ import { toArr } from '@formily/shared';
 import { Cascader as AntdCascader } from 'antd';
 import { isBoolean, omit } from 'lodash';
 import React from 'react';
-
-const defaultFieldNames = {
-  label: 'label',
-  value: 'value',
-  children: 'children',
-};
-
-const CascaderDisplay = (props) => {
-  const { fieldNames = defaultFieldNames } = props;
-  const values = toArr(props.value);
-  const len = values.length;
-  const field = useField<ArrayField>();
-  let dataSource = field.dataSource;
-  const data = [];
-  for (const item of values) {
-    if (typeof item === 'object') {
-      data.push(item);
-    } else {
-      const curr = dataSource?.find((v) => v[fieldNames.value] === item);
-      dataSource = curr?.[fieldNames.children] || [];
-      data.push(curr || { label: item, value: item });
-    }
-  }
-  return (
-    <div>
-      {data.map((item, index) => {
-        return (
-          <span key={index}>
-            {typeof item === 'object' ? item[fieldNames.label] : item}
-            {len > index + 1 && ' / '}
-          </span>
-        );
-      })}
-    </div>
-  );
-};
+import { defaultFieldNames } from './defaultFieldNames';
+import { ReadPretty } from './ReadPretty';
 
 export const Cascader = connect(
   (props: any) => {
@@ -121,7 +87,7 @@ export const Cascader = connect(
       };
     },
   ),
-  mapReadPretty(CascaderDisplay),
+  mapReadPretty(ReadPretty),
 );
 
 export default Cascader;
