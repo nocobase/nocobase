@@ -2,18 +2,20 @@ import React, { useRef, useState } from 'react';
 import { Button, Layout } from 'antd';
 import { useRoute } from '../../hooks';
 import { useHistory, useRouteMatch } from 'react-router-dom';
-import { findMenuItem, RemoteSchemaComponent, PluginManager, CurrentUser } from '../../../';
+import { findMenuItem, RemoteSchemaComponent, PluginManager, CurrentUser, useDocumentTitle } from '../../../';
 
 export function AdminLayout(props: any) {
   const route = useRoute();
   const history = useHistory();
   const match = useRouteMatch<any>();
+  const { setTitle } = useDocumentTitle();
   const sideMenuRef = useRef();
   const defaultSelectedUid = match.params.name;
   const [schema, setSchema] = useState({});
   const onSelect = ({ item }) => {
     const schema = item.props.schema;
     setSchema(schema);
+    setTitle(schema.title);
     history.push(`/admin/${schema['x-uid']}`);
   };
   const [hidden, setHidden] = useState(false);
@@ -38,6 +40,7 @@ export function AdminLayout(props: any) {
               const s = findMenuItem(data?.data);
               if (s) {
                 setSchema(s);
+                setTitle(s.title);
                 history.push(`/admin/${s['x-uid']}`);
               }
             }}
