@@ -1,10 +1,10 @@
 /**
  * title: 勾选
  */
-import React from 'react';
-import { VoidTable, SchemaComponentProvider, SchemaComponent } from '@nocobase/client';
 import { FormItem } from '@formily/antd';
 import { ISchema } from '@formily/react';
+import { Input, SchemaComponent, SchemaComponentProvider, VoidTable } from '@nocobase/client';
+import React from 'react';
 
 const schema: ISchema = {
   type: 'object',
@@ -25,28 +25,27 @@ const schema: ISchema = {
           { id: 3, name: 'Name3' },
         ],
       },
-      'x-reactions': {
-        target: 'read',
-        fulfill: {
-          state: {
-            value: '{{$self.value}}',
+      properties: {
+        column1: {
+          type: 'void',
+          title: 'Name',
+          'x-component': 'VoidTable.Column',
+          properties: {
+            name: {
+              type: 'string',
+              'x-component': 'Input',
+              'x-read-pretty': true,
+            },
           },
         },
       },
-    },
-    read: {
-      type: 'array',
-      title: `阅读模式`,
-      'x-read-pretty': true,
-      'x-decorator': 'FormItem',
-      'x-component': 'VoidTable',
     },
   },
 };
 
 export default () => {
   return (
-    <SchemaComponentProvider components={{ VoidTable, FormItem }}>
+    <SchemaComponentProvider components={{ Input, VoidTable, FormItem }}>
       <SchemaComponent schema={schema} />
     </SchemaComponentProvider>
   );

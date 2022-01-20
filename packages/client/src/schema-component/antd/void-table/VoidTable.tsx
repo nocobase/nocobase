@@ -1,11 +1,16 @@
 import { createForm } from '@formily/core';
 import { FieldContext, FormContext, observer, SchemaContext, useField, useFieldSchema } from '@formily/react';
+import { TableProps } from 'antd';
 import React, { useMemo } from 'react';
 import { useAttach } from '../../hooks';
 import { ArrayTable } from '../array-table';
-import { TableProps } from 'antd';
 
-export const VoidTable: React.FC<TableProps<any>> = observer((props) => {
+type VoidTableType = React.FC<TableProps<any>> & {
+  Column?: React.FC<any>;
+  mixin?: (T: any) => void;
+};
+
+export const VoidTable: VoidTableType = observer((props) => {
   const field = useField();
   const fieldSchema = useFieldSchema();
   const form = useMemo(
@@ -30,3 +35,7 @@ export const VoidTable: React.FC<TableProps<any>> = observer((props) => {
     </div>
   );
 });
+
+VoidTable.mixin = ArrayTable.mixin;
+
+ArrayTable.mixin(VoidTable)

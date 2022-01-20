@@ -1,7 +1,7 @@
-import React from 'react';
 import { observer } from '@formily/react';
-import { VoidTable } from '../void-table';
 import { TableProps } from 'antd';
+import React from 'react';
+import { VoidTable } from '../void-table';
 
 export const RowSelection: React.FC<TableProps<any> & { value?: any; onChange?: any }> = observer((props) => {
   const rowSelection: any = {
@@ -14,3 +14,5 @@ export const RowSelection: React.FC<TableProps<any> & { value?: any; onChange?: 
   };
   return <VoidTable {...props} rowSelection={rowSelection} />;
 });
+
+VoidTable.mixin(RowSelection);

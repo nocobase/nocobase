@@ -1,29 +1,10 @@
+import { LoadingOutlined } from '@ant-design/icons';
+import { Field } from '@formily/core';
 import { connect, mapProps, mapReadPretty, RecursionField, useField, useFieldSchema } from '@formily/react';
+import { toArr } from '@formily/shared';
 import { Drawer, Select, Tag } from 'antd';
 import React, { createContext, useContext, useState } from 'react';
-import { LoadingOutlined } from '@ant-design/icons';
-import { toArr } from '@formily/shared';
-import { Field } from '@formily/core';
 import { VisibleContext } from '../action';
-
-const AddNew: React.FC = (props) => {
-  const [visible, setVisible] = useState(false);
-  return (
-    <>
-      <Tag
-        style={{ borderStyle: 'dashed', backgroundColor: 'transparent', cursor: 'pointer' }}
-        onClick={() => {
-          setVisible(true);
-        }}
-      >
-        {props.children}
-      </Tag>
-      <Drawer visible={visible} onClose={() => setVisible(false)} destroyOnClose>
-        aa
-      </Drawer>
-    </>
-  );
-};
 
 const InputRecordPicker: React.FC = (props) => {
   const [visible, setVisible] = useState(false);
@@ -41,7 +22,7 @@ const InputRecordPicker: React.FC = (props) => {
           onlyRenderProperties
           schema={fieldSchema}
           filterProperties={(s) => {
-            return s['x-component'] === 'RecordPicker.RowSelection';
+            return s['x-component'] === 'RowSelection';
           }}
         ></RecursionField>
       </Drawer>
@@ -100,8 +81,4 @@ RecordPicker.SelectedItem = () => {
       </VisibleContext.Provider>
     </>
   );
-};
-
-RecordPicker.RowSelection = () => {
-  return <div>RowSelection</div>;
 };

@@ -20,6 +20,7 @@ import {
   SystemSettingsShortcut,
   DocumentTitleProvider,
   Page,
+  Input,
 } from '@nocobase/client';
 import { I18nextProvider } from 'react-i18next';
 import { Spin } from 'antd';
@@ -35,7 +36,7 @@ const providers = [
     PluginManagerProvider,
     { components: { ACLShortcut, DesignableSwitch, CollectionManagerShortcut, SystemSettingsShortcut } },
   ],
-  [SchemaComponentProvider, { components: { Page, Menu, Action } }],
+  [SchemaComponentProvider, { components: { Input, Page, Menu, Action } }],
   [DocumentTitleProvider, { addonAfter: 'NocoBase' }],
   [RouteSwitchProvider, { components: { AuthLayout, AdminLayout } }],
 ];

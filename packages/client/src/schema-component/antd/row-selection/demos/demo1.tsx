@@ -1,10 +1,10 @@
 /**
  * title: 勾选
  */
-import React from 'react';
-import { ISchema } from '@formily/react';
 import { FormItem } from '@formily/antd';
-import { RowSelection, SchemaComponentProvider, SchemaComponent } from '@nocobase/client';
+import { ISchema } from '@formily/react';
+import { Input, RowSelection, SchemaComponent, SchemaComponentProvider } from '@nocobase/client';
+import React from 'react';
 
 const schema: ISchema = {
   type: 'object',
@@ -34,6 +34,20 @@ const schema: ISchema = {
           },
         },
       },
+      properties: {
+        column1: {
+          type: 'void',
+          title: 'Name',
+          'x-component': 'RowSelection.Column',
+          properties: {
+            name: {
+              type: 'string',
+              'x-component': 'Input',
+              'x-read-pretty': true,
+            },
+          },
+        },
+      },
     },
     read: {
       type: 'array',
@@ -47,7 +61,7 @@ const schema: ISchema = {
 
 export default () => {
   return (
-    <SchemaComponentProvider components={{ RowSelection, FormItem }}>
+    <SchemaComponentProvider components={{ Input, RowSelection, FormItem }}>
       <SchemaComponent schema={schema} />
     </SchemaComponentProvider>
   );

@@ -13,3 +13,7 @@ export * from './password';
 export * from './radio';
 export * from './menu';
 export * from './page';
+export * from './array-table';
+export * from './void-table';
+export * from './record-picker';
+export * from './row-selection';
