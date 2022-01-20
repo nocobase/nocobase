@@ -9,6 +9,10 @@ group:
 
 ## Examples
 
-### TimePicker usage
+### TimePicker
 
 <code src="./demos/demo1.tsx" />
+
+### Time Range Picker
+
+<code src="./demos/demo2.tsx" />

@@ -19,7 +19,7 @@ const mapTimeFormat = function () {
       value: momentable(props.value, format),
       onChange: (value: moment.Moment | moment.Moment[]) => {
         if (onChange) {
-          onChange(formatMomentValue(value, format));
+          onChange(formatMomentValue(value, format) || null);
         }
       },
     };
