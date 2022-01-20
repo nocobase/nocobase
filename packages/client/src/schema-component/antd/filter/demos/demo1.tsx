@@ -9,6 +9,20 @@ const schema = {
   name: 'filter',
   type: 'object',
   'x-component': 'Filter',
+  default: {
+    and: [
+      {
+        field1: {
+          eq: 'aa',
+        },
+      },
+      {
+        field1: {
+          eq: 'bbb',
+        },
+      },
+    ],
+  },
   properties: {
     column1: {
       type: 'void',
@@ -40,8 +54,8 @@ const schema = {
       },
       properties: {
         field2: {
-          type: 'string',
-          'x-component': 'Input',
+          type: 'number',
+          'x-component': 'InputNumber',
         },
       },
     },
