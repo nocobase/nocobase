@@ -26,6 +26,7 @@
     "ahooks": "^3.0.5",
     "axios": "^0.24.0",
     "i18next": "^21.6.0",
+    "marked": "^4.0.10",
     "react-helmet": "^6.1.0",
     "react-i18next": "^11.15.1"
   },
@@ -44,6 +45,7 @@
     "build:esm": "tsc --project tsconfig.build.json --module es2015 --outDir esm"
   },
   "devDependencies": {
+    "@types/marked": "^4.0.1",
     "axios-mock-adapter": "^1.20.0"
   }
 }
