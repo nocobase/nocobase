@@ -15,3 +15,4 @@ export * from './page';
 export * from './password';
 export * from './radio';
 export * from './time-picker';
+export * from './upload';
