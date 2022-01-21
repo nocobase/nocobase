@@ -17,5 +17,18 @@ export default class PluginACL extends Plugin {
 
     this.app.resourcer.define(availableActionResource);
     this.app.resourcer.define(roleCollectionsResource);
+
+    this.app.db.on('roles.afterSave', (model) => {
+      const roleName = model.get('name');
+      let role = acl.getRole(roleName);
+
+      if (!role) {
+        role = acl.define({
+          role: model.get('name'),
+        });
+      }
+
+      role.setStrategy(model.get('strategy'));
+    });
   }
 }

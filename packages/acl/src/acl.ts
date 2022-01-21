@@ -109,6 +109,10 @@ export class ACL extends EventEmitter {
       }
     }
 
+    if (!aclRole.strategy) {
+      return null;
+    }
+
     const roleStrategy = lodash.isString(aclRole.strategy)
       ? this.availableStrategy.get(aclRole.strategy)
       : new ACLAvailableStrategy(this, aclRole.strategy);
@@ -138,5 +142,13 @@ export class ACL extends EventEmitter {
 
   public resolveActionAlias(action: string) {
     return this.actionAlias.get(action) ? this.actionAlias.get(action) : action;
+  }
+
+  middleware() {
+    const aclInstance = this;
+    return async function ACLMiddleware(ctx, next) {
+      ctx.can = this.can.bind(aclInstance);
+      await next();
+    };
   }
 }
