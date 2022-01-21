@@ -58,6 +58,7 @@ const schema = {
       'x-decorator': 'FormItem',
       'x-component': 'Upload.Attachment',
       'x-component-props': {
+        action: 'attachments:upload',
         multiple: true,
       },
       'x-reactions': [

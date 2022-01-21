@@ -192,7 +192,7 @@ export function useUploadProps<T extends IUploadProps = UploadProps>({ serviceEr
       }
       formData.append(filename, file);
       api.axios
-        .post('attachments:upload', formData, {
+        .post(action, formData, {
           withCredentials,
           headers,
           onUploadProgress: ({ total, loaded }) => {

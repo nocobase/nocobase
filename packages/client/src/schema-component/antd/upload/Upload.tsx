@@ -125,7 +125,6 @@ Upload.Attachment = connect((props: UploadProps) => {
               multiple={multiple}
               listType={'picture-card'}
               fileList={fileList}
-              action={`${process.env.API_BASE_URL}attachments:upload`}
               onChange={(info) => {
                 setSync(false);
                 if (multiple) {
