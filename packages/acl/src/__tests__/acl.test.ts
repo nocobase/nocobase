@@ -7,6 +7,36 @@ describe('acl', () => {
     acl = new ACL();
   });
 
+  it('should define role with predicate', () => {
+    acl.setAvailableAction('edit', {
+      type: 'old-data',
+    });
+
+    acl.setAvailableAction('create', {
+      type: 'new-data',
+    });
+
+    acl.define({
+      role: 'admin',
+      strategy: {
+        actions: ['edit:own', 'create'],
+      },
+    });
+
+    const canResult = acl.can({ role: 'admin', resource: 'posts', action: 'edit' });
+
+    expect(canResult).toMatchObject({
+      role: 'admin',
+      resource: 'posts',
+      action: 'edit',
+      params: {
+        filter: {
+          createdById: '{{ ctx.state.currentUser.id }}',
+        },
+      },
+    });
+  });
+
   it('should allow all', () => {
     acl.setAvailableAction('create', {
       type: 'new-data',

@@ -3,7 +3,6 @@ import { ACL } from './acl';
 type StrategyValue = false | '*' | string | string[];
 
 export interface AvailableStrategyOptions {
-  acl: ACL;
   displayName?: string;
   actions: false | string | string[];
   resource?: '*';
@@ -25,18 +24,56 @@ export function strategyValueMatched(strategy: StrategyValue, value: string) {
   return false;
 }
 
-export class ACLAvailableStrategy {
-  options: AvailableStrategyOptions;
+const predicate = {
+  own: {
+    filter: {
+      createdById: '{{ ctx.state.currentUser.id }}',
+    },
+  },
+  all: {},
+};
 
-  constructor(options: AvailableStrategyOptions) {
+export class ACLAvailableStrategy {
+  acl: ACL;
+  options: AvailableStrategyOptions;
+  actionsAsObject: { [key: string]: string };
+
+  constructor(acl: ACL, options: AvailableStrategyOptions) {
+    this.acl = acl;
     this.options = options;
+
+    let actions = this.options.actions;
+    if (lodash.isString(actions) && actions != '*') {
+      actions = [actions];
+    }
+
+    if (lodash.isArray(actions)) {
+      this.actionsAsObject = actions.reduce((carry, action) => {
+        const [actionName, predicate] = action.split(':');
+        carry[actionName] = predicate;
+        return carry;
+      }, {});
+    }
   }
 
   matchAction(actionName: string) {
-    return strategyValueMatched(this.options.actions, actionName);
+    if (this.options.actions == '*') {
+      return true;
+    }
+
+    if (this.actionsAsObject?.hasOwnProperty(actionName)) {
+      const predicateName = this.actionsAsObject[actionName];
+      if (predicateName) {
+        return predicate[predicateName];
+      }
+
+      return true;
+    }
+
+    return false;
   }
 
   allow(resourceName: string, actionName: string) {
-    return this.matchAction(this.options.acl.resolveActionAlias(actionName));
+    return this.matchAction(this.acl.resolveActionAlias(actionName));
   }
 }

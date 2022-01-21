@@ -18,7 +18,7 @@ interface CanResult {
 
 export interface DefineOptions {
   role: string;
-  strategy?: string | AvailableStrategyOptions;
+  strategy?: string | Omit<AvailableStrategyOptions, 'acl'>;
   actions?: {
     [key: string]: RoleActionParams;
   };
@@ -80,13 +80,7 @@ export class ACL extends EventEmitter {
   }
 
   setAvailableStrategy(name: string, options: Omit<AvailableStrategyOptions, 'acl'>) {
-    this.availableStrategy.set(
-      name,
-      new ACLAvailableStrategy({
-        ...options,
-        acl: this,
-      }),
-    );
+    this.availableStrategy.set(name, new ACLAvailableStrategy(this, options));
   }
 
   beforeGrantAction(path: string, listener?: Listener) {
@@ -117,14 +111,22 @@ export class ACL extends EventEmitter {
 
     const roleStrategy = lodash.isString(aclRole.strategy)
       ? this.availableStrategy.get(aclRole.strategy)
-      : new ACLAvailableStrategy(aclRole.strategy);
+      : new ACLAvailableStrategy(this, aclRole.strategy);
 
     if (!roleStrategy) {
       return null;
     }
 
-    if (roleStrategy.allow(resource, this.resolveActionAlias(action))) {
-      return { role, resource, action };
+    const roleStrategyParams = roleStrategy.allow(resource, this.resolveActionAlias(action));
+
+    if (roleStrategyParams) {
+      const result = { role, resource, action };
+
+      if (lodash.isPlainObject(roleStrategyParams)) {
+        result['params'] = roleStrategyParams;
+      }
+
+      return result;
     }
 
     return null;
