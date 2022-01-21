@@ -208,4 +208,114 @@ describe('acl', () => {
       }),
     ).toBeNull();
   });
+
+  it('should revoke actions when not using actions config', async () => {
+    await app
+      .agent()
+      .resource('roles')
+      .create({
+        values: {
+          name: 'admin',
+          title: 'Admin User',
+          allowConfigure: true,
+        },
+      });
+
+    const role = await db.getRepository('roles').findOne({
+      filter: {
+        name: 'admin',
+      },
+    });
+
+    await db.getRepository('collections').create({
+      values: {
+        name: 'posts',
+        title: 'posts',
+      },
+    });
+
+    await app
+      .agent()
+      .resource('roles.resources')
+      .create({
+        associatedIndex: role.get('name') as string,
+        values: {
+          name: 'posts',
+          usingActionsConfig: true,
+          actions: [
+            {
+              name: 'create',
+            },
+          ],
+        },
+      });
+
+    expect(
+      acl.can({
+        role: 'admin',
+        resource: 'posts',
+        action: 'create',
+      }),
+    ).toMatchObject({
+      role: 'admin',
+      resource: 'posts',
+      action: 'create',
+    });
+
+    await app
+      .agent()
+      .resource('roles.resources')
+      .update({
+        associatedIndex: role.get('name') as string,
+        resourceIndex: (
+          await db.getRepository('rolesResources').findOne({
+            filter: {
+              name: 'posts',
+              roleName: 'admin',
+            },
+          })
+        ).get('id') as string,
+        values: {
+          usingActionsConfig: false,
+        },
+      });
+
+    expect(
+      acl.can({
+        role: 'admin',
+        resource: 'posts',
+        action: 'create',
+      }),
+    ).toBeNull();
+
+    await app
+      .agent()
+      .resource('roles.resources')
+      .update({
+        associatedIndex: role.get('name') as string,
+        resourceIndex: (
+          await db.getRepository('rolesResources').findOne({
+            filter: {
+              name: 'posts',
+              roleName: 'admin',
+            },
+          })
+        ).get('id') as string,
+        values: {
+          usingActionsConfig: true,
+        },
+      });
+
+    expect(
+      acl.can({
+        role: 'admin',
+        resource: 'posts',
+        action: 'create',
+      }),
+    ).toMatchObject({
+      role: 'admin',
+      resource: 'posts',
+      action: 'create',
+    });
+  });
 });

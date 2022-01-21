@@ -5,6 +5,26 @@ import path from 'path';
 import { availableActionResource } from './actions/available-actions';
 import { roleCollectionsResource } from './actions/role-collections';
 
+async function actionModelToParams(actionModel, resourceName) {
+  const fields = actionModel.get('fields');
+  const actionPath = `${resourceName}:${actionModel.get('name')}`;
+
+  const actionParams = {
+    fields,
+  };
+
+  const scope = await actionModel.getScope();
+
+  if (scope) {
+    actionParams['filter'] = scope.get('scope');
+  }
+
+  return {
+    actionPath,
+    actionParams,
+  };
+}
+
 export default class PluginACL extends Plugin {
   acl: ACL;
 
@@ -31,7 +51,22 @@ export default class PluginACL extends Plugin {
       role.setStrategy(model.get('strategy'));
     });
 
-    this.app.db.on('rolesResources.afterSave', async (model, options) => {});
+    this.app.db.on('rolesResources.afterSave', async (model, options) => {
+      const roleName = model.get('roleName');
+      const role = acl.getRole(roleName);
+
+      if (model.usingActionsConfig === true && model._previousDataValues.usingActionsConfig === false) {
+        const actions = await model.getActions();
+        for (const action of actions) {
+          const { actionPath, actionParams } = await actionModelToParams(action, model.get('name'));
+          role.grantAction(actionPath, actionParams);
+        }
+      }
+
+      if (model._previousDataValues.usingActionsConfig === true && model.usingActionsConfig === false) {
+        role.revokeResource(model.get('name'));
+      }
+    });
 
     this.app.db.on('rolesResourcesActions.beforeBulkUpdate', async (options) => {
       options.individualHooks = true;
@@ -54,20 +89,8 @@ export default class PluginACL extends Plugin {
 
       const roleName = resource.get('roleName');
       const role = acl.getRole(roleName);
-      const fields = model.get('fields');
 
-      const actionPath = `${resource.get('name')}:${model.get('name')}`;
-
-      const actionParams = {
-        fields,
-      };
-
-      const scope = await model.getScope();
-
-      if (scope) {
-        actionParams['filter'] = scope.get('scope');
-      }
-
+      const { actionPath, actionParams } = await actionModelToParams(model, resource.get('name'));
       role.grantAction(actionPath, actionParams);
     });
   }
