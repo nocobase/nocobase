@@ -32,6 +32,7 @@ export class APIClient {
 
   request<T = any, R = AxiosResponse<T>, D = any>(config: AxiosRequestConfig<D> | ResourceActionOptions): Promise<R> {
     const { resource, resourceOf, action, params } = config as any;
+    console.log('config', config);
     if (resource) {
       return this.resource(resource, resourceOf)[action](params);
     }
@@ -51,8 +52,11 @@ export class APIClient {
           config['method'] = 'post';
         }
         return (params?: ActionParams) => {
-          config[config.method === 'get' ? 'params' : 'data'] = { __params__: params };
-          console.log({ config });
+          const { values, ...others } = params || {};
+          config['params'] = others;
+          if (config.method !== 'get') {
+            config['data'] = values || {};
+          }
           return this.request(config);
         };
       },
