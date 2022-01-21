@@ -1,9 +1,11 @@
+import { useContext } from 'react';
 import { compile } from '@formily/json-schema/lib/compiler';
-import { useTranslation } from 'react-i18next';
+import { SchemaExpressionScopeContext, SchemaOptionsContext } from '@formily/react';
 
 export const useCompile = () => {
-  const { t } = useTranslation();
+  const options = useContext(SchemaOptionsContext);
+  const scope = useContext(SchemaExpressionScopeContext);
   return (source: any) => {
-    return compile(source, { t });
+    return compile(source, { ...options.scope, ...scope });
   };
 };

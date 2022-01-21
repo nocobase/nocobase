@@ -34,6 +34,7 @@ mock.onGet('/china_regions').reply(200, {
 
 const useAsyncDataSource = (api: APIClient) => (field) => {
   field.loading = true;
+  console.log('useAsyncDataSource');
   api.request({ url: 'china_regions' }).then(
     action.bound((res) => {
       field.dataSource = res?.data?.data || [];

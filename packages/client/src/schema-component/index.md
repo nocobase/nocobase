@@ -17,6 +17,14 @@ group:
 
 ## Hooks
 
+### useSchemaComponentContext()
+
+获取 SchemaComponent 的上下文
+
+```ts
+const { refresh, reset } = useSchemaComponentContext();
+```
+
 ### useDesignable()
 
 获取当前 schema 节点设计器的 API

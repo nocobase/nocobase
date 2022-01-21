@@ -21,6 +21,7 @@ export const Cascader = connect(
       useLoadData = useDefLoadData,
       changeOnSelectLast,
       changeOnSelect,
+      maxLevel,
       ...others
     } = props;
     const loadData = useLoadData(props);
