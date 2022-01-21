@@ -2,7 +2,14 @@ import { FormItem } from '@formily/antd';
 import { ArrayField } from '@formily/core';
 import { useField } from '@formily/react';
 import { action } from '@formily/reactive';
-import { APIClient, APIClientProvider, Cascader, SchemaComponent, SchemaComponentProvider } from '@nocobase/client';
+import {
+  APIClient,
+  APIClientProvider,
+  Cascader,
+  SchemaComponent,
+  SchemaComponentProvider,
+  useAPIClient
+} from '@nocobase/client';
 import MockAdapter from 'axios-mock-adapter';
 import React from 'react';
 
@@ -35,29 +42,28 @@ const useAsyncDataSource = (api: APIClient) => (field) => {
   );
 };
 
-const useLoadData = (api: APIClient) => {
-  return () => {
-    // hook 写在这里
-    const field = useField<ArrayField>();
-    return (selectedOptions) => {
-      const targetOption = selectedOptions[selectedOptions.length - 1];
-      targetOption.loading = true;
-      // load options lazily
-      setTimeout(() => {
-        targetOption.loading = false;
-        targetOption.children = [
-          {
-            label: `${targetOption.label} Dynamic 1`,
-            value: 'dynamic1',
-          },
-          {
-            label: `${targetOption.label} Dynamic 2`,
-            value: 'dynamic2',
-          },
-        ];
-        field.dataSource = [...field.dataSource];
-      }, 500);
-    };
+const useLoadData = () => {
+  // hook 写在这里
+  const api = useAPIClient();
+  const field = useField<ArrayField>();
+  return (selectedOptions) => {
+    const targetOption = selectedOptions[selectedOptions.length - 1];
+    targetOption.loading = true;
+    // load options lazily
+    setTimeout(() => {
+      targetOption.loading = false;
+      targetOption.children = [
+        {
+          label: `${targetOption.label} Dynamic 1`,
+          value: 'dynamic1',
+        },
+        {
+          label: `${targetOption.label} Dynamic 2`,
+          value: 'dynamic2',
+        },
+      ];
+      field.dataSource = [...field.dataSource];
+    }, 500);
   };
 };
 
@@ -73,7 +79,7 @@ const schema = {
         changeOnSelectLast: false,
         labelInValue: true,
         maxLevel: 3,
-        useLoadData: '{{useLoadData(apiClient)}}',
+        useLoadData: '{{useLoadData}}',
         // fieldNames: {
         //   label: 'name',
         //   value: 'code',
