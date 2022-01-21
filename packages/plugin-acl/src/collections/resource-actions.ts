@@ -4,6 +4,12 @@ export default {
   name: 'rolesResourcesActions',
   fields: [
     {
+      type: 'belongsTo',
+      name: 'resource',
+      foreignKey: 'rolesResourceId',
+      target: 'rolesResources',
+    },
+    {
       type: 'string',
       name: 'name',
     },

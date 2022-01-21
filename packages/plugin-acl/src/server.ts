@@ -30,5 +30,24 @@ export default class PluginACL extends Plugin {
 
       role.setStrategy(model.get('strategy'));
     });
+
+    this.app.db.on('rolesResources.afterSave', async (model, options) => {});
+
+    this.app.db.on('rolesResourcesActions.afterSave', async (model) => {
+      const resource = await model.getResource();
+      const roleName = resource.get('roleName');
+      const role = acl.getRole(roleName);
+      const fields = model.get('fields');
+
+      const actionParams = {
+        fields,
+      };
+      const scope = await model.getScope();
+      if (scope) {
+        actionParams['filter'] = scope.get('scope');
+      }
+
+      role.grantAction(`${resource.get('name')}:${model.get('name')}`, actionParams);
+    });
   }
 }
