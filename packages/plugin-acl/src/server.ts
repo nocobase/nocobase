@@ -33,8 +33,25 @@ export default class PluginACL extends Plugin {
 
     this.app.db.on('rolesResources.afterSave', async (model, options) => {});
 
+    this.app.db.on('rolesResourcesActions.beforeBulkUpdate', async (options) => {
+      options.individualHooks = true;
+    });
+
     this.app.db.on('rolesResourcesActions.afterSave', async (model) => {
       const resource = await model.getResource();
+      if (!resource) {
+        const previousResource = await this.app.db.getRepository('rolesResources').findOne({
+          filter: {
+            id: model._previousDataValues.rolesResourceId,
+          },
+        });
+
+        const roleName = previousResource.get('roleName') as string;
+        const role = acl.getRole(roleName);
+        role.revokeAction(`${previousResource.get('name')}:${model.get('name')}`);
+        return;
+      }
+
       const roleName = resource.get('roleName');
       const role = acl.getRole(roleName);
       const fields = model.get('fields');
