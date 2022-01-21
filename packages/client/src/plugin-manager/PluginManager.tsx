@@ -43,11 +43,11 @@ PluginManager.Toolbar = (props: ToolbarProps) => {
       <Menu style={{ width: '100%' }} selectable={false} mode={'horizontal'} theme={'dark'}>
         {items
           .filter((item) => item.pin)
-          .map((item) => {
+          .map((item, index) => {
             const Action = get(components, item.component);
             return (
               Action && (
-                <ToolbarItemContext.Provider value={item}>
+                <ToolbarItemContext.Provider key={index} value={item}>
                   <Action />
                 </ToolbarItemContext.Provider>
               )
@@ -56,18 +56,18 @@ PluginManager.Toolbar = (props: ToolbarProps) => {
         <Menu.SubMenu key={'more'} title={<MoreOutlined />}>
           {items
             .filter((item) => !item.pin)
-            .map((item) => {
+            .map((item, index) => {
               const Action = get(components, item.component);
               return (
                 Action && (
-                  <ToolbarItemContext.Provider value={item}>
+                  <ToolbarItemContext.Provider key={index} value={item}>
                     <Action />
                   </ToolbarItemContext.Provider>
                 )
               );
             })}
-          <Menu.Divider></Menu.Divider>
-          <Menu.Item disabled icon={<SettingOutlined />}>
+          <Menu.Divider key={'divider'}></Menu.Divider>
+          <Menu.Item  key={'plugins'} disabled icon={<SettingOutlined />}>
             管理插件
           </Menu.Item>
         </Menu.SubMenu>
