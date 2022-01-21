@@ -1,4 +1,6 @@
 import { FormItem } from '@formily/antd';
+import { ArrayField } from '@formily/core';
+import { useField } from '@formily/react';
 import { action } from '@formily/reactive';
 import { APIClient, APIClientProvider, Cascader, SchemaComponent, SchemaComponentProvider } from '@nocobase/client';
 import MockAdapter from 'axios-mock-adapter';
@@ -33,26 +35,31 @@ const useAsyncDataSource = (api: APIClient) => (field) => {
   );
 };
 
-const loadData = (api: APIClient) => (selectedOptions, field) => {
-  const targetOption = selectedOptions[selectedOptions.length - 1];
-  targetOption.loading = true;
-
-  // load options lazily
-  setTimeout(() => {
-    targetOption.loading = false;
-    targetOption.children = [
-      {
-        label: `${targetOption.label} Dynamic 1`,
-        value: 'dynamic1',
-      },
-      {
-        label: `${targetOption.label} Dynamic 2`,
-        value: 'dynamic2',
-      },
-    ];
-    field.dataSource = [...field.dataSource];
-  }, 500);
-}
+const useLoadData = (api: APIClient) => {
+  return () => {
+    // hook 写在这里
+    const field = useField<ArrayField>();
+    return (selectedOptions) => {
+      const targetOption = selectedOptions[selectedOptions.length - 1];
+      targetOption.loading = true;
+      // load options lazily
+      setTimeout(() => {
+        targetOption.loading = false;
+        targetOption.children = [
+          {
+            label: `${targetOption.label} Dynamic 1`,
+            value: 'dynamic1',
+          },
+          {
+            label: `${targetOption.label} Dynamic 2`,
+            value: 'dynamic2',
+          },
+        ];
+        field.dataSource = [...field.dataSource];
+      }, 500);
+    };
+  };
+};
 
 const schema = {
   type: 'object',
@@ -60,14 +67,13 @@ const schema = {
     input: {
       type: 'string',
       title: `编辑模式`,
-      name: 'name1',
       'x-decorator': 'FormItem',
       'x-component': 'Cascader',
       'x-component-props': {
         changeOnSelectLast: false,
         labelInValue: true,
         maxLevel: 3,
-        loadData: '{{loadData(apiClient)}}',
+        useLoadData: '{{useLoadData(apiClient)}}',
         // fieldNames: {
         //   label: 'name',
         //   value: 'code',
@@ -89,7 +95,6 @@ const schema = {
     read: {
       type: 'string',
       title: `阅读模式`,
-      name: 'name2',
       'x-read-pretty': true,
       'x-decorator': 'FormItem',
       'x-component': 'Cascader',
@@ -111,7 +116,7 @@ export default () => {
   return (
     <APIClientProvider apiClient={apiClient}>
       <SchemaComponentProvider components={{ Cascader, FormItem }}>
-        <SchemaComponent scope={{ apiClient, loadData, useAsyncDataSource }} schema={schema} />
+        <SchemaComponent scope={{ apiClient, useLoadData, useAsyncDataSource }} schema={schema} />
       </SchemaComponentProvider>
     </APIClientProvider>
   );

@@ -8,19 +8,22 @@ import React from 'react';
 import { defaultFieldNames } from './defaultFieldNames';
 import { ReadPretty } from './ReadPretty';
 
+const useDefLoadData = (props: any) => props.loadData;
+
 export const Cascader = connect(
   (props: any) => {
     const field = useField<ArrayField>();
     const {
       value,
       onChange,
-      loadData,
       labelInValue,
       fieldNames = defaultFieldNames,
+      useLoadData = useDefLoadData,
       changeOnSelectLast,
       changeOnSelect,
       ...others
     } = props;
+    const loadData = useLoadData(props);
     // 兼容值为 object[] 的情况
     const toValue = () => {
       return toArr(value).map((item) => {
@@ -50,17 +53,18 @@ export const Cascader = connect(
         return <span key={option[fieldNames.value]}>{option[fieldNames.label]} / </span>;
       });
     };
-    if (loadData) {
-      Object.assign(others, {
-        loadData: (selectedOptions: any[]) => {
-          // 将 field 传给 loadData
-          loadData(selectedOptions, field);
-        },
-      });
-    }
+    // if (loadData) {
+    //   Object.assign(others, {
+    //     loadData: (selectedOptions: any[]) => {
+    //       // 将 field 传给 loadData
+    //       loadData(selectedOptions, field);
+    //     },
+    //   });
+    // }
     return (
       <AntdCascader
         {...others}
+        loadData={loadData}
         changeOnSelect={isBoolean(changeOnSelectLast) ? !changeOnSelectLast : changeOnSelect}
         value={toValue()}
         fieldNames={fieldNames}
@@ -71,7 +75,6 @@ export const Cascader = connect(
           } else {
             onChange(value);
           }
-          console.log({ value, selectedOptions });
         }}
       />
     );
