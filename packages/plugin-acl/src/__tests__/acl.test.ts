@@ -166,5 +166,46 @@ describe('acl', () => {
         fields: ['title', 'age'],
       },
     });
+
+    // revoke action
+    const response = await app
+      .agent()
+      .resource('roles.resources')
+      .list({
+        associatedIndex: role.get('name') as string,
+        appends: ['actions'],
+      });
+
+    const actions = response.body.data[0].actions;
+    const resourceId = response.body.data[0].id;
+
+    const viewActionId = actions.find((action) => action.name === 'view').id;
+
+    await app
+      .agent()
+      .resource('roles.resources')
+      .update({
+        associatedIndex: role.get('name') as string,
+        resourceIndex: resourceId,
+        values: {
+          name: 'c1',
+          usingActionsConfig: true,
+          actions: [
+            {
+              id: viewActionId,
+              name: 'view',
+              fields: ['title', 'age'],
+            },
+          ],
+        },
+      });
+
+    expect(
+      acl.can({
+        role: 'admin',
+        resource: 'c1',
+        action: 'create',
+      }),
+    ).toBeNull();
   });
 });

@@ -39,15 +39,19 @@ export default class PluginACL extends Plugin {
       const role = acl.getRole(roleName);
       const fields = model.get('fields');
 
+      const actionPath = `${resource.get('name')}:${model.get('name')}`;
+
       const actionParams = {
         fields,
       };
+
       const scope = await model.getScope();
+
       if (scope) {
         actionParams['filter'] = scope.get('scope');
       }
 
-      role.grantAction(`${resource.get('name')}:${model.get('name')}`, actionParams);
+      role.grantAction(actionPath, actionParams);
     });
   }
 }
