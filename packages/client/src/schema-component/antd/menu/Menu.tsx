@@ -1,8 +1,8 @@
+import { DesktopOutlined } from '@ant-design/icons';
+import { observer, RecursionField, Schema, useFieldSchema } from '@formily/react';
+import { Menu as AntdMenu } from 'antd';
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { Menu as AntdMenu } from 'antd';
-import { Schema, observer, useFieldSchema, RecursionField } from '@formily/react';
-import { DesktopOutlined } from '@ant-design/icons';
 import { findKeysByUid, findMenuItem } from './util';
 
 type ComposedMenu = React.FC<any> & {
@@ -22,6 +22,7 @@ export const Menu: ComposedMenu = observer((props) => {
     defaultOpenKeys: dOpenKeys,
     ...others
   } = props;
+  console.log('defaultSelectedUid', defaultSelectedUid)
   const schema = useFieldSchema();
   const [defaultSelectedKeys, setDefaultSelectedKeys] = useState(() => {
     if (dSelectedKeys) {

@@ -29,7 +29,6 @@ export const SchemaComponentProvider: React.FC<ISchemaComponentProvider> = (prop
         SchemaField,
         components,
         scope,
-        refreshFormId: () => setFormId(uid()),
         reset: () => setFormId(uid()),
         refresh: () => setUid(uid()),
         designable: active === 'true',

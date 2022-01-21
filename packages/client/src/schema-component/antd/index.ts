@@ -1,6 +1,7 @@
 export * from './action';
 export * from './array-table';
 export * from './block-item';
+export * from './cascader';
 export * from './checkbox';
 export * from './color-select';
 export * from './date-picker';
@@ -19,4 +20,3 @@ export * from './record-picker';
 export * from './row-selection';
 export * from './time-picker';
 export * from './void-table';
-

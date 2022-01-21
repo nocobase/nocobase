@@ -473,7 +473,7 @@ export default function App() {
  * defaultShowCode: true
  * title: RouteSwitch + SchemaComponent
  */
-import React, { useMemo } from 'react';
+import React, { useMemo, useEffect } from 'react';
 import { Link, MemoryRouter as Router } from 'react-router-dom';
 import {
   RouteRedirectProps,
@@ -483,6 +483,7 @@ import {
   SchemaComponentProvider,
   SchemaComponent,
   useDesignable,
+  useSchemaComponentContext,
 } from '@nocobase/client';
 import { Spin, Button } from 'antd';
 import { observer, Schema } from '@formily/react';
@@ -503,6 +504,10 @@ const Hello = observer(({ name }) => {
 
 const RouteSchemaComponent = (props) => {
   const route = useRoute();
+  const { reset } = useSchemaComponentContext();
+  useEffect(() => {
+    reset();
+  }, route.schema);
   return <SchemaComponent schema={route.schema}/>
 }
 
