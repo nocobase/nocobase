@@ -2,6 +2,7 @@ import { Field } from '@formily/core';
 import { useField } from '@formily/react';
 import { reaction } from '@formily/reactive';
 import { isArr, isValid, toArr as toArray } from '@formily/shared';
+import { useAPIClient } from '@nocobase/client';
 import { UploadChangeParam } from 'antd/lib/upload';
 import { UploadFile } from 'antd/lib/upload/interface';
 import { useEffect } from 'react';
@@ -177,8 +178,38 @@ export function useUploadProps<T extends IUploadProps = UploadProps>({ serviceEr
   const onChange = (param: UploadChangeParam<UploadFile>) => {
     props.onChange?.(normalizeFileList([...param.fileList]));
   };
+
+  const api = useAPIClient();
+
   return {
     ...props,
+    customRequest({ action, data, file, filename, headers, onError, onProgress, onSuccess, withCredentials }) {
+      const formData = new FormData();
+      if (data) {
+        Object.keys(data).forEach((key) => {
+          formData.append(key, data[key]);
+        });
+      }
+      formData.append(filename, file);
+      api.axios
+        .post('attachments:upload', formData, {
+          withCredentials,
+          headers,
+          onUploadProgress: ({ total, loaded }) => {
+            onProgress({ percent: Math.round((loaded / total) * 100).toFixed(2) }, file);
+          },
+        })
+        .then(({ data }) => {
+          onSuccess(data, file);
+        })
+        .catch(onError);
+
+      return {
+        abort() {
+          console.log('upload progress is aborted.');
+        },
+      };
+    },
     onChange,
   };
 }
