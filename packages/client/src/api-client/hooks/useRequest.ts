@@ -21,16 +21,14 @@ export function useRequest<P>(
   if (typeof service === 'function') {
     return useReq(service, options);
   }
-  return useReq(async () => {
-    const { url, resource, resourceOf, action, params } = service as any;
-    if (url) {
-      const response = await api.request(service);
-      return response?.data;
-    }
+  return useReq(async (params) => {
+    const { resource } = service as ResourceActionOptions;
     if (resource) {
-      const response = await api.resource(resource, resourceOf)[action](params);
-      return response?.data?.data;
+      Object.assign(service, { params });
+    } else {
+      Object.assign(service, params);
     }
-    return;
+    const response = await api.request(service);
+    return response?.data;
   }, options);
 }

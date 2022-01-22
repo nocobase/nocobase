@@ -13,8 +13,8 @@ export class CollectionModel extends MagicAttributeModel {
     return (<any>this.constructor).database;
   }
 
-  async load(loadOptions?: LoadOptions) {
-    const { skipExist = false, skipField = false } = loadOptions || {};
+  async load(loadOptions: LoadOptions = {}) {
+    const { skipExist, skipField } = loadOptions;
     const name = this.get('name');
     let collection: Collection;
     if (this.db.hasCollection(name)) {
