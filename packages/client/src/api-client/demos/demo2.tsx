@@ -16,9 +16,8 @@ const providers = [
 
 export default compose(...providers)(() => {
   const { data } = useRequest({
-    resource: 'users',
-    action: 'get',
-    params: {},
+    url: 'users:get',
+    method: 'get',
   });
   return <div>{data?.data?.name}</div>;
 });
