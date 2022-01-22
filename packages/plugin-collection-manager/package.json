@@ -1,5 +1,5 @@
 {
-  "name": "@nocobase/plugin-plugin-manager",
+  "name": "@nocobase/plugin-collection-manager",
   "version": "0.6.0-alpha.0",
   "main": "lib/index.js",
   "license": "MIT",
