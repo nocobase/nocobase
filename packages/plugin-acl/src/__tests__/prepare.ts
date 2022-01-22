@@ -1,5 +1,5 @@
 import { mockServer } from '@nocobase/test';
-import PluginUiSchema from '@nocobase/plugin-ui-schema';
+import PluginUiSchema from '@nocobase/plugin-ui-schema-storage';
 import PluginCollectionManager from '@nocobase/plugin-collection-manager';
 import PluginACL from '../server';
 
