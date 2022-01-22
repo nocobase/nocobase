@@ -1,11 +1,13 @@
 import { MockServer } from '@nocobase/test';
 import { prepareApp } from './prepare';
 import { Database } from '@nocobase/database';
-import { acl } from '../acl';
+import { ACL } from '@nocobase/acl';
+import PluginACL from '../server';
 
 describe('acl', () => {
   let app: MockServer;
   let db: Database;
+  let acl: ACL;
 
   afterEach(async () => {
     await app.destroy();
@@ -14,6 +16,9 @@ describe('acl', () => {
   beforeEach(async () => {
     app = await prepareApp();
     db = app.db;
+    const aclPlugin = app.getPlugin<PluginACL>('PluginACL');
+
+    acl = aclPlugin.getACL();
   });
 
   it('should works with universal actions', async () => {

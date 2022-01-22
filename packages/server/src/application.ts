@@ -151,6 +151,10 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     await this.emitAsync('plugins.afterLoad');
   }
 
+  getPlugin<P extends Plugin>(name: string) {
+    return this.plugins.get(name) as P;
+  }
+
   async emitAsync(event: string | symbol, ...args: any[]): Promise<boolean> {
     // @ts-ignore
     const events = this._events;

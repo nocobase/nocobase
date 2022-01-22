@@ -64,6 +64,10 @@ export class ACL extends EventEmitter {
     return this.roles.get(name);
   }
 
+  removeRole(name: string) {
+    return this.roles.delete(name);
+  }
+
   setAvailableAction(name: string, options: AvailableActionOptions) {
     this.availableActions.set(name, new AclAvailableAction(name, options));
 
@@ -147,7 +151,8 @@ export class ACL extends EventEmitter {
   middleware() {
     const aclInstance = this;
     return async function ACLMiddleware(ctx, next) {
-      ctx.can = this.can.bind(aclInstance);
+      ctx.can = aclInstance.can.bind(aclInstance);
+      console.log('hello world');
       await next();
     };
   }

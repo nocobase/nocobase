@@ -1,7 +1,7 @@
 import { ACL } from '@nocobase/acl';
 import { availableActions } from './available-action';
 
-function createACL() {
+export function createACL() {
   const acl = new ACL();
 
   for (const [actionName, actionParams] of Object.entries(availableActions)) {
@@ -10,7 +10,3 @@ function createACL() {
 
   return acl;
 }
-
-const acl = createACL();
-
-export { acl };

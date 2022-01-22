@@ -1,9 +1,9 @@
 import { Plugin } from '@nocobase/server';
 import { ACL } from '@nocobase/acl';
-import { acl } from './acl';
 import path from 'path';
 import { availableActionResource } from './actions/available-actions';
 import { roleCollectionsResource } from './actions/role-collections';
+import { createACL } from './acl';
 
 async function actionModelToParams(actionModel, resourceName) {
   const fields = actionModel.get('fields');
@@ -28,7 +28,12 @@ async function actionModelToParams(actionModel, resourceName) {
 export default class PluginACL extends Plugin {
   acl: ACL;
 
+  getACL() {
+    return this.acl;
+  }
+
   async load() {
+    const acl = createACL();
     this.acl = acl;
 
     await this.app.db.import({
@@ -37,6 +42,8 @@ export default class PluginACL extends Plugin {
 
     this.app.resourcer.define(availableActionResource);
     this.app.resourcer.define(roleCollectionsResource);
+
+    this.app.resourcer.use(this.acl.middleware());
 
     this.app.db.on('roles.afterSave', (model) => {
       const roleName = model.get('name');
@@ -49,6 +56,11 @@ export default class PluginACL extends Plugin {
       }
 
       role.setStrategy(model.get('strategy'));
+    });
+
+    this.app.db.on('roles.afterDestroy', (model) => {
+      const roleName = model.get('name');
+      acl.removeRole(roleName);
     });
 
     this.app.db.on('rolesResources.afterSave', async (model, options) => {
