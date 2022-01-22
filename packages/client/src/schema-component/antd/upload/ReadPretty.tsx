@@ -6,7 +6,7 @@ import cls from 'classnames';
 import { saveAs } from 'file-saver';
 import React, { useState } from 'react';
 import Lightbox from 'react-image-lightbox';
-import { downloadFile, isImage, toArr, toImages } from './shared';
+import { isImage, toArr, toImages } from './shared';
 import type { UploadProps } from './type';
 
 type Composed = React.FC<UploadProps> & {
@@ -36,7 +36,7 @@ ReadPretty.Attachment = (props: UploadProps) => {
                 setVisible(true);
                 setPhotoIndex(index);
               } else {
-                downloadFile(file.url);
+                saveAs(file.url, `${file.title}${file.extname}`);
               }
             };
             return (

@@ -14,17 +14,6 @@ export const isImage = (extName: string) => {
   return reg.test(extName);
 };
 
-export const downloadFile = (url) => {
-  //下载文件
-  var a = document.createElement('a');
-  a.setAttribute('href', url);
-  a.setAttribute('target', '_blank');
-  a.setAttribute('download', '');
-  let clickEvent = document.createEvent('MouseEvents');
-  clickEvent.initEvent('click', true, true);
-  a.dispatchEvent(clickEvent);
-};
-
 export const toMap = (fileList: any) => {
   if (!fileList) {
     return [];
