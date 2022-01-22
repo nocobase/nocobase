@@ -1,5 +1,5 @@
 import lodash from 'lodash';
-import { ACLAvailableStrategy, AvailableStrategyOptions } from './acl-available-strategy';
+import { ACLAvailableStrategy, AvailableStrategyOptions, predicate } from './acl-available-strategy';
 import { ACLRole, RoleActionParams } from './acl-role';
 import { AclAvailableAction, AvailableActionOptions } from './acl-available-action';
 import EventEmitter from 'events';
@@ -28,6 +28,7 @@ export interface DefineOptions {
 export interface ListenerContext {
   acl: ACL;
   role: ACLRole;
+  path: string;
   params: RoleActionParams;
 }
 
@@ -40,6 +41,16 @@ export class ACL extends EventEmitter {
   roles = new Map<string, ACLRole>();
 
   actionAlias = new Map<string, string>();
+
+  constructor() {
+    super();
+
+    this.beforeGrantAction((ctx) => {
+      if (lodash.isPlainObject(ctx.params) && ctx.params.own) {
+        ctx.params = lodash.merge(ctx.params, predicate.own);
+      }
+    });
+  }
 
   define(options: DefineOptions): ACLRole {
     const roleName = options.role;
@@ -87,8 +98,8 @@ export class ACL extends EventEmitter {
     this.availableStrategy.set(name, new ACLAvailableStrategy(this, options));
   }
 
-  beforeGrantAction(path: string, listener?: Listener) {
-    this.addListener(`${path}.beforeGrantAction`, listener);
+  beforeGrantAction(listener?: Listener) {
+    this.addListener('beforeGrantAction', listener);
   }
 
   can({ role, resource, action }: { role: string; resource: string; action: string }): CanResult | null {

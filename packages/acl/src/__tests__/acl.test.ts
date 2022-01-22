@@ -7,6 +7,37 @@ describe('acl', () => {
     acl = new ACL();
   });
 
+  it('should grant action with own params', () => {
+    acl.setAvailableAction('edit', {
+      type: 'old-data',
+    });
+
+    acl.setAvailableAction('create', {
+      type: 'new-data',
+    });
+
+    acl.define({
+      role: 'admin',
+      actions: {
+        'posts:edit': {
+          own: true,
+        },
+      },
+    });
+
+    const canResult = acl.can({ role: 'admin', resource: 'posts', action: 'edit' });
+
+    expect(canResult).toMatchObject({
+      role: 'admin',
+      resource: 'posts',
+      action: 'edit',
+      params: {
+        filter: {
+          createdById: '{{ ctx.state.currentUser.id }}',
+        },
+      },
+    });
+  });
   it('should define role with predicate', () => {
     acl.setAvailableAction('edit', {
       type: 'old-data',
@@ -278,15 +309,17 @@ describe('acl', () => {
       type: 'old-data',
     });
 
-    acl.beforeGrantAction('posts:create', (ctx) => {
-      ctx.params = {
-        filter: {
-          status: 'publish',
-        },
-      };
+    acl.beforeGrantAction((ctx) => {
+      if (ctx.path === 'posts:create') {
+        ctx.params = {
+          filter: {
+            status: 'publish',
+          },
+        };
+      }
     });
 
-    expect(acl.listenerCount('posts:create.beforeGrantAction')).toEqual(1);
+    expect(acl.listenerCount('beforeGrantAction')).toEqual(1);
 
     acl.define({
       role: 'admin',

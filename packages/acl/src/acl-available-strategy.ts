@@ -24,7 +24,7 @@ export function strategyValueMatched(strategy: StrategyValue, value: string) {
   return false;
 }
 
-const predicate = {
+export const predicate = {
   own: {
     filter: {
       createdById: '{{ ctx.state.currentUser.id }}',
