@@ -1,5 +1,5 @@
 import { ISchemaFieldProps, Schema } from '@formily/react';
-import React, { useContext, useEffect, useMemo, useRef } from 'react';
+import React, { useContext, useMemo } from 'react';
 import { SchemaComponentContext } from '../context';
 
 function toSchema(schema?: any) {
@@ -18,16 +18,8 @@ function toSchema(schema?: any) {
 }
 
 export function SchemaComponent(props: ISchemaFieldProps) {
-  const { schema: defaultSchema, ...others } = props;
-  const { reset, SchemaField } = useContext(SchemaComponentContext);
-  const schema = useMemo(() => toSchema(defaultSchema), []);
-  const isInitialMount = useRef(true);
-  useEffect(() => {
-    if (isInitialMount.current) {
-      isInitialMount.current = false;
-   } else {
-    reset();
-   }
-  }, [JSON.stringify(defaultSchema)]);
-  return <SchemaField {...others} schema={schema} />;
+  const { schema, ...others } = props;
+  const { SchemaField } = useContext(SchemaComponentContext);
+  const s = useMemo(() => toSchema(schema), []);
+  return <SchemaField {...others} schema={s} />;
 }

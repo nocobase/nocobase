@@ -1,5 +1,6 @@
 export * from './action';
 export * from './block-item';
+export * from './cascader';
 export * from './checkbox';
 export * from './color-select';
 export * from './date-picker';
