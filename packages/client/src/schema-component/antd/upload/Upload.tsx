@@ -11,7 +11,7 @@ import { useTranslation } from 'react-i18next';
 import Lightbox from 'react-image-lightbox';
 import 'react-image-lightbox/style.css'; // This only needs to be imported once in your app
 import { ReadPretty } from './ReadPretty';
-import { toArr, toFileList, toItem, toValue, useUploadProps } from './shared';
+import { isImage, toArr, toFileList, toItem, toValue, useUploadProps } from './shared';
 import './style.less';
 import type { ComposedUpload, DraggerProps, UploadProps } from './type';
 
@@ -45,9 +45,14 @@ Upload.Attachment = connect((props: UploadProps) => {
           {fileList.map((file) => {
             const handleClick = (e) => {
               e.preventDefault();
+              e.stopPropagation();
               const index = fileList.indexOf(file);
-              setVisible(true);
-              setPhotoIndex(index);
+              if (isImage(file.extname)) {
+                setVisible(true);
+                setPhotoIndex(index);
+              } else {
+                saveAs(file.url, `${file.title}${file.extname}`);
+              }
             };
             return (
               <div className={'ant-upload-list-picture-card-container'}>
