@@ -49,8 +49,8 @@ const api = new Application({
   },
 });
 
-api.plugin(require('@nocobase/plugin-collection-manager'));
-api.plugin(require('@nocobase/plugin-ui-schema-storage'));
+api.plugin(require('@nocobase/plugin-collection-manager').default);
+api.plugin(require('@nocobase/plugin-ui-schema-storage').default);
 // api.plugin(require('@nocobase/plugin-acl'));
 
 if (process.argv.length < 3) {
