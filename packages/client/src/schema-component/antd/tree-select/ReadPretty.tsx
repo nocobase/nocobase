@@ -11,7 +11,7 @@ export const ReadPretty: React.FC<TreeSelectProps<any>> = observer((props) => {
   const field = useField<Field>();
   const { placeholder } = props;
   const prefixCls = usePrefixCls('description-tree-select', props);
-  const dataSource = field?.dataSource?.length ? field.dataSource : props?.options?.length ? props.options : [];
+  const dataSource = field?.dataSource?.length ? field.dataSource : props?.treeData?.length ? props.treeData : [];
   const getSelected = () => {
     const value = props.value;
     if (props.multiple) {
