@@ -9,12 +9,11 @@ interface LoadOptions {
 }
 
 export class CollectionModel extends MagicAttributeModel {
-
   get db(): Database {
     return (<any>this.constructor).database;
   }
 
-  async load(loadOptions?: LoadOptions) {
+  async load(loadOptions: LoadOptions = {}) {
     const { skipExist, skipField } = loadOptions;
     const name = this.get('name');
     let collection: Collection;
