@@ -47,11 +47,13 @@ const schema = {
   type: 'object',
   properties: {
     input: {
-      type: 'boolean',
+      type: 'string',
       title: `Editable`,
       'x-decorator': 'FormItem',
       'x-component': 'TreeSelect',
-      enum: dataSource,
+      'x-component-props': {
+        treeData: dataSource,
+      },
       'x-reactions': {
         target: 'read',
         fulfill: {
@@ -62,12 +64,14 @@ const schema = {
       },
     },
     read: {
-      type: 'boolean',
+      type: 'string',
       title: `Read pretty`,
       'x-read-pretty': true,
       'x-decorator': 'FormItem',
       'x-component': 'TreeSelect',
-      enum: dataSource,
+      'x-component-props': {
+        treeData: dataSource,
+      },
     },
   },
 };
