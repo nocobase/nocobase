@@ -26,7 +26,9 @@
     "ahooks": "^3.0.5",
     "axios": "^0.24.0",
     "i18next": "^21.6.0",
-    "react-i18next": "^11.15.1"
+    "react-helmet": "^6.1.0",
+    "react-i18next": "^11.15.1",
+    "use-deep-compare-effect": "^1.8.1"
   },
   "peerDependencies": {
     "@types/react": ">=16.8.0 || >=17.0.0",
