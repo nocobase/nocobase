@@ -26,14 +26,48 @@ async (ctx, next) {
 
 ## ctx.action <Badge>待完善</Badge>
 
+```ts
+class IAction {
+  resourceName: string;
+  actionName: string;
+  resourceOf?: string;
+  params?: ActionParams;
+  mergeParams?: (params: ActionParams, strategies?: MergeStrategies): void;
+}
+
+interface ActionParams {
+  filterByTk?: any;
+  filter?: any;
+  fields?: string[];
+  sort?: string[];
+  page?: string | number;
+  pageSize?: string | number;
+  values?: any;
+  [key: string]?: any;
+}
+```
+
+如查看 posts 的 id=1 的 comments
+
+```bash
+GET /api/posts/1/comments:list?filter={"f1":"v1"}&fields=f1,f2
+```
+
+对应 ctx.action 的主要参数：
+
+```ts
+{
+  resourceName: 'posts.comments',
+  resourceOf: 1,
+  actionName: 'list',
+  params: {
+    filter: {f1: 'v1'},
+    fields: ['f1', 'f2'],
+  },
+}
+```
+
 ### action.params
-
-资源标识定位
-
-- `associatedName`
-- `associatedIndex`
-- `resourceName`
-- `resourceIndex`
 
 request body
 
