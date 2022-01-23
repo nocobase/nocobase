@@ -32,12 +32,22 @@ describe('middleware', () => {
     await db.getRepository('collections').create({
       values: {
         name: 'posts',
-        fields: [
-          {
-            type: 'string',
-            name: 'title',
-          },
-        ],
+      },
+      context: {},
+    });
+
+    await db.getRepository('collections.fields', 'posts').create({
+      values: {
+        name: 'title',
+        type: 'string',
+      },
+      context: {},
+    });
+
+    await db.getRepository('collections.fields', 'posts').create({
+      values: {
+        name: 'description',
+        type: 'string',
       },
       context: {},
     });
@@ -70,5 +80,38 @@ describe('middleware', () => {
     });
 
     expect(response.statusCode).toEqual(200);
+  });
+
+  it('should merge can result params', async () => {
+    await app
+      .agent()
+      .resource('roles.resources')
+      .create({
+        associatedIndex: role.get('name') as string,
+        values: {
+          name: 'posts',
+          usingActionsConfig: true,
+          actions: [
+            {
+              name: 'create',
+              fields: ['title'],
+            },
+          ],
+        },
+      });
+
+    await app
+      .agent()
+      .resource('posts')
+      .create({
+        values: {
+          title: 'post-title',
+          description: 'post-description',
+        },
+      });
+
+    const post = await db.getRepository('posts').findOne();
+    expect(post.get('title')).toEqual('post-title');
+    expect(post.get('description')).toBeNull();
   });
 });

@@ -44,6 +44,8 @@ export class ACLResource {
       acl: this.role.acl,
       params: params || {},
       path: `${this.name}:${name}`,
+      resourceName: this.name,
+      actionName: name,
     };
 
     this.acl.emit('beforeGrantAction', context);

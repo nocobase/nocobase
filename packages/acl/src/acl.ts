@@ -3,6 +3,7 @@ import { ACLAvailableStrategy, AvailableStrategyOptions, predicate } from './acl
 import { ACLRole, RoleActionParams } from './acl-role';
 import { AclAvailableAction, AvailableActionOptions } from './acl-available-action';
 import EventEmitter from 'events';
+import { Action } from '@nocobase/resourcer';
 
 interface CanResult {
   role: string;
@@ -25,6 +26,8 @@ export interface ListenerContext {
   acl: ACL;
   role: ACLRole;
   path: string;
+  actionName: string;
+  resourceName: string;
   params: RoleActionParams;
 }
 
@@ -52,6 +55,17 @@ export class ACL extends EventEmitter {
     this.beforeGrantAction((ctx) => {
       if (lodash.isPlainObject(ctx.params) && ctx.params.own) {
         ctx.params = lodash.merge(ctx.params, predicate.own);
+      }
+    });
+
+    this.beforeGrantAction((ctx) => {
+      if (lodash.isPlainObject(ctx.params)) {
+        if ((ctx.actionName === 'create' || ctx.actionName === 'update') && ctx.params.fields) {
+          ctx.params = {
+            ...lodash.omit(ctx.params, 'fields'),
+            whitelist: ctx.params.fields,
+          };
+        }
       }
     });
   }
@@ -182,6 +196,8 @@ export class ACL extends EventEmitter {
       const roleName = ctx.state.currentRole;
       const { resourceName, actionName } = ctx.action;
 
+      const resourcerAction: Action = ctx.action;
+
       ctx.can = (options: Omit<CanArgs, 'role'>) => {
         return aclInstance.can({ role: roleName, ...options });
       };
@@ -191,6 +207,10 @@ export class ACL extends EventEmitter {
       if (!canResult) {
         ctx.throw(403, 'no permission');
         return;
+      }
+
+      if (lodash.get(canResult, 'params')) {
+        resourcerAction.mergeParams(canResult.params);
       }
 
       await next();
