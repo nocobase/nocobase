@@ -34,6 +34,15 @@ export interface ListenerContext {
 
 type Listener = (ctx: ListenerContext) => void;
 
+interface CanArgs {
+  role: string;
+  resource: string;
+  action: string;
+  options?: {
+    allowConfigure?: boolean;
+  };
+}
+
 export class ACL extends EventEmitter {
   protected availableActions = new Map<string, AclAvailableAction>();
   protected availableStrategy = new Map<string, ACLAvailableStrategy>();
@@ -102,7 +111,7 @@ export class ACL extends EventEmitter {
     this.addListener('beforeGrantAction', listener);
   }
 
-  can({ role, resource, action }: { role: string; resource: string; action: string }): CanResult | null {
+  can({ role, resource, action }: CanArgs): CanResult | null {
     if (!this.isAvailableAction(action)) {
       return null;
     }
@@ -161,9 +170,18 @@ export class ACL extends EventEmitter {
 
   middleware() {
     const aclInstance = this;
+
     return async function ACLMiddleware(ctx, next) {
+      const roleName = ctx.state.currentRole;
+      const { resourceName, actionName } = ctx.action.params;
       ctx.can = aclInstance.can.bind(aclInstance);
-      console.log('hello world');
+
+      const canResult = ctx.can({ role: roleName, resource: resourceName, action: actionName });
+
+      if (!canResult) {
+        ctx.throw(403, 'no permission');
+        return;
+      }
       await next();
     };
   }
