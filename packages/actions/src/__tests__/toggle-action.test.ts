@@ -80,9 +80,8 @@ describe('toggle action', () => {
 
     const response = await app
       .agent()
-      .resource('posts.tags')
+      .resource('posts.tags', p1.get('id'))
       .toggle({
-        associatedIndex: p1.get('id'),
         values: [t1.get('id'), t2.get('id')],
       });
 
@@ -90,9 +89,8 @@ describe('toggle action', () => {
 
     await app
       .agent()
-      .resource('posts.tags')
+      .resource('posts.tags', p1.get('id'))
       .toggle({
-        associatedIndex: p1.get('id'),
         values: [t2.get('id')],
       });
 
