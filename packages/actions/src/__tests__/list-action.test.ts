@@ -103,8 +103,8 @@ describe('list action', () => {
     // tags with posts id eq 1
     const response = await app
       .agent()
-      .resource('posts.tags')
-      .list({ associatedIndex: 1, fields: ['id', 'posts_tags.createdAt'], sort: ['id'] });
+      .resource('posts.tags', 1)
+      .list({ fields: ['id', 'posts_tags.createdAt'], sort: ['id'] });
 
     const body = response.body;
     expect(body.count).toEqual(2);

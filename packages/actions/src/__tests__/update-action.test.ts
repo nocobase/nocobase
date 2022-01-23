@@ -1,8 +1,8 @@
-import { mockServer } from './index';
+import { MockServer, mockServer } from './index';
 import { registerActions } from '@nocobase/actions';
 
 describe('update action', () => {
-  let app;
+  let app: MockServer;
   let Post;
   let Comment;
   let Tag;
@@ -71,7 +71,7 @@ describe('update action', () => {
       .agent()
       .resource('posts')
       .update({
-        resourceIndex: p1.get('id'),
+        filterByTk: p1.get('id'),
         values: {
           title: 'p0',
         },
@@ -97,10 +97,9 @@ describe('update action', () => {
 
     const response = await app
       .agent()
-      .resource('posts.comments')
+      .resource('posts.comments', p1.get('id'))
       .update({
-        resourceIndex: c1.get('id'),
-        associatedIndex: p1.get('id'),
+        filterByTk: c1.get('id'),
         values: {
           content: 'c0',
         },
@@ -129,10 +128,9 @@ describe('update action', () => {
 
     const response = await app
       .agent()
-      .resource('posts.tags')
+      .resource('posts.tags', p1t1.get('id'))
       .update({
-        resourceIndex: p1.get('id'),
-        associatedIndex: p1t1.get('id'),
+        filterByTk: p1.get('id'),
         values: {
           posts_tags: {
             tagged_at: 'test',
@@ -158,9 +156,8 @@ describe('update action', () => {
 
     const response = await app
       .agent()
-      .resource('posts.profile')
+      .resource('posts.profile', p1.get('id'))
       .update({
-        associatedIndex: p1.get('id'),
         values: {
           post_profile: 'test0',
         },

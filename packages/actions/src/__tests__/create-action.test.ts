@@ -71,9 +71,8 @@ describe('create action', () => {
 
     const response = await app
       .agent()
-      .resource('posts.comments')
+      .resource('posts.comments', p1.get('id'))
       .create({
-        associatedIndex: p1.get('id'),
         values: {
           content: 'hello',
         },
@@ -95,9 +94,8 @@ describe('create action', () => {
     expect(await Tag.repository.findOne()).toBeNull();
     const response = await app
       .agent()
-      .resource('posts.tags')
+      .resource('posts.tags', p1.get('id'))
       .create({
-        associatedIndex: p1.get('id'),
         values: {
           name: 'hello',
         },
