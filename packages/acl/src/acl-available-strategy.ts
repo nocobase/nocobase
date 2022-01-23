@@ -4,7 +4,8 @@ type StrategyValue = false | '*' | string | string[];
 
 export interface AvailableStrategyOptions {
   displayName?: string;
-  actions: false | string | string[];
+  actions?: false | string | string[];
+  allowConfigure?: boolean;
   resource?: '*';
 }
 
@@ -38,9 +39,12 @@ export class ACLAvailableStrategy {
   options: AvailableStrategyOptions;
   actionsAsObject: { [key: string]: string };
 
+  allowConfigure: boolean;
+
   constructor(acl: ACL, options: AvailableStrategyOptions) {
     this.acl = acl;
     this.options = options;
+    this.allowConfigure = options.allowConfigure;
 
     let actions = this.options.actions;
     if (lodash.isString(actions) && actions != '*') {
@@ -74,6 +78,10 @@ export class ACLAvailableStrategy {
   }
 
   allow(resourceName: string, actionName: string) {
+    if (this.acl.isConfigResource(resourceName) && this.allowConfigure) {
+      return true;
+    }
+
     return this.matchAction(this.acl.resolveActionAlias(actionName));
   }
 }

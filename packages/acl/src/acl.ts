@@ -4,11 +4,6 @@ import { ACLRole, RoleActionParams } from './acl-role';
 import { AclAvailableAction, AvailableActionOptions } from './acl-available-action';
 import EventEmitter from 'events';
 
-interface StrategyOptions {
-  role: string;
-  strategy: string;
-}
-
 interface CanResult {
   role: string;
   resource: string;
@@ -18,6 +13,7 @@ interface CanResult {
 
 export interface DefineOptions {
   role: string;
+  allowConfigure?: boolean;
   strategy?: string | Omit<AvailableStrategyOptions, 'acl'>;
   actions?: {
     [key: string]: RoleActionParams;
@@ -38,9 +34,6 @@ interface CanArgs {
   role: string;
   resource: string;
   action: string;
-  options?: {
-    allowConfigure?: boolean;
-  };
 }
 
 export class ACL extends EventEmitter {
@@ -50,6 +43,8 @@ export class ACL extends EventEmitter {
   roles = new Map<string, ACLRole>();
 
   actionAlias = new Map<string, string>();
+
+  configResources: string[] = [];
 
   constructor() {
     super();
@@ -86,6 +81,18 @@ export class ACL extends EventEmitter {
 
   removeRole(name: string) {
     return this.roles.delete(name);
+  }
+
+  registerConfigResources(names: string[]) {
+    names.forEach((name) => this.registerConfigResource(name));
+  }
+
+  registerConfigResource(name: string) {
+    this.configResources.push(name);
+  }
+
+  isConfigResource(name: string) {
+    return this.configResources.includes(name);
   }
 
   setAvailableAction(name: string, options: AvailableActionOptions) {
@@ -178,6 +185,7 @@ export class ACL extends EventEmitter {
 
       const canResult = ctx.can({ role: roleName, resource: resourceName, action: actionName });
 
+      console.log({ canResult });
       if (!canResult) {
         ctx.throw(403, 'no permission');
         return;

@@ -319,8 +319,6 @@ describe('acl', () => {
       }
     });
 
-    expect(acl.listenerCount('beforeGrantAction')).toEqual(1);
-
     acl.define({
       role: 'admin',
       actions: {
@@ -371,6 +369,34 @@ describe('acl', () => {
       actions: {
         'posts:create': {},
       },
+    });
+  });
+
+  it('should allow system config', () => {
+    acl.setAvailableAction('create', {
+      displayName: 'create',
+      type: 'new-data',
+    });
+
+    acl.registerConfigResources(['roles']);
+
+    const role = acl.define({
+      role: 'admin',
+      strategy: {
+        allowConfigure: true,
+      },
+    });
+
+    expect(
+      acl.can({
+        role: 'admin',
+        resource: 'roles',
+        action: 'create',
+      }),
+    ).toMatchObject({
+      role: 'admin',
+      resource: 'roles',
+      action: 'create',
     });
   });
 });
