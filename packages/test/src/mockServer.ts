@@ -89,7 +89,7 @@ export class MockServer extends Application {
                     if (params.resourceIndex) {
                       filterByTk = params.resourceIndex;
                     }
-                    let url = prefix;
+                    let url = prefix || '';
                     if (keys.length > 1) {
                       url += `/${keys[0]}/${resourceOf}/${keys[1]}`;
                     } else {
