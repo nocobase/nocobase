@@ -80,9 +80,8 @@ describe('set action', () => {
 
     const response = await app
       .agent()
-      .resource('posts.tags')
+      .resource('posts.tags', p1.get('id'))
       .set({
-        associatedIndex: p1.get('id'),
         values: [t1.get('id'), t2.get('id')],
       });
 
@@ -91,9 +90,8 @@ describe('set action', () => {
     // add with through values
     await app
       .agent()
-      .resource('posts.tags')
+      .resource('posts.tags', p1.get('id'))
       .set({
-        associatedIndex: p1.get('id'),
         values: [
           [
             t3.get('id'),
