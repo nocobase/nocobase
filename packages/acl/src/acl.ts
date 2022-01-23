@@ -4,6 +4,7 @@ import { ACLRole, RoleActionParams } from './acl-role';
 import { AclAvailableAction, AvailableActionOptions } from './acl-available-action';
 import EventEmitter from 'events';
 import { Action } from '@nocobase/resourcer';
+const parse = require('json-templates');
 
 interface CanResult {
   role: string;
@@ -220,7 +221,9 @@ export class ACL extends EventEmitter {
       }
 
       if (lodash.get(canResult, 'params')) {
-        resourcerAction.mergeParams(canResult.params);
+        const template = parse(canResult.params);
+
+        resourcerAction.mergeParams(template({ ctx }));
       }
 
       await next();

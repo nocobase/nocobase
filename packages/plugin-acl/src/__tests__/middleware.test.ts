@@ -1,8 +1,9 @@
 import { MockServer } from '@nocobase/test';
-import { prepareApp } from './prepare';
+import { changeMockUser, prepareApp } from './prepare';
 import { Database, Model } from '@nocobase/database';
 import { ACL } from '@nocobase/acl';
 import PluginACL from '@nocobase/plugin-acl';
+import * as stream from 'stream';
 
 describe('middleware', () => {
   let app: MockServer;
@@ -48,6 +49,14 @@ describe('middleware', () => {
       values: {
         name: 'description',
         type: 'string',
+      },
+      context: {},
+    });
+
+    await db.getRepository('collections.fields', 'posts').create({
+      values: {
+        name: 'createdById',
+        type: 'integer',
       },
       context: {},
     });
@@ -126,6 +135,74 @@ describe('middleware', () => {
     expect(data['id']).not.toBeUndefined();
     expect(data['title']).toEqual('post-title');
     expect(data['description']).toBeUndefined();
+  });
+
+  it('should parse template value on action params', async () => {
+    changeMockUser({
+      id: 2,
+    });
+
+    await app
+      .agent()
+      .resource('rolesResourcesScopes')
+      .create({
+        values: {
+          name: 'own',
+          scope: {
+            createdById: '{{ ctx.state.currentUser.id }}',
+          },
+        },
+      });
+
+    const scope = await db.getRepository('rolesResourcesScopes').findOne();
+
+    await app
+      .agent()
+      .resource('roles.resources')
+      .create({
+        associatedIndex: role.get('name') as string,
+        values: {
+          name: 'posts',
+          usingActionsConfig: true,
+          actions: [
+            {
+              name: 'create',
+              fields: ['title', 'description', 'createdById'],
+            },
+            {
+              name: 'view',
+              fields: ['title'],
+              scope: scope.get('id'),
+            },
+          ],
+        },
+      });
+
+    await app
+      .agent()
+      .resource('posts')
+      .create({
+        values: {
+          title: 't1',
+          description: 'd1',
+          createdById: 1,
+        },
+      });
+
+    await app
+      .agent()
+      .resource('posts')
+      .create({
+        values: {
+          title: 't2',
+          description: 'p2',
+          createdById: 2,
+        },
+      });
+
+    const response = await app.agent().resource('posts').list();
+    const data = response.body.data;
+    expect(data.length).toEqual(1);
   });
 
   it('should change fields params to whitelist in create action', async () => {
