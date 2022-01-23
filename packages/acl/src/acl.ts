@@ -180,7 +180,7 @@ export class ACL extends EventEmitter {
 
     return async function ACLMiddleware(ctx, next) {
       const roleName = ctx.state.currentRole;
-      const { resourceName, actionName } = ctx.action.params;
+      const { resourceName, actionName } = ctx.action;
 
       ctx.can = (options: Omit<CanArgs, 'role'>) => {
         return aclInstance.can({ role: roleName, ...options });

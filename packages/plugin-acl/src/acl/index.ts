@@ -1,7 +1,14 @@
 import { ACL } from '@nocobase/acl';
 import { availableActions } from './available-action';
 
-const configureResources = ['roles', 'collections', 'resources', 'rolesResourcesScopes', 'availableActions'];
+const configureResources = [
+  'roles',
+  'collections',
+  'roles.collections',
+  'roles.resources',
+  'rolesResourcesScopes',
+  'availableActions',
+];
 
 export function createACL() {
   const acl = new ACL();
