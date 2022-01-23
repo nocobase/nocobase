@@ -16,6 +16,7 @@ describe('middleware', () => {
 
   beforeEach(async () => {
     app = await prepareApp();
+
     db = app.db;
     const aclPlugin = app.getPlugin<PluginACL>('PluginACL');
     acl = aclPlugin.getACL();
@@ -24,6 +25,7 @@ describe('middleware', () => {
       values: {
         name: 'admin',
         title: 'Admin User',
+        allowConfigure: true,
       },
     });
 

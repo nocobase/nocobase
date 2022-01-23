@@ -17,47 +17,28 @@ describe('role api', () => {
     db = app.db;
   });
 
-  it('should create role', async () => {
-    const response = await app
-      .agent()
-      .resource('roles')
-      .create({
-        values: {
-          name: 'admin',
-          description: 'Admin user',
-        },
-      });
-
-    expect(response.statusCode).toEqual(200);
-
-    const role = await db.getRepository('roles').findOne();
-    expect(role.get('name')).toEqual('admin');
-  });
-
-  it('should list actions', async () => {
-    const response = await app.agent().resource('availableActions').list();
-    expect(response.statusCode).toEqual(200);
-  });
-
   describe('grant', () => {
     let role: Model;
 
     beforeEach(async () => {
-      await app
-        .agent()
-        .resource('roles')
-        .create({
-          values: {
-            name: 'admin',
-            title: 'Admin User',
-          },
-        });
+      await db.getRepository('roles').create({
+        values: {
+          name: 'admin',
+          title: 'Admin User',
+          allowConfigure: true,
+        },
+      });
 
       role = await db.getRepository('roles').findOne({
         filter: {
           name: 'admin',
         },
       });
+    });
+
+    it('should list actions', async () => {
+      const response = await app.agent().resource('availableActions').list();
+      expect(response.statusCode).toEqual(200);
     });
 
     it('should grant universal role actions', async () => {

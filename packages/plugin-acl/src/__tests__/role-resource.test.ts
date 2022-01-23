@@ -15,15 +15,13 @@ describe('role resource api', () => {
     app = await prepareApp();
     db = app.db;
 
-    await app
-      .agent()
-      .resource('roles')
-      .create({
-        values: {
-          name: 'admin',
-          title: 'Admin User',
-        },
-      });
+    await db.getRepository('roles').create({
+      values: {
+        name: 'admin',
+        title: 'Admin User',
+        allowConfigure: true,
+      },
+    });
 
     role = await db.getRepository('roles').findOne({
       filter: {

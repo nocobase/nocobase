@@ -22,16 +22,13 @@ describe('acl', () => {
   });
 
   it('should works with universal actions', async () => {
-    await app
-      .agent()
-      .resource('roles')
-      .create({
-        values: {
-          name: 'admin',
-          title: 'Admin User',
-          allowConfigure: true,
-        },
-      });
+    await db.getRepository('roles').create({
+      values: {
+        name: 'admin',
+        title: 'Admin User',
+        allowConfigure: true,
+      },
+    });
 
     const role = await db.getRepository('roles').findOne({
       filter: {
@@ -74,16 +71,13 @@ describe('acl', () => {
   });
 
   it('should works with resources actions', async () => {
-    await app
-      .agent()
-      .resource('roles')
-      .create({
-        values: {
-          name: 'admin',
-          title: 'Admin User',
-          allowConfigure: true,
-        },
-      });
+    await db.getRepository('roles').create({
+      values: {
+        name: 'admin',
+        title: 'Admin User',
+        allowConfigure: true,
+      },
+    });
 
     const role = await db.getRepository('roles').findOne({
       filter: {
@@ -215,16 +209,13 @@ describe('acl', () => {
   });
 
   it('should revoke actions when not using actions config', async () => {
-    await app
-      .agent()
-      .resource('roles')
-      .create({
-        values: {
-          name: 'admin',
-          title: 'Admin User',
-          allowConfigure: true,
-        },
-      });
+    await db.getRepository('roles').create({
+      values: {
+        name: 'admin',
+        title: 'Admin User',
+        allowConfigure: true,
+      },
+    });
 
     const role = await db.getRepository('roles').findOne({
       filter: {

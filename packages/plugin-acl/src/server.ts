@@ -55,7 +55,10 @@ export default class PluginACL extends Plugin {
         });
       }
 
-      role.setStrategy(model.get('strategy'));
+      role.setStrategy({
+        ...(model.get('strategy') || {}),
+        allowConfigure: model.get('allowConfigure'),
+      });
     });
 
     this.app.db.on('roles.afterDestroy', (model) => {

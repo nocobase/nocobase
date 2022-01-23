@@ -13,6 +13,13 @@ describe('scope api', () => {
   beforeEach(async () => {
     app = await prepareApp();
     db = app.db;
+    await db.getRepository('roles').create({
+      values: {
+        name: 'admin',
+        title: 'Admin User',
+        allowConfigure: true,
+      },
+    });
   });
 
   it('should create scope of resource', async () => {

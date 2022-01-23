@@ -181,15 +181,18 @@ export class ACL extends EventEmitter {
     return async function ACLMiddleware(ctx, next) {
       const roleName = ctx.state.currentRole;
       const { resourceName, actionName } = ctx.action.params;
-      ctx.can = aclInstance.can.bind(aclInstance);
 
-      const canResult = ctx.can({ role: roleName, resource: resourceName, action: actionName });
+      ctx.can = (options: Omit<CanArgs, 'role'>) => {
+        return aclInstance.can({ role: roleName, ...options });
+      };
 
-      console.log({ canResult });
+      const canResult = ctx.can({ resource: resourceName, action: actionName });
+
       if (!canResult) {
         ctx.throw(403, 'no permission');
         return;
       }
+
       await next();
     };
   }
