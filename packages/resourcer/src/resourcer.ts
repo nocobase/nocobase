@@ -305,15 +305,21 @@ export class Resourcer {
         // action 需要 clone 之后再赋给 ctx
         ctx.action = this.getAction(getNameByParams(params), params.actionName).clone();
         ctx.action.setContext(ctx);
+        ctx.action.actionName = params.actionName;
+        ctx.action.resourceOf = params.associatedIndex;
+        ctx.action.resourceName = params.associatedName
+          ? `${params.associatedName}.${params.resourceName}`
+          : params.resourceName;
+        ctx.action.params.filterByTk = params.resourceIndex;
         const query = parseQuery(ctx.request.querystring);
         if (pathToRegexp('/resourcer/{:associatedName.}?:resourceName{\\::actionName}').test(ctx.request.path)) {
-          await ctx.action.mergeParams({
+          ctx.action.mergeParams({
             ...query,
             ...params,
             ...ctx.request.body,
           });
         } else {
-          await ctx.action.mergeParams({
+          ctx.action.mergeParams({
             ...query,
             ...params,
             ...(_.isEmpty(ctx.request.body) ? {} : { values: ctx.request.body }),
