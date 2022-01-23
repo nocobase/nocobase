@@ -72,16 +72,34 @@ function useRequest<P>(
 支持 `axios.request(config)`，config 详情查看 [axios](https://github.com/axios/axios#request-config)
 
 ```ts
-const { data, loading, refresh } = useRequest({ url: '/users' });
+const { data, loading, refresh, run, params } = useRequest({ url: '/users' });
+
+// useRequest 里传的是 AxiosRequestConfig，所以 run 里传的也是 AxiosRequestConfig
+run({
+  params: {
+    pageSize: 20,
+  }
+});
 ```
+
+例子如下：
+
+<code src="./demos/demo2.tsx" />
 
 或者是 NocoBase 的 resource & action 请求：
 
 ```ts
-const { data } = useRequest({
+const { data, run } = useRequest({
   resource: 'users',
-  action: 'get',
-  params: {},
+  action: 'list',
+  params: {
+    pageSize: 20,
+  },
+});
+
+// useRequest 传的是 ResourceActionOptions，所以 run 直接传 action params 就可以了。
+run({
+  pageSize: 50,
 });
 ```
 
@@ -92,7 +110,9 @@ const { data } = useRequest({
 也可以是自定义的异步函数：
 
 ```ts
-const { data, loading, refresh } = useRequest(() => Promise.resolve({}));
+const { data, loading, run, refresh, params } = useRequest((...params) => Promise.resolve({}));
+
+run(...params);
 ```
 
 更多用法查看 ahooks 的 [useRequest()](https://ahooks.js.org/hooks/use-request/index)

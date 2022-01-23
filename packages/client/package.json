@@ -25,9 +25,11 @@
     "@formily/react": "^2.0.7",
     "ahooks": "^3.0.5",
     "axios": "^0.24.0",
+    "file-saver": "^2.0.5",
     "i18next": "^21.6.0",
     "react-helmet": "^6.1.0",
     "react-i18next": "^11.15.1",
+    "react-image-lightbox": "^5.1.4",
     "use-deep-compare-effect": "^1.8.1"
   },
   "peerDependencies": {

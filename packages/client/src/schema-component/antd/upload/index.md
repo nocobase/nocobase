@@ -6,3 +6,13 @@ group:
 ---
 
 # Upload
+
+## Examples
+
+### Upload
+
+<code src="./demos/demo1.tsx" />
+
+### Upload
+
+<code src="./demos/demo2.tsx" />

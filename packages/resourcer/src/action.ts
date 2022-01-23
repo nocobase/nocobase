@@ -122,6 +122,7 @@ export interface ActionOptions {
  * - params 是开发配置参数 + 客户端参数的结合体
  */
 export interface ActionParams {
+  filterByTk?: any;
   /**
    * 输出哪些字段
    *
@@ -201,6 +202,10 @@ export class Action {
   protected context: ActionContext = {};
 
   public params: ActionParams = {};
+
+  public actionName: string;
+  public resourceName: string;
+  public resourceOf: any;
 
   public readonly middlewares: Array<Middleware> = [];
 
