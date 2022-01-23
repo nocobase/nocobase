@@ -82,7 +82,53 @@ describe('middleware', () => {
     expect(response.statusCode).toEqual(200);
   });
 
-  it('should merge can result params', async () => {
+  it('should limit fields on view actions', async () => {
+    await app
+      .agent()
+      .resource('roles.resources')
+      .create({
+        associatedIndex: role.get('name') as string,
+        values: {
+          name: 'posts',
+          usingActionsConfig: true,
+          actions: [
+            {
+              name: 'create',
+              fields: ['title', 'description'],
+            },
+            {
+              name: 'view',
+              fields: ['title'],
+            },
+          ],
+        },
+      });
+
+    await app
+      .agent()
+      .resource('posts')
+      .create({
+        values: {
+          title: 'post-title',
+          description: 'post-description',
+        },
+      });
+
+    const post = await db.getRepository('posts').findOne();
+    expect(post.get('title')).toEqual('post-title');
+    expect(post.get('description')).toEqual('post-description');
+
+    const response = await app.agent().resource('posts').list({});
+    expect(response.statusCode).toEqual(200);
+
+    const data = response.body.data[0];
+
+    expect(data['id']).not.toBeUndefined();
+    expect(data['title']).toEqual('post-title');
+    expect(data['description']).toBeUndefined();
+  });
+
+  it('should change fields params to whitelist in create action', async () => {
     await app
       .agent()
       .resource('roles.resources')

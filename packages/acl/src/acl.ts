@@ -59,11 +59,21 @@ export class ACL extends EventEmitter {
     });
 
     this.beforeGrantAction((ctx) => {
+      const actionName = this.resolveActionAlias(ctx.actionName);
+
       if (lodash.isPlainObject(ctx.params)) {
-        if ((ctx.actionName === 'create' || ctx.actionName === 'update') && ctx.params.fields) {
+        if ((actionName === 'create' || actionName === 'update') && ctx.params.fields) {
           ctx.params = {
             ...lodash.omit(ctx.params, 'fields'),
             whitelist: ctx.params.fields,
+          };
+        }
+
+        if (actionName === 'view' && ctx.params.fields) {
+          const appendFields = ['id', 'createdAt', 'updatedAt'];
+          ctx.params = {
+            ...lodash.omit(ctx.params, 'fields'),
+            fields: [...ctx.params.fields, ...appendFields],
           };
         }
       }
