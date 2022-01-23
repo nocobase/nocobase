@@ -10,16 +10,10 @@ describe('middleware', () => {
   let db: Database;
   let acl: ACL;
 
-  afterEach(async () => {
-    await app.destroy();
-  });
-
   beforeEach(async () => {
     app = await prepareApp();
-
     db = app.db;
-    const aclPlugin = app.getPlugin<PluginACL>('PluginACL');
-    acl = aclPlugin.getACL();
+    acl = app.getPlugin<PluginACL>('PluginACL').getACL();
 
     await db.getRepository('roles').create({
       values: {
@@ -47,6 +41,10 @@ describe('middleware', () => {
       },
       context: {},
     });
+  });
+
+  afterAll(async () => {
+    await app.destroy();
   });
 
   it('should throw 403 when no permission', async () => {
