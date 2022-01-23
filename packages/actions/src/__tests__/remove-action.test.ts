@@ -91,9 +91,8 @@ describe('remove action', () => {
 
     const response = await app
       .agent()
-      .resource('posts.tags')
+      .resource('posts.tags', p1.get('id'))
       .remove({
-        associatedIndex: p1.get('id'),
         values: [t1.get('id')],
       });
 
@@ -115,10 +114,8 @@ describe('remove action', () => {
 
     const response = await app
       .agent()
-      .resource('posts.profile')
-      .remove({
-        associatedIndex: p1.get('id'),
-      });
+      .resource('posts.profile', p1.get('id'))
+      .remove();
 
     await postProfile.reload();
     expect(await postProfile.getPost()).toBeNull();

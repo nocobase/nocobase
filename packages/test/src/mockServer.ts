@@ -4,21 +4,28 @@ import Application, { ApplicationOptions } from '@nocobase/server';
 import { getConfig } from './mockDatabase';
 
 interface ActionParams {
-  fields?:
-    | string[]
-    | {
-        only?: string[];
-        except?: string[];
-        appends?: string[];
-      };
+  filterByTk?: any;
+  fields?: string[];
   filter?: any;
   sort?: string[];
   page?: number;
   perPage?: number;
   values?: any;
+  /**
+   * @deprecated
+   */
   resourceName?: string;
+  /**
+   * @deprecated
+   */
   resourceIndex?: string;
+  /**
+   * @deprecated
+   */
   associatedName?: string;
+  /**
+   * @deprecated
+   */
   associatedIndex?: string;
   [key: string]: any;
 }
@@ -62,29 +69,35 @@ export class MockServer extends Application {
     await this.db.sequelize.getQueryInterface().dropAllTables();
   }
 
-  agent(): SuperAgentTest & { resource: (name: string) => Resource } {
+  agent(): SuperAgentTest & { resource: (name: string, resourceOf?: any) => Resource } {
     const agent = supertest.agent(this.callback());
     const prefix = this.resourcer.options.prefix;
     const proxy = new Proxy(agent, {
       get(target, method: string, receiver) {
         if (method === 'resource') {
-          return (name: string) => {
+          return (name: string, resourceOf?: any) => {
             const keys = name.split('.');
             const proxy = new Proxy(
               {},
               {
                 get(target, method: string, receiver) {
                   return (params: ActionParams = {}) => {
-                    const { associatedIndex, resourceIndex, values = {}, file, ...restParams } = params;
+                    let { filterByTk, values = {}, file, ...restParams } = params;
+                    if (params.associatedIndex) {
+                      resourceOf = params.associatedIndex;
+                    }
+                    if (params.resourceIndex) {
+                      filterByTk = params.resourceIndex;
+                    }
                     let url = prefix;
                     if (keys.length > 1) {
-                      url = `/${keys[0]}/${associatedIndex}/${keys[1]}`;
+                      url += `/${keys[0]}/${resourceOf}/${keys[1]}`;
                     } else {
-                      url = `/${name}`;
+                      url += `/${name}`;
                     }
                     url += `:${method as string}`;
-                    if (resourceIndex) {
-                      url += `/${resourceIndex}`;
+                    if (filterByTk) {
+                      url += `/${filterByTk}`;
                     }
 
                     switch (method) {

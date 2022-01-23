@@ -1,8 +1,8 @@
-import { mockServer } from './index';
+import { MockServer, mockServer } from './index';
 import { registerActions } from '@nocobase/actions';
 
 describe('get action', () => {
-  let app;
+  let app: MockServer;
   let Post;
   let Comment;
   let Tag;
@@ -77,7 +77,7 @@ describe('get action', () => {
       .agent()
       .resource('posts')
       .get({
-        resourceIndex: p1.get('id'),
+        filterByTk: p1.get('id'),
       });
 
     const body = response.body;
@@ -100,10 +100,9 @@ describe('get action', () => {
 
     const response = await app
       .agent()
-      .resource('posts.comments')
+      .resource('posts.comments', p1.get('id'))
       .get({
-        resourceIndex: c1.get('id'),
-        associatedIndex: p1.get('id'),
+        filterByTk: c1.get('id'),
       });
 
     expect(response.body['id']).toEqual(c1.get('id'));
@@ -123,10 +122,8 @@ describe('get action', () => {
 
     const response = await app
       .agent()
-      .resource('posts.profile')
-      .get({
-        associatedIndex: p1.get('id'),
-      });
+      .resource('posts.profile', p1.get('id'))
+      .get();
 
     expect(response.body['id']).toEqual(postProfile.get('id'));
   });
