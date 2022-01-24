@@ -27,6 +27,7 @@ export const Menu: ComposedMenu = observer((props) => {
     onSelect,
     mode,
     defaultSelectedUid,
+    sideMenuRefScopeKey,
     defaultSelectedKeys: dSelectedKeys,
     defaultOpenKeys: dOpenKeys,
     ...others
