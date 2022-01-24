@@ -1,32 +1,18 @@
-import React, { createContext, useContext, useEffect, useMemo, useState } from 'react';
-import { uid } from '@formily/shared';
-import { createForm, Form } from '@formily/core';
-import { useCookieState, useUpdateEffect } from 'ahooks';
-import { useTranslation } from 'react-i18next';
-import {
-  Schema,
-  FormProvider,
-  RecursionField,
-  createSchemaField,
-  IRecursionFieldProps,
-  ISchemaFieldProps,
-  SchemaOptionsContext,
-  SchemaReactComponents,
-  SchemaExpressionScopeContext,
-} from '@formily/react';
-import { IRecursionComponentProps, ISchemaComponentProvider } from '../types';
+import { RecursionField, SchemaExpressionScopeContext, SchemaOptionsContext } from '@formily/react';
+import React, { useContext } from 'react';
 import { SchemaComponentContext } from '../context';
+import { IRecursionComponentProps } from '../types';
 
 export const RecursionComponent: React.FC<IRecursionComponentProps> = (props) => {
   const { components, scope } = useContext(SchemaComponentContext);
   return (
     <SchemaOptionsContext.Provider
       value={{
-        scope: { ...props.scope, ...scope },
-        components: { ...props.components, ...components },
+        scope: { ...scope, ...props.scope },
+        components: { ...components, ...props.components },
       }}
     >
-      <SchemaExpressionScopeContext.Provider value={{ scope }}>
+      <SchemaExpressionScopeContext.Provider value={{ ...scope, ...props.scope }}>
         <RecursionField {...props} />
       </SchemaExpressionScopeContext.Provider>
     </SchemaOptionsContext.Provider>

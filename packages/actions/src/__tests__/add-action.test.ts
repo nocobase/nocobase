@@ -1,8 +1,8 @@
-import { mockServer } from './index';
+import { mockServer, MockServer } from './index';
 import { registerActions } from '@nocobase/actions';
 
 describe('add action', () => {
-  let app;
+  let app: MockServer;
   let Post;
   let Comment;
   let Tag;
@@ -80,9 +80,8 @@ describe('add action', () => {
 
     const response = await app
       .agent()
-      .resource('posts.tags')
+      .resource('posts.tags', p1.get('id'))
       .add({
-        associatedIndex: p1.get('id'),
         values: [t1.get('id'), t2.get('id')],
       });
 
@@ -91,9 +90,8 @@ describe('add action', () => {
     // add with through values
     await app
       .agent()
-      .resource('posts.tags')
+      .resource('posts.tags', p1.get('id'))
       .add({
-        associatedIndex: p1.get('id'),
         values: [
           [
             t3.get('id'),

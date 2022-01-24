@@ -30,4 +30,12 @@ group:
 
 ## Examples
 
+### Action + Action.Drawer
+
 <code src="./demos/demo1.tsx"/>
+
+### VisibleContext + Action.Drawer
+
+只配置 Action.Drawer，而不需要 Action，通过 VisibleContext 自定义按钮。
+
+<code src="./demos/demo2.tsx"/>

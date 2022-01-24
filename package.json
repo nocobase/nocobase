@@ -8,6 +8,8 @@
     "start-docs": "dumi dev",
     "bootstrap": "lerna bootstrap",
     "clean": "rimraf -rf packages/*/{lib,esm,dist} && lerna clean",
+    "nocobase": "ts-node-dev -r dotenv/config -r tsconfig-paths/register ./packages/api/src/index.ts",
+    "start-server": "ts-node-dev -r dotenv/config -r tsconfig-paths/register ./packages/api/src/index.ts",
     "build": "lerna run build",
     "build-docs": "dumi build",
     "test": "jest",
@@ -63,7 +65,8 @@
     "ts-jest": "^26.0.0",
     "ts-loader": "^7.0.4",
     "ts-node": "^9.1.1",
-    "tsconfig-paths": "^3.11.0",
+    "ts-node-dev": "^1.1.8",
+    "tsconfig-paths": "^3.12.0",
     "typescript": "^4.1.5"
   }
 }

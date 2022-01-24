@@ -1,8 +1,8 @@
-import { mockServer } from './index';
+import { MockServer, mockServer } from './index';
 import { registerActions } from '@nocobase/actions';
 
 describe('destroy action', () => {
-  let app;
+  let app: MockServer;
   let Post;
   let Comment;
   let Tag;
@@ -71,7 +71,7 @@ describe('destroy action', () => {
       .agent()
       .resource('posts')
       .destroy({
-        resourceIndex: p1.get('id'),
+        filterByTk: p1.get('id'),
       });
 
     expect(await Post.repository.count()).toEqual(0);
@@ -93,10 +93,9 @@ describe('destroy action', () => {
 
     const response = await app
       .agent()
-      .resource('posts.comments')
+      .resource('posts.comments', p1.get('id'))
       .destroy({
-        resourceIndex: c1.get('id'),
-        associatedIndex: p1.get('id'),
+        filterByTk: c1.get('id'),
       });
 
     expect(await Comment.repository.count()).toEqual(0);
@@ -123,10 +122,9 @@ describe('destroy action', () => {
 
     const response = await app
       .agent()
-      .resource('posts.tags')
+      .resource('posts.tags', p1t1.get('id'))
       .destroy({
-        resourceIndex: p1.get('id'),
-        associatedIndex: p1t1.get('id'),
+        filterByTk: p1.get('id'),
       });
 
     expect(await Tag.repository.count()).toEqual(0);
@@ -146,10 +144,8 @@ describe('destroy action', () => {
 
     const response = await app
       .agent()
-      .resource('posts.profile')
-      .destroy({
-        associatedIndex: p1.get('id'),
-      });
+      .resource('posts.profile', p1.get('id'))
+      .destroy();
 
     expect(await Profile.repository.count()).toEqual(0);
   });

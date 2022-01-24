@@ -19,7 +19,6 @@ export interface ISchemaComponentContext {
   scope?: any;
   components?: SchemaReactComponents;
   refresh?: () => void;
-  refreshFormId?: () => void;
   reset?: () => void;
   designable?: boolean;
   setDesignable?: (value: boolean) => void;

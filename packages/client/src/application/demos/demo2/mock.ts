@@ -18,7 +18,7 @@ export default (apiClient: APIClient) => {
         theme: 'dark',
         // defaultSelectedUid: 'u8',
         onSelect: '{{ onSelect }}',
-        sideMenuRef: '{{ sideMenuRef }}',
+        sideMenuRefScopeKey: 'sideMenuRef',
       },
       properties: {
         item3: {
@@ -112,8 +112,7 @@ export default (apiClient: APIClient) => {
         type: 'void',
         name: name,
         'x-uid': name,
-        'x-component': 'div',
-        'x-content': name,
+        'x-component': 'Page',
       },
     };
     return [200, response];

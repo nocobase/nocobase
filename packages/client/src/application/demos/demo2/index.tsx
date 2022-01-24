@@ -1,20 +1,28 @@
-import React from 'react';
-import { HashRouter, MemoryRouter } from 'react-router-dom';
 import {
-  i18n,
-  compose,
-  useRequest,
-  AuthLayout,
+  ACLShortcut,
+  Action,
   AdminLayout,
+  AntdConfigProvider,
   APIClientProvider,
+  AuthLayout,
+  CollectionManagerShortcut,
+  compose,
+  DesignableSwitch,
+  DocumentTitleProvider,
+  i18n,
+  Menu,
+  Page,
+  PluginManagerProvider,
   RouteSwitch,
   RouteSwitchProvider,
-  AntdConfigProvider,
   SchemaComponentProvider,
-  Menu,
+  SystemSettingsShortcut,
+  useRequest
 } from '@nocobase/client';
-import { I18nextProvider } from 'react-i18next';
 import { Spin } from 'antd';
+import React from 'react';
+import { I18nextProvider } from 'react-i18next';
+import { MemoryRouter } from 'react-router-dom';
 import apiClient from './apiClient';
 
 const providers = [
@@ -23,7 +31,12 @@ const providers = [
   [APIClientProvider, { apiClient }],
   [I18nextProvider, { i18n }],
   [AntdConfigProvider, { remoteLocale: true }],
-  [SchemaComponentProvider, { components: { Menu } }],
+  [
+    PluginManagerProvider,
+    { components: { ACLShortcut, DesignableSwitch, CollectionManagerShortcut, SystemSettingsShortcut } },
+  ],
+  [SchemaComponentProvider, { components: { Page, Menu, Action } }],
+  [DocumentTitleProvider, { addonAfter: 'NocoBase' }],
   [RouteSwitchProvider, { components: { AuthLayout, AdminLayout } }],
 ];
 

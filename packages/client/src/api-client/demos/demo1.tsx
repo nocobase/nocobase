@@ -20,5 +20,5 @@ export default compose(...providers)(() => {
     action: 'get',
     params: {},
   });
-  return <div>{data?.name}</div>;
+  return <div>{data?.data?.name}</div>;
 });

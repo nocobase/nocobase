@@ -1,8 +1,9 @@
-import React from 'react';
-import { Spin } from 'antd';
-import { useRequest } from '../../api-client';
-import { SchemaComponent } from './SchemaComponent';
 import { Schema } from '@formily/react';
+import { Spin } from 'antd';
+import React from 'react';
+import { useRequest } from '../../api-client';
+import { useSchemaComponentContext } from '../hooks';
+import { SchemaComponent } from './SchemaComponent';
 
 export interface RemoteSchemaComponentProps {
   scope?: any;
@@ -15,20 +16,22 @@ export interface RemoteSchemaComponentProps {
 
 const defaultTransform = (s: Schema) => s;
 
-export const RemoteSchemaComponent: React.FC<RemoteSchemaComponentProps> = (props) => {
+const RequestSchemaComponent: React.FC<RemoteSchemaComponentProps> = (props) => {
   const { hidden, scope, uid, onSuccess, schemaTransform = defaultTransform } = props;
-  if (!uid) {
-    return null;
-  }
+  const { reset } = useSchemaComponentContext();
   const { data, loading } = useRequest(
     {
       url: `/ui_schemas:getJsonSchema/${uid}`,
     },
     {
       refreshDeps: [uid],
-      onSuccess,
+      onSuccess(data) {
+        onSuccess && onSuccess(data);
+        reset && reset();
+      },
     },
   );
+
   if (loading) {
     return <Spin />;
   }
@@ -36,4 +39,8 @@ export const RemoteSchemaComponent: React.FC<RemoteSchemaComponentProps> = (prop
     return <Spin />;
   }
   return <SchemaComponent scope={scope} schema={schemaTransform(data?.data || {})} />;
+};
+
+export const RemoteSchemaComponent: React.FC<RemoteSchemaComponentProps> = (props) => {
+  return props.uid ? <RequestSchemaComponent {...props}/> : null;
 };
