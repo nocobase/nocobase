@@ -22,11 +22,11 @@ export const RecursionComponent: React.FC<IRecursionComponentProps> = (props) =>
   return (
     <SchemaOptionsContext.Provider
       value={{
-        scope: { ...props.scope, ...scope },
-        components: { ...props.components, ...components },
+        scope: { ...scope, ...props.scope },
+        components: { ...components, ...props.components },
       }}
     >
-      <SchemaExpressionScopeContext.Provider value={{ scope }}>
+      <SchemaExpressionScopeContext.Provider value={{ ...scope, ...props.scope }}>
         <RecursionField {...props} />
       </SchemaExpressionScopeContext.Provider>
     </SchemaOptionsContext.Provider>
