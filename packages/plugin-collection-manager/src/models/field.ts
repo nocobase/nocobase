@@ -12,7 +12,7 @@ export class FieldModel extends MagicAttributeModel {
   }
 
   async load(loadOptions?: LoadOptions) {
-    const { skipExist } = loadOptions;
+    const { skipExist = false } = loadOptions || {};
     const collectionName = this.get('collectionName');
     if (!this.db.hasCollection(collectionName)) {
       throw new Error(`${collectionName} collection does not exist.`);

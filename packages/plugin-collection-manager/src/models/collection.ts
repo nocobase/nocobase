@@ -16,7 +16,9 @@ export class CollectionModel extends MagicAttributeModel {
   async load(loadOptions: LoadOptions = {}) {
     const { skipExist, skipField } = loadOptions;
     const name = this.get('name');
+
     let collection: Collection;
+
     if (this.db.hasCollection(name)) {
       collection = this.db.getCollection(name);
       if (skipExist) {
@@ -26,6 +28,7 @@ export class CollectionModel extends MagicAttributeModel {
     } else {
       collection = this.db.collection(this.get());
     }
+
     if (!skipField) {
       await this.loadFields();
     }

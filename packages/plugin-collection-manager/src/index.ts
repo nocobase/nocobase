@@ -2,11 +2,12 @@ import path from 'path';
 import { Plugin } from '@nocobase/server';
 import { CollectionModel } from './models/collection';
 import { FieldModel } from './models/field';
-import { uid } from '@nocobase/utils';
 import beforeInitOptions from './hooks/beforeInitOptions';
 import { beforeCreateForChildrenCollection } from './hooks/beforeCreateForChildrenCollection';
 import { beforeCreateForReverseField } from './hooks/beforeCreateForReverseField';
 import { afterCreateForReverseField } from './hooks/afterCreateForReverseField';
+
+export * from './repositories/collection-repository';
 
 export default class CollectionManagerPlugin extends Plugin {
   async load() {
@@ -14,9 +15,11 @@ export default class CollectionManagerPlugin extends Plugin {
       CollectionModel,
       FieldModel,
     });
+
     await this.app.db.import({
       directory: path.resolve(__dirname, './collections'),
     });
+
     // 要在 beforeInitOptions 之前处理
     this.app.db.on('fields.beforeCreate', beforeCreateForReverseField(this.app.db));
     this.app.db.on('fields.beforeCreate', beforeCreateForChildrenCollection(this.app.db));
@@ -31,13 +34,15 @@ export default class CollectionManagerPlugin extends Plugin {
       }
     }
     this.app.db.on('fields.afterCreate', afterCreateForReverseField(this.app.db));
-    this.app.db.on('collections.afterCreate', async (model, options) => {
+
+    this.app.db.on('collections.afterCreateWithAssociations', async (model, options) => {
       if (options.context) {
         process.nextTick(async () => {
           await model.migrate();
         });
       }
     });
+
     this.app.db.on('fields.afterCreate', async (model, options) => {
       if (options.context) {
         process.nextTick(async () => {
