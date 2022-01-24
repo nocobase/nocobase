@@ -35,19 +35,15 @@ export default class CollectionManagerPlugin extends Plugin {
     }
     this.app.db.on('fields.afterCreate', afterCreateForReverseField(this.app.db));
 
-    this.app.db.on('collections.afterCreateWithAssociations', async (model, options) => {
-      if (options.context) {
-        process.nextTick(async () => {
-          await model.migrate();
-        });
+    this.app.db.on('collections.afterCreateWithAssociations', async (model, { context, transaction }) => {
+      if (context) {
+        await model.migrate({ transaction });
       }
     });
 
-    this.app.db.on('fields.afterCreate', async (model, options) => {
-      if (options.context) {
-        process.nextTick(async () => {
-          await model.migrate();
-        });
+    this.app.db.on('fields.afterCreate', async (model, { context, transaction }) => {
+      if (context) {
+        await model.migrate({ transaction });
       }
     });
   }
