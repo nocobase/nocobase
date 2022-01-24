@@ -128,7 +128,7 @@ export class Database extends EventEmitter implements AsyncEmitter {
     }
   }
 
-  getRepository(name: string): Repository;
+  getRepository<R extends Repository>(name: string): R;
   getRepository<R extends RelationRepository>(name: string, relationId: string | number): R;
 
   getRepository<R extends RelationRepository>(name: string, relationId?: string | number): Repository | R {
