@@ -1,7 +1,7 @@
-import { SyncOptions } from 'sequelize';
+import { SyncOptions, Transactionable } from 'sequelize';
 import Database, { MagicAttributeModel } from '@nocobase/database';
 
-interface LoadOptions {
+interface LoadOptions extends Transactionable {
   // TODO
   skipExist?: boolean;
 }
@@ -25,8 +25,10 @@ export class FieldModel extends MagicAttributeModel {
     return collection.setField(name, this.get());
   }
 
-  async migrate(options?: SyncOptions) {
-    const field = await this.load();
+  async migrate(options?: SyncOptions & Transactionable) {
+    const field = await this.load({
+      transaction: options.transaction,
+    });
     await field.sync(options);
   }
 }
