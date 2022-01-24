@@ -1,6 +1,7 @@
-import { ISchemaFieldProps, Schema } from '@formily/react';
+import { ISchemaFieldProps, RecursionField, Schema } from '@formily/react';
 import React, { useContext, useMemo } from 'react';
 import { SchemaComponentContext } from '../context';
+import { SchemaComponentOptions } from './SchemaComponentOptions';
 
 function toSchema(schema?: any) {
   if (Schema.isSchemaInstance(schema)) {
@@ -18,8 +19,12 @@ function toSchema(schema?: any) {
 }
 
 export function SchemaComponent(props: ISchemaFieldProps) {
-  const { schema, ...others } = props;
-  const { SchemaField } = useContext(SchemaComponentContext);
+  const { components, scope, schema, ...others } = props;
   const s = useMemo(() => toSchema(schema), []);
-  return <SchemaField {...others} schema={s} />;
+  console.log('SchemaComponent', { components, scope });
+  return (
+    <SchemaComponentOptions inherit components={components} scope={scope}>
+      <RecursionField {...others} schema={s} />
+    </SchemaComponentOptions>
+  );
 }
