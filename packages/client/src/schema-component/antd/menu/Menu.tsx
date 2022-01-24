@@ -1,5 +1,5 @@
 import { DesktopOutlined } from '@ant-design/icons';
-import { observer, RecursionField, Schema, useFieldSchema } from '@formily/react';
+import { observer, RecursionField, Schema, SchemaExpressionScopeContext, useFieldSchema } from '@formily/react';
 import { Menu as AntdMenu } from 'antd';
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
@@ -12,10 +12,19 @@ type ComposedMenu = React.FC<any> & {
 
 const MenuModeContext = createContext(null);
 
+const useSideMenuRef = () => {
+  const schema = useFieldSchema();
+  const scope = useContext(SchemaExpressionScopeContext);
+  const scopeKey = schema?.['x-component-props']?.['sideMenuRefScopeKey'];
+  if (!scopeKey) {
+    return;
+  }
+  return scope[scopeKey];
+}
+
 export const Menu: ComposedMenu = observer((props) => {
   let {
     onSelect,
-    sideMenuRef,
     mode,
     defaultSelectedUid,
     defaultSelectedKeys: dSelectedKeys,
@@ -24,6 +33,7 @@ export const Menu: ComposedMenu = observer((props) => {
   } = props;
   console.log('defaultSelectedUid', defaultSelectedUid)
   const schema = useFieldSchema();
+  const sideMenuRef = useSideMenuRef();
   const [defaultSelectedKeys, setDefaultSelectedKeys] = useState(() => {
     if (dSelectedKeys) {
       return dSelectedKeys;
@@ -107,7 +117,7 @@ export const Menu: ComposedMenu = observer((props) => {
         ? null
         : mode === 'mix' &&
           sideMenuSchema?.properties &&
-          sideMenuRef.current?.firstChild &&
+          sideMenuRef?.current?.firstChild &&
           createPortal(
             <MenuModeContext.Provider value={'inline'}>
               <AntdMenu
