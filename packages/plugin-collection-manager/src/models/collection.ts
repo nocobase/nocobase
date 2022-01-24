@@ -24,9 +24,15 @@ export class CollectionModel extends MagicAttributeModel {
       if (skipExist) {
         return collection;
       }
-      collection.updateOptions(this.get());
+      collection.updateOptions({
+        ...this.get(),
+        fields: [],
+      });
     } else {
-      collection = this.db.collection(this.get());
+      collection = this.db.collection({
+        ...this.get(),
+        fields: [],
+      });
     }
 
     if (!skipField) {
