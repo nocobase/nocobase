@@ -3,7 +3,6 @@ import { changeMockUser, prepareApp } from './prepare';
 import { Database, Model } from '@nocobase/database';
 import { ACL } from '@nocobase/acl';
 import PluginACL from '@nocobase/plugin-acl';
-import * as stream from 'stream';
 
 describe('middleware', () => {
   let app: MockServer;
