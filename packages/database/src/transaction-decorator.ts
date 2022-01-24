@@ -44,6 +44,7 @@ export function transactionWrapperBuilder(transactionGenerator) {
             return results;
           } catch (err) {
             await transaction.rollback();
+            console.error({ err });
             throw err;
           }
         } else {

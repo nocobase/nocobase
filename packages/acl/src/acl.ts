@@ -1,13 +1,10 @@
 import lodash from 'lodash';
-import { ACLAvailableStrategy, AvailableStrategyOptions } from './acl-available-strategy';
+import { ACLAvailableStrategy, AvailableStrategyOptions, predicate } from './acl-available-strategy';
 import { ACLRole, RoleActionParams } from './acl-role';
 import { AclAvailableAction, AvailableActionOptions } from './acl-available-action';
 import EventEmitter from 'events';
-
-interface StrategyOptions {
-  role: string;
-  strategy: string;
-}
+import { Action } from '@nocobase/resourcer';
+const parse = require('json-templates');
 
 interface CanResult {
   role: string;
@@ -18,7 +15,8 @@ interface CanResult {
 
 export interface DefineOptions {
   role: string;
-  strategy?: string | AvailableStrategyOptions;
+  allowConfigure?: boolean;
+  strategy?: string | Omit<AvailableStrategyOptions, 'acl'>;
   actions?: {
     [key: string]: RoleActionParams;
   };
@@ -28,10 +26,19 @@ export interface DefineOptions {
 export interface ListenerContext {
   acl: ACL;
   role: ACLRole;
+  path: string;
+  actionName: string;
+  resourceName: string;
   params: RoleActionParams;
 }
 
 type Listener = (ctx: ListenerContext) => void;
+
+interface CanArgs {
+  role: string;
+  resource: string;
+  action: string;
+}
 
 export class ACL extends EventEmitter {
   protected availableActions = new Map<string, AclAvailableAction>();
@@ -40,6 +47,39 @@ export class ACL extends EventEmitter {
   roles = new Map<string, ACLRole>();
 
   actionAlias = new Map<string, string>();
+
+  configResources: string[] = [];
+
+  constructor() {
+    super();
+
+    this.beforeGrantAction((ctx) => {
+      if (lodash.isPlainObject(ctx.params) && ctx.params.own) {
+        ctx.params = lodash.merge(ctx.params, predicate.own);
+      }
+    });
+
+    this.beforeGrantAction((ctx) => {
+      const actionName = this.resolveActionAlias(ctx.actionName);
+
+      if (lodash.isPlainObject(ctx.params)) {
+        if ((actionName === 'create' || actionName === 'update') && ctx.params.fields) {
+          ctx.params = {
+            ...lodash.omit(ctx.params, 'fields'),
+            whitelist: ctx.params.fields,
+          };
+        }
+
+        if (actionName === 'view' && ctx.params.fields) {
+          const appendFields = ['id', 'createdAt', 'updatedAt'];
+          ctx.params = {
+            ...lodash.omit(ctx.params, 'fields'),
+            fields: [...ctx.params.fields, ...appendFields],
+          };
+        }
+      }
+    });
+  }
 
   define(options: DefineOptions): ACLRole {
     const roleName = options.role;
@@ -64,6 +104,22 @@ export class ACL extends EventEmitter {
     return this.roles.get(name);
   }
 
+  removeRole(name: string) {
+    return this.roles.delete(name);
+  }
+
+  registerConfigResources(names: string[]) {
+    names.forEach((name) => this.registerConfigResource(name));
+  }
+
+  registerConfigResource(name: string) {
+    this.configResources.push(name);
+  }
+
+  isConfigResource(name: string) {
+    return this.configResources.includes(name);
+  }
+
   setAvailableAction(name: string, options: AvailableActionOptions) {
     this.availableActions.set(name, new AclAvailableAction(name, options));
 
@@ -75,21 +131,19 @@ export class ACL extends EventEmitter {
     }
   }
 
+  getAvailableActions() {
+    return this.availableActions;
+  }
+
   setAvailableStrategy(name: string, options: Omit<AvailableStrategyOptions, 'acl'>) {
-    this.availableStrategy.set(
-      name,
-      new ACLAvailableStrategy({
-        ...options,
-        acl: this,
-      }),
-    );
+    this.availableStrategy.set(name, new ACLAvailableStrategy(this, options));
   }
 
-  beforeGrantAction(path: string, listener?: Listener) {
-    this.addListener(`${path}.beforeGrantAction`, listener);
+  beforeGrantAction(listener?: Listener) {
+    this.addListener('beforeGrantAction', listener);
   }
 
-  can({ role, resource, action }: { role: string; resource: string; action: string }): CanResult | null {
+  can({ role, resource, action }: CanArgs): CanResult | null {
     if (!this.isAvailableAction(action)) {
       return null;
     }
@@ -111,16 +165,28 @@ export class ACL extends EventEmitter {
       }
     }
 
+    if (!aclRole.strategy) {
+      return null;
+    }
+
     const roleStrategy = lodash.isString(aclRole.strategy)
       ? this.availableStrategy.get(aclRole.strategy)
-      : new ACLAvailableStrategy(aclRole.strategy);
+      : new ACLAvailableStrategy(this, aclRole.strategy);
 
     if (!roleStrategy) {
       return null;
     }
 
-    if (roleStrategy.allow(resource, this.resolveActionAlias(action))) {
-      return { role, resource, action };
+    const roleStrategyParams = roleStrategy.allow(resource, this.resolveActionAlias(action));
+
+    if (roleStrategyParams) {
+      const result = { role, resource, action };
+
+      if (lodash.isPlainObject(roleStrategyParams)) {
+        result['params'] = roleStrategyParams;
+      }
+
+      return result;
     }
 
     return null;
@@ -132,5 +198,35 @@ export class ACL extends EventEmitter {
 
   public resolveActionAlias(action: string) {
     return this.actionAlias.get(action) ? this.actionAlias.get(action) : action;
+  }
+
+  middleware() {
+    const aclInstance = this;
+
+    return async function ACLMiddleware(ctx, next) {
+      const roleName = ctx.state.currentRole;
+      const { resourceName, actionName } = ctx.action;
+
+      const resourcerAction: Action = ctx.action;
+
+      ctx.can = (options: Omit<CanArgs, 'role'>) => {
+        return aclInstance.can({ role: roleName, ...options });
+      };
+
+      const canResult = ctx.can({ resource: resourceName, action: actionName });
+
+      if (!canResult) {
+        ctx.throw(403, 'no permission');
+        return;
+      }
+
+      if (lodash.get(canResult, 'params')) {
+        const template = parse(canResult.params);
+
+        resourcerAction.mergeParams(template({ ctx }));
+      }
+
+      await next();
+    };
   }
 }
