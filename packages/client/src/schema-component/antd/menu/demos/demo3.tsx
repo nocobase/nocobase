@@ -16,7 +16,7 @@ const schema: ISchema = {
         mode: 'mix',
         theme: 'dark',
         defaultSelectedUid: 'u8',
-        sideMenuRef: '{{ sideMenuRef }}',
+        sideMenuRefScopeKey: 'sideMenuRef',
       },
       properties: {
         item1: {

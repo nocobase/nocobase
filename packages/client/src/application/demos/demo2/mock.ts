@@ -18,7 +18,7 @@ export default (apiClient: APIClient) => {
         theme: 'dark',
         // defaultSelectedUid: 'u8',
         onSelect: '{{ onSelect }}',
-        sideMenuRef: '{{ sideMenuRef }}',
+        sideMenuRefScopeKey: 'sideMenuRef',
       },
       properties: {
         item3: {
