@@ -1,7 +1,7 @@
 import { get } from 'lodash';
 
 import { ModelCtor } from '@nocobase/database';
-import { ExecutionModel } from '../../models/Execution';
+import { ExecutionModel } from '../models/Execution';
 
 export type OperandType = 'context' | 'input' | 'job';
 

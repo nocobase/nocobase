@@ -1,4 +1,4 @@
-type Calculator = (...args: any[]) => boolean;
+type Calculator = (...args: any[]) => any;
 
 const calculators = new Map<string, Calculator>();
 

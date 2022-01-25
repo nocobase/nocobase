@@ -2,11 +2,29 @@ import path from 'path';
 import { MockServer, mockServer } from '@nocobase/test';
 
 import plugin from '../server';
+import { InstructionResult, registerInstruction } from '../instructions';
+import { JOB_STATUS } from '../constants';
 
 export async function getApp(options = {}): Promise<MockServer> {
   const app = mockServer(options);
 
   app.plugin(plugin);
+
+  // for test only
+  registerInstruction('echo', {
+    run(this, { result }, execution) {
+      return {
+        status: JOB_STATUS.RESOLVED,
+        result
+      };
+    }
+  });
+
+  registerInstruction('error', {
+    run(this, input, execution) {
+      throw new Error('definite error');
+    }
+  });
 
   await app.load();
 

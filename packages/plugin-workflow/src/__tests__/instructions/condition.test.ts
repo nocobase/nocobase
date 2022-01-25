@@ -2,7 +2,7 @@ import { Application } from '@nocobase/server';
 import Database, { Model, ModelCtor } from '@nocobase/database';
 import { getApp } from '..';
 import { WorkflowModel } from '../../models/Workflow';
-import { EXECUTION_STATUS, JOB_STATUS } from '../../constants';
+import { EXECUTION_STATUS, JOB_STATUS, LINK_TYPE } from '../../constants';
 
 
 
@@ -22,6 +22,10 @@ describe('workflow > instructions > condition', () => {
 
   afterEach(() => db.close());
 
+  describe('config.rejectOnFalse', () => {
+
+  });
+
   describe('single calculation', () => {
     it('calculation to true downstream', async () => {
       const workflow = await WorkflowModel.create({
@@ -36,24 +40,26 @@ describe('workflow > instructions > condition', () => {
       const n1 = await workflow.createNode({
         title: 'condition',
         type: 'condition',
-        // (1 === 1): true
         config: {
-          calculator: 'equal',
-          operands: [{ value: 1 }, { value: 1 }]
+          // (1 === 1): true
+          calculation: {
+            calculator: 'equal',
+            operands: [{ value: 1 }, { value: 1 }]
+          }
         }
       });
 
-      await workflow.createNode({
+      const n2 = await workflow.createNode({
         title: 'true to echo',
         type: 'echo',
-        when: true,
+        linkType: LINK_TYPE.ON_TRUE,
         upstream_id: n1.id
       });
 
-      await workflow.createNode({
+      const n3 = await workflow.createNode({
         title: 'false to echo',
         type: 'echo',
-        when: false,
+        linkType: LINK_TYPE.ON_FALSE,
         upstream_id: n1.id
       });
 
@@ -80,24 +86,26 @@ describe('workflow > instructions > condition', () => {
       const n1 = await workflow.createNode({
         title: 'condition',
         type: 'condition',
-        // (0 === 1): false
         config: {
-          calculator: 'equal',
-          operands: [{ value: 0 }, { value: 1 }]
+          // (0 === 1): false
+          calculation: {
+            calculator: 'equal',
+            operands: [{ value: 0 }, { value: 1 }]
+          }
         }
       });
 
       await workflow.createNode({
         title: 'true to echo',
         type: 'echo',
-        when: true,
+        linkType: LINK_TYPE.ON_TRUE,
         upstream_id: n1.id
       });
 
       await workflow.createNode({
         title: 'false to echo',
         type: 'echo',
-        when: false,
+        linkType: LINK_TYPE.ON_FALSE,
         upstream_id: n1.id
       });
 
@@ -110,5 +118,9 @@ describe('workflow > instructions > condition', () => {
       expect(jobs.length).toEqual(2);
       expect(jobs[1].result).toEqual(false);
     });
+  });
+
+  describe('group calculation', () => {
+
   });
 });

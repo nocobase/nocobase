@@ -1,7 +1,9 @@
+import { ModelCtor } from '@nocobase/database';
+import { WorkflowModel } from '../models/Workflow';
 import * as dataChangeTriggers from './data-change';
 
 export interface ITrigger {
-  (config: any): void
+  (this: ModelCtor<WorkflowModel>, config: any): void
 }
 
 const triggers = new Map<string, ITrigger>();

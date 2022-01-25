@@ -1,140 +1,175 @@
-import { Model } from '@nocobase/database';
+import Sequelize from 'sequelize';
+import { Model, ModelCtor } from '@nocobase/database';
 
 import { EXECUTION_STATUS, JOB_STATUS } from '../constants';
 import { getInstruction } from '../instructions';
 
 export class ExecutionModel extends Model {
-  async exec(input, previousJob = null, options = {}) {
-    // check execution status for quick out
-    if (this.get('status') !== EXECUTION_STATUS.STARTED) {
-      return;
-    }
+  nodes: Array<any> = [];
+  nodesMap = new Map();
+  jobsMap = new Map();
 
-    let lastJob = previousJob || await this.getLastJob(options);
-    const node = await this.getNextNode(lastJob);
-    // if not found any node
-    if (!node) {
-      // set execution as resolved
-      await this.update({
-        status: EXECUTION_STATUS.RESOLVED
-      });
+  // make dual linked nodes list then cache
+  makeNodes(nodes = []) {
+    this.nodes = nodes;
 
-      return;
-    }
+    nodes.forEach(node => {
+      this.nodesMap.set(node.id, node);
+    });
 
-    // got node.id and node.type
-    // find node instruction by type from registered node types in memory (program defined)
-    const instruction = getInstruction(node.type);
-
-    let result = null;
-    let status = JOB_STATUS.PENDING;
-    // check if manual or node is on current job
-    if (!instruction.manual || (lastJob && lastJob.node_id === node.id)) {
-      // execute instruction of next node and get status
-      try {
-        result = await instruction.run.call(node, input ?? lastJob?.result, this);
-        status = JOB_STATUS.RESOLVED;
-      } catch(err) {
-        result = err;
-        status = JOB_STATUS.REJECTED;
+    nodes.forEach(node => {
+      if (node.upstream_id) {
+        node.upstream = this.nodesMap.get(node.upstream_id);
       }
-    }
 
-    // manually exec pending job
-    if (lastJob && lastJob.node_id === node.id) {
-      if (lastJob.status !== JOB_STATUS.PENDING) {
-        // not allow to retry resolved or rejected job for now
-        // TODO: based on retry config
-        return;
+      if (node.downstream_id) {
+        node.downstream = this.nodesMap.get(node.downstream_id);
       }
-      // RUN instruction
-      // should update the record based on input
-      lastJob.update({
-        status,
-        result
-      });
-    } else {
-      // RUN instruction
-      lastJob = await this.createJob({
-        status,
-        node_id: node.id,
-        upstream_id: lastJob ? lastJob.id : null,
-        // TODO: how to presentation error?
-        result
-      });
-    }
-
-    switch(status) {
-      case JOB_STATUS.PENDING:
-      case JOB_STATUS.REJECTED:
-        // TODO: should handle rejected when configured
-        return;
-      default:
-        // should return chained promise to run any nodes as many as possible,
-        // till end (pending/rejected/no more)
-        return this.exec(result, lastJob, options);
-    }
+    });
   }
 
-  async getLastJob(options) {
+  makeJobs(jobs: Array<ModelCtor<Model>>) {
+    jobs.forEach(job => {
+      this.jobsMap.set(job.id, job);
+    });
+  }
+
+  async prepare() {
+    if (this.status !== EXECUTION_STATUS.STARTED) {
+      throw new Error(`execution was ended with status ${this.status}`);
+    }
+
+    if (!this.workflow) {
+      this.workflow = await this.getWorkflow();
+    }
+
+    const nodes = await this.workflow.getNodes();
+
+    this.makeNodes(nodes);
+
     const jobs = await this.getJobs();
-    
-    if (!jobs.length) {
-      return null;
-    }
 
-    // find last job, last means no any other jobs set upstream to
-    const lastJobIds = new Set(jobs.map(item => item.id));
-    jobs.forEach(item => {
-      if (item.upstream_id) {
-        lastJobIds.delete(item.upstream_id);
-      }
-    });
-    // TODO(feature):
-    // if has multiple jobs? which one or some should be run next?
-    // if has determined flowNodeId, run that one.
-    // else not supported for now (multiple race pendings)
-    const [jobId] = Array.from(lastJobIds);
-    return jobs.find(item => item.id === jobId) || null;
+    this.makeJobs(jobs);
   }
 
-  async getNextNode(lastJob) {
-    if (!this.get('workflow')) {
-      // cache workflow
-      this.setDataValue('workflow', await this.getWorkflow());
+  async start(options) {
+    await this.prepare();
+    if (!this.nodes.length) {
+      return this.exit(null);
     }
-    const workflow = this.get('workflow');
+    const head = this.nodes.find(item => !item.upstream);
+    return this.exec(head, { result: this.context });
+  }
 
-    // if has not any job, means initial execution
-    if (!lastJob) {
-      // find first node for this workflow
-      // first one is the one has no upstream
-      const [firstNode = null] = await workflow.getNodes({
-        where: {
-          upstream_id: null
-        }
+  async resume(job, options) {
+    await this.prepare();
+    const node = this.nodesMap.get(job.node_id);
+    return this.recall(node, job);
+  }
+
+  private async run(instruction, node, prevJob) {
+    let job;
+    try {
+      // call instruction to get result and status
+      job = await instruction.call(node, prevJob, this);
+    } catch (err) {
+      console.error(err);
+      // for uncaught error, set to rejected
+      job = {
+        result: err,
+        status: JOB_STATUS.REJECTED
+      };
+    }
+
+    let savedJob;
+    if (job instanceof Sequelize.Model) {
+      savedJob = await job.save();
+    } else {
+      const upstream_id = prevJob instanceof Sequelize.Model ? prevJob.get('id') : null;
+      savedJob = await this.saveJob({
+        node_id: node.id,
+        upstream_id,
+        ...job
       });
-
-      // put firstNode as next node to be execute
-      return firstNode;
     }
 
-    const lastNode = await lastJob.getNode();
-
-    if (lastJob.status === JOB_STATUS.PENDING) {
-      return lastNode;
+    if (savedJob.get('status') === JOB_STATUS.RESOLVED && node.downstream) {
+      // run next node
+      return this.exec(node.downstream, savedJob);
     }
 
-    const [nextNode = null] = await workflow.getNodes({
-      where: {
-        upstream_id: lastJob.node_id,
-        // TODO: need better design
-        ...(lastNode.type === 'condition' ? {
-          when: lastJob.result
-        } : {})
-      }
+    // all nodes in scope have been executed
+    return this.end(node, savedJob);
+  }
+
+  async exec(node, input?) {
+    const { run } = getInstruction(node.type);
+
+    return this.run(run, node, input);
+  }
+
+  // parent node should take over the control
+  end(node, job) {
+    const parentNode = this.findBranchParentNode(node);
+    // no parent, means on main flow
+    if (parentNode) {
+      return this.recall(parentNode, job);
+    }
+    
+    // really done for all nodes
+    // * should mark execution as done with last job status
+    return this.exit(job);
+  }
+
+  async recall(node, job) {
+    const { resume } = getInstruction(node.type);
+    if (!resume) {
+      return Promise.reject(new Error('`resume` should be implemented because the node made branch'));
+    }
+
+    return this.run(resume, node, job);
+  }
+
+  async exit(job) {
+    const executionStatusMap = {
+      [JOB_STATUS.PENDING]: EXECUTION_STATUS.STARTED,
+      [JOB_STATUS.RESOLVED]: EXECUTION_STATUS.RESOLVED,
+      [JOB_STATUS.REJECTED]: EXECUTION_STATUS.REJECTED,
+      [JOB_STATUS.CANCELLED]: EXECUTION_STATUS.CANCELLED,
+    };
+    const status = job ? executionStatusMap[job.status] : EXECUTION_STATUS.RESOLVED;
+    await this.update({ status });
+    return job;
+  }
+
+  // TODO(optimize)
+  async saveJob(payload) {
+    const JobModel = this.database.getModel('jobs');
+    const [result] = await JobModel.upsert({
+      ...payload,
+      execution_id: this.id
     });
 
-    return nextNode;
+    this.jobsMap.set(result.id, result);
+
+    return result;
+  }
+
+  findBranchParentNode(node): any {
+    for (let n = node; n; n = n.upstream) {
+      if (n.linkType !== null) {
+        return n.upstream;
+      }
+    }
+    return null;
+  }
+
+  findBranchParentJob(job, node) {
+    for (let j = job; j; j = this.jobsMap.get(j.upstream_id)) {
+      if (j.node_id === node.id) {
+        return j;
+      }
+    }
+    return null;
   }
 }

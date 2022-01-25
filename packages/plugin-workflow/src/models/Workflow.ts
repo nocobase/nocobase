@@ -43,7 +43,9 @@ export class WorkflowModel extends Model {
       status: EXECUTION_STATUS.STARTED
     });
     execution.setDataValue('workflow', this);
-    await execution.exec(context, null, options);
+    execution.workflow = this;
+
+    await execution.start(null, null, options);
     return execution;
   }
 }

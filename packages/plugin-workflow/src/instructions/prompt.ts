@@ -1,6 +1,14 @@
+import { JOB_STATUS } from "../constants";
+
 export default {
-  manual: true,
-  run(this, input, context) {
-    return input;
+  run(this, input, execution) {
+    return {
+      status: JOB_STATUS.PENDING
+    };
+  },
+
+  resume(this, job, execution) {
+    job.set('status', JOB_STATUS.RESOLVED);
+    return job;
   }
 }
