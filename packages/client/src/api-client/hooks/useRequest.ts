@@ -1,8 +1,11 @@
-import { useContext } from 'react';
-import { AxiosRequestConfig } from 'axios';
-import { Options } from 'ahooks/lib/useRequest/src/types';
+import { merge } from '@formily/shared';
 import { default as useReq } from 'ahooks/lib/useRequest';
+import { Options } from 'ahooks/lib/useRequest/src/types';
+import { AxiosRequestConfig } from 'axios';
+import cloneDeep from 'lodash/cloneDeep';
+import { useContext } from 'react';
 import { APIClientContext } from '../context';
+import { assign } from './assign';
 
 type FunctionService = (...args: any[]) => Promise<any>;
 
@@ -21,14 +24,16 @@ export function useRequest<P>(
   if (typeof service === 'function') {
     return useReq(service, options);
   }
-  return useReq(async (params) => {
+  return useReq(async (params = {}) => {
     const { resource } = service as ResourceActionOptions;
+    let args = cloneDeep(service);
     if (resource) {
-      Object.assign(service, { params });
+      args.params = args.params || {};
+      assign(args.params, params);
     } else {
-      Object.assign(service, params);
+      args = merge(args, params);
     }
-    const response = await api.request(service);
+    const response = await api.request(args);
     return response?.data;
   }, options);
 }
