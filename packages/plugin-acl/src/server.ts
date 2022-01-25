@@ -7,7 +7,8 @@ import { createACL } from './acl';
 
 async function actionModelToParams(actionModel, resourceName) {
   const fields = actionModel.get('fields');
-  const actionPath = `${resourceName}:${actionModel.get('name')}`;
+  const actionName = actionModel.get('name');
+  const actionPath = `${resourceName}:${actionName}`;
 
   const actionParams = {
     fields,
@@ -22,14 +23,74 @@ async function actionModelToParams(actionModel, resourceName) {
   return {
     actionPath,
     actionParams,
+    resourceName,
+    actionName,
   };
+}
+
+interface AssociationFieldAction {
+  associationActions: string[];
+  associatedActions?: string[];
+}
+interface AssociationFieldActions {
+  [availableActionName: string]: AssociationFieldAction;
+}
+
+interface AssociationFieldsActions {
+  [associationType: string]: AssociationFieldActions;
 }
 
 export default class PluginACL extends Plugin {
   acl: ACL;
 
+  associationFieldsActions: AssociationFieldsActions = {};
+
+  registerAssociationFieldAction(associationType: string, value: AssociationFieldActions) {
+    this.associationFieldsActions[associationType] = value;
+  }
+
   getACL() {
     return this.acl;
+  }
+
+  registerAssociationFieldsActions() {
+    this.registerAssociationFieldAction('linkTo', {
+      view: {
+        associationActions: ['list', 'get'],
+      },
+      create: {
+        associationActions: ['add'],
+        associatedActions: ['view'],
+      },
+      update: {
+        associationActions: ['add', 'remove', 'toggle'],
+        associatedActions: ['view'],
+      },
+    });
+
+    this.registerAssociationFieldAction('attachments', {
+      view: {
+        associationActions: ['list', 'get'],
+      },
+      add: {
+        associationActions: ['upload', 'add'],
+      },
+      update: {
+        associationActions: ['update', 'add', 'remove', 'toggle'],
+      },
+    });
+
+    this.registerAssociationFieldAction('subTable', {
+      view: {
+        associationActions: ['list', 'get'],
+      },
+      create: {
+        associationActions: ['create'],
+      },
+      update: {
+        associationActions: ['update', 'destroy'],
+      },
+    });
   }
 
   async load() {
@@ -39,6 +100,8 @@ export default class PluginACL extends Plugin {
     await this.app.db.import({
       directory: path.resolve(__dirname, 'collections'),
     });
+
+    this.registerAssociationFieldsActions();
 
     this.app.resourcer.define(availableActionResource);
     this.app.resourcer.define(roleCollectionsResource);
@@ -89,6 +152,8 @@ export default class PluginACL extends Plugin {
 
     this.app.db.on('rolesResourcesActions.afterSave', async (model) => {
       const resource = await model.getResource();
+
+      // revoke resource action
       if (!resource) {
         const previousResource = await this.app.db.getRepository('rolesResources').findOne({
           filter: {
@@ -105,8 +170,36 @@ export default class PluginACL extends Plugin {
       const roleName = resource.get('roleName');
       const role = acl.getRole(roleName);
 
-      const { actionPath, actionParams } = await actionModelToParams(model, resource.get('name'));
+      const { actionPath, actionParams, resourceName, actionName } = await actionModelToParams(
+        model,
+        resource.get('name'),
+      );
+
       role.grantAction(actionPath, actionParams);
+
+      const collection = this.app.db.getCollection(resourceName);
+      const fields = actionParams.fields || [];
+
+      const availableAction = this.acl.resolveActionAlias(actionName);
+
+      for (const field of fields) {
+        const collectionField = collection.getField(field);
+        const fieldType = collectionField.get('interface') as string;
+
+        const fieldActions: AssociationFieldAction = this.associationFieldsActions?.[fieldType]?.[availableAction];
+
+        if (fieldActions) {
+          const associationActions = fieldActions.associationActions || [];
+          associationActions.forEach((associationAction) => {
+            role.grantAction(`${resourceName}.${field}:${associationAction}`);
+          });
+
+          const associatedActions = fieldActions.associatedActions || [];
+          associatedActions.forEach((associatedAction) => {
+            role.grantAction(`${field}:${associatedAction}`);
+          });
+        }
+      }
     });
   }
 }

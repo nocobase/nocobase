@@ -35,7 +35,7 @@ export class ACLResource {
   }
 
   getAction(name: string) {
-    return this.actions.get(this.acl.resolveActionAlias(name));
+    return this.actions.get(name) || this.actions.get(this.acl.resolveActionAlias(name));
   }
 
   setAction(name: string, params: RoleActionParams) {

@@ -46,6 +46,7 @@ describe('association field acl', () => {
 
     await db.getRepository('collections.fields', 'users').create({
       values: {
+        interface: 'linkTo',
         name: 'orders',
         type: 'hasMany',
         target: 'orders',
@@ -119,6 +120,10 @@ describe('association field acl', () => {
         resource: 'orders',
         action: 'list',
       }),
-    ).toBeNull();
+    ).toMatchObject({
+      role: 'admin',
+      resource: 'orders',
+      action: 'list',
+    });
   });
 });

@@ -101,6 +101,7 @@ export class ACLRole {
     const [resourceName, actionName] = path.split(':');
 
     const resource = this.resources.get(resourceName);
+
     let action = null;
     if (resource) {
       action = resource.getAction(actionName);
