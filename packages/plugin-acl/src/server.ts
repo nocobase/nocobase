@@ -30,7 +30,7 @@ async function actionModelToParams(actionModel, resourceName) {
 
 interface AssociationFieldAction {
   associationActions: string[];
-  associatedActions?: string[];
+  targetActions?: string[];
 }
 interface AssociationFieldActions {
   [availableActionName: string]: AssociationFieldAction;
@@ -60,11 +60,11 @@ export default class PluginACL extends Plugin {
       },
       create: {
         associationActions: ['add'],
-        associatedActions: ['view'],
+        targetActions: ['view'],
       },
       update: {
         associationActions: ['add', 'remove', 'toggle'],
-        associatedActions: ['view'],
+        targetActions: ['view'],
       },
     });
 
@@ -194,9 +194,9 @@ export default class PluginACL extends Plugin {
             role.grantAction(`${resourceName}.${field}:${associationAction}`);
           });
 
-          const associatedActions = fieldActions.associatedActions || [];
-          associatedActions.forEach((associatedAction) => {
-            role.grantAction(`${field}:${associatedAction}`);
+          const targetActions = fieldActions.targetActions || [];
+          targetActions.forEach((targetAction) => {
+            role.grantAction(`${field}:${targetAction}`);
           });
         }
       }
