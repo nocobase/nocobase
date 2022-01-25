@@ -18,13 +18,29 @@ function toSchema(schema?: any) {
   return new Schema(schema);
 }
 
-export function SchemaComponent(props: ISchemaFieldProps) {
+const useMemoizedSchema = (schema) => {
+  return useMemo(() => toSchema(schema), []);
+};
+
+const RecursionSchemaComponent = (props: ISchemaFieldProps) => {
   const { components, scope, schema, ...others } = props;
-  const s = useMemo(() => toSchema(schema), []);
-  console.log('SchemaComponent', { components, scope });
   return (
     <SchemaComponentOptions inherit components={components} scope={scope}>
-      <RecursionField {...others} schema={s} />
+      <RecursionField {...others} schema={toSchema(schema)} />
     </SchemaComponentOptions>
   );
-}
+};
+
+const MemoizedSchemaComponent = (props: ISchemaFieldProps) => {
+  const { schema, ...others } = props;
+  const s = useMemoizedSchema(schema);
+  return <RecursionSchemaComponent {...others} schema={s} />;
+};
+
+export const SchemaComponent = (props: ISchemaFieldProps & { memoized?: boolean }) => {
+  const { memoized, ...others } = props;
+  if (memoized) {
+    return <MemoizedSchemaComponent {...others} />;
+  }
+  return <RecursionSchemaComponent {...others} />;
+};
