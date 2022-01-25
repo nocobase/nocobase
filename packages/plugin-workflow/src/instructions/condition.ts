@@ -15,8 +15,10 @@
 //   }
 // }
 
-import { getValue, Operand } from "./getter";
-import { getCalculator } from "./calculators";
+import Sequelize = require('sequelize');
+import { getValue, Operand } from "../utils/getter";
+import { getCalculator } from "../utils/calculators";
+import { JOB_STATUS } from "../constants";
 
 type BaseCalculation = {
   not?: boolean;
@@ -63,10 +65,55 @@ function calculate(config, input, execution) {
 
 
 export default {
-  manual: false,
-  async run(this, input, execution) {
+  async run(this, prevJob, execution) {
     // TODO(optimize): loading of jobs could be reduced and turned into incrementally in execution
-    const jobs = await execution.getJobs();
-    return calculate(this.config as Calculation, input, execution);
+    // const jobs = await execution.getJobs();
+    const { calculation } = this.config || {};
+    const result = calculate(calculation, prevJob, execution);
+
+    if (!result && this.config.rejectOnFalse) {
+      return {
+        status: JOB_STATUS.REJECTED,
+        result
+      };
+    }
+
+    const job = {
+      status: JOB_STATUS.RESOLVED,
+      result,
+      // TODO(optimize): try unify the building of job
+      node_id: this.id,
+      upstream_id: prevJob instanceof Sequelize.Model ? prevJob.get('id') : null
+    };
+
+    const branchNode = execution.nodes
+      .find(item => item.upstream === this && item.linkType === Number(result));
+
+    if (!branchNode) {
+      return job;
+    }
+
+    const savedJob = await execution.saveJob(job);
+
+    // return execution.exec(branchNode, savedJob);
+    const tailJob = await execution.exec(branchNode, savedJob);
+
+    if (tailJob.status === JOB_STATUS.PENDING) {
+      savedJob.set('status', JOB_STATUS.PENDING);
+      return savedJob;
+    }
+
+    return tailJob;
+  },
+
+  async resume(this, branchJob, execution) {
+    if (branchJob.status === JOB_STATUS.RESOLVED) {
+      const job = execution.findBranchParentJob(branchJob, this);
+      job.set('status', JOB_STATUS.RESOLVED);
+      return job;
+    }
+
+    // pass control to upper scope by ending current scope
+    return execution.end(this, branchJob);
   }
 }

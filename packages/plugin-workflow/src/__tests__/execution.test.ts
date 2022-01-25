@@ -2,11 +2,11 @@ import { Application } from '@nocobase/server';
 import Database, { Model, ModelCtor } from '@nocobase/database';
 import { getApp } from '.';
 import { WorkflowModel } from '../models/Workflow';
-import { EXECUTION_STATUS, JOB_STATUS } from '../constants';
+import { EXECUTION_STATUS, JOB_STATUS, LINK_TYPE } from '../constants';
 
 jest.setTimeout(300000);
 
-describe('workflow', () => {
+describe('execution', () => {
   let app: Application;
   let db: Database;
   let PostModel: ModelCtor<Model>;
@@ -85,11 +85,13 @@ describe('workflow', () => {
         type: 'echo'
       });
   
-      await workflow.createNode({
+      const n2 = await workflow.createNode({
         title: 'echo 2',
         type: 'echo',
         upstream_id: n1.id
       });
+
+      await n1.setDownstream(n2);
   
       const post = await PostModel.create({ title: 't1' });
   
@@ -104,7 +106,6 @@ describe('workflow', () => {
       expect(result).toMatchObject({ data: JSON.parse(JSON.stringify(post.toJSON())) });
     });
 
-    // TODO: or should throw error?
     it('execute resolved workflow', async () => {
       const workflow = await WorkflowModel.create({
         title: 'simple workflow',
@@ -115,15 +116,20 @@ describe('workflow', () => {
         }
       });
   
+      await workflow.createNode({
+        title: 'echo',
+        type: 'echo'
+      });
+  
       const post = await PostModel.create({ title: 't1' });
   
       const [execution] = await workflow.getExecutions();
       expect(execution.status).toEqual(EXECUTION_STATUS.RESOLVED);
 
-      await execution.exec(123);
+      expect(execution.start()).rejects.toThrow();
       expect(execution.status).toEqual(EXECUTION_STATUS.RESOLVED);
       const jobs = await execution.getJobs();
-      expect(jobs.length).toEqual(0);
+      expect(jobs.length).toEqual(1);
     });
   });
 
@@ -143,11 +149,13 @@ describe('workflow', () => {
         type: 'prompt',
       });
       
-      await workflow.createNode({
+      const n2 = await workflow.createNode({
         title: 'echo',
         type: 'echo',
         upstream_id: n1.id
       });
+
+      await n1.setDownstream(n2);
 
       const post = await PostModel.create({ title: 't1' });
 
@@ -157,10 +165,11 @@ describe('workflow', () => {
       expect(pending.status).toEqual(JOB_STATUS.PENDING);
       expect(pending.result).toEqual(null);
 
-      await execution.exec(123, null, {});
+      pending.set('result', 123);
+      await execution.resume(pending);
       expect(execution.status).toEqual(EXECUTION_STATUS.RESOLVED);
 
-      const jobs = await execution.getJobs();
+      const jobs = await execution.getJobs({ order: [['id', 'ASC']] });
       expect(jobs.length).toEqual(2);
       expect(jobs[0].status).toEqual(JOB_STATUS.RESOLVED);
       expect(jobs[0].result).toEqual(123);
@@ -186,17 +195,17 @@ describe('workflow', () => {
         // no config means always true
       });
 
-      await workflow.createNode({
+      const n2 = await workflow.createNode({
         title: 'true to echo',
         type: 'echo',
-        when: true,
+        linkType: LINK_TYPE.ON_TRUE,
         upstream_id: n1.id
       });
 
       await workflow.createNode({
         title: 'false to echo',
         type: 'echo',
-        when: false,
+        linkType: LINK_TYPE.ON_FALSE,
         upstream_id: n1.id
       });
 
@@ -205,9 +214,55 @@ describe('workflow', () => {
       const [execution] = await workflow.getExecutions();
       expect(execution.status).toEqual(EXECUTION_STATUS.RESOLVED);
 
-      const jobs = await execution.getJobs();
+      const jobs = await execution.getJobs({ order: [['id', 'ASC']] });
       expect(jobs.length).toEqual(2);
+      expect(jobs[0].node_id).toEqual(n1.id);
+      expect(jobs[1].node_id).toEqual(n2.id);
       expect(jobs[1].result).toEqual(true);
+    });
+
+    it('suspend downstream in condition branch, then go on', async () => {
+      const workflow = await WorkflowModel.create({
+        title: 'condition workflow',
+        enabled: true,
+        type: 'afterCreate',
+        config: {
+          collection: 'posts'
+        }
+      });
+
+      const n1 = await workflow.createNode({
+        title: 'condition',
+        type: 'condition',
+        // no config means always true
+      });
+
+      const n2 = await workflow.createNode({
+        title: 'manual',
+        type: 'prompt',
+        linkType: LINK_TYPE.ON_TRUE,
+        upstream_id: n1.id
+      });
+
+      const n3 = await workflow.createNode({
+        title: 'echo input value',
+        type: 'echo',
+        upstream_id: n1.id
+      });
+
+      await n1.setDownstream(n3);
+
+      const post = await PostModel.create({ title: 't1' });
+
+      const [execution] = await workflow.getExecutions();
+      expect(execution.status).toEqual(EXECUTION_STATUS.STARTED);
+
+      const [pending] = await execution.getJobs({ node_id: n2.id });
+      pending.set('result', 123);
+      await execution.resume(pending);
+
+      const jobs = await execution.getJobs();
+      expect(jobs.length).toEqual(3);
     });
   });
 });
