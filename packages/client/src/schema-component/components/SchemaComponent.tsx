@@ -1,6 +1,7 @@
-import { ISchemaFieldProps, Schema } from '@formily/react';
+import { ISchemaFieldProps, RecursionField, Schema } from '@formily/react';
 import React, { useContext, useMemo } from 'react';
 import { SchemaComponentContext } from '../context';
+import { SchemaComponentOptions } from './SchemaComponentOptions';
 
 function toSchema(schema?: any) {
   if (Schema.isSchemaInstance(schema)) {
@@ -17,9 +18,29 @@ function toSchema(schema?: any) {
   return new Schema(schema);
 }
 
-export function SchemaComponent(props: ISchemaFieldProps) {
+const useMemoizedSchema = (schema) => {
+  return useMemo(() => toSchema(schema), []);
+};
+
+const RecursionSchemaComponent = (props: ISchemaFieldProps) => {
+  const { components, scope, schema, ...others } = props;
+  return (
+    <SchemaComponentOptions inherit components={components} scope={scope}>
+      <RecursionField {...others} schema={toSchema(schema)} />
+    </SchemaComponentOptions>
+  );
+};
+
+const MemoizedSchemaComponent = (props: ISchemaFieldProps) => {
   const { schema, ...others } = props;
-  const { SchemaField } = useContext(SchemaComponentContext);
-  const s = useMemo(() => toSchema(schema), []);
-  return <SchemaField {...others} schema={s} />;
-}
+  const s = useMemoizedSchema(schema);
+  return <RecursionSchemaComponent {...others} schema={s} />;
+};
+
+export const SchemaComponent = (props: ISchemaFieldProps & { memoized?: boolean }) => {
+  const { memoized, ...others } = props;
+  if (memoized) {
+    return <MemoizedSchemaComponent {...others} />;
+  }
+  return <RecursionSchemaComponent {...others} />;
+};

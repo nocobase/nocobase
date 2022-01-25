@@ -42,5 +42,5 @@ const RequestSchemaComponent: React.FC<RemoteSchemaComponentProps> = (props) => 
 };
 
 export const RemoteSchemaComponent: React.FC<RemoteSchemaComponentProps> = (props) => {
-  return props.uid ? <RequestSchemaComponent {...props}/> : null;
+  return props.uid ? <RequestSchemaComponent {...props} /> : null;
 };
