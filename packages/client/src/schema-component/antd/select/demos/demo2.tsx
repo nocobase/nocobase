@@ -12,19 +12,17 @@ const schema = {
       type: 'string',
       title: `Editable`,
       'x-decorator': 'FormItem',
-      'x-component': 'Select',
-      'x-component-props': {},
+      'x-component': 'Select.Object',
+      'x-component-props': {
+        fieldNames: { label: 'title', value: 'id' },
+      },
       enum: [
         {
-          label: '福建',
-          value: 'FuJian',
-          children: [
-            { label: '福州', value: 'FZ' },
-            { label: '莆田', value: 'PT' },
-          ],
+          title: '福建',
+          id: 'FJ',
         },
-        { label: '江苏', value: 'XZ' },
-        { label: '浙江', value: 'ZX' },
+        { title: '江苏', id: 'XZ' },
+        { title: '浙江', id: 'ZX' },
       ],
       'x-reactions': {
         target: 'read',
@@ -40,19 +38,21 @@ const schema = {
       title: `Read pretty`,
       'x-read-pretty': true,
       'x-decorator': 'FormItem',
-      'x-component': 'Select',
-      'x-component-props': {},
+      'x-component': 'Select.Object',
+      'x-component-props': {
+        fieldNames: { label: 'title', value: 'id' },
+      },
       enum: [
         {
-          label: '福建',
-          value: 'FuJian',
+          title: '福建',
+          id: 'FuJian',
           children: [
-            { label: '福州', value: 'FZ' },
-            { label: '莆田', value: 'PT' },
+            { title: '福州', id: 'FZ' },
+            { title: '莆田', id: 'PT' },
           ],
         },
-        { label: '江苏', value: 'XZ' },
-        { label: '浙江', value: 'ZX' },
+        { title: '江苏', id: 'XZ' },
+        { title: '浙江', id: 'ZX' },
       ],
     },
   },
