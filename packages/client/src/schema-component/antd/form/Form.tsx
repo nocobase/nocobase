@@ -49,9 +49,9 @@ export const Form: ComposedForm = observer((props) => {
   return decorator ? (
     <FormDecorator form={form} />
   ) : (
-    <FormProvider form={form}>
+    <FormContext.Provider value={form}>
       <SchemaComponent schema={fieldSchema} />
-    </FormProvider>
+    </FormContext.Provider>
   );
 });
 

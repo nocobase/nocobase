@@ -4,7 +4,7 @@ export function beforeCreateForChildrenCollection(db: Database) {
   const Collection = db.getCollection('collections');
   const Field = db.getCollection('fields');
 
-  return async (model, { transaction }) => {
+  return async (model, { transaction, context }) => {
     const parentKey = model.get('parentKey');
     if (!parentKey) {
       return;
@@ -19,7 +19,11 @@ export function beforeCreateForChildrenCollection(db: Database) {
       },
     });
     if (!collection) {
-      await Collection.model.create({ name: parentTarget }, { transaction });
+      await Collection.repository.create({
+        values: { name: parentTarget },
+        transaction,
+        context,
+      });
     }
   };
 }
