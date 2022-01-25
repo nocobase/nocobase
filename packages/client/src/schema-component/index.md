@@ -11,9 +11,43 @@ group:
 
 ### SchemaComponentProvider
 
-### SchemaComponent
+```tsx | pure
+<SchemaComponentProvider>
+  <SchemaComponent schema={{}}/>
+</SchemaComponentProvider>
+```
 
-### RecursionComponent
+### SchemaComponentOptions
+
+提供 SchemaComponent 所需的 scope 和 components，可以嵌套，当 `inherit={true}` 时，继承父级的 scope 和 components。
+
+```tsx | pure
+<SchemaComponentOptions scope={{}} components={{}}>
+</SchemaComponentOptions>
+
+<SchemaComponentOptions scope={{}} components={{}}>
+  {/* 继承父级的 scope 和 components */}
+  <SchemaComponentOptions inherit scope={{}} components={{}}>
+  </SchemaComponentOptions>
+</SchemaComponentOptions>
+```
+
+例如将  useTranslation 的 t 附加给 scope
+
+```tsx | pure
+import { useTranslation } from 'react-i18next';
+
+function TranslationProvider(props) {
+  const { t } = useTranslation();
+  return (
+    <SchemaComponentOptions inherit scope={{ t }}>
+      { props.children }
+    </SchemaComponentOptions>
+  );
+}
+```
+
+### SchemaComponent
 
 ## Hooks
 

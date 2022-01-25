@@ -35,3 +35,9 @@ export interface IRecursionComponentProps extends IRecursionFieldProps {
   scope?: any;
   components?: SchemaReactComponents;
 }
+
+export interface ISchemaComponentOptionsProps {
+  scope?: any;
+  components?: SchemaReactComponents;
+  inherit?: boolean;
+}
