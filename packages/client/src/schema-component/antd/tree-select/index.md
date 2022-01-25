@@ -6,3 +6,9 @@ group:
 ---
 
 # TreeSelect
+
+## Examples
+
+### TreeSelect
+
+<code src="./demos/demo1.tsx" />

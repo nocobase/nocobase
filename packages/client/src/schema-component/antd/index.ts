@@ -16,4 +16,5 @@ export * from './page';
 export * from './password';
 export * from './radio';
 export * from './time-picker';
+export * from './tree-select';
 export * from './upload';
