@@ -3,18 +3,18 @@
  */
 import { FormItem } from '@formily/antd';
 import { ISchema } from '@formily/react';
+import { uid } from '@formily/shared';
 import {
   APIClient,
   APIClientProvider,
   Input,
   SchemaComponent,
   SchemaComponentProvider,
-  VoidTable,
+  VoidTable
 } from '@nocobase/client';
 import MockAdapter from 'axios-mock-adapter';
-import React from 'react';
-import { uid } from '@formily/shared';
 import _ from 'lodash';
+import React from 'react';
 
 const schema: ISchema = {
   type: 'object',
@@ -35,6 +35,8 @@ const schema: ISchema = {
           params: {
             filter: {},
             fields: [],
+            page: 2,
+            pageSize: 20,
           },
         },
         dataSource: [
@@ -70,7 +72,7 @@ const sleep = (value: number) => new Promise((resolve) => setTimeout(resolve, va
 mock.onGet('/posts:list').reply(async (config) => {
   // const [{ pageSize }] = config.params;
   const pageSize = config.params.pageSize || 10;
-  console.log(config.params);
+  console.log(pageSize);
   await sleep(1000);
   return [
     200,

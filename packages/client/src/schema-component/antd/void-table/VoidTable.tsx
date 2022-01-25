@@ -1,8 +1,8 @@
-import { ArrayField, createForm } from '@formily/core';
+import { createForm } from '@formily/core';
 import { FieldContext, FormContext, observer, SchemaContext, useField, useFieldSchema } from '@formily/react';
+import { TablePaginationConfig, TableProps } from 'antd';
+import React, { createContext, useContext, useMemo } from 'react';
 import { useRequest } from '../../../api-client';
-import { TableProps } from 'antd';
-import React, { createContext, useMemo } from 'react';
 import { useAttach } from '../../hooks';
 import { ArrayTable } from '../array-table';
 
@@ -31,17 +31,22 @@ const ArrayFieldProvider: React.FC<ArrayFieldProviderProps> = (props) => {
       }),
     [],
   );
+  console.log({ request });
   const f = useAttach(form.createArrayField({ ...field.props, basePath: '' }));
   const result = useRequest(request, {
     onSuccess(data) {
-      console.log(data?.data);
+      console.log(data?.meta);
+      if (data?.meta?.count) {
+        field.componentProps.pagination = field.componentProps.pagination || {};
+        field.componentProps.pagination.total = data?.meta?.count;
+      }
       form.setValues({
         [fieldSchema.name]: data?.data,
       });
     },
   });
   return (
-    <RequestContext.Provider value={result}>
+    <RequestContext.Provider value={{ ...result, field }}>
       <FormContext.Provider value={form}>
         <SchemaContext.Provider value={fieldSchema}>
           <FieldContext.Provider value={f}>{children}</FieldContext.Provider>
@@ -51,14 +56,36 @@ const ArrayFieldProvider: React.FC<ArrayFieldProviderProps> = (props) => {
   );
 };
 
+const usePaginationProps = (props: TableProps<any> & { request?: any }): TablePaginationConfig | false => {
+  const result = useContext(RequestContext);
+  // if (result.loading) {
+  //   return false;
+  // }
+  if (props.pagination === false) {
+    return false;
+  }
+  const pagination: TablePaginationConfig = props.pagination || { total: 100 };
+  if (props?.request?.params?.pageSize) {
+    pagination.defaultPageSize = props?.request?.params?.pageSize;
+  }
+  return {
+    ...pagination,
+    onChange(page, pageSize) {
+      result.run({ ...result.params[0], page, pageSize });
+    },
+  };
+};
+
+const InternalTable = (props) => {
+  const result = useContext(RequestContext);
+  return <ArrayTable {...props} loading={result.loading} pagination={usePaginationProps(props)} />;
+};
+
 export const VoidTable: VoidTableType = observer((props) => {
+  console.log('props.request', props.request);
   return (
     <ArrayFieldProvider request={props.request} initialValue={props.dataSource}>
-      <RequestContext.Consumer>
-        {(result) => {
-          return <ArrayTable {...props} loading={result.loading} />;
-        }}
-      </RequestContext.Consumer>
+      <InternalTable {...props} />
     </ArrayFieldProvider>
   );
 });
