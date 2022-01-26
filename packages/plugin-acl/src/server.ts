@@ -102,7 +102,8 @@ export default class PluginACL extends Plugin {
 
     this.app.resourcer.use(this.acl.middleware());
 
-    this.app.db.on('roles.afterSave', (model) => {
+    this.app.db.on('roles.afterSave', async (model, options) => {
+      const { transaction } = options;
       const roleName = model.get('name');
       let role = acl.getRole(roleName);
 
@@ -116,6 +117,20 @@ export default class PluginACL extends Plugin {
         ...(model.get('strategy') || {}),
         allowConfigure: model.get('allowConfigure'),
       });
+
+      // model is default
+      if (model.get('default')) {
+        await this.app.db.getRepository('roles').update({
+          values: {
+            default: false,
+          },
+          filter: {
+            'name.$ne': model.get('name'),
+          },
+          hooks: false,
+          transaction,
+        });
+      }
     });
 
     this.app.db.on('roles.afterDestroy', (model) => {
