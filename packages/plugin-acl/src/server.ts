@@ -20,10 +20,19 @@ export interface AssociationFieldsActions {
   [associationType: string]: AssociationFieldActions;
 }
 
+export class GrantHelper {
+  resourceTargetActionMap = new Map<string, string[]>();
+  targetActionResourceMap = new Map<string, string[]>();
+
+  constructor() {}
+}
+
 export default class PluginACL extends Plugin {
   acl: ACL;
 
   associationFieldsActions: AssociationFieldsActions = {};
+
+  grantHelper = new GrantHelper();
 
   registerAssociationFieldAction(associationType: string, value: AssociationFieldActions) {
     this.associationFieldsActions[associationType] = value;
@@ -119,7 +128,48 @@ export default class PluginACL extends Plugin {
         acl: this.acl,
         associationFieldsActions: this.associationFieldsActions,
         transaction: options.transaction,
+        grantHelper: this.grantHelper,
       });
+    });
+
+    this.app.db.on('rolesResourcesActions.afterUpdateWithAssociations', async (model, options) => {
+      const { transaction } = options;
+      const resource = await model.getResource({
+        transaction,
+      });
+
+      await resource.writeToACL({
+        acl: this.acl,
+        associationFieldsActions: this.associationFieldsActions,
+        transaction: options.transaction,
+        grantHelper: this.grantHelper,
+      });
+    });
+
+    this.app.db.on('fields.afterDestroy', async (model, options) => {
+      const collectionName = model.get('collectionName');
+      const fieldName = model.get('name');
+
+      const resourceActions = await this.app.db.getRepository('rolesResourcesActions').find({
+        filter: {
+          'resource.name': collectionName,
+          'fields.$anyOf': [fieldName],
+        },
+        transaction: options.transaction,
+      });
+
+      for (const resourceAction of resourceActions) {
+        const fields = resourceAction.get('fields') as string[];
+        const newFields = fields.filter((field) => field != fieldName);
+
+        await this.app.db.getRepository('rolesResourcesActions').update({
+          filterByTk: resourceAction.get('id') as number,
+          values: {
+            fields: newFields,
+          },
+          transaction: options.transaction,
+        });
+      }
     });
   }
 }

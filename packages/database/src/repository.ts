@@ -362,8 +362,8 @@ export class Repository<TModelAttributes extends {} = any, TCreationAttributes e
       });
     }
 
-    for (const instance of instances) {
-      if (options.hooks !== false) {
+    if (options.hooks !== false) {
+      for (const instance of instances) {
         await this.database.emitAsync(`${this.collection.name}.afterUpdateWithAssociations`, instance, options);
         await this.database.emitAsync(`${this.collection.name}.afterSaveWithAssociations`, instance, options);
       }

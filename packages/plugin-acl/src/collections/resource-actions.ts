@@ -15,7 +15,7 @@ export default {
       name: 'name',
     },
     {
-      type: 'json',
+      type: 'array',
       name: 'fields',
       defaultValue: [],
     },

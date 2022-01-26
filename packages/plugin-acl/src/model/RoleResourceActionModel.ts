@@ -1,18 +1,19 @@
 import { Database, Model } from '@nocobase/database';
 import { ACL, ACLRole } from '@nocobase/acl';
-import { AssociationFieldAction, AssociationFieldsActions } from '../server';
+import { AssociationFieldAction, AssociationFieldsActions, GrantHelper } from '../server';
 
 export class RoleResourceActionModel extends Model {
-  async writeToAcl(options: {
+  async writeToACL(options: {
     acl: ACL;
     role: ACLRole;
     resourceName: string;
     associationFieldsActions: AssociationFieldsActions;
+    grantHelper: GrantHelper;
   }) {
     // @ts-ignore
     const db: Database = this.constructor.database;
 
-    const { resourceName, role, acl, associationFieldsActions } = options;
+    const { resourceName, role, acl, associationFieldsActions, grantHelper } = options;
     const actionName = this.get('name') as string;
 
     const fields = this.get('fields') as any;
@@ -54,7 +55,19 @@ export class RoleResourceActionModel extends Model {
         const targetActions = fieldActions.targetActions || [];
 
         targetActions.forEach((targetAction) => {
-          role.grantAction(`${field}:${targetAction}`);
+          const targetActionPath = `${field}:${targetAction}`;
+
+          grantHelper.resourceTargetActionMap.set(resourceName, [
+            ...(grantHelper.resourceTargetActionMap.get(resourceName) || []),
+            targetActionPath,
+          ]);
+
+          grantHelper.targetActionResourceMap.set(targetActionPath, [
+            ...(grantHelper.targetActionResourceMap.get(targetActionPath) || []),
+            resourceName,
+          ]);
+
+          role.grantAction(targetActionPath);
         });
       }
     }
