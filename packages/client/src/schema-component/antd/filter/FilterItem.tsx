@@ -154,6 +154,7 @@ export const FilterItem = (props) => {
 
   const columnEnum: any = [...columns.values()].map((column) => column.toJSON());
   debugger;
+
   const schema: ISchema = {
     type: 'void',
     properties: {
