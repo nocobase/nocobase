@@ -4,39 +4,19 @@ import path from 'path';
 import { availableActionResource } from './actions/available-actions';
 import { roleCollectionsResource } from './actions/role-collections';
 import { createACL } from './acl';
+import { RoleResourceActionModel } from './model/RoleResourceActionModel';
+import { RoleResourceModel } from './model/RoleResourceModel';
 
-async function actionModelToParams(actionModel, resourceName) {
-  const fields = actionModel.get('fields');
-  const actionName = actionModel.get('name');
-  const actionPath = `${resourceName}:${actionName}`;
-
-  const actionParams = {
-    fields,
-  };
-
-  const scope = await actionModel.getScope();
-
-  if (scope) {
-    actionParams['filter'] = scope.get('scope');
-  }
-
-  return {
-    actionPath,
-    actionParams,
-    resourceName,
-    actionName,
-  };
-}
-
-interface AssociationFieldAction {
+export interface AssociationFieldAction {
   associationActions: string[];
   targetActions?: string[];
 }
+
 interface AssociationFieldActions {
   [availableActionName: string]: AssociationFieldAction;
 }
 
-interface AssociationFieldsActions {
+export interface AssociationFieldsActions {
   [associationType: string]: AssociationFieldActions;
 }
 
@@ -94,6 +74,11 @@ export default class PluginACL extends Plugin {
   }
 
   async load() {
+    this.app.db.registerModels({
+      RoleResourceActionModel,
+      RoleResourceModel,
+    });
+
     const acl = createACL();
     this.acl = acl;
 
@@ -129,77 +114,12 @@ export default class PluginACL extends Plugin {
       acl.removeRole(roleName);
     });
 
-    this.app.db.on('rolesResources.afterSave', async (model, options) => {
-      const roleName = model.get('roleName');
-      const role = acl.getRole(roleName);
-
-      if (model.usingActionsConfig === true && model._previousDataValues.usingActionsConfig === false) {
-        const actions = await model.getActions();
-        for (const action of actions) {
-          const { actionPath, actionParams } = await actionModelToParams(action, model.get('name'));
-          role.grantAction(actionPath, actionParams);
-        }
-      }
-
-      if (model._previousDataValues.usingActionsConfig === true && model.usingActionsConfig === false) {
-        role.revokeResource(model.get('name'));
-      }
-    });
-
-    this.app.db.on('rolesResourcesActions.beforeBulkUpdate', async (options) => {
-      options.individualHooks = true;
-    });
-
-    this.app.db.on('rolesResourcesActions.afterSave', async (model) => {
-      const resource = await model.getResource();
-
-      // revoke resource action
-      if (!resource) {
-        const previousResource = await this.app.db.getRepository('rolesResources').findOne({
-          filter: {
-            id: model._previousDataValues.rolesResourceId,
-          },
-        });
-
-        const roleName = previousResource.get('roleName') as string;
-        const role = acl.getRole(roleName);
-        role.revokeAction(`${previousResource.get('name')}:${model.get('name')}`);
-        return;
-      }
-
-      const roleName = resource.get('roleName');
-      const role = acl.getRole(roleName);
-
-      const { actionPath, actionParams, resourceName, actionName } = await actionModelToParams(
-        model,
-        resource.get('name'),
-      );
-
-      role.grantAction(actionPath, actionParams);
-
-      const collection = this.app.db.getCollection(resourceName);
-      const fields = actionParams.fields || [];
-
-      const availableAction = this.acl.resolveActionAlias(actionName);
-
-      for (const field of fields) {
-        const collectionField = collection.getField(field);
-        const fieldType = collectionField.get('interface') as string;
-
-        const fieldActions: AssociationFieldAction = this.associationFieldsActions?.[fieldType]?.[availableAction];
-
-        if (fieldActions) {
-          const associationActions = fieldActions.associationActions || [];
-          associationActions.forEach((associationAction) => {
-            role.grantAction(`${resourceName}.${field}:${associationAction}`);
-          });
-
-          const targetActions = fieldActions.targetActions || [];
-          targetActions.forEach((targetAction) => {
-            role.grantAction(`${field}:${targetAction}`);
-          });
-        }
-      }
+    this.app.db.on('rolesResources.afterSaveWithAssociations', async (model: RoleResourceModel, options) => {
+      await model.writeToACL({
+        acl: this.acl,
+        associationFieldsActions: this.associationFieldsActions,
+        transaction: options.transaction,
+      });
     });
   }
 }

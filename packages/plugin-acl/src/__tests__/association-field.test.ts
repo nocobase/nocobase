@@ -1,5 +1,5 @@
 import { MockServer } from '@nocobase/test';
-import { Database } from '@nocobase/database';
+import { Database, Model } from '@nocobase/database';
 import { ACL } from '@nocobase/acl';
 import { prepareApp } from './prepare';
 import PluginACL from '@nocobase/plugin-acl';
@@ -8,6 +8,8 @@ describe('association field acl', () => {
   let app: MockServer;
   let db: Database;
   let acl: ACL;
+
+  let role: Model;
 
   afterEach(async () => {
     await app.destroy();
@@ -19,10 +21,8 @@ describe('association field acl', () => {
     const aclPlugin = app.getPlugin<PluginACL>('PluginACL');
 
     acl = aclPlugin.getACL();
-  });
 
-  it('should allow association fields access', async () => {
-    const role = await db.getRepository('roles').create({
+    role = await db.getRepository('roles').create({
       values: {
         name: 'admin',
         title: 'Admin User',
@@ -66,7 +66,7 @@ describe('association field acl', () => {
       .agent()
       .resource('roles.resources')
       .create({
-        associatedIndex: role.get('name') as string,
+        associatedIndex: 'admin',
         values: {
           name: 'users',
           usingActionsConfig: true,
@@ -76,13 +76,65 @@ describe('association field acl', () => {
               fields: ['orders'],
             },
             {
-              name: 'list',
+              name: 'view',
               fields: ['orders'],
             },
           ],
         },
       });
+  });
 
+  it('should revoke association action on action revoke', async () => {
+    expect(
+      acl.can({
+        role: 'admin',
+        resource: 'users.orders',
+        action: 'add',
+      }),
+    ).toMatchObject({
+      role: 'admin',
+      resource: 'users.orders',
+      action: 'add',
+    });
+
+    const viewAction = await db.getRepository('rolesResourcesActions').findOne({
+      filter: {
+        name: 'view',
+      },
+    });
+
+    const actionId = viewAction.get('id') as number;
+
+    const response = await app
+      .agent()
+      .resource('roles.resources')
+      .update({
+        associatedIndex: 'admin',
+        values: {
+          name: 'users',
+          usingActionsConfig: true,
+          actions: [
+            {
+              id: actionId,
+            },
+          ],
+        },
+      });
+
+    expect(response.statusCode).toEqual(200);
+
+    expect(
+      acl.can({
+        role: 'admin',
+        resource: 'users.orders',
+        action: 'add',
+      }),
+    ).toBeNull();
+  });
+
+  it('should revoke association action on field deleted', async () => {});
+
+  it('should allow association fields access', async () => {
     const createResponse = await app
       .agent()
       .resource('users')

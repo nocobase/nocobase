@@ -2,6 +2,7 @@ import { CollectionOptions } from '@nocobase/database';
 
 export default {
   name: 'rolesResourcesActions',
+  model: 'RoleResourceActionModel',
   fields: [
     {
       type: 'belongsTo',

@@ -1,6 +1,7 @@
 import { ACLResource } from './acl-resource';
 import { AvailableStrategyOptions } from './acl-available-strategy';
 import { ACL, DefineOptions } from './acl';
+import Array from '@nocobase/database/src/operators/array';
 
 export interface RoleActionParams {
   fields?: string[];
@@ -52,7 +53,11 @@ export class ACLRole {
   }
 
   public revokeResource(resourceName) {
-    this.resources.delete(resourceName);
+    for (const key of [...this.resources.keys()]) {
+      if (key === resourceName || key.includes(`${resourceName}.`)) {
+        this.resources.delete(key);
+      }
+    }
   }
 
   public grantAction(path: string, options?: RoleActionParams) {

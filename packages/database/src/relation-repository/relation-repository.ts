@@ -8,6 +8,7 @@ import { updateAssociations } from '../update-associations';
 import lodash from 'lodash';
 import { transactionWrapperBuilder } from '../transaction-decorator';
 import { RelationField } from '../fields/relation-field';
+import Database from '../database';
 
 export const transaction = transactionWrapperBuilder(function () {
   return this.sourceCollection.model.sequelize.transaction();
@@ -22,8 +23,11 @@ export abstract class RelationRepository {
   associationField: RelationField;
   sourceKeyValue: string | number;
   sourceInstance: Model;
+  db: Database;
 
   constructor(sourceCollection: Collection, association: string, sourceKeyValue: string | number) {
+    this.db = sourceCollection.context.database;
+
     this.sourceCollection = sourceCollection;
     this.sourceKeyValue = sourceKeyValue;
     this.associationName = association;
@@ -54,6 +58,11 @@ export abstract class RelationRepository {
     const instance = await sourceModel[createAccessor](guard.sanitize(options.values), options);
 
     await updateAssociations(instance, values, options);
+
+    if (options.hooks !== false) {
+      const eventName = `${this.targetCollection.name}.afterSaveWithAssociations`;
+      await this.db.emitAsync(eventName, instance, options);
+    }
 
     return instance;
   }

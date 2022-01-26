@@ -306,6 +306,7 @@ export class Repository<TModelAttributes extends {} = any, TCreationAttributes e
 
     if (options.hooks !== false) {
       await this.database.emitAsync(`${this.collection.name}.afterCreateWithAssociations`, instance, options);
+      await this.database.emitAsync(`${this.collection.name}.afterSaveWithAssociations`, instance, options);
     }
 
     return instance;
@@ -359,6 +360,13 @@ export class Repository<TModelAttributes extends {} = any, TCreationAttributes e
         sanitized: true,
         transaction,
       });
+    }
+
+    for (const instance of instances) {
+      if (options.hooks !== false) {
+        await this.database.emitAsync(`${this.collection.name}.afterUpdateWithAssociations`, instance, options);
+        await this.database.emitAsync(`${this.collection.name}.afterSaveWithAssociations`, instance, options);
+      }
     }
 
     return instances;
