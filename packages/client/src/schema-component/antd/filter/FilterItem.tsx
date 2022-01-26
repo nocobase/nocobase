@@ -1,6 +1,6 @@
 import { CloseCircleOutlined } from '@ant-design/icons';
-import { FormLayout } from '@formily/antd';
-import { createForm, onFieldChange, onFieldReact, onFormValuesChange } from '@formily/core';
+import { FormItem as FormilyFormItem, FormLayout, Space } from '@formily/antd';
+import { createForm, onFieldReact, onFieldValueChange, onFormValuesChange } from '@formily/core';
 import { Field } from '@formily/core/esm/models/Field';
 import { Form } from '@formily/core/esm/models/Form';
 import type { ISchema } from '@formily/react';
@@ -9,6 +9,8 @@ import { isValid, uid } from '@formily/shared';
 import { get } from 'lodash';
 import React, { useContext, useMemo } from 'react';
 import { SchemaComponent } from '../../components';
+import { Select } from '../select';
+import { Filter } from './Filter';
 
 function useFilterColumns(): Map<SchemaKey, Schema> {
   const schema = useFieldSchema();
@@ -95,7 +97,8 @@ export const FilterItem = (props) => {
       createForm({
         initialValues: values,
         effects: (form) => {
-          onFieldChange('column', (field: Field, form: Form) => {
+          onFieldValueChange('column', (field: Field, form: Form) => {
+            debugger;
             const column = (field.value || {}) as ISchema;
             const operations = column?.['x-component-props']?.['operations'] || [];
             field.query('operation').take((f: Field) => {
@@ -119,6 +122,7 @@ export const FilterItem = (props) => {
             });
           });
           onFormValuesChange((form) => {
+            debugger;
             const { column, operation, value } = form.values;
             if (!operation?.value) {
               return;
@@ -149,7 +153,7 @@ export const FilterItem = (props) => {
   );
 
   const columnEnum: any = [...columns.values()].map((column) => column.toJSON());
-
+  debugger;
   const schema: ISchema = {
     type: 'void',
     properties: {
@@ -157,44 +161,54 @@ export const FilterItem = (props) => {
         type: 'void',
         'x-component': 'Space',
         properties: {
-          [uid()]: {
-            type: 'string',
+          column: {
+            type: 'object',
             name: 'column',
             'x-decorator': 'FormilyFormItem',
             'x-decorator-props': {
               asterisk: true,
               feedbackLayout: 'none',
             },
-            'x-component': 'Select.Object',
+            'x-component': 'Select',
             'x-component-props': {
+              objectValue: true,
               style: {
                 width: 100,
               },
               fieldNames: {
                 label: 'title',
                 value: 'name',
+                options: 'options',
               },
+              options: columnEnum,
             },
             enum: columnEnum,
           },
-          [uid()]: {
-            type: 'string',
+          operation: {
+            type: 'object',
             name: 'operation',
             'x-decorator': 'FormilyFormItem',
             'x-decorator-props': {
               asterisk: true,
               feedbackLayout: 'none',
             },
-            'x-component': 'Select.Object',
+            'x-component': 'Select',
             'x-component-props': {
+              objectValue: true,
               style: {
                 width: 100,
               },
+              fieldNames: {
+                label: 'label',
+                value: 'value',
+                options: 'options',
+              },
+              options: values.operations,
             },
             enum: values.operations,
           },
-          [uid()]: {
-            type: 'string',
+          value: {
+            type: 'object',
             name: 'value',
             'x-decorator': 'FormilyFormItem',
             'x-decorator-props': {
@@ -219,7 +233,10 @@ export const FilterItem = (props) => {
   return (
     <FormProvider form={form}>
       <FormLayout layout={'inline'}>
-        <SchemaComponent schema={schema} components={{ Remove }}></SchemaComponent>
+        <SchemaComponent
+          schema={schema}
+          components={{ Space, Select, FormilyFormItem, Filter, Remove }}
+        ></SchemaComponent>
       </FormLayout>
     </FormProvider>
   );

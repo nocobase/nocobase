@@ -1,28 +1,14 @@
 /**
  * title: Filter
  */
-import { FormItem } from '@formily/antd';
-import { Filter, SchemaComponent, SchemaComponentProvider } from '@nocobase/client';
+import { FormItem as FormilyFormItem } from '@formily/antd';
+import { Filter, Input, SchemaComponent, SchemaComponentProvider } from '@nocobase/client';
 import React from 'react';
 
 const schema = {
   name: 'filter',
   type: 'object',
   'x-component': 'Filter',
-  default: {
-    and: [
-      {
-        field1: {
-          eq: 'aa',
-        },
-      },
-      {
-        field1: {
-          eq: 'bbb',
-        },
-      },
-    ],
-  },
   properties: {
     column1: {
       type: 'void',
@@ -54,8 +40,8 @@ const schema = {
       },
       properties: {
         field2: {
-          type: 'number',
-          'x-component': 'InputNumber',
+          type: 'string',
+          'x-component': 'Input',
         },
       },
     },
@@ -64,7 +50,7 @@ const schema = {
 
 export default () => {
   return (
-    <SchemaComponentProvider components={{ Filter, FormItem }}>
+    <SchemaComponentProvider components={{ Input, Filter, FormilyFormItem }}>
       <SchemaComponent schema={schema} />
     </SchemaComponentProvider>
   );
