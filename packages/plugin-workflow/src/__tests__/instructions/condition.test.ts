@@ -1,7 +1,6 @@
 import { Application } from '@nocobase/server';
-import Database, { Model, ModelCtor } from '@nocobase/database';
+import Database from '@nocobase/database';
 import { getApp } from '..';
-import { WorkflowModel } from '../../models/Workflow';
 import { EXECUTION_STATUS, JOB_STATUS, LINK_TYPE } from '../../constants';
 
 
@@ -9,15 +8,25 @@ import { EXECUTION_STATUS, JOB_STATUS, LINK_TYPE } from '../../constants';
 describe('workflow > instructions > condition', () => {
   let app: Application;
   let db: Database;
-  let PostModel: ModelCtor<Model>;
-  let WorkflowModel: ModelCtor<WorkflowModel>;
+  let PostModel;
+  let WorkflowModel;
+  let workflow;
 
   beforeEach(async () => {
     app = await getApp();
 
     db = app.db;
-    WorkflowModel = db.getModel('workflows') as any;
+    WorkflowModel = db.getModel('workflows');
     PostModel = db.getModel('posts');
+
+    workflow = await WorkflowModel.create({
+      title: 'condition workflow',
+      enabled: true,
+      type: 'afterCreate',
+      config: {
+        collection: 'posts'
+      }
+    });
   });
 
   afterEach(() => db.close());
@@ -28,14 +37,6 @@ describe('workflow > instructions > condition', () => {
 
   describe('single calculation', () => {
     it('calculation to true downstream', async () => {
-      const workflow = await WorkflowModel.create({
-        title: 'condition workflow',
-        enabled: true,
-        type: 'afterCreate',
-        config: {
-          collection: 'posts'
-        }
-      });
 
       const n1 = await workflow.createNode({
         title: 'condition',

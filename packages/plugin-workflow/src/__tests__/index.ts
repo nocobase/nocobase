@@ -2,7 +2,7 @@ import path from 'path';
 import { MockServer, mockServer } from '@nocobase/test';
 
 import plugin from '../server';
-import { InstructionResult, registerInstruction } from '../instructions';
+import { registerInstruction } from '../instructions';
 import { JOB_STATUS } from '../constants';
 
 export async function getApp(options = {}): Promise<MockServer> {
@@ -23,6 +23,17 @@ export async function getApp(options = {}): Promise<MockServer> {
   registerInstruction('error', {
     run(this, input, execution) {
       throw new Error('definite error');
+    }
+  });
+
+  registerInstruction('prompt->error', {
+    run(this, input, execution) {
+      return {
+        status: JOB_STATUS.PENDING
+      };
+    },
+    resume(this, input, execution) {
+      throw new Error('input failed');
     }
   });
 

@@ -73,15 +73,21 @@ export class ExecutionModel extends Model {
       // call instruction to get result and status
       job = await instruction.call(node, prevJob, this);
     } catch (err) {
-      console.error(err);
       // for uncaught error, set to rejected
       job = {
-        result: err,
+        result: err instanceof Error ? err.toString() : err,
         status: JOB_STATUS.REJECTED
       };
+      // if previous job is from resuming
+      if (prevJob && prevJob.node_id === node.id) {
+        prevJob.set(job);
+        job = prevJob;
+      }
     }
 
     let savedJob;
+    // TODO(optimize): many checking of resuming or new could be improved
+    // could be implemented separately in exec() / resume()
     if (job instanceof Sequelize.Model) {
       savedJob = await job.save();
     } else {
