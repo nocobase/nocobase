@@ -18,6 +18,7 @@ export * from './password';
 export * from './radio';
 export * from './record-picker';
 export * from './row-selection';
+export * from './select';
 export * from './time-picker';
 export * from './tree-select';
 export * from './upload';
