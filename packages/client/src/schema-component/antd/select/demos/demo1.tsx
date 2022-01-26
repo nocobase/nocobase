@@ -5,6 +5,19 @@ import { FormItem } from '@formily/antd';
 import { SchemaComponent, SchemaComponentProvider, Select } from '@nocobase/client';
 import React from 'react';
 
+const dataSource = [
+  {
+    label: '福建',
+    value: 'FuJian',
+    children: [
+      { label: '{{t("福州")}}', value: 'FZ' },
+      { label: '莆田', value: 'PT' },
+    ],
+  },
+  { label: '江苏', value: 'XZ' },
+  { label: '浙江', value: 'ZX' },
+];
+
 const schema = {
   type: 'object',
   properties: {
@@ -14,18 +27,7 @@ const schema = {
       'x-decorator': 'FormItem',
       'x-component': 'Select',
       'x-component-props': {},
-      enum: [
-        {
-          label: '福建',
-          value: 'FuJian',
-          children: [
-            { label: '福州', value: 'FZ' },
-            { label: '莆田', value: 'PT' },
-          ],
-        },
-        { label: '江苏', value: 'XZ' },
-        { label: '浙江', value: 'ZX' },
-      ],
+      enum: dataSource,
       'x-reactions': {
         target: 'read',
         fulfill: {
@@ -42,25 +44,16 @@ const schema = {
       'x-decorator': 'FormItem',
       'x-component': 'Select',
       'x-component-props': {},
-      enum: [
-        {
-          label: '福建',
-          value: 'FuJian',
-          children: [
-            { label: '福州', value: 'FZ' },
-            { label: '莆田', value: 'PT' },
-          ],
-        },
-        { label: '江苏', value: 'XZ' },
-        { label: '浙江', value: 'ZX' },
-      ],
+      enum: dataSource,
     },
   },
 };
 
+const t = (text?: any) => text;
+
 export default () => {
   return (
-    <SchemaComponentProvider components={{ Select, FormItem }}>
+    <SchemaComponentProvider scope={{ t }} components={{ Select, FormItem }}>
       <SchemaComponent schema={schema} />
     </SchemaComponentProvider>
   );

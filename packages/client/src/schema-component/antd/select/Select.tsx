@@ -1,129 +1,66 @@
 import { LoadingOutlined } from '@ant-design/icons';
-import { connect, mapProps, mapReadPretty, useField } from '@formily/react';
-import { isArr, isValid } from '@formily/shared';
+import { connect, mapProps, mapReadPretty } from '@formily/react';
+import { isValid, toArr } from '@formily/shared';
 import type { SelectProps } from 'antd';
 import { Select as AntdSelect } from 'antd';
 import React from 'react';
-import { useCompile } from '../../hooks/useCompile';
 import { ReadPretty } from './ReadPretty';
+import { defaultFieldNames, getCurrentOptions } from './shared';
 
-type ComposedSelect = React.FC<SelectProps<unknown>> & {
-  Object?: React.FC<unknown>;
+type Props = SelectProps<any, any> & { objectValue?: boolean; onChange?: (v: any) => void };
+
+const ObjectSelect = (props: Props) => {
+  const { value, options, onChange, fieldNames, mode, ...others } = props;
+  const toValue = (v: any) => {
+    if (!isValid(v)) {
+      return;
+    }
+    const values = toArr(v).map((val) => {
+      return typeof val === 'object' ? val[fieldNames.value] : val;
+    });
+    const current = getCurrentOptions(values, options, fieldNames).map((val) => {
+      return {
+        label: val[fieldNames.label],
+        value: val[fieldNames.value],
+      };
+    });
+    if (['tags', 'multiple'].includes(mode)) {
+      return current;
+    }
+    return current.shift();
+  };
+  return (
+    <AntdSelect
+      value={toValue(value)}
+      allowClear
+      labelInValue
+      options={options}
+      fieldNames={fieldNames}
+      onChange={(changed) => {
+        const current = getCurrentOptions(
+          toArr(changed).map((v) => v.value),
+          options,
+          fieldNames,
+        );
+        if (['tags', 'multiple'].includes(mode)) {
+          onChange(current);
+        } else {
+          onChange(current.shift());
+        }
+      }}
+      mode={mode}
+      {...others}
+    />
+  );
 };
 
-export const Select: ComposedSelect = connect(
-  (props) => {
-    const { options = [], ...others } = props;
-    const compile = useCompile();
-    return (
-      <AntdSelect {...others}>
-        {options.map((option: any, key: any) => {
-          if (option.children) {
-            return (
-              <AntdSelect.OptGroup key={key} label={option.label}>
-                {option.children.map((child: any, childKey: any) => (
-                  <AntdSelect.Option key={`${key}-${childKey}`} {...child}>
-                    {compile(child.label)}
-                  </AntdSelect.Option>
-                ))}
-              </AntdSelect.OptGroup>
-            );
-          } else {
-            return (
-              <AntdSelect.Option key={key} {...option}>
-                {compile(option.label)}
-              </AntdSelect.Option>
-            );
-          }
-        })}
-      </AntdSelect>
-    );
-  },
-  mapProps(
-    {
-      dataSource: 'options',
-      loading: true,
-    },
-    (props, field) => {
-      return {
-        ...props,
-        suffixIcon: field?.['loading'] || field?.['validating'] ? <LoadingOutlined /> : props.suffixIcon,
-      };
-    },
-  ),
-  mapReadPretty(ReadPretty.Select),
-);
-
-Select.Object = connect(
-  (props) => {
-    const field = useField();
-    const {
-      value,
-      onChange,
-      fieldNames = {
-        label: 'label',
-        value: 'value',
-      },
-      ...others
-    } = props;
-    const options = field?.['dataSource'] || props.options || [];
-    let optionValue = undefined;
-    if (isArr(value)) {
-      optionValue = value.map((val) => {
-        return {
-          label: val[fieldNames.label],
-          value: val[fieldNames.value],
-        };
-      });
-    } else if (value) {
-      optionValue = {
-        label: value[fieldNames.label],
-        value: value[fieldNames.value],
-      };
+export const Select = connect(
+  (props: Props) => {
+    const { objectValue, ...others } = props;
+    if (objectValue) {
+      return <ObjectSelect {...others} />;
     }
-    return (
-      <AntdSelect
-        allowClear
-        labelInValue
-        {...others}
-        value={optionValue}
-        onChange={(selectValue: any) => {
-          if (!isValid(selectValue)) {
-            onChange(null);
-            return;
-          }
-          if (isArr(selectValue)) {
-            const selectValues = selectValue.map((s) => s.value);
-            const values = {};
-            if (isArr(value)) {
-              value.forEach((option) => {
-                const val = option[fieldNames.value];
-                if (selectValues.includes(val)) {
-                  values[val] = option;
-                }
-              });
-            }
-            options.forEach((option) => {
-              const val = option[fieldNames.value];
-              if (selectValues.includes(val)) {
-                values[val] = option;
-              }
-            });
-            console.log({ selectValue, values });
-            onChange(Object.values(values));
-          } else {
-            // 这里不能用 undefined，需要用 null
-            onChange(options.find((option) => option[fieldNames.value] === selectValue.value));
-          }
-        }}
-        options={options.map((option) => {
-          return {
-            label: option[fieldNames.label],
-            value: option[fieldNames.value],
-          };
-        })}
-      />
-    );
+    return <AntdSelect {...others} />;
   },
   mapProps(
     {
@@ -133,12 +70,12 @@ Select.Object = connect(
     (props, field) => {
       return {
         ...props,
-        options: field?.['dataSource'],
+        fieldNames: { ...defaultFieldNames, ...props.fieldNames },
         suffixIcon: field?.['loading'] || field?.['validating'] ? <LoadingOutlined /> : props.suffixIcon,
       };
     },
   ),
-  mapReadPretty(ReadPretty.Object),
+  mapReadPretty(ReadPretty),
 );
 
 export default Select;

@@ -5,6 +5,19 @@ import { FormItem } from '@formily/antd';
 import { SchemaComponent, SchemaComponentProvider, Select } from '@nocobase/client';
 import React from 'react';
 
+const dataSource = [
+  {
+    label: '福建',
+    value: 'FuJian',
+    children: [
+      { label: '{{t("福州")}}', value: 'FZ' },
+      { label: '莆田', value: 'PT' },
+    ],
+  },
+  { label: '江苏', value: 'XZ' },
+  { label: '浙江', value: 'ZX' },
+];
+
 const schema = {
   type: 'object',
   properties: {
@@ -12,18 +25,11 @@ const schema = {
       type: 'string',
       title: `Editable`,
       'x-decorator': 'FormItem',
-      'x-component': 'Select.Object',
+      'x-component': 'Select',
       'x-component-props': {
-        fieldNames: { label: 'title', value: 'id' },
+        mode: 'tags',
       },
-      enum: [
-        {
-          title: '福建',
-          id: 'FJ',
-        },
-        { title: '江苏', id: 'XZ' },
-        { title: '浙江', id: 'ZX' },
-      ],
+      enum: dataSource,
       'x-reactions': {
         target: 'read',
         fulfill: {
@@ -38,29 +44,20 @@ const schema = {
       title: `Read pretty`,
       'x-read-pretty': true,
       'x-decorator': 'FormItem',
-      'x-component': 'Select.Object',
+      'x-component': 'Select',
       'x-component-props': {
-        fieldNames: { label: 'title', value: 'id' },
+        mode: 'tags',
       },
-      enum: [
-        {
-          title: '福建',
-          id: 'FuJian',
-          children: [
-            { title: '福州', id: 'FZ' },
-            { title: '莆田', id: 'PT' },
-          ],
-        },
-        { title: '江苏', id: 'XZ' },
-        { title: '浙江', id: 'ZX' },
-      ],
+      enum: dataSource,
     },
   },
 };
 
+const t = (text?: any) => text;
+
 export default () => {
   return (
-    <SchemaComponentProvider components={{ Select, FormItem }}>
+    <SchemaComponentProvider scope={{ t }} components={{ Select, FormItem }}>
       <SchemaComponent schema={schema} />
     </SchemaComponentProvider>
   );
