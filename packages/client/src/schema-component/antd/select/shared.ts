@@ -9,7 +9,7 @@ export const defaultFieldNames = {
 
 export const getCurrentOptions = (values, dataSource, fieldNames) => {
   values = toArr(values).map((val) => (typeof val === 'object' ? val[fieldNames.value] : val));
-  const findOptions = (options: any[]) => {
+  const findOptions = (options: any[] = []) => {
     let current = [];
     for (const option of options) {
       if (values.includes(option[fieldNames.value])) {
