@@ -1,4 +1,6 @@
-import axios, { Axios, AxiosInstance, AxiosResponse, AxiosRequestConfig } from 'axios';
+import { observable } from '@formily/reactive';
+import { Result } from 'ahooks/lib/useRequest/src/types';
+import axios, { AxiosInstance, AxiosRequestConfig, AxiosResponse } from 'axios';
 
 export interface ActionParams {
   [key: string]: any;
@@ -22,12 +24,19 @@ export interface IResource {
 export class APIClient {
   axios: AxiosInstance;
 
+  services: Record<string, Result<any, any>>;
+
   constructor(instance?: AxiosInstance | AxiosRequestConfig) {
+    this.services = observable({});
     if (typeof instance === 'function') {
       this.axios = instance;
     } else {
       this.axios = axios.create(instance);
     }
+  }
+
+  service(uid: string): Result<any, any> {
+    return this.services[uid];
   }
 
   request<T = any, R = AxiosResponse<T>, D = any>(config: AxiosRequestConfig<D> | ResourceActionOptions): Promise<R> {
