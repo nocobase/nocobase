@@ -10,6 +10,7 @@ import {
   Input,
   SchemaComponent,
   SchemaComponentProvider,
+  useAPIClient,
   VoidTable
 } from '@nocobase/client';
 import MockAdapter from 'axios-mock-adapter';
@@ -19,7 +20,11 @@ import React from 'react';
 const schema: ISchema = {
   type: 'object',
   properties: {
+    hello: {
+      'x-component': 'Hello',
+    },
     input: {
+      'x-uid': 'input',
       type: 'array',
       title: `编辑模式`,
       'x-decorator': 'FormItem',
@@ -90,10 +95,23 @@ mock.onGet('/posts:list').reply(async (config) => {
   ];
 });
 
+const Hello = () => {
+  const api = useAPIClient();
+  return (
+    <div
+      onClick={() => {
+        api.services.input.refresh();
+      }}
+    >
+      Hello
+    </div>
+  );
+};
+
 export default () => {
   return (
     <APIClientProvider apiClient={api}>
-      <SchemaComponentProvider components={{ Input, VoidTable, FormItem }}>
+      <SchemaComponentProvider components={{ Hello, Input, VoidTable, FormItem }}>
         <SchemaComponent schema={schema} />
       </SchemaComponentProvider>
     </APIClientProvider>

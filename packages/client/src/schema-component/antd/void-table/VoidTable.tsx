@@ -31,11 +31,10 @@ const ArrayFieldProvider: React.FC<ArrayFieldProviderProps> = (props) => {
       }),
     [],
   );
-  console.log({ request });
   const f = useAttach(form.createArrayField({ ...field.props, basePath: '' }));
   const result = useRequest(request, {
+    uid: fieldSchema['x-uid'],
     onSuccess(data) {
-      console.log(data?.meta);
       if (data?.meta?.count) {
         field.componentProps.pagination = field.componentProps.pagination || {};
         field.componentProps.pagination.total = data?.meta?.count;
@@ -58,9 +57,6 @@ const ArrayFieldProvider: React.FC<ArrayFieldProviderProps> = (props) => {
 
 const usePaginationProps = (props: TableProps<any> & { request?: any }): TablePaginationConfig | false => {
   const result = useContext(RequestContext);
-  // if (result.loading) {
-  //   return false;
-  // }
   if (props.pagination === false) {
     return false;
   }
