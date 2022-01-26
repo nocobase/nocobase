@@ -19,7 +19,15 @@
     "@types/react": "^17.0.0",
     "@types/react-dom": "^17.0.0"
   },
+  "config": {
+    "ghooks": {
+      "commit-msg": "commitlint --edit"
+    }
+  },
   "devDependencies": {
+    "@commitlint/cli": "^16.1.0",
+    "@commitlint/prompt-cli": "^16.1.0",
+    "@commitlint/config-conventional": "^16.0.0",
     "@testing-library/react": "^12.1.2",
     "@types/jest": "^26.0.0",
     "@types/koa": "^2.13.4",
@@ -44,6 +52,7 @@
     "eslint-plugin-react": "^7.14.2",
     "eslint-plugin-react-hooks": "^4.2.0",
     "eslint-plugin-vue": "^7.0.1",
+    "ghooks": "^2.0.4",
     "glob": "^7.1.3",
     "jest": "^26.0.0",
     "jest-codemods": "^0.19.1",
