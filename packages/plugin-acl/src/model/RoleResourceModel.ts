@@ -1,20 +1,11 @@
 import { Database, Model } from '@nocobase/database';
-import { ACL } from '@nocobase/acl';
+import { ACL, ACLRole } from '@nocobase/acl';
 import { RoleResourceActionModel } from './RoleResourceActionModel';
 import { AssociationFieldsActions, GrantHelper } from '../server';
 
 export class RoleResourceModel extends Model {
-  async writeToACL(options: {
-    acl: ACL;
-    associationFieldsActions: AssociationFieldsActions;
-    grantHelper: GrantHelper;
-    transaction: any;
-  }) {
-    const { acl, associationFieldsActions, grantHelper } = options;
-    const resourceName = this.get('name') as string;
-    const roleName = this.get('roleName') as string;
-    const role = acl.getRole(roleName);
-
+  async revoke(options: { role: ACLRole; resourceName: string; grantHelper: GrantHelper }) {
+    const { role, resourceName, grantHelper } = options;
     role.revokeResource(resourceName);
 
     const targetActions = grantHelper.resourceTargetActionMap.get(resourceName) || [];
@@ -31,6 +22,25 @@ export class RoleResourceModel extends Model {
     }
 
     grantHelper.resourceTargetActionMap.set(resourceName, []);
+  }
+
+  async writeToACL(options: {
+    acl: ACL;
+    associationFieldsActions: AssociationFieldsActions;
+    grantHelper: GrantHelper;
+    transaction: any;
+  }) {
+    const { acl, associationFieldsActions, grantHelper } = options;
+    const resourceName = this.get('name') as string;
+    const roleName = this.get('roleName') as string;
+    const role = acl.getRole(roleName);
+
+    await this.revoke({ role, resourceName, grantHelper });
+
+    // @ts-ignore
+    if (this.usingActionsConfig === false) {
+      return;
+    }
 
     // @ts-ignore
     const actions: RoleResourceActionModel[] = await this.getActions({

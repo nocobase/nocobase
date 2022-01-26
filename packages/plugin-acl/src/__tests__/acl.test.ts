@@ -161,7 +161,7 @@ describe('acl', () => {
       resource: 'c1',
       action: 'view',
       params: {
-        fields: ['title', 'age', 'id', 'createdAt', 'updatedAt'],
+        fields: ['age', 'title', 'id', 'createdAt', 'updatedAt'],
       },
     });
 
