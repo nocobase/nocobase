@@ -88,6 +88,7 @@ export function FilterList(props) {
       return [`index-${index}`, item];
     }),
   );
+  debugger;
   useEffect(() => {
     const id = uid();
     form.addEffects(id, () => {
@@ -155,6 +156,7 @@ export function FilterList(props) {
 
 export const Filter: any = connect(
   (props) => {
+    debugger;
     return (
       <div>
         <FilterGroup bordered={false} {...props} />
@@ -190,11 +192,6 @@ Filter.DynamicValue = connect((props: DynamicValuePorps) => {
         initialValues: {
           [fieldName || 'value']: value,
         },
-        // effects() {
-        //   onFormValuesChange((form) => {
-        //     onChange(form.values[fieldName]);
-        //   });
-        // },
       }),
     [value],
   );
@@ -216,6 +213,7 @@ Filter.DynamicValue = connect((props: DynamicValuePorps) => {
     },
     operation?.schema || {},
   );
+  debugger;
   return (
     <FormProvider form={form}>
       <SchemaComponent
