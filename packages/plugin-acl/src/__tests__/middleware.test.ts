@@ -61,7 +61,7 @@ describe('middleware', () => {
     });
   });
 
-  afterAll(async () => {
+  afterEach(async () => {
     await app.destroy();
   });
 
