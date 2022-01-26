@@ -40,7 +40,6 @@ const schema: ISchema = {
           params: {
             filter: {},
             fields: [],
-            page: 2,
             pageSize: 20,
           },
         },
@@ -77,7 +76,8 @@ const sleep = (value: number) => new Promise((resolve) => setTimeout(resolve, va
 mock.onGet('/posts:list').reply(async (config) => {
   // const [{ pageSize }] = config.params;
   const pageSize = config.params.pageSize || 10;
-  console.log(pageSize);
+  const page = config.params.page || 1;
+  console.log(pageSize, page, config.params);
   await sleep(1000);
   return [
     200,
@@ -90,6 +90,8 @@ mock.onGet('/posts:list').reply(async (config) => {
       }),
       meta: {
         count: 100,
+        pageSize,
+        page,
       },
     },
   ];
@@ -100,7 +102,7 @@ const Hello = () => {
   return (
     <div
       onClick={() => {
-        api.services.input.refresh();
+        api.services.input.run({ ...api.services.input.params[0], page: 3 });
       }}
     >
       Hello
