@@ -3,12 +3,11 @@ import { FormItem as FormilyFormItem, FormLayout, Space as AntdSpace } from '@fo
 import { createForm, onFieldReact, onFieldValueChange, onFormValuesChange } from '@formily/core';
 import { Field } from '@formily/core/esm/models/Field';
 import { Form } from '@formily/core/esm/models/Form';
-import { ISchema, Schema, SchemaKey, SchemaOptionsContext, useFieldSchema } from '@formily/react';
+import { FormContext, ISchema, Schema, SchemaKey, SchemaOptionsContext, useFieldSchema } from '@formily/react';
 import { isValid, uid } from '@formily/shared';
 import { get } from 'lodash';
 import React, { useContext, useMemo } from 'react';
-import { SchemaComponent, SchemaComponentProvider } from '../../components';
-import { AntdSchemaComponentProvider } from '../AntdSchemaComponentProvider';
+import { SchemaComponent } from '../../components';
 
 function useFilterColumns(): Map<SchemaKey, Schema> {
   const schema = useFieldSchema();
@@ -231,13 +230,11 @@ export const FilterItem = (props) => {
   };
 
   return (
-    <SchemaComponentProvider form={form}>
-      <AntdSchemaComponentProvider>
-        <FormLayout layout={'inline'}>
-          <SchemaComponent schema={schema} components={{ AntdSpace, FormilyFormItem, Remove }}></SchemaComponent>
-        </FormLayout>
-      </AntdSchemaComponentProvider>
-    </SchemaComponentProvider>
+    <FormContext.Provider value={form}>
+      <FormLayout layout={'inline'}>
+        <SchemaComponent schema={schema} components={{ AntdSpace, FormilyFormItem, Remove }}></SchemaComponent>
+      </FormLayout>
+    </FormContext.Provider>
   );
 };
 
