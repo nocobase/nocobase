@@ -1,14 +1,48 @@
 import { LoadingOutlined } from '@ant-design/icons';
-import { Field } from '@formily/core';
-import { connect, mapProps, mapReadPretty, RecursionField, useField, useFieldSchema } from '@formily/react';
+import { createForm, Field, onFormSubmit } from '@formily/core';
+import {
+  connect,
+  FieldContext,
+  FormContext,
+  mapProps,
+  mapReadPretty,
+  RecursionField,
+  Schema,
+  useField,
+  useFieldSchema
+} from '@formily/react';
 import { toArr } from '@formily/shared';
-import { Drawer, Select, Tag } from 'antd';
-import React, { createContext, useContext, useState } from 'react';
+import { Button, Drawer, Select, Tag } from 'antd';
+import React, { createContext, useContext, useMemo, useState } from 'react';
+import { useAttach } from '../../hooks/useAttach';
 import { VisibleContext } from '../action';
 
 const InputRecordPicker: React.FC = (props) => {
   const [visible, setVisible] = useState(false);
   const fieldSchema = useFieldSchema();
+  const field = useField<Field>();
+  const s = fieldSchema.reduceProperties((buf, s) => {
+    if (s['x-component'] === 'RowSelection') {
+      return s;
+    }
+    return buf;
+  }, new Schema({}));
+  const form = useMemo(
+    () =>
+      createForm({
+        initialValues: {
+          [s.name]: field.value,
+        },
+        effects() {
+          onFormSubmit((form) => {
+            field.value = form.values[s.name];
+            console.log('field.value', form.values[s.name]);
+          });
+        },
+      }),
+    [],
+  );
+  const f = useAttach(form.createVoidField({ ...field.props, basePath: '' }));
   return (
     <div>
       <Select
@@ -17,15 +51,35 @@ const InputRecordPicker: React.FC = (props) => {
         }}
         open={false}
       ></Select>
-      <Drawer placement={'right'} destroyOnClose visible={visible} onClose={() => setVisible(false)}>
-        <RecursionField
-          onlyRenderProperties
-          schema={fieldSchema}
-          filterProperties={(s) => {
-            return s['x-component'] === 'RowSelection';
-          }}
-        ></RecursionField>
-      </Drawer>
+      <FormContext.Provider value={form}>
+        <FieldContext.Provider value={f}>
+          <Drawer
+            placement={'right'}
+            destroyOnClose
+            visible={visible}
+            onClose={() => setVisible(false)}
+            footer={
+              <Button
+                onClick={async () => {
+                  await form.submit();
+                  setVisible(false);
+                }}
+              >
+                提交
+              </Button>
+            }
+          >
+            <RecursionField
+              onlyRenderProperties
+              basePath={f.address}
+              schema={fieldSchema}
+              filterProperties={(s) => {
+                return s['x-component'] === 'RowSelection';
+              }}
+            />
+          </Drawer>
+        </FieldContext.Provider>
+      </FormContext.Provider>
     </div>
   );
 };

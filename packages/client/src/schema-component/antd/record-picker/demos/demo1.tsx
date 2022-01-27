@@ -13,8 +13,8 @@ const schema: ISchema = {
       type: 'array',
       title: `编辑模式`,
       default: [
-        { id: 1, name: 'tag1' },
-        { id: 2, name: 'tag2' },
+        { id: 1, name: 'name1' },
+        { id: 2, name: 'name2' },
       ],
       'x-decorator': 'FormItem',
       'x-component': 'RecordPicker',
@@ -31,6 +31,7 @@ const schema: ISchema = {
           'x-component': 'RowSelection',
           'x-component-props': {
             rowKey: 'id',
+            objectValue: true,
             rowSelection: {
               type: 'checkbox',
             },

@@ -1,4 +1,4 @@
-import { createForm } from '@formily/core';
+import { createForm, Field } from '@formily/core';
 import { FieldContext, FormContext, observer, useField, useFieldSchema } from '@formily/react';
 import { Options, Result } from 'ahooks/lib/useRequest/src/types';
 import { TablePaginationConfig, TableProps } from 'antd';
@@ -72,10 +72,10 @@ const useDefDataSource = (props, options) => {
 
 export const VoidTable: VoidTableType = observer((props) => {
   const { useDataSource = useDefDataSource } = props;
-  const field = useField();
+  const field = useField<Field>();
   const fieldSchema = useFieldSchema();
   const form = useMemo(() => createForm(), []);
-  const f = useAttach(form.createArrayField({ ...field.props, basePath: '' }));
+  const f = useAttach(form.createArrayField({ name: fieldSchema.name }));
   const result = useDataSource(props, {
     uid: fieldSchema['x-uid'],
     onSuccess(data) {

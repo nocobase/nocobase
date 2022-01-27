@@ -41,7 +41,7 @@ export const ArrayTable: ArrayTableType = observer((props) => {
   const { onChange, ...others } = props;
   return (
     <div>
-      <Table {...others} columns={columns} dataSource={field.value} />
+      <Table {...others} columns={columns} dataSource={field.value?.slice()}/>
     </div>
   );
 });
