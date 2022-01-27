@@ -3,7 +3,15 @@ import { FormItem as FormilyFormItem, FormLayout, Space as AntdSpace } from '@fo
 import { createForm, onFieldReact, onFieldValueChange, onFormValuesChange } from '@formily/core';
 import { Field } from '@formily/core/esm/models/Field';
 import { Form } from '@formily/core/esm/models/Form';
-import { FormContext, ISchema, Schema, SchemaKey, SchemaOptionsContext, useFieldSchema } from '@formily/react';
+import {
+  FieldContext,
+  FormContext,
+  ISchema,
+  Schema,
+  SchemaKey,
+  SchemaOptionsContext,
+  useFieldSchema,
+} from '@formily/react';
 import { isValid, uid } from '@formily/shared';
 import { get } from 'lodash';
 import React, { useContext, useMemo } from 'react';
@@ -120,7 +128,7 @@ export const FilterItem = (props) => {
           });
           onFormValuesChange((form) => {
             debugger;
-            const { column, operation, value } = form.values;
+            const { column, operation, value } = form?.values?.filter || {};
             if (!operation?.value) {
               return;
             }
@@ -155,7 +163,7 @@ export const FilterItem = (props) => {
   const schema: ISchema = {
     type: 'void',
     properties: {
-      [uid()]: {
+      space: {
         type: 'void',
         'x-component': 'AntdSpace',
         properties: {
@@ -229,11 +237,13 @@ export const FilterItem = (props) => {
   };
 
   return (
-    <FormContext.Provider value={form}>
-      <FormLayout layout={'inline'}>
-        <SchemaComponent schema={schema} components={{ AntdSpace, FormilyFormItem, Remove }}></SchemaComponent>
-      </FormLayout>
-    </FormContext.Provider>
+    <FieldContext.Provider value={null}>
+      <FormContext.Provider value={form}>
+        <FormLayout layout={'inline'}>
+          <SchemaComponent schema={schema} components={{ AntdSpace, FormilyFormItem, Remove }}></SchemaComponent>
+        </FormLayout>
+      </FormContext.Provider>
+    </FieldContext.Provider>
   );
 };
 
