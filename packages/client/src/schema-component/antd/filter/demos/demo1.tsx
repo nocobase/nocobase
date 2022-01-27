@@ -39,8 +39,8 @@ const schema = {
       },
       properties: {
         field2: {
-          type: 'string',
-          'x-component': 'Input',
+          type: 'number',
+          'x-component': 'InputNumber',
         },
       },
     },
