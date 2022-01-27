@@ -38,9 +38,10 @@ type ArrayTableType = React.FC<any> & {
 export const ArrayTable: ArrayTableType = observer((props) => {
   const field = useField<ArrayField>();
   const columns = useTableColumns();
+  const { onChange, ...others } = props;
   return (
     <div>
-      <Table {...props} columns={columns} dataSource={field.value} />
+      <Table {...others} columns={columns} dataSource={field.value} />
     </div>
   );
 });

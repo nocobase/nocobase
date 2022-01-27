@@ -33,7 +33,7 @@ const schema: ISchema = {
   type: 'object',
   properties: {
     table1: {
-      type: 'array',
+      type: 'void',
       'x-component': 'VoidTable',
       'x-component-props': {
         rowKey: 'id',
@@ -93,9 +93,8 @@ import React from 'react';
 const schema: ISchema = {
   type: 'object',
   properties: {
-    input: {
-      type: 'array',
-      'x-uid': 'input',
+    table1: {
+      type: 'void',
       'x-component': 'VoidTable',
       'x-component-props': {
         rowKey: 'id',
@@ -155,8 +154,8 @@ import React from 'react';
 const schema: ISchema = {
   type: 'object',
   properties: {
-    input: {
-      type: 'array',
+    table1: {
+      type: 'void',
       'x-uid': 'input',
       'x-component': 'VoidTable',
       'x-component-props': {

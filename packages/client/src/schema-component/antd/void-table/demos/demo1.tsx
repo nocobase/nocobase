@@ -19,9 +19,9 @@ const schema: ISchema = {
     hello: {
       'x-component': 'Hello',
     },
-    input: {
+    table1: {
+      type: 'void',
       'x-uid': 'input',
-      type: 'array',
       'x-component': 'VoidTable',
       'x-component-props': {
         rowKey: 'id',

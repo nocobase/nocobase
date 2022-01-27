@@ -1,36 +1,44 @@
 /**
  * title: 勾选
  */
-import { FormItem } from '@formily/antd';
 import { ISchema } from '@formily/react';
-import { Input, RowSelection, SchemaComponent, SchemaComponentProvider } from '@nocobase/client';
+import {
+  APIClientProvider,
+  Input,
+  RowSelection,
+  SchemaComponent,
+  SchemaComponentProvider,
+  useAPIClient
+} from '@nocobase/client';
 import React from 'react';
+import { apiClient } from './apiClient';
 
 const schema: ISchema = {
   type: 'object',
   properties: {
-    input: {
-      type: 'array',
-      title: `编辑模式`,
-      default: [1, 2],
-      'x-decorator': 'FormItem',
+    hello: {
+      'x-component': 'Hello',
+    },
+    table1: {
+      type: 'string',
+      default: 1,
+      'x-uid': 'input',
       'x-component': 'RowSelection',
       'x-component-props': {
         rowKey: 'id',
         rowSelection: {
-          type: 'checkbox',
+          type: 'radio',
         },
-        dataSource: [
-          { id: 1, name: 'Name1' },
-          { id: 2, name: 'Name2' },
-          { id: 3, name: 'Name3' },
-        ],
-      },
-      'x-reactions': {
-        target: 'read',
-        fulfill: {
-          state: {
-            value: '{{$self.value}}',
+        pagination: {
+          // current: 2,
+          pageSize: 2,
+        },
+        request: {
+          resource: 'posts',
+          action: 'list',
+          params: {
+            filter: {},
+            // pageSize: 5,
           },
         },
       },
@@ -49,20 +57,32 @@ const schema: ISchema = {
         },
       },
     },
-    read: {
-      type: 'array',
-      title: `阅读模式`,
-      'x-read-pretty': true,
-      'x-decorator': 'FormItem',
-      'x-component': 'RowSelection',
-    },
   },
+};
+
+const Hello = () => {
+  const api = useAPIClient();
+  return (
+    <div
+      onClick={() => {
+        const service = api.service('input');
+        if (!service) {
+          return;
+        }
+        service.run({ ...service.params[0], page: 3 });
+      }}
+    >
+      Hello
+    </div>
+  );
 };
 
 export default () => {
   return (
-    <SchemaComponentProvider components={{ Input, RowSelection, FormItem }}>
-      <SchemaComponent schema={schema} />
-    </SchemaComponentProvider>
+    <APIClientProvider apiClient={apiClient}>
+      <SchemaComponentProvider components={{ Hello, Input, RowSelection }}>
+        <SchemaComponent schema={schema} />
+      </SchemaComponentProvider>
+    </APIClientProvider>
   );
 };
