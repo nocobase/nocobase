@@ -8,7 +8,6 @@ import './style.less';
 
 export const Filter: any = connect(
   (props) => {
-    debugger;
     const form = useForm();
     console.log('...........', form.id);
     return (
@@ -70,7 +69,6 @@ Filter.DynamicValue = connect((props: DynamicValueProps) => {
     },
     operation?.schema || {},
   );
-  debugger;
   return (
     <SchemaComponent
       schema={{
