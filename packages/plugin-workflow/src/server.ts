@@ -1,21 +1,19 @@
 import path from 'path';
 
-import { registerModels } from '@nocobase/database';
-
-import { WorkflowModel } from './models/Workflow';
-import { ExecutionModel } from './models/Execution';
+import WorkflowModel from './models/Workflow';
+import ExecutionModel from './models/Execution';
 
 export default {
   name: 'workflow',
   async load(options = {}) {
     const { db } = this.app;
 
-    registerModels({
+    db.registerModels({
       WorkflowModel,
       ExecutionModel,
     });
 
-    db.import({
+    await db.import({
       directory: path.resolve(__dirname, 'collections'),
     });
 
@@ -24,8 +22,8 @@ export default {
     //   * add all hooks for enabled workflows
     //   * add hooks for create/update[enabled]/delete workflow to add/remove specific hooks
     this.app.on('beforeStart', async () => {
-      const Workflow = db.getModel('workflows');
-      await Workflow.mount();
+      const { model } = db.getCollection('workflows');
+      await model.mount();
     })
 
     // [Life Cycle]: initialize all necessary seed data

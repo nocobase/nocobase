@@ -1,15 +1,41 @@
-import { Model } from '@nocobase/database';
+import { Model, HasManyGetAssociationsMixin, HasManyCreateAssociationMixin } from 'sequelize';
+
+import Database from '@nocobase/database';
 
 import { get as getTrigger } from '../triggers';
 import { EXECUTION_STATUS } from '../constants';
+import ExecutionModel from './Execution';
+import FlowNodeModel from './FlowNode';
 
-export class WorkflowModel extends Model {
+export default class WorkflowModel extends Model {
+  declare static database: Database;
+
+  declare id: number;
+  declare title: string;
+  declare enabled: boolean;
+  declare description?: string;
+  declare type: string;
+  declare config: any;
+
+  declare createdAt: Date;
+  declare updatedAt: Date;
+
+  declare nodes: FlowNodeModel[];
+  declare getNodes: HasManyGetAssociationsMixin<FlowNodeModel>;
+  declare createNode: HasManyCreateAssociationMixin<FlowNodeModel>;
+
+  declare executions: ExecutionModel[];
+  declare getExecutions: HasManyGetAssociationsMixin<ExecutionModel>;
+  declare createExecution: HasManyCreateAssociationMixin<ExecutionModel>;
+
   static async mount() {
-    const workflows = await this.findAll({
-      where: { enabled: true }
+    const collection = this.database.getCollection('workflows');
+    const workflows = await collection.repository.find({
+      filter: { enabled: true }
     });
 
     workflows.forEach(workflow => {
+      // @ts-ignore
       workflow.mount();
     });
 
@@ -42,10 +68,10 @@ export class WorkflowModel extends Model {
       context,
       status: EXECUTION_STATUS.STARTED
     });
-    execution.setDataValue('workflow', this);
+
     execution.workflow = this;
 
-    await execution.start(null, null, options);
+    await execution.start(options);
     return execution;
   }
 }

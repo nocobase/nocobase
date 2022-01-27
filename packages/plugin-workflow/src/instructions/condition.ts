@@ -82,12 +82,12 @@ export default {
       status: JOB_STATUS.RESOLVED,
       result,
       // TODO(optimize): try unify the building of job
-      node_id: this.id,
-      upstream_id: prevJob instanceof Sequelize.Model ? prevJob.get('id') : null
+      nodeId: this.id,
+      upstreamId: prevJob instanceof Sequelize.Model ? prevJob.get('id') : null
     };
 
     const branchNode = execution.nodes
-      .find(item => item.upstream === this && item.linkType === Number(result));
+      .find(item => item.upstream === this && Boolean(item.branchIndex) === result);
 
     if (!branchNode) {
       return job;

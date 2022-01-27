@@ -1,7 +1,7 @@
 import { Application } from '@nocobase/server';
 import Database from '@nocobase/database';
 import { getApp } from '.';
-import { EXECUTION_STATUS, JOB_STATUS, LINK_TYPE } from '../constants';
+import { BRANCH_INDEX, EXECUTION_STATUS, JOB_STATUS } from '../constants';
 
 jest.setTimeout(300000);
 
@@ -10,22 +10,28 @@ describe('execution', () => {
   let db: Database;
   let PostModel;
   let WorkflowModel;
+  let WorkflowRepository;
   let workflow;
 
   beforeEach(async () => {
     app = await getApp();
 
     db = app.db;
-    WorkflowModel = db.getModel('workflows');
-    PostModel = db.getModel('posts');
-    // Target = db.getModel('targets');
+    WorkflowRepository = db.getCollection('workflows').repository;
+    WorkflowModel = db.getCollection('workflows').model;
+    PostModel = db.getCollection('posts').model;
 
-    workflow = await WorkflowModel.create({
-      title: 'test workflow',
-      enabled: true,
-      type: 'afterCreate',
-      config: {
-        collection: 'posts'
+    // TODO(question): why the hooks of creating workflow won't run by using `WorkflowModel.create()`?
+    // maybe the model is not the original defined one which hooks have been added.
+    // @see database/../collections.ts@L99: `this.model = class extends M {};`
+    workflow = await WorkflowRepository.create({
+      values: {
+        title: 'condition workflow',
+        enabled: true,
+        type: 'afterCreate',
+        config: {
+          collection: 'posts'
+        }
       }
     });
   });
@@ -86,7 +92,7 @@ describe('execution', () => {
       const n2 = await workflow.createNode({
         title: 'echo 2',
         type: 'echo',
-        upstream_id: n1.id
+        upstreamId: n1.id
       });
 
       await n1.setDownstream(n2);
@@ -133,7 +139,7 @@ describe('execution', () => {
       const n2 = await workflow.createNode({
         title: 'echo',
         type: 'echo',
-        upstream_id: n1.id
+        upstreamId: n1.id
       });
 
       await n1.setDownstream(n2);
@@ -166,7 +172,7 @@ describe('execution', () => {
       const n2 = await workflow.createNode({
         title: 'echo',
         type: 'echo',
-        upstream_id: n1.id
+        upstreamId: n1.id
       });
       await n1.setDownstream(n2);
 
@@ -200,15 +206,15 @@ describe('execution', () => {
       const n2 = await workflow.createNode({
         title: 'true to echo',
         type: 'echo',
-        linkType: LINK_TYPE.ON_TRUE,
-        upstream_id: n1.id
+        branchIndex: BRANCH_INDEX.ON_TRUE,
+        upstreamId: n1.id
       });
 
       await workflow.createNode({
         title: 'false to echo',
         type: 'echo',
-        linkType: LINK_TYPE.ON_FALSE,
-        upstream_id: n1.id
+        branchIndex: BRANCH_INDEX.ON_FALSE,
+        upstreamId: n1.id
       });
 
       const post = await PostModel.create({ title: 't1' });
@@ -218,8 +224,8 @@ describe('execution', () => {
 
       const jobs = await execution.getJobs({ order: [['id', 'ASC']] });
       expect(jobs.length).toEqual(2);
-      expect(jobs[0].node_id).toEqual(n1.id);
-      expect(jobs[1].node_id).toEqual(n2.id);
+      expect(jobs[0].nodeId).toEqual(n1.id);
+      expect(jobs[1].nodeId).toEqual(n2.id);
       expect(jobs[1].result).toEqual(true);
     });
 
@@ -233,14 +239,14 @@ describe('execution', () => {
       const n2 = await workflow.createNode({
         title: 'manual',
         type: 'prompt',
-        linkType: LINK_TYPE.ON_TRUE,
-        upstream_id: n1.id
+        branchIndex: BRANCH_INDEX.ON_TRUE,
+        upstreamId: n1.id
       });
 
       const n3 = await workflow.createNode({
         title: 'echo input value',
         type: 'echo',
-        upstream_id: n1.id
+        upstreamId: n1.id
       });
 
       await n1.setDownstream(n3);
@@ -250,7 +256,7 @@ describe('execution', () => {
       const [execution] = await workflow.getExecutions();
       expect(execution.status).toEqual(EXECUTION_STATUS.STARTED);
 
-      const [pending] = await execution.getJobs({ node_id: n2.id });
+      const [pending] = await execution.getJobs({ nodeId: n2.id });
       pending.set('result', 123);
       await execution.resume(pending);
 
@@ -268,14 +274,14 @@ describe('execution', () => {
       const n2 = await workflow.createNode({
         title: 'manual',
         type: 'prompt->error',
-        linkType: LINK_TYPE.ON_TRUE,
-        upstream_id: n1.id
+        branchIndex: BRANCH_INDEX.ON_TRUE,
+        upstreamId: n1.id
       });
 
       const n3 = await workflow.createNode({
         title: 'echo input value',
         type: 'echo',
-        upstream_id: n1.id
+        upstreamId: n1.id
       });
 
       await n1.setDownstream(n3);
@@ -285,7 +291,7 @@ describe('execution', () => {
       const [execution] = await workflow.getExecutions();
       expect(execution.status).toEqual(EXECUTION_STATUS.STARTED);
 
-      const [pending] = await execution.getJobs({ node_id: n2.id });
+      const [pending] = await execution.getJobs({ nodeId: n2.id });
       pending.set('result', 123);
       await execution.resume(pending);
       expect(execution.status).toEqual(EXECUTION_STATUS.REJECTED);

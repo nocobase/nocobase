@@ -1,4 +1,4 @@
-import { TableOptions } from '@nocobase/database';
+import { CollectionOptions } from '@nocobase/database';
 
 export default {
   name: 'executions',
@@ -30,4 +30,4 @@ export default {
       title: '状态'
     }
   ]
-} as TableOptions;
+} as CollectionOptions;
