@@ -6,7 +6,7 @@ import React from 'react';
 
 const schema = {
   name: 'filter',
-  type: 'object',
+  type: 'void',
   'x-component': 'Filter',
   default: {
     and: [
