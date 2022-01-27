@@ -21,6 +21,7 @@ export default {
 
     database.on('users.afterCreate', async (model, options) => {
       const { transaction } = options;
+
       const defaultRole = await this.app.db.getRepository('roles').findOne({
         filter: {
           default: true,
