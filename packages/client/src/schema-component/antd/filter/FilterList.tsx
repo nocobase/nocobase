@@ -17,7 +17,6 @@ export function FilterList(props) {
       return [`index-${index}`, item];
     }),
   );
-  debugger;
   useEffect(() => {
     const id = uid();
     form.addEffects(id, () => {

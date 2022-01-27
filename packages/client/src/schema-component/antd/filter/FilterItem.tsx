@@ -103,7 +103,6 @@ export const FilterItem = (props) => {
         initialValues: values,
         effects: (form) => {
           onFieldValueChange('column', (field: Field, form: Form) => {
-            debugger;
             const column = (field.value || {}) as ISchema;
             const operations = column?.['x-component-props']?.['operations'] || [];
             field.query('operation').take((f: Field) => {
@@ -127,7 +126,6 @@ export const FilterItem = (props) => {
             });
           });
           onFormValuesChange((form) => {
-            debugger;
             const { column, operation, value } = form?.values?.filter || {};
             if (!operation?.value) {
               return;
@@ -156,7 +154,6 @@ export const FilterItem = (props) => {
       }),
     [],
   );
-  debugger;
 
   const columnEnum: any = [...columns.values()].map((column) => column.toJSON());
   debugger;
