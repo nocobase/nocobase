@@ -1,7 +1,7 @@
 import { Application } from '@nocobase/server';
 import Database from '@nocobase/database';
 import { getApp } from '..';
-import { EXECUTION_STATUS, JOB_STATUS, LINK_TYPE } from '../../constants';
+import { EXECUTION_STATUS, BRANCH_INDEX } from '../../constants';
 
 
 
@@ -10,21 +10,25 @@ describe('workflow > instructions > condition', () => {
   let db: Database;
   let PostModel;
   let WorkflowModel;
+  let WorkflowRepository;
   let workflow;
 
   beforeEach(async () => {
     app = await getApp();
 
     db = app.db;
-    WorkflowModel = db.getModel('workflows');
-    PostModel = db.getModel('posts');
+    WorkflowRepository = db.getCollection('workflows').repository;
+    WorkflowModel = db.getCollection('workflows').model;
+    PostModel = db.getCollection('posts').model;
 
-    workflow = await WorkflowModel.create({
-      title: 'condition workflow',
-      enabled: true,
-      type: 'afterCreate',
-      config: {
-        collection: 'posts'
+    workflow = await WorkflowRepository.create({
+      values: {
+        title: 'condition workflow',
+        enabled: true,
+        type: 'afterCreate',
+        config: {
+          collection: 'posts'
+        }
       }
     });
   });
@@ -53,15 +57,15 @@ describe('workflow > instructions > condition', () => {
       const n2 = await workflow.createNode({
         title: 'true to echo',
         type: 'echo',
-        linkType: LINK_TYPE.ON_TRUE,
-        upstream_id: n1.id
+        branchIndex: BRANCH_INDEX.ON_TRUE,
+        upstreamId: n1.id
       });
 
       const n3 = await workflow.createNode({
         title: 'false to echo',
         type: 'echo',
-        linkType: LINK_TYPE.ON_FALSE,
-        upstream_id: n1.id
+        branchIndex: BRANCH_INDEX.ON_FALSE,
+        upstreamId: n1.id
       });
 
       const post = await PostModel.create({ title: 't1' });
@@ -99,15 +103,15 @@ describe('workflow > instructions > condition', () => {
       await workflow.createNode({
         title: 'true to echo',
         type: 'echo',
-        linkType: LINK_TYPE.ON_TRUE,
-        upstream_id: n1.id
+        branchIndex: BRANCH_INDEX.ON_TRUE,
+        upstreamId: n1.id
       });
 
       await workflow.createNode({
         title: 'false to echo',
         type: 'echo',
-        linkType: LINK_TYPE.ON_FALSE,
-        upstream_id: n1.id
+        branchIndex: BRANCH_INDEX.ON_FALSE,
+        upstreamId: n1.id
       });
 
       const post = await PostModel.create({ title: 't1' });

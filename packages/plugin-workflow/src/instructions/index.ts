@@ -1,7 +1,5 @@
-// something like template for type of nodes
-
-import { ModelCtor, Model } from "@nocobase/database";
-import { ExecutionModel } from "../models/Execution";
+import ExecutionModel from "../models/Execution";
+import FlowNodeModel from "../models/FlowNode";
 
 import prompt from './prompt';
 import condition from './condition';
@@ -19,13 +17,13 @@ export type InstructionResult = Job | Promise<Job>;
 // - base on input and context, do any calculations or system call (io), and produce a result or pending.
 export interface Instruction {
   run(
-    this: ModelCtor<Model>,
+    this: FlowNodeModel,
     // what should input to be?
     // - just use previously output result for convenience?
     input: any,
     // what should context to be?
     // - could be the workflow execution object (containing context data)
-    execution: ModelCtor<ExecutionModel>
+    execution: ExecutionModel
   ): InstructionResult;
   // for start node in main flow (or branch) to resume when manual sub branch triggered
   resume?(): InstructionResult

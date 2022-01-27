@@ -1,5 +1,4 @@
-import { TableOptions } from '@nocobase/database';
-import { LINK_TYPE } from '../constants';
+import { CollectionOptions } from '@nocobase/database';
 
 export default {
   name: 'flow_nodes',
@@ -40,18 +39,11 @@ export default {
     // only works when upstream node is branching type, like condition and parallel.
     // put here because the design of flow-links model is not really necessary for now.
     // or it should be put into flow-links model.
-    // if keeps 1:n relactionship, cannot support cycle flow.
     {
       interface: 'select',
-      name: 'linkType',
-      type: 'smallint',
-      title: 'Link Type',
-      dataSource: [
-        { label: 'Default', value: LINK_TYPE.DEFAULT },
-        { label: 'Branched, on true', value: LINK_TYPE.ON_TRUE },
-        { label: 'Branched, on false', value: LINK_TYPE.ON_FALSE },
-        { label: 'Branched, no limit', value: LINK_TYPE.NO_LIMIT }
-      ]
+      name: 'branchIndex',
+      type: 'integer',
+      title: 'branch index'
     },
     // for reasons:
     // 1. redirect type node to solve cycle flow.
@@ -83,4 +75,4 @@ export default {
       defaultValue: {}
     }
   ]
-} as TableOptions;
+} as CollectionOptions;

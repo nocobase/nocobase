@@ -36,10 +36,10 @@ export async function getApp(options = {}): Promise<MockServer> {
       throw new Error('input failed');
     }
   });
-
+  
   await app.load();
-
-  app.db.import({
+  
+  await app.db.import({
     directory: path.resolve(__dirname, './collections')
   });
 

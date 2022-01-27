@@ -12,9 +12,8 @@ export const JOB_STATUS = {
   CANCELLED: -2
 };
 
-export const LINK_TYPE = {
+export const BRANCH_INDEX = {
   DEFAULT: null,
   ON_TRUE: 1,
-  ON_FALSE: 0,
-  NO_LIMIT: -1
+  ON_FALSE: 0
 };

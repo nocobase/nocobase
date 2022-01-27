@@ -1,4 +1,4 @@
-import { TableOptions } from '@nocobase/database';
+import { CollectionOptions } from '@nocobase/database';
 
 export default {
   name: 'workflows',
@@ -53,4 +53,4 @@ export default {
       title: '触发执行'
     }
   ]
-} as TableOptions;
+} as CollectionOptions;

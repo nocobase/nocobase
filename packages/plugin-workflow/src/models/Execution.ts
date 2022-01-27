@@ -1,13 +1,50 @@
-import Sequelize from 'sequelize';
-import { Model, ModelCtor } from '@nocobase/database';
+import {
+  Model,
+  BelongsToGetAssociationMixin,
+  Optional,
+  HasManyGetAssociationsMixin
+} from 'sequelize';
+
+import Database from '@nocobase/database';
 
 import { EXECUTION_STATUS, JOB_STATUS } from '../constants';
 import { getInstruction } from '../instructions';
+import WorkflowModel from './Workflow';
+import FlowNodeModel from './FlowNode';
+import JobModel from './Job';
 
-export class ExecutionModel extends Model {
-  nodes: Array<any> = [];
-  nodesMap = new Map();
-  jobsMap = new Map();
+interface ExecutionAttributes {
+  id: number;
+  title: string;
+  context: any;
+  status: number;
+}
+
+interface ExecutionCreationAttributes extends Optional<ExecutionAttributes, 'id'> {}
+
+export default class ExecutionModel
+  extends Model<ExecutionAttributes, ExecutionCreationAttributes>
+  implements ExecutionAttributes {
+
+  declare readonly database: Database;
+
+  declare id: number;
+  declare title: string;
+  declare context: any;
+  declare status: number;
+
+  declare createdAt: Date;
+  declare updatedAt: Date;
+
+  declare workflow?: WorkflowModel;
+  declare getWorkflow: BelongsToGetAssociationMixin<WorkflowModel>;
+
+  declare jobs?: JobModel[];
+  declare getJobs: HasManyGetAssociationsMixin<JobModel>;
+
+  nodes: Array<FlowNodeModel> = [];
+  nodesMap = new Map<number, FlowNodeModel>();
+  jobsMap = new Map<number, JobModel>();
 
   // make dual linked nodes list then cache
   makeNodes(nodes = []) {
@@ -18,17 +55,17 @@ export class ExecutionModel extends Model {
     });
 
     nodes.forEach(node => {
-      if (node.upstream_id) {
-        node.upstream = this.nodesMap.get(node.upstream_id);
+      if (node.upstreamId) {
+        node.upstream = this.nodesMap.get(node.upstreamId);
       }
 
-      if (node.downstream_id) {
-        node.downstream = this.nodesMap.get(node.downstream_id);
+      if (node.downstreamId) {
+        node.downstream = this.nodesMap.get(node.downstreamId);
       }
     });
   }
 
-  makeJobs(jobs: Array<ModelCtor<Model>>) {
+  makeJobs(jobs: Array<JobModel>) {
     jobs.forEach(job => {
       this.jobsMap.set(job.id, job);
     });
@@ -55,7 +92,7 @@ export class ExecutionModel extends Model {
   async start(options) {
     await this.prepare();
     if (!this.nodes.length) {
-      return this.exit(null);
+      return this.exit();
     }
     const head = this.nodes.find(item => !item.upstream);
     return this.exec(head, { result: this.context });
@@ -63,7 +100,7 @@ export class ExecutionModel extends Model {
 
   async resume(job, options) {
     await this.prepare();
-    const node = this.nodesMap.get(job.node_id);
+    const node = this.nodesMap.get(job.nodeId);
     return this.recall(node, job);
   }
 
@@ -79,7 +116,7 @@ export class ExecutionModel extends Model {
         status: JOB_STATUS.REJECTED
       };
       // if previous job is from resuming
-      if (prevJob && prevJob.node_id === node.id) {
+      if (prevJob && prevJob.nodeId === node.id) {
         prevJob.set(job);
         job = prevJob;
       }
@@ -88,13 +125,13 @@ export class ExecutionModel extends Model {
     let savedJob;
     // TODO(optimize): many checking of resuming or new could be improved
     // could be implemented separately in exec() / resume()
-    if (job instanceof Sequelize.Model) {
+    if (job instanceof Model) {
       savedJob = await job.save();
     } else {
-      const upstream_id = prevJob instanceof Sequelize.Model ? prevJob.get('id') : null;
+      const upstreamId = prevJob instanceof Model ? prevJob.get('id') : null;
       savedJob = await this.saveJob({
-        node_id: node.id,
-        upstream_id,
+        nodeId: node.id,
+        upstreamId,
         ...job
       });
     }
@@ -136,7 +173,7 @@ export class ExecutionModel extends Model {
     return this.run(resume, node, job);
   }
 
-  async exit(job) {
+  async exit(job?: JobModel) {
     const executionStatusMap = {
       [JOB_STATUS.PENDING]: EXECUTION_STATUS.STARTED,
       [JOB_STATUS.RESOLVED]: EXECUTION_STATUS.RESOLVED,
@@ -150,29 +187,30 @@ export class ExecutionModel extends Model {
 
   // TODO(optimize)
   async saveJob(payload) {
-    const JobModel = this.database.getModel('jobs');
-    const [result] = await JobModel.upsert({
+    // @ts-ignore
+    const { database } = this.constructor;
+    const { model } = database.getCollection('jobs');
+    const [result] = await model.upsert({
       ...payload,
-      execution_id: this.id
-    });
-
+      executionId: this.id
+    }) as [JobModel, boolean | null];
     this.jobsMap.set(result.id, result);
 
     return result;
   }
 
-  findBranchParentNode(node): any {
+  findBranchParentNode(node: FlowNodeModel): FlowNodeModel | null {
     for (let n = node; n; n = n.upstream) {
-      if (n.linkType !== null) {
+      if (n.branchIndex !== null) {
         return n.upstream;
       }
     }
     return null;
   }
 
-  findBranchParentJob(job, node) {
-    for (let j = job; j; j = this.jobsMap.get(j.upstream_id)) {
-      if (j.node_id === node.id) {
+  findBranchParentJob(job: JobModel, node: FlowNodeModel): JobModel | null {
+    for (let j = job; j; j = this.jobsMap.get(j.upstreamId)) {
+      if (j.nodeId === node.id) {
         return j;
       }
     }

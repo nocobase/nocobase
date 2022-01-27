@@ -1,4 +1,4 @@
-import { TableOptions } from '@nocobase/database';
+import { CollectionOptions } from '@nocobase/database';
 
 export default {
   name: 'posts',
@@ -12,4 +12,4 @@ export default {
       name: 'published',
     }
   ]
-} as TableOptions;
+} as CollectionOptions;

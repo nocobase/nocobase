@@ -1,7 +1,6 @@
 import { get } from 'lodash';
 
-import { ModelCtor } from '@nocobase/database';
-import { ExecutionModel } from '../models/Execution';
+import ExecutionModel from '../models/Execution';
 
 export type OperandType = 'context' | 'input' | 'job';
 
@@ -36,7 +35,7 @@ export type JobOperand = {
 export type Operand = ContextOperand | InputOperand | JobOperand | ConstantOperand;
 
 // TODO: other instructions may also use this method, could be moved to utils.
-export function getValue(operand: Operand, input: any, execution: ModelCtor<ExecutionModel>) {
+export function getValue(operand: Operand, input: any, execution: ExecutionModel) {
   switch (operand.type) {
     // from execution context
     case 'context':
@@ -47,7 +46,7 @@ export function getValue(operand: Operand, input: any, execution: ModelCtor<Exec
     // from job in execution
     case 'job':
       // assume jobs have been fetched from execution before
-      const job = execution.jobs.find(item => item.id === operand.options.id);
+      const job = execution.jobsMap.get(operand.options.id);
       return get(job, operand.options.path);
     // constant
     default:

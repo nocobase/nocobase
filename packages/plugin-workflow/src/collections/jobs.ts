@@ -1,4 +1,4 @@
-import { TableOptions } from '@nocobase/database';
+import { CollectionOptions } from '@nocobase/database';
 
 export default {
   name: 'jobs',
@@ -45,4 +45,4 @@ export default {
     //   title: 'node snapshot'
     // }
   ]
-} as TableOptions;
+} as CollectionOptions;
