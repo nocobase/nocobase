@@ -7,15 +7,7 @@ import { FilterGroup } from './FilterGroup';
 import './style.less';
 
 export const Filter: any = connect(
-  (props) => {
-    const form = useForm();
-    console.log('...........', form.id);
-    return (
-      <div>
-        <FilterGroup bordered={false} {...props} />
-      </div>
-    );
-  },
+  (props) => <FilterGroup bordered={false} {...props} />,
   mapProps((props, field) => {
     return {
       ...props,
