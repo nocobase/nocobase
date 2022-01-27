@@ -1,16 +1,14 @@
 import { CloseCircleOutlined } from '@ant-design/icons';
-import { FormItem as FormilyFormItem, FormLayout, Space } from '@formily/antd';
+import { FormItem as FormilyFormItem, FormLayout, Space as AntdSpace } from '@formily/antd';
 import { createForm, onFieldReact, onFieldValueChange, onFormValuesChange } from '@formily/core';
 import { Field } from '@formily/core/esm/models/Field';
 import { Form } from '@formily/core/esm/models/Form';
-import type { ISchema } from '@formily/react';
-import { FormProvider, Schema, SchemaKey, SchemaOptionsContext, useFieldSchema } from '@formily/react';
+import { ISchema, Schema, SchemaKey, SchemaOptionsContext, useFieldSchema } from '@formily/react';
 import { isValid, uid } from '@formily/shared';
 import { get } from 'lodash';
 import React, { useContext, useMemo } from 'react';
-import { SchemaComponent } from '../../components';
-import { Select } from '../select';
-import { Filter } from './Filter';
+import { SchemaComponent, SchemaComponentProvider } from '../../components';
+import { AntdSchemaComponentProvider } from '../AntdSchemaComponentProvider';
 
 function useFilterColumns(): Map<SchemaKey, Schema> {
   const schema = useFieldSchema();
@@ -151,6 +149,7 @@ export const FilterItem = (props) => {
       }),
     [],
   );
+  debugger;
 
   const columnEnum: any = [...columns.values()].map((column) => column.toJSON());
   debugger;
@@ -160,7 +159,7 @@ export const FilterItem = (props) => {
     properties: {
       [uid()]: {
         type: 'void',
-        'x-component': 'Space',
+        'x-component': 'AntdSpace',
         properties: {
           column: {
             type: 'object',
@@ -232,14 +231,13 @@ export const FilterItem = (props) => {
   };
 
   return (
-    <FormProvider form={form}>
-      <FormLayout layout={'inline'}>
-        <SchemaComponent
-          schema={schema}
-          components={{ Space, Select, FormilyFormItem, Filter, Remove }}
-        ></SchemaComponent>
-      </FormLayout>
-    </FormProvider>
+    <SchemaComponentProvider form={form}>
+      <AntdSchemaComponentProvider>
+        <FormLayout layout={'inline'}>
+          <SchemaComponent schema={schema} components={{ AntdSpace, FormilyFormItem, Remove }}></SchemaComponent>
+        </FormLayout>
+      </AntdSchemaComponentProvider>
+    </SchemaComponentProvider>
   );
 };
 

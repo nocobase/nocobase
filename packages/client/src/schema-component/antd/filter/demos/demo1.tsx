@@ -1,8 +1,7 @@
 /**
  * title: Filter
  */
-import { FormItem as FormilyFormItem } from '@formily/antd';
-import { Filter, Input, SchemaComponent, SchemaComponentProvider } from '@nocobase/client';
+import { AntdSchemaComponentProvider, SchemaComponent, SchemaComponentProvider } from '@nocobase/client';
 import React from 'react';
 
 const schema = {
@@ -50,8 +49,10 @@ const schema = {
 
 export default () => {
   return (
-    <SchemaComponentProvider components={{ Input, Filter, FormilyFormItem }}>
-      <SchemaComponent schema={schema} />
+    <SchemaComponentProvider>
+      <AntdSchemaComponentProvider>
+        <SchemaComponent schema={schema} />
+      </AntdSchemaComponentProvider>
     </SchemaComponentProvider>
   );
 };
