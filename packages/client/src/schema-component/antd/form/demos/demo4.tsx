@@ -19,12 +19,17 @@ export default observer(() => {
             type: 'void',
             'x-component': 'Action.Drawer',
             'x-decorator': 'Form',
+            'x-decorator-props': {
+              initialValue: {
+                field1: 'aaa',
+              },
+            },
             title: 'Drawer Title',
             properties: {
               field1: {
+                title: 'T1',
                 'x-component': 'Input',
                 'x-decorator': 'FormItem',
-                title: 'T1',
               },
               out: {
                 'x-component': 'Output',
