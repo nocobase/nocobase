@@ -10,11 +10,12 @@ export default observer(() => {
     properties: {
       form1: {
         type: 'void',
-        'x-decorator': 'Card',
-        "x-decorator-props": {
-          title: 'Form Title',
-        },
         'x-component': 'Form',
+        'x-component-props': {
+          initialValue: {
+            field1: 'aaa',
+          },
+        },
         properties: {
           field1: {
             'x-component': 'Input',
