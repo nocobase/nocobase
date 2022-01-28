@@ -77,7 +77,6 @@ Markdown.Void = observer((props: any) => {
       }}
       onSubmit={async (value) => {
         field.readPretty = true;
-        schema['default'] = value;
         schema['x-component-props'] ?? (schema['x-component-props'] = {});
         schema['x-component-props']['content'] = value;
         onSave?.(schema);
