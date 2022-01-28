@@ -1,22 +1,20 @@
 import WorkflowModel from '../models/Workflow';
-import * as dataChangeTriggers from './data-change';
+import modelTrigger from './model';
 
-export interface ITrigger {
-  (this: WorkflowModel, config: any): void
+export interface Trigger {
+  name: string;
+  on(this: WorkflowModel, callback: Function): void;
+  off(this: WorkflowModel): void;
 }
 
-const triggers = new Map<string, ITrigger>();
+const triggers = new Map<string, Trigger>();
 
-export function register(type: string, trigger: ITrigger): void {
+export function register(type: string, trigger: Trigger): void {
   triggers.set(type, trigger);
 }
 
-export function get(type: string): ITrigger | undefined {
+export function get(type: string): Trigger | undefined {
   return triggers.get(type);
 }
 
-for (const key in dataChangeTriggers) {
-  if (dataChangeTriggers.hasOwnProperty(key)) {
-    register(key, dataChangeTriggers[key]);
-  }
-}
+register(modelTrigger.name, modelTrigger);

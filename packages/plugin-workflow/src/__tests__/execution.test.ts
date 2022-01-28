@@ -10,28 +10,22 @@ describe('execution', () => {
   let db: Database;
   let PostModel;
   let WorkflowModel;
-  let WorkflowRepository;
   let workflow;
 
   beforeEach(async () => {
     app = await getApp();
 
     db = app.db;
-    WorkflowRepository = db.getCollection('workflows').repository;
     WorkflowModel = db.getCollection('workflows').model;
     PostModel = db.getCollection('posts').model;
 
-    // TODO(question): why the hooks of creating workflow won't run by using `WorkflowModel.create()`?
-    // maybe the model is not the original defined one which hooks have been added.
-    // @see database/../collections.ts@L99: `this.model = class extends M {};`
-    workflow = await WorkflowRepository.create({
-      values: {
-        title: 'condition workflow',
-        enabled: true,
-        type: 'afterCreate',
-        config: {
-          collection: 'posts'
-        }
+    workflow = await WorkflowModel.create({
+      title: 'test workflow',
+      enabled: true,
+      type: 'model',
+      config: {
+        mode: 1,
+        collection: 'posts'
       }
     });
   });
