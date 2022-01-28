@@ -68,16 +68,16 @@ Markdown.Void = observer((props: any) => {
   const text = schema['x-component-props']?.['content'] ?? schema['default'];
   let value = <div className={'nb-markdown'} dangerouslySetInnerHTML={{ __html: markdown(text) }} />;
   const { onSave, onCancel } = props;
-  return field?.pattern !== 'readPretty' ? (
+  return field.editable ? (
     <MarkdownTextArea
       {...props}
       defaultValue={text}
       onCancel={() => {
-        field.readPretty = true;
+        field.editable = false;
         onCancel?.();
       }}
       onSubmit={async (value) => {
-        field.readPretty = true;
+        field.editable = false;
         schema['x-component-props'] ?? (schema['x-component-props'] = {});
         schema['x-component-props']['content'] = value;
         onSave?.(schema);
