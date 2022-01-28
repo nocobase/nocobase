@@ -1,5 +1,6 @@
+import { uid } from '@formily/shared';
 import { APIClient, APIClientProvider, useAPIClient, useRequest } from '@nocobase/client';
-import { Button, Table } from 'antd';
+import { Button, Input, Space, Table } from 'antd';
 import MockAdapter from 'axios-mock-adapter';
 import React from 'react';
 
@@ -14,8 +15,8 @@ mock.onGet('/users:list').reply(async () => {
     200,
     {
       data: [
-        { id: 1, name: 'John Smith' },
-        { id: 2, name: 'James' },
+        { id: 1, name: uid() },
+        { id: 2, name: uid() },
       ],
     },
   ];
@@ -46,14 +47,20 @@ const ComponentA = () => {
 const ComponentB = () => {
   console.log('ComponentB');
   const apiClient = useAPIClient();
-  return <Button onClick={() => apiClient.service('test')?.refresh()}>刷新</Button>;
+  return (
+    <Space>
+      <Input />
+      <Button onClick={() => apiClient.service('test')?.run()}>提交</Button>
+    </Space>
+  );
 };
 
 export default () => {
   return (
     <APIClientProvider apiClient={apiClient}>
       <ComponentB />
-      <br/><br/>
+      <br />
+      <br />
       <ComponentA />
     </APIClientProvider>
   );
