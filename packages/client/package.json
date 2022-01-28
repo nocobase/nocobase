@@ -27,7 +27,7 @@
     "axios": "^0.24.0",
     "file-saver": "^2.0.5",
     "i18next": "^21.6.0",
-    "marked": "^4.0.10",
+    "marked": "^4.0.12",
     "react-helmet": "^6.1.0",
     "react-i18next": "^11.15.1",
     "react-image-lightbox": "^5.1.4",

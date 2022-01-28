@@ -8,26 +8,14 @@ import React from 'react';
 const schema = {
   type: 'object',
   properties: {
-    input: {
-      type: 'string',
-      title: `Editable`,
-      'x-decorator': 'FormItem',
-      'x-component': 'Markdown',
-      'x-reactions': {
-        target: 'read',
-        fulfill: {
-          state: {
-            value: '{{$self.value}}',
-          },
-        },
-      },
-    },
-    read: {
+    pretty: {
       type: 'string',
       title: `Read pretty`,
-      'x-read-pretty': true,
       'x-decorator': 'FormItem',
-      'x-component': 'Markdown',
+      'x-component': 'Markdown.Void',
+      'x-component-props': {
+        content: '# Markdown content',
+      },
     },
   },
 };
