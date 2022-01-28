@@ -1,5 +1,5 @@
 /**
- * title: Markdown
+ * title: Markdown.Void
  */
 import { FormItem } from '@formily/antd';
 import { observer, useField } from '@formily/react';
@@ -10,11 +10,12 @@ import React from 'react';
 const schema = {
   type: 'object',
   properties: {
-    MarkdownVoid: {
-      type: 'string',
+    markdown: {
+      type: 'void',
       title: `Read pretty`,
       'x-decorator': 'Editable',
       'x-component': 'Markdown.Void',
+      'x-editable': false,
       'x-component-props': {
         content: '# Markdown content',
       },
