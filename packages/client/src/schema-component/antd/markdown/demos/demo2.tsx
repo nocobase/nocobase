@@ -24,17 +24,18 @@ const schema = {
 
 const Editable = observer((props: any) => {
   const filed = useField<any>();
+  if (filed.editable) {
+    return props.children;
+  }
   return (
     <div>
-      {!filed.editable && (
-        <Button
-          onClick={() => {
-            filed.editable = true;
-          }}
-        >
-          编辑
-        </Button>
-      )}
+      <Button
+        onClick={() => {
+          filed.editable = true;
+        }}
+      >
+        编辑
+      </Button>
       <div>{props.children}</div>
     </div>
   );
