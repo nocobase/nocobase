@@ -10,25 +10,21 @@ describe('workflow > instructions > condition', () => {
   let db: Database;
   let PostModel;
   let WorkflowModel;
-  let WorkflowRepository;
   let workflow;
 
   beforeEach(async () => {
     app = await getApp();
 
     db = app.db;
-    WorkflowRepository = db.getCollection('workflows').repository;
     WorkflowModel = db.getCollection('workflows').model;
     PostModel = db.getCollection('posts').model;
 
-    workflow = await WorkflowRepository.create({
-      values: {
-        title: 'condition workflow',
-        enabled: true,
-        type: 'afterCreate',
-        config: {
-          collection: 'posts'
-        }
+    workflow = await WorkflowModel.create({
+      title: 'test workflow',
+      enabled: true,
+      type: 'afterCreate',
+      config: {
+        collection: 'posts'
       }
     });
   });

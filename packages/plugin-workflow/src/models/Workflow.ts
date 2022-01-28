@@ -34,28 +34,27 @@ export default class WorkflowModel extends Model {
       filter: { enabled: true }
     });
 
-    workflows.forEach(workflow => {
-      // @ts-ignore
-      workflow.mount();
+    workflows.forEach((workflow: WorkflowModel) => {
+      workflow.toggle();
     });
 
-    this.addHook('afterCreate', (model: WorkflowModel) => model.mount());
-    // TODO: afterUpdate, afterDestroy
+    this.addHook('afterCreate', (model: WorkflowModel) => model.toggle());
+    this.addHook('afterUpdate', (model: WorkflowModel) => model.toggle());
+    this.addHook('afterDestroy', (model: WorkflowModel) => model.toggle(false));
   }
 
-  async mount() {
-    if (!this.get('enabled')) {
-      return;
-    }
+  getHookId() {
+    return `workflow-${this.get('id')}`;
+  }
+
+  async toggle(enable?: boolean) {
     const type = this.get('type');
-    const config = this.get('config');
-    const trigger = getTrigger(type);
-    trigger.call(this, config, this.start.bind(this));
-  }
-
-  // TODO
-  async unmount() {
-    
+    const { on, off } = getTrigger(type);
+    if (typeof enable !== 'undefined' ? enable : this.get('enabled')) {
+      on.call(this, this.start.bind(this));
+    } else {
+      off.call(this);
+    }
   }
 
   async start(context: Object, options) {
