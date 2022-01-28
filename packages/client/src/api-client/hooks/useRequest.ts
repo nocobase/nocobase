@@ -18,7 +18,7 @@ type ResourceActionOptions<P = any> = {
 
 export function useRequest<P>(
   service: AxiosRequestConfig<P> | ResourceActionOptions<P> | FunctionService,
-  options?: Options<any, any> & { uid?: string },
+  options: Options<any, any> & { uid?: string } = {},
 ) {
   const api = useContext(APIClientContext);
   if (typeof service === 'function') {
