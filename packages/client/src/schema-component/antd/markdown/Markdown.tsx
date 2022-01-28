@@ -1,8 +1,9 @@
 import { LoadingOutlined } from '@ant-design/icons';
-import { connect, mapProps, mapReadPretty, observer, useFieldSchema } from '@formily/react';
-import { Input as AntdInput } from 'antd';
+import { connect, mapProps, mapReadPretty, observer, useField, useFieldSchema } from '@formily/react';
+import { Button, Input as AntdInput, Space } from 'antd';
 import { marked } from 'marked';
-import React from 'react';
+import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { ReadPretty as InputReadPretty } from '../input';
 
 export function markdown(text) {
@@ -27,12 +28,64 @@ export const Markdown: any = connect(
   }),
 );
 
-const MarkdownVoid = observer((props: any) => {
+function MarkdownTextArea(props: any) {
+  const { t } = useTranslation();
+  const [value, setValue] = useState(props.defaultValue);
+  return (
+    <div className={'mb-markdown'} style={{ position: 'relative' }}>
+      <AntdInput.TextArea
+        autoSize={{ minRows: 3 }}
+        {...props}
+        value={value}
+        onChange={(e) => {
+          setValue(e.target.value);
+        }}
+      />
+      <Space style={{ position: 'absolute', bottom: 5, right: 5 }}>
+        <Button
+          onClick={(e) => {
+            props.onCancel && props.onCancel(e);
+          }}
+        >
+          {t('Cancel')}
+        </Button>
+        <Button
+          type={'primary'}
+          onClick={() => {
+            props.onSubmit && props.onSubmit(value);
+          }}
+        >
+          {t('Save')}
+        </Button>
+      </Space>
+    </div>
+  );
+}
+
+Markdown.Void = observer((props: any) => {
   const schema = useFieldSchema();
+  const field = useField<any>();
   const text = schema['x-component-props']?.['content'] ?? schema['default'];
   let value = <div className={'nb-markdown'} dangerouslySetInnerHTML={{ __html: markdown(text) }} />;
-  return <InputReadPretty.TextArea {...props} text={text} value={value} />;
+  const { onSave } = props;
+  return field?.pattern !== 'readPretty' ? (
+    <MarkdownTextArea
+      {...props}
+      defaultValue={text}
+      onCancel={() => {
+        field.readPretty = true;
+      }}
+      onSubmit={async (value) => {
+        field.readPretty = true;
+        schema['default'] = value;
+        schema['x-component-props'] ?? (schema['x-component-props'] = {});
+        schema['x-component-props']['content'] = value;
+        onSave?.(schema);
+      }}
+    />
+  ) : (
+    <InputReadPretty.TextArea {...props} text={text} value={value} />
+  );
 });
-Markdown.Void = connect(MarkdownVoid);
 
 export default Markdown;

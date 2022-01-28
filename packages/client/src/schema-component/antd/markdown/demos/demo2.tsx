@@ -8,7 +8,7 @@ import React from 'react';
 const schema = {
   type: 'object',
   properties: {
-    pretty: {
+    MarkdownVoid: {
       type: 'string',
       title: `Read pretty`,
       'x-decorator': 'FormItem',
