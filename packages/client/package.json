@@ -17,8 +17,8 @@
     "npm": ">=3.0.0"
   },
   "dependencies": {
-    "@dnd-kit/core": "^4.0.3",
-    "@dnd-kit/sortable": "^5.1.0",
+    "@dnd-kit/core": "^5.0.1",
+    "@dnd-kit/sortable": "^6.0.0",
     "@emotion/css": "^11.7.1",
     "@formily/antd": "^2.0.7",
     "@formily/core": "^2.0.7",

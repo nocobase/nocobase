@@ -1257,27 +1257,27 @@
   dependencies:
     tslib "^2.0.0"
 
-"@dnd-kit/core@^4.0.3":
-  version "4.0.3"
-  resolved "https://registry.npmjs.org/@dnd-kit/core/-/core-4.0.3.tgz#49abe3c9b481b6e07909df1781e88b20f3dd25b0"
-  integrity sha512-uT1uHZxKx3iEkupmLfknMIvbykMJSetoXXmra6sGGvtWy+OMKrWm3axH2c90+JC/q6qaeKs2znd3Qs8GLnCa5Q==
+"@dnd-kit/core@^5.0.1":
+  version "5.0.1"
+  resolved "https://registry.npmjs.org/@dnd-kit/core/-/core-5.0.1.tgz#ae8c01ca5a91083ab31bbd8c839c552e5cf62c26"
+  integrity sha512-h02GyHb2KqbpqbELA9QW5WVLdnAQODgZs8Nv15PTg/VpEpQxEkLPn0QHqiMSSOOFBx0qJOowwYh6ggfL1ZIJPQ==
   dependencies:
     "@dnd-kit/accessibility" "^3.0.0"
-    "@dnd-kit/utilities" "^3.0.1"
+    "@dnd-kit/utilities" "^3.1.0"
     tslib "^2.0.0"
 
-"@dnd-kit/sortable@^5.1.0":
-  version "5.1.0"
-  resolved "https://registry.npmjs.org/@dnd-kit/sortable/-/sortable-5.1.0.tgz#f30ec12c95ca5aa90e2e4d9ef3dbe16b3eb26d69"
-  integrity sha512-CPyiUHbTrSYzhddfgdeoX0ERg/dEyVKIWx9+4O6uqpoppo84SXCBHVFiFBRVpQ9wtpsXs7prtUAnAUTcvFQTZg==
+"@dnd-kit/sortable@^6.0.0":
+  version "6.0.0"
+  resolved "https://registry.npmjs.org/@dnd-kit/sortable/-/sortable-6.0.0.tgz#289c06ec594fb519d75cdf04ac5de7359b14f068"
+  integrity sha512-Kf0HO/rbFpd7HxXGEvxXtxBgPI6+IQuxRXDdFz6XKLhylxuDMEomi1netrhS+253KrOZ68V+sjqOmfE2RreLeQ==
   dependencies:
-    "@dnd-kit/utilities" "^3.0.0"
+    "@dnd-kit/utilities" "^3.1.0"
     tslib "^2.0.0"
 
-"@dnd-kit/utilities@^3.0.0", "@dnd-kit/utilities@^3.0.1":
-  version "3.0.2"
-  resolved "https://registry.npmjs.org/@dnd-kit/utilities/-/utilities-3.0.2.tgz#24fd796491a85c2904e9c97f1fdb42005df645f2"
-  integrity sha512-J4WpZXKbLJzBkuALqsIy5KmQr6PQk86ixoPKoixzjWj1+XGE5KdA2vga9Vf43EB/Ewpng+E5SmXVLfTs7ukbhw==
+"@dnd-kit/utilities@^3.1.0":
+  version "3.1.0"
+  resolved "https://registry.npmjs.org/@dnd-kit/utilities/-/utilities-3.1.0.tgz#330ef24303da05f85ff20bb8f74b385c96caee58"
+  integrity sha512-2JBdIgjJ7xjMRpKagdMuYKWJdDoVVw9Wc6lfMrLjrq8t4QlMEjtsab5JVUlzWvHgANn7w3Y3VhalFfbp4dQrKg==
   dependencies:
     tslib "^2.0.0"
 

@@ -9,3 +9,7 @@ group:
 
 - Tabs
 - Tabs.TabPane
+
+## Examples
+
+<code src="./demos/demo1.tsx" />
