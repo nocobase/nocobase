@@ -48,7 +48,7 @@ interface ActionsOptions {
   resourceNames?: string[];
 }
 
-type StartOptions = { port: number } | { listen: false };
+type StartOptions = { port: number; hostName?: string } | { listen: false };
 
 export class Application<StateT = DefaultState, ContextT = DefaultContext> extends Koa implements AsyncEmitter {
   public readonly db: Database;
@@ -83,8 +83,8 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     }
   }
 
-  plugin(options?: PluginType | PluginOptions, ext?: PluginOptions): Plugin {
-    return this.pm.add(options);
+  plugin(pluginClass: any, ext?: PluginOptions): Plugin {
+    return this.pm.add(pluginClass, ext);
   }
 
   use<NewStateT = {}, NewContextT = {}>(
@@ -129,18 +129,26 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
   }
 
   async start(options?: StartOptions) {
-    await this.emitAsync('beforeStart');
-
     // reconnect database
     if (this.db.closed()) {
       await this.db.reconnect();
     }
 
+    await this.emitAsync('beforeStart');
+
     // load configuration
     await this.load();
 
     if (options['port']) {
-      this.listenServer = this.listen(options['port']);
+      const listen = () =>
+        new Promise((resolve, reject) => {
+          const Server = this.listen(options['port'], options['hostName'], () => {
+            resolve(Server);
+          });
+        });
+
+      // @ts-ignore
+      this.listenServer = await listen();
     }
 
     await this.emitAsync('afterStart');
@@ -179,11 +187,11 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
   }
 
   async install(options?: { clean?: true; syncOptions: SyncOptions }) {
-    await this.emitAsync('beforeInstall');
-
     if (options?.clean) {
       await this.clean({ drop: true });
     }
+
+    await this.emitAsync('beforeInstall');
 
     await this.db.sync(options?.syncOptions);
 

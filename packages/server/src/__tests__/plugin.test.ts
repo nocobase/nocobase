@@ -33,6 +33,18 @@ describe('plugin', () => {
   });
 
   describe('define', () => {
+    it('should add plugin with options', async () => {
+      class MyPlugin extends Plugin {
+        load() {}
+      }
+
+      const plugin = app.plugin(MyPlugin, {
+        test: 'hello',
+      });
+
+      expect(plugin.options['test']).toEqual('hello');
+    });
+
     it('plugin name', async () => {
       class MyPlugin extends Plugin {
         load() {}

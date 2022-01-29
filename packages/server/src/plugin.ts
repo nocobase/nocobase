@@ -28,6 +28,10 @@ export abstract class Plugin implements PluginInterface {
   constructor(options?: PluginOptions & { app?: Application }) {
     this.app = options?.app;
     this.db = this.app.db;
+    this.setOptions(options);
+  }
+
+  setOptions(options: PluginOptions) {
     this.options = options;
   }
 

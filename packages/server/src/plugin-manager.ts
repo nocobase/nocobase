@@ -31,7 +31,7 @@ export class PluginManager {
   }
 
   async load() {
-    await this.app.emitAsync('beforeLoad');
+    await this.app.emitAsync('beforeLoadAll');
 
     for (const [name, plugin] of this.plugins) {
       await plugin.beforeLoad();
@@ -43,6 +43,6 @@ export class PluginManager {
       await this.app.emitAsync('afterLoadPlugin', plugin);
     }
 
-    await this.app.emitAsync('afterLoad');
+    await this.app.emitAsync('afterLoadAll');
   }
 }
