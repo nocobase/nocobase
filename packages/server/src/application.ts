@@ -120,7 +120,7 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
   }
 
   getPlugin<P extends Plugin>(name: string) {
-    return this.plugins.get(name) as P;
+    return this.pm.get(name) as P;
   }
 
   async parse(argv = process.argv) {

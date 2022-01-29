@@ -13,6 +13,10 @@ export class PluginManager {
     this.app = options.app;
   }
 
+  get(name: string) {
+    return this.plugins.get(name);
+  }
+
   add(pluginClass: any, ext?: PluginOptions): Plugin {
     const instance = new pluginClass({
       ...ext,
