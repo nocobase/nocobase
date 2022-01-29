@@ -5,6 +5,7 @@ import _ from 'lodash';
 export interface IPlugin {
   install?: (this: Plugin) => void;
   load?: (this: Plugin) => void;
+  beforeLoad?: () => void;
 }
 
 export interface PluginOptions {
@@ -57,4 +58,6 @@ export class Plugin implements IPlugin {
   async load() {
     await this.call('load');
   }
+
+  async beforeLoad() {}
 }

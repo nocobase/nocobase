@@ -6,6 +6,8 @@ import { PluginType, Plugin, PluginOptions } from './plugin';
 import { registerActions } from '@nocobase/actions';
 import { createCli, createI18n, createDatabase, createResourcer, registerMiddlewares } from './helper';
 import { i18n, InitOptions } from 'i18next';
+import { PluginManager } from './plugin-manager';
+import { applyMixins, AsyncEmitter } from '@nocobase/utils';
 
 export interface ResourcerOptions {
   prefix?: string;
@@ -45,7 +47,9 @@ interface ActionsOptions {
   resourceNames?: string[];
 }
 
-export class Application<StateT = DefaultState, ContextT = DefaultContext> extends Koa {
+type StartOptions = { port: number } | { listen: false };
+
+export class Application<StateT = DefaultState, ContextT = DefaultContext> extends Koa implements AsyncEmitter {
   public readonly db: Database;
 
   public readonly resourcer: Resourcer;
@@ -53,6 +57,8 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
   public readonly cli: Command;
 
   public readonly i18n: i18n;
+
+  public readonly pm: PluginManager;
 
   protected plugins = new Map<string, Plugin>();
 
@@ -64,10 +70,18 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     this.cli = createCli(this, options);
     this.i18n = createI18n(options);
 
+    this.pm = new PluginManager({
+      app: this,
+    });
+
     registerMiddlewares(this, options);
     if (options.registerActions !== false) {
       registerActions(this);
     }
+  }
+
+  plugin(options?: PluginType | PluginOptions, ext?: PluginOptions): Plugin {
+    return this.pm.add(options);
   }
 
   use<NewStateT = {}, NewContextT = {}>(
@@ -98,110 +112,12 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     return (this.cli as any)._findCommand(name);
   }
 
-  plugin(options?: PluginType | PluginOptions, ext?: PluginOptions): Plugin {
-    if (typeof options === 'string') {
-      return this.plugin(require(options).default, ext);
-    }
-    let instance: Plugin;
-    if (typeof options === 'function') {
-      try {
-        // @ts-ignore
-        instance = new options({
-          name: options.name,
-          ...ext,
-          app: this,
-        });
-        if (!(instance instanceof Plugin)) {
-          throw new Error('plugin must be instanceof Plugin');
-        }
-      } catch (err) {
-        // console.log(err);
-        instance = new Plugin({
-          name: options.name,
-          ...ext,
-          // @ts-ignore
-          load: options,
-          app: this,
-        });
-      }
-    } else if (typeof options === 'object') {
-      const plugin = options.plugin || Plugin;
-      instance = new plugin({
-        name: options.plugin ? plugin.name : undefined,
-        ...options,
-        ...ext,
-        app: this,
-      });
-    }
-    const name = instance.getName();
-    if (this.plugins.has(name)) {
-      throw new Error(`plugin name [${name}] is repeated`);
-    }
-    this.plugins.set(name, instance);
-    return instance;
-  }
-
   async load() {
-    await this.emitAsync('plugins.beforeLoad');
-    for (const [name, plugin] of this.plugins) {
-      await this.emitAsync(`plugins.${name}.beforeLoad`);
-      await plugin.load();
-      await this.emitAsync(`plugins.${name}.afterLoad`);
-    }
-    await this.emitAsync('plugins.afterLoad');
+    await this.pm.load();
   }
 
   getPlugin<P extends Plugin>(name: string) {
     return this.plugins.get(name) as P;
-  }
-
-  async emitAsync(event: string | symbol, ...args: any[]): Promise<boolean> {
-    // @ts-ignore
-    const events = this._events;
-    let callbacks = events[event];
-    if (!callbacks) {
-      return false;
-    }
-    // helper function to reuse as much code as possible
-    const run = (cb) => {
-      switch (args.length) {
-        // fast cases
-        case 0:
-          cb = cb.call(this);
-          break;
-        case 1:
-          cb = cb.call(this, args[0]);
-          break;
-        case 2:
-          cb = cb.call(this, args[0], args[1]);
-          break;
-        case 3:
-          cb = cb.call(this, args[0], args[1], args[2]);
-          break;
-        // slower
-        default:
-          cb = cb.apply(this, args);
-      }
-
-      if (cb && (cb instanceof Promise || typeof cb.then === 'function')) {
-        return cb;
-      }
-
-      return Promise.resolve(true);
-    };
-
-    if (typeof callbacks === 'function') {
-      await run(callbacks);
-    } else if (typeof callbacks === 'object') {
-      callbacks = callbacks.slice().filter(Boolean);
-      await callbacks.reduce((prev, next) => {
-        return prev.then((res) => {
-          return run(next).then((result) => Promise.resolve(res.concat(result)));
-        });
-      }, Promise.resolve([]));
-    }
-
-    return true;
   }
 
   async parse(argv = process.argv) {
@@ -209,9 +125,48 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     return this.cli.parseAsync(argv);
   }
 
-  async destroy() {
-    await this.db.close();
+  async start(options?: StartOptions) {
+    await this.emitAsync('beforeStart');
+
+    if (options['port']) {
+      this.listen(options['port']);
+    }
+
+    await this.emitAsync('afterStart');
   }
+
+  async stop() {
+    await this.emitAsync('beforeStop');
+    await this.emitAsync('afterStop');
+  }
+
+  async destroy() {
+    await this.emitAsync('beforeStop');
+    await this.db.close();
+    await this.emitAsync('afterStop');
+  }
+
+  async install(options?: { clean?: true }) {
+    await this.emitAsync('beforeInstall');
+
+    if (options?.clean) {
+      await this.clean({ drop: true });
+    }
+
+    await this.db.sync();
+
+    await this.emitAsync('afterInstall');
+  }
+
+  async clean(options?: { drop?: true }) {
+    if (options.drop) {
+      await this.db.sequelize.getQueryInterface().dropAllTables();
+    }
+  }
+
+  emitAsync: (event: string | symbol, ...args: any[]) => Promise<boolean>;
 }
+
+applyMixins(Application, [AsyncEmitter]);
 
 export default Application;
