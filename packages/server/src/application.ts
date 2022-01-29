@@ -134,10 +134,10 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
       await this.db.reconnect();
     }
 
-    await this.emitAsync('beforeStart');
-
     // load configuration
     await this.load();
+
+    await this.emitAsync('beforeStart');
 
     if (options['port']) {
       const listen = () =>
