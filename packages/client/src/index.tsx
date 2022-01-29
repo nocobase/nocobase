@@ -6,6 +6,7 @@ export * from './antd-config-provider';
 export * from './api-client';
 export * from './application';
 export * from './async-data-provider';
+export * from './board';
 export * from './collection-manager';
 export * from './current-user';
 export * from './document-title';
