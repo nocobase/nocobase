@@ -1,7 +1,9 @@
 import { Plugin } from '../../plugin';
 
-export default function abc(this: Plugin) {
-  this.app.collection({
-    name: 'tests',
-  });
+export default class Plugin1 extends Plugin {
+  async load() {
+    this.app.collection({
+      name: 'tests',
+    });
+  }
 }

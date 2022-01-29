@@ -8,6 +8,7 @@ import { createCli, createI18n, createDatabase, createResourcer, registerMiddlew
 import { i18n, InitOptions } from 'i18next';
 import { PluginManager } from './plugin-manager';
 import { applyMixins, AsyncEmitter } from '@nocobase/utils';
+import { Server } from 'http';
 
 export interface ResourcerOptions {
   prefix?: string;
@@ -61,6 +62,8 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
   public readonly pm: PluginManager;
 
   protected plugins = new Map<string, Plugin>();
+
+  public listenServer: Server;
 
   constructor(options: ApplicationOptions) {
     super();
@@ -128,8 +131,16 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
   async start(options?: StartOptions) {
     await this.emitAsync('beforeStart');
 
+    // reconnect database
+    if (this.db.closed()) {
+      await this.db.reconnect();
+    }
+
+    // load configuration
+    await this.load();
+
     if (options['port']) {
-      this.listen(options['port']);
+      this.listenServer = this.listen(options['port']);
     }
 
     await this.emitAsync('afterStart');
@@ -137,13 +148,34 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
 
   async stop() {
     await this.emitAsync('beforeStop');
+
+    // close database connection
+    await this.db.close();
+
+    // close http server
+    if (this.listenServer) {
+      const closeServer = () =>
+        new Promise((resolve, reject) => {
+          this.listenServer.close((err) => {
+            if (err) {
+              return reject(err);
+            }
+
+            this.listenServer = null;
+            resolve(true);
+          });
+        });
+
+      await closeServer();
+    }
+
     await this.emitAsync('afterStop');
   }
 
   async destroy() {
-    await this.emitAsync('beforeStop');
-    await this.db.close();
-    await this.emitAsync('afterStop');
+    await this.emitAsync('beforeDestroy');
+    await this.stop();
+    await this.emitAsync('afterDestroy');
   }
 
   async install(options?: { clean?: true }) {

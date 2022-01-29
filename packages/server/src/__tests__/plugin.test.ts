@@ -1,8 +1,8 @@
-import supertest from 'supertest';
 import { Application } from '../application';
 import { Plugin } from '../plugin';
-import path from 'path';
 import Plugin3 from './plugins/plugin3';
+import Plugin1 from './plugins/plugin1';
+import Plugin2 from './plugins/plugin2';
 
 describe('plugin', () => {
   let app: Application;
@@ -29,101 +29,34 @@ describe('plugin', () => {
   });
 
   afterEach(async () => {
-    return app.db.close();
+    await app.destroy();
   });
 
   describe('define', () => {
     it('plugin name', async () => {
-      const plugin = app.plugin(function abc() {});
-      expect(plugin).toBeInstanceOf(Plugin);
-      expect(plugin.getName()).toBe('abc');
-    });
+      class MyPlugin extends Plugin {
+        load() {}
+      }
 
-    it('plugin name', async () => {
-      const plugin = app.plugin({
-        name: 'plugin-name2',
-        async load() {},
-      });
-      expect(plugin).toBeInstanceOf(Plugin);
-      expect(plugin.getName()).toBe('plugin-name2');
-    });
-
-    it('plugin name', async () => {
-      const plugin = app.plugin({
-        name: 'plugin-name3',
-        load: function () {},
-      });
-      expect(plugin).toBeInstanceOf(Plugin);
-      expect(plugin.getName()).toBe('plugin-name3');
-    });
-
-    it('plugin name', async () => {
-      class MyPlugin extends Plugin {}
       const plugin = app.plugin(MyPlugin);
       expect(plugin).toBeInstanceOf(MyPlugin);
       expect(plugin.getName()).toBe('MyPlugin');
     });
 
     it('plugin name', async () => {
-      class MyPlugin extends Plugin {}
-      const plugin = app.plugin({
-        plugin: MyPlugin,
-      });
-      expect(plugin).toBeInstanceOf(MyPlugin);
-      expect(plugin.getName()).toBe('MyPlugin');
-    });
-
-    it('plugin name', async () => {
-      const plugin = app.plugin(path.resolve(__dirname, './plugins/plugin1'));
+      const plugin = app.plugin(Plugin1);
       expect(plugin).toBeInstanceOf(Plugin);
-      expect(plugin.getName()).toBe('abc');
+      expect(plugin.getName()).toBe('Plugin1');
     });
 
     it('plugin name', async () => {
-      const plugin = app.plugin(path.resolve(__dirname, './plugins/plugin3'));
+      const plugin = app.plugin(Plugin3);
       expect(plugin).toBeInstanceOf(Plugin3);
       expect(plugin.getName()).toBe('Plugin3');
     });
   });
 
   describe('load', () => {
-    it('plugin load', async () => {
-      app.plugin(function abc(this: Plugin) {
-        this.app.collection({
-          name: 'tests',
-        });
-      });
-      await app.load();
-      const Test = app.db.getCollection('tests');
-      expect(Test).toBeDefined();
-    });
-
-    it('plugin load', async () => {
-      app.plugin({
-        load() {
-          app.collection({
-            name: 'tests',
-          });
-        },
-      });
-      await app.load();
-      const Test = app.db.getCollection('tests');
-      expect(Test).toBeDefined();
-    });
-
-    it('plugin load', async () => {
-      app.plugin({
-        load: () => {
-          app.collection({
-            name: 'tests',
-          });
-        },
-      });
-      await app.load();
-      const Test = app.db.getCollection('tests');
-      expect(Test).toBeDefined();
-    });
-
     it('plugin load', async () => {
       app.plugin(
         class MyPlugin extends Plugin {
@@ -140,21 +73,21 @@ describe('plugin', () => {
     });
 
     it('plugin load', async () => {
-      app.plugin(path.resolve(__dirname, './plugins/plugin1'));
+      app.plugin(Plugin1);
       await app.load();
       const Test = app.db.getCollection('tests');
       expect(Test).toBeDefined();
     });
 
     it('plugin load', async () => {
-      app.plugin(path.resolve(__dirname, './plugins/plugin2'));
+      app.plugin(Plugin2);
       await app.load();
       const Test = app.db.getCollection('tests');
       expect(Test).toBeDefined();
     });
 
     it('plugin load', async () => {
-      app.plugin(path.resolve(__dirname, './plugins/plugin3'));
+      app.plugin(Plugin3);
       await app.load();
       const Test = app.db.getCollection('tests');
       expect(Test).toBeDefined();

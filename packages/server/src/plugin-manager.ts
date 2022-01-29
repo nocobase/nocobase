@@ -1,4 +1,4 @@
-import { Plugin, PluginOptions, PluginType } from './plugin';
+import { Plugin, PluginInterface, PluginOptions, PluginType } from './plugin';
 import Application from './application';
 
 interface PluginManagerOptions {
@@ -13,48 +13,20 @@ export class PluginManager {
     this.app = options.app;
   }
 
-  add(options?: PluginType | PluginOptions, ext?: PluginOptions): Plugin {
-    if (typeof options === 'string') {
-      return this.add(require(options).default, ext);
-    }
+  add(pluginClass: any, ext?: PluginOptions): Plugin {
+    const instance = new pluginClass({
+      ...ext,
+      app: this.app,
+    });
 
-    let instance: Plugin;
-
-    if (typeof options === 'function') {
-      try {
-        // @ts-ignore
-        instance = new options({
-          name: options.name,
-          ...ext,
-          app: this,
-        });
-        if (!(instance instanceof Plugin)) {
-          throw new Error('plugin must be instanceof Plugin');
-        }
-      } catch (err) {
-        // console.log(err);
-        instance = new Plugin({
-          name: options.name,
-          ...ext,
-          // @ts-ignore
-          load: options,
-          app: this.app,
-        });
-      }
-    } else if (typeof options === 'object') {
-      const plugin = options.plugin || Plugin;
-      instance = new plugin({
-        name: options.plugin ? plugin.name : undefined,
-        ...options,
-        ...ext,
-        app: this.app,
-      });
-    }
     const name = instance.getName();
+
     if (this.plugins.has(name)) {
-      throw new Error(`plugin name [${name}] is repeated`);
+      throw new Error(`plugin name [${name}] `);
     }
+
     this.plugins.set(name, instance);
+
     return instance;
   }
 
