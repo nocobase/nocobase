@@ -126,7 +126,9 @@ export const FilterItem = (props) => {
             });
           });
           onFormValuesChange((form) => {
-            const { column, operation, value } = form?.values?.filter || {};
+            const { column, operation, value } = form?.values || {};
+            debugger;
+
             if (!operation?.value) {
               return;
             }
@@ -156,7 +158,6 @@ export const FilterItem = (props) => {
   );
 
   const columnEnum: any = [...columns.values()].map((column) => column.toJSON());
-  debugger;
   const schema: ISchema = {
     type: 'void',
     properties: {
