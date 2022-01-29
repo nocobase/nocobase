@@ -127,7 +127,6 @@ export const FilterItem = (props) => {
           });
           onFormValuesChange((form) => {
             const { column, operation, value } = form?.values || {};
-            debugger;
 
             if (!operation?.value) {
               return;
