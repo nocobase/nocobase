@@ -42,6 +42,15 @@ const instance = axios.create({
   baseURL: '',
 });
 const apiClient = new APIClient(instance);
+
+// 常规请求
+const response = await apiClient.request({ url });
+
+// NocoBase 特有的资源操作
+const response = await apiClient.resource('posts').list();
+
+// 请求共享
+const { data, loading, run } = apiClient.service('uid');
 ```
 
 `api.service(uid)` 的例子，ComponentB 里刷新 ComponentA 的请求数据
