@@ -1,6 +1,6 @@
 import Koa from 'koa';
 import { Command, CommandOptions } from 'commander';
-import Database, { DatabaseOptions, CollectionOptions } from '@nocobase/database';
+import Database, { DatabaseOptions, CollectionOptions, SyncOptions } from '@nocobase/database';
 import Resourcer, { ResourceOptions } from '@nocobase/resourcer';
 import { PluginType, Plugin, PluginOptions } from './plugin';
 import { registerActions } from '@nocobase/actions';
@@ -178,14 +178,14 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     await this.emitAsync('afterDestroy');
   }
 
-  async install(options?: { clean?: true }) {
+  async install(options?: { clean?: true; syncOptions: SyncOptions }) {
     await this.emitAsync('beforeInstall');
 
     if (options?.clean) {
       await this.clean({ drop: true });
     }
 
-    await this.db.sync();
+    await this.db.sync(options?.syncOptions);
 
     await this.emitAsync('afterInstall');
   }

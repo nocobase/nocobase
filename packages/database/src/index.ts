@@ -8,7 +8,7 @@ export * from './relation-repository/hasmany-repository';
 export * from './relation-repository/single-relation-repository';
 export * from './relation-repository/multiple-relation-repository';
 
-export { Model, ModelCtor } from 'sequelize';
+export { Model, ModelCtor, SyncOptions } from 'sequelize';
 export * from './fields';
 export * from './update-associations';
 export * from './magic-attribute-model';
