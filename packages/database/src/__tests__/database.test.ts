@@ -3,6 +3,15 @@ import path from 'path';
 import { Model } from '..';
 
 describe('database', () => {
+  test('close state', async () => {
+    const db = mockDatabase();
+    expect(db.closed()).toBeFalsy();
+    await db.close();
+    expect(db.closed()).toBeTruthy();
+    await db.reconnect();
+    expect(db.closed()).toBeFalsy();
+  });
+
   test('get repository', async () => {
     const db = mockDatabase();
     db.collection({

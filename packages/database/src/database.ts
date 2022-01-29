@@ -219,6 +219,22 @@ export class Database extends EventEmitter implements AsyncEmitter {
     return result;
   }
 
+  async reconnect() {
+    // @ts-ignore
+    const ConnectionManager = this.sequelize.dialect.connectionManager.constructor;
+    // @ts-ignore
+    const connectionManager = new ConnectionManager(this.sequelize.dialect, this.sequelize);
+    // @ts-ignore
+    this.sequelize.dialect.connectionManager = connectionManager;
+    // @ts-ignore
+    this.sequelize.connectionManager = connectionManager;
+  }
+
+  closed() {
+    // @ts-ignore
+    return this.sequelize.connectionManager.pool._draining;
+  }
+
   async close() {
     return this.sequelize.close();
   }
