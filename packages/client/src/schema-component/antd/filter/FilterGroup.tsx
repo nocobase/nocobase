@@ -62,9 +62,11 @@ export function FilterGroup(props) {
       <FilterList
         initialValue={value.list}
         onChange={(list: any[]) => {
-          onChange?.({
+          const values = {
             [value.logical]: list.filter((item) => isValid(item) && Object.keys(item).length),
-          });
+          };
+          debugger;
+          onChange?.(values);
         }}
       />
     </div>

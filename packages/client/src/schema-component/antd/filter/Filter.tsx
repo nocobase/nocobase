@@ -33,15 +33,6 @@ Filter.DynamicValue = connect((props: DynamicValueProps) => {
   const form = useForm();
   console.log('Filter.DynamicValue', form.id, fieldSchema, { operation });
 
-  // const form = useMemo(
-  //   () =>
-  //     createForm({
-  //       initialValues: {
-  //         [fieldName]: value,
-  //       },
-  //     }),
-  //   [value],
-  // );
   const extra: ISchema = deepmerge(
     {
       required: false,
