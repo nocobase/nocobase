@@ -183,7 +183,7 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     await this.emitAsync('afterDestroy');
   }
 
-  async install(options?: { clean?: true; syncOptions: SyncOptions }) {
+  async install(options?: { clean?: true; syncOptions?: SyncOptions }) {
     if (options?.clean) {
       await this.clean({ drop: true });
     }
