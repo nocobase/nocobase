@@ -10,7 +10,7 @@ const schema = {
   properties: {
     demo: {
       name: 'filter',
-      type: 'void',
+      type: 'array',
       'x-component': 'Filter',
       'x-component-props': {
         onChange: (value) => {

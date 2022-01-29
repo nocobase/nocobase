@@ -1,4 +1,5 @@
 import { CloseCircleOutlined } from '@ant-design/icons';
+import { useForm } from '@formily/react';
 import { isValid } from '@formily/shared';
 import { Select } from 'antd';
 import cls from 'classnames';
@@ -34,7 +35,8 @@ const toValue = (value) => {
 export function FilterGroup(props) {
   const { bordered = true, onRemove, onChange } = props;
   const value = toValue(props.value);
-  console.log('list', value);
+  const form = useForm();
+  console.log('list', form.values, value);
 
   return (
     <div className={cls('nb-filter-group', { bordered })}>
@@ -65,7 +67,6 @@ export function FilterGroup(props) {
           const values = {
             [value.logical]: list.filter((item) => isValid(item) && Object.keys(item).length),
           };
-          debugger;
           onChange?.(values);
         }}
       />
