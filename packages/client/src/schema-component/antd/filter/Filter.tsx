@@ -1,7 +1,8 @@
 import { LoadingOutlined } from '@ant-design/icons';
-import { connect, ISchema, mapProps, mapReadPretty, Schema, useForm } from '@formily/react';
+import { createForm, onFieldValueChange } from '@formily/core';
+import { connect, FieldContext, FormContext, ISchema, mapProps, mapReadPretty, Schema } from '@formily/react';
 import deepmerge from 'deepmerge';
-import React from 'react';
+import React, { useMemo } from 'react';
 import { SchemaComponent } from '../../components';
 import { FilterGroup } from './FilterGroup';
 import './style.less';
@@ -30,9 +31,20 @@ Filter.DynamicValue = connect((props: DynamicValueProps) => {
   const { onChange, value, operation } = props;
   const fieldName = Object.keys(props?.schema?.properties || {}).shift() ?? 'value';
   const fieldSchema = Object.values(props?.schema?.properties || {}).shift();
-  const form = useForm();
-  console.log('Filter.DynamicValue', form.id, fieldSchema, { operation });
-
+  const form = useMemo(
+    () =>
+      createForm({
+        initialValues: {
+          [fieldName]: value,
+        },
+        effects(form) {
+          onFieldValueChange(fieldName, (field) => {
+            onChange(field.value);
+          });
+        },
+      }),
+    [],
+  );
   const extra: ISchema = deepmerge(
     {
       required: false,
@@ -45,8 +57,6 @@ Filter.DynamicValue = connect((props: DynamicValueProps) => {
         feedbackLayout: 'none',
       },
       'x-component-props': {
-        value,
-        onChange,
         style: {
           minWidth: '150px',
         },
@@ -62,8 +72,13 @@ Filter.DynamicValue = connect((props: DynamicValueProps) => {
       }) as any,
     },
   };
-  debugger;
-  return <SchemaComponent schema={schema} />;
+  return (
+    <FieldContext.Provider value={null}>
+      <FormContext.Provider value={form}>
+        <SchemaComponent schema={schema} />
+      </FormContext.Provider>
+    </FieldContext.Provider>
+  );
 });
 
 export default Filter;
