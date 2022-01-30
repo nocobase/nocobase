@@ -1,7 +1,7 @@
-import React from 'react';
-import { observer, ISchema } from '@formily/react';
-import { SchemaComponent, SchemaComponentProvider, Form, Action, useCloseAction } from '@nocobase/client';
 import { FormItem, Input } from '@formily/antd';
+import { ISchema, observer, useForm } from '@formily/react';
+import { Action, Form, SchemaComponent, SchemaComponentProvider, useCloseAction } from '@nocobase/client';
+import React from 'react';
 
 export default observer(() => {
   const schema: ISchema = {
@@ -26,6 +26,9 @@ export default observer(() => {
                 'x-decorator': 'FormItem',
                 title: 'T1',
               },
+              out: {
+                'x-component': 'Output',
+              },
               f1: {
                 type: 'void',
                 'x-component': 'Action.Drawer.Footer',
@@ -45,8 +48,14 @@ export default observer(() => {
       },
     },
   };
+
+  const Output = observer(() => {
+    const form = useForm();
+    return <pre>{JSON.stringify(form.values, null, 2)}</pre>;
+  });
+
   return (
-    <SchemaComponentProvider scope={{ useCloseAction }} components={{ Form, Action, Input, FormItem }}>
+    <SchemaComponentProvider scope={{ useCloseAction }} components={{ Output, Form, Action, Input, FormItem }}>
       <SchemaComponent schema={schema} />
     </SchemaComponentProvider>
   );

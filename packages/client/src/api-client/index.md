@@ -13,6 +13,8 @@ group:
 class APIClient {
   // axios 实例
   axios: AxiosInstance;
+  // 缓存带 uid 的 useRequest({}, {uid}) 的结果，可供其他组件调用
+  services: Record<string, Result<any, any>>;
   // 构造器
   constructor(instance?: AxiosInstance | AxiosRequestConfig);
   // 客户端请求，支持 AxiosRequestConfig 和 ResourceActionOptions
@@ -40,7 +42,20 @@ const instance = axios.create({
   baseURL: '',
 });
 const apiClient = new APIClient(instance);
+
+// 常规请求
+const response = await apiClient.request({ url });
+
+// NocoBase 特有的资源操作
+const response = await apiClient.resource('posts').list();
+
+// 请求共享
+const { data, loading, run } = apiClient.service('uid');
 ```
+
+`api.service(uid)` 的例子，ComponentB 里刷新 ComponentA 的请求数据
+
+<code src="./demos/demo3.tsx" />
 
 ## APIClientProvider
 

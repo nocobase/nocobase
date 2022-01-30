@@ -17,8 +17,8 @@
     "npm": ">=3.0.0"
   },
   "dependencies": {
-    "@dnd-kit/core": "^4.0.3",
-    "@dnd-kit/sortable": "^5.1.0",
+    "@dnd-kit/core": "^5.0.1",
+    "@dnd-kit/sortable": "^6.0.0",
     "@emotion/css": "^11.7.1",
     "@formily/antd": "^2.0.7",
     "@formily/core": "^2.0.7",
@@ -27,6 +27,8 @@
     "axios": "^0.24.0",
     "file-saver": "^2.0.5",
     "i18next": "^21.6.0",
+    "marked": "^4.0.12",
+    "react-beautiful-dnd": "^13.1.0",
     "react-helmet": "^6.1.0",
     "react-i18next": "^11.15.1",
     "react-image-lightbox": "^5.1.4",
@@ -35,7 +37,7 @@
   "peerDependencies": {
     "@types/react": ">=16.8.0 || >=17.0.0",
     "@types/react-dom": ">=16.8.0 || >=17.0.0",
-    "antd": "^4.0.0",
+    "antd": "^4.18.5",
     "react": ">=16.8.0 || >=17.0.0",
     "react-dom": ">=16.8.0",
     "react-is": ">=16.8.0 || >=17.0.0",
@@ -47,6 +49,7 @@
     "build:esm": "tsc --project tsconfig.build.json --module es2015 --outDir esm"
   },
   "devDependencies": {
+    "@types/marked": "^4.0.1",
     "axios-mock-adapter": "^1.20.0"
   }
 }

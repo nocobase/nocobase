@@ -1,17 +1,18 @@
-import React, { useContext, useMemo } from 'react';
-import { toJS } from '@formily/reactive';
 import { createForm, FormPath } from '@formily/core';
 import {
   FieldContext,
   FormContext,
-  FormProvider,
   observer,
   SchemaContext,
   SchemaOptionsContext,
   useField,
-  useFieldSchema,
+  useFieldSchema
 } from '@formily/react';
+import { toJS } from '@formily/reactive';
+import { Spin } from 'antd';
+import React, { useContext, useMemo } from 'react';
 import { SchemaComponent, useAttach } from '../..';
+import { useRequest } from '../../../api-client';
 
 type ComposedForm = React.FC<any> & {
   __NOCOBASE_FORM?: boolean;
@@ -42,17 +43,47 @@ const FormDecorator: React.FC<any> = (props) => {
   );
 };
 
-export const Form: ComposedForm = observer((props) => {
-  const form = useMemo(() => createForm(), []);
+const FormComponent: React.FC<any> = (props) => {
+  const { form } = props;
   const fieldSchema = useFieldSchema();
-  const decorator = useFormDecorator();
-  return decorator ? (
-    <FormDecorator form={form} />
-  ) : (
-    <FormContext.Provider value={form}>
-      <SchemaComponent schema={fieldSchema} />
-    </FormContext.Provider>
+  return (
+    <FieldContext.Provider value={undefined}>
+      <FormContext.Provider value={form}>
+        <SchemaComponent schema={fieldSchema} />
+      </FormContext.Provider>
+    </FieldContext.Provider>
   );
+};
+
+const useRequestProps = (props: any) => {
+  const { request, initialValue } = props;
+  if (request) {
+    return request;
+  }
+  return () => {
+    return Promise.resolve({
+      data: initialValue,
+    });
+  };
+};
+
+const useDefaultValues = (props: any = {}, opts: any = {}) => {
+  return useRequest(useRequestProps(props), opts);
+};
+
+export const Form: ComposedForm = observer((props) => {
+  const { useValues = useDefaultValues } = props;
+  const decorator = useFormDecorator();
+  const fieldSchema = useFieldSchema();
+  const form = useMemo(() => createForm(), []);
+  const { loading } = useValues(props, {
+    uid: fieldSchema['x-uid'],
+    async onSuccess(data) {
+      await form.reset();
+      form.setValues(data?.data);
+    },
+  });
+  return <Spin spinning={loading}>{decorator ? <FormDecorator form={form} /> : <FormComponent form={form} />}</Spin>;
 });
 
 Form.__NOCOBASE_FORM = true;

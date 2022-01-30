@@ -131,7 +131,7 @@ export default (apiClient: APIClient) => {
         uiSchemaUid: 'qqzzjakwkwl',
         path: '/admin/:name(.+)?',
         component: 'AdminLayout',
-        title: 'NocoBase',
+        title: 'NocoBase Admin',
       },
       {
         type: 'route',
