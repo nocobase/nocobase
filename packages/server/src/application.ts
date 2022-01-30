@@ -49,7 +49,7 @@ interface ActionsOptions {
   resourceNames?: string[];
 }
 
-interface StartOptions {
+interface ListenOptions {
   port?: number | undefined;
   host?: string | undefined;
   backlog?: number | undefined;
@@ -62,6 +62,10 @@ interface StartOptions {
    */
   ipv6Only?: boolean | undefined;
   signal?: AbortSignal | undefined;
+}
+
+interface StartOptions {
+  listen?: ListenOptions;
 }
 
 interface InstallOptions {
@@ -155,10 +159,10 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
 
     await this.emitAsync('beforeStart', this, options);
 
-    if (options?.port) {
+    if (options?.listen?.port) {
       const listen = () =>
         new Promise((resolve) => {
-          const Server = this.listen(options, () => {
+          const Server = this.listen(options?.listen, () => {
             resolve(Server);
           });
         });
