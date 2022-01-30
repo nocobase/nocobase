@@ -55,7 +55,7 @@ export function createCli(app: Application, options: ApplicationOptions) {
     });
 
   cli
-    .command('init')
+    .command('install')
     .option('-f, --force')
     .action(async (opts, ...args) => {
       if (!opts?.force) {
@@ -72,10 +72,13 @@ export function createCli(app: Application, options: ApplicationOptions) {
           return;
         }
       }
-      await app.db.sync({
-        force: true,
+
+      await app.install({
+        sync: {
+          force: true,
+        },
       });
-      await app.emitAsync('db.init', opts, ...args);
+
       await app.destroy();
     });
 

@@ -11,16 +11,12 @@ export default class PluginUiSchema extends Plugin {
     });
   }
 
-  async load() {
+  async beforeLoad() {
     const db = this.app.db;
 
     this.app.db.registerModels({ MagicAttributeModel });
 
     this.registerRepository();
-
-    await db.import({
-      directory: path.resolve(__dirname, 'collections'),
-    });
 
     db.on('ui_schemas.beforeCreate', (model) => {
       model.set('uid', model.get('x-uid'));
@@ -44,23 +40,15 @@ export default class PluginUiSchema extends Plugin {
       });
     });
 
-    await db.getCollection('ui_schemas').sync({
-      force: false,
-      alter: {
-        drop: false,
-      },
-    });
-
-    await db.getCollection('ui_schema_tree_path').sync({
-      force: false,
-      alter: {
-        drop: false,
-      },
-    });
-
     this.app.resourcer.define({
       name: 'ui_schemas',
       actions: uiSchemaActions,
+    });
+  }
+
+  async load() {
+    await this.db.import({
+      directory: path.resolve(__dirname, 'collections'),
     });
   }
 }

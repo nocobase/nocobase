@@ -53,7 +53,7 @@ async function importData(model) {
 
 export default class PluginChinaRegion extends Plugin {
   async beforeLoad() {
-    this.app.on('beforeInstall', async () => {
+    this.app.on('installing', async () => {
       const ChinaRegion = this.db.getCollection('china_regions').model;
       await importData(ChinaRegion);
     });
