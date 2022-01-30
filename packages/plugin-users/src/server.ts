@@ -19,6 +19,21 @@ export default {
       });
     });
 
+    database.on('users.afterCreateWithAssociations', async (model, options) => {
+      const { transaction } = options;
+
+      const defaultRole = await this.app.db.getRepository('roles').findOne({
+        filter: {
+          default: true,
+        },
+        transaction,
+      });
+
+      if (defaultRole && (await model.countRoles({ transaction })) == 0) {
+        await model.addRoles(defaultRole, { transaction });
+      }
+    });
+
     database.on('afterDefineCollection', (collection: Collection) => {
       let { createdBy, updatedBy } = collection.options;
       if (createdBy === true) {
