@@ -1,8 +1,8 @@
 import { Application } from '../application';
 import { Plugin } from '../plugin';
-import Plugin3 from './plugins/plugin3';
 import Plugin1 from './plugins/plugin1';
 import Plugin2 from './plugins/plugin2';
+import Plugin3 from './plugins/plugin3';
 
 describe('plugin', () => {
   let app: Application;
@@ -46,11 +46,20 @@ describe('plugin', () => {
     });
 
     it('plugin name', async () => {
-      class MyPlugin extends Plugin {
-        load() {}
+      interface Options {
+        a?: string;
       }
-
-      const plugin = app.plugin(MyPlugin);
+      class MyPlugin extends Plugin<Options> {
+        load() {
+          this.options.a;
+        }
+      }
+      const plugin = app.plugin<Options>(MyPlugin, {
+        a: 'aa',
+      });
+      plugin.setOptions({
+        a: 'a'
+      })
       expect(plugin).toBeInstanceOf(MyPlugin);
       expect(plugin.getName()).toBe('MyPlugin');
     });

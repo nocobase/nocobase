@@ -1,14 +1,14 @@
-import Koa from 'koa';
-import { Command, CommandOptions } from 'commander';
-import Database, { DatabaseOptions, CollectionOptions, SyncOptions } from '@nocobase/database';
-import Resourcer, { ResourceOptions } from '@nocobase/resourcer';
-import { PluginType, Plugin, PluginOptions } from './plugin';
 import { registerActions } from '@nocobase/actions';
-import { createCli, createI18n, createDatabase, createResourcer, registerMiddlewares } from './helper';
-import { i18n, InitOptions } from 'i18next';
-import { PluginManager } from './plugin-manager';
+import Database, { CollectionOptions, DatabaseOptions, SyncOptions } from '@nocobase/database';
+import Resourcer, { ResourceOptions } from '@nocobase/resourcer';
 import { applyMixins, AsyncEmitter } from '@nocobase/utils';
+import { Command, CommandOptions } from 'commander';
 import { Server } from 'http';
+import { i18n, InitOptions } from 'i18next';
+import Koa from 'koa';
+import { createCli, createDatabase, createI18n, createResourcer, registerMiddlewares } from './helper';
+import { Plugin } from './plugin';
+import { PluginManager } from './plugin-manager';
 
 export interface ResourcerOptions {
   prefix?: string;
@@ -48,7 +48,20 @@ interface ActionsOptions {
   resourceNames?: string[];
 }
 
-type StartOptions = { port: number; hostName?: string } | { listen: false };
+interface StartOptions {
+  port?: number | undefined;
+  host?: string | undefined;
+  backlog?: number | undefined;
+  path?: string | undefined;
+  exclusive?: boolean | undefined;
+  readableAll?: boolean | undefined;
+  writableAll?: boolean | undefined;
+  /**
+   * @default false
+   */
+  ipv6Only?: boolean | undefined;
+  signal?: AbortSignal | undefined;
+}
 
 export class Application<StateT = DefaultState, ContextT = DefaultContext> extends Koa implements AsyncEmitter {
   public readonly db: Database;
@@ -83,8 +96,8 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     }
   }
 
-  plugin(pluginClass: any, ext?: PluginOptions): Plugin {
-    return this.pm.add(pluginClass, ext);
+  plugin<O = any>(pluginClass: any, options?: O): Plugin<O> {
+    return this.pm.add(pluginClass, options);
   }
 
   use<NewStateT = {}, NewContextT = {}>(
@@ -136,10 +149,10 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
 
     await this.emitAsync('beforeStart');
 
-    if (options['port']) {
+    if (options?.port) {
       const listen = () =>
-        new Promise((resolve, reject) => {
-          const Server = this.listen(options['port'], options['hostName'], () => {
+        new Promise((resolve) => {
+          const Server = this.listen(options, () => {
             resolve(Server);
           });
         });

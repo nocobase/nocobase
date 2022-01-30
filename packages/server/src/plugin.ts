@@ -1,5 +1,5 @@
-import { Application } from './application';
 import { Database } from '@nocobase/database';
+import { Application } from './application';
 
 export interface PluginInterface {
   beforeLoad?: () => void;
@@ -20,27 +20,23 @@ export interface PluginOptions {
 
 export type PluginType = typeof Plugin;
 
-export abstract class Plugin implements PluginInterface {
-  options: PluginOptions = {};
+export abstract class Plugin<O = any> implements PluginInterface {
+  options: O;
   app: Application;
   db: Database;
 
-  constructor(options?: PluginOptions & { app?: Application }) {
-    this.app = options?.app;
-    this.db = this.app.db;
+  constructor(app: Application, options?: O) {
+    this.app = app;
+    this.db = app.db;
     this.setOptions(options);
   }
 
-  setOptions(options: PluginOptions) {
-    this.options = options;
+  setOptions(options: O) {
+    this.options = options || ({} as any);
   }
 
   getName(): string {
     return this.constructor.name;
-  }
-
-  activate() {
-    this.options.activate = true;
   }
 
   beforeLoad() {}

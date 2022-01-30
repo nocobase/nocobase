@@ -1,5 +1,5 @@
-import { Plugin, PluginInterface, PluginOptions, PluginType } from './plugin';
 import Application from './application';
+import { Plugin } from './plugin';
 
 interface PluginManagerOptions {
   app: Application;
@@ -17,11 +17,8 @@ export class PluginManager {
     return this.plugins.get(name);
   }
 
-  add(pluginClass: any, ext?: PluginOptions): Plugin {
-    const instance = new pluginClass({
-      ...ext,
-      app: this.app,
-    });
+  add<P = Plugin, O = any>(pluginClass: any, options?: O): P {
+    const instance = new pluginClass(this.app, options);
 
     const name = instance.getName();
 
