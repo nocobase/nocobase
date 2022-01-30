@@ -1,10 +1,9 @@
-import React, { createContext, useContext } from 'react';
-import { Menu, Space, Tooltip, MenuItemProps } from 'antd';
-import { SettingOutlined, MoreOutlined, DesktopOutlined } from '@ant-design/icons';
-import { get } from 'lodash';
-import { PluginManagerContext } from './context';
+import { MoreOutlined, SettingOutlined } from '@ant-design/icons';
+import { ConfigProvider, Menu, MenuItemProps, Tooltip } from 'antd';
 import cls from 'classnames';
-import { ConfigProvider } from 'antd';
+import { get } from 'lodash';
+import React, { createContext, useContext } from 'react';
+import { PluginManagerContext } from './context';
 
 export const usePrefixCls = (
   tag?: string,
@@ -67,7 +66,7 @@ PluginManager.Toolbar = (props: ToolbarProps) => {
               );
             })}
           <Menu.Divider key={'divider'}></Menu.Divider>
-          <Menu.Item  key={'plugins'} disabled icon={<SettingOutlined />}>
+          <Menu.Item key={'plugins'} disabled icon={<SettingOutlined />}>
             管理插件
           </Menu.Item>
         </Menu.SubMenu>

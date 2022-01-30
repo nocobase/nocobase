@@ -3,6 +3,7 @@ import {
   Action,
   AdminLayout,
   AntdConfigProvider,
+  AntdSchemaComponentProvider,
   APIClientProvider,
   AuthLayout,
   CollectionManagerShortcut,
@@ -36,6 +37,7 @@ const providers = [
     { components: { ACLShortcut, DesignableSwitch, CollectionManagerShortcut, SystemSettingsShortcut } },
   ],
   [SchemaComponentProvider, { components: { Page, Menu, Action } }],
+  AntdSchemaComponentProvider,
   [DocumentTitleProvider, { addonAfter: 'NocoBase' }],
   [RouteSwitchProvider, { components: { AuthLayout, AdminLayout } }],
 ];
