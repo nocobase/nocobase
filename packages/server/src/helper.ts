@@ -86,7 +86,7 @@ export function createCli(app: Application, options: ApplicationOptions) {
       const cli = args.pop();
       const opts = cli.opts();
       await app.emitAsync('beforeStart');
-      app.listen(opts.port || 3000);
+      await app.start(opts.port || 3000);
       console.log(`http://localhost:${opts.port || 3000}/`);
     });
   return cli;

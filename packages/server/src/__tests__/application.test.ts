@@ -2,7 +2,9 @@ import supertest from 'supertest';
 import { Application } from '../application';
 import { Plugin } from '../plugin';
 
-class MyPlugin extends Plugin {}
+class MyPlugin extends Plugin {
+  load() {}
+}
 
 describe('application', () => {
   let app: Application;

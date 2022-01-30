@@ -1,9 +1,9 @@
-import { IPlugin } from '../../plugin';
+import { Plugin } from '../../plugin';
 
-export default {
-  load() {
+export default class Plugin2 extends Plugin {
+  async load() {
     this.app.collection({
       name: 'tests',
     });
-  },
-} as IPlugin;
+  }
+}
