@@ -50,8 +50,8 @@ export default {
       type: 'belongsToMany',
       name: 'roles',
       target: 'roles',
-      foreignKey: 'user_id',
-      otherKey: 'role_name',
+      foreignKey: 'userId',
+      otherKey: 'roleName',
       sourceKey: 'id',
       targetKey: 'name',
       uiSchema: {

@@ -1,11 +1,15 @@
-import Koa from 'koa';
-import { Command, CommandOptions } from 'commander';
-import Database, { DatabaseOptions, CollectionOptions } from '@nocobase/database';
-import Resourcer, { ResourceOptions } from '@nocobase/resourcer';
-import { PluginType, Plugin, PluginOptions } from './plugin';
 import { registerActions } from '@nocobase/actions';
-import { createCli, createI18n, createDatabase, createResourcer, registerMiddlewares } from './helper';
+import Database, { CleanOptions, CollectionOptions, DatabaseOptions, SyncOptions } from '@nocobase/database';
+import Resourcer, { ResourceOptions } from '@nocobase/resourcer';
+import { applyMixins, AsyncEmitter } from '@nocobase/utils';
+import { Command, CommandOptions } from 'commander';
+import { Server } from 'http';
 import { i18n, InitOptions } from 'i18next';
+import Koa from 'koa';
+import { isBoolean } from 'lodash';
+import { createCli, createDatabase, createI18n, createResourcer, registerMiddlewares } from './helper';
+import { Plugin } from './plugin';
+import { PluginManager } from './plugin-manager';
 
 export interface ResourcerOptions {
   prefix?: string;
@@ -45,7 +49,31 @@ interface ActionsOptions {
   resourceNames?: string[];
 }
 
-export class Application<StateT = DefaultState, ContextT = DefaultContext> extends Koa {
+interface ListenOptions {
+  port?: number | undefined;
+  host?: string | undefined;
+  backlog?: number | undefined;
+  path?: string | undefined;
+  exclusive?: boolean | undefined;
+  readableAll?: boolean | undefined;
+  writableAll?: boolean | undefined;
+  /**
+   * @default false
+   */
+  ipv6Only?: boolean | undefined;
+  signal?: AbortSignal | undefined;
+}
+
+interface StartOptions {
+  listen?: ListenOptions;
+}
+
+interface InstallOptions {
+  clean?: CleanOptions | boolean;
+  sync?: SyncOptions;
+}
+
+export class Application<StateT = DefaultState, ContextT = DefaultContext> extends Koa implements AsyncEmitter {
   public readonly db: Database;
 
   public readonly resourcer: Resourcer;
@@ -54,7 +82,11 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
 
   public readonly i18n: i18n;
 
+  public readonly pm: PluginManager;
+
   protected plugins = new Map<string, Plugin>();
+
+  public listenServer: Server;
 
   constructor(options: ApplicationOptions) {
     super();
@@ -64,10 +96,18 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     this.cli = createCli(this, options);
     this.i18n = createI18n(options);
 
+    this.pm = new PluginManager({
+      app: this,
+    });
+
     registerMiddlewares(this, options);
     if (options.registerActions !== false) {
       registerActions(this);
     }
+  }
+
+  plugin<O = any>(pluginClass: any, options?: O): Plugin<O> {
+    return this.pm.add(pluginClass, options);
   }
 
   use<NewStateT = {}, NewContextT = {}>(
@@ -98,110 +138,12 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     return (this.cli as any)._findCommand(name);
   }
 
-  plugin(options?: PluginType | PluginOptions, ext?: PluginOptions): Plugin {
-    if (typeof options === 'string') {
-      return this.plugin(require(options).default, ext);
-    }
-    let instance: Plugin;
-    if (typeof options === 'function') {
-      try {
-        // @ts-ignore
-        instance = new options({
-          name: options.name,
-          ...ext,
-          app: this,
-        });
-        if (!(instance instanceof Plugin)) {
-          throw new Error('plugin must be instanceof Plugin');
-        }
-      } catch (err) {
-        // console.log(err);
-        instance = new Plugin({
-          name: options.name,
-          ...ext,
-          // @ts-ignore
-          load: options,
-          app: this,
-        });
-      }
-    } else if (typeof options === 'object') {
-      const plugin = options.plugin || Plugin;
-      instance = new plugin({
-        name: options.plugin ? plugin.name : undefined,
-        ...options,
-        ...ext,
-        app: this,
-      });
-    }
-    const name = instance.getName();
-    if (this.plugins.has(name)) {
-      throw new Error(`plugin name [${name}] is repeated`);
-    }
-    this.plugins.set(name, instance);
-    return instance;
-  }
-
   async load() {
-    await this.emitAsync('plugins.beforeLoad');
-    for (const [name, plugin] of this.plugins) {
-      await this.emitAsync(`plugins.${name}.beforeLoad`);
-      await plugin.load();
-      await this.emitAsync(`plugins.${name}.afterLoad`);
-    }
-    await this.emitAsync('plugins.afterLoad');
+    await this.pm.load();
   }
 
   getPlugin<P extends Plugin>(name: string) {
-    return this.plugins.get(name) as P;
-  }
-
-  async emitAsync(event: string | symbol, ...args: any[]): Promise<boolean> {
-    // @ts-ignore
-    const events = this._events;
-    let callbacks = events[event];
-    if (!callbacks) {
-      return false;
-    }
-    // helper function to reuse as much code as possible
-    const run = (cb) => {
-      switch (args.length) {
-        // fast cases
-        case 0:
-          cb = cb.call(this);
-          break;
-        case 1:
-          cb = cb.call(this, args[0]);
-          break;
-        case 2:
-          cb = cb.call(this, args[0], args[1]);
-          break;
-        case 3:
-          cb = cb.call(this, args[0], args[1], args[2]);
-          break;
-        // slower
-        default:
-          cb = cb.apply(this, args);
-      }
-
-      if (cb && (cb instanceof Promise || typeof cb.then === 'function')) {
-        return cb;
-      }
-
-      return Promise.resolve(true);
-    };
-
-    if (typeof callbacks === 'function') {
-      await run(callbacks);
-    } else if (typeof callbacks === 'object') {
-      callbacks = callbacks.slice().filter(Boolean);
-      await callbacks.reduce((prev, next) => {
-        return prev.then((res) => {
-          return run(next).then((result) => Promise.resolve(res.concat(result)));
-        });
-      }, Promise.resolve([]));
-    }
-
-    return true;
+    return this.pm.get(name) as P;
   }
 
   async parse(argv = process.argv) {
@@ -209,9 +151,73 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     return this.cli.parseAsync(argv);
   }
 
-  async destroy() {
-    await this.db.close();
+  async start(options?: StartOptions) {
+    // reconnect database
+    if (this.db.closed()) {
+      await this.db.reconnect();
+    }
+
+    await this.emitAsync('beforeStart', this, options);
+
+    if (options?.listen?.port) {
+      const listen = () =>
+        new Promise((resolve) => {
+          const Server = this.listen(options?.listen, () => {
+            resolve(Server);
+          });
+        });
+
+      // @ts-ignore
+      this.listenServer = await listen();
+    }
+
+    await this.emitAsync('afterStart', this, options);
   }
+
+  async stop() {
+    await this.emitAsync('beforeStop', this);
+
+    // close database connection
+    await this.db.close();
+
+    // close http server
+    if (this.listenServer) {
+      const closeServer = () =>
+        new Promise((resolve, reject) => {
+          this.listenServer.close((err) => {
+            if (err) {
+              return reject(err);
+            }
+
+            this.listenServer = null;
+            resolve(true);
+          });
+        });
+
+      await closeServer();
+    }
+
+    await this.emitAsync('afterStop', this);
+  }
+
+  async destroy() {
+    await this.emitAsync('beforeDestroy', this);
+    await this.stop();
+    await this.emitAsync('afterDestroy', this);
+  }
+
+  async install(options?: InstallOptions) {
+    if (options?.clean) {
+      await this.db.clean(isBoolean(options.clean) ? { drop: options.clean } : options.clean);
+    }
+    await this.db.sync(options?.sync);
+    await this.emitAsync('beforeInstall', this, options);
+    await this.emitAsync('afterInstall', this, options);
+  }
+
+  emitAsync: (event: string | symbol, ...args: any[]) => Promise<boolean>;
 }
+
+applyMixins(Application, [AsyncEmitter]);
 
 export default Application;

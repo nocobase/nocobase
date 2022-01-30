@@ -63,4 +63,30 @@ describe('role api', () => {
       });
     });
   });
+
+  it('should works with default option', async () => {
+    await db.getRepository('roles').create({
+      values: {
+        name: 'role1',
+        title: 'admin 1',
+        default: true,
+      },
+    });
+
+    await db.getRepository('roles').create({
+      values: {
+        name: 'role2',
+        default: true,
+      },
+    });
+
+    const defaultRole = await db.getRepository('roles').find({
+      filter: {
+        default: true,
+      },
+    });
+
+    expect(defaultRole.length).toEqual(1);
+    expect(defaultRole[0].get('name')).toEqual('role2');
+  });
 });

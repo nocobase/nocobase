@@ -7,7 +7,7 @@ import {
   Hookable,
   Model,
   ModelCtor,
-  Transactionable
+  Transactionable,
 } from 'sequelize';
 import { TransactionAble } from './repository';
 import { UpdateGuard } from './update-guard';
@@ -178,9 +178,6 @@ export async function updateAssociation(
   options: UpdateAssociationOptions = {},
 ) {
   const association = modelAssociationByKey(instance, key);
-
-  // @ts-ignore
-  console.log(key, options.context);
 
   if (!association) {
     return false;

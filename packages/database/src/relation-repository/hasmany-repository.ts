@@ -70,6 +70,7 @@ export class HasManyRepository extends MultipleRelationRepository implements IHa
       where: {
         [Op.and]: where,
       },
+      individualHooks: true,
       transaction,
     });
 

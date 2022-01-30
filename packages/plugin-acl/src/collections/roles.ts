@@ -28,6 +28,11 @@ export default {
     },
     {
       type: 'boolean',
+      name: 'default',
+      defaultValue: false,
+    },
+    {
+      type: 'boolean',
       name: 'allowConfigure',
     },
     {

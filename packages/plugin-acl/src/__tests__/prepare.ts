@@ -19,7 +19,6 @@ export async function prepareApp() {
     registerActions: true,
   });
 
-  await app.cleanDb();
   app.plugin(PluginUiSchema);
   app.plugin(PluginCollectionManager);
 
@@ -30,7 +29,7 @@ export async function prepareApp() {
   });
 
   app.plugin(PluginACL);
-  await app.loadAndSync();
+  await app.loadAndInstall();
 
   return app;
 }

@@ -6,3 +6,13 @@ group:
 ---
 
 # Markdown
+
+## Examples
+
+### Markdown
+
+<code src="./demos/demo1.tsx" />
+
+### Markdown. Void
+
+<code src="./demos/demo2.tsx" />

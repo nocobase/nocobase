@@ -1,18 +1,15 @@
-import { Sequelize, ModelCtor, Model, Options, SyncOptions, Op, Utils } from 'sequelize';
-
-import { EventEmitter } from 'events';
-import { Collection, CollectionOptions, RepositoryType } from './collection';
-import * as FieldTypes from './fields';
-import { BaseFieldOptions, Field, FieldContext, FieldOptions, RelationField } from './fields';
 import { applyMixins, AsyncEmitter } from '@nocobase/utils';
-
 import merge from 'deepmerge';
-import { ModelHook } from './model-hook';
+import { EventEmitter } from 'events';
+import { Model, ModelCtor, Op, Options, QueryInterfaceDropAllTablesOptions, Sequelize, SyncOptions, Utils } from 'sequelize';
+import { Collection, CollectionOptions, RepositoryType } from './collection';
 import { ImporterReader, ImportFileExtension } from './collection-importer';
-
+import * as FieldTypes from './fields';
+import { Field, FieldContext, RelationField } from './fields';
+import { ModelHook } from './model-hook';
 import extendOperators from './operators';
-import { Repository } from './repository';
 import { RelationRepository } from './relation-repository/relation-repository';
+import { Repository } from './repository';
 
 export interface MergeOptions extends merge.Options {}
 
@@ -31,6 +28,10 @@ interface RegisterOperatorsContext {
   db?: Database;
   path?: string;
   field?: Field;
+}
+
+export interface CleanOptions extends QueryInterfaceDropAllTablesOptions {
+  drop?: boolean;
 }
 
 type OperatorFunc = (value: any, ctx?: RegisterOperatorsContext) => any;
@@ -217,6 +218,29 @@ export class Database extends EventEmitter implements AsyncEmitter {
       await this.sequelize.query('SET FOREIGN_KEY_CHECKS = 1', null);
     }
     return result;
+  }
+
+  async clean(options: CleanOptions) {
+    const { drop, ...others } = options;
+    if (drop) {
+      await this.sequelize.getQueryInterface().dropAllTables(others);
+    }
+  }
+
+  async reconnect() {
+    // @ts-ignore
+    const ConnectionManager = this.sequelize.dialect.connectionManager.constructor;
+    // @ts-ignore
+    const connectionManager = new ConnectionManager(this.sequelize.dialect, this.sequelize);
+    // @ts-ignore
+    this.sequelize.dialect.connectionManager = connectionManager;
+    // @ts-ignore
+    this.sequelize.connectionManager = connectionManager;
+  }
+
+  closed() {
+    // @ts-ignore
+    return this.sequelize.connectionManager.pool._draining;
   }
 
   async close() {

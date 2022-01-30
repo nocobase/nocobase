@@ -43,8 +43,8 @@ export function transactionWrapperBuilder(transactionGenerator) {
 
             return results;
           } catch (err) {
-            await transaction.rollback();
             console.error({ err });
+            await transaction.rollback();
             throw err;
           }
         } else {

@@ -1,9 +1,9 @@
+import { observer, RecursionField, useField, useFieldSchema } from '@formily/react';
+import { Drawer } from 'antd';
 import React, { useContext } from 'react';
 import { createPortal } from 'react-dom';
-import { Drawer } from 'antd';
 import { VisibleContext } from './context';
 import { ComposedActionDrawer } from './types';
-import { observer, RecursionField, useField, useFieldSchema } from '@formily/react';
 
 export const ActionDrawer: ComposedActionDrawer = observer((props) => {
   const [visible, setVisible] = useContext(VisibleContext);
@@ -13,6 +13,7 @@ export const ActionDrawer: ComposedActionDrawer = observer((props) => {
     <>
       {createPortal(
         <Drawer
+          width={'50%'}
           title={schema.title}
           {...props}
           destroyOnClose
