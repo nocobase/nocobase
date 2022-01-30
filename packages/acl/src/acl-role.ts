@@ -52,7 +52,11 @@ export class ACLRole {
   }
 
   public revokeResource(resourceName) {
-    this.resources.delete(resourceName);
+    for (const key of [...this.resources.keys()]) {
+      if (key === resourceName || key.includes(`${resourceName}.`)) {
+        this.resources.delete(key);
+      }
+    }
   }
 
   public grantAction(path: string, options?: RoleActionParams) {
@@ -101,6 +105,7 @@ export class ACLRole {
     const [resourceName, actionName] = path.split(':');
 
     const resource = this.resources.get(resourceName);
+
     let action = null;
     if (resource) {
       action = resource.getAction(actionName);

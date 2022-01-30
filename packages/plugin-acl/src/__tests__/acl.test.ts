@@ -147,7 +147,6 @@ describe('acl', () => {
       action: 'create',
       params: {
         filter: { published: true },
-        fields: [],
       },
     });
 
@@ -162,7 +161,7 @@ describe('acl', () => {
       resource: 'c1',
       action: 'view',
       params: {
-        fields: ['title', 'age'],
+        fields: ['age', 'title', 'id', 'createdAt', 'updatedAt'],
       },
     });
 

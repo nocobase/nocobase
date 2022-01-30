@@ -144,10 +144,6 @@ export class ACL extends EventEmitter {
   }
 
   can({ role, resource, action }: CanArgs): CanResult | null {
-    if (!this.isAvailableAction(action)) {
-      return null;
-    }
-
     const aclRole = this.roles.get(role);
     const aclResource = aclRole.getResource(resource);
 
