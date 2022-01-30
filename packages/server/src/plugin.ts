@@ -1,14 +1,13 @@
-import { uid } from '@nocobase/utils';
+import { Database } from '@nocobase/database';
 import { Application } from './application';
-import _ from 'lodash';
 
-export interface IPlugin {
-  install?: (this: Plugin) => void;
-  load?: (this: Plugin) => void;
+export interface PluginInterface {
+  beforeLoad?: () => void;
+  load();
+  getName(): string;
 }
 
 export interface PluginOptions {
-  name?: string;
   activate?: boolean;
   displayName?: string;
   description?: string;
@@ -19,42 +18,28 @@ export interface PluginOptions {
   [key: string]: any;
 }
 
-export type PluginFn = (this: Plugin) => void;
+export type PluginType = typeof Plugin;
 
-export type PluginType = string | PluginFn | typeof Plugin;
-
-export class Plugin implements IPlugin {
-  options: PluginOptions = {};
+export abstract class Plugin<O = any> implements PluginInterface {
+  options: O;
   app: Application;
-  callbacks: IPlugin = {};
+  db: Database;
 
-  constructor(options?: PluginOptions & { app?: Application }) {
-    this.app = options?.app;
-    this.options = options;
-    this.callbacks = _.pick(options, ['load', 'activate']);
+  constructor(app: Application, options?: O) {
+    this.app = app;
+    this.db = app.db;
+    this.setOptions(options);
   }
 
-  getName() {
-    return this.options.name || uid();
+  setOptions(options: O) {
+    this.options = options || ({} as any);
   }
 
-  async activate() {
-    this.options.activate = true;
+  getName(): string {
+    return this.constructor.name;
   }
 
-  async install() {
-    await this.call('install');
-  }
+  beforeLoad() {}
 
-  async call(name: string) {
-    if (!this.callbacks[name]) {
-      return;
-    }
-    const callback = this.callbacks[name].bind(this);
-    await callback();
-  }
-
-  async load() {
-    await this.call('load');
-  }
+  abstract load();
 }
