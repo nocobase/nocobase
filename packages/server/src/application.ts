@@ -1,11 +1,12 @@
 import { registerActions } from '@nocobase/actions';
-import Database, { CollectionOptions, DatabaseOptions, SyncOptions } from '@nocobase/database';
+import Database, { CleanOptions, CollectionOptions, DatabaseOptions, SyncOptions } from '@nocobase/database';
 import Resourcer, { ResourceOptions } from '@nocobase/resourcer';
 import { applyMixins, AsyncEmitter } from '@nocobase/utils';
 import { Command, CommandOptions } from 'commander';
 import { Server } from 'http';
 import { i18n, InitOptions } from 'i18next';
 import Koa from 'koa';
+import { isBoolean } from 'lodash';
 import { createCli, createDatabase, createI18n, createResourcer, registerMiddlewares } from './helper';
 import { Plugin } from './plugin';
 import { PluginManager } from './plugin-manager';
@@ -61,6 +62,11 @@ interface StartOptions {
    */
   ipv6Only?: boolean | undefined;
   signal?: AbortSignal | undefined;
+}
+
+interface InstallOptions {
+  clean?: CleanOptions | boolean;
+  sync?: SyncOptions;
 }
 
 export class Application<StateT = DefaultState, ContextT = DefaultContext> extends Koa implements AsyncEmitter {
@@ -147,7 +153,7 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
       await this.db.reconnect();
     }
 
-    await this.emitAsync('beforeStart');
+    await this.emitAsync('beforeStart', this, options);
 
     if (options?.port) {
       const listen = () =>
@@ -161,11 +167,11 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
       this.listenServer = await listen();
     }
 
-    await this.emitAsync('afterStart');
+    await this.emitAsync('afterStart', this, options);
   }
 
   async stop() {
-    await this.emitAsync('beforeStop');
+    await this.emitAsync('beforeStop', this);
 
     // close database connection
     await this.db.close();
@@ -187,31 +193,25 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
       await closeServer();
     }
 
-    await this.emitAsync('afterStop');
+    await this.emitAsync('afterStop', this);
   }
 
   async destroy() {
-    await this.emitAsync('beforeDestroy');
+    await this.emitAsync('beforeDestroy', this);
     await this.stop();
-    await this.emitAsync('afterDestroy');
+    await this.emitAsync('afterDestroy', this);
   }
 
-  async install(options?: { clean?: true; syncOptions?: SyncOptions }) {
+  async install(options?: InstallOptions) {
     if (options?.clean) {
-      await this.clean({ drop: true });
+      await this.db.clean(isBoolean(options.clean) ? { drop: options.clean } : options.clean);
     }
 
-    await this.emitAsync('beforeInstall');
+    await this.emitAsync('beforeInstall', this, options);
 
-    await this.db.sync(options?.syncOptions);
+    await this.db.sync(options?.sync);
 
-    await this.emitAsync('afterInstall');
-  }
-
-  async clean(options?: { drop?: true }) {
-    if (options.drop) {
-      await this.db.sequelize.getQueryInterface().dropAllTables();
-    }
+    await this.emitAsync('afterInstall', this, options);
   }
 
   emitAsync: (event: string | symbol, ...args: any[]) => Promise<boolean>;
