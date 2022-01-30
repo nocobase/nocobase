@@ -44,7 +44,7 @@ describe('application life cycle', () => {
       },
     });
 
-    await app.start({ port: 13090 });
+    await app.start({ listen: { port: 13090 } });
     expect(app.listenServer).not.toBeNull();
 
     await app.stop();

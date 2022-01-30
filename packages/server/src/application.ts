@@ -210,11 +210,8 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     if (options?.clean) {
       await this.db.clean(isBoolean(options.clean) ? { drop: options.clean } : options.clean);
     }
-
-    await this.emitAsync('beforeInstall', this, options);
-
     await this.db.sync(options?.sync);
-
+    await this.emitAsync('beforeInstall', this, options);
     await this.emitAsync('afterInstall', this, options);
   }
 
