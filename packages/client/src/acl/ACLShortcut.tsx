@@ -1,8 +1,10 @@
-import React, { useState } from 'react';
 import { LockOutlined } from '@ant-design/icons';
-import { SchemaComponent, useActionVisible, VisibleContext } from '../schema-component';
 import { ISchema, useForm } from '@formily/react';
+import { uid } from '@formily/shared';
+import React, { useState } from 'react';
 import { PluginManager } from '../plugin-manager';
+import { SchemaComponent, useActionVisible, VisibleContext } from '../schema-component';
+import { RoleTable } from './RolePermissionManager';
 
 const useCloseAction = () => {
   const { setVisible } = useActionVisible();
@@ -20,28 +22,28 @@ const useCloseAction = () => {
 const schema: ISchema = {
   type: 'object',
   properties: {
-    drawer1: {
+    [uid()]: {
       'x-component': 'Action.Drawer',
       type: 'void',
       title: 'Drawer Title',
       properties: {
         hello1: {
-          'x-content': 'Hello',
-          title: 'T1',
-        },
-        footer1: {
-          'x-component': 'Action.Drawer.Footer',
           type: 'void',
-          properties: {
-            close1: {
-              title: 'Close',
-              'x-component': 'Action',
-              'x-component-props': {
-                useAction: '{{ useCloseAction }}',
-              },
-            },
-          },
+          'x-component': 'RoleTable',
         },
+        // footer1: {
+        //   'x-component': 'Action.Drawer.Footer',
+        //   type: 'void',
+        //   properties: {
+        //     close1: {
+        //       title: 'Close',
+        //       'x-component': 'Action',
+        //       'x-component-props': {
+        //         useAction: '{{ useCloseAction }}',
+        //       },
+        //     },
+        //   },
+        // },
       },
     },
   },
@@ -58,7 +60,7 @@ export const ACLShortcut = () => {
           setVisible(true);
         }}
       />
-      <SchemaComponent scope={{ useCloseAction }} schema={schema} />
+      <SchemaComponent components={{ RoleTable }} scope={{ useCloseAction }} schema={schema} />
     </VisibleContext.Provider>
   );
 };
