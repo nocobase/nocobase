@@ -1,6 +1,6 @@
-import { mockDatabase } from './index';
 import path from 'path';
 import { Model } from '..';
+import { mockDatabase } from './index';
 
 describe('database', () => {
   test('close state', async () => {
@@ -10,6 +10,14 @@ describe('database', () => {
     expect(db.closed()).toBeTruthy();
     await db.reconnect();
     expect(db.closed()).toBeFalsy();
+  });
+
+  test('reconnect', async () => {
+    const db = mockDatabase();
+    await db.sequelize.authenticate();
+    await db.close();
+    await db.reconnect();
+    await db.sequelize.authenticate();
   });
 
   test('get repository', async () => {
