@@ -51,18 +51,17 @@ async function importData(model) {
   console.log(`${count} rows of region data imported in ${(Date.now() - timer) / 1000}s`);
 }
 
-export default {
-  name: 'china-region',
-  async load(this: Plugin) {
-    const db = this.app.db;
-
-    await db.import({
-      directory: path.resolve(__dirname, 'collections'),
-    });
-
-    this.app.on('db.init', async () => {
-      const ChinaRegion = db.getCollection('china_regions').model;
+export default class PluginChinaRegion extends Plugin {
+  async beforeLoad() {
+    this.app.on('beforeInstall', async () => {
+      const ChinaRegion = this.db.getCollection('china_regions').model;
       await importData(ChinaRegion);
     });
-  },
-};
+  }
+
+  async load() {
+    await this.db.import({
+      directory: path.resolve(__dirname, 'collections'),
+    });
+  }
+}
