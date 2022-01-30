@@ -1,9 +1,9 @@
-import { Menu } from 'antd';
-import React, { useState } from 'react';
 import { SettingOutlined } from '@ant-design/icons';
-import { SchemaComponent, useActionVisible, VisibleContext } from '../schema-component';
 import { ISchema, useForm } from '@formily/react';
+import { uid } from '@formily/shared';
+import React, { useState } from 'react';
 import { PluginManager } from '..';
+import { SchemaComponent, useActionVisible, VisibleContext } from '../schema-component';
 
 const useCloseAction = () => {
   const { setVisible } = useActionVisible();
@@ -21,7 +21,7 @@ const useCloseAction = () => {
 const schema: ISchema = {
   type: 'object',
   properties: {
-    drawer1: {
+    [uid()]: {
       'x-component': 'Action.Drawer',
       type: 'void',
       title: 'Drawer Title',

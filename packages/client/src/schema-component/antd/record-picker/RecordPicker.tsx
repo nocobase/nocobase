@@ -12,7 +12,7 @@ import {
   useFieldSchema
 } from '@formily/react';
 import { toArr } from '@formily/shared';
-import { Button, Drawer, Select, Tag } from 'antd';
+import { Button, Drawer, Select, Space, Tag } from 'antd';
 import React, { createContext, useContext, useMemo, useState } from 'react';
 import { useAttach } from '../../hooks/useAttach';
 import { VisibleContext } from '../action';
@@ -54,28 +54,32 @@ const InputRecordPicker: React.FC = (props) => {
       <FormContext.Provider value={form}>
         <FieldContext.Provider value={f}>
           <Drawer
+            width={'50%'}
             placement={'right'}
             destroyOnClose
             visible={visible}
             onClose={() => setVisible(false)}
             footer={
-              <Button
-                onClick={async () => {
-                  await form.submit();
-                  setVisible(false);
-                }}
-              >
-                提交
-              </Button>
+              <Space style={{ justifyContent: 'flex-end', width: '100%' }}>
+                <Button
+                  type={'primary'}
+                  onClick={async () => {
+                    await form.submit();
+                    setVisible(false);
+                  }}
+                >
+                  Submit
+                </Button>
+              </Space>
             }
           >
             <RecursionField
               onlyRenderProperties
               basePath={f.address}
               schema={fieldSchema}
-              filterProperties={(s) => {
-                return s['x-component'] === 'RowSelection';
-              }}
+              // filterProperties={(s) => {
+              //   return s['x-component'] === 'RowSelection';
+              // }}
             />
           </Drawer>
         </FieldContext.Provider>
