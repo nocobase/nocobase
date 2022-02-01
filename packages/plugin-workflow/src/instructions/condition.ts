@@ -95,22 +95,13 @@ export default {
 
     const savedJob = await execution.saveJob(job);
 
-    // return execution.exec(branchNode, savedJob);
-    const tailJob = await execution.exec(branchNode, savedJob);
-
-    if (tailJob.status === JOB_STATUS.PENDING) {
-      savedJob.set('status', JOB_STATUS.PENDING);
-      return savedJob;
-    }
-
-    return tailJob;
+    return execution.exec(branchNode, savedJob);
   },
 
   async resume(this, branchJob, execution) {
     if (branchJob.status === JOB_STATUS.RESOLVED) {
-      const job = execution.findBranchParentJob(branchJob, this);
-      job.set('status', JOB_STATUS.RESOLVED);
-      return job;
+      // return to continue this.downstream
+      return branchJob;
     }
 
     // pass control to upper scope by ending current scope

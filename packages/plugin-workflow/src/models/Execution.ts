@@ -2,7 +2,8 @@ import {
   Model,
   BelongsToGetAssociationMixin,
   Optional,
-  HasManyGetAssociationsMixin
+  HasManyGetAssociationsMixin,
+  Transaction
 } from 'sequelize';
 
 import Database from '@nocobase/database';
@@ -22,11 +23,15 @@ interface ExecutionAttributes {
 
 interface ExecutionCreationAttributes extends Optional<ExecutionAttributes, 'id'> {}
 
+export interface ExecutionOptions {
+  transaction?: Transaction;
+}
+
 export default class ExecutionModel
   extends Model<ExecutionAttributes, ExecutionCreationAttributes>
   implements ExecutionAttributes {
 
-  declare readonly database: Database;
+  declare static readonly database: Database;
 
   declare id: number;
   declare title: string;
@@ -42,9 +47,19 @@ export default class ExecutionModel
   declare jobs?: JobModel[];
   declare getJobs: HasManyGetAssociationsMixin<JobModel>;
 
+  options: ExecutionOptions;
+  transaction: Transaction;
+
   nodes: Array<FlowNodeModel> = [];
   nodesMap = new Map<number, FlowNodeModel>();
   jobsMap = new Map<number, JobModel>();
+
+  static StatusMap = {
+    [JOB_STATUS.PENDING]: EXECUTION_STATUS.STARTED,
+    [JOB_STATUS.RESOLVED]: EXECUTION_STATUS.RESOLVED,
+    [JOB_STATUS.REJECTED]: EXECUTION_STATUS.REJECTED,
+    [JOB_STATUS.CANCELLED]: EXECUTION_STATUS.CANCELLED,
+  };
 
   // make dual linked nodes list then cache
   makeNodes(nodes = []) {
@@ -71,44 +86,60 @@ export default class ExecutionModel
     });
   }
 
-  async prepare() {
+  async prepare(options) {
     if (this.status !== EXECUTION_STATUS.STARTED) {
       throw new Error(`execution was ended with status ${this.status}`);
     }
 
+    this.options = options || {};
+    const { transaction = await (<typeof ExecutionModel>this.constructor).database.sequelize.transaction() } = this.options;
+    this.transaction = transaction;
+
     if (!this.workflow) {
-      this.workflow = await this.getWorkflow();
+      this.workflow = await this.getWorkflow({ transaction });
     }
 
-    const nodes = await this.workflow.getNodes();
+    const nodes = await this.workflow.getNodes({ transaction });
 
     this.makeNodes(nodes);
 
-    const jobs = await this.getJobs();
+    const jobs = await this.getJobs({ transaction });
 
     this.makeJobs(jobs);
   }
 
-  async start(options) {
-    await this.prepare();
-    if (!this.nodes.length) {
-      return this.exit();
+  async start(options: ExecutionOptions) {
+    await this.prepare(options);
+    if (this.nodes.length) {
+      const head = this.nodes.find(item => !item.upstream);
+      await this.exec(head, { result: this.context });
+    } else {
+      await this.exit(null);
     }
-    const head = this.nodes.find(item => !item.upstream);
-    return this.exec(head, { result: this.context });
+    await this.commit();
   }
 
-  async resume(job, options) {
-    await this.prepare();
+  async resume(job: JobModel, options: ExecutionOptions) {
+    await this.prepare(options);
     const node = this.nodesMap.get(job.nodeId);
-    return this.recall(node, job);
+    await this.recall(node, job);
+    await this.commit();
   }
 
-  private async run(instruction, node, prevJob) {
+  private async commit() {
+    if (!this.options || !this.options.transaction) {
+      await this.transaction.commit();
+    }
+  }
+
+  private async run(instruction, node: FlowNodeModel, prevJob) {
     let job;
     try {
       // call instruction to get result and status
       job = await instruction.call(node, prevJob, this);
+      if (!job) {
+        return null;
+      }
     } catch (err) {
       // for uncaught error, set to rejected
       job = {
@@ -122,11 +153,11 @@ export default class ExecutionModel
       }
     }
 
-    let savedJob;
+    let savedJob: JobModel;
     // TODO(optimize): many checking of resuming or new could be improved
     // could be implemented separately in exec() / resume()
     if (job instanceof Model) {
-      savedJob = await job.save();
+      savedJob = await job.save({ transaction: this.transaction }) as JobModel;
     } else {
       const upstreamId = prevJob instanceof Model ? prevJob.get('id') : null;
       savedJob = await this.saveJob({
@@ -173,32 +204,36 @@ export default class ExecutionModel
     return this.run(resume, node, job);
   }
 
-  async exit(job?: JobModel) {
-    const executionStatusMap = {
-      [JOB_STATUS.PENDING]: EXECUTION_STATUS.STARTED,
-      [JOB_STATUS.RESOLVED]: EXECUTION_STATUS.RESOLVED,
-      [JOB_STATUS.REJECTED]: EXECUTION_STATUS.REJECTED,
-      [JOB_STATUS.CANCELLED]: EXECUTION_STATUS.CANCELLED,
-    };
-    const status = job ? executionStatusMap[job.status] : EXECUTION_STATUS.RESOLVED;
-    await this.update({ status });
-    return job;
+  async exit(job: JobModel | null) {
+    const status = job ? ExecutionModel.StatusMap[job.status] : EXECUTION_STATUS.RESOLVED;
+    await this.update({ status }, { transaction: this.transaction });
+    return null;
   }
 
   // TODO(optimize)
   async saveJob(payload) {
-    // @ts-ignore
-    const { database } = this.constructor;
+    const { database } = <typeof WorkflowModel>this.constructor;
     const { model } = database.getCollection('jobs');
     const [result] = await model.upsert({
       ...payload,
       executionId: this.id
-    }) as [JobModel, boolean | null];
+    }, { transaction: this.transaction }) as [JobModel, boolean | null];
     this.jobsMap.set(result.id, result);
 
     return result;
   }
 
+  // find the first node in current branch
+  findBranchStartNode(node: FlowNodeModel): FlowNodeModel | null {
+    for (let n = node; n; n = n.upstream) {
+      if (n.branchIndex !== null) {
+        return n;
+      }
+    }
+    return null;
+  }
+
+  // find the node start current branch
   findBranchParentNode(node: FlowNodeModel): FlowNodeModel | null {
     for (let n = node; n; n = n.upstream) {
       if (n.branchIndex !== null) {
