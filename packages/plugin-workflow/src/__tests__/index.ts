@@ -5,6 +5,12 @@ import plugin from '../server';
 import { registerInstruction } from '../instructions';
 import { JOB_STATUS } from '../constants';
 
+export function sleep(ms: number) {
+  return new Promise(resolve => {
+    setTimeout(resolve, ms);
+  });
+}
+
 export async function getApp(options = {}): Promise<MockServer> {
   const app = mockServer(options);
 

@@ -22,8 +22,9 @@ describe('workflow > instructions > condition', () => {
     workflow = await WorkflowModel.create({
       title: 'test workflow',
       enabled: true,
-      type: 'afterCreate',
+      type: 'model',
       config: {
+        mode: 1,
         collection: 'posts'
       }
     });
@@ -75,15 +76,6 @@ describe('workflow > instructions > condition', () => {
     });
 
     it('calculation to false downstream', async () => {
-      const workflow = await WorkflowModel.create({
-        title: 'condition workflow',
-        enabled: true,
-        type: 'afterCreate',
-        config: {
-          collection: 'posts'
-        }
-      });
-
       const n1 = await workflow.createNode({
         title: 'condition',
         type: 'condition',
