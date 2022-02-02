@@ -1,7 +1,7 @@
 import React, { useEffect } from 'react';
 import { PageHeader as AntdPageHeader } from 'antd';
 import { observer, useField } from '@formily/react';
-import { useDocumentTitle } from '@nocobase/client';
+import { useDocumentTitle } from '../../../document-title';
 
 export const Page = (props) => {
   const { children, ...others } = props;

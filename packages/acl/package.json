@@ -11,6 +11,7 @@
     "build:esm": "tsc --project tsconfig.build.json --module es2015 --outDir esm"
   },
   "dependencies": {
+    "@nocobase/resourcer": "0.6.0-alpha.0"
   },
   "repository": {
     "type": "git",
