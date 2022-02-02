@@ -1,4 +1,4 @@
-import PluginACL from '@nocobase/plugin-acl';
+import PluginACL from '..';
 
 const availableActionResource = {
   name: 'availableActions',
