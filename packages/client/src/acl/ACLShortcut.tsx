@@ -25,25 +25,12 @@ const schema: ISchema = {
     [uid()]: {
       'x-component': 'Action.Drawer',
       type: 'void',
-      title: 'Drawer Title',
+      title: '角色配置',
       properties: {
         hello1: {
           type: 'void',
           'x-component': 'RoleTable',
         },
-        // footer1: {
-        //   'x-component': 'Action.Drawer.Footer',
-        //   type: 'void',
-        //   properties: {
-        //     close1: {
-        //       title: 'Close',
-        //       'x-component': 'Action',
-        //       'x-component-props': {
-        //         useAction: '{{ useCloseAction }}',
-        //       },
-        //     },
-        //   },
-        // },
       },
     },
   },

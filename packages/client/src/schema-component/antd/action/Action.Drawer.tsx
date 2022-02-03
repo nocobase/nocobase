@@ -9,6 +9,12 @@ export const ActionDrawer: ComposedActionDrawer = observer((props) => {
   const [visible, setVisible] = useContext(VisibleContext);
   const schema = useFieldSchema();
   const field = useField();
+  const footerSchema = schema.reduceProperties((buf, s) => {
+    if (s['x-component'] === 'Action.Drawer.Footer') {
+      return s;
+    }
+    return buf;
+  });
   return (
     <>
       {createPortal(
@@ -20,14 +26,16 @@ export const ActionDrawer: ComposedActionDrawer = observer((props) => {
           visible={visible}
           onClose={() => setVisible(false)}
           footer={
-            <RecursionField
-              basePath={field.address}
-              schema={schema}
-              onlyRenderProperties
-              filterProperties={(s) => {
-                return s['x-component'] === 'Action.Drawer.Footer';
-              }}
-            />
+            footerSchema && (
+              <RecursionField
+                basePath={field.address}
+                schema={schema}
+                onlyRenderProperties
+                filterProperties={(s) => {
+                  return s['x-component'] === 'Action.Drawer.Footer';
+                }}
+              />
+            )
           }
         >
           <RecursionField
