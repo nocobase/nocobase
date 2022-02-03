@@ -4,6 +4,7 @@ import { uid } from '@formily/shared';
 import React, { useState } from 'react';
 import { PluginManager } from '../plugin-manager';
 import { SchemaComponent, useActionVisible, VisibleContext } from '../schema-component';
+import { ConfigurationTable } from './Configuration';
 
 const useCloseAction = () => {
   const { setVisible } = useActionVisible();
@@ -24,24 +25,10 @@ const schema: ISchema = {
     [uid()]: {
       'x-component': 'Action.Drawer',
       type: 'void',
-      title: 'Drawer Title',
+      title: '数据表配置',
       properties: {
-        hello1: {
-          'x-content': 'Hello',
-          title: 'T1',
-        },
-        footer1: {
-          'x-component': 'Action.Drawer.Footer',
-          type: 'void',
-          properties: {
-            close1: {
-              title: 'Close',
-              'x-component': 'Action',
-              'x-component-props': {
-                useAction: '{{ useCloseAction }}',
-              },
-            },
-          },
+        configuration: {
+          'x-component': 'ConfigurationTable',
         },
       },
     },
@@ -59,7 +46,7 @@ export const CollectionManagerShortcut = () => {
           setVisible(true);
         }}
       />
-      <SchemaComponent scope={{ useCloseAction }} schema={schema} />
+      <SchemaComponent scope={{ useCloseAction }} schema={schema} components={{ ConfigurationTable }} />
     </VisibleContext.Provider>
   );
 };
