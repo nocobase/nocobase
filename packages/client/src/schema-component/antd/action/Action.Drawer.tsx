@@ -1,3 +1,4 @@
+import { css } from '@emotion/css';
 import { observer, RecursionField, useField, useFieldSchema } from '@formily/react';
 import { Drawer } from 'antd';
 import React, { useContext } from 'react';
@@ -27,14 +28,25 @@ export const ActionDrawer: ComposedActionDrawer = observer((props) => {
           onClose={() => setVisible(false)}
           footer={
             footerSchema && (
-              <RecursionField
-                basePath={field.address}
-                schema={schema}
-                onlyRenderProperties
-                filterProperties={(s) => {
-                  return s['x-component'] === 'Action.Drawer.Footer';
-                }}
-              />
+              <div
+                className={css`
+                  display: flex;
+                  justify-content: flex-end;
+                  width: 100%;
+                  .ant-btn {
+                    margin-right: 8px;
+                  }
+                `}
+              >
+                <RecursionField
+                  basePath={field.address}
+                  schema={schema}
+                  onlyRenderProperties
+                  filterProperties={(s) => {
+                    return s['x-component'] === 'Action.Drawer.Footer';
+                  }}
+                />
+              </div>
             )
           }
         >
