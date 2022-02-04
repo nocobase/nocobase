@@ -17,6 +17,7 @@ import {
   RouteSwitch,
   RouteSwitchProvider,
   SchemaComponentProvider,
+  SystemSettingsProvider,
   SystemSettingsShortcut,
   useRequest
 } from '@nocobase/client';
@@ -32,6 +33,7 @@ const providers = [
   [APIClientProvider, { apiClient }],
   [I18nextProvider, { i18n }],
   [AntdConfigProvider, { remoteLocale: true }],
+  SystemSettingsProvider,
   [
     PluginManagerProvider,
     { components: { ACLShortcut, DesignableSwitch, CollectionManagerShortcut, SystemSettingsShortcut } },
