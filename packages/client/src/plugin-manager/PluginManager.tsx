@@ -34,28 +34,39 @@ interface ToolbarItemProps {
   pin?: boolean;
 }
 
+const splitItems = (items: ToolbarItemProps[]) => {
+  const pinned = [];
+  const unpinned = [];
+  for (const item of items) {
+    if (item.pin) {
+      pinned.push(item);
+    } else {
+      unpinned.push(item);
+    }
+  }
+  return [pinned, unpinned];
+};
+
 PluginManager.Toolbar = (props: ToolbarProps) => {
   const { components } = useContext(PluginManagerContext);
   const { items = [] } = props;
+  const [pinned, unpinned] = splitItems(items);
   return (
     <div style={{ display: 'inline-block' }}>
       <Menu style={{ width: '100%' }} selectable={false} mode={'horizontal'} theme={'dark'}>
-        {items
-          .filter((item) => item.pin)
-          .map((item, index) => {
-            const Action = get(components, item.component);
-            return (
-              Action && (
-                <ToolbarItemContext.Provider key={index} value={item}>
-                  <Action />
-                </ToolbarItemContext.Provider>
-              )
-            );
-          })}
-        <Menu.SubMenu key={'more'} title={<MoreOutlined />}>
-          {items
-            .filter((item) => !item.pin)
-            .map((item, index) => {
+        {pinned.map((item, index) => {
+          const Action = get(components, item.component);
+          return (
+            Action && (
+              <ToolbarItemContext.Provider key={index} value={item}>
+                <Action />
+              </ToolbarItemContext.Provider>
+            )
+          );
+        })}
+        {unpinned.length > 0 && (
+          <Menu.SubMenu popupClassName={'pm-sub-menu'} key={'more'} title={<MoreOutlined />}>
+            {unpinned.map((item, index) => {
               const Action = get(components, item.component);
               return (
                 Action && (
@@ -65,11 +76,12 @@ PluginManager.Toolbar = (props: ToolbarProps) => {
                 )
               );
             })}
-          <Menu.Divider key={'divider'}></Menu.Divider>
-          <Menu.Item key={'plugins'} disabled icon={<SettingOutlined />}>
-            管理插件
-          </Menu.Item>
-        </Menu.SubMenu>
+            {unpinned.length > 0 && <Menu.Divider key={'divider'}></Menu.Divider>}
+            <Menu.Item key={'plugins'} disabled icon={<SettingOutlined />}>
+              管理插件
+            </Menu.Item>
+          </Menu.SubMenu>
+        )}
       </Menu>
     </div>
   );

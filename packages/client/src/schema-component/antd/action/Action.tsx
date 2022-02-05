@@ -1,10 +1,10 @@
-import React, { useState } from 'react';
-import { Button, ButtonProps } from 'antd';
 import { observer, RecursionField, useField, useFieldSchema } from '@formily/react';
-import { useA } from './hooks';
-import { VisibleContext } from './context';
-import { ComposedAction } from './types';
+import { Button } from 'antd';
+import React, { useState } from 'react';
 import { ActionDrawer } from './Action.Drawer';
+import { VisibleContext } from './context';
+import { useA } from './hooks';
+import { ComposedAction } from './types';
 
 export const Action: ComposedAction = observer((props) => {
   const { useAction = useA, onClick, ...others } = props;
@@ -22,7 +22,7 @@ export const Action: ComposedAction = observer((props) => {
           run();
         }}
       >
-        {schema.title}
+        {field.title}
       </Button>
       <RecursionField basePath={field.address} schema={schema} onlyRenderProperties />
     </VisibleContext.Provider>
