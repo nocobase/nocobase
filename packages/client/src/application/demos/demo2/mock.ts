@@ -145,10 +145,13 @@ export default (apiClient: APIClient) => {
         routes: [
           {
             type: 'route',
-            uiSchemaUid: 'dtf9j0b8p9u',
             path: '/signin',
-            component: 'RouteSchemaComponent',
-            title: '{{t("Sign in")}}',
+            component: 'SigninPage',
+          },
+          {
+            type: 'route',
+            path: '/signup',
+            component: 'SignupPage',
           },
         ],
       },

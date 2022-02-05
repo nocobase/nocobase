@@ -7,9 +7,9 @@ import {
   PluginManager,
   RemoteSchemaComponent,
   useDocumentTitle,
+  useRoute,
   useSystemSettings
 } from '../../../';
-import { useRoute } from '../../hooks';
 
 export function AdminLayout(props: any) {
   const route = useRoute();
@@ -64,7 +64,7 @@ export function AdminLayout(props: any) {
               { component: 'SystemSettingsShortcut' },
             ]}
           />
-          <CurrentUser.Dropdown />
+          <CurrentUser />
         </div>
       </Layout.Header>
       <Layout>
