@@ -8,6 +8,12 @@ export default (apiClient: APIClient) => {
     data: { lang: 'en-US' },
   });
 
+  mock.onGet('/system_settings:get').reply(200, {
+    data: {
+      title: 'NocoBase',
+    },
+  });
+
   const jsonSchema = {
     qqzzjakwkwl: {
       name: 'qqzzjakwkwl',

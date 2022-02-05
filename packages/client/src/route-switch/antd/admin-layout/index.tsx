@@ -1,8 +1,15 @@
+import { Layout } from 'antd';
 import React, { useRef, useState } from 'react';
-import { Button, Layout } from 'antd';
-import { useRoute } from '../../hooks';
 import { useHistory, useRouteMatch } from 'react-router-dom';
-import { findMenuItem, RemoteSchemaComponent, PluginManager, CurrentUser, useDocumentTitle } from '../../../';
+import {
+  CurrentUser,
+  findMenuItem,
+  PluginManager,
+  RemoteSchemaComponent,
+  useDocumentTitle,
+  useSystemSettings
+} from '../../../';
+import { useRoute } from '../../hooks';
 
 export function AdminLayout(props: any) {
   const route = useRoute();
@@ -19,10 +26,12 @@ export function AdminLayout(props: any) {
     history.push(`/admin/${schema['x-uid']}`);
   };
   const [hidden, setHidden] = useState(false);
+  const result = useSystemSettings();
   return (
     <Layout>
-      <Layout.Header style={{ position: 'relative' }}>
-        <div>
+      <Layout.Header style={{ position: 'relative', paddingLeft: 0 }}>
+        <div style={{ display: 'flex' }}>
+          <div style={{ display: 'inline-flex', color: '#fff', padding: '0 24px' }}>{result?.data?.data?.title}</div>
           <RemoteSchemaComponent
             hidden={hidden}
             uid={route.uiSchemaUid}
@@ -55,7 +64,7 @@ export function AdminLayout(props: any) {
               { component: 'SystemSettingsShortcut' },
             ]}
           />
-          <CurrentUser.Dropdown/>
+          <CurrentUser.Dropdown />
         </div>
       </Layout.Header>
       <Layout>
