@@ -215,7 +215,7 @@ export const ResourceActionsForm = () => {
             title: '可操作的数据范围',
             dataIndex: 'scope',
             key: 'scope',
-            render: () => <ScopeRecordPicker />
+            render: () => <ScopeRecordPicker />,
           },
         ]}
         dataSource={[

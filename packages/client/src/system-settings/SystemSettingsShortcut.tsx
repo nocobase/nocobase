@@ -2,17 +2,37 @@ import { SettingOutlined } from '@ant-design/icons';
 import { ISchema, useForm } from '@formily/react';
 import { uid } from '@formily/shared';
 import React, { useState } from 'react';
-import { PluginManager } from '..';
+import { useSystemSettings } from '.';
+import { PluginManager, useRequest } from '..';
 import { SchemaComponent, useActionVisible, VisibleContext } from '../schema-component';
 
 const useCloseAction = () => {
   const { setVisible } = useActionVisible();
-  const form = useForm();
+  // const form = useForm();
   return {
     async run() {
       setVisible(false);
-      form.submit((values) => {
-        console.log(values);
+    },
+  };
+};
+
+const useSystemSettingsValues = (props, options) => {
+  const result = useSystemSettings();
+  return useRequest(() => Promise.resolve(result.data), {
+    ...options,
+  });
+};
+
+const useSaveSystemSettingsValues = () => {
+  const { setVisible } = useActionVisible();
+  const form = useForm();
+  const { mutate } = useSystemSettings();
+  return {
+    async run() {
+      await form.submit();
+      setVisible(false);
+      mutate({
+        data: form.values,
       });
     },
   };
@@ -22,23 +42,64 @@ const schema: ISchema = {
   type: 'object',
   properties: {
     [uid()]: {
+      'x-decorator': 'Form',
+      'x-decorator-props': {
+        useValues: '{{ useSystemSettingsValues }}',
+      },
       'x-component': 'Action.Drawer',
       type: 'void',
-      title: 'Drawer Title',
+      title: '系统设置',
       properties: {
-        hello1: {
-          'x-content': 'Hello',
-          title: 'T1',
+        title: {
+          type: 'string',
+          title: "{{t('System title')}}",
+          'x-decorator': 'FormItem',
+          'x-component': 'Input',
+          required: true,
+        },
+        logo: {
+          type: 'string',
+          title: "{{t('Logo')}}",
+          'x-decorator': 'FormItem',
+          'x-component': 'Upload.Attachment',
+          'x-component-props': {
+            // accept: 'jpg,png'
+          },
+        },
+        appLang: {
+          type: 'string',
+          title: '{{t("Language")}}',
+          'x-component': 'Select',
+          'x-decorator': 'FormItem',
+          enum: [
+            { label: 'English', value: 'en-US' },
+            { label: '简体中文', value: 'zh-CN' },
+          ],
+        },
+        allowSignUp: {
+          type: 'string',
+          title: '{{t("Allow sign up")}}',
+          'x-component': 'Checkbox',
+          'x-decorator': 'FormItem',
+          default: true,
         },
         footer1: {
           'x-component': 'Action.Drawer.Footer',
           type: 'void',
           properties: {
-            close1: {
-              title: 'Close',
+            cancel: {
+              title: 'Cancel',
               'x-component': 'Action',
               'x-component-props': {
                 useAction: '{{ useCloseAction }}',
+              },
+            },
+            submit: {
+              title: 'Submit',
+              'x-component': 'Action',
+              'x-component-props': {
+                type: 'primary',
+                useAction: '{{ useSaveSystemSettingsValues }}',
               },
             },
           },
@@ -60,7 +121,10 @@ export const SystemSettingsShortcut = () => {
         icon={<SettingOutlined />}
         title={'系统设置'}
       />
-      <SchemaComponent scope={{ useCloseAction }} schema={schema} />
+      <SchemaComponent
+        scope={{ useSaveSystemSettingsValues, useSystemSettingsValues, useCloseAction }}
+        schema={schema}
+      />
     </VisibleContext.Provider>
   );
 };

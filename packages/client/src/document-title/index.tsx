@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState } from 'react';
+import React, { createContext, useContext, useEffect, useState } from 'react';
 import { Helmet } from 'react-helmet';
 
 interface DocumentTitleContextProps {
@@ -34,4 +34,11 @@ export const DocumentTitleProvider: React.FC<{ addonBefore?: string; addonAfter?
 
 export const useDocumentTitle = () => {
   return useContext(DocumentTitleContext);
+};
+
+export const useCurrentDocumentTitle = (title: string) => {
+  const { setTitle } = useDocumentTitle();
+  useEffect(() => {
+    setTitle(title);
+  }, []);
 };

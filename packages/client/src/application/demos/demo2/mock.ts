@@ -8,6 +8,12 @@ export default (apiClient: APIClient) => {
     data: { lang: 'en-US' },
   });
 
+  mock.onGet('/system_settings:get').reply(200, {
+    data: {
+      title: 'NocoBase',
+    },
+  });
+
   const jsonSchema = {
     qqzzjakwkwl: {
       name: 'qqzzjakwkwl',
@@ -139,10 +145,13 @@ export default (apiClient: APIClient) => {
         routes: [
           {
             type: 'route',
-            uiSchemaUid: 'dtf9j0b8p9u',
             path: '/signin',
-            component: 'RouteSchemaComponent',
-            title: '{{t("Sign in")}}',
+            component: 'SigninPage',
+          },
+          {
+            type: 'route',
+            path: '/signup',
+            component: 'SignupPage',
           },
         ],
       },

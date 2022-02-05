@@ -1,0 +1,12 @@
+{
+  "name": "@nocobase/plugin-workflow",
+  "version": "0.6.0-alpha.0",
+  "main": "lib/index.js",
+  "private": true,
+  "license": "MIT",
+  "dependencies": {
+  },
+  "devDependencies": {
+  },
+  "gitHead": "f0b335ac30f29f25c95d7d137655fa64d8d67f1e"
+}

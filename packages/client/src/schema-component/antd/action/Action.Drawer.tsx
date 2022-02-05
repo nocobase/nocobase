@@ -1,3 +1,4 @@
+import { css } from '@emotion/css';
 import { observer, RecursionField, useField, useFieldSchema } from '@formily/react';
 import { Drawer } from 'antd';
 import React, { useContext } from 'react';
@@ -9,6 +10,12 @@ export const ActionDrawer: ComposedActionDrawer = observer((props) => {
   const [visible, setVisible] = useContext(VisibleContext);
   const schema = useFieldSchema();
   const field = useField();
+  const footerSchema = schema.reduceProperties((buf, s) => {
+    if (s['x-component'] === 'Action.Drawer.Footer') {
+      return s;
+    }
+    return buf;
+  });
   return (
     <>
       {createPortal(
@@ -20,14 +27,27 @@ export const ActionDrawer: ComposedActionDrawer = observer((props) => {
           visible={visible}
           onClose={() => setVisible(false)}
           footer={
-            <RecursionField
-              basePath={field.address}
-              schema={schema}
-              onlyRenderProperties
-              filterProperties={(s) => {
-                return s['x-component'] === 'Action.Drawer.Footer';
-              }}
-            />
+            footerSchema && (
+              <div
+                className={css`
+                  display: flex;
+                  justify-content: flex-end;
+                  width: 100%;
+                  .ant-btn {
+                    margin-right: 8px;
+                  }
+                `}
+              >
+                <RecursionField
+                  basePath={field.address}
+                  schema={schema}
+                  onlyRenderProperties
+                  filterProperties={(s) => {
+                    return s['x-component'] === 'Action.Drawer.Footer';
+                  }}
+                />
+              </div>
+            )
           }
         >
           <RecursionField
