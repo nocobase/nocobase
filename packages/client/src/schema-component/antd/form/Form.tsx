@@ -1,3 +1,4 @@
+import { FormLayout } from '@formily/antd';
 import { createForm, FormPath } from '@formily/core';
 import {
   FieldContext,
@@ -72,7 +73,7 @@ const useDefaultValues = (props: any = {}, opts: any = {}) => {
 };
 
 export const Form: ComposedForm = observer((props) => {
-  const { useValues = useDefaultValues } = props;
+  const { request, initialValue, useValues = useDefaultValues, ...others } = props;
   const decorator = useFormDecorator();
   const fieldSchema = useFieldSchema();
   const form = useMemo(() => createForm(), []);
@@ -83,7 +84,13 @@ export const Form: ComposedForm = observer((props) => {
       form.setValues(data?.data);
     },
   });
-  return <Spin spinning={loading}>{decorator ? <FormDecorator form={form} /> : <FormComponent form={form} />}</Spin>;
+  return (
+    <Spin spinning={loading}>
+      <FormLayout layout={'vertical'} {...others}>
+        {decorator ? <FormDecorator form={form} /> : <FormComponent form={form} />}
+      </FormLayout>
+    </Spin>
+  );
 });
 
 Form.__NOCOBASE_FORM = true;

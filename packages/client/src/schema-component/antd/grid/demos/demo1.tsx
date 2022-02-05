@@ -1,115 +1,90 @@
-import React from 'react';
-import { uid } from '@formily/shared';
 import { observer, useFieldSchema } from '@formily/react';
-import { useDraggable, useDroppable } from '@dnd-kit/core';
-import { SchemaComponent, SchemaComponentProvider, Grid } from '@nocobase/client';
-
-function Draggable(props) {
-  const { attributes, listeners, setNodeRef, transform } = useDraggable({
-    id: props.id,
-    data: props.data,
-  });
-  const style = transform
-    ? {
-        transform: `translate3d(${transform.x}px, ${transform.y}px, 0)`,
-      }
-    : undefined;
-
-  return (
-    <button ref={setNodeRef} style={style} {...listeners} {...attributes}>
-      {props.children}
-    </button>
-  );
-}
-
-function Droppable(props) {
-  const { isOver, setNodeRef } = useDroppable({
-    id: props.id,
-    data: props.data,
-  });
-  const style = {
-    color: isOver ? 'green' : undefined,
-  };
-
-  return (
-    <div ref={setNodeRef} style={style}>
-      {props.children}
-    </div>
-  );
-}
+import { uid } from '@formily/shared';
+import { BlockItem, DragHandler, Grid, SchemaComponent, SchemaComponentProvider } from '@nocobase/client';
+import React from 'react';
 
 const Block = observer((props) => {
   const fieldSchema = useFieldSchema();
   return (
-    <Droppable id={fieldSchema.name} data={{ schema: fieldSchema }}>
-      <div style={{ marginBottom: 20, padding: '0 20px', height: 50, lineHeight: '50px', background: '#f1f1f1' }}>
-        Block {fieldSchema.name}
-        <Draggable id={fieldSchema.name} data={{ schema: fieldSchema }}>
-          Drag
-        </Draggable>
-      </div>
-    </Droppable>
+    <div style={{ marginBottom: 20, padding: '0 20px', height: 50, lineHeight: '50px', background: '#f1f1f1' }}>
+      Block {fieldSchema.title}
+      <DragHandler />
+    </div>
   );
 });
 
 export default function App() {
   return (
-    <SchemaComponentProvider components={{ Grid, Block }}>
+    <SchemaComponentProvider components={{ Grid, Block, BlockItem }}>
       <SchemaComponent
         schema={{
           type: 'void',
-          name: 'page',
+          name: 'grid1',
           'x-component': 'Grid',
           'x-uid': uid(),
           properties: {
-            [uid()]: {
+            row1: {
               type: 'void',
               'x-component': 'Grid.Row',
               'x-uid': uid(),
               properties: {
-                [uid()]: {
+                col11: {
                   type: 'void',
                   'x-component': 'Grid.Col',
                   properties: {
-                    [uid()]: {
+                    block1: {
                       type: 'void',
+                      title: '1',
+                      'x-decorator': 'BlockItem',
+                      'x-component': 'Block',
+                    },
+                    block2: {
+                      type: 'void',
+                      title: '2',
+                      'x-decorator': 'BlockItem',
                       'x-component': 'Block',
                     },
                   },
                 },
-                [uid()]: {
+                col12: {
                   type: 'void',
                   'x-component': 'Grid.Col',
                   properties: {
-                    [uid()]: {
+                    block3: {
                       type: 'void',
+                      title: '3',
+                      'x-decorator': 'BlockItem',
                       'x-component': 'Block',
                     },
                   },
                 },
               },
             },
-            [uid()]: {
+            row2: {
               type: 'void',
               'x-component': 'Grid.Row',
               'x-uid': uid(),
               properties: {
-                [uid()]: {
+                col21: {
                   type: 'void',
                   'x-component': 'Grid.Col',
                   properties: {
-                    [uid()]: {
+                    block4: {
                       type: 'void',
+                      title: '4',
+                      'x-decorator': 'BlockItem',
                       'x-component': 'Block',
                     },
                   },
                 },
-                [uid()]: {
+                col22: {
                   type: 'void',
                   'x-component': 'Grid.Col',
                   properties: {
-                    [uid()]: {
+                    block5: {
                       type: 'void',
+                      title: '5',
+                      'x-decorator': 'BlockItem',
                       'x-component': 'Block',
                     },
                   },

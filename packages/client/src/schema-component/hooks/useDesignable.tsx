@@ -1,8 +1,8 @@
-import React, { useContext } from 'react';
 import { ISchema, Schema, useField, useFieldSchema } from '@formily/react';
-import { SchemaComponentContext } from '../context';
-import set from 'lodash/set';
 import { uid } from '@formily/shared';
+import set from 'lodash/set';
+import React, { useContext } from 'react';
+import { SchemaComponentContext } from '../context';
 
 interface CreateDesignableProps {
   current: Schema;
@@ -17,6 +17,11 @@ export function createDesignable(options: CreateDesignableProps) {
  */
 type Position = 'beforeBegin' | 'afterBegin' | 'beforeEnd' | 'afterEnd';
 
+interface InsertAdjacentOptions {
+  wrap?: (s: ISchema) => ISchema;
+  removeEmptyParents?: boolean;
+}
+
 const generateUid = (s: ISchema) => {
   if (!s['x-uid']) {
     s['x-uid'] = uid();
@@ -25,6 +30,8 @@ const generateUid = (s: ISchema) => {
     generateUid(s.properties[key]);
   });
 };
+
+const defaultWrap = (s: ISchema) => s;
 
 export class Designable {
   current: Schema;
@@ -66,25 +73,63 @@ export class Designable {
     this.events[name].forEach((fn) => fn.bind(this)(...args));
   }
 
-  insertAdjacent(position: Position, schema: ISchema) {
+  insertAdjacent(position: Position, schema: ISchema, options: InsertAdjacentOptions = {}) {
     switch (position) {
       case 'beforeBegin':
-        return this.insertBeforeBegin(schema);
+        return this.insertBeforeBegin(schema, options);
       case 'afterBegin':
-        return this.insertAfterBegin(schema);
+        return this.insertAfterBegin(schema, options);
       case 'beforeEnd':
-        return this.insertBeforeEnd(schema);
+        return this.insertBeforeEnd(schema, options);
       case 'afterEnd':
-        return this.insertAfterEnd(schema);
+        return this.insertAfterEnd(schema, options);
     }
   }
 
-  remove() {
-    const s = this.current.parent.removeProperty(this.current.name);
-    this.emit('afterRemove', s);
+  removeIfChildrenEmpty(schema?: Schema, options: { recursive?: boolean } = {}) {
+    if (!schema) {
+      return;
+    }
+    const { recursive } = options;
+    let s = schema;
+    const count = Object.keys(s.properties || {}).length;
+    console.log('removeIfChildrenEmpty', count, s.properties);
+    if (count > 0) {
+      return;
+    }
+    let removed;
+    while (s.parent) {
+      removed = s.parent.removeProperty(s.name);
+      if (!recursive) {
+        break;
+      }
+      const count = Object.keys(s.parent.properties || {}).length;
+      if (count > 0) {
+        break;
+      }
+      s = s.parent;
+    }
   }
 
-  insertBeforeBeginOrAfterEnd(schema: ISchema) {
+  remove(schema?: Schema, options: { removeEmptyParents?: boolean } = {}) {
+    const { removeEmptyParents } = options;
+    let s = schema || this.current;
+    let removed;
+    while (s.parent) {
+      removed = s.parent.removeProperty(s.name);
+      if (!removeEmptyParents) {
+        break;
+      }
+      const count = Object.keys(s.parent.properties || {}).length;
+      if (count > 0) {
+        break;
+      }
+      s = s.parent;
+    }
+    this.emit('afterRemove', removed);
+  }
+
+  insertBeforeBeginOrAfterEnd(schema: ISchema, options: InsertAdjacentOptions = {}) {
     if (!Schema.isSchemaInstance(this.current)) {
       return;
     }
@@ -104,22 +149,25 @@ export class Designable {
         fromIndex = index;
       }
     });
-    return fromIndex > toIndex ? this.insertBeforeBegin(schema) : this.insertAfterEnd(schema);
+    return fromIndex > toIndex ? this.insertBeforeBegin(schema, options) : this.insertAfterEnd(schema, options);
   }
 
   /**
    * Before the current schema itself.
    */
-  insertBeforeBegin(schema: ISchema) {
+  insertBeforeBegin(schema: ISchema, options: InsertAdjacentOptions = {}) {
     if (!Schema.isSchemaInstance(this.current)) {
       return;
     }
+    const { wrap = defaultWrap, removeEmptyParents } = options;
     const properties = {};
     let start = false;
 
     if (Schema.isSchemaInstance(schema)) {
       schema.parent.removeProperty(schema.name);
-      schema.parent = this.current.parent;
+      if (removeEmptyParents) {
+        this.removeIfChildrenEmpty(schema.parent);
+      }
     }
 
     this.current.parent.mapProperties((property, key) => {
@@ -133,7 +181,9 @@ export class Designable {
     });
 
     this.prepareProperty(schema);
-    const s = this.current.parent.addProperty(schema.name, schema);
+    const wrapped = wrap(schema);
+    const s = this.current.parent.addProperty(wrapped.name, wrapped);
+    s.parent = this.current.parent;
     this.current.parent.setProperties(properties);
     this.emit('afterInsertAdjacent', 'beforeBegin', s);
   }
@@ -144,13 +194,16 @@ export class Designable {
    * @param schema
    * @returns
    */
-  insertAfterBegin(schema: ISchema) {
+  insertAfterBegin(schema: ISchema, options: InsertAdjacentOptions = {}) {
     if (!Schema.isSchemaInstance(this.current)) {
       return;
     }
+    const { wrap = defaultWrap, removeEmptyParents } = options;
     if (Schema.isSchemaInstance(schema)) {
       schema.parent.removeProperty(schema.name);
-      schema.parent = this.current;
+      if (removeEmptyParents) {
+        this.removeIfChildrenEmpty(schema.parent);
+      }
     }
     const properties = {};
     this.current.mapProperties((schema, key) => {
@@ -158,7 +211,9 @@ export class Designable {
     });
     this.current.properties = {};
     this.prepareProperty(schema);
-    const s = this.current.addProperty(schema.name, schema);
+    const wrapped = wrap(schema);
+    const s = this.current.addProperty(wrapped.name, wrapped);
+    s.parent = this.current;
     this.current.setProperties(properties);
     this.emit('afterInsertAdjacent', 'afterBegin', s);
   }
@@ -169,32 +224,40 @@ export class Designable {
    * @param schema
    * @returns
    */
-  insertBeforeEnd(schema: ISchema) {
+  insertBeforeEnd(schema: ISchema, options: InsertAdjacentOptions = {}) {
     if (!Schema.isSchemaInstance(this.current)) {
       return;
     }
+    const { wrap = defaultWrap, removeEmptyParents } = options;
     if (Schema.isSchemaInstance(schema)) {
       schema.parent.removeProperty(schema.name);
-      schema.parent = this.current;
+      if (removeEmptyParents) {
+        this.removeIfChildrenEmpty(schema.parent);
+      }
     }
     this.prepareProperty(schema);
-    const s = this.current.addProperty(schema.name || uid(), schema);
+    const wrapped = wrap(schema);
+    const s = this.current.addProperty(wrapped.name || uid(), wrapped);
+    s.parent = this.current;
     this.emit('afterInsertAdjacent', 'beforeEnd', s);
   }
 
   /**
    * After the current schema itself.
    */
-  insertAfterEnd(schema: ISchema) {
+  insertAfterEnd(schema: ISchema, options: InsertAdjacentOptions = {}) {
     if (!Schema.isSchemaInstance(this.current)) {
       return;
     }
     const properties = {};
     let start = false;
-
+    const { wrap = defaultWrap, removeEmptyParents } = options;
     if (Schema.isSchemaInstance(schema)) {
       schema.parent.removeProperty(schema.name);
-      schema.parent = this.current.parent;
+      if (removeEmptyParents) {
+        this.removeIfChildrenEmpty(schema.parent);
+      }
+      schema.parent = null;
     }
 
     this.current.parent.mapProperties((property, key) => {
@@ -208,7 +271,11 @@ export class Designable {
     });
 
     this.prepareProperty(schema);
-    const s = this.current.parent.addProperty(schema.name || uid(), schema);
+
+    const wrapped = wrap(schema);
+
+    const s = this.current.parent.addProperty(wrapped.name || uid(), wrapped);
+    s.parent = this.current.parent;
     this.current.parent.setProperties(properties);
     this.emit('afterInsertAdjacent', 'afterEnd', s);
   }

@@ -10,6 +10,9 @@ const useDragEnd = () => {
     console.log({ active, over });
     const activeSchema = active?.data?.current?.schema;
     const overSchema = over?.data?.current?.schema;
+    const insertAdjacent = over?.data?.current?.insertAdjacent;
+    const wrapSchema = over?.data?.current?.wrapSchema;
+    const onInsertAdjacent = over?.data?.current?.onInsertAdjacent;
 
     if (!activeSchema || !overSchema) {
       return;
@@ -20,7 +23,25 @@ const useDragEnd = () => {
     });
 
     dn.on('afterInsertAdjacent', refresh);
-    dn.insertBeforeBeginOrAfterEnd(activeSchema);
+    dn.on('afterRemove', refresh);
+
+    if (activeSchema.parent === overSchema.parent) {
+      return dn.insertBeforeBeginOrAfterEnd(activeSchema);
+    }
+
+    if (insertAdjacent) {
+      console.log('removeIfChildrenEmpty', activeSchema)
+      dn.insertAdjacent(insertAdjacent, activeSchema, {
+        wrap: wrapSchema,
+        removeEmptyParents: true,
+      });
+      // onInsertAdjacent && onInsertAdjacent({
+      //   dn,
+      //   orginDraggedParentSchema,
+      //   draggedSchema: activeSchema,
+      // });
+      return;
+    }
   };
 };
 

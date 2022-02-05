@@ -25,8 +25,10 @@ export * from './radio';
 export * from './record-picker';
 export * from './row-selection';
 export * from './select';
+export * from './sortable-item';
 export * from './tabs';
 export * from './time-picker';
 export * from './tree-select';
 export * from './upload';
 export * from './void-table';
+
