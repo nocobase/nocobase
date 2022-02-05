@@ -5,11 +5,18 @@ group:
   path: /client
 ---
 
-# SystemSettings <Badge>待定</Badge>
+# SystemSettings
 
 ## SystemSettingsProvider
 
-## SystemSettingsAction
+## SystemSettingsShortcut
 
 ## useSystemSettings
 
+```ts
+const { data, loading, refresh } = useSystemSettings();
+```
+
+## Examples
+
+<code src="./demos/demo1.tsx"/>
