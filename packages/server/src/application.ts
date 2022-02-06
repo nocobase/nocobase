@@ -65,10 +65,12 @@ interface ListenOptions {
 }
 
 interface StartOptions {
+  cliArgs?: any[];
   listen?: ListenOptions;
 }
 
 interface InstallOptions {
+  cliArgs?: any[];
   clean?: CleanOptions | boolean;
   sync?: SyncOptions;
 }
@@ -174,8 +176,8 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     await this.emitAsync('afterStart', this, options);
   }
 
-  async stop() {
-    await this.emitAsync('beforeStop', this);
+  async stop(options?: any) {
+    await this.emitAsync('beforeStop', this, options);
 
     // close database connection
     await this.db.close();
@@ -188,7 +190,6 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
             if (err) {
               return reject(err);
             }
-
             this.listenServer = null;
             resolve(true);
           });
@@ -197,13 +198,13 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
       await closeServer();
     }
 
-    await this.emitAsync('afterStop', this);
+    await this.emitAsync('afterStop', this, options);
   }
 
-  async destroy() {
-    await this.emitAsync('beforeDestroy', this);
-    await this.stop();
-    await this.emitAsync('afterDestroy', this);
+  async destroy(options?: any) {
+    await this.emitAsync('beforeDestroy', this, options);
+    await this.stop(options);
+    await this.emitAsync('afterDestroy', this, options);
   }
 
   async install(options?: InstallOptions) {
@@ -211,7 +212,9 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
       await this.db.clean(isBoolean(options.clean) ? { drop: options.clean } : options.clean);
     }
     await this.db.sync(options?.sync);
+
     await this.emitAsync('beforeInstall', this, options);
+    await this.emitAsync('installing', this, options);
     await this.emitAsync('afterInstall', this, options);
   }
 

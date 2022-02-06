@@ -1,6 +1,6 @@
 import { mockServer, MockServer } from '@nocobase/test';
 import { Collection, Database } from '@nocobase/database';
-import PluginUiSchema, { UiSchemaRepository } from '@nocobase/plugin-ui-schema';
+import PluginUiSchema, { UiSchemaRepository } from '..';
 
 describe('ui schema model', () => {
   let app: MockServer;

@@ -2,16 +2,12 @@ import path from 'path';
 import * as actions from './actions/users';
 import * as middlewares from './middlewares';
 import { Collection } from '@nocobase/database';
-import { PluginOptions } from '@nocobase/server';
+import { Plugin, PluginOptions } from '@nocobase/server';
 
-export default {
-  name: 'users',
-  async load() {
-    const database = this.app.db;
-    const resourcer = this.app.resourcer;
-
-    this.app.on('db.init', async () => {
-      const User = database.getCollection('users');
+export default class PluginUsers extends Plugin {
+  async beforeLoad() {
+    this.app.on('installing', async () => {
+      const User = this.db.getCollection('users');
       await User.model.create({
         nickname: 'Super Admin',
         email: process.env.ADMIN_EMAIL || 'admin@nocobase.com',
@@ -19,7 +15,7 @@ export default {
       });
     });
 
-    database.on('users.afterCreateWithAssociations', async (model, options) => {
+    this.db.on('users.afterCreateWithAssociations', async (model, options) => {
       const { transaction } = options;
 
       const defaultRole = await this.app.db.getRepository('roles').findOne({
@@ -34,7 +30,7 @@ export default {
       }
     });
 
-    database.on('afterDefineCollection', (collection: Collection) => {
+    this.db.on('afterDefineCollection', (collection: Collection) => {
       let { createdBy, updatedBy } = collection.options;
       if (createdBy === true) {
         collection.setField('createdById', {
@@ -65,14 +61,16 @@ export default {
       }
     });
 
-    await database.import({
-      directory: path.resolve(__dirname, 'collections'),
-    });
-
     for (const [key, action] of Object.entries(actions)) {
-      resourcer.registerActionHandler(`users:${key}`, action);
+      this.app.resourcer.registerActionHandler(`users:${key}`, action);
     }
 
-    resourcer.use(middlewares.parseToken({}));
-  },
-} as PluginOptions;
+    this.app.resourcer.use(middlewares.parseToken({}));
+  }
+
+  async load() {
+    await this.db.import({
+      directory: path.resolve(__dirname, 'collections'),
+    });
+  }
+}

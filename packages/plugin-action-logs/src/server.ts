@@ -1,16 +1,17 @@
 import path from 'path';
-import { Plugin } from '@nocobase/server';
 import { afterCreate, afterUpdate, afterDestroy } from './hooks';
+import { Plugin } from '@nocobase/server';
 
-export default class extends Plugin {
-  name: 'action-logs';
+export default class PluginActionLogs extends Plugin {
+  async beforeLoad() {
+    this.db.on('afterCreate', afterCreate);
+    this.db.on('afterUpdate', afterUpdate);
+    this.db.on('afterDestroy', afterDestroy);
+  }
+
   async load() {
-    const database = this.app.db;
-    await database.import({
+    await this.db.import({
       directory: path.resolve(__dirname, 'collections'),
     });
-    database.on('afterCreate', afterCreate);
-    database.on('afterUpdate', afterUpdate);
-    database.on('afterDestroy', afterDestroy);
   }
-};
+}

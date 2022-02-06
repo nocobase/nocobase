@@ -1,19 +1,10 @@
 import path from 'path';
-import { PluginOptions } from '@nocobase/server';
+import { Plugin, PluginOptions } from '@nocobase/server';
 
-export default {
-  name: 'system-settings',
-  async load() {
-    const database = this.app.db;
-
-    await database.import({
-      directory: path.resolve(__dirname, 'collections'),
-    });
-
-    const SystemSetting = database.getCollection('system_settings');
-
-    this.app.on('db.init', async () => {
-      await SystemSetting.repository.create({
+export default class PluginSystemSettings extends Plugin {
+  async beforeLoad() {
+    this.app.on('installing', async () => {
+      await this.db.getRepository('system_settings').create({
         values: {
           title: 'NocoBase',
           logo: {
@@ -26,5 +17,11 @@ export default {
         },
       });
     });
-  },
-} as PluginOptions;
+  }
+
+  async load() {
+    await this.app.db.import({
+      directory: path.resolve(__dirname, 'collections'),
+    });
+  }
+}
