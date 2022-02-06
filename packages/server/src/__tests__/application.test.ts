@@ -3,7 +3,7 @@ import { Application } from '../application';
 import { Plugin } from '../plugin';
 
 class MyPlugin extends Plugin {
-  load() {}
+  async load() {}
 }
 
 describe('application', () => {

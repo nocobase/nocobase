@@ -79,7 +79,7 @@ export function createCli(app: Application, options: ApplicationOptions) {
         },
       });
 
-      await app.destroy();
+      await app.stop();
     });
 
   cli
@@ -88,10 +88,17 @@ export function createCli(app: Application, options: ApplicationOptions) {
     .action(async (...args) => {
       const cli = args.pop();
       const opts = cli.opts();
-      await app.emitAsync('beforeStart');
-      await app.start(opts.port || 3000);
+      const listenPort = opts.port || 3000;
+
+      await app.start({
+        listen: {
+          port: listenPort,
+        },
+      });
+
       console.log(`http://localhost:${opts.port || 3000}/`);
     });
+
   return cli;
 }
 
