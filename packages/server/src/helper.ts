@@ -1,13 +1,13 @@
-import { DefaultContext, DefaultState } from 'koa';
-import bodyParser from 'koa-bodyparser';
 import cors from '@koa/cors';
 import Database from '@nocobase/database';
 import Resourcer from '@nocobase/resourcer';
 import { Command } from 'commander';
+import i18next from 'i18next';
+import { DefaultContext, DefaultState } from 'koa';
+import bodyParser from 'koa-bodyparser';
 import Application, { ApplicationOptions } from './application';
 import { dataWrapping } from './middlewares/data-wrapping';
 import { table2resource } from './middlewares/table2resource';
-import i18next from 'i18next';
 
 export function createDatabase(options: ApplicationOptions) {
   if (options.database instanceof Database) {
@@ -37,12 +37,11 @@ export function createCli(app: Application, options: ApplicationOptions) {
   cli
     .command('db:sync')
     .option('-f, --force')
-    .action(async (...args) => {
+    .action(async (...cliArgs) => {
+      const [opts] = cliArgs;
       console.log('db sync...');
-      const cli = args.pop();
-      const force = cli.opts()?.force;
       await app.db.sync(
-        force
+        opts.force
           ? {
               force: true,
               alter: {
@@ -51,55 +50,42 @@ export function createCli(app: Application, options: ApplicationOptions) {
             }
           : {},
       );
-      await app.destroy();
+      await app.stop({
+        cliArgs,
+      });
     });
 
   cli
     .command('install')
     .option('-f, --force')
-    .option('--import-demo')
-    .option('--lang [lang]')
-    .action(async (opts, ...args) => {
-      if (!opts?.force) {
-        const tables = await app.db.sequelize.getQueryInterface().showAllTables();
-        if (tables.includes('collections')) {
-          console.log('NocoBase is already installed. To reinstall, please execute:');
-          console.log();
-          let command = 'yarn nocobase init --force';
-          for (const [key, value] of Object.entries(opts || {})) {
-            command += value === true ? ` --${key}` : ` --${key}=${value}`;
-          }
-          console.log(command);
-          console.log();
-          return;
-        }
-      }
-
+    .action(async (...cliArgs) => {
+      const [opts] = cliArgs;
       await app.install({
-        ...opts,
+        cliArgs,
         sync: {
-          force: true,
+          force: opts.force,
         },
       });
-
-      await app.stop();
+      await app.stop({
+        cliArgs,
+      });
     });
 
   cli
     .command('start')
     .option('-p, --port [port]')
-    .action(async (...args) => {
-      const cli = args.pop();
-      const opts = cli.opts();
-      const listenPort = opts.port || 3000;
+    .action(async (...cliArgs) => {
+      const [opts] = cliArgs;
+      const port = opts.port || 3000;
 
       await app.start({
+        cliArgs,
         listen: {
-          port: listenPort,
+          port,
         },
       });
 
-      console.log(`http://localhost:${opts.port || 3000}/`);
+      console.log(`http://localhost:${port}/`);
     });
 
   return cli;
