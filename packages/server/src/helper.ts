@@ -57,6 +57,8 @@ export function createCli(app: Application, options: ApplicationOptions) {
   cli
     .command('install')
     .option('-f, --force')
+    .option('--import-demo')
+    .option('--lang [lang]')
     .action(async (opts, ...args) => {
       if (!opts?.force) {
         const tables = await app.db.sequelize.getQueryInterface().showAllTables();
@@ -74,6 +76,7 @@ export function createCli(app: Application, options: ApplicationOptions) {
       }
 
       await app.install({
+        ...opts,
         sync: {
           force: true,
         },
