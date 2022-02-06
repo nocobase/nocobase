@@ -1,11 +1,10 @@
 import path from 'path';
-import { PluginOptions } from '@nocobase/server';
+import { Plugin } from '@nocobase/server';
 
-export default {
-  name: 'notifications',
+export default class PluginNotifications extends Plugin {
   async load() {
     await this.app.db.import({
       directory: path.resolve(__dirname, 'collections'),
     });
   }
-} as PluginOptions
+}

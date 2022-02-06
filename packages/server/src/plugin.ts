@@ -1,5 +1,6 @@
 import { Database } from '@nocobase/database';
 import { Application } from './application';
+import path from 'path';
 
 export interface PluginInterface {
   beforeLoad?: () => void;
@@ -41,5 +42,16 @@ export abstract class Plugin<O = any> implements PluginInterface {
 
   beforeLoad() {}
 
-  abstract load();
+  async load() {
+    const collectionPath = this.collectionPath();
+    if (collectionPath) {
+      await this.db.import({
+        directory: collectionPath,
+      });
+    }
+  }
+
+  collectionPath() {
+    return null;
+  }
 }

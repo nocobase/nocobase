@@ -10,14 +10,10 @@ import { afterCreateForReverseField } from './hooks/afterCreateForReverseField';
 export * from './repositories/collection-repository';
 
 export default class CollectionManagerPlugin extends Plugin {
-  async load() {
+  async beforeLoad() {
     this.app.db.registerModels({
       CollectionModel,
       FieldModel,
-    });
-
-    await this.app.db.import({
-      directory: path.resolve(__dirname, './collections'),
     });
 
     // 要在 beforeInitOptions 之前处理
@@ -45,6 +41,12 @@ export default class CollectionManagerPlugin extends Plugin {
       if (context) {
         await model.migrate({ transaction });
       }
+    });
+  }
+
+  async load() {
+    await this.app.db.import({
+      directory: path.resolve(__dirname, './collections'),
     });
   }
 }

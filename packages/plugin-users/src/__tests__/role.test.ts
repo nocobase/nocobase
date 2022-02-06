@@ -11,7 +11,7 @@ describe('role', () => {
     await api.cleanDb();
     api.plugin(require('../server').default);
     api.plugin(PluginACL);
-    await api.loadAndSync();
+    await api.loadAndInstall();
 
     db = api.db;
   });

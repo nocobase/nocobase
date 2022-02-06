@@ -82,25 +82,19 @@ export default class PluginACL extends Plugin {
     });
   }
 
-  async load() {
-    this.app.db.registerModels({
-      RoleResourceActionModel,
-      RoleResourceModel,
-    });
-
+  async beforeLoad() {
     const acl = createACL();
     this.acl = acl;
 
-    await this.app.db.import({
-      directory: path.resolve(__dirname, 'collections'),
+    this.app.db.registerModels({
+      RoleResourceActionModel,
+      RoleResourceModel,
     });
 
     this.registerAssociationFieldsActions();
 
     this.app.resourcer.define(availableActionResource);
     this.app.resourcer.define(roleCollectionsResource);
-
-    this.app.resourcer.use(this.acl.middleware());
 
     this.app.db.on('roles.afterSave', async (model, options) => {
       const { transaction } = options;
@@ -186,5 +180,13 @@ export default class PluginACL extends Plugin {
         });
       }
     });
+  }
+
+  async load() {
+    await this.app.db.import({
+      directory: path.resolve(__dirname, 'collections'),
+    });
+
+    this.app.resourcer.use(this.acl.middleware());
   }
 }
