@@ -15,6 +15,7 @@ export * from './plugin-manager';
 export * from './record-provider';
 export * from './route-switch';
 export * from './schema-component';
+export * from './schema-initializer';
 export * from './system-settings';
 export * from './user';
 

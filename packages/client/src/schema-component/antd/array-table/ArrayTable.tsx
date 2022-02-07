@@ -2,6 +2,7 @@ import { ArrayField } from '@formily/core';
 import { observer, RecursionField, Schema, useField, useFieldSchema } from '@formily/react';
 import { Table, TableColumnProps } from 'antd';
 import React from 'react';
+import { TableColumnInitializeButton } from './Initializer';
 
 const isColumnComponent = (schema: Schema) => {
   return schema['x-component']?.endsWith('.Column') > -1;
@@ -27,7 +28,14 @@ const useTableColumns = () => {
       } as TableColumnProps<any>;
     });
   console.log(columns);
-  return columns;
+  if (!schema['x-column-initializer']) {
+    return columns;
+  }
+  return columns.concat({
+    title: <TableColumnInitializeButton />,
+    dataIndex: 'TableColumnInitializeButton',
+    key: 'TableColumnInitializeButton',
+  });
 };
 
 type ArrayTableType = React.FC<any> & {
@@ -41,7 +49,7 @@ export const ArrayTable: ArrayTableType = observer((props) => {
   const { onChange, ...others } = props;
   return (
     <div>
-      <Table {...others} columns={columns} dataSource={field.value?.slice()}/>
+      <Table {...others} columns={columns} dataSource={field.value?.slice()} />
     </div>
   );
 });
