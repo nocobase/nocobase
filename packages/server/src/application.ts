@@ -208,12 +208,11 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
   }
 
   async install(options?: InstallOptions) {
+    await this.emitAsync('beforeInstall', this, options);
     if (options?.clean) {
       await this.db.clean(isBoolean(options.clean) ? { drop: options.clean } : options.clean);
     }
     await this.db.sync(options?.sync);
-
-    await this.emitAsync('beforeInstall', this, options);
     await this.emitAsync('installing', this, options);
     await this.emitAsync('afterInstall', this, options);
   }

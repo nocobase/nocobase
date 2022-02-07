@@ -1,5 +1,5 @@
-import { resolve } from 'path';
 import { Application } from '@nocobase/server';
+import { resolve } from 'path';
 
 const start = Date.now();
 
@@ -9,6 +9,12 @@ const api = new Application({
       ? {
           dialect: process.env.DB_DIALECT as any,
           storage: resolve(process.cwd(), './db.sqlite'),
+          pool: {
+            max: 5,
+            min: 0,
+            acquire: 60000,
+            idle: 10000,
+          },
           logging: process.env.DB_LOG_SQL === 'on' ? console.log : false,
           define: {},
           sync: {

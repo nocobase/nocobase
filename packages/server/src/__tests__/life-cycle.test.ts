@@ -21,7 +21,7 @@ describe('application life cycle', () => {
         return 'Test';
       }
 
-      load() {
+      async load() {
         loadFn();
         this.app.on('beforeInstall', () => {
           installFn();
