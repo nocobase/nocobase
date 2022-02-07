@@ -1,34 +1,29 @@
-import { FormOutlined, TableOutlined } from '@ant-design/icons';
-import { Field } from '@formily/core';
-import { observer, useField } from '@formily/react';
-import { SchemaComponent, SchemaComponentProvider, SchemaInitializer } from '@nocobase/client';
+import { observer } from '@formily/react';
+import { Action, ActionBar, SchemaComponent, SchemaComponentProvider, SchemaInitializer } from '@nocobase/client';
 import React from 'react';
 
-const Hello = observer((props) => {
-  const field = useField<Field>();
-  return (
-    <div style={{ marginBottom: 20, padding: '0 20px', height: 50, lineHeight: '50px', background: '#f1f1f1' }}>
-      {field.title}
-    </div>
-  );
-});
-
-const InitializerDemo = observer((props: any) => {
+const InitializerButton = observer((props: any) => {
   return (
     <SchemaInitializer.Button
       wrap={(schema) => schema}
-      insertPosition={'beforeBegin'}
+      insertPosition={'beforeEnd'}
+      style={{ marginLeft: 8 }}
       items={[
         {
-          title: 'Data blocks',
+          title: 'Enable actions',
           children: [
             {
-              title: 'Table',
-              component: 'TableBlockInitializer',
+              title: 'Create',
+              key: 'create',
+              component: 'ActionInitializer',
+              schema: {
+                'x-align': 'left',
+              },
             },
             {
-              title: 'Form',
-              component: 'FormBlockInitializer',
+              title: 'Update',
+              key: 'update',
+              component: 'ActionInitializer',
             },
           ],
         },
@@ -39,81 +34,43 @@ const InitializerDemo = observer((props: any) => {
   );
 });
 
-const TableBlockInitializer = (props) => {
-  const { insert } = props;
+const ActionInitializer = (props) => {
+  const { title, schema, insert } = props;
   return (
     <SchemaInitializer.Item
-      icon={<TableOutlined />}
       onClick={(info) => {
-        console.log({ info });
         insert({
           type: 'void',
           title: info.key,
-          'x-component': 'Hello',
-        });
-      }}
-      items={[
-        {
-          type: 'itemGroup',
-          title: 'select a data source',
-          children: [
-            {
-              key: 'users',
-              title: 'Users',
-            },
-            {
-              key: 'posts',
-              title: 'Posts',
-            },
-          ],
-        },
-      ]}
-    >
-      Table
-    </SchemaInitializer.Item>
-  );
-};
-
-const FormBlockInitializer = (props) => {
-  const { insert } = props;
-  return (
-    <SchemaInitializer.Item
-      icon={<FormOutlined />}
-      onClick={(info) => {
-        insert({
-          type: 'void',
-          title: 'form',
-          'x-component': 'Hello',
+          'x-component': 'Action',
+          ...schema,
         });
       }}
     >
-      Form
+      {title}
     </SchemaInitializer.Item>
   );
 };
 
 export default function App() {
   return (
-    <SchemaComponentProvider components={{ Hello, InitializerDemo, TableBlockInitializer, FormBlockInitializer }}>
+    <SchemaComponentProvider components={{ ActionBar, Action, ActionInitializer, InitializerButton }}>
       <SchemaComponent
         schema={{
           type: 'void',
           name: 'page',
-          'x-component': 'div',
+          'x-component': 'ActionBar',
+          'x-initializer': 'InitializerButton',
           properties: {
-            hello1: {
+            action1: {
               type: 'void',
               title: 'Test1',
-              'x-component': 'Hello',
+              'x-component': 'Action',
             },
-            hello2: {
+            action2: {
               type: 'void',
               title: 'Test2',
-              'x-component': 'Hello',
-            },
-            initializer: {
-              type: 'void',
-              'x-component': 'InitializerDemo',
+              'x-component': 'Action',
             },
           },
         }}

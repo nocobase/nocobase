@@ -1,5 +1,6 @@
-import { ISchema, Schema, useField, useFieldSchema } from '@formily/react';
+import { ISchema, Schema, SchemaOptionsContext, useField, useFieldSchema } from '@formily/react';
 import { uid } from '@formily/shared';
+import get from 'lodash/get';
 import set from 'lodash/set';
 import React, { useContext } from 'react';
 import { SchemaComponentContext } from '../context';
@@ -250,7 +251,7 @@ export class Designable {
     const { wrap = defaultWrap, removeEmptyParents } = options;
     if (Schema.isSchemaInstance(schema)) {
       schema.parent.removeProperty(schema.name);
-      console.log('insertAfterEnd', removeEmptyParents)
+      console.log('insertAfterEnd', removeEmptyParents);
       if (removeEmptyParents) {
         this.removeIfChildrenEmpty(schema.parent);
       }
@@ -281,6 +282,7 @@ export class Designable {
 // TODO
 export function useDesignable() {
   const { designable, setDesignable, refresh, reset } = useContext(SchemaComponentContext);
+  const { components } = useContext(SchemaOptionsContext);
   const DesignableBar = () => {
     return <></>;
   };
@@ -295,6 +297,15 @@ export function useDesignable() {
     refresh,
     setDesignable,
     DesignableBar,
+    findComponent(component: any) {
+      if (!component) {
+        return null;
+      }
+      if (typeof component !== 'string') {
+        return component;
+      }
+      return get(components, component);
+    },
     on: dn.on.bind(dn),
     // TODO
     patch: (key: ISchema | string, value?: any) => {
