@@ -4,7 +4,7 @@ import { observer, RecursionField, Schema, useField, useFieldSchema } from '@for
 import { uid } from '@formily/shared';
 import cls from 'classnames';
 import React from 'react';
-import { DndContext } from '../dnd-context';
+import { DndContext } from '../../common/dnd-context';
 
 export const Grid: any = observer((props) => {
   return (
