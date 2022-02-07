@@ -1,7 +1,6 @@
-import { observer, Schema, SchemaOptionsContext } from '@formily/react';
+import { observer, Schema } from '@formily/react';
 import { useDesignable } from '@nocobase/client';
 import { Button, Dropdown, Menu } from 'antd';
-import { get } from 'lodash';
 import React, { createContext, useContext, useState } from 'react';
 
 const defaultWrap = (s: Schema) => s;
@@ -12,8 +11,7 @@ export const SchemaInitializer = () => null;
 
 SchemaInitializer.Button = observer((props: any) => {
   const { wrap = defaultWrap, items = [], insertPosition, dropdown, ...others } = props;
-  const { insertAdjacent } = useDesignable();
-  const { components } = useContext(SchemaOptionsContext);
+  const { insertAdjacent, findComponent } = useDesignable();
 
   const menu = (
     <Menu>
@@ -22,7 +20,7 @@ SchemaInitializer.Button = observer((props: any) => {
           return <Menu.Divider key={`item-${indexA}`} />;
         }
         if (item.component) {
-          const Component = typeof item.component === 'object' ? item.component : get(components, item.component);
+          const Component = findComponent(item.component);
           return (
             Component && (
               <SchemaInitializerItemContext.Provider
@@ -53,8 +51,7 @@ SchemaInitializer.Button = observer((props: any) => {
                 if (!child.component) {
                   return null;
                 }
-                const Component =
-                  typeof child.component === 'object' ? child.component : get(components, child.component);
+                const Component = findComponent(child.component);
                 return (
                   Component && (
                     <SchemaInitializerItemContext.Provider

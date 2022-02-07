@@ -3,7 +3,7 @@
  */
 import { FormItem } from '@formily/antd';
 import { ISchema } from '@formily/react';
-import { ArrayTable, ArrayTableColumnInitializer, Input, SchemaComponent, SchemaComponentProvider } from '@nocobase/client';
+import { ArrayTable, Input, SchemaComponent, SchemaComponentProvider } from '@nocobase/client';
 import React from 'react';
 
 const schema: ISchema = {
@@ -19,7 +19,6 @@ const schema: ISchema = {
       ],
       'x-decorator': 'FormItem',
       'x-component': 'ArrayTable',
-      'x-column-initializer': 'ArrayTableColumnInitializer',
       'x-component-props': {
         rowKey: 'id',
       },
@@ -61,7 +60,7 @@ const schema: ISchema = {
 
 export default () => {
   return (
-    <SchemaComponentProvider components={{ Input, ArrayTable, FormItem, ArrayTableColumnInitializer }}>
+    <SchemaComponentProvider components={{ Input, ArrayTable, FormItem }}>
       <SchemaComponent schema={schema} />
     </SchemaComponentProvider>
   );

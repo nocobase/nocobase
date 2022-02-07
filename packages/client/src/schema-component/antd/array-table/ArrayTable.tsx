@@ -2,7 +2,7 @@ import { ArrayField } from '@formily/core';
 import { observer, RecursionField, Schema, useField, useFieldSchema } from '@formily/react';
 import { Table, TableColumnProps } from 'antd';
 import React from 'react';
-import { TableColumnInitializeButton } from './Initializer';
+import { useComponent } from '../../hooks';
 
 const isColumnComponent = (schema: Schema) => {
   return schema['x-component']?.endsWith('.Column') > -1;
@@ -11,6 +11,7 @@ const isColumnComponent = (schema: Schema) => {
 const useTableColumns = () => {
   const field = useField<ArrayField>();
   const schema = useFieldSchema();
+  const Initializer = useComponent(schema['x-initializer']);
   const columns = schema
     .reduceProperties((buf, s) => {
       if (isColumnComponent(s)) {
@@ -28,13 +29,13 @@ const useTableColumns = () => {
       } as TableColumnProps<any>;
     });
   console.log(columns);
-  if (!schema['x-column-initializer']) {
+  if (!Initializer) {
     return columns;
   }
   return columns.concat({
-    title: <TableColumnInitializeButton />,
-    dataIndex: 'TableColumnInitializeButton',
-    key: 'TableColumnInitializeButton',
+    title: <Initializer />,
+    dataIndex: 'TableColumnInitializer',
+    key: 'TableColumnInitializer',
   });
 };
 
