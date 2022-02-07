@@ -86,11 +86,10 @@ export class Designable {
     }
   }
 
-  removeIfChildrenEmpty(schema?: Schema, options: { recursive?: boolean } = {}) {
+  removeIfChildrenEmpty(schema?: Schema) {
     if (!schema) {
       return;
     }
-    const { recursive } = options;
     let s = schema;
     const count = Object.keys(s.properties || {}).length;
     console.log('removeIfChildrenEmpty', count, s.properties);
@@ -100,9 +99,6 @@ export class Designable {
     let removed;
     while (s.parent) {
       removed = s.parent.removeProperty(s.name);
-      if (!recursive) {
-        break;
-      }
       const count = Object.keys(s.parent.properties || {}).length;
       if (count > 0) {
         break;
@@ -254,6 +250,7 @@ export class Designable {
     const { wrap = defaultWrap, removeEmptyParents } = options;
     if (Schema.isSchemaInstance(schema)) {
       schema.parent.removeProperty(schema.name);
+      console.log('insertAfterEnd', removeEmptyParents)
       if (removeEmptyParents) {
         this.removeIfChildrenEmpty(schema.parent);
       }
@@ -327,8 +324,8 @@ export function useDesignable() {
     remove() {
       dn.remove();
     },
-    insertAdjacent(position: Position, schema: ISchema) {
-      dn.insertAdjacent(position, schema);
+    insertAdjacent(position: Position, schema: ISchema, options: InsertAdjacentOptions = {}) {
+      dn.insertAdjacent(position, schema, options);
     },
     insertBeforeBegin(schema: ISchema) {
       dn.insertBeforeBegin(schema);
