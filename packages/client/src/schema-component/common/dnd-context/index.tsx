@@ -1,7 +1,7 @@
 import { DndContext as DndKitContext, DragEndEvent } from '@dnd-kit/core';
 import { observer } from '@formily/react';
 import React from 'react';
-import { createDesignable, useDesignable } from '../..';
+import { createDesignable, useDesignable } from '../../hooks';
 
 const useDragEnd = () => {
   const { refresh } = useDesignable();
@@ -30,7 +30,7 @@ const useDragEnd = () => {
     }
 
     if (insertAdjacent) {
-      console.log('removeIfChildrenEmpty', activeSchema)
+      console.log('removeIfChildrenEmpty', activeSchema);
       dn.insertAdjacent(insertAdjacent, activeSchema, {
         wrap: wrapSchema,
         removeEmptyParents: true,
