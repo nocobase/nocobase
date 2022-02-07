@@ -47,15 +47,40 @@ export const SortableItem = observer((props) => {
 });
 
 export const DragHandler = () => {
-  const { attributes, listeners, setNodeRef, transform } = useContext(DraggableContext);
+  const { isDragging, attributes, listeners, setNodeRef, transform } = useContext(DraggableContext);
   const style = transform
     ? {
         transform: `translate3d(${transform.x}px, ${transform.y}px, 0)`,
       }
     : undefined;
+
   return (
-    <div ref={setNodeRef} style={{ ...style, display: 'inline-block' }} {...listeners} {...attributes}>
-      Drag
+    <div
+      style={{
+        display: 'inline-block',
+      }}
+    >
+      <div style={{ display: isDragging ? 'inline-block' : 'none', fontSize: 10, position: 'absolute', zIndex: 0 }}>
+        Drag
+      </div>
+      <div
+        ref={setNodeRef}
+        style={{
+          ...style,
+          position: 'relative',
+          zIndex: 1,
+          backgroundColor: '#333',
+          lineHeight: 0,
+          height: 2,
+          width: 2,
+          fontSize: 0,
+          display: 'inline-block',
+        }}
+        {...listeners}
+        {...attributes}
+      >
+        <div style={{ fontSize: 10 }}>Drag</div>
+      </div>
     </div>
   );
 };

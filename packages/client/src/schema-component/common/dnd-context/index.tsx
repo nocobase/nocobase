@@ -1,4 +1,4 @@
-import { DndContext as DndKitContext, DragEndEvent } from '@dnd-kit/core';
+import { DndContext as DndKitContext, DragEndEvent, rectIntersection } from '@dnd-kit/core';
 import { observer } from '@formily/react';
 import React from 'react';
 import { createDesignable, useDesignable } from '../../hooks';
@@ -12,9 +12,12 @@ const useDragEnd = () => {
     const overSchema = over?.data?.current?.schema;
     const insertAdjacent = over?.data?.current?.insertAdjacent;
     const wrapSchema = over?.data?.current?.wrapSchema;
-    const onInsertAdjacent = over?.data?.current?.onInsertAdjacent;
 
     if (!activeSchema || !overSchema) {
+      return;
+    }
+
+    if (activeSchema === overSchema) {
       return;
     }
 
@@ -30,21 +33,19 @@ const useDragEnd = () => {
     }
 
     if (insertAdjacent) {
-      console.log('removeIfChildrenEmpty', activeSchema);
       dn.insertAdjacent(insertAdjacent, activeSchema, {
         wrap: wrapSchema,
         removeEmptyParents: true,
       });
-      // onInsertAdjacent && onInsertAdjacent({
-      //   dn,
-      //   orginDraggedParentSchema,
-      //   draggedSchema: activeSchema,
-      // });
       return;
     }
   };
 };
 
 export const DndContext = observer((props) => {
-  return <DndKitContext onDragEnd={useDragEnd()}>{props.children}</DndKitContext>;
+  return (
+    <DndKitContext collisionDetection={rectIntersection} onDragEnd={useDragEnd()}>
+      {props.children}
+    </DndKitContext>
+  );
 });
