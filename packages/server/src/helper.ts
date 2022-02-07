@@ -31,7 +31,7 @@ export function createI18n(options: ApplicationOptions) {
   return instance;
 }
 
-export function createCli(app: Application, options: ApplicationOptions) {
+export function createCli(app: Application, options: ApplicationOptions): Command {
   const cli = new Command();
 
   cli
