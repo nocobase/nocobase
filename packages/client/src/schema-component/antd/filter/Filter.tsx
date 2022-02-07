@@ -3,7 +3,7 @@ import { createForm, onFieldValueChange } from '@formily/core';
 import { connect, FieldContext, FormContext, ISchema, mapProps, mapReadPretty, Schema } from '@formily/react';
 import deepmerge from 'deepmerge';
 import React, { useMemo } from 'react';
-import { SchemaComponent } from '../../components';
+import { SchemaComponent } from '../../core';
 import { FilterGroup } from './FilterGroup';
 import './style.less';
 

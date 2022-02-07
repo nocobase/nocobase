@@ -8,7 +8,6 @@ export * from './chart';
 export * from './checkbox';
 export * from './color-select';
 export * from './date-picker';
-export * from './dnd-context';
 export * from './filter';
 export * from './form';
 export * from './form-item';
@@ -31,4 +30,3 @@ export * from './time-picker';
 export * from './tree-select';
 export * from './upload';
 export * from './void-table';
-

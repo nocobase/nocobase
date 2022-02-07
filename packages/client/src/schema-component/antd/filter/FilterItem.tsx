@@ -15,7 +15,7 @@ import {
 import { isValid, uid } from '@formily/shared';
 import { get } from 'lodash';
 import React, { useContext, useMemo } from 'react';
-import { SchemaComponent } from '../../components';
+import { SchemaComponent } from '../../core';
 
 function useFilterColumns(): Map<SchemaKey, Schema> {
   const schema = useFieldSchema();
