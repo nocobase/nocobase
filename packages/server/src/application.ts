@@ -132,12 +132,12 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     return this.resourcer.registerActions(handlers);
   }
 
-  command(nameAndArgs: string, opts?: CommandOptions) {
-    return this.cli.command(nameAndArgs, opts);
+  command(name: string, desc?: string, opts?: CommandOptions): Command {
+    return this.cli.command(name, desc, opts);
   }
 
   findCommand(name: string): Command {
-    return (this.cli as any)._findCommand(name);
+    return this.cli._findCommand(name);
   }
 
   async load() {
