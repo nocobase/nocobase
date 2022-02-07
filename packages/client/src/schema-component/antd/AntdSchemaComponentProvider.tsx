@@ -1,6 +1,6 @@
 import React from 'react';
 import * as components from '.';
-import { SchemaComponentOptions } from '../components/SchemaComponentOptions';
+import { SchemaComponentOptions } from '../core/SchemaComponentOptions';
 
 export const AntdSchemaComponentProvider = (props) => {
   const { children } = props;
