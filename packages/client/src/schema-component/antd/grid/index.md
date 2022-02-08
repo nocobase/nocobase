@@ -5,6 +5,10 @@ group:
   path: /schema-components
 ---
 
-# Grid <Badge>待定</Badge>
+# Grid
 
 <code src="./demos/demo1.tsx" />
+
+<code src="./demos/demo2.tsx" />
+
+<code src="./demos/demo3.tsx" />

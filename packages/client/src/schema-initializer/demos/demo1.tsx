@@ -13,7 +13,7 @@ const Hello = observer((props) => {
   );
 });
 
-const InitializerButton = observer((props: any) => {
+const AddBlockButton = observer((props: any) => {
   return (
     <SchemaInitializer.Button
       wrap={(schema) => schema}
@@ -34,7 +34,7 @@ const InitializerButton = observer((props: any) => {
         },
       ]}
     >
-      Create block
+      Add block
     </SchemaInitializer.Button>
   );
 });
@@ -94,7 +94,7 @@ const FormBlockInitializerItem = (props) => {
 
 export default function App() {
   return (
-    <SchemaComponentProvider components={{ Hello, InitializerButton }}>
+    <SchemaComponentProvider components={{ Hello, AddBlockButton }}>
       <SchemaComponent
         schema={{
           type: 'void',
@@ -113,7 +113,7 @@ export default function App() {
             },
             initializer: {
               type: 'void',
-              'x-component': 'InitializerButton',
+              'x-component': 'AddBlockButton',
             },
           },
         }}

@@ -1,15 +1,68 @@
-import { observer, Schema, useFieldSchema } from '@formily/react';
+import { ISchema, observer, Schema, useFieldSchema } from '@formily/react';
+import { uid } from '@formily/shared';
 import {
   Form,
   FormItem,
+  Grid,
+  Input,
   Markdown,
   SchemaComponent,
   SchemaComponentProvider,
   SchemaInitializer,
   useDesignable
 } from '@nocobase/client';
-import { Input, Switch } from 'antd';
+import { Switch } from 'antd';
 import React from 'react';
+
+const schema: ISchema = {
+  type: 'void',
+  name: 'grid1',
+  'x-decorator': 'Form',
+  'x-component': 'Grid',
+  'x-item-initializer': 'AddGridFormItem',
+  'x-uid': uid(),
+  properties: {
+    row1: {
+      type: 'void',
+      'x-component': 'Grid.Row',
+      'x-uid': uid(),
+      properties: {
+        col11: {
+          type: 'void',
+          'x-component': 'Grid.Col',
+          properties: {
+            name: {
+              type: 'string',
+              title: 'Name',
+              'x-decorator': 'FormItem',
+              'x-component': 'Input',
+              'x-collection-field': 'posts.name',
+            },
+            title: {
+              type: 'string',
+              title: 'Title',
+              'x-decorator': 'FormItem',
+              'x-component': 'Input',
+              'x-collection-field': 'posts.title',
+            },
+          },
+        },
+        col12: {
+          type: 'void',
+          'x-component': 'Grid.Col',
+          properties: {
+            intro: {
+              type: 'string',
+              title: 'Intro',
+              'x-decorator': 'FormItem',
+              'x-component': 'Input',
+            },
+          },
+        },
+      },
+    },
+  },
+};
 
 const useFormItemInitializerFields = () => {
   return [
@@ -40,10 +93,26 @@ const useFormItemInitializerFields = () => {
   ];
 };
 
-const AddFormItemButton = observer((props: any) => {
+const gridRowColWrap = (schema: ISchema) => {
+  return {
+    type: 'void',
+    'x-component': 'Grid.Row',
+    properties: {
+      [uid()]: {
+        type: 'void',
+        'x-component': 'Grid.Col',
+        properties: {
+          [schema.name || uid()]: schema,
+        },
+      },
+    },
+  };
+};
+
+const AddGridFormItem = observer((props: any) => {
   return (
     <SchemaInitializer.Button
-      wrap={(schema) => schema}
+      wrap={gridRowColWrap}
       insertPosition={'beforeEnd'}
       items={[
         {
@@ -84,7 +153,10 @@ const useCurrentFieldSchema = (path: string) => {
     schema,
     exists: !!schema,
     remove() {
-      schema && remove(schema);
+      schema &&
+        remove(schema, {
+          removeEmptyParents: true,
+        });
     },
   };
 };
@@ -128,42 +200,10 @@ const InitializeTextFormItem = (props) => {
   );
 };
 
-const Page = (props) => {
-  return (
-    <div>
-      {props.children}
-      <AddFormItemButton />
-    </div>
-  );
-};
-
 export default function App() {
   return (
-    <SchemaComponentProvider components={{ Page, Form, Input, FormItem, Markdown }}>
-      <SchemaComponent
-        schema={{
-          type: 'void',
-          name: 'page',
-          'x-decorator': 'Form',
-          'x-component': 'Page',
-          properties: {
-            title: {
-              type: 'string',
-              title: 'Title',
-              'x-component': 'Input',
-              'x-decorator': 'FormItem',
-              'x-collection-field': 'posts.title',
-            },
-            name: {
-              type: 'string',
-              title: 'Name',
-              'x-component': 'Input',
-              'x-decorator': 'FormItem',
-              'x-collection-field': 'posts.name',
-            },
-          },
-        }}
-      />
+    <SchemaComponentProvider components={{ AddGridFormItem, Markdown, Form, Grid, Input, FormItem }}>
+      <SchemaComponent schema={schema} />
     </SchemaComponentProvider>
   );
 }
