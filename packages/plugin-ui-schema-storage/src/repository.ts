@@ -385,6 +385,34 @@ export default class UiSchemaRepository extends Repository {
     });
   }
 
+  private async insertSchemaRecord(name, uid, schema, transaction) {
+    const node = await this.create({
+      values: {
+        name,
+        uid,
+        schema,
+      },
+      transaction,
+      hooks: false,
+    });
+
+    await this.insertSchemaAttrs(node, transaction);
+    return node;
+  }
+
+  private async insertSchemaAttrs(schema, transaction) {
+    const collectionPath = schema.get('x-collection') || schema.get('x-collection-field');
+
+    if (collectionPath) {
+      await this.database.getRepository('uiSchemaAttrs').create({
+        values: {
+          uid: schema.get('uid'),
+          collectionPath: collectionPath,
+        },
+      });
+    }
+  }
+
   async insertSingleNode(schema: SchemaNode, transaction: Transaction) {
     const db = this.database;
     const treeCollection = db.getCollection('ui_schema_tree_path');
@@ -414,15 +442,7 @@ export default class UiSchemaRepository extends Repository {
     if (existsNode) {
       savedNode = existsNode;
     } else {
-      savedNode = await this.create({
-        values: {
-          name,
-          uid,
-          schema,
-        },
-        transaction,
-        hooks: false,
-      });
+      savedNode = await this.insertSchemaRecord(name, uid, schema, transaction);
     }
 
     if (childOptions) {

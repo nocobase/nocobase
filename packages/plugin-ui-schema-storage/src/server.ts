@@ -18,11 +18,11 @@ export default class PluginUiSchema extends Plugin {
 
     this.registerRepository();
 
-    db.on('ui_schemas.beforeCreate', (model) => {
+    db.on('ui_schemas.beforeCreate', function setUid(model) {
       model.set('uid', model.get('x-uid'));
     });
 
-    db.on('ui_schemas.afterCreate', async (model, options) => {
+    db.on('ui_schemas.afterCreate', async function insertSchema(model, options) {
       const { transaction } = options;
       const uiSchemaRepository = db.getCollection('ui_schemas').repository as UiSchemaRepository;
 
@@ -31,7 +31,7 @@ export default class PluginUiSchema extends Plugin {
       });
     });
 
-    db.on('ui_schemas.afterUpdate', async (model, options) => {
+    db.on('ui_schemas.afterUpdate', async function patchSchema(model, options) {
       const { transaction } = options;
       const uiSchemaRepository = db.getCollection('ui_schemas').repository as UiSchemaRepository;
 
