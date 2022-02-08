@@ -18,7 +18,7 @@ describe('server hooks', () => {
         'x-component': 'Table',
         'x-collection': 'posts',
         'x-server-hooks': {
-          afterDestroyCollection: ['aaa'],
+          afterDestroyCollection: ['onCollectionDestroy'],
         },
         properties: {
           col1: {
@@ -85,7 +85,7 @@ describe('server hooks', () => {
     expect(nodeFieldAttr.get('collectionPath')).toEqual('posts.title');
   });
 
-  it('should call server hooks', async () => {
+  it('should call server hooks afterFieldDestroy', async () => {
     const PostModel = await db.getRepository('collections').create({
       values: {
         name: 'posts',
@@ -114,6 +114,63 @@ describe('server hooks', () => {
         name: 'title',
       },
       individualHooks: true,
+    });
+
+    expect(hookFn).toHaveBeenCalled();
+  });
+
+  it('should call server hooks afterCollectionDestroy', async () => {
+    const PostModel = await db.getRepository('collections').create({
+      values: {
+        name: 'posts',
+      },
+    });
+
+    const fieldModel = await db.getRepository('fields').create({
+      values: {
+        name: 'title',
+        type: 'string',
+        collectionName: 'posts',
+      },
+    });
+
+    // @ts-ignore
+    await PostModel.migrate();
+
+    const serverHooks = uiSchemaPlugin.serverHooks;
+
+    const hookFn = jest.fn();
+
+    serverHooks.register('afterDestroyCollection', 'onCollectionDestroy', hookFn);
+
+    // destroy a field
+    await db.getRepository('collections').destroy({
+      filter: {
+        name: 'posts',
+      },
+      individualHooks: true,
+    });
+
+    expect(hookFn).toHaveBeenCalled();
+  });
+
+  it('should call server hooks afterUiSchemaCreated', async () => {
+    const menuSchema = {
+      'x-uid': 'menu',
+      'x-server-hooks': {
+        afterCreateSelf: ['afterCreateMenu'],
+      },
+    };
+
+    const serverHooks = uiSchemaPlugin.serverHooks;
+    const hookFn = jest.fn();
+
+    serverHooks.register('afterCreateSelf', 'afterCreateMenu', hookFn);
+
+    await uiSchemaRepository.create({
+      values: {
+        schema: menuSchema,
+      },
     });
 
     expect(hookFn).toHaveBeenCalled();
