@@ -3,8 +3,12 @@ import { Plugin } from '@nocobase/server';
 import path from 'path';
 import { uiSchemaActions } from './actions/ui-schema-action';
 import UiSchemaRepository from './repository';
+import { ServerHooks } from './server-hooks';
+import { UiSchemaModel } from './model';
 
 export default class PluginUiSchema extends Plugin {
+  serverHooks: ServerHooks;
+
   registerRepository() {
     this.app.db.registerRepositories({
       UiSchemaRepository,
@@ -14,9 +18,15 @@ export default class PluginUiSchema extends Plugin {
   async beforeLoad() {
     const db = this.app.db;
 
-    this.app.db.registerModels({ MagicAttributeModel });
+    this.serverHooks = new ServerHooks(db);
+
+    this.app.db.registerModels({ MagicAttributeModel, UiSchemaModel });
 
     this.registerRepository();
+
+    db.on('ui_schemas.afterDefine', (model) => {
+      model.primaryKeyAttribute = 'uid';
+    });
 
     db.on('ui_schemas.beforeCreate', function setUid(model) {
       model.set('uid', model.get('x-uid'));

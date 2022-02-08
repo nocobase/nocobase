@@ -51,7 +51,7 @@ export class CollectionModel extends MagicAttributeModel {
 
   async migrate(options?: SyncOptions & Transactionable) {
     const collection = await this.load({
-      transaction: options.transaction,
+      transaction: options?.transaction,
     });
     await collection.sync({
       force: false,

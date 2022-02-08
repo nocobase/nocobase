@@ -1,5 +1,11 @@
-import { Model } from '@nocobase/database';
+import { MagicAttributeModel } from '@nocobase/database';
+import { HookType } from './server-hooks';
 
-export class UiSchemaModel extends Model {
-  
+class UiSchemaModel extends MagicAttributeModel {
+  getListenServerHooks(type: HookType) {
+    const hooks = this.get('x-server-hooks');
+    return hooks[type] || [];
+  }
 }
+
+export { UiSchemaModel };
