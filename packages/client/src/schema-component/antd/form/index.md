@@ -15,7 +15,11 @@ group:
 
 ### Form Decorator
 
-Form 也可以作 decorator 存在，和 Action.Drawer 结合就是 DrawerForm 了。
+Form 也可以作 decorator 存在
+
+<code src="./demos/demo6.tsx"/>
+
+和 Action.Drawer 结合就是 DrawerForm 了
 
 <code src="./demos/demo1.tsx"/>
 

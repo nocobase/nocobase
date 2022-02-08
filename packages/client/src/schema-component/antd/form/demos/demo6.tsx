@@ -10,17 +10,18 @@ export default observer(() => {
     properties: {
       form1: {
         type: 'void',
-        'x-decorator': 'Card',
+        'x-decorator': 'Form',
         'x-decorator-props': {
-          title: 'Form Title',
+          initialValue: {
+            field1: 'aaa',
+          },
         },
-        'x-component': 'Form',
+        'x-component': 'Card',
         properties: {
           field1: {
             'x-component': 'Input',
             'x-decorator': 'FormItem',
             title: 'T1',
-            required: true,
           },
           out: {
             'x-component': 'Output',
@@ -47,7 +48,6 @@ export default observer(() => {
     const form = useForm();
     return {
       async run() {
-        await form.submit();
         console.log(form.values);
       },
     };

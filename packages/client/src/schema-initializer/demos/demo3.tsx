@@ -146,8 +146,8 @@ export default function App() {
         schema={{
           type: 'void',
           name: 'page',
-          'x-decorator': 'Page',
-          'x-component': 'Form',
+          'x-decorator': 'Form',
+          'x-component': 'Page',
           properties: {
             title: {
               type: 'string',
