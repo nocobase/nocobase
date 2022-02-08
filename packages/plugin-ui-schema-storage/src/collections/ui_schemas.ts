@@ -26,6 +26,12 @@ export default {
       name: 'name',
     },
     {
+      type: 'hasOne',
+      name: 'attrs',
+      target: 'uiSchemaAttrs',
+      foreignKey: 'uid',
+    },
+    {
       type: 'json',
       name: 'schema',
       defaultValue: {},
