@@ -10,7 +10,7 @@ import {
 import { Switch } from 'antd';
 import React from 'react';
 
-const ActionInitializerButton = observer((props: any) => {
+const AddActionButton = observer((props: any) => {
   return (
     <SchemaInitializer.Button
       insertPosition={'beforeEnd'}
@@ -22,7 +22,7 @@ const ActionInitializerButton = observer((props: any) => {
             {
               title: 'Create',
               key: 'create',
-              component: 'ActionInitializerItem',
+              component: InitializeAction,
               schema: {
                 title: 'Create',
                 'x-action': 'posts:create',
@@ -36,7 +36,7 @@ const ActionInitializerButton = observer((props: any) => {
                 title: 'Update',
                 'x-action': 'posts:update',
               },
-              component: 'ActionInitializerItem',
+              component: InitializeAction,
             },
           ],
         },
@@ -65,7 +65,7 @@ const useCurrentActionSchema = (action: string) => {
   };
 };
 
-const ActionInitializerItem = (props) => {
+const InitializeAction = (props) => {
   const { title, schema, insert } = props;
   const { exists, remove } = useCurrentActionSchema(schema['x-action']);
   return (
@@ -90,13 +90,13 @@ const ActionInitializerItem = (props) => {
 
 export default function App() {
   return (
-    <SchemaComponentProvider components={{ ActionBar, Action, ActionInitializerItem, ActionInitializerButton }}>
+    <SchemaComponentProvider components={{ ActionBar, Action, AddActionButton }}>
       <SchemaComponent
         schema={{
           type: 'void',
           name: 'page',
           'x-component': 'ActionBar',
-          'x-action-initializer': 'ActionInitializerButton',
+          'x-action-initializer': 'AddActionButton',
           properties: {
             action1: {
               type: 'void',
@@ -104,13 +104,6 @@ export default function App() {
               'x-action': 'posts:update',
               'x-component': 'Action',
             },
-            // action2: {
-            //   type: 'void',
-            //   title: 'Create',
-            //   'x-action': 'posts:create',
-            //   'x-align': 'left',
-            //   'x-component': 'Action',
-            // },
           },
         }}
       />

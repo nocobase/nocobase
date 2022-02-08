@@ -21,7 +21,7 @@ const useTableColumnInitializerFields = () => {
         'x-collection-field': 'posts.name',
         'x-component': 'Input',
       },
-      component: ColumnInitializer,
+      component: ColumnInitializerItem,
     },
     {
       key: 'title',
@@ -32,13 +32,13 @@ const useTableColumnInitializerFields = () => {
         'x-collection-field': 'posts.title',
         'x-component': 'Input',
       },
-      component: ColumnInitializer,
+      component: ColumnInitializerItem,
     },
   ];
   return fields;
 };
 
-export const InitializerButton = observer((props: any) => {
+export const AddTableColumn = observer((props: any) => {
   return (
     <SchemaInitializer.Button
       wrap={(schema) => schema}
@@ -80,7 +80,7 @@ const useCurrentColumnSchema = (path: string) => {
   };
 };
 
-export const ColumnInitializer = (props) => {
+export const ColumnInitializerItem = (props) => {
   const { title, schema, insert } = props;
   const { exists, remove } = useCurrentColumnSchema(schema['x-collection-field']);
   return (
@@ -120,7 +120,7 @@ const schema = {
         { id: 3, name: 'Name3' },
       ],
       'x-component': 'ArrayTable',
-      'x-column-initializer': 'InitializerButton',
+      'x-column-initializer': 'AddTableColumn',
       'x-component-props': {
         rowKey: 'id',
       },
@@ -145,7 +145,7 @@ const schema = {
 
 export default function App() {
   return (
-    <SchemaComponentProvider components={{ InitializerButton, Input, ArrayTable }}>
+    <SchemaComponentProvider components={{ AddTableColumn, Input, ArrayTable }}>
       <SchemaComponent schema={schema} />
     </SchemaComponentProvider>
   );
