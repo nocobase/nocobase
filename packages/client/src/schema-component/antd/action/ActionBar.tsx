@@ -5,7 +5,7 @@ import { useComponent } from '../../hooks';
 
 export const ActionBar = () => {
   const fieldSchema = useFieldSchema();
-  const Initializer = useComponent(fieldSchema['x-initializer']);
+  const ActionInitializer = useComponent(fieldSchema['x-action-initializer']);
   return (
     <div style={{ display: 'flex', justifyContent: 'space-between' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', width: '100%' }}>
@@ -26,7 +26,7 @@ export const ActionBar = () => {
           })}
         </Space>
       </div>
-      {Initializer && <Initializer />}
+      {ActionInitializer && <ActionInitializer />}
     </div>
   );
 };
