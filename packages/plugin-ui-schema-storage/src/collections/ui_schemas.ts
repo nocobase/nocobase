@@ -6,7 +6,7 @@ export default {
   autoGenId: false,
   timestamps: false,
   repository: 'UiSchemaRepository',
-  model: 'MagicAttributeModel',
+  model: 'UiSchemaModel',
   magicAttribute: 'schema',
   fields: [
     {

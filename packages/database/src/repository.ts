@@ -214,18 +214,20 @@ export class Repository<TModelAttributes extends {} = any, TCreationAttributes e
     };
 
     if (opts.include && opts.include.length > 0) {
+      // @ts-ignore
+      const primaryKeyField = model.primaryKeyField || model.primaryKeyAttribute;
       const ids = (
         await model.findAll({
           ...opts,
           includeIgnoreAttributes: false,
-          attributes: [model.primaryKeyAttribute],
-          group: `${model.name}.${model.primaryKeyAttribute}`,
+          attributes: [primaryKeyField],
+          group: `${model.name}.${primaryKeyField}`,
           transaction,
         })
-      ).map((row) => row.get(model.primaryKeyAttribute));
+      ).map((row) => row.get(primaryKeyField));
 
       const where = {
-        [model.primaryKeyAttribute]: {
+        [primaryKeyField]: {
           [Op.in]: ids,
         },
       };
@@ -415,7 +417,7 @@ export class Repository<TModelAttributes extends {} = any, TCreationAttributes e
       }
 
       return await this.destroy({
-        context: options.context,
+        ...lodash.omit(options, 'filter'),
         filterByTk: pks,
         transaction,
       });
