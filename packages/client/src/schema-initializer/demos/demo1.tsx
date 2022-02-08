@@ -20,13 +20,16 @@ const AddBlockButton = observer((props: any) => {
       insertPosition={'beforeBegin'}
       items={[
         {
+          type: 'itemGroup',
           title: 'Data blocks',
           children: [
             {
+              type: 'item',
               title: 'Table',
               component: TableBlockInitializerItem,
             },
             {
+              type: 'item',
               title: 'Form',
               component: FormBlockInitializerItem,
             },
@@ -39,58 +42,56 @@ const AddBlockButton = observer((props: any) => {
   );
 });
 
-const TableBlockInitializerItem = (props) => {
+const TableBlockInitializerItem = SchemaInitializer.itemWrap((props) => {
   const { insert } = props;
+  const items: any = [
+    {
+      type: 'itemGroup',
+      title: 'select a data source',
+      children: [
+        {
+          type: 'item',
+          title: 'Users',
+        },
+        {
+          type: 'item',
+          title: 'Posts',
+        },
+      ],
+    },
+  ];
   return (
     <SchemaInitializer.Item
       icon={<TableOutlined />}
-      onClick={(info) => {
-        console.log({ info });
+      items={items}
+      onClick={({ item }) => {
+        // 如果有 items 时，onClick 里会返回点击的 item
+        // TODO: 实际情况，这里还需要补充更完整的初始化逻辑
         insert({
           type: 'void',
-          title: info.key,
+          title: item.title,
           'x-component': 'Hello',
         });
       }}
-      items={[
-        {
-          type: 'itemGroup',
-          title: 'select a data source',
-          children: [
-            {
-              key: 'users',
-              title: 'Users',
-            },
-            {
-              key: 'posts',
-              title: 'Posts',
-            },
-          ],
-        },
-      ]}
-    >
-      Table
-    </SchemaInitializer.Item>
+    />
   );
-};
+});
 
-const FormBlockInitializerItem = (props) => {
+const FormBlockInitializerItem = SchemaInitializer.itemWrap((props) => {
   const { insert } = props;
   return (
     <SchemaInitializer.Item
       icon={<FormOutlined />}
-      onClick={(info) => {
+      onClick={() => {
         insert({
           type: 'void',
-          title: 'form',
+          title: 'Form',
           'x-component': 'Hello',
         });
       }}
-    >
-      Form
-    </SchemaInitializer.Item>
+    />
   );
-};
+});
 
 export default function App() {
   return (

@@ -1,15 +1,21 @@
-import { observer, Schema } from '@formily/react';
+import { ISchema, observer } from '@formily/react';
 import { useDesignable } from '@nocobase/client';
 import { Button, Dropdown, Menu } from 'antd';
 import React, { createContext, useContext, useState } from 'react';
+import {
+  SchemaInitializerButtonProps,
+  SchemaInitializerItemComponent,
+  SchemaInitializerItemOptions,
+  SchemaInitializerItemProps
+} from './types';
 
-const defaultWrap = (s: Schema) => s;
+const defaultWrap = (s: ISchema) => s;
 
 export const SchemaInitializerItemContext = createContext(null);
 
 export const SchemaInitializer = () => null;
 
-SchemaInitializer.Button = observer((props: any) => {
+SchemaInitializer.Button = observer((props: SchemaInitializerButtonProps) => {
   const { wrap = defaultWrap, items = [], insertPosition, dropdown, ...others } = props;
   const { insertAdjacent, findComponent } = useDesignable();
   const [visible, setVisible] = useState(false);
@@ -20,7 +26,7 @@ SchemaInitializer.Button = observer((props: any) => {
         if (item.type === 'divider') {
           return <Menu.Divider key={`item-${indexA}`} />;
         }
-        if (item.component) {
+        if (item.type === 'item' && item.component) {
           const Component = findComponent(item.component);
           return (
             Component && (
@@ -37,6 +43,7 @@ SchemaInitializer.Button = observer((props: any) => {
               >
                 <Component
                   {...item}
+                  item={item}
                   insert={(schema) => {
                     insertAdjacent(insertPosition, wrap(schema));
                   }}
@@ -68,6 +75,7 @@ SchemaInitializer.Button = observer((props: any) => {
                     >
                       <Component
                         {...child}
+                        item={child}
                         insert={(schema) => {
                           insertAdjacent(insertPosition, wrap(schema));
                         }}
@@ -97,18 +105,22 @@ SchemaInitializer.Button = observer((props: any) => {
   );
 });
 
-SchemaInitializer.Item = (props) => {
-  const { items = [], children, icon, onClick, ...others } = props;
+SchemaInitializer.Item = (props: SchemaInitializerItemProps) => {
   const { index, info } = useContext(SchemaInitializerItemContext);
+  const { items = [], children = info?.title, icon, onClick, ...others } = props;
   if (items?.length > 0) {
-    const renderMenuItem = (items) => {
+    const renderMenuItem = (items: SchemaInitializerItemOptions[]) => {
       if (!items?.length) {
         return null;
       }
       return items.map((item, indexA) => {
+        if (item.type === 'divider') {
+          return <Menu.Divider key={`divider-${indexA}`} />;
+        }
         if (item.type === 'itemGroup') {
           return (
-            <Menu.ItemGroup eventKey={indexA} key={indexA} title={item.title}>
+            // @ts-ignore
+            <Menu.ItemGroup eventKey={`item-group-${indexA}`} key={`item-group-${indexA}`} title={item.title}>
               {renderMenuItem(item.children)}
             </Menu.ItemGroup>
           );
@@ -116,13 +128,19 @@ SchemaInitializer.Item = (props) => {
         if (item.type === 'subMenu') {
           return (
             // @ts-ignore
-            <Menu.SubMenu eventKey={indexA} key={indexA} title={item.title}>
+            <Menu.SubMenu eventKey={`sub-menu-${indexA}`} key={`sub-menu-${indexA}`} title={item.title}>
               {renderMenuItem(item.children)}
             </Menu.SubMenu>
           );
         }
         return (
-          <Menu.Item eventKey={item.key} key={item.key} onClick={onClick}>
+          <Menu.Item
+            eventKey={item.key}
+            key={item.key}
+            onClick={(info) => {
+              onClick({ ...info, item });
+            }}
+          >
             {item.title}
           </Menu.Item>
         );
@@ -136,8 +154,19 @@ SchemaInitializer.Item = (props) => {
     );
   }
   return (
-    <Menu.Item eventKey={info.key || index} icon={icon} onClick={onClick} {...others}>
+    <Menu.Item
+      eventKey={index}
+      icon={icon}
+      onClick={(opts) => {
+        onClick({ ...opts, item: info });
+      }}
+      {...others}
+    >
       {children}
     </Menu.Item>
   );
+};
+
+SchemaInitializer.itemWrap = (component?: SchemaInitializerItemComponent) => {
+  return component;
 };

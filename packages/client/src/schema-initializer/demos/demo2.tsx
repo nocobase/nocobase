@@ -17,11 +17,12 @@ const AddActionButton = observer((props: any) => {
       style={{ marginLeft: 8 }}
       items={[
         {
+          type: 'itemGroup',
           title: 'Enable actions',
           children: [
             {
+              type: 'item',
               title: 'Create',
-              key: 'create',
               component: InitializeAction,
               schema: {
                 title: 'Create',
@@ -30,13 +31,13 @@ const AddActionButton = observer((props: any) => {
               },
             },
             {
+              type: 'item',
               title: 'Update',
-              key: 'update',
+              component: InitializeAction,
               schema: {
                 title: 'Update',
                 'x-action': 'posts:update',
               },
-              component: InitializeAction,
             },
           ],
         },
@@ -65,28 +66,28 @@ const useCurrentActionSchema = (action: string) => {
   };
 };
 
-const InitializeAction = (props) => {
-  const { title, schema, insert } = props;
-  const { exists, remove } = useCurrentActionSchema(schema['x-action']);
+const InitializeAction = SchemaInitializer.itemWrap((props) => {
+  const { item, insert } = props;
+  const { exists, remove } = useCurrentActionSchema(item.schema['x-action']);
   return (
     <SchemaInitializer.Item
-      onClick={(info) => {
+      onClick={() => {
         if (exists) {
           return remove();
         }
         insert({
           type: 'void',
           'x-component': 'Action',
-          ...schema,
+          ...item.schema,
         });
       }}
     >
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-        {title} <Switch size={'small'} checked={exists} />
+        {item.title} <Switch size={'small'} checked={exists} />
       </div>
     </SchemaInitializer.Item>
   );
-};
+});
 
 export default function App() {
   return (
@@ -96,11 +97,15 @@ export default function App() {
           type: 'void',
           name: 'page',
           'x-component': 'ActionBar',
+          // 指定初始化的按钮组件，
+          // Table、Form、Details、Calendar、Kanban 等等不同区块
+          // 可以根据情况组装自己的 initializer
           'x-action-initializer': 'AddActionButton',
           properties: {
             action1: {
               type: 'void',
               title: 'Update',
+              // 使用 x-action 来标记 action schema
               'x-action': 'posts:update',
               'x-component': 'Action',
             },
