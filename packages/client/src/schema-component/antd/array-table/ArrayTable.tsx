@@ -11,7 +11,7 @@ const isColumnComponent = (schema: Schema) => {
 const useTableColumns = () => {
   const field = useField<ArrayField>();
   const schema = useFieldSchema();
-  const Initializer = useComponent(schema['x-initializer']);
+  const Initializer = useComponent(schema['x-column-initializer']);
   const columns = schema
     .reduceProperties((buf, s) => {
       if (isColumnComponent(s)) {

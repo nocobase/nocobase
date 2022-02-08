@@ -24,11 +24,11 @@ const InitializerButton = observer((props: any) => {
           children: [
             {
               title: 'Table',
-              component: 'TableBlockInitializer',
+              component: TableBlockInitializerItem,
             },
             {
               title: 'Form',
-              component: 'FormBlockInitializer',
+              component: FormBlockInitializerItem,
             },
           ],
         },
@@ -39,7 +39,7 @@ const InitializerButton = observer((props: any) => {
   );
 });
 
-const TableBlockInitializer = (props) => {
+const TableBlockInitializerItem = (props) => {
   const { insert } = props;
   return (
     <SchemaInitializer.Item
@@ -74,7 +74,7 @@ const TableBlockInitializer = (props) => {
   );
 };
 
-const FormBlockInitializer = (props) => {
+const FormBlockInitializerItem = (props) => {
   const { insert } = props;
   return (
     <SchemaInitializer.Item
@@ -94,7 +94,7 @@ const FormBlockInitializer = (props) => {
 
 export default function App() {
   return (
-    <SchemaComponentProvider components={{ Hello, InitializerButton, TableBlockInitializer, FormBlockInitializer }}>
+    <SchemaComponentProvider components={{ Hello, InitializerButton }}>
       <SchemaComponent
         schema={{
           type: 'void',

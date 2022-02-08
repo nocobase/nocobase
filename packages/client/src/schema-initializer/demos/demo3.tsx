@@ -1,33 +1,46 @@
-import { Field } from '@formily/core';
-import { observer, useField } from '@formily/react';
-import { SchemaComponent, SchemaComponentProvider, SchemaInitializer } from '@nocobase/client';
+import { observer, Schema, useFieldSchema } from '@formily/react';
+import {
+  Form,
+  FormItem,
+  Markdown,
+  SchemaComponent,
+  SchemaComponentProvider,
+  SchemaInitializer,
+  useDesignable
+} from '@nocobase/client';
+import { Input, Switch } from 'antd';
 import React from 'react';
-
-const Hello = observer((props) => {
-  const field = useField<Field>();
-  return (
-    <div style={{ marginBottom: 20, padding: '0 20px', height: 50, lineHeight: '50px', background: '#f1f1f1' }}>
-      {field.title}
-    </div>
-  );
-});
 
 const useFormItemInitializerFields = () => {
   return [
     {
-      key: 'field1',
-      title: 'Field1',
+      key: 'name',
+      title: 'Name',
       component: 'FormItemInitializer',
+      schema: {
+        type: 'string',
+        title: 'Name',
+        'x-component': 'Input',
+        'x-decorator': 'FormItem',
+        'x-collection-field': 'posts.name',
+      },
     },
     {
-      key: 'field2',
-      title: 'Field2',
+      key: 'title',
+      title: 'Title',
       component: 'FormItemInitializer',
+      schema: {
+        type: 'string',
+        title: 'Title',
+        'x-component': 'Input',
+        'x-decorator': 'FormItem',
+        'x-collection-field': 'posts.title',
+      },
     },
   ];
 };
 
-const InitializerButton = observer((props: any) => {
+const FormItemInitializerButton = observer((props: any) => {
   return (
     <SchemaInitializer.Button
       wrap={(schema) => schema}
@@ -51,19 +64,48 @@ const InitializerButton = observer((props: any) => {
   );
 });
 
+const useCurrentFieldSchema = (path: string) => {
+  const fieldSchema = useFieldSchema();
+  const { remove } = useDesignable();
+  const findFieldSchema = (schema: Schema) => {
+    return schema.reduceProperties((buf, s) => {
+      if (s['x-collection-field'] === path) {
+        return s;
+      }
+      const child = findFieldSchema(s);
+      if (child) {
+        return child;
+      }
+      return buf;
+    });
+  };
+  const schema = findFieldSchema(fieldSchema);
+  return {
+    schema,
+    exists: !!schema,
+    remove() {
+      schema && remove(schema);
+    },
+  };
+};
+
 const FormItemInitializer = (props) => {
-  const { title, insert } = props;
+  const { title, schema, insert } = props;
+  const { exists, remove } = useCurrentFieldSchema(schema['x-collection-field']);
   return (
     <SchemaInitializer.Item
-      onClick={(info) => {
+      onClick={() => {
+        if (exists) {
+          return remove();
+        }
         insert({
-          type: 'void',
-          title: info.key,
-          'x-component': 'Hello',
+          ...schema,
         });
       }}
     >
-      {title}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        {title} <Switch size={'small'} checked={exists} />
+      </div>
     </SchemaInitializer.Item>
   );
 };
@@ -75,8 +117,9 @@ const AddTextFormItemInitializer = (props) => {
       onClick={(info) => {
         insert({
           type: 'void',
-          title: 'Text',
-          'x-component': 'Hello',
+          'x-component': 'Markdown.Void',
+          'x-decorator': 'FormItem',
+          // 'x-editable': false,
         });
       }}
     >
@@ -89,7 +132,7 @@ const Page = (props) => {
   return (
     <div>
       {props.children}
-      <InitializerButton />
+      <FormItemInitializerButton />
     </div>
   );
 };
@@ -97,23 +140,28 @@ const Page = (props) => {
 export default function App() {
   return (
     <SchemaComponentProvider
-      components={{ Page, Hello, InitializerButton, FormItemInitializer, AddTextFormItemInitializer }}
+      components={{ Page, Form, Input, FormItem, Markdown, FormItemInitializer, AddTextFormItemInitializer }}
     >
       <SchemaComponent
         schema={{
           type: 'void',
           name: 'page',
-          'x-component': 'Page',
+          'x-decorator': 'Page',
+          'x-component': 'Form',
           properties: {
-            hello1: {
-              type: 'void',
-              title: 'Test1',
-              'x-component': 'Hello',
+            title: {
+              type: 'string',
+              title: 'Title',
+              'x-component': 'Input',
+              'x-decorator': 'FormItem',
+              'x-collection-field': 'posts.title',
             },
-            hello2: {
-              type: 'void',
-              title: 'Test2',
-              'x-component': 'Hello',
+            name: {
+              type: 'string',
+              title: 'Name',
+              'x-component': 'Input',
+              'x-decorator': 'FormItem',
+              'x-collection-field': 'posts.name',
             },
           },
         }}

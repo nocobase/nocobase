@@ -1,18 +1,38 @@
-import { observer } from '@formily/react';
-import { ArrayTable, Input, SchemaComponent, SchemaComponentProvider, SchemaInitializer } from '@nocobase/client';
+import { observer, Schema, useFieldSchema } from '@formily/react';
+import {
+  ArrayTable,
+  Input,
+  SchemaComponent,
+  SchemaComponentProvider,
+  SchemaInitializer,
+  useDesignable
+} from '@nocobase/client';
+import { Switch } from 'antd';
 import React from 'react';
 
 const useTableColumnInitializerFields = () => {
   const fields = [
     {
-      key: 'field1',
-      title: 'Field1',
+      key: 'name',
+      title: 'Name',
+      schema: {
+        type: 'string',
+        name: 'name',
+        'x-collection-field': 'posts.name',
+        'x-component': 'Input',
+      },
       component: ColumnInitializer,
     },
     {
-      key: 'field2',
-      title: 'Field2',
-      component: 'ColumnInitializer',
+      key: 'title',
+      title: 'Title',
+      schema: {
+        type: 'string',
+        name: 'title',
+        'x-collection-field': 'posts.title',
+        'x-component': 'Input',
+      },
+      component: ColumnInitializer,
     },
   ];
   return fields;
@@ -35,26 +55,56 @@ export const InitializerButton = observer((props: any) => {
   );
 });
 
+const useCurrentColumnSchema = (path: string) => {
+  const fieldSchema = useFieldSchema();
+  const { remove } = useDesignable();
+  const findFieldSchema = (schema: Schema) => {
+    return schema.reduceProperties((buf, s) => {
+      if (s['x-collection-field'] === path) {
+        return s;
+      }
+      const child = findFieldSchema(s);
+      if (child) {
+        return child;
+      }
+      return buf;
+    });
+  };
+  const schema = findFieldSchema(fieldSchema);
+  return {
+    schema,
+    exists: !!schema,
+    remove() {
+      schema && remove(schema.parent);
+    },
+  };
+};
+
 export const ColumnInitializer = (props) => {
-  const { title, insert } = props;
+  const { title, schema, insert } = props;
+  const { exists, remove } = useCurrentColumnSchema(schema['x-collection-field']);
   return (
     <SchemaInitializer.Item
-      onClick={(info) => {
+      onClick={() => {
+        if (exists) {
+          return remove();
+        }
         insert({
           type: 'void',
-          title: 'Name',
+          title: schema.name,
           'x-component': 'ArrayTable.Column',
           properties: {
-            name: {
-              type: 'string',
-              'x-component': 'Input',
+            [schema.name]: {
               'x-read-pretty': true,
+              ...schema,
             },
           },
         });
       }}
     >
-      {title}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        {title} <Switch size={'small'} checked={exists} />
+      </div>
     </SchemaInitializer.Item>
   );
 };
@@ -70,7 +120,7 @@ const schema = {
         { id: 3, name: 'Name3' },
       ],
       'x-component': 'ArrayTable',
-      'x-initializer': 'InitializerButton',
+      'x-column-initializer': 'InitializerButton',
       'x-component-props': {
         rowKey: 'id',
       },
@@ -83,6 +133,7 @@ const schema = {
             name: {
               type: 'string',
               'x-component': 'Input',
+              'x-collection-field': 'posts.name',
               'x-read-pretty': true,
             },
           },
@@ -94,7 +145,7 @@ const schema = {
 
 export default function App() {
   return (
-    <SchemaComponentProvider components={{ ColumnInitializer, Input, ArrayTable, InitializerButton }}>
+    <SchemaComponentProvider components={{ InitializerButton, Input, ArrayTable }}>
       <SchemaComponent schema={schema} />
     </SchemaComponentProvider>
   );
