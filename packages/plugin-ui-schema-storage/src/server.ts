@@ -24,10 +24,6 @@ export default class PluginUiSchema extends Plugin {
 
     this.registerRepository();
 
-    db.on('ui_schemas.afterDefine', (model) => {
-      model.primaryKeyAttribute = 'uid';
-    });
-
     db.on('ui_schemas.beforeCreate', function setUid(model) {
       model.set('uid', model.get('x-uid'));
     });

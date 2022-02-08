@@ -1,7 +1,7 @@
 import { Database } from '@nocobase/database';
 import { UiSchemaModel } from '../model';
 
-export type HookType = 'afterDestroyField';
+export type HookType = 'afterDestroyField' | 'afterDestroyCollection' | 'afterCreateSelf';
 
 export class ServerHooks {
   hooks = new Map<HookType, Map<string, any>>();
@@ -14,6 +14,53 @@ export class ServerHooks {
     this.db.on('fields.afterDestroy', async (model, options) => {
       await this.afterFieldDestroy(model, options);
     });
+
+    this.db.on('collections.afterDestroy', async (model, options) => {
+      await this.afterCollectionDestroy(model, options);
+    });
+
+    this.db.on('ui_schemas.afterCreate', async (model, options) => {
+      await this.afterUiSchemaCreated(model, options);
+    });
+  }
+
+  protected async afterUiSchemaCreated(uiSchemaModel, options) {
+    const { transaction } = options;
+    const listenHooksName = uiSchemaModel.getListenServerHooks('afterCreateSelf');
+
+    for (const listenHookName of listenHooksName) {
+      const hookFunc = this.hooks.get('afterCreateSelf')?.get(listenHookName);
+
+      await hookFunc({
+        model: uiSchemaModel,
+        transaction,
+      });
+    }
+  }
+
+  protected async afterCollectionDestroy(collectionModel, options) {
+    const { transaction } = options;
+
+    const collectionPath = collectionModel.get('name');
+
+    const listenSchemas = (await this.db.getRepository('ui_schemas').find({
+      filter: {
+        'attrs.collectionPath': collectionPath,
+      },
+      transaction,
+    })) as UiSchemaModel[];
+
+    for (const listenSchema of listenSchemas) {
+      const listenHooksName = listenSchema.getListenServerHooks('afterDestroyCollection');
+      for (const listenHookName of listenHooksName) {
+        const hookFunc = this.hooks.get('afterDestroyCollection')?.get(listenHookName);
+
+        await hookFunc({
+          model: listenSchema,
+          transaction,
+        });
+      }
+    }
   }
 
   protected async afterFieldDestroy(fieldModel, options) {
@@ -32,6 +79,7 @@ export class ServerHooks {
       const listenHooksName = listenSchema.getListenServerHooks('afterDestroyField');
       for (const listenHookName of listenHooksName) {
         const hookFunc = this.hooks.get('afterDestroyField')?.get(listenHookName);
+
         await hookFunc({
           model: listenSchema,
           transaction,
