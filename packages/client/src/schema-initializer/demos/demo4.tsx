@@ -5,15 +5,16 @@ import {
   SchemaComponent,
   SchemaComponentProvider,
   SchemaInitializer,
+  SchemaInitializerItemOptions,
   useDesignable
 } from '@nocobase/client';
 import { Switch } from 'antd';
 import React from 'react';
 
 const useTableColumnInitializerFields = () => {
-  const fields = [
+  const fields: SchemaInitializerItemOptions[] = [
     {
-      key: 'name',
+      type: 'item',
       title: 'Name',
       schema: {
         type: 'string',
@@ -24,7 +25,7 @@ const useTableColumnInitializerFields = () => {
       component: ColumnInitializerItem,
     },
     {
-      key: 'title',
+      type: 'item',
       title: 'Title',
       schema: {
         type: 'string',
@@ -45,6 +46,7 @@ export const AddTableColumn = observer((props: any) => {
       insertPosition={'beforeEnd'}
       items={[
         {
+          type: 'itemGroup',
           title: 'Display fields',
           children: useTableColumnInitializerFields(),
         },
@@ -80,9 +82,9 @@ const useCurrentColumnSchema = (path: string) => {
   };
 };
 
-export const ColumnInitializerItem = (props) => {
-  const { title, schema, insert } = props;
-  const { exists, remove } = useCurrentColumnSchema(schema['x-collection-field']);
+export const ColumnInitializerItem = SchemaInitializer.itemWrap((props) => {
+  const { item, insert } = props;
+  const { exists, remove } = useCurrentColumnSchema(item.schema['x-collection-field']);
   return (
     <SchemaInitializer.Item
       onClick={() => {
@@ -91,23 +93,23 @@ export const ColumnInitializerItem = (props) => {
         }
         insert({
           type: 'void',
-          title: schema.name,
+          title: item.schema.name,
           'x-component': 'ArrayTable.Column',
           properties: {
-            [schema.name]: {
+            [item.schema.name]: {
               'x-read-pretty': true,
-              ...schema,
+              ...item.schema,
             },
           },
         });
       }}
     >
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-        {title} <Switch size={'small'} checked={exists} />
+        {item.title} <Switch size={'small'} checked={exists} />
       </div>
     </SchemaInitializer.Item>
   );
-};
+});
 
 const schema = {
   type: 'object',

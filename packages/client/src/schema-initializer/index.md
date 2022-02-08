@@ -7,7 +7,25 @@ group:
 
 # SchemaInitializer
 
-用于配置各种 schema 的初始化
+用于各种 schema 的初始化。新增的 schema 可以插入到某个已有 schema 节点的任意位置，包括：
+
+```ts
+{
+  properties: {
+    // beforeBegin 在当前节点的前面插入
+    node1: {
+      properties: {
+        // afterBegin 在当前节点的第一个子节点前面插入
+        // ...
+        // beforeEnd 在当前节点的最后一个子节点后面
+      },
+    },
+    // afterEnd 在当前节点的后面
+  },
+}
+```
+
+SchemaInitializer 的核心包括 `<SchemaInitializer.Button/>` 和 `<SchemaInitializer.Item/>` 两个组件。`<SchemaInitializer.Button/>` 是用于创建 Schema 的 Dropdown 按钮，按钮有上下文，表示新增的 schema 要插入的位置，可以通过 `insertPosition` 属性来指定插入的具体位置。下拉菜单里的为 `<SchemaInitializer.Item/>`，用于自定义各种 schema 的初始化逻辑，schema 可以是区块、字段、操作等。
 
 ## SchemaInitializer.Button
 
@@ -16,13 +34,16 @@ group:
 ```tsx | pure
 const items = [
   {
+    type: 'itemGroup',
     title: 'Data blocks',
     children: [
       {
+        type: 'item',
         title: 'Table',
         component: 'TableBlockInitializerItem',
       },
       {
+        type: 'item',
         title: 'Form',
         component: 'FormBlockInitializerItem',
       },
@@ -51,8 +72,9 @@ const useFormItemInitializerFields = () => {
   const { fields } = useCollection();
   return fields.map(field => {
     return {
-      key: field.name,
-      component: 'FormItemInitializerItem'
+      type: 'item',
+      component: 'FormItemInitializerItem',
+      schema: {}, // TODO, 例如从 field.uiSchema 里获取
     }
   });
 }
@@ -77,43 +99,38 @@ export const AddFieldButton = () => {
 
 ## SchemaInitializer.Item
 
-扩展项
+用于自定义各种 schema 的初始化逻辑，配合 `SchemaInitializer.itemWrap()` 可获得更好的类型提示。
+
+`<SchemaInitializer.Button/>` 的下拉菜单项，items 属性里 type 为 item 的 component）：
+
+```ts
+{
+  type: 'item',
+  title: 'Table',
+  component: 'TableBlockInitializerItem',
+}
+```
+
+例子如下：
 
 ```tsx | pure
-const TableBlockInitializerItem = (props) => {
+const TableBlockInitializerItem = SchemaInitializer.itemWrap((props) => {
   const { insert } = props;
   return (
     <SchemaInitializer.Item
       icon={<TableOutlined />}
-      onClick={(info) => {
-        console.log({ info });
+      onClick={() => {
+        // 插入的 schema，在这里补充更完整的逻辑
         insert({
           type: 'void',
-          title: info.key,
-          'x-component': 'Hello',
+          'x-component': 'Table',
         });
       }}
-      items={[
-        {
-          type: 'itemGroup',
-          title: 'select a data source',
-          children: [
-            {
-              key: 'users',
-              title: 'Users',
-            },
-            {
-              key: 'posts',
-              title: 'Posts',
-            },
-          ],
-        },
-      ]}
     >
       Table
     </SchemaInitializer.Item>
   );
-};
+});
 ```
 
 ## Examples

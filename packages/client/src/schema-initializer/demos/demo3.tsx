@@ -6,6 +6,7 @@ import {
   SchemaComponent,
   SchemaComponentProvider,
   SchemaInitializer,
+  SchemaInitializerItemOptions,
   useDesignable
 } from '@nocobase/client';
 import { Input, Switch } from 'antd';
@@ -14,7 +15,7 @@ import React from 'react';
 const useFormItemInitializerFields = () => {
   return [
     {
-      key: 'name',
+      type: 'item',
       title: 'Name',
       component: InitializeFormItem,
       schema: {
@@ -26,7 +27,7 @@ const useFormItemInitializerFields = () => {
       },
     },
     {
-      key: 'title',
+      type: 'item',
       title: 'Title',
       component: InitializeFormItem,
       schema: {
@@ -37,7 +38,7 @@ const useFormItemInitializerFields = () => {
         'x-collection-field': 'posts.title',
       },
     },
-  ];
+  ] as SchemaInitializerItemOptions[];
 };
 
 const AddFormItemButton = observer((props: any) => {
@@ -47,6 +48,7 @@ const AddFormItemButton = observer((props: any) => {
       insertPosition={'beforeEnd'}
       items={[
         {
+          type: 'itemGroup',
           title: 'Display fields',
           children: useFormItemInitializerFields(),
         },
@@ -54,6 +56,7 @@ const AddFormItemButton = observer((props: any) => {
           type: 'divider',
         },
         {
+          type: 'item',
           title: 'Add text',
           component: InitializeTextFormItem,
         },
@@ -89,9 +92,9 @@ const useCurrentFieldSchema = (path: string) => {
   };
 };
 
-const InitializeFormItem = (props) => {
-  const { title, schema, insert } = props;
-  const { exists, remove } = useCurrentFieldSchema(schema['x-collection-field']);
+const InitializeFormItem = SchemaInitializer.itemWrap((props) => {
+  const { item, insert } = props;
+  const { exists, remove } = useCurrentFieldSchema(item.schema['x-collection-field']);
   return (
     <SchemaInitializer.Item
       onClick={() => {
@@ -99,22 +102,22 @@ const InitializeFormItem = (props) => {
           return remove();
         }
         insert({
-          ...schema,
+          ...item.schema,
         });
       }}
     >
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-        {title} <Switch size={'small'} checked={exists} />
+        {item.title} <Switch size={'small'} checked={exists} />
       </div>
     </SchemaInitializer.Item>
   );
-};
+});
 
-const InitializeTextFormItem = (props) => {
-  const { title, insert } = props;
+const InitializeTextFormItem = SchemaInitializer.itemWrap((props) => {
+  const { insert } = props;
   return (
     <SchemaInitializer.Item
-      onClick={(info) => {
+      onClick={() => {
         insert({
           type: 'void',
           'x-component': 'Markdown.Void',
@@ -122,11 +125,9 @@ const InitializeTextFormItem = (props) => {
           // 'x-editable': false,
         });
       }}
-    >
-      {title}
-    </SchemaInitializer.Item>
+    />
   );
-};
+});
 
 const Page = (props) => {
   return (
