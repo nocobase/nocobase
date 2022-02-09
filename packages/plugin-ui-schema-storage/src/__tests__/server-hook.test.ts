@@ -178,11 +178,7 @@ describe('server hooks', () => {
       ],
     };
 
-    await uiSchemaRepository.create({
-      values: {
-        schema: menuSchema,
-      },
-    });
+    await uiSchemaRepository.insert(menuSchema);
 
     const PostModel = await db.getRepository('collections').create({
       values: {
