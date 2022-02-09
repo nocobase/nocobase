@@ -5,30 +5,33 @@ import React, { createContext, useContext } from 'react';
 export const DraggableContext = createContext(null);
 
 export const Sortable = (props: any) => {
+  const { id, data, style, children, ...others } = props;
   const draggable = useDraggable({
-    id: props.id,
-    data: props.data,
+    id,
+    data,
   });
 
   const { isOver, setNodeRef } = useDroppable({
-    id: props.id,
-    data: props.data,
+    id,
+    data,
   });
 
-  const droppableStyle = {
-    color: isOver ? 'green' : undefined,
-  };
+  const droppableStyle = { ...style };
+
+  if (isOver) {
+    droppableStyle['color'] = 'green';
+  }
 
   return (
     <DraggableContext.Provider value={draggable}>
-      <div ref={setNodeRef} style={droppableStyle}>
-        {props.children}
+      <div {...others} ref={setNodeRef} style={droppableStyle}>
+        {children}
       </div>
     </DraggableContext.Provider>
   );
 };
 
-export const SortableItem = observer((props) => {
+export const SortableItem: React.FC<any> = observer((props) => {
   const field = useField();
   const fieldSchema = useFieldSchema();
   const onInsertAdjacent = ({ dn, orginDraggedParentSchema }) => {
@@ -38,6 +41,7 @@ export const SortableItem = observer((props) => {
   };
   return (
     <Sortable
+      {...props}
       id={field.address.toString()}
       data={{ insertAdjacent: 'afterEnd', onInsertAdjacent, schema: fieldSchema }}
     >

@@ -51,15 +51,16 @@ const AddGridBlockItem = observer((props: any) => {
       insertPosition={'beforeEnd'}
       items={[
         {
+          type: 'itemGroup',
           title: 'Data blocks',
           children: [
             {
-              key: 'table',
+              type: 'item',
               title: 'Table',
               component: TableBlockInitializerItem,
             },
             {
-              key: 'form',
+              type: 'item',
               title: 'Form',
               component: FormBlockInitializerItem,
             },
@@ -72,12 +73,14 @@ const AddGridBlockItem = observer((props: any) => {
   );
 });
 
-const TableBlockInitializerItem = (props) => {
+const itemWrap = SchemaInitializer.itemWrap;
+
+const TableBlockInitializerItem = itemWrap((props) => {
   const { insert } = props;
   return (
     <SchemaInitializer.Item
       icon={<TableOutlined />}
-      onClick={(info) => {
+      onClick={() => {
         insert({
           type: 'void',
           'x-component': 'VoidTable',
@@ -90,11 +93,13 @@ const TableBlockInitializerItem = (props) => {
           title: 'select a data source',
           children: [
             {
-              key: 'users',
+              type: 'item',
+              name: 'users',
               title: 'Users',
             },
             {
-              key: 'posts',
+              type: 'item',
+              name: 'posts',
               title: 'Posts',
             },
           ],
@@ -104,14 +109,14 @@ const TableBlockInitializerItem = (props) => {
       Table
     </SchemaInitializer.Item>
   );
-};
+});
 
-const FormBlockInitializerItem = (props) => {
+const FormBlockInitializerItem = itemWrap((props) => {
   const { insert } = props;
   return (
     <SchemaInitializer.Item
       icon={<FormOutlined />}
-      onClick={(info) => {
+      onClick={() => {
         insert({
           type: 'void',
           'x-component': 'Form',
@@ -124,11 +129,13 @@ const FormBlockInitializerItem = (props) => {
           title: 'select a data source',
           children: [
             {
-              key: 'users',
+              type: 'item',
+              name: 'users',
               title: 'Users',
             },
             {
-              key: 'posts',
+              type: 'item',
+              name: 'posts',
               title: 'Posts',
             },
           ],
@@ -138,7 +145,7 @@ const FormBlockInitializerItem = (props) => {
       Form
     </SchemaInitializer.Item>
   );
-};
+});
 
 export default function App() {
   return (
