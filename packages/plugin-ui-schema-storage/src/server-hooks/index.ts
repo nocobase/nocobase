@@ -32,8 +32,8 @@ export class ServerHooks {
       const hookFunc = this.hooks.get('afterCreateSelf')?.get(listenHookName);
 
       await hookFunc({
-        model: uiSchemaModel,
-        transaction,
+        schemaInstance: uiSchemaModel,
+        options,
       });
     }
   }
@@ -56,8 +56,9 @@ export class ServerHooks {
         const hookFunc = this.hooks.get('afterDestroyCollection')?.get(listenHookName);
 
         await hookFunc({
-          model: listenSchema,
-          transaction,
+          collectionInstance: collectionModel,
+          schemaInstance: listenSchema,
+          options,
         });
       }
     }
@@ -81,8 +82,9 @@ export class ServerHooks {
         const hookFunc = this.hooks.get('afterDestroyField')?.get(listenHookName);
 
         await hookFunc({
-          model: listenSchema,
-          transaction,
+          fieldInstance: fieldModel,
+          schemaInstance: listenSchema,
+          options,
         });
       }
     }
