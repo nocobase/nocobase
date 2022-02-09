@@ -26,9 +26,9 @@ export default {
       name: 'name',
     },
     {
-      type: 'hasOne',
-      name: 'attrs',
-      target: 'uiSchemaAttrs',
+      type: 'hasMany',
+      name: 'serverHooks',
+      target: 'uiSchemaServerHooks',
       foreignKey: 'uid',
     },
     {

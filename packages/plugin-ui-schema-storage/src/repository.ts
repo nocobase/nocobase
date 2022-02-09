@@ -386,31 +386,20 @@ export default class UiSchemaRepository extends Repository {
   }
 
   private async insertSchemaRecord(name, uid, schema, transaction) {
+    const serverHooks = schema['x-server-hooks'] || [];
+
     const node = await this.create({
       values: {
         name,
         uid,
         schema,
+        serverHooks,
       },
       transaction,
       hooks: false,
     });
 
-    await this.insertSchemaAttrs(node, transaction);
     return node;
-  }
-
-  private async insertSchemaAttrs(schema, transaction) {
-    const collectionPath = schema.get('x-collection') || schema.get('x-collection-field');
-
-    if (collectionPath) {
-      await this.database.getRepository('uiSchemaAttrs').create({
-        values: {
-          uid: schema.get('uid'),
-          collectionPath: collectionPath,
-        },
-      });
-    }
   }
 
   async insertSingleNode(schema: SchemaNode, transaction: Transaction) {
