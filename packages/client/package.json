@@ -30,6 +30,7 @@
     "i18next": "^21.6.0",
     "marked": "^4.0.12",
     "react-beautiful-dnd": "^13.1.0",
+    "react-big-calendar": "^0.38.7",
     "react-helmet": "^6.1.0",
     "react-i18next": "^11.15.1",
     "react-image-lightbox": "^5.1.4",
