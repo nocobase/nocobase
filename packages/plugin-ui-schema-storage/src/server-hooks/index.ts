@@ -18,6 +18,7 @@ export class ServerHooks {
   listen() {
     this.db.on('fields.afterDestroy', async (model, options) => {
       await this.onCollectionFieldDestroy(model, options);
+      await this.onAnyCollectionFieldDestroy(model, options);
     });
 
     this.db.on('collections.afterDestroy', async (model, options) => {
@@ -39,6 +40,23 @@ export class ServerHooks {
       },
       {
         collectionModel,
+        options,
+      },
+      transaction,
+    );
+  }
+
+  protected async onAnyCollectionFieldDestroy(fieldModel, options) {
+    const { transaction } = options;
+    const collectionName = fieldModel.get('collectionName');
+
+    await this.findHooksAndCall(
+      {
+        type: 'onAnyCollectionFieldDestroy',
+        collection: collectionName,
+      },
+      {
+        fieldInstance: fieldModel,
         options,
       },
       transaction,
