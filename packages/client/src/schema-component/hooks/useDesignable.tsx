@@ -154,6 +154,7 @@ export class Designable {
   }
 
   insertAdjacent(position: Position, schema: ISchema, options: InsertAdjacentOptions = {}) {
+    debugger;
     switch (position) {
       case 'beforeBegin':
         return this.insertBeforeBegin(schema, options);
