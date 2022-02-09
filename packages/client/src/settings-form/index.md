@@ -5,4 +5,6 @@ group:
   path: /client
 ---
 
-# SettingsForm <Badge>待定</Badge>
+# SettingsForm
+
+<code src="./demos/demo1.tsx" />
