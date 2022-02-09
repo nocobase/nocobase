@@ -166,6 +166,57 @@ describe('server hooks', () => {
     expect(hookFn).toHaveBeenCalled();
   });
 
+  it('should call server hooks onAnyCollectionFieldDestroy', async () => {
+    const menuSchema = {
+      'x-uid': 'menu',
+      'x-server-hooks': [
+        {
+          type: 'onAnyCollectionFieldDestroy',
+          collection: 'posts',
+          method: 'test1',
+        },
+      ],
+    };
+
+    await uiSchemaRepository.create({
+      values: {
+        schema: menuSchema,
+      },
+    });
+
+    const PostModel = await db.getRepository('collections').create({
+      values: {
+        name: 'posts',
+      },
+    });
+
+    const fieldModel = await db.getRepository('fields').create({
+      values: {
+        name: 'title',
+        type: 'string',
+        collectionName: 'posts',
+      },
+    });
+
+    // @ts-ignore
+    await PostModel.migrate();
+
+    const serverHooks = uiSchemaPlugin.serverHooks;
+    const hookFn = jest.fn();
+
+    serverHooks.register('onAnyCollectionFieldDestroy', 'test1', hookFn);
+
+    // destroy a field
+    await db.getRepository('fields').destroy({
+      filter: {
+        name: 'title',
+      },
+      individualHooks: true,
+    });
+
+    expect(hookFn).toHaveBeenCalled();
+  });
+
   it('should rollback after throw error', async () => {
     const testSchema = {
       'x-uid': 'test',
