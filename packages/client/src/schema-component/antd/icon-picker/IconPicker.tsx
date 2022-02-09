@@ -1,4 +1,5 @@
 import { CloseOutlined, LoadingOutlined } from '@ant-design/icons';
+import { useFormLayout } from '@formily/antd';
 import { connect, mapProps, mapReadPretty } from '@formily/react';
 import { isValid } from '@formily/shared';
 import { Button, Input, Popover } from 'antd';
@@ -7,7 +8,8 @@ import { useTranslation } from 'react-i18next';
 import { hasIcon, Icon, icons } from '../../../icon';
 
 function IconField(props: any) {
-  const { value, onChange } = props;
+  const layout = useFormLayout();
+  const { value, onChange, disabled } = props;
   const [visible, setVisible] = useState(false);
   const { t } = useTranslation();
   return (
@@ -17,6 +19,9 @@ function IconField(props: any) {
           placement={'bottom'}
           visible={visible}
           onVisibleChange={(val) => {
+            if (disabled) {
+              return;
+            }
             setVisible(val);
           }}
           content={
@@ -37,10 +42,13 @@ function IconField(props: any) {
           title={t('Icon')}
           trigger="click"
         >
-          <Button>{hasIcon(value) ? <Icon type={value} /> : t('Select icon')}</Button>
+          <Button size={layout.size as any} disabled={disabled}>
+            {hasIcon(value) ? <Icon type={value} /> : t('Select icon')}
+          </Button>
         </Popover>
-        {value && (
+        {value && !disabled && (
           <Button
+            size={layout.size as any}
             icon={<CloseOutlined />}
             onClick={(e) => {
               onChange(null);
