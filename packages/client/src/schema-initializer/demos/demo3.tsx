@@ -21,6 +21,7 @@ const useFormItemInitializerFields = () => {
       schema: {
         type: 'string',
         title: 'Name',
+        name: 'name',
         'x-component': 'Input',
         'x-decorator': 'FormItem',
         'x-collection-field': 'posts.name',
@@ -33,6 +34,7 @@ const useFormItemInitializerFields = () => {
       schema: {
         type: 'string',
         title: 'Title',
+        name: 'title',
         'x-component': 'Input',
         'x-decorator': 'FormItem',
         'x-collection-field': 'posts.title',
