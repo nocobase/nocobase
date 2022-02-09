@@ -39,7 +39,7 @@ export class ServerHooks {
         collection: collectionModel.get('name'),
       },
       {
-        collectionModel,
+        collectionInstance: collectionModel,
         options,
       },
       transaction,
@@ -56,7 +56,7 @@ export class ServerHooks {
         collection: collectionName,
       },
       {
-        fieldInstance: fieldModel,
+        collectionFieldInstance: fieldModel,
         options,
       },
       transaction,
@@ -75,7 +75,7 @@ export class ServerHooks {
         'fields.$anyOf': [fieldName],
       },
       {
-        fieldInstance: fieldModel,
+        collectionFieldInstance: fieldModel,
         options,
       },
       transaction,
