@@ -1,7 +1,12 @@
 import { Database } from '@nocobase/database';
-import { UiSchemaModel } from '../model';
+import { ServerHookModel } from './model';
 
-export type HookType = 'afterDestroyField' | 'afterDestroyCollection' | 'afterCreateSelf';
+export type HookType =
+  | 'onSchemaDestroy'
+  | 'onCollectionDestroy'
+  | 'onCollectionFieldDestroy'
+  | 'onAnyCollectionFieldDestroy'
+  | 'onSelfCreate';
 
 export class ServerHooks {
   hooks = new Map<HookType, Map<string, any>>();
@@ -12,80 +17,82 @@ export class ServerHooks {
 
   listen() {
     this.db.on('fields.afterDestroy', async (model, options) => {
-      await this.afterFieldDestroy(model, options);
+      await this.onCollectionFieldDestroy(model, options);
     });
 
     this.db.on('collections.afterDestroy', async (model, options) => {
-      await this.afterCollectionDestroy(model, options);
+      await this.onCollectionDestroy(model, options);
     });
 
-    this.db.on('ui_schemas.afterCreate', async (model, options) => {
-      await this.afterUiSchemaCreated(model, options);
+    this.db.on('ui_schemas.afterCreateWithAssociations', async (model, options) => {
+      await this.onUiSchemaCreate(model, options);
     });
   }
 
-  protected async afterUiSchemaCreated(uiSchemaModel, options) {
+  protected async onCollectionDestroy(collectionModel, options) {
     const { transaction } = options;
-    const listenHooksName = uiSchemaModel.getListenServerHooks('afterCreateSelf');
 
-    for (const listenHookName of listenHooksName) {
-      const hookFunc = this.hooks.get('afterCreateSelf')?.get(listenHookName);
-
-      await hookFunc({
-        schemaInstance: uiSchemaModel,
+    await this.findHooksAndCall(
+      {
+        type: 'onCollectionDestroy',
+        collection: collectionModel.get('name'),
+      },
+      {
+        collectionModel,
         options,
-      });
-    }
-  }
-
-  protected async afterCollectionDestroy(collectionModel, options) {
-    const { transaction } = options;
-
-    const collectionPath = collectionModel.get('name');
-
-    const listenSchemas = (await this.db.getRepository('ui_schemas').find({
-      filter: {
-        'attrs.collectionPath': collectionPath,
       },
       transaction,
-    })) as UiSchemaModel[];
-
-    for (const listenSchema of listenSchemas) {
-      const listenHooksName = listenSchema.getListenServerHooks('afterDestroyCollection');
-      for (const listenHookName of listenHooksName) {
-        const hookFunc = this.hooks.get('afterDestroyCollection')?.get(listenHookName);
-
-        await hookFunc({
-          collectionInstance: collectionModel,
-          schemaInstance: listenSchema,
-          options,
-        });
-      }
-    }
+    );
   }
 
-  protected async afterFieldDestroy(fieldModel, options) {
+  protected async onCollectionFieldDestroy(fieldModel, options) {
     const { transaction } = options;
+    const collectionName = fieldModel.get('collectionName');
+    const fieldName = fieldModel.get('name');
 
-    const collectionPath = `${fieldModel.get('collectionName')}.${fieldModel.get('name')}`;
-
-    const listenSchemas = (await this.db.getRepository('ui_schemas').find({
-      filter: {
-        'attrs.collectionPath': collectionPath,
+    await this.findHooksAndCall(
+      {
+        type: 'onCollectionFieldDestroy',
+        collection: collectionName,
+        'fields.$anyOf': [fieldName],
+      },
+      {
+        fieldInstance: fieldModel,
+        options,
       },
       transaction,
-    })) as UiSchemaModel[];
+    );
+  }
 
-    for (const listenSchema of listenSchemas) {
-      const listenHooksName = listenSchema.getListenServerHooks('afterDestroyField');
-      for (const listenHookName of listenHooksName) {
-        const hookFunc = this.hooks.get('afterDestroyField')?.get(listenHookName);
+  protected async onUiSchemaCreate(uiSchemaModel, options) {
+    const { transaction } = options;
 
-        await hookFunc({
-          fieldInstance: fieldModel,
-          schemaInstance: listenSchema,
-          options,
-        });
+    await this.findHooksAndCall(
+      {
+        type: 'onSelfCreate',
+        uid: uiSchemaModel.schema['x-uid'],
+      },
+      {
+        uiSchemaModel,
+        options,
+      },
+      transaction,
+    );
+  }
+
+  protected async findHooksAndCall(hooksFilter, hooksArgs, transaction) {
+    const hooks = (await this.db.getRepository('uiSchemaServerHooks').find({
+      filter: hooksFilter,
+      appends: ['uiSchema'],
+      transaction,
+    })) as ServerHookModel[];
+
+    for (const hookRecord of hooks) {
+      const hoodMethodName = hookRecord.get('method') as string;
+      const hookFunc = this.hooks.get(hookRecord.get('type') as HookType)?.get(hoodMethodName);
+
+      if (hookFunc) {
+        await hookFunc({ ...hooksArgs, schemaInstance: (<any>hookRecord).uiSchema });
       }
     }
   }

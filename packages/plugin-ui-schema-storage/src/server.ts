@@ -5,6 +5,7 @@ import { uiSchemaActions } from './actions/ui-schema-action';
 import UiSchemaRepository from './repository';
 import { ServerHooks } from './server-hooks';
 import { UiSchemaModel } from './model';
+import { ServerHookModel } from './server-hooks/model';
 
 export default class PluginUiSchema extends Plugin {
   serverHooks: ServerHooks;
@@ -20,7 +21,7 @@ export default class PluginUiSchema extends Plugin {
 
     this.serverHooks = new ServerHooks(db);
 
-    this.app.db.registerModels({ MagicAttributeModel, UiSchemaModel });
+    this.app.db.registerModels({ MagicAttributeModel, UiSchemaModel, ServerHookModel });
 
     this.registerRepository();
 
