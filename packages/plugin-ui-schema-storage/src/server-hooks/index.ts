@@ -110,7 +110,7 @@ export class ServerHooks {
       const hookFunc = this.hooks.get(hookRecord.get('type') as HookType)?.get(hoodMethodName);
 
       if (hookFunc) {
-        await hookFunc({ ...hooksArgs, schemaInstance: (<any>hookRecord).uiSchema });
+        await hookFunc({ ...hooksArgs, schemaInstance: (<any>hookRecord).uiSchema, db: this.db });
       }
     }
   }
