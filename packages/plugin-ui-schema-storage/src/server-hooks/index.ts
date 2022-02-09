@@ -2,7 +2,7 @@ import { Database } from '@nocobase/database';
 import { ServerHookModel } from './model';
 
 export type HookType =
-  | 'onSchemaDestroy'
+  | 'onSelfDestroy'
   | 'onCollectionDestroy'
   | 'onCollectionFieldDestroy'
   | 'onAnyCollectionFieldDestroy'
@@ -82,16 +82,16 @@ export class ServerHooks {
     );
   }
 
-  protected async onUiSchemaCreate(uiSchemaModel, options) {
+  protected async onUiSchemaCreate(schemaInstance, options) {
     const { transaction } = options;
 
     await this.findHooksAndCall(
       {
         type: 'onSelfCreate',
-        uid: uiSchemaModel.schema['x-uid'],
+        uid: schemaInstance.schema['x-uid'],
       },
       {
-        uiSchemaModel,
+        schemaInstance,
         options,
       },
       transaction,
