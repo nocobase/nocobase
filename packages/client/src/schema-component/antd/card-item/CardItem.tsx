@@ -5,7 +5,7 @@ import { BlockItem } from '../block-item';
 export const CardItem: React.FC = (props) => {
   return (
     <BlockItem className={'noco-card-item'}>
-      <Card bordered={false} {...props}>
+      <Card style={{ marginBottom: 24 }} bordered={false} {...props}>
         {props.children}
       </Card>
     </BlockItem>

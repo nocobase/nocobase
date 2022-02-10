@@ -1,3 +1,4 @@
+import { uid } from '@formily/shared';
 import { APIClient } from '@nocobase/client';
 import MockAdapter from 'axios-mock-adapter';
 
@@ -119,6 +120,16 @@ export default (apiClient: APIClient) => {
         name: name,
         'x-uid': name,
         'x-component': 'Page',
+        properties: {
+          [uid()]: {
+            type: 'void',
+            name: 'grid1',
+            'x-component': 'Grid',
+            'x-item-initializer': 'Grid.AddBlockItem',
+            'x-uid': uid(),
+            properties: {},
+          },
+        },
       },
     };
     return [200, response];
