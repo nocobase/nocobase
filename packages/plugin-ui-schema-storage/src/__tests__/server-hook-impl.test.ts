@@ -155,12 +155,62 @@ describe('server hooks', () => {
       filter: {
         name: 'intro',
       },
-      individualHooks: true,
     });
 
     const jsonTree = await uiSchemaRepository.getJsonSchema('grid1');
     expect(jsonTree['properties']['row1']['properties']['col11']).toBeDefined();
     expect(jsonTree['properties']['row1']['properties']['col12']).not.toBeDefined();
+  });
+
+  it('should works with breakComponent', async () => {
+    await db.getRepository('collections').create({
+      values: {
+        name: 'posts',
+      },
+    });
+
+    const schema = {
+      'x-uid': 'root',
+      name: 'root',
+      properties: {
+        grid: {
+          properties: {
+            row: {
+              'x-component': 'row',
+              properties: {
+                col: {
+                  'x-component': 'col',
+                  'x-uid': 'col',
+                  'x-server-hooks': [
+                    {
+                      type: 'onCollectionDestroy',
+                      collection: 'posts',
+                      method: 'removeSchema',
+                      params: {
+                        breakComponent: 'row',
+                        removeEmptyParents: true,
+                      },
+                    },
+                  ],
+                },
+              },
+            },
+          },
+        },
+      },
+    };
+
+    await uiSchemaRepository.insert(schema);
+
+    await db.getRepository('collections').destroy({
+      filter: {
+        name: 'posts',
+      },
+    });
+
+    const jsonTree = await uiSchemaRepository.getJsonSchema('root');
+    expect(jsonTree['properties']['grid']['properties']['row']).toBeDefined();
+    expect(jsonTree['properties']['grid']['properties']['row']['properties']).not.toBeDefined();
   });
 
   it('should remove schema when collection destroy', async () => {

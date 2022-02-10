@@ -237,6 +237,10 @@ export default class UiSchemaRepository extends Repository {
       },
     });
 
+    if (!parent) {
+      return null;
+    }
+
     const countResult = await db.sequelize.query(
       `SELECT COUNT(*) FROM ${
         db.getCollection('ui_schema_tree_path').model.tableName
@@ -253,7 +257,13 @@ export default class UiSchemaRepository extends Repository {
     const parentChildrenCount = countResult[0]['count'];
 
     if (parentChildrenCount == 1) {
-      return parent.get('ancestor') as string;
+      const schema = await db.getRepository('ui_schemas').findOne({
+        filter: {
+          uid: parent.get('ancestor') as string,
+        },
+      });
+
+      return schema;
     }
 
     return null;
@@ -263,10 +273,12 @@ export default class UiSchemaRepository extends Repository {
     const { transaction, uid, breakComponent } = options;
 
     const removeParent = async (nodeUid: string) => {
-      const parentUid = await this.isSingleChild(nodeUid, transaction);
+      const parent = await this.isSingleChild(nodeUid, transaction);
 
-      if (parentUid) {
-        await removeParent(parentUid);
+      const nodeComponentType = parent ? parent.get('x-component') : null;
+
+      if ((parent && !breakComponent) || (parent && breakComponent != nodeComponentType)) {
+        await removeParent(parent.get('uid') as string);
       } else {
         await this.remove(nodeUid, { transaction });
       }
