@@ -227,6 +227,54 @@ export default class UiSchemaRepository extends Repository {
     );
   }
 
+  protected async isSingleChild(uid, transaction) {
+    const db = this.database;
+
+    const parent = await db.getRepository('ui_schema_tree_path').findOne({
+      filter: {
+        descendant: uid,
+        depth: 1,
+      },
+    });
+
+    const countResult = await db.sequelize.query(
+      `SELECT COUNT(*) FROM ${
+        db.getCollection('ui_schema_tree_path').model.tableName
+      } where ancestor = :ancestor and depth  = 1`,
+      {
+        replacements: {
+          ancestor: parent.get('ancestor'),
+        },
+        type: 'SELECT',
+        transaction,
+      },
+    );
+
+    const parentChildrenCount = countResult[0]['count'];
+
+    if (parentChildrenCount == 1) {
+      return parent.get('ancestor') as string;
+    }
+
+    return null;
+  }
+
+  async removeEmptyParents(options: TransactionAble & { uid: string; breakComponent?: string }) {
+    const { transaction, uid, breakComponent } = options;
+
+    const removeParent = async (nodeUid: string) => {
+      const parentUid = await this.isSingleChild(nodeUid, transaction);
+
+      if (parentUid) {
+        await removeParent(parentUid);
+      } else {
+        await this.remove(nodeUid, { transaction });
+      }
+    };
+
+    await removeParent(uid);
+  }
+
   async remove(uid: string, options?: TransactionAble) {
     let handleTransaction: boolean = true;
     let transaction;

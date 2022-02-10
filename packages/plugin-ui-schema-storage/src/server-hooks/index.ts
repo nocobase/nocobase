@@ -116,7 +116,12 @@ export class ServerHooks {
       const hookFunc = this.hooks.get(hookRecord.get('type') as HookType)?.get(hoodMethodName);
 
       if (hookFunc) {
-        await hookFunc({ ...hooksArgs, schemaInstance: (<any>hookRecord).uiSchema, db: this.db });
+        await hookFunc({
+          ...hooksArgs,
+          schemaInstance: (<any>hookRecord).uiSchema,
+          db: this.db,
+          params: hookRecord.get('params'),
+        });
       }
     }
   }
