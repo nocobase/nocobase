@@ -9,6 +9,7 @@
     "bootstrap": "lerna bootstrap",
     "clean": "rimraf -rf packages/*/{lib,esm,dist} && lerna clean",
     "nocobase": "ts-node-dev -r dotenv/config -r tsconfig-paths/register ./packages/api/src/index.ts",
+    "start-client": "cd packages/app && npm run start",
     "start-server": "ts-node-dev -r dotenv/config -r tsconfig-paths/register ./packages/api/src/index.ts",
     "build": "lerna run build",
     "build-docs": "dumi build",
