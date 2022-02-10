@@ -1,6 +1,6 @@
 import { Context, Next } from '@nocobase/actions';
 import { PasswordField } from '@nocobase/database';
-import cryptoRandomString from 'crypto-random-string';
+import crypto from 'crypto';
 
 export async function check(ctx: Context, next: Next) {
   if (ctx.state.currentUser) {
@@ -33,7 +33,7 @@ export async function signin(ctx: Context, next: Next) {
     ctx.throw(401, '密码错误，请您重新输入');
   }
   if (!user.token) {
-    user.token = cryptoRandomString({ length: 20 });
+    user.token = crypto.randomBytes(20).toString('hex');
     await user.save();
   }
   ctx.body = user.toJSON();
@@ -78,7 +78,7 @@ export async function lostpassword(ctx: Context, next: Next) {
   if (!user) {
     ctx.throw(401, '邮箱账号未注册');
   }
-  user.resetToken = cryptoRandomString({ length: 20 });
+  user.resetToken = crypto.randomBytes(20).toString('hex');
   await user.save();
   ctx.body = user;
   await next();

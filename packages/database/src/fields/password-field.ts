@@ -1,9 +1,17 @@
+import crypto from 'crypto';
 import { DataTypes } from 'sequelize';
 import { BaseColumnFieldOptions, Field } from './field';
-import bcrypt from 'bcrypt';
 
 export interface PasswordFieldOptions extends BaseColumnFieldOptions {
   type: 'password';
+  /**
+   * @default 64
+   */
+  length?: number;
+  /**
+   * @default 8
+   */
+  randomBytesSize?: number;
 }
 
 export class PasswordField extends Field {
@@ -11,8 +19,27 @@ export class PasswordField extends Field {
     return DataTypes.STRING;
   }
 
-  async verify(data: string | Buffer, encrypted: string) {
-    return await bcrypt.compare(data, encrypted);
+  async verify(password: string, hash: string) {
+    const { length = 64, randomBytesSize = 8 } = this.options;
+    return new Promise((resolve, reject) => {
+      const salt = hash.substring(0, randomBytesSize * 2);
+      const key = hash.substring(randomBytesSize * 2);
+      crypto.scrypt(password, salt, length / 2 - randomBytesSize, (err, derivedKey) => {
+        if (err) reject(err);
+        resolve(key == derivedKey.toString('hex'));
+      });
+    });
+  }
+
+  async hash(password: string) {
+    const { length = 64, randomBytesSize = 8 } = this.options;
+    return new Promise((resolve, reject) => {
+      const salt = crypto.randomBytes(randomBytesSize).toString('hex');
+      crypto.scrypt(password, salt, length / 2 - randomBytesSize, (err, derivedKey) => {
+        if (err) reject(err);
+        resolve(salt + derivedKey.toString('hex'));
+      });
+    });
   }
 
   init() {
@@ -23,10 +50,7 @@ export class PasswordField extends Field {
       }
       const value = model.get(name) as string;
       if (value) {
-        if (value.startsWith('$2b$10$') && value.length === 60) {
-          return;
-        }
-        const hash = await bcrypt.hash(value, 10);
+        const hash = await this.hash(value);
         model.set(name, hash);
       } else {
         model.set(name, null);
