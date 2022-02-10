@@ -1,4 +1,4 @@
-import { Repository } from '@nocobase/database';
+import { Repository, TransactionAble } from '@nocobase/database';
 import lodash from 'lodash';
 import { ChildOptions, SchemaNode, TargetPosition, UiSchemaNodeDAO } from './dao/ui_schema_node_dao';
 import { uid } from '@nocobase/utils';
@@ -227,7 +227,7 @@ export default class UiSchemaRepository extends Repository {
     );
   }
 
-  async remove(uid: string, options?) {
+  async remove(uid: string, options?: TransactionAble) {
     let handleTransaction: boolean = true;
     let transaction;
 

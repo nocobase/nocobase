@@ -1,4 +1,5 @@
 import { UiSchemaRepository } from '@nocobase/plugin-ui-schema-storage';
+import { hookFactory } from './factory';
 
 // given a child uid, if it is a single child ,return its parent
 async function isSingleChild(uid, db, transaction) {
@@ -31,7 +32,7 @@ async function isSingleChild(uid, db, transaction) {
   return null;
 }
 
-export async function removeEmptyParents({ schemaInstance, options, db }) {
+async function removeEmptyParents({ schemaInstance, options, db }) {
   const { transaction } = options;
   const uiSchemaRepository: UiSchemaRepository = db.getRepository('ui_schemas');
   const uid = schemaInstance.get('uid');
@@ -50,3 +51,5 @@ export async function removeEmptyParents({ schemaInstance, options, db }) {
     await uiSchemaRepository.remove(uid, { transaction });
   }
 }
+
+export default hookFactory('onCollectionFieldDestroy', 'removeEmptyParents', removeEmptyParents);

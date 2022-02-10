@@ -1,5 +1,6 @@
 import { Database } from '@nocobase/database';
 import { ServerHookModel } from './model';
+import { hooks } from './hooks';
 
 export type HookType =
   | 'onSelfDestroy'
@@ -13,6 +14,11 @@ export class ServerHooks {
 
   constructor(protected db: Database) {
     this.listen();
+    this.registerHooks();
+  }
+
+  registerHooks() {
+    hooks.forEach((hook) => this.register(hook.hookType, hook.hookName, hook.hookFunc));
   }
 
   listen() {
