@@ -1,10 +1,10 @@
-import React from 'react';
-import { observer, ISchema, useForm } from '@formily/react';
-import { SchemaComponent, SchemaComponentProvider, Form, Action, useActionVisible } from '@nocobase/client';
 import { FormItem, Input } from '@formily/antd';
+import { ISchema, observer, useForm } from '@formily/react';
+import { Action, Form, SchemaComponent, SchemaComponentProvider, useActionContext } from '@nocobase/client';
+import React from 'react';
 
 const useCloseAction = () => {
-  const { setVisible } = useActionVisible();
+  const { setVisible } = useActionContext();
   const form = useForm();
   return {
     async run() {

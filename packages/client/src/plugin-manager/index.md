@@ -44,7 +44,7 @@ Plugin1.ToolbarItem = () => {
 Plugin2.ToolbarItem = () => {
   const [visible, setVisible] = useState(false);
   return (
-    <VisibleContext.Provider value={[visible, setVisible]}>
+    <ActionContext.Provider value={{ visible, setVisible }}>
       <PluginManager.Toolbar.Item
         icon={<VerifiedOutlined />}
         title={'Plugin2'}
@@ -53,7 +53,7 @@ Plugin2.ToolbarItem = () => {
         }}
       />
       <SchemaComponent scope={{ useCloseAction }} schema={schema} />
-    </VisibleContext.Provider>
+    </ActionContext.Provider>
   );
 };
 ```

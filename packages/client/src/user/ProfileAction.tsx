@@ -2,10 +2,10 @@ import { ISchema, useForm } from '@formily/react';
 import { uid } from '@formily/shared';
 import { Menu } from 'antd';
 import React, { useState } from 'react';
-import { SchemaComponent, useActionVisible, useRequest, VisibleContext } from '../';
+import { ActionContext, SchemaComponent, useActionContext, useRequest } from '../';
 
 const useCloseAction = () => {
-  const { setVisible } = useActionVisible();
+  const { setVisible } = useActionContext();
   const form = useForm();
   return {
     async run() {
@@ -30,7 +30,7 @@ const useCurrentUserValues = (props, options) => {
 };
 
 const useSaveCurrentUserValues = () => {
-  const { setVisible } = useActionVisible();
+  const { setVisible } = useActionContext();
   const form = useForm();
   return {
     async run() {
@@ -90,7 +90,7 @@ const schema: ISchema = {
 export const ProfileAction = () => {
   const [visible, setVisible] = useState(false);
   return (
-    <VisibleContext.Provider value={[visible, setVisible]}>
+    <ActionContext.Provider value={{ visible, setVisible }}>
       <Menu.Item
         eventKey={'ProfileAction'}
         onClick={() => {
@@ -100,6 +100,6 @@ export const ProfileAction = () => {
         个人资料
       </Menu.Item>
       <SchemaComponent scope={{ useCurrentUserValues, useCloseAction, useSaveCurrentUserValues }} schema={schema} />
-    </VisibleContext.Provider>
+    </ActionContext.Provider>
   );
 };

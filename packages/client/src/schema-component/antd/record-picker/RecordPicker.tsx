@@ -15,7 +15,7 @@ import { toArr } from '@formily/shared';
 import { Button, Drawer, Select, Space, Tag } from 'antd';
 import React, { createContext, useContext, useMemo, useState } from 'react';
 import { useAttach } from '../../hooks/useAttach';
-import { VisibleContext } from '../action';
+import { ActionContext } from '../action';
 
 const InputRecordPicker: React.FC = (props) => {
   const [visible, setVisible] = useState(false);
@@ -130,13 +130,11 @@ RecordPicker.SelectedItem = () => {
   const fieldSchema = useFieldSchema();
   const [visible, setVisible] = useState(false);
   return (
-    <>
-      <VisibleContext.Provider value={[visible, setVisible]}>
-        <Tag style={{ cursor: 'pointer' }} onClick={() => setVisible(true)}>
-          {ctx.record?.name}
-        </Tag>
-        <RecursionField onlyRenderProperties schema={fieldSchema}></RecursionField>
-      </VisibleContext.Provider>
-    </>
+    <ActionContext.Provider value={{ visible, setVisible }}>
+      <Tag style={{ cursor: 'pointer' }} onClick={() => setVisible(true)}>
+        {ctx.record?.name}
+      </Tag>
+      <RecursionField onlyRenderProperties schema={fieldSchema}></RecursionField>
+    </ActionContext.Provider>
   );
 };

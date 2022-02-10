@@ -1,13 +1,13 @@
 import { css } from '@emotion/css';
 import { observer, RecursionField, useField, useFieldSchema } from '@formily/react';
-import { Drawer } from 'antd';
+import { Modal } from 'antd';
 import React from 'react';
 import { createPortal } from 'react-dom';
-import { useActionContext } from './hooks';
+import { useActionContext } from '.';
 import { ComposedActionDrawer } from './types';
 
-export const ActionDrawer: ComposedActionDrawer = observer((props) => {
-  const { footerNodeName = 'Action.Drawer.Footer', ...others } = props;
+export const ActionModal: ComposedActionDrawer = observer((props) => {
+  const { footerNodeName = 'Action.Modal.Footer', ...others } = props;
   const { visible, setVisible } = useActionContext();
   const schema = useFieldSchema();
   const field = useField();
@@ -20,13 +20,13 @@ export const ActionDrawer: ComposedActionDrawer = observer((props) => {
   return (
     <>
       {createPortal(
-        <Drawer
-          width={'50%'}
+        <Modal
+          // width={'50%'}
           title={schema.title}
           {...others}
           destroyOnClose
           visible={visible}
-          onClose={() => setVisible(false)}
+          onCancel={() => setVisible(false)}
           footer={
             footerSchema && (
               <div
@@ -59,17 +59,17 @@ export const ActionDrawer: ComposedActionDrawer = observer((props) => {
               return s['x-component'] !== footerNodeName;
             }}
           />
-        </Drawer>,
+        </Modal>,
         document.body,
       )}
     </>
   );
 });
 
-ActionDrawer.Footer = observer(() => {
+ActionModal.Footer = observer(() => {
   const field = useField();
   const schema = useFieldSchema();
   return <RecursionField basePath={field.address} schema={schema} onlyRenderProperties />;
 });
 
-export default ActionDrawer;
+export default ActionModal;

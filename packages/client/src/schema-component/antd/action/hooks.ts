@@ -1,6 +1,6 @@
 import { useForm } from '@formily/react';
 import { useContext } from 'react';
-import { VisibleContext } from './context';
+import { ActionContext } from './context';
 
 export const useA = () => {
   return {
@@ -8,13 +8,21 @@ export const useA = () => {
   };
 };
 
-export const useActionVisible = () => {
-  const [visible, setVisible] = useContext(VisibleContext);
-  return { visible, setVisible };
+export const useActionContext = () => {
+  const ctx = useContext(ActionContext);
+
+  return {
+    ...ctx,
+    setVisible(visible: boolean) {
+      if (ctx.openMode !== 'page') {
+        ctx.setVisible(visible);
+      }
+    },
+  };
 };
 
 export const useCloseAction = () => {
-  const [, setVisible] = useContext(VisibleContext);
+  const { setVisible } = useContext(ActionContext);
   const form = useForm();
   return {
     async run() {

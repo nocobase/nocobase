@@ -4,10 +4,10 @@ import { uid } from '@formily/shared';
 import React, { useState } from 'react';
 import { useSystemSettings } from '.';
 import { PluginManager, useRequest } from '..';
-import { SchemaComponent, useActionVisible, VisibleContext } from '../schema-component';
+import { ActionContext, SchemaComponent, useActionContext } from '../schema-component';
 
 const useCloseAction = () => {
-  const { setVisible } = useActionVisible();
+  const { setVisible } = useActionContext();
   // const form = useForm();
   return {
     async run() {
@@ -24,7 +24,7 @@ const useSystemSettingsValues = (props, options) => {
 };
 
 const useSaveSystemSettingsValues = () => {
-  const { setVisible } = useActionVisible();
+  const { setVisible } = useActionContext();
   const form = useForm();
   const { mutate } = useSystemSettings();
   return {
@@ -112,7 +112,7 @@ const schema: ISchema = {
 export const SystemSettingsShortcut = () => {
   const [visible, setVisible] = useState(false);
   return (
-    <VisibleContext.Provider value={[visible, setVisible]}>
+    <ActionContext.Provider value={{ visible, setVisible }}>
       <PluginManager.Toolbar.Item
         eventKey={'ACLAction'}
         onClick={() => {
@@ -125,6 +125,6 @@ export const SystemSettingsShortcut = () => {
         scope={{ useSaveSystemSettingsValues, useSystemSettingsValues, useCloseAction }}
         schema={schema}
       />
-    </VisibleContext.Provider>
+    </ActionContext.Provider>
   );
 };
