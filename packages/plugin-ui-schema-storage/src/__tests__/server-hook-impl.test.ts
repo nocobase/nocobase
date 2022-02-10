@@ -2,7 +2,6 @@ import { mockServer, MockServer } from '@nocobase/test';
 import { Database } from '@nocobase/database';
 import PluginUiSchema, { UiSchemaRepository } from '@nocobase/plugin-ui-schema-storage';
 import PluginCollectionManager from '@nocobase/plugin-collection-manager';
-import { removeEmptyParents } from '../server-hooks/removeEmptyParents';
 
 describe('server hooks', () => {
   let app: MockServer;
@@ -144,8 +143,6 @@ describe('server hooks', () => {
 
     await uiSchemaRepository.insert(schema);
 
-    uiSchemaPlugin.serverHooks.register('onCollectionFieldDestroy', 'removeEmptyParents', removeEmptyParents);
-
     await db.getRepository('fields').destroy({
       filter: {
         name: 'intro',
@@ -156,5 +153,35 @@ describe('server hooks', () => {
     const jsonTree = await uiSchemaRepository.getJsonSchema('grid1');
     expect(jsonTree['properties']['row1']['properties']['col11']).toBeDefined();
     expect(jsonTree['properties']['row1']['properties']['col12']).not.toBeDefined();
+  });
+
+  it('should remove schema when collection destroy', async () => {
+    await db.getRepository('collections').create({
+      values: {
+        name: 'posts',
+      },
+    });
+
+    await db.getRepository('fields').create({
+      values: {
+        name: 'title',
+        type: 'string',
+        collectionName: 'posts',
+      },
+    });
+
+    const schema = {
+      'x-uid': 'root',
+      properties: {
+        child1: {
+          'x-uid': 'child1',
+        },
+
+        child2: {
+          'x-uid': 'child2',
+          'x-server-hooks': [],
+        },
+      },
+    };
   });
 });
