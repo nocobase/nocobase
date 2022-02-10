@@ -1,19 +1,18 @@
-import { observer, useFieldSchema } from '@formily/react';
+import { observer } from '@formily/react';
 import React from 'react';
 import { SchemaInitializer } from '../../../schema-initializer';
 
 const useTableColumnInitializerFields = () => {
-  const fieldSchema = useFieldSchema();
   const fields = [
     {
-      key: 'field1',
       title: 'Field1',
-      component: fieldSchema['x-column-initializer'],
+      name: 'field1',
+      component: ArrayTableColumnInitializer,
     },
     {
-      key: 'field2',
       title: 'Field2',
-      component: fieldSchema['x-column-initializer'],
+      name: 'field2',
+      component: ArrayTableColumnInitializer,
     },
   ].filter((field) => field.component);
   return fields;
@@ -22,10 +21,10 @@ const useTableColumnInitializerFields = () => {
 export const TableColumnInitializeButton = observer((props: any) => {
   return (
     <SchemaInitializer.Button
-      wrap={(schema) => schema}
       insertPosition={'beforeEnd'}
       items={[
         {
+          type: 'item',
           title: 'Display fields',
           children: useTableColumnInitializerFields(),
         },
@@ -36,11 +35,11 @@ export const TableColumnInitializeButton = observer((props: any) => {
   );
 });
 
-export const ArrayTableColumnInitializer = (props) => {
-  const { title, insert } = props;
+export const ArrayTableColumnInitializer = SchemaInitializer.itemWrap((props) => {
+  const { insert } = props;
   return (
     <SchemaInitializer.Item
-      onClick={(info) => {
+      onClick={() => {
         insert({
           type: 'void',
           title: 'Name',
@@ -54,8 +53,6 @@ export const ArrayTableColumnInitializer = (props) => {
           },
         });
       }}
-    >
-      {title}
-    </SchemaInitializer.Item>
+    />
   );
-};
+});
