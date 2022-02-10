@@ -33,6 +33,12 @@ export default class PluginUiSchema extends Plugin {
       const { transaction } = options;
       const uiSchemaRepository = db.getCollection('ui_schemas').repository as UiSchemaRepository;
 
+      const context = options.context;
+
+      if (context?.disableInsertHook) {
+        return;
+      }
+
       await uiSchemaRepository.insert(model.toJSON(), {
         transaction,
       });

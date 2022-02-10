@@ -91,17 +91,19 @@ export class ServerHooks {
   protected async onUiSchemaCreate(schemaInstance, options) {
     const { transaction } = options;
 
-    await this.findHooksAndCall(
-      {
-        type: 'onSelfCreate',
-        uid: schemaInstance.schema['x-uid'],
-      },
-      {
+    const serverHooks = schemaInstance.get('serverHooks') || [];
+
+    const onSelfCreateHooks = serverHooks.filter((serverHook) => serverHook.get('type') === 'onSelfCreate');
+
+    for (const serverHook of onSelfCreateHooks) {
+      const hookFunc = this.hooks.get('onSelfCreate')?.get(serverHook.get('method'));
+      await hookFunc({
         schemaInstance,
         options,
-      },
-      transaction,
-    );
+        db: this.db,
+        params: serverHook.get('params'),
+      });
+    }
   }
 
   protected async findHooksAndCall(hooksFilter, hooksArgs, transaction) {
