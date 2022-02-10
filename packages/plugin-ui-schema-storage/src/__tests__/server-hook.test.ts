@@ -157,11 +157,7 @@ describe('server hooks', () => {
 
     serverHooks.register('onSelfCreate', 'afterCreateMenu', hookFn);
 
-    await uiSchemaRepository.create({
-      values: {
-        schema: menuSchema,
-      },
-    });
+    await uiSchemaRepository.insert(menuSchema);
 
     expect(hookFn).toHaveBeenCalled();
   });

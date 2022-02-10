@@ -438,7 +438,7 @@ export default class UiSchemaRepository extends Repository {
     }
   }
 
-  async insert(schema: any, options?) {
+  async insert(schema: any, options?: TransactionAble) {
     const nodes = UiSchemaRepository.schemaToSingleNodes(schema);
     const insertedNodes = await this.insertNodes(nodes, options);
     return this.getJsonSchema(insertedNodes[0].get('uid'), {
@@ -457,7 +457,9 @@ export default class UiSchemaRepository extends Repository {
         serverHooks,
       },
       transaction,
-      hooks: false,
+      context: {
+        disableInsertHook: true,
+      },
     });
 
     return node;

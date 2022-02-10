@@ -1,4 +1,3 @@
-import { hookFactory } from './factory';
 import { UiSchemaRepository } from '@nocobase/plugin-ui-schema-storage';
 
 export async function removeSchema({ schemaInstance, options, db, params }) {
