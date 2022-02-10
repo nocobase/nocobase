@@ -1,10 +1,10 @@
-import React, { useState } from 'react';
 import { VerifiedOutlined } from '@ant-design/icons';
 import { ISchema, useForm } from '@formily/react';
-import { PluginManager, SchemaComponent, useActionVisible, VisibleContext } from '@nocobase/client';
+import { ActionContext, PluginManager, SchemaComponent, useActionContext } from '@nocobase/client';
+import React, { useState } from 'react';
 
 const useCloseAction = () => {
-  const { setVisible } = useActionVisible();
+  const { setVisible } = useActionContext();
   const form = useForm();
   return {
     async run() {
@@ -51,7 +51,7 @@ export const Plugin4 = () => null;
 Plugin4.ToolbarItem = () => {
   const [visible, setVisible] = useState(false);
   return (
-    <VisibleContext.Provider value={[visible, setVisible]}>
+    <ActionContext.Provider value={{ visible, setVisible }}>
       <PluginManager.Toolbar.Item
         icon={<VerifiedOutlined />}
         title={'Plugin4'}
@@ -60,6 +60,6 @@ Plugin4.ToolbarItem = () => {
         }}
       />
       <SchemaComponent scope={{ useCloseAction }} schema={schema} />
-    </VisibleContext.Provider>
+    </ActionContext.Provider>
   );
 };

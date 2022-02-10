@@ -10,22 +10,15 @@ group:
 
 ## Nodes
 
-已确定的节点：
-
 - Action
-- Action.URL
-- Action.Link
 - Action.Drawer
 - Action.Drawer.Footer
 - Action.Modal
 - Action.Modal.Footer
-- Action.Popover
-
-不确定的节点：
-
-- Action.Group
-- Action.Dropdown
-- Action.Window
+- Action.Drawer
+- Action.Drawer.Footer
+- Action.Container
+- Action.Container.Footer
 - ActionBar
 
 ## Examples
@@ -34,8 +27,12 @@ group:
 
 <code src="./demos/demo1.tsx"/>
 
-### VisibleContext + Action.Drawer
+### ActionContext + Action.Drawer
 
-只配置 Action.Drawer，而不需要 Action，通过 VisibleContext 自定义按钮。
+只配置 Action.Drawer，而不需要 Action，结合 ActionContext 自定义按钮。
 
 <code src="./demos/demo2.tsx"/>
+
+### 不同的打开方式
+
+<code src="./demos/demo3.tsx"/>

@@ -3,11 +3,11 @@ import { ISchema, useForm } from '@formily/react';
 import { uid } from '@formily/shared';
 import React, { useState } from 'react';
 import { PluginManager } from '../plugin-manager';
-import { SchemaComponent, useActionVisible, VisibleContext } from '../schema-component';
+import { ActionContext, SchemaComponent, useActionContext } from '../schema-component';
 import { ConfigurationTable } from './Configuration';
 
 const useCloseAction = () => {
-  const { setVisible } = useActionVisible();
+  const { setVisible } = useActionContext();
   const form = useForm();
   return {
     async run() {
@@ -38,7 +38,7 @@ const schema: ISchema = {
 export const CollectionManagerShortcut = () => {
   const [visible, setVisible] = useState(false);
   return (
-    <VisibleContext.Provider value={[visible, setVisible]}>
+    <ActionContext.Provider value={{ visible, setVisible }}>
       <PluginManager.Toolbar.Item
         icon={<DatabaseOutlined />}
         title={'数据表配置'}
@@ -47,6 +47,6 @@ export const CollectionManagerShortcut = () => {
         }}
       />
       <SchemaComponent scope={{ useCloseAction }} schema={schema} components={{ ConfigurationTable }} />
-    </VisibleContext.Provider>
+    </ActionContext.Provider>
   );
 };

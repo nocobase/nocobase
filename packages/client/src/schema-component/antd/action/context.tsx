@@ -1,3 +1,10 @@
 import { createContext } from 'react';
 
-export const VisibleContext = createContext<[boolean, any]>([false, () => {}]);
+export const ActionContext = createContext<ActionContextProps>({});
+
+export interface ActionContextProps {
+  visible?: boolean;
+  setVisible?: (v: boolean) => void;
+  openMode?: 'drawer' | 'modal' | 'page';
+  containerRefKey?: string;
+}

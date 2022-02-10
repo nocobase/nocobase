@@ -1,18 +1,17 @@
-import React, { useState } from 'react';
-import { observer, ISchema, useForm } from '@formily/react';
+import { FormItem, Input } from '@formily/antd';
+import { ISchema, observer, useForm } from '@formily/react';
 import {
+  Action,
+  ActionContext,
+  Form,
   SchemaComponent,
   SchemaComponentProvider,
-  Form,
-  Action,
-  useActionVisible,
-  VisibleContext,
+  useActionContext
 } from '@nocobase/client';
-import { FormItem, Input } from '@formily/antd';
-import { Button } from 'antd';
+import React, { useState } from 'react';
 
 const useCloseAction = () => {
-  const { setVisible } = useActionVisible();
+  const { setVisible } = useActionContext();
   const form = useForm();
   return {
     async run() {
@@ -58,10 +57,10 @@ export default observer(() => {
   const [visible, setVisible] = useState(false);
   return (
     <SchemaComponentProvider components={{ Form, Action, Input, FormItem }}>
-      <VisibleContext.Provider value={[visible, setVisible]}>
+      <ActionContext.Provider value={{ visible, setVisible }}>
         <a onClick={() => setVisible(true)}>Open</a>
         <SchemaComponent scope={{ useCloseAction }} schema={schema} />
-      </VisibleContext.Provider>
+      </ActionContext.Provider>
     </SchemaComponentProvider>
   );
 });
