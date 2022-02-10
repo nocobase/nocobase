@@ -290,7 +290,7 @@ describe('server hooks', () => {
           'x-server-hooks': [
             {
               type: 'onSelfCreate',
-              method: 'bindMenuToRow',
+              method: 'bindMenuToRole',
             },
           ],
         },
