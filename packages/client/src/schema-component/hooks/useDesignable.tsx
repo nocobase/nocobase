@@ -23,6 +23,11 @@ interface InsertAdjacentOptions {
   removeEmptyParents?: boolean;
 }
 
+interface RemoveOptions {
+  removeEmptyParents?: boolean;
+  breakComponent?: string;
+}
+
 const generateUid = (s: ISchema) => {
   if (!s['x-uid']) {
     s['x-uid'] = uid();
@@ -108,13 +113,16 @@ export class Designable {
     }
   }
 
-  remove(schema?: Schema, options: { removeEmptyParents?: boolean } = {}) {
-    const { removeEmptyParents } = options;
+  remove(schema?: Schema, options: RemoveOptions = {}) {
+    const { removeEmptyParents, breakComponent } = options;
     let s = schema || this.current;
     let removed;
     while (s.parent) {
       removed = s.parent.removeProperty(s.name);
       if (!removeEmptyParents) {
+        break;
+      }
+      if (s?.parent?.['x-component'] === breakComponent) {
         break;
       }
       const count = Object.keys(s.parent.properties || {}).length;
@@ -332,10 +340,10 @@ export function useDesignable() {
       update(key);
       refresh();
     },
-    remove(schema: any, options?: any) {
+    remove(schema: any, options?: RemoveOptions) {
       dn.remove(schema, options);
     },
-    insertAdjacent(position: Position, schema: ISchema, options: InsertAdjacentOptions = {}) {
+    insertAdjacent(position: Position, schema: ISchema, options?: InsertAdjacentOptions) {
       dn.insertAdjacent(position, schema, options);
     },
     insertBeforeBegin(schema: ISchema) {

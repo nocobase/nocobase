@@ -38,7 +38,7 @@ const RequestSchemaComponent: React.FC<RemoteSchemaComponentProps> = (props) => 
   if (hidden) {
     return <Spin />;
   }
-  return <SchemaComponent scope={scope} schema={schemaTransform(data?.data || {})} />;
+  return <SchemaComponent memoized scope={scope} schema={schemaTransform(data?.data || {})} />;
 };
 
 export const RemoteSchemaComponent: React.FC<RemoteSchemaComponentProps> = (props) => {
