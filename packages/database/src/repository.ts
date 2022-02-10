@@ -387,6 +387,10 @@ export class Repository<TModelAttributes extends {} = any, TCreationAttributes e
 
     options = <DestroyOptions>options;
 
+    if (options['individualHooks'] === undefined) {
+      options['individualHooks'] = true;
+    }
+
     const filterByTk: TargetKey[] | undefined =
       options.filterByTk && !lodash.isArray(options.filterByTk)
         ? [options.filterByTk]

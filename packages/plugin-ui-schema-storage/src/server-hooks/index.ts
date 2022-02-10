@@ -78,7 +78,7 @@ export class ServerHooks {
       {
         type: 'onCollectionFieldDestroy',
         collection: collectionName,
-        'fields.$anyOf': [fieldName],
+        field: fieldName,
       },
       {
         collectionFieldInstance: fieldModel,

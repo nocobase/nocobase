@@ -6,19 +6,23 @@ export default {
   // autoGenId: false,
   timestamps: false,
   fields: [
-    { type: 'belongsTo', name: 'uiSchema', target: 'ui_schemas', foreignKey: 'uid' },
+    { type: 'belongsTo', name: 'uiSchema', target: 'ui_schemas', foreignKey: 'uid', onDelete: 'CASCADE' },
     { type: 'string', name: 'type' },
     {
       type: 'string',
       name: 'collection',
     },
     {
-      type: 'array',
-      name: 'fields',
+      type: 'string',
+      name: 'field',
     },
     {
       type: 'string',
       name: 'method',
+    },
+    {
+      type: 'json',
+      name: 'params',
     },
   ],
 } as CollectionOptions;

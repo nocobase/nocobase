@@ -91,7 +91,7 @@ describe('server hooks', () => {
                     {
                       type: 'onCollectionFieldDestroy',
                       collection: 'posts',
-                      fields: ['name'],
+                      field: 'name',
                       method: 'removeEmptyParents',
                     },
                   ],
@@ -107,7 +107,7 @@ describe('server hooks', () => {
                     {
                       type: 'onCollectionFieldDestroy',
                       collection: 'posts',
-                      fields: ['title'],
+                      field: 'title',
                       method: 'removeEmptyParents',
                     },
                   ],
@@ -129,7 +129,7 @@ describe('server hooks', () => {
                     {
                       type: 'onCollectionFieldDestroy',
                       collection: 'posts',
-                      fields: ['intro'],
+                      field: 'intro',
                       method: 'removeEmptyParents',
                     },
                   ],
@@ -172,6 +172,7 @@ describe('server hooks', () => {
 
     const schema = {
       'x-uid': 'root',
+      name: 'root',
       properties: {
         child1: {
           'x-uid': 'child1',
@@ -179,9 +180,27 @@ describe('server hooks', () => {
 
         child2: {
           'x-uid': 'child2',
-          'x-server-hooks': [],
+          'x-server-hooks': [
+            {
+              type: 'onCollectionDestroy',
+              collection: 'posts',
+              method: 'remove',
+            },
+          ],
         },
       },
     };
+
+    await uiSchemaRepository.insert(schema);
+
+    await db.getRepository('collections').destroy({
+      filter: {
+        name: 'posts',
+      },
+    });
+
+    const jsonTree = await uiSchemaRepository.getJsonSchema('root');
+    expect(jsonTree['properties']['child1']).toBeDefined();
+    expect(jsonTree['properties']['child2']).not.toBeDefined();
   });
 });
