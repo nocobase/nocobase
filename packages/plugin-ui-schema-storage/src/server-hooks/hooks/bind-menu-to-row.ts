@@ -1,6 +1,4 @@
-import { BelongsToManyRepository } from '@nocobase/database';
-
-export async function bindMenuToRow({ schemaInstance, db, options }) {
+export async function bindMenuToRole({ schemaInstance, db, options }) {
   const { transaction } = options;
   const addNewMenuRoles = await db.getRepository('roles').find({
     filter: {
