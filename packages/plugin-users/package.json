@@ -8,9 +8,7 @@
     "build:cjs": "tsc --project tsconfig.build.json",
     "build:esm": "tsc --project tsconfig.build.json --module es2015 --outDir esm"
   },
-  "dependencies": {
-    "crypto-random-string": "^3.3.0"
-  },
+  "dependencies": {},
   "devDependencies": {
     "@nocobase/test": "^0.6.0-alpha.0"
   },
