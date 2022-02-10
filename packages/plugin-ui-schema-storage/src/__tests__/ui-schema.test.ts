@@ -24,7 +24,7 @@ describe('ui-schema', () => {
 
     app.plugin(PluginUiSchema);
 
-    await app.load();
+    await app.loadAndInstall();
     uiSchemaRepository = db.getCollection('ui_schemas').repository as UiSchemaRepository;
   });
 
