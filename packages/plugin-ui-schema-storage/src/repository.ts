@@ -370,6 +370,7 @@ export default class UiSchemaRepository extends Repository {
       }
       return insertedNodes;
     } catch (err) {
+      console.log({ err });
       if (handleTransaction) {
         await transaction.rollback();
       }

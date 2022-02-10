@@ -37,7 +37,7 @@ describe('server hooks', () => {
                   {
                     type: 'onCollectionFieldDestroy',
                     collection: 'posts',
-                    fields: ['title'],
+                    field: 'title',
                     method: 'onFieldDestroy',
                   },
                 ],
@@ -221,7 +221,7 @@ describe('server hooks', () => {
         {
           type: 'onCollectionFieldDestroy',
           collection: 'posts',
-          fields: ['title'],
+          field: 'title',
           method: 'preventDestroy',
         },
       ],
