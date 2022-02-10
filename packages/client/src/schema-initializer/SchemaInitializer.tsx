@@ -1,7 +1,7 @@
 import { ISchema, observer } from '@formily/react';
-import { useDesignable } from '@nocobase/client';
 import { Button, Dropdown, Menu } from 'antd';
 import React, { createContext, useContext, useState } from 'react';
+import { useDesignable } from '../schema-component/hooks';
 import {
   SchemaInitializerButtonProps,
   SchemaInitializerItemComponent,

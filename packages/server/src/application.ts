@@ -137,7 +137,7 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
   }
 
   findCommand(name: string): Command {
-    return this.cli._findCommand(name);
+    return (<any>this.cli)._findCommand(name);
   }
 
   async load() {
