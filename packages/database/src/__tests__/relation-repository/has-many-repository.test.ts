@@ -125,6 +125,9 @@ describe('has many repository', () => {
 
   beforeEach(async () => {
     db = mockDatabase();
+
+    await db.clean({ drop: true });
+
     User = db.collection({
       name: 'users',
       fields: [
@@ -235,20 +238,20 @@ describe('has many repository', () => {
     });
 
     const p2 = await Post.repository.create({
-      values: { title: 'p2', tags: [t1, t2, t3] },
+      values: { title: 'p2', tags: [t1.get('id'), t2.get('id'), t3.get('id')] },
     });
 
     const p3 = await Post.repository.create({
-      values: { title: 'p3', tags: [t1, t2, t3] },
+      values: { title: 'p3', tags: [t1.get('id'), t2.get('id'), t3.get('id')] },
     });
     const p4 = await Post.repository.create({
-      values: { title: 'p4', tags: [t1, t2, t3] },
+      values: { title: 'p4', tags: [t1.get('id'), t2.get('id'), t3.get('id')] },
     });
     const p5 = await Post.repository.create({
-      values: { title: 'p5', tags: [t1, t2, t3] },
+      values: { title: 'p5', tags: [t1.get('id'), t2.get('id'), t3.get('id')] },
     });
     const p6 = await Post.repository.create({
-      values: { title: 'p6', tags: [t1, t2, t3] },
+      values: { title: 'p6', tags: [t1.get('id'), t2.get('id'), t3.get('id')] },
     });
 
     const UserPostRepository = new HasManyRepository(User, 'posts', u1.id);
