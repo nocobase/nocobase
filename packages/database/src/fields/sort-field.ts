@@ -21,7 +21,10 @@ export class SortField extends Field {
     const where = {};
 
     if (scopeKey) {
-      where[scopeKey] = instance.get(scopeKey);
+      const value = instance.get(scopeKey);
+      if (value !== undefined && value !== null) {
+        where[scopeKey] = value;
+      }
     }
 
     await sortFieldMutex.runExclusive(async () => {

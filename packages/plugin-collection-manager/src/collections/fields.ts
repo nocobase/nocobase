@@ -6,9 +6,8 @@ export default {
   model: 'FieldModel',
   timestamps: false,
   sortable: {
-    type: 'sort',
     name: 'sort',
-    scope: ['parentKey'],
+    scopeKey: 'parentKey',
   },
   fields: [
     {
