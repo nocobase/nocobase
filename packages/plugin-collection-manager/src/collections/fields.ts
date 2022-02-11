@@ -54,6 +54,7 @@ export default {
       type: 'belongsTo',
       name: 'uiSchema',
       target: 'ui_schemas',
+      foreignKey: 'uiSchemaUid'
     },
     {
       type: 'json',

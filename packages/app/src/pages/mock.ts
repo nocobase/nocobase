@@ -15,7 +15,7 @@ export default (apiClient: APIClient) => {
     },
   });
 
-  const jsonSchema = {
+  const jsonSchema: any = {
     qqzzjakwkwl: {
       name: 'qqzzjakwkwl',
       type: 'void',
@@ -109,11 +109,12 @@ export default (apiClient: APIClient) => {
   };
 
   mock.onGet(/\/ui_schemas\:getJsonSchema\/(\w+)/).reply(function (config) {
-    const name = config.url.split('/').pop();
-    console.log(name);
-    if (jsonSchema[name]) {
+    const name = config?.url?.split('/')?.pop();
+
+    if (name && jsonSchema[name]) {
       return [200, { data: jsonSchema[name] }];
     }
+
     const response = {
       data: {
         type: 'void',
