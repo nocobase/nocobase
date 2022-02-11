@@ -25,12 +25,12 @@ import { Spin } from 'antd';
 import 'antd/dist/antd.css';
 import React from 'react';
 import { I18nextProvider } from 'react-i18next';
-import { Link, MemoryRouter, NavLink } from 'react-router-dom';
+import { Link, NavLink } from 'react-router-dom';
 import apiClient from './apiClient';
 
 const providers = [
   // [HashRouter],
-  [MemoryRouter, { initialEntries: ['/'] }],
+  // [MemoryRouter, { initialEntries: ['/'] }],
   [APIClientProvider, { apiClient }],
   [I18nextProvider, { i18n }],
   [AntdConfigProvider, { remoteLocale: true }],
