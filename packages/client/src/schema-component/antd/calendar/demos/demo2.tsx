@@ -2,8 +2,9 @@
  * title: Calendar
  */
 import { uid } from '@formily/shared';
-import { Calendar, SchemaComponent, SchemaComponentProvider } from '@nocobase/client';
+import { APIClientProvider, Calendar, SchemaComponent, SchemaComponentProvider } from '@nocobase/client';
 import React from 'react';
+import { apiClient } from './apiClient';
 import defaultValues from './defaultValues';
 import { AddActionButton } from './Initializer';
 
@@ -16,6 +17,13 @@ const schema = {
       title: '',
       startTime: '',
       endTime: '',
+    },
+    request: {
+      resource: 'tasks',
+      action: 'list',
+      params: {
+        filter: {},
+      },
     },
   },
   default: defaultValues,
@@ -36,6 +44,19 @@ const schema = {
           type: 'void',
           title: '翻页',
           'x-component': 'Calendar.Nav',
+          'x-component-props': {
+            pagination: {
+              current: 2,
+              pageSize: 2,
+            },
+            request: {
+              resource: 'posts',
+              action: 'list',
+              params: {
+                filter: {},
+              },
+            },
+          },
           'x-action': 'calendar:nav',
           'x-align': 'left',
         },
@@ -80,8 +101,10 @@ const schema = {
 
 export default () => {
   return (
-    <SchemaComponentProvider components={{ AddActionButton, Calendar }}>
-      <SchemaComponent schema={schema} />
-    </SchemaComponentProvider>
+    <APIClientProvider apiClient={apiClient}>
+      <SchemaComponentProvider components={{ AddActionButton, Calendar }}>
+        <SchemaComponent schema={schema} />
+      </SchemaComponentProvider>
+    </APIClientProvider>
   );
 };
