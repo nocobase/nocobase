@@ -70,7 +70,6 @@ const schema = {
           'x-action': 'calendar:viewSelect',
           'x-align': 'right',
         },
-
         // filter: {
         //   type: 'void',
         //   title: '过滤',

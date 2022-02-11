@@ -1,30 +1,9 @@
 import { observer, useFieldSchema } from '@formily/react';
-import { useCollection } from '@nocobase/client';
+import { SchemaInitializer, useCollection, useDesignable } from '@nocobase/client';
 import { Switch } from 'antd';
 import React from 'react';
-import { SchemaInitializer } from '../../../schema-initializer';
-import { SchemaComponent } from '../../core';
-import { useDesignable } from '../../hooks';
-import { Action, ActionBar } from '../action';
 
-export const ToolBar = observer((props: any) => {
-  const fieldSchema = useFieldSchema();
-  debugger;
-  return (
-    <SchemaComponent
-      components={{ ActionBar, Action, AddActionButton }}
-      schema={{
-        type: 'void',
-        name: 'actionBar',
-        'x-component': 'ActionBar',
-        'x-action-initializer': 'AddActionButton',
-        properties: { ...fieldSchema.properties },
-      }}
-    />
-  );
-});
-
-const AddActionButton = observer((props: any) => {
+export const AddActionButton = observer((props: any) => {
   const { name: collectName } = useCollection();
   return (
     <SchemaInitializer.Button
@@ -86,7 +65,6 @@ const useCurrentActionSchema = (action: string) => {
 
 const InitializeAction = SchemaInitializer.itemWrap((props) => {
   const { item, insert } = props;
-  debugger;
   const { exists, remove } = useCurrentActionSchema(item.schema['x-action']);
   return (
     <SchemaInitializer.Item
