@@ -21,7 +21,6 @@ export function useRequest<P>(
   options: Options<any, any> & { uid?: string } = {},
 ) {
   const api = useContext(APIClientContext);
-  debugger;
   if (typeof service === 'function') {
     const result = useReq(service, {
       ...options,
@@ -50,7 +49,6 @@ export function useRequest<P>(
     {
       ...options,
       onSuccess(...args) {
-        debugger;
         options.onSuccess?.(...args);
         if (options.uid) {
           api.services[options.uid] = result;

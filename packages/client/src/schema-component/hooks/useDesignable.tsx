@@ -80,7 +80,6 @@ export class Designable {
   }
 
   insertAdjacent(position: Position, schema: ISchema, options: InsertAdjacentOptions = {}) {
-    debugger;
     switch (position) {
       case 'beforeBegin':
         return this.insertBeforeBegin(schema, options);
@@ -117,7 +116,6 @@ export class Designable {
   remove(schema?: Schema, options: RemoveOptions = {}) {
     const { removeEmptyParents, breakComponent } = options;
     let s = schema || this.current;
-    debugger;
     let removed;
     while (s.parent) {
       removed = s.parent.removeProperty(s.name);
