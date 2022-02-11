@@ -25,9 +25,10 @@ describe('createdBy/updatedBy', () => {
         updatedBy: true,
       });
       expect(Post.hasField('createdBy')).toBeTruthy();
+      expect(Post.hasField('updatedBy')).toBeTruthy();
     });
 
-    it.skip('case 2', async () => {
+    it('case 2', async () => {
       const Post = db.collection({
         name: 'posts',
         createdBy: true,
@@ -35,7 +36,7 @@ describe('createdBy/updatedBy', () => {
       });
       await db.sync();
       const currentUser = await db.getCollection('users').model.create();
-      const p1 = await Post.repository.create({
+      await Post.repository.create({
         context: {
           state: {
             currentUser,
@@ -45,11 +46,12 @@ describe('createdBy/updatedBy', () => {
       const p2 = await Post.repository.findOne({
         appends: ['createdBy', 'updatedBy'],
       });
-      expect(p2.get('createdBy')).toMatchObject(currentUser.toJSON());
-      expect(p2.get('updatedBy')).toMatchObject(currentUser.toJSON());
+      const data = p2.toJSON();
+      expect(data.createdBy.id).toBe(currentUser.get('id'));
+      expect(data.updatedBy.id).toBe(currentUser.get('id'));
     });
 
-    it.skip('case 3', async () => {
+    it('case 3', async () => {
       const Post = db.collection({
         name: 'posts',
         createdBy: true,
@@ -77,8 +79,9 @@ describe('createdBy/updatedBy', () => {
       const p2 = await Post.repository.findOne({
         appends: ['createdBy', 'updatedBy'],
       });
-      expect(p2.get('createdBy')).toMatchObject(user1.toJSON());
-      expect(p2.get('updatedBy')).toMatchObject(user2.toJSON());
+      const data = p2.toJSON();
+      expect(data.createdBy.id).toBe(user1.get('id'));
+      expect(data.updatedBy.id).toBe(user2.get('id'));
     });
   });
 });

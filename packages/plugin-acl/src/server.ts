@@ -1,9 +1,9 @@
-import { Plugin } from '@nocobase/server';
 import { ACL } from '@nocobase/acl';
+import { Plugin } from '@nocobase/server';
 import path from 'path';
+import { createACL } from './acl';
 import { availableActionResource } from './actions/available-actions';
 import { roleCollectionsResource } from './actions/role-collections';
-import { createACL } from './acl';
 import { RoleResourceActionModel } from './model/RoleResourceActionModel';
 import { RoleResourceModel } from './model/RoleResourceModel';
 
@@ -27,7 +27,7 @@ export class GrantHelper {
   constructor() {}
 }
 
-export default class PluginACL extends Plugin {
+export class PluginACL extends Plugin {
   acl: ACL;
 
   associationFieldsActions: AssociationFieldsActions = {};
@@ -190,3 +190,5 @@ export default class PluginACL extends Plugin {
     this.app.resourcer.use(this.acl.middleware());
   }
 }
+
+export default PluginACL;

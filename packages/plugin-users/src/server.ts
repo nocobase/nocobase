@@ -1,17 +1,23 @@
-import path from 'path';
+import { Collection } from '@nocobase/database';
+import { Plugin } from '@nocobase/server';
+import { resolve } from 'path';
 import * as actions from './actions/users';
 import * as middlewares from './middlewares';
-import { Collection } from '@nocobase/database';
-import { Plugin, PluginOptions } from '@nocobase/server';
 
-export default class PluginUsers extends Plugin {
+export default class UsersPlugin extends Plugin {
   async beforeLoad() {
+    const {
+      adminNickname = 'Super Admin',
+      adminEmail = 'admin@nocobase.com',
+      adminPassword = 'admin123',
+    } = this.options;
+
     this.app.on('installing', async () => {
       const User = this.db.getCollection('users');
       await User.model.create({
-        nickname: 'Super Admin',
-        email: process.env.ADMIN_EMAIL || 'admin@nocobase.com',
-        password: process.env.ADMIN_PASSWORD || 'admin123',
+        nickname: adminNickname,
+        email: adminEmail,
+        password: adminPassword,
       });
     });
 
@@ -65,12 +71,12 @@ export default class PluginUsers extends Plugin {
       this.app.resourcer.registerActionHandler(`users:${key}`, action);
     }
 
-    this.app.resourcer.use(middlewares.parseToken({}));
+    this.app.resourcer.use(middlewares.parseToken());
   }
 
   async load() {
     await this.db.import({
-      directory: path.resolve(__dirname, 'collections'),
+      directory: resolve(__dirname, 'collections'),
     });
   }
 }

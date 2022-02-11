@@ -1,14 +1,14 @@
-import path from 'path';
 import { Plugin } from '@nocobase/server';
-
+import { resolve } from 'path';
 import { action as uploadAction, middleware as uploadMiddleware } from './actions/upload';
-import { getStorageConfig } from './storages';
 import { STORAGE_TYPE_LOCAL } from './constants';
+import { getStorageConfig } from './storages';
 
 export default class PluginFileManager extends Plugin {
   storageType() {
     return process.env.DEFAULT_STORAGE_TYPE;
   }
+
   async beforeLoad() {
     this.app.on('installing', async () => {
       const defaultStorageConfig = getStorageConfig(this.storageType());
@@ -27,7 +27,7 @@ export default class PluginFileManager extends Plugin {
 
   async load() {
     await this.db.import({
-      directory: path.resolve(__dirname, 'collections'),
+      directory: resolve(__dirname, 'collections'),
     });
 
     // 暂时中间件只能通过 use 加进来
