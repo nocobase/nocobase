@@ -207,6 +207,69 @@ describe('acl', () => {
     ).toBeNull();
   });
 
+  it('should revoke resource when collection destroy', async () => {
+    const role = await db.getRepository('roles').create({
+      values: {
+        name: 'admin',
+        title: 'Admin User',
+        allowConfigure: true,
+      },
+    });
+
+    await db.getRepository('collections').create({
+      values: {
+        name: 'posts',
+      },
+    });
+
+    await db.getRepository('fields').create({
+      values: {
+        collectionName: 'posts',
+        type: 'string',
+        name: 'title',
+      },
+    });
+
+    await app
+      .agent()
+      .resource('roles.resources')
+      .create({
+        associatedIndex: role.get('name') as string,
+        values: {
+          name: 'posts',
+          usingActionsConfig: true,
+          actions: [
+            {
+              name: 'view',
+              fields: ['title'],
+            },
+          ],
+        },
+      });
+
+    expect(
+      acl.can({
+        role: 'admin',
+        resource: 'posts',
+        action: 'view',
+      }),
+    ).not.toBeNull();
+
+    await db.getRepository('collections').destroy({
+      filter: {
+        name: 'posts',
+      },
+    });
+
+    expect(
+      acl.can({
+        role: 'admin',
+        resource: 'posts',
+        action: 'view',
+      }),
+    ).toBeNull();
+  });
+
   it('should revoke actions when not using actions config', async () => {
     await db.getRepository('roles').create({
       values: {
