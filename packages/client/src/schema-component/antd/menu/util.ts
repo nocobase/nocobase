@@ -1,6 +1,9 @@
-import { Schema, observer, useFieldSchema, useField, RecursionField } from '@formily/react';
+import { Schema } from '@formily/react';
 
-function findByUid(schema: Schema, uid: string) {
+export function findByUid(schema: Schema, uid: string) {
+  if (!Schema.isSchemaInstance(schema)) {
+    schema = new Schema(schema);
+  }
   return schema.reduceProperties((buffter, s) => {
     if (s['x-uid'] === uid) {
       return s;

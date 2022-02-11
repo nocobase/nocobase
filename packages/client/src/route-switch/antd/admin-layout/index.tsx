@@ -3,6 +3,7 @@ import React, { useRef, useState } from 'react';
 import { useHistory, useRouteMatch } from 'react-router-dom';
 import {
   CurrentUser,
+  findByUid,
   findMenuItem,
   PluginManager,
   RemoteSchemaComponent,
@@ -42,6 +43,10 @@ export function AdminLayout(props: any) {
             }}
             onSuccess={(data) => {
               if (defaultSelectedUid) {
+                const s = findByUid(data?.data, defaultSelectedUid);
+                if (s) {
+                  setTitle(s.title);
+                }
                 return;
               }
               setHidden(true);
