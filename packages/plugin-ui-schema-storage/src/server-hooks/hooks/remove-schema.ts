@@ -1,4 +1,4 @@
-import { UiSchemaRepository } from '@nocobase/plugin-ui-schema-storage';
+import { UiSchemaRepository } from '../../';
 
 export async function removeSchema({ schemaInstance, options, db, params }) {
   const { transaction } = options;
