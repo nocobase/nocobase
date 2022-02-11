@@ -169,6 +169,21 @@ export class PluginACL extends Plugin {
       await this.writeResourceToACL(resource, transaction);
     });
 
+    this.app.db.on('rolesResources.afterDestroy', async (model, options) => {
+      const role = this.acl.getRole(model.get('roleName'));
+      role.revokeResource(model.get('name'));
+    });
+
+    this.app.db.on('collections.afterDestroy', async (model, options) => {
+      const { transaction } = options;
+      await this.app.db.getRepository('rolesResources').destroy({
+        filter: {
+          name: model.get('name'),
+        },
+        transaction,
+      });
+    });
+
     this.app.db.on('fields.afterCreate', async (model, options) => {
       const { transaction } = options;
 
