@@ -13,7 +13,7 @@ export type RepositoryType = typeof Repository;
 
 export type CollectionSortable = string | boolean | { name?: string; scopeKey?: string };
 
-export interface CollectionOptions extends Omit<ModelOptions, 'name'> {
+export interface CollectionOptions extends Omit<ModelOptions, 'name' | 'hooks'> {
   name: string;
   tableName?: string;
   filterTargetKey?: string;
@@ -201,17 +201,9 @@ export class Collection<
     this.setFields(options.fields, false);
     this.setRepository(options.repository);
 
-    if (newOptions.hooks) {
-      this.setUpHooks(newOptions.hooks);
-    }
-
     this.context.database.emit('afterUpdateCollection', this);
 
     return this;
-  }
-
-  setUpHooks(bindHooks) {
-    (<any>this.model)._setupHooks(bindHooks);
   }
 
   setSortable(sortable) {
