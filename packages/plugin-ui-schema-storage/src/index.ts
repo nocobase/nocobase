@@ -1,4 +1,4 @@
-import PluginUiSchema from './server';
-import UiSchemaRepository from './repository';
-export default PluginUiSchema;
-export { UiSchemaRepository };
+export * from './repository';
+export * from './server';
+export { default } from './server';
+

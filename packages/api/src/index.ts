@@ -55,10 +55,20 @@ const api = new Application({
   },
 });
 
-api.plugin(require('@nocobase/plugin-collection-manager').default);
-api.plugin(require('@nocobase/plugin-ui-schema-storage').default);
-api.plugin(require('@nocobase/plugin-ui-routes-storage').default);
-// api.plugin(require('@nocobase/plugin-acl'));
+const plugins = [
+  '@nocobase/plugin-collection-manager',
+  '@nocobase/plugin-ui-schema-storage',
+  '@nocobase/plugin-ui-routes-storage',
+  '@nocobase/plugin-client',
+  '@nocobase/plugin-file-manager',
+  '@nocobase/plugin-system-settings',
+  '@nocobase/plugin-users',
+  '@nocobase/plugin-acl',
+];
+
+for (const plugin of plugins) {
+  api.plugin(require(plugin).default);
+}
 
 if (process.argv.length < 3) {
   // @ts-ignore

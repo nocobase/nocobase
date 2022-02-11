@@ -2,12 +2,12 @@ import { MagicAttributeModel } from '@nocobase/database';
 import { Plugin } from '@nocobase/server';
 import path from 'path';
 import { uiSchemaActions } from './actions/ui-schema-action';
+import { UiSchemaModel } from './model';
 import UiSchemaRepository from './repository';
 import { ServerHooks } from './server-hooks';
-import { UiSchemaModel } from './model';
 import { ServerHookModel } from './server-hooks/model';
 
-export default class PluginUiSchema extends Plugin {
+export class UiSchemaStoragePlugin extends Plugin {
   serverHooks: ServerHooks;
 
   registerRepository() {
@@ -65,3 +65,5 @@ export default class PluginUiSchema extends Plugin {
     });
   }
 }
+
+export default UiSchemaStoragePlugin;

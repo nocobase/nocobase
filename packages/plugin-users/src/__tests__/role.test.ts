@@ -1,6 +1,6 @@
-import { MockServer, mockServer } from '@nocobase/test';
 import Database from '@nocobase/database';
 import PluginACL from '@nocobase/plugin-acl';
+import { MockServer, mockServer } from '@nocobase/test';
 
 describe('role', () => {
   let api: MockServer;

@@ -1,8 +1,8 @@
 import { Repository, TransactionAble } from '@nocobase/database';
-import lodash from 'lodash';
-import { ChildOptions, SchemaNode, TargetPosition, UiSchemaNodeDAO } from './dao/ui_schema_node_dao';
 import { uid } from '@nocobase/utils';
+import lodash from 'lodash';
 import { Transaction } from 'sequelize';
+import { ChildOptions, SchemaNode, TargetPosition } from './dao/ui_schema_node_dao';
 
 interface GetJsonSchemaOptions {
   includeAsyncNode?: boolean;
@@ -11,7 +11,7 @@ interface GetJsonSchemaOptions {
 
 const nodeKeys = ['properties', 'definitions', 'patternProperties', 'additionalProperties', 'items'];
 
-export default class UiSchemaRepository extends Repository {
+export class UiSchemaRepository extends Repository {
   static schemaToSingleNodes(schema: any, carry: SchemaNode[] = [], childOptions: ChildOptions = null): SchemaNode[] {
     const node = lodash.cloneDeep(
       lodash.isString(schema)
@@ -706,3 +706,5 @@ export default class UiSchemaRepository extends Repository {
     return savedNode;
   }
 }
+
+export default UiSchemaRepository;

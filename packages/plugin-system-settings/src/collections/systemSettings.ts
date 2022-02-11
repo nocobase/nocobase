@@ -1,7 +1,7 @@
-import { CollectionOptions } from '@nocobase/database';
+import { defineCollection } from '@nocobase/database';
 
-export default {
-  name: 'system_settings',
+export default defineCollection({
+  name: 'systemSettings',
   fields: [
     {
       type: 'string',
@@ -26,4 +26,5 @@ export default {
       name: 'appLang',
     },
   ],
-} as CollectionOptions;
+});
+
