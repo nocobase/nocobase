@@ -76,7 +76,7 @@ export default class UiSchemaRepository extends Repository {
     const rawSql = `
         SELECT SchemaTable.uid as uid, SchemaTable.name as name, SchemaTable.schema as "schema",
                TreePath.depth as depth,
-               NodeInfo.type as type, NodeInfo.async as async,  ParentPath.ancestor as parent
+               NodeInfo.type as type, NodeInfo.async as async,  ParentPath.ancestor as parent, ParentPath.sort as sort
         FROM ${treeCollection.model.tableName} as TreePath
                  LEFT JOIN ${this.model.tableName} as SchemaTable ON SchemaTable.uid =  TreePath.descendant
                  LEFT JOIN ${treeCollection.model.tableName} as NodeInfo ON NodeInfo.descendant = SchemaTable.uid and NodeInfo.descendant = NodeInfo.ancestor and NodeInfo.depth = 0
