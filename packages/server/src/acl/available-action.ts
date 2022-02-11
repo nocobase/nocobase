@@ -4,24 +4,28 @@ const availableActions: {
   [key: string]: AvailableActionOptions;
 } = {
   create: {
-    displayName: 't("create")',
+    displayName: 't("Create")',
     type: 'new-data',
   },
   import: {
-    displayName: 't("import")',
+    displayName: 't("Import")',
+    type: 'new-data',
+  },
+  export: {
+    displayName: 't("Import")',
     type: 'new-data',
   },
   view: {
-    displayName: 't("view")',
+    displayName: 't("View")',
     type: 'old-data',
     aliases: ['get', 'list'],
   },
   update: {
-    displayName: 't("edit")',
+    displayName: 't("Edit")',
     type: 'old-data',
   },
   destroy: {
-    displayName: 't("destroy")',
+    displayName: 't("Delete")',
     type: 'old-data',
   },
 };

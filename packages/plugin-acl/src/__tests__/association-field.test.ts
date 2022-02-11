@@ -1,8 +1,7 @@
-import { MockServer } from '@nocobase/test';
-import { Database, HasManyRepository, Model } from '@nocobase/database';
 import { ACL } from '@nocobase/acl';
+import { Database, HasManyRepository, Model } from '@nocobase/database';
+import { MockServer } from '@nocobase/test';
 import { prepareApp } from './prepare';
-import PluginACL from '@nocobase/plugin-acl';
 
 describe('association field acl', () => {
   let app: MockServer;
@@ -18,9 +17,7 @@ describe('association field acl', () => {
   beforeEach(async () => {
     app = await prepareApp();
     db = app.db;
-    const aclPlugin = app.getPlugin<PluginACL>('PluginACL');
-
-    acl = aclPlugin.getACL();
+    acl = app.acl;
 
     role = await db.getRepository('roles').create({
       values: {

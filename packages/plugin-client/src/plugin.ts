@@ -1,3 +1,4 @@
+import { skip } from '@nocobase/acl';
 import { Plugin } from '@nocobase/server';
 
 export class ClientPlugin extends Plugin {
@@ -18,17 +19,12 @@ export class ClientPlugin extends Plugin {
   }
 
   async load() {
-    // @ts-ignore
-    this.app.acl.use(async (ctx, next) => {
-      const { resourceName } = ctx.action;
-      if (resourceName === 'app') {
-        ctx.permission = {
-          skip: true,
-        };
-      }
-      await next();
-    });
-
+    this.app.acl.use(
+      skip({
+        resourceName: 'app',
+        actionName: 'getLang',
+      }),
+    );
     this.app.resource({
       name: 'app',
       actions: {

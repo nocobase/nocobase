@@ -1,3 +1,4 @@
+import { skip } from '@nocobase/acl';
 import { MagicAttributeModel } from '@nocobase/database';
 import { Plugin } from '@nocobase/server';
 import { resolve } from 'path';
@@ -130,6 +131,12 @@ export class UiRoutesStoragePlugin extends Plugin {
     this.app.db.import({
       directory: resolve(__dirname, 'collections'),
     });
+    this.app.acl.use(
+      skip({
+        resourceName: 'uiRoutes',
+        actionName: 'getAccessible',
+      }),
+    );
   }
 }
 
