@@ -86,6 +86,9 @@ export class PluginACL extends Plugin {
     const acl = createACL();
     this.acl = acl;
 
+    // @ts-ignore
+    this.app.acl = acl;
+
     this.app.db.registerModels({
       RoleResourceActionModel,
       RoleResourceModel,
