@@ -1,16 +1,17 @@
-import { Sequelize, ModelCtor, Model, ModelOptions } from 'sequelize';
+import merge from 'deepmerge';
 import { EventEmitter } from 'events';
+import { default as lodash, default as _ } from 'lodash';
+import { Model, ModelCtor, ModelOptions } from 'sequelize';
+import { SyncOptions } from 'sequelize/types/lib/sequelize';
 import { Database } from './database';
 import { Field, FieldOptions } from './fields';
-
-import _ from 'lodash';
 import { Repository } from './repository';
-import { SyncOptions } from 'sequelize/types/lib/sequelize';
-import lodash from 'lodash';
-import merge from 'deepmerge';
+
 const { hooks } = require('sequelize/lib/hooks');
 
 export type RepositoryType = typeof Repository;
+
+export type CollectionSortable = string | boolean | { name?: string; scopeKey?: string };
 
 export interface CollectionOptions extends Omit<ModelOptions, 'name'> {
   name: string;
@@ -19,6 +20,7 @@ export interface CollectionOptions extends Omit<ModelOptions, 'name'> {
   fields?: FieldOptions[];
   model?: string | ModelCtor<Model>;
   repository?: string | RepositoryType;
+  sortable?: CollectionSortable;
   /**
    * @default true
    */
@@ -61,6 +63,7 @@ export class Collection<
     this.modelInit();
     this.setFields(options.fields);
     this.setRepository(options.repository);
+    this.setSortable(options.sortable);
   }
 
   private sequelizeModelOptions() {
@@ -209,6 +212,27 @@ export class Collection<
 
   setUpHooks(bindHooks) {
     (<any>this.model)._setupHooks(bindHooks);
+  }
+
+  setSortable(sortable) {
+    if (!sortable) {
+      return;
+    }
+    if (sortable === true) {
+      this.setField('sort', {
+        type: 'sort',
+        hidden: true,
+      });
+    }
+    if (typeof sortable === 'string') {
+      this.setField(sortable, {
+        type: 'sort',
+        hidden: true,
+      });
+    } else if (typeof sortable === 'object') {
+      const { name, ...opts } = sortable;
+      this.setField(name || 'sort', { type: 'sort', hidden: true, ...opts });
+    }
   }
 
   /**
