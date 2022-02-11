@@ -32,6 +32,8 @@ const roleCollectionsResource = {
           usingConfig,
         };
       });
+
+      await next();
     },
   },
 };

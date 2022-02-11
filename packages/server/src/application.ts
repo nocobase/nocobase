@@ -1,3 +1,4 @@
+import { ACL } from '@nocobase/acl';
 import { registerActions } from '@nocobase/actions';
 import Database, { CleanOptions, CollectionOptions, DatabaseOptions, SyncOptions } from '@nocobase/database';
 import Resourcer, { ResourceOptions } from '@nocobase/resourcer';
@@ -7,6 +8,7 @@ import { Server } from 'http';
 import { i18n, InitOptions } from 'i18next';
 import Koa from 'koa';
 import { isBoolean } from 'lodash';
+import { createACL } from './acl';
 import { createCli, createDatabase, createI18n, createResourcer, registerMiddlewares } from './helper';
 import { Plugin } from './plugin';
 import { PluginManager } from './plugin-manager';
@@ -86,6 +88,8 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
 
   public readonly pm: PluginManager;
 
+  public readonly acl: ACL;
+
   protected plugins = new Map<string, Plugin>();
 
   public listenServer: Server;
@@ -93,6 +97,7 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
   constructor(options: ApplicationOptions) {
     super();
 
+    this.acl = createACL();
     this.db = createDatabase(options);
     this.resourcer = createResourcer(options);
     this.cli = createCli(this, options);

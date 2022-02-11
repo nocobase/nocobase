@@ -1,7 +1,5 @@
-import { ACL } from '@nocobase/acl';
 import { Plugin } from '@nocobase/server';
-import path from 'path';
-import { createACL } from './acl';
+import { resolve } from 'path';
 import { availableActionResource } from './actions/available-actions';
 import { roleCollectionsResource } from './actions/role-collections';
 import { RoleResourceActionModel } from './model/RoleResourceActionModel';
@@ -28,18 +26,17 @@ export class GrantHelper {
 }
 
 export class PluginACL extends Plugin {
-  acl: ACL;
 
   associationFieldsActions: AssociationFieldsActions = {};
 
   grantHelper = new GrantHelper();
 
-  registerAssociationFieldAction(associationType: string, value: AssociationFieldActions) {
-    this.associationFieldsActions[associationType] = value;
+  get acl() {
+    return this.app.acl;
   }
 
-  getACL() {
-    return this.acl;
+  registerAssociationFieldAction(associationType: string, value: AssociationFieldActions) {
+    this.associationFieldsActions[associationType] = value;
   }
 
   registerAssociationFieldsActions() {
@@ -104,11 +101,6 @@ export class PluginACL extends Plugin {
   }
 
   async beforeLoad() {
-    const acl = createACL();
-    this.acl = acl;
-
-    // @ts-ignore
-    this.app.acl = acl;
 
     this.app.db.registerModels({
       RoleResourceActionModel,
@@ -123,10 +115,10 @@ export class PluginACL extends Plugin {
     this.app.db.on('roles.afterSave', async (model, options) => {
       const { transaction } = options;
       const roleName = model.get('name');
-      let role = acl.getRole(roleName);
+      let role = this.acl.getRole(roleName);
 
       if (!role) {
-        role = acl.define({
+        role = this.acl.define({
           role: model.get('name'),
         });
       }
@@ -153,7 +145,7 @@ export class PluginACL extends Plugin {
 
     this.app.db.on('roles.afterDestroy', (model) => {
       const roleName = model.get('name');
-      acl.removeRole(roleName);
+      this.acl.removeRole(roleName);
     });
 
     this.app.db.on('rolesResources.afterSaveWithAssociations', async (model: RoleResourceModel, options) => {
@@ -241,7 +233,7 @@ export class PluginACL extends Plugin {
 
   async load() {
     await this.app.db.import({
-      directory: path.resolve(__dirname, 'collections'),
+      directory: resolve(__dirname, 'collections'),
     });
 
     this.app.resourcer.use(this.acl.middleware());
