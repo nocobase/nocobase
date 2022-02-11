@@ -1,7 +1,16 @@
 import { applyMixins, AsyncEmitter } from '@nocobase/utils';
 import merge from 'deepmerge';
 import { EventEmitter } from 'events';
-import { Model, ModelCtor, Op, Options, QueryInterfaceDropAllTablesOptions, Sequelize, SyncOptions, Utils } from 'sequelize';
+import {
+  Model,
+  ModelCtor,
+  Op,
+  Options,
+  QueryInterfaceDropAllTablesOptions,
+  Sequelize,
+  SyncOptions,
+  Utils
+} from 'sequelize';
 import { Collection, CollectionOptions, RepositoryType } from './collection';
 import { ImporterReader, ImportFileExtension } from './collection-importer';
 import * as FieldTypes from './fields';
@@ -294,6 +303,18 @@ export function extend(collectionOptions: CollectionOptions, mergeOptions?: Merg
     extend: true,
   };
 }
+
+export const defineCollection = (collectionOptions: CollectionOptions) => {
+  return collectionOptions;
+};
+
+export const extendCollection = (collectionOptions: CollectionOptions, mergeOptions?: MergeOptions) => {
+  return {
+    collectionOptions,
+    mergeOptions,
+    extend: true,
+  };
+};
 
 applyMixins(Database, [AsyncEmitter]);
 

@@ -1,31 +1,30 @@
+import lodash, { omit } from 'lodash';
 import {
   Association,
   BulkCreateOptions,
   CreateOptions as SequelizeCreateOptions,
-  UpdateOptions as SequelizeUpdateOptions,
-  FindAndCountOptions as SequelizeAndCountOptions,
   DestroyOptions as SequelizeDestroyOptions,
+  FindAndCountOptions as SequelizeAndCountOptions,
   FindOptions as SequelizeFindOptions,
   Model,
   ModelCtor,
   Op,
   Transaction,
+  UpdateOptions as SequelizeUpdateOptions
 } from 'sequelize';
-
 import { Collection } from './collection';
-import lodash, { omit } from 'lodash';
 import { Database } from './database';
-import { updateAssociations, updateModelByValues } from './update-associations';
 import { RelationField } from './fields';
 import FilterParser from './filter-parser';
 import { OptionsParser } from './options-parser';
-import { RelationRepository } from './relation-repository/relation-repository';
-import { HasOneRepository } from './relation-repository/hasone-repository';
-import { BelongsToRepository } from './relation-repository/belongs-to-repository';
 import { BelongsToManyRepository } from './relation-repository/belongs-to-many-repository';
+import { BelongsToRepository } from './relation-repository/belongs-to-repository';
 import { HasManyRepository } from './relation-repository/hasmany-repository';
-import { UpdateGuard } from './update-guard';
+import { HasOneRepository } from './relation-repository/hasone-repository';
+import { RelationRepository } from './relation-repository/relation-repository';
 import { transactionWrapperBuilder } from './transaction-decorator';
+import { updateAssociations, updateModelByValues } from './update-associations';
+import { UpdateGuard } from './update-guard';
 
 const debug = require('debug')('noco-database');
 
@@ -324,15 +323,11 @@ export class Repository<TModelAttributes extends {} = any, TCreationAttributes e
   async createMany(options: CreateManyOptions) {
     const transaction = await this.getTransaction(options);
     const { records } = options;
-    const instances = await this.collection.model.bulkCreate(records, {
-      ...options,
-      transaction,
-    });
-
-    for (let i = 0; i < instances.length; i++) {
-      await updateAssociations(instances[i], records[i], { ...options, transaction });
+    const instances = [];
+    for (const values of records) {
+      const instance = await this.create({ values, transaction });
+      instances.push(instance);
     }
-
     return instances;
   }
 
