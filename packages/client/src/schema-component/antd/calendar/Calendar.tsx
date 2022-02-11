@@ -18,6 +18,7 @@ import './style.less';
 import { Title } from './Title';
 import { Today } from './Today';
 import type { ToolbarProps } from './types';
+import { toEvents } from './utils';
 import { ViewSelect } from './ViewSelect';
 
 const localizer = momentLocalizer(moment);
@@ -106,8 +107,7 @@ export const Calendar: any = observer((props: any) => {
   const result = useDataSource(props, {
     uid: fieldSchema['x-uid'],
     onSuccess(data) {
-      debugger;
-      field.setValue(data?.data);
+      field.setValue(toEvents(data?.data, fieldNames));
     },
   });
   return (
