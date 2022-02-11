@@ -313,4 +313,69 @@ describe('acl', () => {
       action: 'create',
     });
   });
+
+  it('should add fields when field created', async () => {
+    const role = await db.getRepository('roles').create({
+      values: {
+        name: 'admin',
+        title: 'Admin User',
+        allowConfigure: true,
+      },
+    });
+
+    await db.getRepository('collections').create({
+      values: {
+        name: 'posts',
+      },
+    });
+
+    await db.getRepository('fields').create({
+      values: {
+        collectionName: 'posts',
+        type: 'string',
+        name: 'title',
+      },
+    });
+
+    await app
+      .agent()
+      .resource('roles.resources')
+      .create({
+        associatedIndex: role.get('name') as string,
+        values: {
+          name: 'posts',
+          usingActionsConfig: true,
+          actions: [
+            {
+              name: 'view',
+              fields: ['title'],
+            },
+          ],
+        },
+      });
+
+    const allowFields = acl.can({
+      role: 'admin',
+      resource: 'posts',
+      action: 'view',
+    })['params']['fields'];
+
+    expect(allowFields.includes('title')).toBeTruthy();
+
+    await db.getRepository('fields').create({
+      values: {
+        collectionName: 'posts',
+        type: 'string',
+        name: 'description',
+      },
+    });
+
+    const newAllowFields = acl.can({
+      role: 'admin',
+      resource: 'posts',
+      action: 'view',
+    })['params']['fields'];
+
+    expect(newAllowFields.includes('description')).toBeTruthy();
+  });
 });

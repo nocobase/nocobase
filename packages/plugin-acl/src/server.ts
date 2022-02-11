@@ -82,6 +82,27 @@ export class PluginACL extends Plugin {
     });
   }
 
+  async writeResourceToACL(resourceModel: RoleResourceModel, transaction) {
+    await resourceModel.writeToACL({
+      acl: this.acl,
+      associationFieldsActions: this.associationFieldsActions,
+      transaction: transaction,
+      grantHelper: this.grantHelper,
+    });
+  }
+
+  async writeActionToACL(actionModel: RoleResourceActionModel, transaction) {
+    const resource = actionModel.get('resource') as RoleResourceModel;
+    const role = this.acl.getRole(resource.get('roleName') as string);
+    await actionModel.writeToACL({
+      acl: this.acl,
+      role,
+      resourceName: resource.get('name') as string,
+      associationFieldsActions: this.associationFieldsActions,
+      grantHelper: this.grantHelper,
+    });
+  }
+
   async beforeLoad() {
     const acl = createACL();
     this.acl = acl;
@@ -136,12 +157,7 @@ export class PluginACL extends Plugin {
     });
 
     this.app.db.on('rolesResources.afterSaveWithAssociations', async (model: RoleResourceModel, options) => {
-      await model.writeToACL({
-        acl: this.acl,
-        associationFieldsActions: this.associationFieldsActions,
-        transaction: options.transaction,
-        grantHelper: this.grantHelper,
-      });
+      await this.writeResourceToACL(model, options.transaction);
     });
 
     this.app.db.on('rolesResourcesActions.afterUpdateWithAssociations', async (model, options) => {
@@ -150,12 +166,35 @@ export class PluginACL extends Plugin {
         transaction,
       });
 
-      await resource.writeToACL({
-        acl: this.acl,
-        associationFieldsActions: this.associationFieldsActions,
-        transaction: options.transaction,
-        grantHelper: this.grantHelper,
-      });
+      await this.writeResourceToACL(resource, transaction);
+    });
+
+    this.app.db.on('fields.afterCreate', async (model, options) => {
+      const { transaction } = options;
+
+      const collectionName = model.get('collectionName');
+      const fieldName = model.get('name');
+
+      const resourceActions = (await this.app.db.getRepository('rolesResourcesActions').find({
+        filter: {
+          'resource.name': collectionName,
+        },
+        transaction,
+        appends: ['resource'],
+      })) as RoleResourceActionModel[];
+
+      for (const resourceAction of resourceActions) {
+        const fields = resourceAction.get('fields') as string[];
+        const newFields = [...fields, fieldName];
+
+        await this.app.db.getRepository('rolesResourcesActions').update({
+          filterByTk: resourceAction.get('id') as number,
+          values: {
+            fields: newFields,
+          },
+          transaction,
+        });
+      }
     });
 
     this.app.db.on('fields.afterDestroy', async (model, options) => {
