@@ -17,6 +17,7 @@ export class RoleResourceActionModel extends Model {
     const actionName = this.get('name') as string;
 
     const fields = this.get('fields') as any;
+
     const actionPath = `${resourceName}:${actionName}`;
     const actionParams = {
       fields,
