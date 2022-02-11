@@ -7,7 +7,7 @@ import React, { useState } from 'react';
 import { Calendar as BigCalendar, momentLocalizer } from 'react-big-calendar';
 import * as dates from 'react-big-calendar/lib/utils/dates';
 import { useTranslation } from 'react-i18next';
-import { useRequest } from '../../../';
+import { AsyncDataProvider, useRequest } from '../../../';
 import { i18n } from '../../../i18n';
 import { ActionBar } from '../action';
 import { CalendarContext, RecordContext, ToolbarContext } from './context';
@@ -17,6 +17,7 @@ import './style.less';
 import { Title } from './Title';
 import { Today } from './Today';
 import type { ToolbarProps } from './types';
+import { toEvents } from './utils';
 import { ViewSelect } from './ViewSelect';
 
 const localizer = momentLocalizer(moment);
@@ -79,7 +80,14 @@ const useDefDataSource = (props, options) => {
 };
 
 export const Calendar: any = observer((props: any) => {
-  const { useDataSource = useDefDataSource } = props;
+  const {
+    useDataSource = useDefDataSource,
+    fieldNames = {
+      title: 'title',
+      startTime: 'startTime',
+      endTime: 'endTime',
+    },
+  } = props;
   const { t } = useTranslation();
   const field = useField<ArrayField>();
   const fieldSchema = useFieldSchema();
@@ -96,70 +104,72 @@ export const Calendar: any = observer((props: any) => {
   const result = useDataSource(props, {
     uid: fieldSchema['x-uid'],
     onSuccess(data) {
-      field.setValue(data?.data);
+      field.setValue(toEvents(data?.data, fieldNames));
     },
   });
   return (
-    <CalendarContext.Provider value={{ field, props }}>
-      <div {...props} style={{ height: 700 }}>
-        <Drawer
-          width={'50%'}
-          visible={visible}
-          onClose={() => {
-            setVisible(false);
-          }}
-          title={t('View record')}
-          bodyStyle={{
-            background: '#f0f2f5',
-            paddingTop: 0,
-          }}
-        >
-          <RecordContext.Provider value={record}>
-            <RecursionField name={eventSchema.name} schema={eventSchema} onlyRenderProperties />
-          </RecordContext.Provider>
-        </Drawer>
-        <BigCalendar
-          popup
-          selectable
-          events={Array.isArray(field.value.slice()) ? field.value.slice() : []}
-          views={['month', 'week', 'day']}
-          step={60}
-          showMultiDayTimes
-          messages={messages}
-          onSelectSlot={(slotInfo) => {
-            console.log('onSelectSlot', slotInfo);
-          }}
-          onDoubleClickEvent={(event) => {
-            console.log('onDoubleClickEvent');
-          }}
-          onSelectEvent={(event) => {
-            const record = field.value?.find((item) => item.id === event.id);
-            if (!record) {
-              return;
-            }
-            setRecord(record);
-            setVisible(true);
-            console.log('onSelectEvent');
-          }}
-          formats={{
-            monthHeaderFormat: 'Y-M',
-            agendaDateFormat: 'M-DD',
-            dayHeaderFormat: 'Y-M-DD',
-            dayRangeHeaderFormat: ({ start, end }, culture, local) => {
-              if (dates.eq(start, end, 'month')) {
-                return local.format(start, 'Y-M', culture);
+    <AsyncDataProvider value={result}>
+      <CalendarContext.Provider value={{ field, props }}>
+        <div {...props} style={{ height: 700 }}>
+          <Drawer
+            width={'50%'}
+            visible={visible}
+            onClose={() => {
+              setVisible(false);
+            }}
+            title={t('View record')}
+            bodyStyle={{
+              background: '#f0f2f5',
+              paddingTop: 0,
+            }}
+          >
+            <RecordContext.Provider value={record}>
+              <RecursionField name={eventSchema.name} schema={eventSchema} onlyRenderProperties />
+            </RecordContext.Provider>
+          </Drawer>
+          <BigCalendar
+            popup
+            selectable
+            events={Array.isArray(field.value.slice()) ? field.value.slice() : []}
+            views={['month', 'week', 'day']}
+            step={60}
+            showMultiDayTimes
+            messages={messages}
+            onSelectSlot={(slotInfo) => {
+              console.log('onSelectSlot', slotInfo);
+            }}
+            onDoubleClickEvent={(event) => {
+              console.log('onDoubleClickEvent');
+            }}
+            onSelectEvent={(event) => {
+              const record = field.value?.find((item) => item.id === event.id);
+              if (!record) {
+                return;
               }
-              return `${local.format(start, 'Y-M', culture)} - ${local.format(end, 'Y-M', culture)}`;
-            },
-          }}
-          defaultDate={new Date()}
-          components={{
-            toolbar: Toolbar,
-          }}
-          localizer={localizer}
-        />
-      </div>
-    </CalendarContext.Provider>
+              setRecord(record);
+              setVisible(true);
+              console.log('onSelectEvent');
+            }}
+            formats={{
+              monthHeaderFormat: 'Y-M',
+              agendaDateFormat: 'M-DD',
+              dayHeaderFormat: 'Y-M-DD',
+              dayRangeHeaderFormat: ({ start, end }, culture, local) => {
+                if (dates.eq(start, end, 'month')) {
+                  return local.format(start, 'Y-M', culture);
+                }
+                return `${local.format(start, 'Y-M', culture)} - ${local.format(end, 'Y-M', culture)}`;
+              },
+            }}
+            defaultDate={new Date()}
+            components={{
+              toolbar: Toolbar,
+            }}
+            localizer={localizer}
+          />
+        </div>
+      </CalendarContext.Provider>
+    </AsyncDataProvider>
   );
 });
 

@@ -11,13 +11,7 @@ const schema = {
   type: 'array',
   name: 'calendar1',
   'x-component': 'Calendar',
-  'x-component-props': {
-    fieldNames: {
-      title: '',
-      startTime: '',
-      endTime: '',
-    },
-  },
+  'x-component-props': {},
   default: defaultValues,
   properties: {
     toolBar: {
