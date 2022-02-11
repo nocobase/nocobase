@@ -18,6 +18,17 @@ export class ClientPlugin extends Plugin {
   }
 
   async load() {
+    // @ts-ignore
+    this.app.acl.use(async (ctx, next) => {
+      const { resourceName } = ctx.action;
+      if (resourceName === 'app') {
+        ctx.permission = {
+          skip: true,
+        };
+      }
+      await next();
+    });
+
     this.app.resource({
       name: 'app',
       actions: {

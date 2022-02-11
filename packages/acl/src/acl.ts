@@ -1,9 +1,10 @@
+import { Action } from '@nocobase/resourcer';
+import EventEmitter from 'events';
+import compose from 'koa-compose';
 import lodash from 'lodash';
+import { AclAvailableAction, AvailableActionOptions } from './acl-available-action';
 import { ACLAvailableStrategy, AvailableStrategyOptions, predicate } from './acl-available-strategy';
 import { ACLRole, RoleActionParams } from './acl-role';
-import { AclAvailableAction, AvailableActionOptions } from './acl-available-action';
-import EventEmitter from 'events';
-import { Action } from '@nocobase/resourcer';
 const parse = require('json-templates');
 
 interface CanResult {
@@ -43,6 +44,7 @@ interface CanArgs {
 export class ACL extends EventEmitter {
   protected availableActions = new Map<string, AclAvailableAction>();
   protected availableStrategy = new Map<string, ACLAvailableStrategy>();
+  protected middlewares = [];
 
   roles = new Map<string, ACLRole>();
 
@@ -145,6 +147,11 @@ export class ACL extends EventEmitter {
 
   can({ role, resource, action }: CanArgs): CanResult | null {
     const aclRole = this.roles.get(role);
+
+    if (!aclRole) {
+      return null;
+    }
+
     const aclResource = aclRole.getResource(resource);
 
     if (aclResource) {
@@ -196,33 +203,47 @@ export class ACL extends EventEmitter {
     return this.actionAlias.get(action) ? this.actionAlias.get(action) : action;
   }
 
+  use(fn: any) {
+    this.middlewares.push(fn);
+  }
+
   middleware() {
-    const aclInstance = this;
+    const acl = this;
 
     return async function ACLMiddleware(ctx, next) {
-      const roleName = ctx.state.currentRole;
+      const roleName = ctx.state.currentRole || 'anonymous';
       const { resourceName, actionName } = ctx.action;
 
       const resourcerAction: Action = ctx.action;
 
       ctx.can = (options: Omit<CanArgs, 'role'>) => {
-        return aclInstance.can({ role: roleName, ...options });
+        return acl.can({ role: roleName, ...options });
       };
 
-      const canResult = ctx.can({ resource: resourceName, action: actionName });
+      ctx.permission = {
+        can: ctx.can({ resource: resourceName, action: actionName }),
+      };
 
-      if (!canResult) {
-        ctx.throw(403, 'no permission');
-        return;
-      }
+      return compose(acl.middlewares)(ctx, async () => {
+        const permission = ctx.permission;
 
-      if (lodash.get(canResult, 'params')) {
-        const template = parse(canResult.params);
+        if (permission.skip) {
+          return next();
+        }
 
-        resourcerAction.mergeParams(template({ ctx }));
-      }
+        if (!permission.can || typeof permission.can !== 'object') {
+          ctx.throw(403, 'no permission');
+          return;
+        }
 
-      await next();
+        const { params } = permission.can;
+
+        if (params) {
+          resourcerAction.mergeParams(parse(params)({ ctx }));
+        }
+
+        await next();
+      });
     };
   }
 }
