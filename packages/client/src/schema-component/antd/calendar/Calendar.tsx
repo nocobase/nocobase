@@ -83,9 +83,10 @@ export const Calendar: any = observer((props: any) => {
   const {
     useDataSource = useDefDataSource,
     fieldNames = {
+      id: 'id',
       title: 'title',
-      startTime: 'startTime',
-      endTime: 'endTime',
+      start: 'start',
+      end: 'end',
     },
   } = props;
   const { t } = useTranslation();
