@@ -1,7 +1,6 @@
 import {
   Model,
   BelongsToGetAssociationMixin,
-  Optional,
   HasManyGetAssociationsMixin,
   Transaction
 } from 'sequelize';
@@ -14,23 +13,11 @@ import WorkflowModel from './Workflow';
 import FlowNodeModel from './FlowNode';
 import JobModel from './Job';
 
-interface ExecutionAttributes {
-  id: number;
-  title: string;
-  context: any;
-  status: number;
-}
-
-interface ExecutionCreationAttributes extends Optional<ExecutionAttributes, 'id'> {}
-
 export interface ExecutionOptions {
   transaction?: Transaction;
 }
 
-export default class ExecutionModel
-  extends Model<ExecutionAttributes, ExecutionCreationAttributes>
-  implements ExecutionAttributes {
-
+export default class ExecutionModel extends Model {
   declare static readonly database: Database;
 
   declare id: number;

@@ -15,7 +15,7 @@
 //   }
 // }
 
-import Sequelize = require('sequelize');
+import Sequelize from 'sequelize';
 import { getValue, Operand } from "../utils/getter";
 import { getCalculator } from "../utils/calculators";
 import { JOB_STATUS } from "../constants";
