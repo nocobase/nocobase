@@ -126,6 +126,10 @@ export class UpdateGuard {
       values[association] = associationValues;
     });
 
+    if (values instanceof Model) {
+      return values;
+    }
+
     let valuesKeys = Object.keys(values);
 
     // handle whitelist
