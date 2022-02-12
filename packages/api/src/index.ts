@@ -64,6 +64,7 @@ const plugins = [
   '@nocobase/plugin-system-settings',
   '@nocobase/plugin-users',
   '@nocobase/plugin-acl',
+  '@nocobase/plugin-china-region',
 ];
 
 for (const plugin of plugins) {
@@ -78,5 +79,5 @@ if (process.argv.length < 3) {
 console.log(process.argv);
 
 api.parse(process.argv).then(() => {
-  console.log(`Start-up time: ${(Date.now() - start) / 1000}s`);
+  console.log(`${new Date().toLocaleTimeString()} Start-up time: ${(Date.now() - start) / 1000}s`);
 });

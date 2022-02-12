@@ -138,6 +138,10 @@ export class Database extends EventEmitter implements AsyncEmitter {
     }
   }
 
+  getModel<M extends Model>(name: string) {
+    return this.getCollection(name).model as ModelCtor<M>;
+  }
+
   getRepository<R extends Repository>(name: string): R;
   getRepository<R extends RelationRepository>(name: string, relationId: string | number): R;
 
