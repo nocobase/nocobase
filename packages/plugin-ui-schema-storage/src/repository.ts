@@ -128,8 +128,11 @@ export class UiSchemaRepository extends Repository {
         ...lodash.pick(node, [...nodeKeys, 'name']),
         ['x-uid']: node.uid,
         ['x-async']: !!node.async,
-        ['x-index']: node.sort,
       };
+
+      if (lodash.isNumber(node.sort)) {
+        schema['x-index'] = node.sort;
+      }
 
       return schema;
     };

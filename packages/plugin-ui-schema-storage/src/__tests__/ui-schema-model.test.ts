@@ -78,7 +78,6 @@ describe('ui schema model', () => {
       name: 'root-node',
       'x-uid': 'root-uid',
       'x-async': false,
-      'x-index': null,
     });
   });
 
@@ -138,7 +137,6 @@ describe('ui schema model', () => {
       name: 'new-root-name',
       'x-uid': 'root-uid',
       'x-async': false,
-      'x-index': null,
     });
   });
 });

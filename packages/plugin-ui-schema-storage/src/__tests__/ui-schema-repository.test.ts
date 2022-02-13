@@ -196,7 +196,6 @@ describe('ui_schema repository', () => {
       name: 'root-name',
       'x-uid': 'root',
       'x-async': false,
-      'x-index': null,
     });
   });
 
