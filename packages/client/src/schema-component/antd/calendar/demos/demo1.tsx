@@ -1,22 +1,18 @@
 /**
  * title: Calendar
  */
+
 import { useForm } from '@formily/react';
 import { uid } from '@formily/shared';
 import {
-  Action,
-  Calendar,
-  DatePicker,
-  Form,
-  FormItem,
-  Input,
+  AntdSchemaComponentProvider,
   SchemaComponent,
   SchemaComponentProvider,
   useActionContext,
+  useAsyncData,
 } from '@nocobase/client';
 import React from 'react';
 import defaultValues from './defaultValues';
-import { AddActionButton } from './Initializer';
 
 const schema = {
   type: 'array',
@@ -28,7 +24,7 @@ const schema = {
     toolBar: {
       type: 'void',
       'x-component': 'Calendar.ActionBar',
-      'x-action-initializer': 'AddActionButton',
+      'x-action-initializer': 'Calendar.ActionInitializer',
       properties: {
         today: {
           type: 'void',
@@ -70,13 +66,12 @@ const schema = {
     event: {
       type: 'void',
       'x-component': 'Calendar.Event',
+      'x-decorator': 'Form',
       properties: {
         [uid()]: {
           type: 'void',
           'x-component': 'Grid',
-          'x-component-props': {
-            // addNewComponent: 'AddNew.FormItem',
-          },
+          'x-item-initializer': 'Grid.AddFormItem',
         },
       },
     },
@@ -85,13 +80,14 @@ const schema = {
 
 const useOkAction = () => {
   const { setVisible } = useActionContext();
+  const { refresh } = useAsyncData();
   const form = useForm();
   return {
     async run() {
       setVisible(false);
       form.submit((values) => {
-        debugger;
         console.log(values);
+        refresh();
       });
     },
   };
@@ -108,11 +104,10 @@ const useCloseAction = () => {
 
 export default () => {
   return (
-    <SchemaComponentProvider
-      scope={{ useOkAction, useCloseAction }}
-      components={{ AddActionButton, Action, Input, Calendar, DatePicker, FormItem, Form }}
-    >
-      <SchemaComponent schema={schema} />
+    <SchemaComponentProvider scope={{ useOkAction, useCloseAction }}>
+      <AntdSchemaComponentProvider>
+        <SchemaComponent schema={schema} />
+      </AntdSchemaComponentProvider>
     </SchemaComponentProvider>
   );
 };
