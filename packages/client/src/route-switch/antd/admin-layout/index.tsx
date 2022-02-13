@@ -75,7 +75,7 @@ export function AdminLayout(props: any) {
       <Layout>
         <Layout.Sider style={{ display: 'none' }} theme={'light'} ref={sideMenuRef}></Layout.Sider>
         <Layout.Content>
-          <RemoteSchemaComponent uid={match.params.name} />
+          <RemoteSchemaComponent onlyRenderProperties uid={match.params.name} />
         </Layout.Content>
       </Layout>
     </Layout>

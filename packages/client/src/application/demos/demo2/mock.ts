@@ -9,7 +9,7 @@ export default (apiClient: APIClient) => {
     data: { lang: 'en-US' },
   });
 
-  mock.onGet('/system_settings:get').reply(200, {
+  mock.onGet('/systemSettings:get/1').reply(200, {
     data: {
       title: 'NocoBase',
     },
@@ -119,6 +119,33 @@ export default (apiClient: APIClient) => {
         type: 'void',
         name: name,
         'x-uid': name,
+        'x-component': 'Page',
+        properties: {
+          [uid()]: {
+            type: 'void',
+            name: 'grid1',
+            'x-component': 'Grid',
+            'x-item-initializer': 'Grid.AddBlockItem',
+            'x-uid': uid(),
+            properties: {},
+          },
+        },
+      },
+    };
+    return [200, response];
+  });
+
+  mock.onGet(/\/ui_schemas\:getProperties\/(\w+)/).reply(function (config) {
+    // const name = config.url.split('/').pop();
+    // console.log(name);
+    // if (jsonSchema[name]) {
+    //   return [200, { data: jsonSchema[name] }];
+    // }
+    const response = {
+      data: {
+        type: 'void',
+        name:  uid(),
+        'x-uid': uid(),
         'x-component': 'Page',
         properties: {
           [uid()]: {

@@ -47,7 +47,7 @@ const providers = [
 
 const App = compose(...providers)(() => {
   const { data, loading } = useRequest({
-    url: 'routes:getAccessible',
+    url: 'uiRoutes:getAccessible',
   });
   if (loading) {
     return <Spin />;

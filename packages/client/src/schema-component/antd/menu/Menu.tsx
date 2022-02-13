@@ -20,7 +20,7 @@ const useSideMenuRef = () => {
     return;
   }
   return scope[scopeKey];
-}
+};
 
 export const Menu: ComposedMenu = observer((props) => {
   let {
@@ -32,7 +32,6 @@ export const Menu: ComposedMenu = observer((props) => {
     defaultOpenKeys: dOpenKeys,
     ...others
   } = props;
-  console.log('defaultSelectedUid', defaultSelectedUid)
   const schema = useFieldSchema();
   const sideMenuRef = useSideMenuRef();
   const [defaultSelectedKeys, setDefaultSelectedKeys] = useState(() => {
@@ -52,8 +51,9 @@ export const Menu: ComposedMenu = observer((props) => {
     return dOpenKeys;
   });
   const [sideMenuSchema, setSideMenuSchema] = useState<Schema>(() => {
-    if (mode === 'mix' && defaultSelectedKeys[0]) {
-      const s = schema.properties?.[defaultSelectedKeys[0]];
+    const key = defaultSelectedKeys?.[0] || null;
+    if (mode === 'mix' && key) {
+      const s = schema.properties?.[key];
       if (s['x-component'] === 'Menu.SubMenu') {
         return s;
       }
