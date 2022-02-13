@@ -1,7 +1,7 @@
 import Koa from 'koa';
+import bodyParser from 'koa-bodyparser';
 import supertest from 'supertest';
 import Resourcer from '../resourcer';
-import bodyParser from 'koa-bodyparser';
 
 describe('koa middleware', () => {
   it('shound work', async () => {
@@ -205,7 +205,7 @@ describe('koa middleware', () => {
         other: 'other1',
         sort: '-id',
       });
-      expect(response.body).toEqual({
+      expect(response.body).toMatchObject({
         sort: '-id',
         filter: {
           $and: [
@@ -231,7 +231,7 @@ describe('koa middleware', () => {
         },
       });
       const response = await agent.post('/tests').send({ aa: 'aa' });
-      expect(response.body).toEqual({
+      expect(response.body).toMatchObject({
         actionName: 'create',
         resourceName: 'tests',
         values: { col1: 'val1', aa: 'aa' },
@@ -251,7 +251,7 @@ describe('koa middleware', () => {
       const response = await agent.post('/resourcer/tests:create').send({
         values: { aa: 'aa' },
       });
-      expect(response.body).toEqual({
+      expect(response.body).toMatchObject({
         actionName: 'create',
         resourceName: 'tests',
         values: { col1: 'val1', aa: 'aa' },
@@ -272,7 +272,7 @@ describe('koa middleware', () => {
         resourceIndex: 1,
         values: { aa: 'aa' },
       });
-      expect(response.body).toEqual({
+      expect(response.body).toMatchObject({
         resourceIndex: 1,
         actionName: 'update',
         resourceName: 'tests',
@@ -288,7 +288,7 @@ describe('koa middleware', () => {
       });
       it('get', async () => {
         const response = await agent.get('/users/1/settings');
-        expect(response.body).toEqual({
+        expect(response.body).toMatchObject({
           associatedName: 'users',
           associatedIndex: '1',
           resourceName: 'settings',
@@ -297,7 +297,7 @@ describe('koa middleware', () => {
       });
       it('update', async () => {
         const response = await agent.post('/users/1/settings');
-        expect(response.body).toEqual({
+        expect(response.body).toMatchObject({
           associatedName: 'users',
           associatedIndex: '1',
           resourceName: 'settings',
@@ -306,7 +306,7 @@ describe('koa middleware', () => {
       });
       it('destroy', async () => {
         const response = await agent.delete('/users/1/settings');
-        expect(response.body).toEqual({
+        expect(response.body).toMatchObject({
           associatedName: 'users',
           associatedIndex: '1',
           resourceName: 'settings',
@@ -323,7 +323,7 @@ describe('koa middleware', () => {
       });
       it('list', async () => {
         const response = await agent.get('/users/1/posts');
-        expect(response.body).toEqual({
+        expect(response.body).toMatchObject({
           associatedName: 'users',
           associatedIndex: '1',
           resourceName: 'posts',
@@ -332,7 +332,7 @@ describe('koa middleware', () => {
       });
       it('get', async () => {
         const response = await agent.get('/users/1/posts/1');
-        expect(response.body).toEqual({
+        expect(response.body).toMatchObject({
           associatedName: 'users',
           associatedIndex: '1',
           resourceName: 'posts',
@@ -342,7 +342,7 @@ describe('koa middleware', () => {
       });
       it('create', async () => {
         const response = await agent.post('/users/1/posts');
-        expect(response.body).toEqual({
+        expect(response.body).toMatchObject({
           associatedName: 'users',
           associatedIndex: '1',
           resourceName: 'posts',
@@ -351,7 +351,7 @@ describe('koa middleware', () => {
       });
       it('update', async () => {
         const response = await agent.put('/users/1/posts/1');
-        expect(response.body).toEqual({
+        expect(response.body).toMatchObject({
           associatedName: 'users',
           associatedIndex: '1',
           resourceName: 'posts',
@@ -361,7 +361,7 @@ describe('koa middleware', () => {
       });
       it('destroy', async () => {
         const response = await agent.delete('/users/1/posts/1');
-        expect(response.body).toEqual({
+        expect(response.body).toMatchObject({
           associatedName: 'users',
           associatedIndex: '1',
           resourceName: 'posts',
@@ -379,7 +379,7 @@ describe('koa middleware', () => {
       });
       it('get', async () => {
         const response = await agent.get('/posts/1/user');
-        expect(response.body).toEqual({
+        expect(response.body).toMatchObject({
           associatedName: 'posts',
           associatedIndex: '1',
           resourceName: 'user',
@@ -388,7 +388,7 @@ describe('koa middleware', () => {
       });
       it('set', async () => {
         const response = await agent.post('/posts/1/user/1');
-        expect(response.body).toEqual({
+        expect(response.body).toMatchObject({
           associatedName: 'posts',
           associatedIndex: '1',
           resourceName: 'user',
@@ -398,7 +398,7 @@ describe('koa middleware', () => {
       });
       it('remove', async () => {
         const response = await agent.delete('/posts/1/user');
-        expect(response.body).toEqual({
+        expect(response.body).toMatchObject({
           associatedName: 'posts',
           associatedIndex: '1',
           resourceName: 'user',
@@ -415,7 +415,7 @@ describe('koa middleware', () => {
       });
       it('list', async () => {
         const response = await agent.get('/posts/1/tags');
-        expect(response.body).toEqual({
+        expect(response.body).toMatchObject({
           associatedName: 'posts',
           associatedIndex: '1',
           resourceName: 'tags',
@@ -424,7 +424,7 @@ describe('koa middleware', () => {
       });
       it('get', async () => {
         const response = await agent.get('/posts/1/tags/1');
-        expect(response.body).toEqual({
+        expect(response.body).toMatchObject({
           associatedName: 'posts',
           associatedIndex: '1',
           resourceName: 'tags',
@@ -434,7 +434,7 @@ describe('koa middleware', () => {
       });
       it('set', async () => {
         const response = await agent.post('/posts/1/tags');
-        expect(response.body).toEqual({
+        expect(response.body).toMatchObject({
           associatedName: 'posts',
           associatedIndex: '1',
           resourceName: 'tags',
@@ -443,7 +443,7 @@ describe('koa middleware', () => {
       });
       it('add', async () => {
         const response = await agent.post('/posts/1/tags/1');
-        expect(response.body).toEqual({
+        expect(response.body).toMatchObject({
           associatedName: 'posts',
           associatedIndex: '1',
           resourceName: 'tags',
@@ -453,7 +453,7 @@ describe('koa middleware', () => {
       });
       it('update', async () => {
         const response = await agent.put('/posts/1/tags/1');
-        expect(response.body).toEqual({
+        expect(response.body).toMatchObject({
           associatedName: 'posts',
           associatedIndex: '1',
           resourceName: 'tags',
@@ -463,7 +463,7 @@ describe('koa middleware', () => {
       });
       it('remove', async () => {
         const response = await agent.delete('/posts/1/tags/1');
-        expect(response.body).toEqual({
+        expect(response.body).toMatchObject({
           associatedName: 'posts',
           associatedIndex: '1',
           resourceName: 'tags',
@@ -482,7 +482,7 @@ describe('koa middleware', () => {
       const response = await agent.get('/test1').query({
         fields: ['id', 'col1'],
       });
-      expect(response.body).toEqual({
+      expect(response.body).toMatchObject({
         actionName: 'list',
         resourceName: 'test1',
         fields: ['id', 'col1'],
@@ -500,7 +500,7 @@ describe('koa middleware', () => {
       const response = await agent.get('/test1').query({
         fields: ['id', 'col1'],
       });
-      expect(response.body).toEqual({
+      expect(response.body).toMatchObject({
         actionName: 'list',
         resourceName: 'test1',
         fields: ['id'],
@@ -518,7 +518,7 @@ describe('koa middleware', () => {
       const response = await agent.get('/test1').query({
         fields: ['id', 'col1', 'password'],
       });
-      expect(response.body).toEqual({
+      expect(response.body).toMatchObject({
         actionName: 'list',
         resourceName: 'test1',
         fields: ['id', 'col1', 'password'],
@@ -538,7 +538,7 @@ describe('koa middleware', () => {
       const response = await agent.get('/test1').query({
         fields: ['id', 'col1', 'password', 'col2'],
       });
-      expect(response.body).toEqual({
+      expect(response.body).toMatchObject({
         actionName: 'list',
         resourceName: 'test1',
         fields: ['id', 'col1', 'password', 'col2'],
@@ -559,7 +559,7 @@ describe('koa middleware', () => {
       const response = await agent.get('/test1').query({
         appends: ['relation1'],
       });
-      expect(response.body).toEqual({
+      expect(response.body).toMatchObject({
         actionName: 'list',
         resourceName: 'test1',
         except: ['password'],
@@ -576,7 +576,7 @@ describe('koa middleware', () => {
       const response = await agent.get('/test1').query({
         appends: 'rel1,rel2',
       });
-      expect(response.body).toEqual({
+      expect(response.body).toMatchObject({
         actionName: 'list',
         resourceName: 'test1',
         appends: ['rel1', 'rel2'],
@@ -592,7 +592,7 @@ describe('koa middleware', () => {
       const response = await agent.get('/users/name/posts').query({
         appends: 'rel1,rel2',
       });
-      expect(response.body).toEqual({
+      expect(response.body).toMatchObject({
         associatedName: 'users',
         associatedIndex: 'name',
         resourceName: 'posts',
@@ -613,7 +613,7 @@ describe('koa middleware', () => {
         },
       });
       const response = await agent.get('/users/name/posts');
-      expect(response.body).toEqual({
+      expect(response.body).toMatchObject({
         associatedName: 'users',
         associatedIndex: 'name',
         resourceName: 'posts',
@@ -634,7 +634,7 @@ describe('koa middleware', () => {
         },
       });
       const response = await agent.get('/users/name/posts');
-      expect(response.body).toEqual({
+      expect(response.body).toMatchObject({
         associatedName: 'users',
         associatedIndex: 'name',
         resourceName: 'posts',

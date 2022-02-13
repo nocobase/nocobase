@@ -1,4 +1,4 @@
-import { usePrefixCls } from '@formily/antd/esm/__builtins__';
+import { usePrefixCls } from '@formily/antd/lib/__builtins__';
 import { Field } from '@formily/core';
 import { observer, useField } from '@formily/react';
 import { isArr } from '@formily/shared';

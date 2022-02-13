@@ -1,4 +1,4 @@
-import { formatMomentValue, momentable } from '@formily/antd/esm/__builtins__';
+import { formatMomentValue, momentable } from '@formily/antd/lib/__builtins__';
 import { connect, mapProps, mapReadPretty } from '@formily/react';
 import { TimePicker as AntdTimePicker } from 'antd';
 import { TimePickerProps as AntdTimePickerProps, TimeRangePickerProps } from 'antd/lib/time-picker';
