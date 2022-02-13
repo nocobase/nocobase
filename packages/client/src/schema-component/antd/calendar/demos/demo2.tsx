@@ -3,33 +3,17 @@
  */
 import { useForm } from '@formily/react';
 import { uid } from '@formily/shared';
-import {
-  Action,
-  APIClientProvider,
-  Calendar,
-  DatePicker,
-  Form,
-  FormItem,
-  Input,
-  SchemaComponent,
-  SchemaComponentProvider,
-  useActionContext,
-} from '@nocobase/client';
+import { APIClientProvider, SchemaComponent, SchemaComponentProvider, useActionContext } from '@nocobase/client';
 import React from 'react';
+import { AntdSchemaComponentProvider } from '../../..';
 import { apiClient } from './apiClient';
 import defaultValues from './defaultValues';
-import { AddActionButton } from './Initializer';
 
 const schema = {
   type: 'array',
   name: 'calendar1',
   'x-component': 'Calendar',
   'x-component-props': {
-    fieldNames: {
-      title: '',
-      startTime: '',
-      endTime: '',
-    },
     request: {
       resource: 'tasks',
       action: 'list',
@@ -43,7 +27,7 @@ const schema = {
     toolBar: {
       type: 'void',
       'x-component': 'Calendar.ActionBar',
-      'x-action-initializer': 'AddActionButton',
+      'x-action-initializer': 'Calendar.ActionInitializer',
       properties: {
         today: {
           type: 'void',
@@ -99,13 +83,12 @@ const schema = {
     event: {
       type: 'void',
       'x-component': 'Calendar.Event',
+      'x-decorator': 'Form',
       properties: {
         [uid()]: {
           type: 'void',
           'x-component': 'Grid',
-          'x-component-props': {
-            // addNewComponent: 'AddNew.FormItem',
-          },
+          'x-item-initializer': 'Grid.AddFormItem',
         },
       },
     },
@@ -135,11 +118,10 @@ const useCloseAction = () => {
 export default () => {
   return (
     <APIClientProvider apiClient={apiClient}>
-      <SchemaComponentProvider
-        scope={{ useOkAction, useCloseAction }}
-        components={{ AddActionButton, Calendar, Input, Action, DatePicker, FormItem, Form }}
-      >
-        <SchemaComponent schema={schema} />
+      <SchemaComponentProvider scope={{ useOkAction, useCloseAction }}>
+        <AntdSchemaComponentProvider>
+          <SchemaComponent schema={schema} />
+        </AntdSchemaComponentProvider>
       </SchemaComponentProvider>
     </APIClientProvider>
   );
