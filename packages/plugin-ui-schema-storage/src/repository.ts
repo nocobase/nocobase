@@ -89,6 +89,10 @@ export class UiSchemaRepository extends Repository {
       },
     });
 
+    if (nodes[0].length == 0) {
+      return {};
+    }
+
     const schema = this.nodesToSchema(nodes[0], uid);
     return lodash.pick(schema, ['type', 'properties']);
   }
@@ -116,6 +120,10 @@ export class UiSchemaRepository extends Repository {
       },
       transaction: options?.transaction,
     });
+
+    if (nodes[0].length == 0) {
+      return {};
+    }
 
     const schema = this.nodesToSchema(nodes[0], uid);
     return schema;
