@@ -1,10 +1,11 @@
 import path from 'path';
 
+import { Plugin } from '@nocobase/server';
+
 import WorkflowModel from './models/Workflow';
 import ExecutionModel from './models/Execution';
 
-export default {
-  name: 'workflow',
+export default class WorkflowPlugin extends Plugin {
   async load(options = {}) {
     const { db } = this.app;
 
@@ -23,7 +24,7 @@ export default {
     //   * add hooks for create/update[enabled]/delete workflow to add/remove specific hooks
     this.app.on('beforeStart', async () => {
       const { model } = db.getCollection('workflows');
-      await model.mount();
+      await (model as typeof WorkflowModel).mount();
     })
 
     // [Life Cycle]: initialize all necessary seed data
