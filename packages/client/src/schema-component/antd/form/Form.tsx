@@ -1,12 +1,21 @@
 import { FormLayout } from '@formily/antd';
 import { createForm } from '@formily/core';
 import { FieldContext, FormContext, observer, useField, useFieldSchema } from '@formily/react';
+import { Options, Result } from 'ahooks/lib/useRequest/src/types';
 import { Spin } from 'antd';
 import React, { useMemo } from 'react';
 import { useAttach } from '../..';
 import { useRequest } from '../../../api-client';
 
-const FormComponent: React.FC<any> = (props) => {
+type Opts = Options<any, any> & { uid?: string };
+
+export interface FormProps {
+  [key: string]: any;
+}
+
+export type FormUseValues = (props?: FormProps, opts?: Opts) => Result<any, any>;
+
+const FormComponent: React.FC<FormProps> = (props) => {
   const { form, children, ...others } = props;
   const field = useField();
   // TODO: component 里 useField 会与当前 field 存在偏差
@@ -34,12 +43,12 @@ const useRequestProps = (props: any) => {
   };
 };
 
-const useDefaultValues = (props: any = {}, opts: any = {}) => {
+const useDef = (props: FormProps = {}, opts: any = {}) => {
   return useRequest(useRequestProps(props), opts);
 };
 
-export const Form: React.FC<any> = observer((props) => {
-  const { request, initialValue, useValues = useDefaultValues, ...others } = props;
+export const Form: React.FC<FormProps> = observer((props) => {
+  const { request, initialValue, useValues = useDef, ...others } = props;
   const fieldSchema = useFieldSchema();
   const form = useMemo(() => createForm(), []);
   const { loading } = useValues(props, {
