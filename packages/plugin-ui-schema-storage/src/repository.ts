@@ -246,6 +246,7 @@ export class UiSchemaRepository extends Repository {
         descendant: uid,
         depth: 1,
       },
+      transaction,
     });
 
     if (!parent) {
@@ -253,7 +254,7 @@ export class UiSchemaRepository extends Repository {
     }
 
     const countResult = await db.sequelize.query(
-      `SELECT COUNT(*) FROM ${
+      `SELECT COUNT(*) as count FROM ${
         db.getCollection('ui_schema_tree_path').model.tableName
       } where ancestor = :ancestor and depth  = 1`,
       {
@@ -272,6 +273,7 @@ export class UiSchemaRepository extends Repository {
         filter: {
           uid: parent.get('ancestor') as string,
         },
+        transaction,
       });
 
       return schema;
@@ -463,6 +465,7 @@ export class UiSchemaRepository extends Repository {
     const node = await this.create({
       values: {
         name,
+        ['x-uid']: uid,
         uid,
         schema,
         serverHooks,

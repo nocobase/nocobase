@@ -57,7 +57,15 @@ interface Resource {
 export class MockServer extends Application {
   async loadAndInstall() {
     await this.load();
-    await this.install({ clean: true });
+    await this.install({
+      clean: true,
+      sync: {
+        force: true,
+        alter: {
+          drop: false,
+        },
+      },
+    });
   }
 
   async cleanDb() {

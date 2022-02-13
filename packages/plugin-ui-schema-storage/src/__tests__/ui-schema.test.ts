@@ -177,7 +177,6 @@ describe('ui-schema', () => {
       };
 
       const result = await uiSchemaRepository.insert(schema);
-      console.log(JSON.stringify(result, null, 2));
     });
 
     it('items is array or plain object', () => {
