@@ -4,6 +4,11 @@
   "main": "lib/index.js",
   "private": true,
   "license": "MIT",
+  "scripts": {
+    "build": "rimraf -rf lib esm dist && npm run build:cjs && npm run build:esm",
+    "build:cjs": "tsc --project tsconfig.build.json",
+    "build:esm": "tsc --project tsconfig.build.json --module es2015 --outDir esm"
+  },
   "dependencies": {
   },
   "devDependencies": {
