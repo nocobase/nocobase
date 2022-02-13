@@ -45,6 +45,21 @@ export class UiRoutesStoragePlugin extends Plugin {
                         title: 'Menu Item u7',
                         'x-component': 'Menu.Item',
                         'x-component-props': {},
+                        properties: {
+                          page1: {
+                            type: 'void',
+                            'x-component': 'Page',
+                            'x-async': true,
+                            properties: {
+                              grid1: {
+                                type: 'void',
+                                'x-component': 'Grid',
+                                'x-item-initializer': 'Grid.AddBlockItem',
+                                properties: {},
+                              },
+                            },
+                          }
+                        }
                       },
                       item8: {
                         type: 'void',

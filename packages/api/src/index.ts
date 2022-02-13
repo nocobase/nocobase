@@ -63,7 +63,7 @@ const plugins = [
   '@nocobase/plugin-file-manager',
   '@nocobase/plugin-system-settings',
   '@nocobase/plugin-users',
-  '@nocobase/plugin-acl',
+  // '@nocobase/plugin-acl',
   '@nocobase/plugin-china-region',
 ];
 

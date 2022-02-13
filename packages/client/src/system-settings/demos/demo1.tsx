@@ -16,7 +16,7 @@ const apiClient = new APIClient();
 
 const mock = new MockAdapter(apiClient.axios);
 
-mock.onGet('/system_settings:get').reply(200, {
+mock.onGet('/systemSettings:get/1').reply(200, {
   data: {
     title: 'NocoBase',
   },

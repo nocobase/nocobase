@@ -12,25 +12,24 @@ export interface RemoteSchemaComponentProps {
   schemaTransform?: (schema: Schema) => Schema;
   render?: any;
   hidden?: any;
+  onlyRenderProperties?: boolean;
 }
 
 const defaultTransform = (s: Schema) => s;
 
 const RequestSchemaComponent: React.FC<RemoteSchemaComponentProps> = (props) => {
-  const { hidden, scope, uid, onSuccess, schemaTransform = defaultTransform } = props;
+  const { onlyRenderProperties, hidden, scope, uid, onSuccess, schemaTransform = defaultTransform } = props;
   const { reset } = useSchemaComponentContext();
-  const { data, loading } = useRequest(
-    {
-      url: `/ui_schemas:getJsonSchema/${uid}`,
+  const conf = {
+    url: `/ui_schemas:${onlyRenderProperties ? 'getProperties' : 'getJsonSchema'}/${uid}`,
+  };
+  const { data, loading } = useRequest(conf, {
+    refreshDeps: [uid],
+    onSuccess(data) {
+      onSuccess && onSuccess(data);
+      reset && reset();
     },
-    {
-      refreshDeps: [uid],
-      onSuccess(data) {
-        onSuccess && onSuccess(data);
-        reset && reset();
-      },
-    },
-  );
+  });
 
   if (loading) {
     return <Spin />;

@@ -1,5 +1,6 @@
 import { MagicAttributeModel } from '@nocobase/database';
 import { Plugin } from '@nocobase/server';
+import { uid } from '@nocobase/utils';
 import path from 'path';
 import { uiSchemaActions } from './actions/ui-schema-action';
 import { UiSchemaModel } from './model';
@@ -27,6 +28,9 @@ export class UiSchemaStoragePlugin extends Plugin {
 
     db.on('ui_schemas.beforeCreate', function setUid(model) {
       model.set('uid', model.get('x-uid'));
+      if (!model.get('name')) {
+        model.set('name', uid());
+      }
     });
 
     db.on('ui_schemas.afterCreate', async function insertSchema(model, options) {

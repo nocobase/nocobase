@@ -9,7 +9,7 @@ export default (apiClient: APIClient) => {
     data: { lang: 'en-US' },
   });
 
-  mock.onGet('/system_settings:get').reply(200, {
+  mock.onGet('/systemSettings:get/1').reply(200, {
     data: {
       title: 'NocoBase',
     },

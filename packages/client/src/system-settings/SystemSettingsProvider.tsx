@@ -11,11 +11,7 @@ export const useSystemSettings = () => {
 
 export const SystemSettingsProvider: React.FC = (props) => {
   const result = useRequest({
-    resource: 'system_settings',
-    action: 'get',
-    params: {
-      filterByTk: 1,
-    },
+    url: 'systemSettings:get/1',
   });
   if (result.loading) {
     return <Spin />;
