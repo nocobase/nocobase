@@ -1,6 +1,6 @@
-import { generatePrefixByPath, mockDatabase } from './index';
 import { Collection } from '../collection';
 import { Database } from '../database';
+import { generatePrefixByPath, mockDatabase } from './index';
 
 test('collection disable authGenId', async () => {
   const db = mockDatabase();
@@ -15,6 +15,7 @@ test('collection disable authGenId', async () => {
 
   await db.sync();
   expect(model.rawAttributes['id']).toBeUndefined();
+  await db.close();
 });
 
 test('new collection', async () => {
