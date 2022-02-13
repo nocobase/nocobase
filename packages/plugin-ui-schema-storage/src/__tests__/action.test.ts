@@ -86,6 +86,22 @@ describe('action test', () => {
     expect(data.properties.b.properties.c['x-uid']).toEqual('n3');
   });
 
+  test('getJsonSchema when uid not exists', async () => {
+    const response = await app.agent().resource('ui_schemas').getJsonSchema({
+      resourceIndex: 'not-exists',
+    });
+
+    expect(response.statusCode).toEqual(200);
+  });
+
+  test('get properties when uid not exists', async () => {
+    const response = await app.agent().resource('ui_schemas').getProperties({
+      resourceIndex: 'not-exists',
+    });
+
+    expect(response.statusCode).toEqual(200);
+  });
+
   test('remove', async () => {
     await app
       .agent()
