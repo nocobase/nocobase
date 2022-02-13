@@ -1,8 +1,19 @@
 /**
  * title: Calendar
  */
+import { useForm } from '@formily/react';
 import { uid } from '@formily/shared';
-import { Calendar, SchemaComponent, SchemaComponentProvider } from '@nocobase/client';
+import {
+  Action,
+  Calendar,
+  DatePicker,
+  Form,
+  FormItem,
+  Input,
+  SchemaComponent,
+  SchemaComponentProvider,
+  useActionContext,
+} from '@nocobase/client';
 import React from 'react';
 import defaultValues from './defaultValues';
 import { AddActionButton } from './Initializer';
@@ -72,9 +83,35 @@ const schema = {
   },
 };
 
+const useOkAction = () => {
+  const { setVisible } = useActionContext();
+  const form = useForm();
+  return {
+    async run() {
+      setVisible(false);
+      form.submit((values) => {
+        debugger;
+        console.log(values);
+      });
+    },
+  };
+};
+
+const useCloseAction = () => {
+  const { setVisible } = useActionContext();
+  return {
+    async run() {
+      setVisible(false);
+    },
+  };
+};
+
 export default () => {
   return (
-    <SchemaComponentProvider components={{ AddActionButton, Calendar }}>
+    <SchemaComponentProvider
+      scope={{ useOkAction, useCloseAction }}
+      components={{ AddActionButton, Action, Input, Calendar, DatePicker, FormItem, Form }}
+    >
       <SchemaComponent schema={schema} />
     </SchemaComponentProvider>
   );
