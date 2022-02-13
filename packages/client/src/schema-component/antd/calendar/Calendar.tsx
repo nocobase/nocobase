@@ -10,6 +10,7 @@ import { useTranslation } from 'react-i18next';
 import { AsyncDataProvider, useRequest } from '../../../';
 import { i18n } from '../../../i18n';
 import { ActionBar } from '../action';
+import { ActionInitializer } from './ActionInitializer';
 import { CalendarContext, RecordContext, ToolbarContext } from './context';
 import { Filter } from './Filter';
 import { Nav } from './Nav';
@@ -175,6 +176,8 @@ export const Calendar: any = observer((props: any) => {
     </AsyncDataProvider>
   );
 });
+
+Calendar.ActionInitializer = ActionInitializer;
 
 Calendar.ActionBar = ActionBar;
 

@@ -1,10 +1,14 @@
 import { observer, useFieldSchema } from '@formily/react';
-import { SchemaInitializer, useCollection, useDesignable } from '@nocobase/client';
 import { Switch } from 'antd';
 import React from 'react';
+import { useTranslation } from 'react-i18next';
+import { useCollection } from '../../../collection-manager';
+import { SchemaInitializer } from '../../../schema-initializer';
+import { useDesignable } from '../../hooks';
 
-export const AddActionButton = observer((props: any) => {
+export const ActionInitializer = observer((props: any) => {
   const { name: collectName } = useCollection();
+  const { t } = useTranslation();
   return (
     <SchemaInitializer.Button
       insertPosition={'beforeEnd'}
@@ -12,14 +16,14 @@ export const AddActionButton = observer((props: any) => {
       items={[
         {
           type: 'itemGroup',
-          title: '启用操作',
+          title: t('Enable actions'),
           children: [
             {
               type: 'item',
-              title: '今天',
+              title: t('Today'),
               component: InitializeAction,
               schema: {
-                title: '今天',
+                title: t('Today'),
                 'x-component': 'Calendar.Today',
                 'x-action': `calendar:today`,
                 'x-align': 'left',
@@ -27,10 +31,10 @@ export const AddActionButton = observer((props: any) => {
             },
             {
               type: 'item',
-              title: '翻页',
+              title: t('turn page'),
               component: InitializeAction,
               schema: {
-                title: '翻页',
+                title: t('turn page'),
                 'x-component': 'Calendar.Nav',
                 'x-action': `calendar:nav`,
                 'x-align': 'left',
@@ -38,10 +42,10 @@ export const AddActionButton = observer((props: any) => {
             },
             {
               type: 'item',
-              title: '标题',
+              title: t('Title'),
               component: InitializeAction,
               schema: {
-                title: '标题',
+                title: t('Title'),
                 'x-component': 'Calendar.Title',
                 'x-action': `calendar:title`,
                 'x-align': 'left',
@@ -49,10 +53,10 @@ export const AddActionButton = observer((props: any) => {
             },
             {
               type: 'item',
-              title: '切换视图',
+              title: t('Select view'),
               component: InitializeAction,
               schema: {
-                title: '切换视图',
+                title: t('Select view'),
                 'x-component': 'Calendar.ViewSelect',
                 'x-action': `calendar:viewSelect`,
                 'x-align': 'left',
@@ -60,10 +64,10 @@ export const AddActionButton = observer((props: any) => {
             },
             {
               type: 'item',
-              title: '添加',
+              title: t('Add new'),
               component: InitializeAction,
               schema: {
-                title: '添加',
+                title: t('Add new'),
                 'x-component': 'Action',
                 'x-component-props': {
                   type: 'primary',
@@ -73,34 +77,14 @@ export const AddActionButton = observer((props: any) => {
                 properties: {
                   modal: {
                     'x-component': 'Action.Drawer',
+                    'x-decorator': 'Form',
                     type: 'void',
                     title: 'Drawer Title',
                     properties: {
-                      form: {
-                        type: 'object',
-                        'x-component': 'Form',
-                        properties: {
-                          id: {
-                            'x-component': 'Input',
-                            'x-decorator': 'FormItem',
-                            title: 'ID',
-                          },
-                          title: {
-                            'x-component': 'Input',
-                            'x-decorator': 'FormItem',
-                            title: 'Title',
-                          },
-                          start: {
-                            'x-component': 'DatePicker',
-                            'x-decorator': 'FormItem',
-                            title: 'Start',
-                          },
-                          end: {
-                            'x-component': 'DatePicker',
-                            'x-decorator': 'FormItem',
-                            title: 'End',
-                          },
-                        },
+                      grid: {
+                        type: 'void',
+                        'x-component': 'Grid',
+                        'x-item-initializer': 'Grid.AddFormItem',
                       },
                       footer: {
                         'x-component': 'Action.Drawer.Footer',
