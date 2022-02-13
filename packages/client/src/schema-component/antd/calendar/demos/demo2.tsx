@@ -1,8 +1,20 @@
 /**
  * title: Calendar
  */
+import { useForm } from '@formily/react';
 import { uid } from '@formily/shared';
-import { APIClientProvider, Calendar, SchemaComponent, SchemaComponentProvider } from '@nocobase/client';
+import {
+  Action,
+  APIClientProvider,
+  Calendar,
+  DatePicker,
+  Form,
+  FormItem,
+  Input,
+  SchemaComponent,
+  SchemaComponentProvider,
+  useActionContext,
+} from '@nocobase/client';
 import React from 'react';
 import { apiClient } from './apiClient';
 import defaultValues from './defaultValues';
@@ -74,6 +86,7 @@ const schema = {
           'x-action': 'calendar:viewSelect',
           'x-align': 'right',
         },
+
         // filter: {
         //   type: 'void',
         //   title: '过滤',
@@ -98,11 +111,34 @@ const schema = {
     },
   },
 };
+const useOkAction = () => {
+  const { setVisible } = useActionContext();
+  const form = useForm();
+  return {
+    async run() {
+      setVisible(false);
+      form.submit((values) => {
+        console.log(values);
+      });
+    },
+  };
+};
 
+const useCloseAction = () => {
+  const { setVisible } = useActionContext();
+  return {
+    async run() {
+      setVisible(false);
+    },
+  };
+};
 export default () => {
   return (
     <APIClientProvider apiClient={apiClient}>
-      <SchemaComponentProvider components={{ AddActionButton, Calendar }}>
+      <SchemaComponentProvider
+        scope={{ useOkAction, useCloseAction }}
+        components={{ AddActionButton, Calendar, Input, Action, DatePicker, FormItem, Form }}
+      >
         <SchemaComponent schema={schema} />
       </SchemaComponentProvider>
     </APIClientProvider>
