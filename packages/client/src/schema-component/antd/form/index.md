@@ -34,3 +34,15 @@ Form 也可以作 decorator 存在
 ### 远程初始化数据
 
 <code src="./demos/demo5.tsx"/>
+
+### useValues
+
+<code src="./demos/demo7.tsx"/>
+
+## API
+
+属性说明
+
+- `initialValue` 静态的初始化数据
+- `request` 远程请求参数
+- `useValues` 自定义的 useRequest
