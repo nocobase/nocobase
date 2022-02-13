@@ -36,6 +36,98 @@ export const AddActionButton = observer((props: any) => {
                 'x-align': 'left',
               },
             },
+            {
+              type: 'item',
+              title: '标题',
+              component: InitializeAction,
+              schema: {
+                title: '标题',
+                'x-component': 'Calendar.Title',
+                'x-action': `calendar:title`,
+                'x-align': 'left',
+              },
+            },
+            {
+              type: 'item',
+              title: '切换视图',
+              component: InitializeAction,
+              schema: {
+                title: '切换视图',
+                'x-component': 'Calendar.ViewSelect',
+                'x-action': `calendar:viewSelect`,
+                'x-align': 'left',
+              },
+            },
+            {
+              type: 'item',
+              title: '添加',
+              component: InitializeAction,
+              schema: {
+                title: '添加',
+                'x-component': 'Action',
+                'x-component-props': {
+                  type: 'primary',
+                },
+                'x-action': `action`,
+                'x-align': 'right',
+                properties: {
+                  modal: {
+                    'x-component': 'Action.Drawer',
+                    type: 'void',
+                    title: 'Drawer Title',
+                    properties: {
+                      form: {
+                        type: 'object',
+                        'x-component': 'Form',
+                        properties: {
+                          id: {
+                            'x-component': 'Input',
+                            'x-decorator': 'FormItem',
+                            title: 'ID',
+                          },
+                          title: {
+                            'x-component': 'Input',
+                            'x-decorator': 'FormItem',
+                            title: 'Title',
+                          },
+                          start: {
+                            'x-component': 'DatePicker',
+                            'x-decorator': 'FormItem',
+                            title: 'Start',
+                          },
+                          end: {
+                            'x-component': 'DatePicker',
+                            'x-decorator': 'FormItem',
+                            title: 'End',
+                          },
+                        },
+                      },
+                      footer: {
+                        'x-component': 'Action.Drawer.Footer',
+                        type: 'void',
+                        properties: {
+                          ok: {
+                            title: 'submit',
+                            'x-component': 'Action',
+                            'x-component-props': {
+                              useAction: '{{ useOkAction }}',
+                              type: 'primary',
+                            },
+                          },
+                          close: {
+                            title: 'Close',
+                            'x-component': 'Action',
+                            'x-component-props': {
+                              useAction: '{{ useCloseAction }}',
+                            },
+                          },
+                        },
+                      },
+                    },
+                  },
+                },
+              },
+            },
           ],
         },
       ]}
