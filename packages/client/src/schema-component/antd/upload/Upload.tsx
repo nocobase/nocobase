@@ -1,7 +1,7 @@
 import DeleteOutlined from '@ant-design/icons/DeleteOutlined';
 import DownloadOutlined from '@ant-design/icons/DownloadOutlined';
 import PlusOutlined from '@ant-design/icons/PlusOutlined';
-import { usePrefixCls } from '@formily/antd/esm/__builtins__';
+import { usePrefixCls } from '@formily/antd/lib/__builtins__';
 import { connect, mapProps, mapReadPretty } from '@formily/react';
 import { Button, Progress, Space, Upload as AntdUpload } from 'antd';
 import cls from 'classnames';

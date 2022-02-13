@@ -24,25 +24,25 @@ describe('utils', () => {
 
   describe('parseFields', () => {
     it('plain string fields equal to only', () => {
-      expect(parseFields('name,age')).toEqual({
+      expect(parseFields('name,age')).toMatchObject({
         only: ['name', 'age'],
       });
     });
 
     it('plain array fields equal to only', () => {
-      expect(parseFields(['name', 'age'])).toEqual({
+      expect(parseFields(['name', 'age'])).toMatchObject({
         only: ['name', 'age'],
       });
     });
 
     it('only string fields equal to only', () => {
-      expect(parseFields({ only: 'name,age' })).toEqual({
+      expect(parseFields({ only: 'name,age' })).toMatchObject({
         only: ['name', 'age'],
       });
     });
 
     it('only array fields equal to only', () => {
-      expect(parseFields({ only: ['name', 'age'] })).toEqual({
+      expect(parseFields({ only: ['name', 'age'] })).toMatchObject({
         only: ['name', 'age'],
       });
     });
@@ -50,7 +50,7 @@ describe('utils', () => {
     it('plain only and expect fields', () => {
       // input as "fields=title&fields[only]=content&fields[except]=status&fields[except]=created_at"
       const result = parseFields(['title', { only: 'content' }, { except: ['status', 'created_at'] }]);
-      expect(result).toEqual({
+      expect(result).toMatchObject({
         only: ['title', 'content'],
         except: ['status', 'created_at'],
       });
@@ -60,11 +60,11 @@ describe('utils', () => {
   describe('mergeFields', () => {
     describe('empty default', () => {
       it('always contains "appends"', async () => {
-        expect(mergeFields({}, { only: ['col'] })).toEqual({ appends: [], only: ['col'] });
+        expect(mergeFields({}, { only: ['col'] })).toMatchObject({ appends: [], only: ['col'] });
       });
 
       it('appends', async () => {
-        expect(mergeFields({}, { only: ['col1'], appends: ['col2'] })).toEqual({ only: ['col1'], appends: ['col2'] });
+        expect(mergeFields({}, { only: ['col1'], appends: ['col2'] })).toMatchObject({ only: ['col1'], appends: ['col2'] });
       });
     });
 
@@ -83,7 +83,7 @@ describe('utils', () => {
               appends: ['col6'],
             },
           ),
-        ).toEqual({
+        ).toMatchObject({
           only: ['col1'],
           appends: ['col6', 'col4'],
         });
@@ -97,7 +97,7 @@ describe('utils', () => {
         path: '/posts',
         method: 'GET',
       });
-      expect(params).toEqual({ resourceName: 'posts', actionName: 'list' });
+      expect(params).toMatchObject({ resourceName: 'posts', actionName: 'list' });
     });
 
     it('store action', () => {
@@ -105,7 +105,7 @@ describe('utils', () => {
         path: '/posts',
         method: 'POST',
       });
-      expect(params).toEqual({ resourceName: 'posts', actionName: 'create' });
+      expect(params).toMatchObject({ resourceName: 'posts', actionName: 'create' });
     });
 
     it('get action', () => {
@@ -113,7 +113,7 @@ describe('utils', () => {
         path: '/posts/1',
         method: 'GET',
       });
-      expect(params).toEqual({ resourceName: 'posts', resourceIndex: '1', actionName: 'get' });
+      expect(params).toMatchObject({ resourceName: 'posts', resourceIndex: '1', actionName: 'get' });
     });
 
     it('update action', () => {
@@ -121,7 +121,7 @@ describe('utils', () => {
         path: '/posts/1',
         method: 'PUT',
       });
-      expect(params).toEqual({ resourceName: 'posts', resourceIndex: '1', actionName: 'update' });
+      expect(params).toMatchObject({ resourceName: 'posts', resourceIndex: '1', actionName: 'update' });
     });
 
     it('update action', () => {
@@ -129,7 +129,7 @@ describe('utils', () => {
         path: '/posts/1',
         method: 'PATCH',
       });
-      expect(params).toEqual({ resourceName: 'posts', resourceIndex: '1', actionName: 'update' });
+      expect(params).toMatchObject({ resourceName: 'posts', resourceIndex: '1', actionName: 'update' });
     });
 
     it('delete action', () => {
@@ -137,7 +137,7 @@ describe('utils', () => {
         path: '/posts/1',
         method: 'delete',
       });
-      expect(params).toEqual({ resourceName: 'posts', resourceIndex: '1', actionName: 'destroy' });
+      expect(params).toMatchObject({ resourceName: 'posts', resourceIndex: '1', actionName: 'destroy' });
     });
 
     it('delete action', () => {
@@ -145,7 +145,7 @@ describe('utils', () => {
         path: '/posts/1,2,3,4,5,6',
         method: 'delete',
       });
-      expect(params).toEqual({ resourceName: 'posts', resourceIndex: '1,2,3,4,5,6', actionName: 'destroy' });
+      expect(params).toMatchObject({ resourceName: 'posts', resourceIndex: '1,2,3,4,5,6', actionName: 'destroy' });
     });
 
     it('index action', () => {
@@ -153,7 +153,7 @@ describe('utils', () => {
         path: '/posts/1/comments',
         method: 'GET',
       });
-      expect(params).toEqual({
+      expect(params).toMatchObject({
         resourceName: 'comments',
         associatedName: 'posts',
         associatedIndex: '1',
@@ -166,7 +166,7 @@ describe('utils', () => {
         path: '/posts/1/comments',
         method: 'POST',
       });
-      expect(params).toEqual({
+      expect(params).toMatchObject({
         resourceName: 'comments',
         associatedName: 'posts',
         associatedIndex: '1',
@@ -179,7 +179,7 @@ describe('utils', () => {
         path: '/posts/1/comments/1',
         method: 'GET',
       });
-      expect(params).toEqual({
+      expect(params).toMatchObject({
         resourceName: 'comments',
         resourceIndex: '1',
         associatedName: 'posts',
@@ -193,7 +193,7 @@ describe('utils', () => {
         path: '/posts/1/comments/1',
         method: 'PUT',
       });
-      expect(params).toEqual({
+      expect(params).toMatchObject({
         resourceName: 'comments',
         resourceIndex: '1',
         associatedName: 'posts',
@@ -207,7 +207,7 @@ describe('utils', () => {
         path: '/posts/1/comments/1',
         method: 'PATCH',
       });
-      expect(params).toEqual({
+      expect(params).toMatchObject({
         resourceName: 'comments',
         resourceIndex: '1',
         associatedName: 'posts',
@@ -221,7 +221,7 @@ describe('utils', () => {
         path: '/posts/1/comments/1',
         method: 'delete',
       });
-      expect(params).toEqual({
+      expect(params).toMatchObject({
         resourceName: 'comments',
         resourceIndex: '1',
         associatedName: 'posts',
@@ -235,7 +235,7 @@ describe('utils', () => {
         path: '/posts:export',
         method: 'GET',
       });
-      expect(params).toEqual({ resourceName: 'posts', actionName: 'export' });
+      expect(params).toMatchObject({ resourceName: 'posts', actionName: 'export' });
     });
 
     it('export action', () => {
@@ -243,7 +243,7 @@ describe('utils', () => {
         path: '/posts:export',
         method: 'POST',
       });
-      expect(params).toEqual({ resourceName: 'posts', actionName: 'export' });
+      expect(params).toMatchObject({ resourceName: 'posts', actionName: 'export' });
     });
 
     it('export action', () => {
@@ -251,7 +251,7 @@ describe('utils', () => {
         path: '/posts:export/1',
         method: 'POST',
       });
-      expect(params).toEqual({ resourceName: 'posts', resourceIndex: '1', actionName: 'export' });
+      expect(params).toMatchObject({ resourceName: 'posts', resourceIndex: '1', actionName: 'export' });
     });
 
     it('attach action', () => {
@@ -259,7 +259,7 @@ describe('utils', () => {
         path: '/posts/1/tags:attach/2',
         method: 'POST',
       });
-      expect(params).toEqual({
+      expect(params).toMatchObject({
         resourceName: 'tags',
         resourceIndex: '2',
         associatedIndex: '1',
@@ -278,7 +278,7 @@ describe('utils', () => {
           prefix: '/api',
         },
       );
-      expect(params).toEqual({ resourceName: 'posts', actionName: 'list' });
+      expect(params).toMatchObject({ resourceName: 'posts', actionName: 'list' });
     });
 
     it('prefix options', () => {
@@ -306,7 +306,7 @@ describe('utils', () => {
           },
         },
       );
-      expect(params).toEqual({ resourceName: 'posts', actionName: 'query' });
+      expect(params).toMatchObject({ resourceName: 'posts', actionName: 'query' });
     });
 
     it('actions options', () => {
@@ -314,7 +314,7 @@ describe('utils', () => {
         path: '/posts:list',
         method: 'GET',
       });
-      expect(params).toEqual({ resourceName: 'posts', actionName: 'list' });
+      expect(params).toMatchObject({ resourceName: 'posts', actionName: 'list' });
     });
 
     it('actions options', () => {
@@ -322,7 +322,7 @@ describe('utils', () => {
         path: '/resourcer/user.posts:list',
         method: 'GET',
       });
-      expect(params).toEqual({ associatedName: 'user', resourceName: 'posts', actionName: 'list' });
+      expect(params).toMatchObject({ associatedName: 'user', resourceName: 'posts', actionName: 'list' });
     });
   });
 });

@@ -1,4 +1,4 @@
-import { usePrefixCls } from '@formily/antd/esm/__builtins__';
+import { usePrefixCls } from '@formily/antd/lib/__builtins__';
 import { Popover } from 'antd';
 import { InputProps, TextAreaProps } from 'antd/lib/input';
 import cls from 'classnames';

@@ -1,7 +1,8 @@
+import { render } from '@testing-library/react';
 import React from 'react';
 import { MemoryRouter } from 'react-router-dom';
-import { RouteSwitchProvider, RouteSwitch } from '../';
-import { render } from '@testing-library/react';
+import { RouteSwitch } from '../RouteSwitch';
+import { RouteSwitchProvider } from '../RouteSwitchProvider';
 
 const Home = () => <h1>Home</h1>;
 const About = () => <h1>About</h1>;

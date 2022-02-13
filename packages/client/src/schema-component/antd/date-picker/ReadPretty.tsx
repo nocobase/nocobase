@@ -1,8 +1,8 @@
-import { formatMomentValue, usePrefixCls } from '@formily/antd/esm/__builtins__';
+import { formatMomentValue, usePrefixCls } from '@formily/antd/lib/__builtins__';
 import { isArr } from '@formily/shared';
 import type {
   DatePickerProps as AntdDatePickerProps,
-  RangePickerProps as AntdRangePickerProps,
+  RangePickerProps as AntdRangePickerProps
 } from 'antd/lib/date-picker';
 import cls from 'classnames';
 import moment from 'moment';
