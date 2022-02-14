@@ -13,7 +13,7 @@ const escape = (value, ctx) => {
 const sqliteExistQuery = (value, ctx) => {
   const fieldName = getFieldName(ctx);
 
-  const sqlArray = `(${value.map((v) => JSON.stringify(v.toString())).join(', ')})`;
+  const sqlArray = `(${value.map((v) => `'${v}'`).join(', ')})`;
 
   const subQuery = `exists (select * from json_each(${fieldName}) where json_each.value in ${sqlArray})`;
 
