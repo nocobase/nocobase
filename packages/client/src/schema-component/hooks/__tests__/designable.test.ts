@@ -217,14 +217,14 @@ describe('createDesignable', () => {
     });
   });
 
-  describe('removeIfNoChildren', () => {
+  describe('recursiveRemoveIfNoChildren', () => {
     test('has child nodes', () => {
-      dn.removeIfNoChildren(schema.properties.current);
+      dn.recursiveRemoveIfNoChildren(schema.properties.current);
       expect(schema.properties.current).toBeDefined();
     });
 
     test('no child nodes', () => {
-      dn.removeIfNoChildren(schema.properties.current.properties.child);
+      dn.recursiveRemoveIfNoChildren(schema.properties.current.properties.child);
       expect(schema.properties.current?.properties?.child).toBeUndefined();
     });
   });
@@ -241,20 +241,20 @@ describe('createDesignable', () => {
       expect(schema.properties.current?.properties?.child).toBeUndefined();
     });
 
-    test('removeParentsIfNoChildren + breakSchema json', () => {
+    test('removeParentsIfNoChildren + breakRemoveOn json', () => {
       dn.remove(schema.properties.current.properties.child, {
         removeParentsIfNoChildren: true,
-        breakSchema: {
+        breakRemoveOn: {
           'x-uid': 'global',
         },
       });
       expect(schema?.properties?.current).toBeUndefined();
     });
 
-    test('removeParentsIfNoChildren + breakSchema function', () => {
+    test('removeParentsIfNoChildren + breakRemoveOn function', () => {
       dn.remove(schema.properties.current.properties.child, {
         removeParentsIfNoChildren: true,
-        breakSchema: (s) => s['x-uid'] === 'global',
+        breakRemoveOn: (s) => s['x-uid'] === 'global',
       });
       expect(schema?.properties?.current).toBeUndefined();
     });
@@ -486,6 +486,6 @@ describe('parentsIn', () => {
     dn.on('error', callback);
     dn.insertAfterBegin(schema.properties.menu);
     expect(schema.properties.menu).toBeDefined();
-    expect(callback.mock.calls[0][1].code).toBe('parent_is_not_allowed');
+    expect(callback.mock.calls[0][0].code).toBe('parent_is_not_allowed');
   });
 });
