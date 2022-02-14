@@ -68,18 +68,35 @@ export class Designable {
     generateUid(schema);
   }
 
-  on(name: 'afterInsertAdjacent' | 'afterRemove', listener: any) {
+  on(name: 'afterInsertAdjacent' | 'afterRemove' | 'error', listener: any) {
     if (!this.events[name]) {
       this.events[name] = [];
     }
     this.events[name].push(listener);
   }
 
-  emit(name: 'afterInsertAdjacent' | 'afterRemove', ...args) {
+  emit(name: 'afterInsertAdjacent' | 'afterRemove' | 'error', ...args) {
     if (!this.events[name]) {
       return;
     }
     this.events[name].forEach((fn) => fn.bind(this)(this.current, ...args));
+  }
+
+  parentsIn(schema: Schema) {
+    if (!schema) {
+      return false;
+    }
+    if (!Schema.isSchemaInstance(schema)) {
+      return false;
+    }
+    let s = this.current;
+    while (s?.parent) {
+      if (s.parent === schema) {
+        return true;
+      }
+      s = s.parent;
+    }
+    return false;
   }
 
   insertAdjacent(position: Position, schema: ISchema, options: InsertAdjacentOptions = {}) {
@@ -193,6 +210,13 @@ export class Designable {
     const opts = {};
     const { wrap = defaultWrap, removeParentsIfNoChildren } = options;
     if (Schema.isSchemaInstance(schema)) {
+      if (this.parentsIn(schema)) {
+        this.emit('error', {
+          code: 'parent_is_not_allowed',
+          schema,
+        });
+        return;
+      }
       schema.parent.removeProperty(schema.name);
       if (removeParentsIfNoChildren) {
         opts['removed'] = this.removeIfNoChildren(schema.parent);
@@ -237,6 +261,13 @@ export class Designable {
     const opts = {};
     const { wrap = defaultWrap, removeParentsIfNoChildren } = options;
     if (Schema.isSchemaInstance(schema)) {
+      if (this.parentsIn(schema)) {
+        this.emit('error', {
+          code: 'parent_is_not_allowed',
+          schema,
+        });
+        return;
+      }
       schema.parent.removeProperty(schema.name);
       if (removeParentsIfNoChildren) {
         opts['removed'] = this.removeIfNoChildren(schema.parent);
@@ -272,6 +303,13 @@ export class Designable {
     const opts = {};
     const { wrap = defaultWrap, removeParentsIfNoChildren } = options;
     if (Schema.isSchemaInstance(schema)) {
+      if (this.parentsIn(schema)) {
+        this.emit('error', {
+          code: 'parent_is_not_allowed',
+          schema,
+        });
+        return;
+      }
       schema.parent.removeProperty(schema.name);
       if (removeParentsIfNoChildren) {
         opts['removed'] = this.removeIfNoChildren(schema.parent);
@@ -294,6 +332,13 @@ export class Designable {
     const opts = {};
     const { wrap = defaultWrap, removeParentsIfNoChildren } = options;
     if (Schema.isSchemaInstance(schema)) {
+      if (this.parentsIn(schema)) {
+        this.emit('error', {
+          code: 'parent_is_not_allowed',
+          schema,
+        });
+        return;
+      }
       schema.parent.removeProperty(schema.name);
       if (removeParentsIfNoChildren) {
         opts['removed'] = this.removeIfNoChildren(schema.parent);
