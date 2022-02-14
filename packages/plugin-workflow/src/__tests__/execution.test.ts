@@ -394,7 +394,7 @@ describe('execution', () => {
       const [execution] = await workflow.getExecutions();
       expect(execution.status).toEqual(EXECUTION_STATUS.STARTED);
 
-      const [pending] = await execution.getJobs({ nodeId: n2.id });
+      const [pending] = await execution.getJobs({ where: { nodeId: n2.id } });
       pending.set('result', 123);
       await execution.resume(pending);
 
