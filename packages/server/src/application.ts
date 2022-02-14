@@ -1,6 +1,6 @@
 import { ACL } from '@nocobase/acl';
 import { registerActions } from '@nocobase/actions';
-import Database, { CleanOptions, CollectionOptions, DatabaseOptions, SyncOptions } from '@nocobase/database';
+import Database, { CleanOptions, CollectionOptions, IDatabaseOptions, SyncOptions } from '@nocobase/database';
 import Resourcer, { ResourceOptions } from '@nocobase/resourcer';
 import { applyMixins, AsyncEmitter } from '@nocobase/utils';
 import { Command, CommandOptions } from 'commander';
@@ -18,7 +18,7 @@ export interface ResourcerOptions {
 }
 
 export interface ApplicationOptions {
-  database?: DatabaseOptions;
+  database?: IDatabaseOptions | Database;
   resourcer?: ResourcerOptions;
   bodyParser?: any;
   cors?: any;

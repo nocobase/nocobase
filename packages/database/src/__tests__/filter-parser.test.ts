@@ -1,7 +1,7 @@
-import { mockDatabase } from './index';
-import FilterParser from '../filter-parser';
 import { Op } from 'sequelize';
 import { Database } from '../database';
+import FilterParser from '../filter-parser';
+import { mockDatabase } from './index';
 
 test('filter item by string', async () => {
   const database = mockDatabase();

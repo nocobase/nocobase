@@ -31,7 +31,11 @@ interface MapOf<T> {
   [key: string]: T;
 }
 
-export type DatabaseOptions = Options | Sequelize;
+export interface IDatabaseOptions extends Options {
+  tablePrefix?: string;
+}
+
+export type DatabaseOptions = IDatabaseOptions | Sequelize;
 
 interface RegisterOperatorsContext {
   db?: Database;
@@ -48,6 +52,7 @@ type OperatorFunc = (value: any, ctx?: RegisterOperatorsContext) => any;
 export class Database extends EventEmitter implements AsyncEmitter {
   sequelize: Sequelize;
   fieldTypes = new Map();
+  options: IDatabaseOptions;
   models = new Map<string, ModelCtor<any>>();
   repositories = new Map<string, RepositoryType>();
   operators = new Map();
@@ -66,6 +71,7 @@ export class Database extends EventEmitter implements AsyncEmitter {
       this.sequelize = options;
     } else {
       this.sequelize = new Sequelize(options);
+      this.options = options;
     }
 
     this.collections = new Map();
@@ -113,6 +119,10 @@ export class Database extends EventEmitter implements AsyncEmitter {
     this.emit('afterDefineCollection', collection);
 
     return collection;
+  }
+
+  getTablePrefix() {
+    return this.options.tablePrefix || '';
   }
 
   /**
