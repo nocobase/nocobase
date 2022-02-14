@@ -8,9 +8,8 @@ describe('createdBy/updatedBy', () => {
   beforeEach(async () => {
     api = mockServer();
     api.plugin(require('../server').default);
-    await api.load();
+    await api.loadAndInstall();
     db = api.db;
-    await db.sync();
   });
 
   afterEach(async () => {

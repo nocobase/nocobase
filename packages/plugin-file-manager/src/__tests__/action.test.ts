@@ -18,9 +18,7 @@ describe('action', () => {
 
   beforeEach(async () => {
     app = await getApp({
-      database: {
-        logging: console.log,
-      },
+      database: {},
     });
     agent = app.agent();
     db = app.db;

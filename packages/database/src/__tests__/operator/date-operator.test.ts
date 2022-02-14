@@ -8,9 +8,7 @@ describe('date operator test', () => {
   let User: Collection;
 
   beforeEach(async () => {
-    db = mockDatabase({
-      logging: console.log,
-    });
+    db = mockDatabase();
 
     User = db.collection({
       name: 'users',

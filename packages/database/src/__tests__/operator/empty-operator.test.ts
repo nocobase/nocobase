@@ -13,9 +13,7 @@ describe('empty operator', () => {
   });
 
   beforeEach(async () => {
-    db = mockDatabase({
-      logging: console.log,
-    });
+    db = mockDatabase({});
 
     User = db.collection({
       name: 'users',
