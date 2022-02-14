@@ -74,8 +74,10 @@ const useCurrentFieldSchema = (path: string) => {
     remove() {
       schema &&
         remove(schema, {
-          breakComponent: 'Grid',
-          removeEmptyParents: true,
+          removeParentsIfNoChildren: true,
+          breakSchema: (s) => {
+            return s['x-component'] === 'Grid';
+          },
         });
     },
   };

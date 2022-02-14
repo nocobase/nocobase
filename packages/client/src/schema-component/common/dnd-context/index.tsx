@@ -7,7 +7,6 @@ const useDragEnd = () => {
   const { refresh } = useDesignable();
 
   return ({ active, over }: DragEndEvent) => {
-    console.log({ active, over });
     const activeSchema = active?.data?.current?.schema;
     const overSchema = over?.data?.current?.schema;
     const insertAdjacent = over?.data?.current?.insertAdjacent;
@@ -35,7 +34,7 @@ const useDragEnd = () => {
     if (insertAdjacent) {
       dn.insertAdjacent(insertAdjacent, activeSchema, {
         wrap: wrapSchema,
-        removeEmptyParents: true,
+        removeParentsIfNoChildren: true,
       });
       return;
     }

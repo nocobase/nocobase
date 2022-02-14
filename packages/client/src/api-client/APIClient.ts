@@ -19,6 +19,7 @@ export interface IResource {
   create?: (params?: ActionParams) => Promise<any>;
   update?: (params?: ActionParams) => Promise<any>;
   destroy?: (params?: ActionParams) => Promise<any>;
+  [key: string]: (params?: ActionParams) => Promise<any>;
 }
 
 export class APIClient {
