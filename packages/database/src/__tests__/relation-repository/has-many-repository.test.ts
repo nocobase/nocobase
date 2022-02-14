@@ -1,10 +1,20 @@
 import { mockDatabase } from '../index';
 import { HasManyRepository } from '../../relation-repository/hasmany-repository';
 import { BelongsToManyRepository } from '../../relation-repository/belongs-to-many-repository';
+import Database, { Collection } from '@nocobase/database';
 
 describe('has many with target key', function () {
+  let db: Database;
+  afterEach(async () => {
+    await db.close();
+  });
+
+  beforeEach(async () => {
+    db = mockDatabase();
+    await db.clean({ drop: true });
+  });
+
   test('target key with filterTargetKey', async () => {
-    const db = mockDatabase();
     const User = db.collection<{ id: number; name: string }, { name: string }>({
       name: 'users',
       filterTargetKey: 'name',
@@ -34,7 +44,6 @@ describe('has many with target key', function () {
   });
 
   test('destroy by target key and filter', async () => {
-    const db = mockDatabase();
     const User = db.collection<{ id: number; name: string }, { name: string }>({
       name: 'users',
       filterTargetKey: 'name',
@@ -125,6 +134,8 @@ describe('has many repository', () => {
 
   beforeEach(async () => {
     db = mockDatabase();
+    await db.clean({ drop: true });
+
     User = db.collection({
       name: 'users',
       fields: [

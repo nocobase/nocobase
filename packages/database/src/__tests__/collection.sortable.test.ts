@@ -1,9 +1,19 @@
 import { mockDatabase } from './index';
+import { Database } from '@nocobase/database';
 
 describe('collection sortable options', () => {
-  test('sortable=true', async () => {
-    const db = mockDatabase();
+  let db: Database;
 
+  beforeEach(async () => {
+    db = mockDatabase();
+    await db.clean({ drop: true });
+  });
+
+  afterEach(async () => {
+    await db.close();
+  });
+
+  test('sortable=true', async () => {
     const Test = db.collection({
       name: 'test',
       sortable: true,
@@ -18,8 +28,6 @@ describe('collection sortable options', () => {
   });
 
   test('sortable=string', async () => {
-    const db = mockDatabase();
-
     const Test = db.collection({
       name: 'test',
       sortable: 'order',
@@ -34,8 +42,6 @@ describe('collection sortable options', () => {
   });
 
   test('sortable=object', async () => {
-    const db = mockDatabase();
-
     const Test = db.collection({
       name: 'test',
       sortable: {

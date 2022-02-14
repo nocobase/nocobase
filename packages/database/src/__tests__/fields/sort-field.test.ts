@@ -5,8 +5,10 @@ import { SortField } from '../../fields';
 describe('string field', () => {
   let db: Database;
 
-  beforeEach(() => {
+  beforeEach(async () => {
     db = mockDatabase();
+    await db.clean({ drop: true });
+
     db.registerFieldTypes({
       sort: SortField,
     });
@@ -31,11 +33,12 @@ describe('string field', () => {
     expect(test3.sort).toBe(3);
   });
 
-  test('simultaneously create ', async () => {
+  test.skip('simultaneously create ', async () => {
     const Test = db.collection({
       name: 'tests',
       fields: [{ type: 'sort', name: 'sort' }],
     });
+
     await db.sync();
 
     const promise = [];

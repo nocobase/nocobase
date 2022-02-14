@@ -8,6 +8,8 @@ describe('create', () => {
 
   beforeEach(async () => {
     db = mockDatabase();
+    await db.clean({ drop: true });
+
     User = db.collection({
       name: 'users',
       fields: [
@@ -24,6 +26,10 @@ describe('create', () => {
       ],
     });
     await db.sync();
+  });
+
+  afterEach(async () => {
+    await db.close();
   });
   test('create with association', async () => {
     const u1 = await User.repository.create({

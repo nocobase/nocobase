@@ -4,8 +4,9 @@ import { mockDatabase } from '../';
 describe('has many field', () => {
   let db: Database;
 
-  beforeEach(() => {
+  beforeEach(async () => {
     db = mockDatabase();
+    await db.clean({ drop: true });
   });
 
   afterEach(async () => {

@@ -15,6 +15,7 @@ describe('has one repository', () => {
 
   beforeEach(async () => {
     db = mockDatabase();
+    await db.clean({ drop: true });
 
     User = db.collection({
       name: 'users',

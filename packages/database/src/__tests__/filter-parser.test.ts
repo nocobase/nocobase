@@ -3,35 +3,6 @@ import FilterParser from '../filter-parser';
 import { Op } from 'sequelize';
 import { Database } from '../database';
 
-test('filter item by string', async () => {
-  const database = mockDatabase();
-  const UserCollection = database.collection({
-    name: 'users',
-    fields: [{ type: 'string', name: 'name' }],
-  });
-
-  await database.sync();
-
-  const filterParser = new FilterParser(
-    {
-      name: 'hello',
-    },
-    {
-      collection: UserCollection,
-    },
-  );
-
-  const filterParams = filterParser.toSequelizeParams();
-
-  expect(filterParams).toMatchObject({
-    where: {
-      name: 'hello',
-    },
-  });
-
-  await database.close();
-});
-
 describe('filter by related', () => {
   let db: Database;
 
@@ -72,6 +43,32 @@ describe('filter by related', () => {
 
   afterEach(async () => {
     await db.close();
+  });
+
+  test('filter item by string', async () => {
+    const UserCollection = db.collection({
+      name: 'users',
+      fields: [{ type: 'string', name: 'name' }],
+    });
+
+    await db.sync();
+
+    const filterParser = new FilterParser(
+      {
+        name: 'hello',
+      },
+      {
+        collection: UserCollection,
+      },
+    );
+
+    const filterParams = filterParser.toSequelizeParams();
+
+    expect(filterParams).toMatchObject({
+      where: {
+        name: 'hello',
+      },
+    });
   });
 
   test('hasMany', async () => {

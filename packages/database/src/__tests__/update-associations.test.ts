@@ -6,8 +6,10 @@ import { mockDatabase } from './';
 describe('update associations', () => {
   describe('belongsTo', () => {
     let db: Database;
-    beforeEach(() => {
+    beforeEach(async () => {
       db = mockDatabase();
+
+      await db.clean({ drop: true });
     });
 
     afterEach(async () => {
@@ -101,6 +103,8 @@ describe('update associations', () => {
     let Post: Collection;
     beforeEach(async () => {
       db = mockDatabase();
+      await db.clean({ drop: true });
+
       User = db.collection({
         name: 'users',
         fields: [
@@ -246,6 +250,8 @@ describe('update associations', () => {
 
     beforeEach(async () => {
       db = mockDatabase();
+      await db.clean({ drop: true });
+
       User = db.collection({
         name: 'users',
         fields: [
@@ -363,6 +369,8 @@ describe('update associations', () => {
 
     beforeEach(async () => {
       db = mockDatabase();
+      await db.clean({ drop: true });
+
       PostTag = db.collection({
         name: 'posts_tags',
         fields: [{ type: 'string', name: 'tagged_at' }],
@@ -386,6 +394,9 @@ describe('update associations', () => {
       await db.sync();
     });
 
+    afterEach(async () => {
+      await db.close();
+    });
     test('set through value', async () => {
       const p1 = await Post.repository.create({
         values: {

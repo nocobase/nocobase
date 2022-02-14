@@ -47,7 +47,11 @@ describe('update-guard', () => {
       ],
     });
 
-    await db.sync();
+    await db.sync({
+      force: true,
+      alter: { drop: false },
+    });
+
     const repository = User.repository;
 
     await repository.createMany({
@@ -60,12 +64,12 @@ describe('update-guard', () => {
         {
           name: 'u2',
           age: 20,
-          posts: [{ title: 'u2t1', comments: ['u2t1c1'] }],
+          posts: [{ title: 'u2t1', comments: [{ content: 'u2t1c1' }] }],
         },
         {
           name: 'u3',
           age: 30,
-          posts: [{ title: 'u3t1', comments: ['u3t1c1'] }],
+          posts: [{ title: 'u3t1', comments: [{ content: 'u3t1c1' }] }],
         },
       ],
     });

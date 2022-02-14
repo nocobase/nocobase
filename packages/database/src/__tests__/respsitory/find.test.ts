@@ -8,8 +8,15 @@ describe('repository find', () => {
   let User: Collection;
   let Post: Collection;
   let Comment: Collection;
+
+  afterEach(async () => {
+    await db.close();
+  });
+
   beforeEach(async () => {
-    const db = mockDatabase();
+    db = mockDatabase();
+    await db.clean({ drop: true });
+
     User = db.collection<{ id: number; name: string }, { name: string }>({
       name: 'users',
       fields: [
@@ -50,17 +57,17 @@ describe('repository find', () => {
         {
           name: 'u1',
           age: 10,
-          posts: [{ title: 'u1t1', comments: ['u1t1c1'] }],
+          posts: [{ title: 'u1t1', comments: [{ content: 'u1t1c1' }] }],
         },
         {
           name: 'u2',
           age: 20,
-          posts: [{ title: 'u2t1', comments: ['u2t1c1'] }],
+          posts: [{ title: 'u2t1', comments: [{ content: 'u2t1c1' }] }],
         },
         {
           name: 'u3',
           age: 30,
-          posts: [{ title: 'u3t1', comments: ['u3t1c1'] }],
+          posts: [{ title: 'u3t1', comments: [{ content: 'u3t1c1' }] }],
         },
       ],
     });
