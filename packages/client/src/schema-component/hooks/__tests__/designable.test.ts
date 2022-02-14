@@ -451,3 +451,41 @@ describe('wrap', () => {
     expect(schema.properties.row2.properties.col21.properties.block2).toBeDefined();
   });
 });
+
+describe('parentsIn', () => {
+  let schema: Schema;
+
+  beforeEach(() => {
+    schema = new Schema({
+      type: 'void',
+      name: 'page',
+      properties: {
+        menu: {
+          type: 'void',
+          'x-uid': 'menu',
+          properties: {
+            item1: {
+              type: 'void',
+              'x-uid': 'item1',
+            },
+            item2: {
+              type: 'void',
+              'x-uid': 'item2',
+            },
+          },
+        },
+      },
+    });
+  });
+
+  test('parentsIn', () => {
+    const dn = createDesignable({
+      current: schema.properties.menu.properties.item1,
+    });
+    const callback = jest.fn();
+    dn.on('error', callback);
+    dn.insertAfterBegin(schema.properties.menu);
+    expect(schema.properties.menu).toBeDefined();
+    expect(callback.mock.calls[0][1].code).toBe('parent_is_not_allowed');
+  });
+});
