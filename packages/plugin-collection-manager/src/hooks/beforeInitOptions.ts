@@ -1,7 +1,7 @@
 import { uid } from '@nocobase/utils';
 import { Model } from 'sequelize';
 
-export default {
+export const beforeInitOptions = {
   belongsTo(model: Model) {
     const defaults = {
       targetKey: 'id',
