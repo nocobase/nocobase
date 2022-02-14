@@ -1,10 +1,10 @@
 import Database from '@nocobase/database';
 
 export function beforeCreateForChildrenCollection(db: Database) {
-  const Collection = db.getCollection('collections');
-  const Field = db.getCollection('fields');
-
   return async (model, { transaction, context }) => {
+    const Collection = db.getCollection('collections');
+    const Field = db.getCollection('fields');
+
     const parentKey = model.get('parentKey');
     if (!parentKey) {
       return;

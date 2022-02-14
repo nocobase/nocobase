@@ -445,7 +445,7 @@ export class Repository<TModelAttributes extends {} = any, TCreationAttributes e
 
     const params = parser.toSequelizeParams();
     debug('sequelize query params %o', params);
-    return { ...options, ...params };
+    return { where: {}, ...options, ...params };
   }
 
   protected parseFilter(filter: Filter) {

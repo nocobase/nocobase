@@ -3,11 +3,13 @@ import { uid } from '@formily/shared';
 import get from 'lodash/get';
 import set from 'lodash/set';
 import React, { useContext } from 'react';
-import { useAPIClient } from '../../api-client';
+import { APIClient, useAPIClient } from '../../api-client';
 import { SchemaComponentContext } from '../context';
 
 interface CreateDesignableProps {
   current: Schema;
+  api?: APIClient;
+  refresh?: () => void;
 }
 
 export function createDesignable(options: CreateDesignableProps) {
@@ -22,13 +24,18 @@ type Position = 'beforeBegin' | 'afterBegin' | 'beforeEnd' | 'afterEnd';
 interface InsertAdjacentOptions {
   wrap?: (s: ISchema) => ISchema;
   removeParentsIfNoChildren?: boolean;
+  breakRemoveOn?: ISchema | BreakFn;
 }
 
 type BreakFn = (s: ISchema) => boolean;
 
 interface RemoveOptions {
   removeParentsIfNoChildren?: boolean;
-  breakSchema?: ISchema | BreakFn;
+  breakRemoveOn?: ISchema | BreakFn;
+}
+
+interface RecursiveRemoveOptions {
+  breakRemoveOn?: ISchema | BreakFn;
 }
 
 const generateUid = (s: ISchema) => {
@@ -42,13 +49,59 @@ const generateUid = (s: ISchema) => {
 
 const defaultWrap = (s: ISchema) => s;
 
+const matchSchema = (source: ISchema, target: ISchema) => {
+  if (!source || !target) {
+    return;
+  }
+  for (const key in target) {
+    if (Object.prototype.hasOwnProperty.call(target, key)) {
+      const value = target[key];
+      if (value !== source?.[key]) {
+        return false;
+      }
+    }
+  }
+  return true;
+};
+
 export class Designable {
   current: Schema;
-
+  options: CreateDesignableProps;
   events = {};
 
-  constructor({ current }) {
-    this.current = current;
+  constructor(options: CreateDesignableProps) {
+    this.options = options;
+    this.current = options.current;
+  }
+
+  loadAPIClientEvents() {
+    const { refresh, api } = this.options;
+    if (!api) {
+      return;
+    }
+    this.on('insertAdjacent', async ({ current, position, schema, removed }) => {
+      refresh();
+      await api.request({
+        url: `/ui_schemas:insertAdjacent/${current['x-uid']}?position=${position}`,
+        method: 'post',
+        data: schema.toJSON(),
+      });
+      if (removed?.['x-uid']) {
+        await api.request({
+          url: `/ui_schemas:remove/${removed['x-uid']}`,
+          method: 'post',
+        });
+      }
+    });
+    this.on('remove', async ({ removed }) => {
+      refresh();
+      if (removed?.['x-uid']) {
+        await api.request({
+          url: `/ui_schemas:remove/${removed['x-uid']}`,
+          method: 'post',
+        });
+      }
+    });
   }
 
   prepareProperty(schema: ISchema) {
@@ -68,18 +121,19 @@ export class Designable {
     generateUid(schema);
   }
 
-  on(name: 'afterInsertAdjacent' | 'afterRemove' | 'error', listener: any) {
+  on(name: 'insertAdjacent' | 'remove' | 'error', listener: any) {
     if (!this.events[name]) {
       this.events[name] = [];
     }
     this.events[name].push(listener);
   }
 
-  emit(name: 'afterInsertAdjacent' | 'afterRemove' | 'error', ...args) {
+  emit(name: 'insertAdjacent' | 'remove' | 'error', ...args) {
     if (!this.events[name]) {
       return;
     }
-    this.events[name].forEach((fn) => fn.bind(this)(this.current, ...args));
+    const [opts, ...others] = args;
+    this.events[name].forEach((fn) => fn.bind(this)({ current: this.current, ...opts }, ...others));
   }
 
   parentsIn(schema: Schema) {
@@ -112,21 +166,29 @@ export class Designable {
     }
   }
 
-  removeIfNoChildren(schema?: Schema) {
+  recursiveRemoveIfNoChildren(schema?: Schema, options?: RecursiveRemoveOptions) {
     if (!schema) {
       return;
     }
     let s = schema;
-    const count = Object.keys(s.properties || {}).length;
-    if (count > 0) {
-      return;
-    }
     let removed: Schema;
-    while (s.parent) {
-      removed = s.parent.removeProperty(s.name);
-      const count = Object.keys(s.parent.properties || {}).length;
+    const breakRemoveOn = options?.breakRemoveOn;
+    while (s) {
+      if (typeof breakRemoveOn === 'function') {
+        if (breakRemoveOn(s)) {
+          break;
+        }
+      } else {
+        if (matchSchema(s, breakRemoveOn)) {
+          break;
+        }
+      }
+      const count = Object.keys(s.properties || {}).length;
       if (count > 0) {
         break;
+      }
+      if (s.parent) {
+        removed = s.parent.removeProperty(s.name);
       }
       s = s.parent;
     }
@@ -134,47 +196,16 @@ export class Designable {
   }
 
   remove(schema?: Schema, options: RemoveOptions = {}) {
-    const { removeParentsIfNoChildren, breakSchema } = options;
+    const { breakRemoveOn, removeParentsIfNoChildren } = options;
     let s = schema || this.current;
-    let removed;
-    const matchSchema = (source: ISchema, target: ISchema) => {
-      if (!source || !target) {
-        return;
+    let removed = s.parent.removeProperty(s.name);
+    if (removeParentsIfNoChildren) {
+      const parent = this.recursiveRemoveIfNoChildren(s.parent, { breakRemoveOn });
+      if (parent) {
+        removed = parent;
       }
-      for (const key in target) {
-        if (Object.prototype.hasOwnProperty.call(target, key)) {
-          const value = target[key];
-          if (value !== source?.[key]) {
-            return false;
-          }
-        }
-      }
-      return true;
-    };
-    while (s.parent) {
-      removed = s.parent.removeProperty(s.name);
-      if (!removeParentsIfNoChildren) {
-        break;
-      }
-      if (typeof breakSchema === 'function') {
-        if (breakSchema(s?.parent)) {
-          break;
-        }
-      } else {
-        if (matchSchema(s?.parent, breakSchema)) {
-          break;
-        }
-      }
-      if (s?.parent?.['x-component'] === breakSchema) {
-        break;
-      }
-      const count = Object.keys(s.parent.properties || {}).length;
-      if (count > 0) {
-        break;
-      }
-      s = s.parent;
     }
-    this.emit('afterRemove', removed, options);
+    this.emit('remove', { removed });
   }
 
   insertBeforeBeginOrAfterEnd(schema: ISchema, options: InsertAdjacentOptions = {}) {
@@ -208,7 +239,7 @@ export class Designable {
       return;
     }
     const opts = {};
-    const { wrap = defaultWrap, removeParentsIfNoChildren } = options;
+    const { wrap = defaultWrap, breakRemoveOn, removeParentsIfNoChildren } = options;
     if (Schema.isSchemaInstance(schema)) {
       if (this.parentsIn(schema)) {
         this.emit('error', {
@@ -219,7 +250,7 @@ export class Designable {
       }
       schema.parent.removeProperty(schema.name);
       if (removeParentsIfNoChildren) {
-        opts['removed'] = this.removeIfNoChildren(schema.parent);
+        opts['removed'] = this.recursiveRemoveIfNoChildren(schema.parent, { breakRemoveOn });
       }
     }
     const properties = {};
@@ -245,7 +276,11 @@ export class Designable {
     s['x-index'] = newOrder;
     s.parent = this.current.parent;
     this.current.parent.setProperties(properties);
-    this.emit('afterInsertAdjacent', 'beforeBegin', s, opts);
+    this.emit('insertAdjacent', {
+      position: 'beforeBegin',
+      schema: s,
+      ...opts,
+    });
   }
 
   /**
@@ -259,7 +294,7 @@ export class Designable {
       return;
     }
     const opts = {};
-    const { wrap = defaultWrap, removeParentsIfNoChildren } = options;
+    const { wrap = defaultWrap, breakRemoveOn, removeParentsIfNoChildren } = options;
     if (Schema.isSchemaInstance(schema)) {
       if (this.parentsIn(schema)) {
         this.emit('error', {
@@ -270,7 +305,7 @@ export class Designable {
       }
       schema.parent.removeProperty(schema.name);
       if (removeParentsIfNoChildren) {
-        opts['removed'] = this.removeIfNoChildren(schema.parent);
+        opts['removed'] = this.recursiveRemoveIfNoChildren(schema.parent, { breakRemoveOn });
       }
     }
     const properties = {};
@@ -287,7 +322,11 @@ export class Designable {
     s['x-index'] = 0;
     s.parent = this.current;
     this.current.setProperties(properties);
-    this.emit('afterInsertAdjacent', 'afterBegin', s, opts);
+    this.emit('insertAdjacent', {
+      position: 'afterBegin',
+      schema: s,
+      ...opts,
+    });
   }
 
   /**
@@ -301,7 +340,7 @@ export class Designable {
       return;
     }
     const opts = {};
-    const { wrap = defaultWrap, removeParentsIfNoChildren } = options;
+    const { wrap = defaultWrap, breakRemoveOn, removeParentsIfNoChildren } = options;
     if (Schema.isSchemaInstance(schema)) {
       if (this.parentsIn(schema)) {
         this.emit('error', {
@@ -312,14 +351,18 @@ export class Designable {
       }
       schema.parent.removeProperty(schema.name);
       if (removeParentsIfNoChildren) {
-        opts['removed'] = this.removeIfNoChildren(schema.parent);
+        opts['removed'] = this.recursiveRemoveIfNoChildren(schema.parent, { breakRemoveOn });
       }
     }
     this.prepareProperty(schema);
     const wrapped = wrap(schema);
     const s = this.current.addProperty(wrapped.name || uid(), wrapped);
     s.parent = this.current;
-    this.emit('afterInsertAdjacent', 'beforeEnd', s, opts);
+    this.emit('insertAdjacent', {
+      position: 'beforeEnd',
+      schema: s,
+      ...opts,
+    });
   }
 
   /**
@@ -330,7 +373,7 @@ export class Designable {
       return;
     }
     const opts = {};
-    const { wrap = defaultWrap, removeParentsIfNoChildren } = options;
+    const { wrap = defaultWrap, breakRemoveOn, removeParentsIfNoChildren } = options;
     if (Schema.isSchemaInstance(schema)) {
       if (this.parentsIn(schema)) {
         this.emit('error', {
@@ -341,7 +384,7 @@ export class Designable {
       }
       schema.parent.removeProperty(schema.name);
       if (removeParentsIfNoChildren) {
-        opts['removed'] = this.removeIfNoChildren(schema.parent);
+        opts['removed'] = this.recursiveRemoveIfNoChildren(schema.parent, { breakRemoveOn });
       }
       schema.parent = null;
     }
@@ -371,7 +414,11 @@ export class Designable {
     s.parent = this.current.parent;
     s['x-index'] = newOrder;
     this.current.parent.setProperties(properties);
-    this.emit('afterInsertAdjacent', 'afterEnd', s, opts);
+    this.emit('insertAdjacent', {
+      position: 'afterEnd',
+      schema: s,
+      ...opts,
+    });
   }
 }
 
@@ -384,18 +431,9 @@ export function useDesignable() {
   };
   const field = useField();
   const fieldSchema = useFieldSchema();
-  const dn = createDesignable({ current: fieldSchema });
   const api = useAPIClient();
-  dn.on('afterInsertAdjacent', async (current, position, schema) => {
-    refresh();
-    // await api.request({
-    //   url: `/ui_schemas:insertAdjacent/${current['x-uid']}?position=${position}`,
-    //   method: 'post',
-    //   data: schema.toJSON(),
-    // });
-    // console.log(current, position, schema);
-  });
-  dn.on('afterRemove', refresh);
+  const dn = createDesignable({ api, refresh, current: fieldSchema });
+  dn.loadAPIClientEvents();
   return {
     designable,
     reset,
