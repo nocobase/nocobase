@@ -10,8 +10,11 @@
     "build:esm": "tsc --project tsconfig.build.json --module es2015 --outDir esm"
   },
   "dependencies": {
+    "@nocobase/database": "^0.6.0-alpha.0",
+    "@nocobase/server": "^0.6.0-alpha.0"
   },
   "devDependencies": {
+    "@nocobase/test": "^0.6.0-alpha.0"
   },
   "gitHead": "f0b335ac30f29f25c95d7d137655fa64d8d67f1e"
 }
