@@ -1,4 +1,4 @@
-import { formatMomentValue, usePrefixCls } from '@formily/antd/esm/__builtins__';
+import { formatMomentValue, usePrefixCls } from '@formily/antd/lib/__builtins__';
 import { isArr } from '@formily/shared';
 import { TimeRangePickerProps } from 'antd/lib/time-picker';
 import cls from 'classnames';

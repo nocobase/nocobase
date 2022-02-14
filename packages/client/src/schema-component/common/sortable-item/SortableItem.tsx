@@ -34,16 +34,11 @@ export const Sortable = (props: any) => {
 export const SortableItem: React.FC<any> = observer((props) => {
   const field = useField();
   const fieldSchema = useFieldSchema();
-  const onInsertAdjacent = ({ dn, orginDraggedParentSchema }) => {
-    dn.removeIfChildrenEmpty(orginDraggedParentSchema, {
-      removeEmptyParents: true,
-    });
-  };
   return (
     <Sortable
       {...props}
       id={field.address.toString()}
-      data={{ insertAdjacent: 'afterEnd', onInsertAdjacent, schema: fieldSchema }}
+      data={{ insertAdjacent: 'afterEnd', schema: fieldSchema }}
     >
       {props.children}
     </Sortable>

@@ -1,5 +1,5 @@
+import { formatMomentValue, momentable } from '@formily/antd/lib/__builtins__';
 import type { DatePickerProps } from 'antd/lib/date-picker';
-import { formatMomentValue, momentable } from '@formily/antd/esm/__builtins__';
 
 export const getDefaultFormat = (props: DatePickerProps & { dateFormat: string; timeFormat: string }) => {
   if (props.format) {
