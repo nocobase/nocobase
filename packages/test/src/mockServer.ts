@@ -1,7 +1,7 @@
+import { mockDatabase } from '@nocobase/database';
+import Application, { ApplicationOptions } from '@nocobase/server';
 import qs from 'qs';
 import supertest, { SuperAgentTest } from 'supertest';
-import Application, { ApplicationOptions } from '@nocobase/server';
-import { getConfig } from './mockDatabase';
 
 interface ActionParams {
   filterByTk?: any;
@@ -123,10 +123,11 @@ export class MockServer extends Application {
   }
 }
 
-export function mockServer(options?: ApplicationOptions) {
+export function mockServer(options: ApplicationOptions = {}) {
+  const database = mockDatabase((<any>options?.database) || {});
   return new MockServer({
     ...options,
-    database: getConfig(options?.database),
+    database,
   });
 }
 

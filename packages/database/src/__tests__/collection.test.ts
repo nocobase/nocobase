@@ -1,6 +1,6 @@
 import { Collection } from '../collection';
 import { Database } from '../database';
-import { generatePrefixByPath, mockDatabase } from './index';
+import { mockDatabase } from './index';
 
 test('collection disable authGenId', async () => {
   const db = mockDatabase();
@@ -91,7 +91,7 @@ describe('collection sync', () => {
     ]);
 
     await collection.sync();
-    const tableFields = await (<any>collection.model).queryInterface.describeTable(`${generatePrefixByPath()}_users`);
+    const tableFields = await (<any>collection.model).queryInterface.describeTable(`${db.getTablePrefix()}users`);
 
     expect(tableFields).toHaveProperty('firstName');
     expect(tableFields).toHaveProperty('lastName');
@@ -114,7 +114,7 @@ describe('collection sync', () => {
 
     const model = collection.model;
 
-    const tableFields = await (<any>model).queryInterface.describeTable(`${generatePrefixByPath()}_posts`);
+    const tableFields = await (<any>model).queryInterface.describeTable(`${db.getTablePrefix()}posts`);
 
     expect(tableFields['user_id']).toBeUndefined();
   });
@@ -143,7 +143,7 @@ describe('collection sync', () => {
 
     const model = collection.model;
     await collection.sync();
-    const tableFields = await (<any>model).queryInterface.describeTable(`${generatePrefixByPath()}_posts_tags`);
+    const tableFields = await (<any>model).queryInterface.describeTable(`${db.getTablePrefix()}posts_tags`);
     expect(tableFields['postId']).toBeDefined();
     expect(tableFields['tagId']).toBeDefined();
   });
@@ -184,13 +184,13 @@ test.skip('update collection options', async () => {
     },
   );
 
-  expect(collection.model.getTableName()).toEqual(`${generatePrefixByPath()}_posts`);
+  expect(collection.model.getTableName()).toEqual(`${db.getTablePrefix()}posts`);
 
   collection.updateOptions({
     name: 'articles',
   });
 
-  expect(collection.model.getTableName()).toEqual(`${generatePrefixByPath()}_articles`);
+  expect(collection.model.getTableName()).toEqual(`${db.getTablePrefix()}articles`);
 });
 
 test('collection with association', async () => {
