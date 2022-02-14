@@ -1,9 +1,8 @@
 import Database from '@nocobase/database';
 
 export function beforeCreateForReverseField(db: Database) {
-  const Field = db.getCollection('fields');
-
   return async (model, { transaction }) => {
+    const Field = db.getCollection('fields');
     const reverseKey = model.get('reverseKey');
     if (!reverseKey) {
       return;

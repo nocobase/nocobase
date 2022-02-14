@@ -1,4 +1,4 @@
-import Database, { Collection as DBCollection, StringFieldOptions } from '@nocobase/database';
+import Database, { Collection as DBCollection } from '@nocobase/database';
 import Application from '@nocobase/server';
 import { createApp } from '..';
 
