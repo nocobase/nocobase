@@ -108,24 +108,6 @@ describe('acl', () => {
     expect(acl.can({ role: 'admin', resource: 'posts', action: 'create' })).toBeNull();
   });
 
-  it('should deny when action is not available action', () => {
-    acl.setAvailableStrategy('s1', {
-      displayName: 'test',
-      actions: false,
-    });
-
-    const role = acl.define({
-      role: 'admin',
-      strategy: 's1',
-    });
-
-    expect(acl.can({ role: 'admin', resource: 'posts', action: 'create' })).toBeNull();
-
-    role.grantAction('posts:create', {});
-
-    expect(acl.can({ role: 'admin', resource: 'posts', action: 'create' })).toBeNull();
-  });
-
   it('should grant action when define role', () => {
     acl.setAvailableAction('create', {
       displayName: 'create',
