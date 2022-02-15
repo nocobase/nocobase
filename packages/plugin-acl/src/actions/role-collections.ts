@@ -21,17 +21,19 @@ const roleCollectionsResource = {
 
       const roleResourcesNames = roleResources.map((roleResource) => roleResource.get('name'));
 
-      ctx.body = collections.map((collection) => {
-        const usingConfig: UsingConfigType = roleResourcesNames.includes(collection.get('name'))
-          ? 'resourceAction'
-          : 'strategy';
+      ctx.body = collections
+        .map((collection) => {
+          const usingConfig: UsingConfigType = roleResourcesNames.includes(collection.get('name'))
+            ? 'resourceAction'
+            : 'strategy';
 
-        return {
-          name: collection.get('name'),
-          title: collection.get('title'),
-          usingConfig,
-        };
-      });
+          return {
+            name: collection.get('name') as string,
+            title: collection.get('title') as string,
+            usingConfig,
+          };
+        })
+        .sort((a, b) => (a.name > b.name ? 1 : -1));
 
       await next();
     },
