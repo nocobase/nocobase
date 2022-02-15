@@ -1,10 +1,18 @@
-import path from 'path';
 import dotenv from 'dotenv';
+import { existsSync } from 'fs';
+import { resolve } from 'path';
 import prettyFormat from 'pretty-format';
+import yargs from 'yargs';
+
+const envFile = existsSync(resolve(__dirname, '.env.test')) ? '.env.test' : '.env';
 
 dotenv.config({
-  path: path.resolve(__dirname, process.env.ENV_FILE || '.env'),
+  path: resolve(__dirname, envFile),
 });
+
+if (yargs.argv.dbDialect) {
+  process.env.DB_DIALECT = yargs.argv.dbDialect as any;
+}
 
 global['prettyFormat'] = prettyFormat;
 
