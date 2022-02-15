@@ -42,7 +42,7 @@ export default {
     {
       type: 'belongsToMany',
       name: 'menuUiSchemas',
-      target: 'ui_schemas',
+      target: 'uiSchemas',
     },
     {
       type: 'hasMany',

@@ -82,13 +82,13 @@ export class Designable {
     this.on('insertAdjacent', async ({ current, position, schema, removed }) => {
       refresh();
       await api.request({
-        url: `/ui_schemas:insertAdjacent/${current['x-uid']}?position=${position}`,
+        url: `/uiSchemas:insertAdjacent/${current['x-uid']}?position=${position}`,
         method: 'post',
         data: schema.toJSON(),
       });
       if (removed?.['x-uid']) {
         await api.request({
-          url: `/ui_schemas:remove/${removed['x-uid']}`,
+          url: `/uiSchemas:remove/${removed['x-uid']}`,
           method: 'post',
         });
       }
@@ -97,7 +97,7 @@ export class Designable {
       refresh();
       if (removed?.['x-uid']) {
         await api.request({
-          url: `/ui_schemas:remove/${removed['x-uid']}`,
+          url: `/uiSchemas:remove/${removed['x-uid']}`,
           method: 'post',
         });
       }

@@ -1,6 +1,6 @@
 import { ISchema } from '@formily/json-schema';
+import { Database } from '@nocobase/database';
 import { mockServer, MockServer } from '@nocobase/test';
-import { Collection, Database } from '@nocobase/database';
 import PluginUiSchema, { UiSchemaRepository } from '..';
 
 describe('ui-schema', () => {
@@ -25,7 +25,7 @@ describe('ui-schema', () => {
     app.plugin(PluginUiSchema);
 
     await app.loadAndInstall();
-    uiSchemaRepository = db.getCollection('ui_schemas').repository as UiSchemaRepository;
+    uiSchemaRepository = db.getCollection('uiSchemas').repository as UiSchemaRepository;
   });
 
   type SchemaProperties = Record<string, ISchema>;

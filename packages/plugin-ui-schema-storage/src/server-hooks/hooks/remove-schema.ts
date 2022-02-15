@@ -2,7 +2,7 @@ import { UiSchemaRepository } from '../../repository';
 
 export async function removeSchema({ schemaInstance, options, db, params }) {
   const { transaction } = options;
-  const uiSchemaRepository: UiSchemaRepository = db.getRepository('ui_schemas');
+  const uiSchemaRepository: UiSchemaRepository = db.getRepository('uiSchemas');
   const uid = schemaInstance.get('uid') as string;
 
   if (params?.removeEmptyParents) {

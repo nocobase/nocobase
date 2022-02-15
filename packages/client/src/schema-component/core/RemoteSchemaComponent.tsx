@@ -21,7 +21,7 @@ const RequestSchemaComponent: React.FC<RemoteSchemaComponentProps> = (props) => 
   const { onlyRenderProperties, hidden, scope, uid, onSuccess, schemaTransform = defaultTransform } = props;
   const { reset } = useSchemaComponentContext();
   const conf = {
-    url: `/ui_schemas:${onlyRenderProperties ? 'getProperties' : 'getJsonSchema'}/${uid}`,
+    url: `/uiSchemas:${onlyRenderProperties ? 'getProperties' : 'getJsonSchema'}/${uid}`,
   };
   const { data, loading } = useRequest(conf, {
     refreshDeps: [uid],

@@ -1,5 +1,5 @@
-import { MockServer, mockServer } from '@nocobase/test';
 import { Database } from '@nocobase/database';
+import { MockServer, mockServer } from '@nocobase/test';
 import PluginUiSchema from '../server';
 
 describe('action test', () => {
@@ -34,7 +34,7 @@ describe('action test', () => {
   test('insert action', async () => {
     const response = await app
       .agent()
-      .resource('ui_schemas')
+      .resource('uiSchemas')
       .insert({
         values: {
           'x-uid': 'n1',
@@ -59,7 +59,7 @@ describe('action test', () => {
   test('getJsonSchema', async () => {
     await app
       .agent()
-      .resource('ui_schemas')
+      .resource('uiSchemas')
       .insert({
         values: {
           'x-uid': 'n1',
@@ -78,7 +78,7 @@ describe('action test', () => {
         },
       });
 
-    const response = await app.agent().resource('ui_schemas').getJsonSchema({
+    const response = await app.agent().resource('uiSchemas').getJsonSchema({
       resourceIndex: 'n1',
     });
 
@@ -87,7 +87,7 @@ describe('action test', () => {
   });
 
   test('getJsonSchema when uid not exists', async () => {
-    const response = await app.agent().resource('ui_schemas').getJsonSchema({
+    const response = await app.agent().resource('uiSchemas').getJsonSchema({
       resourceIndex: 'not-exists',
     });
 
@@ -95,7 +95,7 @@ describe('action test', () => {
   });
 
   test('get properties when uid not exists', async () => {
-    const response = await app.agent().resource('ui_schemas').getProperties({
+    const response = await app.agent().resource('uiSchemas').getProperties({
       resourceIndex: 'not-exists',
     });
 
@@ -105,7 +105,7 @@ describe('action test', () => {
   test('remove', async () => {
     await app
       .agent()
-      .resource('ui_schemas')
+      .resource('uiSchemas')
       .insert({
         values: {
           'x-uid': 'n1',
@@ -124,13 +124,13 @@ describe('action test', () => {
         },
       });
 
-    let response = await app.agent().resource('ui_schemas').remove({
+    let response = await app.agent().resource('uiSchemas').remove({
       resourceIndex: 'n2',
     });
 
     expect(response.statusCode).toEqual(200);
 
-    response = await app.agent().resource('ui_schemas').getJsonSchema({
+    response = await app.agent().resource('uiSchemas').getJsonSchema({
       resourceIndex: 'n1',
     });
 
@@ -141,7 +141,7 @@ describe('action test', () => {
   test('patch', async () => {
     await app
       .agent()
-      .resource('ui_schemas')
+      .resource('uiSchemas')
       .insert({
         values: {
           'x-uid': 'n1',
@@ -162,7 +162,7 @@ describe('action test', () => {
 
     let response = await app
       .agent()
-      .resource('ui_schemas')
+      .resource('uiSchemas')
       .patch({
         values: {
           'x-uid': 'n1',
@@ -179,7 +179,7 @@ describe('action test', () => {
       });
 
     expect(response.statusCode).toEqual(200);
-    response = await app.agent().resource('ui_schemas').getJsonSchema({
+    response = await app.agent().resource('uiSchemas').getJsonSchema({
       resourceIndex: 'n1',
     });
 
@@ -190,7 +190,7 @@ describe('action test', () => {
   test('insert adjacent', async () => {
     await app
       .agent()
-      .resource('ui_schemas')
+      .resource('uiSchemas')
       .insert({
         values: {
           'x-uid': 'n1',
@@ -211,7 +211,7 @@ describe('action test', () => {
 
     let response = await app
       .agent()
-      .resource('ui_schemas')
+      .resource('uiSchemas')
       .insertAdjacent({
         resourceIndex: 'n2',
         position: 'beforeBegin',
@@ -222,7 +222,7 @@ describe('action test', () => {
       });
 
     expect(response.statusCode).toEqual(200);
-    response = await app.agent().resource('ui_schemas').getJsonSchema({
+    response = await app.agent().resource('uiSchemas').getJsonSchema({
       resourceIndex: 'n1',
     });
 

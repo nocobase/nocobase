@@ -1,7 +1,7 @@
-import { mockServer, MockServer } from '@nocobase/test';
 import { Database } from '@nocobase/database';
-import UiSchemaStoragePlugin, { UiSchemaRepository } from '@nocobase/plugin-ui-schema-storage';
 import PluginCollectionManager from '@nocobase/plugin-collection-manager';
+import UiSchemaStoragePlugin, { UiSchemaRepository } from '@nocobase/plugin-ui-schema-storage';
+import { mockServer, MockServer } from '@nocobase/test';
 
 describe('server hooks', () => {
   let app: MockServer;
@@ -65,7 +65,7 @@ describe('server hooks', () => {
 
     await app.loadAndInstall();
 
-    uiSchemaRepository = db.getRepository('ui_schemas');
+    uiSchemaRepository = db.getRepository('uiSchemas');
     await uiSchemaRepository.insert(schema);
 
     uiSchemaPlugin = app.getPlugin<UiSchemaStoragePlugin>('UiSchemaStoragePlugin');

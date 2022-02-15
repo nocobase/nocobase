@@ -1,5 +1,5 @@
-import { mockServer, MockServer } from '@nocobase/test';
 import { Collection, Database } from '@nocobase/database';
+import { mockServer, MockServer } from '@nocobase/test';
 import PluginUiSchema, { UiSchemaRepository } from '..';
 
 describe('ui schema model', () => {
@@ -32,7 +32,7 @@ describe('ui schema model', () => {
         {
           type: 'belongsTo',
           name: 'uiSchema',
-          target: 'ui_schemas',
+          target: 'uiSchemas',
         },
       ],
     });
@@ -41,7 +41,7 @@ describe('ui schema model', () => {
   });
 
   it('should create schema tree after ui_schema created', async () => {
-    const uiSchemaRepository = db.getCollection('ui_schemas').repository as UiSchemaRepository;
+    const uiSchemaRepository = db.getCollection('uiSchemas').repository as UiSchemaRepository;
 
     await RelatedCollection.repository.create({
       values: {
@@ -82,7 +82,7 @@ describe('ui schema model', () => {
   });
 
   it('should update schema tree after ui_schema updated', async () => {
-    const uiSchemaRepository = db.getCollection('ui_schemas').repository as UiSchemaRepository;
+    const uiSchemaRepository = db.getCollection('uiSchemas').repository as UiSchemaRepository;
 
     const relatedInstance = await RelatedCollection.repository.create({
       values: {
