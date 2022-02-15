@@ -15,8 +15,6 @@ describe('repository find', () => {
 
   beforeEach(async () => {
     db = mockDatabase();
-    await db.clean({ drop: true });
-
     User = db.collection<{ id: number; name: string }, { name: string }>({
       name: 'users',
       fields: [

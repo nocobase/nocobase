@@ -7,7 +7,6 @@ describe('collection', () => {
 
   beforeEach(async () => {
     db = mockDatabase();
-    await db.clean({ drop: true });
   });
 
   afterEach(async () => {
@@ -139,7 +138,6 @@ describe('collection sync', () => {
 
   beforeEach(async () => {
     db = mockDatabase();
-    await db.clean({ drop: true });
   });
 
   afterEach(async () => {

@@ -1,12 +1,11 @@
 import { mockDatabase } from './index';
-import { Database } from '@nocobase/database';
+import { Database } from '../database';
 
 describe('collection sortable options', () => {
   let db: Database;
 
   beforeEach(async () => {
     db = mockDatabase();
-    await db.clean({ drop: true });
   });
 
   afterEach(async () => {

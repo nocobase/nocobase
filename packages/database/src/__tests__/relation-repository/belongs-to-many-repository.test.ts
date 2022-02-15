@@ -9,8 +9,6 @@ describe('belongs to many with target key', function () {
   let Post: Collection;
   beforeEach(async () => {
     db = mockDatabase();
-    await db.clean({ drop: true });
-
     Post = db.collection({
       name: 'posts',
       filterTargetKey: 'title',

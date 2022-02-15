@@ -19,8 +19,6 @@ describe('association operator', () => {
 
   beforeEach(async () => {
     db = mockDatabase();
-    await db.clean({ drop: true });
-
     Group = db.collection({
       name: 'groups',
       fields: [

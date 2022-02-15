@@ -7,7 +7,6 @@ describe('find by targetKey', function () {
 
   beforeEach(async () => {
     db = mockDatabase();
-    await db.clean({ drop: true });
   });
 
   afterEach(async () => {
@@ -58,8 +57,6 @@ describe('repository.find', () => {
 
   beforeEach(async () => {
     db = mockDatabase();
-    await db.clean({ drop: true });
-
     User = db.collection({
       name: 'users',
       fields: [
@@ -192,7 +189,6 @@ describe('repository.create', () => {
 
   beforeEach(async () => {
     db = mockDatabase();
-    await db.clean({ drop: true });
     User = db.collection({
       name: 'users',
       fields: [

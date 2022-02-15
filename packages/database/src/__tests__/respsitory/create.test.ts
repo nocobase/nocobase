@@ -8,8 +8,6 @@ describe('create', () => {
 
   beforeEach(async () => {
     db = mockDatabase();
-    await db.clean({ drop: true });
-
     User = db.collection({
       name: 'users',
       fields: [
