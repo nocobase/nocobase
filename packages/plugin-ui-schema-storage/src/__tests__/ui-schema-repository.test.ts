@@ -1,8 +1,8 @@
-import { mockServer, MockServer } from '@nocobase/test';
 import { Collection, Database } from '@nocobase/database';
-import PluginUiSchema from '../server';
-import UiSchemaRepository from '../repository';
+import { mockServer, MockServer } from '@nocobase/test';
 import { SchemaNode } from '../dao/ui_schema_node_dao';
+import UiSchemaRepository from '../repository';
+import PluginUiSchema from '../server';
 
 describe('ui_schema repository', () => {
   let app: MockServer;
@@ -34,12 +34,12 @@ describe('ui_schema repository', () => {
         drop: false,
       },
     });
-    repository = db.getCollection('ui_schemas').repository as UiSchemaRepository;
+    repository = db.getCollection('uiSchemas').repository as UiSchemaRepository;
     treePathCollection = db.getCollection('ui_schema_tree_path');
   });
 
   it('should be registered', async () => {
-    expect(db.getCollection('ui_schemas').repository).toBeInstanceOf(UiSchemaRepository);
+    expect(db.getCollection('uiSchemas').repository).toBeInstanceOf(UiSchemaRepository);
   });
 
   it('should insert single ui schema node', async () => {

@@ -1,6 +1,6 @@
 import { Database } from '@nocobase/database';
-import { ServerHookModel } from './model';
 import { hooks } from './hooks';
+import { ServerHookModel } from './model';
 
 export type HookType =
   | 'onSelfDestroy'
@@ -31,7 +31,7 @@ export class ServerHooks {
       await this.onCollectionDestroy(model, options);
     });
 
-    this.db.on('ui_schemas.afterCreateWithAssociations', async (model, options) => {
+    this.db.on('uiSchemas.afterCreateWithAssociations', async (model, options) => {
       await this.onUiSchemaCreate(model, options);
     });
   }

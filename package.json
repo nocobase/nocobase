@@ -13,7 +13,7 @@
     "start-server": "ts-node-dev -r dotenv/config -r tsconfig-paths/register ./packages/api/src/index.ts",
     "build": "lerna run build",
     "build-docs": "dumi build",
-    "test": "node ./jest.cli.js",
+    "test": "node ./jest.cli.js -i",
     "lint": "eslint ."
   },
   "resolutions": {

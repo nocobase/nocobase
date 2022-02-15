@@ -108,7 +108,7 @@ export default (apiClient: APIClient) => {
     },
   };
 
-  mock.onGet(/\/ui_schemas\:getJsonSchema\/(\w+)/).reply(function (config) {
+  mock.onGet(/\/uiSchemas\:getJsonSchema\/(\w+)/).reply(function (config) {
     const name = config.url.split('/').pop();
     console.log(name);
     if (jsonSchema[name]) {
@@ -135,7 +135,7 @@ export default (apiClient: APIClient) => {
     return [200, response];
   });
 
-  mock.onGet(/\/ui_schemas\:getProperties\/(\w+)/).reply(function (config) {
+  mock.onGet(/\/uiSchemas\:getProperties\/(\w+)/).reply(function (config) {
     // const name = config.url.split('/').pop();
     // console.log(name);
     // if (jsonSchema[name]) {

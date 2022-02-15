@@ -26,16 +26,16 @@ export class UiSchemaStoragePlugin extends Plugin {
 
     this.registerRepository();
 
-    db.on('ui_schemas.beforeCreate', function setUid(model) {
+    db.on('uiSchemas.beforeCreate', function setUid(model) {
       model.set('uid', model.get('x-uid'));
       if (!model.get('name')) {
         model.set('name', uid());
       }
     });
 
-    db.on('ui_schemas.afterCreate', async function insertSchema(model, options) {
+    db.on('uiSchemas.afterCreate', async function insertSchema(model, options) {
       const { transaction } = options;
-      const uiSchemaRepository = db.getCollection('ui_schemas').repository as UiSchemaRepository;
+      const uiSchemaRepository = db.getCollection('uiSchemas').repository as UiSchemaRepository;
 
       const context = options.context;
 
@@ -48,9 +48,9 @@ export class UiSchemaStoragePlugin extends Plugin {
       });
     });
 
-    db.on('ui_schemas.afterUpdate', async function patchSchema(model, options) {
+    db.on('uiSchemas.afterUpdate', async function patchSchema(model, options) {
       const { transaction } = options;
-      const uiSchemaRepository = db.getCollection('ui_schemas').repository as UiSchemaRepository;
+      const uiSchemaRepository = db.getCollection('uiSchemas').repository as UiSchemaRepository;
 
       await uiSchemaRepository.patch(model.toJSON(), {
         transaction,
@@ -58,7 +58,7 @@ export class UiSchemaStoragePlugin extends Plugin {
     });
 
     this.app.resourcer.define({
-      name: 'ui_schemas',
+      name: 'uiSchemas',
       actions: uiSchemaActions,
     });
   }

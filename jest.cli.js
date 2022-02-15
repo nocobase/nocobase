@@ -13,6 +13,11 @@ if (yargs.argv.dbDialect) {
   process.env.DB_DIALECT = yargs.argv.dbDialect;
 }
 
-console.log('DB_DIALECT: ', process.env.DB_DIALECT);
+if (yargs.argv.dbPort) {
+  process.env.DB_PORT = yargs.argv.dbPort;
+}
+
+console.log('DB_DIALECT:', process.env.DB_DIALECT);
+console.log('DB_PORT:', process.env.DB_PORT);
 
 require('jest-cli/bin/jest');

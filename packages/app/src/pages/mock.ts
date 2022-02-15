@@ -108,7 +108,7 @@ export default (apiClient: APIClient) => {
     },
   };
 
-  mock.onGet(/\/ui_schemas\:getJsonSchema\/(\w+)/).reply(function (config) {
+  mock.onGet(/\/uiSchemas\:getJsonSchema\/(\w+)/).reply(function (config) {
     const name = config?.url?.split('/')?.pop();
 
     if (name && jsonSchema[name]) {

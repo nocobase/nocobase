@@ -12,6 +12,22 @@ interface GetJsonSchemaOptions {
 const nodeKeys = ['properties', 'definitions', 'patternProperties', 'additionalProperties', 'items'];
 
 export class UiSchemaRepository extends Repository {
+
+  get uiSchemasTableName() {
+    if (this.database.sequelize.getDialect() === 'postgres') {
+      return `"${this.model.tableName}"`;
+    }
+    return this.model.tableName;
+  }
+
+  get uiSchemaTreePathTableName() {
+    const model = this.database.getCollection('ui_schema_tree_path').model;
+    if (this.database.sequelize.getDialect() === 'postgres') {
+      return `"${model.tableName}"`;
+    }
+    return model.tableName;
+  }
+
   static schemaToSingleNodes(schema: any, carry: SchemaNode[] = [], childOptions: ChildOptions = null): SchemaNode[] {
     const node = lodash.cloneDeep(
       lodash.isString(schema)
@@ -71,16 +87,19 @@ export class UiSchemaRepository extends Repository {
 
   async getProperties(uid: string) {
     const db = this.database;
-    const treeCollection = db.getCollection('ui_schema_tree_path');
 
     const rawSql = `
         SELECT SchemaTable.uid as uid, SchemaTable.name as name, SchemaTable.schema as "schema",
                TreePath.depth as depth,
                NodeInfo.type as type, NodeInfo.async as async,  ParentPath.ancestor as parent, ParentPath.sort as sort
-        FROM ${treeCollection.model.tableName} as TreePath
-                 LEFT JOIN ${this.model.tableName} as SchemaTable ON SchemaTable.uid =  TreePath.descendant
-                 LEFT JOIN ${treeCollection.model.tableName} as NodeInfo ON NodeInfo.descendant = SchemaTable.uid and NodeInfo.descendant = NodeInfo.ancestor and NodeInfo.depth = 0
-                 LEFT JOIN ${treeCollection.model.tableName} as ParentPath ON (ParentPath.descendant = SchemaTable.uid AND ParentPath.depth = 1)
+        FROM ${this.uiSchemaTreePathTableName} as TreePath
+                 LEFT JOIN ${this.uiSchemasTableName} as SchemaTable ON SchemaTable.uid =  TreePath.descendant
+                 LEFT JOIN ${
+                   this.uiSchemaTreePathTableName
+                 } as NodeInfo ON NodeInfo.descendant = SchemaTable.uid and NodeInfo.descendant = NodeInfo.ancestor and NodeInfo.depth = 0
+                 LEFT JOIN ${
+                   this.uiSchemaTreePathTableName
+                 } as ParentPath ON (ParentPath.descendant = SchemaTable.uid AND ParentPath.depth = 1)
         WHERE TreePath.ancestor = :ancestor  AND (NodeInfo.async  = false or TreePath.depth = 1)`;
 
     const nodes = await db.sequelize.query(rawSql, {
@@ -99,16 +118,15 @@ export class UiSchemaRepository extends Repository {
 
   async getJsonSchema(uid: string, options?: GetJsonSchemaOptions) {
     const db = this.database;
-    const treeCollection = db.getCollection('ui_schema_tree_path');
 
-    const treeTable = treeCollection.model.tableName;
+    const treeTable = this.uiSchemaTreePathTableName;
 
     const rawSql = `
         SELECT SchemaTable.uid as uid, SchemaTable.name as name, SchemaTable.schema as "schema" ,
                TreePath.depth as depth,
                NodeInfo.type as type, NodeInfo.async as async,  ParentPath.ancestor as parent, ParentPath.sort as sort
         FROM ${treeTable} as TreePath
-                 LEFT JOIN ${this.model.tableName} as SchemaTable ON SchemaTable.uid =  TreePath.descendant
+                 LEFT JOIN ${this.uiSchemasTableName} as SchemaTable ON SchemaTable.uid =  TreePath.descendant
                  LEFT JOIN ${treeTable} as NodeInfo ON NodeInfo.descendant = SchemaTable.uid and NodeInfo.descendant = NodeInfo.ancestor and NodeInfo.depth = 0
                  LEFT JOIN ${treeTable} as ParentPath ON (ParentPath.descendant = SchemaTable.uid AND ParentPath.depth = 1)
         WHERE TreePath.ancestor = :ancestor  ${options?.includeAsyncNode ? '' : 'AND (NodeInfo.async != true )'}
@@ -269,7 +287,7 @@ export class UiSchemaRepository extends Repository {
     const parentChildrenCount = countResult[0]['count'];
 
     if (parentChildrenCount == 1) {
-      const schema = await db.getRepository('ui_schemas').findOne({
+      const schema = await db.getRepository('uiSchemas').findOne({
         filter: {
           uid: parent.get('ancestor') as string,
         },
@@ -311,11 +329,11 @@ export class UiSchemaRepository extends Repository {
       transaction = await this.database.sequelize.transaction();
     }
 
-    const treePathTable = this.treeCollection().model.tableName;
+    const treePathTable = this.uiSchemaTreePathTableName;
 
     try {
       await this.database.sequelize.query(
-        `DELETE FROM ${this.model.tableName} WHERE uid IN (
+        `DELETE FROM ${this.uiSchemasTableName} WHERE uid IN (
             SELECT descendant FROM ${treePathTable} WHERE ancestor = :uid
         )
         `,
@@ -362,7 +380,7 @@ export class UiSchemaRepository extends Repository {
     });
 
     const db = this.database;
-    const treeTable = this.treeCollection().model.tableName;
+    const treeTable = this.uiSchemaTreePathTableName;
     const typeQuery = await db.sequelize.query(`SELECT type from ${treeTable} WHERE ancestor = :uid AND depth = 0;`, {
       type: 'SELECT',
       replacements: {
@@ -503,7 +521,7 @@ export class UiSchemaRepository extends Repository {
       transaction,
     });
 
-    const treeTable = treeCollection.model.tableName;
+    const treeTable = this.uiSchemaTreePathTableName;
 
     if (existsNode) {
       savedNode = existsNode;
