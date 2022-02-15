@@ -22,6 +22,7 @@ mock.onGet('/posts:list').reply(async (config) => {
         return {
           id: v + (page - 1) * pageSize,
           name: uid(),
+          date: '2022-01-02 22:22:22'
         };
       }),
       meta: {
