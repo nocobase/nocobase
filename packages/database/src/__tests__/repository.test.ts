@@ -3,9 +3,17 @@ import { Database } from '../database';
 import { mockDatabase } from './';
 
 describe('find by targetKey', function () {
-  it('can filter by target key', async () => {
-    const db = mockDatabase({});
+  let db: Database;
 
+  beforeEach(async () => {
+    db = mockDatabase();
+  });
+
+  afterEach(async () => {
+    await db.close();
+  });
+
+  it('can filter by target key', async () => {
     const User = db.collection({
       name: 'users',
       filterTargetKey: 'name',
@@ -162,15 +170,6 @@ describe('repository.find', () => {
     });
 
     expect(result).toBeNull();
-  });
-
-  it('findOne', async () => {
-    const data = await User.repository.findOne({
-      filter: {
-        'posts.comments.name': 'comment331',
-      },
-    });
-    console.log(data);
   });
 
   it('find item', async () => {

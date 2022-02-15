@@ -8,6 +8,10 @@ describe('count', () => {
   let Post: Collection;
   let Tag;
 
+  afterEach(async () => {
+    await db.close();
+  });
+
   beforeEach(async () => {
     db = mockDatabase();
     User = db.collection({

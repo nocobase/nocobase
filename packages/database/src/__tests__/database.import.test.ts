@@ -1,9 +1,19 @@
 import { mockDatabase } from './index';
 import path from 'path';
+import Database from '../database';
 
 describe('database', () => {
+  let db: Database;
+
+  beforeEach(() => {
+    db = mockDatabase();
+  });
+
+  afterEach(async () => {
+    await db.close();
+  });
+
   test('import', async () => {
-    const db = mockDatabase();
     await db.import({
       directory: path.resolve(__dirname, './fixtures/c0'),
     });

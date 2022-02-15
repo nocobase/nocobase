@@ -1,6 +1,6 @@
 import { mockServer, MockServer } from '@nocobase/test';
 import { BelongsToManyRepository, Database, HasManyRepository } from '@nocobase/database';
-import PluginUiSchema, { UiSchemaRepository } from '@nocobase/plugin-ui-schema-storage';
+import UiSchemaStoragePlugin, { UiSchemaRepository } from '@nocobase/plugin-ui-schema-storage';
 import PluginCollectionManager from '@nocobase/plugin-collection-manager';
 import PluginACL from '@nocobase/plugin-acl';
 
@@ -8,7 +8,7 @@ describe('server hooks', () => {
   let app: MockServer;
   let db: Database;
   let uiSchemaRepository: UiSchemaRepository;
-  let uiSchemaPlugin: PluginUiSchema;
+  let uiSchemaPlugin: UiSchemaStoragePlugin;
 
   afterEach(async () => {
     await app.destroy();
@@ -21,8 +21,7 @@ describe('server hooks', () => {
 
     db = app.db;
 
-    await app.cleanDb();
-    app.plugin(PluginUiSchema);
+    app.plugin(UiSchemaStoragePlugin);
     app.plugin(PluginCollectionManager);
     app.plugin(PluginACL);
 
@@ -30,7 +29,7 @@ describe('server hooks', () => {
 
     uiSchemaRepository = db.getRepository('ui_schemas');
 
-    uiSchemaPlugin = app.getPlugin<PluginUiSchema>('PluginUiSchema');
+    uiSchemaPlugin = app.getPlugin<UiSchemaStoragePlugin>('UiSchemaStoragePlugin');
   });
 
   it('should clean row struct', async () => {

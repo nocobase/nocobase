@@ -1,10 +1,11 @@
 import { Database } from '../../database';
 import { mockDatabase } from '../';
+import { makeWatchHost } from 'ts-loader/dist/servicesHost';
 
 describe('has many field', () => {
   let db: Database;
 
-  beforeEach(() => {
+  beforeEach(async () => {
     db = mockDatabase();
   });
 

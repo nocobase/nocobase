@@ -4,7 +4,7 @@ import { Database, PasswordField } from '../../';
 describe('password field', () => {
   let db: Database;
 
-  beforeEach(() => {
+  beforeEach(async () => {
     db = mockDatabase();
   });
 

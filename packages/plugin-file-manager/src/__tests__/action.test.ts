@@ -2,8 +2,6 @@ import { promisify } from 'util';
 import { promises as fs } from 'fs';
 import path from 'path';
 
-import { generatePrefixByPath } from '@nocobase/test';
-
 import { FILE_FIELD_NAME, STORAGE_TYPE_LOCAL } from '../constants';
 import { getApp, requestFile } from '.';
 
@@ -18,16 +16,14 @@ describe('action', () => {
 
   beforeEach(async () => {
     app = await getApp({
-      database: {
-        logging: console.log,
-      },
+      database: {},
     });
     agent = app.agent();
     db = app.db;
 
     const Storage = db.getCollection('storages').model;
     await Storage.create({
-      name: `local1_${generatePrefixByPath()}`,
+      name: `local1_${db.getTablePrefix()}`,
       type: STORAGE_TYPE_LOCAL,
       baseUrl: DEFAULT_LOCAL_BASE_URL,
       default: true,

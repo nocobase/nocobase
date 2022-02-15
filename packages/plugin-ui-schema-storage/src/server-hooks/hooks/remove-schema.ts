@@ -12,6 +12,8 @@ export async function removeSchema({ schemaInstance, options, db, params }) {
       transaction,
     });
   } else {
-    await uiSchemaRepository.remove(uid);
+    await uiSchemaRepository.remove(uid, {
+      transaction,
+    });
   }
 }

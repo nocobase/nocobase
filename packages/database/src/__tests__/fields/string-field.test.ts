@@ -4,7 +4,7 @@ import { mockDatabase } from '../';
 describe('string field', () => {
   let db: Database;
 
-  beforeEach(() => {
+  beforeEach(async () => {
     db = mockDatabase();
   });
 

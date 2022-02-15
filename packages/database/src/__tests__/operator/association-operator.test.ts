@@ -19,7 +19,6 @@ describe('association operator', () => {
 
   beforeEach(async () => {
     db = mockDatabase();
-
     Group = db.collection({
       name: 'groups',
       fields: [

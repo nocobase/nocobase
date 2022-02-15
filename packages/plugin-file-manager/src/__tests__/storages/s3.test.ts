@@ -1,5 +1,5 @@
 import path from 'path';
-import { generatePrefixByPath, MockServer } from '@nocobase/test';
+import { MockServer } from '@nocobase/test';
 import s3Storage from '../../storages/s3';
 import { FILE_FIELD_NAME } from '../../constants';
 import { getApp, requestFile } from '..';
@@ -20,7 +20,7 @@ describe('storage:s3', () => {
     const Storage = db.getCollection('storages').model;
     await Storage.create({
       ...s3Storage.defaults(),
-      name: `s3_${generatePrefixByPath()}`,
+      name: `s3_${db.getTablePrefix()}`,
       default: true,
       path: 'test/path',
     });

@@ -25,6 +25,10 @@ describe('create', () => {
     });
     await db.sync();
   });
+
+  afterEach(async () => {
+    await db.close();
+  });
   test('create with association', async () => {
     const u1 = await User.repository.create({
       values: {

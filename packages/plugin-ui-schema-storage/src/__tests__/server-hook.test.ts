@@ -60,7 +60,6 @@ describe('server hooks', () => {
 
     db = app.db;
 
-    await app.cleanDb();
     app.plugin(UiSchemaStoragePlugin);
     app.plugin(PluginCollectionManager);
 
