@@ -1,13 +1,4 @@
-import dotenv from 'dotenv';
-import { existsSync } from 'fs';
-import { resolve } from 'path';
 import prettyFormat from 'pretty-format';
-
-const envFile = existsSync(resolve(__dirname, '.env.test')) ? '.env.test' : '.env';
-
-dotenv.config({
-  path: resolve(__dirname, envFile),
-});
 
 global['prettyFormat'] = prettyFormat;
 

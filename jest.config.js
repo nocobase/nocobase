@@ -7,10 +7,7 @@ module.exports = {
   testEnvironment: 'jsdom',
   preset: 'ts-jest',
   testMatch: ['**/__tests__/**/*.test.[jt]s?(x)'],
-  setupFilesAfterEnv: [
-    require.resolve('jest-dom/extend-expect'),
-    './jest.setup.ts',
-  ],
+  setupFilesAfterEnv: [require.resolve('jest-dom/extend-expect'), './jest.setup.ts'],
   moduleNameMapper: pathsToModuleNameMapper(compilerOptions.paths, {
     prefix: '<rootDir>/',
   }),
@@ -21,6 +18,7 @@ module.exports = {
       diagnostics: false,
     },
   },
+  modulePathIgnorePatterns: ['/esm/', '/lib/'],
   coveragePathIgnorePatterns: [
     '/node_modules/',
     '/__tests__/',
@@ -30,4 +28,4 @@ module.exports = {
     '/demo/',
     'package-lock.json',
   ],
-}
+};
