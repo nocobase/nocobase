@@ -49,7 +49,7 @@ export type Filter = any;
 export type Appends = string[];
 export type Except = string[];
 export type Fields = string[];
-export type Sort = string[];
+export type Sort = string[] | string;
 
 export type WhiteList = string[];
 export type BlackList = string[];

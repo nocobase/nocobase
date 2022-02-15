@@ -11,3 +11,4 @@ db.sqlite
 coverage
 .umi
 /uploads
+.env.test
