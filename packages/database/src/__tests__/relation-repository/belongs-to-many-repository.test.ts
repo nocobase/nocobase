@@ -1,7 +1,7 @@
-import { mockDatabase } from '../index';
-import { BelongsToManyRepository } from '../../relation-repository/belongs-to-many-repository';
+import { Collection } from '@nocobase/database';
 import Database from '../../database';
-import { Collection, HasManyRepository } from '@nocobase/database';
+import { BelongsToManyRepository } from '../../relation-repository/belongs-to-many-repository';
+import { mockDatabase } from '../index';
 
 describe('belongs to many with target key', function () {
   let db: Database;
@@ -158,7 +158,6 @@ describe('belongs to many', () => {
       ],
     });
 
-    await db.sequelize.getQueryInterface().dropAllTables();
     await db.sync({ force: true });
   });
 
