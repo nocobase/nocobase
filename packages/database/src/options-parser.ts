@@ -1,8 +1,8 @@
-import { Appends, Except, FindOptions } from './repository';
-import FilterParser from './filter-parser';
 import { FindAttributeOptions, ModelCtor, Op } from 'sequelize';
-import { Database } from './database';
 import { Collection } from './collection';
+import { Database } from './database';
+import FilterParser from './filter-parser';
+import { Appends, Except, FindOptions } from './repository';
 
 const debug = require('debug')('noco-database');
 
@@ -61,8 +61,10 @@ export class OptionsParser {
    * @protected
    */
   protected parseSort(filterParams) {
-    const sort = this.options?.sort || [];
-
+    let sort = this.options?.sort || [];
+    if (typeof sort === 'string') {
+      sort = sort.split(',');
+    }
     const orderParams = sort.map((sortKey: string) => {
       const direction = sortKey.startsWith('-') ? 'DESC' : 'ASC';
       const sortField: Array<any> = sortKey.replace('-', '').split('.');
