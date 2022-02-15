@@ -1,9 +1,18 @@
 import { mockDatabase } from '.';
-import { MagicAttributeModel } from '..';
+import { Database, MagicAttributeModel } from '..';
 
 describe('magic-attribute-model', () => {
+  let db: Database;
+
+  beforeEach(async () => {
+    db = mockDatabase();
+  });
+
+  afterEach(async () => {
+    await db.close();
+  });
+
   it('case 1', async () => {
-    const db = mockDatabase();
     db.registerModels({ MagicAttributeModel });
 
     const Test = db.collection({
@@ -41,12 +50,9 @@ describe('magic-attribute-model', () => {
       },
       'x-decorator-props': { key1: 'val1' },
     });
-
-    await db.close();
   });
 
   it('case 2', async () => {
-    const db = mockDatabase();
     db.registerModels({ MagicAttributeModel });
 
     const Test = db.collection({
@@ -78,7 +84,7 @@ describe('magic-attribute-model', () => {
     test = await Test.model.findByPk(test.get('id') as string);
 
     await test.update({
-      'x-component-props': { arr2: [1, 2, 3, 4] }
+      'x-component-props': { arr2: [1, 2, 3, 4] },
     });
 
     test = await Test.model.findByPk(test.get('id') as string);
@@ -93,7 +99,5 @@ describe('magic-attribute-model', () => {
       },
       'x-decorator-props': { key1: 'val1' },
     });
-
-    await db.close();
   });
 });

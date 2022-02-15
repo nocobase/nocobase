@@ -6,7 +6,7 @@ import { mockDatabase } from './';
 describe('update associations', () => {
   describe('belongsTo', () => {
     let db: Database;
-    beforeEach(() => {
+    beforeEach(async () => {
       db = mockDatabase();
     });
 
@@ -386,6 +386,9 @@ describe('update associations', () => {
       await db.sync();
     });
 
+    afterEach(async () => {
+      await db.close();
+    });
     test('set through value', async () => {
       const p1 = await Post.repository.create({
         values: {

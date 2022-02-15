@@ -13,7 +13,6 @@ describe('destroy with targetKey', function () {
 
   beforeEach(async () => {
     db = mockDatabase();
-
     User = db.collection({
       name: 'users',
       autoGenId: false,
@@ -81,6 +80,10 @@ describe('destroy', () => {
   let User: Collection;
   let Post: Collection;
 
+  afterEach(async () => {
+    await db.close();
+  });
+
   beforeEach(async () => {
     db = mockDatabase();
     User = db.collection({
@@ -130,8 +133,9 @@ describe('destroy', () => {
 
     await User.repository.destroy();
     expect(await User.repository.count()).toEqual(1);
-    await User.repository.destroy({ truncate: true });
-    expect(await User.repository.count()).toEqual(0);
+
+    await Post.repository.destroy({ truncate: true });
+    expect(await Post.repository.count()).toEqual(0);
   });
 
   test('destroy with filter', async () => {

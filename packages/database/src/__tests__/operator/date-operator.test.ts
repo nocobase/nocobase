@@ -7,10 +7,12 @@ describe('date operator test', () => {
 
   let User: Collection;
 
+  afterEach(async () => {
+    await db.close();
+  });
+
   beforeEach(async () => {
-    db = mockDatabase({
-      logging: console.log,
-    });
+    db = mockDatabase();
 
     User = db.collection({
       name: 'users',
@@ -26,7 +28,7 @@ describe('date operator test', () => {
       ],
     });
 
-    await db.sync();
+    await db.sync({ force: true, alter: { drop: false } });
   });
 
   test('$dateOn', async () => {

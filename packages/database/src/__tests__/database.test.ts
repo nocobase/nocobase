@@ -1,10 +1,19 @@
 import path from 'path';
-import { Model } from '..';
+import { Database, Model } from '..';
 import { mockDatabase } from './index';
 
 describe('database', () => {
+  let db: Database;
+
+  beforeEach(async () => {
+    db = mockDatabase();
+  });
+
+  afterEach(async () => {
+    await db.close();
+  });
+
   test('close state', async () => {
-    const db = mockDatabase();
     expect(db.closed()).toBeFalsy();
     await db.close();
     expect(db.closed()).toBeTruthy();
@@ -13,7 +22,6 @@ describe('database', () => {
   });
 
   test('reconnect', async () => {
-    const db = mockDatabase();
     await db.sequelize.authenticate();
     await db.close();
     await db.reconnect();
@@ -21,7 +29,6 @@ describe('database', () => {
   });
 
   test('get repository', async () => {
-    const db = mockDatabase();
     db.collection({
       name: 'tests',
       fields: [{ type: 'hasMany', name: 'relations' }],
@@ -38,7 +45,6 @@ describe('database', () => {
   });
 
   test('import', async () => {
-    const db = mockDatabase();
     await db.import({
       directory: path.resolve(__dirname, './fixtures/collections'),
     });
@@ -71,7 +77,6 @@ describe('database', () => {
   });
 
   test('get collection', async () => {
-    const db = mockDatabase();
     expect(db.getCollection('test')).toBeUndefined();
     expect(db.hasCollection('test')).toBeFalsy();
     db.collection({
@@ -83,7 +88,6 @@ describe('database', () => {
   });
 
   test('collection beforeBulkCreate event', async () => {
-    const db = mockDatabase();
     const listener = jest.fn();
 
     db.on('posts.beforeBulkUpdate', listener);
@@ -115,7 +119,6 @@ describe('database', () => {
   });
 
   test('global model event', async () => {
-    const db = mockDatabase();
     const listener = jest.fn();
     const listener2 = jest.fn();
 
@@ -140,7 +143,6 @@ describe('database', () => {
   });
 
   test('collection multiple model event', async () => {
-    const db = mockDatabase();
     const listener = jest.fn();
     const listener2 = jest.fn();
 
@@ -165,7 +167,6 @@ describe('database', () => {
   });
 
   test('collection afterCreate model event', async () => {
-    const db = mockDatabase();
     const postAfterCreateListener = jest.fn();
 
     db.on('posts.afterCreate', postAfterCreateListener);
@@ -189,7 +190,6 @@ describe('database', () => {
   });
 
   test('collection event', async () => {
-    const db = mockDatabase();
     const listener = jest.fn();
     db.on('beforeDefineCollection', listener);
 
@@ -207,8 +207,6 @@ describe('database', () => {
         this.setDataValue('abc', 'abc');
       }
     }
-
-    const db = mockDatabase();
 
     db.registerModels({
       CustomModel,

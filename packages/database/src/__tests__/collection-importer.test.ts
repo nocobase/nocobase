@@ -1,7 +1,6 @@
 import { ImporterReader } from '../collection-importer';
 import * as path from 'path';
 import { extend } from '../database';
-import { mockDatabase } from './index';
 
 describe('collection importer', () => {
   test('import reader', async () => {

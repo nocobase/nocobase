@@ -11,7 +11,8 @@ describe('option parser', () => {
   let Tag: Collection;
 
   beforeEach(async () => {
-    const db = mockDatabase();
+    db = mockDatabase();
+
     User = db.collection<{ id: number; name: string }, { name: string }>({
       name: 'users',
       fields: [
@@ -53,6 +54,10 @@ describe('option parser', () => {
       fields: [{ type: 'string', name: 'name' }],
     });
     await db.sync();
+  });
+
+  afterEach(async () => {
+    await db.close();
   });
 
   test('fields with association', () => {

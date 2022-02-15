@@ -246,6 +246,7 @@ export class UiSchemaRepository extends Repository {
         descendant: uid,
         depth: 1,
       },
+      transaction,
     });
 
     if (!parent) {
@@ -253,7 +254,7 @@ export class UiSchemaRepository extends Repository {
     }
 
     const countResult = await db.sequelize.query(
-      `SELECT COUNT(*) FROM ${
+      `SELECT COUNT(*) as count FROM ${
         db.getCollection('ui_schema_tree_path').model.tableName
       } where ancestor = :ancestor and depth  = 1`,
       {
@@ -272,6 +273,7 @@ export class UiSchemaRepository extends Repository {
         filter: {
           uid: parent.get('ancestor') as string,
         },
+        transaction,
       });
 
       return schema;
@@ -463,6 +465,7 @@ export class UiSchemaRepository extends Repository {
     const node = await this.create({
       values: {
         name,
+        ['x-uid']: uid,
         uid,
         schema,
         serverHooks,
@@ -608,21 +611,29 @@ export class UiSchemaRepository extends Repository {
       // insert at first
       if (nodePosition === 'first') {
         sort = 1;
-        // move all child last index
-        await db.sequelize.query(
-          `UPDATE ${treeTable} as TreeTable
+
+        let updateSql = `UPDATE ${treeTable} as TreeTable
                 SET sort = TreeTable.sort + 1
                 FROM ${treeTable} as NodeInfo
                 WHERE NodeInfo.descendant = TreeTable.descendant and NodeInfo.depth = 0
-                AND TreeTable.depth = 1 AND TreeTable.ancestor = :ancestor and NodeInfo.type = :type`,
-          {
-            replacements: {
-              ancestor: childOptions.parentUid,
-              type: childOptions.type,
-            },
-            transaction,
+                AND TreeTable.depth = 1 AND TreeTable.ancestor = :ancestor and NodeInfo.type = :type`;
+
+        // Compatible with mysql
+        if (this.database.sequelize.getDialect() === 'mysql') {
+          updateSql = `UPDATE ${treeTable} as TreeTable 
+          JOIN ${treeTable} as NodeInfo ON (NodeInfo.descendant = TreeTable.descendant and NodeInfo.depth = 0)
+          SET TreeTable.sort = TreeTable.sort + 1
+          WHERE TreeTable.depth = 1 AND TreeTable.ancestor = :ancestor and NodeInfo.type = :type`;
+        }
+
+        // move all child last index
+        await db.sequelize.query(updateSql, {
+          replacements: {
+            ancestor: childOptions.parentUid,
+            type: childOptions.type,
           },
-        );
+          transaction,
+        });
       }
 
       if (nodePosition === 'last') {
@@ -671,21 +682,31 @@ export class UiSchemaRepository extends Repository {
           sort += 1;
         }
 
-        await db.sequelize.query(
-          `UPDATE  ${treeTable} as TreeTable
-           SET sort = TreeTable.sort + 1
-              FROM ${treeTable} as NodeInfo
-           WHERE NodeInfo.descendant = TreeTable.descendant and NodeInfo.depth = 0   
-            AND TreeTable.depth = 1 AND TreeTable.ancestor = :ancestor and TreeTable.sort >= :sort and NodeInfo.type = :type`,
-          {
-            replacements: {
-              ancestor: childOptions.parentUid,
-              sort,
-              type: childOptions.type,
-            },
-            transaction,
+        let updateSql = `UPDATE ${treeTable} as TreeTable
+                         SET sort = TreeTable.sort + 1
+                             FROM ${treeTable} as NodeInfo
+                         WHERE NodeInfo.descendant = TreeTable.descendant
+                           and NodeInfo.depth = 0
+                           AND TreeTable.depth = 1
+                           AND TreeTable.ancestor = :ancestor
+                           and TreeTable.sort >= :sort
+                           and NodeInfo.type = :type`;
+
+        if (this.database.sequelize.getDialect() === 'mysql') {
+          updateSql = `UPDATE  ${treeTable} as TreeTable
+JOIN ${treeTable} as NodeInfo ON (NodeInfo.descendant = TreeTable.descendant and NodeInfo.depth = 0)
+SET TreeTable.sort = TreeTable.sort + 1
+WHERE TreeTable.depth = 1 AND  TreeTable.ancestor = :ancestor and TreeTable.sort >= :sort and NodeInfo.type = :type`;
+        }
+
+        await db.sequelize.query(updateSql, {
+          replacements: {
+            ancestor: childOptions.parentUid,
+            sort,
+            type: childOptions.type,
           },
-        );
+          transaction,
+        });
       }
 
       // update order

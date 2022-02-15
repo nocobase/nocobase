@@ -18,8 +18,6 @@ describe('ui_schema repository', () => {
   beforeEach(async () => {
     app = mockServer({
       registerActions: true,
-
-      database: {},
     });
 
     db = app.db;

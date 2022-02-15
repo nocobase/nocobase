@@ -25,7 +25,7 @@ export function getConfigByEnv() {
     dialect: process.env.DB_DIALECT,
     logging: process.env.DB_LOG_SQL === 'on' ? console.log : false,
     storage: process.env.DB_STORAGE ? resolve(process.cwd(), process.env.DB_STORAGE) : ':memory:',
-    dialectOptions: {
+    define: {
       charset: 'utf8mb4',
       collate: 'utf8mb4_unicode_ci',
     },

@@ -55,6 +55,7 @@ describe('role resource api', () => {
       .resource('roles.collections')
       .list({
         associatedIndex: role.get('name') as string,
+        sort: ['sort'],
       });
 
     expect(response.statusCode).toEqual(200);

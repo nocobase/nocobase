@@ -57,7 +57,14 @@ interface Resource {
 export class MockServer extends Application {
   async loadAndInstall() {
     await this.load();
-    await this.install({ clean: true });
+    await this.install({
+      sync: {
+        force: true,
+        alter: {
+          drop: false,
+        },
+      },
+    });
   }
 
   async cleanDb() {
@@ -95,17 +102,16 @@ export class MockServer extends Application {
                       url += `/${filterByTk}`;
                     }
 
+                    const queryString = qs.stringify(restParams, { arrayFormat: 'brackets' });
+
                     switch (method) {
                       case 'upload':
-                        return agent
-                          .post(`${url}?${qs.stringify(restParams)}`)
-                          .attach('file', file)
-                          .field(values);
+                        return agent.post(`${url}?${queryString}`).attach('file', file).field(values);
                       case 'list':
                       case 'get':
-                        return agent.get(`${url}?${qs.stringify(restParams)}`);
+                        return agent.get(`${url}?${queryString}`);
                       default:
-                        return agent.post(`${url}?${qs.stringify(restParams)}`).send(values);
+                        return agent.post(`${url}?${queryString}`).send(values);
                     }
                   };
                 },
@@ -124,7 +130,7 @@ export class MockServer extends Application {
 }
 
 export function mockServer(options: ApplicationOptions = {}) {
-  const database = mockDatabase((<any>options?.database) || {});
+  const database = mockDatabase(<any>options?.database || {});
   return new MockServer({
     ...options,
     database,

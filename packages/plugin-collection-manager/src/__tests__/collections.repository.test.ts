@@ -120,7 +120,7 @@ describe('collections repository', () => {
     });
 
     const json = data.toJSON();
-
+    json.fields = json.fields.sort((a, b) => a.sort - b.sort);
     expect(json.fields.length).toBe(7);
 
     expect(json).toMatchObject({

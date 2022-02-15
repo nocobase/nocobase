@@ -2,73 +2,141 @@ import { Collection } from '../collection';
 import { Database } from '../database';
 import { mockDatabase } from './index';
 
-test('collection disable authGenId', async () => {
-  const db = mockDatabase();
+describe('collection', () => {
+  let db: Database;
 
-  const Test = db.collection({
-    name: 'test',
-    autoGenId: false,
-    fields: [{ type: 'string', name: 'uid', primaryKey: true }],
+  beforeEach(async () => {
+    db = mockDatabase();
   });
 
-  const model = Test.model;
+  afterEach(async () => {
+    await db.close();
+  });
 
-  await db.sync();
-  expect(model.rawAttributes['id']).toBeUndefined();
-  await db.close();
-});
-
-test('new collection', async () => {
-  const db = mockDatabase();
-  const collection = new Collection(
-    {
+  test('collection disable authGenId', async () => {
+    const Test = db.collection({
       name: 'test',
-    },
-    { database: db },
-  );
+      autoGenId: false,
+      fields: [{ type: 'string', name: 'uid', primaryKey: true }],
+    });
 
-  expect(collection.name).toEqual('test');
-});
+    const model = Test.model;
 
-test('collection create field', async () => {
-  const db = mockDatabase();
-  const collection = new Collection(
-    {
-      name: 'user',
-    },
-    { database: db },
-  );
-
-  collection.addField('age', {
-    type: 'integer',
+    await db.sync();
+    expect(model.rawAttributes['id']).toBeUndefined();
   });
 
-  const ageField = collection.getField('age');
-  expect(ageField).toBeDefined();
-  expect(collection.hasField('age')).toBeTruthy();
-  expect(collection.hasField('test')).toBeFalsy();
+  test('new collection', async () => {
+    const collection = new Collection(
+      {
+        name: 'test',
+      },
+      { database: db },
+    );
 
-  collection.removeField('age');
-  expect(collection.hasField('age')).toBeFalsy();
-});
+    expect(collection.name).toEqual('test');
+  });
 
-test('collection set fields', () => {
-  const db = mockDatabase();
-  const collection = new Collection(
-    {
-      name: 'user',
-    },
-    { database: db },
-  );
+  test('collection create field', async () => {
+    const collection = new Collection(
+      {
+        name: 'user',
+      },
+      { database: db },
+    );
 
-  collection.setFields([{ type: 'string', name: 'firstName' }]);
-  expect(collection.hasField('firstName')).toBeTruthy();
+    collection.addField('age', {
+      type: 'integer',
+    });
+
+    const ageField = collection.getField('age');
+    expect(ageField).toBeDefined();
+    expect(collection.hasField('age')).toBeTruthy();
+    expect(collection.hasField('test')).toBeFalsy();
+
+    collection.removeField('age');
+    expect(collection.hasField('age')).toBeFalsy();
+  });
+
+  test('collection set fields', () => {
+    const collection = new Collection(
+      {
+        name: 'user',
+      },
+      { database: db },
+    );
+
+    collection.setFields([{ type: 'string', name: 'firstName' }]);
+    expect(collection.hasField('firstName')).toBeTruthy();
+  });
+
+  test('update collection field', async () => {
+    const collection = new Collection(
+      {
+        name: 'posts',
+        fields: [{ type: 'string', name: 'title' }],
+      },
+      {
+        database: db,
+      },
+    );
+    expect(collection.hasField('title')).toBeTruthy();
+
+    collection.updateField('title', {
+      type: 'string',
+      name: 'content',
+    });
+
+    expect(collection.hasField('title')).toBeFalsy();
+    expect(collection.hasField('content')).toBeTruthy();
+  });
+
+  test('collection with association', async () => {
+    const User = db.collection({
+      name: 'users',
+      fields: [
+        { type: 'string', name: 'name' },
+        { type: 'integer', name: 'age' },
+        { type: 'hasMany', name: 'posts' },
+      ],
+    });
+
+    const Post = db.collection({
+      name: 'posts',
+      fields: [
+        { type: 'string', name: 'title' },
+        { type: 'string', name: 'content' },
+        {
+          type: 'belongsTo',
+          name: 'user',
+        },
+        {
+          type: 'hasMany',
+          name: 'comments',
+        },
+      ],
+    });
+
+    const Comment = db.collection({
+      name: 'comments',
+      fields: [
+        { type: 'string', name: 'content' },
+        { type: 'string', name: 'comment_as' },
+        { type: 'belongsTo', name: 'post' },
+      ],
+    });
+
+    expect(User.model.associations['posts']).toBeDefined();
+    expect(Post.model.associations['comments']).toBeDefined();
+
+    expect(User.model.associations['posts'].target.associations['comments']).toBeDefined();
+  });
 });
 
 describe('collection sync', () => {
   let db: Database;
 
-  beforeEach(() => {
+  beforeEach(async () => {
     db = mockDatabase();
   });
 
@@ -147,92 +215,4 @@ describe('collection sync', () => {
     expect(tableFields['postId']).toBeDefined();
     expect(tableFields['tagId']).toBeDefined();
   });
-});
-
-test('update collection field', async () => {
-  const db = mockDatabase();
-
-  const collection = new Collection(
-    {
-      name: 'posts',
-      fields: [{ type: 'string', name: 'title' }],
-    },
-    {
-      database: db,
-    },
-  );
-  expect(collection.hasField('title')).toBeTruthy();
-
-  collection.updateField('title', {
-    type: 'string',
-    name: 'content',
-  });
-
-  expect(collection.hasField('title')).toBeFalsy();
-  expect(collection.hasField('content')).toBeTruthy();
-});
-
-test.skip('update collection options', async () => {
-  const db = mockDatabase();
-  const collection = new Collection(
-    {
-      name: 'posts',
-      fields: [{ type: 'string', name: 'title' }],
-    },
-    {
-      database: db,
-    },
-  );
-
-  expect(collection.model.getTableName()).toEqual(`${db.getTablePrefix()}posts`);
-
-  collection.updateOptions({
-    name: 'articles',
-  });
-
-  expect(collection.model.getTableName()).toEqual(`${db.getTablePrefix()}articles`);
-});
-
-test('collection with association', async () => {
-  const db = mockDatabase();
-  const User = db.collection({
-    name: 'users',
-    fields: [
-      { type: 'string', name: 'name' },
-      { type: 'integer', name: 'age' },
-      { type: 'hasMany', name: 'posts' },
-    ],
-  });
-
-  const Post = db.collection({
-    name: 'posts',
-    fields: [
-      { type: 'string', name: 'title' },
-      { type: 'string', name: 'content' },
-      {
-        type: 'belongsTo',
-        name: 'user',
-      },
-      {
-        type: 'hasMany',
-        name: 'comments',
-      },
-    ],
-  });
-
-  const Comment = db.collection({
-    name: 'comments',
-    fields: [
-      { type: 'string', name: 'content' },
-      { type: 'string', name: 'comment_as' },
-      { type: 'belongsTo', name: 'post' },
-    ],
-  });
-
-  expect(User.model.associations['posts']).toBeDefined();
-  expect(Post.model.associations['comments']).toBeDefined();
-
-  expect(User.model.associations['posts'].target.associations['comments']).toBeDefined();
-
-  await db.close();
 });
