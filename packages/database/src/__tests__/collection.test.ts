@@ -4,6 +4,7 @@ import { mockDatabase } from './index';
 
 describe('collection', () => {
   let db: Database;
+
   beforeEach(async () => {
     db = mockDatabase();
     await db.clean({ drop: true });
@@ -130,8 +131,6 @@ describe('collection', () => {
     expect(Post.model.associations['comments']).toBeDefined();
 
     expect(User.model.associations['posts'].target.associations['comments']).toBeDefined();
-
-    await db.close();
   });
 });
 
