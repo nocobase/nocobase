@@ -1,6 +1,6 @@
 import { Collection } from '../collection';
 import { Database } from '../database';
-import { generatePrefixByPath, mockDatabase } from './index';
+import { mockDatabase } from './index';
 
 describe('collection', () => {
   let db: Database;
@@ -91,26 +91,6 @@ describe('collection', () => {
     expect(collection.hasField('content')).toBeTruthy();
   });
 
-  test.skip('update collection options', async () => {
-    const collection = new Collection(
-      {
-        name: 'posts',
-        fields: [{ type: 'string', name: 'title' }],
-      },
-      {
-        database: db,
-      },
-    );
-
-    expect(collection.model.getTableName()).toEqual(`${generatePrefixByPath()}_posts`);
-
-    collection.updateOptions({
-      name: 'articles',
-    });
-
-    expect(collection.model.getTableName()).toEqual(`${generatePrefixByPath()}_articles`);
-  });
-
   test('collection with association', async () => {
     const User = db.collection({
       name: 'users',
@@ -182,7 +162,7 @@ describe('collection sync', () => {
     ]);
 
     await collection.sync();
-    const tableFields = await (<any>collection.model).queryInterface.describeTable(`${generatePrefixByPath()}_users`);
+    const tableFields = await (<any>collection.model).queryInterface.describeTable(`${db.getTablePrefix()}users`);
 
     expect(tableFields).toHaveProperty('firstName');
     expect(tableFields).toHaveProperty('lastName');
@@ -205,7 +185,7 @@ describe('collection sync', () => {
 
     const model = collection.model;
 
-    const tableFields = await (<any>model).queryInterface.describeTable(`${generatePrefixByPath()}_posts`);
+    const tableFields = await (<any>model).queryInterface.describeTable(`${db.getTablePrefix()}posts`);
 
     expect(tableFields['user_id']).toBeUndefined();
   });
@@ -234,7 +214,7 @@ describe('collection sync', () => {
 
     const model = collection.model;
     await collection.sync();
-    const tableFields = await (<any>model).queryInterface.describeTable(`${generatePrefixByPath()}_posts_tags`);
+    const tableFields = await (<any>model).queryInterface.describeTable(`${db.getTablePrefix()}posts_tags`);
     expect(tableFields['postId']).toBeDefined();
     expect(tableFields['tagId']).toBeDefined();
   });

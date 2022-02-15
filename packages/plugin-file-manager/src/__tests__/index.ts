@@ -14,18 +14,11 @@ export async function getApp(options = {}): Promise<MockServer> {
 
   app.plugin(plugin);
 
-  await app.load();
-
   app.db.import({
     directory: path.resolve(__dirname, './tables'),
   });
-  try {
-    await app.db.sync();
-  } catch (error) {
-    console.error(error);
-  }
 
-  await app.emitAsync('beforeStart');
+  await app.loadAndInstall();
 
   return app;
 }

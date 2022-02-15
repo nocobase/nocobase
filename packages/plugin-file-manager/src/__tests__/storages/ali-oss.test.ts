@@ -1,5 +1,5 @@
 import path from 'path';
-import { generatePrefixByPath, MockServer } from '@nocobase/test';
+import { MockServer } from '@nocobase/test';
 import aliossStorage from '../../storages/ali-oss';
 import { FILE_FIELD_NAME } from '../../constants';
 import { getApp, requestFile } from '..';
@@ -20,7 +20,7 @@ describe('storage:ali-oss', () => {
     const Storage = db.getCollection('storages').model;
     await Storage.create({
       ...aliossStorage.defaults(),
-      name: `ali-oss_${generatePrefixByPath()}`,
+      name: `ali-oss_${db.getTablePrefix()}`,
       default: true,
       path: 'test/path',
     });
