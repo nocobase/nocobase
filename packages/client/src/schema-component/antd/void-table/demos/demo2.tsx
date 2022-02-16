@@ -1,19 +1,18 @@
-/**
- * title: 勾选
- */
 import { ISchema, useField, useFieldSchema } from '@formily/react';
 import { uid } from '@formily/shared';
 import {
   AntdSchemaComponentProvider,
   APIClientProvider,
   CollectionField,
+  CollectionManagerProvider,
   CollectionProvider,
   SchemaComponent,
   SchemaComponentProvider,
-  useCollection
+  useCollection,
+  useDesignable,
+  useRequest
 } from '@nocobase/client';
-import React, { useEffect } from 'react';
-import { useDesignable } from '../../..';
+import React, { createContext, useContext, useEffect } from 'react';
 import { apiClient } from './apiClient';
 
 const schema: ISchema = {
@@ -21,7 +20,22 @@ const schema: ISchema = {
   properties: {
     block1: {
       type: 'void',
-      'x-decorator': 'CollectionBlock',
+      'x-decorator': 'CollectionProvider',
+      'x-decorator-props': {
+        name: 'posts',
+      },
+      'x-component': 'ResourceActionProvider',
+      'x-component-props': {
+        request: {
+          resource: 'posts',
+          action: 'list',
+          params: {
+            filter: {},
+            sort: [],
+            appends: [],
+          },
+        },
+      },
       properties: {
         table1: {
           type: 'void',
@@ -32,18 +46,7 @@ const schema: ISchema = {
             rowSelection: {
               type: 'checkbox',
             },
-            pagination: {
-              current: 2,
-              pageSize: 2,
-            },
-            request: {
-              resource: 'posts',
-              action: 'list',
-              params: {
-                filter: {},
-                // pageSize: 5,
-              },
-            },
+            useDataSource: '{{ useDataSourceFromRAC }}',
           },
           properties: {
             column1: {
@@ -142,68 +145,85 @@ const TableColumnDecorator = (props) => {
   );
 };
 
-const CollectionBlock = (props) => {
-  return (
-    <CollectionProvider
-      collection={{
-        name: 'posts',
-        fields: [
-          {
-            type: 'integer',
-            name: 'id',
-            interface: 'input',
-            uiSchema: {
-              title: 'ID1',
-              type: 'number',
-              'x-component': 'InputNumber',
-              required: true,
-              description: 'description1',
-            } as ISchema,
+const collections = [
+  {
+    name: 'posts',
+    fields: [
+      {
+        type: 'integer',
+        name: 'id',
+        interface: 'input',
+        uiSchema: {
+          title: 'ID1',
+          type: 'number',
+          'x-component': 'InputNumber',
+          required: true,
+          description: 'description1',
+        } as ISchema,
+      },
+      {
+        type: 'string',
+        name: 'name',
+        interface: 'input',
+        uiSchema: {
+          title: 'Name1',
+          type: 'string',
+          'x-component': 'Input',
+          required: true,
+          description: 'description1',
+        } as ISchema,
+      },
+      {
+        type: 'string',
+        name: 'date',
+        interface: 'datetime',
+        uiSchema: {
+          type: 'boolean',
+          title: `Date1`,
+          'x-read-pretty': true,
+          'x-decorator': 'FormItem',
+          'x-component': 'DatePicker',
+          'x-component-props': {
+            dateFormat: 'YYYY/MM/DD',
+            // showTime: true,
           },
-          {
-            type: 'string',
-            name: 'name',
-            interface: 'input',
-            uiSchema: {
-              title: 'Name1',
-              type: 'string',
-              'x-component': 'Input',
-              required: true,
-              description: 'description1',
-            } as ISchema,
-          },
-          {
-            type: 'string',
-            name: 'date',
-            interface: 'datetime',
-            uiSchema: {
-              type: 'boolean',
-              title: `Date1`,
-              'x-read-pretty': true,
-              'x-decorator': 'FormItem',
-              'x-component': 'DatePicker',
-              'x-component-props': {
-                dateFormat: 'YYYY/MM/DD',
-                // showTime: true,
-              },
-            },
-          },
-        ],
-      }}
-    >
-      {props.children}
-    </CollectionProvider>
-  );
+        },
+      },
+    ],
+  },
+];
+
+const ResourceActionContext = createContext(null);
+
+const ResourceActionProvider = (props) => {
+  const { name } = useCollection();
+  const { request } = props;
+  const service = useRequest(request);
+  return <ResourceActionContext.Provider value={{ service }}>{props.children}</ResourceActionContext.Provider>;
 };
+
+const useDataSourceFromRAC = (options: any) => {
+  const { service } = useContext(ResourceActionContext);
+  useEffect(() => {
+    if (!service.loading) {
+      options?.onSuccess(service.data);
+    }
+  }, [service.loading]);
+  return service;
+};
+
+const componets = { CollectionProvider, TableColumnDecorator, ResourceActionProvider, CollectionField };
 
 export default () => {
   return (
     <APIClientProvider apiClient={apiClient}>
-      <SchemaComponentProvider components={{ TableColumnDecorator, CollectionBlock, CollectionField }}>
-        <AntdSchemaComponentProvider>
-          <SchemaComponent schema={schema} />
-        </AntdSchemaComponentProvider>
-      </SchemaComponentProvider>
+      <CollectionManagerProvider collections={collections}>
+        <SchemaComponentProvider components={componets}>
+          <AntdSchemaComponentProvider>
+            <SchemaComponent schema={schema} scope={{ useDataSourceFromRAC }} />
+          </AntdSchemaComponentProvider>
+        </SchemaComponentProvider>
+      </CollectionManagerProvider>
     </APIClientProvider>
   );
 };

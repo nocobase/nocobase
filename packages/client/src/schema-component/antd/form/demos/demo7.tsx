@@ -50,7 +50,7 @@ const useSubmit = () => {
   };
 };
 
-const useValues: FormUseValues = (props, opts) => {
+const useValues: FormUseValues = (opts) => {
   return useRequest(() => {
     return Promise.resolve({ data: { field1: 'aabb' } });
   }, opts);

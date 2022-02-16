@@ -202,6 +202,50 @@ export default () => {
 
 <code src="./demos/demo1.tsx">
 
-CollectionProvider + CollectionField
+### CollectionProvider + ResourceActionProvider
 
 <code src="./demos/demo2.tsx">
+
+大纲
+
+```tsx | pure
+<CollectionProvider> {/* 属于哪个 collection */}
+  <ResourceActionProvider> {/* 发起请求，将请求结果存到上下文共享给子组件 */}
+    <SettingsForm /> {/* 区块的配置表单 */}
+    <ActionBar /> {/* 操作区 */}
+    <Table/> {/* 具体的组件，如 Table、Form、Calendar 等 */}
+  </ResourceActionProvider>
+</CollectionProvider>
+```
+
+通过 CollectionProvider 和 ResourceActionProvider 来解决数据区块配置和数据请求，与具体组件无关，所有区块通用。在里面可以放任意东西。
+
+嵌套使用的情况
+
+```tsx | pure
+<CollectionProvider> {/* 属于哪个 collection */}
+  <ResourceActionProvider> {/* 发起请求，将请求结果存到上下文共享给子组件 */}
+    <SettingsForm /> {/* 区块的配置表单 */}
+    <ActionBar /> {/* 操作区 */}
+    <Table> {/* 具体的组件 */}
+      <Table.Column>
+        <SettingsForm /> {/* 表格列的配置表单 */}
+        <RecordProvider> {/* 列表数据的行记录 */}
+          <CollectionField>
+            <CollectionFieldProvider> {/* 是哪个字段 */}
+              <CollectionProvider> {/* 关联字段的关联表 collection */}
+                <ResourceActionProvider> {/* 可能也会发起请求，如查看详情 */}
+                  <SettingsForm />
+                  <ActionBar />
+                  <Table />
+                </ResourceActionProvider>
+              </CollectionProvider>
+            </CollectionFieldProvider>
+          </CollectionField>
+        </RecordProvider>
+      </Table.Column>
+      <Table.Column></Table.Column>  {/* 会有很多列 */}
+    </Table>
+  </ResourceActionProvider>
+</CollectionProvider>
+```
