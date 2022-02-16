@@ -8,7 +8,7 @@ export async function removeSchema({ schemaInstance, options, db, params }) {
   if (params?.removeEmptyParents) {
     await uiSchemaRepository.removeEmptyParents({
       uid,
-      breakComponent: params['breakComponent'],
+      breakRemoveOn: params['breakRemoveOn'],
       transaction,
     });
   } else {

@@ -111,8 +111,8 @@ describe('server hooks', () => {
                       field: 'title',
                       method: 'removeSchema',
                       params: {
-                        breakComponent: 'Grid',
-                        removeEmptyParents: true,
+                        breakRemoveOn: { 'x-component': 'Grid' },
+                        removeParentsIfNoChildren: true,
                       },
                     },
                   ],
@@ -137,8 +137,8 @@ describe('server hooks', () => {
                       field: 'intro',
                       method: 'removeSchema',
                       params: {
-                        breakComponent: 'Grid',
-                        removeEmptyParents: true,
+                        breakRemoveOn: { 'x-component': 'Grid' },
+                        removeParentsIfNoChildren: true,
                       },
                     },
                   ],
@@ -188,8 +188,8 @@ describe('server hooks', () => {
                       collection: 'posts',
                       method: 'removeSchema',
                       params: {
-                        breakComponent: 'row',
-                        removeEmptyParents: true,
+                        breakRemoveOn: { 'x-component': 'row' },
+                        removeParentsIfNoChildren: true,
                       },
                     },
                   ],
