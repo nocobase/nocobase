@@ -28,8 +28,7 @@ export interface ICollectionProviderProps {
 
 export interface CollectionFieldOptions {
   name?: any;
-  collectinName?: string;
-  targetKey?: string;
+  collectionName?: string;
   sourceKey?: string; // association field
   uiSchema?: ISchema;
 }
