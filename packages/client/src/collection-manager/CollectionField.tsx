@@ -26,6 +26,8 @@ const InternalField: React.FC = (props) => {
     setFieldProps('description', uiSchema.description);
     setFieldProps('initialValue', uiSchema.default);
     setRequired();
+    // @ts-ignore
+    field.dataSource = uiSchema.enum;
     field.component = [component, uiSchema['x-component-props']];
   }, [uiSchema.title, uiSchema.description, uiSchema.required]);
   return React.createElement(component, props);

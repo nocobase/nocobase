@@ -3,6 +3,7 @@ import { Result } from 'ahooks/lib/useRequest/src/types';
 import axios, { AxiosInstance, AxiosRequestConfig, AxiosResponse } from 'axios';
 
 export interface ActionParams {
+  filterByTk?: any;
   [key: string]: any;
 }
 
