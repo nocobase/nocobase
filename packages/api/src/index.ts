@@ -44,13 +44,20 @@ const plugins = [
   '@nocobase/plugin-file-manager',
   '@nocobase/plugin-system-settings',
   '@nocobase/plugin-users',
-  // '@nocobase/plugin-acl',
+  '@nocobase/plugin-acl',
   '@nocobase/plugin-china-region',
 ];
 
 for (const plugin of plugins) {
   api.plugin(require(plugin).default);
 }
+
+api.acl.use(async (ctx, next) => {
+  ctx.permission = {
+    skip: true,
+  };
+  await next();
+});
 
 if (process.argv.length < 3) {
   // @ts-ignore
