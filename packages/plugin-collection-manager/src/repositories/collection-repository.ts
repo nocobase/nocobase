@@ -7,7 +7,7 @@ interface LoadOptions {
 }
 
 export class CollectionRepository extends Repository {
-  async load(options?: LoadOptions) {
+  async load(options: LoadOptions = {}) {
     const { filter, skipExist } = options;
     const instances = (await this.find({ filter })) as CollectionModel[];
     for (const instance of instances) {

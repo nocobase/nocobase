@@ -4,7 +4,7 @@ import { uid } from '@formily/shared';
 import React, { useState } from 'react';
 import { PluginManager } from '../plugin-manager';
 import { ActionContext, SchemaComponent, useActionContext } from '../schema-component';
-import { RoleTable } from './RolePermissionManager';
+import * as components from './Configuration';
 
 const useCloseAction = () => {
   const { setVisible } = useActionContext();
@@ -47,7 +47,7 @@ export const ACLShortcut = () => {
           setVisible(true);
         }}
       />
-      <SchemaComponent components={{ RoleTable }} scope={{ useCloseAction }} schema={schema} />
+      <SchemaComponent components={components} scope={{ useCloseAction }} schema={schema} />
     </ActionContext.Provider>
   );
 };
