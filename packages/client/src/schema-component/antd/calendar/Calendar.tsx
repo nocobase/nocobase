@@ -66,7 +66,6 @@ const messages: any = {
 
 const useRequestProps = (props) => {
   const { request, value } = props;
-  debugger;
   if (request) {
     return request;
   }
@@ -107,8 +106,7 @@ export const Calendar: any = observer((props: any) => {
   const result = useDataSource(props, {
     uid: fieldSchema['x-uid'],
     onSuccess(data) {
-      debugger;
-      field.setValue(data?.data);
+      field.setValue(toEvents(data?.data, fieldNames));
     },
   });
   return (
