@@ -4,36 +4,25 @@ import { Switch } from 'antd';
 import React from 'react';
 import { SchemaInitializer, SchemaInitializerItemOptions } from '../../../schema-initializer';
 import { useDesignable } from '../../hooks';
+import { useCollection } from '../../../collection-manager/hooks';
 
 const useFormItemInitializerFields = () => {
-  return [
-    {
+  const { fields } = useCollection();
+  return fields?.map((field) => {
+    return {
       type: 'item',
-      title: 'Name',
+      title: field.name,
       component: InitializeFormItem,
       schema: {
-        name: 'name',
-        type: 'string',
-        title: 'Name',
-        'x-component': 'Input',
-        'x-decorator': 'FormItem',
-        'x-collection-field': 'posts.name',
+        name: field.name,
+        type: field.type,
+        title: field?.uiSchema?.title ?? field.name,
+        'x-component': field?.uiSchema?.['x-component'],
+        'x-decorator': field?.uiSchema?.['FormItem'] ?? 'FormItem',
+        'x-collection-field': field.name,
       },
-    },
-    {
-      type: 'item',
-      title: 'Title',
-      component: InitializeFormItem,
-      schema: {
-        name: 'title',
-        type: 'string',
-        title: 'Title',
-        'x-component': 'Input',
-        'x-decorator': 'FormItem',
-        'x-collection-field': 'posts.title',
-      },
-    },
-  ] as SchemaInitializerItemOptions[];
+    };
+  }) as SchemaInitializerItemOptions[];
 };
 
 const gridRowColWrap = (schema: ISchema) => {
