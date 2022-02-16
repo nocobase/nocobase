@@ -1,16 +1,11 @@
 import { observer, RecursionField, useField, useFieldSchema } from '@formily/react';
-import { Button } from 'antd';
 import React, { useState } from 'react';
-import ActionContainer from './Action.Container';
-import { ActionDrawer } from './Action.Drawer';
-import { ActionLink } from './Action.Link';
-import { ActionModal } from './Action.Modal';
-import { ActionPage } from './Action.Page';
+import { Link } from 'react-router-dom';
 import { ActionContext } from './context';
 import { useA } from './hooks';
 import { ComposedAction } from './types';
 
-export const Action: ComposedAction = observer((props: any) => {
+export const ActionLink: ComposedAction = observer((props: any) => {
   const { openMode, containerRefKey, useAction = useA, onClick, ...others } = props;
   const [visible, setVisible] = useState(false);
   const schema = useFieldSchema();
@@ -18,7 +13,7 @@ export const Action: ComposedAction = observer((props: any) => {
   const { run } = useAction();
   return (
     <ActionContext.Provider value={{ visible, setVisible, openMode, containerRefKey }}>
-      <Button
+      <Link
         {...others}
         onClick={(e) => {
           onClick && onClick(e);
@@ -27,16 +22,10 @@ export const Action: ComposedAction = observer((props: any) => {
         }}
       >
         {field.title}
-      </Button>
+      </Link>
       <RecursionField basePath={field.address} schema={schema} onlyRenderProperties />
     </ActionContext.Provider>
   );
 });
 
-Action.Link = ActionLink;
-Action.Drawer = ActionDrawer;
-Action.Modal = ActionModal;
-Action.Container = ActionContainer;
-Action.Page = ActionPage;
-
-export default Action;
+export default ActionLink;
