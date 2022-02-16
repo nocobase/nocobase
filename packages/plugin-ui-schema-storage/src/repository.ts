@@ -337,15 +337,13 @@ export class UiSchemaRepository extends Repository {
     return null;
   }
 
-  async removeEmptyParents(options: TransactionAble & { uid: string; breakComponent?: string }) {
-    const { transaction, uid, breakComponent } = options;
+  async removeEmptyParents(options: TransactionAble & { uid: string; breakRemoveOn?: BreakRemoveOnType }) {
+    const { transaction, uid, breakRemoveOn } = options;
 
     const removeParent = async (nodeUid: string) => {
       const parent = await this.isSingleChild(nodeUid, transaction);
 
-      const nodeComponentType = parent ? parent.get('x-component') : null;
-
-      if ((parent && !breakComponent) || (parent && breakComponent != nodeComponentType)) {
+      if (parent && !this.breakOnMatched(parent, breakRemoveOn)) {
         await removeParent(parent.get('uid') as string);
       } else {
         await this.remove(nodeUid, { transaction });
@@ -397,7 +395,7 @@ export class UiSchemaRepository extends Repository {
     await removeLeafNode(uid);
   }
 
-  async remove(uid: string, options?: TransactionAble) {
+  async remove(uid: string, options?: TransactionAble & removeParentOptions) {
     let handleTransaction: boolean = true;
     let transaction;
 
@@ -411,6 +409,14 @@ export class UiSchemaRepository extends Repository {
     const treePathTable = this.uiSchemaTreePathTableName;
 
     try {
+      if (options?.removeParentsIfNoChildren) {
+        await this.removeEmptyParents({ transaction, uid, breakRemoveOn: options.breakRemoveOn });
+        if (handleTransaction) {
+          await transaction.commit();
+        }
+        return;
+      }
+
       await this.database.sequelize.query(
         `DELETE FROM ${this.uiSchemasTableName} WHERE uid IN (
             SELECT descendant FROM ${treePathTable} WHERE ancestor = :uid
