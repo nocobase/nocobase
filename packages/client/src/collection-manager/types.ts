@@ -7,6 +7,7 @@ export interface CollectionManagerOptions {
 
 export interface CollectionOptions {
   name?: string;
+  filterTargetKey?: string;
   fields?: any[];
 }
 
@@ -18,6 +19,7 @@ export interface ICollectionProviderProps {
 export interface CollectionFieldOptions {
   name?: any;
   collectinName?: string;
+  targetKey?: string;
   sourceKey?: string; // association field
   uiSchema?: ISchema;
 }

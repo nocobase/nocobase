@@ -1,8 +1,8 @@
-import { useContext } from 'react';
 import { SchemaKey } from '@formily/react';
-import { CollectionFieldOptions } from '../types';
-import { CollectionContext } from '../context';
+import { useContext } from 'react';
 import { useAPIClient } from '../../api-client';
+import { CollectionContext } from '../context';
+import { CollectionFieldOptions } from '../types';
 
 export const useCollection = () => {
   const collection = useContext(CollectionContext);

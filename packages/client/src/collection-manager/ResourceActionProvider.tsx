@@ -1,22 +1,59 @@
 import { Result } from 'ahooks/lib/useRequest/src/types';
 import React, { createContext, useContext, useEffect } from 'react';
-import { useRequest } from '../api-client';
+import { useRecord } from '..';
+import { useAPIClient, useRequest } from '../api-client';
 
 export const ResourceActionContext = createContext<Result<any, any>>(null);
 
 interface ResourceActionProviderProps {
+  type?: 'association' | 'collection';
   request?: any;
   uid?: string;
 }
 
-export const ResourceActionProvider: React.FC<ResourceActionProviderProps> = (props) => {
-  const { request, uid } = props;
-  console.log(request);
+const ResourceContext = createContext<any>(null);
+
+const CollectionResourceActionProvider = (props) => {
+  const { collection, request, uid } = props;
+  const api = useAPIClient();
   const service = useRequest(request, {
     uid,
     refreshDeps: [request],
   });
-  return <ResourceActionContext.Provider value={service}>{props.children}</ResourceActionContext.Provider>;
+  const resource = api.resource(request.resource);
+  return (
+    <ResourceContext.Provider value={{ type: 'collection', resource, collection }}>
+      <ResourceActionContext.Provider value={service}>{props.children}</ResourceActionContext.Provider>
+    </ResourceContext.Provider>
+  );
+};
+
+const AssociationResourceActionProvider = (props) => {
+  const { association, request, uid } = props;
+  const api = useAPIClient();
+  const record = useRecord();
+  const resourceOf = record[association.sourceKey];
+  const service = useRequest(
+    { resourceOf, ...request },
+    {
+      uid,
+      refreshDeps: [request, resourceOf],
+    },
+  );
+  const resource = api.resource(request.resource, resourceOf);
+  return (
+    <ResourceContext.Provider value={{ type: 'association', resource, association }}>
+      <ResourceActionContext.Provider value={service}>{props.children}</ResourceActionContext.Provider>
+    </ResourceContext.Provider>
+  );
+};
+
+export const ResourceActionProvider: React.FC<ResourceActionProviderProps> = (props) => {
+  const { request } = props;
+  if (request?.resource?.includes('.')) {
+    return <AssociationResourceActionProvider {...props} />;
+  }
+  return <CollectionResourceActionProvider {...props} />;
 };
 
 export const useResourceActionContext = () => {
@@ -31,4 +68,9 @@ export const useDataSourceFromRAC = (options: any) => {
     }
   }, [service.loading]);
   return service;
+};
+
+export const useResourceContext = () => {
+  const { type, resource, collection, association } = useContext(ResourceContext);
+  return { type, resource, collection, association, targetKey: association?.targetKey || collection?.targetKey };
 };
