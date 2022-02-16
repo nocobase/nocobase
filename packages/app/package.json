@@ -5,7 +5,7 @@
   "scripts": {
     "start": "umi dev",
     "build": "umi build",
-    "postinstall": "umi generate tmp",
+    "postinstall": "node ./umi.cli.js generate tmp",
     "test": "umi-test",
     "test:coverage": "umi-test --coverage"
   },
