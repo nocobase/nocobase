@@ -1,14 +1,15 @@
-import React, { useContext, useEffect } from 'react';
-import { connect, SchemaOptionsContext, useField, useFieldSchema, useForm } from '@formily/react';
-import { useCollectionField } from './hooks';
-import { CollectionFieldProvider } from './CollectionFieldProvider';
 import { Field, FormPath } from '@formily/core';
+import { connect, SchemaOptionsContext, useField, useFieldSchema } from '@formily/react';
+import React, { useContext, useEffect } from 'react';
+import { CollectionFieldProvider } from './CollectionFieldProvider';
+import { useCollectionField } from './hooks';
 
 // TODO: 初步适配
 const InternalField: React.FC = (props) => {
   const field = useField<Field>();
   const fieldSchema = useFieldSchema();
   const { uiSchema } = useCollectionField();
+  console.log('uiSchema', uiSchema);
   const options = useContext(SchemaOptionsContext);
   const component = FormPath.getIn(options?.components, uiSchema['x-component']);
   const setFieldProps = (key, value) => {

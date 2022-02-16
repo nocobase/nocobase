@@ -1,18 +1,13 @@
-import { ISchema, useField, useFieldSchema } from '@formily/react';
-import { uid } from '@formily/shared';
+import { ISchema, observer, useField, useFieldSchema } from '@formily/react';
 import {
   AntdSchemaComponentProvider,
   APIClientProvider,
-  CollectionField,
   CollectionManagerProvider,
-  CollectionProvider,
   SchemaComponent,
-  SchemaComponentProvider,
-  useCollection,
-  useDesignable,
-  useRequest
+  SchemaComponentProvider
 } from '@nocobase/client';
-import React, { createContext, useContext, useEffect } from 'react';
+import { Button } from 'antd';
+import React from 'react';
 import { apiClient } from './apiClient';
 
 const schema: ISchema = {
@@ -30,6 +25,7 @@ const schema: ISchema = {
           resource: 'posts',
           action: 'list',
           params: {
+            pageSize: 5,
             filter: {},
             sort: [],
             appends: [],
@@ -37,6 +33,9 @@ const schema: ISchema = {
         },
       },
       properties: {
+        settings: {
+          'x-component': 'SimpleSettingsForm',
+        },
         table1: {
           type: 'void',
           'x-uid': 'input',
@@ -88,61 +87,55 @@ const schema: ISchema = {
                 },
               },
             },
+            column4: {
+              type: 'void',
+              // title: 'Name',
+              'x-decorator': 'TableColumnDecorator',
+              'x-component': 'VoidTable.Column',
+              properties: {
+                createdBy: {
+                  'x-component': 'CollectionField',
+                  'x-read-pretty': true,
+                  properties: {
+                    item: {
+                      'x-component': 'RecordPicker.SelectedItem',
+                      properties: {
+                        drawer1: {
+                          'x-component': 'Action.Drawer',
+                          type: 'void',
+                          title: 'Drawer Title',
+                          properties: {
+                            hello1: {
+                              'x-content': 'Hello',
+                              title: 'T1',
+                            },
+                            footer1: {
+                              'x-component': 'Action.Drawer.Footer',
+                              type: 'void',
+                              properties: {
+                                close1: {
+                                  type: 'void',
+                                  title: 'Close',
+                                  'x-component': 'Action',
+                                  'x-component-props': {
+                                    // useAction: '{{ useCloseAction }}',
+                                  },
+                                },
+                              },
+                            },
+                          },
+                        },
+                      },
+                    },
+                  },
+                },
+              },
+            },
           },
         },
       },
     },
   },
-};
-
-const useColumnSchema = () => {
-  const { getField } = useCollection();
-  const columnSchema = useFieldSchema();
-  const fieldSchema = columnSchema.reduceProperties((buf, s) => {
-    if (s['x-component'] === 'CollectionField') {
-      return s;
-    }
-    return buf;
-  }, null);
-  if (!fieldSchema) {
-    return;
-  }
-  const collectionField = getField(fieldSchema.name);
-  return { columnSchema, fieldSchema, collectionField };
-};
-
-const TableColumnDecorator = (props) => {
-  const field = useField();
-  const { columnSchema, fieldSchema, collectionField } = useColumnSchema();
-  const { refresh } = useDesignable();
-  useEffect(() => {
-    if (field.title) {
-      return;
-    }
-    if (!fieldSchema) {
-      return;
-    }
-    if (collectionField?.uiSchema?.title) {
-      field.title = collectionField?.uiSchema?.title;
-    }
-  }, []);
-  return (
-    <>
-      {props.children}
-      <div
-        onClick={() => {
-          field.title = uid();
-          columnSchema.title = field.title = field.title;
-          refresh();
-          field.query(`.*.${fieldSchema.name}`).take((f) => {
-            f.componentProps.dateFormat = 'YYYY-MM-DD';
-          });
-        }}
-      >
-        Edit
-      </div>
-    </>
-  );
 };
 
 const collections = [
@@ -189,41 +182,57 @@ const collections = [
           },
         },
       },
+      {
+        type: 'belongsToMany',
+        name: 'createdBy',
+        target: 'users',
+        foreignKey: 'createdById',
+        uiSchema: {
+          type: 'array',
+          title: `创建人`,
+          // default: [
+          //   { id: 1, name: 'name1' },
+          //   { id: 2, name: 'name2' },
+          // ],
+          'x-decorator': 'FormItem',
+          'x-component': 'RecordPicker',
+        },
+      },
     ],
   },
 ];
 
-const ResourceActionContext = createContext(null);
-
-const ResourceActionProvider = (props) => {
-  const { name } = useCollection();
-  const { request } = props;
-  const service = useRequest(request);
-  return <ResourceActionContext.Provider value={{ service }}>{props.children}</ResourceActionContext.Provider>;
-};
-
-const useDataSourceFromRAC = (options: any) => {
-  const { service } = useContext(ResourceActionContext);
-  useEffect(() => {
-    if (!service.loading) {
-      options?.onSuccess(service.data);
-    }
-  }, [service.loading]);
-  return service;
-};
-
-const componets = { CollectionProvider, TableColumnDecorator, ResourceActionProvider, CollectionField };
+const SimpleSettingsForm = observer(() => {
+  const field = useField();
+  const fieldSchema = useFieldSchema();
+  return (
+    <div>
+      <Button
+        onClick={() => {
+          fieldSchema.parent['x-component-props']['request']['params']['pageSize'] = 20;
+          field.query('.').take((f) => {
+            f.componentProps.request.params.pageSize = 20;
+          });
+        }}
+      >
+        Edit
+      </Button>
+      <br />
+      <br />
+    </div>
+  );
+});
 
 export default () => {
   return (
     <APIClientProvider apiClient={apiClient}>
-      <CollectionManagerProvider collections={collections}>
-        <SchemaComponentProvider components={componets}>
-          <AntdSchemaComponentProvider>
-            <SchemaComponent schema={schema} scope={{ useDataSourceFromRAC }} />
-          </AntdSchemaComponentProvider>
-        </SchemaComponentProvider>
-      </CollectionManagerProvider>
+      <SchemaComponentProvider>
+        <AntdSchemaComponentProvider>
+          <CollectionManagerProvider collections={collections}>
+            <SchemaComponent schema={schema} components={{ SimpleSettingsForm }} />
+          </CollectionManagerProvider>
+        </AntdSchemaComponentProvider>
+      </SchemaComponentProvider>
     </APIClientProvider>
   );
 };
