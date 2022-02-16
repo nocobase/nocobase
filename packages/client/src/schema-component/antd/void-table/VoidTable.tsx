@@ -10,7 +10,7 @@ import { ArrayTable } from '../array-table';
 
 type VoidTableProps = TableProps<any> & {
   request?: any;
-  useDataSource?: (data?: any, options?: Options<any, any> & { uid?: string }) => Result<any, any>;
+  useDataSource?: (options?: Options<any, any> & { uid?: string }, props?: any) => Result<any, any>;
 };
 
 type VoidTableType = React.FC<VoidTableProps> & {
@@ -66,33 +66,36 @@ const useRequestProps = (props) => {
   };
 };
 
-const useDefDataSource = (props, options) => {
+const useDef = (options, props) => {
   return useRequest(useRequestProps(props), options);
 };
 
 export const VoidTable: VoidTableType = observer((props) => {
-  const { useDataSource = useDefDataSource } = props;
+  const { useDataSource = useDef } = props;
   const field = useField<Field>();
   const fieldSchema = useFieldSchema();
   const form = useMemo(() => createForm(), []);
   const f = useAttach(form.createArrayField({ name: fieldSchema.name }));
-  const result = useDataSource(props, {
-    uid: fieldSchema['x-uid'],
-    onSuccess(data) {
-      form.setValues({
-        [fieldSchema.name]: data?.data,
-      });
-      if (field?.componentProps?.pagination === false) {
-        return;
-      }
-      field.componentProps.pagination = field.componentProps.pagination || {};
-      if (data?.meta?.count) {
-        field.componentProps.pagination.total = data?.meta?.count;
-      }
-      field.componentProps.pagination.current = data?.meta?.page || 1;
-      field.componentProps.pagination.pageSize = data?.meta?.pageSize || 10;
+  const result = useDataSource(
+    {
+      uid: fieldSchema['x-uid'],
+      onSuccess(data) {
+        form.setValues({
+          [fieldSchema.name]: data?.data,
+        });
+        if (field?.componentProps?.pagination === false) {
+          return;
+        }
+        field.componentProps.pagination = field.componentProps.pagination || {};
+        if (data?.meta?.count) {
+          field.componentProps.pagination.total = data?.meta?.count;
+        }
+        field.componentProps.pagination.current = data?.meta?.page || 1;
+        field.componentProps.pagination.pageSize = data?.meta?.pageSize || 10;
+      },
     },
-  });
+    props,
+  );
   return (
     <AsyncDataProvider value={result}>
       <FormContext.Provider value={form}>

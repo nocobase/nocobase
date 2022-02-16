@@ -13,7 +13,7 @@ export interface FormProps {
   [key: string]: any;
 }
 
-export type FormUseValues = (props?: FormProps, opts?: Opts) => Result<any, any>;
+export type FormUseValues = (opts?: Opts, props?: FormProps) => Result<any, any>;
 
 const FormComponent: React.FC<FormProps> = (props) => {
   const { form, children, ...others } = props;
@@ -43,7 +43,7 @@ const useRequestProps = (props: any) => {
   };
 };
 
-const useDef = (props: FormProps = {}, opts: any = {}) => {
+const useDef = (opts: any = {}, props: FormProps = {}) => {
   return useRequest(useRequestProps(props), opts);
 };
 
@@ -51,13 +51,16 @@ export const Form: React.FC<FormProps> = observer((props) => {
   const { request, initialValue, useValues = useDef, ...others } = props;
   const fieldSchema = useFieldSchema();
   const form = useMemo(() => createForm(), []);
-  const { loading } = useValues(props, {
-    uid: fieldSchema['x-uid'],
-    async onSuccess(data) {
-      await form.reset();
-      form.setValues(data?.data);
+  const { loading } = useValues(
+    {
+      uid: fieldSchema['x-uid'],
+      async onSuccess(data) {
+        await form.reset();
+        form.setValues(data?.data);
+      },
     },
-  });
+    props,
+  );
   return (
     <Spin spinning={loading}>
       <FormComponent form={form} {...others} />

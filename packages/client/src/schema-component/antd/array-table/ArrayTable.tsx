@@ -2,6 +2,7 @@ import { ArrayField } from '@formily/core';
 import { observer, RecursionField, Schema, useField, useFieldSchema } from '@formily/react';
 import { Table, TableColumnProps } from 'antd';
 import React from 'react';
+import { RecordProvider } from '../../../';
 import { useComponent } from '../../hooks';
 
 const isColumnComponent = (schema: Schema) => {
@@ -24,7 +25,11 @@ const useTableColumns = () => {
         dataIndex: s.name,
         render: (v, record) => {
           const index = field.value?.indexOf(record);
-          return <RecursionField schema={s} name={index} onlyRenderProperties />;
+          return (
+            <RecordProvider record={record}>
+              <RecursionField schema={s} name={index} onlyRenderProperties />
+            </RecordProvider>
+          );
         },
       } as TableColumnProps<any>;
     });
