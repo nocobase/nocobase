@@ -31,7 +31,7 @@ export class UiSchemaRepository extends Repository {
   }
 
   get uiSchemaTreePathTableName() {
-    const model = this.database.getCollection('ui_schema_tree_path').model;
+    const model = this.database.getCollection('uiSchemaTreePath').model;
     if (this.database.sequelize.getDialect() === 'postgres') {
       return `"${model.tableName}"`;
     }
@@ -200,7 +200,7 @@ export class UiSchemaRepository extends Repository {
   }
 
   treeCollection() {
-    return this.database.getCollection('ui_schema_tree_path');
+    return this.database.getCollection('uiSchemaTreePath');
   }
 
   async patch(newSchema: any, options?) {
@@ -266,9 +266,7 @@ export class UiSchemaRepository extends Repository {
     const db = this.database;
 
     const countResult = await db.sequelize.query(
-      `SELECT COUNT(*) as count FROM ${
-        db.getCollection('ui_schema_tree_path').model.tableName
-      } where ancestor = :ancestor and depth  = 1`,
+      `SELECT COUNT(*) as count FROM ${this.uiSchemaTreePathTableName} where ancestor = :ancestor and depth  = 1`,
       {
         replacements: {
           ancestor: uid,
@@ -287,7 +285,7 @@ export class UiSchemaRepository extends Repository {
   }
 
   async findParentUid(uid, transaction?) {
-    const parent = await this.database.getRepository('ui_schema_tree_path').findOne({
+    const parent = await this.database.getRepository('uiSchemaTreePath').findOne({
       filter: {
         descendant: uid,
         depth: 1,
@@ -594,7 +592,7 @@ export class UiSchemaRepository extends Repository {
     const { transaction } = options;
 
     const db = this.database;
-    const treeCollection = db.getCollection('ui_schema_tree_path');
+    const treeCollection = db.getCollection('uiSchemaTreePath');
 
     const uid = schema['x-uid'];
     const name = schema['name'];

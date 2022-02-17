@@ -1,4 +1,4 @@
-import { UiSchemaRepository } from '@nocobase/plugin-ui-schema-storage';
+import { UiSchemaRepository } from '../../repository';
 
 export async function removeParentsIfNoChildren({ schemaInstance, db, options, params }) {
   const { transaction, oldParentUid } = options;

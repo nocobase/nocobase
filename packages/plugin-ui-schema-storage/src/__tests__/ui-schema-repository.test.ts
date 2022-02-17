@@ -35,7 +35,7 @@ describe('ui_schema repository', () => {
       },
     });
     repository = db.getCollection('uiSchemas').repository as UiSchemaRepository;
-    treePathCollection = db.getCollection('ui_schema_tree_path');
+    treePathCollection = db.getCollection('uiSchemaTreePath');
   });
 
   it('should be registered', async () => {
