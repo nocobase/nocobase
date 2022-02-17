@@ -1,10 +1,6 @@
 import { omit } from 'lodash';
-import { Sequelize, ModelCtor, Model, DataTypes, Utils } from 'sequelize';
+import { BelongsToOptions as SequelizeBelongsToOptions, Utils } from 'sequelize';
 import { BaseRelationFieldOptions, RelationField } from './relation-field';
-import { HasInverseField } from './has-inverse-field';
-import { BaseColumnFieldOptions, Field } from './field';
-import { HasManyField } from './has-many-field';
-import { BelongsToOptions as SequelizeBelongsToOptions } from 'sequelize/types/lib/associations/belongs-to';
 
 export class BelongsToField extends RelationField {
   static type = 'belongsTo';

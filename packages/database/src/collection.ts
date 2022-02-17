@@ -1,13 +1,10 @@
 import merge from 'deepmerge';
 import { EventEmitter } from 'events';
 import { default as lodash, default as _ } from 'lodash';
-import { Model, ModelCtor, ModelOptions } from 'sequelize';
-import { SyncOptions } from 'sequelize/types/lib/sequelize';
+import { Model, ModelCtor, ModelOptions, SyncOptions } from 'sequelize';
 import { Database } from './database';
 import { Field, FieldOptions } from './fields';
 import { Repository } from './repository';
-
-const { hooks } = require('sequelize/lib/hooks');
 
 export type RepositoryType = typeof Repository;
 
