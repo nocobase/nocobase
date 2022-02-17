@@ -1,7 +1,7 @@
-import Database from './database';
 import lodash from 'lodash';
 import { Model } from 'sequelize';
-import { SequelizeHooks } from 'sequelize/types/lib/hooks';
+import type { SequelizeHooks } from 'sequelize/types/lib/hooks';
+import Database from './database';
 
 const { hooks } = require('sequelize/lib/hooks');
 
