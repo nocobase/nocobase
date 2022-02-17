@@ -2,9 +2,9 @@ import { ISchema, observer, Schema, useFieldSchema } from '@formily/react';
 import { uid } from '@formily/shared';
 import { Switch } from 'antd';
 import React from 'react';
+import { useCollection } from '../../../collection-manager/hooks';
 import { SchemaInitializer, SchemaInitializerItemOptions } from '../../../schema-initializer';
 import { useDesignable } from '../../hooks';
-import { useCollection } from '../../../collection-manager/hooks';
 
 const useFormItemInitializerFields = () => {
   const { fields } = useCollection();
@@ -18,7 +18,9 @@ const useFormItemInitializerFields = () => {
         type: field.type,
         title: field?.uiSchema?.title ?? field.name,
         'x-component': field?.uiSchema?.['x-component'],
+        'x-component-props': field?.uiSchema?.['x-component-props'],
         'x-decorator': field?.uiSchema?.['FormItem'] ?? 'FormItem',
+        'x-decorator-props': field?.uiSchema?.['x-decorator-props'],
         'x-collection-field': field.name,
       },
     };

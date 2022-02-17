@@ -81,6 +81,7 @@ const useDefDataSource = (props, options) => {
 };
 
 export const Calendar: any = observer((props: any) => {
+  debugger;
   const {
     useDataSource = useDefDataSource,
     fieldNames = {
@@ -106,9 +107,11 @@ export const Calendar: any = observer((props: any) => {
   const result = useDataSource(props, {
     uid: fieldSchema['x-uid'],
     onSuccess(data) {
+      debugger;
       field.setValue(toEvents(data?.data, fieldNames));
     },
   });
+  debugger;
   return (
     <AsyncDataProvider value={result}>
       <CalendarContext.Provider value={{ field, props }}>
@@ -132,7 +135,7 @@ export const Calendar: any = observer((props: any) => {
           <BigCalendar
             popup
             selectable
-            events={Array.isArray(field.value.slice()) ? field.value.slice() : []}
+            events={Array.isArray(result?.data?.data) ? result?.data?.data : []}
             views={['month', 'week', 'day']}
             step={60}
             showMultiDayTimes
