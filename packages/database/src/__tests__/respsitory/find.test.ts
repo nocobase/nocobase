@@ -71,6 +71,16 @@ describe('repository find', () => {
     });
   });
 
+  it('append with associations', async () => {
+    const users = await User.repository.findAndCount({
+      appends: ['posts', 'posts.comments'],
+    });
+
+    const user = users[0][0];
+    // @ts-ignore
+    expect(user.get('posts')[0].get('comments')).toBeDefined();
+  });
+
   describe('findOne', () => {
     test('find one with attribute', async () => {
       const user = await User.repository.findOne({

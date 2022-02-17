@@ -195,7 +195,18 @@ export class OptionsParser {
       //  appends: ['posts']
       //  appends: ['posts.title']
       //  All of these can be seen as last level
-      const lastLevel = appendFields.length <= 2;
+      let lastLevel: boolean = false;
+
+      if (appendFields.length == 1) {
+        lastLevel = true;
+      }
+
+      if (appendFields.length == 2) {
+        const associationModel = associations[appendFields[0]].target;
+        if (associationModel.rawAttributes[appendFields[1]]) {
+          lastLevel = true;
+        }
+      }
 
       // find association index
       if (queryParams['include'] == undefined) {
@@ -230,8 +241,10 @@ export class OptionsParser {
             attributes = [];
           }
 
+          const attributeName = appendFields[1];
+
           // push field to it
-          attributes.push(appendFields[1]);
+          attributes.push(attributeName);
         } else {
           // if attributes is empty array, change it to object
           if (Array.isArray(attributes) && attributes.length == 0) {
