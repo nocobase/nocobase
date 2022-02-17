@@ -727,7 +727,91 @@ describe('ui_schema repository', () => {
     });
   });
 
-  it('should insertAdjacent with removeParent', async () => {
+  it('should insertInner with removeParent', async () => {
+    const schema = {
+      'x-uid': 'A',
+      name: 'A',
+      properties: {
+        B: {
+          'x-uid': 'B',
+          properties: {
+            C: {
+              'x-uid': 'C',
+              properties: {
+                D: {
+                  'x-uid': 'D',
+                },
+              },
+            },
+          },
+        },
+        E: {
+          'x-uid': 'E',
+        },
+      },
+    };
+
+    await repository.insert(schema);
+
+    await repository.insertAfterBegin(
+      'E',
+      {
+        'x-uid': 'F',
+        name: 'F',
+        properties: {
+          G: {
+            'x-uid': 'G',
+            properties: {
+              D: {
+                'x-uid': 'D',
+              },
+            },
+          },
+        },
+      },
+      {
+        removeParentsIfNoChildren: true,
+      },
+    );
+
+    const A = await repository.getJsonSchema('A');
+
+    expect(A).toEqual({
+      properties: {
+        E: {
+          properties: {
+            F: {
+              properties: {
+                G: {
+                  properties: {
+                    D: {
+                      'x-uid': 'D',
+                      'x-async': false,
+                      'x-index': 1,
+                    },
+                  },
+                  'x-uid': 'G',
+                  'x-async': false,
+                  'x-index': 1,
+                },
+              },
+              'x-uid': 'F',
+              'x-async': false,
+              'x-index': 1,
+            },
+          },
+          'x-uid': 'E',
+          'x-async': false,
+          'x-index': 2,
+        },
+      },
+      name: 'A',
+      'x-uid': 'A',
+      'x-async': false,
+    });
+  });
+
+  it('should insertBeside with removeParent', async () => {
     const schema = {
       'x-uid': 'A',
       name: 'A',

@@ -501,7 +501,7 @@ export class UiSchemaRepository extends Repository {
       position,
     };
 
-    const insertedNodes = await this.insertNodes(nodes);
+    const insertedNodes = await this.insertNodes(nodes, options);
     return await this.getJsonSchema(insertedNodes[0].get('uid'));
   }
 
