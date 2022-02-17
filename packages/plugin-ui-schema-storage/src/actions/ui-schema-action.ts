@@ -53,10 +53,13 @@ export const uiSchemaActions = {
   },
 
   async insertAdjacent(ctx: Context, next) {
-    const { resourceIndex, position, values } = ctx.action.params;
+    const { resourceIndex, position, values, removeParentsIfNoChildren, breakRemoveOn } = ctx.action.params;
     const repository = getRepositoryFromCtx(ctx);
 
-    ctx.body = await repository.insertAdjacent(position, resourceIndex, values);
+    ctx.body = await repository.insertAdjacent(position, resourceIndex, values, {
+      removeParentsIfNoChildren,
+      breakRemoveOn,
+    });
 
     await next();
   },
@@ -68,9 +71,12 @@ export const uiSchemaActions = {
 
 function insertPositionActionBuilder(position: 'beforeBegin' | 'afterBegin' | 'beforeEnd' | 'afterEnd') {
   return async function (ctx: Context, next) {
-    const { resourceIndex, values } = ctx.action.params;
+    const { resourceIndex, values, removeParentsIfNoChildren, breakRemoveOn } = ctx.action.params;
     const repository = getRepositoryFromCtx(ctx);
-    ctx.body = await repository.insertAdjacent(position, resourceIndex, values);
+    ctx.body = await repository.insertAdjacent(position, resourceIndex, values, {
+      removeParentsIfNoChildren,
+      breakRemoveOn,
+    });
     await next();
   };
 }
