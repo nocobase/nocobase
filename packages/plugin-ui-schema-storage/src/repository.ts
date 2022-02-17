@@ -457,14 +457,10 @@ export class UiSchemaRepository extends Repository {
   }
 
   async insertBeside(targetUid: string, schema: any, side: 'before' | 'after', options?: InsertAdjacentOptions) {
-    const targetParent = await this.treeCollection().repository.findOne({
-      filter: {
-        descendant: targetUid,
-        depth: 1,
-      },
-    });
+    const targetParent = await this.findParentUid(targetUid);
 
     const db = this.database;
+
     const treeTable = this.uiSchemaTreePathTableName;
 
     const typeQuery = await db.sequelize.query(`SELECT type from ${treeTable} WHERE ancestor = :uid AND depth = 0;`, {
@@ -479,7 +475,7 @@ export class UiSchemaRepository extends Repository {
     const rootNode = nodes[0];
 
     rootNode.childOptions = {
-      parentUid: targetParent.get('ancestor') as string,
+      parentUid: targetParent,
       type: typeQuery[0]['type'],
       position: {
         type: side,
@@ -843,6 +839,12 @@ WHERE TreeTable.depth = 1 AND  TreeTable.ancestor = :ancestor and TreeTable.sort
 
       // move node to new parent
       if (oldParentUid !== null && oldParentUid !== parentUid) {
+        await this.database.emitAsync('uiSchemaMove', savedNode, {
+          transaction,
+          oldParentUid,
+          parentUid,
+        });
+
         if (options.removeParentsIfNoChildren) {
           await this.recursivelyRemoveIfNoChildren({
             transaction,
