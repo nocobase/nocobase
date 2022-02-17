@@ -22,7 +22,7 @@ export const ActionDrawer: ComposedActionDrawer = observer((props) => {
       {createPortal(
         <Drawer
           width={'50%'}
-          title={schema.title}
+          title={field.title}
           {...others}
           destroyOnClose
           visible={visible}

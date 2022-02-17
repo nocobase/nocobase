@@ -3,37 +3,24 @@ import { uid } from '@formily/shared';
 import { Switch } from 'antd';
 import React from 'react';
 import { SchemaInitializer, SchemaInitializerItemOptions } from '../..';
+import { useCollection } from '../../../collection-manager';
 import { useDesignable } from '../../../schema-component';
 
 const useFormItemInitializerFields = () => {
-  return [
-    {
+  const { name, fields } = useCollection();
+  return fields?.map((field) => {
+    return {
       type: 'item',
-      title: 'Name',
+      title: field?.uiSchema?.title || field.name,
       component: InitializeFormItem,
       schema: {
-        name: 'name',
-        type: 'string',
-        title: 'Name',
-        'x-component': 'Input',
+        name: field.name,
+        'x-component': 'CollectionField',
         'x-decorator': 'FormItem',
-        'x-collection-field': 'posts.name',
+        'x-collection-field': `${name}.${field.name}`,
       },
-    },
-    {
-      type: 'item',
-      title: 'Title',
-      component: InitializeFormItem,
-      schema: {
-        name: 'title',
-        type: 'string',
-        title: 'Title',
-        'x-component': 'Input',
-        'x-decorator': 'FormItem',
-        'x-collection-field': 'posts.title',
-      },
-    },
-  ] as SchemaInitializerItemOptions[];
+    } as SchemaInitializerItemOptions;
+  });
 };
 
 const gridRowColWrap = (schema: ISchema) => {

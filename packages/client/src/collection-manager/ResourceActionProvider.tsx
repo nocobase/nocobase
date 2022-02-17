@@ -1,5 +1,6 @@
 import { Result } from 'ahooks/lib/useRequest/src/types';
 import React, { createContext, useContext, useEffect } from 'react';
+import { useCollectionManager } from '.';
 import { CollectionProvider, useRecord } from '..';
 import { useAPIClient, useRequest } from '../api-client';
 
@@ -14,13 +15,17 @@ interface ResourceActionProviderProps {
 const ResourceContext = createContext<any>(null);
 
 const CollectionResourceActionProvider = (props) => {
-  const { collection, request, uid } = props;
+  let { collection, request, uid } = props;
+  const { get } = useCollectionManager();
   const api = useAPIClient();
-  const service = useRequest(request, {
-    uid,
-    // refreshDeps: [request],
-  });
+  const service = useRequest(request, { uid });
   const resource = api.resource(request.resource);
+  if (typeof collection === 'string') {
+    collection = get(collection);
+  }
+  if (!collection) {
+    return null;
+  }
   return (
     <ResourceContext.Provider value={{ type: 'collection', resource, collection }}>
       <ResourceActionContext.Provider value={service}>
@@ -31,18 +36,19 @@ const CollectionResourceActionProvider = (props) => {
 };
 
 const AssociationResourceActionProvider = (props) => {
-  const { collection, association, request, uid } = props;
+  let { collection, association, request, uid } = props;
+  const { get } = useCollectionManager();
   const api = useAPIClient();
   const record = useRecord();
   const resourceOf = record[association.sourceKey];
-  const service = useRequest(
-    { resourceOf, ...request },
-    {
-      uid,
-      // refreshDeps: [request, resourceOf],
-    },
-  );
+  const service = useRequest({ resourceOf, ...request }, { uid });
   const resource = api.resource(request.resource, resourceOf);
+  if (typeof collection === 'string') {
+    collection = get(collection);
+  }
+  if (!collection) {
+    return null;
+  }
   return (
     <ResourceContext.Provider value={{ type: 'association', resource, association }}>
       <ResourceActionContext.Provider value={service}>
