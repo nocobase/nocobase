@@ -3,6 +3,7 @@
  */
 
 import { useField, useFieldSchema, useForm } from '@formily/react';
+import { observable } from '@formily/reactive';
 import { uid } from '@formily/shared';
 import {
   AntdSchemaComponentProvider,
@@ -16,12 +17,14 @@ import {
 import React from 'react';
 import defaultValues from './defaultValues';
 
+const dataSource = observable(defaultValues);
 const schema = {
-  type: 'array',
+  type: 'void',
   name: 'calendar1',
   'x-component': 'Calendar',
-  'x-component-props': {},
-  default: defaultValues,
+  'x-component-props': {
+    dataSource: dataSource,
+  },
   properties: {
     toolBar: {
       type: 'void',
@@ -93,6 +96,8 @@ const useOkAction = () => {
       console.log(form.values, fieldSchema, field, data);
       // data?.data?.push({ ...form.values, start: new Date(form.values.start), end: new Date(form.values.end) });
       debugger;
+      dataSource.push({ ...form.values, start: new Date(form.values.start), end: new Date(form.values.end) });
+      schema['x-component-props']['dataSource'] = dataSource;
       dataRefresh();
     },
   };
