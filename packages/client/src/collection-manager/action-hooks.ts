@@ -32,6 +32,18 @@ export const useCreateAction = () => {
   };
 };
 
+export const useCreateActionWithoutRefresh = () => {
+  const form = useForm();
+  const { resource } = useResourceContext();
+  return {
+    async run() {
+      await form.submit();
+      await resource.create({ values: form.values });
+      await form.reset();
+    },
+  };
+};
+
 export const useUpdateAction = () => {
   const form = useForm();
   const ctx = useActionContext();

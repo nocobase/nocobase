@@ -1,0 +1,99 @@
+import { TableOutlined } from '@ant-design/icons';
+import { ISchema } from '@formily/react';
+import React from 'react';
+import { useTranslation } from 'react-i18next';
+import { SchemaInitializer } from '../..';
+import { useCollectionManager } from '../../../collection-manager';
+
+const createSchema = (collectionName) => {
+  const schema: ISchema = {
+    type: 'void',
+    'x-collection': 'collections',
+    'x-decorator': 'ResourceActionProvider',
+    'x-decorator-props': {
+      collection: collectionName,
+      request: {
+        resource: collectionName,
+        action: 'list',
+        params: {
+          perPage: 20,
+          pageSize: 20,
+          filter: {},
+          // sort: ['sort'],
+          appends: [],
+        },
+      },
+    },
+    'x-component': 'CardItem',
+    properties: {
+      actions: {
+        type: 'void',
+        'x-component': 'ActionBar',
+        'x-action-initializer': 'TableActionInitializer',
+        properties: {},
+      },
+      table1: {
+        type: 'void',
+        'x-component': 'VoidTable',
+        'x-component-props': {
+          rowKey: 'id',
+          rowSelection: {
+            type: 'checkbox',
+          },
+          useDataSource: '{{ useDataSourceFromRAC }}',
+        },
+        'x-column-initializer': 'TableColumnInitializer',
+        properties: {
+          actions: {
+            type: 'void',
+            title: 'Actions',
+            'x-decorator': 'TableColumnActionBar',
+            'x-component': 'VoidTable.Column',
+            'x-action-initializer': 'TableColumnActionInitializer',
+            properties: {
+              actions: {
+                type: 'void',
+                'x-component': 'Space',
+                'x-component-props': {
+                  split: '|',
+                },
+                properties: {},
+              },
+            },
+          },
+        },
+      },
+    },
+  };
+  return schema;
+};
+
+const itemWrap = SchemaInitializer.itemWrap;
+
+export const TableBlock = itemWrap((props) => {
+  const { insert } = props;
+  const { collections } = useCollectionManager();
+  const { t } = useTranslation();
+  return (
+    <SchemaInitializer.Item
+      {...props}
+      icon={<TableOutlined />}
+      onClick={({ item }) => {
+        insert(createSchema(item.name));
+      }}
+      items={[
+        {
+          type: 'itemGroup',
+          title: t('Select data source'),
+          children: collections?.map((item) => {
+            return {
+              type: 'item',
+              name: item.name,
+              title: item.title,
+            };
+          }),
+        },
+      ]}
+    />
+  );
+});

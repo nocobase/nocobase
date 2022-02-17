@@ -8,11 +8,11 @@ import { useCollection, useDesignable } from '../../..';
 const useTableColumnInitializerFields = () => {
   const { name, fields } = useCollection();
   return fields
-    .filter((field) => field?.uiSchema?.title)
+    // .filter((field) => field?.uiSchema?.title)
     .map((field) => {
       return {
         type: 'item',
-        title: field?.uiSchema?.title,
+        title: field?.uiSchema?.title || field.name,
         schema: {
           name: field.name,
           'x-collection-field': `${name}.${field.name}`,

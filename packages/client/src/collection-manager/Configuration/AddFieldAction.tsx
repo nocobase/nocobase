@@ -32,8 +32,10 @@ const getSchema = (schema: IField, useAction): ISchema => {
             'x-component': 'CollectionField',
             'x-decorator': 'FormItem',
           },
-          title: {
-            'x-component': 'CollectionField',
+          'uiSchema.title': {
+            type: 'number',
+            title: '字段名称',
+            'x-component': 'Input',
             'x-decorator': 'FormItem',
           },
           name: {

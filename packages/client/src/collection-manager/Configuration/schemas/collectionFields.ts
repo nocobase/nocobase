@@ -72,7 +72,7 @@ export const collectionFieldSchema: ISchema = {
         pageSize: 5,
         filter: {},
         sort: ['sort'],
-        appends: [],
+        appends: ['uiSchema'],
       },
     },
   },
@@ -114,12 +114,12 @@ export const collectionFieldSchema: ISchema = {
       properties: {
         column1: {
           type: 'void',
-          'x-decorator': 'TableColumnDecorator',
+          title: '字段名称',
           'x-component': 'VoidTable.Column',
           properties: {
-            title: {
+            'uiSchema.title': {
               type: 'number',
-              'x-component': 'CollectionField',
+              'x-component': 'Input',
               'x-read-pretty': true,
             },
           },

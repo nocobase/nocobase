@@ -73,8 +73,50 @@ export const TableActionInitializer = observer((props: any) => {
               title: t('Add new'),
               component: InitializeAction,
               schema: {
+                type: 'void',
                 title: '{{ t("Add new") }}',
                 'x-action': 'create',
+                'x-component': 'Action',
+                'x-component-props': {
+                  type: 'primary',
+                },
+                properties: {
+                  drawer: {
+                    type: 'void',
+                    title: '{{ t("Add new record") }}',
+                    'x-component': 'Action.Drawer',
+                    'x-decorator': 'Form',
+                    properties: {
+                      grid: {
+                        type: 'void',
+                        'x-component': 'Grid',
+                        'x-item-initializer': 'FormItemInitializer',
+                        properties: {},
+                      },
+                      footer: {
+                        type: 'void',
+                        'x-component': 'Action.Drawer.Footer',
+                        properties: {
+                          action1: {
+                            title: '{{ t("Cancel") }}',
+                            'x-component': 'Action',
+                            'x-component-props': {
+                              useAction: '{{ useCancelAction }}',
+                            },
+                          },
+                          action2: {
+                            title: '{{ t("Submit") }}',
+                            'x-component': 'Action',
+                            'x-component-props': {
+                              type: 'primary',
+                              useAction: '{{ useCreateAction }}',
+                            },
+                          },
+                        },
+                      },
+                    },
+                  },
+                },
               },
             },
             {

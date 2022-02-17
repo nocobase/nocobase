@@ -31,6 +31,30 @@ const useCurrentActionSchema = (action: string) => {
   };
 };
 
+const InitializeViewAction = SchemaInitializer.itemWrap((props) => {
+  const { item, insert } = props;
+  const { exists, remove } = useCurrentActionSchema(item.schema['x-action']);
+  return (
+    <SchemaInitializer.Item
+      onClick={() => {
+        console.log('InitializeAction', insert);
+        if (exists) {
+          return remove();
+        }
+        insert({
+          type: 'void',
+          'x-component': 'Action.Link',
+          ...item.schema,
+        });
+      }}
+    >
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        {item.title} <Switch style={{ marginLeft: 20 }} size={'small'} checked={exists} />
+      </div>
+    </SchemaInitializer.Item>
+  );
+});
+
 const InitializeAction = SchemaInitializer.itemWrap((props) => {
   const { item, insert } = props;
   const { exists, remove } = useCurrentActionSchema(item.schema['x-action']);
@@ -89,7 +113,7 @@ export const TableColumnActionInitializer = observer((props: any) => {
             {
               type: 'item',
               title: t('View'),
-              component: InitializeAction,
+              component: InitializeViewAction,
               schema: {
                 title: '{{ t("View") }}',
                 type: 'void',
@@ -101,7 +125,31 @@ export const TableColumnActionInitializer = observer((props: any) => {
                     type: 'void',
                     'x-component': 'Action.Drawer',
                     title: '{{ t("View record") }}',
-                    properties: {},
+                    properties: {
+                      tabs: {
+                        type: 'void',
+                        'x-component': 'Tabs',
+                        'x-component-props': {},
+                        properties: {
+                          tab1: {
+                            type: 'void',
+                            title: '详情',
+                            'x-component': 'Tabs.TabPane',
+                            'x-component-props': {},
+                            properties: {
+                              grid: {
+                                type: 'void',
+                                'x-decorator': 'Form',
+                                'x-component': 'Grid',
+                                'x-read-pretty': true,
+                                'x-item-initializer': 'RecordBlockInitializer',
+                                properties: {},
+                              },
+                            },
+                          },
+                        },
+                      },
+                    },
                   },
                 },
               },
@@ -124,7 +172,7 @@ export const TableColumnActionInitializer = observer((props: any) => {
                     properties: {},
                   },
                 },
-              }
+              },
             },
             {
               type: 'item',
