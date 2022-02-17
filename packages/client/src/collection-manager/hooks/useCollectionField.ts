@@ -11,7 +11,6 @@ export const useCollectionField = () => {
   const ctx = useContext(CollectionFieldContext);
   const resourceName = `${ctx?.collectinName || collection?.name}.${ctx.name}`;
   const resource = api?.resource(resourceName, record[ctx.sourceKey]);
-  console.log({ resourceName });
   return {
     ...ctx,
     resource,

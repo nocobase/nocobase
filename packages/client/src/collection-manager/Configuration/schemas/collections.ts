@@ -1,9 +1,11 @@
 import { ISchema } from '@formily/react';
+import { CollectionOptions } from '../../types';
 import { collectionFieldSchema } from './collectionFields';
 
-const collection = {
+const collection: CollectionOptions = {
   name: 'collections',
   filterTargetKey: 'name',
+  targetKey: 'name',
   fields: [
     {
       type: 'integer',
@@ -14,7 +16,7 @@ const collection = {
         type: 'number',
         'x-component': 'Input',
         required: true,
-      } as ISchema,
+      },
     },
     {
       type: 'string',
@@ -25,7 +27,7 @@ const collection = {
         type: 'string',
         'x-component': 'Input',
         description: '使用英文',
-      } as ISchema,
+      },
     },
     {
       type: 'hasMany',
@@ -47,9 +49,7 @@ export const collectionSchema: ISchema = {
       'x-collection': 'collections',
       'x-decorator': 'ResourceActionProvider',
       'x-decorator-props': {
-        collection: {
-          targetKey: 'name',
-        },
+        collection,
         request: {
           resource: 'collections',
           action: 'list',
@@ -61,10 +61,10 @@ export const collectionSchema: ISchema = {
           },
         },
       },
-      'x-component': 'CollectionProvider',
-      'x-component-props': {
-        collection,
-      },
+      // 'x-component': 'CollectionProvider',
+      // 'x-component-props': {
+      //   collection,
+      // },
       properties: {
         actions: {
           type: 'void',
@@ -113,7 +113,7 @@ export const collectionSchema: ISchema = {
                           'x-component': 'Action',
                           'x-component-props': {
                             type: 'primary',
-                            useAction: '{{ useCreateAction }}',
+                            useAction: '{{ useCreateActionAndRefreshCM }}',
                           },
                         },
                       },
@@ -201,7 +201,7 @@ export const collectionSchema: ISchema = {
                           'x-component': 'Action.Drawer',
                           'x-decorator': 'Form',
                           'x-decorator-props': {
-                            useValues: '{{ useValues }}',
+                            useValues: '{{ useValuesFromRecord }}',
                           },
                           title: 'Drawer Title',
                           properties: {
@@ -230,7 +230,7 @@ export const collectionSchema: ISchema = {
                                   'x-component': 'Action',
                                   'x-component-props': {
                                     type: 'primary',
-                                    useAction: '{{ useUpdateAction }}',
+                                    useAction: '{{ useUpdateActionAndRefreshCM }}',
                                   },
                                 },
                               },
@@ -244,7 +244,7 @@ export const collectionSchema: ISchema = {
                       title: '删除',
                       'x-component': 'Action.Link',
                       'x-component-props': {
-                        useAction: '{{ useDestroyAction }}',
+                        useAction: '{{ useDestroyActionAndRefreshCM }}',
                       },
                     },
                   },

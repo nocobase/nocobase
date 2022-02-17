@@ -5,9 +5,7 @@ import { collectionSchema } from './schemas/collections';
 export const ConfigurationTable = () => {
   return (
     <div>
-      <SchemaComponent
-        schema={collectionSchema}
-      />
+      <SchemaComponent schema={collectionSchema} />
     </div>
   );
 };

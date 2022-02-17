@@ -54,12 +54,12 @@ export class UiRoutesStoragePlugin extends Plugin {
                               grid1: {
                                 type: 'void',
                                 'x-component': 'Grid',
-                                'x-item-initializer': 'Grid.AddBlockItem',
+                                'x-item-initializer': 'BlockInitializer',
                                 properties: {},
                               },
                             },
-                          }
-                        }
+                          },
+                        },
                       },
                       item8: {
                         type: 'void',

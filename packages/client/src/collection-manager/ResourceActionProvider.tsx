@@ -1,6 +1,6 @@
 import { Result } from 'ahooks/lib/useRequest/src/types';
 import React, { createContext, useContext, useEffect } from 'react';
-import { useRecord } from '..';
+import { CollectionProvider, useRecord } from '..';
 import { useAPIClient, useRequest } from '../api-client';
 
 export const ResourceActionContext = createContext<Result<any, any>>(null);
@@ -18,18 +18,20 @@ const CollectionResourceActionProvider = (props) => {
   const api = useAPIClient();
   const service = useRequest(request, {
     uid,
-    refreshDeps: [request],
+    // refreshDeps: [request],
   });
   const resource = api.resource(request.resource);
   return (
     <ResourceContext.Provider value={{ type: 'collection', resource, collection }}>
-      <ResourceActionContext.Provider value={service}>{props.children}</ResourceActionContext.Provider>
+      <ResourceActionContext.Provider value={service}>
+        <CollectionProvider collection={collection}>{props.children}</CollectionProvider>
+      </ResourceActionContext.Provider>
     </ResourceContext.Provider>
   );
 };
 
 const AssociationResourceActionProvider = (props) => {
-  const { association, request, uid } = props;
+  const { collection, association, request, uid } = props;
   const api = useAPIClient();
   const record = useRecord();
   const resourceOf = record[association.sourceKey];
@@ -37,13 +39,15 @@ const AssociationResourceActionProvider = (props) => {
     { resourceOf, ...request },
     {
       uid,
-      refreshDeps: [request, resourceOf],
+      // refreshDeps: [request, resourceOf],
     },
   );
   const resource = api.resource(request.resource, resourceOf);
   return (
     <ResourceContext.Provider value={{ type: 'association', resource, association }}>
-      <ResourceActionContext.Provider value={service}>{props.children}</ResourceActionContext.Provider>
+      <ResourceActionContext.Provider value={service}>
+        <CollectionProvider collection={collection}>{props.children}</CollectionProvider>
+      </ResourceActionContext.Provider>
     </ResourceContext.Provider>
   );
 };

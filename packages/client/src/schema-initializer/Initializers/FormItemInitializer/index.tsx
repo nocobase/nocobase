@@ -2,8 +2,8 @@ import { ISchema, observer, Schema, useFieldSchema } from '@formily/react';
 import { uid } from '@formily/shared';
 import { Switch } from 'antd';
 import React from 'react';
-import { SchemaInitializer, SchemaInitializerItemOptions } from '../../../schema-initializer';
-import { useDesignable } from '../../hooks';
+import { SchemaInitializer, SchemaInitializerItemOptions } from '../..';
+import { useDesignable } from '../../../schema-component';
 
 const useFormItemInitializerFields = () => {
   return [
@@ -122,7 +122,7 @@ const InitializeTextFormItem = itemWrap((props) => {
   );
 });
 
-export const AddGridFormItem = observer((props: any) => {
+export const FormItemInitializer = observer((props: any) => {
   return (
     <SchemaInitializer.Button
       wrap={gridRowColWrap}

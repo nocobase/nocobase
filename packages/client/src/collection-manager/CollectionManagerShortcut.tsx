@@ -1,23 +1,10 @@
 import { DatabaseOutlined } from '@ant-design/icons';
-import { ISchema, useForm } from '@formily/react';
+import { ISchema } from '@formily/react';
 import { uid } from '@formily/shared';
 import React, { useState } from 'react';
 import { PluginManager } from '../plugin-manager';
-import { ActionContext, SchemaComponent, useActionContext } from '../schema-component';
-import { ConfigurationTable } from './Configuration';
-
-const useCloseAction = () => {
-  const { setVisible } = useActionContext();
-  const form = useForm();
-  return {
-    async run() {
-      setVisible(false);
-      form.submit((values) => {
-        console.log(values);
-      });
-    },
-  };
-};
+import { ActionContext, SchemaComponent } from '../schema-component';
+import { AddFieldAction, ConfigurationTable, EditFieldAction } from './Configuration';
 
 const schema: ISchema = {
   type: 'object',
@@ -46,7 +33,7 @@ export const CollectionManagerShortcut = () => {
           setVisible(true);
         }}
       />
-      <SchemaComponent scope={{ useCloseAction }} schema={schema} components={{ ConfigurationTable }} />
+      <SchemaComponent schema={schema} components={{ ConfigurationTable, AddFieldAction, EditFieldAction }} />
     </ActionContext.Provider>
   );
 };

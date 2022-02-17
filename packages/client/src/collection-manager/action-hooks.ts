@@ -1,4 +1,5 @@
 import { useForm } from '@formily/react';
+import { useCollectionManager } from '.';
 import { useRequest } from '../api-client';
 import { useRecord } from '../record-provider';
 import { useActionContext } from '../schema-component';
@@ -60,10 +61,43 @@ export const useDestroyAction = () => {
   };
 };
 
-export const useValues = (options) => {
+export const useValuesFromRecord = (options) => {
   const record = useRecord();
   return useRequest(() => Promise.resolve({ data: record }), {
     ...options,
     refreshDeps: [record],
   });
+};
+
+export const useCreateActionAndRefreshCM = () => {
+  const { run } = useCreateAction();
+  const { refreshCM } = useCollectionManager();
+  return {
+    async run() {
+      await run();
+      await refreshCM();
+    },
+  };
+};
+
+export const useUpdateActionAndRefreshCM = () => {
+  const { run } = useUpdateAction();
+  const { refreshCM } = useCollectionManager();
+  return {
+    async run() {
+      await run();
+      await refreshCM();
+    },
+  };
+};
+
+export const useDestroyActionAndRefreshCM = () => {
+  const { run } = useDestroyAction();
+  const { refreshCM } = useCollectionManager();
+  return {
+    async run() {
+      await run();
+      await refreshCM();
+    },
+  };
 };

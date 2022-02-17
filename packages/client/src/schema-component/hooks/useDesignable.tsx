@@ -475,7 +475,7 @@ export function useDesignable() {
       update(key);
       refresh();
     },
-    remove(schema: any, options?: RemoveOptions) {
+    remove(schema?: any, options?: RemoveOptions) {
       dn.remove(schema, options);
     },
     insertAdjacent(position: Position, schema: ISchema, options?: InsertAdjacentOptions) {

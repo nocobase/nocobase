@@ -1,14 +1,24 @@
 import { ISchema } from '@formily/react';
 
 export interface CollectionManagerOptions {
+  service?: any;
   interfaces?: any;
   collections?: any[];
+  refreshCM?: () => Promise<void>;
+}
+
+export interface FieldOptions {
+  type: string;
+  interface?: string;
+  uiSchema?: ISchema;
+  [key: string]: any;
 }
 
 export interface CollectionOptions {
   name?: string;
   filterTargetKey?: string;
-  fields?: any[];
+  targetKey?: string;
+  fields?: FieldOptions[];
 }
 
 export interface ICollectionProviderProps {

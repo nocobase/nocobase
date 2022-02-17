@@ -22,6 +22,16 @@ const collection = {
     },
     {
       type: 'string',
+      name: 'interface',
+      interface: 'input',
+      uiSchema: {
+        title: '字段类型',
+        type: 'string',
+        'x-component': 'Input',
+      },
+    },
+    {
+      type: 'string',
       name: 'title',
       interface: 'input',
       uiSchema: {
@@ -54,6 +64,7 @@ export const collectionFieldSchema: ISchema = {
       sourceKey: 'name',
       targetKey: 'name',
     },
+    collection,
     request: {
       resource: 'collections.fields',
       action: 'list',
@@ -65,10 +76,10 @@ export const collectionFieldSchema: ISchema = {
       },
     },
   },
-  'x-component': 'CollectionProvider',
-  'x-component-props': {
-    collection,
-  },
+  // 'x-component': 'CollectionProvider',
+  // 'x-component-props': {
+  //   collection,
+  // },
   properties: {
     actions: {
       type: 'void',
@@ -82,57 +93,14 @@ export const collectionFieldSchema: ISchema = {
         create: {
           type: 'void',
           title: '创建',
-          'x-component': 'Action',
+          'x-component': 'AddFieldAction',
           'x-component-props': {
             type: 'primary',
-          },
-          properties: {
-            drawer: {
-              type: 'void',
-              'x-component': 'Action.Drawer',
-              'x-decorator': 'Form',
-              title: 'Drawer Title',
-              properties: {
-                type: {
-                  'x-component': 'CollectionField',
-                  'x-decorator': 'FormItem',
-                },
-                title: {
-                  'x-component': 'CollectionField',
-                  'x-decorator': 'FormItem',
-                },
-                name: {
-                  'x-component': 'CollectionField',
-                  'x-decorator': 'FormItem',
-                },
-                footer: {
-                  type: 'void',
-                  'x-component': 'Action.Drawer.Footer',
-                  properties: {
-                    action1: {
-                      title: 'Cancel',
-                      'x-component': 'Action',
-                      'x-component-props': {
-                        useAction: '{{ useCancelAction }}',
-                      },
-                    },
-                    action2: {
-                      title: 'Submit',
-                      'x-component': 'Action',
-                      'x-component-props': {
-                        type: 'primary',
-                        useAction: '{{ useCreateAction }}',
-                      },
-                    },
-                  },
-                },
-              },
-            },
           },
         },
       },
     },
-    table1: {
+    table: {
       type: 'void',
       'x-uid': 'input',
       'x-component': 'VoidTable',
@@ -170,6 +138,18 @@ export const collectionFieldSchema: ISchema = {
         },
         column3: {
           type: 'void',
+          'x-decorator': 'TableColumnDecorator',
+          'x-component': 'VoidTable.Column',
+          properties: {
+            interface: {
+              type: 'string',
+              'x-component': 'CollectionField',
+              'x-read-pretty': true,
+            },
+          },
+        },
+        column4: {
+          type: 'void',
           title: 'Actions',
           'x-component': 'VoidTable.Column',
           properties: {
@@ -183,52 +163,9 @@ export const collectionFieldSchema: ISchema = {
                 update: {
                   type: 'void',
                   title: '编辑',
-                  'x-component': 'Action.Link',
+                  'x-component': 'EditFieldAction',
                   'x-component-props': {
                     type: 'primary',
-                  },
-                  properties: {
-                    drawer: {
-                      type: 'void',
-                      'x-component': 'Action.Drawer',
-                      'x-decorator': 'Form',
-                      'x-decorator-props': {
-                        useValues: '{{ useValues }}',
-                      },
-                      title: 'Drawer Title',
-                      properties: {
-                        title: {
-                          'x-component': 'CollectionField',
-                          'x-decorator': 'FormItem',
-                        },
-                        name: {
-                          'x-component': 'CollectionField',
-                          'x-decorator': 'FormItem',
-                          'x-disabled': true,
-                        },
-                        footer: {
-                          type: 'void',
-                          'x-component': 'Action.Drawer.Footer',
-                          properties: {
-                            action1: {
-                              title: 'Cancel',
-                              'x-component': 'Action',
-                              'x-component-props': {
-                                useAction: '{{ useCancelAction }}',
-                              },
-                            },
-                            action2: {
-                              title: 'Submit',
-                              'x-component': 'Action',
-                              'x-component-props': {
-                                type: 'primary',
-                                useAction: '{{ useUpdateAction }}',
-                              },
-                            },
-                          },
-                        },
-                      },
-                    },
                   },
                 },
                 delete: {
@@ -236,7 +173,7 @@ export const collectionFieldSchema: ISchema = {
                   title: '删除',
                   'x-component': 'Action.Link',
                   'x-component-props': {
-                    useAction: '{{ useDestroyAction }}',
+                    useAction: '{{ useDestroyActionAndRefreshCM }}',
                   },
                 },
               },

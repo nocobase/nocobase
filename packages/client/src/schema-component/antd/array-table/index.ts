@@ -1,4 +1,5 @@
 export * from './ArrayTable';
-export * from './Initializer';
+export * from './TableColumnActionBar';
 export * from './TableColumnDecorator';
+
 
