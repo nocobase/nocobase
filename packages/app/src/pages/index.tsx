@@ -5,17 +5,18 @@ import {
   AntdSchemaComponentProvider,
   APIClientProvider,
   AuthLayout,
-  CollectionManagerProvider,
   CollectionManagerShortcut,
   compose,
   DesignableSwitch,
   DocumentTitleProvider,
   i18n,
   PluginManagerProvider,
+  RemoteCollectionManagerProvider,
   RouteSchemaComponent,
   RouteSwitch,
   RouteSwitchProvider,
   SchemaComponentProvider,
+  SchemaInitializerProvider,
   SigninPage,
   SignupPage,
   SystemSettingsProvider,
@@ -38,13 +39,32 @@ const providers = [
   SystemSettingsProvider,
   [
     PluginManagerProvider,
-    { components: { ACLShortcut, DesignableSwitch, CollectionManagerShortcut, SystemSettingsShortcut } },
+    {
+      components: {
+        ACLShortcut,
+        DesignableSwitch,
+        CollectionManagerShortcut,
+        SystemSettingsShortcut,
+      },
+    },
   ],
   [SchemaComponentProvider, { components: { Link, NavLink } }],
-  CollectionManagerProvider,
+  RemoteCollectionManagerProvider,
+  SchemaInitializerProvider,
   AntdSchemaComponentProvider,
   [DocumentTitleProvider, { addonAfter: 'NocoBase' }],
-  [RouteSwitchProvider, { components: { AuthLayout, AdminLayout, RouteSchemaComponent, SigninPage, SignupPage } }],
+  [
+    RouteSwitchProvider,
+    {
+      components: {
+        AuthLayout,
+        AdminLayout,
+        RouteSchemaComponent,
+        SigninPage,
+        SignupPage,
+      },
+    },
+  ],
 ];
 
 const App = compose(...providers)(() => {

@@ -2,6 +2,7 @@ import { ISchema } from '@formily/react';
 
 const collection = {
   name: 'collections',
+  targetKey: 'name',
   filterTargetKey: 'name',
   fields: [
     {
@@ -42,6 +43,7 @@ export const roleCollectionsSchema: ISchema = {
   type: 'void',
   'x-decorator': 'ResourceActionProvider',
   'x-decorator-props': {
+    collection,
     association: {
       sourceKey: 'name',
       targetKey: 'name',
@@ -57,10 +59,6 @@ export const roleCollectionsSchema: ISchema = {
         appends: [],
       },
     },
-  },
-  'x-component': 'CollectionProvider',
-  'x-component-props': {
-    collection,
   },
   properties: {
     table1: {

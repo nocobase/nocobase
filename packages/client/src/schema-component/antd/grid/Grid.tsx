@@ -6,8 +6,6 @@ import cls from 'classnames';
 import React, { createContext, useContext, useState } from 'react';
 import { useComponent } from '../..';
 import { DndContext } from '../../common/dnd-context';
-import { AddGridBlockItem } from './AddBlockItem';
-import { AddGridFormItem } from './AddFormItem';
 
 const GridRowContext = createContext(null);
 const GridColContext = createContext(null);
@@ -209,6 +207,3 @@ Grid.Col = observer((props: any) => {
     </div>
   );
 });
-
-Grid.AddFormItem = AddGridFormItem;
-Grid.AddBlockItem = AddGridBlockItem;

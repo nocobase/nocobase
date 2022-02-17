@@ -1,4 +1,4 @@
-import { observer, RecursionField, useField, useFieldSchema } from '@formily/react';
+import { observer, useField, useFieldSchema } from '@formily/react';
 import { Button } from 'antd';
 import React, { useState } from 'react';
 import ActionContainer from './Action.Container';
@@ -28,7 +28,7 @@ export const Action: ComposedAction = observer((props: any) => {
       >
         {field.title}
       </Button>
-      <RecursionField basePath={field.address} schema={schema} onlyRenderProperties />
+      {props.children}
     </ActionContext.Provider>
   );
 });

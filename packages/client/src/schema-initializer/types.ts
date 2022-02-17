@@ -2,6 +2,7 @@ import { ISchema } from '@formily/react';
 import { ButtonProps, DropDownProps, MenuItemProps } from 'antd';
 
 export interface SchemaInitializerButtonProps extends ButtonProps {
+  insert?: (s: ISchema) => void;
   wrap?: (s: ISchema) => ISchema;
   insertPosition?: 'beforeBegin' | 'afterBegin' | 'beforeEnd' | 'afterEnd';
   items?: SchemaInitializerItemOptions[];

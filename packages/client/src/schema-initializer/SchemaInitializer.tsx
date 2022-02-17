@@ -16,10 +16,16 @@ export const SchemaInitializerItemContext = createContext(null);
 export const SchemaInitializer = () => null;
 
 SchemaInitializer.Button = observer((props: SchemaInitializerButtonProps) => {
-  const { wrap = defaultWrap, items = [], insertPosition, dropdown, ...others } = props;
-  const { insertAdjacent, findComponent } = useDesignable();
+  const { insert, wrap = defaultWrap, items = [], insertPosition, dropdown, ...others } = props;
+  let { insertAdjacent, findComponent } = useDesignable();
   const [visible, setVisible] = useState(false);
-
+  const insertSchema = (schema) => {
+    if (props.insert) {
+      props.insert(wrap(schema));
+    } else {
+      insertAdjacent(insertPosition, wrap(schema));
+    }
+  };
   const menu = (
     <Menu>
       {items?.map((item, indexA) => {
@@ -36,18 +42,10 @@ SchemaInitializer.Button = observer((props: SchemaInitializerButtonProps) => {
                   index: indexA,
                   item,
                   info: item,
-                  insert: (schema) => {
-                    insertAdjacent(insertPosition, wrap(schema));
-                  },
+                  insert: insertSchema,
                 }}
               >
-                <Component
-                  {...item}
-                  item={item}
-                  insert={(schema) => {
-                    insertAdjacent(insertPosition, wrap(schema));
-                  }}
-                />
+                <Component {...item} item={item} insert={insertSchema} />
               </SchemaInitializerItemContext.Provider>
             )
           );
@@ -68,18 +66,10 @@ SchemaInitializer.Button = observer((props: SchemaInitializerButtonProps) => {
                         index: indexB,
                         item: child,
                         info: child,
-                        insert: (schema) => {
-                          insertAdjacent(insertPosition, wrap(schema));
-                        },
+                        insert: insertSchema,
                       }}
                     >
-                      <Component
-                        {...child}
-                        item={child}
-                        insert={(schema) => {
-                          insertAdjacent(insertPosition, wrap(schema));
-                        }}
-                      />
+                      <Component {...child} item={child} insert={insertSchema} />
                     </SchemaInitializerItemContext.Provider>
                   )
                 );
@@ -90,6 +80,8 @@ SchemaInitializer.Button = observer((props: SchemaInitializerButtonProps) => {
       })}
     </Menu>
   );
+
+  console.log('others', others);
 
   return (
     <Dropdown

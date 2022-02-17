@@ -16,6 +16,7 @@ import {
   RouteSwitch,
   RouteSwitchProvider,
   SchemaComponentProvider,
+  SchemaInitializerProvider,
   SigninPage,
   SignupPage,
   SystemSettingsProvider,
@@ -42,6 +43,7 @@ const providers = [
   [SchemaComponentProvider, { components: { Link, NavLink } }],
   CollectionManagerProvider,
   AntdSchemaComponentProvider,
+  SchemaInitializerProvider,
   [DocumentTitleProvider, { addonAfter: 'NocoBase' }],
   [RouteSwitchProvider, { components: { AuthLayout, AdminLayout, RouteSchemaComponent, SigninPage, SignupPage } }],
 ];

@@ -1,6 +1,15 @@
 import { ISchema } from '@formily/react';
 import { uid } from '@formily/shared';
-import { Form, FormItem, Grid, Input, Markdown, SchemaComponent, SchemaComponentProvider } from '@nocobase/client';
+import {
+  Form,
+  FormItem,
+  Grid,
+  Input,
+  Markdown,
+  SchemaComponent,
+  SchemaComponentProvider,
+  SchemaInitializerProvider
+} from '@nocobase/client';
 import React from 'react';
 
 const schema: ISchema = {
@@ -8,7 +17,7 @@ const schema: ISchema = {
   name: 'grid1',
   'x-decorator': 'Form',
   'x-component': 'Grid',
-  'x-item-initializer': 'Grid.AddFormItem',
+  'x-item-initializer': 'AddFormItem',
   'x-uid': uid(),
   properties: {
     row1: {
@@ -56,7 +65,9 @@ const schema: ISchema = {
 export default function App() {
   return (
     <SchemaComponentProvider components={{ Markdown, Form, Grid, Input, FormItem }}>
-      <SchemaComponent schema={schema} />
+      <SchemaInitializerProvider>
+        <SchemaComponent schema={schema} />
+      </SchemaInitializerProvider>
     </SchemaComponentProvider>
   );
 }

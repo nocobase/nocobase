@@ -38,9 +38,7 @@ export const roleSchema: ISchema = {
       type: 'void',
       'x-decorator': 'ResourceActionProvider',
       'x-decorator-props': {
-        collection: {
-          targetKey: 'name',
-        },
+        collection,
         resourceName: 'roles',
         request: {
           resource: 'roles',

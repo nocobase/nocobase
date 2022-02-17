@@ -1,8 +1,10 @@
-import { FormOutlined, TableOutlined } from '@ant-design/icons';
+import { FormOutlined } from '@ant-design/icons';
 import { ISchema, observer } from '@formily/react';
 import { uid } from '@formily/shared';
 import React from 'react';
-import { SchemaInitializer } from '../../../schema-initializer';
+import { SchemaInitializer } from '../..';
+import { FormBlockInitializerItem } from './FormBlockInitializerItem';
+import { TableBlockInitializerItem } from './TableBlockInitializerItem';
 
 const gridRowColWrap = (schema: ISchema) => {
   return {
@@ -21,87 +23,6 @@ const gridRowColWrap = (schema: ISchema) => {
 };
 
 const itemWrap = SchemaInitializer.itemWrap;
-
-const TableBlockInitializerItem = itemWrap((props) => {
-  const { insert } = props;
-  return (
-    <SchemaInitializer.Item
-      icon={<TableOutlined />}
-      onClick={() => {
-        insert({
-          type: 'void',
-          'x-component': 'VoidTable',
-          'x-decorator': 'CardItem',
-        });
-      }}
-      items={[
-        {
-          type: 'itemGroup',
-          title: 'select a data source',
-          children: [
-            {
-              type: 'item',
-              name: 'users',
-              title: 'Users',
-            },
-            {
-              type: 'item',
-              name: 'posts',
-              title: 'Posts',
-            },
-          ],
-        },
-      ]}
-    >
-      Table
-    </SchemaInitializer.Item>
-  );
-});
-
-const FormBlockInitializerItem = itemWrap((props) => {
-  const { insert } = props;
-  return (
-    <SchemaInitializer.Item
-      icon={<FormOutlined />}
-      onClick={() => {
-        insert({
-          type: 'void',
-          'x-uid': uid(),
-          'x-component': 'Form',
-          'x-decorator': 'CardItem',
-          properties: {
-            [uid()]: {
-              type: 'void',
-              'x-component': 'Grid',
-              'x-item-initializer': 'Grid.AddFormItem',
-              'x-uid': uid(),
-            },
-          },
-        });
-      }}
-      items={[
-        {
-          type: 'itemGroup',
-          title: 'select a data source',
-          children: [
-            {
-              type: 'item',
-              name: 'users',
-              title: 'Users',
-            },
-            {
-              type: 'item',
-              name: 'posts',
-              title: 'Posts',
-            },
-          ],
-        },
-      ]}
-    >
-      Form
-    </SchemaInitializer.Item>
-  );
-});
 
 const TestInitializerItem = itemWrap((props) => {
   const { insert } = props;
@@ -193,7 +114,7 @@ const TestInitializerItem = itemWrap((props) => {
   );
 });
 
-export const AddGridBlockItem = observer((props: any) => {
+export const BlockInitializer = observer((props: any) => {
   return (
     <SchemaInitializer.Button
       wrap={gridRowColWrap}
@@ -212,11 +133,6 @@ export const AddGridBlockItem = observer((props: any) => {
               type: 'item',
               title: 'Form',
               component: FormBlockInitializerItem,
-            },
-            {
-              type: 'item',
-              title: 'Test',
-              component: TestInitializerItem,
             },
           ],
         },

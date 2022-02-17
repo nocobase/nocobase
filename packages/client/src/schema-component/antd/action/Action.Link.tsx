@@ -1,4 +1,4 @@
-import { observer, RecursionField, useField, useFieldSchema } from '@formily/react';
+import { observer, useField, useFieldSchema } from '@formily/react';
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { ActionContext } from './context';
@@ -23,7 +23,7 @@ export const ActionLink: ComposedAction = observer((props: any) => {
       >
         {field.title}
       </Link>
-      <RecursionField basePath={field.address} schema={schema} onlyRenderProperties />
+      {props.children}
     </ActionContext.Provider>
   );
 });
