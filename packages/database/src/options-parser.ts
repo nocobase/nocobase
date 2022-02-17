@@ -179,16 +179,17 @@ export class OptionsParser {
 
   protected parseAppends(appends: Appends, filterParams: any) {
     if (!appends) return filterParams;
-    const associations = this.model.associations;
 
     /**
      * set include params
      * @param includeRoot
      * @param appends
      */
-    const setInclude = (queryParams: any, append: string) => {
+    const setInclude = (model: ModelCtor<any>, queryParams: any, append: string) => {
       const appendFields = append.split('.');
       const appendAssociation = appendFields[0];
+
+      const associations = model.associations;
 
       // if append length less or equal 2
       // example:
@@ -260,19 +261,17 @@ export class OptionsParser {
           attributes,
         };
       } else {
-        setInclude(queryParams['include'][existIncludeIndex], appendFields.filter((_, index) => index !== 0).join('.'));
+        setInclude(
+          model.associations[queryParams['include'][existIncludeIndex].association].target,
+          queryParams['include'][existIncludeIndex],
+          appendFields.filter((_, index) => index !== 0).join('.'),
+        );
       }
     };
 
     // handle every appends
     for (const append of appends) {
-      const appendFields = append.split('.');
-
-      if (!associations[appendFields[0]]) {
-        throw new Error(`${append} is not a valid association`);
-      }
-
-      setInclude(filterParams, append);
+      setInclude(this.model, filterParams, append);
     }
 
     debug('filter params: %o', filterParams);
