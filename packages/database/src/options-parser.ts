@@ -179,23 +179,35 @@ export class OptionsParser {
 
   protected parseAppends(appends: Appends, filterParams: any) {
     if (!appends) return filterParams;
-    const associations = this.model.associations;
 
     /**
      * set include params
      * @param includeRoot
      * @param appends
      */
-    const setInclude = (queryParams: any, append: string) => {
+    const setInclude = (model: ModelCtor<any>, queryParams: any, append: string) => {
       const appendFields = append.split('.');
       const appendAssociation = appendFields[0];
+
+      const associations = model.associations;
 
       // if append length less or equal 2
       // example:
       //  appends: ['posts']
       //  appends: ['posts.title']
       //  All of these can be seen as last level
-      const lastLevel = appendFields.length <= 2;
+      let lastLevel: boolean = false;
+
+      if (appendFields.length == 1) {
+        lastLevel = true;
+      }
+
+      if (appendFields.length == 2) {
+        const associationModel = associations[appendFields[0]].target;
+        if (associationModel.rawAttributes[appendFields[1]]) {
+          lastLevel = true;
+        }
+      }
 
       // find association index
       if (queryParams['include'] == undefined) {
@@ -230,8 +242,10 @@ export class OptionsParser {
             attributes = [];
           }
 
+          const attributeName = appendFields[1];
+
           // push field to it
-          attributes.push(appendFields[1]);
+          attributes.push(attributeName);
         } else {
           // if attributes is empty array, change it to object
           if (Array.isArray(attributes) && attributes.length == 0) {
@@ -247,19 +261,17 @@ export class OptionsParser {
           attributes,
         };
       } else {
-        setInclude(queryParams['include'][existIncludeIndex], appendFields.filter((_, index) => index !== 0).join('.'));
+        setInclude(
+          model.associations[queryParams['include'][existIncludeIndex].association].target,
+          queryParams['include'][existIncludeIndex],
+          appendFields.filter((_, index) => index !== 0).join('.'),
+        );
       }
     };
 
     // handle every appends
     for (const append of appends) {
-      const appendFields = append.split('.');
-
-      if (!associations[appendFields[0]]) {
-        throw new Error(`${append} is not a valid association`);
-      }
-
-      setInclude(filterParams, append);
+      setInclude(this.model, filterParams, append);
     }
 
     debug('filter params: %o', filterParams);

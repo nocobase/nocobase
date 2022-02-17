@@ -1,17 +1,13 @@
 import { omit } from 'lodash';
 import {
-  Sequelize,
-  ModelCtor,
-  Model,
-  DataType,
   AssociationScope,
+  DataType,
   ForeignKeyOptions,
   HasOneOptions,
-  Utils,
+  HasOneOptions as SequelizeHasOneOptions,
+  Utils
 } from 'sequelize';
 import { BaseRelationFieldOptions, RelationField } from './relation-field';
-import { BaseColumnFieldOptions } from './field';
-import { HasOneOptions as SequelizeHasOneOptions } from 'sequelize/types/lib/associations/has-one';
 
 export interface HasOneFieldOptions extends HasOneOptions {
   /**

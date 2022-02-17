@@ -1,9 +1,7 @@
 import { omit } from 'lodash';
-import { Sequelize, ModelCtor, Model, DataTypes, Utils } from 'sequelize';
+import { BelongsToManyOptions as SequelizeBelongsToManyOptions } from 'sequelize';
 import { Collection } from '../collection';
 import { BaseRelationFieldOptions, RelationField } from './relation-field';
-import { BaseColumnFieldOptions } from './field';
-import { BelongsToManyOptions as SequelizeBelongsToManyOptions } from 'sequelize/types/lib/associations/belongs-to-many';
 
 export class BelongsToManyField extends RelationField {
   get through() {

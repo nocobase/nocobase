@@ -7,7 +7,7 @@ export const ActionBar = () => {
   const fieldSchema = useFieldSchema();
   const ActionInitializer = useComponent(fieldSchema['x-action-initializer']);
   return (
-    <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 16 }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', width: '100%' }}>
         <Space>
           {fieldSchema.mapProperties((schema, key) => {

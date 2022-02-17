@@ -1,5 +1,6 @@
 import { Plugin } from '@nocobase/server';
 import path from 'path';
+import { CollectionRepository } from '.';
 import {
   afterCreateForReverseField,
   beforeCreateForChildrenCollection,
@@ -13,6 +14,10 @@ export class CollectionManagerPlugin extends Plugin {
     this.app.db.registerModels({
       CollectionModel,
       FieldModel,
+    });
+
+    this.app.db.registerRepositories({
+      CollectionRepository,
     });
 
     // 要在 beforeInitOptions 之前处理
@@ -40,6 +45,10 @@ export class CollectionManagerPlugin extends Plugin {
       if (context) {
         await model.migrate({ transaction });
       }
+    });
+
+    this.app.on('beforeStart', async () => {
+      await this.app.db.getRepository<CollectionRepository>('collections').load();
     });
   }
 

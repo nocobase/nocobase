@@ -6,6 +6,7 @@ export default {
   sortable: 'sort',
   autoGenId: false,
   model: 'CollectionModel',
+  repository: 'CollectionRepository',
   timestamps: false,
   filterTargetKey: 'name',
   fields: [
