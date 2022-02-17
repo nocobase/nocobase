@@ -2,14 +2,16 @@
  * title: Calendar
  */
 
-import { useForm } from '@formily/react';
+import { useField, useFieldSchema, useForm } from '@formily/react';
 import { uid } from '@formily/shared';
 import {
   AntdSchemaComponentProvider,
+  CollectionProvider,
   SchemaComponent,
   SchemaComponentProvider,
   useActionContext,
   useAsyncData,
+  useDesignable,
 } from '@nocobase/client';
 import React from 'react';
 import defaultValues from './defaultValues';
@@ -80,15 +82,18 @@ const schema = {
 
 const useOkAction = () => {
   const { setVisible } = useActionContext();
-  const { refresh } = useAsyncData();
+  const { refresh: schemaRefresh } = useDesignable();
+  const { refresh: dataRefresh, data } = useAsyncData();
   const form = useForm();
+  const fieldSchema = useFieldSchema();
+  const field = useField();
   return {
     async run() {
       setVisible(false);
-      form.submit((values) => {
-        console.log(values);
-        refresh();
-      });
+      console.log(form.values, fieldSchema, field, data);
+      // data?.data?.push({ ...form.values, start: new Date(form.values.start), end: new Date(form.values.end) });
+      debugger;
+      dataRefresh();
     },
   };
 };
@@ -102,12 +107,61 @@ const useCloseAction = () => {
   };
 };
 
+const collection = {
+  name: 'tests',
+  fields: [
+    {
+      type: 'string',
+      name: 'id',
+      interface: 'input',
+      uiSchema: {
+        type: 'string',
+        'x-component': 'Input',
+      },
+    },
+    {
+      type: 'string',
+      name: 'title',
+      interface: 'input',
+      uiSchema: {
+        type: 'string',
+        'x-component': 'Input',
+      },
+    },
+    {
+      type: 'string',
+      name: 'start',
+      interface: 'datetime',
+      uiSchema: {
+        type: 'string',
+        'x-component': 'DatePicker',
+        'x-component-props': {
+          dateFormat: 'YYYY-MM-DD',
+        },
+      },
+    },
+    {
+      type: 'string',
+      name: 'end',
+      interface: 'datetime',
+      uiSchema: {
+        type: 'string',
+        'x-component': 'DatePicker',
+        'x-component-props': {
+          dateFormat: 'YYYY-MM-DD',
+        },
+      },
+    },
+  ],
+};
 export default () => {
   return (
-    <SchemaComponentProvider scope={{ useOkAction, useCloseAction }}>
-      <AntdSchemaComponentProvider>
-        <SchemaComponent schema={schema} />
-      </AntdSchemaComponentProvider>
-    </SchemaComponentProvider>
+    <CollectionProvider collection={collection}>
+      <SchemaComponentProvider scope={{ useOkAction, useCloseAction }}>
+        <AntdSchemaComponentProvider>
+          <SchemaComponent schema={schema} />
+        </AntdSchemaComponentProvider>
+      </SchemaComponentProvider>
+    </CollectionProvider>
   );
 };
