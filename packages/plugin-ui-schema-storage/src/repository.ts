@@ -369,7 +369,7 @@ export class UiSchemaRepository extends Repository {
     return true;
   }
 
-  async recursivelyRemoveIfNoChildren(options: TransactionAble & { uid: string; breakRemoveOn: BreakRemoveOnType }) {
+  async recursivelyRemoveIfNoChildren(options: TransactionAble & { uid: string; breakRemoveOn?: BreakRemoveOnType }) {
     const { uid, transaction, breakRemoveOn } = options;
 
     const removeLeafNode = async (nodeUid: string) => {

@@ -304,4 +304,91 @@ describe('server hooks', () => {
     const role2Menus = await db.getRepository<BelongsToManyRepository>('roles.menuUiSchemas', 'role2').find();
     expect(role2Menus.length).toEqual(0);
   });
+
+  it('should remove parents on self move', async () => {
+    const schema = {
+      'x-uid': 'A',
+      name: 'A',
+      properties: {
+        B: {
+          'x-uid': 'B',
+          properties: {
+            C: {
+              'x-uid': 'C',
+              properties: {
+                D: {
+                  'x-uid': 'D',
+                  'x-server-hooks': [
+                    {
+                      type: 'onSelfMove',
+                      method: 'removeParentsIfNoChildren',
+                    },
+                  ],
+                },
+              },
+            },
+          },
+        },
+        E: {
+          'x-uid': 'E',
+        },
+      },
+    };
+
+    await uiSchemaRepository.insert(schema);
+
+    await uiSchemaRepository.insertAfterEnd('E', {
+      'x-uid': 'F',
+      name: 'F',
+      properties: {
+        G: {
+          'x-uid': 'G',
+          properties: {
+            D: {
+              'x-uid': 'D',
+            },
+          },
+        },
+      },
+    });
+
+    const A = await uiSchemaRepository.getJsonSchema('A');
+    expect(A).toEqual({
+      properties: {
+        E: {
+          'x-uid': 'E',
+          'x-async': false,
+          'x-index': 2,
+        },
+        F: {
+          properties: {
+            G: {
+              properties: {
+                D: {
+                  'x-server-hooks': [
+                    {
+                      type: 'onSelfMove',
+                      method: 'removeParentsIfNoChildren',
+                    },
+                  ],
+                  'x-uid': 'D',
+                  'x-async': false,
+                  'x-index': 1,
+                },
+              },
+              'x-uid': 'G',
+              'x-async': false,
+              'x-index': 1,
+            },
+          },
+          'x-uid': 'F',
+          'x-async': false,
+          'x-index': 3,
+        },
+      },
+      name: 'A',
+      'x-uid': 'A',
+      'x-async': false,
+    });
+  });
 });
