@@ -1,5 +1,5 @@
 import { LeftOutlined, RightOutlined } from '@ant-design/icons';
-import { ArrayField } from '@formily/core';
+import { VoidField } from '@formily/core';
 import { observer, RecursionField, Schema, useField, useFieldSchema } from '@formily/react';
 import { Drawer } from 'antd';
 import moment from 'moment';
@@ -18,7 +18,6 @@ import './style.less';
 import { Title } from './Title';
 import { Today } from './Today';
 import type { ToolbarProps } from './types';
-import { toEvents } from './utils';
 import { ViewSelect } from './ViewSelect';
 
 const localizer = momentLocalizer(moment);
@@ -65,13 +64,14 @@ const messages: any = {
 };
 
 const useRequestProps = (props) => {
-  const { request, value } = props;
+  const { request, dataSource } = props;
   if (request) {
     return request;
   }
+  debugger;
   return (params: any = {}) => {
     return Promise.resolve({
-      data: value,
+      data: dataSource,
     });
   };
 };
@@ -92,7 +92,7 @@ export const Calendar: any = observer((props: any) => {
     },
   } = props;
   const { t } = useTranslation();
-  const field = useField<ArrayField>();
+  const field = useField<VoidField>();
   const fieldSchema = useFieldSchema();
   const eventSchema: Schema = fieldSchema.reduceProperties((buf, current) => {
     if (current['x-component'] === 'Calendar.Event') {
@@ -103,12 +103,10 @@ export const Calendar: any = observer((props: any) => {
 
   const [visible, setVisible] = useState(false);
   const [record, setRecord] = useState<any>({});
-  console.log('field.value', field.value);
   const result = useDataSource(props, {
     uid: fieldSchema['x-uid'],
     onSuccess(data) {
-      debugger;
-      field.setValue(toEvents(data?.data, fieldNames));
+      return data;
     },
   });
   debugger;
@@ -147,7 +145,7 @@ export const Calendar: any = observer((props: any) => {
               console.log('onDoubleClickEvent');
             }}
             onSelectEvent={(event) => {
-              const record = field.value?.find((item) => item.id === event.id);
+              const record = result?.data?.data?.find((item) => item.id === event.id);
               if (!record) {
                 return;
               }
