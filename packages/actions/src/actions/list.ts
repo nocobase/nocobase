@@ -6,23 +6,23 @@ export const DEFAULT_PER_PAGE = 20;
 
 function pageArgsToLimitArgs(
   page: number,
-  perPage: number,
+  pageSize: number,
 ): {
   offset: number;
   limit: number;
 } {
   return {
-    offset: (page - 1) * perPage,
-    limit: perPage,
+    offset: (page - 1) * pageSize,
+    limit: pageSize,
   };
 }
 
-function totalPage(total, perPage): number {
-  return Math.ceil(total / perPage);
+function totalPage(total, pageSize): number {
+  return Math.ceil(total / pageSize);
 }
 
 export async function list(ctx: Context, next) {
-  const { page = DEFAULT_PAGE, perPage = DEFAULT_PER_PAGE, fields, filter, appends, except, sort } = ctx.action.params;
+  const { page = DEFAULT_PAGE, pageSize = DEFAULT_PER_PAGE, fields, filter, appends, except, sort } = ctx.action.params;
 
   const repository = getRepositoryFromParams(ctx);
 
@@ -32,15 +32,15 @@ export async function list(ctx: Context, next) {
     appends,
     except,
     sort,
-    ...pageArgsToLimitArgs(parseInt(String(page)), parseInt(String(perPage))),
+    ...pageArgsToLimitArgs(parseInt(String(page)), parseInt(String(pageSize))),
   });
 
   ctx.body = {
     count,
     rows,
     page,
-    perPage,
-    totalPage: totalPage(count, perPage),
+    pageSize,
+    totalPage: totalPage(count, pageSize),
   };
 
   await next();
