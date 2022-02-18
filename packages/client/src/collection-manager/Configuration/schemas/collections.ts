@@ -12,7 +12,7 @@ const collection: CollectionOptions = {
       name: 'title',
       interface: 'input',
       uiSchema: {
-        title: '数据表名称',
+        title: '{{ t("Collection display name") }}',
         type: 'number',
         'x-component': 'Input',
         required: true,
@@ -23,10 +23,10 @@ const collection: CollectionOptions = {
       name: 'name',
       interface: 'input',
       uiSchema: {
-        title: '数据表标识',
+        title: '{{ t("Collection name") }}',
         type: 'string',
         'x-component': 'Input',
-        description: '使用英文',
+        // description: '使用英文',
       },
     },
     {
@@ -54,7 +54,7 @@ export const collectionSchema: ISchema = {
           resource: 'collections',
           action: 'list',
           params: {
-            pageSize: 5,
+            pageSize: 50,
             filter: {},
             sort: ['sort'],
             appends: [],
@@ -69,15 +69,20 @@ export const collectionSchema: ISchema = {
         actions: {
           type: 'void',
           'x-component': 'ActionBar',
+          'x-component-props': {
+            style: {
+              marginBottom: 16,
+            },
+          },
           properties: {
             delete: {
               type: 'void',
-              title: '删除',
+              title: '{{ t("Delete") }}',
               'x-component': 'Action',
             },
             create: {
               type: 'void',
-              title: '创建',
+              title: '{{ t("Create collection") }}',
               'x-component': 'Action',
               'x-component-props': {
                 type: 'primary',
@@ -85,9 +90,9 @@ export const collectionSchema: ISchema = {
               properties: {
                 drawer: {
                   type: 'void',
+                  title: '{{ t("Create collection") }}',
                   'x-component': 'Action.Drawer',
                   'x-decorator': 'Form',
-                  title: 'Drawer Title',
                   properties: {
                     title: {
                       'x-component': 'CollectionField',
@@ -102,14 +107,14 @@ export const collectionSchema: ISchema = {
                       'x-component': 'Action.Drawer.Footer',
                       properties: {
                         action1: {
-                          title: 'Cancel',
+                          title: '{{ t("Cancel") }}',
                           'x-component': 'Action',
                           'x-component-props': {
                             useAction: '{{ useCancelAction }}',
                           },
                         },
                         action2: {
-                          title: 'Submit',
+                          title: '{{ t("Submit") }}',
                           'x-component': 'Action',
                           'x-component-props': {
                             type: 'primary',
@@ -124,7 +129,7 @@ export const collectionSchema: ISchema = {
             },
           },
         },
-        table1: {
+        table: {
           type: 'void',
           'x-uid': 'input',
           'x-component': 'VoidTable',
@@ -142,7 +147,6 @@ export const collectionSchema: ISchema = {
               'x-component': 'VoidTable.Column',
               properties: {
                 title: {
-                  type: 'number',
                   'x-component': 'CollectionField',
                   'x-read-pretty': true,
                 },
@@ -162,7 +166,7 @@ export const collectionSchema: ISchema = {
             },
             column3: {
               type: 'void',
-              title: 'Actions',
+              title: '{{ t("Actions") }}',
               'x-component': 'VoidTable.Column',
               properties: {
                 actions: {
@@ -174,14 +178,14 @@ export const collectionSchema: ISchema = {
                   properties: {
                     view: {
                       type: 'void',
-                      title: '配置字段',
+                      title: '{{ t("Configure fields") }}',
                       'x-component': 'Action.Link',
                       'x-component-props': {},
                       properties: {
                         drawer: {
                           type: 'void',
                           'x-component': 'Action.Drawer',
-                          title: 'Drawer Title',
+                          title: '{{ t("Configure fields") }}',
                           properties: {
                             collectionFieldSchema,
                           },
@@ -190,7 +194,7 @@ export const collectionSchema: ISchema = {
                     },
                     update: {
                       type: 'void',
-                      title: '编辑',
+                      title: '{{ t("Edit") }}',
                       'x-component': 'Action.Link',
                       'x-component-props': {
                         type: 'primary',
@@ -203,7 +207,7 @@ export const collectionSchema: ISchema = {
                           'x-decorator-props': {
                             useValues: '{{ useValuesFromRecord }}',
                           },
-                          title: 'Drawer Title',
+                          title: '{{ t("Edit collection") }}',
                           properties: {
                             title: {
                               'x-component': 'CollectionField',
@@ -219,14 +223,14 @@ export const collectionSchema: ISchema = {
                               'x-component': 'Action.Drawer.Footer',
                               properties: {
                                 action1: {
-                                  title: 'Cancel',
+                                  title: '{{ t("Cancel") }}',
                                   'x-component': 'Action',
                                   'x-component-props': {
                                     useAction: '{{ useCancelAction }}',
                                   },
                                 },
                                 action2: {
-                                  title: 'Submit',
+                                  title: '{{ t("Submit") }}',
                                   'x-component': 'Action',
                                   'x-component-props': {
                                     type: 'primary',
@@ -241,7 +245,7 @@ export const collectionSchema: ISchema = {
                     },
                     delete: {
                       type: 'void',
-                      title: '删除',
+                      title: '{{ t("Delete") }}',
                       'x-component': 'Action.Link',
                       'x-component-props': {
                         useAction: '{{ useDestroyActionAndRefreshCM }}',
