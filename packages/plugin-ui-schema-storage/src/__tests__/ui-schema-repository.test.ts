@@ -35,7 +35,7 @@ describe('ui_schema repository', () => {
       },
     });
     repository = db.getCollection('uiSchemas').repository as UiSchemaRepository;
-    treePathCollection = db.getCollection('ui_schema_tree_path');
+    treePathCollection = db.getCollection('uiSchemaTreePath');
   });
 
   it('should be registered', async () => {
@@ -50,7 +50,7 @@ describe('ui_schema repository', () => {
     };
 
     const transaction = await db.sequelize.transaction();
-    await repository.insertSingleNode(singleNode, transaction);
+    await repository.insertSingleNode(singleNode, { transaction });
 
     await transaction.commit();
     // it should save in ui schema tables
@@ -76,7 +76,7 @@ describe('ui_schema repository', () => {
 
     const transaction = await db.sequelize.transaction();
 
-    await repository.insertSingleNode(singleNode, transaction);
+    await repository.insertSingleNode(singleNode, { transaction });
 
     const child1: SchemaNode = {
       name: 'child1',
@@ -88,7 +88,7 @@ describe('ui_schema repository', () => {
       },
     };
 
-    await repository.insertSingleNode(child1, transaction);
+    await repository.insertSingleNode(child1, { transaction });
 
     const child11: SchemaNode = {
       name: 'child11',
@@ -99,7 +99,7 @@ describe('ui_schema repository', () => {
         type: 'test',
       },
     };
-    await repository.insertSingleNode(child11, transaction);
+    await repository.insertSingleNode(child11, { transaction });
 
     await transaction.commit();
     expect(
@@ -724,6 +724,217 @@ describe('ui_schema repository', () => {
       const newTree = await repository.getJsonSchema(rootUid);
       expect(newTree.title).toEqual('test-title');
       expect(newTree.properties.a1.title).toEqual('new a1 title');
+    });
+  });
+
+  it('should insertInner with removeParent', async () => {
+    const schema = {
+      'x-uid': 'A',
+      name: 'A',
+      properties: {
+        B: {
+          'x-uid': 'B',
+          properties: {
+            C: {
+              'x-uid': 'C',
+              properties: {
+                D: {
+                  'x-uid': 'D',
+                },
+              },
+            },
+          },
+        },
+        E: {
+          'x-uid': 'E',
+        },
+      },
+    };
+
+    await repository.insert(schema);
+
+    await repository.insertAfterBegin(
+      'E',
+      {
+        'x-uid': 'F',
+        name: 'F',
+        properties: {
+          G: {
+            'x-uid': 'G',
+            properties: {
+              D: {
+                'x-uid': 'D',
+              },
+            },
+          },
+        },
+      },
+      {
+        removeParentsIfNoChildren: true,
+      },
+    );
+
+    const A = await repository.getJsonSchema('A');
+
+    expect(A).toEqual({
+      properties: {
+        E: {
+          properties: {
+            F: {
+              properties: {
+                G: {
+                  properties: {
+                    D: {
+                      'x-uid': 'D',
+                      'x-async': false,
+                      'x-index': 1,
+                    },
+                  },
+                  'x-uid': 'G',
+                  'x-async': false,
+                  'x-index': 1,
+                },
+              },
+              'x-uid': 'F',
+              'x-async': false,
+              'x-index': 1,
+            },
+          },
+          'x-uid': 'E',
+          'x-async': false,
+          'x-index': 2,
+        },
+      },
+      name: 'A',
+      'x-uid': 'A',
+      'x-async': false,
+    });
+  });
+
+  it('should insertBeside with removeParent', async () => {
+    const schema = {
+      'x-uid': 'A',
+      name: 'A',
+      properties: {
+        B: {
+          'x-uid': 'B',
+          properties: {
+            C: {
+              'x-uid': 'C',
+              properties: {
+                D: {
+                  'x-uid': 'D',
+                },
+              },
+            },
+          },
+        },
+        E: {
+          'x-uid': 'E',
+        },
+      },
+    };
+
+    await repository.insert(schema);
+
+    await repository.insertAfterEnd(
+      'E',
+      {
+        'x-uid': 'F',
+        name: 'F',
+        properties: {
+          G: {
+            'x-uid': 'G',
+            properties: {
+              D: {
+                'x-uid': 'D',
+              },
+            },
+          },
+        },
+      },
+      {
+        removeParentsIfNoChildren: true,
+      },
+    );
+
+    const A = await repository.getJsonSchema('A');
+
+    expect(A).toEqual({
+      properties: {
+        E: {
+          'x-uid': 'E',
+          'x-async': false,
+          'x-index': 2,
+        },
+        F: {
+          properties: {
+            G: {
+              'x-uid': 'G',
+              'x-async': false,
+              'x-index': 1,
+              properties: {
+                D: {
+                  'x-uid': 'D',
+                  'x-async': false,
+                  'x-index': 1,
+                },
+              },
+            },
+          },
+          'x-uid': 'F',
+          'x-async': false,
+          'x-index': 3,
+        },
+      },
+      name: 'A',
+      'x-uid': 'A',
+      'x-async': false,
+    });
+  });
+
+  it('should remove with breakOn', async () => {
+    const schema = {
+      'x-uid': 'A',
+      name: 'A',
+      properties: {
+        B: {
+          'x-uid': 'B',
+          properties: {
+            C: {
+              'x-uid': 'C',
+              properties: {
+                D: {
+                  'x-uid': 'D',
+                },
+              },
+            },
+          },
+        },
+        E: {
+          'x-uid': 'E',
+        },
+      },
+    };
+
+    await repository.insert(schema);
+
+    await repository.remove('D', {
+      removeParentsIfNoChildren: true,
+    });
+
+    const A = await repository.getJsonSchema('A');
+    expect(A).toEqual({
+      properties: {
+        E: {
+          'x-uid': 'E',
+          'x-async': false,
+          'x-index': 2,
+        },
+      },
+      name: 'A',
+      'x-uid': 'A',
+      'x-async': false,
     });
   });
 });

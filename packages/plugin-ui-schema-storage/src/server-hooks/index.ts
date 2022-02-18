@@ -7,7 +7,8 @@ export type HookType =
   | 'onCollectionDestroy'
   | 'onCollectionFieldDestroy'
   | 'onAnyCollectionFieldDestroy'
-  | 'onSelfCreate';
+  | 'onSelfCreate'
+  | 'onSelfMove';
 
 export class ServerHooks {
   hooks = new Map<HookType, Map<string, any>>();
@@ -34,6 +35,30 @@ export class ServerHooks {
     this.db.on('uiSchemas.afterCreateWithAssociations', async (model, options) => {
       await this.onUiSchemaCreate(model, options);
     });
+
+    this.db.on('uiSchemaMove', async (model, options) => {
+      await this.onUiSchemaMove(model, options);
+    });
+  }
+
+  protected async callSchemaInstanceHooksByType(schemaInstance, options, type: HookType) {
+    const { transaction } = options;
+
+    const hooks = schemaInstance.getServerHooksByType(type);
+
+    for (const hook of hooks) {
+      const hookFunc = this.hooks.get(type)?.get(hook['method']);
+      await hookFunc({
+        schemaInstance,
+        options,
+        db: this.db,
+        params: hook['params'],
+      });
+    }
+  }
+
+  protected async onUiSchemaMove(schemaInstance, options) {
+    await this.callSchemaInstanceHooksByType(schemaInstance, options, 'onSelfMove');
   }
 
   protected async onCollectionDestroy(collectionModel, options) {
@@ -89,21 +114,7 @@ export class ServerHooks {
   }
 
   protected async onUiSchemaCreate(schemaInstance, options) {
-    const { transaction } = options;
-
-    const serverHooks = schemaInstance.get('serverHooks') || [];
-
-    const onSelfCreateHooks = serverHooks.filter((serverHook) => serverHook.get('type') === 'onSelfCreate');
-
-    for (const serverHook of onSelfCreateHooks) {
-      const hookFunc = this.hooks.get('onSelfCreate')?.get(serverHook.get('method'));
-      await hookFunc({
-        schemaInstance,
-        options,
-        db: this.db,
-        params: serverHook.get('params'),
-      });
-    }
+    await this.callSchemaInstanceHooksByType(schemaInstance, options, 'onSelfCreate');
   }
 
   protected async findHooksAndCall(hooksFilter, hooksArgs, transaction) {

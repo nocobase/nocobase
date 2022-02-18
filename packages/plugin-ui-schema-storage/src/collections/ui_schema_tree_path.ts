@@ -1,5 +1,5 @@
 export default {
-  name: 'ui_schema_tree_path',
+  name: 'uiSchemaTreePath',
   autoGenId: false,
   timestamps: false,
   fields: [
