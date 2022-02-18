@@ -89,11 +89,11 @@ export interface ActionOptions {
   /**
    * 每页显示数量
    */
-  perPage?: number;
+  pageSize?: number;
   /**
    * 最大每页显示数量
    */
-  maxPerPage?: number;
+  maxPageSize?: number;
   /**
    * 中间件
    */
@@ -155,7 +155,7 @@ export interface ActionParams {
   /**
    * 每页显示数量
    */
-  perPage?: number;
+  pageSize?: number;
   /**
    * 数据，默认为 options.defaultValues + request.body
    */

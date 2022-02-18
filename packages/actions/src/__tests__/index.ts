@@ -53,7 +53,7 @@ interface ActionParams {
   filterByTk?: any;
   sort?: string[];
   page?: number;
-  perPage?: number;
+  pageSize?: number;
   values?: any;
   /**
    * @deprecated
