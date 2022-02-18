@@ -93,6 +93,18 @@ export class Designable {
         });
       }
     });
+    this.on('patch', async ({ schema }) => {
+      refresh();
+      if (schema?.['x-uid']) {
+        await api.request({
+          url: `/uiSchemas:patch`,
+          method: 'post',
+          data: {
+            ...schema,
+          },
+        });
+      }
+    });
     this.on('remove', async ({ removed }) => {
       refresh();
       if (removed?.['x-uid']) {
@@ -121,14 +133,14 @@ export class Designable {
     generateUid(schema);
   }
 
-  on(name: 'insertAdjacent' | 'remove' | 'error', listener: any) {
+  on(name: 'insertAdjacent' | 'remove' | 'error' | 'patch', listener: any) {
     if (!this.events[name]) {
       this.events[name] = [];
     }
     this.events[name].push(listener);
   }
 
-  emit(name: 'insertAdjacent' | 'remove' | 'error', ...args) {
+  emit(name: 'insertAdjacent' | 'remove' | 'error' | 'patch', ...args) {
     if (!this.events[name]) {
       return;
     }
@@ -435,6 +447,7 @@ export function useDesignable() {
   const dn = createDesignable({ api, refresh, current: fieldSchema });
   dn.loadAPIClientEvents();
   return {
+    dn,
     designable,
     reset,
     refresh,

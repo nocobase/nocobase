@@ -2,11 +2,12 @@ import { ISchema, observer, Schema, useFieldSchema } from '@formily/react';
 import { uid } from '@formily/shared';
 import { Switch } from 'antd';
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { SchemaInitializer, SchemaInitializerItemOptions } from '../..';
 import { useCollection } from '../../../collection-manager';
 import { useDesignable } from '../../../schema-component';
 
-const useFormItemInitializerFields = () => {
+const useFormItems = () => {
   const { name, fields } = useCollection();
   return fields?.map((field) => {
     return {
@@ -15,6 +16,7 @@ const useFormItemInitializerFields = () => {
       component: InitializeFormItem,
       schema: {
         name: field.name,
+        'x-designer': 'TestDesigner',
         'x-component': 'CollectionField',
         'x-decorator': 'FormItem',
         'x-collection-field': `${name}.${field.name}`,
@@ -100,9 +102,13 @@ const InitializeTextFormItem = itemWrap((props) => {
       onClick={() => {
         insert({
           type: 'void',
-          'x-component': 'Markdown.Void',
+          'x-editable': false,
           'x-decorator': 'FormItem',
-          // 'x-editable': false,
+          'x-designer': 'Markdown.Void.Designer',
+          'x-component': 'Markdown.Void',
+          'x-component-props': {
+            content: '# Markdown content',
+          },
         });
       }}
     />
@@ -110,6 +116,7 @@ const InitializeTextFormItem = itemWrap((props) => {
 });
 
 export const FormItemInitializer = observer((props: any) => {
+  const { t } = useTranslation();
   return (
     <SchemaInitializer.Button
       wrap={gridRowColWrap}
@@ -117,20 +124,20 @@ export const FormItemInitializer = observer((props: any) => {
       items={[
         {
           type: 'itemGroup',
-          title: 'Display fields',
-          children: useFormItemInitializerFields(),
+          title: t('Display fields'),
+          children: useFormItems(),
         },
         {
           type: 'divider',
         },
         {
           type: 'item',
-          title: 'Add text',
+          title: t('Add text'),
           component: InitializeTextFormItem,
         },
       ]}
     >
-      Configure fields
+      {t('Configure fields')}
     </SchemaInitializer.Button>
   );
 });

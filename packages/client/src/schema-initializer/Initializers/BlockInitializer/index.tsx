@@ -4,6 +4,7 @@ import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { SchemaInitializer } from '../..';
 import { FormBlock } from './FormBlock';
+import { MarkdownBlock } from './MarkdownBlock';
 import { TableBlock } from './TableBlock';
 
 const gridRowColWrap = (schema: ISchema) => {
@@ -42,6 +43,17 @@ export const BlockInitializer = observer((props: any) => {
               type: 'item',
               title: t('Form'),
               component: FormBlock,
+            },
+          ],
+        },
+        {
+          type: 'itemGroup',
+          title: t('Media'),
+          children: [
+            {
+              type: 'item',
+              title: t('Markdown'),
+              component: MarkdownBlock,
             },
           ],
         },

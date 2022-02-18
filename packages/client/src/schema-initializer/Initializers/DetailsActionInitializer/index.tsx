@@ -33,6 +33,7 @@ const InitializeAction = SchemaInitializer.itemWrap((props) => {
         }
         insert({
           type: 'void',
+          'x-designer': 'TestDesigner',
           'x-component': 'Action',
           ...item.schema,
         });

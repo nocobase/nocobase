@@ -67,6 +67,7 @@ const InitializeAction = SchemaInitializer.itemWrap((props) => {
         }
         insert({
           type: 'void',
+          'x-designer': 'TestDesigner',
           'x-component': 'Action.Link',
           ...item.schema,
         });
@@ -79,7 +80,7 @@ const InitializeAction = SchemaInitializer.itemWrap((props) => {
   );
 });
 
-export const TableColumnActionInitializer = observer((props: any) => {
+export const TableRecordActionInitializer = observer((props: any) => {
   const fieldSchema = useFieldSchema();
   const api = useAPIClient();
   const { refresh } = useDesignable();
@@ -181,6 +182,9 @@ export const TableColumnActionInitializer = observer((props: any) => {
               schema: {
                 title: '{{ t("Delete") }}',
                 'x-action': 'destroy',
+                'x-component-props': {
+                  useAction: '{{ useDestroyAction }}',
+                },
               },
             },
           ],
