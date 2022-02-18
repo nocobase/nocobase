@@ -114,7 +114,7 @@ export const roleSchema: ISchema = {
             },
           },
         },
-        table1: {
+        table: {
           type: 'void',
           'x-uid': 'input',
           'x-component': 'VoidTable',
@@ -228,7 +228,7 @@ export const roleSchema: ISchema = {
                           'x-component': 'Action.Drawer',
                           'x-decorator': 'Form',
                           'x-decorator-props': {
-                            useValues: '{{ useValues }}',
+                            useValues: '{{ useValuesFromRecord }}',
                           },
                           title: 'Drawer Title',
                           properties: {
