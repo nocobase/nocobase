@@ -5,10 +5,10 @@ export async function removeSchema({ schemaInstance, options, db, params }) {
   const uiSchemaRepository: UiSchemaRepository = db.getRepository('uiSchemas');
   const uid = schemaInstance.get('uid') as string;
 
-  if (params?.removeEmptyParents) {
+  if (params?.removeParentsIfNoChildren) {
     await uiSchemaRepository.removeEmptyParents({
       uid,
-      breakComponent: params['breakComponent'],
+      breakRemoveOn: params['breakRemoveOn'],
       transaction,
     });
   } else {

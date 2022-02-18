@@ -274,4 +274,68 @@ describe('server hooks', () => {
       }),
     ).toBeDefined();
   });
+
+  it('should call onSelfMove', async () => {
+    const schema = {
+      'x-uid': 'A',
+      name: 'A',
+      properties: {
+        B: {
+          'x-uid': 'B',
+          properties: {
+            C: {
+              'x-uid': 'C',
+              properties: {
+                D: {
+                  'x-uid': 'D',
+                  'x-server-hooks': [
+                    {
+                      type: 'onSelfMove',
+                      method: 'testOnSelfMove',
+                    },
+                  ],
+                },
+              },
+            },
+          },
+        },
+        E: {
+          'x-uid': 'E',
+        },
+      },
+    };
+
+    const serverHooks = uiSchemaPlugin.serverHooks;
+
+    const jestFn = jest.fn();
+
+    serverHooks.register('onSelfMove', 'testOnSelfMove', async ({ options }) => {
+      jestFn();
+    });
+
+    await uiSchemaRepository.insert(schema);
+
+    await uiSchemaRepository.insertAfterEnd(
+      'E',
+      {
+        'x-uid': 'F',
+        name: 'F',
+        properties: {
+          G: {
+            'x-uid': 'G',
+            properties: {
+              D: {
+                'x-uid': 'D',
+              },
+            },
+          },
+        },
+      },
+      {
+        removeParentsIfNoChildren: true,
+      },
+    );
+
+    expect(jestFn).toHaveBeenCalled();
+  });
 });
