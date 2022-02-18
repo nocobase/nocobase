@@ -30,6 +30,7 @@ const roleCollectionsResource = {
           return {
             name: collection.get('name') as string,
             title: collection.get('title') as string,
+            roleName: role,
             usingConfig,
           };
         })
