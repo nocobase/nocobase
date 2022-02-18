@@ -50,6 +50,18 @@ export class CollectionManagerPlugin extends Plugin {
     this.app.on('beforeStart', async () => {
       await this.app.db.getRepository<CollectionRepository>('collections').load();
     });
+
+    this.app.resourcer.use(async (ctx, next) => {
+      const { resourceName, actionName } = ctx.action;
+      if (resourceName === 'collections.fields' && actionName === 'update') {
+        const { updateAssociationValues = [] } = ctx.action.params;
+        updateAssociationValues.push('uiSchema');
+        ctx.action.mergeParams({
+          updateAssociationValues,
+        });
+      }
+      await next();
+    });
   }
 
   async load() {
