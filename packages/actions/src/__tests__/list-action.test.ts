@@ -87,7 +87,7 @@ describe('list action', () => {
       .resource('posts')
       .list({
         fields: ['id'],
-        perPage: 1,
+        pageSize: 1,
         page: 2,
         sort: ['id'],
       });

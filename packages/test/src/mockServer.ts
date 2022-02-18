@@ -9,7 +9,7 @@ interface ActionParams {
   filter?: any;
   sort?: string[];
   page?: number;
-  perPage?: number;
+  pageSize?: number;
   values?: any;
   /**
    * @deprecated
