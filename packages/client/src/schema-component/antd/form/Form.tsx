@@ -74,10 +74,10 @@ const useDef = (opts: any = {}, props: FormProps = {}) => {
 };
 
 export const Form: React.FC<FormProps> = observer((props) => {
-  const { request, initialValue, useValues = useDef, ...others } = props;
+  const { request, effects, initialValue, useValues = useDef, ...others } = props;
   const fieldSchema = useFieldSchema();
-  const form = useMemo(() => createForm(), []);
-  const { loading } = useValues(
+  const form = useMemo(() => createForm({ effects }), []);
+  const result = useValues(
     {
       uid: fieldSchema['x-uid'],
       async onSuccess(data) {
@@ -88,7 +88,7 @@ export const Form: React.FC<FormProps> = observer((props) => {
     props,
   );
   return (
-    <Spin spinning={loading}>
+    <Spin spinning={result?.loading || false}>
       {fieldSchema['x-decorator'] === 'Form' ? (
         <FormDecorator form={form} {...others} />
       ) : (

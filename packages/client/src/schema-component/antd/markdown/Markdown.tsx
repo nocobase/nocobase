@@ -4,6 +4,8 @@ import { Button, Input as AntdInput, Space } from 'antd';
 import { marked } from 'marked';
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { DragHandler } from '../../common';
+import { useDesignable } from '../../hooks/useDesignable';
 import { ReadPretty as InputReadPretty } from '../input';
 
 export function markdown(text) {
@@ -28,7 +30,7 @@ export const Markdown: any = connect(
   }),
 );
 
-function MarkdownTextArea(props: any) {
+function MarkdownEditor(props: any) {
   const { t } = useTranslation();
   const [value, setValue] = useState(props.defaultValue);
   return (
@@ -63,15 +65,15 @@ function MarkdownTextArea(props: any) {
 }
 
 Markdown.Void = observer((props: any) => {
+  const { content } = props;
+  const field = useField();
   const schema = useFieldSchema();
-  const field = useField<any>();
-  const text = schema['x-component-props']?.['content'] ?? schema['default'];
-  let value = <div className={'nb-markdown'} dangerouslySetInnerHTML={{ __html: markdown(text) }} />;
+  const { dn } = useDesignable();
   const { onSave, onCancel } = props;
   return field.editable ? (
-    <MarkdownTextArea
+    <MarkdownEditor
       {...props}
-      defaultValue={text}
+      defaultValue={content}
       onCancel={() => {
         field.editable = false;
         onCancel?.();
@@ -80,12 +82,45 @@ Markdown.Void = observer((props: any) => {
         field.editable = false;
         schema['x-component-props'] ?? (schema['x-component-props'] = {});
         schema['x-component-props']['content'] = value;
+        field.componentProps.content = value;
         onSave?.(schema);
+        dn.emit('patch', {
+          schema: {
+            'x-uid': schema['x-uid'],
+            'x-component-props': {
+              content: value,
+            },
+          },
+        });
       }}
     />
   ) : (
-    <InputReadPretty.TextArea {...props} text={text} value={value} />
+    <div className={'nb-markdown'} dangerouslySetInnerHTML={{ __html: markdown(content) }} />
   );
 });
+
+Markdown.Void.Designer = () => {
+  const { remove } = useDesignable();
+  const field = useField();
+  return (
+    <div>
+      <a
+        onClick={() => {
+          remove();
+        }}
+      >
+        删除
+      </a>
+      <a
+        onClick={() => {
+          field.editable = true;
+        }}
+      >
+        Edit
+      </a>
+      <DragHandler />
+    </div>
+  );
+};
 
 export default Markdown;

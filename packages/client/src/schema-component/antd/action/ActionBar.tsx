@@ -1,13 +1,22 @@
-import { RecursionField, useFieldSchema } from '@formily/react';
+import { observer, RecursionField, useFieldSchema } from '@formily/react';
 import { Space } from 'antd';
 import React from 'react';
 import { useComponent } from '../../hooks';
 
-export const ActionBar = () => {
+export const ActionBar = observer((props: any) => {
+  const { layout = 'tow-columns', style, ...others } = props;
   const fieldSchema = useFieldSchema();
   const ActionInitializer = useComponent(fieldSchema['x-action-initializer']);
+  if (layout === 'one-column') {
+    return (
+      <div style={{ display: 'flex', ...style }} {...others}>
+        {props.children && <div style={{ marginRight: 8 }}>{props.children}</div>}
+        {ActionInitializer && <ActionInitializer />}
+      </div>
+    );
+  }
   return (
-    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 16 }}>
+    <div style={{ display: 'flex', justifyContent: 'space-between', ...style }} {...others}>
       <div style={{ display: 'flex', justifyContent: 'space-between', width: '100%' }}>
         <Space>
           {fieldSchema.mapProperties((schema, key) => {
@@ -29,4 +38,4 @@ export const ActionBar = () => {
       {ActionInitializer && <ActionInitializer />}
     </div>
   );
-};
+});
