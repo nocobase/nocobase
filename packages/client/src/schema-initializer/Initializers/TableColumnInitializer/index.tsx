@@ -7,20 +7,23 @@ import { useCollection, useDesignable } from '../../..';
 
 const useTableColumnInitializerFields = () => {
   const { name, fields } = useCollection();
-  return fields
-    // .filter((field) => field?.uiSchema?.title)
-    .map((field) => {
-      return {
-        type: 'item',
-        title: field?.uiSchema?.title || field.name,
-        schema: {
-          name: field.name,
-          'x-collection-field': `${name}.${field.name}`,
-          'x-component': 'CollectionField',
-        },
-        component: ColumnInitializerItem,
-      } as SchemaInitializerItemOptions;
-    });
+  return (
+    fields
+      // .filter((field) => field?.uiSchema?.title)
+      .map((field) => {
+        return {
+          type: 'item',
+          title: field?.uiSchema?.title || field.name,
+          schema: {
+            name: field.name,
+            'x-designer': 'TestDesigner',
+            'x-collection-field': `${name}.${field.name}`,
+            'x-component': 'CollectionField',
+          },
+          component: ColumnInitializerItem,
+        } as SchemaInitializerItemOptions;
+      })
+  );
 };
 
 const useCurrentColumnSchema = (path: string) => {
