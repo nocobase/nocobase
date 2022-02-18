@@ -32,7 +32,7 @@ export const RemoteCollectionManagerProvider = (props: any) => {
     resource: 'collections',
     action: 'list',
     params: {
-      perPage: 999,
+      pageSize: 999,
       appends: ['fields', 'fields.uiSchema'],
     },
   };

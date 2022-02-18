@@ -82,5 +82,5 @@ export const useDataSourceFromRAC = (options: any) => {
 
 export const useResourceContext = () => {
   const { type, resource, collection, association } = useContext(ResourceContext);
-  return { type, resource, collection, association, targetKey: association?.targetKey || collection?.targetKey };
+  return { type, resource, collection, association, targetKey: association?.targetKey || collection?.targetKey || 'id' };
 };
