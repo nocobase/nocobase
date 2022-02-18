@@ -44,7 +44,7 @@ export abstract class MultipleRelationRepository extends RelationRepository {
     if (findOptions.include && findOptions.include.length > 0) {
       const ids = (
         await sourceModel[getAccessor]({
-          ...findOptions,
+          ...omit(findOptions, 'order'),
           includeIgnoreAttributes: false,
           attributes: [this.targetKey()],
           group: `${this.targetModel.name}.${this.targetKey()}`,
