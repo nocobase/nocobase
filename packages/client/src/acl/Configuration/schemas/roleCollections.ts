@@ -1,4 +1,6 @@
-import { ISchema } from '@formily/react';
+import { ISchema, useForm } from '@formily/react';
+import { useEffect } from 'react';
+import { useActionContext, useAPIClient, useRecord, useRequest } from '../../../';
 
 const collection = {
   name: 'collections',
@@ -67,9 +69,9 @@ export const roleCollectionsSchema: ISchema = {
       'x-component': 'VoidTable',
       'x-component-props': {
         rowKey: 'name',
-        rowSelection: {
-          type: 'checkbox',
-        },
+        // rowSelection: {
+        //   type: 'checkbox',
+        // },
         useDataSource: '{{ useDataSourceFromRAC }}',
       },
       properties: {
@@ -122,13 +124,37 @@ export const roleCollectionsSchema: ISchema = {
                       'x-component': 'Action.Drawer',
                       'x-decorator': 'Form',
                       'x-decorator-props': {
-                        useValues: '{{ useValues }}',
+                        useValues(options) {
+                          const record = useRecord();
+                          const { visible } = useActionContext();
+                          const result = useRequest(
+                            {
+                              resource: 'roles.resources',
+                              resourceOf: record.roleName,
+                              action: 'get',
+                              params: {
+                                filterByTk: record.name,
+                              },
+                            },
+                            { ...options, manual: true },
+                          );
+                          useEffect(() => {
+                            if (record.usingConfig === 'strategy') {
+                              return;
+                            }
+                            if (visible) {
+                              result.run();
+                            }
+                          }, [visible, record.usingConfig]);
+                          return;
+                        },
                       },
-                      title: 'Drawer Title',
+                      title: '配置权限',
                       properties: {
                         usingActionsConfig: {
                           'x-component': 'Radio.Group',
                           'x-decorator': 'FormItem',
+                          default: false,
                           enum: [
                             { value: false, label: '使用通用权限：只能查看、添加、修改数据' },
                             { value: true, label: '单独配置权限' },
@@ -154,7 +180,21 @@ export const roleCollectionsSchema: ISchema = {
                               'x-component': 'Action',
                               'x-component-props': {
                                 type: 'primary',
-                                useAction: '{{ useUpdateAction }}',
+                                useAction: () => {
+                                  const form = useForm();
+                                  const api = useAPIClient();
+                                  const record = useRecord();
+                                  return {
+                                    async run() {
+                                      await api.resource('roles.resources', record.roleName).create({
+                                        values: {
+                                          ...form.values,
+                                          name: record.name,
+                                        },
+                                      });
+                                    },
+                                  };
+                                },
                               },
                             },
                           },
