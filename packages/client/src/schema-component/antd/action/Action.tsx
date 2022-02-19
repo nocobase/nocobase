@@ -21,7 +21,7 @@ export const Action: ComposedAction = observer((props: any) => {
       <Button
         {...others}
         onClick={(e) => {
-          onClick && onClick(e);
+          onClick?.(e);
           setVisible(true);
           run();
         }}

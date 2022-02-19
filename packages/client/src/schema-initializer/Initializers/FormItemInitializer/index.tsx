@@ -7,8 +7,10 @@ import { SchemaInitializer, SchemaInitializerItemOptions } from '../..';
 import { useCollection } from '../../../collection-manager';
 import { useDesignable } from '../../../schema-component';
 
-const useFormItems = () => {
-  const { name, fields } = useCollection();
+const useFormItemInitializerFields = () => {
+  const { fields } = useCollection();
+  const fieldSchema = useFieldSchema();
+  const props = fieldSchema['x-item-initializer-props'];
   return fields?.map((field) => {
     return {
       type: 'item',
@@ -16,10 +18,14 @@ const useFormItems = () => {
       component: InitializeFormItem,
       schema: {
         name: field.name,
-        'x-designer': 'TestDesigner',
-        'x-component': 'CollectionField',
-        'x-decorator': 'FormItem',
-        'x-collection-field': `${name}.${field.name}`,
+        type: field.type,
+        title: field?.uiSchema?.title ?? field.name,
+        'x-component': field?.uiSchema?.['x-component'],
+        'x-component-props': field?.uiSchema?.['x-component-props'],
+        'x-decorator': field?.uiSchema?.['FormItem'] ?? 'FormItem',
+        'x-decorator-props': field?.uiSchema?.['x-decorator-props'],
+        'x-collection-field': field.name,
+        'x-read-pretty': !!props?.readPretty,
       },
     } as SchemaInitializerItemOptions;
   });
@@ -125,7 +131,7 @@ export const FormItemInitializer = observer((props: any) => {
         {
           type: 'itemGroup',
           title: t('Display fields'),
-          children: useFormItems(),
+          children: useFormItemInitializerFields(),
         },
         {
           type: 'divider',

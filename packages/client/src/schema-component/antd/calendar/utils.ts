@@ -1,3 +1,5 @@
+import type { ISchema } from '@formily/react';
+import { uid } from '@formily/shared';
 import { get } from 'lodash';
 import { i18n } from '../../../i18n';
 
@@ -40,4 +42,41 @@ export const toEvents = (data: any[], fieldNames: any) => {
       end: new Date(get(item, fieldNames.end || fieldNames.start)),
     };
   });
+};
+
+export const eventSchema: ISchema = {
+  type: 'void',
+  name: 'event',
+  properties: {
+    modal: {
+      'x-component': 'Action.Drawer',
+      'x-decorator': 'Form',
+      'x-decorator-props': {
+        useValues: '{{ useValues }}',
+      },
+      type: 'void',
+      title: 'Drawer Title',
+      properties: {
+        grid: {
+          type: 'void',
+          'x-component': 'Grid',
+          'x-item-initializer': 'Grid.AddFormItem',
+          'x-item-initializer-props': {
+            readPretty: true,
+          },
+        },
+        footer: {
+          'x-component': 'Action.Drawer.Footer',
+          type: 'void',
+          properties: {
+            [uid()]: {
+              title: 'submit',
+              'x-component': 'ActionBar',
+              'x-action-initializer': 'Calendar.FooterActionInitializer',
+            },
+          },
+        },
+      },
+    },
+  },
 };
