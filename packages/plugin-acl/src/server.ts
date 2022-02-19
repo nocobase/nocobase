@@ -4,6 +4,7 @@ import { availableActionResource } from './actions/available-actions';
 import { roleCollectionsResource } from './actions/role-collections';
 import { RoleResourceActionModel } from './model/RoleResourceActionModel';
 import { RoleResourceModel } from './model/RoleResourceModel';
+import { RoleModel } from './model/RoleModel';
 
 export interface AssociationFieldAction {
   associationActions: string[];
@@ -26,7 +27,6 @@ export class GrantHelper {
 }
 
 export class PluginACL extends Plugin {
-
   associationFieldsActions: AssociationFieldsActions = {};
 
   grantHelper = new GrantHelper();
@@ -100,11 +100,23 @@ export class PluginACL extends Plugin {
     });
   }
 
-  async beforeLoad() {
+  async writeRolesToACL() {
+    const roles = (await this.app.db.getRepository('roles').find({
+      appends: ['resources', 'resources.actions'],
+    })) as RoleModel[];
+    for (const role of roles) {
+      role.writeToAcl({ acl: this.acl });
+      for (const resource of role.get('resources') as RoleResourceModel[]) {
+        await this.writeResourceToACL(resource, null);
+      }
+    }
+  }
 
+  async beforeLoad() {
     this.app.db.registerModels({
       RoleResourceActionModel,
       RoleResourceModel,
+      RoleModel,
     });
 
     this.registerAssociationFieldsActions();
@@ -114,18 +126,9 @@ export class PluginACL extends Plugin {
 
     this.app.db.on('roles.afterSave', async (model, options) => {
       const { transaction } = options;
-      const roleName = model.get('name');
-      let role = this.acl.getRole(roleName);
 
-      if (!role) {
-        role = this.acl.define({
-          role: model.get('name'),
-        });
-      }
-
-      role.setStrategy({
-        ...(model.get('strategy') || {}),
-        allowConfigure: model.get('allowConfigure'),
+      model.writeToAcl({
+        acl: this.acl,
       });
 
       // model is default
@@ -228,6 +231,11 @@ export class PluginACL extends Plugin {
           transaction: options.transaction,
         });
       }
+    });
+
+    // sync database role data to acl
+    this.app.on('beforeStart', async () => {
+      await this.writeRolesToACL();
     });
   }
 

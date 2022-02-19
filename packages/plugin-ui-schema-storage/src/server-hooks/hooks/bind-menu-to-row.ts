@@ -8,7 +8,7 @@ export async function bindMenuToRole({ schemaInstance, db, options }) {
 
   for (const role of addNewMenuRoles) {
     await db.getRepository('roles.menuUiSchemas', role.get('name')).add({
-      tk: schemaInstance.get('uid'),
+      tk: schemaInstance.get('x-uid'),
       transaction,
     });
   }

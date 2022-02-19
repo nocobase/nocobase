@@ -56,7 +56,7 @@ describe('ui_schema repository', () => {
     // it should save in ui schema tables
     const testNode = await repository.findOne({
       filter: {
-        uid: 'test',
+        'x-uid': 'test',
       },
     });
 
@@ -277,8 +277,8 @@ describe('ui_schema repository', () => {
         (
           await treePathCollection.repository.findOne({
             filter: {
-              ancestor: root.get('uid'),
-              descendant: a1.get('uid'),
+              ancestor: root.get('x-uid'),
+              descendant: a1.get('x-uid'),
               depth: 1,
             },
           })
@@ -289,8 +289,8 @@ describe('ui_schema repository', () => {
         (
           await treePathCollection.repository.findOne({
             filter: {
-              ancestor: root.get('uid'),
-              descendant: b1.get('uid'),
+              ancestor: root.get('x-uid'),
+              descendant: b1.get('x-uid'),
               depth: 1,
             },
           })
@@ -301,8 +301,8 @@ describe('ui_schema repository', () => {
         (
           await treePathCollection.repository.findOne({
             filter: {
-              ancestor: b1.get('uid'),
-              descendant: c1.get('uid'),
+              ancestor: b1.get('x-uid'),
+              descendant: c1.get('x-uid'),
               depth: 1,
             },
           })
@@ -313,8 +313,8 @@ describe('ui_schema repository', () => {
         (
           await treePathCollection.repository.findOne({
             filter: {
-              ancestor: b1.get('uid'),
-              descendant: d1.get('uid'),
+              ancestor: b1.get('x-uid'),
+              descendant: d1.get('x-uid'),
               depth: 1,
             },
           })
@@ -330,7 +330,7 @@ describe('ui_schema repository', () => {
         },
       });
 
-      const results = await repository.getJsonSchema(rootNode.get('uid') as string);
+      const results = await repository.getJsonSchema(rootNode.get('x-uid') as string);
 
       expect(results).toMatchObject({
         type: 'object',
@@ -375,7 +375,7 @@ describe('ui_schema repository', () => {
         },
       });
 
-      const results = await repository.getProperties(rootNode.get('uid') as string);
+      const results = await repository.getProperties(rootNode.get('x-uid') as string);
 
       expect(results).toMatchObject({
         type: 'object',
@@ -468,7 +468,7 @@ describe('ui_schema repository', () => {
         },
       });
 
-      rootUid = rootNode.get('uid') as string;
+      rootUid = rootNode.get('x-uid') as string;
     });
 
     it('should insertAfterBegin', async () => {
@@ -506,7 +506,7 @@ describe('ui_schema repository', () => {
         },
       });
 
-      await repository.insertBeforeBegin(b1Node.get('uid') as string, newNode);
+      await repository.insertBeforeBegin(b1Node.get('x-uid') as string, newNode);
 
       const schema = await repository.getJsonSchema(rootUid);
       expect(schema.properties['newNode']['x-index']).toEqual(2);
@@ -525,7 +525,7 @@ describe('ui_schema repository', () => {
         },
       });
 
-      await repository.insertAfterEnd(a1Node.get('uid') as string, newNode);
+      await repository.insertAfterEnd(a1Node.get('x-uid') as string, newNode);
 
       const schema = await repository.getJsonSchema(rootUid);
       expect(schema.properties['newNode']['x-index']).toEqual(2);
@@ -544,7 +544,7 @@ describe('ui_schema repository', () => {
         },
       });
 
-      await repository.insertAfterEnd(b1Node.get('uid') as string, newNode);
+      await repository.insertAfterEnd(b1Node.get('x-uid') as string, newNode);
 
       const schema = await repository.getJsonSchema(rootUid);
       expect(schema.properties['newNode']['x-index']).toEqual(3);
@@ -705,7 +705,7 @@ describe('ui_schema repository', () => {
         },
       });
 
-      rootUid = rootNode.get('uid') as string;
+      rootUid = rootNode.get('x-uid') as string;
     });
 
     it('should patch root ui schema', async () => {
@@ -924,6 +924,7 @@ describe('ui_schema repository', () => {
     });
 
     const A = await repository.getJsonSchema('A');
+
     expect(A).toEqual({
       properties: {
         E: {

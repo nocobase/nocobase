@@ -1,12 +1,15 @@
 import { ACL } from '@nocobase/acl';
 import { Database } from '@nocobase/database';
 import { MockServer } from '@nocobase/test';
-import { prepareApp } from './prepare';
+import { changeMockRole, prepareApp } from './prepare';
+import { UiSchemaRepository } from '@nocobase/plugin-ui-schema-storage';
 
 describe('acl', () => {
   let app: MockServer;
   let db: Database;
   let acl: ACL;
+
+  let uiSchemaRepository: UiSchemaRepository;
 
   afterEach(async () => {
     await app.destroy();
@@ -16,6 +19,8 @@ describe('acl', () => {
     app = await prepareApp();
     db = app.db;
     acl = app.acl;
+
+    uiSchemaRepository = db.getRepository('uiSchemas');
   });
 
   it('should works with universal actions', async () => {
@@ -68,20 +73,20 @@ describe('acl', () => {
   });
 
   it('should works with resources actions', async () => {
-    await db.getRepository('roles').create({
+    const role = await db.getRepository('roles').create({
       values: {
         name: 'admin',
         title: 'Admin User',
         allowConfigure: true,
+        strategy: {
+          actions: ['list'],
+        },
       },
     });
 
-    const role = await db.getRepository('roles').findOne({
-      filter: {
-        name: 'admin',
-      },
-    });
+    changeMockRole('admin');
 
+    // create c1 collection
     await db.getRepository('collections').create({
       values: {
         name: 'c1',
@@ -89,6 +94,7 @@ describe('acl', () => {
       },
     });
 
+    // create c2 collection
     await db.getRepository('collections').create({
       values: {
         name: 'c2',
@@ -96,6 +102,7 @@ describe('acl', () => {
       },
     });
 
+    // create c1 published scope
     await app
       .agent()
       .resource('rolesResourcesScopes')
@@ -111,11 +118,11 @@ describe('acl', () => {
 
     const publishedScope = await db.getRepository('rolesResourcesScopes').findOne();
 
+    // set admin resources
     await app
       .agent()
-      .resource('roles.resources')
+      .resource('roles.resources', 'admin')
       .create({
-        associatedIndex: role.get('name') as string,
         values: {
           name: 'c1',
           usingActionsConfig: true,
@@ -170,10 +177,10 @@ describe('acl', () => {
         appends: ['actions'],
       });
 
+    expect(response.statusCode).toEqual(200);
+
     const actions = response.body.data[0].actions;
     const collectionName = response.body.data[0].name;
-
-    const viewActionId = actions.find((action) => action.name === 'view').id;
 
     await app
       .agent()
@@ -185,7 +192,6 @@ describe('acl', () => {
           usingActionsConfig: true,
           actions: [
             {
-              id: viewActionId,
               name: 'view',
               fields: ['title', 'age'],
             },
@@ -433,5 +439,95 @@ describe('acl', () => {
     })['params']['fields'];
 
     expect(newAllowFields.includes('description')).toBeTruthy();
+  });
+
+  it('should get role menus', async () => {
+    const role = await db.getRepository('roles').create({
+      values: {
+        name: 'admin',
+        title: 'Admin User',
+        allowConfigure: true,
+        strategy: {
+          actions: ['view'],
+        },
+      },
+    });
+
+    changeMockRole('admin');
+
+    const menuResponse = await app.agent().resource('roles.menuUiSchemas', 'admin').list();
+
+    expect(menuResponse.statusCode).toEqual(200);
+  });
+
+  it('should toggle role menus', async () => {
+    const role = await db.getRepository('roles').create({
+      values: {
+        name: 'admin',
+        title: 'Admin User',
+        allowConfigure: true,
+        strategy: {
+          actions: ['*'],
+        },
+      },
+    });
+
+    changeMockRole('admin');
+
+    const schema = {
+      'x-uid': 'test',
+    };
+
+    await uiSchemaRepository.insert(schema);
+
+    const response = await app
+      .agent()
+      .resource('roles.menuUiSchemas', 'admin')
+      .toggle({
+        values: { tk: 'test' },
+      });
+
+    expect(response.statusCode).toEqual(200);
+  });
+
+  it('should sync data to acl before app start', async () => {
+    const role = await db.getRepository('roles').create({
+      values: {
+        name: 'admin',
+        title: 'Admin User',
+        allowConfigure: true,
+        resources: [
+          {
+            name: 'posts',
+            usingActionsConfig: true,
+            actions: [
+              {
+                name: 'view',
+                fields: ['title'],
+              },
+            ],
+          },
+        ],
+      },
+      hooks: false,
+    });
+
+    expect(acl.getRole('admin')).toBeUndefined();
+
+    await app.start();
+
+    expect(acl.getRole('admin')).toBeDefined();
+
+    expect(
+      acl.can({
+        role: 'admin',
+        resource: 'posts',
+        action: 'view',
+      }),
+    ).toMatchObject({
+      role: 'admin',
+      resource: 'posts',
+      action: 'view',
+    });
   });
 });
