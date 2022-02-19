@@ -7,6 +7,7 @@ import React, { useMemo } from 'react';
 import { AsyncDataProvider, useRequest } from '../../../';
 import { useAttach } from '../../hooks';
 import { ArrayTable } from '../array-table';
+import { VoidTableDesigner } from './VoidTable.Designer';
 
 type VoidTableProps = TableProps<any> & {
   request?: any;
@@ -15,6 +16,7 @@ type VoidTableProps = TableProps<any> & {
 
 type VoidTableType = React.FC<VoidTableProps> & {
   Column?: React.FC<any>;
+  Designer?: any;
   mixin?: (T: any) => void;
 };
 
@@ -107,6 +109,6 @@ export const VoidTable: VoidTableType = observer((props) => {
   );
 });
 
+VoidTable.Designer = VoidTableDesigner;
 VoidTable.mixin = ArrayTable.mixin;
-
 ArrayTable.mixin(VoidTable);

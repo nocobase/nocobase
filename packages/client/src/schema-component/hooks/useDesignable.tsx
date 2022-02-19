@@ -165,6 +165,11 @@ export class Designable {
     return false;
   }
 
+  refresh() {
+    const { refresh } = this.options;
+    return refresh?.();
+  }
+
   insertAdjacent(position: Position, schema: ISchema, options: InsertAdjacentOptions = {}) {
     switch (position) {
       case 'beforeBegin':

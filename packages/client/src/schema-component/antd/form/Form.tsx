@@ -6,6 +6,7 @@ import { Spin } from 'antd';
 import React, { useMemo } from 'react';
 import { useAttach, useComponent } from '../..';
 import { useRequest } from '../../../api-client';
+import { GeneralSchemaDesigner, SchemaSettings } from '../../../schema-settings';
 
 type Opts = Options<any, any> & { uid?: string };
 
@@ -73,7 +74,7 @@ const useDef = (opts: any = {}, props: FormProps = {}) => {
   return useRequest(useRequestProps(props), opts);
 };
 
-export const Form: React.FC<FormProps> = observer((props) => {
+export const Form: React.FC<FormProps> & { Designer?: any } = observer((props) => {
   const { request, effects, initialValue, useValues = useDef, ...others } = props;
   const fieldSchema = useFieldSchema();
   const form = useMemo(() => createForm({ effects }), []);
@@ -97,3 +98,11 @@ export const Form: React.FC<FormProps> = observer((props) => {
     </Spin>
   );
 });
+
+Form.Designer = () => {
+  return (
+    <GeneralSchemaDesigner>
+      <SchemaSettings.Remove />
+    </GeneralSchemaDesigner>
+  );
+};
