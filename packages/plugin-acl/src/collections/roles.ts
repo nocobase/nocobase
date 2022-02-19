@@ -7,6 +7,7 @@ export default {
     {
       type: 'uid',
       name: 'name',
+      prefix: 'r_',
       primaryKey: true,
     },
     {
@@ -43,12 +44,14 @@ export default {
       type: 'belongsToMany',
       name: 'menuUiSchemas',
       target: 'uiSchemas',
+      targetKey: 'uid',
     },
     {
       type: 'hasMany',
       name: 'resources',
       target: 'rolesResources',
       sourceKey: 'name',
+      targetKey: 'name',
     },
   ],
 } as CollectionOptions;
