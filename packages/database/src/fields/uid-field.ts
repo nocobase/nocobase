@@ -1,6 +1,6 @@
+import { uid } from '@nocobase/utils';
 import { DataTypes } from 'sequelize';
 import { BaseColumnFieldOptions, Field } from './field';
-import { uid } from '@nocobase/utils';
 
 export class UidField extends Field {
   get dataType() {
@@ -20,4 +20,5 @@ export class UidField extends Field {
 
 export interface UidFieldOptions extends BaseColumnFieldOptions {
   type: 'uid';
+  prefix?: string;
 }
