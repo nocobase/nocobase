@@ -165,23 +165,21 @@ describe('acl', () => {
     // revoke action
     const response = await app
       .agent()
-      .resource('roles.resources')
+      .resource('roles.resources', role.get('name'))
       .list({
-        associatedIndex: role.get('name') as string,
         appends: ['actions'],
       });
 
     const actions = response.body.data[0].actions;
-    const resourceId = response.body.data[0].id;
+    const collectionName = response.body.data[0].name;
 
     const viewActionId = actions.find((action) => action.name === 'view').id;
 
     await app
       .agent()
-      .resource('roles.resources')
+      .resource('roles.resources', role.get('name'))
       .update({
-        associatedIndex: role.get('name') as string,
-        resourceIndex: resourceId,
+        filterByTk: collectionName,
         values: {
           name: 'c1',
           usingActionsConfig: true,
@@ -319,17 +317,16 @@ describe('acl', () => {
 
     await app
       .agent()
-      .resource('roles.resources')
+      .resource('roles.resources', role.get('name'))
       .update({
-        associatedIndex: role.get('name') as string,
-        resourceIndex: (
+        filterByTk: (
           await db.getRepository('rolesResources').findOne({
             filter: {
               name: 'posts',
               roleName: 'admin',
             },
           })
-        ).get('id') as string,
+        ).get('name') as string,
         values: {
           usingActionsConfig: false,
         },
@@ -345,17 +342,16 @@ describe('acl', () => {
 
     await app
       .agent()
-      .resource('roles.resources')
+      .resource('roles.resources', role.get('name'))
       .update({
-        associatedIndex: role.get('name') as string,
-        resourceIndex: (
+        filterByTk: (
           await db.getRepository('rolesResources').findOne({
             filter: {
               name: 'posts',
               roleName: 'admin',
             },
           })
-        ).get('id') as string,
+        ).get('name') as string,
         values: {
           usingActionsConfig: true,
         },
