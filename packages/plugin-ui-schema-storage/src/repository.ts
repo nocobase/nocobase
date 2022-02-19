@@ -38,6 +38,14 @@ export class UiSchemaRepository extends Repository {
     return model.tableName;
   }
 
+  sqlAdapter(sql: string) {
+    if (this.database.sequelize.getDialect() === 'mysql') {
+      return lodash.replace(sql, /"/g, '`');
+    }
+
+    return sql;
+  }
+
   static schemaToSingleNodes(schema: any, carry: SchemaNode[] = [], childOptions: ChildOptions = null): SchemaNode[] {
     const node = lodash.cloneDeep(
       lodash.isString(schema)
@@ -108,7 +116,7 @@ export class UiSchemaRepository extends Repository {
                  LEFT JOIN ${this.uiSchemaTreePathTableName} as ParentPath ON (ParentPath.descendant = "SchemaTable"."x-uid" AND ParentPath.depth = 1)
         WHERE TreePath.ancestor = :ancestor  AND (NodeInfo.async  = false or TreePath.depth = 1)`;
 
-    const nodes = await db.sequelize.query(rawSql, {
+    const nodes = await db.sequelize.query(this.sqlAdapter(rawSql), {
       replacements: {
         ancestor: uid,
       },
@@ -138,7 +146,7 @@ export class UiSchemaRepository extends Repository {
         WHERE TreePath.ancestor = :ancestor  ${options?.includeAsyncNode ? '' : 'AND (NodeInfo.async != true )'}
     `;
 
-    const nodes = await db.sequelize.query(rawSql, {
+    const nodes = await db.sequelize.query(this.sqlAdapter(rawSql), {
       replacements: {
         ancestor: uid,
       },
