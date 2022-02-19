@@ -2,14 +2,14 @@ import { LeftOutlined, RightOutlined } from '@ant-design/icons';
 import { createForm, VoidField } from '@formily/core';
 import { observer, RecursionField, Schema, useField, useFieldSchema } from '@formily/react';
 import moment from 'moment';
-import React, { useContext, useEffect, useMemo, useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { Calendar as BigCalendar, momentLocalizer } from 'react-big-calendar';
 import * as dates from 'react-big-calendar/lib/utils/dates';
 import { useTranslation } from 'react-i18next';
 import { SchemaComponent } from '../..';
 import { AsyncDataProvider, useRequest } from '../../../';
 import { i18n } from '../../../i18n';
-import { ActionBar, ActionContext, useActionContext } from '../action';
+import { ActionBar, ActionContext } from '../action';
 import { ActionInitializer } from './ActionInitializer';
 import { CalendarContext, ToolbarContext } from './context';
 import { Filter } from './Filter';
@@ -113,32 +113,12 @@ export const Calendar: any = observer((props: any) => {
     return buf;
   }, null);
 
-  const useValues = (options) => {
-    const { visible } = useActionContext();
-    const { record } = useContext(CalendarContext);
-    const result = useRequest(
-      () =>
-        Promise.resolve({
-          data: {
-            ...record,
-          },
-        }),
-      { ...options, manual: true },
-    );
-    useEffect(() => {
-      if (visible) {
-        result.run();
-      }
-    }, [visible]);
-    return result;
-  };
-
   return (
     <AsyncDataProvider value={result}>
       <CalendarContext.Provider value={{ field, props, record }}>
         <div {...props} style={{ height: 700 }}>
           <ActionContext.Provider value={{ visible, setVisible }}>
-            <SchemaComponent memoized name={eventSchema.name} scope={{ useValues }} schema={eventSchema as any} />
+            <SchemaComponent memoized name={eventSchema.name} schema={eventSchema as any} />
           </ActionContext.Provider>
           <BigCalendar
             popup

@@ -13,8 +13,9 @@ import {
   SchemaComponentProvider,
   useActionContext,
   useAsyncData,
+  useRequest,
 } from '@nocobase/client';
-import React, { useContext } from 'react';
+import React, { useContext, useEffect } from 'react';
 import defaultValues from './defaultValues';
 
 const dataSource = observable(defaultValues);
@@ -189,6 +190,26 @@ const useUpdateAction = () => {
   };
 };
 
+const useValues = (options) => {
+  const { visible } = useActionContext();
+  const { record } = useContext(CalendarContext);
+  const result = useRequest(
+    () =>
+      Promise.resolve({
+        data: {
+          ...record,
+        },
+      }),
+    { ...options, manual: true },
+  );
+  useEffect(() => {
+    if (visible) {
+      result.run();
+    }
+  }, [visible]);
+  return result;
+};
+
 const collection = {
   name: 'tests',
   fields: [
@@ -240,7 +261,7 @@ export default () => {
   return (
     <CollectionProvider collection={collection}>
       <SchemaComponentProvider
-        scope={{ useSaveAction, useCloseAction, useEditAction, useUpdateAction, useRemoveAction }}
+        scope={{ useSaveAction, useCloseAction, useEditAction, useUpdateAction, useValues, useRemoveAction }}
       >
         <AntdSchemaComponentProvider>
           <SchemaComponent schema={schema} />
