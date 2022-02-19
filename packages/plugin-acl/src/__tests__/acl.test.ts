@@ -489,4 +489,45 @@ describe('acl', () => {
 
     expect(response.statusCode).toEqual(200);
   });
+
+  it('should sync data to acl before app start', async () => {
+    const role = await db.getRepository('roles').create({
+      values: {
+        name: 'admin',
+        title: 'Admin User',
+        allowConfigure: true,
+        resources: [
+          {
+            name: 'posts',
+            usingActionsConfig: true,
+            actions: [
+              {
+                name: 'view',
+                fields: ['title'],
+              },
+            ],
+          },
+        ],
+      },
+      hooks: false,
+    });
+
+    expect(acl.getRole('admin')).toBeUndefined();
+
+    await app.start();
+
+    expect(acl.getRole('admin')).toBeDefined();
+
+    expect(
+      acl.can({
+        role: 'admin',
+        resource: 'posts',
+        action: 'view',
+      }),
+    ).toMatchObject({
+      role: 'admin',
+      resource: 'posts',
+      action: 'view',
+    });
+  });
 });

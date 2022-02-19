@@ -3,6 +3,7 @@ import { CollectionOptions } from '@nocobase/database';
 export default {
   name: 'roles',
   autoGenId: false,
+  model: 'RoleModel',
   fields: [
     {
       type: 'uid',
