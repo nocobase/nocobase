@@ -34,6 +34,7 @@ const InitializeAction = SchemaInitializer.itemWrap((props) => {
         }
         insert({
           type: 'void',
+          'x-designer': 'TestDesigner',
           'x-component': 'Action',
           ...item.schema,
         });
@@ -52,7 +53,6 @@ export const FormActionInitializer = observer((props: any) => {
   return (
     <SchemaInitializer.Button
       insertPosition={'beforeEnd'}
-      style={{ marginLeft: 8 }}
       items={[
         {
           type: 'itemGroup',

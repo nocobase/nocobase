@@ -1,8 +1,9 @@
-import { PlusOutlined } from '@ant-design/icons';
 import { ISchema } from '@formily/react';
 import { uid } from '@formily/shared';
-import { Button, Dropdown, Menu } from 'antd';
 import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
+import { useAPIClient } from '../../api-client';
+import { useRecord } from '../../record-provider';
 import { ActionContext, SchemaComponent } from '../../schema-component';
 import { useCollectionManager } from '../hooks';
 import { IField } from '../interfaces/types';
@@ -24,7 +25,7 @@ const getSchema = (schema: IField): ISchema => {
             name: `f_${uid()}`,
           },
         },
-        title: '{{ t("Add field") }}',
+        title: '{{ t("Edit field") }}',
         properties: {
           type: {
             'x-component': 'CollectionField',
@@ -40,6 +41,7 @@ const getSchema = (schema: IField): ISchema => {
           name: {
             'x-component': 'CollectionField',
             'x-decorator': 'FormItem',
+            'x-disabled': true,
           },
           // @ts-ignore
           ...schema.properties,
@@ -59,7 +61,7 @@ const getSchema = (schema: IField): ISchema => {
                 'x-component': 'Action',
                 'x-component-props': {
                   type: 'primary',
-                  useAction: '{{ useCreateActionAndRefreshCM }}',
+                  useAction: '{{ useUpdateActionAndRefreshCM }}',
                 },
               },
             },
@@ -70,33 +72,31 @@ const getSchema = (schema: IField): ISchema => {
   };
 };
 
-export const AddFieldAction = () => {
+export const EditFieldAction = (props) => {
+  const record = useRecord();
   const { getInterface } = useCollectionManager();
   const [visible, setVisible] = useState(false);
   const [schema, setSchema] = useState({});
+  const api = useAPIClient();
+  const { t } = useTranslation();
   return (
     <ActionContext.Provider value={{ visible, setVisible }}>
-      <Dropdown
-        overlay={
-          <Menu
-            onClick={(info) => {
-              const schema = getSchema(getInterface(info.key));
-              setSchema(schema);
-              setVisible(true);
-            }}
-          >
-            <Menu.SubMenu title={'基本类型'}>
-              <Menu.Item key={'input'}>input</Menu.Item>
-              <Menu.Item key={'textarea'}>textarea</Menu.Item>
-              <Menu.Item key={'chinaRegion'}>China region</Menu.Item>
-            </Menu.SubMenu>
-          </Menu>
-        }
+      <a
+        onClick={async () => {
+          const { data } = await api.resource('collections.fields', record.collectionName).get({
+            filterByTk: record.name,
+            appends: ['uiSchema'],
+          });
+          const schema = getSchema({
+            ...getInterface(record.interface),
+            default: data?.data,
+          });
+          setSchema(schema);
+          setVisible(true);
+        }}
       >
-        <Button icon={<PlusOutlined />} type={'primary'}>
-          添加字段
-        </Button>
-      </Dropdown>
+        {t('Edit')}
+      </a>
       <SchemaComponent schema={schema} />
     </ActionContext.Provider>
   );

@@ -18,6 +18,7 @@ const createSchema = (collectionName) => {
         params: {},
       },
     },
+    'x-designer': 'TestDesigner',
     'x-component': 'CardItem',
     properties: {
       form: {
@@ -33,8 +34,14 @@ const createSchema = (collectionName) => {
           },
           actions: {
             type: 'void',
-            'x-component': 'ActionBar',
             'x-action-initializer': 'FormActionInitializer',
+            'x-component': 'ActionBar',
+            'x-component-props': {
+              layout: 'one-column',
+              style: {
+                marginTop: 24,
+              },
+            },
             properties: {},
           },
         },

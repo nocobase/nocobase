@@ -1,6 +1,7 @@
 import { ISchema } from '@formily/react';
+import { CollectionOptions } from '../../types';
 
-const collection = {
+const collection: CollectionOptions = {
   name: 'fields',
   fields: [
     {
@@ -8,7 +9,7 @@ const collection = {
       name: 'type',
       interface: 'input',
       uiSchema: {
-        title: '存储类型',
+        title: '{{ t("Storage type") }}',
         type: 'string',
         'x-component': 'Select',
         enum: [
@@ -18,14 +19,14 @@ const collection = {
           },
         ],
         required: true,
-      } as ISchema,
+      },
     },
     {
       type: 'string',
       name: 'interface',
       interface: 'input',
       uiSchema: {
-        title: '字段类型',
+        title: '{{ t("Field interface") }}',
         type: 'string',
         'x-component': 'Input',
       },
@@ -35,22 +36,21 @@ const collection = {
       name: 'title',
       interface: 'input',
       uiSchema: {
-        title: '字段名称',
+        title: '{{ t("Field display name") }}',
         type: 'string',
         'x-component': 'Input',
         required: true,
-      } as ISchema,
+      },
     },
     {
       type: 'string',
       name: 'name',
       interface: 'input',
       uiSchema: {
-        title: '字段标识',
+        title: '{{ t("Field name") }}',
         type: 'string',
         'x-component': 'Input',
-        description: '使用英文',
-      } as ISchema,
+      },
     },
   ],
 };
@@ -69,9 +69,9 @@ export const collectionFieldSchema: ISchema = {
       resource: 'collections.fields',
       action: 'list',
       params: {
-        pageSize: 5,
+        pageSize: 50,
         filter: {},
-        sort: ['sort'],
+        // sort: ['sort'],
         appends: ['uiSchema'],
       },
     },
@@ -84,15 +84,20 @@ export const collectionFieldSchema: ISchema = {
     actions: {
       type: 'void',
       'x-component': 'ActionBar',
+      'x-component-props': {
+        style: {
+          marginBottom: 16,
+        },
+      },
       properties: {
         delete: {
           type: 'void',
-          title: '删除',
+          title: '{{ t("Delete") }}',
           'x-component': 'Action',
         },
         create: {
           type: 'void',
-          title: '创建',
+          title: '{{ t("Add new") }}',
           'x-component': 'AddFieldAction',
           'x-component-props': {
             type: 'primary',
@@ -114,7 +119,7 @@ export const collectionFieldSchema: ISchema = {
       properties: {
         column1: {
           type: 'void',
-          title: '字段名称',
+          title: '{{ t("Field display name") }}',
           'x-component': 'VoidTable.Column',
           properties: {
             'uiSchema.title': {
@@ -130,7 +135,6 @@ export const collectionFieldSchema: ISchema = {
           'x-component': 'VoidTable.Column',
           properties: {
             name: {
-              type: 'string',
               'x-component': 'CollectionField',
               'x-read-pretty': true,
             },
@@ -142,7 +146,6 @@ export const collectionFieldSchema: ISchema = {
           'x-component': 'VoidTable.Column',
           properties: {
             interface: {
-              type: 'string',
               'x-component': 'CollectionField',
               'x-read-pretty': true,
             },
@@ -150,7 +153,7 @@ export const collectionFieldSchema: ISchema = {
         },
         column4: {
           type: 'void',
-          title: 'Actions',
+          title: '{{ t("Actions") }}',
           'x-component': 'VoidTable.Column',
           properties: {
             actions: {
@@ -162,7 +165,7 @@ export const collectionFieldSchema: ISchema = {
               properties: {
                 update: {
                   type: 'void',
-                  title: '编辑',
+                  title: '{{ t("Edit") }}',
                   'x-component': 'EditFieldAction',
                   'x-component-props': {
                     type: 'primary',
@@ -170,7 +173,7 @@ export const collectionFieldSchema: ISchema = {
                 },
                 delete: {
                   type: 'void',
-                  title: '删除',
+                  title: '{{ t("Delete") }}',
                   'x-component': 'Action.Link',
                   'x-component-props': {
                     useAction: '{{ useDestroyActionAndRefreshCM }}',

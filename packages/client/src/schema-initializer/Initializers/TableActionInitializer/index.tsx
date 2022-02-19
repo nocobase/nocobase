@@ -34,6 +34,7 @@ const InitializeAction = SchemaInitializer.itemWrap((props) => {
         }
         insert({
           type: 'void',
+          'x-designer': 'TestDesigner',
           'x-component': 'Action',
           ...item.schema,
         });
@@ -79,12 +80,14 @@ export const TableActionInitializer = observer((props: any) => {
                 'x-component': 'Action',
                 'x-component-props': {
                   type: 'primary',
+                  openMode: 'drawer',
                 },
                 properties: {
                   drawer: {
                     type: 'void',
                     title: '{{ t("Add new record") }}',
-                    'x-component': 'Action.Drawer',
+                    'x-component': 'Action.Container',
+                    'x-component-props': {},
                     'x-decorator': 'Form',
                     properties: {
                       grid: {
@@ -95,7 +98,7 @@ export const TableActionInitializer = observer((props: any) => {
                       },
                       footer: {
                         type: 'void',
-                        'x-component': 'Action.Drawer.Footer',
+                        'x-component': 'Action.Container.Footer',
                         properties: {
                           action1: {
                             title: '{{ t("Cancel") }}',
@@ -126,6 +129,9 @@ export const TableActionInitializer = observer((props: any) => {
               schema: {
                 title: '{{ t("Delete") }}',
                 'x-action': 'destroy',
+                'x-component-props': {
+                  useAction: '{{ useBulkDestroyAction }}',
+                },
               },
             },
           ],

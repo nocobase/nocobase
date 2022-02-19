@@ -6,5 +6,5 @@ export interface AvailableActionOptions {
 }
 
 export class AclAvailableAction {
-  constructor(private name: string, private options: AvailableActionOptions) {}
+  constructor(public name: string, public options: AvailableActionOptions) {}
 }

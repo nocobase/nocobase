@@ -16,7 +16,6 @@ const createSchema = (collectionName) => {
         resource: collectionName,
         action: 'list',
         params: {
-          perPage: 20,
           pageSize: 20,
           filter: {},
           // sort: ['sort'],
@@ -24,15 +23,21 @@ const createSchema = (collectionName) => {
         },
       },
     },
+    'x-designer': 'TestDesigner',
     'x-component': 'CardItem',
     properties: {
       actions: {
         type: 'void',
-        'x-component': 'ActionBar',
         'x-action-initializer': 'TableActionInitializer',
+        'x-component': 'ActionBar',
+        'x-component-props': {
+          style: {
+            marginBottom: 16,
+          },
+        },
         properties: {},
       },
-      table1: {
+      table: {
         type: 'void',
         'x-component': 'VoidTable',
         'x-component-props': {
@@ -47,9 +52,10 @@ const createSchema = (collectionName) => {
           actions: {
             type: 'void',
             title: 'Actions',
+            'x-designer': 'TestDesigner',
             'x-decorator': 'TableColumnActionBar',
             'x-component': 'VoidTable.Column',
-            'x-action-initializer': 'TableColumnActionInitializer',
+            'x-action-initializer': 'TableRecordActionInitializer',
             properties: {
               actions: {
                 type: 'void',

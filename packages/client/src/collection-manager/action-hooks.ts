@@ -73,6 +73,18 @@ export const useDestroyAction = () => {
   };
 };
 
+export const useBulkDestroyAction = () => {
+  const { refresh } = useResourceActionContext();
+  const { resource, targetKey } = useResourceContext();
+  const { [targetKey]: filterByTk } = useRecord();
+  return {
+    async run() {
+      await resource.destroy({ filterByTk });
+      refresh();
+    },
+  };
+};
+
 export const useValuesFromRecord = (options) => {
   const record = useRecord();
   return useRequest(() => Promise.resolve({ data: record }), {
