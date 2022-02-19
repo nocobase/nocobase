@@ -100,6 +100,18 @@ export class PluginACL extends Plugin {
     });
   }
 
+  async writeRolesToACL() {
+    const roles = (await this.app.db.getRepository('roles').find({
+      appends: ['resources', 'resources.actions'],
+    })) as RoleModel[];
+    for (const role of roles) {
+      role.writeToAcl({ acl: this.acl });
+      for (const resource of role.get('resources') as RoleResourceModel[]) {
+        await this.writeResourceToACL(resource, null);
+      }
+    }
+  }
+
   async beforeLoad() {
     this.app.db.registerModels({
       RoleResourceActionModel,
@@ -223,15 +235,7 @@ export class PluginACL extends Plugin {
 
     // sync database role data to acl
     this.app.on('beforeStart', async () => {
-      const roles = (await this.app.db.getRepository('roles').find({
-        appends: ['resources', 'resources.actions'],
-      })) as RoleModel[];
-      for (const role of roles) {
-        role.writeToAcl({ acl: this.acl });
-        for (const resource of role.get('resources') as RoleResourceModel[]) {
-          await this.writeResourceToACL(resource, null);
-        }
-      }
+      await this.writeRolesToACL();
     });
   }
 
