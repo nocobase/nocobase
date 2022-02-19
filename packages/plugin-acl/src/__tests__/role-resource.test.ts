@@ -52,9 +52,8 @@ describe('role resource api', () => {
     // get collections list
     let response = await app
       .agent()
-      .resource('roles.collections')
+      .resource('roles.collections', 'admin')
       .list({
-        associatedIndex: role.get('name') as string,
         sort: ['sort'],
       });
 

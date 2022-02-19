@@ -73,20 +73,20 @@ describe('acl', () => {
   });
 
   it('should works with resources actions', async () => {
-    await db.getRepository('roles').create({
+    const role = await db.getRepository('roles').create({
       values: {
         name: 'admin',
         title: 'Admin User',
         allowConfigure: true,
+        strategy: {
+          actions: ['list'],
+        },
       },
     });
 
-    const role = await db.getRepository('roles').findOne({
-      filter: {
-        name: 'admin',
-      },
-    });
+    changeMockRole('admin');
 
+    // create c1 collection
     await db.getRepository('collections').create({
       values: {
         name: 'c1',
@@ -94,6 +94,7 @@ describe('acl', () => {
       },
     });
 
+    // create c2 collection
     await db.getRepository('collections').create({
       values: {
         name: 'c2',
@@ -101,6 +102,7 @@ describe('acl', () => {
       },
     });
 
+    // create c1 published scope
     await app
       .agent()
       .resource('rolesResourcesScopes')
@@ -116,11 +118,11 @@ describe('acl', () => {
 
     const publishedScope = await db.getRepository('rolesResourcesScopes').findOne();
 
+    // set admin resources
     await app
       .agent()
-      .resource('roles.resources')
+      .resource('roles.resources', 'admin')
       .create({
-        associatedIndex: role.get('name') as string,
         values: {
           name: 'c1',
           usingActionsConfig: true,
@@ -175,10 +177,10 @@ describe('acl', () => {
         appends: ['actions'],
       });
 
+    expect(response.statusCode).toEqual(200);
+
     const actions = response.body.data[0].actions;
     const collectionName = response.body.data[0].name;
-
-    const viewActionId = actions.find((action) => action.name === 'view').id;
 
     await app
       .agent()
@@ -190,7 +192,6 @@ describe('acl', () => {
           usingActionsConfig: true,
           actions: [
             {
-              id: viewActionId,
               name: 'view',
               fields: ['title', 'age'],
             },
