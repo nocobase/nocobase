@@ -19,7 +19,7 @@ import './style.less';
 import { Title } from './Title';
 import { Today } from './Today';
 import type { ToolbarProps } from './types';
-import { eventSchema, toEvents } from './utils';
+import { toEvents } from './utils';
 import { ViewSelect } from './ViewSelect';
 
 const localizer = momentLocalizer(moment);
@@ -81,11 +81,6 @@ const useDefDataSource = (props, options) => {
   return useRequest(useRequestProps(props), options);
 };
 
-const useInitItem = () => {
-  const field = useField<VoidField>();
-  debugger;
-};
-
 export const Calendar: any = observer((props: any) => {
   const {
     useDataSource = useDefDataSource,
@@ -111,6 +106,12 @@ export const Calendar: any = observer((props: any) => {
       return toEvents(data?.data, fieldNames);
     },
   });
+  const eventSchema: Schema = fieldSchema.reduceProperties((buf, current) => {
+    if (current['x-component'] === 'Calendar.Event') {
+      return current;
+    }
+    return buf;
+  }, null);
 
   const useValues = (options) => {
     const { visible } = useActionContext();
@@ -132,24 +133,6 @@ export const Calendar: any = observer((props: any) => {
     return result;
   };
 
-  const useEditAction = () => {
-    const { record } = useContext(CalendarContext);
-    return {
-      async run() {
-        console.log(record);
-        debugger;
-      },
-    };
-  };
-  const useRemoveAction = () => {
-    const { record } = useContext(CalendarContext);
-    return {
-      async run() {
-        console.log(record);
-        debugger;
-      },
-    };
-  };
   return (
     <AsyncDataProvider value={result}>
       <CalendarContext.Provider value={{ field, props, record }}>
@@ -158,7 +141,7 @@ export const Calendar: any = observer((props: any) => {
             <SchemaComponent
               memoized
               name={eventSchema.name}
-              scope={{ useValues, useEditAction, useRemoveAction }}
+              scope={{ useValues }}
               schema={eventSchema as any}
               onlyRenderProperties
             />

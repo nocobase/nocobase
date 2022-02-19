@@ -1,4 +1,4 @@
-import { ISchemaFieldProps, RecursionField, Schema } from '@formily/react';
+import { IRecursionFieldProps, ISchemaFieldProps, RecursionField, Schema } from '@formily/react';
 import React, { useMemo } from 'react';
 import { SchemaComponentOptions } from './SchemaComponentOptions';
 
@@ -36,7 +36,7 @@ const MemoizedSchemaComponent = (props: ISchemaFieldProps) => {
   return <RecursionSchemaComponent {...others} schema={s} />;
 };
 
-export const SchemaComponent = (props: ISchemaFieldProps & { memoized?: boolean }) => {
+export const SchemaComponent = (props: (ISchemaFieldProps | IRecursionFieldProps) & { memoized?: boolean }) => {
   const { memoized, ...others } = props;
   if (memoized) {
     return <MemoizedSchemaComponent {...others} />;

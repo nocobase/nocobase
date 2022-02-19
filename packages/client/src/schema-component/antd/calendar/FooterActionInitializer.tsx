@@ -31,6 +31,45 @@ export const FooterActionInitializer = observer((props: any) => {
                 },
                 'x-action': `calendar:edit`,
                 'x-align': 'right',
+                properties: {
+                  modal: {
+                    'x-component': 'Action.Drawer',
+                    'x-decorator': 'Form',
+                    'x-decorator-props': {
+                      useValues: '{{ useValues }}',
+                    },
+                    type: 'void',
+                    title: 'Drawer Title',
+                    properties: {
+                      grid: {
+                        type: 'void',
+                        'x-component': 'Grid',
+                        'x-item-initializer': 'Grid.AddFormItem',
+                      },
+                      footer: {
+                        'x-component': 'Action.Drawer.Footer',
+                        type: 'void',
+                        properties: {
+                          update: {
+                            title: 'update',
+                            'x-component': 'Action',
+                            'x-component-props': {
+                              useAction: '{{ useUpdateAction }}',
+                              type: 'primary',
+                            },
+                          },
+                          close: {
+                            title: 'Close',
+                            'x-component': 'Action',
+                            'x-component-props': {
+                              useAction: '{{ useCloseAction }}',
+                            },
+                          },
+                        },
+                      },
+                    },
+                  },
+                },
               },
             },
             {
