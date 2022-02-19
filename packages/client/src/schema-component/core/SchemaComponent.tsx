@@ -23,7 +23,6 @@ const useMemoizedSchema = (schema) => {
 
 const RecursionSchemaComponent = (props: ISchemaFieldProps) => {
   const { components, scope, schema, ...others } = props;
-  debugger;
   return (
     <SchemaComponentOptions inherit components={components} scope={scope}>
       <RecursionField {...others} schema={toSchema(schema)} />

@@ -8,6 +8,8 @@ import { useDesignable } from '../../hooks';
 
 const useFormItemInitializerFields = () => {
   const { fields } = useCollection();
+  const fieldSchema = useFieldSchema();
+  const props = fieldSchema['x-item-initializer-props'];
   return fields?.map((field) => {
     return {
       type: 'item',
@@ -22,6 +24,7 @@ const useFormItemInitializerFields = () => {
         'x-decorator': field?.uiSchema?.['FormItem'] ?? 'FormItem',
         'x-decorator-props': field?.uiSchema?.['x-decorator-props'],
         'x-collection-field': field.name,
+        'x-read-pretty': !!props?.readPretty,
       },
     };
   }) as SchemaInitializerItemOptions[];

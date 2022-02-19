@@ -4,7 +4,6 @@
 
 import { useField, useFieldSchema, useForm } from '@formily/react';
 import { observable } from '@formily/reactive';
-import { uid } from '@formily/shared';
 import {
   AntdSchemaComponentProvider,
   CollectionProvider,
@@ -68,18 +67,6 @@ const schema = {
         // },
       },
     },
-    event: {
-      type: 'void',
-      'x-component': 'Calendar.Event',
-      'x-decorator': 'Form',
-      properties: {
-        [uid()]: {
-          type: 'void',
-          'x-component': 'Grid',
-          'x-item-initializer': 'Grid.AddFormItem',
-        },
-      },
-    },
   },
 };
 
@@ -94,11 +81,10 @@ const useOkAction = () => {
     async run() {
       setVisible(false);
       console.log(form.values, fieldSchema, field, data);
-      // data?.data?.push({ ...form.values, start: new Date(form.values.start), end: new Date(form.values.end) });
-      debugger;
       dataSource.push({ ...form.values, start: new Date(form.values.start), end: new Date(form.values.end) });
       schema['x-component-props']['dataSource'] = dataSource;
       dataRefresh();
+      form.reset();
     },
   };
 };

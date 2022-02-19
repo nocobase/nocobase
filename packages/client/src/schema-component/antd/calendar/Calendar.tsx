@@ -1,24 +1,25 @@
 import { LeftOutlined, RightOutlined } from '@ant-design/icons';
-import { VoidField } from '@formily/core';
+import { createForm, VoidField } from '@formily/core';
 import { observer, RecursionField, Schema, useField, useFieldSchema } from '@formily/react';
-import { Drawer } from 'antd';
 import moment from 'moment';
-import React, { useState } from 'react';
+import React, { useContext, useEffect, useMemo, useState } from 'react';
 import { Calendar as BigCalendar, momentLocalizer } from 'react-big-calendar';
 import * as dates from 'react-big-calendar/lib/utils/dates';
 import { useTranslation } from 'react-i18next';
+import { SchemaComponent } from '../..';
 import { AsyncDataProvider, useRequest } from '../../../';
 import { i18n } from '../../../i18n';
-import { ActionBar } from '../action';
+import { ActionBar, ActionContext, useActionContext } from '../action';
 import { ActionInitializer } from './ActionInitializer';
-import { CalendarContext, RecordContext, ToolbarContext } from './context';
+import { CalendarContext, ToolbarContext } from './context';
 import { Filter } from './Filter';
+import { FooterActionInitializer } from './FooterActionInitializer';
 import { Nav } from './Nav';
 import './style.less';
 import { Title } from './Title';
 import { Today } from './Today';
 import type { ToolbarProps } from './types';
-import { toEvents } from './utils';
+import { eventSchema, toEvents } from './utils';
 import { ViewSelect } from './ViewSelect';
 
 const localizer = momentLocalizer(moment);
@@ -69,7 +70,6 @@ const useRequestProps = (props) => {
   if (request) {
     return request;
   }
-  debugger;
   return (params: any = {}) => {
     return Promise.resolve({
       data: dataSource,
@@ -81,8 +81,12 @@ const useDefDataSource = (props, options) => {
   return useRequest(useRequestProps(props), options);
 };
 
-export const Calendar: any = observer((props: any) => {
+const useInitItem = () => {
+  const field = useField<VoidField>();
   debugger;
+};
+
+export const Calendar: any = observer((props: any) => {
   const {
     useDataSource = useDefDataSource,
     fieldNames = {
@@ -93,14 +97,10 @@ export const Calendar: any = observer((props: any) => {
     },
   } = props;
   const { t } = useTranslation();
+  const form = useMemo(() => createForm(), []);
+
   const field = useField<VoidField>();
   const fieldSchema = useFieldSchema();
-  const eventSchema: Schema = fieldSchema.reduceProperties((buf, current) => {
-    if (current['x-component'] === 'Calendar.Event') {
-      return current;
-    }
-    return buf;
-  }, null);
 
   const [visible, setVisible] = useState(false);
   const [record, setRecord] = useState<any>({});
@@ -111,27 +111,58 @@ export const Calendar: any = observer((props: any) => {
       return toEvents(data?.data, fieldNames);
     },
   });
-  debugger;
+
+  const useValues = (options) => {
+    const { visible } = useActionContext();
+    const { record } = useContext(CalendarContext);
+    const result = useRequest(
+      () =>
+        Promise.resolve({
+          data: {
+            ...record,
+          },
+        }),
+      { ...options, manual: true },
+    );
+    useEffect(() => {
+      if (visible) {
+        result.run();
+      }
+    }, [visible]);
+    return result;
+  };
+
+  const useEditAction = () => {
+    const { record } = useContext(CalendarContext);
+    return {
+      async run() {
+        console.log(record);
+        debugger;
+      },
+    };
+  };
+  const useRemoveAction = () => {
+    const { record } = useContext(CalendarContext);
+    return {
+      async run() {
+        console.log(record);
+        debugger;
+      },
+    };
+  };
   return (
     <AsyncDataProvider value={result}>
-      <CalendarContext.Provider value={{ field, props }}>
+      <CalendarContext.Provider value={{ field, props, record }}>
         <div {...props} style={{ height: 700 }}>
-          <Drawer
-            width={'50%'}
-            visible={visible}
-            onClose={() => {
-              setVisible(false);
-            }}
-            title={t('View record')}
-            bodyStyle={{
-              background: '#f0f2f5',
-              paddingTop: 0,
-            }}
-          >
-            <RecordContext.Provider value={record}>
-              <RecursionField name={eventSchema.name} schema={eventSchema} onlyRenderProperties />
-            </RecordContext.Provider>
-          </Drawer>
+          <ActionContext.Provider value={{ visible, setVisible }}>
+            <SchemaComponent
+              memoized
+              name={eventSchema.name}
+              scope={{ useValues, useEditAction, useRemoveAction }}
+              schema={eventSchema as any}
+              onlyRenderProperties
+            />
+          </ActionContext.Provider>
           <BigCalendar
             popup
             selectable
@@ -179,6 +210,8 @@ export const Calendar: any = observer((props: any) => {
 });
 
 Calendar.ActionInitializer = ActionInitializer;
+
+Calendar.FooterActionInitializer = FooterActionInitializer;
 
 Calendar.ActionBar = ActionBar;
 
