@@ -44,7 +44,7 @@ export const FooterActionInitializer = observer((props: any) => {
                       grid: {
                         type: 'void',
                         'x-component': 'Grid',
-                        'x-item-initializer': 'Grid.AddFormItem',
+                        'x-item-initializer': 'FormItemInitializer',
                       },
                       footer: {
                         'x-component': 'Action.Drawer.Footer',

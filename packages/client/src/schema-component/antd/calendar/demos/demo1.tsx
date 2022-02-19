@@ -11,6 +11,7 @@ import {
   CollectionProvider,
   SchemaComponent,
   SchemaComponentProvider,
+  SchemaInitializerProvider,
   useActionContext,
   useAsyncData,
   useRequest,
@@ -86,7 +87,7 @@ const schema = {
             grid: {
               type: 'void',
               'x-component': 'Grid',
-              'x-item-initializer': 'Grid.AddFormItem',
+              'x-item-initializer': 'FormItemInitializer',
               'x-item-initializer-props': {
                 readPretty: true,
               },
@@ -261,11 +262,20 @@ export default () => {
   return (
     <CollectionProvider collection={collection}>
       <SchemaComponentProvider
-        scope={{ useSaveAction, useCloseAction, useEditAction, useUpdateAction, useValues, useRemoveAction }}
+        scope={{
+          useSaveAction,
+          useCloseAction,
+          useEditAction,
+          useUpdateAction,
+          useValues,
+          useRemoveAction,
+        }}
       >
-        <AntdSchemaComponentProvider>
-          <SchemaComponent schema={schema} />
-        </AntdSchemaComponentProvider>
+        <SchemaInitializerProvider>
+          <AntdSchemaComponentProvider>
+            <SchemaComponent schema={schema} />
+          </AntdSchemaComponentProvider>
+        </SchemaInitializerProvider>
       </SchemaComponentProvider>
     </CollectionProvider>
   );
