@@ -1,40 +1,13 @@
-import { Checkbox, Spin, Table } from 'antd';
+import { Checkbox, Table } from 'antd';
 import React from 'react';
+import { useMenuItems } from '.';
 import { useRecord } from '../..';
-import { useAPIClient, useRequest } from '../../api-client';
-import { useRoute } from '../../route-switch';
-
-const toItems = (properties = {}) => {
-  const items = [];
-  for (const key in properties) {
-    if (Object.prototype.hasOwnProperty.call(properties, key)) {
-      const element = properties[key];
-      const item = {
-        title: element.title,
-        uid: element['x-uid'],
-      };
-      if (element.properties) {
-        item['children'] = toItems(element.properties);
-      }
-      items.push(item);
-    }
-  }
-  return items;
-};
+import { useAPIClient } from '../../api-client';
 
 export const MenuConfigure = () => {
-  const route = useRoute();
   const record = useRecord();
-  console.log(route.uiSchemaUid);
   const api = useAPIClient();
-  const { loading, data } = useRequest({
-    url: `uiSchemas:getProperties/${route.uiSchemaUid}`,
-  });
-  if (loading) {
-    return <Spin />;
-  }
-  const items = toItems(data?.data?.properties);
-  console.log(items);
+  const items = useMenuItems();
   return (
     <Table
       rowKey={'uid'}

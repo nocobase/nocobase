@@ -59,6 +59,11 @@ export const roleSchema: ISchema = {
         actions: {
           type: 'void',
           'x-component': 'ActionBar',
+          'x-component-props': {
+            style: {
+              marginBottom: 16,
+            },
+          },
           properties: {
             delete: {
               type: 'void',
@@ -77,7 +82,7 @@ export const roleSchema: ISchema = {
                   type: 'void',
                   'x-component': 'Action.Drawer',
                   'x-decorator': 'Form',
-                  title: 'Drawer Title',
+                  title: '添加角色',
                   properties: {
                     title: {
                       'x-component': 'CollectionField',
@@ -171,7 +176,7 @@ export const roleSchema: ISchema = {
                         drawer: {
                           type: 'void',
                           'x-component': 'Action.Drawer',
-                          title: 'Drawer Title',
+                          title: '配置权限',
                           properties: {
                             tabs1: {
                               type: 'void',
@@ -230,7 +235,7 @@ export const roleSchema: ISchema = {
                           'x-decorator-props': {
                             useValues: '{{ useValuesFromRecord }}',
                           },
-                          title: 'Drawer Title',
+                          title: '编辑角色',
                           properties: {
                             title: {
                               'x-component': 'CollectionField',
