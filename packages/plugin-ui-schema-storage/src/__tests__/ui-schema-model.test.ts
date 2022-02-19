@@ -70,7 +70,7 @@ describe('ui schema model', () => {
       properties: {
         child1: {
           title: 'child1',
-          'x-uid': child1.get('uid'),
+          'x-uid': child1.get('x-uid'),
           'x-async': false,
           'x-index': 1,
         },
@@ -129,7 +129,7 @@ describe('ui schema model', () => {
       properties: {
         child1: {
           title: 'new-child1-title',
-          'x-uid': child1.get('uid'),
+          'x-uid': child1.get('x-uid'),
           'x-async': false,
           'x-index': 1,
         },
