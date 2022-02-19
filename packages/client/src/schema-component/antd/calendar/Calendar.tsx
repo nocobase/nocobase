@@ -1,8 +1,8 @@
 import { LeftOutlined, RightOutlined } from '@ant-design/icons';
-import { createForm, VoidField } from '@formily/core';
+import { VoidField } from '@formily/core';
 import { observer, RecursionField, Schema, useField, useFieldSchema } from '@formily/react';
 import moment from 'moment';
-import React, { useMemo, useState } from 'react';
+import React, { useState } from 'react';
 import { Calendar as BigCalendar, momentLocalizer } from 'react-big-calendar';
 import * as dates from 'react-big-calendar/lib/utils/dates';
 import { useTranslation } from 'react-i18next';
@@ -12,6 +12,7 @@ import { i18n } from '../../../i18n';
 import { ActionBar, ActionContext } from '../action';
 import { ActionInitializer } from './ActionInitializer';
 import { CalendarContext, ToolbarContext } from './context';
+import { Event } from './Event';
 import { Filter } from './Filter';
 import { FooterActionInitializer } from './FooterActionInitializer';
 import { Nav } from './Nav';
@@ -92,7 +93,6 @@ export const Calendar: any = observer((props: any) => {
     },
   } = props;
   const { t } = useTranslation();
-  const form = useMemo(() => createForm(), []);
 
   const field = useField<VoidField>();
   const fieldSchema = useFieldSchema();
@@ -172,9 +172,7 @@ Calendar.FooterActionInitializer = FooterActionInitializer;
 
 Calendar.ActionBar = ActionBar;
 
-Calendar.Event = observer((props) => {
-  return <>{props.children}</>;
-});
+Calendar.Event = Event;
 
 Calendar.Title = Title;
 
