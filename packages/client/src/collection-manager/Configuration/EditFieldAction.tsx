@@ -53,7 +53,7 @@ const getSchema = (schema: IField): ISchema => {
                 title: '{{ t("Cancel") }}',
                 'x-component': 'Action',
                 'x-component-props': {
-                  useAction: '{{ useCancelAction }}',
+                  useAction: '{{ cm.useCancelAction }}',
                 },
               },
               action2: {
@@ -61,7 +61,7 @@ const getSchema = (schema: IField): ISchema => {
                 'x-component': 'Action',
                 'x-component-props': {
                   type: 'primary',
-                  useAction: '{{ useUpdateActionAndRefreshCM }}',
+                  useAction: '{{ cm.useUpdateActionAndRefreshCM }}',
                 },
               },
             },

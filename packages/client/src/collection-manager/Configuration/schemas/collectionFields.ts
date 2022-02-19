@@ -114,7 +114,7 @@ export const collectionFieldSchema: ISchema = {
         rowSelection: {
           type: 'checkbox',
         },
-        useDataSource: '{{ useDataSourceFromRAC }}',
+        useDataSource: '{{ cm.useDataSourceFromRAC }}',
       },
       properties: {
         column1: {
@@ -176,7 +176,7 @@ export const collectionFieldSchema: ISchema = {
                   title: '{{ t("Delete") }}',
                   'x-component': 'Action.Link',
                   'x-component-props': {
-                    useAction: '{{ useDestroyActionAndRefreshCM }}',
+                    useAction: '{{ cm.useDestroyActionAndRefreshCM }}',
                   },
                 },
               },

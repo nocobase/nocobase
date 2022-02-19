@@ -104,7 +104,7 @@ export const TableActionInitializer = observer((props: any) => {
                             title: '{{ t("Cancel") }}',
                             'x-component': 'Action',
                             'x-component-props': {
-                              useAction: '{{ useCancelAction }}',
+                              useAction: '{{ cm.useCancelAction }}',
                             },
                           },
                           action2: {
@@ -112,7 +112,7 @@ export const TableActionInitializer = observer((props: any) => {
                             'x-component': 'Action',
                             'x-component-props': {
                               type: 'primary',
-                              useAction: '{{ useCreateAction }}',
+                              useAction: '{{ cm.useCreateAction }}',
                             },
                           },
                         },
@@ -130,7 +130,7 @@ export const TableActionInitializer = observer((props: any) => {
                 title: '{{ t("Delete") }}',
                 'x-action': 'destroy',
                 'x-component-props': {
-                  useAction: '{{ useBulkDestroyAction }}',
+                  useAction: '{{ cm.useBulkDestroyAction }}',
                 },
               },
             },

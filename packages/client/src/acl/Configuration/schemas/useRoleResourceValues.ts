@@ -23,5 +23,5 @@ export const useRoleResourceValues = (options) => {
       result.run();
     }
   }, [visible, record.usingConfig]);
-  return;
+  return result;
 };

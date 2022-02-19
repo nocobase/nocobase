@@ -72,7 +72,7 @@ export const roleCollectionsSchema: ISchema = {
         // rowSelection: {
         //   type: 'checkbox',
         // },
-        useDataSource: '{{ useDataSourceFromRAC }}',
+        useDataSource: '{{ cm.useDataSourceFromRAC }}',
       },
       properties: {
         column1: {
@@ -149,7 +149,7 @@ export const roleCollectionsSchema: ISchema = {
                               title: 'Cancel',
                               'x-component': 'Action',
                               'x-component-props': {
-                                useAction: '{{ useCancelAction }}',
+                                useAction: '{{ cm.useCancelAction }}',
                               },
                             },
                             action2: {
