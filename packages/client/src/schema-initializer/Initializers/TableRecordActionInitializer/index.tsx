@@ -168,9 +168,49 @@ export const TableRecordActionInitializer = observer((props: any) => {
                 properties: {
                   drawer: {
                     type: 'void',
+                    'x-decorator': 'Form',
+                    'x-decorator-props': {
+                      useValues: '{{ cm.useValuesFromRecord }}',
+                    },
                     'x-component': 'Action.Drawer',
                     title: '{{ t("Edit record") }}',
-                    properties: {},
+                    properties: {
+                      grid: {
+                        type: 'void',
+                        'x-component': 'Grid',
+                        'x-item-initializer': 'FormItemInitializer',
+                        properties: {},
+                      },
+                      footer: {
+                        type: 'void',
+                        'x-component': 'Action.Drawer.Footer',
+                        properties: {
+                          actions: {
+                            type: 'void',
+                            // 'x-action-initializer': 'DrawerForm',
+                            'x-component': 'ActionBar',
+                            'x-component-props': {},
+                            properties: {
+                              action1: {
+                                title: '{{ t("Cancel") }}',
+                                'x-component': 'Action',
+                                'x-component-props': {
+                                  useAction: '{{ cm.useCancelAction }}',
+                                },
+                              },
+                              action2: {
+                                title: '{{ t("Submit") }}',
+                                'x-component': 'Action',
+                                'x-component-props': {
+                                  type: 'primary',
+                                  useAction: '{{ cm.useUpdateAction }}',
+                                },
+                              },
+                            },
+                          },
+                        },
+                      },
+                    },
                   },
                 },
               },
