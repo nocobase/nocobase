@@ -74,10 +74,6 @@ export default class ExecutionModel extends Model {
   }
 
   async prepare(options) {
-    if (this.status !== EXECUTION_STATUS.STARTED) {
-      throw new Error(`execution was ended with status ${this.status}`);
-    }
-
     this.options = options || {};
     const { transaction = await (<typeof ExecutionModel>this.constructor).database.sequelize.transaction() } = this.options;
     this.transaction = transaction;
@@ -96,6 +92,9 @@ export default class ExecutionModel extends Model {
   }
 
   async start(options: ExecutionOptions) {
+    if (this.status !== EXECUTION_STATUS.STARTED) {
+      throw new Error(`execution was ended with status ${this.status}`);
+    }
     await this.prepare(options);
     if (this.nodes.length) {
       const head = this.nodes.find(item => !item.upstream);
@@ -107,6 +106,9 @@ export default class ExecutionModel extends Model {
   }
 
   async resume(job: JobModel, options: ExecutionOptions) {
+    if (this.status !== EXECUTION_STATUS.STARTED) {
+      throw new Error(`execution was ended with status ${this.status}`);
+    }
     await this.prepare(options);
     const node = this.nodesMap.get(job.nodeId);
     await this.recall(node, job);
