@@ -27,7 +27,6 @@ export class UiSchemaStoragePlugin extends Plugin {
     this.registerRepository();
 
     db.on('uiSchemas.beforeCreate', function setUid(model) {
-      model.set('uid', model.get('x-uid'));
       if (!model.get('name')) {
         model.set('name', uid());
       }
