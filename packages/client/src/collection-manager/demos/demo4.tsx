@@ -1,6 +1,7 @@
 import { ISchema } from '@formily/react';
 import {
-  AntdSchemaComponentProvider, CollectionManagerProvider,
+  AntdSchemaComponentProvider,
+  CollectionManagerProvider,
   SchemaComponent,
   SchemaComponentProvider
 } from '@nocobase/client';

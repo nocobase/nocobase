@@ -183,7 +183,7 @@ export const TableRecordActionInitializer = observer((props: any) => {
                 title: '{{ t("Delete") }}',
                 'x-action': 'destroy',
                 'x-component-props': {
-                  useAction: '{{ useDestroyAction }}',
+                  useAction: '{{ cm.useDestroyAction }}',
                 },
               },
             },

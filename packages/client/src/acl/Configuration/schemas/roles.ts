@@ -100,7 +100,7 @@ export const roleSchema: ISchema = {
                           title: 'Cancel',
                           'x-component': 'Action',
                           'x-component-props': {
-                            useAction: '{{ useCancelAction }}',
+                            useAction: '{{ cm.useCancelAction }}',
                           },
                         },
                         action2: {
@@ -108,7 +108,7 @@ export const roleSchema: ISchema = {
                           'x-component': 'Action',
                           'x-component-props': {
                             type: 'primary',
-                            useAction: '{{ useCreateAction }}',
+                            useAction: '{{ cm.useCreateAction }}',
                           },
                         },
                       },
@@ -128,7 +128,7 @@ export const roleSchema: ISchema = {
             rowSelection: {
               type: 'checkbox',
             },
-            useDataSource: '{{ useDataSourceFromRAC }}',
+            useDataSource: '{{ cm.useDataSourceFromRAC }}',
           },
           properties: {
             column1: {
@@ -233,7 +233,7 @@ export const roleSchema: ISchema = {
                           'x-component': 'Action.Drawer',
                           'x-decorator': 'Form',
                           'x-decorator-props': {
-                            useValues: '{{ useValuesFromRecord }}',
+                            useValues: '{{ cm.useValuesFromRecord }}',
                           },
                           title: '编辑角色',
                           properties: {
@@ -254,7 +254,7 @@ export const roleSchema: ISchema = {
                                   title: 'Cancel',
                                   'x-component': 'Action',
                                   'x-component-props': {
-                                    useAction: '{{ useCancelAction }}',
+                                    useAction: '{{ cm.useCancelAction }}',
                                   },
                                 },
                                 action2: {
@@ -262,7 +262,7 @@ export const roleSchema: ISchema = {
                                   'x-component': 'Action',
                                   'x-component-props': {
                                     type: 'primary',
-                                    useAction: '{{ useUpdateAction }}',
+                                    useAction: '{{ cm.useUpdateAction }}',
                                   },
                                 },
                               },
@@ -276,7 +276,7 @@ export const roleSchema: ISchema = {
                       title: '删除',
                       'x-component': 'Action.Link',
                       'x-component-props': {
-                        useAction: '{{ useDestroyAction }}',
+                        useAction: '{{ cm.useDestroyAction }}',
                       },
                     },
                   },

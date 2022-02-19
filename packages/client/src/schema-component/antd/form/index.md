@@ -39,6 +39,12 @@ Form 也可以作 decorator 存在
 
 <code src="./demos/demo7.tsx"/>
 
+### DrawerForm
+
+自由控制弹窗表单（Drawer+Form），并异步填充表单数据
+
+<code src="./demos/demo8.tsx"/>
+
 ## API
 
 属性说明

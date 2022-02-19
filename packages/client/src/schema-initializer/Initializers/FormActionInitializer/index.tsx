@@ -69,7 +69,7 @@ export const FormActionInitializer = observer((props: any) => {
                 'x-component': 'Action',
                 'x-component-props': {
                   type: 'primary',
-                  useAction: '{{ useCreateActionWithoutRefresh }}',
+                  useAction: '{{ cm.useCreateActionWithoutRefresh }}',
                 },
               },
             },

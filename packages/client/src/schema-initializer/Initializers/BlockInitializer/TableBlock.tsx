@@ -45,7 +45,7 @@ const createSchema = (collectionName) => {
           rowSelection: {
             type: 'checkbox',
           },
-          useDataSource: '{{ useDataSourceFromRAC }}',
+          useDataSource: '{{ cm.useDataSourceFromRAC }}',
         },
         'x-column-initializer': 'TableColumnInitializer',
         properties: {

@@ -110,7 +110,7 @@ export const collectionSchema: ISchema = {
                           title: '{{ t("Cancel") }}',
                           'x-component': 'Action',
                           'x-component-props': {
-                            useAction: '{{ useCancelAction }}',
+                            useAction: '{{ cm.useCancelAction }}',
                           },
                         },
                         action2: {
@@ -118,7 +118,7 @@ export const collectionSchema: ISchema = {
                           'x-component': 'Action',
                           'x-component-props': {
                             type: 'primary',
-                            useAction: '{{ useCreateActionAndRefreshCM }}',
+                            useAction: '{{ cm.useCreateActionAndRefreshCM }}',
                           },
                         },
                       },
@@ -138,7 +138,7 @@ export const collectionSchema: ISchema = {
             rowSelection: {
               type: 'checkbox',
             },
-            useDataSource: '{{ useDataSourceFromRAC }}',
+            useDataSource: '{{ cm.useDataSourceFromRAC }}',
           },
           properties: {
             column1: {
@@ -205,7 +205,7 @@ export const collectionSchema: ISchema = {
                           'x-component': 'Action.Drawer',
                           'x-decorator': 'Form',
                           'x-decorator-props': {
-                            useValues: '{{ useValuesFromRecord }}',
+                            useValues: '{{ cm.useValuesFromRecord }}',
                           },
                           title: '{{ t("Edit collection") }}',
                           properties: {
@@ -226,7 +226,7 @@ export const collectionSchema: ISchema = {
                                   title: '{{ t("Cancel") }}',
                                   'x-component': 'Action',
                                   'x-component-props': {
-                                    useAction: '{{ useCancelAction }}',
+                                    useAction: '{{ cm.useCancelAction }}',
                                   },
                                 },
                                 action2: {
@@ -234,7 +234,7 @@ export const collectionSchema: ISchema = {
                                   'x-component': 'Action',
                                   'x-component-props': {
                                     type: 'primary',
-                                    useAction: '{{ useUpdateActionAndRefreshCM }}',
+                                    useAction: '{{ cm.useUpdateActionAndRefreshCM }}',
                                   },
                                 },
                               },
@@ -248,7 +248,7 @@ export const collectionSchema: ISchema = {
                       title: '{{ t("Delete") }}',
                       'x-component': 'Action.Link',
                       'x-component-props': {
-                        useAction: '{{ useDestroyActionAndRefreshCM }}',
+                        useAction: '{{ cm.useDestroyActionAndRefreshCM }}',
                       },
                     },
                   },
