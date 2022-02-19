@@ -23,7 +23,7 @@ const createSchema = (collectionName) => {
         },
       },
     },
-    'x-designer': 'TestDesigner',
+    'x-designer': 'VoidTable.Designer',
     'x-component': 'CardItem',
     properties: {
       actions: {

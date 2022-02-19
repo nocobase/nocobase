@@ -18,7 +18,7 @@ const createSchema = (collectionName) => {
         params: {},
       },
     },
-    'x-designer': 'TestDesigner',
+    'x-designer': 'Form.Designer',
     'x-component': 'CardItem',
     properties: {
       form: {
