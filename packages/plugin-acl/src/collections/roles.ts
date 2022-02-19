@@ -43,7 +43,6 @@ export default {
       type: 'belongsToMany',
       name: 'menuUiSchemas',
       target: 'uiSchemas',
-      targetKey: 'uid',
     },
     {
       type: 'hasMany',

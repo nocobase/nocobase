@@ -2,11 +2,14 @@ import { ACL } from '@nocobase/acl';
 import { Database } from '@nocobase/database';
 import { MockServer } from '@nocobase/test';
 import { changeMockRole, prepareApp } from './prepare';
+import { UiSchemaRepository } from '@nocobase/plugin-ui-schema-storage';
 
 describe('acl', () => {
   let app: MockServer;
   let db: Database;
   let acl: ACL;
+
+  let uiSchemaRepository: UiSchemaRepository;
 
   afterEach(async () => {
     await app.destroy();
@@ -16,6 +19,8 @@ describe('acl', () => {
     app = await prepareApp();
     db = app.db;
     acl = app.acl;
+
+    uiSchemaRepository = db.getRepository('uiSchemas');
   });
 
   it('should works with universal actions', async () => {
@@ -456,5 +461,35 @@ describe('acl', () => {
     const menuResponse = await app.agent().resource('roles.menuUiSchemas', 'admin').list();
 
     expect(menuResponse.statusCode).toEqual(200);
+  });
+
+  it('should toggle role menus', async () => {
+    const role = await db.getRepository('roles').create({
+      values: {
+        name: 'admin',
+        title: 'Admin User',
+        allowConfigure: true,
+        strategy: {
+          actions: ['*'],
+        },
+      },
+    });
+
+    changeMockRole('admin');
+
+    const schema = {
+      'x-uid': 'test',
+    };
+
+    await uiSchemaRepository.insert(schema);
+
+    const response = await app
+      .agent()
+      .resource('roles.menuUiSchemas', 'admin')
+      .toggle({
+        values: { tk: 'test' },
+      });
+
+    expect(response.statusCode).toEqual(200);
   });
 });
