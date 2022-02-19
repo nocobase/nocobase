@@ -1,7 +1,7 @@
 import { ACL } from '@nocobase/acl';
 import { Database } from '@nocobase/database';
 import { MockServer } from '@nocobase/test';
-import { prepareApp } from './prepare';
+import { changeMockRole, prepareApp } from './prepare';
 
 describe('acl', () => {
   let app: MockServer;
@@ -437,5 +437,24 @@ describe('acl', () => {
     })['params']['fields'];
 
     expect(newAllowFields.includes('description')).toBeTruthy();
+  });
+
+  it('should get role menus', async () => {
+    const role = await db.getRepository('roles').create({
+      values: {
+        name: 'admin',
+        title: 'Admin User',
+        allowConfigure: true,
+        strategy: {
+          actions: ['view'],
+        },
+      },
+    });
+
+    changeMockRole('admin');
+
+    const menuResponse = await app.agent().resource('roles.menuUiSchemas', 'admin').list();
+
+    expect(menuResponse.statusCode).toEqual(200);
   });
 });
