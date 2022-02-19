@@ -12,7 +12,10 @@ export const useCollectionManager = () => {
     get(name: string) {
       return collections?.find((collection) => collection.name === name);
     },
-    getInterface(name) {
+    getCollection(name: string) {
+      return collections?.find((collection) => collection.name === name);
+    },
+    getInterface(name: string) {
       return interfaces[name] ? clone(interfaces[name]) : null;
     },
   };

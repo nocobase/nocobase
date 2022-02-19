@@ -71,7 +71,7 @@ export const collectionFieldSchema: ISchema = {
       params: {
         pageSize: 50,
         filter: {},
-        sort: ['sort'],
+        // sort: ['sort'],
         appends: ['uiSchema'],
       },
     },

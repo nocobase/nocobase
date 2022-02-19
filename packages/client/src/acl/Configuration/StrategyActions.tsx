@@ -1,7 +1,11 @@
 import { Checkbox, Select, Table } from 'antd';
 import React from 'react';
+import { useAvailableActions } from '.';
+import { useCompile } from '../..';
 
 export const StrategyActions = () => {
+  const availableActions = useAvailableActions();
+  const compile = useCompile();
   return (
     <div>
       <Table
@@ -11,6 +15,7 @@ export const StrategyActions = () => {
           {
             dataIndex: 'displayName',
             title: '操作',
+            render: (value) => compile(value),
           },
           {
             dataIndex: 'type',
@@ -24,23 +29,10 @@ export const StrategyActions = () => {
           {
             dataIndex: 'scope',
             title: '可操作的数据范围',
-            render: () => <Select size={'small'}/>,
+            render: () => <Select size={'small'} />,
           },
         ]}
-        dataSource={[
-          {
-            displayName: '添加',
-            type: 'new-data',
-          },
-          {
-            displayName: '导入',
-            type: 'new-data',
-          },
-          {
-            displayName: '查看',
-            type: 'old-data',
-          },
-        ]}
+        dataSource={availableActions}
       />
     </div>
   );
