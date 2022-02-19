@@ -82,19 +82,44 @@ const schema = {
     },
     event: {
       type: 'void',
+      name: 'event',
       'x-component': 'Calendar.Event',
-      'x-decorator': 'Form',
       properties: {
-        [uid()]: {
+        modal: {
+          'x-component': 'Action.Drawer',
+          'x-decorator': 'Form',
+          'x-decorator-props': {
+            useValues: '{{ useValues }}',
+          },
           type: 'void',
-          'x-component': 'Grid',
-          'x-item-initializer': 'Grid.AddFormItem',
+          title: 'Drawer Title',
+          properties: {
+            grid: {
+              type: 'void',
+              'x-component': 'Grid',
+              'x-item-initializer': 'Grid.AddFormItem',
+              'x-item-initializer-props': {
+                readPretty: true,
+              },
+            },
+            footer: {
+              'x-component': 'Action.Drawer.Footer',
+              type: 'void',
+              properties: {
+                [uid()]: {
+                  title: 'submit',
+                  'x-component': 'ActionBar',
+                  'x-action-initializer': 'Calendar.FooterActionInitializer',
+                },
+              },
+            },
+          },
         },
       },
     },
   },
 };
-const useOkAction = () => {
+const useSaveAction = () => {
   const { setVisible } = useActionContext();
   const form = useForm();
   return {
@@ -118,7 +143,7 @@ const useCloseAction = () => {
 export default () => {
   return (
     <APIClientProvider apiClient={apiClient}>
-      <SchemaComponentProvider scope={{ useOkAction, useCloseAction }}>
+      <SchemaComponentProvider scope={{ useSaveAction, useCloseAction }}>
         <AntdSchemaComponentProvider>
           <SchemaComponent schema={schema} />
         </AntdSchemaComponentProvider>

@@ -94,7 +94,7 @@ export const ActionInitializer = observer((props: any) => {
                             title: 'submit',
                             'x-component': 'Action',
                             'x-component-props': {
-                              useAction: '{{ useOkAction }}',
+                              useAction: '{{ useSaveAction }}',
                               type: 'primary',
                             },
                           },

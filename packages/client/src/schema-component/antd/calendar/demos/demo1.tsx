@@ -4,16 +4,17 @@
 
 import { useField, useFieldSchema, useForm } from '@formily/react';
 import { observable } from '@formily/reactive';
+import { uid } from '@formily/shared';
 import {
   AntdSchemaComponentProvider,
+  CalendarContext,
   CollectionProvider,
   SchemaComponent,
   SchemaComponentProvider,
   useActionContext,
   useAsyncData,
-  useDesignable,
 } from '@nocobase/client';
-import React from 'react';
+import React, { useContext } from 'react';
 import defaultValues from './defaultValues';
 
 const dataSource = observable(defaultValues);
@@ -67,12 +68,48 @@ const schema = {
         // },
       },
     },
+    event: {
+      type: 'void',
+      name: 'event',
+      'x-component': 'Calendar.Event',
+      properties: {
+        modal: {
+          'x-component': 'Action.Drawer',
+          'x-decorator': 'Form',
+          'x-decorator-props': {
+            useValues: '{{ useValues }}',
+          },
+          type: 'void',
+          title: 'Drawer Title',
+          properties: {
+            grid: {
+              type: 'void',
+              'x-component': 'Grid',
+              'x-item-initializer': 'Grid.AddFormItem',
+              'x-item-initializer-props': {
+                readPretty: true,
+              },
+            },
+            footer: {
+              'x-component': 'Action.Drawer.Footer',
+              type: 'void',
+              properties: {
+                [uid()]: {
+                  title: 'submit',
+                  'x-component': 'ActionBar',
+                  'x-action-initializer': 'Calendar.FooterActionInitializer',
+                },
+              },
+            },
+          },
+        },
+      },
+    },
   },
 };
 
-const useOkAction = () => {
+const useSaveAction = () => {
   const { setVisible } = useActionContext();
-  const { refresh: schemaRefresh } = useDesignable();
   const { refresh: dataRefresh, data } = useAsyncData();
   const form = useForm();
   const fieldSchema = useFieldSchema();
@@ -94,6 +131,60 @@ const useCloseAction = () => {
   return {
     async run() {
       setVisible(false);
+    },
+  };
+};
+
+const useRemoveAction = () => {
+  const { refresh: dataRefresh, data } = useAsyncData();
+  const { record } = useContext(CalendarContext);
+  const { setVisible } = useActionContext();
+
+  return {
+    async run() {
+      setVisible(false);
+      for (let i = 0, iLen = dataSource.length; i < iLen; i++) {
+        const element = dataSource[i];
+        if (element.id === record.id) {
+          dataSource.splice(i, 1);
+          break;
+        }
+      }
+      schema['x-component-props']['dataSource'] = dataSource;
+      dataRefresh();
+    },
+  };
+};
+
+const useEditAction = () => {
+  const { refresh: dataRefresh, data } = useAsyncData();
+  const { record } = useContext(CalendarContext);
+  const { setVisible } = useActionContext();
+  return {
+    async run() {
+      console.log(record);
+    },
+  };
+};
+
+const useUpdateAction = () => {
+  const form = useForm();
+  const { setVisible } = useActionContext();
+  const { refresh: dataRefresh, data } = useAsyncData();
+  return {
+    async run() {
+      setVisible(false);
+      console.log(form.values);
+      const record = form.values;
+      for (let i = 0, iLen = dataSource.length; i < iLen; i++) {
+        const element = dataSource[i];
+        if (element.id === record.id) {
+          dataSource[i] = { ...record };
+          break;
+        }
+      }
+      schema['x-component-props']['dataSource'] = dataSource;
+      form.reset();
     },
   };
 };
@@ -148,7 +239,9 @@ const collection = {
 export default () => {
   return (
     <CollectionProvider collection={collection}>
-      <SchemaComponentProvider scope={{ useOkAction, useCloseAction }}>
+      <SchemaComponentProvider
+        scope={{ useSaveAction, useCloseAction, useEditAction, useUpdateAction, useRemoveAction }}
+      >
         <AntdSchemaComponentProvider>
           <SchemaComponent schema={schema} />
         </AntdSchemaComponentProvider>
