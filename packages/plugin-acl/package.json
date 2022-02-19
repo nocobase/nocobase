@@ -13,8 +13,7 @@
   "dependencies": {
     "@nocobase/acl": "0.6.0-alpha.0",
     "@nocobase/database": "0.6.0-alpha.0",
-    "@nocobase/server": "0.6.0-alpha.0",
-    "json-templates": "^4.2.0"
+    "@nocobase/server": "0.6.0-alpha.0"
   },
   "repository": {
     "type": "git",
