@@ -9,7 +9,7 @@ export const useCollectionField = () => {
   const record = useRecord();
   const api = useAPIClient();
   const ctx = useContext(CollectionFieldContext);
-  const resourceName = `${ctx?.collectinName || collection?.name}.${ctx.name}`;
+  const resourceName = `${ctx?.collectionName || collection?.name}.${ctx.name}`;
   const resource = api?.resource(resourceName, record[ctx.sourceKey]);
   return {
     ...ctx,
