@@ -4,28 +4,28 @@ const availableActions: {
   [key: string]: AvailableActionOptions;
 } = {
   create: {
-    displayName: 't("Create")',
+    displayName: '{{ t("Create") }}',
     type: 'new-data',
   },
   import: {
-    displayName: 't("Import")',
+    displayName: '{{ t("Import") }}',
     type: 'new-data',
   },
   export: {
-    displayName: 't("Import")',
+    displayName: '{{ t("Export") }}',
     type: 'new-data',
   },
   view: {
-    displayName: 't("View")',
+    displayName: '{{ t("View") }}',
     type: 'old-data',
     aliases: ['get', 'list'],
   },
   update: {
-    displayName: 't("Edit")',
+    displayName: '{{ t("Edit") }}',
     type: 'old-data',
   },
   destroy: {
-    displayName: 't("Delete")',
+    displayName: '{{ t("Delete") }}',
     type: 'old-data',
   },
 };
