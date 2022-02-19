@@ -138,13 +138,7 @@ export const Calendar: any = observer((props: any) => {
       <CalendarContext.Provider value={{ field, props, record }}>
         <div {...props} style={{ height: 700 }}>
           <ActionContext.Provider value={{ visible, setVisible }}>
-            <SchemaComponent
-              memoized
-              name={eventSchema.name}
-              scope={{ useValues }}
-              schema={eventSchema as any}
-              onlyRenderProperties
-            />
+            <SchemaComponent memoized name={eventSchema.name} scope={{ useValues }} schema={eventSchema as any} />
           </ActionContext.Provider>
           <BigCalendar
             popup
@@ -197,6 +191,10 @@ Calendar.ActionInitializer = ActionInitializer;
 Calendar.FooterActionInitializer = FooterActionInitializer;
 
 Calendar.ActionBar = ActionBar;
+
+Calendar.Event = observer((props) => {
+  return <>{props.children}</>;
+});
 
 Calendar.Title = Title;
 
