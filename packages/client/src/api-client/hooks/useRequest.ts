@@ -49,7 +49,6 @@ export function useRequest<P>(
     {
       ...options,
       onSuccess(...args) {
-        debugger;
         options.onSuccess?.(...args);
         if (options.uid) {
           api.services[options.uid] = result;
