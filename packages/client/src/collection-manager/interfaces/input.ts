@@ -1,7 +1,7 @@
 import { IField } from './types';
 
 export const input: IField = {
-  name: 'string',
+  name: 'input',
   type: 'object',
   group: 'basic',
   order: 1,
