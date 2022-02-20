@@ -427,9 +427,9 @@ export class UiSchemaRepository extends Repository {
       }
 
       await this.database.sequelize.query(
-        `DELETE FROM ${this.uiSchemasTableName} WHERE "x-uid" IN (
+        this.sqlAdapter(`DELETE FROM ${this.uiSchemasTableName} WHERE "x-uid" IN (
             SELECT descendant FROM ${this.uiSchemaTreePathTableName} WHERE ancestor = :uid
-        )`,
+        )`),
         {
           replacements: {
             uid,
