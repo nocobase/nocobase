@@ -36,7 +36,7 @@ export default {
       sourceKey: 'id',
       foreignKey: 'upstream_id',
     },
-    // only works when upstream node is branching type, like condition and parallel.
+    // only works when upstream node is branching type, such as condition and parallel.
     // put here because the design of flow-links model is not really necessary for now.
     // or it should be put into flow-links model.
     {
@@ -47,7 +47,7 @@ export default {
     },
     // for reasons:
     // 1. redirect type node to solve cycle flow.
-    // 2. recognize as true next node after branches.
+    // 2. recognize as real next node after branches.
     {
       interface: 'linkTo',
       name: 'downstream',

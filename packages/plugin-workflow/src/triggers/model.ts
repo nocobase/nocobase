@@ -2,6 +2,7 @@ import WorkflowModel from "../models/Workflow";
 
 export interface ModelChangeTriggerConfig {
   collection: string;
+  mode: number;
   // TODO: ICondition
   filter: any;
 }
@@ -23,7 +24,7 @@ export default {
     const { database } = <typeof WorkflowModel>this.constructor;
     const { collection, mode } = this.config;
     const { model } = database.getCollection(collection);
-    const handler = (data: any, options) => callback({ data }, options);
+    const handler = (data: any, options) => callback({ data: data.get() }, options);
     // TODO: duplication when mode change should be considered
     for (let [key, event] of MODE_BITMAP_EVENTS.entries()) {
       if (mode & key) {
