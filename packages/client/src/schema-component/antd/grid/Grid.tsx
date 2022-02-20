@@ -17,7 +17,7 @@ const ColDivider = (props) => {
   });
 
   const droppableStyle = {
-    backgroundColor: isOver ? 'green' : undefined,
+    backgroundColor: isOver ? 'rgba(241, 139, 98, .1)' : undefined,
   };
 
   return <div ref={setNodeRef} style={{ width: 24, ...droppableStyle }}></div>;
@@ -32,7 +32,7 @@ const RowDivider = (props) => {
   const droppableStyle = {};
 
   if (isOver) {
-    droppableStyle['backgroundColor'] = 'green';
+    droppableStyle['backgroundColor'] = 'rgba(241, 139, 98, .1)';
   }
 
   const [active, setActive] = useState(false);

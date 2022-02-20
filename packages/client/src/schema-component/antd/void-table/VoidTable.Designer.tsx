@@ -4,7 +4,12 @@ import { GeneralSchemaDesigner, SchemaSettings } from '../../../schema-settings'
 export const VoidTableDesigner = () => {
   return (
     <GeneralSchemaDesigner>
-      <SchemaSettings.Remove />
+      <SchemaSettings.Remove
+        removeParentsIfNoChildren
+        breakRemoveOn={{
+          'x-component': 'Grid',
+        }}
+      />
     </GeneralSchemaDesigner>
   );
 };
