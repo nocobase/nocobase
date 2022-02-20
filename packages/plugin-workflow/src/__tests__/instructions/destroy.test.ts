@@ -48,7 +48,6 @@ describe('workflow > instructions > create', () => {
       const post = await PostModel.create({ title: 't1' });
 
       const [execution] = await workflow.getExecutions();
-      await execution.prepare({}, true);
       const [job] = await execution.getJobs();
       expect(job.result).toBe(1);
 

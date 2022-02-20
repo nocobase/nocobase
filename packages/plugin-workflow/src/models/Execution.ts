@@ -98,7 +98,7 @@ export default class ExecutionModel extends Model {
     this.makeJobs(jobs);
 
     if (commit) {
-      await transaction.commit();
+      await this.commit();
     }
   }
 
@@ -189,7 +189,7 @@ export default class ExecutionModel extends Model {
     if (parentNode) {
       return this.recall(parentNode, job);
     }
-    
+
     // really done for all nodes
     // * should mark execution as done with last job status
     return this.exit(job);

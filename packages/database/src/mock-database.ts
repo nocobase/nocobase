@@ -24,7 +24,7 @@ export function getConfigByEnv() {
     port: process.env.DB_PORT,
     dialect: process.env.DB_DIALECT,
     logging: process.env.DB_LOG_SQL === 'on' ? console.log : false,
-    storage: process.env.DB_STORAGE ? resolve(process.cwd(), process.env.DB_STORAGE) : ':memory:',
+    storage: process.env.DB_STORAGE && process.env.DB_STORAGE !== ':memory:' ? resolve(process.cwd(), process.env.DB_STORAGE) : ':memory:',
     define: {
       charset: 'utf8mb4',
       collate: 'utf8mb4_unicode_ci',

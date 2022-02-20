@@ -52,7 +52,6 @@ describe('workflow > instructions > update', () => {
       expect(post.published).toBe(false);
 
       const [execution] = await workflow.getExecutions();
-      await execution.prepare({}, true);
       const [job] = await execution.getJobs();
       expect(job.result.published).toBe(true);
 

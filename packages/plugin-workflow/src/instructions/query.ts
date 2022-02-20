@@ -11,7 +11,10 @@ export default {
 
     const repo = (<typeof FlowNodeModel>this.constructor).database.getRepository(collection);
     const options = execution.getParsedValue(params);
-    const result = await (multiple ? repo.find : repo.findOne).call(repo, options);
+    const result = await (multiple ? repo.find : repo.findOne).call(repo, {
+      ...options,
+      transaction: execution.transaction
+    });
 
     return {
       result,

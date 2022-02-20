@@ -43,7 +43,6 @@ describe('workflow > instructions > query', () => {
       const post = await PostModel.create({ title: 't1' });
 
       const [execution] = await workflow.getExecutions();
-      await execution.prepare({}, true);
       const [job] = await execution.getJobs();
       expect(job.result.title).toBe(post.title);
     });
@@ -64,7 +63,6 @@ describe('workflow > instructions > query', () => {
       const post = await PostModel.create({ title: 't1' });
 
       const [execution] = await workflow.getExecutions();
-      await execution.prepare({}, true);
       const [job] = await execution.getJobs();
       expect(job.result.title).toBe(post.title);
     });
@@ -85,7 +83,6 @@ describe('workflow > instructions > query', () => {
       const post = await PostModel.create({ title: 't1' });
 
       const [execution] = await workflow.getExecutions();
-      await execution.prepare({}, true);
       const [job] = await execution.getJobs();
       expect(job.result).toBe(null);
     });
@@ -106,7 +103,6 @@ describe('workflow > instructions > query', () => {
       const post = await PostModel.create({ title: 't1' });
 
       const [execution] = await workflow.getExecutions();
-      await execution.prepare({}, true);
       const [job] = await execution.getJobs();
       expect(job.result.title).toBe(post.title);
     });
@@ -132,7 +128,6 @@ describe('workflow > instructions > query', () => {
       const post = await PostModel.create({ title: 't1' });
 
       const [execution] = await workflow.getExecutions();
-      await execution.prepare({}, true);
       const jobs = await execution.getJobs({ order: [['id', 'ASC']] });
       expect(jobs[1].result.title).toBe(post.title);
     });
@@ -154,7 +149,6 @@ describe('workflow > instructions > query', () => {
       // get the 2nd execution
       const [execution] = await workflow.getExecutions({ order: [['id', 'DESC']] });
       expect(execution.context.data.title).toBe(p2.title);
-      await execution.prepare({}, true);
       const [job] = await execution.getJobs();
       expect(job.result.title).toBe(p1.title);
     });
@@ -173,7 +167,6 @@ describe('workflow > instructions > query', () => {
       const post = await PostModel.create({ title: 't1' });
 
       const [execution] = await workflow.getExecutions();
-      await execution.prepare({}, true);
       const [job] = await execution.getJobs();
       expect(job.result.length).toBe(1);
       expect(job.result[0].title).toBe(post.title);
@@ -196,7 +189,6 @@ describe('workflow > instructions > query', () => {
       const post = await PostModel.create({ title: 't1' });
 
       const [execution] = await workflow.getExecutions();
-      await execution.prepare({}, true);
       const [job] = await execution.getJobs();
       expect(job.result.length).toBe(1);
       expect(job.result[0].title).toBe(post.title);
@@ -219,7 +211,6 @@ describe('workflow > instructions > query', () => {
       const post = await PostModel.create({ title: 't1' });
 
       const [execution] = await workflow.getExecutions();
-      await execution.prepare({}, true);
       const [job] = await execution.getJobs();
       expect(job.result.length).toBe(0);
     });
