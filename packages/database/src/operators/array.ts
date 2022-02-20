@@ -52,15 +52,16 @@ const isMySQL = (ctx) => {
 
 export default {
   $match(value, ctx) {
-    value = escape(JSON.stringify(value.sort()), ctx);
-
     const fieldName = getFieldName(ctx);
+
     if (isPg(ctx)) {
       return {
         [Op.contained]: value,
         [Op.contains]: value,
       };
     }
+
+    value = escape(JSON.stringify(value.sort()), ctx);
 
     if (isMySQL(ctx)) {
       return Sequelize.literal(`JSON_CONTAINS(${fieldName}, ${value}) AND JSON_CONTAINS(${value}, ${fieldName})`);
@@ -76,9 +77,7 @@ export default {
     value = escape(JSON.stringify(value), ctx);
 
     if (isPg(ctx)) {
-      return Sequelize.literal(
-        `not (${fieldName} <@ ${escape(value, ctx)}::JSONB and ${fieldName} @> ${value}::JSONB)`,
-      );
+      return Sequelize.literal(`not (${fieldName} <@ ${value}::JSONB and ${fieldName} @> ${value}::JSONB)`);
     }
 
     if (isMySQL(ctx)) {
@@ -89,17 +88,18 @@ export default {
     };
   },
 
-  // TODO sql injection
   $anyOf(value, ctx) {
+    const fieldName = getFieldName(ctx);
+
     if (isPg(ctx)) {
-      return {
-        [Op.contains]: value,
-      };
+      const queryValue = JSON.stringify(value).replace("'", "''");
+
+      return Sequelize.literal(`${fieldName} @> ${escape(queryValue, ctx)}::JSONB`);
     }
 
     if (isMySQL(ctx)) {
-      const fieldName = getFieldName(ctx);
       value = escape(JSON.stringify(value), ctx);
+
       return Sequelize.literal(`JSON_OVERLAPS(${fieldName}, ${value})`);
     }
 

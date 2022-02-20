@@ -1,7 +1,7 @@
 import { mockDatabase } from '../index';
 import Database from '../../database';
 
-describe.skip('array field operator', function () {
+describe('array field operator', function () {
   let db: Database;
   let Test;
 
@@ -119,6 +119,7 @@ describe.skip('array field operator', function () {
 
     expect(result.length).toEqual(1);
     expect(result[0].get('name')).toEqual('u0');
+
     result = await User.repository.find({
       filter: {
         'posts.tags.$anyOf': ['t1'],
