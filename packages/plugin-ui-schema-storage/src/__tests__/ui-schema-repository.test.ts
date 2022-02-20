@@ -478,9 +478,9 @@ describe('ui_schema repository', () => {
 
       await repository.insertAfterBegin(rootUid, newNode);
       const schema = await repository.getJsonSchema(rootUid);
-      expect(schema.properties['newNode']['x-index']).toEqual(1);
-      expect(schema.properties.a1['x-index']).toEqual(2);
-      expect(schema.properties.b1['x-index']).toEqual(3);
+      expect(schema['properties']['newNode']['x-index']).toEqual(1);
+      expect(schema['properties'].a1['x-index']).toEqual(2);
+      expect(schema['properties'].b1['x-index']).toEqual(3);
     });
 
     it('should insertBeforeEnd', async () => {
@@ -490,9 +490,9 @@ describe('ui_schema repository', () => {
 
       await repository.insertBeforeEnd(rootUid, newNode);
       const schema = await repository.getJsonSchema(rootUid);
-      expect(schema.properties['newNode']['x-index']).toEqual(3);
-      expect(schema.properties.a1['x-index']).toEqual(1);
-      expect(schema.properties.b1['x-index']).toEqual(2);
+      expect(schema['properties']['newNode']['x-index']).toEqual(3);
+      expect(schema['properties'].a1['x-index']).toEqual(1);
+      expect(schema['properties'].b1['x-index']).toEqual(2);
     });
 
     it('should insertBeforeBegin', async () => {
@@ -509,9 +509,9 @@ describe('ui_schema repository', () => {
       await repository.insertBeforeBegin(b1Node.get('x-uid') as string, newNode);
 
       const schema = await repository.getJsonSchema(rootUid);
-      expect(schema.properties['newNode']['x-index']).toEqual(2);
-      expect(schema.properties.a1['x-index']).toEqual(1);
-      expect(schema.properties.b1['x-index']).toEqual(3);
+      expect(schema['properties']['newNode']['x-index']).toEqual(2);
+      expect(schema['properties'].a1['x-index']).toEqual(1);
+      expect(schema['properties'].b1['x-index']).toEqual(3);
     });
 
     it('should insertAfterEnd a1', async () => {
@@ -528,9 +528,9 @@ describe('ui_schema repository', () => {
       await repository.insertAfterEnd(a1Node.get('x-uid') as string, newNode);
 
       const schema = await repository.getJsonSchema(rootUid);
-      expect(schema.properties['newNode']['x-index']).toEqual(2);
-      expect(schema.properties.a1['x-index']).toEqual(1);
-      expect(schema.properties.b1['x-index']).toEqual(3);
+      expect(schema['properties']['newNode']['x-index']).toEqual(2);
+      expect(schema['properties'].a1['x-index']).toEqual(1);
+      expect(schema['properties'].b1['x-index']).toEqual(3);
     });
 
     it('should insertAfterEnd b1', async () => {
@@ -547,9 +547,9 @@ describe('ui_schema repository', () => {
       await repository.insertAfterEnd(b1Node.get('x-uid') as string, newNode);
 
       const schema = await repository.getJsonSchema(rootUid);
-      expect(schema.properties['newNode']['x-index']).toEqual(3);
-      expect(schema.properties.a1['x-index']).toEqual(1);
-      expect(schema.properties.b1['x-index']).toEqual(2);
+      expect(schema['properties']['newNode']['x-index']).toEqual(3);
+      expect(schema['properties'].a1['x-index']).toEqual(1);
+      expect(schema['properties'].b1['x-index']).toEqual(2);
     });
   });
 
@@ -614,11 +614,136 @@ describe('ui_schema repository', () => {
 
       await repository.insertAfterBegin('n2', 'n4');
       const schema = await repository.getJsonSchema('n1');
-      expect(schema.properties.b.properties.d['x-uid']).toEqual('n4');
+      expect(schema['properties'].b.properties.d['x-uid']).toEqual('n4');
     });
   });
 
   describe('remove', () => {
+    it('should remove node in schema table', async () => {
+      const schema = {
+        type: 'void',
+        'x-uid': 'root',
+        'x-component': 'Menu',
+        'x-designer': 'Menu.Designer',
+        'x-initializer': 'MenuItemInitializer',
+        'x-component-props': {
+          mode: 'mix',
+          theme: 'dark',
+          // defaultSelectedUid: 'u8',
+          onSelect: '{{ onSelect }}',
+          sideMenuRefScopeKey: 'sideMenuRef',
+        },
+        properties: {
+          item3: {
+            'x-uid': 'item3',
+            type: 'void',
+            title: 'SubMenu u3',
+            'x-component': 'Menu.SubMenu',
+            'x-component-props': {},
+            properties: {
+              item6: {
+                type: 'void',
+                title: 'SubMenu u6',
+                'x-component': 'Menu.SubMenu',
+                'x-component-props': {},
+                properties: {
+                  item7: {
+                    type: 'void',
+                    title: 'Menu Item u7',
+                    'x-component': 'Menu.Item',
+                    'x-component-props': {},
+                    properties: {
+                      page1: {
+                        type: 'void',
+                        'x-component': 'Page',
+                        'x-async': true,
+                        properties: {
+                          grid1: {
+                            type: 'void',
+                            'x-component': 'Grid',
+                            'x-item-initializer': 'BlockInitializer',
+                            properties: {},
+                          },
+                        },
+                      },
+                    },
+                  },
+                  item8: {
+                    type: 'void',
+                    title: 'Menu Item u8',
+                    'x-component': 'Menu.Item',
+                    'x-component-props': {},
+                  },
+                },
+              },
+              item4: {
+                type: 'void',
+                title: 'Menu Item u4',
+                'x-component': 'Menu.Item',
+                'x-component-props': {},
+              },
+              item5: {
+                type: 'void',
+                title: 'Menu Item u5',
+                'x-component': 'Menu.Item',
+                'x-component-props': {},
+              },
+            },
+          },
+          item1: {
+            'x-uid': 'item1',
+            type: 'void',
+            title: 'Menu Item u1',
+            'x-component': 'Menu.Item',
+            'x-component-props': {},
+          },
+          item2: {
+            'x-uid': 'item2',
+            type: 'void',
+            title: 'Menu Item u2',
+            'x-component': 'Menu.Item',
+            'x-component-props': {},
+          },
+          item9: {
+            'x-uid': 'item9',
+            type: 'void',
+            title: 'SubMenu u9',
+            'x-component': 'Menu.SubMenu',
+            'x-component-props': {},
+            properties: {
+              item10: {
+                type: 'void',
+                title: 'Menu Item u10',
+                'x-component': 'Menu.Item',
+                'x-component-props': {},
+              },
+            },
+          },
+        },
+      };
+
+      await repository.insert(schema);
+      await repository.remove('item1');
+
+      const item1Node = await repository.findOne({
+        filter: {
+          'x-uid': 'item1',
+        },
+      });
+
+      expect(item1Node).toBeNull();
+
+      let tree = await repository.getProperties('root');
+      expect(tree['properties']['item1']).toBeUndefined();
+      await repository.remove('item2');
+      await repository.remove('item3');
+      await repository.remove('item9');
+
+      tree = await repository.getJsonSchema('root');
+      console.log(JSON.stringify(tree, null, 2));
+      expect(tree['properties']).toBeUndefined();
+    });
+
     it('should remove node', async () => {
       await repository.insert({
         'x-uid': 'n1',
