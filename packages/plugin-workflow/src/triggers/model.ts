@@ -2,6 +2,7 @@ import WorkflowModel from "../models/Workflow";
 
 export interface ModelChangeTriggerConfig {
   collection: string;
+  mode: number;
   // TODO: ICondition
   filter: any;
 }

@@ -1,7 +1,6 @@
 import { Application } from '@nocobase/server';
 import Database from '@nocobase/database';
 import { getApp } from '..';
-import { EXECUTION_STATUS, BRANCH_INDEX } from '../../constants';
 
 
 
@@ -44,10 +43,9 @@ describe('workflow > instructions > query', () => {
       const post = await PostModel.create({ title: 't1' });
 
       const [execution] = await workflow.getExecutions();
-      await execution.prepare();
-      await execution.commit();
+      await execution.prepare({}, true);
       const [job] = await execution.getJobs();
-      expect(job.result.title).toEqual(post.title);
+      expect(job.result.title).toBe(post.title);
     });
 
     it('params.filter: match', async () => {
@@ -66,10 +64,9 @@ describe('workflow > instructions > query', () => {
       const post = await PostModel.create({ title: 't1' });
 
       const [execution] = await workflow.getExecutions();
-      await execution.prepare();
-      await execution.commit();
+      await execution.prepare({}, true);
       const [job] = await execution.getJobs();
-      expect(job.result.title).toEqual(post.title);
+      expect(job.result.title).toBe(post.title);
     });
 
     it('params.filter: unmatch', async () => {
@@ -88,10 +85,9 @@ describe('workflow > instructions > query', () => {
       const post = await PostModel.create({ title: 't1' });
 
       const [execution] = await workflow.getExecutions();
-      await execution.prepare();
-      await execution.commit();
+      await execution.prepare({}, true);
       const [job] = await execution.getJobs();
-      expect(job.result).toEqual(null);
+      expect(job.result).toBe(null);
     });
 
     it('params.filter: value from context', async () => {
@@ -110,10 +106,9 @@ describe('workflow > instructions > query', () => {
       const post = await PostModel.create({ title: 't1' });
 
       const [execution] = await workflow.getExecutions();
-      await execution.prepare();
-      await execution.commit();
+      await execution.prepare({}, true);
       const [job] = await execution.getJobs();
-      expect(job.result.title).toEqual(post.title);
+      expect(job.result.title).toBe(post.title);
     });
 
     it('params.filter: value from job of node', async () => {
@@ -137,10 +132,9 @@ describe('workflow > instructions > query', () => {
       const post = await PostModel.create({ title: 't1' });
 
       const [execution] = await workflow.getExecutions();
-      await execution.prepare();
-      await execution.commit();
+      await execution.prepare({}, true);
       const jobs = await execution.getJobs({ order: [['id', 'ASC']] });
-      expect(jobs[1].result.title).toEqual(post.title);
+      expect(jobs[1].result.title).toBe(post.title);
     });
 
     it('params.sort', async () => {
@@ -159,11 +153,10 @@ describe('workflow > instructions > query', () => {
 
       // get the 2nd execution
       const [execution] = await workflow.getExecutions({ order: [['id', 'DESC']] });
-      expect(execution.context.data.title).toEqual(p2.title);
-      await execution.prepare();
-      await execution.commit();
+      expect(execution.context.data.title).toBe(p2.title);
+      await execution.prepare({}, true);
       const [job] = await execution.getJobs();
-      expect(job.result.title).toEqual(p1.title);
+      expect(job.result.title).toBe(p1.title);
     });
   });
 
@@ -180,11 +173,10 @@ describe('workflow > instructions > query', () => {
       const post = await PostModel.create({ title: 't1' });
 
       const [execution] = await workflow.getExecutions();
-      await execution.prepare();
-      await execution.commit();
+      await execution.prepare({}, true);
       const [job] = await execution.getJobs();
-      expect(job.result.length).toEqual(1);
-      expect(job.result[0].title).toEqual(post.title);
+      expect(job.result.length).toBe(1);
+      expect(job.result[0].title).toBe(post.title);
     });
 
     it('params.filter: match', async () => {
@@ -204,11 +196,10 @@ describe('workflow > instructions > query', () => {
       const post = await PostModel.create({ title: 't1' });
 
       const [execution] = await workflow.getExecutions();
-      await execution.prepare();
-      await execution.commit();
+      await execution.prepare({}, true);
       const [job] = await execution.getJobs();
-      expect(job.result.length).toEqual(1);
-      expect(job.result[0].title).toEqual(post.title);
+      expect(job.result.length).toBe(1);
+      expect(job.result[0].title).toBe(post.title);
     });
 
     it('params.filter: unmatch', async () => {
@@ -228,10 +219,9 @@ describe('workflow > instructions > query', () => {
       const post = await PostModel.create({ title: 't1' });
 
       const [execution] = await workflow.getExecutions();
-      await execution.prepare();
-      await execution.commit();
+      await execution.prepare({}, true);
       const [job] = await execution.getJobs();
-      expect(job.result.length).toEqual(0);
+      expect(job.result.length).toBe(0);
     });
   });
 });

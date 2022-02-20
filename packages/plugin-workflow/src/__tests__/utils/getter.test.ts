@@ -43,14 +43,14 @@ describe('value getter', () => {
       const v1 = getValue({
         value: null
       }, null, null);
-      expect(v1).toEqual(null);
+      expect(v1).toBe(null);
     });
 
     it('number', () => {
       const v1 = getValue({
         value: 1
       }, null, null);
-      expect(v1).toEqual(1);
+      expect(v1).toBe(1);
     });
   });
 
@@ -75,7 +75,7 @@ describe('value getter', () => {
         type: 'context',
         options: { path: 'data.title' }
       }, null, execution);
-      expect(v3).toEqual(post.title);
+      expect(v3).toBe(post.title);
     });
   });
 
@@ -86,8 +86,7 @@ describe('value getter', () => {
       });
       const post = await PostModel.create({ title: 't1' });
       const [execution] = await workflow.getExecutions();
-      await execution.prepare();
-      await execution.commit();
+      await execution.prepare({}, true);
 
       const v1 = getValue({
         type: 'job',
@@ -97,7 +96,7 @@ describe('value getter', () => {
         }
       }, null, execution);
 
-      expect(v1).toEqual(post.title);
+      expect(v1).toBe(post.title);
     });
 
     it('result of unexecuted job could not be got', async () => {
@@ -119,8 +118,7 @@ describe('value getter', () => {
 
       const post = await PostModel.create({ title: 't1' });
       const [execution] = await workflow.getExecutions();
-      await execution.prepare();
-      await execution.commit();
+      await execution.prepare({}, true);
 
       const v1 = getValue({
         type: 'job',

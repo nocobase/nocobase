@@ -59,9 +59,8 @@ export function getValue(operand: Operand, lastJob: JobModel, execution: Executi
     // from job in execution
     case 'job':
       // assume jobs have been fetched from execution before
-      // TODO: searching should consider cycle, and from lastJob
-      const job = Array.from(execution.jobsMap.values()).find(item => item.nodeId === operand.options.nodeId);
-      return job && get(job.result, operand.options.path);
+      const job = execution.jobsMapByNodeId[operand.options.nodeId];
+      return job && get(job, operand.options.path);
     // constant
     default:
       return operand.value;

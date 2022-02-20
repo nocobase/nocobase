@@ -4,6 +4,7 @@ import {
   HasManyGetAssociationsMixin,
   Transaction
 } from 'sequelize';
+import parse from 'json-templates';
 
 import Database from '@nocobase/database';
 
@@ -40,6 +41,7 @@ export default class ExecutionModel extends Model {
   nodes: Array<FlowNodeModel> = [];
   nodesMap = new Map<number, FlowNodeModel>();
   jobsMap = new Map<number, JobModel>();
+  jobsMapByNodeId: { [key: number]: any } = {};
 
   static StatusMap = {
     [JOB_STATUS.PENDING]: EXECUTION_STATUS.STARTED,
@@ -70,10 +72,12 @@ export default class ExecutionModel extends Model {
   makeJobs(jobs: Array<JobModel>) {
     jobs.forEach(job => {
       this.jobsMap.set(job.id, job);
+      // TODO: should consider cycle, and from previous job
+      this.jobsMapByNodeId[job.nodeId] = job.result;
     });
   }
 
-  async prepare(options) {
+  async prepare(options, commit = false) {
     this.options = options || {};
     const { transaction = await (<typeof ExecutionModel>this.constructor).database.sequelize.transaction() } = this.options;
     this.transaction = transaction;
@@ -86,9 +90,16 @@ export default class ExecutionModel extends Model {
 
     this.makeNodes(nodes);
 
-    const jobs = await this.getJobs({ transaction });
+    const jobs = await this.getJobs({
+      order: [['id', 'ASC']],
+      transaction
+    });
 
     this.makeJobs(jobs);
+
+    if (commit) {
+      await transaction.commit();
+    }
   }
 
   async start(options: ExecutionOptions) {
@@ -203,13 +214,14 @@ export default class ExecutionModel extends Model {
   async saveJob(payload) {
     const { database } = <typeof WorkflowModel>this.constructor;
     const { model } = database.getCollection('jobs');
-    const [result] = await model.upsert({
+    const [job] = await model.upsert({
       ...payload,
       executionId: this.id
     }, { transaction: this.transaction }) as [JobModel, boolean | null];
-    this.jobsMap.set(result.id, result);
+    this.jobsMap.set(job.id, job);
+    this.jobsMapByNodeId[job.nodeId] = job.result;
 
-    return result;
+    return job;
   }
 
   // find the first node in current branch
@@ -239,5 +251,12 @@ export default class ExecutionModel extends Model {
       }
     }
     return null;
+  }
+
+  getParsedValue(value) {
+    return parse(value)({
+      $context: this.context,
+      $jobsMapByNodeId: this.jobsMapByNodeId
+    });
   }
 }
