@@ -20,6 +20,8 @@ export class UiRoutesStoragePlugin extends Plugin {
           uiSchema: {
             type: 'void',
             'x-component': 'Menu',
+            'x-designer': 'Menu.Designer',
+            'x-initializer': 'MenuItemInitializer',
             'x-component-props': {
               mode: 'mix',
               theme: 'dark',

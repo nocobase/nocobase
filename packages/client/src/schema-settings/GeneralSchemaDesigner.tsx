@@ -6,7 +6,7 @@ import { DragHandler, useDesignable } from '../schema-component';
 import { SchemaSettings } from './SchemaSettings';
 
 export const GeneralSchemaDesigner = (props: any) => {
-  const { dn } = useDesignable();
+  const { dn, designable } = useDesignable();
   const field = useField();
   const fieldSchema = useFieldSchema();
   const schemaSettingsProps = {
@@ -14,6 +14,9 @@ export const GeneralSchemaDesigner = (props: any) => {
     field,
     fieldSchema,
   };
+  if (!designable) {
+    return null;
+  }
   return (
     <div className={'general-schema-designer'}>
       <div className={'general-schema-designer-icons'}>

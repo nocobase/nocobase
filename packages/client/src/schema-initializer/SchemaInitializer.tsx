@@ -17,7 +17,7 @@ export const SchemaInitializer = () => null;
 
 SchemaInitializer.Button = observer((props: SchemaInitializerButtonProps) => {
   const { insert, wrap = defaultWrap, items = [], insertPosition, dropdown, style, ...others } = props;
-  let { insertAdjacent, findComponent } = useDesignable();
+  let { insertAdjacent, findComponent, designable } = useDesignable();
   const [visible, setVisible] = useState(false);
   const insertSchema = (schema) => {
     if (props.insert) {
@@ -81,7 +81,9 @@ SchemaInitializer.Button = observer((props: SchemaInitializerButtonProps) => {
     </Menu>
   );
 
-  console.log('others', others);
+  if (!designable) {
+    return null;
+  }
 
   return (
     <Dropdown
