@@ -13,7 +13,12 @@ export const MarkdownVoidDesigner = () => {
         }}
       />
       <SchemaSettings.Divider />
-      <SchemaSettings.Remove />
+      <SchemaSettings.Remove
+        removeParentsIfNoChildren
+        breakRemoveOn={{
+          'x-component': 'Grid',
+        }}
+      />
     </GeneralSchemaDesigner>
   );
 };

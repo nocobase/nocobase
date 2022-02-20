@@ -92,7 +92,14 @@ SchemaInitializer.Button = observer((props: SchemaInitializerButtonProps) => {
       {...dropdown}
       overlay={menu}
     >
-      <Button {...others} />
+      <Button
+        {...others}
+        type={'dashed'}
+        style={{
+          borderColor: '#f18b62',
+          color: '#f18b62',
+        }}
+      />
     </Dropdown>
   );
 });

@@ -1,5 +1,5 @@
 import { GeneralField } from '@formily/core';
-import { Schema } from '@formily/react';
+import { ISchema, Schema } from '@formily/react';
 import { Dropdown, Menu, MenuItemProps } from 'antd';
 import React, { createContext, useContext } from 'react';
 import { Designable } from '..';
@@ -23,8 +23,13 @@ export const useSchemaSettings = () => {
   return useContext(SchemaSettingsContext);
 };
 
+interface RemoveProps {
+  removeParentsIfNoChildren?: boolean;
+  breakRemoveOn?: ISchema | ((s: ISchema) => boolean);
+}
+
 type SchemaSettingsNested = {
-  Remove?: React.FC;
+  Remove?: React.FC<RemoveProps>;
   Item?: React.FC<MenuItemProps>;
   Divider?: React.FC;
   [key: string]: any;
@@ -59,7 +64,11 @@ export const SchemaSettings: React.FC<SchemaSettingsProps> & SchemaSettingsNeste
 };
 
 SchemaSettings.Item = (props) => {
-  return <Menu.Item {...props}>{props.children || props.title}</Menu.Item>;
+  return (
+    <Menu.Item {...props} style={{ minWidth: 120 }}>
+      {props.children || props.title}
+    </Menu.Item>
+  );
 };
 
 SchemaSettings.ItemGroup = (props) => {
@@ -74,12 +83,17 @@ SchemaSettings.Divider = (props) => {
   return <Menu.Divider {...props} />;
 };
 
-SchemaSettings.Remove = () => {
+SchemaSettings.Remove = (props: any) => {
+  const { removeParentsIfNoChildren, breakRemoveOn } = props;
   const { dn } = useSchemaSettings();
   return (
     <Menu.Item
+      style={{ minWidth: 120 }}
       onClick={() => {
-        dn.remove();
+        dn.remove(null, {
+          removeParentsIfNoChildren,
+          breakRemoveOn,
+        });
       }}
     >
       移除

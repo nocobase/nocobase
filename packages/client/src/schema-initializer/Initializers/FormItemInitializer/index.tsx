@@ -16,7 +16,7 @@ const useFormItems = () => {
       component: InitializeFormItem,
       schema: {
         name: field.name,
-        'x-designer': 'TestDesigner',
+        'x-designer': 'FormItem.Designer',
         'x-component': 'CollectionField',
         'x-decorator': 'FormItem',
         'x-collection-field': `${name}.${field.name}`,
