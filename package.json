@@ -63,6 +63,7 @@
     "jest-localstorage-mock": "^2.3.0",
     "jest-styled-components": "6.3.3",
     "jest-watch-lerna-packages": "^1.1.0",
+    "json-templates": "^4.2.0",
     "koa": "^2.13.4",
     "koa-bodyparser": "^4.3.0",
     "lerna": "^4.0.0",
