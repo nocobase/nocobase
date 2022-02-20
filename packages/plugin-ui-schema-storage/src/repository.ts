@@ -23,19 +23,20 @@ interface InsertAdjacentOptions extends removeParentOptions {}
 const nodeKeys = ['properties', 'definitions', 'patternProperties', 'additionalProperties', 'items'];
 
 export class UiSchemaRepository extends Repository {
-  get uiSchemasTableName() {
+  tableNameAdapter(tableName) {
     if (this.database.sequelize.getDialect() === 'postgres') {
-      return `"${this.model.tableName}"`;
+      return `"${tableName}"`;
     }
-    return this.model.tableName;
+    return tableName;
+  }
+
+  get uiSchemasTableName() {
+    return this.tableNameAdapter(this.model.tableName);
   }
 
   get uiSchemaTreePathTableName() {
     const model = this.database.getCollection('uiSchemaTreePath').model;
-    if (this.database.sequelize.getDialect() === 'postgres') {
-      return `"${model.tableName}"`;
-    }
-    return model.tableName;
+    return this.tableNameAdapter(model.tableName);
   }
 
   sqlAdapter(sql: string) {
@@ -130,7 +131,7 @@ export class UiSchemaRepository extends Repository {
     return lodash.pick(schema, ['type', 'properties']);
   }
 
-  async getJsonSchema(uid: string, options?: GetJsonSchemaOptions) {
+  async getJsonSchema(uid: string, options?: GetJsonSchemaOptions): Promise<any> {
     const db = this.database;
 
     const treeTable = this.uiSchemaTreePathTableName;
@@ -161,10 +162,14 @@ export class UiSchemaRepository extends Repository {
     return schema;
   }
 
+  private ignoreSchemaProperties(schemaProperties) {
+    return lodash.omit(schemaProperties, nodeKeys);
+  }
+
   nodesToSchema(nodes, rootUid) {
     const nodeAttributeSanitize = (node) => {
       const schema = {
-        ...(lodash.isPlainObject(node.schema) ? node.schema : JSON.parse(node.schema)),
+        ...this.ignoreSchemaProperties(lodash.isPlainObject(node.schema) ? node.schema : JSON.parse(node.schema)),
         ...lodash.pick(node, [...nodeKeys, 'name']),
         ['x-uid']: node['x-uid'],
         ['x-async']: !!node.async,
@@ -412,8 +417,6 @@ export class UiSchemaRepository extends Repository {
       transaction = await this.database.sequelize.transaction();
     }
 
-    const treePathTable = this.uiSchemaTreePathTableName;
-
     try {
       if (options?.removeParentsIfNoChildren) {
         await this.removeEmptyParents({ transaction, uid, breakRemoveOn: options.breakRemoveOn });
@@ -424,10 +427,9 @@ export class UiSchemaRepository extends Repository {
       }
 
       await this.database.sequelize.query(
-        `DELETE FROM ${this.uiSchemasTableName} WHERE 'x-uid' IN (
-            SELECT descendant FROM ${treePathTable} WHERE ancestor = :uid
-        )
-        `,
+        this.sqlAdapter(`DELETE FROM ${this.uiSchemasTableName} WHERE "x-uid" IN (
+            SELECT descendant FROM ${this.uiSchemaTreePathTableName} WHERE ancestor = :uid
+        )`),
         {
           replacements: {
             uid,
@@ -435,13 +437,14 @@ export class UiSchemaRepository extends Repository {
           transaction,
         },
       );
+
       await this.database.sequelize.query(
         `
-            DELETE FROM ${treePathTable}
+            DELETE FROM ${this.uiSchemaTreePathTableName}
             WHERE descendant IN (
                 select descendant FROM
                     (SELECT descendant
-                     FROM ${treePathTable}
+                     FROM ${this.uiSchemaTreePathTableName}
                      WHERE ancestor = :uid)as descendantTable) `,
         {
           replacements: {
