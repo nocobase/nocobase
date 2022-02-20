@@ -62,6 +62,7 @@ export const ArrayTable: ArrayTableType = observer((props) => {
 
 ArrayTable.Column = (props) => {
   const field = useField();
+  console.log('field.title', field.title);
   return <div>{field.title}</div>;
 };
 

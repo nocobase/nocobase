@@ -16,7 +16,7 @@ export const SchemaInitializerItemContext = createContext(null);
 export const SchemaInitializer = () => null;
 
 SchemaInitializer.Button = observer((props: SchemaInitializerButtonProps) => {
-  const { insert, wrap = defaultWrap, items = [], insertPosition, dropdown, ...others } = props;
+  const { insert, wrap = defaultWrap, items = [], insertPosition, dropdown, style, ...others } = props;
   let { insertAdjacent, findComponent } = useDesignable();
   const [visible, setVisible] = useState(false);
   const insertSchema = (schema) => {
@@ -96,6 +96,7 @@ SchemaInitializer.Button = observer((props: SchemaInitializerButtonProps) => {
         {...others}
         type={'dashed'}
         style={{
+          ...style,
           borderColor: '#f18b62',
           color: '#f18b62',
         }}

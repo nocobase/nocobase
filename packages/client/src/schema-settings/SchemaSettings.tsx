@@ -65,7 +65,15 @@ export const SchemaSettings: React.FC<SchemaSettingsProps> & SchemaSettingsNeste
 
 SchemaSettings.Item = (props) => {
   return (
-    <Menu.Item {...props} style={{ minWidth: 120 }}>
+    <Menu.Item
+      {...props}
+      onClick={(info) => {
+        info.domEvent.preventDefault();
+        info.domEvent.stopPropagation();
+        props?.onClick?.(info);
+      }}
+      style={{ minWidth: 120 }}
+    >
       {props.children || props.title}
     </Menu.Item>
   );
@@ -87,8 +95,7 @@ SchemaSettings.Remove = (props: any) => {
   const { removeParentsIfNoChildren, breakRemoveOn } = props;
   const { dn } = useSchemaSettings();
   return (
-    <Menu.Item
-      style={{ minWidth: 120 }}
+    <SchemaSettings.Item
       onClick={() => {
         dn.remove(null, {
           removeParentsIfNoChildren,
@@ -97,7 +104,7 @@ SchemaSettings.Remove = (props: any) => {
       }}
     >
       移除
-    </Menu.Item>
+    </SchemaSettings.Item>
   );
 };
 
