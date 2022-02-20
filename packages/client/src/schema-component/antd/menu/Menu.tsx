@@ -1,13 +1,121 @@
-import { DesktopOutlined } from '@ant-design/icons';
-import { observer, RecursionField, Schema, SchemaExpressionScopeContext, useFieldSchema } from '@formily/react';
+import { css } from '@emotion/css';
+import {
+  observer,
+  RecursionField,
+  Schema,
+  SchemaExpressionScopeContext,
+  useField,
+  useFieldSchema
+} from '@formily/react';
 import { Menu as AntdMenu } from 'antd';
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
+import { createDesignable, DndContext, SortableItem, useComponent, useDesignable, useDesigner } from '../..';
+import { Icon, useAPIClient } from '../../../';
+import { MenuDesigner } from './Menu.Designer';
 import { findKeysByUid, findMenuItem } from './util';
+
+const subMenuDesignerCss = css`
+  position: relative;
+  display: inline-block;
+  margin-left: -24px;
+  margin-right: -34px;
+  padding: 0 34px 0 24px;
+  width: calc(100% + 58px);
+  &:hover {
+    > .general-schema-designer {
+      display: block;
+    }
+  }
+  &.nb-action-link {
+    > .general-schema-designer {
+      top: -10px;
+      bottom: -10px;
+      left: -10px;
+      right: -10px;
+    }
+  }
+  > .general-schema-designer {
+    position: absolute;
+    z-index: 999;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    display: none;
+    background: rgba(241, 139, 98, 0.06);
+    border: 0;
+    pointer-events: none;
+    > .general-schema-designer-icons {
+      position: absolute;
+      right: 2px;
+      top: 2px;
+      line-height: 16px;
+      pointer-events: all;
+      .ant-space-item {
+        background-color: #f18b62;
+        color: #fff;
+        line-height: 16px;
+        width: 16px;
+        padding-left: 1px;
+      }
+    }
+  }
+`;
+
+const designerCss = css`
+  position: relative;
+  display: inline-block;
+  margin-left: -20px;
+  margin-right: -20px;
+  padding: 0 20px;
+  width: calc(100% + 40px);
+  &:hover {
+    > .general-schema-designer {
+      display: block;
+    }
+  }
+  &.nb-action-link {
+    > .general-schema-designer {
+      top: -10px;
+      bottom: -10px;
+      left: -10px;
+      right: -10px;
+    }
+  }
+  > .general-schema-designer {
+    position: absolute;
+    z-index: 999;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    display: none;
+    background: rgba(241, 139, 98, 0.06);
+    border: 0;
+    pointer-events: none;
+    > .general-schema-designer-icons {
+      position: absolute;
+      right: 2px;
+      top: 2px;
+      line-height: 16px;
+      pointer-events: all;
+      .ant-space-item {
+        background-color: #f18b62;
+        color: #fff;
+        line-height: 16px;
+        width: 16px;
+        padding-left: 1px;
+      }
+    }
+  }
+`;
 
 type ComposedMenu = React.FC<any> & {
   Item?: React.FC<any>;
+  URL?: React.FC<any>;
   SubMenu?: React.FC<any>;
+  Designer?: React.FC<any>;
 };
 
 const MenuModeContext = createContext(null);
@@ -22,6 +130,8 @@ const useSideMenuRef = () => {
   return scope[scopeKey];
 };
 
+const MenuItemDesignerContext = createContext(null);
+
 export const Menu: ComposedMenu = observer((props) => {
   let {
     onSelect,
@@ -32,7 +142,11 @@ export const Menu: ComposedMenu = observer((props) => {
     defaultOpenKeys: dOpenKeys,
     ...others
   } = props;
+  const Designer = useDesigner();
   const schema = useFieldSchema();
+  const { refresh } = useDesignable();
+  const api = useAPIClient();
+  const Initializer = useComponent(schema['x-initializer']);
   const sideMenuRef = useSideMenuRef();
   const [defaultSelectedKeys, setDefaultSelectedKeys] = useState(() => {
     if (dSelectedKeys) {
@@ -70,98 +184,190 @@ export const Menu: ComposedMenu = observer((props) => {
     if (!sideMenuElement) {
       return;
     }
-    sideMenuElement.style.display = sideMenuSchema?.properties ? 'block' : 'none';
-  }, [sideMenuSchema?.properties, sideMenuRef]);
+    sideMenuElement.style.display = sideMenuSchema?.['x-component'] === 'Menu.SubMenu' ? 'block' : 'none';
+  }, [sideMenuSchema?.name, sideMenuRef]);
   return (
-    <MenuModeContext.Provider value={mode}>
-      <AntdMenu
-        {...others}
-        onSelect={(info: any) => {
-          const s = schema.properties[info.key];
-          if (mode === 'mix') {
-            setSideMenuSchema(s);
-            if (!s?.properties) {
-              onSelect && onSelect(info);
-            } else {
-              const menuItemSchema = findMenuItem(s);
-              if (!menuItemSchema) {
-                return;
+    <DndContext>
+      <MenuItemDesignerContext.Provider value={Designer}>
+        <MenuModeContext.Provider value={mode}>
+          <AntdMenu
+            {...others}
+            style={{
+              width: mode === 'mix' ? '100%' : undefined,
+            }}
+            className={css`
+              .ant-menu-item:hover {
+                > .ant-menu-title-content > div {
+                  .general-schema-designer {
+                    display: block;
+                  }
+                }
               }
-              // TODO
-              setLoading(true);
-              const keys = findKeysByUid(schema, menuItemSchema['x-uid']);
-              setDefaultSelectedKeys(keys);
-              setTimeout(() => {
-                setLoading(false);
-              }, 100);
-              onSelect &&
-                onSelect({
-                  key: menuItemSchema.name,
-                  item: {
-                    props: {
-                      schema: menuItemSchema,
-                    },
-                  },
-                });
-            }
-          } else {
-            onSelect && onSelect(info);
-          }
-        }}
-        mode={mode === 'mix' ? 'horizontal' : mode}
-        defaultOpenKeys={defaultOpenKeys}
-        defaultSelectedKeys={defaultSelectedKeys}
-      >
-        <RecursionField schema={schema} onlyRenderProperties />
-      </AntdMenu>
-      {loading
-        ? null
-        : mode === 'mix' &&
-          sideMenuSchema?.properties &&
-          sideMenuRef?.current?.firstChild &&
-          createPortal(
-            <MenuModeContext.Provider value={'inline'}>
-              <AntdMenu
-                mode={'inline'}
-                defaultOpenKeys={defaultOpenKeys}
-                defaultSelectedKeys={defaultSelectedKeys}
-                onSelect={(info) => {
+            `}
+            onSelect={(info: any) => {
+              const s = schema.properties[info.key];
+              if (mode === 'mix') {
+                setSideMenuSchema(s);
+                if (s['x-component'] !== 'Menu.SubMenu') {
                   onSelect && onSelect(info);
-                }}
-              >
-                <RecursionField schema={sideMenuSchema} onlyRenderProperties />
-              </AntdMenu>
-            </MenuModeContext.Provider>,
-            sideMenuRef.current.firstChild,
-          )}
-    </MenuModeContext.Provider>
+                } else {
+                  const menuItemSchema = findMenuItem(s);
+                  if (!menuItemSchema) {
+                    return;
+                  }
+                  // TODO
+                  setLoading(true);
+                  const keys = findKeysByUid(schema, menuItemSchema['x-uid']);
+                  setDefaultSelectedKeys(keys);
+                  setTimeout(() => {
+                    setLoading(false);
+                  }, 100);
+                  onSelect &&
+                    onSelect({
+                      key: menuItemSchema.name,
+                      item: {
+                        props: {
+                          schema: menuItemSchema,
+                        },
+                      },
+                    });
+                }
+              } else {
+                onSelect && onSelect(info);
+              }
+            }}
+            mode={mode === 'mix' ? 'horizontal' : mode}
+            defaultOpenKeys={defaultOpenKeys}
+            defaultSelectedKeys={defaultSelectedKeys}
+          >
+            <RecursionField schema={schema} onlyRenderProperties />
+            {Initializer && <Initializer style={{ background: 'none', marginTop: 7, marginLeft: 8 }} />}
+          </AntdMenu>
+          {loading
+            ? null
+            : mode === 'mix' &&
+              sideMenuSchema?.['x-component'] === 'Menu.SubMenu' &&
+              sideMenuRef?.current?.firstChild &&
+              createPortal(
+                <MenuModeContext.Provider value={'inline'}>
+                  <AntdMenu
+                    mode={'inline'}
+                    defaultOpenKeys={defaultOpenKeys}
+                    defaultSelectedKeys={defaultSelectedKeys}
+                    onSelect={(info) => {
+                      onSelect && onSelect(info);
+                    }}
+                    className={css`
+                      .ant-menu-item {
+                        > .ant-menu-title-content {
+                          margin-left: -24px;
+                          margin-right: -16px;
+                          padding: 0 16px 0 24px;
+                          > div {
+                            > .general-schema-designer {
+                              right: 6px !important;
+                            }
+                          }
+                        }
+                      }
+                      .ant-menu-submenu-title {
+                        .ant-menu-title-content {
+                          margin-left: -24px;
+                          margin-right: -34px;
+                          padding: 0 34px 0 24px;
+                          > div {
+                            > .general-schema-designer {
+                              right: 6px !important;
+                            }
+                          }
+                        }
+                      }
+                    `}
+                  >
+                    <RecursionField schema={sideMenuSchema} onlyRenderProperties />
+                    {Initializer && (
+                      <Initializer
+                        style={{ margin: 8 }}
+                        insert={(s) => {
+                          console.log('createDesignable', s);
+                          const dn = createDesignable({
+                            api,
+                            refresh,
+                            current: sideMenuSchema,
+                          });
+                          dn.loadAPIClientEvents();
+                          dn.insertAdjacent('beforeEnd', s);
+                        }}
+                      />
+                    )}
+                  </AntdMenu>
+                </MenuModeContext.Provider>,
+                sideMenuRef.current.firstChild,
+              )}
+        </MenuModeContext.Provider>
+      </MenuItemDesignerContext.Provider>
+    </DndContext>
   );
 });
 
 Menu.Item = observer((props) => {
+  const { icon, ...others } = props;
   const schema = useFieldSchema();
+  const Designer = useContext(MenuItemDesignerContext);
   return (
-    <AntdMenu.Item {...props} icon={<DesktopOutlined />} key={schema.name} eventKey={schema.name} schema={schema}>
-      {schema.title}
+    <AntdMenu.Item {...others} key={schema.name} eventKey={schema.name} schema={schema}>
+      <SortableItem className={designerCss}>
+        <Icon type={icon} style={{ marginRight: 5 }} />
+        {schema.title}
+        <Designer />
+      </SortableItem>
+    </AntdMenu.Item>
+  );
+});
+
+Menu.URL = observer((props) => {
+  const { icon, ...others } = props;
+  const schema = useFieldSchema();
+  const field = useField();
+  const Designer = useContext(MenuItemDesignerContext);
+  return (
+    <AntdMenu.Item {...others} key={schema.name} eventKey={schema.name} schema={schema} onClick={() => {
+      window.open(props.href, '_blank');
+    }}>
+      <SortableItem className={designerCss}>
+        <Icon style={{ marginRight: 5 }} type={icon} />
+        {schema.title}
+        <Designer />
+      </SortableItem>
     </AntdMenu.Item>
   );
 });
 
 Menu.SubMenu = observer((props) => {
+  const { icon, ...others } = props;
   const schema = useFieldSchema();
+  const field = useField();
   const mode = useContext(MenuModeContext);
+  const Designer = useContext(MenuItemDesignerContext);
   if (mode === 'mix') {
     return <Menu.Item {...props} />;
   }
   return (
     <AntdMenu.SubMenu
-      {...props}
-      icon={<DesktopOutlined />}
-      title={schema.title}
+      {...others}
       key={schema.name}
       eventKey={schema.name}
+      title={
+        <SortableItem className={subMenuDesignerCss}>
+          <Icon style={{ marginRight: 5 }} type={icon} />
+          {field.title}
+          <Designer />
+        </SortableItem>
+      }
     >
       <RecursionField schema={schema} onlyRenderProperties />
     </AntdMenu.SubMenu>
   );
 });
+
+Menu.Designer = MenuDesigner;

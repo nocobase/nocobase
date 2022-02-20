@@ -1,9 +1,11 @@
 import { useFieldSchema } from '@formily/react';
-import { useComponent } from '.';
+import { useComponent, useDesignable } from '.';
 
 const Def = () => null;
 
 export const useDesigner = () => {
+  const { designable } = useDesignable();
   const fieldSchema = useFieldSchema();
-  return useComponent(fieldSchema['x-designer'], Def);
+  const component = useComponent(fieldSchema['x-designer'], Def);
+  return designable ? component : Def;
 };

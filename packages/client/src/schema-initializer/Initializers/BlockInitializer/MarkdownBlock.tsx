@@ -20,7 +20,7 @@ export const MarkdownBlock = itemWrap((props) => {
           'x-component': 'Markdown.Void',
           'x-editable': false,
           'x-component-props': {
-            content: '# Markdown content',
+            content: t('This is a demo text, **supports Markdown syntax**.'),
           },
         });
       }}

@@ -1,5 +1,6 @@
 import { ISchema, Schema, SchemaOptionsContext, useField, useFieldSchema } from '@formily/react';
 import { uid } from '@formily/shared';
+import { message } from 'antd';
 import get from 'lodash/get';
 import set from 'lodash/set';
 import React, { useContext } from 'react';
@@ -92,6 +93,7 @@ export class Designable {
           method: 'post',
         });
       }
+      message.success('配置保存成功！', 0.2);
     });
     this.on('patch', async ({ schema }) => {
       refresh();
@@ -104,6 +106,7 @@ export class Designable {
           },
         });
       }
+      message.success('配置保存成功！', 0.2);
     });
     this.on('remove', async ({ removed }) => {
       refresh();
@@ -113,6 +116,7 @@ export class Designable {
           method: 'post',
         });
       }
+      message.success('配置保存成功！', 0.2);
     });
   }
 

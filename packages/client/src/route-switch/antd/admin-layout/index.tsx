@@ -22,6 +22,7 @@ export function AdminLayout(props: any) {
   const [schema, setSchema] = useState({});
   const onSelect = ({ item }) => {
     const schema = item.props.schema;
+    console.log('onSelect', schema);
     setSchema(schema);
     setTitle(schema.title);
     history.push(`/admin/${schema['x-uid']}`);
@@ -30,7 +31,7 @@ export function AdminLayout(props: any) {
   const result = useSystemSettings();
   return (
     <Layout>
-      <Layout.Header style={{ position: 'relative', paddingLeft: 0 }}>
+      <Layout.Header style={{ height: 46, lineHeight: '46px', position: 'relative', paddingLeft: 0 }}>
         <div style={{ display: 'flex' }}>
           <div style={{ display: 'inline-flex', color: '#fff', padding: '0 24px' }}>{result?.data?.data?.title}</div>
           <RemoteSchemaComponent
@@ -74,7 +75,7 @@ export function AdminLayout(props: any) {
       </Layout.Header>
       <Layout>
         <Layout.Sider style={{ display: 'none' }} theme={'light'} ref={sideMenuRef}></Layout.Sider>
-        <Layout.Content>
+        <Layout.Content style={{ minHeight: 'calc(100vh - 46px)' }}>
           <RemoteSchemaComponent onlyRenderProperties uid={match.params.name} />
         </Layout.Content>
       </Layout>
