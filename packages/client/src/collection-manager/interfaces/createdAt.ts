@@ -10,7 +10,7 @@ export const createdAt: IField = {
   sortable: true,
   default: {
     type: 'date',
-    field: 'created_at',
+    field: 'createdAt',
     // name,
     uiSchema: {
       type: 'datetime',
