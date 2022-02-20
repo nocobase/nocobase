@@ -1,11 +1,13 @@
 import { PlusOutlined } from '@ant-design/icons';
+import { ArrayTable } from '@formily/antd';
 import { ISchema } from '@formily/react';
 import { uid } from '@formily/shared';
 import { Button, Dropdown, Menu } from 'antd';
 import React, { useState } from 'react';
-import { ActionContext, SchemaComponent } from '../../schema-component';
+import { ActionContext, SchemaComponent, useCompile } from '../../schema-component';
 import { useCollectionManager } from '../hooks';
 import { IField } from '../interfaces/types';
+import { options } from './interfaces';
 
 const getSchema = (schema: IField): ISchema => {
   if (!schema) {
@@ -74,6 +76,7 @@ export const AddFieldAction = () => {
   const { getInterface } = useCollectionManager();
   const [visible, setVisible] = useState(false);
   const [schema, setSchema] = useState({});
+  const compile = useCompile();
   return (
     <ActionContext.Provider value={{ visible, setVisible }}>
       <Dropdown
@@ -85,11 +88,16 @@ export const AddFieldAction = () => {
               setVisible(true);
             }}
           >
-            <Menu.SubMenu title={'基本类型'}>
-              <Menu.Item key={'input'}>input</Menu.Item>
-              <Menu.Item key={'textarea'}>textarea</Menu.Item>
-              <Menu.Item key={'chinaRegion'}>China region</Menu.Item>
-            </Menu.SubMenu>
+            {options.map((option) => {
+              return (
+                <Menu.SubMenu title={compile(option.label)}>
+                  {option.children.map((child) => {
+                    console.log(child);
+                    return <Menu.Item key={child.name}>{compile(child.title)}</Menu.Item>;
+                  })}
+                </Menu.SubMenu>
+              );
+            })}
           </Menu>
         }
       >
@@ -97,7 +105,7 @@ export const AddFieldAction = () => {
           添加字段
         </Button>
       </Dropdown>
-      <SchemaComponent schema={schema} />
+      <SchemaComponent schema={schema} components={{ ArrayTable }} />
     </ActionContext.Provider>
   );
 };
