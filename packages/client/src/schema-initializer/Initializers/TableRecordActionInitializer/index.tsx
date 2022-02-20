@@ -1,3 +1,5 @@
+import { MenuOutlined } from '@ant-design/icons';
+import { css } from '@emotion/css';
 import { observer, Schema, useFieldSchema } from '@formily/react';
 import { Switch } from 'antd';
 import React from 'react';
@@ -67,7 +69,7 @@ const InitializeAction = SchemaInitializer.itemWrap((props) => {
         }
         insert({
           type: 'void',
-          'x-designer': 'TestDesigner',
+          'x-designer': 'Action.Designer',
           'x-component': 'Action.Link',
           ...item.schema,
         });
@@ -87,6 +89,16 @@ export const TableRecordActionInitializer = observer((props: any) => {
   const { t } = useTranslation();
   return (
     <SchemaInitializer.Button
+      className={css`
+        border: 0 !important;
+        color: #fff !important;
+        background: none !important;
+        height: auto !important;
+        line-height: 12px !important;
+        width: 12px !important;
+        padding: 0;
+        font-size: 12px;
+      `}
       insertPosition={'beforeEnd'}
       insert={(schema) => {
         const spaceSchema = fieldSchema.reduceProperties((buf, schema) => {
@@ -119,6 +131,7 @@ export const TableRecordActionInitializer = observer((props: any) => {
                 title: '{{ t("View") }}',
                 type: 'void',
                 'x-action': 'view',
+                'x-designer': 'Action.Designer',
                 'x-component': 'Action.Link',
                 'x-component-props': {},
                 properties: {
@@ -231,7 +244,7 @@ export const TableRecordActionInitializer = observer((props: any) => {
         },
       ]}
     >
-      Configure
+      <MenuOutlined />
     </SchemaInitializer.Button>
   );
 });

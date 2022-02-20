@@ -51,10 +51,10 @@ const createSchema = (collectionName) => {
         properties: {
           actions: {
             type: 'void',
-            title: 'Actions',
-            'x-designer': 'TestDesigner',
+            title: '{{ t("Actions") }}',
             'x-decorator': 'TableColumnActionBar',
             'x-component': 'VoidTable.Column',
+            'x-designer': 'TableRecordActionDesigner',
             'x-action-initializer': 'TableRecordActionInitializer',
             properties: {
               actions: {

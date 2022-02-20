@@ -19,7 +19,7 @@ export const BlockItem: React.FC<any> = (props) => {
             }
           }
           &.nb-form-item:hover {
-            .general-schema-designer {
+            > .general-schema-designer {
               background: rgba(241, 139, 98, 0.06) !important;
               border: 0 !important;
               top: -5px !important;
@@ -28,7 +28,7 @@ export const BlockItem: React.FC<any> = (props) => {
               right: -5px !important;
             }
           }
-          .general-schema-designer {
+          > .general-schema-designer {
             position: absolute;
             z-index: 999;
             top: 0;
@@ -38,7 +38,7 @@ export const BlockItem: React.FC<any> = (props) => {
             display: none;
             border: 2px solid rgba(241, 139, 98, 0.3);
             pointer-events: none;
-            .general-schema-designer-icons {
+            > .general-schema-designer-icons {
               position: absolute;
               right: 2px;
               top: 2px;

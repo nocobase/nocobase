@@ -1,6 +1,7 @@
 import { ButtonProps, DrawerProps } from 'antd';
 
 export type ActionProps = ButtonProps & {
+  component?: any;
   useAction?: () => {
     run(): Promise<void>;
   };
