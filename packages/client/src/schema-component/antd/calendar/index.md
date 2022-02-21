@@ -5,4 +5,12 @@ group:
   path: /schema-components
 ---
 
-# Calendar <Badge>待定</Badge>
+# Calendar
+
+## Examples
+
+### Calendar
+
+#### Sync Data
+
+<code src="./demos/demo1.tsx" />
