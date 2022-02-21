@@ -99,6 +99,14 @@ describe('list action', () => {
     expect(body.totalPage).toEqual(3);
   });
 
+  test('list with non-paged', async () => {
+    const response = await app.agent().resource('posts').list({
+      paginate: false,
+    });
+    const body = response.body;
+    expect(body.length).toEqual(3);
+  });
+
   test('list by association', async () => {
     // tags with posts id eq 1
     const response = await app
