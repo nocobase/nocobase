@@ -17,8 +17,8 @@ export const ActionBar = observer((props: any) => {
     );
   }
   return (
-    <div style={{ display: 'flex', justifyContent: 'space-between', ...style }} {...others}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', width: '100%' }}>
+    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', ...style }} {...others}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
         <DndContext>
           <Space>
             {fieldSchema.mapProperties((schema, key) => {

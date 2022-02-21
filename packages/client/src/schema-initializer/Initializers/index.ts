@@ -1,4 +1,5 @@
 export * from './BlockInitializer';
+export * from './CalendarActionInitializer';
 export * from './DetailsActionInitializer';
 export * from './FormActionInitializer';
 export * from './FormItemInitializer';

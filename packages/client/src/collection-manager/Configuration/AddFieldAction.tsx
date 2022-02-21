@@ -22,6 +22,7 @@ const getSchema = (schema: IField): ISchema => {
         'x-decorator': 'Form',
         'x-decorator-props': {
           initialValue: {
+            interface: schema.name,
             ...schema.default,
             name: `f_${uid()}`,
           },
