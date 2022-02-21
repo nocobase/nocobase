@@ -1,5 +1,7 @@
 import { Context } from '..';
 import { getRepositoryFromParams } from './utils';
+import { Repository } from '@nocobase/database';
+import { ActionParams } from '@nocobase/resourcer';
 
 export const DEFAULT_PAGE = 1;
 export const DEFAULT_PER_PAGE = 20;
@@ -21,17 +23,18 @@ function totalPage(total, pageSize): number {
   return Math.ceil(total / pageSize);
 }
 
-export async function list(ctx: Context, next) {
-  const { page = DEFAULT_PAGE, pageSize = DEFAULT_PER_PAGE, fields, filter, appends, except, sort } = ctx.action.params;
+function findArgs(params: ActionParams) {
+  const { fields, filter, appends, except, sort } = params;
+  return { filter, fields, appends, except, sort };
+}
+
+async function listWithPagination(ctx: Context) {
+  const { page = DEFAULT_PAGE, pageSize = DEFAULT_PER_PAGE } = ctx.action.params;
 
   const repository = getRepositoryFromParams(ctx);
 
   const [rows, count] = await repository.findAndCount({
-    filter,
-    fields,
-    appends,
-    except,
-    sort,
+    ...findArgs(ctx.action.params),
     ...pageArgsToLimitArgs(parseInt(String(page)), parseInt(String(pageSize))),
   });
 
@@ -42,6 +45,24 @@ export async function list(ctx: Context, next) {
     pageSize,
     totalPage: totalPage(count, pageSize),
   };
+}
+
+async function listWithNonPaged(ctx: Context) {
+  const repository = getRepositoryFromParams(ctx);
+
+  const rows = await repository.find(findArgs(ctx.action.params));
+
+  ctx.body = rows;
+}
+
+export async function list(ctx: Context, next) {
+  const { paginate } = ctx.action.params;
+
+  if (paginate === false || paginate === 'false') {
+    await listWithNonPaged(ctx);
+  } else {
+    await listWithPagination(ctx);
+  }
 
   await next();
 }
