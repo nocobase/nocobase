@@ -12,7 +12,7 @@ export const useCollectionField = () => {
   if (!ctx) {
     return {} as any;
   }
-  const resourceName = `${ctx?.collectinName || collection?.name}.${ctx.name}`;
+  const resourceName = `${ctx?.collectionName || collection?.name}.${ctx.name}`;
   const resource = api?.resource(resourceName, record[ctx.sourceKey]);
   return {
     ...ctx,

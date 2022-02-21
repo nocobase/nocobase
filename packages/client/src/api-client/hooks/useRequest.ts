@@ -25,7 +25,7 @@ export function useRequest<P>(
     const result = useReq(service, {
       ...options,
       onSuccess(...args) {
-        options.onSuccess && options.onSuccess(...args);
+        options.onSuccess?.(...args);
         if (options.uid) {
           api.services[options.uid] = result;
         }
@@ -49,7 +49,7 @@ export function useRequest<P>(
     {
       ...options,
       onSuccess(...args) {
-        options.onSuccess && options.onSuccess(...args);
+        options.onSuccess?.(...args);
         if (options.uid) {
           api.services[options.uid] = result;
         }

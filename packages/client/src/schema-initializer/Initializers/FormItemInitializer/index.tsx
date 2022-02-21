@@ -7,7 +7,7 @@ import { SchemaInitializer, SchemaInitializerItemOptions } from '../..';
 import { useCollection } from '../../../collection-manager';
 import { useDesignable } from '../../../schema-component';
 
-const useFormItems = () => {
+const useFormItemInitializerFields = () => {
   const { name, fields } = useCollection();
   return fields?.map((field) => {
     return {
@@ -127,7 +127,7 @@ export const FormItemInitializer = observer((props: any) => {
         {
           type: 'itemGroup',
           title: t('Display fields'),
-          children: useFormItems(),
+          children: useFormItemInitializerFields(),
         },
         {
           type: 'divider',
