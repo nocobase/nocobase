@@ -1,5 +1,6 @@
 import { ISchema } from '@formily/react';
 import { CollectionOptions } from '../../types';
+import { options } from '../interfaces';
 
 const collection: CollectionOptions = {
   name: 'fields',
@@ -28,7 +29,8 @@ const collection: CollectionOptions = {
       uiSchema: {
         title: '{{ t("Field interface") }}',
         type: 'string',
-        'x-component': 'Input',
+        'x-component': 'Select',
+        enum: options as any,
       },
     },
     {
@@ -94,6 +96,12 @@ export const collectionFieldSchema: ISchema = {
           type: 'void',
           title: '{{ t("Delete") }}',
           'x-component': 'Action',
+          "x-component-props": {
+            confirm: {
+              title: "{{t('Delete record')}}",
+              content: "{{t('Are you sure you want to delete it?')}}",
+            },
+          }
         },
         create: {
           type: 'void',
@@ -176,6 +184,10 @@ export const collectionFieldSchema: ISchema = {
                   title: '{{ t("Delete") }}',
                   'x-component': 'Action.Link',
                   'x-component-props': {
+                    confirm: {
+                      title: "{{t('Delete record')}}",
+                      content: "{{t('Are you sure you want to delete it?')}}",
+                    },
                     useAction: '{{ cm.useDestroyActionAndRefreshCM }}',
                   },
                 },

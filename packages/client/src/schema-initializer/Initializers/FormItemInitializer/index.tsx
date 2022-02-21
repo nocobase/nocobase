@@ -13,7 +13,7 @@ const useFormItems = () => {
     return {
       type: 'item',
       title: field?.uiSchema?.title || field.name,
-      component: InitializeFormItem,
+      component: FormItem,
       schema: {
         name: field.name,
         'x-designer': 'FormItem.Designer',
@@ -74,7 +74,7 @@ const useCurrentFieldSchema = (path: string) => {
 
 const itemWrap = SchemaInitializer.itemWrap;
 
-const InitializeFormItem = itemWrap((props) => {
+const FormItem = itemWrap((props) => {
   const { item, insert } = props;
   const { schema, exists, remove } = useCurrentFieldSchema(item.schema['x-collection-field']);
   return (
@@ -95,8 +95,10 @@ const InitializeFormItem = itemWrap((props) => {
   );
 });
 
-const InitializeTextFormItem = itemWrap((props) => {
+const TextItem = itemWrap((props) => {
   const { insert } = props;
+  const { t } = useTranslation();
+
   return (
     <SchemaInitializer.Item
       onClick={() => {
@@ -107,7 +109,7 @@ const InitializeTextFormItem = itemWrap((props) => {
           'x-designer': 'Markdown.Void.Designer',
           'x-component': 'Markdown.Void',
           'x-component-props': {
-            content: '# Markdown content',
+            content: t('This is a demo text, **supports Markdown syntax**.'),
           },
         });
       }}
@@ -133,7 +135,7 @@ export const FormItemInitializer = observer((props: any) => {
         {
           type: 'item',
           title: t('Add text'),
-          component: InitializeTextFormItem,
+          component: TextItem,
         },
       ]}
     >

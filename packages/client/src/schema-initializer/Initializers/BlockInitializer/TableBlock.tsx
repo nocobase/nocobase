@@ -59,6 +59,7 @@ const createSchema = (collectionName) => {
             properties: {
               actions: {
                 type: 'void',
+                'x-decorator': 'DndContext',
                 'x-component': 'Space',
                 'x-component-props': {
                   split: '|',

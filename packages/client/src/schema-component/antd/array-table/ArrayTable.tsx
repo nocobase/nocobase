@@ -1,7 +1,10 @@
+import { css } from '@emotion/css';
 import { ArrayField } from '@formily/core';
 import { observer, RecursionField, Schema, useField, useFieldSchema } from '@formily/react';
 import { Table, TableColumnProps } from 'antd';
+import cls from 'classnames';
 import React from 'react';
+import { DndContext } from '../..';
 import { RecordProvider } from '../../../';
 import { useComponent } from '../../hooks';
 
@@ -23,6 +26,7 @@ const useTableColumns = () => {
       return {
         title: <RecursionField name={s.name} schema={s} onlyRenderSelf />,
         dataIndex: s.name,
+        key: s.name,
         render: (v, record) => {
           const index = field.value?.indexOf(record);
           return (
@@ -39,8 +43,8 @@ const useTableColumns = () => {
   }
   return columns.concat({
     title: <Initializer />,
-    dataIndex: 'TableColumnInitializer',
-    key: 'TableColumnInitializer',
+    dataIndex: 'TABLE_COLUMN_INITIALIZER',
+    key: 'TABLE_COLUMN_INITIALIZER',
   });
 };
 
@@ -49,13 +53,49 @@ type ArrayTableType = React.FC<any> & {
   mixin?: (T: any) => void;
 };
 
+export const components = {
+  header: {
+    wrapper: (props) => {
+      return (
+        <DndContext>
+          <thead {...props} />
+        </DndContext>
+      );
+    },
+    cell: (props) => {
+      return (
+        <th
+          {...props}
+          className={cls(
+            props.className,
+            css`
+              &:hover .general-schema-designer {
+                display: block;
+              }
+            `,
+          )}
+        />
+      );
+    },
+  },
+  body: {
+    wrapper: (props) => {
+      return (
+        <DndContext>
+          <tbody {...props} />
+        </DndContext>
+      );
+    },
+  },
+};
+
 export const ArrayTable: ArrayTableType = observer((props) => {
   const field = useField<ArrayField>();
   const columns = useTableColumns();
   const { onChange, ...others } = props;
   return (
     <div>
-      <Table {...others} columns={columns} dataSource={field.value?.slice()} />
+      <Table {...others} components={components} columns={columns} dataSource={field.value?.slice()} />
     </div>
   );
 });

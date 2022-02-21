@@ -1,3 +1,4 @@
+import { defaultProps } from './properties';
 import { IField } from './types';
 
 export const checkbox: IField = {
@@ -14,7 +15,9 @@ export const checkbox: IField = {
       'x-component': 'Checkbox',
     },
   },
-  properties: {},
+  properties: {
+    ...defaultProps,
+  },
   operators: [
     { label: '{{t("Yes")}}', value: '$isTruly', selected: true, noValue: true },
     { label: '{{t("No")}}', value: '$isFalsy', noValue: true },

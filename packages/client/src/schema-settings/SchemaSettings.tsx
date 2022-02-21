@@ -1,8 +1,10 @@
 import { GeneralField } from '@formily/core';
 import { ISchema, Schema } from '@formily/react';
-import { Dropdown, Menu, MenuItemProps } from 'antd';
-import React, { createContext, useContext } from 'react';
-import { Designable } from '..';
+import { uid } from '@formily/shared';
+import { Dropdown, Menu, MenuItemProps, Modal } from 'antd';
+import React, { createContext, useContext, useState } from 'react';
+import { useTranslation } from 'react-i18next';
+import { ActionContext, Designable, SchemaComponent } from '..';
 
 interface SchemaSettingsProps {
   title?: any;
@@ -32,6 +34,7 @@ type SchemaSettingsNested = {
   Remove?: React.FC<RemoveProps>;
   Item?: React.FC<MenuItemProps>;
   Divider?: React.FC;
+  Popup?: React.FC<MenuItemProps & { schema?: ISchema }>;
   [key: string]: any;
 };
 
@@ -68,6 +71,7 @@ SchemaSettings.Item = (props) => {
     <Menu.Item
       {...props}
       onClick={(info) => {
+        //
         info.domEvent.preventDefault();
         info.domEvent.stopPropagation();
         props?.onClick?.(info);
@@ -92,18 +96,26 @@ SchemaSettings.Divider = (props) => {
 };
 
 SchemaSettings.Remove = (props: any) => {
-  const { removeParentsIfNoChildren, breakRemoveOn } = props;
+  const { confirm, removeParentsIfNoChildren, breakRemoveOn } = props;
   const { dn } = useSchemaSettings();
+  const { t } = useTranslation();
   return (
     <SchemaSettings.Item
       onClick={() => {
-        dn.remove(null, {
-          removeParentsIfNoChildren,
-          breakRemoveOn,
+        Modal.confirm({
+          title: t('Delete block'),
+          content: t('Are you sure you want to delete it?'),
+          ...confirm,
+          onOk() {
+            dn.remove(null, {
+              removeParentsIfNoChildren,
+              breakRemoveOn,
+            });
+          },
         });
       }}
     >
-      移除
+      {t('Delete')}
     </SchemaSettings.Item>
   );
 };
@@ -116,10 +128,34 @@ SchemaSettings.SwitchItem = (props) => {
   return null;
 };
 
-SchemaSettings.ModalItem = (props) => {
-  return null;
+SchemaSettings.Popup = (props) => {
+  const { schema, ...others } = props;
+  const [visible, setVisible] = useState(false);
+  return (
+    <ActionContext.Provider value={{ visible, setVisible }}>
+      <SchemaSettings.Item
+        {...others}
+        onClick={() => {
+          setVisible(true);
+        }}
+      >
+        {props.children || props.title}
+      </SchemaSettings.Item>
+      <SchemaComponent
+        schema={{
+          name: uid(),
+          ...schema,
+        }}
+      />
+    </ActionContext.Provider>
+  );
 };
 
 SchemaSettings.DrawerItem = (props) => {
-  return null;
+  const [visible, setVisible] = useState(false);
+  return (
+    <ActionContext.Provider value={{ visible, setVisible }}>
+      <SchemaSettings.Item {...props}>{props.children || props.title}</SchemaSettings.Item>
+    </ActionContext.Provider>
+  );
 };

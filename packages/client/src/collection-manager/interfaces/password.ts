@@ -1,26 +1,24 @@
-import { input } from './input';
 import { defaultProps } from './properties';
 import { IField } from './types';
 
-export const email: IField = {
-  name: 'email',
+export const password: IField = {
+  name: 'password',
   type: 'object',
   group: 'basic',
-  order: 4,
-  title: '{{t("Email")}}',
-  sortable: true,
+  order: 7,
+  title: '{{t("Password")}}',
   default: {
-    type: 'string',
+    type: 'password',
     // name,
     uiSchema: {
       type: 'string',
       // title,
-      'x-component': 'Input',
-      'x-validator': 'email',
+      'x-component': 'Password',
+      'x-decorator': 'FormItem',
+      'x-designable-bar': 'Password.DesignableBar',
     },
   },
   properties: {
     ...defaultProps,
   },
-  operators: input.operators,
 };

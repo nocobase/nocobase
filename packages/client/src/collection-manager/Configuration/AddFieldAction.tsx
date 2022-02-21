@@ -28,21 +28,6 @@ const getSchema = (schema: IField): ISchema => {
         },
         title: '{{ t("Add field") }}',
         properties: {
-          type: {
-            'x-component': 'CollectionField',
-            'x-decorator': 'FormItem',
-          },
-          'uiSchema.title': {
-            type: 'number',
-            title: '{{ t("Field display name") }}',
-            required: true,
-            'x-component': 'Input',
-            'x-decorator': 'FormItem',
-          },
-          name: {
-            'x-component': 'CollectionField',
-            'x-decorator': 'FormItem',
-          },
           // @ts-ignore
           ...schema.properties,
           footer: {

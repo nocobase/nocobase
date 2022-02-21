@@ -204,20 +204,15 @@ export const TableRecordActionInitializer = observer((props: any) => {
                             'x-component': 'ActionBar',
                             'x-component-props': {},
                             properties: {
-                              action1: {
-                                title: '{{ t("Cancel") }}',
-                                'x-component': 'Action',
+                              actions: {
+                                type: 'void',
+                                'x-action-initializer': 'PopupFormActionInitializer',
+                                'x-decorator': 'DndContext',
+                                'x-component': 'ActionBar',
                                 'x-component-props': {
-                                  useAction: '{{ cm.useCancelAction }}',
+                                  layout: 'one-column',
                                 },
-                              },
-                              action2: {
-                                title: '{{ t("Submit") }}',
-                                'x-component': 'Action',
-                                'x-component-props': {
-                                  type: 'primary',
-                                  useAction: '{{ cm.useUpdateAction }}',
-                                },
+                                properties: {},
                               },
                             },
                           },
@@ -236,6 +231,10 @@ export const TableRecordActionInitializer = observer((props: any) => {
                 title: '{{ t("Delete") }}',
                 'x-action': 'destroy',
                 'x-component-props': {
+                  confirm: {
+                    title: "{{t('Delete record')}}",
+                    content: "{{t('Are you sure you want to delete it?')}}",
+                  },
                   useAction: '{{ cm.useDestroyAction }}',
                 },
               },
