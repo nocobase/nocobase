@@ -1,5 +1,6 @@
 import { ISchema } from '@formily/react';
 import { uid } from '@formily/shared';
+import cloneDeep from 'lodash/cloneDeep';
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useAPIClient } from '../../api-client';
@@ -20,29 +21,10 @@ const getSchema = (schema: IField): ISchema => {
         'x-component': 'Action.Drawer',
         'x-decorator': 'Form',
         'x-decorator-props': {
-          initialValue: {
-            ...schema.default,
-            name: `f_${uid()}`,
-          },
+          initialValue: cloneDeep(schema.default),
         },
         title: '{{ t("Edit field") }}',
         properties: {
-          type: {
-            'x-component': 'CollectionField',
-            'x-decorator': 'FormItem',
-          },
-          'uiSchema.title': {
-            type: 'number',
-            title: '{{ t("Field display name") }}',
-            required: true,
-            'x-component': 'Input',
-            'x-decorator': 'FormItem',
-          },
-          name: {
-            'x-component': 'CollectionField',
-            'x-decorator': 'FormItem',
-            'x-disabled': true,
-          },
           // @ts-ignore
           ...schema.properties,
           footer: {

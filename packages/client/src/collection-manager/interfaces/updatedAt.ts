@@ -1,20 +1,21 @@
+import { datetime } from './datetime';
 import { dateTimeProps, defaultProps } from './properties';
 import { IField } from './types';
 
-export const createdAt: IField = {
-  name: 'createdAt',
+export const updatedAt: IField = {
+  name: 'updatedAt',
   type: 'object',
   group: 'systemInfo',
-  order: 1,
-  title: '{{t("Created at")}}',
+  order: 2,
+  title: '{{t("Last updated at")}}',
   sortable: true,
   default: {
     type: 'date',
-    field: 'createdAt',
+    field: 'updated_at',
     // name,
     uiSchema: {
       type: 'datetime',
-      title: '{{t("Created at")}}',
+      title: '{{t("Last updated at")}}',
       'x-component': 'DatePicker',
       'x-component-props': {},
       'x-read-pretty': true,
@@ -24,4 +25,5 @@ export const createdAt: IField = {
     ...defaultProps,
     ...dateTimeProps,
   },
+  operators: datetime.operators,
 };

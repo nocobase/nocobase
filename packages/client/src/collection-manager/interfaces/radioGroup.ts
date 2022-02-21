@@ -1,23 +1,25 @@
 import { dataSource, defaultProps } from './properties';
+import { select } from './select';
 import { IField } from './types';
 
-export const checkboxGroup: IField = {
-  name: 'checkboxGroup',
+export const radioGroup: IField = {
+  name: 'radioGroup',
   type: 'object',
   group: 'choices',
-  order: 5,
-  title: '{{t("Checkbox group")}}',
+  order: 4,
+  title: '{{t("Radio group")}}',
   default: {
-    interface: 'checkboxGroup',
-    type: 'json',
+    type: 'string',
     // name,
     uiSchema: {
       type: 'string',
-      'x-component': 'Checkbox.Group',
+      // title,
+      'x-component': 'Radio.Group',
     },
   },
   properties: {
     ...defaultProps,
     'uiSchema.enum': dataSource,
   },
+  operators: select.operators,
 };

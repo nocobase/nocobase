@@ -1,6 +1,6 @@
 import { css } from '@emotion/css';
 import { observer, useField } from '@formily/react';
-import { Button } from 'antd';
+import { Button, Modal } from 'antd';
 import classnames from 'classnames';
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
@@ -63,7 +63,7 @@ export const actionDesignerCss = css`
 `;
 
 export const Action: ComposedAction = observer((props: any) => {
-  const { openMode, containerRefKey, component, useAction = useA, onClick, className, ...others } = props;
+  const { confirm, openMode, containerRefKey, component, useAction = useA, onClick, className, ...others } = props;
   const [visible, setVisible] = useState(false);
   const Designer = useDesigner();
   const field = useField();
@@ -73,9 +73,19 @@ export const Action: ComposedAction = observer((props: any) => {
       <SortableItem
         {...others}
         onClick={(e) => {
-          onClick && onClick(e);
-          setVisible(true);
-          run();
+          const onOk = () => {
+            onClick?.(e);
+            setVisible(true);
+            run();
+          };
+          if (confirm) {
+            Modal.confirm({
+              ...confirm,
+              onOk,
+            });
+          } else {
+            onOk();
+          }
         }}
         component={component || Button}
         className={classnames(className, actionDesignerCss)}
@@ -102,7 +112,7 @@ Action.Designer = () => {
 };
 
 Action.Link = observer((props) => {
-  return <Action {...props} component={Link} className={'nb-action-link'}/>;
+  return <Action {...props} component={Link} className={'nb-action-link'} />;
 });
 
 Action.Drawer = ActionDrawer;

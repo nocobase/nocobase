@@ -49,7 +49,12 @@ const useDragEnd = () => {
 export const DndContext = observer((props) => {
   return (
     <DndKitContext collisionDetection={rectIntersection} onDragEnd={useDragEnd()}>
-      <DragOverlay>
+      <DragOverlay
+        dropAnimation={{
+          duration: 10,
+          easing: 'cubic-bezier(0.18, 0.67, 0.6, 1.22)',
+        }}
+      >
         <span style={{ whiteSpace: 'nowrap' }}>拖拽中</span>
       </DragOverlay>
       {props.children}

@@ -1,3 +1,4 @@
+import { defaultProps } from './properties';
 import { IField } from './types';
 
 export const input: IField = {
@@ -16,6 +17,7 @@ export const input: IField = {
     },
   },
   properties: {
+    ...defaultProps,
   },
   operators: [
     { label: '{{t("contains")}}', value: '$includes', selected: true },

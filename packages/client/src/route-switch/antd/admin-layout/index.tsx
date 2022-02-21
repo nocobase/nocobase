@@ -39,6 +39,10 @@ export function AdminLayout(props: any) {
             uid={route.uiSchemaUid}
             scope={{ onSelect, sideMenuRef, defaultSelectedUid }}
             schemaTransform={(data) => {
+              if (!data) {
+                return data;
+              }
+              data['x-component-props'] = data['x-component-props'] || {};
               data['x-component-props']['defaultSelectedUid'] = defaultSelectedUid;
               return data;
             }}

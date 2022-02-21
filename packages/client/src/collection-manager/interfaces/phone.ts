@@ -2,12 +2,12 @@ import { input } from './input';
 import { defaultProps } from './properties';
 import { IField } from './types';
 
-export const email: IField = {
-  name: 'email',
+export const phone: IField = {
+  name: 'phone',
   type: 'object',
   group: 'basic',
-  order: 4,
-  title: '{{t("Email")}}',
+  order: 3,
+  title: '{{t("Phone")}}',
   sortable: true,
   default: {
     type: 'string',
@@ -16,7 +16,9 @@ export const email: IField = {
       type: 'string',
       // title,
       'x-component': 'Input',
-      'x-validator': 'email',
+      'x-decorator': 'FormItem',
+      'x-validator': 'phone',
+      'x-designable-bar': 'Input.DesignableBar',
     },
   },
   properties: {

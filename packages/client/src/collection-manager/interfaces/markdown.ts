@@ -1,19 +1,18 @@
 import { defaultProps } from './properties';
 import { IField } from './types';
 
-export const textarea: IField = {
-  name: 'textarea',
+export const markdown: IField = {
+  name: 'markdown',
   type: 'object',
-  group: 'basic',
-  order: 2,
-  title: '{{t("Long text")}}',
+  title: 'Markdown',
+  group: 'media',
   default: {
-    interface: 'textarea',
     type: 'text',
     // name,
     uiSchema: {
       type: 'string',
-      'x-component': 'Input.TextArea',
+      // title,
+      'x-component': 'Markdown',
     },
   },
   properties: {

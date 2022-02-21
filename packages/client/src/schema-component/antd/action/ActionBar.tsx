@@ -1,6 +1,7 @@
 import { observer, RecursionField, useFieldSchema } from '@formily/react';
 import { Space } from 'antd';
 import React from 'react';
+import { DndContext } from '../../common';
 import { useComponent } from '../../hooks';
 
 export const ActionBar = observer((props: any) => {
@@ -18,22 +19,24 @@ export const ActionBar = observer((props: any) => {
   return (
     <div style={{ display: 'flex', justifyContent: 'space-between', ...style }} {...others}>
       <div style={{ display: 'flex', justifyContent: 'space-between', width: '100%' }}>
-        <Space>
-          {fieldSchema.mapProperties((schema, key) => {
-            if (schema['x-align'] !== 'left') {
-              return null;
-            }
-            return <RecursionField key={key} name={key} schema={schema} />;
-          })}
-        </Space>
-        <Space>
-          {fieldSchema.mapProperties((schema, key) => {
-            if (schema['x-align'] === 'left') {
-              return null;
-            }
-            return <RecursionField key={key} name={key} schema={schema} />;
-          })}
-        </Space>
+        <DndContext>
+          <Space>
+            {fieldSchema.mapProperties((schema, key) => {
+              if (schema['x-align'] !== 'left') {
+                return null;
+              }
+              return <RecursionField key={key} name={key} schema={schema} />;
+            })}
+          </Space>
+          <Space>
+            {fieldSchema.mapProperties((schema, key) => {
+              if (schema['x-align'] === 'left') {
+                return null;
+              }
+              return <RecursionField key={key} name={key} schema={schema} />;
+            })}
+          </Space>
+        </DndContext>
       </div>
       {ActionInitializer && <ActionInitializer />}
     </div>

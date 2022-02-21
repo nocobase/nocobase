@@ -9,6 +9,9 @@ export const useCollectionField = () => {
   const record = useRecord();
   const api = useAPIClient();
   const ctx = useContext(CollectionFieldContext);
+  if (!ctx) {
+    return {} as any;
+  }
   const resourceName = `${ctx?.collectinName || collection?.name}.${ctx.name}`;
   const resource = api?.resource(resourceName, record[ctx.sourceKey]);
   return {

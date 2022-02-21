@@ -1,12 +1,16 @@
-import React, { useMemo, useState } from 'react';
-import { uid } from '@formily/shared';
 import { createForm } from '@formily/core';
-import { useCookieState } from 'ahooks';
-import { useTranslation } from 'react-i18next';
 import { FormProvider } from '@formily/react';
-import { ISchemaComponentProvider } from '../types';
+import { uid } from '@formily/shared';
+import { useCookieState } from 'ahooks';
+import React, { useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { SchemaComponentContext } from '../context';
+import { ISchemaComponentProvider } from '../types';
 import { SchemaComponentOptions } from './SchemaComponentOptions';
+
+const randomString = (prefix: string = '') => {
+  return `${prefix}${uid()}`;
+};
 
 export const SchemaComponentProvider: React.FC<ISchemaComponentProvider> = (props) => {
   const { components, children } = props;
@@ -14,7 +18,7 @@ export const SchemaComponentProvider: React.FC<ISchemaComponentProvider> = (prop
   const [formId, setFormId] = useState(uid());
   const form = props.form || useMemo(() => createForm(), [formId]);
   const { t } = useTranslation();
-  const scope = { ...props.scope, t };
+  const scope = { ...props.scope, t, randomString };
   const [active, setActive] = useCookieState('useCookieDesignable');
   return (
     <SchemaComponentContext.Provider

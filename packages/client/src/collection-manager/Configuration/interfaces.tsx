@@ -35,7 +35,10 @@ export const options = Object.keys(groupLabels).map((groupName) => {
     label: groupLabels[groupName],
     children: Object.keys(fields[groupName] || {})
       .map((type) => {
+        const field = fields[groupName][type];
         return {
+          value: type,
+          label: field.title,
           name: type,
           ...fields[groupName][type],
         };
