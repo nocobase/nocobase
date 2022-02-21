@@ -5,9 +5,8 @@ import moment from 'moment';
 import React, { useState } from 'react';
 import { Calendar as BigCalendar, momentLocalizer } from 'react-big-calendar';
 import * as dates from 'react-big-calendar/lib/utils/dates';
-import { useTranslation } from 'react-i18next';
 import { SchemaComponent } from '../..';
-import { AsyncDataProvider, useRequest } from '../../../';
+import { AsyncDataProvider, RecordProvider, useRequest } from '../../../';
 import { i18n } from '../../../i18n';
 import { ActionBar, ActionContext } from '../action';
 import { ActionInitializer } from './ActionInitializer';
@@ -78,7 +77,7 @@ const useRequestProps = (props) => {
   };
 };
 
-const useDefDataSource = (props, options) => {
+const useDefDataSource = (options, props) => {
   return useRequest(useRequestProps(props), options);
 };
 
@@ -92,20 +91,24 @@ export const Calendar: any = observer((props: any) => {
       end: 'end',
     },
   } = props;
-  const { t } = useTranslation();
 
   const field = useField<VoidField>();
   const fieldSchema = useFieldSchema();
+  const [dataSource, setDataSource] = useState(props.dataSource || []);
 
   const [visible, setVisible] = useState(false);
   const [record, setRecord] = useState<any>({});
-  const result = useDataSource(props, {
-    uid: fieldSchema['x-uid'],
-    refreshDeps: [props.dataSource],
-    onSuccess(data) {
-      return toEvents(data?.data, fieldNames);
+  const result = useDataSource(
+    {
+      uid: fieldSchema['x-uid'],
+      refreshDeps: [props.dataSource],
+      onSuccess(data) {
+        const events = toEvents(data?.data, fieldNames);
+        setDataSource(events);
+      },
     },
-  });
+    props,
+  );
   const eventSchema: Schema = fieldSchema.reduceProperties((buf, current) => {
     if (current['x-component'] === 'Calendar.Event') {
       return current;
@@ -118,12 +121,14 @@ export const Calendar: any = observer((props: any) => {
       <CalendarContext.Provider value={{ field, props, record }}>
         <div {...props} style={{ height: 700 }}>
           <ActionContext.Provider value={{ visible, setVisible }}>
-            <SchemaComponent memoized name={eventSchema.name} schema={eventSchema as any} />
+            <RecordProvider record={record}>
+              <SchemaComponent memoized name={eventSchema.name} schema={eventSchema as any} />
+            </RecordProvider>
           </ActionContext.Provider>
           <BigCalendar
             popup
             selectable
-            events={Array.isArray(result?.data?.data) ? result?.data?.data : []}
+            events={dataSource}
             views={['month', 'week', 'day']}
             step={60}
             showMultiDayTimes
@@ -141,7 +146,7 @@ export const Calendar: any = observer((props: any) => {
               }
               setRecord(record);
               setVisible(true);
-              console.log('onSelectEvent');
+              console.log('onSelectEvent', record);
             }}
             formats={{
               monthHeaderFormat: 'Y-M',

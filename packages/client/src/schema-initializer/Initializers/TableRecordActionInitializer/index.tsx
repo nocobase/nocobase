@@ -200,21 +200,13 @@ export const TableRecordActionInitializer = observer((props: any) => {
                         properties: {
                           actions: {
                             type: 'void',
-                            // 'x-action-initializer': 'DrawerForm',
+                            'x-action-initializer': 'PopupFormActionInitializer',
+                            'x-decorator': 'DndContext',
                             'x-component': 'ActionBar',
-                            'x-component-props': {},
-                            properties: {
-                              actions: {
-                                type: 'void',
-                                'x-action-initializer': 'PopupFormActionInitializer',
-                                'x-decorator': 'DndContext',
-                                'x-component': 'ActionBar',
-                                'x-component-props': {
-                                  layout: 'one-column',
-                                },
-                                properties: {},
-                              },
+                            'x-component-props': {
+                              layout: 'one-column',
                             },
+                            properties: {},
                           },
                         },
                       },

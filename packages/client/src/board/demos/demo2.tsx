@@ -1,5 +1,5 @@
 import { Board } from '@nocobase/client';
-import { Button } from 'antd';
+import { Button, Card } from 'antd';
 import React, { useState } from 'react';
 import '../style.less';
 
@@ -94,6 +94,9 @@ export default function App() {
       cardAdderPosition={'bottom'}
       onNewCardConfirm={(draftCard) => draftCard}
       onCardNew={console.log}
+      renderCard={(card, { column, dragging }) => {
+        return <Card style={{ width: 220, marginBottom: 15 }}>{card.title}</Card>;
+      }}
       renderCardAdder={({ column }) => {
         return (
           <Button

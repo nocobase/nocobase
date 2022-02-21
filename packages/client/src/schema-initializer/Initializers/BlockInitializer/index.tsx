@@ -3,6 +3,7 @@ import { uid } from '@formily/shared';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { SchemaInitializer } from '../..';
+import { CalendarBlock } from './CalendarBlock';
 import { FormBlock } from './FormBlock';
 import { MarkdownBlock } from './MarkdownBlock';
 import { TableBlock } from './TableBlock';
@@ -43,6 +44,11 @@ export const BlockInitializer = observer((props: any) => {
               type: 'item',
               title: t('Form'),
               component: FormBlock,
+            },
+            {
+              type: 'item',
+              title: t('Calendar'),
+              component: CalendarBlock,
             },
           ],
         },
