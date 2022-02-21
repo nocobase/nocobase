@@ -1,7 +1,11 @@
 import { Model, BelongsToGetAssociationMixin } from 'sequelize';
+import Database from '@nocobase/database';
+
 import WorkflowModel from './Workflow';
 
 export default class FlowNodeModel extends Model {
+  declare static readonly database: Database;
+
   declare id: number;
   declare title: string;
   declare branchIndex: null | number;

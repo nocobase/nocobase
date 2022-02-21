@@ -52,9 +52,8 @@ describe('role resource api', () => {
     // get collections list
     let response = await app
       .agent()
-      .resource('roles.collections')
+      .resource('roles.collections', 'admin')
       .list({
-        associatedIndex: role.get('name') as string,
         sort: ['sort'],
       });
 
@@ -65,20 +64,21 @@ describe('role resource api', () => {
         name: 'c1',
         title: 'table1',
         usingConfig: 'strategy',
+        exists: false,
       },
       {
         name: 'c2',
         title: 'table2',
         usingConfig: 'strategy',
+        exists: false,
       },
     ]);
 
     // set resource actions
     response = await app
       .agent()
-      .resource('roles.resources')
+      .resource('roles.resources', 'admin')
       .create({
-        associatedIndex: role.get('name') as string,
         values: {
           name: 'c1',
           usingActionsConfig: true,

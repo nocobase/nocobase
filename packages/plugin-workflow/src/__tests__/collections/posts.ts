@@ -10,6 +10,7 @@ export default {
     {
       type: 'boolean',
       name: 'published',
+      defaultValue: false
     }
   ]
 } as CollectionOptions;

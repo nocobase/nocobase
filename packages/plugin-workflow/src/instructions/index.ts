@@ -4,6 +4,10 @@ import FlowNodeModel from "../models/FlowNode";
 import prompt from './prompt';
 import condition from './condition';
 import parallel from './parallel';
+import query from "./query";
+import create from "./create";
+import update from "./update";
+import destroy from "./destroy";
 
 export interface Job {
   status: number;
@@ -42,3 +46,7 @@ export function registerInstruction(key: string, instruction: any) {
 registerInstruction('prompt', prompt);
 registerInstruction('condition', condition);
 registerInstruction('parallel', parallel);
+registerInstruction('query', query);
+registerInstruction('create', create);
+registerInstruction('update', update);
+registerInstruction('destroy', destroy);

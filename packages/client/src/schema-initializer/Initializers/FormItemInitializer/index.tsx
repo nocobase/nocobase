@@ -8,24 +8,18 @@ import { useCollection } from '../../../collection-manager';
 import { useDesignable } from '../../../schema-component';
 
 const useFormItemInitializerFields = () => {
-  const { fields } = useCollection();
-  const fieldSchema = useFieldSchema();
-  const props = fieldSchema['x-item-initializer-props'];
+  const { name, fields } = useCollection();
   return fields?.map((field) => {
     return {
       type: 'item',
       title: field?.uiSchema?.title || field.name,
-      component: InitializeFormItem,
+      component: FormItem,
       schema: {
         name: field.name,
-        type: field.type,
-        title: field?.uiSchema?.title ?? field.name,
-        'x-component': field?.uiSchema?.['x-component'],
-        'x-component-props': field?.uiSchema?.['x-component-props'],
-        'x-decorator': field?.uiSchema?.['FormItem'] ?? 'FormItem',
-        'x-decorator-props': field?.uiSchema?.['x-decorator-props'],
-        'x-collection-field': field.name,
-        'x-read-pretty': !!props?.readPretty,
+        'x-designer': 'FormItem.Designer',
+        'x-component': 'CollectionField',
+        'x-decorator': 'FormItem',
+        'x-collection-field': `${name}.${field.name}`,
       },
     } as SchemaInitializerItemOptions;
   });
@@ -80,7 +74,7 @@ const useCurrentFieldSchema = (path: string) => {
 
 const itemWrap = SchemaInitializer.itemWrap;
 
-const InitializeFormItem = itemWrap((props) => {
+const FormItem = itemWrap((props) => {
   const { item, insert } = props;
   const { schema, exists, remove } = useCurrentFieldSchema(item.schema['x-collection-field']);
   return (
@@ -101,8 +95,10 @@ const InitializeFormItem = itemWrap((props) => {
   );
 });
 
-const InitializeTextFormItem = itemWrap((props) => {
+const TextItem = itemWrap((props) => {
   const { insert } = props;
+  const { t } = useTranslation();
+
   return (
     <SchemaInitializer.Item
       onClick={() => {
@@ -113,7 +109,7 @@ const InitializeTextFormItem = itemWrap((props) => {
           'x-designer': 'Markdown.Void.Designer',
           'x-component': 'Markdown.Void',
           'x-component-props': {
-            content: '# Markdown content',
+            content: t('This is a demo text, **supports Markdown syntax**.'),
           },
         });
       }}
@@ -139,7 +135,7 @@ export const FormItemInitializer = observer((props: any) => {
         {
           type: 'item',
           title: t('Add text'),
-          component: InitializeTextFormItem,
+          component: TextItem,
         },
       ]}
     >

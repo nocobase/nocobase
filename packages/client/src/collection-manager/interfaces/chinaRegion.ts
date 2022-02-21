@@ -1,4 +1,5 @@
 import { uid } from '@formily/shared';
+import { defaultProps } from './properties';
 import { IField } from './types';
 
 export const chinaRegion: IField = {
@@ -48,6 +49,7 @@ export const chinaRegion: IField = {
     }
   },
   properties: {
+    ...defaultProps,
     'uiSchema.x-component-props.maxLevel': {
       type: 'number',
       'x-component': 'Radio.Group',

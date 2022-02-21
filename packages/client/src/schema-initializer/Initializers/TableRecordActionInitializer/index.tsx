@@ -1,3 +1,5 @@
+import { MenuOutlined } from '@ant-design/icons';
+import { css } from '@emotion/css';
 import { observer, Schema, useFieldSchema } from '@formily/react';
 import { Switch } from 'antd';
 import React from 'react';
@@ -67,7 +69,7 @@ const InitializeAction = SchemaInitializer.itemWrap((props) => {
         }
         insert({
           type: 'void',
-          'x-designer': 'TestDesigner',
+          'x-designer': 'Action.Designer',
           'x-component': 'Action.Link',
           ...item.schema,
         });
@@ -87,6 +89,16 @@ export const TableRecordActionInitializer = observer((props: any) => {
   const { t } = useTranslation();
   return (
     <SchemaInitializer.Button
+      className={css`
+        border: 0 !important;
+        color: #fff !important;
+        background: none !important;
+        height: auto !important;
+        line-height: 12px !important;
+        width: 12px !important;
+        padding: 0;
+        font-size: 12px;
+      `}
       insertPosition={'beforeEnd'}
       insert={(schema) => {
         const spaceSchema = fieldSchema.reduceProperties((buf, schema) => {
@@ -119,6 +131,7 @@ export const TableRecordActionInitializer = observer((props: any) => {
                 title: '{{ t("View") }}',
                 type: 'void',
                 'x-action': 'view',
+                'x-designer': 'Action.Designer',
                 'x-component': 'Action.Link',
                 'x-component-props': {},
                 properties: {
@@ -168,9 +181,44 @@ export const TableRecordActionInitializer = observer((props: any) => {
                 properties: {
                   drawer: {
                     type: 'void',
+                    'x-decorator': 'Form',
+                    'x-decorator-props': {
+                      useValues: '{{ cm.useValuesFromRecord }}',
+                    },
                     'x-component': 'Action.Drawer',
                     title: '{{ t("Edit record") }}',
-                    properties: {},
+                    properties: {
+                      grid: {
+                        type: 'void',
+                        'x-component': 'Grid',
+                        'x-item-initializer': 'FormItemInitializer',
+                        properties: {},
+                      },
+                      footer: {
+                        type: 'void',
+                        'x-component': 'Action.Drawer.Footer',
+                        properties: {
+                          actions: {
+                            type: 'void',
+                            // 'x-action-initializer': 'DrawerForm',
+                            'x-component': 'ActionBar',
+                            'x-component-props': {},
+                            properties: {
+                              actions: {
+                                type: 'void',
+                                'x-action-initializer': 'PopupFormActionInitializer',
+                                'x-decorator': 'DndContext',
+                                'x-component': 'ActionBar',
+                                'x-component-props': {
+                                  layout: 'one-column',
+                                },
+                                properties: {},
+                              },
+                            },
+                          },
+                        },
+                      },
+                    },
                   },
                 },
               },
@@ -183,6 +231,10 @@ export const TableRecordActionInitializer = observer((props: any) => {
                 title: '{{ t("Delete") }}',
                 'x-action': 'destroy',
                 'x-component-props': {
+                  confirm: {
+                    title: "{{t('Delete record')}}",
+                    content: "{{t('Are you sure you want to delete it?')}}",
+                  },
                   useAction: '{{ cm.useDestroyAction }}',
                 },
               },
@@ -191,7 +243,7 @@ export const TableRecordActionInitializer = observer((props: any) => {
         },
       ]}
     >
-      Configure
+      <MenuOutlined />
     </SchemaInitializer.Button>
   );
 });

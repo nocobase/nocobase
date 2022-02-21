@@ -34,7 +34,7 @@ const InitializeAction = SchemaInitializer.itemWrap((props) => {
         }
         insert({
           type: 'void',
-          'x-designer': 'TestDesigner',
+          'x-designer': 'Action.Designer',
           'x-component': 'Action',
           ...item.schema,
         });
@@ -100,20 +100,15 @@ export const TableActionInitializer = observer((props: any) => {
                         type: 'void',
                         'x-component': 'Action.Container.Footer',
                         properties: {
-                          action1: {
-                            title: '{{ t("Cancel") }}',
-                            'x-component': 'Action',
+                          actions: {
+                            type: 'void',
+                            'x-action-initializer': 'PopupFormActionInitializer',
+                            'x-decorator': 'DndContext',
+                            'x-component': 'ActionBar',
                             'x-component-props': {
-                              useAction: '{{ cm.useCancelAction }}',
+                              layout: 'one-column',
                             },
-                          },
-                          action2: {
-                            title: '{{ t("Submit") }}',
-                            'x-component': 'Action',
-                            'x-component-props': {
-                              type: 'primary',
-                              useAction: '{{ cm.useCreateAction }}',
-                            },
+                            properties: {},
                           },
                         },
                       },
@@ -130,6 +125,10 @@ export const TableActionInitializer = observer((props: any) => {
                 title: '{{ t("Delete") }}',
                 'x-action': 'destroy',
                 'x-component-props': {
+                  confirm: {
+                    title: "{{t('Delete record')}}",
+                    content: "{{t('Are you sure you want to delete it?')}}",
+                  },
                   useAction: '{{ cm.useBulkDestroyAction }}',
                 },
               },

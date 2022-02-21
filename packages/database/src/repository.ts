@@ -207,6 +207,7 @@ export class Repository<TModelAttributes extends {} = any, TCreationAttributes e
   async find(options?: FindOptions) {
     const model = this.collection.model;
     const transaction = await this.getTransaction(options);
+
     const opts = {
       subQuery: false,
       ...this.buildQueryOptions(options),
@@ -215,6 +216,7 @@ export class Repository<TModelAttributes extends {} = any, TCreationAttributes e
     if (opts.include && opts.include.length > 0) {
       // @ts-ignore
       const primaryKeyField = model.primaryKeyField || model.primaryKeyAttribute;
+
       const ids = (
         await model.findAll({
           ...opts,

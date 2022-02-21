@@ -16,8 +16,8 @@ export const SchemaInitializerItemContext = createContext(null);
 export const SchemaInitializer = () => null;
 
 SchemaInitializer.Button = observer((props: SchemaInitializerButtonProps) => {
-  const { insert, wrap = defaultWrap, items = [], insertPosition, dropdown, ...others } = props;
-  let { insertAdjacent, findComponent } = useDesignable();
+  const { insert, wrap = defaultWrap, items = [], insertPosition, dropdown, style, ...others } = props;
+  let { insertAdjacent, findComponent, designable } = useDesignable();
   const [visible, setVisible] = useState(false);
   const insertSchema = (schema) => {
     if (props.insert) {
@@ -81,7 +81,9 @@ SchemaInitializer.Button = observer((props: SchemaInitializerButtonProps) => {
     </Menu>
   );
 
-  console.log('others', others);
+  if (!designable) {
+    return null;
+  }
 
   return (
     <Dropdown
@@ -92,7 +94,15 @@ SchemaInitializer.Button = observer((props: SchemaInitializerButtonProps) => {
       {...dropdown}
       overlay={menu}
     >
-      <Button {...others} />
+      <Button
+        {...others}
+        type={'dashed'}
+        style={{
+          ...style,
+          borderColor: '#f18b62',
+          color: '#f18b62',
+        }}
+      />
     </Dropdown>
   );
 });

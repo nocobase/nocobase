@@ -8,7 +8,7 @@ import {
 } from './multiple-relation-repository';
 import { CreateOptions, DestroyOptions, FindOptions, TK, TargetKey, UpdateOptions } from '../repository';
 import { transaction } from './relation-repository';
-import lodash from 'lodash';
+import lodash, { omit } from 'lodash';
 
 interface IHasManyRepository<M extends Model> {
   find(options?: FindOptions): Promise<M>;
@@ -29,6 +29,25 @@ interface IHasManyRepository<M extends Model> {
 }
 
 export class HasManyRepository extends MultipleRelationRepository implements IHasManyRepository<any> {
+  async find(options?: FindOptions): Promise<any> {
+    const targetRepository = this.targetCollection.repository;
+
+    const addFilter = {
+      [this.association.foreignKey]: this.sourceKeyValue,
+    };
+
+    if (options?.filterByTk) {
+      addFilter[this.associationField.targetKey] = options.filterByTk;
+    }
+
+    return await targetRepository.find({
+      ...omit(options, ['filterByTk']),
+      filter: {
+        $and: [options.filter || {}, addFilter],
+      },
+    });
+  }
+
   @transaction((args, transaction) => {
     return {
       filterByTk: args[0],

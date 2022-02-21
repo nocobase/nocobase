@@ -58,21 +58,20 @@ export const DetailsActionInitializer = observer((props: any) => {
           children: [
             {
               type: 'item',
-              title: 'Create',
+              title: 'Edit',
               component: InitializeAction,
               schema: {
-                title: 'Create',
-                'x-action': 'posts:create',
-                'x-align': 'left',
+                title: 'Edit',
+                'x-action': 'update',
               },
             },
             {
               type: 'item',
-              title: 'Update',
+              title: 'Delete',
               component: InitializeAction,
               schema: {
-                title: 'Update',
-                'x-action': 'posts:update',
+                title: 'Delete',
+                'x-action': 'delete',
               },
             },
           ],

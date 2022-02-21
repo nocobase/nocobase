@@ -23,7 +23,7 @@ const createSchema = (collectionName) => {
         },
       },
     },
-    'x-designer': 'TestDesigner',
+    'x-designer': 'VoidTable.Designer',
     'x-component': 'CardItem',
     properties: {
       actions: {
@@ -51,14 +51,15 @@ const createSchema = (collectionName) => {
         properties: {
           actions: {
             type: 'void',
-            title: 'Actions',
-            'x-designer': 'TestDesigner',
+            title: '{{ t("Actions") }}',
             'x-decorator': 'TableColumnActionBar',
             'x-component': 'VoidTable.Column',
+            'x-designer': 'TableRecordActionDesigner',
             'x-action-initializer': 'TableRecordActionInitializer',
             properties: {
               actions: {
                 type: 'void',
+                'x-decorator': 'DndContext',
                 'x-component': 'Space',
                 'x-component-props': {
                   split: '|',

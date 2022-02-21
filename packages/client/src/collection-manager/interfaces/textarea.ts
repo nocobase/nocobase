@@ -1,3 +1,4 @@
+import { defaultProps } from './properties';
 import { IField } from './types';
 
 export const textarea: IField = {
@@ -15,5 +16,7 @@ export const textarea: IField = {
       'x-component': 'Input.TextArea',
     },
   },
-  properties: {},
+  properties: {
+    ...defaultProps,
+  },
 };

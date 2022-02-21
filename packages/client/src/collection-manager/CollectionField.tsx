@@ -1,6 +1,7 @@
-import { Field, FormPath } from '@formily/core';
-import { connect, SchemaOptionsContext, useField, useFieldSchema } from '@formily/react';
-import React, { useContext, useEffect } from 'react';
+import { Field } from '@formily/core';
+import { connect, useField, useFieldSchema } from '@formily/react';
+import React, { useEffect } from 'react';
+import { useComponent } from '..';
 import { CollectionFieldProvider } from './CollectionFieldProvider';
 import { useCollectionField } from './hooks';
 
@@ -9,9 +10,7 @@ const InternalField: React.FC = (props) => {
   const field = useField<Field>();
   const fieldSchema = useFieldSchema();
   const { uiSchema } = useCollectionField();
-  console.log('uiSchema', uiSchema);
-  const options = useContext(SchemaOptionsContext);
-  const component = FormPath.getIn(options?.components, uiSchema['x-component']);
+  const component = useComponent(uiSchema?.['x-component']);
   const setFieldProps = (key, value) => {
     field[key] = typeof field[key] === 'undefined' ? value : field[key];
   };
@@ -22,6 +21,9 @@ const InternalField: React.FC = (props) => {
   };
   // TODO: 初步适配
   useEffect(() => {
+    if (!uiSchema) {
+      return;
+    }
     setFieldProps('title', uiSchema.title);
     setFieldProps('description', uiSchema.description);
     setFieldProps('initialValue', uiSchema.default);
@@ -29,7 +31,10 @@ const InternalField: React.FC = (props) => {
     // @ts-ignore
     field.dataSource = uiSchema.enum;
     field.component = [component, uiSchema['x-component-props']];
-  }, [uiSchema.title, uiSchema.description, uiSchema.required]);
+  }, [uiSchema?.title, uiSchema?.description, uiSchema?.required]);
+  if (!uiSchema) {
+    return null;
+  }
   return React.createElement(component, props);
 };
 

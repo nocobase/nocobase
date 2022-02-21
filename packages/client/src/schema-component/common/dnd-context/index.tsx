@@ -1,4 +1,4 @@
-import { DndContext as DndKitContext, DragEndEvent, rectIntersection } from '@dnd-kit/core';
+import { DndContext as DndKitContext, DragEndEvent, DragOverlay, rectIntersection } from '@dnd-kit/core';
 import { observer } from '@formily/react';
 import React from 'react';
 import { useAPIClient } from '../../../';
@@ -49,6 +49,14 @@ const useDragEnd = () => {
 export const DndContext = observer((props) => {
   return (
     <DndKitContext collisionDetection={rectIntersection} onDragEnd={useDragEnd()}>
+      <DragOverlay
+        dropAnimation={{
+          duration: 10,
+          easing: 'cubic-bezier(0.18, 0.67, 0.6, 1.22)',
+        }}
+      >
+        <span style={{ whiteSpace: 'nowrap' }}>拖拽中</span>
+      </DragOverlay>
       {props.children}
     </DndKitContext>
   );

@@ -1,7 +1,6 @@
 import { useField, useFieldSchema } from '@formily/react';
-import { uid } from '@formily/shared';
-import React, { useEffect } from 'react';
-import { useCollection, useDesignable } from '../../../';
+import React, { useLayoutEffect } from 'react';
+import { designerCss, SortableItem, useCollection, useDesignable, useDesigner } from '../../../';
 
 export const useColumnSchema = () => {
   const { getField } = useCollection();
@@ -20,10 +19,11 @@ export const useColumnSchema = () => {
 };
 
 export const TableColumnDecorator = (props) => {
+  const Designer = useDesigner();
   const field = useField();
   const { columnSchema, fieldSchema, collectionField } = useColumnSchema();
   const { refresh } = useDesignable();
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (field.title) {
       return;
     }
@@ -33,22 +33,25 @@ export const TableColumnDecorator = (props) => {
     if (collectionField?.uiSchema?.title) {
       field.title = collectionField?.uiSchema?.title;
     }
-  }, []);
+  }, [collectionField?.uiSchema?.title]);
+  console.log('field.title', collectionField?.uiSchema?.title, field.title);
   return (
-    <>
-      {props.children}
-      <div
+    <SortableItem className={designerCss}>
+      <Designer />
+      {/* <RecursionField name={columnSchema.name} schema={columnSchema}/> */}
+      {field.title || collectionField?.uiSchema?.title}
+      {/* <div
         onClick={() => {
           field.title = uid();
-          columnSchema.title = field.title = field.title;
-          refresh();
-          field.query(`.*.${fieldSchema.name}`).take((f) => {
-            f.componentProps.dateFormat = 'YYYY-MM-DD';
-          });
+          // columnSchema.title = field.title = field.title;
+          // refresh();
+          // field.query(`.*.${fieldSchema.name}`).take((f) => {
+          //   f.componentProps.dateFormat = 'YYYY-MM-DD';
+          // });
         }}
       >
         Edit
-      </div>
-    </>
+      </div> */}
+    </SortableItem>
   );
 };

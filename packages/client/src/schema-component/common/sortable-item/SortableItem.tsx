@@ -3,50 +3,51 @@ import { observer, useField, useFieldSchema } from '@formily/react';
 import React, { createContext, useContext } from 'react';
 
 export const DraggableContext = createContext(null);
+export const SortableContext = createContext(null);
 
-export const Sortable = (props: any) => {
-  const { id, data, style, children, ...others } = props;
+export const SortableProvider = (props) => {
+  const { id, data, children } = props;
   const draggable = useDraggable({
     id,
     data,
   });
-
-  const { isOver, setNodeRef } = useDroppable({
+  const droppable = useDroppable({
     id,
     data,
   });
+  return <SortableContext.Provider value={{ draggable, droppable }}>{children}</SortableContext.Provider>;
+};
 
+export const Sortable = (props: any) => {
+  const { component, style, children, ...others } = props;
+  const { droppable } = useContext(SortableContext);
+  const { isOver, setNodeRef } = droppable;
   const droppableStyle = { ...style };
 
   if (isOver) {
-    droppableStyle['color'] = 'green';
+    droppableStyle['color'] = 'rgba(241, 139, 98, .1)';
   }
 
-  return (
-    <DraggableContext.Provider value={draggable}>
-      <div {...others} ref={setNodeRef} style={droppableStyle}>
-        {children}
-      </div>
-    </DraggableContext.Provider>
-  );
+  return React.createElement(component || 'div', {
+    ...others,
+    ref: setNodeRef,
+    style: droppableStyle,
+  }, children);
 };
 
 export const SortableItem: React.FC<any> = observer((props) => {
   const field = useField();
   const fieldSchema = useFieldSchema();
   return (
-    <Sortable
-      {...props}
-      id={field.address.toString()}
-      data={{ insertAdjacent: 'afterEnd', schema: fieldSchema }}
-    >
-      {props.children}
-    </Sortable>
+    <SortableProvider id={field.address.toString()} data={{ insertAdjacent: 'afterEnd', schema: fieldSchema }}>
+      <Sortable {...props}>{props.children}</Sortable>
+    </SortableProvider>
   );
 });
 
-export const DragHandler = () => {
-  const { isDragging, attributes, listeners, setNodeRef, transform } = useContext(DraggableContext);
+export const DragHandler = (props) => {
+  const { draggable } = useContext(SortableContext);
+  const { isDragging, attributes, listeners, setNodeRef, transform } = draggable;
   const style = transform
     ? {
         transform: `translate3d(${transform.x}px, ${transform.y}px, 0)`,
@@ -57,18 +58,19 @@ export const DragHandler = () => {
     <div
       style={{
         display: 'inline-block',
+        width: 12,
+        height: 12,
+        lineHeight: '12px',
+        textAlign: 'left',
       }}
     >
-      <div style={{ display: isDragging ? 'inline-block' : 'none', fontSize: 10, position: 'absolute', zIndex: 0 }}>
-        Drag
-      </div>
       <div
         ref={setNodeRef}
         style={{
-          ...style,
+          // ...style,
           position: 'relative',
           zIndex: 1,
-          backgroundColor: '#333',
+          // backgroundColor: '#333',
           lineHeight: 0,
           height: 2,
           width: 2,
@@ -78,7 +80,7 @@ export const DragHandler = () => {
         {...listeners}
         {...attributes}
       >
-        <div style={{ fontSize: 10 }}>Drag</div>
+        <span style={{ cursor: 'move', fontSize: 12 }}>{props.children}</span>
       </div>
     </div>
   );

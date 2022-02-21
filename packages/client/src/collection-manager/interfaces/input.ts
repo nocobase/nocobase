@@ -1,7 +1,8 @@
+import { defaultProps } from './properties';
 import { IField } from './types';
 
 export const input: IField = {
-  name: 'string',
+  name: 'input',
   type: 'object',
   group: 'basic',
   order: 1,
@@ -16,6 +17,7 @@ export const input: IField = {
     },
   },
   properties: {
+    ...defaultProps,
   },
   operators: [
     { label: '{{t("contains")}}', value: '$includes', selected: true },

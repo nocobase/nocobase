@@ -16,7 +16,6 @@ const useTableColumnInitializerFields = () => {
           title: field?.uiSchema?.title || field.name,
           schema: {
             name: field.name,
-            'x-designer': 'TestDesigner',
             'x-collection-field': `${name}.${field.name}`,
             'x-component': 'CollectionField',
           },
@@ -63,6 +62,7 @@ const ColumnInitializerItem = SchemaInitializer.itemWrap((props) => {
         insert({
           type: 'void',
           'x-decorator': 'TableColumnDecorator',
+          'x-designer': 'TableColumnDeigner',
           'x-component': 'VoidTable.Column',
           properties: {
             [item.schema.name]: {

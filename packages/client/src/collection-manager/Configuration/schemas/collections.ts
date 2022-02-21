@@ -79,6 +79,12 @@ export const collectionSchema: ISchema = {
               type: 'void',
               title: '{{ t("Delete") }}',
               'x-component': 'Action',
+              'x-component-props': {
+                confirm: {
+                  title: "{{t('Delete record')}}",
+                  content: "{{t('Are you sure you want to delete it?')}}",
+                },
+              },
             },
             create: {
               type: 'void',
@@ -101,6 +107,7 @@ export const collectionSchema: ISchema = {
                     name: {
                       'x-component': 'CollectionField',
                       'x-decorator': 'FormItem',
+                      default: '{{ randomString("t_") }}',
                     },
                     footer: {
                       type: 'void',
@@ -248,6 +255,10 @@ export const collectionSchema: ISchema = {
                       title: '{{ t("Delete") }}',
                       'x-component': 'Action.Link',
                       'x-component-props': {
+                        confirm: {
+                          title: "{{t('Delete record')}}",
+                          content: "{{t('Are you sure you want to delete it?')}}",
+                        },
                         useAction: '{{ cm.useDestroyActionAndRefreshCM }}',
                       },
                     },

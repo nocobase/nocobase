@@ -3,6 +3,7 @@ import { CollectionOptions } from '@nocobase/database';
 export default {
   name: 'roles',
   autoGenId: false,
+  model: 'RoleModel',
   fields: [
     {
       type: 'uid',
@@ -44,7 +45,6 @@ export default {
       type: 'belongsToMany',
       name: 'menuUiSchemas',
       target: 'uiSchemas',
-      targetKey: 'uid',
     },
     {
       type: 'hasMany',
