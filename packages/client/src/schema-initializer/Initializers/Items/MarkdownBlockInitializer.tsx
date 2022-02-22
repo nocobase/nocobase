@@ -3,9 +3,7 @@ import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { SchemaInitializer } from '../..';
 
-const itemWrap = SchemaInitializer.itemWrap;
-
-export const MarkdownBlock = itemWrap((props) => {
+export const MarkdownBlockInitializer = (props) => {
   const { insert } = props;
   const { t } = useTranslation();
   return (
@@ -26,4 +24,4 @@ export const MarkdownBlock = itemWrap((props) => {
       }}
     />
   );
-});
+};

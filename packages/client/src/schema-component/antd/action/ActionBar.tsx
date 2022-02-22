@@ -1,18 +1,18 @@
 import { observer, RecursionField, useFieldSchema } from '@formily/react';
 import { Space } from 'antd';
 import React from 'react';
+import { useSchemaInitializer } from '../../../schema-initializer';
 import { DndContext } from '../../common';
-import { useComponent } from '../../hooks';
 
 export const ActionBar = observer((props: any) => {
   const { layout = 'tow-columns', style, ...others } = props;
   const fieldSchema = useFieldSchema();
-  const ActionInitializer = useComponent(fieldSchema['x-action-initializer']);
+  const { render } = useSchemaInitializer(fieldSchema['x-initializer']);
   if (layout === 'one-column') {
     return (
       <div style={{ display: 'flex', ...style }} {...others}>
         {props.children && <div style={{ marginRight: 8 }}>{props.children}</div>}
-        {ActionInitializer && <ActionInitializer />}
+        {render()}
       </div>
     );
   }
@@ -38,7 +38,7 @@ export const ActionBar = observer((props: any) => {
           </Space>
         </DndContext>
       </div>
-      {ActionInitializer && <ActionInitializer />}
+      {render()}
     </div>
   );
 });

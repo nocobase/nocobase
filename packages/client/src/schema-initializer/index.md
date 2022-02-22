@@ -150,3 +150,70 @@ const TableBlockInitializerItem = SchemaInitializer.itemWrap((props) => {
 ### Table.Column
 
 <code src="./demos/demo4.tsx" />
+
+## 配置
+
+核心的参数
+
+```tsx | pure
+const initializers = {
+  xxx: {
+    title: '{{t("Add block")}}',
+    insertPosition: 'beforeEnd',
+    items: [], // 在这里配置
+  },
+};
+
+<SchemaInitializerProvider initializers={initializers}>
+  {/* children */}
+</SchemaInitializerProvider>
+```
+
+items 例子：
+
+- Initializer.Item 只有添加的逻辑
+- Initializer.SwitchItem 可以添加或移除
+
+```ts
+{
+  BlockInitializer: {
+    insertPosition: 'beforeEnd',
+    items: [
+      {
+        type: 'itemGroup',
+        title: "{{t('Enable actions')}}",
+        children: [
+          {
+            type: 'item',
+            title: "{{t('Tody')}}",
+            component: 'Initializer.SwitchItem',
+            schema: {
+              title: "{{t('Tody')}}",
+              'x-component': 'Calendar.Today',
+              'x-action': `calendar:today`,
+              'x-align': 'left',
+            },
+          },
+          {
+            type: 'item',
+            title: "{{t('Tody')}}",
+            component: 'Initializer.Item',
+            schema: {
+              title: "{{t('Tody')}}",
+              'x-component': 'Calendar.Today',
+              'x-action': `calendar:today`,
+              'x-align': 'left',
+            },
+          },
+        ],
+      },
+    ],
+  },
+}
+```
+
+内置的 Initializer 有：
+
+- `GeneralInitializer` 通用的配置项，只有插入的逻辑
+- `ActionInitializer` 用于配置操作按钮，有插入和移除的逻辑
+- `CollectionFieldInitializer` 用于配置数据表字段，有插入和移除的逻辑

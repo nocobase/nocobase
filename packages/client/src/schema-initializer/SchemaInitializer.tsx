@@ -2,6 +2,7 @@ import { ISchema, observer } from '@formily/react';
 import { Button, Dropdown, Menu } from 'antd';
 import React, { createContext, useContext, useState } from 'react';
 import { useDesignable } from '../schema-component/hooks';
+import { initializes, items } from './Initializers';
 import {
   SchemaInitializerButtonProps,
   SchemaInitializerItemComponent,
@@ -15,8 +16,21 @@ export const SchemaInitializerItemContext = createContext(null);
 
 export const SchemaInitializer = () => null;
 
+SchemaInitializer.items = items;
+
+SchemaInitializer.initializes = initializes;
+
 SchemaInitializer.Button = observer((props: SchemaInitializerButtonProps) => {
-  const { insert, wrap = defaultWrap, items = [], insertPosition, dropdown, style, ...others } = props;
+  const {
+    title,
+    insert,
+    wrap = defaultWrap,
+    items = [],
+    insertPosition = 'beforeEnd',
+    dropdown,
+    style,
+    ...others
+  } = props;
   let { insertAdjacent, findComponent, designable } = useDesignable();
   const [visible, setVisible] = useState(false);
   const insertSchema = (schema) => {
@@ -102,7 +116,9 @@ SchemaInitializer.Button = observer((props: SchemaInitializerButtonProps) => {
           borderColor: '#f18b62',
           color: '#f18b62',
         }}
-      />
+      >
+        {props.children || props.title}
+      </Button>
     </Dropdown>
   );
 });

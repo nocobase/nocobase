@@ -4,7 +4,7 @@ import { observer, RecursionField, Schema, useField, useFieldSchema } from '@for
 import { uid } from '@formily/shared';
 import cls from 'classnames';
 import React, { createContext, useContext, useState } from 'react';
-import { useComponent } from '../..';
+import { useSchemaInitializer } from '../../../';
 import { DndContext } from '../../common/dnd-context';
 
 const GridRowContext = createContext(null);
@@ -123,7 +123,7 @@ const useColProperties = () => {
 export const Grid: any = observer((props) => {
   const field = useField();
   const fieldSchema = useFieldSchema();
-  const ItemInitializer = useComponent(fieldSchema['x-item-initializer']);
+  const { render } = useSchemaInitializer(fieldSchema['x-initializer']);
   const addr = field.address.toString();
   const rows = useRowProperties();
   return (
@@ -145,7 +145,7 @@ export const Grid: any = observer((props) => {
           );
         })}
       </DndContext>
-      <div>{ItemInitializer && <ItemInitializer />}</div>
+      <div>{render()}</div>
     </div>
   );
 });

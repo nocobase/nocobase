@@ -5,8 +5,7 @@ import { Table, TableColumnProps } from 'antd';
 import cls from 'classnames';
 import React from 'react';
 import { DndContext } from '../..';
-import { RecordProvider } from '../../../';
-import { useComponent } from '../../hooks';
+import { RecordProvider, useSchemaInitializer } from '../../../';
 
 const isColumnComponent = (schema: Schema) => {
   return schema['x-component']?.endsWith('.Column') > -1;
@@ -15,7 +14,7 @@ const isColumnComponent = (schema: Schema) => {
 const useTableColumns = () => {
   const field = useField<ArrayField>();
   const schema = useFieldSchema();
-  const Initializer = useComponent(schema['x-column-initializer']);
+  const { exists, render } = useSchemaInitializer(schema['x-initializer']);
   const columns = schema
     .reduceProperties((buf, s) => {
       if (isColumnComponent(s)) {
@@ -38,11 +37,11 @@ const useTableColumns = () => {
       } as TableColumnProps<any>;
     });
   console.log(columns);
-  if (!Initializer) {
+  if (!exists) {
     return columns;
   }
   return columns.concat({
-    title: <Initializer />,
+    title: render(),
     dataIndex: 'TABLE_COLUMN_INITIALIZER',
     key: 'TABLE_COLUMN_INITIALIZER',
   });

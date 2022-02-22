@@ -3,9 +3,9 @@ import { FormDialog, FormLayout } from '@formily/antd';
 import { ISchema, SchemaOptionsContext } from '@formily/react';
 import React, { useContext } from 'react';
 import { useTranslation } from 'react-i18next';
-import { SchemaInitializer } from '../..';
 import { useCollectionManager } from '../../../collection-manager';
 import { SchemaComponent, SchemaComponentOptions } from '../../../schema-component';
+import { SchemaInitializer } from '../../SchemaInitializer';
 
 const createSchema = (collectionName, { title, start, end }) => {
   const schema: ISchema = {
@@ -38,7 +38,12 @@ const createSchema = (collectionName, { title, start, end }) => {
           toolBar: {
             type: 'void',
             'x-component': 'Calendar.ActionBar',
-            'x-action-initializer': 'CalendarActionInitializer',
+            'x-component-props': {
+              style: {
+                marginBottom: 24,
+              },
+            },
+            'x-initializer': 'CalendarActionInitializers',
             properties: {},
           },
           event: {
@@ -58,7 +63,7 @@ const createSchema = (collectionName, { title, start, end }) => {
                   grid: {
                     type: 'void',
                     'x-component': 'Grid',
-                    'x-item-initializer': 'FormItemInitializer',
+                    'x-initializer': 'GridFormItemInitializers',
                     properties: {},
                   },
                   footer: {
@@ -67,7 +72,7 @@ const createSchema = (collectionName, { title, start, end }) => {
                     properties: {
                       actions: {
                         type: 'void',
-                        'x-action-initializer': 'PopupFormActionInitializer',
+                        'x-initializer': 'PopupFormActionInitializers',
                         'x-decorator': 'DndContext',
                         'x-component': 'ActionBar',
                         'x-component-props': {
@@ -88,9 +93,7 @@ const createSchema = (collectionName, { title, start, end }) => {
   return schema;
 };
 
-const itemWrap = SchemaInitializer.itemWrap;
-
-export const CalendarBlock = itemWrap((props) => {
+export const CalendarBlockInitializer = (props) => {
   const { insert } = props;
   const { collections, getCollection } = useCollectionManager();
   const { t } = useTranslation();
@@ -160,4 +163,4 @@ export const CalendarBlock = itemWrap((props) => {
       ]}
     />
   );
-});
+};

@@ -1,4 +1,4 @@
 export * from './Menu';
-export * from './MenuItemInitializer';
+export * from './MenuItemInitializers';
 export * from './util';
 

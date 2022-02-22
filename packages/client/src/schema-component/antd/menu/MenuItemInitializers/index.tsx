@@ -1,11 +1,11 @@
 import { FormDialog, FormLayout } from '@formily/antd';
-import { observer, SchemaOptionsContext } from '@formily/react';
+import { SchemaOptionsContext } from '@formily/react';
 import React, { useContext } from 'react';
 import { useTranslation } from 'react-i18next';
 import { SchemaComponent, SchemaComponentOptions } from '../../..';
 import { SchemaInitializer } from '../../../../schema-initializer';
 
-export const MenuItemInitializer = observer((props: any) => {
+export const MenuItemInitializers = (props: any) => {
   const { t } = useTranslation();
   return (
     <SchemaInitializer.Button
@@ -34,7 +34,7 @@ export const MenuItemInitializer = observer((props: any) => {
       {t('Add menu item')}
     </SchemaInitializer.Button>
   );
-});
+};
 
 const itemWrap = SchemaInitializer.itemWrap;
 
@@ -137,7 +137,7 @@ export const PageMenuItem = itemWrap((props) => {
                 grid: {
                   type: 'void',
                   'x-component': 'Grid',
-                  'x-item-initializer': 'BlockInitializer',
+                  'x-initializer': 'BlockInitializers',
                   properties: {},
                 },
               },

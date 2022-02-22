@@ -1,92 +1,18 @@
 import { MenuOutlined } from '@ant-design/icons';
 import { css } from '@emotion/css';
-import { observer, Schema, useFieldSchema } from '@formily/react';
-import { Switch } from 'antd';
+import { useFieldSchema } from '@formily/react';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { SchemaInitializer } from '../..';
-import { useAPIClient } from '../../../api-client';
-import { createDesignable, useDesignable } from '../../../schema-component';
+import { useAPIClient } from '../../api-client';
+import { createDesignable, useDesignable } from '../../schema-component';
 
-const useCurrentActionSchema = (action: string) => {
-  const fieldSchema = useFieldSchema();
-  const { remove } = useDesignable();
-  const findActionSchema = (schema: Schema) => {
-    return schema.reduceProperties((buf, s) => {
-      if (s['x-action'] === action) {
-        return s;
-      }
-      const c = findActionSchema(s);
-      if (c) {
-        return c;
-      }
-      return buf;
-    });
-  };
-  const schema = findActionSchema(fieldSchema);
-  return {
-    schema,
-    exists: !!schema,
-    remove() {
-      schema && remove(schema);
-    },
-  };
-};
-
-const InitializeViewAction = SchemaInitializer.itemWrap((props) => {
-  const { item, insert } = props;
-  const { exists, remove } = useCurrentActionSchema(item.schema['x-action']);
-  return (
-    <SchemaInitializer.Item
-      onClick={() => {
-        console.log('InitializeAction', insert);
-        if (exists) {
-          return remove();
-        }
-        insert({
-          type: 'void',
-          'x-component': 'Action.Link',
-          ...item.schema,
-        });
-      }}
-    >
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-        {item.title} <Switch style={{ marginLeft: 20 }} size={'small'} checked={exists} />
-      </div>
-    </SchemaInitializer.Item>
-  );
-});
-
-const InitializeAction = SchemaInitializer.itemWrap((props) => {
-  const { item, insert } = props;
-  const { exists, remove } = useCurrentActionSchema(item.schema['x-action']);
-  return (
-    <SchemaInitializer.Item
-      onClick={() => {
-        console.log('InitializeAction', insert);
-        if (exists) {
-          return remove();
-        }
-        insert({
-          type: 'void',
-          'x-designer': 'Action.Designer',
-          'x-component': 'Action.Link',
-          ...item.schema,
-        });
-      }}
-    >
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-        {item.title} <Switch style={{ marginLeft: 20 }} size={'small'} checked={exists} />
-      </div>
-    </SchemaInitializer.Item>
-  );
-});
-
-export const TableRecordActionInitializer = observer((props: any) => {
+export const TableRecordActionInitializers = (props: any) => {
   const fieldSchema = useFieldSchema();
   const api = useAPIClient();
   const { refresh } = useDesignable();
   const { t } = useTranslation();
+  console.log('TableRecordActionInitializers');
   return (
     <SchemaInitializer.Button
       className={css`
@@ -126,7 +52,7 @@ export const TableRecordActionInitializer = observer((props: any) => {
             {
               type: 'item',
               title: t('View'),
-              component: InitializeViewAction,
+              component: 'ActionInitializer',
               schema: {
                 title: '{{ t("View") }}',
                 type: 'void',
@@ -171,11 +97,12 @@ export const TableRecordActionInitializer = observer((props: any) => {
             {
               type: 'item',
               title: t('Edit'),
-              component: InitializeAction,
+              component: 'ActionInitializer',
               schema: {
                 title: '{{ t("Edit") }}',
                 type: 'void',
                 'x-action': 'update',
+                'x-designer': 'Action.Designer',
                 'x-component': 'Action.Link',
                 'x-component-props': {},
                 properties: {
@@ -218,10 +145,12 @@ export const TableRecordActionInitializer = observer((props: any) => {
             {
               type: 'item',
               title: t('Delete'),
-              component: InitializeAction,
+              component: 'ActionInitializer',
               schema: {
                 title: '{{ t("Delete") }}',
                 'x-action': 'destroy',
+                'x-designer': 'Action.Designer',
+                'x-component': 'Action.Link',
                 'x-component-props': {
                   confirm: {
                     title: "{{t('Delete record')}}",
@@ -238,4 +167,4 @@ export const TableRecordActionInitializer = observer((props: any) => {
       <MenuOutlined />
     </SchemaInitializer.Button>
   );
-});
+};
