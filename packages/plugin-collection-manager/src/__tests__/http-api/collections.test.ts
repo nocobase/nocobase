@@ -27,6 +27,30 @@ describe('collections repository', () => {
       .resource('collections')
       .create({
         values: {
+          name: 'foos',
+          fields: [
+            {
+              name: 'title',
+              type: 'string',
+            },
+          ],
+        },
+      });
+    await app
+      .agent()
+      .resource('collections.fields', 'tags')
+      .create({
+        values: {
+          name: 'foos',
+          target: 'foos',
+          type: 'belongsToMany',
+        },
+      });
+    await app
+      .agent()
+      .resource('collections')
+      .create({
+        values: {
           name: 'comments',
           fields: [
             {
@@ -286,12 +310,12 @@ describe('collections repository', () => {
       .agent()
       .resource('posts.tags', postId)
       .list({
-        // filter: {
-        //   $or: [{ title: 'Tag1' }, { title: 'Tag2' }],
-        // },
-        sort: ['id'],
+        appends: ['foos'],
+        page: 1,
+        pageSize: 20,
+        sort: ['-createdAt'],
       });
-    expect(response1.body.data.length).toBe(3);
+    console.log(response1.body.data);
   });
 
   it('case 11', async () => {
