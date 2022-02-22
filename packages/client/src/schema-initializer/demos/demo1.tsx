@@ -91,9 +91,10 @@ const AddBlockButton = observer((props: any) => {
 
 export default function App() {
   return (
-    <SchemaComponentProvider designable components={{ TableBlockInitializer, Hello, AddBlockButton }}>
+    <SchemaComponentProvider designable>
       <SchemaInitializerProvider initializers={initializers}>
         <SchemaComponent
+          components={{ TableBlockInitializer, Hello, AddBlockButton }}
           schema={{
             type: 'void',
             name: 'page',

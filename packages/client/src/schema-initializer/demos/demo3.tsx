@@ -5,11 +5,12 @@ import {
   SchemaComponent,
   SchemaComponentProvider,
   SchemaInitializer,
-  SchemaInitializerItemOptions
+  SchemaInitializerItemOptions,
+  SchemaInitializerProvider,
+  useSchemaInitializer
 } from '@nocobase/client';
 import { Input } from 'antd';
 import React from 'react';
-import { SchemaInitializerProvider, useSchemaInitializer } from '..';
 
 const useFormItemInitializerFields = () => {
   return [
