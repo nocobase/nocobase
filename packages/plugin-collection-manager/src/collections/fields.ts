@@ -9,6 +9,12 @@ export default {
     name: 'sort',
     scopeKey: 'parentKey',
   },
+  indexes: [
+    {
+      type: 'UNIQUE',
+      fields: ['collectionName', 'name'],
+    },
+  ],
   fields: [
     {
       type: 'uid',
