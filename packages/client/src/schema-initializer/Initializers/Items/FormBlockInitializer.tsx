@@ -29,12 +29,12 @@ const createSchema = (collectionName) => {
           grid: {
             type: 'void',
             'x-component': 'Grid',
-            'x-item-initializer': 'FormItemInitializer',
+            'x-initializer': 'GridFormItemInitializers',
             properties: {},
           },
           actions: {
             type: 'void',
-            'x-action-initializer': 'FormActionInitializer',
+            'x-initializer': 'FormActionInitializers',
             'x-component': 'ActionBar',
             'x-component-props': {
               layout: 'one-column',
@@ -51,9 +51,7 @@ const createSchema = (collectionName) => {
   return schema;
 };
 
-const itemWrap = SchemaInitializer.itemWrap;
-
-export const FormBlock = itemWrap((props) => {
+export const FormBlockInitializer = (props) => {
   const { insert } = props;
   const { collections } = useCollectionManager();
   const { t } = useTranslation();
@@ -79,4 +77,4 @@ export const FormBlock = itemWrap((props) => {
       ]}
     />
   );
-});
+};

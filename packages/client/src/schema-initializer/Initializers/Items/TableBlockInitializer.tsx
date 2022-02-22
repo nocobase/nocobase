@@ -28,7 +28,7 @@ const createSchema = (collectionName) => {
     properties: {
       actions: {
         type: 'void',
-        'x-action-initializer': 'TableActionInitializer',
+        'x-initializer': 'TableActionInitializers',
         'x-component': 'ActionBar',
         'x-component-props': {
           style: {
@@ -47,7 +47,7 @@ const createSchema = (collectionName) => {
           },
           useDataSource: '{{ cm.useDataSourceFromRAC }}',
         },
-        'x-column-initializer': 'TableColumnInitializer',
+        'x-initializer': 'TableColumnInitializers',
         properties: {
           actions: {
             type: 'void',
@@ -55,7 +55,7 @@ const createSchema = (collectionName) => {
             'x-decorator': 'TableColumnActionBar',
             'x-component': 'VoidTable.Column',
             'x-designer': 'TableRecordActionDesigner',
-            'x-action-initializer': 'TableRecordActionInitializer',
+            'x-initializer': 'TableRecordActionInitializers',
             properties: {
               actions: {
                 type: 'void',
@@ -75,9 +75,7 @@ const createSchema = (collectionName) => {
   return schema;
 };
 
-const itemWrap = SchemaInitializer.itemWrap;
-
-export const TableBlock = itemWrap((props) => {
+export const TableBlockInitializer = (props) => {
   const { insert } = props;
   const { collections } = useCollectionManager();
   const { t } = useTranslation();
@@ -103,4 +101,4 @@ export const TableBlock = itemWrap((props) => {
       ]}
     />
   );
-});
+};

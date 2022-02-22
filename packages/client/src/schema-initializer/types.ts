@@ -1,4 +1,4 @@
-import { ISchema } from '@formily/react';
+import { ISchema, Schema } from '@formily/react';
 import { ButtonProps, DropDownProps, MenuItemProps } from 'antd';
 
 export interface SchemaInitializerButtonProps extends ButtonProps {
@@ -25,10 +25,21 @@ interface SubMenuOptions extends ItemCommonOptions {
   children?: SchemaInitializerItemOptions[];
 }
 
+type BreakFn = (s: ISchema) => boolean;
+
+interface RemoveOptions {
+  removeParentsIfNoChildren?: boolean;
+  breakRemoveOn?: ISchema | BreakFn;
+}
+
+type RemoveCallback = (s: Schema, options?: RemoveOptions) => void;
+
 interface ItemOptions extends ItemCommonOptions {
   type: 'item';
   component?: any;
   schema?: ISchema;
+  remove?: (schema: Schema, cb: RemoveCallback) => void;
+  find?: (schema: Schema, current: string) => Schema | null | undefined;
   [key: string]: any;
 }
 

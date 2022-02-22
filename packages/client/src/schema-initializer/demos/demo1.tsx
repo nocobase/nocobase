@@ -1,7 +1,13 @@
-import { FormOutlined, TableOutlined } from '@ant-design/icons';
+import { TableOutlined } from '@ant-design/icons';
 import { Field } from '@formily/core';
 import { observer, useField } from '@formily/react';
-import { SchemaComponent, SchemaComponentProvider, SchemaInitializer } from '@nocobase/client';
+import {
+  SchemaComponent,
+  SchemaComponentProvider,
+  SchemaInitializer,
+  SchemaInitializerProvider,
+  useSchemaInitializer
+} from '@nocobase/client';
 import React from 'react';
 
 const Hello = observer((props) => {
@@ -13,36 +19,7 @@ const Hello = observer((props) => {
   );
 });
 
-const AddBlockButton = observer((props: any) => {
-  return (
-    <SchemaInitializer.Button
-      wrap={(schema) => schema}
-      insertPosition={'beforeBegin'}
-      items={[
-        {
-          type: 'itemGroup',
-          title: 'Data blocks',
-          children: [
-            {
-              type: 'item',
-              title: 'Table',
-              component: TableBlockInitializerItem,
-            },
-            {
-              type: 'item',
-              title: 'Form',
-              component: FormBlockInitializerItem,
-            },
-          ],
-        },
-      ]}
-    >
-      Add block
-    </SchemaInitializer.Button>
-  );
-});
-
-const TableBlockInitializerItem = SchemaInitializer.itemWrap((props) => {
+const TableBlockInitializer = SchemaInitializer.itemWrap((props) => {
   const { insert } = props;
   const items: any = [
     {
@@ -77,48 +54,69 @@ const TableBlockInitializerItem = SchemaInitializer.itemWrap((props) => {
   );
 });
 
-const FormBlockInitializerItem = SchemaInitializer.itemWrap((props) => {
-  const { insert } = props;
-  return (
-    <SchemaInitializer.Item
-      icon={<FormOutlined />}
-      onClick={() => {
-        insert({
-          type: 'void',
-          title: 'Form',
-          'x-component': 'Hello',
-        });
-      }}
-    />
-  );
+const initializers = {
+  AddBlock: {
+    title: 'Add block',
+    insertPosition: 'beforeBegin',
+    items: [
+      {
+        type: 'itemGroup',
+        title: 'Data blocks',
+        children: [
+          {
+            type: 'item',
+            title: 'Table',
+            component: 'TableBlockInitializer',
+          },
+          {
+            type: 'item',
+            title: 'Form',
+            component: 'GeneralInitializer',
+            schema: {
+              type: 'void',
+              title: 'Form',
+              'x-component': 'Hello',
+            },
+          },
+        ],
+      },
+    ],
+  },
+};
+
+const AddBlockButton = observer((props: any) => {
+  const { render } = useSchemaInitializer('AddBlock');
+  return <>{render()}</>;
 });
 
 export default function App() {
   return (
-    <SchemaComponentProvider components={{ Hello, AddBlockButton }}>
-      <SchemaComponent
-        schema={{
-          type: 'void',
-          name: 'page',
-          'x-component': 'div',
-          properties: {
-            hello1: {
-              type: 'void',
-              title: 'Test1',
-              'x-component': 'Hello',
+    <SchemaComponentProvider components={{ TableBlockInitializer, Hello, AddBlockButton }}>
+      <SchemaInitializerProvider initializers={initializers}>
+        <SchemaComponent
+          schema={{
+            type: 'void',
+            name: 'page',
+            'x-component': 'div',
+            properties: {
+              hello1: {
+                type: 'void',
+                title: 'Test1',
+                'x-component': 'Hello',
+              },
+              hello2: {
+                type: 'void',
+                title: 'Test2',
+                'x-component': 'Hello',
+              },
+              initializer: {
+                type: 'void',
+                'x-component': 'AddBlockButton',
+              },
             },
-            hello2: {
-              type: 'void',
-              title: 'Test2',
-              'x-component': 'Hello',
-            },
-            initializer: {
-              type: 'void',
-              'x-component': 'AddBlockButton',
-            },
-          },
-        }}
-      />
+          }}
+        />
+      </SchemaInitializerProvider>
     </SchemaComponentProvider>
   );
 }

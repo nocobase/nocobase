@@ -10,6 +10,7 @@ import {
   DesignableSwitch,
   DocumentTitleProvider,
   i18n,
+  MenuItemInitializers,
   PluginManagerProvider,
   RemoteCollectionManagerProvider,
   RouteSchemaComponent,
@@ -50,7 +51,7 @@ const providers = [
   ],
   [SchemaComponentProvider, { components: { Link, NavLink } }],
   RemoteCollectionManagerProvider,
-  SchemaInitializerProvider,
+  [SchemaInitializerProvider, { initializers: { MenuItemInitializers } }],
   AntdSchemaComponentProvider,
   [DocumentTitleProvider, { addonAfter: 'NocoBase' }],
   [

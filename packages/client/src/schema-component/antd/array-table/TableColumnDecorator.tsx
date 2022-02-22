@@ -12,7 +12,7 @@ export const useColumnSchema = () => {
     return buf;
   }, null);
   if (!fieldSchema) {
-    return;
+    return {};
   }
   const collectionField = getField(fieldSchema.name);
   return { columnSchema, fieldSchema, collectionField };
@@ -21,7 +21,7 @@ export const useColumnSchema = () => {
 export const TableColumnDecorator = (props) => {
   const Designer = useDesigner();
   const field = useField();
-  const { columnSchema, fieldSchema, collectionField } = useColumnSchema();
+  const { fieldSchema, collectionField } = useColumnSchema();
   const { refresh } = useDesignable();
   useLayoutEffect(() => {
     if (field.title) {

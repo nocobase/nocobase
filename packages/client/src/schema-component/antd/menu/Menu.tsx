@@ -10,8 +10,8 @@ import {
 import { Menu as AntdMenu } from 'antd';
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { createDesignable, DndContext, SortableItem, useComponent, useDesignable, useDesigner } from '../..';
-import { Icon, useAPIClient } from '../../../';
+import { createDesignable, DndContext, SortableItem, useDesignable, useDesigner } from '../..';
+import { Icon, useAPIClient, useSchemaInitializer } from '../../../';
 import { MenuDesigner } from './Menu.Designer';
 import { findKeysByUid, findMenuItem } from './util';
 
@@ -146,7 +146,7 @@ export const Menu: ComposedMenu = observer((props) => {
   const schema = useFieldSchema();
   const { refresh } = useDesignable();
   const api = useAPIClient();
-  const Initializer = useComponent(schema['x-initializer']);
+  const { render } = useSchemaInitializer(schema['x-initializer']);
   const sideMenuRef = useSideMenuRef();
   const [defaultSelectedKeys, setDefaultSelectedKeys] = useState(() => {
     if (dSelectedKeys) {
@@ -241,7 +241,7 @@ export const Menu: ComposedMenu = observer((props) => {
             defaultSelectedKeys={defaultSelectedKeys}
           >
             <RecursionField schema={schema} onlyRenderProperties />
-            {Initializer && <Initializer style={{ background: 'none', marginTop: 7, marginLeft: 8 }} />}
+            {render({ style: { background: 'none', marginTop: 7, marginLeft: 8 } })}
           </AntdMenu>
           {loading
             ? null
@@ -285,21 +285,19 @@ export const Menu: ComposedMenu = observer((props) => {
                     `}
                   >
                     <RecursionField schema={sideMenuSchema} onlyRenderProperties />
-                    {Initializer && (
-                      <Initializer
-                        style={{ margin: 8 }}
-                        insert={(s) => {
-                          console.log('createDesignable', s);
-                          const dn = createDesignable({
-                            api,
-                            refresh,
-                            current: sideMenuSchema,
-                          });
-                          dn.loadAPIClientEvents();
-                          dn.insertAdjacent('beforeEnd', s);
-                        }}
-                      />
-                    )}
+                    {render({
+                      style: { margin: 8 },
+                      insert: (s) => {
+                        console.log('createDesignable', s);
+                        const dn = createDesignable({
+                          api,
+                          refresh,
+                          current: sideMenuSchema,
+                        });
+                        dn.loadAPIClientEvents();
+                        dn.insertAdjacent('beforeEnd', s);
+                      },
+                    })}
                   </AntdMenu>
                 </MenuModeContext.Provider>,
                 sideMenuRef.current.firstChild,
@@ -331,9 +329,15 @@ Menu.URL = observer((props) => {
   const field = useField();
   const Designer = useContext(MenuItemDesignerContext);
   return (
-    <AntdMenu.Item {...others} key={schema.name} eventKey={schema.name} schema={schema} onClick={() => {
-      window.open(props.href, '_blank');
-    }}>
+    <AntdMenu.Item
+      {...others}
+      key={schema.name}
+      eventKey={schema.name}
+      schema={schema}
+      onClick={() => {
+        window.open(props.href, '_blank');
+      }}
+    >
       <SortableItem className={designerCss}>
         <Icon style={{ marginRight: 5 }} type={icon} />
         {schema.title}

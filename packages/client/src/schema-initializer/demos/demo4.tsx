@@ -1,115 +1,89 @@
-import { observer, Schema, useFieldSchema } from '@formily/react';
+import { uid } from '@formily/shared';
 import {
   ArrayTable,
   Input,
   SchemaComponent,
   SchemaComponentProvider,
-  SchemaInitializer,
   SchemaInitializerItemOptions,
-  useDesignable
+  SchemaInitializerProvider
 } from '@nocobase/client';
-import { Switch } from 'antd';
 import React from 'react';
+
+const removeColumn = (schema, cb) => {
+  cb(schema, {
+    removeParentsIfNoChildren: true,
+    breakRemoveOn: {
+      'x-component': 'ArrayTable',
+    },
+  });
+};
 
 const useTableColumnInitializerFields = () => {
   const fields: SchemaInitializerItemOptions[] = [
     {
       type: 'item',
       title: 'Name',
+      remove: removeColumn,
       schema: {
-        type: 'string',
         name: 'name',
+        type: 'string',
+        title: 'Name',
         'x-collection-field': 'posts.name',
         'x-component': 'Input',
+        'x-read-pretty': true,
       },
-      component: ColumnInitializerItem,
+      component: 'CollectionFieldInitializer',
     },
     {
       type: 'item',
       title: 'Title',
+      remove: removeColumn,
       schema: {
-        type: 'string',
         name: 'title',
+        type: 'string',
+        title: 'Title',
         'x-collection-field': 'posts.title',
         'x-component': 'Input',
+        'x-read-pretty': true,
       },
-      component: ColumnInitializerItem,
+      component: 'CollectionFieldInitializer',
     },
   ];
   return fields;
 };
 
-export const AddTableColumn = observer((props: any) => {
-  return (
-    <SchemaInitializer.Button
-      wrap={(schema) => schema}
-      insertPosition={'beforeEnd'}
-      items={[
+const columnWrap = (s) => {
+  return {
+    name: [uid()],
+    type: 'void',
+    title: s.title,
+    'x-component': 'ArrayTable.Column',
+    properties: {
+      [s.name]: {
+        ...s,
+      },
+    },
+  };
+};
+
+// 因为有个动态获取字段的 hook，所以这里将 SchemaInitializerProvider 自定义的处理了一下
+const CustomSchemaInitializerProvider: React.FC = (props) => {
+  const initializers = {
+    AddColumn: {
+      insertPosition: 'beforeEnd',
+      title: 'Configure columns',
+      wrap: columnWrap,
+      items: [
         {
           type: 'itemGroup',
           title: 'Display fields',
           children: useTableColumnInitializerFields(),
         },
-      ]}
-    >
-      Configure columns
-    </SchemaInitializer.Button>
-  );
-});
-
-const useCurrentColumnSchema = (path: string) => {
-  const fieldSchema = useFieldSchema();
-  const { remove } = useDesignable();
-  const findFieldSchema = (schema: Schema) => {
-    return schema.reduceProperties((buf, s) => {
-      if (s['x-collection-field'] === path) {
-        return s;
-      }
-      const child = findFieldSchema(s);
-      if (child) {
-        return child;
-      }
-      return buf;
-    });
-  };
-  const schema = findFieldSchema(fieldSchema);
-  return {
-    schema,
-    exists: !!schema,
-    remove() {
-      schema && remove(schema.parent);
+      ],
     },
   };
+  return <SchemaInitializerProvider initializers={initializers}>{props.children}</SchemaInitializerProvider>;
 };
-
-export const ColumnInitializerItem = SchemaInitializer.itemWrap((props) => {
-  const { item, insert } = props;
-  const { exists, remove } = useCurrentColumnSchema(item.schema['x-collection-field']);
-  return (
-    <SchemaInitializer.Item
-      onClick={() => {
-        if (exists) {
-          return remove();
-        }
-        insert({
-          type: 'void',
-          title: item.schema.name,
-          'x-component': 'ArrayTable.Column',
-          properties: {
-            [item.schema.name]: {
-              'x-read-pretty': true,
-              ...item.schema,
-            },
-          },
-        });
-      }}
-    >
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-        {item.title} <Switch size={'small'} checked={exists} />
-      </div>
-    </SchemaInitializer.Item>
-  );
-});
 
 const schema = {
   type: 'object',
@@ -122,7 +96,7 @@ const schema = {
         { id: 3, name: 'Name3' },
       ],
       'x-component': 'ArrayTable',
-      'x-column-initializer': 'AddTableColumn',
+      'x-initializer': 'AddColumn',
       'x-component-props': {
         rowKey: 'id',
       },
@@ -147,8 +121,10 @@ const schema = {
 
 export default function App() {
   return (
-    <SchemaComponentProvider components={{ AddTableColumn, Input, ArrayTable }}>
-      <SchemaComponent schema={schema} />
+    <SchemaComponentProvider components={{ Input, ArrayTable }}>
+      <CustomSchemaInitializerProvider>
+        <SchemaComponent schema={schema} />
+      </CustomSchemaInitializerProvider>
     </SchemaComponentProvider>
   );
 }
