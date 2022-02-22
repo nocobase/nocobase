@@ -392,7 +392,7 @@ describe('collections repository', () => {
     expect(response2.body.data.length).toBe(2);
   });
 
-  it.skip('case 13', async () => {
+  it('case 13', async () => {
     const tagRepository = app.db.getRepository('tags');
     const tag1 = await tagRepository.create({ values: { title: 'tag1' } });
     const tag2 = await tagRepository.create({ values: { title: 'tag2' } });
@@ -410,7 +410,7 @@ describe('collections repository', () => {
       .resource('posts')
       .create({
         values: {
-          tags: [tag1.get('id'), tag2.get('id')],
+          tags: [tag2.get('id')],
         },
       });
     await app
