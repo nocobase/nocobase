@@ -7,6 +7,7 @@ import { SchemaInitializer } from './SchemaInitializer';
 const SchemaInitializerContext = createContext(null);
 
 export interface SchemaInitializerProviderProps {
+  components?: any;
   initializers?: Record<string, any>;
 }
 
@@ -44,11 +45,11 @@ export const useSchemaInitializer = (name: string) => {
 };
 
 export const SchemaInitializerProvider: React.FC<SchemaInitializerProviderProps> = (props) => {
-  const { initializers, children } = props;
+  const { initializers, components, children } = props;
 
   return (
     <SchemaInitializerContext.Provider value={{ ...globals, ...initializers }}>
-      <SchemaComponentOptions components={{ ...items }}>{children}</SchemaComponentOptions>
+      <SchemaComponentOptions components={{ ...items, ...components }}>{children}</SchemaComponentOptions>
     </SchemaInitializerContext.Provider>
   );
 };

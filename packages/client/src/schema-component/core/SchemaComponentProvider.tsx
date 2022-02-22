@@ -13,13 +13,15 @@ const randomString = (prefix: string = '') => {
 };
 
 export const SchemaComponentProvider: React.FC<ISchemaComponentProvider> = (props) => {
-  const { components, children } = props;
+  const { designable, components, children } = props;
   const [, setUid] = useState(uid());
   const [formId, setFormId] = useState(uid());
   const form = props.form || useMemo(() => createForm(), [formId]);
   const { t } = useTranslation();
   const scope = { ...props.scope, t, randomString };
-  const [active, setActive] = useCookieState('useCookieDesignable');
+  const [active, setActive] = useCookieState('useCookieDesignable', {
+    defaultValue: designable ? 'true' : 'false',
+  });
   return (
     <SchemaComponentContext.Provider
       value={{

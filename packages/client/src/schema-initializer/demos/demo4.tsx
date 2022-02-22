@@ -121,7 +121,7 @@ const schema = {
 
 export default function App() {
   return (
-    <SchemaComponentProvider components={{ Input, ArrayTable }}>
+    <SchemaComponentProvider designable components={{ Input, ArrayTable }}>
       <CustomSchemaInitializerProvider>
         <SchemaComponent schema={schema} />
       </CustomSchemaInitializerProvider>

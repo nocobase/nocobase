@@ -25,112 +25,81 @@ group:
 }
 ```
 
-SchemaInitializer 的核心包括 `<SchemaInitializer.Button/>` 和 `<SchemaInitializer.Item/>` 两个组件。`<SchemaInitializer.Button/>` 是用于创建 Schema 的 Dropdown 按钮，按钮有上下文，表示新增的 schema 要插入的位置，可以通过 `insertPosition` 属性来指定插入的具体位置。下拉菜单里的为 `<SchemaInitializer.Item/>`，用于自定义各种 schema 的初始化逻辑，schema 可以是区块、字段、操作等。
+SchemaInitializer 的核心包括 `<SchemaInitializer.Button/>` 和 `<SchemaInitializer.Item/>` 两个组件。`<SchemaInitializer.Button/>` 用于创建 Schema 的下拉菜单按钮，下拉菜单的菜单项为 `<SchemaInitializer.Item/>`。
 
-## SchemaInitializer.Button
+SchemaInitializer.Item 用于实现各种初始化器（Initializer），负责各种 schema 的初始化逻辑，可以是区块、字段、操作等 schema 片段。目前内置的 Initializer 有：
 
-常规区块的初始化按钮
+- `ActionInitializer` 普通的 Action 操作按钮的初始化器
+- `AddNewActionInitializer` 添加按钮的初始化器
+- `CalendarBlockInitializer` 日历区块的初始化器
+- `CollectionFieldInitializer` 字段的初始化器
+- `FormBlockInitializer` 表单的初始化器
+- `GeneralInitializer` 通用的初始化器
+- `MarkdownBlockInitializer` Markdown 区块的初始化器
+- `TableBlockInitializer` 表格区块的初始化器
+
+SchemaInitializer.Button 用于将各种 Initializer 分组，以下拉菜单的方式呈现。内置的有：
+
+- `BlockInitializers` 页面里的「添加区块」
+- `CalendarActionInitializers` 日历的「操作配置」
+- `DetailsActionInitializers` 详情的「操作配置」
+- `FormActionInitializers` 普通表单的「操作配置」
+- `GridFormItemInitializers` Grid 组件里「配置字段」
+- `MenuItemInitializers` 菜单里「添加菜单项」
+- `PopupFormActionInitializers` 弹窗表单的「操作配置」
+- `RecordBlockInitializers` 当前行记录所在面板的「添加区块」
+- `TableActionInitializers` 表格「操作配置」
+- `TableColumnInitializers` 表格「列配置」
+- `TableRecordActionInitializers` 表格当前行记录的「操作配置」
+
+## 配置
 
 ```tsx | pure
-const items = [
-  {
-    type: 'itemGroup',
-    title: 'Data blocks',
-    children: [
+const initializers = {
+  // 可以是 SchemaInitializer.Button 的 props
+  BlockInitializers: {
+    title: 'Add new',
+    items: [
       {
-        type: 'item',
-        title: 'Table',
-        component: 'TableBlockInitializerItem',
+        type: 'itemGroup',
+        title: 'Data blocks',
+        children: [
+          {
+            type: 'item',
+            title: 'Table',
+            component: 'TableBlockInitializer',
+          },
+          {
+            type: 'item',
+            title: 'Form',
+            component: 'FormBlockInitializer',
+          },
+        ],
       },
       {
-        type: 'item',
-        title: 'Form',
-        component: 'FormBlockInitializerItem',
+        type: 'itemGroup',
+        title: 'Media',
+        children: [
+          {
+            type: 'item',
+            title: 'Markdown',
+            component: 'MarkdownBlockInitializer',
+          },
+        ],
       },
     ],
   },
-];
+  // 也可以是自定义的 SchemaInitializer.Button 组件
+  CustomSchemaInitializerButton,
+};
 
-export const AddBlockButton = () => {
-  return (
-    <SchemaInitializer.Button
-      // 待插入的节点，wrap 处理
-      wrap={(schema) => schema}
-      // 插入位置
-      insertPosition={'beforeBegin'}
-      // 菜单项
-      items={items}
-    >Create block</SchemaInitializer.Button>
-  );
-}
-```
-
-动态字段的配置
-
-```tsx | pure
-const useFormItemInitializerFields = () => {
-  const { fields } = useCollection();
-  return fields.map(field => {
-    return {
-      type: 'item',
-      component: 'FormItemInitializerItem',
-      schema: {}, // TODO, 例如从 field.uiSchema 里获取
-    }
-  });
+const CustomSchemaInitializerButton = () => {
+  return <SchemaInitializer.Button title={'Add new'} items={[]}/>
 }
 
-export const AddFieldButton = () => {
-  return (
-    <SchemaInitializer.Button
-      // 待插入的节点，wrap 处理
-      wrap={(schema) => schema}
-      // 插入位置
-      insertPosition={'beforeBegin'}
-      items={[
-        {
-          title: 'Display fields',
-          children: useFormItemInitializerFields(),
-        },
-      ]}
-    >Configure fields</SchemaInitializer.Button>
-  )
-}
-```
-
-## SchemaInitializer.Item
-
-用于自定义各种 schema 的初始化逻辑，配合 `SchemaInitializer.itemWrap()` 可获得更好的类型提示。
-
-`<SchemaInitializer.Button/>` 的下拉菜单项，items 属性里 type 为 item 的 component）：
-
-```ts
-{
-  type: 'item',
-  title: 'Table',
-  component: 'TableBlockInitializerItem',
-}
-```
-
-例子如下：
-
-```tsx | pure
-const TableBlockInitializerItem = SchemaInitializer.itemWrap((props) => {
-  const { insert } = props;
-  return (
-    <SchemaInitializer.Item
-      icon={<TableOutlined />}
-      onClick={() => {
-        // 插入的 schema，在这里补充更完整的逻辑
-        insert({
-          type: 'void',
-          'x-component': 'Table',
-        });
-      }}
-    >
-      Table
-    </SchemaInitializer.Item>
-  );
-});
+<SchemaInitializerProvider initializers={initializers}>
+  {/* children */}
+</SchemaInitializerProvider>
 ```
 
 ## Examples
@@ -150,70 +119,3 @@ const TableBlockInitializerItem = SchemaInitializer.itemWrap((props) => {
 ### Table.Column
 
 <code src="./demos/demo4.tsx" />
-
-## 配置
-
-核心的参数
-
-```tsx | pure
-const initializers = {
-  xxx: {
-    title: '{{t("Add block")}}',
-    insertPosition: 'beforeEnd',
-    items: [], // 在这里配置
-  },
-};
-
-<SchemaInitializerProvider initializers={initializers}>
-  {/* children */}
-</SchemaInitializerProvider>
-```
-
-items 例子：
-
-- Initializer.Item 只有添加的逻辑
-- Initializer.SwitchItem 可以添加或移除
-
-```ts
-{
-  BlockInitializer: {
-    insertPosition: 'beforeEnd',
-    items: [
-      {
-        type: 'itemGroup',
-        title: "{{t('Enable actions')}}",
-        children: [
-          {
-            type: 'item',
-            title: "{{t('Tody')}}",
-            component: 'Initializer.SwitchItem',
-            schema: {
-              title: "{{t('Tody')}}",
-              'x-component': 'Calendar.Today',
-              'x-action': `calendar:today`,
-              'x-align': 'left',
-            },
-          },
-          {
-            type: 'item',
-            title: "{{t('Tody')}}",
-            component: 'Initializer.Item',
-            schema: {
-              title: "{{t('Tody')}}",
-              'x-component': 'Calendar.Today',
-              'x-action': `calendar:today`,
-              'x-align': 'left',
-            },
-          },
-        ],
-      },
-    ],
-  },
-}
-```
-
-内置的 Initializer 有：
-
-- `GeneralInitializer` 通用的配置项，只有插入的逻辑
-- `ActionInitializer` 用于配置操作按钮，有插入和移除的逻辑
-- `CollectionFieldInitializer` 用于配置数据表字段，有插入和移除的逻辑

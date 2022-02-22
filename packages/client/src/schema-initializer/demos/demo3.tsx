@@ -92,7 +92,7 @@ export default function App() {
     },
   };
   return (
-    <SchemaComponentProvider components={{ TextInitializer, Page, Form, Input, FormItem, Markdown }}>
+    <SchemaComponentProvider designable components={{ TextInitializer, Page, Form, Input, FormItem, Markdown }}>
       <SchemaInitializerProvider initializers={initializers}>
         <SchemaComponent
           schema={{
