@@ -313,7 +313,7 @@ describe('collections repository', () => {
         appends: ['foos'],
         page: 1,
         pageSize: 20,
-        sort: ['-createdAt'],
+        sort: ['-createdAt', '-id'],
       });
 
     expect(response1.body.data[0]['id']).toEqual(3);
