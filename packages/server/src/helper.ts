@@ -58,10 +58,12 @@ export function createCli(app: Application, options: ApplicationOptions): Comman
   cli
     .command('install')
     .option('-f, --force')
+    .option('-c, --clean')
     .action(async (...cliArgs) => {
       const [opts] = cliArgs;
       await app.install({
         cliArgs,
+        clean: opts.clean,
         sync: {
           force: opts.force,
         },
