@@ -1,19 +1,9 @@
-import React, { createContext, useContext, useMemo, useState } from 'react';
-import { uid } from '@formily/shared';
-import { createForm, Form } from '@formily/core';
-import { useCookieState } from 'ahooks';
-import { useTranslation } from 'react-i18next';
+import { Form } from '@formily/core';
 import {
-  Schema,
-  FormProvider,
-  RecursionField,
-  createSchemaField,
   IRecursionFieldProps,
-  ISchemaFieldProps,
-  SchemaOptionsContext,
-  SchemaReactComponents,
-  SchemaExpressionScopeContext,
+  ISchemaFieldProps, SchemaReactComponents
 } from '@formily/react';
+import React from 'react';
 
 export interface ISchemaComponentContext {
   scope?: any;
@@ -26,6 +16,7 @@ export interface ISchemaComponentContext {
 }
 
 export interface ISchemaComponentProvider {
+  designable?: boolean;
   form?: Form;
   scope?: any;
   components?: SchemaReactComponents;

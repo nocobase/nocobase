@@ -49,7 +49,7 @@ const initializers = {
 
 export default function App() {
   return (
-    <SchemaComponentProvider components={{ ActionBar, Action }}>
+    <SchemaComponentProvider designable components={{ ActionBar, Action }}>
       <SchemaInitializerProvider initializers={initializers}>
         <SchemaComponent
           schema={{
