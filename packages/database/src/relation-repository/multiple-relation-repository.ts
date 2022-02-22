@@ -32,11 +32,14 @@ export abstract class MultipleRelationRepository extends RelationRepository {
   async find(options?: FindOptions): Promise<any> {
     const transaction = await this.getTransaction(options);
 
-    const findOptions = this.extendFindOptions(
-      this.buildQueryOptions({
-        ...options,
-      }),
-    );
+    const findOptions = {
+      ...this.extendFindOptions(
+        this.buildQueryOptions({
+          ...options,
+        }),
+      ),
+      subQuery: false,
+    };
 
     const getAccessor = this.accessors().get;
     const sourceModel = await this.getSourceModel(transaction);
@@ -48,7 +51,6 @@ export abstract class MultipleRelationRepository extends RelationRepository {
           includeIgnoreAttributes: false,
           attributes: [this.targetKey()],
           group: `${this.targetModel.name}.${this.targetKey()}`,
-          subQuery: false,
           transaction,
         })
       ).map((row) => row.get(this.targetKey()));

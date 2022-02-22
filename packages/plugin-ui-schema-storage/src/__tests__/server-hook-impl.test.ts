@@ -19,6 +19,7 @@ describe('server hooks', () => {
       registerActions: true,
     });
 
+    await app.cleanDb();
     db = app.db;
 
     app.plugin(UiSchemaStoragePlugin);
