@@ -99,6 +99,9 @@ export const collectionSchema: ISchema = {
                   title: '{{ t("Create collection") }}',
                   'x-component': 'Action.Drawer',
                   'x-decorator': 'Form',
+                  'x-decorator-props': {
+                    useValues: '{{ useCollectionValues }}',
+                  },
                   properties: {
                     title: {
                       'x-component': 'CollectionField',
@@ -107,7 +110,6 @@ export const collectionSchema: ISchema = {
                     name: {
                       'x-component': 'CollectionField',
                       'x-decorator': 'FormItem',
-                      default: '{{ randomString("t_") }}',
                     },
                     footer: {
                       type: 'void',
