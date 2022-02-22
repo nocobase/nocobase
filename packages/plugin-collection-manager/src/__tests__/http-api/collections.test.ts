@@ -151,12 +151,14 @@ describe('collections repository', () => {
     expect(response2.body.data[0].id).toBe(1);
   });
 
-  it.skip('case 5', async () => {
+  it('case 5', async () => {
     const response = await app.agent().resource('posts').create();
     const postId = response.body.data.id;
     await app.agent().resource('posts.tags', postId).create({
       values: {},
     });
+
+    expect(await app.db.getRepository('tags').count()).toEqual(1);
   });
 
   it('case 6', async () => {
