@@ -44,10 +44,11 @@ export abstract class MultipleRelationRepository extends RelationRepository {
     if (findOptions.include && findOptions.include.length > 0) {
       const ids = (
         await sourceModel[getAccessor]({
-          ...omit(findOptions, 'order'),
+          ...findOptions,
           includeIgnoreAttributes: false,
           attributes: [this.targetKey()],
           group: `${this.targetModel.name}.${this.targetKey()}`,
+          subQuery: false,
           transaction,
         })
       ).map((row) => row.get(this.targetKey()));
