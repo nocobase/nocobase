@@ -7,8 +7,11 @@ describe('belongs to many with target key', function () {
   let db: Database;
   let Tag: Collection;
   let Post: Collection;
+  let Color: Collection;
+
   beforeEach(async () => {
     db = mockDatabase();
+
     Post = db.collection({
       name: 'posts',
       filterTargetKey: 'title',
@@ -114,6 +117,7 @@ describe('belongs to many', () => {
   let Post;
   let Tag;
   let PostTag;
+  let Color;
 
   beforeEach(async () => {
     db = mockDatabase();
@@ -154,6 +158,15 @@ describe('belongs to many', () => {
         { type: 'belongsToMany', name: 'posts', through: 'posts_tags' },
         { type: 'string', name: 'name' },
         { type: 'string', name: 'status' },
+        { type: 'hasMany', name: 'colors' },
+      ],
+    });
+
+    Color = db.collection({
+      name: 'colors',
+      fields: [
+        { type: 'string', name: 'name' },
+        { type: 'belongsTo', name: 'tag' },
       ],
     });
 
@@ -267,6 +280,35 @@ describe('belongs to many', () => {
       },
     });
     expect(t1).toBeNull();
+  });
+
+  test('find with sort & appends', async () => {
+    const p1 = await Post.repository.create({
+      values: {
+        title: 'p1',
+        tags: [
+          {
+            name: 't1',
+            colors: [
+              {
+                name: 'red',
+              },
+            ],
+          },
+          { name: 't2', colors: [{ name: 'green' }] },
+        ],
+      },
+    });
+
+    const PostTagsRepository = new BelongsToManyRepository(Post, 'tags', p1.id);
+    const tags = await PostTagsRepository.find({
+      appends: ['colors'],
+      sort: ['name'],
+      limit: 20,
+      offset: 0,
+    });
+
+    console.log(tags);
   });
 
   test('update raw attribute', async () => {

@@ -33,7 +33,8 @@ export class BelongsToManyRepository extends MultipleRelationRepository implemen
     const transaction = await this.getTransaction(options);
 
     const createAccessor = this.accessors().create;
-    const values = options.values;
+
+    const values = options.values || {};
 
     const sourceModel = await this.getSourceModel(transaction);
 
