@@ -206,7 +206,7 @@ describe('collections repository', () => {
     expect(response1.body.data.length).toBe(1);
   });
 
-  it.skip('case 8', async () => {
+  it('case 8', async () => {
     const response = await app
       .agent()
       .resource('posts')
@@ -232,10 +232,10 @@ describe('collections repository', () => {
           $or: [{ title: 'Tag1' }, { title: 'Tag2' }],
         },
       });
-    expect(response1.body.data.length).toBe(1);
+    expect(response1.body.data.length).toBe(2);
   });
 
-  it.skip('case 9', async () => {
+  it('case 9', async () => {
     const response = await app
       .agent()
       .resource('posts')
@@ -261,10 +261,10 @@ describe('collections repository', () => {
           $or: [{ title: 'Tag1' }, { title: 'Tag2' }],
         },
       });
-    expect(response1.body.data.length).toBe(1);
+    expect(response1.body.data.length).toBe(2);
   });
 
-  it.skip('case 10', async () => {
+  it('case 10', async () => {
     const response = await app
       .agent()
       .resource('posts')
@@ -291,7 +291,7 @@ describe('collections repository', () => {
         // },
         sort: ['id'],
       });
-    expect(response1.body.data.length).toBe(1);
+    expect(response1.body.data.length).toBe(3);
   });
 
   it('case 11', async () => {
