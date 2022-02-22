@@ -1,9 +1,9 @@
 import { DragOutlined } from '@ant-design/icons';
 import { useFieldSchema } from '@formily/react';
-import { useSchemaInitializer } from '@nocobase/client';
 import { Space } from 'antd';
 import React from 'react';
 import { DragHandler } from '../../../schema-component';
+import { useSchemaInitializer } from '../../../schema-initializer';
 
 export const TableRecordActionDesigner = (props: any) => {
   const fieldSchema = useFieldSchema();
