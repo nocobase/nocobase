@@ -1,9 +1,7 @@
-import { flatten } from 'flat';
-import lodash, { keys } from 'lodash';
-
-import { Collection } from './collection';
-import { BelongsTo, HasOne, Model, ModelCtor } from 'sequelize';
+import lodash from 'lodash';
+import { Model, ModelCtor } from 'sequelize';
 import { AssociationKeysToBeUpdate, BlackList, WhiteList } from './repository';
+
 
 type UpdateValueItem = string | number | UpdateValues;
 
@@ -130,7 +128,7 @@ export class UpdateGuard {
       return values;
     }
 
-    let valuesKeys = Object.keys(values);
+    let valuesKeys = Object.keys(values || {});
 
     // handle whitelist
     if (this.whiteList) {
