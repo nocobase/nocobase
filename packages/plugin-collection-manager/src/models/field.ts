@@ -1,5 +1,5 @@
-import { SyncOptions, Transactionable } from 'sequelize';
 import Database, { MagicAttributeModel } from '@nocobase/database';
+import { SyncOptions, Transactionable } from 'sequelize';
 
 interface LoadOptions extends Transactionable {
   // TODO
@@ -15,7 +15,7 @@ export class FieldModel extends MagicAttributeModel {
     const { skipExist = false } = loadOptions || {};
     const collectionName = this.get('collectionName');
     if (!this.db.hasCollection(collectionName)) {
-      throw new Error(`${collectionName} collection does not exist.`);
+      return;
     }
     const collection = this.db.getCollection(collectionName);
     const name = this.get('name');
@@ -29,6 +29,9 @@ export class FieldModel extends MagicAttributeModel {
     const field = await this.load({
       transaction: options.transaction,
     });
+    if (!field) {
+      return;
+    }
     await field.sync(options);
   }
 }
