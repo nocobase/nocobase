@@ -1,8 +1,9 @@
-import { RelationRepository, transaction } from './relation-repository';
-import { Model, SingleAssociationAccessors } from 'sequelize';
-import { updateModelByValues } from '../update-associations';
 import lodash from 'lodash';
+import { SingleAssociationAccessors } from 'sequelize';
+import { Model } from '../model';
 import { Appends, Except, Fields, Filter, TargetKey, TransactionAble, UpdateOptions } from '../repository';
+import { updateModelByValues } from '../update-associations';
+import { RelationRepository, transaction } from './relation-repository';
 
 export interface SingleRelationFindOption extends TransactionAble {
   fields?: Fields;

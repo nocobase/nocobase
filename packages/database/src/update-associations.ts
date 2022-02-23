@@ -5,10 +5,10 @@ import {
   HasMany,
   HasOne,
   Hookable,
-  Model,
   ModelCtor,
-  Transactionable,
+  Transactionable
 } from 'sequelize';
+import { Model } from './model';
 import { TransactionAble } from './repository';
 import { UpdateGuard } from './update-guard';
 
@@ -257,11 +257,11 @@ export async function updateSingleAssociation(
     let dataKey: string;
     let M: ModelCtor<Model>;
     if (association.associationType === 'BelongsTo') {
-      M = association.target;
+      M = association.target as ModelCtor<Model>;
       // @ts-ignore
       dataKey = association.targetKey;
     } else {
-      M = association.source;
+      M = association.source as ModelCtor<Model>;
       dataKey = M.primaryKeyAttribute;
     }
 
@@ -396,7 +396,7 @@ export async function updateMultipleAssociation(
         list3.push(instance);
       } else {
         // set & update record
-        const instance = await association.target.findByPk(item[pk], {
+        const instance = await association.target.findByPk<any>(item[pk], {
           transaction,
         });
         const addAccessor = association.accessors.add;

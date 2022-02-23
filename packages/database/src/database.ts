@@ -2,7 +2,6 @@ import { applyMixins, AsyncEmitter } from '@nocobase/utils';
 import merge from 'deepmerge';
 import { EventEmitter } from 'events';
 import {
-  Model,
   ModelCtor,
   Op,
   Options,
@@ -15,6 +14,7 @@ import { Collection, CollectionOptions, RepositoryType } from './collection';
 import { ImporterReader, ImportFileExtension } from './collection-importer';
 import * as FieldTypes from './fields';
 import { Field, FieldContext, RelationField } from './fields';
+import { Model } from './model';
 import { ModelHook } from './model-hook';
 import extendOperators from './operators';
 import { RelationRepository } from './relation-repository/relation-repository';
@@ -53,7 +53,7 @@ export class Database extends EventEmitter implements AsyncEmitter {
   sequelize: Sequelize;
   fieldTypes = new Map();
   options: IDatabaseOptions;
-  models = new Map<string, ModelCtor<any>>();
+  models = new Map<string, ModelCtor<Model>>();
   repositories = new Map<string, RepositoryType>();
   operators = new Map();
   collections = new Map<string, Collection>();

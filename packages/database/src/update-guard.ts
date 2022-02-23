@@ -1,7 +1,7 @@
 import lodash from 'lodash';
-import { Model, ModelCtor } from 'sequelize';
+import { ModelCtor } from 'sequelize';
+import { Model } from './model';
 import { AssociationKeysToBeUpdate, BlackList, WhiteList } from './repository';
-
 
 type UpdateValueItem = string | number | UpdateValues;
 

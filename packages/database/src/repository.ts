@@ -6,16 +6,16 @@ import {
   DestroyOptions as SequelizeDestroyOptions,
   FindAndCountOptions as SequelizeAndCountOptions,
   FindOptions as SequelizeFindOptions,
-  Model,
   ModelCtor,
   Op,
   Transaction,
-  UpdateOptions as SequelizeUpdateOptions,
+  UpdateOptions as SequelizeUpdateOptions
 } from 'sequelize';
 import { Collection } from './collection';
 import { Database } from './database';
 import { RelationField } from './fields';
 import FilterParser from './filter-parser';
+import { Model } from './model';
 import { OptionsParser } from './options-parser';
 import { BelongsToManyRepository } from './relation-repository/belongs-to-many-repository';
 import { BelongsToRepository } from './relation-repository/belongs-to-repository';

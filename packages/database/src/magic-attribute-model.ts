@@ -1,7 +1,7 @@
-import { Model } from 'sequelize';
 import { merge } from '@nocobase/utils';
 import _ from 'lodash';
 import Database from './database';
+import { Model } from './model';
 
 export class MagicAttributeModel extends Model {
   get magicAttribute() {

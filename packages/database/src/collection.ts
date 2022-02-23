@@ -1,9 +1,10 @@
 import merge from 'deepmerge';
 import { EventEmitter } from 'events';
 import { default as lodash, default as _ } from 'lodash';
-import { Model, ModelCtor, ModelOptions, SyncOptions } from 'sequelize';
+import { ModelCtor, ModelOptions, SyncOptions } from 'sequelize';
 import { Database } from './database';
 import { Field, FieldOptions } from './fields';
+import { Model } from './model';
 import { Repository } from './repository';
 
 export type RepositoryType = typeof Repository;
@@ -41,7 +42,7 @@ export class Collection<
   context: CollectionContext;
   isThrough?: boolean;
   fields: Map<string, any> = new Map<string, any>();
-  model: ModelCtor<Model<TModelAttributes, TCreationAttributes>>;
+  model: ModelCtor<Model>;
   repository: Repository<TModelAttributes, TCreationAttributes>;
 
   get filterTargetKey() {
@@ -81,12 +82,16 @@ export class Collection<
       return;
     }
     const { name, model, autoGenId = true } = this.options;
-    let M = Model;
+    let M: ModelCtor<Model> = Model;
     if (this.context.database.sequelize.isDefined(name)) {
       const m = this.context.database.sequelize.model(name);
       if ((m as any).isThrough) {
+        // @ts-ignore
         this.model = m;
-        Object.defineProperty(this.model, 'database', { value: this.context.database });
+        // @ts-ignore
+        this.model.database = this.context.database;
+        // @ts-ignore
+        this.model.collection = this;
         return;
       }
     }
@@ -95,6 +100,7 @@ export class Collection<
     } else if (model) {
       M = model;
     }
+    // @ts-ignore
     this.model = class extends M {};
     this.model.init(null, this.sequelizeModelOptions());
 
@@ -102,7 +108,10 @@ export class Collection<
       this.model.removeAttribute('id');
     }
 
-    Object.defineProperty(this.model, 'database', { value: this.context.database });
+    // @ts-ignore
+    this.model.database = this.context.database;
+    // @ts-ignore
+    this.model.collection = this;
   }
 
   setRepository(repository?: RepositoryType | string) {

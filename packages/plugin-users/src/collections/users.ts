@@ -4,14 +4,6 @@ export default {
   name: 'users',
   title: '{{t("Users")}}',
   sortable: 'sort',
-  scopes: {
-    withPassword: {
-      attributes: { include: ['password'] },
-    },
-  },
-  defaultScope: {
-    attributes: { exclude: ['password'] },
-  },
   fields: [
     {
       interface: 'string',
@@ -39,6 +31,7 @@ export default {
       interface: 'password',
       type: 'password',
       name: 'password',
+      hidden: true,
       uiSchema: {
         type: 'string',
         title: '{{t("Password")}}',
