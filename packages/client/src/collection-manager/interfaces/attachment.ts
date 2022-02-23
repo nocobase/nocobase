@@ -16,8 +16,9 @@ export const attachment: IField = {
       type: 'array',
       // title,
       'x-component': 'Upload.Attachment',
-      'x-decorator': 'FormItem',
-      'x-designable-bar': 'Upload.DesignableBar',
+      'x-component-props': {
+        action: 'attachments:upload',
+      },
     },
   },
   initialize: (values: any) => {

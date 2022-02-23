@@ -1,18 +1,22 @@
-import { ISchema } from '@formily/react';
+import { ISchema, useForm } from '@formily/react';
 import { uid } from '@formily/shared';
 import cloneDeep from 'lodash/cloneDeep';
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useAPIClient } from '../../api-client';
+import { useAPIClient, useRequest } from '../../api-client';
 import { useRecord } from '../../record-provider';
 import { ActionContext, SchemaComponent } from '../../schema-component';
+import { useUpdateAction } from '../action-hooks';
 import { useCollectionManager } from '../hooks';
 import { IField } from '../interfaces/types';
+import { ArrayTable } from './ArrayTable';
 
 const getSchema = (schema: IField): ISchema => {
   if (!schema) {
     return;
   }
+  const properties = cloneDeep(schema.properties) as any;
+  properties.name['x-disabled'] = true;
   return {
     type: 'object',
     properties: {
@@ -21,12 +25,20 @@ const getSchema = (schema: IField): ISchema => {
         'x-component': 'Action.Drawer',
         'x-decorator': 'Form',
         'x-decorator-props': {
-          initialValue: cloneDeep(schema.default),
+          useValues(options) {
+            return useRequest(
+              () =>
+                Promise.resolve({
+                  data: cloneDeep(schema.default),
+                }),
+              options,
+            );
+          },
         },
         title: '{{ t("Edit field") }}',
         properties: {
           // @ts-ignore
-          ...schema.properties,
+          ...properties,
           footer: {
             type: 'void',
             'x-component': 'Action.Drawer.Footer',
@@ -43,13 +55,36 @@ const getSchema = (schema: IField): ISchema => {
                 'x-component': 'Action',
                 'x-component-props': {
                   type: 'primary',
-                  useAction: '{{ cm.useUpdateActionAndRefreshCM }}',
+                  useAction: '{{ useUpdateCollectionField }}',
                 },
               },
             },
           },
         },
       },
+    },
+  };
+};
+
+const useUpdateCollectionField = () => {
+  const form = useForm();
+  const { run } = useUpdateAction();
+  const { refreshCM } = useCollectionManager();
+  return {
+    async run() {
+      await form.submit();
+      const options = form?.values?.uiSchema?.enum?.slice() || [];
+      form.setValuesIn(
+        'uiSchema.enum',
+        options.map((option) => {
+          return {
+            value: uid(),
+            ...option,
+          };
+        }),
+      );
+      await run();
+      await refreshCM();
     },
   };
 };
@@ -79,7 +114,7 @@ export const EditFieldAction = (props) => {
       >
         {t('Edit')}
       </a>
-      <SchemaComponent schema={schema} />
+      <SchemaComponent schema={schema} components={{ ArrayTable }} scope={{ useUpdateCollectionField }} />
     </ActionContext.Provider>
   );
 };

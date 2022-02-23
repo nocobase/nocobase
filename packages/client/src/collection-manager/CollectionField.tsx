@@ -1,7 +1,7 @@
 import { Field } from '@formily/core';
 import { connect, useField, useFieldSchema } from '@formily/react';
 import React, { useEffect } from 'react';
-import { useComponent } from '..';
+import { useCompile, useComponent } from '..';
 import { CollectionFieldProvider } from './CollectionFieldProvider';
 import { useCollectionField } from './hooks';
 
@@ -11,6 +11,7 @@ const InternalField: React.FC = (props) => {
   const fieldSchema = useFieldSchema();
   const { uiSchema } = useCollectionField();
   const component = useComponent(uiSchema?.['x-component']);
+  const compile = useCompile();
   const setFieldProps = (key, value) => {
     field[key] = typeof field[key] === 'undefined' ? value : field[key];
   };
@@ -24,6 +25,7 @@ const InternalField: React.FC = (props) => {
     if (!uiSchema) {
       return;
     }
+    console.log('uiSchema', uiSchema);
     setFieldProps('title', uiSchema.title);
     setFieldProps('description', uiSchema.description);
     setFieldProps('initialValue', uiSchema.default);

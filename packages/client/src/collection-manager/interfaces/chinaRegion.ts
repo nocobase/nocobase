@@ -20,6 +20,8 @@ export const chinaRegion: IField = {
       // title,
       'x-component': 'Cascader',
       'x-component-props': {
+        useDataSource: '{{ useChinaRegionDataSource }}',
+        useLoadData: '{{ useChinaRegionLoadData }}',
         changeOnSelectLast: false,
         labelInValue: true,
         maxLevel: 3,

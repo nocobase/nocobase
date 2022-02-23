@@ -5,10 +5,18 @@ import { toArr } from '@formily/shared';
 import { Cascader as AntdCascader } from 'antd';
 import { isBoolean, omit } from 'lodash';
 import React from 'react';
+import { useRequest } from '../../../api-client';
 import { defaultFieldNames } from './defaultFieldNames';
 import { ReadPretty } from './ReadPretty';
 
-const useDefLoadData = (props: any) => props.loadData;
+const useDefDataSource = (options) => {
+  const field = useField<ArrayField>();
+  return useRequest(() => Promise.resolve({ data: field.dataSource || [] }), options);
+};
+
+const useDefLoadData = (props: any) => {
+  return props?.loadData;
+};
 
 export const Cascader = connect(
   (props: any) => {
@@ -18,6 +26,7 @@ export const Cascader = connect(
       onChange,
       labelInValue,
       fieldNames = defaultFieldNames,
+      useDataSource = useDefDataSource,
       useLoadData = useDefLoadData,
       changeOnSelectLast,
       changeOnSelect,
@@ -25,6 +34,11 @@ export const Cascader = connect(
       ...others
     } = props;
     const loadData = useLoadData(props);
+    const { loading } = useDataSource({
+      onSuccess(data) {
+        field.dataSource = data?.data || [];
+      },
+    });
     // 兼容值为 object[] 的情况
     const toValue = () => {
       return toArr(value).map((item) => {
@@ -54,17 +68,11 @@ export const Cascader = connect(
         return <span key={option[fieldNames.value]}>{option[fieldNames.label]} / </span>;
       });
     };
-    // if (loadData) {
-    //   Object.assign(others, {
-    //     loadData: (selectedOptions: any[]) => {
-    //       // 将 field 传给 loadData
-    //       loadData(selectedOptions, field);
-    //     },
-    //   });
-    // }
     return (
       <AntdCascader
+        loading={loading}
         {...others}
+        options={field.dataSource}
         loadData={loadData}
         changeOnSelect={isBoolean(changeOnSelectLast) ? !changeOnSelectLast : changeOnSelect}
         value={toValue()}

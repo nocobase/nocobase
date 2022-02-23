@@ -15,12 +15,12 @@ export const linkTo: IField = {
     uiSchema: {
       type: 'array',
       // title,
-      'x-component': 'Select.Drawer',
+      'x-component': 'RecordPicker',
       'x-component-props': {},
     },
   },
   initialize: (values: any) => {
-    if (values.dataType === 'belongsToMany') {
+    if (values.type === 'belongsToMany') {
       if (!values.through) {
         values.through = `t_${uid()}`;
       }
@@ -34,11 +34,7 @@ export const linkTo: IField = {
         values.sourceKey = 'id';
       }
       if (!values.targetKey) {
-        if (values.target === 'roles') {
-          values.targetKey = 'name';
-        } else {
-          values.targetKey = 'id';
-        }
+        values.targetKey = 'id';
       }
     }
   },

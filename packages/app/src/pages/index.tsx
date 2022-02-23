@@ -5,6 +5,7 @@ import {
   AntdSchemaComponentProvider,
   APIClientProvider,
   AuthLayout,
+  ChinaRegionProvider,
   CollectionManagerShortcut,
   compose,
   DesignableSwitch,
@@ -53,6 +54,7 @@ const providers = [
   RemoteCollectionManagerProvider,
   [SchemaInitializerProvider, { initializers: { MenuItemInitializers } }],
   AntdSchemaComponentProvider,
+  ChinaRegionProvider,
   [DocumentTitleProvider, { addonAfter: 'NocoBase' }],
   [
     RouteSwitchProvider,

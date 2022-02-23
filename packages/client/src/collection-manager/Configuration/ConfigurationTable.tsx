@@ -23,6 +23,8 @@ const useCollectionValues = (options) => {
       Promise.resolve({
         data: {
           name: `t_${uid()}`,
+          createdBy: true,
+          updatedBy: true,
         },
       }),
     {
@@ -38,7 +40,7 @@ const useCollectionValues = (options) => {
   }, [visible]);
 
   return result;
-}
+};
 
 export const ConfigurationTable = () => {
   const { collections = [] } = useCollectionManager();
@@ -50,7 +52,7 @@ export const ConfigurationTable = () => {
   };
   return (
     <div>
-      <SchemaComponent schema={collectionSchema} scope={{ useCollectionValues, useAsyncDataSource, loadCollections }}/>
+      <SchemaComponent schema={collectionSchema} scope={{ useCollectionValues, useAsyncDataSource, loadCollections }} />
     </div>
   );
 };
