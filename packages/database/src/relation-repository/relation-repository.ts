@@ -1,14 +1,15 @@
-import { Association, BelongsTo, BelongsToMany, HasMany, HasOne, Model, ModelCtor, Transaction } from 'sequelize';
-import { OptionsParser } from '../options-parser';
-import { Collection } from '../collection';
-import { CreateOptions, Filter, FindOptions } from '../repository';
-import FilterParser from '../filter-parser';
-import { UpdateGuard } from '../update-guard';
-import { updateAssociations } from '../update-associations';
 import lodash from 'lodash';
-import { transactionWrapperBuilder } from '../transaction-decorator';
-import { RelationField } from '../fields/relation-field';
+import { Association, BelongsTo, BelongsToMany, HasMany, HasOne, ModelCtor, Transaction } from 'sequelize';
+import { Collection } from '../collection';
 import Database from '../database';
+import { RelationField } from '../fields/relation-field';
+import FilterParser from '../filter-parser';
+import { Model } from '../model';
+import { OptionsParser } from '../options-parser';
+import { CreateOptions, Filter, FindOptions } from '../repository';
+import { transactionWrapperBuilder } from '../transaction-decorator';
+import { updateAssociations } from '../update-associations';
+import { UpdateGuard } from '../update-guard';
 
 export const transaction = transactionWrapperBuilder(function () {
   return this.sourceCollection.model.sequelize.transaction();

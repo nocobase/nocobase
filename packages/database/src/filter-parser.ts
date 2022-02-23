@@ -1,9 +1,9 @@
-import { Model, ModelCtor } from 'sequelize';
-import _ from 'lodash';
-import { flatten, unflatten } from 'flat';
-import { Database } from './database';
-import lodash from 'lodash';
+import { flatten } from 'flat';
+import { default as lodash, default as _ } from 'lodash';
+import { ModelCtor } from 'sequelize';
 import { Collection } from './collection';
+import { Database } from './database';
+import { Model } from './model';
 
 const debug = require('debug')('noco-database');
 

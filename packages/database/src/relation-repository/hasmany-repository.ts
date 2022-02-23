@@ -1,14 +1,14 @@
-import { BelongsToMany, HasMany, Model, Op, Sequelize } from 'sequelize';
-
+import { omit } from 'lodash';
+import { HasMany, Op } from 'sequelize';
+import { Model } from '../model';
+import { CreateOptions, DestroyOptions, FindOptions, TargetKey, TK, UpdateOptions } from '../repository';
 import {
   AssociatedOptions,
   FindAndCountOptions,
   FindOneOptions,
-  MultipleRelationRepository,
+  MultipleRelationRepository
 } from './multiple-relation-repository';
-import { CreateOptions, DestroyOptions, FindOptions, TK, TargetKey, UpdateOptions } from '../repository';
 import { transaction } from './relation-repository';
-import lodash, { omit } from 'lodash';
 
 interface IHasManyRepository<M extends Model> {
   find(options?: FindOptions): Promise<M>;

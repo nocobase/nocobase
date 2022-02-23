@@ -1,5 +1,6 @@
 import { lodash } from '@umijs/utils';
-import { DataTypes, Model } from 'sequelize';
+import { DataTypes } from 'sequelize';
+import { Model } from '../model';
 import { BaseColumnFieldOptions, Field } from './field';
 
 export class ContextField extends Field {

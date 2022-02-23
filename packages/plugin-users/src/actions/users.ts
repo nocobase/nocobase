@@ -19,7 +19,7 @@ export async function signin(ctx: Context, next: Next) {
     ctx.throw(401, '请填写邮箱账号');
   }
   const User = ctx.db.getCollection('users');
-  const user = await User.model.scope('withPassword').findOne<any>({
+  const user = await User.model.findOne<any>({
     where: {
       [uniqueField]: values[uniqueField],
     },
@@ -36,8 +36,10 @@ export async function signin(ctx: Context, next: Next) {
     user.token = crypto.randomBytes(20).toString('hex');
     await user.save();
   }
-  ctx.body = user.toJSON();
-  delete ctx.body.password;
+  ctx.body = {
+    ...user.toJSON(),
+    token: user.get('token'),
+  };
   await next();
 }
 
@@ -47,10 +49,10 @@ export async function signout(ctx: Context, next: Next) {
 }
 
 export async function signup(ctx: Context, next: Next) {
-  const User = ctx.db.getCollection('users');
+  const User = ctx.db.getRepository('users');
   const { values } = ctx.action.params;
   try {
-    const user = await User.model.create(values);
+    const user = await User.create({ values });
     ctx.body = user;
   } catch (error) {
     if (error.errors) {
@@ -139,7 +141,7 @@ export async function changePassword(ctx: Context, next: Next) {
     ctx.throw(401, 'Unauthorized');
   }
   const User = ctx.db.getCollection('users');
-  const user = await User.model.scope('withPassword').findOne<any>({
+  const user = await User.model.findOne<any>({
     where: {
       email: ctx.state.currentUser.email,
     },

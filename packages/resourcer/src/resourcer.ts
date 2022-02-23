@@ -1,10 +1,10 @@
 import glob from 'glob';
 import compose from 'koa-compose';
+import _ from 'lodash';
+import { pathToRegexp } from 'path-to-regexp';
 import Action, { ActionName } from './action';
 import Resource, { ResourceOptions } from './resource';
-import { parseRequest, getNameByParams, ParsedParams, requireModule, parseQuery } from './utils';
-import { pathToRegexp } from 'path-to-regexp';
-import _ from 'lodash';
+import { getNameByParams, ParsedParams, parseQuery, parseRequest, requireModule } from './utils';
 
 export interface ResourcerContext {
   resourcer?: Resourcer;
