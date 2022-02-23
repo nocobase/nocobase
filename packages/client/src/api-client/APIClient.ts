@@ -37,6 +37,16 @@ export class APIClient {
     }
   }
 
+  setBearerToken(key = 'nocobaseToken') {
+    this.axios.interceptors.request.use((config) => {
+      const token = localStorage.getItem(key);
+      if (token) {
+        config.headers['Authorization'] = `Bearer ${token}`;
+      }
+      return config;
+    });
+  }
+
   service(uid: string): Result<any, any> {
     return this.services[uid];
   }
