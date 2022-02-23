@@ -41,7 +41,7 @@ export class MagicAttributeModel extends Model {
       if ((this.constructor as any).rawAttributes[column]) {
         return super.get(key, value);
       }
-      const options = super.get(this.magicAttribute);
+      const options = super.get(this.magicAttribute, value);
       return _.get(options, key);
     }
     const data = super.get(key, value);

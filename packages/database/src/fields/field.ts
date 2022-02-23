@@ -1,7 +1,7 @@
-import { Collection } from '../collection';
-import { Database } from '../database';
 import _ from 'lodash';
 import { DataType, ModelAttributeColumnOptions, ModelIndexesOptions, SyncOptions } from 'sequelize';
+import { Collection } from '../collection';
+import { Database } from '../database';
 
 export interface FieldContext {
   database: Database;
@@ -10,6 +10,7 @@ export interface FieldContext {
 
 export interface BaseFieldOptions {
   name?: string;
+  hidden?: boolean;
   [key: string]: any;
 }
 
