@@ -1,18 +1,29 @@
 import { PlusOutlined } from '@ant-design/icons';
-import { ArrayTable } from '@formily/antd';
-import { ISchema } from '@formily/react';
+import { ISchema, useForm } from '@formily/react';
 import { uid } from '@formily/shared';
 import { Button, Dropdown, Menu } from 'antd';
+import { cloneDeep } from 'lodash';
 import React, { useState } from 'react';
+import { useRequest } from '../../api-client';
 import { ActionContext, SchemaComponent, useCompile } from '../../schema-component';
+import { useCreateAction } from '../action-hooks';
 import { useCollectionManager } from '../hooks';
 import { IField } from '../interfaces/types';
+import { ArrayTable } from './ArrayTable';
 import { options } from './interfaces';
 
 const getSchema = (schema: IField): ISchema => {
   if (!schema) {
     return;
   }
+  const properties = cloneDeep(schema.properties) as any;
+  const initialValue = {
+    ...cloneDeep(schema.default),
+    interface: schema.name,
+    name: `f_${uid()}`,
+  };
+  initialValue.uiSchema.title = schema.title;
+  console.log('initialValue', initialValue);
   return {
     type: 'object',
     properties: {
@@ -21,16 +32,20 @@ const getSchema = (schema: IField): ISchema => {
         'x-component': 'Action.Drawer',
         'x-decorator': 'Form',
         'x-decorator-props': {
-          initialValue: {
-            interface: schema.name,
-            ...schema.default,
-            name: `f_${uid()}`,
+          useValues(options) {
+            return useRequest(
+              () =>
+                Promise.resolve({
+                  data: initialValue,
+                }),
+              options,
+            );
           },
         },
         title: '{{ t("Add field") }}',
         properties: {
           // @ts-ignore
-          ...schema.properties,
+          ...properties,
           footer: {
             type: 'void',
             'x-component': 'Action.Drawer.Footer',
@@ -47,13 +62,37 @@ const getSchema = (schema: IField): ISchema => {
                 'x-component': 'Action',
                 'x-component-props': {
                   type: 'primary',
-                  useAction: '{{ cm.useCreateActionAndRefreshCM }}',
+                  useAction: '{{ useCreateCollectionField }}',
                 },
               },
             },
           },
         },
       },
+    },
+  };
+};
+
+const useCreateCollectionField = () => {
+  const form = useForm();
+  const { run } = useCreateAction();
+  const { refreshCM } = useCollectionManager();
+  return {
+    async run() {
+      await form.submit();
+      const options = form?.values?.uiSchema?.enum?.slice() || [];
+      form.setValuesIn(
+        'uiSchema.enum',
+        options.map((option) => {
+          return {
+            value: uid(),
+            ...option,
+          };
+        }),
+      );
+      console.log('form.values', form.values);
+      await run();
+      await refreshCM();
     },
   };
 };
@@ -78,7 +117,6 @@ export const AddFieldAction = () => {
               return (
                 <Menu.SubMenu title={compile(option.label)}>
                   {option.children.map((child) => {
-                    console.log(child);
                     return <Menu.Item key={child.name}>{compile(child.title)}</Menu.Item>;
                   })}
                 </Menu.SubMenu>
@@ -91,7 +129,7 @@ export const AddFieldAction = () => {
           添加字段
         </Button>
       </Dropdown>
-      <SchemaComponent schema={schema} components={{ ArrayTable }} />
+      <SchemaComponent schema={schema} components={{ ArrayTable }} scope={{ useCreateCollectionField }} />
     </ActionContext.Provider>
   );
 };
