@@ -6,6 +6,7 @@ import { Spin } from 'antd';
 import React, { useMemo } from 'react';
 import { useAttach, useComponent } from '../..';
 import { useRequest } from '../../../api-client';
+import { useCollection } from '../../../collection-manager';
 import { GeneralSchemaDesigner, SchemaSettings } from '../../../schema-settings';
 
 type Opts = Options<any, any> & { uid?: string };
@@ -100,8 +101,9 @@ export const Form: React.FC<FormProps> & { Designer?: any } = observer((props) =
 });
 
 Form.Designer = () => {
+  const { name, title } = useCollection();
   return (
-    <GeneralSchemaDesigner>
+    <GeneralSchemaDesigner title={title || name}>
       <SchemaSettings.Remove />
     </GeneralSchemaDesigner>
   );
