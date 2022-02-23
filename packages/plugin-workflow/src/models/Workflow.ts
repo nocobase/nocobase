@@ -1,9 +1,7 @@
-import { Model, HasManyGetAssociationsMixin, HasManyCreateAssociationMixin } from 'sequelize';
-
-import Database from '@nocobase/database';
-
-import { get as getTrigger } from '../triggers';
+import { Database, Model } from '@nocobase/database';
+import { HasManyCreateAssociationMixin, HasManyGetAssociationsMixin } from 'sequelize';
 import { EXECUTION_STATUS } from '../constants';
+import { get as getTrigger } from '../triggers';
 import ExecutionModel from './Execution';
 import FlowNodeModel from './FlowNode';
 
@@ -31,7 +29,7 @@ export default class WorkflowModel extends Model {
   static async mount() {
     const collection = this.database.getCollection('workflows');
     const workflows = await collection.repository.find({
-      filter: { enabled: true }
+      filter: { enabled: true },
     });
 
     workflows.forEach((workflow: WorkflowModel) => {
@@ -65,7 +63,7 @@ export default class WorkflowModel extends Model {
 
     const execution = await this.createExecution({
       context,
-      status: EXECUTION_STATUS.STARTED
+      status: EXECUTION_STATUS.STARTED,
     });
 
     execution.workflow = this;

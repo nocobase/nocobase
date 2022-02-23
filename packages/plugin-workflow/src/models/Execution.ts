@@ -1,18 +1,12 @@
-import {
-  Model,
-  BelongsToGetAssociationMixin,
-  HasManyGetAssociationsMixin,
-  Transaction
-} from 'sequelize';
+import { Database, Model } from '@nocobase/database';
 import parse from 'json-templates';
-
-import Database from '@nocobase/database';
-
+import { BelongsToGetAssociationMixin, HasManyGetAssociationsMixin, Transaction } from 'sequelize';
 import { EXECUTION_STATUS, JOB_STATUS } from '../constants';
 import { getInstruction } from '../instructions';
-import WorkflowModel from './Workflow';
 import FlowNodeModel from './FlowNode';
 import JobModel from './Job';
+import WorkflowModel from './Workflow';
+
 
 export interface ExecutionOptions {
   transaction?: Transaction;
@@ -54,11 +48,11 @@ export default class ExecutionModel extends Model {
   makeNodes(nodes = []) {
     this.nodes = nodes;
 
-    nodes.forEach(node => {
+    nodes.forEach((node) => {
       this.nodesMap.set(node.id, node);
     });
 
-    nodes.forEach(node => {
+    nodes.forEach((node) => {
       if (node.upstreamId) {
         node.upstream = this.nodesMap.get(node.upstreamId);
       }
@@ -70,7 +64,7 @@ export default class ExecutionModel extends Model {
   }
 
   makeJobs(jobs: Array<JobModel>) {
-    jobs.forEach(job => {
+    jobs.forEach((job) => {
       this.jobsMap.set(job.id, job);
       // TODO: should consider cycle, and from previous job
       this.jobsMapByNodeId[job.nodeId] = job.result;
@@ -79,7 +73,8 @@ export default class ExecutionModel extends Model {
 
   async prepare(options, commit = false) {
     this.options = options || {};
-    const { transaction = await (<typeof ExecutionModel>this.constructor).database.sequelize.transaction() } = this.options;
+    const { transaction = await (<typeof ExecutionModel>this.constructor).database.sequelize.transaction() } =
+      this.options;
     this.transaction = transaction;
 
     if (!this.workflow) {
@@ -92,7 +87,7 @@ export default class ExecutionModel extends Model {
 
     const jobs = await this.getJobs({
       order: [['id', 'ASC']],
-      transaction
+      transaction,
     });
 
     this.makeJobs(jobs);
@@ -108,7 +103,7 @@ export default class ExecutionModel extends Model {
     }
     await this.prepare(options);
     if (this.nodes.length) {
-      const head = this.nodes.find(item => !item.upstream);
+      const head = this.nodes.find((item) => !item.upstream);
       await this.exec(head, { result: this.context });
     } else {
       await this.exit(null);
@@ -144,7 +139,7 @@ export default class ExecutionModel extends Model {
       // for uncaught error, set to rejected
       job = {
         result: err instanceof Error ? err.toString() : err,
-        status: JOB_STATUS.REJECTED
+        status: JOB_STATUS.REJECTED,
       };
       // if previous job is from resuming
       if (prevJob && prevJob.nodeId === node.id) {
@@ -157,13 +152,13 @@ export default class ExecutionModel extends Model {
     // TODO(optimize): many checking of resuming or new could be improved
     // could be implemented separately in exec() / resume()
     if (job instanceof Model) {
-      savedJob = await job.save({ transaction: this.transaction }) as JobModel;
+      savedJob = (await job.save({ transaction: this.transaction })) as JobModel;
     } else {
       const upstreamId = prevJob instanceof Model ? prevJob.get('id') : null;
       savedJob = await this.saveJob({
         nodeId: node.id,
         upstreamId,
-        ...job
+        ...job,
       });
     }
 
@@ -214,10 +209,13 @@ export default class ExecutionModel extends Model {
   async saveJob(payload) {
     const { database } = <typeof WorkflowModel>this.constructor;
     const { model } = database.getCollection('jobs');
-    const [job] = await model.upsert({
-      ...payload,
-      executionId: this.id
-    }, { transaction: this.transaction }) as [JobModel, boolean | null];
+    const [job] = (await model.upsert(
+      {
+        ...payload,
+        executionId: this.id,
+      },
+      { transaction: this.transaction },
+    )) as [JobModel, boolean | null];
     this.jobsMap.set(job.id, job);
     this.jobsMapByNodeId[job.nodeId] = job.result;
 
@@ -256,7 +254,7 @@ export default class ExecutionModel extends Model {
   getParsedValue(value) {
     return parse(value)({
       $context: this.context,
-      $jobsMapByNodeId: this.jobsMapByNodeId
+      $jobsMapByNodeId: this.jobsMapByNodeId,
     });
   }
 }
