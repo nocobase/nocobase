@@ -12,7 +12,7 @@ export const GridFormItemInitializers = (props: any) => {
       items={[
         {
           type: 'itemGroup',
-          title: 'Display fields',
+          title: t('Display fields'),
           children: useFormItemInitializerFields(),
         },
         {
@@ -20,7 +20,7 @@ export const GridFormItemInitializers = (props: any) => {
         },
         {
           type: 'item',
-          title: 'Add text',
+          title: t('Add text'),
           component: 'GeneralInitializer',
           schema: {
             type: 'void',

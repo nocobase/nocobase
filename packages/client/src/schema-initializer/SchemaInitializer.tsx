@@ -1,7 +1,7 @@
 import { ISchema, observer } from '@formily/react';
 import { Button, Dropdown, Menu } from 'antd';
 import React, { createContext, useContext, useState } from 'react';
-import { useDesignable } from '../schema-component/hooks';
+import { useCompile, useDesignable } from '../schema-component/hooks';
 import { initializes, items } from './Initializers';
 import {
   SchemaInitializerButtonProps,
@@ -31,6 +31,7 @@ SchemaInitializer.Button = observer((props: SchemaInitializerButtonProps) => {
     style,
     ...others
   } = props;
+  const compile = useCompile();
   let { insertAdjacent, findComponent, designable } = useDesignable();
   const [visible, setVisible] = useState(false);
   const insertSchema = (schema) => {
@@ -59,14 +60,21 @@ SchemaInitializer.Button = observer((props: SchemaInitializerButtonProps) => {
                   insert: insertSchema,
                 }}
               >
-                <Component {...item} item={item} insert={insertSchema} />
+                <Component
+                  {...item}
+                  item={{
+                    ...item,
+                    title: compile(item.title),
+                  }}
+                  insert={insertSchema}
+                />
               </SchemaInitializerItemContext.Provider>
             )
           );
         }
         return (
           item?.children?.length > 0 && (
-            <Menu.ItemGroup key={`item-group-${indexA}`} title={item.title}>
+            <Menu.ItemGroup key={`item-group-${indexA}`} title={compile(item.title)}>
               {item?.children?.map((child, indexB) => {
                 if (!child.component) {
                   return null;
@@ -83,7 +91,14 @@ SchemaInitializer.Button = observer((props: SchemaInitializerButtonProps) => {
                         insert: insertSchema,
                       }}
                     >
-                      <Component {...child} item={child} insert={insertSchema} />
+                      <Component
+                        {...child}
+                        item={{
+                          ...child,
+                          title: compile(child.title),
+                        }}
+                        insert={insertSchema}
+                      />
                     </SchemaInitializerItemContext.Provider>
                   )
                 );
@@ -117,7 +132,7 @@ SchemaInitializer.Button = observer((props: SchemaInitializerButtonProps) => {
           color: '#f18b62',
         }}
       >
-        {props.children || props.title}
+        {compile(props.children || props.title)}
       </Button>
     </Dropdown>
   );
@@ -125,6 +140,7 @@ SchemaInitializer.Button = observer((props: SchemaInitializerButtonProps) => {
 
 SchemaInitializer.Item = (props: SchemaInitializerItemProps) => {
   const { index, info } = useContext(SchemaInitializerItemContext);
+  const compile = useCompile();
   const { items = [], children = info?.title, icon, onClick, ...others } = props;
   if (items?.length > 0) {
     const renderMenuItem = (items: SchemaInitializerItemOptions[]) => {
@@ -138,7 +154,7 @@ SchemaInitializer.Item = (props: SchemaInitializerItemProps) => {
         if (item.type === 'itemGroup') {
           return (
             // @ts-ignore
-            <Menu.ItemGroup eventKey={`item-group-${indexA}`} key={`item-group-${indexA}`} title={item.title}>
+            <Menu.ItemGroup eventKey={`item-group-${indexA}`} key={`item-group-${indexA}`} title={compile(item.title)}>
               {renderMenuItem(item.children)}
             </Menu.ItemGroup>
           );
@@ -146,7 +162,7 @@ SchemaInitializer.Item = (props: SchemaInitializerItemProps) => {
         if (item.type === 'subMenu') {
           return (
             // @ts-ignore
-            <Menu.SubMenu eventKey={`sub-menu-${indexA}`} key={`sub-menu-${indexA}`} title={item.title}>
+            <Menu.SubMenu eventKey={`sub-menu-${indexA}`} key={`sub-menu-${indexA}`} title={compile(item.title)}>
               {renderMenuItem(item.children)}
             </Menu.SubMenu>
           );
@@ -159,14 +175,14 @@ SchemaInitializer.Item = (props: SchemaInitializerItemProps) => {
               onClick({ ...info, item });
             }}
           >
-            {item.title}
+            {compile(item.title)}
           </Menu.Item>
         );
       });
     };
     return (
       // @ts-ignore
-      <Menu.SubMenu eventKey={index} key={index} title={children} icon={icon}>
+      <Menu.SubMenu eventKey={index} key={index} title={compile(children)} icon={icon}>
         {renderMenuItem(items)}
       </Menu.SubMenu>
     );
@@ -180,7 +196,7 @@ SchemaInitializer.Item = (props: SchemaInitializerItemProps) => {
       }}
       {...others}
     >
-      {children}
+      {compile(children)}
     </Menu.Item>
   );
 };

@@ -29,6 +29,7 @@ const InternalField: React.FC = (props) => {
     setFieldProps('title', uiSchema.title);
     setFieldProps('description', uiSchema.description);
     setFieldProps('initialValue', uiSchema.default);
+    field.readPretty = uiSchema['x-read-pretty'];
     setRequired();
     // @ts-ignore
     field.dataSource = uiSchema.enum;
