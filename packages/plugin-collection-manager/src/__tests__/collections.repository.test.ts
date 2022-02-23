@@ -119,11 +119,10 @@ describe('collections repository', () => {
       appends: ['fields'],
     });
 
-    const json = data.toJSON();
+    const json = data.get();
     json.fields = json.fields.sort((a, b) => a.sort - b.sort);
     expect(json.fields.length).toBe(7);
-
-    expect(json).toMatchObject({
+    expect(JSON.parse(JSON.stringify(json, null, 2))).toMatchObject({
       name: 'tests',
       fields: [
         {

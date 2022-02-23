@@ -18,6 +18,9 @@ export class Model<TModelAttributes extends {} = any, TCreationAttributes extend
     if (!data) {
       return data;
     }
+    if (typeof data.toJSON === 'function') {
+      data = data.toJSON();
+    }
     const db = (this.constructor as any).database as Database;
     const hidden = [];
     collection.forEachField((field) => {
