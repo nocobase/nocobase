@@ -1,3 +1,10 @@
+---
+nav:
+  path: /client
+group:
+  path: /schema-components
+---
+
 # Table
 
 表格有三个使用场景

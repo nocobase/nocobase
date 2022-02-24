@@ -12,3 +12,4 @@ coverage
 .umi
 /uploads
 .env.test
+docs-dist/

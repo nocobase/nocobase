@@ -3,6 +3,7 @@ import React, { useRef, useState } from 'react';
 import { useHistory, useRouteMatch } from 'react-router-dom';
 import {
   CurrentUser,
+  CurrentUserProvider,
   findByUid,
   findMenuItem,
   PluginManager,
@@ -12,7 +13,7 @@ import {
   useSystemSettings
 } from '../../../';
 
-export function AdminLayout(props: any) {
+const InternalAdminLayout = (props: any) => {
   const route = useRoute();
   const history = useHistory();
   const match = useRouteMatch<any>();
@@ -85,6 +86,14 @@ export function AdminLayout(props: any) {
       </Layout>
     </Layout>
   );
-}
+};
+
+export const AdminLayout = () => {
+  return (
+    <CurrentUserProvider>
+      <InternalAdminLayout />
+    </CurrentUserProvider>
+  );
+};
 
 export default AdminLayout;
