@@ -23,7 +23,7 @@ const createSchema = (collectionName) => {
         },
       },
     },
-    'x-designer': 'VoidTable.Designer',
+    'x-designer': 'Table.Void.Designer',
     'x-component': 'CardItem',
     properties: {
       actions: {
@@ -39,7 +39,7 @@ const createSchema = (collectionName) => {
       },
       table: {
         type: 'void',
-        'x-component': 'VoidTable',
+        'x-component': 'Table.Void',
         'x-component-props': {
           rowKey: 'id',
           rowSelection: {
@@ -52,9 +52,9 @@ const createSchema = (collectionName) => {
           actions: {
             type: 'void',
             title: '{{ t("Actions") }}',
-            'x-decorator': 'TableColumnActionBar',
-            'x-component': 'VoidTable.Column',
-            'x-designer': 'TableRecordActionDesigner',
+            'x-decorator': 'Table.Column.ActionBar',
+            'x-component': 'Table.Column',
+            'x-designer': 'Table.RowActionDesigner',
             'x-initializer': 'TableRecordActionInitializers',
             properties: {
               actions: {

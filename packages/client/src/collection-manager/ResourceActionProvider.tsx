@@ -4,7 +4,7 @@ import { useCollectionManager } from '.';
 import { CollectionProvider, useRecord } from '..';
 import { useAPIClient, useRequest } from '../api-client';
 
-export const ResourceActionContext = createContext<Result<any, any>>(null);
+export const ResourceActionContext = createContext<Result<any, any> & { state?: any; setState?: any }>(null);
 
 interface ResourceActionProviderProps {
   type?: 'association' | 'collection';
@@ -82,5 +82,11 @@ export const useDataSourceFromRAC = (options: any) => {
 
 export const useResourceContext = () => {
   const { type, resource, collection, association } = useContext(ResourceContext);
-  return { type, resource, collection, association, targetKey: association?.targetKey || collection?.targetKey || 'id' };
+  return {
+    type,
+    resource,
+    collection,
+    association,
+    targetKey: association?.targetKey || collection?.targetKey || 'id',
+  };
 };

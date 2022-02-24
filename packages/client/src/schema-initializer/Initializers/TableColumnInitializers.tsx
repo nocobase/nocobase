@@ -14,7 +14,7 @@ export const TableColumnInitializers = (props: any) => {
           type: 'void',
           'x-decorator': 'TableColumnDecorator',
           'x-designer': 'TableColumnDeigner',
-          'x-component': 'VoidTable.Column',
+          'x-component': 'Table.Column',
           properties: {
             [s.name]: {
               'x-read-pretty': true,

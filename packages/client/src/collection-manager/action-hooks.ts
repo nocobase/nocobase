@@ -74,12 +74,18 @@ export const useDestroyAction = () => {
 };
 
 export const useBulkDestroyAction = () => {
-  const { refresh } = useResourceActionContext();
+  const { state, setState, refresh } = useResourceActionContext();
   const { resource, targetKey } = useResourceContext();
-  const { [targetKey]: filterByTk } = useRecord();
   return {
     async run() {
-      await resource.destroy({ filterByTk });
+      await resource.destroy({
+        filter: {
+          [targetKey]: {
+            $in: state?.selectedRowKeys || [],
+          },
+        },
+      });
+      setState?.({ selectedRowKeys: [] });
       refresh();
     },
   };
@@ -117,6 +123,17 @@ export const useUpdateActionAndRefreshCM = () => {
 
 export const useDestroyActionAndRefreshCM = () => {
   const { run } = useDestroyAction();
+  const { refreshCM } = useCollectionManager();
+  return {
+    async run() {
+      await run();
+      await refreshCM();
+    },
+  };
+};
+
+export const useBulkDestroyActionAndRefreshCM = () => {
+  const { run } = useBulkDestroyAction();
   const { refreshCM } = useCollectionManager();
   return {
     async run() {

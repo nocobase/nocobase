@@ -1,9 +1,5 @@
-/**
- * title: 勾选
- */
-import { FormItem } from '@formily/antd';
 import { ISchema } from '@formily/react';
-import { ArrayTable, Input, SchemaComponent, SchemaComponentProvider } from '@nocobase/client';
+import { Input, SchemaComponent, SchemaComponentProvider, Table } from '@nocobase/client';
 import React from 'react';
 
 const schema: ISchema = {
@@ -17,24 +13,18 @@ const schema: ISchema = {
         { id: 2, name: 'Name2' },
         { id: 3, name: 'Name3' },
       ],
-      'x-decorator': 'FormItem',
-      'x-component': 'ArrayTable',
+      'x-component': 'Table.Array',
       'x-component-props': {
         rowKey: 'id',
-      },
-      'x-reactions': {
-        target: 'read',
-        fulfill: {
-          state: {
-            value: '{{$self.value}}',
-          },
+        rowSelection: {
+          type: 'checkbox',
         },
       },
       properties: {
         column1: {
           type: 'void',
           title: 'Name',
-          'x-component': 'ArrayTable.Column',
+          'x-component': 'Table.Column',
           properties: {
             name: {
               type: 'string',
@@ -45,22 +35,12 @@ const schema: ISchema = {
         },
       },
     },
-    read: {
-      type: 'array',
-      title: `阅读模式`,
-      'x-read-pretty': true,
-      'x-decorator': 'FormItem',
-      'x-component': 'ArrayTable',
-      'x-component-props': {
-        rowKey: 'id',
-      },
-    },
   },
 };
 
 export default () => {
   return (
-    <SchemaComponentProvider components={{ Input, ArrayTable, FormItem }}>
+    <SchemaComponentProvider components={{ Table, Input }}>
       <SchemaComponent schema={schema} />
     </SchemaComponentProvider>
   );
