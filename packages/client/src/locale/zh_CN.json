@@ -104,6 +104,7 @@
   "Edit": "编辑",
   "Edit collection": "编辑数据表",
   "Configure fields": "配置字段",
+  "Configure columns": "配置字段",
   "Edit field": "编辑字段",
   "Configure fields of {{title}}": "「{{title}}」的字段配置",
   "Basic": "基本类型",

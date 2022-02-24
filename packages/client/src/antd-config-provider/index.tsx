@@ -1,8 +1,8 @@
-import React, { createContext } from 'react';
-import { I18nextProvider, useTranslation } from 'react-i18next';
 import { ConfigProvider, Spin } from 'antd';
 import enUS from 'antd/lib/locale/en_US';
 import zhCN from 'antd/lib/locale/zh_CN';
+import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { useRequest } from '../api-client';
 
 export function AntdConfigProvider(props) {
@@ -19,7 +19,7 @@ export function AntdConfigProvider(props) {
           i18n.changeLanguage(data?.data?.lang);
         }
       },
-      manual: !remoteLocale,
+      manual: true, // !remoteLocale,
     },
   );
   if (loading) {

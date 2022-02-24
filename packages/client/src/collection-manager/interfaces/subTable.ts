@@ -31,6 +31,132 @@ export const subTable: IField = {
   },
   properties: {
     ...defaultProps,
+    subtable: {
+      type: 'void',
+      'x-component': 'div',
+      properties: {
+        actions: {
+          type: 'void',
+          'x-component': 'ActionBar',
+          'x-component-props': {
+            style: {
+              marginBottom: 16,
+            },
+          },
+          properties: {
+            delete: {
+              type: 'void',
+              title: '{{ t("Delete") }}',
+              'x-component': 'Action',
+              'x-component-props': {
+                useAction: '{{ useBulkDestroySubField }}',
+                confirm: {
+                  title: "{{t('Delete record')}}",
+                  content: "{{t('Are you sure you want to delete it?')}}",
+                },
+              },
+            },
+            create: {
+              type: 'void',
+              title: '{{ t("Add new") }}',
+              'x-component': 'AddSubFieldAction',
+              'x-component-props': {
+                type: 'primary',
+              },
+            },
+          },
+        },
+        children: {
+          type: 'array',
+          title: '{{t("Fields")}}',
+          'x-decorator': 'FormItem',
+          'x-component': 'Table.Array',
+          'x-component-props': {
+            pagination: false,
+            rowKey: 'name',
+            rowSelection: {
+              type: 'checkbox',
+            },
+            useSelectedRowKeys: '{{ useSelectedRowKeys }}',
+            // scroll: { x: '100%' },
+          },
+          properties: {
+            column1: {
+              type: 'void',
+              title: '{{ t("Field display name") }}',
+              'x-component': 'Table.Column',
+              properties: {
+                'uiSchema.title': {
+                  type: 'number',
+                  'x-component': 'Input',
+                  'x-read-pretty': true,
+                },
+              },
+            },
+            column2: {
+              type: 'void',
+              title: '{{ t("Field name") }}',
+              'x-decorator': 'Table.Column.Decorator',
+              'x-component': 'Table.Column',
+              properties: {
+                name: {
+                  'x-component': 'Input',
+                  'x-read-pretty': true,
+                },
+              },
+            },
+            column3: {
+              type: 'void',
+              title: '{{ t("Field interface") }}',
+              'x-decorator': 'Table.Column.Decorator',
+              'x-component': 'Table.Column',
+              properties: {
+                interface: {
+                  'x-component': 'Input',
+                  'x-read-pretty': true,
+                },
+              },
+            },
+            column4: {
+              type: 'void',
+              title: '{{ t("Actions") }}',
+              'x-component': 'Table.Column',
+              properties: {
+                actions: {
+                  type: 'void',
+                  'x-component': 'Space',
+                  'x-component-props': {
+                    split: '|',
+                  },
+                  properties: {
+                    update: {
+                      type: 'void',
+                      title: '{{ t("Edit") }}',
+                      'x-component': 'EditSubFieldAction',
+                      'x-component-props': {
+                        type: 'primary',
+                      },
+                    },
+                    delete: {
+                      type: 'void',
+                      title: '{{ t("Delete") }}',
+                      'x-component': 'Action.Link',
+                      'x-component-props': {
+                        useAction: '{{ useDestroySubField }}',
+                        confirm: {
+                          title: "{{t('Delete record')}}",
+                          content: "{{t('Are you sure you want to delete it?')}}",
+                        },
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+    },
     // children: {
     //   type: 'array',
     //   title: '{{t("Sub-table fields")}}',

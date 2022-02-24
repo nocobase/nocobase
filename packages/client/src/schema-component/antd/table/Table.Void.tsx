@@ -4,12 +4,13 @@ import { Options, Result } from 'ahooks/lib/useRequest/src/types';
 import { TablePaginationConfig, TableProps } from 'antd';
 import { cloneDeep } from 'lodash';
 import React, { useMemo } from 'react';
-import { AsyncDataProvider, useRequest } from '../../../';
+import { AsyncDataProvider, useAsyncData, useRequest } from '../../../';
 import { useAttach } from '../../hooks';
 import { TableArray } from './Table.Array';
 
 type TableVoidProps = TableProps<any> & {
   request?: any;
+  useSelectedRowKeys?: any;
   useDataSource?: (
     options?: Options<any, any> & { uid?: string },
     props?: any,
@@ -69,8 +70,13 @@ const useDef = (options, props) => {
   return useRequest(useRequestProps(props), options);
 };
 
+const useDefSelectedRowKeys = () => {
+  const result = useAsyncData();
+  return [result?.state?.selectedRowKeys, (selectedRowKeys) => result?.setState?.({ selectedRowKeys })];
+};
+
 export const TableVoid: React.FC<TableVoidProps> = observer((props) => {
-  const { useDataSource = useDef } = props;
+  const { useDataSource = useDef, useSelectedRowKeys = useDefSelectedRowKeys } = props;
   const field = useField<Field>();
   const fieldSchema = useFieldSchema();
   const form = useMemo(() => createForm(), []);
@@ -96,23 +102,16 @@ export const TableVoid: React.FC<TableVoidProps> = observer((props) => {
     },
     props,
   );
-  const others = {
-    rowSelection: props.rowSelection
-      ? {
-          type: 'checkbox',
-          ...props.rowSelection,
-          selectedRowKeys: result?.state?.selectedRowKeys || [],
-          onChange(selectedRowKeys: any[]) {
-            result?.setState?.({ selectedRowKeys });
-          },
-        }
-      : undefined,
-  };
   return (
     <AsyncDataProvider value={result}>
       <FormContext.Provider value={form}>
         <FieldContext.Provider value={f}>
-          <TableArray {...props} {...others} loading={result?.loading} pagination={usePaginationProps(props, result)} />
+          <TableArray
+            {...props}
+            useSelectedRowKeys={useSelectedRowKeys}
+            loading={result?.loading}
+            pagination={usePaginationProps(props, result)}
+          />
         </FieldContext.Provider>
       </FormContext.Provider>
     </AsyncDataProvider>

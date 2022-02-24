@@ -1,9 +1,11 @@
 import { useField, useFieldSchema } from '@formily/react';
 import React, { useLayoutEffect } from 'react';
-import { designerCss, SortableItem, useCollection, useDesignable, useDesigner } from '../../../';
+import { SortableItem, useCollection, useCompile, useDesignable, useDesigner } from '../../../';
+import { designerCss } from './Table.Column.ActionBar';
 
 export const useColumnSchema = () => {
   const { getField } = useCollection();
+  const compile = useCompile();
   const columnSchema = useFieldSchema();
   const fieldSchema = columnSchema.reduceProperties((buf, s) => {
     if (s['x-component'] === 'CollectionField') {
@@ -15,14 +17,15 @@ export const useColumnSchema = () => {
     return {};
   }
   const collectionField = getField(fieldSchema.name);
-  return { columnSchema, fieldSchema, collectionField };
+  return { columnSchema, fieldSchema, uiSchema: compile(collectionField?.uiSchema) };
 };
 
 export const TableColumnDecorator = (props) => {
   const Designer = useDesigner();
   const field = useField();
-  const { fieldSchema, collectionField } = useColumnSchema();
+  const { fieldSchema, uiSchema } = useColumnSchema();
   const { refresh } = useDesignable();
+  const compile = useCompile();
   useLayoutEffect(() => {
     if (field.title) {
       return;
@@ -30,16 +33,16 @@ export const TableColumnDecorator = (props) => {
     if (!fieldSchema) {
       return;
     }
-    if (collectionField?.uiSchema?.title) {
-      field.title = collectionField?.uiSchema?.title;
+    if (uiSchema?.title) {
+      field.title = uiSchema?.title;
     }
-  }, [collectionField?.uiSchema?.title]);
-  console.log('field.title', collectionField?.uiSchema?.title, field.title);
+  }, [uiSchema?.title]);
+  console.log('field.title', uiSchema?.title, field.title);
   return (
     <SortableItem className={designerCss}>
       <Designer />
       {/* <RecursionField name={columnSchema.name} schema={columnSchema}/> */}
-      {field.title || collectionField?.uiSchema?.title}
+      {field.title || compile(uiSchema?.title)}
       {/* <div
         onClick={() => {
           field.title = uid();

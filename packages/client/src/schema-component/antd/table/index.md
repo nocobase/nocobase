@@ -25,3 +25,5 @@ group:
 ## Table.RowSelection
 
 <code src="./demos/demo3.tsx" />
+
+<code src="./demos/demo4.tsx" />
