@@ -2,12 +2,13 @@ import { Menu } from 'antd';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { useHistory } from 'react-router-dom';
-import { useDesignable } from '..';
+import { useAPIClient, useDesignable } from '..';
 import { ProfileAction } from './ProfileAction';
 
 export const CurrentUser = () => {
   const history = useHistory();
   const { reset } = useDesignable();
+  const api = useAPIClient();
   const { i18n } = useTranslation();
   return (
     <div style={{ display: 'inline-block' }}>
@@ -27,6 +28,7 @@ export const CurrentUser = () => {
           <Menu.Divider />
           <Menu.Item
             onClick={() => {
+              api.setBearerToken(null);
               history.push('/signin');
             }}
           >

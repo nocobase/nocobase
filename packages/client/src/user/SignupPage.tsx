@@ -1,8 +1,9 @@
 import { ISchema, useForm } from '@formily/react';
 import { uid } from '@formily/shared';
+import { message } from 'antd';
 import React from 'react';
 import { useHistory } from 'react-router-dom';
-import { SchemaComponent, useCurrentDocumentTitle } from '..';
+import { SchemaComponent, useAPIClient, useCurrentDocumentTitle } from '..';
 
 const schema: ISchema = {
   type: 'object',
@@ -86,11 +87,17 @@ const schema: ISchema = {
 const useSignup = () => {
   const history = useHistory();
   const form = useForm();
+  const api = useAPIClient();
   return {
     async run() {
       await form.submit();
-      console.log(form.values);
-      // history.push('/signin');
+      await api.resource('users').signup({
+        values: form.values,
+      });
+      message.success('注册成功，即将跳转登录页');
+      setTimeout(() => {
+        history.push('/signin');
+      }, 2000);
     },
   };
 };

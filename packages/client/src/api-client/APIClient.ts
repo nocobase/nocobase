@@ -28,6 +28,8 @@ export class APIClient {
 
   services: Record<string, Result<any, any>>;
 
+  tokenKey = 'nocobaseToken';
+
   constructor(instance?: AxiosInstance | AxiosRequestConfig) {
     this.services = observable({});
     if (typeof instance === 'function') {
@@ -35,16 +37,21 @@ export class APIClient {
     } else {
       this.axios = axios.create(instance);
     }
+    this.authMiddleware();
   }
 
-  setBearerToken(key = 'nocobaseToken') {
+  authMiddleware() {
     this.axios.interceptors.request.use((config) => {
-      const token = localStorage.getItem(key);
+      const token = localStorage.getItem(this.tokenKey);
       if (token) {
         config.headers['Authorization'] = `Bearer ${token}`;
       }
       return config;
     });
+  }
+
+  setBearerToken(token: any) {
+    localStorage.setItem(this.tokenKey, token || '');
   }
 
   service(uid: string): Result<any, any> {

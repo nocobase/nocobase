@@ -6,7 +6,7 @@ export function AuthLayout(props: any) {
       style={{
         maxWidth: 320,
         margin: '0 auto',
-        // paddingTop: '20vh'
+        paddingTop: '20vh',
       }}
     >
       <h1>NocoBase</h1>
