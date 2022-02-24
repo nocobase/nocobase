@@ -12,8 +12,8 @@ export const TableColumnInitializers = (props: any) => {
       wrap={(s) => {
         return {
           type: 'void',
-          'x-decorator': 'TableColumnDecorator',
-          'x-designer': 'TableColumnDeigner',
+          'x-decorator': 'Table.Column.Decorator',
+          'x-designer': 'Table.Column.Deigner',
           'x-component': 'Table.Column',
           properties: {
             [s.name]: {

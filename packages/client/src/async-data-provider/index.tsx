@@ -2,7 +2,7 @@ import { Result } from 'ahooks/lib/useRequest/src/types';
 import React, { createContext, useContext } from 'react';
 import { useRequest } from '../api-client';
 
-export const AsyncDataContext = createContext<Result<any, any>>(null);
+export const AsyncDataContext = createContext<Result<any, any> & { state?: any; setState?: any }>(null);
 
 export interface AsyncDataProviderProps {
   value?: any;

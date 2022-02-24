@@ -1,11 +1,11 @@
 import { css } from '@emotion/css';
-import { ArrayField } from '@formily/core';
+import { ArrayField, Field } from '@formily/core';
 import { observer, RecursionField, Schema, useField, useFieldSchema } from '@formily/react';
 import { Table, TableColumnProps } from 'antd';
 import cls from 'classnames';
-import React from 'react';
+import React, { useState } from 'react';
 import { DndContext } from '../..';
-import { RecordProvider, useSchemaInitializer } from '../../../';
+import { RecordProvider, useRequest, useSchemaInitializer } from '../../../';
 
 const isColumnComponent = (schema: Schema) => {
   return schema['x-component']?.endsWith('.Column') > -1;
@@ -83,13 +83,45 @@ export const components = {
   },
 };
 
+const useDef = () => {
+  const [selectedRowKeys, setSelectedRowKeys] = useState([]);
+  return [selectedRowKeys, setSelectedRowKeys];
+};
+
+const useDefDataSource = (options, props) => {
+  const field = useField<Field>();
+  return useRequest(() => {
+    return Promise.resolve({
+      data: field.value,
+    });
+  }, options);
+};
+
 export const TableArray: React.FC<any> = observer((props) => {
   const field = useField<ArrayField>();
   const columns = useTableColumns();
-  const { onChange, ...others } = props;
+  const { useSelectedRowKeys = useDef, useDataSource = useDefDataSource, onChange, ...others } = props;
+  const [selectedRowKeys, setSelectedRowKeys] = useSelectedRowKeys();
+  useDataSource({
+    onSuccess(data) {
+      field.value = data?.data || [];
+    },
+  });
+  const restProps = {
+    rowSelection: props.rowSelection
+      ? {
+          type: 'checkbox',
+          selectedRowKeys,
+          onChange(selectedRowKeys: any[]) {
+            setSelectedRowKeys(selectedRowKeys);
+          },
+          ...props.rowSelection,
+        }
+      : undefined,
+  };
   return (
     <div>
-      <Table {...others} components={components} columns={columns} dataSource={field.value?.slice()} />
+      <Table {...others} {...restProps} components={components} columns={columns} dataSource={field.value?.slice()} />
     </div>
   );
 });

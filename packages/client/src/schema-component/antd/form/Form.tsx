@@ -3,7 +3,7 @@ import { createForm } from '@formily/core';
 import { FieldContext, FormContext, observer, RecursionField, useField, useFieldSchema } from '@formily/react';
 import { Options, Result } from 'ahooks/lib/useRequest/src/types';
 import { Spin } from 'antd';
-import React, { useMemo } from 'react';
+import React, { createContext, useContext, useMemo } from 'react';
 import { useAttach, useComponent } from '../..';
 import { useRequest } from '../../../api-client';
 import { useCollection } from '../../../collection-manager';
@@ -75,9 +75,17 @@ const useDef = (opts: any = {}, props: FormProps = {}) => {
   return useRequest(useRequestProps(props), opts);
 };
 
+const FormBlockContext = createContext<any>(null);
+
+export const useFormBlockContext = () => {
+  const ctx = useContext(FormBlockContext);
+  return ctx;
+};
+
 export const Form: React.FC<FormProps> & { Designer?: any } = observer((props) => {
   const { request, effects, initialValue, useValues = useDef, ...others } = props;
   const fieldSchema = useFieldSchema();
+  const field = useField();
   const form = useMemo(() => createForm({ effects }), []);
   const result = useValues(
     {
@@ -89,14 +97,17 @@ export const Form: React.FC<FormProps> & { Designer?: any } = observer((props) =
     },
     props,
   );
+  const parent = useContext(FormBlockContext);
   return (
-    <Spin spinning={result?.loading || false}>
-      {fieldSchema['x-decorator'] === 'Form' ? (
-        <FormDecorator form={form} {...others} />
-      ) : (
-        <FormComponent form={form} {...others} />
-      )}
-    </Spin>
+    <FormBlockContext.Provider value={{ parent, form, result, field, fieldSchema }}>
+      <Spin spinning={result?.loading || false}>
+        {fieldSchema['x-decorator'] === 'Form' ? (
+          <FormDecorator form={form} {...others} />
+        ) : (
+          <FormComponent form={form} {...others} />
+        )}
+      </Spin>
+    </FormBlockContext.Provider>
   );
 });
 
