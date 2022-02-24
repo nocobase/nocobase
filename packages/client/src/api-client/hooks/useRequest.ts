@@ -1,4 +1,5 @@
 import { merge } from '@formily/shared';
+import { useSetState } from 'ahooks';
 import { default as useReq } from 'ahooks/lib/useRequest';
 import { Options } from 'ahooks/lib/useRequest/src/types';
 import { AxiosRequestConfig } from 'axios';
@@ -20,6 +21,9 @@ export function useRequest<P>(
   service: AxiosRequestConfig<P> | ResourceActionOptions<P> | FunctionService,
   options: Options<any, any> & { uid?: string } = {},
 ) {
+  // 缓存用途
+  const [state, setState] = useSetState({});
+  console.log('state, setState', state);
   const api = useContext(APIClientContext);
   if (typeof service === 'function') {
     const result = useReq(service, {
@@ -31,7 +35,7 @@ export function useRequest<P>(
         }
       },
     });
-    return result;
+    return { ...result, state, setState };
   }
   const result = useReq(
     async (params = {}) => {
@@ -56,5 +60,5 @@ export function useRequest<P>(
       },
     },
   );
-  return result;
+  return { ...result, state, setState };
 }

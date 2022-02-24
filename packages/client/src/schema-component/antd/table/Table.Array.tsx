@@ -47,11 +47,6 @@ const useTableColumns = () => {
   });
 };
 
-type ArrayTableType = React.FC<any> & {
-  Column?: React.FC<any>;
-  mixin?: (T: any) => void;
-};
-
 export const components = {
   header: {
     wrapper: (props) => {
@@ -88,7 +83,7 @@ export const components = {
   },
 };
 
-export const ArrayTable: ArrayTableType = observer((props) => {
+export const TableArray: React.FC<any> = observer((props) => {
   const field = useField<ArrayField>();
   const columns = useTableColumns();
   const { onChange, ...others } = props;
@@ -98,13 +93,3 @@ export const ArrayTable: ArrayTableType = observer((props) => {
     </div>
   );
 });
-
-ArrayTable.Column = (props) => {
-  const field = useField();
-  console.log('field.title', field.title);
-  return <div>{field.title}</div>;
-};
-
-ArrayTable.mixin = (Table: any) => {
-  Table.Column = ArrayTable.Column;
-};

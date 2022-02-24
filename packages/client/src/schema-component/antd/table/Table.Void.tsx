@@ -6,21 +6,18 @@ import { cloneDeep } from 'lodash';
 import React, { useMemo } from 'react';
 import { AsyncDataProvider, useRequest } from '../../../';
 import { useAttach } from '../../hooks';
-import { ArrayTable } from '../array-table';
-import { VoidTableDesigner } from './VoidTable.Designer';
+import { TableArray } from './Table.Array';
 
-type VoidTableProps = TableProps<any> & {
+type TableVoidProps = TableProps<any> & {
   request?: any;
-  useDataSource?: (options?: Options<any, any> & { uid?: string }, props?: any) => Result<any, any>;
-};
-
-type VoidTableType = React.FC<VoidTableProps> & {
-  Column?: React.FC<any>;
-  Designer?: any;
-  mixin?: (T: any) => void;
+  useDataSource?: (
+    options?: Options<any, any> & { uid?: string },
+    props?: any,
+  ) => Result<any, any> & { state?: any; setState?: any };
 };
 
 const usePaginationProps = (props: TableProps<any> & { request?: any }, service): TablePaginationConfig | false => {
+  console.log('f.componentProps.pagination', props);
   if (props.pagination === false) {
     return false;
   }
@@ -72,12 +69,12 @@ const useDef = (options, props) => {
   return useRequest(useRequestProps(props), options);
 };
 
-export const VoidTable: VoidTableType = observer((props) => {
+export const TableVoid: React.FC<TableVoidProps> = observer((props) => {
   const { useDataSource = useDef } = props;
   const field = useField<Field>();
   const fieldSchema = useFieldSchema();
   const form = useMemo(() => createForm(), []);
-  const f = useAttach(form.createArrayField({ name: fieldSchema.name }));
+  const f = useAttach(form.createArrayField({ ...field.props, basePath: '' }));
   const result = useDataSource(
     {
       uid: fieldSchema['x-uid'],
@@ -94,21 +91,30 @@ export const VoidTable: VoidTableType = observer((props) => {
         }
         field.componentProps.pagination.current = data?.meta?.page || 1;
         field.componentProps.pagination.pageSize = data?.meta?.pageSize || 10;
+        console.log('f.componentProps.pagination', field.componentProps.pagination);
       },
     },
     props,
   );
+  const others = {
+    rowSelection: props.rowSelection
+      ? {
+          type: 'checkbox',
+          ...props.rowSelection,
+          selectedRowKeys: result?.state?.selectedRowKeys || [],
+          onChange(selectedRowKeys: any[]) {
+            result?.setState?.({ selectedRowKeys });
+          },
+        }
+      : undefined,
+  };
   return (
     <AsyncDataProvider value={result}>
       <FormContext.Provider value={form}>
         <FieldContext.Provider value={f}>
-          <ArrayTable {...props} loading={result?.loading} pagination={usePaginationProps(props, result)} />
+          <TableArray {...props} {...others} loading={result?.loading} pagination={usePaginationProps(props, result)} />
         </FieldContext.Provider>
       </FormContext.Provider>
     </AsyncDataProvider>
   );
 });
-
-VoidTable.Designer = VoidTableDesigner;
-VoidTable.mixin = ArrayTable.mixin;
-ArrayTable.mixin(VoidTable);

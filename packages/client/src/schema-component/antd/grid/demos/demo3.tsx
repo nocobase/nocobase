@@ -9,8 +9,7 @@ import {
   Markdown,
   SchemaComponent,
   SchemaComponentProvider,
-  SchemaInitializerProvider,
-  VoidTable
+  SchemaInitializerProvider
 } from '@nocobase/client';
 import React from 'react';
 
@@ -39,7 +38,7 @@ const schema: ISchema = {
 
 export default function App() {
   return (
-    <SchemaComponentProvider components={{ BlockItem, Block, Grid, CardItem, Markdown, Form, VoidTable }}>
+    <SchemaComponentProvider components={{ BlockItem, Block, Grid, CardItem, Markdown, Form }}>
       <SchemaInitializerProvider>
         <SchemaComponent schema={schema} />
       </SchemaInitializerProvider>

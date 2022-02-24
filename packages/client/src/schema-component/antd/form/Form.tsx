@@ -104,7 +104,12 @@ Form.Designer = () => {
   const { name, title } = useCollection();
   return (
     <GeneralSchemaDesigner title={title || name}>
-      <SchemaSettings.Remove />
+      <SchemaSettings.Remove
+        removeParentsIfNoChildren
+        breakRemoveOn={{
+          'x-component': 'Grid',
+        }}
+      />
     </GeneralSchemaDesigner>
   );
 };

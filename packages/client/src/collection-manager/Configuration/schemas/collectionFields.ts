@@ -73,7 +73,7 @@ export const collectionFieldSchema: ISchema = {
       params: {
         pageSize: 50,
         filter: {},
-        // sort: ['sort'],
+        sort: ['sort'],
         appends: ['uiSchema'],
       },
     },
@@ -96,12 +96,13 @@ export const collectionFieldSchema: ISchema = {
           type: 'void',
           title: '{{ t("Delete") }}',
           'x-component': 'Action',
-          "x-component-props": {
+          'x-component-props': {
+            useAction: '{{ cm.useBulkDestroyActionAndRefreshCM }}',
             confirm: {
               title: "{{t('Delete record')}}",
               content: "{{t('Are you sure you want to delete it?')}}",
             },
-          }
+          },
         },
         create: {
           type: 'void',
@@ -116,9 +117,9 @@ export const collectionFieldSchema: ISchema = {
     table: {
       type: 'void',
       'x-uid': 'input',
-      'x-component': 'VoidTable',
+      'x-component': 'Table.Void',
       'x-component-props': {
-        rowKey: 'id',
+        rowKey: 'name',
         rowSelection: {
           type: 'checkbox',
         },
@@ -128,7 +129,7 @@ export const collectionFieldSchema: ISchema = {
         column1: {
           type: 'void',
           title: '{{ t("Field display name") }}',
-          'x-component': 'VoidTable.Column',
+          'x-component': 'Table.Column',
           properties: {
             'uiSchema.title': {
               type: 'number',
@@ -139,8 +140,8 @@ export const collectionFieldSchema: ISchema = {
         },
         column2: {
           type: 'void',
-          'x-decorator': 'TableColumnDecorator',
-          'x-component': 'VoidTable.Column',
+          'x-decorator': 'Table.Column.Decorator',
+          'x-component': 'Table.Column',
           properties: {
             name: {
               'x-component': 'CollectionField',
@@ -150,8 +151,8 @@ export const collectionFieldSchema: ISchema = {
         },
         column3: {
           type: 'void',
-          'x-decorator': 'TableColumnDecorator',
-          'x-component': 'VoidTable.Column',
+          'x-decorator': 'Table.Column.Decorator',
+          'x-component': 'Table.Column',
           properties: {
             interface: {
               'x-component': 'CollectionField',
@@ -162,7 +163,7 @@ export const collectionFieldSchema: ISchema = {
         column4: {
           type: 'void',
           title: '{{ t("Actions") }}',
-          'x-component': 'VoidTable.Column',
+          'x-component': 'Table.Column',
           properties: {
             actions: {
               type: 'void',

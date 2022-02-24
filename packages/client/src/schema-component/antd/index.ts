@@ -1,5 +1,4 @@
 export * from './action';
-export * from './array-table';
 export * from './block-item';
 export * from './calendar';
 export * from './card-item';
@@ -22,12 +21,11 @@ export * from './page';
 export * from './password';
 export * from './radio';
 export * from './record-picker';
-export * from './row-selection';
 export * from './select';
 export * from './space';
+export * from './table';
 export * from './tabs';
 export * from './time-picker';
 export * from './tree-select';
 export * from './upload';
-export * from './void-table';
 

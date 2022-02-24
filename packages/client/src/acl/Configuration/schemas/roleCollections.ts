@@ -66,7 +66,7 @@ export const roleCollectionsSchema: ISchema = {
     table1: {
       type: 'void',
       'x-uid': 'input',
-      'x-component': 'VoidTable',
+      'x-component': 'Table.Void',
       'x-component-props': {
         rowKey: 'name',
         // rowSelection: {
@@ -77,8 +77,8 @@ export const roleCollectionsSchema: ISchema = {
       properties: {
         column1: {
           type: 'void',
-          'x-decorator': 'TableColumnDecorator',
-          'x-component': 'VoidTable.Column',
+          'x-decorator': 'Table.Column.Decorator',
+          'x-component': 'Table.Column',
           properties: {
             title: {
               type: 'number',
@@ -89,8 +89,8 @@ export const roleCollectionsSchema: ISchema = {
         },
         column2: {
           type: 'void',
-          'x-decorator': 'TableColumnDecorator',
-          'x-component': 'VoidTable.Column',
+          'x-decorator': 'Table.Column.Decorator',
+          'x-component': 'Table.Column',
           properties: {
             name: {
               type: 'string',
@@ -102,7 +102,7 @@ export const roleCollectionsSchema: ISchema = {
         column3: {
           type: 'void',
           title: 'Actions',
-          'x-component': 'VoidTable.Column',
+          'x-component': 'Table.Column',
           properties: {
             actions: {
               type: 'void',

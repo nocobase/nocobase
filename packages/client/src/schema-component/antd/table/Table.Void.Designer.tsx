@@ -2,7 +2,7 @@ import React from 'react';
 import { useCollection } from '../../../collection-manager';
 import { GeneralSchemaDesigner, SchemaSettings } from '../../../schema-settings';
 
-export const VoidTableDesigner = () => {
+export const TableVoidDesigner = () => {
   const { name, title } = useCollection();
   return (
     <GeneralSchemaDesigner title={title || name}>

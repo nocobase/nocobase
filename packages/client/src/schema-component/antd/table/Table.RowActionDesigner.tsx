@@ -5,10 +5,9 @@ import React from 'react';
 import { DragHandler } from '../../../schema-component';
 import { useSchemaInitializer } from '../../../schema-initializer';
 
-export const TableRecordActionDesigner = (props: any) => {
+export const TableRowActionDesigner = (props: any) => {
   const fieldSchema = useFieldSchema();
   const { render } = useSchemaInitializer(fieldSchema['x-initializer']);
-  console.log("fieldSchema['x-initializer']", fieldSchema['x-initializer'])
   return (
     <div className={'general-schema-designer'}>
       <div className={'general-schema-designer-icons'}>

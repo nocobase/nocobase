@@ -1,7 +1,6 @@
+import { ActionParams } from '@nocobase/resourcer';
 import { Context } from '..';
 import { getRepositoryFromParams } from './utils';
-import { Repository } from '@nocobase/database';
-import { ActionParams } from '@nocobase/resourcer';
 
 export const DEFAULT_PAGE = 1;
 export const DEFAULT_PER_PAGE = 20;
@@ -41,8 +40,8 @@ async function listWithPagination(ctx: Context) {
   ctx.body = {
     count,
     rows,
-    page,
-    pageSize,
+    page: Number(page),
+    pageSize: Number(pageSize),
     totalPage: totalPage(count, pageSize),
   };
 }

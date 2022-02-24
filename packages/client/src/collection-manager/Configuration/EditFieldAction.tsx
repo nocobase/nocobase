@@ -1,3 +1,4 @@
+import { ArrayTable } from '@formily/antd';
 import { ISchema, useForm } from '@formily/react';
 import { uid } from '@formily/shared';
 import cloneDeep from 'lodash/cloneDeep';
@@ -9,7 +10,6 @@ import { ActionContext, SchemaComponent } from '../../schema-component';
 import { useUpdateAction } from '../action-hooks';
 import { useCollectionManager } from '../hooks';
 import { IField } from '../interfaces/types';
-import { ArrayTable } from './ArrayTable';
 
 const getSchema = (schema: IField): ISchema => {
   if (!schema) {

@@ -1,4 +1,5 @@
 import { PlusOutlined } from '@ant-design/icons';
+import { ArrayTable } from '@formily/antd';
 import { ISchema, useForm } from '@formily/react';
 import { uid } from '@formily/shared';
 import { Button, Dropdown, Menu } from 'antd';
@@ -9,7 +10,6 @@ import { ActionContext, SchemaComponent, useCompile } from '../../schema-compone
 import { useCreateAction } from '../action-hooks';
 import { useCollectionManager } from '../hooks';
 import { IField } from '../interfaces/types';
-import { ArrayTable } from './ArrayTable';
 import { options } from './interfaces';
 
 const getSchema = (schema: IField): ISchema => {
