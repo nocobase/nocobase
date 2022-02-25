@@ -5,9 +5,10 @@ import {
   ForeignKeyOptions,
   HasManyOptions,
   HasManyOptions as SequelizeHasManyOptions,
-  Utils
+  Utils,
 } from 'sequelize';
-import { BaseRelationFieldOptions, RelationField } from './relation-field';
+
+import { BaseRelationFieldOptions, MultipleRelationFieldOptions, RelationField } from './relation-field';
 
 export interface HasManyFieldOptions extends HasManyOptions {
   /**
@@ -136,7 +137,7 @@ export class HasManyField extends RelationField {
   }
 }
 
-export interface HasManyFieldOptions extends BaseRelationFieldOptions, SequelizeHasManyOptions {
+export interface HasManyFieldOptions extends MultipleRelationFieldOptions, SequelizeHasManyOptions {
   type: 'hasMany';
   target?: string;
 }
