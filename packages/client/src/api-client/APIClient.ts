@@ -1,6 +1,7 @@
 import { observable } from '@formily/reactive';
 import { Result } from 'ahooks/lib/useRequest/src/types';
 import axios, { AxiosInstance, AxiosRequestConfig, AxiosResponse } from 'axios';
+import qs from 'qs';
 
 export interface ActionParams {
   filterByTk?: any;
@@ -37,7 +38,20 @@ export class APIClient {
     } else {
       this.axios = axios.create(instance);
     }
+    this.qsMiddleware();
     this.authMiddleware();
+  }
+
+  qsMiddleware() {
+    this.axios.interceptors.request.use((config) => {
+      config.paramsSerializer = (params) => {
+        return qs.stringify(params, {
+          strictNullHandling: true,
+          arrayFormat: 'brackets',
+        });
+      };
+      return config;
+    });
   }
 
   authMiddleware() {

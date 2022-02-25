@@ -198,7 +198,7 @@ export function parseQuery(input: string): any {
     // 原始 query string 中如果一个键连等号“=”都没有可以被认为是 null 类型
     strictNullHandling: true,
     // 逗号分隔转换为数组
-    comma: true,
+    // comma: true,
   });
   // filter 支持 json string
   if (typeof query.filter === 'string') {
