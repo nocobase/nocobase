@@ -8,12 +8,19 @@ import {
   useDataSourceFromRAC
 } from './';
 import * as hooks from './action-hooks';
+import { DataSourceProvider, ds } from './sub-table';
 
 export const CollectionManagerSchemaComponentProvider: React.FC = (props) => {
   return (
     <SchemaComponentOptions
-      scope={{ cm: { ...hooks, useDataSourceFromRAC } }}
-      components={{ CollectionField, CollectionFieldProvider, CollectionProvider, ResourceActionProvider }}
+      scope={{ cm: { ...hooks, useDataSourceFromRAC }, ds }}
+      components={{
+        DataSourceProvider,
+        CollectionField,
+        CollectionFieldProvider,
+        CollectionProvider,
+        ResourceActionProvider,
+      }}
     >
       {props.children}
     </SchemaComponentOptions>

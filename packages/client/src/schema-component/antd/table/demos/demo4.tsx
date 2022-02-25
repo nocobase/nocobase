@@ -13,52 +13,121 @@ import React, { createContext, useContext, useState } from 'react';
 
 const DataSourceContext = createContext(null);
 
+const useSelectedRowKeys = () => {
+  const ctx = useContext(DataSourceContext);
+  return [ctx.selectedRowKeys, ctx.setSelectedRowKeys];
+};
+
+const useDataSource = (options) => {
+  const ctx = useContext(DataSourceContext);
+  return useRequest(
+    () => {
+      console.log('ctx.dataSource', ctx.dataSource);
+      return Promise.resolve({
+        data: ctx.dataSource,
+      });
+    },
+    {
+      ...options,
+      refreshDeps: [JSON.stringify(ctx.dataSource)],
+    },
+  );
+};
+
+const useCreateAction = () => {
+  const ctx = useContext(DataSourceContext);
+  return {
+    async run() {
+      console.log(ctx.dataSource);
+      const dataSource = ctx.dataSource || [];
+      dataSource.push({
+        id: uid(),
+        name: uid(),
+      });
+      ctx.setDataSource([...dataSource]);
+    },
+  };
+};
+
+const useBulkDestroyAction = () => {
+  const ctx = useContext(DataSourceContext);
+  const { selectedRowKeys, setSelectedRowKeys } = ctx;
+  return {
+    async run() {
+      const dataSource = ctx.dataSource || [];
+      ctx.setDataSource(
+        dataSource.filter((item) => {
+          return !selectedRowKeys.includes(item.id);
+        }),
+      );
+      setSelectedRowKeys([]);
+    },
+  };
+};
+
+const useUpdateAction = () => {
+  const record = useRecord();
+  // const form = useForm();
+  const ctx = useContext(DataSourceContext);
+  return {
+    async run() {
+      const dataSource = ctx.dataSource || [];
+      ctx.setDataSource([
+        ...dataSource.map((item) => {
+          if (record.id === item.id) {
+            record.name = uid();
+            return record;
+          }
+          return item;
+        }),
+      ]);
+    },
+  };
+};
+
+const useDestroyAction = () => {
+  const record = useRecord();
+  const ctx = useContext(DataSourceContext);
+  return {
+    async run() {
+      const dataSource = ctx.dataSource || [];
+      ctx.setDataSource(
+        dataSource.filter((item) => {
+          return record.id !== item.id;
+        }),
+      );
+    },
+  };
+};
+
+const ds = {
+  useSelectedRowKeys,
+  useDataSource,
+  useCreateAction,
+  useBulkDestroyAction,
+  useUpdateAction,
+  useDestroyAction,
+};
+
 const schema: ISchema = {
   type: 'object',
   properties: {
     context: {
       type: 'void',
-      'x-component': 'Context',
+      'x-component': 'DataSourceProvider',
       properties: {
         action1: {
-          title: '提交',
+          title: '添加',
           'x-component': 'Action',
           'x-component-props': {
-            useAction() {
-              const ctx = useContext(DataSourceContext);
-              return {
-                async run() {
-                  console.log(ctx.dataSource);
-                  const dataSource = ctx.dataSource || [];
-                  dataSource.push({
-                    id: uid(),
-                    name: uid(),
-                  });
-                  ctx.setDataSource([...dataSource]);
-                },
-              };
-            },
+            useAction: '{{ ds.useCreateAction }}',
           },
         },
         action2: {
           title: '删除',
           'x-component': 'Action',
           'x-component-props': {
-            useAction() {
-              const ctx = useContext(DataSourceContext);
-              const { selectedRowKeys, setSelectedRowKeys } = ctx;
-              return {
-                async run() {
-                  const dataSource = ctx.dataSource || [];
-                  ctx.setDataSource(
-                    dataSource.filter((item) => {
-                      return !selectedRowKeys.includes(item.id);
-                    }),
-                  );
-                  setSelectedRowKeys([]);
-                },
-              };
-            },
+            useAction: '{{ ds.useBulkDestroyAction }}',
           },
         },
         input: {
@@ -67,28 +136,12 @@ const schema: ISchema = {
           'x-component': 'Table.Array',
           'x-component-props': {
             rowKey: 'id',
+            pagination: false,
             rowSelection: {
               type: 'checkbox',
             },
-            useSelectedRowKeys() {
-              const ctx = useContext(DataSourceContext);
-              return [ctx.selectedRowKeys, ctx.setSelectedRowKeys];
-            },
-            useDataSource(options) {
-              const ctx = useContext(DataSourceContext);
-              return useRequest(
-                () => {
-                  console.log('ctx.dataSource', ctx.dataSource);
-                  return Promise.resolve({
-                    data: ctx.dataSource,
-                  });
-                },
-                {
-                  ...options,
-                  refreshDeps: [JSON.stringify(ctx.dataSource)],
-                },
-              );
-            },
+            useSelectedRowKeys: '{{ ds.useSelectedRowKeys }}',
+            useDataSource: '{{ ds.useDataSource }}',
           },
           properties: {
             column1: {
@@ -108,24 +161,18 @@ const schema: ISchema = {
               title: 'Actions',
               'x-component': 'Table.Column',
               properties: {
-                action: {
+                action1: {
+                  title: '编辑',
+                  'x-component': 'Action',
+                  'x-component-props': {
+                    useAction: '{{ ds.useUpdateAction }}',
+                  },
+                },
+                action2: {
                   title: '删除',
                   'x-component': 'Action',
                   'x-component-props': {
-                    useAction() {
-                      const record = useRecord();
-                      const ctx = useContext(DataSourceContext);
-                      return {
-                        async run() {
-                          const dataSource = ctx.dataSource || [];
-                          ctx.setDataSource(
-                            dataSource.filter((item) => {
-                              return record.id !== item.id;
-                            }),
-                          );
-                        },
-                      };
-                    },
+                    useAction: '{{ ds.useDestroyAction }}',
                   },
                 },
               },
@@ -137,7 +184,7 @@ const schema: ISchema = {
   },
 };
 
-const Context = observer((props) => {
+const DataSourceProvider = observer((props) => {
   const [selectedRowKeys, setSelectedRowKeys] = useState([]);
   const [dataSource, setDataSource] = useState([]);
   const service = useRequest(
@@ -174,7 +221,7 @@ const Context = observer((props) => {
 
 export default () => {
   return (
-    <SchemaComponentProvider components={{ Action, Context, Table, Input }}>
+    <SchemaComponentProvider scope={{ ds }} components={{ Action, DataSourceProvider, Table, Input }}>
       <SchemaComponent schema={schema} />
     </SchemaComponentProvider>
   );

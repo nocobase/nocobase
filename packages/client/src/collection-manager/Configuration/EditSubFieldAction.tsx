@@ -1,12 +1,13 @@
 import { ArrayTable } from '@formily/antd';
-import { ISchema } from '@formily/react';
+import { ISchema, useForm } from '@formily/react';
 import { uid } from '@formily/shared';
 import cloneDeep from 'lodash/cloneDeep';
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useAPIClient, useRequest } from '../../api-client';
 import { useRecord } from '../../record-provider';
-import { ActionContext, SchemaComponent, useActionContext, useFormBlockContext } from '../../schema-component';
+import { ActionContext, SchemaComponent } from '../../schema-component';
+import { useUpdateAction } from '../action-hooks';
 import { useCollectionManager } from '../hooks';
 import { IField } from '../interfaces/types';
 
@@ -54,7 +55,7 @@ const getSchema = (schema: IField): ISchema => {
                 'x-component': 'Action',
                 'x-component-props': {
                   type: 'primary',
-                  useAction: '{{ useUpdateSubField }}',
+                  useAction: '{{ ds.useUpdateAction }}',
                 },
               },
             },
@@ -65,23 +66,25 @@ const getSchema = (schema: IField): ISchema => {
   };
 };
 
-const useUpdateSubField = () => {
-  const { form, parent } = useFormBlockContext();
-  const ctx = useActionContext();
+const useUpdateCollectionField = () => {
+  const form = useForm();
+  const { run } = useUpdateAction();
+  const { refreshCM } = useCollectionManager();
   return {
     async run() {
       await form.submit();
-      const children = parent.form.values?.children?.slice?.();
-      parent.form.setValuesIn(
-        'children',
-        children.map((child) => {
-          if (child.name === form.values.name) {
-            return cloneDeep(form.values);
-          }
-          return child;
+      const options = form?.values?.uiSchema?.enum?.slice() || [];
+      form.setValuesIn(
+        'uiSchema.enum',
+        options.map((option) => {
+          return {
+            value: uid(),
+            ...option,
+          };
         }),
       );
-      ctx.setVisible(false);
+      await run();
+      await refreshCM();
     },
   };
 };
@@ -97,15 +100,13 @@ export const EditSubFieldAction = (props) => {
     <ActionContext.Provider value={{ visible, setVisible }}>
       <a
         onClick={async () => {
-          // const { data } = await api.resource('fields.children', record.key).get({
+          // const { data } = await api.resource('collections.fields', record.collectionName).get({
           //   filterByTk: record.name,
-          //   appends: ['uiSchema'],
+          //   appends: record.interface === 'subTable' ? ['uiSchema', 'children'] : ['uiSchema'],
           // });
           const schema = getSchema({
             ...getInterface(record.interface),
-            default: {
-              ...record,
-            },
+            default: record,
           });
           setSchema(schema);
           setVisible(true);
@@ -113,7 +114,7 @@ export const EditSubFieldAction = (props) => {
       >
         {t('Edit')}
       </a>
-      <SchemaComponent schema={schema} components={{ ArrayTable }} scope={{ useUpdateSubField }} />
+      <SchemaComponent schema={schema} components={{ ArrayTable }} scope={{ useUpdateCollectionField }} />
     </ActionContext.Provider>
   );
 };

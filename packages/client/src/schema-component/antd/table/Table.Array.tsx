@@ -121,7 +121,13 @@ export const TableArray: React.FC<any> = observer((props) => {
   };
   return (
     <div>
-      <Table {...others} {...restProps} components={components} columns={columns} dataSource={field.value?.slice()} />
+      <Table
+        {...others}
+        {...restProps}
+        components={components}
+        columns={columns}
+        dataSource={field?.value?.slice?.()}
+      />
     </div>
   );
 });
