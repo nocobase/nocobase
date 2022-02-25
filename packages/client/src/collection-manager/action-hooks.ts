@@ -79,11 +79,7 @@ export const useBulkDestroyAction = () => {
   return {
     async run() {
       await resource.destroy({
-        filter: {
-          [targetKey]: {
-            $in: state?.selectedRowKeys || [],
-          },
-        },
+        filterByTk: state?.selectedRowKeys || [],
       });
       setState?.({ selectedRowKeys: [] });
       refresh();
