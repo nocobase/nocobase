@@ -25,6 +25,9 @@ export class MagicAttributeModel extends Model {
       }
       return super.set(`${this.magicAttribute}.${key}`, value, options);
     } else {
+      if (!key) {
+        return;
+      }
       Object.keys(key).forEach((k) => {
         this.set(k, key[k], options);
       });

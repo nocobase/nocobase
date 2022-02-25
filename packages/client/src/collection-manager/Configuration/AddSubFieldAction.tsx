@@ -6,7 +6,8 @@ import { Button, Dropdown, Menu } from 'antd';
 import { cloneDeep } from 'lodash';
 import React, { useState } from 'react';
 import { useRequest } from '../../api-client';
-import { ActionContext, SchemaComponent, useActionContext, useCompile, useFormBlockContext } from '../../schema-component';
+import { RecordProvider } from '../../record-provider';
+import { ActionContext, SchemaComponent, useActionContext, useCompile } from '../../schema-component';
 import { useCollectionManager } from '../hooks';
 import { IField } from '../interfaces/types';
 import { options } from './interfaces';
@@ -61,7 +62,7 @@ const getSchema = (schema: IField): ISchema => {
                 'x-component': 'Action',
                 'x-component-props': {
                   type: 'primary',
-                  useAction: '{{ useCreateSubField }}',
+                  useAction: '{{ ds.useCreateAction }}',
                 },
               },
             },
@@ -73,17 +74,9 @@ const getSchema = (schema: IField): ISchema => {
 };
 
 const useCreateSubField = () => {
-  // const form = useForm();
-  const { form, parent } = useFormBlockContext();
   const ctx = useActionContext();
   return {
     async run() {
-      await form.submit();
-      const children = parent.form.values?.children?.slice?.();
-      children.push(cloneDeep(form.values));
-      console.log('form.values', form.values, children);
-      parent.form.setValuesIn('children', children);
-      ctx.setVisible(false);
       // const options = form?.values?.uiSchema?.enum?.slice() || [];
       // form.setValuesIn(
       //   'uiSchema.enum',
@@ -132,7 +125,9 @@ export const AddSubFieldAction = () => {
           添加字段
         </Button>
       </Dropdown>
-      <SchemaComponent schema={schema} components={{ ArrayTable }} scope={{ useCreateSubField }} />
+      <RecordProvider record={{}}>
+        <SchemaComponent schema={schema} components={{ ArrayTable }} scope={{ useCreateSubField }} />
+      </RecordProvider>
     </ActionContext.Provider>
   );
 };

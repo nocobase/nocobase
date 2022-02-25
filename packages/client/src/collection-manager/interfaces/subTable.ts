@@ -33,15 +33,15 @@ export const subTable: IField = {
     ...defaultProps,
     subtable: {
       type: 'void',
-      'x-component': 'div',
+      'x-component': 'DataSourceProvider',
       properties: {
         actions: {
           type: 'void',
           'x-component': 'ActionBar',
           'x-component-props': {
-            style: {
-              marginBottom: 16,
-            },
+            // style: {
+            //   marginBottom: 16,
+            // },
           },
           properties: {
             delete: {
@@ -49,7 +49,7 @@ export const subTable: IField = {
               title: '{{ t("Delete") }}',
               'x-component': 'Action',
               'x-component-props': {
-                useAction: '{{ useBulkDestroySubField }}',
+                useAction: '{{ ds.useBulkDestroyAction }}',
                 confirm: {
                   title: "{{t('Delete record')}}",
                   content: "{{t('Are you sure you want to delete it?')}}",
@@ -73,11 +73,15 @@ export const subTable: IField = {
           'x-component': 'Table.Array',
           'x-component-props': {
             pagination: false,
+            expandable: {
+              childrenColumnName: '__nochildren__',
+            },
             rowKey: 'name',
             rowSelection: {
               type: 'checkbox',
             },
-            useSelectedRowKeys: '{{ useSelectedRowKeys }}',
+            useSelectedRowKeys: '{{ ds.useSelectedRowKeys }}',
+            useDataSource: '{{ ds.useDataSource }}',
             // scroll: { x: '100%' },
           },
           properties: {
@@ -96,7 +100,6 @@ export const subTable: IField = {
             column2: {
               type: 'void',
               title: '{{ t("Field name") }}',
-              'x-decorator': 'Table.Column.Decorator',
               'x-component': 'Table.Column',
               properties: {
                 name: {
@@ -108,7 +111,6 @@ export const subTable: IField = {
             column3: {
               type: 'void',
               title: '{{ t("Field interface") }}',
-              'x-decorator': 'Table.Column.Decorator',
               'x-component': 'Table.Column',
               properties: {
                 interface: {
@@ -134,7 +136,7 @@ export const subTable: IField = {
                       title: '{{ t("Edit") }}',
                       'x-component': 'EditSubFieldAction',
                       'x-component-props': {
-                        type: 'primary',
+                        // useAction: '{{ ds.useUpdateAction }}',
                       },
                     },
                     delete: {
@@ -142,7 +144,7 @@ export const subTable: IField = {
                       title: '{{ t("Delete") }}',
                       'x-component': 'Action.Link',
                       'x-component-props': {
-                        useAction: '{{ useDestroySubField }}',
+                        useAction: '{{ ds.useDestroyAction }}',
                         confirm: {
                           title: "{{t('Delete record')}}",
                           content: "{{t('Are you sure you want to delete it?')}}",
