@@ -33,7 +33,7 @@ export const subTable: IField = {
     ...defaultProps,
     subtable: {
       type: 'void',
-      'x-component': 'DataSourceProvider',
+      'x-component': 'SubFieldDataSourceProvider',
       properties: {
         actions: {
           type: 'void',

@@ -23,9 +23,9 @@ export const gridRowColWrap = (schema: ISchema) => {
 export const removeTableColumn = (schema, cb) => {
   cb(schema, {
     removeParentsIfNoChildren: true,
-    breakRemoveOn: {
-      'x-component': 'ArrayTable',
-    },
+    // breakRemoveOn: (s) => {
+    //   return s['x-component'].startsWith('Table.');
+    // },
   });
 };
 
@@ -35,6 +35,24 @@ export const removeGridFormItem = (schema, cb) => {
     breakRemoveOn: {
       'x-component': 'Grid',
     },
+  });
+};
+
+const findTableColumn = (schema: Schema, key: string, action: string, deepth: number = 0) => {
+  return schema.reduceProperties((buf, s) => {
+    if (s[key] === action) {
+      return s;
+    }
+    const c = s.reduceProperties((buf, s) => {
+      if (s[key] === action) {
+        return s;
+      }
+      return buf;
+    });
+    if (c) {
+      return c;
+    }
+    return buf;
   });
 };
 
@@ -53,6 +71,7 @@ export const useTableColumnInitializerFields = () => {
             'x-component': 'CollectionField',
           },
           component: 'CollectionFieldInitializer',
+          find: findTableColumn,
           remove: removeTableColumn,
         } as SchemaInitializerItemOptions;
       })
@@ -62,6 +81,23 @@ export const useTableColumnInitializerFields = () => {
 export const useFormItemInitializerFields = () => {
   const { name, fields } = useCollection();
   return fields?.map((field) => {
+    if (field.interface === 'subTable') {
+      return {
+        type: 'item',
+        title: field?.uiSchema?.title || field.name,
+        component: 'SubTableFieldInitializer',
+        remove: removeGridFormItem,
+        field,
+        schema: {
+          type: 'void',
+          name: field.name,
+          'x-designer': 'FormItem.Designer',
+          'x-component': 'div',
+          'x-decorator': 'FormItem',
+          'x-collection-field': `${name}.${field.name}`,
+        },
+      } as SchemaInitializerItemOptions;
+    }
     return {
       type: 'item',
       title: field?.uiSchema?.title || field.name,

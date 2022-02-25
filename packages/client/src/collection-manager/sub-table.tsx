@@ -1,4 +1,5 @@
 import { observer, useForm } from '@formily/react';
+import { cloneDeep } from 'lodash';
 import React, { createContext, useContext, useState } from 'react';
 import { CollectionOptions, CollectionProvider, useActionContext, useRecord, useRequest } from '../';
 import { useAPIClient } from '../api-client';
@@ -88,11 +89,12 @@ const useCreateAction = () => {
   const { setVisible } = useActionContext();
   return {
     async run() {
-      // console.log(ctx.dataSource);
+      console.log('form.values', form.values);
       const dataSource = ctx.dataSource || [];
-      dataSource.push(form.values);
+      dataSource.push(cloneDeep(form.values));
       ctx.setDataSource([...dataSource]);
       setVisible(false);
+      await form.reset();
     },
   };
 };
@@ -159,7 +161,7 @@ export const ds = {
   useDestroyAction,
 };
 
-export const DataSourceProvider = observer((props) => {
+export const SubFieldDataSourceProvider = observer((props) => {
   const [selectedRowKeys, setSelectedRowKeys] = useState([]);
   const [dataSource, setDataSource] = useState([]);
   const record = useRecord();
@@ -200,6 +202,53 @@ export const DataSourceProvider = observer((props) => {
       <DataSourceContext.Provider
         value={{
           rowKey: 'name',
+          service,
+          dataSource,
+          setDataSource,
+          selectedRowKeys,
+          setSelectedRowKeys,
+        }}
+      >
+        {props.children}
+      </DataSourceContext.Provider>
+    </CollectionProvider>
+  );
+});
+
+export const DataSourceProvider = observer((props: any) => {
+  const { rowKey = 'id', collection, association } = props;
+  const [selectedRowKeys, setSelectedRowKeys] = useState([]);
+  const [dataSource, setDataSource] = useState([]);
+  const record = useRecord();
+  const api = useAPIClient();
+  const resourceOf = record?.[association.targetKey || 'id'];
+  console.log('record', record);
+  const service = useRequest(
+    () => {
+      if (resourceOf) {
+        return api
+          .request({
+            resource: `${collection}.${association.name}`,
+            resourceOf,
+            action: 'list',
+          })
+          .then((res) => res.data);
+      }
+      return Promise.resolve({
+        data: record?.[association.name] || [],
+      });
+    },
+    {
+      onSuccess(data) {
+        setDataSource(data?.data);
+      },
+    },
+  );
+  return (
+    <CollectionProvider name={collection}>
+      <DataSourceContext.Provider
+        value={{
+          rowKey,
           service,
           dataSource,
           setDataSource,

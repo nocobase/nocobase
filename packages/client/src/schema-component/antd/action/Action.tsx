@@ -72,7 +72,9 @@ export const Action: ComposedAction = observer((props: any) => {
     <ActionContext.Provider value={{ visible, setVisible, openMode, containerRefKey }}>
       <SortableItem
         {...others}
-        onClick={(e) => {
+        onClick={(e: React.MouseEvent) => {
+          e.preventDefault();
+          e.stopPropagation();
           const onOk = () => {
             onClick?.(e);
             setVisible(true);

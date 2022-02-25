@@ -3,7 +3,7 @@ import { CollectionContext } from './context';
 import { useCollectionManager } from './hooks';
 import { CollectionOptions } from './types';
 
-export const CollectionProvider: React.FC<{ name?: string; collection: CollectionOptions }> = (props) => {
+export const CollectionProvider: React.FC<{ name?: string; collection?: CollectionOptions }> = (props) => {
   const { name, collection, children } = props;
   const { get } = useCollectionManager();
   return (

@@ -39,7 +39,7 @@ interface ItemOptions extends ItemCommonOptions {
   component?: any;
   schema?: ISchema;
   remove?: (schema: Schema, cb: RemoveCallback) => void;
-  find?: (schema: Schema, current: string) => Schema | null | undefined;
+  find?: (schema: Schema, key?: string, current?: string) => Schema | null | undefined;
   [key: string]: any;
 }
 

@@ -12,7 +12,6 @@ export const TableRecordActionInitializers = (props: any) => {
   const api = useAPIClient();
   const { refresh } = useDesignable();
   const { t } = useTranslation();
-  console.log('TableRecordActionInitializers');
   return (
     <SchemaInitializer.Button
       className={css`
@@ -118,7 +117,7 @@ export const TableRecordActionInitializers = (props: any) => {
                       grid: {
                         type: 'void',
                         'x-component': 'Grid',
-                        'x-item-initializer': 'FormItemInitializer',
+                        'x-initializer': 'GridFormItemInitializers',
                         properties: {},
                       },
                       footer: {
@@ -127,7 +126,7 @@ export const TableRecordActionInitializers = (props: any) => {
                         properties: {
                           actions: {
                             type: 'void',
-                            'x-action-initializer': 'PopupFormActionInitializer',
+                            'x-initializer': 'PopupFormActionInitializers',
                             'x-decorator': 'DndContext',
                             'x-component': 'ActionBar',
                             'x-component-props': {
