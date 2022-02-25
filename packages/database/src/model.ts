@@ -34,7 +34,7 @@ export class Model<TModelAttributes extends {} = any, TCreationAttributes extend
   }
 
   JSONTransformers(): JSONTransformer[] {
-    return [this.toJsonWithoutHiddenFields, this.sortAssociations];
+    return [this.sortAssociations, this.toJsonWithoutHiddenFields];
   }
 
   private sortAssociations(data, { collection, model, db }: JSONTransformerOptions): any {
