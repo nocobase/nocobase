@@ -1,5 +1,5 @@
 import { mockDatabase } from '@nocobase/test';
-import { Database } from '..';
+import { Database } from '../../index';
 
 describe('associated field order', () => {
   let db: Database;
