@@ -38,7 +38,7 @@ const InternalField: React.FC = (props) => {
   if (!uiSchema) {
     return null;
   }
-  return React.createElement(component, props);
+  return React.createElement(component, props, props.children);
 };
 
 export const CollectionField = connect((props) => {

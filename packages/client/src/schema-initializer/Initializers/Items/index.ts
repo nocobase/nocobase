@@ -5,5 +5,6 @@ export * from './CollectionFieldInitializer';
 export * from './FormBlockInitializer';
 export * from './GeneralInitializer';
 export * from './MarkdownBlockInitializer';
+export * from './SubTableFieldInitializer';
 export * from './TableBlockInitializer';
 
