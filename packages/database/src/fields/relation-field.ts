@@ -2,6 +2,10 @@ import { BaseFieldOptions, Field } from './field';
 
 export interface BaseRelationFieldOptions extends BaseFieldOptions {}
 
+export interface MultipleRelationFieldOptions extends BaseRelationFieldOptions {
+  sortBy?: string | string[];
+}
+
 export abstract class RelationField extends Field {
   /**
    * target relation name

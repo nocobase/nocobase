@@ -26,7 +26,6 @@ export const SubTableFieldInitializer = (props) => {
               type: 'void',
               'x-component': 'DataSourceProvider',
               'x-component-props': {
-                rowKey: 'id',
                 collection: item?.field?.target,
                 association: {
                   name: item.field.name,
@@ -127,7 +126,6 @@ export const SubTableFieldInitializer = (props) => {
                     expandable: {
                       childrenColumnName: '__nochildren__',
                     },
-                    rowKey: 'id',
                     rowSelection: {
                       type: 'checkbox',
                     },
@@ -142,7 +140,7 @@ export const SubTableFieldInitializer = (props) => {
                       'x-decorator': 'Table.Column.ActionBar',
                       'x-component': 'Table.Column',
                       'x-designer': 'Table.RowActionDesigner',
-                      'x-initializer': 'TableRecordActionInitializers',
+                      'x-initializer': 'TableFieldRecordActionInitializers',
                       properties: {
                         actions: {
                           type: 'void',
