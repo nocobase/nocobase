@@ -2,9 +2,9 @@ import { observer, useFieldSchema } from '@formily/react';
 import { Switch } from 'antd';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { useCollection } from '../../../collection-manager';
-import { SchemaInitializer } from '../../../schema-initializer';
-import { useDesignable } from '../../hooks';
+import { useCollection } from '../../../../collection-manager';
+import { SchemaInitializer } from '../../../../schema-initializer';
+import { useDesignable } from '../../../hooks';
 
 export const ActionInitializer = observer((props: any) => {
   const { name: collectName } = useCollection();

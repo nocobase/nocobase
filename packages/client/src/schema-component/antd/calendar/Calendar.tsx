@@ -9,11 +9,9 @@ import { SchemaComponent } from '../..';
 import { AsyncDataProvider, RecordProvider, useRequest } from '../../../';
 import { i18n } from '../../../i18n';
 import { ActionBar, ActionContext } from '../action';
-import { ActionInitializer } from './ActionInitializer';
 import { CalendarContext, ToolbarContext } from './context';
 import { Event } from './Event';
 import { Filter } from './Filter';
-import { FooterActionInitializer } from './FooterActionInitializer';
 import { Nav } from './Nav';
 import './style.less';
 import { Title } from './Title';
@@ -120,11 +118,13 @@ export const Calendar: any = observer((props: any) => {
     <AsyncDataProvider value={result}>
       <CalendarContext.Provider value={{ field, props, record }}>
         <div {...props} style={{ height: 700 }}>
-          <ActionContext.Provider value={{ visible, setVisible }}>
-            <RecordProvider record={record}>
-              <SchemaComponent memoized name={eventSchema.name} schema={eventSchema as any} />
-            </RecordProvider>
-          </ActionContext.Provider>
+          {eventSchema && (
+            <ActionContext.Provider value={{ visible, setVisible }}>
+              <RecordProvider record={record}>
+                <SchemaComponent memoized name={eventSchema.name} schema={eventSchema as any} />
+              </RecordProvider>
+            </ActionContext.Provider>
+          )}
           <BigCalendar
             popup
             selectable
@@ -170,10 +170,6 @@ export const Calendar: any = observer((props: any) => {
     </AsyncDataProvider>
   );
 });
-
-Calendar.ActionInitializer = ActionInitializer;
-
-Calendar.FooterActionInitializer = FooterActionInitializer;
 
 Calendar.ActionBar = ActionBar;
 
