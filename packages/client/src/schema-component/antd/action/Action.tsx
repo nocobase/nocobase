@@ -3,7 +3,6 @@ import { observer, useField } from '@formily/react';
 import { Button, Modal } from 'antd';
 import classnames from 'classnames';
 import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
 import { GeneralSchemaDesigner, SchemaSettings } from '../../../schema-settings';
 import { SortableItem } from '../../common';
 import { useDesigner } from '../../hooks';
@@ -114,7 +113,7 @@ Action.Designer = () => {
 };
 
 Action.Link = observer((props) => {
-  return <Action {...props} component={Link} className={'nb-action-link'} />;
+  return <Action {...props} component={'a'} className={'nb-action-link'} />;
 });
 
 Action.Drawer = ActionDrawer;

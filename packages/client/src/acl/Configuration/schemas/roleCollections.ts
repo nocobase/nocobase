@@ -30,6 +30,20 @@ const collection = {
       } as ISchema,
     },
     {
+      type: 'string',
+      name: 'usingConfig',
+      interface: 'input',
+      uiSchema: {
+        title: '权限策略',
+        type: 'string',
+        'x-component': 'Select',
+        enum: [
+          { label: '单独配置', value: 'resourceAction', color: 'orange' },
+          { label: '通用配置', value: 'strategy', color: 'default' },
+        ],
+      } as ISchema,
+    },
+    {
       type: 'hasMany',
       name: 'fields',
       target: 'fields',
@@ -101,6 +115,18 @@ export const roleCollectionsSchema: ISchema = {
         },
         column3: {
           type: 'void',
+          'x-decorator': 'Table.Column.Decorator',
+          'x-component': 'Table.Column',
+          properties: {
+            usingConfig: {
+              type: 'string',
+              'x-component': 'CollectionField',
+              'x-read-pretty': true,
+            },
+          },
+        },
+        column4: {
+          type: 'void',
           title: 'Actions',
           'x-component': 'Table.Column',
           properties: {
@@ -136,6 +162,14 @@ export const roleCollectionsSchema: ISchema = {
                             { value: false, label: '使用通用权限' },
                             { value: true, label: '单独配置权限' },
                           ],
+                          'x-reactions': {
+                            target: 'actions',
+                            fulfill: {
+                              state: {
+                                hidden: '{{!$self.value}}',
+                              },
+                            },
+                          },
                         },
                         actions: {
                           'x-component': 'RolesResourcesActions',

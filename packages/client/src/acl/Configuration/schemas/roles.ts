@@ -28,6 +28,16 @@ const collection = {
         description: '使用英文',
       } as ISchema,
     },
+    {
+      type: 'boolean',
+      name: 'default',
+      interface: 'boolean',
+      uiSchema: {
+        title: '默认角色',
+        type: 'boolean',
+        'x-component': 'Checkbox',
+      } as ISchema,
+    },
   ],
 };
 
@@ -44,7 +54,7 @@ export const roleSchema: ISchema = {
           resource: 'roles',
           action: 'list',
           params: {
-            pageSize: 5,
+            pageSize: 50,
             filter: {},
             sort: ['createdAt'],
             appends: [],
@@ -89,6 +99,10 @@ export const roleSchema: ISchema = {
                       'x-decorator': 'FormItem',
                     },
                     name: {
+                      'x-component': 'CollectionField',
+                      'x-decorator': 'FormItem',
+                    },
+                    default: {
                       'x-component': 'CollectionField',
                       'x-decorator': 'FormItem',
                     },
@@ -156,6 +170,18 @@ export const roleSchema: ISchema = {
               },
             },
             column3: {
+              type: 'void',
+              'x-decorator': 'Table.Column.Decorator',
+              'x-component': 'Table.Column',
+              properties: {
+                default: {
+                  type: 'string',
+                  'x-component': 'CollectionField',
+                  'x-read-pretty': true,
+                },
+              },
+            },
+            column4: {
               type: 'void',
               title: 'Actions',
               'x-component': 'Table.Column',
@@ -245,6 +271,10 @@ export const roleSchema: ISchema = {
                               'x-component': 'CollectionField',
                               'x-decorator': 'FormItem',
                               'x-disabled': true,
+                            },
+                            default: {
+                              'x-component': 'CollectionField',
+                              'x-decorator': 'FormItem',
                             },
                             footer: {
                               type: 'void',
