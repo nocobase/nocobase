@@ -9,16 +9,18 @@ import { defaultFieldNames, getCurrentOptions } from './shared';
 
 type Props = SelectProps<any, any> & { objectValue?: boolean; onChange?: (v: any) => void };
 
+const isEmptyObject = (val: any) => !isValid(val) || (typeof val === 'object' && Object.keys(val).length === 0);
+
 const ObjectSelect = (props: Props) => {
   const { value, options, onChange, fieldNames, mode, ...others } = props;
   const toValue = (v: any) => {
-    if (!isValid(v)) {
+    if (isEmptyObject(v)) {
       return;
     }
     const values = toArr(v).map((val) => {
       return typeof val === 'object' ? val[fieldNames.value] : val;
     });
-    const current = getCurrentOptions(values, options, fieldNames).map((val) => {
+    const current = getCurrentOptions(values, options, fieldNames)?.map((val) => {
       return {
         label: val[fieldNames.label],
         value: val[fieldNames.value],
