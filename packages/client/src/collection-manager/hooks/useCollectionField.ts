@@ -16,6 +16,7 @@ export const useCollectionField = () => {
   }
   const resourceName = `${ctx?.collectionName || collection?.name}.${ctx.name}`;
   const resource = api?.resource(resourceName, record[ctx.sourceKey]);
+  debugger;
   return {
     ...ctx,
     uiSchema: compile(ctx.uiSchema),

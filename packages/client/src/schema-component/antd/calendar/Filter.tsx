@@ -1,14 +1,12 @@
-import { FormButtonGroup, Submit } from '@formily/antd';
 import { createForm } from '@formily/core';
-import { FormProvider, observer, useFieldSchema } from '@formily/react';
-import { Button, Popover } from 'antd';
+import { observer, useFieldSchema } from '@formily/react';
 import flatten from 'flat';
 import React, { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { SchemaComponent } from '../../core';
 import { useDesignable } from '../../hooks';
 import { useCompile } from '../../hooks/useCompile';
-import { IconPicker } from '../icon-picker';
+import { FilterContext } from '../filter/context';
 
 export const Filter = observer((props: any) => {
   const { t } = useTranslation();
@@ -25,45 +23,19 @@ export const Filter = observer((props: any) => {
     properties[p.name] = p;
   });
   return (
-    <Popover
-      trigger={['click']}
-      placement={'bottomLeft'}
-      visible={visible}
-      onVisibleChange={setVisible}
-      content={
-        <div>
-          <FormProvider form={form}>
-            <SchemaComponent
-              schema={{
-                type: 'object',
-                properties: {
-                  filter: {
-                    type: 'object',
-                    'x-component': 'Filter',
-                    properties,
-                  },
-                },
-              }}
-            />
-            <FormButtonGroup align={'right'}>
-              <Submit
-                onSubmit={() => {
-                  const { filter } = form.values;
-                  console.log('Table.Filter', form.values);
-                  setVisible(false);
-                }}
-              >
-                {t('Submit')}
-              </Submit>
-            </FormButtonGroup>
-          </FormProvider>
-        </div>
-      }
-    >
-      <Button icon={<IconPicker type={icon} />}>
-        {count > 0 ? t('{{count}} filter items', { count }) : compile(filedSchema.title)}
-        <DesignableBar />
-      </Button>
-    </Popover>
+    <FilterContext.Provider value={{ visible, setVisible }}>
+      <SchemaComponent
+        schema={{
+          type: 'void',
+          properties: {
+            filter: {
+              type: 'object',
+              title: t('Filter'),
+              'x-component': 'Filter.Action',
+            },
+          },
+        }}
+      />
+    </FilterContext.Provider>
   );
 });

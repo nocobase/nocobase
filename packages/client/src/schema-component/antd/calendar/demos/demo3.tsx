@@ -7,6 +7,7 @@ import { uid } from '@formily/shared';
 import {
   AntdSchemaComponentProvider,
   CollectionField,
+  CollectionManagerProvider,
   CollectionProvider,
   SchemaComponent,
   SchemaComponentProvider,
@@ -56,6 +57,13 @@ const schema = {
           'x-action': 'calendar:viewSelect',
           'x-align': 'right',
         },
+        filter: {
+          type: 'void',
+          title: '过滤',
+          'x-align': 'right',
+          'x-component': 'Calendar.Filter',
+          'x-action': 'calendar:filter',
+        },
       },
     },
     event: {
@@ -98,9 +106,9 @@ const collection = {
       type: 'string',
       name: 'id',
       interface: 'input',
+      title: 'id',
       uiSchema: {
         type: 'string',
-        title: 'id',
         'x-component': 'Input',
       },
     },
@@ -108,9 +116,9 @@ const collection = {
       type: 'string',
       name: 'title',
       interface: 'input',
+      title: '标题',
       uiSchema: {
         type: 'string',
-        title: '标题',
         'x-component': 'Input',
       },
     },
@@ -118,9 +126,9 @@ const collection = {
       type: 'string',
       name: 'start',
       interface: 'datetime',
+      title: '开始时间',
       uiSchema: {
         type: 'string',
-        title: '开始时间',
         'x-component': 'DatePicker',
         'x-component-props': {
           dateFormat: 'YYYY-MM-DD',
@@ -131,9 +139,9 @@ const collection = {
       type: 'string',
       name: 'end',
       interface: 'datetime',
+      title: '结束时间',
       uiSchema: {
         type: 'string',
-        title: '结束时间',
         'x-component': 'DatePicker',
         'x-component-props': {
           dateFormat: 'YYYY-MM-DD',
@@ -144,14 +152,16 @@ const collection = {
 };
 export default () => {
   return (
-    <CollectionProvider collection={collection}>
-      <SchemaComponentProvider designable={true} components={{ CollectionField }}>
-        <SchemaInitializerProvider>
-          <AntdSchemaComponentProvider>
-            <SchemaComponent schema={schema} />
-          </AntdSchemaComponentProvider>
-        </SchemaInitializerProvider>
-      </SchemaComponentProvider>
-    </CollectionProvider>
+    <CollectionManagerProvider>
+      <CollectionProvider collection={collection}>
+        <SchemaComponentProvider designable={true} components={{ CollectionField }}>
+          <SchemaInitializerProvider>
+            <AntdSchemaComponentProvider>
+              <SchemaComponent schema={schema} />
+            </AntdSchemaComponentProvider>
+          </SchemaInitializerProvider>
+        </SchemaComponentProvider>
+      </CollectionProvider>
+    </CollectionManagerProvider>
   );
 };
