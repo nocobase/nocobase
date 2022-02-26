@@ -47,7 +47,7 @@ export const RoleConfigure = () => {
             'x-component': 'Checkbox',
             'x-content': '允许配置系统，包括界面配置、数据表配置、权限配置、系统配置等全部配置项',
           },
-          strategy: {
+          'strategy.actions': {
             title: '通用数据操作权限',
             description: '所有数据表都默认使用通用数据操作权限；同时，可以针对每个数据表单独配置权限。',
             'x-component': 'StrategyActions',
