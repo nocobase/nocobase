@@ -10,6 +10,7 @@ export const useRoleResourceValues = (options) => {
       resourceOf: record.roleName,
       action: 'get',
       params: {
+        appends: ['actions', 'actions.scope'],
         filterByTk: record.name,
       },
     },
@@ -17,6 +18,9 @@ export const useRoleResourceValues = (options) => {
   );
   useEffect(() => {
     if (record.usingConfig === 'strategy') {
+      options.onSuccess({
+        data: {},
+      });
       return;
     }
     if (visible) {
