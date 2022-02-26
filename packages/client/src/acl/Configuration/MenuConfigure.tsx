@@ -1,15 +1,34 @@
-import { Checkbox, Table } from 'antd';
-import React from 'react';
+import { Checkbox, message, Table } from 'antd';
+import React, { useState } from 'react';
 import { useMenuItems } from '.';
-import { useRecord } from '../..';
-import { useAPIClient } from '../../api-client';
+import { useAPIClient, useRequest } from '../../api-client';
+import { useRecord } from '../../record-provider';
 
 export const MenuConfigure = () => {
   const record = useRecord();
   const api = useAPIClient();
   const items = useMenuItems();
+  const [uids, setUids] = useState([]);
+  const { loading, refresh } = useRequest(
+    {
+      resource: 'roles.menuUiSchemas',
+      resourceOf: record.name,
+      action: 'list',
+      params: {
+        paginate: false,
+      },
+    },
+    {
+      onSuccess(data) {
+        setUids(data?.data?.map((schema) => schema['x-uid']) || []);
+      },
+    },
+  );
+  const resource = api.resource('roles.menuUiSchemas', record.name);
+  const allChecked = items.length === uids.length;
   return (
     <Table
+      loading={loading}
       rowKey={'uid'}
       pagination={false}
       expandable={{
@@ -24,21 +43,53 @@ export const MenuConfigure = () => {
           dataIndex: 'accessible',
           title: (
             <>
-              <Checkbox /> 允许访问
+              <Checkbox
+                checked={allChecked}
+                onChange={async (value) => {
+                  if (allChecked) {
+                    await resource.set({
+                      values: [],
+                    });
+                  } else {
+                    await resource.set({
+                      values: items.map((item) => item.uid),
+                    });
+                  }
+                  refresh();
+                  message.success('保存成功');
+                }}
+              />{' '}
+              允许访问
             </>
           ),
-          render: (_, schema) => (
-            <Checkbox
-              onChange={async (e) => {
-                await api.request({
-                  url: `roles/${record.name}/menuUiSchemas:toggle/${schema.uid}`,
-                });
-              }}
-            />
-          ),
+          render: (checked, schema) => {
+            return (
+              <Checkbox
+                checked={checked}
+                onChange={async (e) => {
+                  if (checked) {
+                    const index = uids.indexOf(schema.uid);
+                    uids.splice(index, 1);
+                    setUids([...uids]);
+                  } else {
+                    setUids((prev) => [...prev, schema.uid]);
+                  }
+                  await resource.toggle({
+                    values: {
+                      tk: schema.uid,
+                    },
+                  });
+                  message.success('保存成功');
+                }}
+              />
+            );
+          },
         },
       ]}
-      dataSource={items}
+      dataSource={items.map((item) => {
+        const accessible = uids.includes(item.uid);
+        return { ...item, accessible };
+      })}
     />
   );
 };
