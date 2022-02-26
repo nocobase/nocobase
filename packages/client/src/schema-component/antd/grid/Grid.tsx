@@ -121,9 +121,11 @@ const useColProperties = () => {
 };
 
 export const Grid: any = observer((props) => {
+  debugger;
   const field = useField();
   const fieldSchema = useFieldSchema();
   const { render } = useSchemaInitializer(fieldSchema['x-initializer']);
+  debugger;
   const addr = field.address.toString();
   const rows = useRowProperties();
   return (
