@@ -3,6 +3,8 @@ export interface AvailableActionOptions {
   type: 'new-data' | 'old-data';
   displayName?: string;
   resource?: string;
+  onNewRecord?: boolean;
+  allowConfigureFields?: boolean;
 }
 
 export class AclAvailableAction {
