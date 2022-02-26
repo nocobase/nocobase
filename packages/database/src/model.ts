@@ -68,10 +68,7 @@ export class Model<TModelAttributes extends {} = any, TCreationAttributes extend
           };
 
           if (['HasMany', 'BelongsToMany'].includes(association.associationType)) {
-            result[key] = handleArray(
-              data[key].map((item) => traverseJSON(item, opts)),
-              opts,
-            );
+            result[key] = handleArray(data[key], opts).map((item) => traverseJSON(item, opts));
           } else {
             result[key] = traverseJSON(data[key], opts);
           }

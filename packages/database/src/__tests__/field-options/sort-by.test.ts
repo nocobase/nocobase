@@ -24,6 +24,26 @@ describe('associated field order', () => {
           name: 'posts',
           sortBy: 'title',
         },
+        {
+          type: 'hasMany',
+          name: 'records',
+          sortBy: 'count',
+        },
+      ],
+    });
+
+    db.collection({
+      name: 'records',
+      fields: [
+        {
+          type: 'integer',
+          name: 'count',
+          hidden: true,
+        },
+        {
+          type: 'string',
+          name: 'name',
+        },
       ],
     });
 
@@ -113,5 +133,28 @@ describe('associated field order', () => {
 
     const postCTags = u1Posts[2]['tags'];
     expect(postCTags.map((p) => p['name'])).toEqual(['a', 'b', 'c']);
+  });
+
+  it('should sortBy hidden field', async () => {
+    await db.getRepository('users').create({
+      values: {
+        name: 'u1',
+        records: [
+          { count: 3, name: 'c' },
+          { count: 2, name: 'b' },
+          { count: 1, name: 'a' },
+        ],
+      },
+    });
+
+    const u1 = await db.getRepository('users').findOne({
+      appends: ['records'],
+    });
+
+    const u1Json = u1.toJSON();
+
+    const u1Records = u1Json['records'];
+    expect(u1Records[0].count).toBeUndefined();
+    expect(u1Records.map((p) => p['name'])).toEqual(['a', 'b', 'c']);
   });
 });
