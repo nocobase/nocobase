@@ -7,7 +7,7 @@ import { SchemaInitializer } from '../..';
 import { useAPIClient } from '../../api-client';
 import { createDesignable, useDesignable } from '../../schema-component';
 
-export const TableRecordActionInitializers = (props: any) => {
+export const TableFieldRecordActionInitializers = (props: any) => {
   const fieldSchema = useFieldSchema();
   const api = useAPIClient();
   const { refresh } = useDesignable();
@@ -126,6 +126,7 @@ export const TableRecordActionInitializers = (props: any) => {
                         properties: {
                           actions: {
                             type: 'void',
+                            'x-decorator': 'DndContext',
                             'x-component': 'ActionBar',
                             'x-component-props': {
                               layout: 'one-column',
@@ -145,7 +146,7 @@ export const TableRecordActionInitializers = (props: any) => {
                                 'x-component': 'Action',
                                 'x-component-props': {
                                   type: 'primary',
-                                  useAction: '{{ cm.useUpdateAction }}',
+                                  useAction: '{{ ds.useUpdateAction }}',
                                 },
                               },
                             },
@@ -171,7 +172,7 @@ export const TableRecordActionInitializers = (props: any) => {
                     title: "{{t('Delete record')}}",
                     content: "{{t('Are you sure you want to delete it?')}}",
                   },
-                  useAction: '{{ cm.useDestroyAction }}',
+                  useAction: '{{ ds.useDestroyAction }}',
                 },
               },
             },

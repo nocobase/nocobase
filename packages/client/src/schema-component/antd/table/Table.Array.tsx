@@ -5,7 +5,7 @@ import { Table, TableColumnProps } from 'antd';
 import cls from 'classnames';
 import React, { useState } from 'react';
 import { DndContext } from '../..';
-import { RecordProvider, useRequest, useSchemaInitializer } from '../../../';
+import { RecordIndexProvider, RecordProvider, useRequest, useSchemaInitializer } from '../../../';
 
 const isColumnComponent = (schema: Schema) => {
   return schema['x-component']?.endsWith('.Column') > -1;
@@ -29,9 +29,11 @@ const useTableColumns = () => {
         render: (v, record) => {
           const index = field.value?.indexOf(record);
           return (
-            <RecordProvider record={record}>
-              <RecursionField schema={s} name={index} onlyRenderProperties />
-            </RecordProvider>
+            <RecordIndexProvider index={index}>
+              <RecordProvider record={record}>
+                <RecursionField schema={s} name={index} onlyRenderProperties />
+              </RecordProvider>
+            </RecordIndexProvider>
           );
         },
       } as TableColumnProps<any>;
@@ -119,9 +121,15 @@ export const TableArray: React.FC<any> = observer((props) => {
         }
       : undefined,
   };
+
+  const defaultRowKey = (record: any) => {
+    return field.value?.indexOf?.(record);
+  };
+
   return (
     <div>
       <Table
+        rowKey={defaultRowKey}
         {...others}
         {...restProps}
         components={components}
