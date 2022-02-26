@@ -1,7 +1,7 @@
 import { observer, useForm } from '@formily/react';
 import { cloneDeep } from 'lodash';
 import React, { createContext, useContext, useState } from 'react';
-import { CollectionOptions, CollectionProvider, useActionContext, useRecord, useRequest } from '../';
+import { CollectionOptions, CollectionProvider, useActionContext, useRecord, useRecordIndex, useRequest } from '../';
 import { useAPIClient } from '../api-client';
 import { options } from './Configuration/interfaces';
 
@@ -104,10 +104,10 @@ const useBulkDestroyAction = () => {
   const { selectedRowKeys, setSelectedRowKeys } = ctx;
   return {
     async run() {
-      const dataSource = ctx.dataSource || [];
+      const dataSource: any[] = ctx.dataSource || [];
       ctx.setDataSource(
-        dataSource.filter((item) => {
-          return !selectedRowKeys.includes(item[ctx.rowKey]);
+        dataSource.filter((_, index) => {
+          return !selectedRowKeys.includes(index);
         }),
       );
       setSelectedRowKeys([]);
@@ -116,16 +116,15 @@ const useBulkDestroyAction = () => {
 };
 
 const useUpdateAction = () => {
-  const record = useRecord();
+  const recordIndex = useRecordIndex();
   const form = useForm();
   const { setVisible } = useActionContext();
   const ctx = useContext(DataSourceContext);
   return {
     async run() {
-      const dataSource = ctx?.dataSource || [];
-      const rowKey = ctx?.rowKey;
-      const values = dataSource.map((item) => {
-        if (record[rowKey] === item[rowKey]) {
+      const dataSource: any[] = ctx?.dataSource || [];
+      const values = dataSource.map((item, index) => {
+        if (index === recordIndex) {
           return { ...form.values };
         }
         return item;
@@ -137,15 +136,14 @@ const useUpdateAction = () => {
 };
 
 const useDestroyAction = () => {
-  const record = useRecord();
+  const recordIndex = useRecordIndex();
   const ctx = useContext(DataSourceContext);
   return {
     async run() {
-      const rowKey = ctx.rowKey;
-      const dataSource = ctx.dataSource || [];
+      const dataSource: any[] = ctx.dataSource || [];
       ctx.setDataSource(
-        dataSource.filter((item) => {
-          return record[rowKey] !== item[rowKey];
+        dataSource.filter((_, index) => {
+          return recordIndex !== index;
         }),
       );
     },
@@ -216,7 +214,7 @@ export const SubFieldDataSourceProvider = observer((props) => {
 });
 
 export const DataSourceProvider = observer((props: any) => {
-  const { rowKey = 'id', collection, association } = props;
+  const { rowKey, collection, association } = props;
   const [selectedRowKeys, setSelectedRowKeys] = useState([]);
   const [dataSource, setDataSource] = useState([]);
   const record = useRecord();

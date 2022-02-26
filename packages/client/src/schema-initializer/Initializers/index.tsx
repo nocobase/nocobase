@@ -8,8 +8,8 @@ import { PopupFormActionInitializers } from './PopupFormActionInitializers';
 import { RecordBlockInitializers } from './RecordBlockInitializers';
 import { TableActionInitializers } from './TableActionInitializers';
 import { TableColumnInitializers } from './TableColumnInitializers';
+import { TableFieldRecordActionInitializers } from './TableFieldRecordActionInitializers';
 import { TableRecordActionInitializers } from './TableRecordActionInitializers';
-
 export const items = { ...Items };
 
 export const initializes = {
@@ -33,4 +33,6 @@ export const initializes = {
   TableColumnInitializers,
   // 表格当前行记录的「操作配置」
   TableRecordActionInitializers,
+  // 表格字段（子表格）场景的当前行记录的「操作配置」
+  TableFieldRecordActionInitializers,
 };
