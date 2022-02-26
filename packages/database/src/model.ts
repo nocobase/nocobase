@@ -1,9 +1,19 @@
-import { Model as SequelizeModel } from 'sequelize';
+import { Model as SequelizeModel, ModelCtor } from 'sequelize';
 import { Collection } from './collection';
 import { Database } from './database';
+import lodash from 'lodash';
+import { Field } from './fields';
 
 interface IModel {
   [key: string]: any;
+}
+
+interface JSONTransformerOptions {
+  model: ModelCtor<any>;
+  collection: Collection;
+  db: Database;
+  key?: string;
+  field?: Field;
 }
 
 export class Model<TModelAttributes extends {} = any, TCreationAttributes extends {} = TModelAttributes>
@@ -12,51 +22,91 @@ export class Model<TModelAttributes extends {} = any, TCreationAttributes extend
 {
   public static database: Database;
   public static collection: Collection;
-  // [key: string]: any;
-
-  private toJsonWithoutHiddenFields(data, { model, collection }): any {
-    if (!data) {
-      return data;
-    }
-    if (typeof data.toJSON === 'function') {
-      data = data.toJSON();
-    }
-    const db = (this.constructor as any).database as Database;
-    const hidden = [];
-    collection.forEachField((field) => {
-      if (field.options.hidden) {
-        hidden.push(field.options.name);
-      }
-    });
-    const json = {};
-    Object.keys(data).forEach((key) => {
-      if (hidden.includes(key)) {
-        return;
-      }
-      if (model.hasAlias(key)) {
-        const association = model.associations[key];
-        const opts = {
-          model: association.target,
-          collection: db.getCollection(association.target.name),
-        };
-        if (['HasMany', 'BelongsToMany'].includes(association.associationType)) {
-          if (Array.isArray(data[key])) {
-            json[key] = data[key].map((item) => this.toJsonWithoutHiddenFields(item, opts));
-          }
-        } else {
-          json[key] = this.toJsonWithoutHiddenFields(data[key], opts);
-        }
-      } else {
-        json[key] = data[key];
-      }
-    });
-    return json;
-  }
 
   public toJSON<T extends TModelAttributes>(): T {
-    return this.toJsonWithoutHiddenFields(super.toJSON(), {
-      model: this.constructor,
+    const handleObj = (obj, options: JSONTransformerOptions) => {
+      const handles = [
+        (data) => {
+          if (data instanceof Model) {
+            return data.toJSON();
+          }
+
+          return data;
+        },
+        this.hiddenObjKey,
+      ];
+      return handles.reduce((carry, fn) => fn.apply(this, [carry, options]), obj);
+    };
+
+    const handleArray = (arrayOfObj, options: JSONTransformerOptions) => {
+      const handles = [this.sortAssociations];
+      return handles.reduce((carry, fn) => fn.apply(this, [carry, options]), arrayOfObj);
+    };
+
+    const opts = {
+      model: this.constructor as ModelCtor<any>,
       collection: (this.constructor as any).collection,
+      db: (this.constructor as any).database as Database,
+    };
+
+    const traverseJSON = (data: T, options: JSONTransformerOptions): T => {
+      const { model, db, collection } = options;
+      // handle Object
+      data = handleObj(data, options);
+
+      const result = {};
+      for (const key of Object.keys(data)) {
+        // @ts-ignore
+        if (model.hasAlias(key)) {
+          const association = model.associations[key];
+          const opts = {
+            model: association.target,
+            collection: db.getCollection(association.target.name),
+            db,
+            key,
+            field: collection.getField(key),
+          };
+
+          if (['HasMany', 'BelongsToMany'].includes(association.associationType)) {
+            result[key] = handleArray(data[key], opts).map((item) => traverseJSON(item, opts));
+          } else {
+            result[key] = traverseJSON(data[key], opts);
+          }
+        } else {
+          result[key] = data[key];
+        }
+      }
+
+      return result as T;
+    };
+
+    return traverseJSON(super.toJSON(), opts);
+  }
+
+  private hiddenObjKey(obj, options: JSONTransformerOptions) {
+    const hiddenFields = Array.from(options.collection.fields.values())
+      .filter((field) => field.options.hidden)
+      .map((field) => field.options.name);
+
+    return lodash.omit(obj, hiddenFields);
+  }
+
+  private sortAssociations(data, { field }: JSONTransformerOptions): any {
+    const sortBy = field.options.sortBy;
+    return sortBy ? this.sortArray(data, sortBy) : data;
+  }
+
+  private sortArray(data, sortBy: string | string[]) {
+    if (!lodash.isArray(sortBy)) {
+      sortBy = [sortBy];
+    }
+
+    const orders = sortBy.map((sortItem) => {
+      const direction = sortItem.startsWith('-') ? 'desc' : 'asc';
+      sortItem.replace('-', '');
+      return [sortItem, direction];
     });
+
+    return lodash.sortBy(data, ...orders);
   }
 }
