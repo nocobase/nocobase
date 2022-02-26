@@ -25,7 +25,16 @@ export class Model<TModelAttributes extends {} = any, TCreationAttributes extend
 
   public toJSON<T extends TModelAttributes>(): T {
     const handleObj = (obj, options: JSONTransformerOptions) => {
-      const handles = [this.hiddenObjKey];
+      const handles = [
+        (data) => {
+          if (data instanceof Model) {
+            return data.toJSON();
+          }
+
+          return data;
+        },
+        this.hiddenObjKey,
+      ];
       return handles.reduce((carry, fn) => fn.apply(this, [carry, options]), obj);
     };
 
