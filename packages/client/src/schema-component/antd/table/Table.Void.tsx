@@ -76,7 +76,7 @@ const useDefSelectedRowKeys = () => {
 };
 
 export const TableVoid: React.FC<TableVoidProps> = observer((props) => {
-  const { useDataSource = useDef, useSelectedRowKeys = useDefSelectedRowKeys } = props;
+  const { rowKey = 'id', useDataSource = useDef, useSelectedRowKeys = useDefSelectedRowKeys } = props;
   const field = useField<Field>();
   const fieldSchema = useFieldSchema();
   const form = useMemo(() => createForm(), []);
@@ -108,6 +108,7 @@ export const TableVoid: React.FC<TableVoidProps> = observer((props) => {
         <FieldContext.Provider value={f}>
           <TableArray
             {...props}
+            rowKey={rowKey}
             useSelectedRowKeys={useSelectedRowKeys}
             loading={result?.loading}
             pagination={usePaginationProps(props, result)}
