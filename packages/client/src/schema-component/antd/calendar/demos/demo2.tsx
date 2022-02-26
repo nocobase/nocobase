@@ -13,7 +13,6 @@ const dataSource = observable(defaultValues);
 
 const DetailCalendar = observer((props) => {
   const record = useRecord();
-  debugger;
   const detailSchema = {
     type: 'void',
     properties: {

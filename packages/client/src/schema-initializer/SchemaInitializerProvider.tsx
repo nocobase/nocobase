@@ -29,7 +29,6 @@ export const useSchemaInitializer = (name: string) => {
   }
 
   if (isPlainObj(initializer)) {
-    debugger;
     return {
       exists: true,
       render: (props?: any) => {
