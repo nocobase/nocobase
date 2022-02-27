@@ -3,7 +3,7 @@ import { ISchema, useForm } from '@formily/react';
 import { uid } from '@formily/shared';
 import React, { useState } from 'react';
 import { useSystemSettings } from '.';
-import { PluginManager, useRequest } from '..';
+import { PluginManager, useAPIClient, useRequest } from '..';
 import { ActionContext, SchemaComponent, useActionContext } from '../schema-component';
 
 const useCloseAction = () => {
@@ -16,7 +16,7 @@ const useCloseAction = () => {
   };
 };
 
-const useSystemSettingsValues = (props, options) => {
+const useSystemSettingsValues = (options) => {
   const result = useSystemSettings();
   return useRequest(() => Promise.resolve(result.data), {
     ...options,
@@ -27,11 +27,17 @@ const useSaveSystemSettingsValues = () => {
   const { setVisible } = useActionContext();
   const form = useForm();
   const { mutate } = useSystemSettings();
+  const api = useAPIClient();
   return {
     async run() {
       await form.submit();
       setVisible(false);
       mutate({
+        data: form.values,
+      });
+      await api.request({
+        url: 'systemSettings:update/1',
+        method: 'post',
         data: form.values,
       });
     },
@@ -63,6 +69,7 @@ const schema: ISchema = {
           'x-decorator': 'FormItem',
           'x-component': 'Upload.Attachment',
           'x-component-props': {
+            'action': 'attachments:upload'
             // accept: 'jpg,png'
           },
         },
