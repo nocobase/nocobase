@@ -11,7 +11,7 @@ export const useSystemSettings = () => {
 
 export const SystemSettingsProvider: React.FC = (props) => {
   const result = useRequest({
-    url: 'systemSettings:get/1',
+    url: 'systemSettings:get/1?appends=logo',
   });
   if (result.loading) {
     return <Spin />;

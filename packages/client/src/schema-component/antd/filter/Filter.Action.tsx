@@ -65,7 +65,6 @@ export const FilterAction = observer((props: any) => {
                   onSubmit={() => {
                     const { filter } = form.values;
                     console.log('Table.Filter====', form.values);
-                    debugger;
                     setVisible(false);
                   }}
                 >
