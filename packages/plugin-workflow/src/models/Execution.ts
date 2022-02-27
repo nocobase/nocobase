@@ -2,11 +2,11 @@ import { Database, Model } from '@nocobase/database';
 import parse from 'json-templates';
 import { BelongsToGetAssociationMixin, HasManyGetAssociationsMixin, Transaction } from 'sequelize';
 import { EXECUTION_STATUS, JOB_STATUS } from '../constants';
-import { getInstruction } from '../instructions';
+import instructions from '../instructions';
+import WorkflowModel from './Workflow';
 import FlowNodeModel from './FlowNode';
 import JobModel from './Job';
-import WorkflowModel from './Workflow';
-
+import calculators from '../calculators';
 
 export interface ExecutionOptions {
   transaction?: Transaction;
@@ -97,21 +97,21 @@ export default class ExecutionModel extends Model {
     }
   }
 
-  async start(options: ExecutionOptions) {
+  public async start(options: ExecutionOptions) {
     if (this.status !== EXECUTION_STATUS.STARTED) {
       throw new Error(`execution was ended with status ${this.status}`);
     }
     await this.prepare(options);
     if (this.nodes.length) {
-      const head = this.nodes.find((item) => !item.upstream);
-      await this.exec(head, { result: this.context });
+      const head = this.nodes.find(item => !item.upstream);
+      await this.run(head, { result: this.context });
     } else {
       await this.exit(null);
     }
     await this.commit();
   }
 
-  async resume(job: JobModel, options: ExecutionOptions) {
+  public async resume(job: JobModel, options: ExecutionOptions) {
     if (this.status !== EXECUTION_STATUS.STARTED) {
       throw new Error(`execution was ended with status ${this.status}`);
     }
@@ -127,7 +127,7 @@ export default class ExecutionModel extends Model {
     }
   }
 
-  private async run(instruction, node: FlowNodeModel, prevJob) {
+  private async exec(instruction: Function, node: FlowNodeModel, prevJob) {
     let job;
     try {
       // call instruction to get result and status
@@ -164,21 +164,24 @@ export default class ExecutionModel extends Model {
 
     if (savedJob.get('status') === JOB_STATUS.RESOLVED && node.downstream) {
       // run next node
-      return this.exec(node.downstream, savedJob);
+      return this.run(node.downstream, savedJob);
     }
 
     // all nodes in scope have been executed
     return this.end(node, savedJob);
   }
 
-  async exec(node, input?) {
-    const { run } = getInstruction(node.type);
+  public async run(node, input?) {
+    const { run } = instructions.get(node.type);
+    if (typeof run !== 'function') {
+      return Promise.reject(new Error('`run` should be implemented for customized execution of the node'));
+    }
 
-    return this.run(run, node, input);
+    return this.exec(run, node, input);
   }
 
   // parent node should take over the control
-  end(node, job) {
+  public end(node, job) {
     const parentNode = this.findBranchParentNode(node);
     // no parent, means on main flow
     if (parentNode) {
@@ -191,12 +194,12 @@ export default class ExecutionModel extends Model {
   }
 
   async recall(node, job) {
-    const { resume } = getInstruction(node.type);
-    if (!resume) {
+    const { resume } = instructions.get(node.type);
+    if (typeof resume !== 'function') {
       return Promise.reject(new Error('`resume` should be implemented because the node made branch'));
     }
 
-    return this.run(resume, node, job);
+    return this.exec(resume, node, job);
   }
 
   async exit(job: JobModel | null) {
@@ -251,10 +254,20 @@ export default class ExecutionModel extends Model {
     return null;
   }
 
-  getParsedValue(value) {
+  public getParsedValue(value, node?) {
+    const injectedFns = {};
+    const scope = {
+      execution: this,
+      node
+    };
+    for (let [name, fn] of calculators.getEntities()) {
+      injectedFns[name] = fn.bind(scope);
+    }
+
     return parse(value)({
       $context: this.context,
       $jobsMapByNodeId: this.jobsMapByNodeId,
+      $fn: injectedFns
     });
   }
 }

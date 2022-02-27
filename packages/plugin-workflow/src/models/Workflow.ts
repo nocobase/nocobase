@@ -1,7 +1,8 @@
 import { Database, Model } from '@nocobase/database';
 import { HasManyCreateAssociationMixin, HasManyGetAssociationsMixin } from 'sequelize';
+
+import triggers from '../triggers';
 import { EXECUTION_STATUS } from '../constants';
-import { get as getTrigger } from '../triggers';
 import ExecutionModel from './Execution';
 import FlowNodeModel from './FlowNode';
 
@@ -47,7 +48,7 @@ export default class WorkflowModel extends Model {
 
   async toggle(enable?: boolean) {
     const type = this.get('type');
-    const { on, off } = getTrigger(type);
+    const { on, off } = triggers.get(type);
     if (typeof enable !== 'undefined' ? enable : this.get('enabled')) {
       on.call(this, this.start.bind(this));
     } else {
