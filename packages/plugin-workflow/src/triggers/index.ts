@@ -1,3 +1,4 @@
+import { Registry } from '@nocobase/utils';
 import WorkflowModel from '../models/Workflow';
 import modelTrigger from './model';
 
@@ -7,14 +8,8 @@ export interface Trigger {
   off(this: WorkflowModel): void;
 }
 
-const triggers = new Map<string, Trigger>();
+export const triggers = new Registry<Trigger>();
 
-export function register(type: string, trigger: Trigger): void {
-  triggers.set(type, trigger);
-}
+export default triggers;
 
-export function get(type: string): Trigger | undefined {
-  return triggers.get(type);
-}
-
-register(modelTrigger.name, modelTrigger);
+triggers.register(modelTrigger.name, modelTrigger);
