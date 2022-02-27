@@ -1,5 +1,5 @@
 import { mockDatabase } from '@nocobase/test';
-import { Database } from '../../index';
+import { BelongsToManyRepository, Database } from '../../index';
 
 describe('associated field order', () => {
   let db: Database;
@@ -63,6 +63,12 @@ describe('associated field order', () => {
           name: 'tags',
           sortBy: 'name',
         },
+        {
+          type: 'belongsToMany',
+          name: 'images',
+          through: 'posts_images',
+          sortBy: ['-posts_images.sort'],
+        },
       ],
     });
 
@@ -76,6 +82,27 @@ describe('associated field order', () => {
         },
       ],
     });
+
+    db.collection({
+      name: 'posts_images',
+      fields: [{ type: 'integer', name: 'sort' }],
+    });
+
+    db.collection({
+      name: 'images',
+      fields: [
+        {
+          type: 'belongsToMany',
+          name: 'posts',
+          through: 'posts_images',
+        },
+        {
+          type: 'string',
+          name: 'url',
+        },
+      ],
+    });
+
     await db.sync();
   });
 
@@ -156,5 +183,38 @@ describe('associated field order', () => {
     const u1Records = u1Json['records'];
     expect(u1Records[0].count).toBeUndefined();
     expect(u1Records.map((p) => p['name'])).toEqual(['a', 'b', 'c']);
+  });
+
+  it('should sortBy through table field', async () => {
+    const p1 = await db.getRepository('posts').create({
+      values: {
+        name: 'u1',
+      },
+    });
+
+    const t1 = await db.getRepository('images').create({
+      values: {
+        url: 't1',
+      },
+    });
+
+    const t2 = await db.getRepository('images').create({
+      values: {
+        url: 't2',
+      },
+    });
+
+    const postImageRepository = db.getRepository<BelongsToManyRepository>('posts.images', p1.get('id') as string);
+
+    await postImageRepository.add([[t2.get('id') as string, { sort: 2 }]]);
+    await postImageRepository.add([[t1.get('id') as string, { sort: 1 }]]);
+
+    const p1Result = await db.getRepository('posts').findOne({
+      appends: ['images'],
+    });
+
+    const p1JSON = p1Result.toJSON();
+    const p1Images = p1JSON['images'];
+    expect(p1Images.map((i) => i['url'])).toEqual(['t2', 't1']);
   });
 });
