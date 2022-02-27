@@ -38,6 +38,7 @@ export default {
       sourceKey: 'name',
       targetKey: 'name',
       foreignKey: 'collectionName',
+      sortBy: 'sort',
     },
   ],
 } as CollectionOptions;
