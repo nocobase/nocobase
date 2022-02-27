@@ -101,12 +101,14 @@ export class Model<TModelAttributes extends {} = any, TCreationAttributes extend
       sortBy = [sortBy];
     }
 
-    const orders = sortBy.map((sortItem) => {
-      const direction = sortItem.startsWith('-') ? 'desc' : 'asc';
-      sortItem.replace('-', '');
-      return [sortItem, direction];
+    const orderItems = [];
+    const orderDirections = [];
+
+    sortBy.forEach((sortItem) => {
+      orderDirections.push(sortItem.startsWith('-') ? 'desc' : 'asc');
+      orderItems.push(sortItem.replace('-', ''));
     });
 
-    return lodash.sortBy(data, ...orders);
+    return lodash.orderBy(data, orderItems, orderDirections);
   }
 }
