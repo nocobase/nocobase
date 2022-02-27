@@ -21,10 +21,10 @@ export class Registry<T> {
     this.map.set(key, value);
   }
 
-  async import({ directory, extensions = ['.js', '.ts', '.json'] }) {
-    const files = await fs.readdir(directory);
-    return files.filter(file => extensions.includes(path.extname(file)))
-  }
+  // async import({ directory, extensions = ['.js', '.ts', '.json'] }) {
+  //   const files = await fs.readdir(directory);
+  //   return files.filter(file => extensions.includes(path.extname(file)))
+  // }
 
   get(key: string): T {
     return this.map.get(key);
