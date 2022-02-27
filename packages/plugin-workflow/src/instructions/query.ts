@@ -21,4 +21,4 @@ export default {
       status: JOB_STATUS.RESOLVED
     };
   }
-}
+};

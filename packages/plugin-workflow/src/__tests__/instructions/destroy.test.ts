@@ -4,7 +4,7 @@ import { getApp } from '..';
 
 
 
-describe('workflow > instructions > create', () => {
+describe('workflow > instructions > destroy', () => {
   let app: Application;
   let db: Database;
   let PostModel;
