@@ -5,40 +5,38 @@ import * as actions from './actions/users';
 import * as middlewares from './middlewares';
 
 export default class UsersPlugin extends Plugin {
-  async beforeLoad() {
+  async install() {
     const {
       adminNickname = 'Super Admin',
       adminEmail = 'admin@nocobase.com',
       adminPassword = 'admin123',
     } = this.options;
 
-    this.app.on('installing', async (...args) => {
-      // TODO 暂时先这么写着，理想状态应该由 app.emitAsync('installing') 内部处理
-      await this.app.emitAsync('installing.beforeUsersPlugin', ...args);
-      const User = this.db.getCollection('users');
-      await User.repository.create({
-        values: {
-          nickname: adminNickname,
-          email: adminEmail,
-          password: adminPassword,
-          roles: ['admin'],
-        },
-      });
-      await this.app.emitAsync('installing.afterUsersPlugin', ...args);
+    const User = this.db.getCollection('users');
+    await User.repository.create({
+      values: {
+        nickname: adminNickname,
+        email: adminEmail,
+        password: adminPassword,
+      },
     });
+  }
 
+  async beforeLoad() {
     this.db.on('users.afterCreateWithAssociations', async (model, options) => {
       const { transaction } = options;
 
-      const defaultRole = await this.app.db.getRepository('roles').findOne({
-        filter: {
-          default: true,
-        },
-        transaction,
-      });
+      if (this.app.db.getCollection('roles')) {
+        const defaultRole = await this.app.db.getRepository('roles').findOne({
+          filter: {
+            default: true,
+          },
+          transaction,
+        });
 
-      if (defaultRole && (await model.countRoles({ transaction })) == 0) {
-        await model.addRoles(defaultRole, { transaction });
+        if (defaultRole && (await model.countRoles({ transaction })) == 0) {
+          await model.addRoles(defaultRole, { transaction });
+        }
       }
     });
 

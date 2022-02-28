@@ -42,6 +42,8 @@ export abstract class Plugin<O = any> implements PluginInterface {
 
   beforeLoad() {}
 
+  async install() {}
+
   async load() {
     const collectionPath = this.collectionPath();
     if (collectionPath) {

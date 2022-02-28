@@ -8,6 +8,7 @@ describe('role', () => {
 
   beforeEach(async () => {
     api = mockServer();
+    await api.cleanDb();
     api.plugin(require('../server').default);
     api.plugin(PluginACL);
     await api.loadAndInstall();

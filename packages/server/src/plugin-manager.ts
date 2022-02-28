@@ -46,4 +46,14 @@ export class PluginManager {
 
     await this.app.emitAsync('afterLoadAll');
   }
+
+  async install() {
+    for (const [name, plugin] of this.plugins) {
+      await this.app.emitAsync('beforeInstallPlugin', plugin);
+      await this.app.emitAsync(`beforeInstall${name}`, plugin);
+      await plugin.install();
+      await this.app.emitAsync('afterInstallPlugin', plugin);
+      await this.app.emitAsync(`afterInstall${name}`, plugin);
+    }
+  }
 }
