@@ -1,6 +1,7 @@
 import { DataTypes, Op } from 'sequelize';
 import { ArrayField, StringField } from '../fields';
 import arrayOperators from './array';
+import lodash, { parseInt } from 'lodash';
 
 const findFilterFieldType = (ctx) => {
   const db = ctx.db;
@@ -17,6 +18,10 @@ const findFilterFieldType = (ctx) => {
   const associationPath = path;
 
   for (const association of associationPath) {
+    if (lodash.isNumber(parseInt(association)) || association.startsWith('$')) {
+      continue;
+    }
+
     model = model.associations[association].target;
   }
 
@@ -24,6 +29,7 @@ const findFilterFieldType = (ctx) => {
 
   return collection.getField(fieldName);
 };
+
 export default {
   $empty(_, ctx) {
     const field = findFilterFieldType(ctx);
