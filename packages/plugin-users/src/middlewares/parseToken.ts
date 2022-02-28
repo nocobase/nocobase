@@ -8,10 +8,11 @@ export function parseToken(options?: any) {
   return async function parseToken(ctx: Context, next: Next) {
     const token = ctx.get('Authorization').replace(/^Bearer\s+/gi, '');
     const User = ctx.db.getCollection('users');
-    const user = await User.model.findOne({
-      where: {
+    const user = await User.repository.findOne({
+      filter: {
         token,
       },
+      appends: ['roles'],
     });
 
     if (user) {
