@@ -1,16 +1,19 @@
 import { FormItem, FormLayout } from '@formily/antd';
 import { ArrayField } from '@formily/core';
 import { connect, useField, useForm } from '@formily/react';
-import { Checkbox, Select, Table, Tag } from 'antd';
+import { Checkbox, Table, Tag } from 'antd';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { useAvailableActions } from '.';
 import { useCollectionManager, useCompile, useRecord } from '../..';
+import { ScopeSelect } from './ScopeSelect';
 
 const toActionMap = (arr: any[]) => {
   const obj = {};
-  arr?.forEach((action) => {
-    obj[action.name] = action;
+  arr?.forEach?.((action) => {
+    if (action.name) {
+      obj[action.name] = action;
+    }
   });
   return obj;
 };
@@ -52,11 +55,16 @@ export const RolesResourcesActions = connect((props) => {
     }
     onChange(Object.values(actionMap));
   };
+  const setScope = (actionName, scope) => {
+    if (!actionMap[actionName]) {
+      toggleAction(actionName);
+    }
+    actionMap[actionName]['scope'] = scope;
+  };
   const allChecked = {};
   for (const action of availableActionsWithFields) {
     allChecked[action.name] = collection?.fields?.length === actionMap?.[action.name]?.fields?.length;
   }
-
   return (
     <div>
       <FormLayout layout={'vertical'}>
@@ -95,7 +103,15 @@ export const RolesResourcesActions = connect((props) => {
               {
                 dataIndex: 'scope',
                 title: '可操作的数据范围',
-                render: () => <Select size={'small'} />,
+                render: (value, action) =>
+                  !action.onNewRecord && (
+                    <ScopeSelect
+                      value={value}
+                      onChange={(scope) => {
+                        setScope(action.name, scope);
+                      }}
+                    />
+                  ),
               },
             ]}
             dataSource={availableActions?.map((item) => {

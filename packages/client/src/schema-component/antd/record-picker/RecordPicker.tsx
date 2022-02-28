@@ -6,82 +6,97 @@ import {
   FormContext,
   mapProps,
   mapReadPretty,
+  observer,
   RecursionField,
-  Schema,
   useField,
-  useFieldSchema
+  useFieldSchema,
+  useForm
 } from '@formily/react';
 import { toArr } from '@formily/shared';
 import { Button, Drawer, Select, Space, Tag } from 'antd';
 import React, { createContext, useContext, useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useAttach } from '../../hooks/useAttach';
-import { ActionContext } from '../action';
+import { ActionContext, useActionContext } from '../action';
 
-const InputRecordPicker: React.FC = (props) => {
+const InputRecordPicker: React.FC<any> = (props) => {
+  const { onChange } = props;
+  const fieldNames = { label: 'label', value: 'value', ...props.fieldNames };
   const [visible, setVisible] = useState(false);
   const fieldSchema = useFieldSchema();
   const field = useField<Field>();
   const s = fieldSchema.reduceProperties((buf, s) => {
-    if (s['x-component'] === 'RowSelection') {
-      return s;
+    if (s['x-component'] === 'RecordPicker.Options') {
+      return s.reduceProperties((buf, s) => {
+        if (s['x-component'] === 'Table.RowSelection') {
+          return s;
+        }
+        return buf;
+      }, null);
     }
     return buf;
-  }, new Schema({}));
+  }, null);
+  const [value, setValue] = useState(field.value);
   const form = useMemo(
     () =>
       createForm({
-        initialValues: {
-          [s.name]: field.value,
-        },
+        initialValues: s?.name
+          ? {
+              [s.name]: field.value,
+            }
+          : {},
         effects() {
           onFormSubmit((form) => {
-            field.value = form.values[s.name];
-            console.log('field.value', form.values[s.name]);
+            setValue(form.values[s.name]);
+            onChange?.(form.values[s.name]);
           });
         },
       }),
     [],
   );
+  const toValue = (value) => {
+    if (!value) {
+      return;
+    }
+    if (Array.isArray(value)) {
+      return value.map((item) => {
+        return {
+          label: item[fieldNames.label] || item[fieldNames.value],
+          value: item[fieldNames.value],
+        };
+      });
+    }
+    return {
+      label: value[fieldNames.label] || value[fieldNames.value],
+      value: value[fieldNames.value],
+    };
+  };
   const f = useAttach(form.createVoidField({ ...field.props, basePath: '' }));
   return (
     <div>
       <Select
+        size={props.size}
+        mode={props.mode}
+        fieldNames={fieldNames}
         onClick={() => {
           setVisible(true);
         }}
+        labelInValue={true}
+        value={toValue(value)}
         open={false}
       ></Select>
       <FormContext.Provider value={form}>
         <FieldContext.Provider value={f}>
-          <Drawer
-            width={'50%'}
-            placement={'right'}
-            destroyOnClose
-            visible={visible}
-            onClose={() => setVisible(false)}
-            footer={
-              <Space style={{ justifyContent: 'flex-end', width: '100%' }}>
-                <Button
-                  type={'primary'}
-                  onClick={async () => {
-                    await form.submit();
-                    setVisible(false);
-                  }}
-                >
-                  Submit
-                </Button>
-              </Space>
-            }
-          >
+          <ActionContext.Provider value={{ visible, setVisible }}>
             <RecursionField
               onlyRenderProperties
               basePath={f.address}
               schema={fieldSchema}
-              // filterProperties={(s) => {
-              //   return s['x-component'] === 'RowSelection';
-              // }}
+              filterProperties={(s) => {
+                return s['x-component'] === 'RecordPicker.Options';
+              }}
             />
-          </Drawer>
+          </ActionContext.Provider>
         </FieldContext.Provider>
       </FormContext.Provider>
     </div>
@@ -124,6 +139,44 @@ export const RecordPicker: any = connect(
   mapProps(mapSuffixProps),
   mapReadPretty(ReadPrettyRecordPicker),
 );
+
+RecordPicker.Options = observer((props) => {
+  const field = useField();
+  const form = useForm();
+  const { visible, setVisible } = useActionContext();
+  const { t } = useTranslation();
+  return (
+    <Drawer
+      width={'50%'}
+      placement={'right'}
+      title={field.title}
+      {...props}
+      destroyOnClose
+      visible={visible}
+      onClose={() => setVisible(false)}
+      footer={
+        <Space style={{ justifyContent: 'flex-end', width: '100%' }}>
+          <Button
+            onClick={async () => {
+              setVisible(false);
+            }}
+          >
+            {t('Cancel')}
+          </Button>
+          <Button
+            type={'primary'}
+            onClick={async () => {
+              await form.submit();
+              setVisible(false);
+            }}
+          >
+            {t('Submit')}
+          </Button>
+        </Space>
+      }
+    />
+  );
+});
 
 RecordPicker.SelectedItem = () => {
   const ctx = useContext(RowContext);
