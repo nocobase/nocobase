@@ -5,22 +5,6 @@ import * as actions from './actions/users';
 import * as middlewares from './middlewares';
 
 export default class UsersPlugin extends Plugin {
-  async install() {
-    const {
-      adminNickname = 'Super Admin',
-      adminEmail = 'admin@nocobase.com',
-      adminPassword = 'admin123',
-    } = this.options;
-
-    const User = this.db.getCollection('users');
-    await User.repository.create({
-      values: {
-        nickname: adminNickname,
-        email: adminEmail,
-        password: adminPassword,
-      },
-    });
-  }
 
   async beforeLoad() {
     this.db.on('users.afterCreateWithAssociations', async (model, options) => {
@@ -83,4 +67,23 @@ export default class UsersPlugin extends Plugin {
       directory: resolve(__dirname, 'collections'),
     });
   }
+
+  async install() {
+    const {
+      adminNickname = 'Super Admin',
+      adminEmail = 'admin@nocobase.com',
+      adminPassword = 'admin123',
+    } = this.options;
+
+    const User = this.db.getCollection('users');
+    await User.repository.create({
+      values: {
+        nickname: adminNickname,
+        email: adminEmail,
+        password: adminPassword,
+        roles: ['admin'],
+      },
+    });
+  }
+
 }

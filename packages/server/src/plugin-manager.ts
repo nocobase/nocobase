@@ -1,6 +1,6 @@
+import { CleanOptions, SyncOptions } from '@nocobase/database';
 import Application from './application';
 import { Plugin } from './plugin';
-import { CleanOptions, SyncOptions } from '@nocobase/database';
 
 interface PluginManagerOptions {
   app: Application;
