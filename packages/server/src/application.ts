@@ -11,7 +11,7 @@ import { isBoolean } from 'lodash';
 import { createACL } from './acl';
 import { createCli, createDatabase, createI18n, createResourcer, registerMiddlewares } from './helper';
 import { Plugin } from './plugin';
-import { PluginManager } from './plugin-manager';
+import { PluginManager, InstallOptions } from './plugin-manager';
 
 export interface ResourcerOptions {
   prefix?: string;
@@ -69,12 +69,6 @@ interface ListenOptions {
 interface StartOptions {
   cliArgs?: any[];
   listen?: ListenOptions;
-}
-
-interface InstallOptions {
-  cliArgs?: any[];
-  clean?: CleanOptions | boolean;
-  sync?: SyncOptions;
 }
 
 export class Application<StateT = DefaultState, ContextT = DefaultContext> extends Koa implements AsyncEmitter {
@@ -214,11 +208,13 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
 
   async install(options?: InstallOptions) {
     await this.emitAsync('beforeInstall', this, options);
+
     if (options?.clean) {
       await this.db.clean(isBoolean(options.clean) ? { drop: options.clean } : options.clean);
     }
+
     await this.db.sync(options?.sync);
-    await this.emitAsync('installing', this, options);
+    await this.pm.install(options);
     await this.emitAsync('afterInstall', this, options);
   }
 

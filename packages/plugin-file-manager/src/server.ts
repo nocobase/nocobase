@@ -9,20 +9,18 @@ export default class PluginFileManager extends Plugin {
     return process.env.DEFAULT_STORAGE_TYPE;
   }
 
-  async beforeLoad() {
-    this.app.on('installing', async () => {
-      const defaultStorageConfig = getStorageConfig(this.storageType());
-      if (defaultStorageConfig) {
-        const Storage = this.db.getCollection('storages');
-        await Storage.repository.create({
-          values: {
-            ...defaultStorageConfig.defaults(),
-            type: this.storageType(),
-            default: true,
-          },
-        });
-      }
-    });
+  async install() {
+    const defaultStorageConfig = getStorageConfig(this.storageType());
+    if (defaultStorageConfig) {
+      const Storage = this.db.getCollection('storages');
+      await Storage.repository.create({
+        values: {
+          ...defaultStorageConfig.defaults(),
+          type: this.storageType(),
+          default: true,
+        },
+      });
+    }
   }
 
   async load() {
