@@ -1,8 +1,9 @@
 import { ISchema, useForm } from '@formily/react';
 import { uid } from '@formily/shared';
 import { Menu } from 'antd';
-import React, { useState } from 'react';
-import { ActionContext, SchemaComponent, useActionContext, useRequest } from '../';
+import React, { useContext, useState } from 'react';
+import { useTranslation } from 'react-i18next';
+import { ActionContext, DropdownVisibleContext, SchemaComponent, useActionContext, useCurrentUserContext, useRequest } from '../';
 
 const useCloseAction = () => {
   const { setVisible } = useActionContext();
@@ -17,16 +18,9 @@ const useCloseAction = () => {
   };
 };
 
-const useCurrentUserValues = (props, options) => {
-  return useRequest(
-    () =>
-      Promise.resolve({
-        data: {},
-      }),
-    {
-      ...options,
-    },
-  );
+const useCurrentUserValues = (options) => {
+  const ctx = useCurrentUserContext();
+  return useRequest(() => Promise.resolve(ctx.data), options);
 };
 
 const useSaveCurrentUserValues = () => {
@@ -87,17 +81,20 @@ const schema: ISchema = {
   },
 };
 
-export const ProfileAction = () => {
+export const EditProfile = () => {
   const [visible, setVisible] = useState(false);
+  const { t } = useTranslation();
+  const ctx = useContext(DropdownVisibleContext);
   return (
     <ActionContext.Provider value={{ visible, setVisible }}>
       <Menu.Item
         eventKey={'ProfileAction'}
         onClick={() => {
           setVisible(true);
+          ctx.setVisible(false);
         }}
       >
-        个人资料
+        {t('Edit profile')}
       </Menu.Item>
       <SchemaComponent scope={{ useCurrentUserValues, useCloseAction, useSaveCurrentUserValues }} schema={schema} />
     </ActionContext.Provider>
