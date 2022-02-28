@@ -1,6 +1,7 @@
 import { Database } from '@nocobase/database';
 import { Application } from './application';
 import path from 'path';
+import { InstallOptions } from './plugin-manager';
 
 export interface PluginInterface {
   beforeLoad?: () => void;
@@ -42,7 +43,7 @@ export abstract class Plugin<O = any> implements PluginInterface {
 
   beforeLoad() {}
 
-  async install() {}
+  async install(options?: InstallOptions) {}
 
   async load() {
     const collectionPath = this.collectionPath();

@@ -1,8 +1,15 @@
 import Application from './application';
 import { Plugin } from './plugin';
+import { CleanOptions, SyncOptions } from '@nocobase/database';
 
 interface PluginManagerOptions {
   app: Application;
+}
+
+export interface InstallOptions {
+  cliArgs?: any[];
+  clean?: CleanOptions | boolean;
+  sync?: SyncOptions;
 }
 
 export class PluginManager {
@@ -47,13 +54,11 @@ export class PluginManager {
     await this.app.emitAsync('afterLoadAll');
   }
 
-  async install() {
+  async install(options?: InstallOptions) {
     for (const [name, plugin] of this.plugins) {
-      await this.app.emitAsync('beforeInstallPlugin', plugin);
-      await this.app.emitAsync(`beforeInstall${name}`, plugin);
-      await plugin.install();
-      await this.app.emitAsync('afterInstallPlugin', plugin);
-      await this.app.emitAsync(`afterInstall${name}`, plugin);
+      await this.app.emitAsync('beforeInstallPlugin', plugin, options);
+      await plugin.install(options);
+      await this.app.emitAsync('afterInstallPlugin', plugin, options);
     }
   }
 }
