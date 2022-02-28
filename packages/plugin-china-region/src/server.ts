@@ -3,11 +3,8 @@ import { areas, cities, provinces } from 'china-division';
 import { resolve } from 'path';
 
 export class ChinaRegionPlugin extends Plugin {
-
-  async beforeLoad() {
-    this.app.on('installing', async () => {
-      await this.importData();
-    });
+  async install() {
+    await this.importData();
   }
 
   async load() {

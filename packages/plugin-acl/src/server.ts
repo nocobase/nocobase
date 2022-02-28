@@ -238,7 +238,7 @@ export class PluginACL extends Plugin {
       await this.writeRolesToACL();
     });
 
-    this.app.on('installing.beforeUsersPlugin', async () => {
+    this.app.on('afterInstallUsersPlugin', async () => {
       const repository = this.app.db.getRepository('roles');
       await repository.createMany({
         records: [
