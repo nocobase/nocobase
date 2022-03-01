@@ -1,3 +1,4 @@
+import flat from 'flat';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { SchemaInitializer } from '../SchemaInitializer';
@@ -31,6 +32,28 @@ export const GridFormItemInitializers = (props: any) => {
             'x-component-props': {
               content: t('This is a demo text, **supports Markdown syntax**.'),
             },
+          },
+        },
+        {
+          type: 'item',
+          title: t('Add Filter'),
+          component: 'GeneralInitializer',
+          schema: {
+            name: 'filter',
+            type: 'object',
+            default: flat.unflatten({
+              $or: [
+                { 'aa.$eq': 'b' },
+                { 'bb.field.$eq': ['aabb', 'aaa'] },
+                {
+                  'bb.field': {
+                    $eq: ['aabb', 'aaa'],
+                  },
+                },
+              ],
+            }),
+            'x-component': 'Filter',
+            'x-component-props': {},
           },
         },
       ]}

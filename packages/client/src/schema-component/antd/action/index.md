@@ -36,3 +36,7 @@ group:
 ### 不同的打开方式
 
 <code src="./demos/demo3.tsx"/>
+
+### Action + Action.Popover
+
+<code src="./demos/demo4.tsx"/>

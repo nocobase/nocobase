@@ -1,75 +1,88 @@
 import { CloseCircleOutlined } from '@ant-design/icons';
-import { useForm } from '@formily/react';
-import { isValid } from '@formily/shared';
-import { Select } from 'antd';
-import cls from 'classnames';
-import React from 'react';
-import { Trans } from 'react-i18next';
-import { FilterList } from './FilterList';
+import { ObjectField as ObjectFieldModel } from '@formily/core';
+import { ArrayField, connect, useField } from '@formily/react';
+import { Select, Space } from 'antd';
+import React, { useContext } from 'react';
+import { Trans, useTranslation } from 'react-i18next';
+import { RemoveConditionContext } from './context';
+import { FilterItems } from './FilterItems';
 
-const toValue = (value) => {
-  if (!value) {
-    return {
-      logical: 'and',
-      list: [{}],
+export const FilterGroup = connect((props) => {
+  const field = useField<ObjectFieldModel>();
+  const remove = useContext(RemoveConditionContext);
+  const { t } = useTranslation();
+  const keys = Object.keys(field.value || {});
+  const logic = keys.includes('$or') ? '$or' : '$and';
+  const setLogic = (value) => {
+    const obj = field.value || {};
+    field.value = {
+      [value]: obj[logic] || [],
     };
-  }
-  if (value.and) {
-    return {
-      logical: 'and',
-      list: value.and,
-    };
-  }
-  if (value.or) {
-    return {
-      logical: 'and',
-      list: value.or,
-    };
-  }
-  return {
-    logical: 'and',
-    list: [{}],
   };
-};
-
-export function FilterGroup(props) {
-  const { bordered = true, onRemove, onChange } = props;
-  const value = toValue(props.value);
-  const form = useForm();
-  console.log('list', form.values, value);
-
   return (
-    <div className={cls('nb-filter-group', { bordered })}>
-      {onRemove && (
-        <a className={'nb-filter-group-close'} onClick={() => onRemove()}>
-          <CloseCircleOutlined />
-        </a>
+    <div
+      style={{
+        position: 'relative',
+        border: '1px dashed #dedede',
+        padding: 14,
+        marginBottom: 8,
+      }}
+    >
+      {remove && (
+        <CloseCircleOutlined
+          style={{
+            position: 'absolute',
+            right: 10,
+          }}
+          onClick={() => remove()}
+        />
       )}
-      <div style={{ marginBottom: 14 }}>
+      <div style={{ marginBottom: 8 }}>
         <Trans>
+          {'Meet '}
           <Select
-            style={{ width: 80 }}
-            onChange={(logical) => {
-              onChange?.({
-                [logical]: value.list,
-              });
+            value={logic}
+            onChange={(value) => {
+              setLogic(value);
             }}
-            defaultValue={value.logical}
           >
-            <Select.Option value={'and'}>All</Select.Option>
-            <Select.Option value={'or'}>Any</Select.Option>
+            <Select.Option value={'$and'}>All</Select.Option>
+            <Select.Option value={'$or'}>Any</Select.Option>
           </Select>
+          {' conditions in the group'}
         </Trans>
       </div>
-      <FilterList
-        initialValue={value.list}
-        onChange={(list: any[]) => {
-          const values = {
-            [value.logical]: list.filter((item) => isValid(item) && Object.keys(item).length),
-          };
-          onChange?.(values);
-        }}
-      />
+      <div>
+        <ArrayField name={logic} component={[FilterItems]} />
+      </div>
+      <Space size={16} style={{ marginTop: 8, marginBottom: 8 }}>
+        <a
+          onClick={() => {
+            const value = field.value || {};
+            const items = value[logic] || [];
+            items.push({});
+            field.value = {
+              [logic]: items,
+            };
+          }}
+        >
+          {t('Add condition')}
+        </a>
+        <a
+          onClick={() => {
+            const value = field.value || {};
+            const items = value[logic] || [];
+            items.push({
+              $and: [{}],
+            });
+            field.value = {
+              [logic]: items,
+            };
+          }}
+        >
+          {t('Add condition group')}
+        </a>
+      </Space>
     </div>
   );
-}
+});

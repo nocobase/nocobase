@@ -1,8 +1,9 @@
 import { css } from '@emotion/css';
-import { observer, useField } from '@formily/react';
-import { Button, Modal } from 'antd';
+import { observer, RecursionField, useField, useFieldSchema } from '@formily/react';
+import { Button, Modal, Popover } from 'antd';
 import classnames from 'classnames';
 import React, { useState } from 'react';
+import { useActionContext } from '../..';
 import { GeneralSchemaDesigner, SchemaSettings } from '../../../schema-settings';
 import { SortableItem } from '../../common';
 import { useDesigner } from '../../hooks';
@@ -62,40 +63,86 @@ export const actionDesignerCss = css`
 `;
 
 export const Action: ComposedAction = observer((props: any) => {
-  const { confirm, openMode, containerRefKey, component, useAction = useA, onClick, className, ...others } = props;
+  const {
+    popover,
+    confirm,
+    openMode,
+    containerRefKey,
+    component,
+    useAction = useA,
+    onClick,
+    className,
+    ...others
+  } = props;
   const [visible, setVisible] = useState(false);
   const Designer = useDesigner();
   const field = useField();
   const { run } = useAction();
+  const fieldSchema = useFieldSchema();
+  const renderButton = () => (
+    <SortableItem
+      {...others}
+      onClick={(e: React.MouseEvent) => {
+        e.preventDefault();
+        e.stopPropagation();
+        const onOk = () => {
+          onClick?.(e);
+          setVisible(true);
+          run();
+        };
+        if (confirm) {
+          Modal.confirm({
+            ...confirm,
+            onOk,
+          });
+        } else {
+          onOk();
+        }
+      }}
+      component={component || Button}
+      className={classnames(className, actionDesignerCss)}
+    >
+      <Designer />
+      {field.title}
+    </SortableItem>
+  );
   return (
-    <ActionContext.Provider value={{ visible, setVisible, openMode, containerRefKey }}>
-      <SortableItem
-        {...others}
-        onClick={(e: React.MouseEvent) => {
-          e.preventDefault();
-          e.stopPropagation();
-          const onOk = () => {
-            onClick?.(e);
-            setVisible(true);
-            run();
-          };
-          if (confirm) {
-            Modal.confirm({
-              ...confirm,
-              onOk,
-            });
-          } else {
-            onOk();
-          }
-        }}
-        component={component || Button}
-        className={classnames(className, actionDesignerCss)}
-      >
-        <Designer />
-        {field.title}
-      </SortableItem>
-      {props.children}
+    <ActionContext.Provider value={{ button: renderButton(), visible, setVisible, openMode, containerRefKey }}>
+      {popover && <RecursionField basePath={field.address} onlyRenderProperties schema={fieldSchema} />}
+      {!popover && renderButton()}
+      {!popover && props.children}
     </ActionContext.Provider>
+  );
+});
+
+Action.Popover = observer((props) => {
+  const { button, visible, setVisible } = useActionContext();
+  return (
+    <Popover
+      {...props}
+      destroyTooltipOnHide
+      visible={visible}
+      onVisibleChange={(visible) => {
+        setVisible(visible);
+      }}
+      content={props.children}
+    >
+      {button}
+    </Popover>
+  );
+});
+
+Action.Popover.Footer = observer((props) => {
+  return (
+    <div
+      className={css`
+        display: flex;
+        justify-content: flex-end;
+        width: 100%;
+      `}
+    >
+      {props.children}
+    </div>
   );
 });
 

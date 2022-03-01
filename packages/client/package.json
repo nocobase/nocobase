@@ -24,7 +24,7 @@
     "@formily/core": "^2.0.7",
     "@formily/react": "^2.0.7",
     "ahooks": "^3.0.5",
-    "antd": "^4.18.5",
+    "antd": "^4.18.9",
     "axios": "^0.24.0",
     "classnames": "^2.3.1",
     "file-saver": "^2.0.5",

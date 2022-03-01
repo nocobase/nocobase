@@ -9,6 +9,14 @@ group:
 
 ## Examples
 
-### Filter usage
+### Filter Action
 
-<code src="./demos/demo1.tsx" />
+<code src="./demos/demo3.tsx" />
+
+### Filter Default Value
+
+<code src="./demos/demo2.tsx" />
+
+### Custom Dynamic Component
+
+<code src="./demos/demo4.tsx" />

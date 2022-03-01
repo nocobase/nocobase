@@ -2,6 +2,7 @@ export * from './ActionInitializer';
 export * from './AddNewActionInitializer';
 export * from './CalendarBlockInitializer';
 export * from './CollectionFieldInitializer';
+export * from './FilterActionInitializer';
 export * from './FormBlockInitializer';
 export * from './GeneralInitializer';
 export * from './MarkdownBlockInitializer';
