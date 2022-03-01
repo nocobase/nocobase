@@ -12,7 +12,7 @@ export const TableActionInitializers = {
         {
           type: 'item',
           title: "{{t('Filter')}}",
-          component: 'ActionInitializer',
+          component: 'FilterActionInitializer',
           schema: {
             title: '{{ t("Filter") }}',
             'x-action': 'filter',
