@@ -19,10 +19,10 @@ export const useValues = () => {
   }
   const values = flat(field.value || {}, { maxDepth });
   const value = Object.values<any>(values).shift();
-  const findOption = (dataIndex) => {
+  const findOption = (dataIndex = []) => {
     let items = options;
     let option;
-    dataIndex.forEach((name, index) => {
+    dataIndex?.forEach?.((name, index) => {
       const item = items.find((item) => item.name === name);
       if (item) {
         option = item;
@@ -44,6 +44,10 @@ export const useValues = () => {
     component: [Input, {}],
     // 当 dataIndex 变化，value 清空
     setDataIndex(di: string[]) {
+      if (!di) {
+        field.value = {};
+        return;
+      }
       const option = findOption(di);
       const op = option?.operators?.[0]?.value || '$eq';
       field.value = flat.unflatten({

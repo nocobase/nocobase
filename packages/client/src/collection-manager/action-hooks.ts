@@ -1,5 +1,5 @@
 import { useForm } from '@formily/react';
-import { useCollectionManager } from '.';
+import { useCollection, useCollectionManager } from '.';
 import { useRequest } from '../api-client';
 import { useRecord } from '../record-provider';
 import { useActionContext } from '../schema-component';
@@ -15,6 +15,58 @@ export const useCancelAction = () => {
     },
   };
 };
+
+export const useCancelFilterAction = () => {
+  const form = useForm();
+  const ctx = useActionContext();
+  return {
+    async run() {
+      ctx.setVisible(false);
+    },
+  };
+};
+
+export const useCollectionFilterOptions = (collectionName: string) => {
+  const { getCollection, getInterface } = useCollectionManager();
+  const options = [];
+  const collection = getCollection(collectionName);
+  const fields = collection?.fields || [];
+  const field2option = (field) => {
+    const fieldInterface = getInterface(field.interface);
+    const option = {
+      name: field.name,
+      title: field?.uiSchema?.title || field.name,
+      operators: fieldInterface.operators || [],
+    };
+    return option;
+  }
+  fields.forEach(field => {
+    options.push(field2option(field));
+  });
+  return options;
+}
+
+export const useFilterDataSource = (options) => {
+  const { name } = useCollection();
+  const data = useCollectionFilterOptions(name);
+  return useRequest(
+    () =>
+      Promise.resolve({
+        data,
+      }),
+    options,
+  );
+}
+
+export const useFilterAction = () => {
+  const form = useForm();
+  const ctx = useActionContext();
+  return {
+    async run() {
+      ctx.setVisible(false);
+    },
+  };
+}
 
 export const useCreateAction = () => {
   const form = useForm();

@@ -1,5 +1,5 @@
 import { ObjectField as ObjectFieldModel } from '@formily/core';
-import { observer, useField } from '@formily/react';
+import { observer, useField, useFieldSchema } from '@formily/react';
 import React from 'react';
 import { useRequest } from '../../../api-client';
 import { FilterContext } from './context';
@@ -14,6 +14,7 @@ const useDef = (options) => {
 export const Filter: any = observer((props: any) => {
   const { useDataSource = useDef, dynamicComponent } = props;
   const field = useField<ObjectFieldModel>();
+  const fieldSchema = useFieldSchema();
   useDataSource({
     onSuccess(data) {
       console.log('onSuccess', data?.data);
@@ -22,7 +23,7 @@ export const Filter: any = observer((props: any) => {
   });
   return (
     <div>
-      <FilterContext.Provider value={{ dynamicComponent, options: field.dataSource || [] }}>
+      <FilterContext.Provider value={{ field, fieldSchema, dynamicComponent, options: field.dataSource || [] }}>
         <FilterGroup {...props} />
       </FilterContext.Provider>
       <pre>{JSON.stringify(field.value, null, 2)}</pre>
