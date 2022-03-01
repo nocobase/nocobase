@@ -8,6 +8,7 @@ import bodyParser from 'koa-bodyparser';
 import Application, { ApplicationOptions } from './application';
 import { dataWrapping } from './middlewares/data-wrapping';
 import { table2resource } from './middlewares/table2resource';
+import { errorHandler } from './middlewares';
 
 export function createDatabase(options: ApplicationOptions) {
   if (options.database instanceof Database) {
@@ -94,6 +95,8 @@ export function createCli(app: Application, options: ApplicationOptions): Comman
 }
 
 export function registerMiddlewares(app: Application, options: ApplicationOptions) {
+  app.use(errorHandler());
+
   if (options.bodyParser !== false) {
     app.use(
       bodyParser({
