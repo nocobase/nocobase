@@ -1,7 +1,7 @@
 import { ObjectField as ObjectFieldModel } from '@formily/core';
 import { observer, useField } from '@formily/react';
-import { useRequest } from '@nocobase/client';
 import React from 'react';
+import { useRequest } from '../../../api-client';
 import { FilterContext } from './context';
 import { FilterGroup } from './FilterGroup';
 import { SaveDefaultValue } from './SaveDefaultValue';
