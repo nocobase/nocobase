@@ -1,5 +1,5 @@
 import { createForm } from '@formily/core';
-import { FormProvider } from '@formily/react';
+import { FormProvider, Schema } from '@formily/react';
 import { uid } from '@formily/shared';
 import { useCookieState } from 'ahooks';
 import React, { useMemo, useState } from 'react';
@@ -11,6 +11,26 @@ import { SchemaComponentOptions } from './SchemaComponentOptions';
 const randomString = (prefix: string = '') => {
   return `${prefix}${uid()}`;
 };
+
+Schema.silent(true);
+
+const Registry = {
+  silent: true,
+  compile(expression: string, scope = {}) {
+    console.log('expression', expression);
+    if (Registry.silent) {
+      try {
+        return new Function('$root', `with($root) { return (${expression}); }`)(scope);
+      } catch {
+        return `{{${expression}}}`;
+      }
+    } else {
+      return new Function('$root', `with($root) { return (${expression}); }`)(scope);
+    }
+  },
+};
+
+Schema.registerCompiler(Registry.compile);
 
 export const SchemaComponentProvider: React.FC<ISchemaComponentProvider> = (props) => {
   const { designable, components, children } = props;

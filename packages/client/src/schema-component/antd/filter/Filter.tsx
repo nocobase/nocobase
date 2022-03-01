@@ -1,27 +1,33 @@
-import { LoadingOutlined } from '@ant-design/icons';
-import { connect, mapProps, mapReadPretty } from '@formily/react';
+import { ObjectField as ObjectFieldModel } from '@formily/core';
+import { observer, useField } from '@formily/react';
 import React from 'react';
-import { FilterAction } from './Filter.Action';
-import { FilterDynamicValue } from './Filter.DynamicValue';
+import { useRequest } from '../../../api-client';
+import { FilterContext } from './context';
 import { FilterGroup } from './FilterGroup';
-import './style.less';
+import { SaveDefaultValue } from './SaveDefaultValue';
 
-export const Filter: any = connect(
-  (props) => {
-    return <FilterGroup bordered={false} {...props} />;
-  },
-  mapProps((props, field) => {
-    return {
-      ...props,
-      suffix: <span>{field?.['loading'] || field?.['validating'] ? <LoadingOutlined /> : props.suffix}</span>,
-    };
-  }),
-  mapReadPretty((props) => {
-    return null;
-  }),
-);
+const useDef = (options) => {
+  const field = useField<ObjectFieldModel>();
+  return useRequest(() => Promise.resolve({ data: field.dataSource }), options);
+};
 
-Filter.DynamicValue = FilterDynamicValue;
-Filter.Action = FilterAction;
+export const Filter: any = observer((props: any) => {
+  const { useDataSource = useDef, dynamicComponent } = props;
+  const field = useField<ObjectFieldModel>();
+  useDataSource({
+    onSuccess(data) {
+      console.log('onSuccess', data?.data);
+      field.dataSource = data?.data || [];
+    },
+  });
+  return (
+    <div>
+      <FilterContext.Provider value={{ dynamicComponent, options: field.dataSource || [] }}>
+        <FilterGroup {...props} />
+      </FilterContext.Provider>
+      <pre>{JSON.stringify(field.value, null, 2)}</pre>
+    </div>
+  );
+});
 
-export default Filter;
+Filter.SaveDefaultValue = SaveDefaultValue;
