@@ -2,6 +2,7 @@ import { CloseCircleOutlined } from '@ant-design/icons';
 import { observer, useField } from '@formily/react';
 import { Cascader, Select, Space } from 'antd';
 import React, { useContext } from 'react';
+import { useCompile } from '../..';
 import { RemoveConditionContext } from './context';
 import { DynamicComponent } from './DynamicComponent';
 import { useValues } from './useValues';
@@ -10,6 +11,7 @@ export const FilterItem = observer((props: any) => {
   const field = useField<any>();
   const remove = useContext(RemoveConditionContext);
   const { option, options, dataIndex, operator, setDataIndex, setOperator, value, setValue } = useValues();
+  const compile = useCompile();
   return (
     <div style={{ marginBottom: 8 }}>
       <Space>
@@ -25,14 +27,14 @@ export const FilterItem = observer((props: any) => {
           changeOnSelect={false}
           key={field.address.toString()}
           value={dataIndex}
-          options={options}
+          options={compile(options)}
           onChange={(value) => {
             setDataIndex(value);
           }}
         />
         <Select
           value={operator}
-          options={option?.operators}
+          options={compile(option?.operators)}
           onChange={(value) => {
             setOperator(value);
           }}

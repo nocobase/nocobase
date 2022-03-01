@@ -41,7 +41,6 @@ export const Cascader = connect(
     });
     // 兼容值为 object[] 的情况
     const toValue = () => {
-      return ['11'];
       return toArr(value).map((item) => {
         if (typeof item === 'object') {
           return item[fieldNames.value];

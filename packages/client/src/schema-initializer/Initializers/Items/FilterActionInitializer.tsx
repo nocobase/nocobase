@@ -1,8 +1,72 @@
 import { Switch } from 'antd';
-import flat from 'flat';
 import React from 'react';
 import { SchemaInitializer } from '../../SchemaInitializer';
 import { useCurrentSchema } from '../utils';
+
+const schema = {
+  'x-component': 'Action',
+  'x-component-props': {
+    popover: true,
+  },
+  type: 'void',
+  title: '{{t("Filter")}}',
+  properties: {
+    popover: {
+      type: 'void',
+      'x-decorator': 'Form',
+      'x-decorator-props': {},
+      'x-component': 'Action.Popover',
+      'x-component-props': {
+        trigger: 'click',
+        placement: 'bottomLeft',
+      },
+      properties: {
+        filter: {
+          type: 'object',
+          default: {},
+          'x-component': 'Filter',
+          'x-component-props': {
+            useDataSource: '{{cm.useFilterDataSource}}',
+          },
+        },
+        footer: {
+          type: 'void',
+          'x-component': 'Action.Popover.Footer',
+          properties: {
+            actions: {
+              type: 'void',
+              'x-component': 'ActionBar',
+              properties: {
+                saveDefault: {
+                  type: 'void',
+                  'x-component': 'Filter.SaveDefaultValue',
+                  'x-component-props': {},
+                },
+                cancel: {
+                  type: 'void',
+                  title: '{{t("Cancel")}}',
+                  'x-component': 'Action',
+                  'x-component-props': {
+                    useAction: '{{cm.useCancelFilterAction}}',
+                  },
+                },
+                submit: {
+                  type: 'void',
+                  title: '{{t("Submit")}}',
+                  'x-component': 'Action',
+                  'x-component-props': {
+                    type: 'primary',
+                    useAction: '{{cm.useFilterAction}}',
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+    },
+  },
+};
 
 export const FilterActionInitializer = (props) => {
   const { item, insert } = props;
@@ -15,22 +79,8 @@ export const FilterActionInitializer = (props) => {
           return remove();
         }
         insert({
+          ...schema,
           ...item.schema,
-          name: 'filter',
-          type: 'object',
-          default: flat.unflatten({
-            $or: [
-              { 'aa.$eq': 'b' },
-              { 'bb.field.$eq': ['aabb', 'aaa'] },
-              {
-                'bb.field': {
-                  $eq: ['aabb', 'aaa'],
-                },
-              },
-            ],
-          }),
-          'x-component': 'Filter',
-          'x-component-props': {},
         });
       }}
     >
