@@ -11,4 +11,4 @@ export default {
     job.set('status', JOB_STATUS.RESOLVED);
     return job;
   }
-}
+};

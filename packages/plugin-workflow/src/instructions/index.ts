@@ -1,17 +1,20 @@
-import ExecutionModel from "../models/Execution";
-import FlowNodeModel from "../models/FlowNode";
+import { Registry } from '@nocobase/utils';
+
+import ExecutionModel from '../models/Execution';
+import FlowNodeModel from '../models/FlowNode';
 
 import prompt from './prompt';
+import calculation from './calculation';
 import condition from './condition';
 import parallel from './parallel';
-import query from "./query";
-import create from "./create";
-import update from "./update";
-import destroy from "./destroy";
+import query from './query';
+import create from './create';
+import update from './update';
+import destroy from './destroy';
 
 export interface Job {
   status: number;
-  result: unknown;
+  result?: unknown;
   [key: string]: unknown;
 }
 
@@ -29,24 +32,24 @@ export interface Instruction {
     // - could be the workflow execution object (containing context data)
     execution: ExecutionModel
   ): InstructionResult;
+
   // for start node in main flow (or branch) to resume when manual sub branch triggered
-  resume?(): InstructionResult
+  resume?(
+    this: FlowNodeModel,
+    input: any,
+    execution: ExecutionModel
+  ): InstructionResult
 }
 
-const registery = new Map<string, Instruction>();
+export const instructions = new Registry<Instruction>();
 
-export function getInstruction(key: string): Instruction {
-  return registery.get(key);
-}
+instructions.register('prompt', prompt);
+instructions.register('calculation', calculation);
+instructions.register('condition', condition);
+instructions.register('parallel', parallel);
+instructions.register('query', query);
+instructions.register('create', create);
+instructions.register('update', update);
+instructions.register('destroy', destroy);
 
-export function registerInstruction(key: string, instruction: any) {
-  registery.set(key, instruction);
-}
-
-registerInstruction('prompt', prompt);
-registerInstruction('condition', condition);
-registerInstruction('parallel', parallel);
-registerInstruction('query', query);
-registerInstruction('create', create);
-registerInstruction('update', update);
-registerInstruction('destroy', destroy);
+export default instructions;

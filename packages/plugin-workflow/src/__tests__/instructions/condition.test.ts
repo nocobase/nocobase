@@ -111,9 +111,161 @@ describe('workflow > instructions > condition', () => {
       expect(jobs.length).toEqual(2);
       expect(jobs[1].result).toEqual(false);
     });
+
+    it('not', async () => {
+
+    });
   });
 
   describe('group calculation', () => {
+    it('and true', async () => {
+      const n1 = workflow.createNode({
+        type: 'condition',
+        config: {
+          calculation: {
+            group: {
+              type: 'and',
+              calculations: [
+                {
+                  calculator: 'equal',
+                  operands: [{ value: 1 }, { value: 1 }]
+                },
+                {
+                  calculator: 'equal',
+                  operands: [{ value: 1 }, { value: 1 }]
+                }
+              ]
+            }
+          }
+        }
+      });
 
+      const post = await PostModel.create({ title: 't1' });
+
+      const [execution] = await workflow.getExecutions();
+      const [job] = await execution.getJobs();
+      expect(job.result).toBe(true);
+    });
+
+    it('and false', async () => {
+      const n1 = workflow.createNode({
+        type: 'condition',
+        config: {
+          calculation: {
+            group: {
+              type: 'and',
+              calculations: [
+                {
+                  calculator: 'equal',
+                  operands: [{ value: 1 }, { value: 1 }]
+                },
+                {
+                  calculator: 'equal',
+                  operands: [{ value: 0 }, { value: 1 }]
+                }
+              ]
+            }
+          }
+        }
+      });
+
+      const post = await PostModel.create({ title: 't1' });
+
+      const [execution] = await workflow.getExecutions();
+      const [job] = await execution.getJobs();
+      expect(job.result).toBe(false);
+    });
+
+    it('or true', async () => {
+      const n1 = workflow.createNode({
+        type: 'condition',
+        config: {
+          calculation: {
+            group: {
+              type: 'or',
+              calculations: [
+                {
+                  calculator: 'equal',
+                  operands: [{ value: 1 }, { value: 1 }]
+                },
+                {
+                  calculator: 'equal',
+                  operands: [{ value: 0 }, { value: 1 }]
+                }
+              ]
+            }
+          }
+        }
+      });
+
+      const post = await PostModel.create({ title: 't1' });
+
+      const [execution] = await workflow.getExecutions();
+      const [job] = await execution.getJobs();
+      expect(job.result).toBe(true);
+    });
+
+    it('or false', async () => {
+      const n1 = workflow.createNode({
+        type: 'condition',
+        config: {
+          calculation: {
+            group: {
+              type: 'and',
+              calculations: [
+                {
+                  calculator: 'equal',
+                  operands: [{ value: 0 }, { value: 1 }]
+                },
+                {
+                  calculator: 'equal',
+                  operands: [{ value: 0 }, { value: 1 }]
+                }
+              ]
+            }
+          }
+        }
+      });
+
+      const post = await PostModel.create({ title: 't1' });
+
+      const [execution] = await workflow.getExecutions();
+      const [job] = await execution.getJobs();
+      expect(job.result).toBe(false);
+    });
+
+    it('nested', async () => {
+      const n1 = workflow.createNode({
+        type: 'condition',
+        config: {
+          calculation: {
+            group: {
+              type: 'and',
+              calculations: [
+                {
+                  calculator: 'equal',
+                  operands: [{ value: 1 }, { value: 1 }]
+                },
+                {
+                  group: {
+                    type: 'or',
+                    calculations: [
+                      { calculator: 'equal', operands: [{ value: 0 }, { value: 1 }] },
+                      { calculator: 'equal', operands: [{ value: 0 }, { value: 1 }] }
+                    ]
+                  }
+                }
+              ]
+            }
+          }
+        }
+      });
+
+      const post = await PostModel.create({ title: 't1' });
+
+      const [execution] = await workflow.getExecutions();
+      const [job] = await execution.getJobs();
+      expect(job.result).toBe(false);
+    });
   });
 });

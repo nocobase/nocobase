@@ -2,9 +2,9 @@ import { Plugin } from '@nocobase/server';
 import { resolve } from 'path';
 import { availableActionResource } from './actions/available-actions';
 import { roleCollectionsResource } from './actions/role-collections';
+import { RoleModel } from './model/RoleModel';
 import { RoleResourceActionModel } from './model/RoleResourceActionModel';
 import { RoleResourceModel } from './model/RoleResourceModel';
-import { RoleModel } from './model/RoleModel';
 
 export interface AssociationFieldAction {
   associationActions: string[];
@@ -236,6 +236,26 @@ export class PluginACL extends Plugin {
     // sync database role data to acl
     this.app.on('beforeStart', async () => {
       await this.writeRolesToACL();
+    });
+
+    this.app.on('beforeInstallPlugin', async (plugin) => {
+      if (plugin.constructor.name !== 'UsersPlugin') {
+        return;
+      }
+      const repository = this.app.db.getRepository('roles');
+      await repository.createMany({
+        records: [
+          {
+            name: 'admin',
+            title: 'Admin',
+          },
+          {
+            name: 'member',
+            title: 'Member',
+            default: true,
+          },
+        ],
+      });
     });
   }
 

@@ -2,8 +2,9 @@ import path from 'path';
 import { MockServer, mockServer } from '@nocobase/test';
 
 import plugin from '../server';
-import { registerInstruction } from '../instructions';
+import instructions from '../instructions';
 import { JOB_STATUS } from '../constants';
+import calculators from '../calculators';
 
 export function sleep(ms: number) {
   return new Promise(resolve => {
@@ -17,34 +18,44 @@ export async function getApp(options = {}): Promise<MockServer> {
   app.plugin(plugin);
 
   // for test only
-  registerInstruction('echo', {
-    run(this, { result }, execution) {
-      return {
-        status: JOB_STATUS.RESOLVED,
-        result
-      };
-    }
-  });
+  if (!instructions.get('echo')) {
+    instructions.register('echo', {
+      run(this, { result }, execution) {
+        return {
+          status: JOB_STATUS.RESOLVED,
+          result
+        };
+      }
+    });
+  }
 
-  registerInstruction('error', {
-    run(this, input, execution) {
-      throw new Error('definite error');
-    }
-  });
+  if (!instructions.get('error')) {
+    instructions.register('error', {
+      run(this, input, execution) {
+        throw new Error('definite error');
+      }
+    });
+  }
 
-  registerInstruction('prompt->error', {
-    run(this, input, execution) {
-      return {
-        status: JOB_STATUS.PENDING
-      };
-    },
-    resume(this, input, execution) {
-      throw new Error('input failed');
-    }
-  });
-  
+  if (!instructions.get('prompt->error')) {
+    instructions.register('prompt->error', {
+      run(this, input, execution) {
+        return {
+          status: JOB_STATUS.PENDING
+        };
+      },
+      resume(this, input, execution) {
+        throw new Error('input failed');
+      }
+    });
+  }
+
+  if (!calculators.get('no1')) {
+    calculators.register('no1', () => 1);
+  }
+
   await app.load();
-  
+
   await app.db.import({
     directory: path.resolve(__dirname, './collections')
   });
@@ -56,6 +67,6 @@ export async function getApp(options = {}): Promise<MockServer> {
   }
   // TODO: need a better life cycle event than manually trigger
   await app.emitAsync('beforeStart');
-  
+
   return app;
 }

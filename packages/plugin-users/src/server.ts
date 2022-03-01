@@ -5,34 +5,22 @@ import * as actions from './actions/users';
 import * as middlewares from './middlewares';
 
 export default class UsersPlugin extends Plugin {
+
   async beforeLoad() {
-    const {
-      adminNickname = 'Super Admin',
-      adminEmail = 'admin@nocobase.com',
-      adminPassword = 'admin123',
-    } = this.options;
-
-    this.app.on('installing', async () => {
-      const User = this.db.getCollection('users');
-      await User.model.create({
-        nickname: adminNickname,
-        email: adminEmail,
-        password: adminPassword,
-      });
-    });
-
     this.db.on('users.afterCreateWithAssociations', async (model, options) => {
       const { transaction } = options;
 
-      const defaultRole = await this.app.db.getRepository('roles').findOne({
-        filter: {
-          default: true,
-        },
-        transaction,
-      });
+      if (this.app.db.getCollection('roles')) {
+        const defaultRole = await this.app.db.getRepository('roles').findOne({
+          filter: {
+            default: true,
+          },
+          transaction,
+        });
 
-      if (defaultRole && (await model.countRoles({ transaction })) == 0) {
-        await model.addRoles(defaultRole, { transaction });
+        if (defaultRole && (await model.countRoles({ transaction })) == 0) {
+          await model.addRoles(defaultRole, { transaction });
+        }
       }
     });
 
@@ -79,4 +67,23 @@ export default class UsersPlugin extends Plugin {
       directory: resolve(__dirname, 'collections'),
     });
   }
+
+  async install() {
+    const {
+      adminNickname = 'Super Admin',
+      adminEmail = 'admin@nocobase.com',
+      adminPassword = 'admin123',
+    } = this.options;
+
+    const User = this.db.getCollection('users');
+    await User.repository.create({
+      values: {
+        nickname: adminNickname,
+        email: adminEmail,
+        password: adminPassword,
+        roles: ['admin'],
+      },
+    });
+  }
+
 }

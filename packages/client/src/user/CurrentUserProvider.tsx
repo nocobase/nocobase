@@ -1,9 +1,13 @@
 import { Spin } from 'antd';
-import React, { createContext } from 'react';
+import React, { createContext, useContext } from 'react';
 import { Redirect } from 'react-router-dom';
 import { useRequest } from '../api-client';
 
 export const CurrentUserContext = createContext(null);
+
+export const useCurrentUserContext = () => {
+  return useContext(CurrentUserContext);
+}
 
 export const CurrentUserProvider = (props) => {
   const result = useRequest({

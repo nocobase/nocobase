@@ -57,7 +57,7 @@ export default {
     // for users, this is almost equivalent to `Promise.all`,
     // because of the delay is not significant sensible.
     // another better aspect of this is, it could handle sequenced branches in future.
-    await branches.reduce((promise: Promise<any>, branch) => promise.then(() => execution.exec(branch, job)), Promise.resolve());
+    await branches.reduce((promise: Promise<any>, branch) => promise.then(() => execution.run(branch, job)), Promise.resolve());
 
     return execution.end(this, job);
   },
@@ -89,4 +89,4 @@ export default {
 
     return job;
   }
-}
+};

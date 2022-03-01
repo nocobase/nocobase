@@ -1,3 +1,4 @@
+import { css } from '@emotion/css';
 import { Layout } from 'antd';
 import React, { useRef, useState } from 'react';
 import { useHistory, useRouteMatch } from 'react-router-dom';
@@ -34,7 +35,16 @@ const InternalAdminLayout = (props: any) => {
     <Layout>
       <Layout.Header style={{ height: 46, lineHeight: '46px', position: 'relative', paddingLeft: 0 }}>
         <div style={{ display: 'flex' }}>
-          <div style={{ display: 'inline-flex', color: '#fff', padding: '0 24px' }}>{result?.data?.data?.title}</div>
+          <div style={{ width: 200, display: 'inline-flex', color: '#fff', padding: '0', alignItems: 'center' }}>
+            <img
+              className={css`
+                height: 20px;
+                padding: 0 16px;
+              `}
+              src={result?.data?.data?.logo?.url}
+            />
+            {/* {result?.data?.data?.title} */}
+          </div>
           <RemoteSchemaComponent
             hidden={hidden}
             uid={route.uiSchemaUid}

@@ -1,6 +1,7 @@
 import { observable } from '@formily/reactive';
 import { Result } from 'ahooks/lib/useRequest/src/types';
 import axios, { AxiosInstance, AxiosRequestConfig, AxiosResponse } from 'axios';
+import Cookies from 'js-cookie';
 import qs from 'qs';
 
 export interface ActionParams {
@@ -54,18 +55,25 @@ export class APIClient {
     });
   }
 
+  // TODO
   authMiddleware() {
     this.axios.interceptors.request.use((config) => {
       const token = localStorage.getItem(this.tokenKey);
       if (token) {
         config.headers['Authorization'] = `Bearer ${token}`;
       }
+      const currentRoleName = Cookies.get('currentRoleName');
+      if (currentRoleName) {
+        config.headers['X-Role'] = currentRoleName;
+      }
       return config;
     });
   }
 
+  // TODO
   setBearerToken(token: any) {
     localStorage.setItem(this.tokenKey, token || '');
+    Cookies.remove('currentRoleName');
   }
 
   service(uid: string): Result<any, any> {
