@@ -11,7 +11,6 @@ import { i18n } from '../../../i18n';
 import { ActionBar, ActionContext } from '../action';
 import { CalendarContext, ToolbarContext } from './context';
 import { Event } from './Event';
-import { Filter } from './Filter';
 import { Nav } from './Nav';
 import './style.less';
 import { Title } from './Title';
@@ -182,5 +181,3 @@ Calendar.Today = Today;
 Calendar.Nav = Nav;
 
 Calendar.ViewSelect = ViewSelect;
-
-Calendar.Filter = Filter;
