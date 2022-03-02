@@ -4,7 +4,7 @@ import { useField, useFieldSchema } from '@formily/react';
 import { Space } from 'antd';
 import classNames from 'classnames';
 import React from 'react';
-import { DragHandler, useDesignable } from '../schema-component';
+import { DragHandler, useCompile, useDesignable } from '../schema-component';
 import { SchemaSettings } from './SchemaSettings';
 
 const titleCss = css`
@@ -27,6 +27,7 @@ export const GeneralSchemaDesigner = (props: any) => {
   const { dn, designable } = useDesignable();
   const field = useField();
   const fieldSchema = useFieldSchema();
+  const compile = useCompile();
   const schemaSettingsProps = {
     dn,
     field,
@@ -37,7 +38,7 @@ export const GeneralSchemaDesigner = (props: any) => {
   }
   return (
     <div className={'general-schema-designer'}>
-      {title && <div className={classNames('general-schema-designer-title', titleCss)}>{title}</div>}
+      {title && <div className={classNames('general-schema-designer-title', titleCss)}>{compile(title)}</div>}
       <div className={'general-schema-designer-icons'}>
         <Space size={2} align={'center'}>
           <DragHandler>

@@ -6,7 +6,7 @@ export default {
   sortable: 'sort',
   fields: [
     {
-      interface: 'string',
+      interface: 'input',
       type: 'string',
       name: 'nickname',
       uiSchema: {
@@ -47,10 +47,11 @@ export default {
       otherKey: 'roleName',
       sourceKey: 'id',
       targetKey: 'name',
+      through: 'rolesUsers',
       uiSchema: {
         type: 'array',
         title: '{{t("Roles")}}',
-        'x-component': 'Select.Drawer',
+        'x-component': 'RecordPicker',
         'x-component-props': {
           multiple: true,
           fieldNames: {
@@ -58,12 +59,9 @@ export default {
             value: 'name',
           },
         },
-        'x-decorator': 'FormItem',
-        'x-designable-bar': 'Select.Drawer.DesignableBar',
       },
     },
     {
-      interface: 'select',
       type: 'string',
       name: 'appLang',
     },

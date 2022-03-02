@@ -2,6 +2,7 @@ import { CollectionOptions } from '@nocobase/database';
 
 export default {
   name: 'roles',
+  title: '{{t("Roles")}}',
   autoGenId: false,
   model: 'RoleModel',
   fields: [
@@ -10,11 +11,21 @@ export default {
       name: 'name',
       prefix: 'r_',
       primaryKey: true,
+      uiSchema: {
+        type: 'string',
+        title: '{{t("Role UID")}}',
+        'x-component': 'Input',
+      },
     },
     {
       type: 'string',
       name: 'title',
       unique: true,
+      uiSchema: {
+        type: 'string',
+        title: '{{t("Role name")}}',
+        'x-component': 'Input',
+      },
     },
     {
       type: 'boolean',
@@ -45,6 +56,7 @@ export default {
       type: 'belongsToMany',
       name: 'menuUiSchemas',
       target: 'uiSchemas',
+      targetKey: 'x-uid',
     },
     {
       type: 'hasMany',

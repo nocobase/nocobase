@@ -184,7 +184,7 @@ describe('collection sync', () => {
 
     const tableFields = await (<any>model).queryInterface.describeTable(`${db.getTablePrefix()}posts`);
 
-    expect(tableFields['user_id']).toBeUndefined();
+    expect(tableFields['userId']).toBeUndefined();
   });
 
   test('sync with association', async () => {
@@ -211,7 +211,7 @@ describe('collection sync', () => {
 
     const model = collection.model;
     await collection.sync();
-    const tableFields = await (<any>model).queryInterface.describeTable(`${db.getTablePrefix()}posts_tags`);
+    const tableFields = await (<any>model).queryInterface.describeTable(`${db.getTablePrefix()}postsTags`);
     expect(tableFields['postId']).toBeDefined();
     expect(tableFields['tagId']).toBeDefined();
   });

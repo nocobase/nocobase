@@ -1,7 +1,7 @@
-import { MockServer } from '@nocobase/test';
 import { Database, Model } from '@nocobase/database';
-import { prepareApp } from './prepare';
 import { CollectionRepository } from '@nocobase/plugin-collection-manager';
+import { MockServer } from '@nocobase/test';
+import { prepareApp } from './prepare';
 
 describe('role resource api', () => {
   let app: MockServer;
@@ -54,6 +54,9 @@ describe('role resource api', () => {
       .agent()
       .resource('roles.collections', 'admin')
       .list({
+        filter: {
+          $or: [{ name: 'c1' }, { name: 'c2' }],
+        },
         sort: ['sort'],
       });
 

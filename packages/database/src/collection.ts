@@ -159,7 +159,7 @@ export class Collection<
         collection: this,
       },
     );
-
+    this.removeField(name);
     this.fields.set(name, field);
     this.emit('field.afterAdd', field);
     return field;
@@ -187,6 +187,9 @@ export class Collection<
   }
 
   removeField(name) {
+    if (!this.fields.has(name)) {
+      return;
+    }
     const field = this.fields.get(name);
     const bool = this.fields.delete(name);
     if (bool) {

@@ -11,7 +11,7 @@ export const updatedAt: IField = {
   sortable: true,
   default: {
     type: 'date',
-    field: 'updated_at',
+    field: 'updatedAt',
     // name,
     uiSchema: {
       type: 'datetime',

@@ -101,13 +101,13 @@ export class APIClient {
         } else {
           config['method'] = 'post';
         }
-        return (params?: ActionParams) => {
+        return async (params?: ActionParams) => {
           const { values, ...others } = params || {};
           config['params'] = others;
           if (config.method !== 'get') {
             config['data'] = values || {};
           }
-          return this.request(config);
+          return await this.request(config);
         };
       },
     };
