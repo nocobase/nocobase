@@ -35,5 +35,7 @@ describe('create with exception', () => {
         },
       ],
     });
+
+    await app.destroy();
   });
 });
