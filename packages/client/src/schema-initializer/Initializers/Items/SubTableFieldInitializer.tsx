@@ -28,6 +28,7 @@ export const SubTableFieldInitializer = (props) => {
               'x-component-props': {
                 collection: item?.field?.target,
                 association: {
+                  collectionName: item.field.collectionName,
                   name: item.field.name,
                   sourceKey: item.field.sourceKey,
                   targetKey: item.field.targetKey,
