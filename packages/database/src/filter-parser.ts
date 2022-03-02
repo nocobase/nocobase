@@ -121,7 +121,7 @@ export default class FilterParser {
             } else if (typeof opKey === 'function') {
               skipPrefix = origins.join('.');
 
-              value = opKey(originalFiler[skipPrefix], {
+              value = opKey(lodash.get(flatten(originalFiler, { safe: true }), skipPrefix), {
                 db: this.database,
                 path: skipPrefix,
                 fieldName: skipPrefix.replace(`.${firstKey}`, ''),
