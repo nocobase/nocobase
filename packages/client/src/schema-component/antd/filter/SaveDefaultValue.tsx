@@ -7,9 +7,12 @@ import { useDesignable } from '../../hooks';
 
 export const SaveDefaultValue = (props) => {
   const { t } = useTranslation();
-  const { dn, refresh } = useDesignable();
+  const { designable, dn, refresh } = useDesignable();
   const fieldSchema = useFieldSchema();
   const form = useForm();
+  if (!designable) {
+    return null;
+  }
   return (
     <Button
       className={css`

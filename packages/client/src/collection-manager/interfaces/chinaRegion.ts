@@ -14,6 +14,7 @@ export const chinaRegion: IField = {
     type: 'belongsToMany',
     target: 'chinaRegions',
     targetKey: 'code',
+    sortBy: 'level',
     // name,
     uiSchema: {
       type: 'array',

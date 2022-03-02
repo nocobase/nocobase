@@ -17,7 +17,6 @@ Schema.silent(true);
 const Registry = {
   silent: true,
   compile(expression: string, scope = {}) {
-    console.log('expression', expression);
     if (Registry.silent) {
       try {
         return new Function('$root', `with($root) { return (${expression}); }`)(scope);

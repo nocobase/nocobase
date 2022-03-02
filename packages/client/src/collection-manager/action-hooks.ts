@@ -39,12 +39,12 @@ export const useCollectionFilterOptions = (collectionName: string) => {
       operators: fieldInterface.operators || [],
     };
     return option;
-  }
-  fields.forEach(field => {
+  };
+  fields.forEach((field) => {
     options.push(field2option(field));
   });
   return options;
-}
+};
 
 export const useFilterDataSource = (options) => {
   const { name } = useCollection();
@@ -56,17 +56,20 @@ export const useFilterDataSource = (options) => {
       }),
     options,
   );
-}
+};
 
 export const useFilterAction = () => {
+  const { run, params } = useResourceActionContext();
   const form = useForm();
   const ctx = useActionContext();
+  const [first, ...others] = params;
   return {
     async run() {
+      run({ ...first, filter: form.values.filter }, ...others);
       ctx.setVisible(false);
     },
   };
-}
+};
 
 export const useCreateAction = () => {
   const form = useForm();

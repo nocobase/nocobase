@@ -58,29 +58,58 @@ const findTableColumn = (schema: Schema, key: string, action: string, deepth: nu
 
 export const useTableColumnInitializerFields = () => {
   const { name, fields } = useCollection();
-  return (
-    fields
-      // .filter((field) => field?.uiSchema?.title)
-      .map((field) => {
+  return fields
+    .filter((field) => field?.interface !== 'subTable')
+    .map((field) => {
+      if (field.interface === 'linkTo') {
         return {
+          field,
           type: 'item',
           title: field?.uiSchema?.title || field.name,
+          find: findTableColumn,
+          remove: removeTableColumn,
+          component: 'LinkToFieldInitializer',
           schema: {
             name: field.name,
             'x-collection-field': `${name}.${field.name}`,
             'x-component': 'CollectionField',
           },
-          component: 'CollectionFieldInitializer',
-          find: findTableColumn,
-          remove: removeTableColumn,
         } as SchemaInitializerItemOptions;
-      })
-  );
+      }
+      return {
+        type: 'item',
+        title: field?.uiSchema?.title || field.name,
+        component: 'CollectionFieldInitializer',
+        find: findTableColumn,
+        remove: removeTableColumn,
+        schema: {
+          name: field.name,
+          'x-collection-field': `${name}.${field.name}`,
+          'x-component': 'CollectionField',
+        },
+      } as SchemaInitializerItemOptions;
+    });
 };
 
 export const useFormItemInitializerFields = () => {
   const { name, fields } = useCollection();
   return fields?.map((field) => {
+    if (field.interface === 'linkTo') {
+      return {
+        type: 'item',
+        title: field?.uiSchema?.title || field.name,
+        component: 'LinkToFieldInitializer',
+        remove: removeGridFormItem,
+        field,
+        schema: {
+          name: field.name,
+          'x-designer': 'FormItem.Designer',
+          'x-component': 'CollectionField',
+          'x-decorator': 'FormItem',
+          'x-collection-field': `${name}.${field.name}`,
+        },
+      } as SchemaInitializerItemOptions;
+    }
     if (field.interface === 'subTable') {
       return {
         type: 'item',
