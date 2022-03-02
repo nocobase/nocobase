@@ -72,7 +72,9 @@ export const collectionFieldSchema: ISchema = {
       action: 'list',
       params: {
         pageSize: 50,
-        filter: {},
+        filter: {
+          'interface.$not': null,
+        },
         sort: ['sort'],
         appends: ['uiSchema'],
       },

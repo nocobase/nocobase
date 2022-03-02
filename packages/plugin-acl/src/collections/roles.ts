@@ -11,6 +11,7 @@ export default {
       name: 'name',
       prefix: 'r_',
       primaryKey: true,
+      interface: 'input',
       uiSchema: {
         type: 'string',
         title: '{{t("Role UID")}}',
@@ -21,6 +22,7 @@ export default {
       type: 'string',
       name: 'title',
       unique: true,
+      interface: 'input',
       uiSchema: {
         type: 'string',
         title: '{{t("Role name")}}',

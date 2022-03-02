@@ -14,18 +14,20 @@ interface ResourceActionProviderProps {
 
 const ResourceContext = createContext<any>(null);
 
-const CollectionResourceActionProvider = (props) => {
+const InternalCollectionResourceActionProvider = (props) => {
   let { collection, request, uid } = props;
-  const { get } = useCollectionManager();
   const api = useAPIClient();
-  const service = useRequest(request, { uid });
+  const service = useRequest(
+    {
+      ...request,
+      params: {
+        ...request?.params,
+        appends: collection.fields.filter(field => field.target).map((field) => field.name),
+      },
+    },
+    { uid },
+  );
   const resource = api.resource(request.resource);
-  if (typeof collection === 'string') {
-    collection = get(collection);
-  }
-  if (!collection) {
-    return null;
-  }
   return (
     <ResourceContext.Provider value={{ type: 'collection', resource, collection }}>
       <ResourceActionContext.Provider value={service}>
@@ -33,6 +35,18 @@ const CollectionResourceActionProvider = (props) => {
       </ResourceActionContext.Provider>
     </ResourceContext.Provider>
   );
+};
+
+const CollectionResourceActionProvider = (props) => {
+  let { collection, request, uid } = props;
+  const { getCollection } = useCollectionManager();
+  if (typeof collection === 'string') {
+    collection = getCollection(collection);
+  }
+  if (!collection) {
+    return null;
+  }
+  return <InternalCollectionResourceActionProvider {...props} collection={collection} />;
 };
 
 const AssociationResourceActionProvider = (props) => {

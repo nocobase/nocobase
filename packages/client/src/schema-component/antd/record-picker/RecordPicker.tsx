@@ -13,7 +13,7 @@ import {
   useForm
 } from '@formily/react';
 import { toArr } from '@formily/shared';
-import { Button, Drawer, Select, Space, Tag } from 'antd';
+import { Button, Drawer, Select, Space } from 'antd';
 import React, { createContext, useContext, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useAttach } from '../../hooks/useAttach';
@@ -113,19 +113,21 @@ const ReadPrettyRecordPicker: React.FC = (props) => {
   const field = useField<Field>();
   return (
     <div>
-      {toArr(field.value).map((record, index) => {
-        return (
-          <RowContext.Provider key={index} value={{ record, field, props }}>
-            <RecursionField
-              schema={fieldSchema}
-              onlyRenderProperties
-              filterProperties={(s) => {
-                return s['x-component'] === 'RecordPicker.SelectedItem';
-              }}
-            />
-          </RowContext.Provider>
-        );
-      })}
+      <Space size={0} split={<span style={{ marginRight: 4, color: '#aaa' }}>, </span>}>
+        {toArr(field.value).map((record, index) => {
+          return (
+            <RowContext.Provider key={index} value={{ record, field, props }}>
+              <RecursionField
+                schema={fieldSchema}
+                onlyRenderProperties
+                filterProperties={(s) => {
+                  return s['x-component'] === 'RecordPicker.SelectedItem';
+                }}
+              />
+            </RowContext.Provider>
+          );
+        })}
+      </Space>
     </div>
   );
 };
@@ -185,11 +187,12 @@ RecordPicker.SelectedItem = () => {
   const ctx = useContext(RowContext);
   const fieldSchema = useFieldSchema();
   const [visible, setVisible] = useState(false);
+  const fieldNames = ctx.field.componentProps.fieldNames;
   return (
     <ActionContext.Provider value={{ visible, setVisible }}>
-      <Tag style={{ cursor: 'pointer' }} onClick={() => setVisible(true)}>
-        {ctx.record?.name}
-      </Tag>
+      <a style={{ cursor: 'pointer' }} onClick={() => setVisible(true)}>
+        {ctx.record[fieldNames?.label || 'id']}
+      </a>
       <RecursionField onlyRenderProperties schema={fieldSchema}></RecursionField>
     </ActionContext.Provider>
   );
