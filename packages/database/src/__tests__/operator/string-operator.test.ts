@@ -39,4 +39,24 @@ describe('string operator', () => {
 
     expect(u1Res.get('id')).toEqual(u1.get('id'));
   });
+
+  it('should query with and ', async () => {
+    const u1 = await db.getRepository('users').create({
+      values: {
+        name: 'names of u1',
+      },
+    });
+
+    const u1Res = await db.getRepository('users').findOne({
+      filter: {
+        $and: [
+          {
+            'name.$includes': 'u1',
+          },
+        ],
+      },
+    });
+
+    expect(u1Res.get('id')).toEqual(u1.get('id'));
+  });
 });
