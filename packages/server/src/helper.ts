@@ -5,11 +5,10 @@ import { Command } from 'commander';
 import i18next from 'i18next';
 import { DefaultContext, DefaultState } from 'koa';
 import bodyParser from 'koa-bodyparser';
+import { BaseError } from 'sequelize';
 import Application, { ApplicationOptions } from './application';
 import { dataWrapping } from './middlewares/data-wrapping';
 import { table2resource } from './middlewares/table2resource';
-
-import ValidationError from 'sequelize';
 
 export function createDatabase(options: ApplicationOptions) {
   if (options.database instanceof Database) {
@@ -97,12 +96,11 @@ export function createCli(app: Application, options: ApplicationOptions): Comman
 
 function registerErrorHandler(app: Application) {
   app.errorHandler.register(
-    (err) => err.name == 'SequelizeValidationError',
+    (err) => err?.errors?.length && err instanceof BaseError,
     (err, ctx) => {
       ctx.body = {
         errors: err.errors.map((err) => ({ message: err.message })),
       };
-
       ctx.status = 400;
     },
   );
