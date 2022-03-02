@@ -1,4 +1,5 @@
 import { Op, Sequelize } from 'sequelize';
+import { isPg, isMySQL } from './utils';
 
 const getFieldName = (ctx) => {
   const fieldName = ctx.fieldName;
@@ -36,18 +37,6 @@ const emptyQuery = (ctx, operator: '=' | '>') => {
   }
 
   return `(select ${ifNull}(${funcName}(${fieldName}), 0) ${operator} 0)`;
-};
-
-const getDialect = (ctx) => {
-  return ctx.db.sequelize.getDialect();
-};
-
-const isPg = (ctx) => {
-  return getDialect(ctx) === 'postgres';
-};
-
-const isMySQL = (ctx) => {
-  return getDialect(ctx) === 'mysql';
 };
 
 export default {
