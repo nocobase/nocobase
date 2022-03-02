@@ -5,7 +5,6 @@ import * as actions from './actions/users';
 import * as middlewares from './middlewares';
 
 export default class UsersPlugin extends Plugin {
-
   async beforeLoad() {
     this.db.on('users.afterCreateWithAssociations', async (model, options) => {
       const { transaction } = options;
@@ -85,5 +84,4 @@ export default class UsersPlugin extends Plugin {
       },
     });
   }
-
 }
