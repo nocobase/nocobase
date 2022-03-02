@@ -1,4 +1,4 @@
-import { flatten } from 'flat';
+import { flatten, unflatten } from 'flat';
 import { default as lodash, default as _ } from 'lodash';
 import { ModelCtor } from 'sequelize';
 import { Collection } from './collection';
@@ -121,7 +121,7 @@ export default class FilterParser {
             } else if (typeof opKey === 'function') {
               skipPrefix = origins.join('.');
 
-              value = opKey(lodash.get(flatten(originalFiler, { safe: true }), skipPrefix), {
+              value = opKey(lodash.get(unflatten(originalFiler), skipPrefix), {
                 db: this.database,
                 path: skipPrefix,
                 fieldName: skipPrefix.replace(`.${firstKey}`, ''),
