@@ -12,7 +12,9 @@ const roleCollectionsResource = {
       const collectionRepository = db.getRepository('collections');
 
       // all collections
-      const collections = await collectionRepository.find();
+      const collections = await collectionRepository.find({
+        filter: ctx.action.params.filter,
+      });
 
       // role collections
       const roleResources = await db.getRepository('rolesResources').find({

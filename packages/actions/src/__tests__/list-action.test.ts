@@ -1,5 +1,5 @@
-import { mockServer } from './index';
 import { registerActions } from '@nocobase/actions';
+import { mockServer } from './index';
 
 describe('list action', () => {
   let app;
@@ -112,7 +112,7 @@ describe('list action', () => {
     const response = await app
       .agent()
       .resource('posts.tags', 1)
-      .list({ fields: ['id', 'posts_tags.createdAt'], sort: ['id'] });
+      .list({ fields: ['id', 'postsTags.createdAt'], sort: ['id'] });
 
     const body = response.body;
     expect(body.count).toEqual(2);

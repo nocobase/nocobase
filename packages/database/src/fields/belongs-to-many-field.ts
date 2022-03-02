@@ -1,16 +1,18 @@
 import { omit } from 'lodash';
-import { BelongsToManyOptions as SequelizeBelongsToManyOptions } from 'sequelize';
+import { BelongsToManyOptions as SequelizeBelongsToManyOptions, Utils } from 'sequelize';
 import { Collection } from '../collection';
-import { BaseRelationFieldOptions, MultipleRelationFieldOptions, RelationField } from './relation-field';
+import { MultipleRelationFieldOptions, RelationField } from './relation-field';
 
 export class BelongsToManyField extends RelationField {
   get through() {
     return (
       this.options.through ||
-      [this.context.collection.model.name, this.target]
-        .map((name) => name.toLowerCase())
-        .sort()
-        .join('_')
+      Utils.camelize(
+        [this.context.collection.model.name, this.target]
+          .map((name) => name.toLowerCase())
+          .sort()
+          .join('_'),
+      )
     );
   }
 
@@ -48,6 +50,12 @@ export class BelongsToManyField extends RelationField {
     }
     if (!this.options.sourceKey) {
       this.options.sourceKey = association.sourceKey;
+    }
+    if (!this.options.otherKey) {
+      this.options.otherKey = association.otherKey;
+    }
+    if (!this.options.through) {
+      this.options.through = this.through;
     }
     return true;
   }

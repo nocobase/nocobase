@@ -1,6 +1,6 @@
-import { mockServer } from '@nocobase/test';
-import PluginUiSchema from '@nocobase/plugin-ui-schema-storage';
 import PluginCollectionManager from '@nocobase/plugin-collection-manager';
+import PluginUiSchema from '@nocobase/plugin-ui-schema-storage';
+import { mockServer } from '@nocobase/test';
 import PluginACL from '../server';
 
 let mockRole: string = 'admin';
@@ -32,6 +32,8 @@ export async function prepareApp() {
 
   app.plugin(PluginACL);
   await app.loadAndInstall();
+
+  await app.db.sync();
 
   return app;
 }

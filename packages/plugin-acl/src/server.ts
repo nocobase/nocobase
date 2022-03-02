@@ -259,6 +259,13 @@ export class PluginACL extends Plugin {
     });
   }
 
+  async install() {
+    const repo = this.db.getRepository<any>('collections');
+    if (repo) {
+      await repo.db2cm('roles');
+    }
+  }
+
   async load() {
     await this.app.db.import({
       directory: resolve(__dirname, 'collections'),

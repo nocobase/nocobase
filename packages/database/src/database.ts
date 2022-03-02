@@ -158,10 +158,10 @@ export class Database extends EventEmitter implements AsyncEmitter {
   getRepository<R extends RelationRepository>(name: string, relationId?: string | number): Repository | R {
     if (relationId) {
       const [collection, relation] = name.split('.');
-      return this.getRepository(collection).relation(relation).of(relationId) as R;
+      return this.getRepository(collection)?.relation(relation)?.of(relationId) as R;
     }
 
-    return this.getCollection(name).repository;
+    return this.getCollection(name)?.repository;
   }
 
   addPendingField(field: RelationField) {

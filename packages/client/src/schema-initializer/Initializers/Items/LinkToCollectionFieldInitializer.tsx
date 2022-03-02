@@ -11,6 +11,7 @@ export const LinkToFieldInitializer = (props) => {
     item.find,
     item.remove,
   );
+  const targetKey = item.field.targetKey || 'id';
   return (
     <SchemaInitializer.Item
       onClick={() => {
@@ -20,17 +21,17 @@ export const LinkToFieldInitializer = (props) => {
         }
         insert({
           ...item.schema,
-          default: [
-            { id: 1, name: 'name1' },
-            { id: 2, name: 'name2' },
-          ],
+          // default: [
+          //   { id: 1, name: 'name1' },
+          //   { id: 2, name: 'name2' },
+          // ],
           // 'x-decorator': 'FormItem',
           'x-component': 'CollectionField',
           'x-component-props': {
             mode: 'tags',
             fieldNames: {
-              label: 'name',
-              value: 'id',
+              label: targetKey,
+              value: targetKey,
             },
           },
           properties: {
@@ -59,22 +60,22 @@ export const LinkToFieldInitializer = (props) => {
                   'x-designer': 'Table.Void.Designer',
                   'x-component': 'CardItem',
                   properties: {
-                    actions: {
-                      type: 'void',
-                      'x-initializer': 'TableActionInitializers',
-                      'x-component': 'ActionBar',
-                      'x-component-props': {
-                        style: {
-                          marginBottom: 16,
-                        },
-                      },
-                      properties: {},
-                    },
+                    // actions: {
+                    //   type: 'void',
+                    //   'x-initializer': 'TableActionInitializers',
+                    //   'x-component': 'ActionBar',
+                    //   'x-component-props': {
+                    //     style: {
+                    //       marginBottom: 16,
+                    //     },
+                    //   },
+                    //   properties: {},
+                    // },
                     table: {
                       // type: 'void',
                       'x-component': 'Table.RowSelection',
                       'x-component-props': {
-                        rowKey: 'id',
+                        rowKey: targetKey,
                         objectValue: true,
                         rowSelection: {
                           type: 'checkbox',
@@ -83,60 +84,29 @@ export const LinkToFieldInitializer = (props) => {
                       },
                       'x-initializer': 'TableColumnInitializers',
                       properties: {
-                        actions: {
-                          type: 'void',
-                          title: '{{ t("Actions") }}',
-                          'x-decorator': 'Table.Column.ActionBar',
-                          'x-component': 'Table.Column',
-                          'x-designer': 'Table.RowActionDesigner',
-                          'x-initializer': 'TableRecordActionInitializers',
-                          properties: {
-                            actions: {
-                              type: 'void',
-                              'x-decorator': 'DndContext',
-                              'x-component': 'Space',
-                              'x-component-props': {
-                                split: '|',
-                              },
-                              properties: {},
-                            },
-                          },
-                        },
+                        // actions: {
+                        //   type: 'void',
+                        //   title: '{{ t("Actions") }}',
+                        //   'x-decorator': 'Table.Column.ActionBar',
+                        //   'x-component': 'Table.Column',
+                        //   'x-designer': 'Table.RowActionDesigner',
+                        //   'x-initializer': 'TableRecordActionInitializers',
+                        //   properties: {
+                        //     actions: {
+                        //       type: 'void',
+                        //       'x-decorator': 'DndContext',
+                        //       'x-component': 'Space',
+                        //       'x-component-props': {
+                        //         split: '|',
+                        //       },
+                        //       properties: {},
+                        //     },
+                        //   },
+                        // },
                       },
                     },
                   },
                 },
-                // input: {
-                //   type: 'array',
-                //   title: `编辑模式`,
-                //   'x-component': 'Table.RowSelection',
-                //   'x-component-props': {
-                //     rowKey: 'id',
-                //     objectValue: true,
-                //     rowSelection: {
-                //       type: 'checkbox',
-                //     },
-                //     dataSource: [
-                //       { id: 1, name: 'Name1' },
-                //       { id: 2, name: 'Name2' },
-                //       { id: 3, name: 'Name3' },
-                //     ],
-                //   },
-                //   properties: {
-                //     column1: {
-                //       type: 'void',
-                //       title: 'Name',
-                //       'x-component': 'Table.Column',
-                //       properties: {
-                //         name: {
-                //           type: 'string',
-                //           'x-component': 'Input',
-                //           'x-read-pretty': true,
-                //         },
-                //       },
-                //     },
-                //   },
-                // },
               },
             },
             item: {

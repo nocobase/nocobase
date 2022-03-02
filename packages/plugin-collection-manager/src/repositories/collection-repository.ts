@@ -14,4 +14,22 @@ export class CollectionRepository extends Repository {
       await instance.load({ skipExist });
     }
   }
+
+  async db2cm(collectionName: string) {
+    const collection = this.database.getCollection(collectionName);
+    const options = collection.options;
+    const fields = [];
+    for (const [name, field] of collection.fields) {
+      fields.push({
+        name,
+        ...field.options,
+      });
+    }
+    await this.create({
+      values: {
+        ...options,
+        fields,
+      },
+    });
+  }
 }
