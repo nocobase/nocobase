@@ -1,7 +1,15 @@
 import { observer, useForm } from '@formily/react';
 import { cloneDeep } from 'lodash';
 import React, { createContext, useContext, useState } from 'react';
-import { CollectionOptions, CollectionProvider, useActionContext, useRecord, useRecordIndex, useRequest } from '../';
+import {
+  CollectionOptions,
+  CollectionProvider,
+  useActionContext,
+  useCollectionManager,
+  useRecord,
+  useRecordIndex,
+  useRequest
+} from '../';
 import { useAPIClient } from '../api-client';
 import { options } from './Configuration/interfaces';
 
@@ -219,16 +227,20 @@ export const DataSourceProvider = observer((props: any) => {
   const [dataSource, setDataSource] = useState([]);
   const record = useRecord();
   const api = useAPIClient();
+  const { getCollection } = useCollectionManager();
+  const coll = getCollection(collection);
   const resourceOf = record?.[association.targetKey || 'id'];
-  console.log('record', record);
   const service = useRequest(
     () => {
       if (resourceOf) {
         return api
           .request({
-            resource: `${collection}.${association.name}`,
+            resource: `${association.collectionName}.${association.name}`,
             resourceOf,
             action: 'list',
+            params: {
+              appends: coll?.fields?.filter((field) => field.target)?.map((field) => field.name),
+            },
           })
           .then((res) => res.data);
       }
