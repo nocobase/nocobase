@@ -23,7 +23,9 @@ const schema = {
       properties: {
         filter: {
           type: 'object',
-          default: {},
+          default: {
+            $and: [{}],
+          },
           'x-component': 'Filter',
           'x-component-props': {
             useDataSource: '{{cm.useFilterDataSource}}',

@@ -19,23 +19,26 @@ import { useTranslation } from 'react-i18next';
 import { useAttach } from '../../hooks/useAttach';
 import { ActionContext, useActionContext } from '../action';
 
+const findRowSelection = (fieldSchema) => {
+  return fieldSchema.reduceProperties((buf, s) => {
+    if (s['x-component'] === 'Table.RowSelection') {
+      return s;
+    }
+    const r = findRowSelection(s);
+    if (r) {
+      return r;
+    }
+    return buf;
+  }, null);
+};
+
 const InputRecordPicker: React.FC<any> = (props) => {
-  const { onChange } = props;
+  const { multiple, onChange } = props;
   const fieldNames = { label: 'label', value: 'value', ...props.fieldNames };
   const [visible, setVisible] = useState(false);
   const fieldSchema = useFieldSchema();
   const field = useField<Field>();
-  const s = fieldSchema.reduceProperties((buf, s) => {
-    if (s['x-component'] === 'RecordPicker.Options') {
-      return s.reduceProperties((buf, s) => {
-        if (s['x-component'] === 'Table.RowSelection') {
-          return s;
-        }
-        return buf;
-      }, null);
-    }
-    return buf;
-  }, null);
+  const s = findRowSelection(fieldSchema);
   const [value, setValue] = useState(field.value);
   const form = useMemo(
     () =>
@@ -76,7 +79,7 @@ const InputRecordPicker: React.FC<any> = (props) => {
     <div>
       <Select
         size={props.size}
-        mode={props.mode}
+        mode={multiple ? 'multiple' : props.mode}
         fieldNames={fieldNames}
         onClick={() => {
           setVisible(true);

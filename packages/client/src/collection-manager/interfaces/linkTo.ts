@@ -13,10 +13,16 @@ export const linkTo: IField = {
     type: 'belongsToMany',
     // name,
     uiSchema: {
-      type: 'array',
       // title,
       'x-component': 'RecordPicker',
-      'x-component-props': {},
+      'x-component-props': {
+        // mode: 'tags',
+        multiple: true,
+        fieldNames: {
+          label: 'id',
+          value: 'id',
+        },
+      },
     },
   },
   initialize: (values: any) => {
