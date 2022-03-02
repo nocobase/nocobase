@@ -6,6 +6,9 @@ export const useCompile = () => {
   const options = useContext(SchemaOptionsContext);
   const scope = useContext(SchemaExpressionScopeContext);
   return (source: any) => {
+    if (!source) {
+      return source;
+    }
     return compile(source, { ...options.scope, ...scope });
   };
 };

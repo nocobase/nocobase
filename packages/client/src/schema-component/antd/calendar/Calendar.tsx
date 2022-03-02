@@ -112,7 +112,6 @@ export const Calendar: any = observer((props: any) => {
     }
     return buf;
   }, null);
-
   return (
     <AsyncDataProvider value={result}>
       <CalendarContext.Provider value={{ field, props, record }}>
