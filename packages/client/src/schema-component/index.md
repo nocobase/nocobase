@@ -119,6 +119,15 @@ insertAdjacent('afterEnd', schema);
 }
 ```
 
+## 扩展的 Formily Schema 属性
+
+- `x-uid` 可缺失，前端无感。主要用于插件 `plugin-ui-schema-storage`，用于后端 schema 的增删改查  
+- `x-designer` schema 设计器
+- `x-initializer` schema 初始化器
+- `x-collection-field` 用来标记 [CollectionField](collection-manager#collectionfield)
+- `x-action` 用来标记 [Action](schema-components/action)
+- `x-align` ActionBar 里用于 action 的布局，包括 `left` 和 `right`
+
 ## Examples
 
 <code src="./demos/demo1.tsx" />

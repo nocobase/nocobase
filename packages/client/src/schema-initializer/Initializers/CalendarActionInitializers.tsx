@@ -54,8 +54,8 @@ export const CalendarActionInitializers = {
         },
         {
           type: 'item',
-          title: 'Filter',
-          component: 'ActionInitializer',
+          title: "{{t('Filter')}}",
+          component: 'FilterActionInitializer',
           schema: {
             title: '{{ t("Filter") }}',
             'x-action': 'filter',

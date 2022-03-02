@@ -32,7 +32,13 @@ export const useCollectionFilterOptions = (collectionName: string) => {
   const collection = getCollection(collectionName);
   const fields = collection?.fields || [];
   const field2option = (field) => {
+    if (!field.interface) {
+      return;
+    }
     const fieldInterface = getInterface(field.interface);
+    if (!fieldInterface.operators) {
+      return;
+    }
     const option = {
       name: field.name,
       title: field?.uiSchema?.title || field.name,
@@ -41,7 +47,10 @@ export const useCollectionFilterOptions = (collectionName: string) => {
     return option;
   };
   fields.forEach((field) => {
-    options.push(field2option(field));
+    const option = field2option(field);
+    if (option) {
+      options.push(option);
+    }
   });
   return options;
 };

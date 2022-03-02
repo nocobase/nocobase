@@ -14,7 +14,7 @@ import {
 } from '@formily/react';
 import { toArr } from '@formily/shared';
 import { Button, Drawer, Select, Space } from 'antd';
-import React, { createContext, useContext, useMemo, useState } from 'react';
+import React, { createContext, useContext, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useAttach } from '../../hooks/useAttach';
 import { ActionContext, useActionContext } from '../action';
@@ -40,6 +40,9 @@ const InputRecordPicker: React.FC<any> = (props) => {
   const field = useField<Field>();
   const s = findRowSelection(fieldSchema);
   const [value, setValue] = useState(field.value);
+  useEffect(() => {
+    setValue(field.value);
+  }, [JSON.stringify(field.value)]);
   const form = useMemo(
     () =>
       createForm({
@@ -55,7 +58,7 @@ const InputRecordPicker: React.FC<any> = (props) => {
           });
         },
       }),
-    [],
+    [JSON.stringify(field.value)],
   );
   const toValue = (value) => {
     if (!value) {

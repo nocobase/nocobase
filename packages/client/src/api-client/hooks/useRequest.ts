@@ -23,7 +23,6 @@ export function useRequest<P>(
 ) {
   // 缓存用途
   const [state, setState] = useSetState({});
-  console.log('state, setState', state);
   const api = useContext(APIClientContext);
   if (typeof service === 'function') {
     const result = useReq(service, {

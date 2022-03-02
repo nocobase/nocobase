@@ -14,6 +14,7 @@ export const PopupFormActionInitializers = {
             title: '{{ t("Submit") }}',
             'x-action': 'submit',
             'x-component': 'Action',
+            'x-designer': 'Action.Designer',
             'x-component-props': {
               type: 'primary',
               useAction: '{{ cm.useCreateAction }}',
@@ -28,6 +29,7 @@ export const PopupFormActionInitializers = {
             title: '{{ t("Cancel") }}',
             'x-action': 'cancel',
             'x-component': 'Action',
+            'x-designer': 'Action.Designer',
             'x-component-props': {
               useAction: '{{ cm.useCancelAction }}',
             },
