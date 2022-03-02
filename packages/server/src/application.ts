@@ -12,6 +12,7 @@ import { createACL } from './acl';
 import { createCli, createDatabase, createI18n, createResourcer, registerMiddlewares } from './helper';
 import { Plugin } from './plugin';
 import { PluginManager, InstallOptions } from './plugin-manager';
+import { ErrorHandler } from './error-handler';
 
 export interface ResourcerOptions {
   prefix?: string;
@@ -84,6 +85,8 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
 
   public readonly acl: ACL;
 
+  public readonly errorHandler: ErrorHandler;
+
   protected plugins = new Map<string, Plugin>();
 
   public listenServer: Server;
@@ -100,6 +103,8 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     this.pm = new PluginManager({
       app: this,
     });
+
+    this.errorHandler = new ErrorHandler(this);
 
     registerMiddlewares(this, options);
     if (options.registerActions !== false) {
