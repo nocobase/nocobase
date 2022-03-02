@@ -1,12 +1,15 @@
 import Application from './application';
 
 export class ErrorHandler {
-  registeredErrors = new Map();
+  handlers = [];
 
   constructor(app: Application) {}
 
-  register(error: any, render: (err, ctx) => void) {
-    this.registeredErrors.set(error, render);
+  register(guard: (err) => boolean, render: (err, ctx) => void) {
+    this.handlers.push({
+      guard,
+      render,
+    });
   }
 
   defaultHandler(err, ctx) {
@@ -28,9 +31,13 @@ export class ErrorHandler {
       try {
         await next();
       } catch (err) {
-        const handler = self.registeredErrors.get(err.constructor);
+        for (const handler of self.handlers) {
+          if (handler.guard(err)) {
+            return handler.render(err, ctx);
+          }
+        }
 
-        return handler ? handler(err, ctx) : self.defaultHandler(err, ctx);
+        self.defaultHandler(err, ctx);
       }
     };
   }

@@ -9,6 +9,8 @@ import Application, { ApplicationOptions } from './application';
 import { dataWrapping } from './middlewares/data-wrapping';
 import { table2resource } from './middlewares/table2resource';
 
+import ValidationError from 'sequelize';
+
 export function createDatabase(options: ApplicationOptions) {
   if (options.database instanceof Database) {
     return options.database;
@@ -93,8 +95,22 @@ export function createCli(app: Application, options: ApplicationOptions): Comman
   return cli;
 }
 
-export function registerMiddlewares(app: Application, options: ApplicationOptions) {
+function registerErrorHandler(app: Application) {
+  app.errorHandler.register(
+    (err) => err.name == 'SequelizeValidationError',
+    (err, ctx) => {
+      ctx.body = {
+        errors: err.errors.map((err) => ({ message: err.message })),
+      };
+
+      ctx.status = 400;
+    },
+  );
   app.use(app.errorHandler.middleware());
+}
+
+export function registerMiddlewares(app: Application, options: ApplicationOptions) {
+  registerErrorHandler(app);
 
   if (options.bodyParser !== false) {
     app.use(
