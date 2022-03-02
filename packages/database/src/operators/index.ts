@@ -3,4 +3,5 @@ export default {
   ...require('./date').default,
   ...require('./array').default,
   ...require('./empty').default,
+  ...require('./string').default,
 };
