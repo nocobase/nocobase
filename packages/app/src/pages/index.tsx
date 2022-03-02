@@ -25,12 +25,24 @@ import {
   SystemSettingsShortcut,
   useRequest
 } from '@nocobase/client';
-import { Spin } from 'antd';
+import { notification, Spin } from 'antd';
 import 'antd/dist/antd.css';
 import React from 'react';
 import { I18nextProvider } from 'react-i18next';
 import { Link, NavLink } from 'react-router-dom';
 import apiClient from './apiClient';
+
+apiClient.axios.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    notification.error({
+      message: error?.response?.data?.errors?.map?.((error: any) => {
+        return <div>{error.message}</div>;
+      }),
+    });
+    throw error;
+  },
+);
 
 const providers = [
   // [HashRouter],
