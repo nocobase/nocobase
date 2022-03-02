@@ -18,19 +18,23 @@ describe('error handle', () => {
     class CustomError extends Error {
       constructor(message, errors) {
         super(message);
-        this.name = 'SequelizeValidationError';
-        this.message = 'Validation Error';
+        this.name = 'CustomError';
       }
     }
 
     const app = mockServer();
 
-    app.errorHandler.register(CustomError, (err, ctx) => {
-      ctx.body = {
-        message: 'hello',
-      };
-      ctx.status = 422;
-    });
+    app.errorHandler.register(
+      (err) => {
+        return err.name == 'CustomError';
+      },
+      (err, ctx) => {
+        ctx.body = {
+          message: 'hello',
+        };
+        ctx.status = 422;
+      },
+    );
 
     app.use(async () => {
       throw new CustomError('some thing went wrong', []);
