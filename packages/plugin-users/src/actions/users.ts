@@ -51,16 +51,8 @@ export async function signout(ctx: Context, next: Next) {
 export async function signup(ctx: Context, next: Next) {
   const User = ctx.db.getRepository('users');
   const { values } = ctx.action.params;
-  try {
-    const user = await User.create({ values });
-    ctx.body = user;
-  } catch (error) {
-    if (error.errors) {
-      ctx.throw(401, error.errors.map((data) => data.message).join(', '));
-    } else {
-      ctx.throw(401, '注册失败');
-    }
-  }
+  const user = await User.create({ values });
+  ctx.body = user;
   await next();
 }
 
