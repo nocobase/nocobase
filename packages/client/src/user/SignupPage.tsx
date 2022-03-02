@@ -91,13 +91,15 @@ const useSignup = () => {
   return {
     async run() {
       await form.submit();
-      await api.resource('users').signup({
+      const response = await api.resource('users').signup({
         values: form.values,
       });
-      message.success('注册成功，即将跳转登录页');
-      setTimeout(() => {
-        history.push('/signin');
-      }, 2000);
+      if (response?.data) {
+        message.success('注册成功，即将跳转登录页');
+        setTimeout(() => {
+          history.push('/signin');
+        }, 2000);
+      }
     },
   };
 };
