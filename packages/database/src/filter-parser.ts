@@ -121,10 +121,12 @@ export default class FilterParser {
             } else if (typeof opKey === 'function') {
               skipPrefix = origins.join('.');
 
-              value = opKey(lodash.get(unflatten(originalFiler), skipPrefix), {
+              const queryValue = lodash.get(unflatten(originalFiler), skipPrefix);
+
+              value = opKey(queryValue, {
                 db: this.database,
                 path: skipPrefix,
-                fieldName: skipPrefix.replace(`.${firstKey}`, ''),
+                fieldName: this.getFieldNameFromQueryPath(skipPrefix),
                 model: this.model,
               });
               break;
@@ -219,5 +221,19 @@ export default class FilterParser {
     };
     debug('where %o, include %o', where, include);
     return { where, include: toInclude(include) };
+  }
+
+  private getFieldNameFromQueryPath(queryPath: string) {
+    const paths = queryPath.split('.');
+    let fieldName;
+    for (const path of paths) {
+      if (path.startsWith('$') || !lodash.isNaN(parseInt(path))) {
+        continue;
+      }
+
+      fieldName = path;
+    }
+
+    return fieldName;
   }
 }

@@ -152,6 +152,21 @@ describe('array field operator', function () {
     expect(filter2[0].get('name')).toEqual(t2.get('name'));
   });
 
+  test('$anyOf with $and', async () => {
+    const filter3 = await Test.repository.find({
+      filter: {
+        $and: [
+          {
+            'selected.$anyOf': ['aa'],
+          },
+        ],
+      },
+    });
+
+    expect(filter3.length).toEqual(1);
+    expect(filter3[0].get('name')).toEqual(t2.get('name'));
+  });
+
   test('$anyOf', async () => {
     const filter3 = await Test.repository.find({
       filter: {
