@@ -1,5 +1,5 @@
 import { uid } from '@formily/shared';
-import { defaultProps } from './properties';
+import { defaultProps, operators } from './properties';
 import { IField } from './types';
 
 export const chinaRegion: IField = {
@@ -74,5 +74,18 @@ export const chinaRegion: IField = {
       'x-decorator': 'FormItem',
     },
   },
-  operators: [{ label: '{{t("is")}}', value: 'code.$in' }],
+  filterable: {
+    children: [
+      {
+        name: 'name',
+        title: '名称',
+        operators: operators.string,
+        schema: {
+          title: '名称',
+          type: 'string',
+          'x-component': 'Input',
+        },
+      },
+    ],
+  },
 };

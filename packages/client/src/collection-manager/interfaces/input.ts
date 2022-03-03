@@ -1,4 +1,4 @@
-import { defaultProps } from './properties';
+import { defaultProps, operators } from './properties';
 import { IField } from './types';
 
 export const input: IField = {
@@ -19,12 +19,7 @@ export const input: IField = {
   properties: {
     ...defaultProps,
   },
-  operators: [
-    { label: '{{t("contains")}}', value: '$includes', selected: true },
-    { label: '{{t("does not contain")}}', value: '$notIncludes' },
-    { label: '{{t("is")}}', value: '$eq' },
-    { label: '{{t("is not")}}', value: '$ne' },
-    { label: '{{t("is empty")}}', value: '$empty', noValue: true },
-    { label: '{{t("is not empty")}}', value: '$notEmpty', noValue: true },
-  ],
+  filterable: {
+    operators: operators.string,
+  },
 };

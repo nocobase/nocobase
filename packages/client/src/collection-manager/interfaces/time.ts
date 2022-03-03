@@ -1,4 +1,4 @@
-import { defaultProps } from './properties';
+import { defaultProps, operators } from './properties';
 import { IField } from './types';
 
 export const time: IField = {
@@ -36,10 +36,7 @@ export const time: IField = {
       ],
     },
   },
-  operators: [
-    { label: '{{t("is")}}', value: '$eq', selected: true },
-    { label: '{{t("is not")}}', value: '$neq' },
-    { label: '{{t("is empty")}}', value: '$null', noValue: true },
-    { label: '{{t("is not empty")}}', value: '$notNull', noValue: true },
-  ],
+  filterable: {
+    operators: operators.time,
+  },
 };

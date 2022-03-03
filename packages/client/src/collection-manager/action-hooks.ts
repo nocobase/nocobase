@@ -27,33 +27,45 @@ export const useCancelFilterAction = () => {
 };
 
 export const useCollectionFilterOptions = (collectionName: string) => {
-  const { getCollection, getInterface } = useCollectionManager();
-  const options = [];
-  const collection = getCollection(collectionName);
-  const fields = collection?.fields || [];
+  const { getCollectionFields, getInterface } = useCollectionManager();
+  const fields = getCollectionFields(collectionName);
   const field2option = (field) => {
     if (!field.interface) {
       return;
     }
     const fieldInterface = getInterface(field.interface);
-    if (!fieldInterface.operators) {
+    if (!fieldInterface.filterable) {
       return;
     }
+    const { nested, children, operators } = fieldInterface.filterable;
     const option = {
       name: field.name,
       title: field?.uiSchema?.title || field.name,
       schema: field?.uiSchema,
-      operators: fieldInterface.operators || [],
+      operators: operators || [],
     };
+    if (children?.length) {
+      option['children'] = children;
+    }
+    if (nested) {
+      const targetFields = getCollectionFields(field.target);
+      const options = getOptions(targetFields);
+      option['children'] = option['children'] || [];
+      option['children'].push(...options);
+    }
     return option;
   };
-  fields.forEach((field) => {
-    const option = field2option(field);
-    if (option) {
-      options.push(option);
-    }
-  });
-  return options;
+  const getOptions = (fields) => {
+    const options = [];
+    fields.forEach((field) => {
+      const option = field2option(field);
+      if (option) {
+        options.push(option);
+      }
+    });
+    return options;
+  };
+  return getOptions(fields);
 };
 
 export const useFilterDataSource = (options) => {

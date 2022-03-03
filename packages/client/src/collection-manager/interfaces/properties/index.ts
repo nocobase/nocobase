@@ -196,3 +196,6 @@ export const defaultProps = {
   },
   type,
 };
+
+
+export * as operators from './operators';

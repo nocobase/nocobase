@@ -1,4 +1,4 @@
-import { dataSource, defaultProps } from './properties';
+import { dataSource, defaultProps, operators } from './properties';
 import { IField } from './types';
 
 export const multipleSelect: IField = {
@@ -26,29 +26,7 @@ export const multipleSelect: IField = {
     ...defaultProps,
     'uiSchema.enum': dataSource,
   },
-  operators: [
-    {
-      label: '{{t("is")}}',
-      value: '$match',
-      selected: true,
-      schema: { 'x-component': 'Select' },
-    },
-    {
-      label: '{{t("is not")}}',
-      value: '$notMatch',
-      schema: { 'x-component': 'Select' },
-    },
-    {
-      label: '{{t("contains")}}',
-      value: '$anyOf',
-      schema: { 'x-component': 'Select' },
-    },
-    {
-      label: '{{t("does not contain")}}',
-      value: '$noneOf',
-      schema: { 'x-component': 'Select' },
-    },
-    { label: '{{t("is empty")}}', value: '$empty', noValue: true },
-    { label: '{{t("is not empty")}}', value: '$notEmpty', noValue: true },
-  ],
+  filterable: {
+    operators: operators.array,
+  },
 };

@@ -1,4 +1,4 @@
-import { dataSource, defaultProps } from './properties';
+import { dataSource, defaultProps, operators } from './properties';
 import { IField } from './types';
 
 export const select: IField = {
@@ -21,35 +21,7 @@ export const select: IField = {
     ...defaultProps,
     'uiSchema.enum': dataSource,
   },
-  operators: [
-    {
-      label: '{{t("is")}}',
-      value: '$eq',
-      selected: true,
-      schema: { 'x-component': 'Select' },
-    },
-    {
-      label: '{{t("is not")}}',
-      value: '$ne',
-      schema: { 'x-component': 'Select' },
-    },
-    {
-      label: '{{t("contains")}}',
-      value: '$in',
-      schema: {
-        'x-component': 'Select',
-        'x-component-props': { mode: 'tags' },
-      },
-    },
-    {
-      label: '{{t("does not contain")}}',
-      value: '$notIn',
-      schema: {
-        'x-component': 'Select',
-        'x-component-props': { mode: 'tags' },
-      },
-    },
-    { label: '{{t("is empty")}}', value: '$empty', noValue: true },
-    { label: '{{t("is not empty")}}', value: '$notEmpty', noValue: true },
-  ],
+  filterable: {
+    operators: operators.enumType,
+  },
 };

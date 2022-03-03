@@ -1,5 +1,4 @@
-import { number } from './number';
-import { defaultProps } from './properties';
+import { defaultProps, operators } from './properties';
 import { IField } from './types';
 
 export const percent: IField = {
@@ -43,5 +42,7 @@ export const percent: IField = {
       ],
     },
   },
-  operators: number.operators,
+  filterable: {
+    operators: operators.number,
+  },
 };

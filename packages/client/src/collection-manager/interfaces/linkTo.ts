@@ -69,4 +69,7 @@ export const linkTo: IField = {
       'x-component': 'Checkbox',
     },
   },
+  filterable: {
+    nested: true,
+  },
 };

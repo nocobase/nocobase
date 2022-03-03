@@ -1,5 +1,4 @@
-import { datetime } from './datetime';
-import { dateTimeProps, defaultProps } from './properties';
+import { dateTimeProps, defaultProps, operators } from './properties';
 import { IField } from './types';
 
 export const updatedAt: IField = {
@@ -25,5 +24,7 @@ export const updatedAt: IField = {
     ...defaultProps,
     ...dateTimeProps,
   },
-  operators: datetime.operators,
+  filterable: {
+    operators: operators.datetime,
+  },
 };
