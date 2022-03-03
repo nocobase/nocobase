@@ -20,8 +20,6 @@ export const percent: IField = {
         step: '0',
         addonAfter: '%',
       },
-      'x-decorator': 'FormItem',
-      'x-designable-bar': 'InputNumber.DesignableBar',
     },
   },
   properties: {

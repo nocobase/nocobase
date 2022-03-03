@@ -14,8 +14,6 @@ export const password: IField = {
       type: 'string',
       // title,
       'x-component': 'Password',
-      'x-decorator': 'FormItem',
-      'x-designable-bar': 'Password.DesignableBar',
     },
   },
   properties: {

@@ -29,6 +29,8 @@ export const DynamicComponent = (props) => {
           ...props.schema,
           name: 'value',
           'x-read-pretty': false,
+          'x-validator': undefined,
+          'x-decorator': undefined,
         }}
       />
     );

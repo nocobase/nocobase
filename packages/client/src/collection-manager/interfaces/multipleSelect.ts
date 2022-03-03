@@ -17,8 +17,6 @@ export const multipleSelect: IField = {
       'x-component-props': {
         mode: 'multiple',
       },
-      'x-decorator': 'FormItem',
-      'x-designable-bar': 'Select.DesignableBar',
       enum: [],
     },
   },
