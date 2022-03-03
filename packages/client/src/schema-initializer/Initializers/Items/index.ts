@@ -9,4 +9,5 @@ export * from './LinkToCollectionFieldInitializer';
 export * from './MarkdownBlockInitializer';
 export * from './SubTableFieldInitializer';
 export * from './TableBlockInitializer';
+export * from './UserFieldInitializer';
 

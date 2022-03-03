@@ -26,7 +26,7 @@ export const multipleSelect: IField = {
     ...defaultProps,
     'uiSchema.enum': dataSource,
   },
-  operations: [
+  operators: [
     {
       label: '{{t("is")}}',
       value: '$match',
@@ -48,7 +48,7 @@ export const multipleSelect: IField = {
       value: '$noneOf',
       schema: { 'x-component': 'Select' },
     },
-    { label: '{{t("is empty")}}', value: '$null', noValue: true },
-    { label: '{{t("is not empty")}}', value: '$notNull', noValue: true },
+    { label: '{{t("is empty")}}', value: '$empty', noValue: true },
+    { label: '{{t("is not empty")}}', value: '$notEmpty', noValue: true },
   ],
 };

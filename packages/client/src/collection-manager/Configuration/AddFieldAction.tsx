@@ -107,6 +107,10 @@ export const AddFieldAction = () => {
       <Dropdown
         overlay={
           <Menu
+            style={{
+              maxHeight: '60vh',
+              overflow: 'auto',
+            }}
             onClick={(info) => {
               const schema = getSchema(getInterface(info.key));
               setSchema(schema);
@@ -115,11 +119,13 @@ export const AddFieldAction = () => {
           >
             {options.map((option) => {
               return (
-                <Menu.SubMenu title={compile(option.label)}>
-                  {option.children.map((child) => {
-                    return <Menu.Item key={child.name}>{compile(child.title)}</Menu.Item>;
-                  })}
-                </Menu.SubMenu>
+                option.children.length > 0 && (
+                  <Menu.ItemGroup title={compile(option.label)}>
+                    {option.children.map((child) => {
+                      return <Menu.Item key={child.name}>{compile(child.title)}</Menu.Item>;
+                    })}
+                  </Menu.ItemGroup>
+                )
               );
             })}
           </Menu>

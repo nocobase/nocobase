@@ -38,6 +38,7 @@ export class ErrorHandler {
         }
 
         self.defaultHandler(err, ctx);
+        console.error(err);
       }
     };
   }

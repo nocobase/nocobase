@@ -61,7 +61,7 @@ export const useTableColumnInitializerFields = () => {
   return fields
     .filter((field) => field?.interface && field?.interface !== 'subTable')
     .map((field) => {
-      if (field.interface === 'linkTo') {
+      if (field.target) {
         return {
           field,
           type: 'item',
@@ -96,22 +96,6 @@ export const useFormItemInitializerFields = () => {
   return fields
     ?.filter((field) => field?.interface)
     ?.map((field) => {
-      if (field.interface === 'linkTo') {
-        return {
-          type: 'item',
-          title: field?.uiSchema?.title || field.name,
-          component: 'LinkToFieldInitializer',
-          remove: removeGridFormItem,
-          field,
-          schema: {
-            name: field.name,
-            'x-designer': 'FormItem.Designer',
-            'x-component': 'CollectionField',
-            'x-decorator': 'FormItem',
-            'x-collection-field': `${name}.${field.name}`,
-          },
-        } as SchemaInitializerItemOptions;
-      }
       if (field.interface === 'subTable') {
         return {
           type: 'item',
@@ -124,6 +108,22 @@ export const useFormItemInitializerFields = () => {
             name: field.name,
             'x-designer': 'FormItem.Designer',
             'x-component': 'div',
+            'x-decorator': 'FormItem',
+            'x-collection-field': `${name}.${field.name}`,
+          },
+        } as SchemaInitializerItemOptions;
+      }
+      if (field.target) {
+        return {
+          type: 'item',
+          title: field?.uiSchema?.title || field.name,
+          component: 'LinkToFieldInitializer',
+          remove: removeGridFormItem,
+          field,
+          schema: {
+            name: field.name,
+            'x-designer': 'FormItem.Designer',
+            'x-component': 'CollectionField',
             'x-decorator': 'FormItem',
             'x-collection-field': `${name}.${field.name}`,
           },

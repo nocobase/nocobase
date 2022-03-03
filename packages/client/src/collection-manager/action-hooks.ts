@@ -42,6 +42,7 @@ export const useCollectionFilterOptions = (collectionName: string) => {
     const option = {
       name: field.name,
       title: field?.uiSchema?.title || field.name,
+      schema: field?.uiSchema,
       operators: fieldInterface.operators || [],
     };
     return option;
