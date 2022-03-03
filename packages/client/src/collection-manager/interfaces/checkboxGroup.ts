@@ -9,7 +9,7 @@ export const checkboxGroup: IField = {
   title: '{{t("Checkbox group")}}',
   default: {
     interface: 'checkboxGroup',
-    type: 'json',
+    type: 'array',
     // name,
     uiSchema: {
       type: 'string',
