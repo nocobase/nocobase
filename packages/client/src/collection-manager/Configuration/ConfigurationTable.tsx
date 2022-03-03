@@ -29,6 +29,7 @@ const useCollectionValues = (options) => {
           name: `t_${uid()}`,
           createdBy: true,
           updatedBy: true,
+          sortable: true,
         },
       }),
     {

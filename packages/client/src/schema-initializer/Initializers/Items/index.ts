@@ -7,6 +7,8 @@ export * from './FormBlockInitializer';
 export * from './GeneralInitializer';
 export * from './LinkToCollectionFieldInitializer';
 export * from './MarkdownBlockInitializer';
+export * from './RecordFormBlockInitializer';
+export * from './RecordRelationBlockInitializer';
 export * from './SubTableFieldInitializer';
 export * from './TableBlockInitializer';
 export * from './UserFieldInitializer';

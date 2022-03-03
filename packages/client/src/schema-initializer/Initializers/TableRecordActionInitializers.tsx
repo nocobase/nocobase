@@ -69,19 +69,19 @@ export const TableRecordActionInitializers = (props: any) => {
                         type: 'void',
                         'x-component': 'Tabs',
                         'x-component-props': {},
+                        'x-initializer': 'TabPaneInitializers',
                         properties: {
                           tab1: {
                             type: 'void',
                             title: '详情',
                             'x-component': 'Tabs.TabPane',
+                            'x-designer': 'Tabs.Designer',
                             'x-component-props': {},
                             properties: {
                               grid: {
                                 type: 'void',
-                                'x-decorator': 'Form',
                                 'x-component': 'Grid',
-                                'x-read-pretty': true,
-                                'x-item-initializer': 'RecordBlockInitializer',
+                                'x-initializer': 'RecordBlockInitializers',
                                 properties: {},
                               },
                             },

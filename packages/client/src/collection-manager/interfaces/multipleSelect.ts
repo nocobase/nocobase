@@ -9,6 +9,7 @@ export const multipleSelect: IField = {
   title: '{{t("Multiple select")}}',
   default: {
     type: 'array',
+    defaultValue: [],
     // name,
     uiSchema: {
       type: 'array',

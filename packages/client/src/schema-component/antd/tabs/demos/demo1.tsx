@@ -2,8 +2,9 @@
  * title: Tabs
  */
 import { ISchema } from '@formily/react';
-import { SchemaComponent, SchemaComponentProvider, Tabs } from '@nocobase/client';
+import { Action, SchemaComponent, SchemaComponentProvider, Tabs } from '@nocobase/client';
 import React from 'react';
+import { AntdSchemaComponentProvider } from '../../AntdSchemaComponentProvider';
 
 const schema: ISchema = {
   type: 'object',
@@ -46,8 +47,10 @@ const schema: ISchema = {
 
 export default () => {
   return (
-    <SchemaComponentProvider components={{ Tabs }}>
-      <SchemaComponent schema={schema} />
+    <SchemaComponentProvider designable components={{ Tabs, Action }}>
+      <AntdSchemaComponentProvider>
+        <SchemaComponent schema={schema} />
+      </AntdSchemaComponentProvider>
     </SchemaComponentProvider>
   );
 };

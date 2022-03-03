@@ -10,6 +10,8 @@ import { TableActionInitializers } from './TableActionInitializers';
 import { TableColumnInitializers } from './TableColumnInitializers';
 import { TableFieldRecordActionInitializers } from './TableFieldRecordActionInitializers';
 import { TableRecordActionInitializers } from './TableRecordActionInitializers';
+import { TabPaneInitializers } from './TabPaneInitializers';
+
 export const items = { ...Items };
 
 export const initializes = {
@@ -35,4 +37,6 @@ export const initializes = {
   TableRecordActionInitializers,
   // 表格字段（子表格）场景的当前行记录的「操作配置」
   TableFieldRecordActionInitializers,
+  // 添加标签页
+  TabPaneInitializers,
 };
