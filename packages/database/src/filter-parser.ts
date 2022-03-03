@@ -81,6 +81,7 @@ export default class FilterParser {
 
     let skipPrefix = null;
     const associations = model.associations;
+
     debug('associations %O', associations);
 
     for (let [key, value] of Object.entries(flattenedFilter)) {
@@ -138,7 +139,7 @@ export default class FilterParser {
         }
 
         // firstKey is number
-        if (/\d+/.test(firstKey)) {
+        if (!lodash.isNaN(parseInt(firstKey))) {
           paths.push(firstKey);
           continue;
         }
@@ -182,6 +183,7 @@ export default class FilterParser {
               }
               assoc.push(associationKey);
             });
+
             _.set(include, assoc, {
               association: attr,
               attributes: [],

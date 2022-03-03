@@ -8,6 +8,7 @@ describe('repository find', () => {
   let User: Collection;
   let Post: Collection;
   let Comment: Collection;
+  let Tag: Collection;
 
   afterEach(async () => {
     await db.close();
@@ -15,6 +16,7 @@ describe('repository find', () => {
 
   beforeEach(async () => {
     db = mockDatabase();
+
     User = db.collection<{ id: number; name: string }, { name: string }>({
       name: 'users',
       fields: [
@@ -36,6 +38,11 @@ describe('repository find', () => {
           type: 'hasMany',
           name: 'comments',
         },
+        {
+          type: 'belongsToMany',
+          name: 'abc1',
+          target: 'tags',
+        },
       ],
     });
 
@@ -47,6 +54,16 @@ describe('repository find', () => {
       ],
     });
 
+    Tag = db.collection({
+      name: 'tags',
+      fields: [
+        {
+          type: 'string',
+          name: 'name',
+        },
+      ],
+    });
+
     await db.sync();
     const repository = User.repository;
 
@@ -55,7 +72,7 @@ describe('repository find', () => {
         {
           name: 'u1',
           age: 10,
-          posts: [{ title: 'u1t1', comments: [{ content: 'u1t1c1' }] }],
+          posts: [{ title: 'u1t1', comments: [{ content: 'u1t1c1' }], abc1: [{ name: 't1' }] }],
         },
         {
           name: 'u2',
@@ -211,6 +228,16 @@ describe('repository find', () => {
       const results = await User.repository.find({
         filter: {
           'posts.title': 'u1t1',
+        },
+      });
+
+      expect(results.length).toEqual(1);
+    });
+
+    test('find with association with $and', async () => {
+      const results = await Post.repository.find({
+        filter: {
+          'abc1.name': 't1',
         },
       });
 

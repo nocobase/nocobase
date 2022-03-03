@@ -141,6 +141,21 @@ describe('array field operator', function () {
     expect(filter1[0].get('name')).toEqual(t1.get('name'));
   });
 
+  test('$match with $and', async () => {
+    const filter1 = await Test.repository.find({
+      filter: {
+        $and: [
+          {
+            selected: { $match: [2, 1, 'a', 'b'] },
+          },
+        ],
+      },
+    });
+
+    expect(filter1.length).toEqual(1);
+    expect(filter1[0].get('name')).toEqual(t1.get('name'));
+  });
+
   test('$notMatch', async () => {
     const filter2 = await Test.repository.find({
       filter: {
