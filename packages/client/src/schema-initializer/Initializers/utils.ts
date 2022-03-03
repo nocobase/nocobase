@@ -76,6 +76,10 @@ export const useTableColumnInitializerFields = () => {
           },
         } as SchemaInitializerItemOptions;
       }
+      const componentProps = {};
+      if (field.interface === 'attachment') {
+        componentProps['size'] = 'small';
+      }
       return {
         type: 'item',
         title: field?.uiSchema?.title || field.name,
@@ -86,6 +90,9 @@ export const useTableColumnInitializerFields = () => {
           name: field.name,
           'x-collection-field': `${name}.${field.name}`,
           'x-component': 'CollectionField',
+          'x-component-props': {
+            ...componentProps,
+          },
         },
       } as SchemaInitializerItemOptions;
     });

@@ -10,6 +10,7 @@ export const checkboxGroup: IField = {
   default: {
     interface: 'checkboxGroup',
     type: 'array',
+    defaultValue: [],
     // name,
     uiSchema: {
       type: 'string',
