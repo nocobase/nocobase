@@ -1,3 +1,5 @@
+import { CollectionOptions } from '@nocobase/database';
+
 export default {
   name: 'uiSchemaTreePath',
   autoGenId: false,
@@ -12,6 +14,7 @@ export default {
       type: 'string',
       name: 'descendant',
       primaryKey: true,
+      index: true,
     },
     {
       type: 'integer',
@@ -32,4 +35,4 @@ export default {
       comment: 'sort of node in adjacency',
     },
   ],
-};
+} as CollectionOptions;
