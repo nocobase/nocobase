@@ -227,7 +227,7 @@ describe('repository find', () => {
     test('find with association', async () => {
       const results = await User.repository.find({
         filter: {
-          'ups.title': 'u1t1',
+          'posts.title': 'u1t1',
         },
       });
 
