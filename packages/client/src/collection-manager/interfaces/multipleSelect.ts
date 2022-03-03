@@ -8,7 +8,7 @@ export const multipleSelect: IField = {
   order: 3,
   title: '{{t("Multiple select")}}',
   default: {
-    type: 'json',
+    type: 'array',
     // name,
     uiSchema: {
       type: 'array',
