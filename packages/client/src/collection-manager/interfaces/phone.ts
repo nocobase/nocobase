@@ -1,5 +1,4 @@
-import { input } from './input';
-import { defaultProps } from './properties';
+import { defaultProps, operators } from './properties';
 import { IField } from './types';
 
 export const phone: IField = {
@@ -24,5 +23,7 @@ export const phone: IField = {
   properties: {
     ...defaultProps,
   },
-  operators: input.operators,
+  filterable: {
+    operators: operators.string,
+  },
 };

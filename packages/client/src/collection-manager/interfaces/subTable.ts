@@ -9,7 +9,6 @@ export const subTable: IField = {
   order: 2,
   title: '{{t("Sub-table")}}',
   isAssociation: true,
-  disabled: true,
   default: {
     type: 'hasMany',
     // name,

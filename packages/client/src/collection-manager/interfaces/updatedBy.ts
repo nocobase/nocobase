@@ -1,4 +1,4 @@
-import { defaultProps } from './properties';
+import { defaultProps, operators } from './properties';
 import { IField } from './types';
 
 export const updatedBy: IField = {
@@ -27,5 +27,19 @@ export const updatedBy: IField = {
   },
   properties: {
     ...defaultProps,
+  },
+  filterable: {
+    children: [
+      {
+        name: 'nickname',
+        title: '{{t("Nickname")}}',
+        operators: operators.string,
+        schema: {
+          title: '{{t("Nickname")}}',
+          type: 'string',
+          'x-component': 'Input',
+        },
+      },
+    ],
   },
 };

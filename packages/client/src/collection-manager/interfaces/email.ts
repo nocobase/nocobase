@@ -1,5 +1,4 @@
-import { input } from './input';
-import { defaultProps } from './properties';
+import { defaultProps, operators } from './properties';
 import { IField } from './types';
 
 export const email: IField = {
@@ -22,5 +21,7 @@ export const email: IField = {
   properties: {
     ...defaultProps,
   },
-  operators: input.operators,
+  filterable: {
+    operators: operators.string,
+  },
 };

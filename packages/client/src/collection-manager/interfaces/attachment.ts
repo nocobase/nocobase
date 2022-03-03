@@ -48,4 +48,21 @@ export const attachment: IField = {
       default: true,
     },
   },
+  filterable: {
+    children: [
+      {
+        name: 'filename',
+        title: '{{t("Filename")}}',
+        operators: [
+          { label: 'empty', value: '$empty' },
+          { label: 'notEmpty', value: '$notEmpty' },
+        ],
+        schema: {
+          title: '{{t("Filename")}}',
+          type: 'string',
+          'x-component': 'Input',
+        },
+      },
+    ],
+  },
 };

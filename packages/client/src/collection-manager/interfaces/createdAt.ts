@@ -1,4 +1,4 @@
-import { dateTimeProps, defaultProps } from './properties';
+import { dateTimeProps, defaultProps, operators } from './properties';
 import { IField } from './types';
 
 export const createdAt: IField = {
@@ -23,5 +23,8 @@ export const createdAt: IField = {
   properties: {
     ...defaultProps,
     ...dateTimeProps,
+  },
+  filterable: {
+    operators: operators.datetime,
   },
 };

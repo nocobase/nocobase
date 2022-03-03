@@ -1,4 +1,4 @@
-import { dataSource, defaultProps } from './properties';
+import { dataSource, defaultProps, operators } from './properties';
 import { IField } from './types';
 
 export const checkboxGroup: IField = {
@@ -19,5 +19,8 @@ export const checkboxGroup: IField = {
   properties: {
     ...defaultProps,
     'uiSchema.enum': dataSource,
+  },
+  filterable: {
+    operators: operators.array,
   },
 };

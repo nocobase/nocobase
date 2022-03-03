@@ -1,5 +1,4 @@
-import { dataSource, defaultProps } from './properties';
-import { select } from './select';
+import { dataSource, defaultProps, operators } from './properties';
 import { IField } from './types';
 
 export const radioGroup: IField = {
@@ -21,5 +20,7 @@ export const radioGroup: IField = {
     ...defaultProps,
     'uiSchema.enum': dataSource,
   },
-  operators: select.operators,
+  filterable: {
+    operators: operators.enumType,
+  },
 };

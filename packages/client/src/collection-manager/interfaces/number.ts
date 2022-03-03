@@ -1,4 +1,4 @@
-import { defaultProps } from './properties';
+import { defaultProps, operators } from './properties';
 import { IField } from './types';
 
 export const number: IField = {
@@ -39,14 +39,7 @@ export const number: IField = {
       ],
     },
   },
-  operations: [
-    { label: '{{t("=")}}', value: '$eq', selected: true },
-    { label: '{{t("≠")}}', value: '$ne' },
-    { label: '{{t(">")}}', value: '$gt' },
-    { label: '{{t("≥")}}', value: '$gte' },
-    { label: '{{t("<")}}', value: '$lt' },
-    { label: '{{t("≤")}}', value: '$lte' },
-    { label: '{{t("is empty")}}', value: '$null', noValue: true },
-    { label: '{{t("is not empty")}}', value: '$notNull', noValue: true },
-  ],
+  filterable: {
+    operators: operators.number,
+  },
 };
