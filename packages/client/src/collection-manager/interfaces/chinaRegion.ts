@@ -74,5 +74,5 @@ export const chinaRegion: IField = {
       'x-decorator': 'FormItem',
     },
   },
-  operators: [{ label: '{{t("is")}}', value: 'code.in' }],
+  operators: [{ label: '{{t("is")}}', value: 'code.$in' }],
 };

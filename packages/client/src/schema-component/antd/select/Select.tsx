@@ -17,7 +17,7 @@ const ObjectSelect = (props: Props) => {
     if (isEmptyObject(v)) {
       return;
     }
-    const values = toArr(v).map((val) => {
+    const values = toArr(v).filter(item => item).map((val) => {
       return typeof val === 'object' ? val[fieldNames.value] : val;
     });
     const current = getCurrentOptions(values, options, fieldNames)?.map((val) => {
@@ -62,7 +62,7 @@ export const Select = connect(
     if (objectValue) {
       return <ObjectSelect {...others} />;
     }
-    return <AntdSelect {...others} />;
+    return <AntdSelect {...others} value={others.value || undefined}/>;
   },
   mapProps(
     {

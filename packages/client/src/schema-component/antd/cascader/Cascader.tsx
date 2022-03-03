@@ -2,7 +2,7 @@ import { LoadingOutlined } from '@ant-design/icons';
 import { ArrayField } from '@formily/core';
 import { connect, mapProps, mapReadPretty, useField } from '@formily/react';
 import { toArr } from '@formily/shared';
-import { Cascader as AntdCascader } from 'antd';
+import { Cascader as AntdCascader, Space } from 'antd';
 import { isBoolean, omit } from 'lodash';
 import React from 'react';
 import { useRequest } from '../../../api-client';
@@ -25,7 +25,7 @@ export const Cascader = connect(
       value,
       onChange,
       labelInValue,
-      fieldNames = defaultFieldNames,
+      // fieldNames = defaultFieldNames,
       useDataSource = useDefDataSource,
       useLoadData = useDefLoadData,
       changeOnSelectLast,
@@ -33,6 +33,7 @@ export const Cascader = connect(
       maxLevel,
       ...others
     } = props;
+    const fieldNames = { ...defaultFieldNames, ...props.fieldNames };
     const loadData = useLoadData(props);
     const { loading } = useDataSource({
       onSuccess(data) {
@@ -49,24 +50,17 @@ export const Cascader = connect(
       });
     };
     const displayRender = (labels: string[], selectedOptions: any[]) => {
-      const values = toArr(value);
-      if (values.length !== labels.length) {
-        labels = toValue();
-        selectedOptions = values;
-      }
-      if (selectedOptions.length === 0) {
-        selectedOptions = values;
-      }
-      return labels.map((label, i) => {
-        let option = selectedOptions[i];
-        if (!option || typeof option === 'string' || typeof option === 'number') {
-          option = { [fieldNames.label]: label, [fieldNames.value]: label };
-        }
-        if (i === labels.length - 1) {
-          return <span key={option[fieldNames.value]}>{option[fieldNames.label]}</span>;
-        }
-        return <span key={option[fieldNames.value]}>{option[fieldNames.label]} / </span>;
-      });
+      return (
+        <Space split={'/'}>
+          {labels.map((label, index) => {
+            if (selectedOptions[index]) {
+              return <span key={label}>{label}</span>;
+            }
+            const item = toArr(value).find((item) => item[fieldNames.value] === label);
+            return <span key={label}>{item?.[fieldNames.label] || label}</span>;
+          })}
+        </Space>
+      );
     };
     return (
       <AntdCascader

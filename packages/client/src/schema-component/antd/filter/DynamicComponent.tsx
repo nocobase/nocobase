@@ -25,9 +25,10 @@ export const DynamicComponent = (props) => {
     return (
       <SchemaComponent
         schema={{
-          name: 'value',
           'x-component': 'Input',
           ...props.schema,
+          name: 'value',
+          'x-read-pretty': false,
         }}
       />
     );
