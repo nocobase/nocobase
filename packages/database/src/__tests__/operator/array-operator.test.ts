@@ -26,14 +26,14 @@ describe('array field operator', function () {
 
     t1 = await Test.repository.create({
       values: {
-        selected: [1, 2, 'a', 'b'],
+        selected: ['1', '2', 'a', 'b'],
         name: 't1',
       },
     });
 
     t2 = await Test.repository.create({
       values: {
-        selected: [11, 22, 'aa', 'bb', 'cc'],
+        selected: ['11', '22', 'aa', 'bb', 'cc'],
         name: 't2',
       },
     });
@@ -133,7 +133,7 @@ describe('array field operator', function () {
   test('$match', async () => {
     const filter1 = await Test.repository.find({
       filter: {
-        'selected.$match': [2, 1, 'a', 'b'],
+        'selected.$match': ['2', '1', 'a', 'b'],
       },
     });
 
@@ -146,7 +146,7 @@ describe('array field operator', function () {
       filter: {
         $and: [
           {
-            selected: { $match: [2, 1, 'a', 'b'] },
+            selected: { $match: ['2', '1', 'a', 'b'] },
           },
         ],
       },
@@ -159,7 +159,7 @@ describe('array field operator', function () {
   test('$notMatch', async () => {
     const filter2 = await Test.repository.find({
       filter: {
-        'selected.$notMatch': [1, 2, 'a', 'b'],
+        'selected.$notMatch': ['1', '2', 'a', 'b'],
       },
     });
 
@@ -193,6 +193,16 @@ describe('array field operator', function () {
     expect(filter3[0].get('name')).toEqual(t2.get('name'));
   });
 
+  test('$anyOf with multiple items', async () => {
+    const filter3 = await Test.repository.find({
+      filter: {
+        'selected.$anyOf': ['aa', 'a', '1'],
+      },
+    });
+
+    expect(filter3.length).toEqual(2);
+  });
+
   test('$noneOf', async () => {
     const filter = await Test.repository.find({
       filter: {
@@ -202,6 +212,24 @@ describe('array field operator', function () {
 
     expect(filter.length).toEqual(1);
     expect(filter[0].get('name')).toEqual(t1.get('name'));
+  });
+
+  test('$noneOf with null', async () => {
+    const t3 = await Test.repository.create({
+      values: {
+        name: 't3',
+        selected: null,
+      },
+    });
+
+    const filter = await Test.repository.find({
+      filter: {
+        'selected.$noneOf': ['a', 'aa', '1'],
+      },
+    });
+
+    expect(filter.length).toEqual(1);
+    expect(filter[0].get('name')).toEqual(t3.get('name'));
   });
 
   test('$empty', async () => {

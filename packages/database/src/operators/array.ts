@@ -81,9 +81,12 @@ export default {
     const fieldName = getFieldName(ctx);
 
     if (isPg(ctx)) {
-      const queryValue = JSON.stringify(value).replace("'", "''");
-
-      return Sequelize.literal(`${fieldName} @> ${escape(queryValue, ctx)}::JSONB`);
+      return Sequelize.literal(
+        `${fieldName} ?| ${escape(
+          value.map((i) => `${i}`),
+          ctx,
+        )}`,
+      );
     }
 
     if (isMySQL(ctx)) {
@@ -98,23 +101,29 @@ export default {
   },
 
   $noneOf(value, ctx) {
+    let where;
+
     if (isPg(ctx)) {
       const fieldName = getFieldName(ctx);
       // pg single quote
-      const queryValue = JSON.stringify(value).replace("'", "''");
-      return Sequelize.literal(`not (${fieldName} @> ${escape(queryValue, ctx)}::JSONB)`);
-    }
-
-    if (isMySQL(ctx)) {
+      where = Sequelize.literal(
+        `not (${fieldName} ?| ${escape(
+          value.map((i) => `${i}`),
+          ctx,
+        )})`,
+      );
+    } else if (isMySQL(ctx)) {
       const fieldName = getFieldName(ctx);
       value = escape(JSON.stringify(value), ctx);
-      return Sequelize.literal(`NOT JSON_OVERLAPS(${fieldName}, ${value})`);
+      where = Sequelize.literal(`NOT JSON_OVERLAPS(${fieldName}, ${value})`);
+    } else {
+      const subQuery = sqliteExistQuery(value, ctx);
+
+      where = Sequelize.literal(`not ${subQuery}`);
     }
 
-    const subQuery = sqliteExistQuery(value, ctx);
-
     return {
-      [Op.and]: [Sequelize.literal(`not ${subQuery}`)],
+      [Op.or]: [where, { [Op.is]: null }],
     };
   },
 
