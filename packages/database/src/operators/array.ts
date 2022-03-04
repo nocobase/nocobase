@@ -1,6 +1,5 @@
 import { Op, Sequelize } from 'sequelize';
 import { isPg, isMySQL } from './utils';
-import lodash from 'lodash';
 
 const getFieldName = (ctx) => {
   const fieldName = ctx.fieldName;
@@ -102,32 +101,29 @@ export default {
   },
 
   $noneOf(value, ctx) {
+    let where;
+
     if (isPg(ctx)) {
       const fieldName = getFieldName(ctx);
       // pg single quote
-      return {
-        [Op.or]: [
-          Sequelize.literal(
-            `not (${fieldName} ?| ${escape(
-              value.map((i) => `${i}`),
-              ctx,
-            )})`,
-          ),
-          { [Op.is]: null },
-        ],
-      };
-    }
-
-    if (isMySQL(ctx)) {
+      where = Sequelize.literal(
+        `not (${fieldName} ?| ${escape(
+          value.map((i) => `${i}`),
+          ctx,
+        )})`,
+      );
+    } else if (isMySQL(ctx)) {
       const fieldName = getFieldName(ctx);
       value = escape(JSON.stringify(value), ctx);
-      return Sequelize.literal(`NOT JSON_OVERLAPS(${fieldName}, ${value})`);
+      where = Sequelize.literal(`NOT JSON_OVERLAPS(${fieldName}, ${value})`);
+    } else {
+      const subQuery = sqliteExistQuery(value, ctx);
+
+      where = Sequelize.literal(`not ${subQuery}`);
     }
 
-    const subQuery = sqliteExistQuery(value, ctx);
-
     return {
-      [Op.and]: [Sequelize.literal(`not ${subQuery}`)],
+      [Op.or]: [where, { [Op.is]: null }],
     };
   },
 
