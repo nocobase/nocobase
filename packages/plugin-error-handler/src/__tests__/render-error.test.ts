@@ -87,4 +87,34 @@ describe('create with exception', () => {
       ],
     });
   });
+
+  it('should render error with field title', async () => {
+    app.collection({
+      name: 'users',
+      fields: [
+        {
+          name: 'name',
+          type: 'string',
+          allowNull: false,
+          uiSchema: {
+            title: '{{t("UserName")}}',
+          },
+        },
+      ],
+    });
+
+    await app.loadAndInstall();
+
+    const response = await app.agent().resource('users').create({});
+
+    expect(response.statusCode).toEqual(400);
+
+    expect(response.body).toEqual({
+      errors: [
+        {
+          message: 'UserName cannot be null',
+        },
+      ],
+    });
+  });
 });
