@@ -1,5 +1,6 @@
 import { Op, Sequelize } from 'sequelize';
 import { isPg, isMySQL } from './utils';
+import lodash from 'lodash';
 
 const getFieldName = (ctx) => {
   const fieldName = ctx.fieldName;
@@ -81,9 +82,12 @@ export default {
     const fieldName = getFieldName(ctx);
 
     if (isPg(ctx)) {
-      const queryValue = JSON.stringify(value).replace("'", "''");
-
-      return Sequelize.literal(`${fieldName} @> ${escape(queryValue, ctx)}::JSONB`);
+      return Sequelize.literal(
+        `${fieldName} ?| ${escape(
+          value.map((i) => `${i}`),
+          ctx,
+        )}`,
+      );
     }
 
     if (isMySQL(ctx)) {
@@ -101,8 +105,17 @@ export default {
     if (isPg(ctx)) {
       const fieldName = getFieldName(ctx);
       // pg single quote
-      const queryValue = JSON.stringify(value).replace("'", "''");
-      return Sequelize.literal(`not (${fieldName} @> ${escape(queryValue, ctx)}::JSONB)`);
+      return {
+        [Op.or]: [
+          Sequelize.literal(
+            `not (${fieldName} ?| ${escape(
+              value.map((i) => `${i}`),
+              ctx,
+            )})`,
+          ),
+          { [Op.is]: null },
+        ],
+      };
     }
 
     if (isMySQL(ctx)) {
