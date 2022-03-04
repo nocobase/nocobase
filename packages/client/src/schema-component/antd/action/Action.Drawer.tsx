@@ -1,6 +1,7 @@
 import { css } from '@emotion/css';
 import { observer, RecursionField, useField, useFieldSchema } from '@formily/react';
 import { Drawer } from 'antd';
+import classNames from 'classnames';
 import React from 'react';
 import { createPortal } from 'react-dom';
 import { useActionContext } from './hooks';
@@ -27,6 +28,13 @@ export const ActionDrawer: ComposedActionDrawer = observer((props) => {
           destroyOnClose
           visible={visible}
           onClose={() => setVisible(false)}
+          className={classNames(others.className, css`
+            &.nb-action-popup {
+              .ant-drawer-content {
+                background: #f0f2f5;
+              }
+            }
+          `)}
           footer={
             footerSchema && (
               <div

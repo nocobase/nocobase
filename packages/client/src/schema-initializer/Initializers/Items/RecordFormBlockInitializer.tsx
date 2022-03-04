@@ -3,12 +3,11 @@ import { ISchema } from '@formily/react';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { SchemaInitializer } from '../..';
-import { useCollectionManager } from '../../../collection-manager';
+import { useCollection } from '../../../collection-manager';
 
 const createSchema = (collectionName) => {
   const schema: ISchema = {
     type: 'void',
-    'x-collection': 'collections',
     'x-decorator': 'ResourceActionProvider',
     'x-decorator-props': {
       collection: collectionName,
@@ -53,14 +52,14 @@ const createSchema = (collectionName) => {
 
 export const RecordFormBlockInitializer = (props) => {
   const { insert } = props;
-  const { collections } = useCollectionManager();
+  const { name } = useCollection();
   const { t } = useTranslation();
   return (
     <SchemaInitializer.Item
       {...props}
       icon={<FormOutlined />}
       onClick={({ item }) => {
-        insert(createSchema(item.name));
+        insert(createSchema(name));
       }}
     />
   );
