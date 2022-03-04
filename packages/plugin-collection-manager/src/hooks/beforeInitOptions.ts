@@ -1,8 +1,25 @@
+import Database from '@nocobase/database';
 import { uid } from '@nocobase/utils';
 import { Model } from 'sequelize';
 
+const setTargetKey = (db: Database, model: Model) => {
+  const target = model.get('target') as any;
+  if (db.hasCollection(target)) {
+    const targetModel = db.getCollection(target).model;
+    model.set('targetKey', targetModel.primaryKeyAttribute || 'id');
+  }
+};
+
+const setSourceKey = (db: Database, model: Model) => {
+  const source = model.get('collectionName') as any;
+  if (db.hasCollection(source)) {
+    const sourceModel = db.getCollection(source).model;
+    model.set('sourceKey', sourceModel.primaryKeyAttribute || 'id');
+  }
+};
+
 export const beforeInitOptions = {
-  belongsTo(model: Model) {
+  belongsTo(model: Model, { database }) {
     const defaults = {
       targetKey: 'id',
       foreignKey: `f_${uid()}`,
@@ -13,8 +30,9 @@ export const beforeInitOptions = {
       }
       model.set(key, defaults[key]);
     }
+    setTargetKey(database, model);
   },
-  belongsToMany(model: Model) {
+  belongsToMany(model: Model, { database }) {
     const defaults = {
       targetKey: 'id',
       sourceKey: 'id',
@@ -28,8 +46,10 @@ export const beforeInitOptions = {
       }
       model.set(key, defaults[key]);
     }
+    setTargetKey(database, model);
+    setSourceKey(database, model);
   },
-  hasMany(model: Model) {
+  hasMany(model: Model, { database }) {
     const defaults = {
       targetKey: 'id',
       sourceKey: 'id',
@@ -42,8 +62,10 @@ export const beforeInitOptions = {
       }
       model.set(key, defaults[key]);
     }
+    setTargetKey(database, model);
+    setSourceKey(database, model);
   },
-  hasOne(model: Model) {
+  hasOne(model: Model, { database }) {
     const defaults = {
       sourceKey: 'id',
       foreignKey: `f_${uid()}`,
@@ -54,5 +76,6 @@ export const beforeInitOptions = {
       }
       model.set(key, defaults[key]);
     }
+    setSourceKey(database, model);
   },
 };
