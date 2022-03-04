@@ -31,7 +31,7 @@ export const RecordBlockInitializers = (props: any) => {
       items={[
         {
           type: 'itemGroup',
-          title: 'Data blocks',
+          title: '当前数据区块',
           children: [
             {
               type: 'item',

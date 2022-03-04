@@ -12,7 +12,7 @@ export const TabPaneInitializers = () => {
     const ctx = useActionContext();
     return {
       async run() {
-        form.submit();
+        await form.submit();
         const { title } = form.values;
         insertBeforeEnd({
           type: 'void',
@@ -29,6 +29,7 @@ export const TabPaneInitializers = () => {
             },
           },
         });
+        await form.reset();
         ctx.setVisible(false);
       },
     };
