@@ -58,27 +58,31 @@ const createSchema = (collectionName, { title, start, end }) => {
                   useValues: '{{ cm.useValuesFromRecord }}',
                 },
                 'x-component': 'Action.Drawer',
-                title: '{{ t("Edit record") }}',
+                'x-component-props': {
+                  className: 'nb-action-popup',
+                },
+                title: '{{ t("View record") }}',
                 properties: {
-                  grid: {
+                  tabs: {
                     type: 'void',
-                    'x-component': 'Grid',
-                    'x-initializer': 'GridFormItemInitializers',
-                    properties: {},
-                  },
-                  footer: {
-                    type: 'void',
-                    'x-component': 'Action.Drawer.Footer',
+                    'x-component': 'Tabs',
+                    'x-component-props': {},
+                    'x-initializer': 'TabPaneInitializers',
                     properties: {
-                      actions: {
+                      tab1: {
                         type: 'void',
-                        'x-initializer': 'PopupFormActionInitializers',
-                        'x-decorator': 'DndContext',
-                        'x-component': 'ActionBar',
-                        'x-component-props': {
-                          layout: 'one-column',
+                        title: '详情',
+                        'x-component': 'Tabs.TabPane',
+                        'x-designer': 'Tabs.Designer',
+                        'x-component-props': {},
+                        properties: {
+                          grid: {
+                            type: 'void',
+                            'x-component': 'Grid',
+                            'x-initializer': 'RecordBlockInitializers',
+                            properties: {},
+                          },
                         },
-                        properties: {},
                       },
                     },
                   },
@@ -104,12 +108,22 @@ export const CalendarBlockInitializer = (props) => {
       icon={<FormOutlined />}
       onClick={async ({ item }) => {
         const collection = getCollection(item.name);
-        const fieldEnum = collection?.fields?.map((field) => {
-          return {
-            label: field?.uiSchema?.title,
-            value: field.name,
-          };
-        });
+        const stringFields = collection?.fields
+          ?.filter((field) => field.type === 'string')
+          ?.map((field) => {
+            return {
+              label: field?.uiSchema?.title,
+              value: field.name,
+            };
+          });
+        const dateFields = collection?.fields
+          ?.filter((field) => field.type === 'date')
+          ?.map((field) => {
+            return {
+              label: field?.uiSchema?.title,
+              value: field.name,
+            };
+          });
         const values = await FormDialog('创建日历区块', () => {
           return (
             <SchemaComponentOptions scope={options.scope} components={{ ...options.components }}>
@@ -119,21 +133,22 @@ export const CalendarBlockInitializer = (props) => {
                     properties: {
                       title: {
                         title: '标题字段',
-                        enum: fieldEnum,
+                        enum: stringFields,
                         required: true,
                         'x-component': 'Select',
                         'x-decorator': 'FormItem',
                       },
                       start: {
                         title: '开始日期字段',
-                        enum: fieldEnum,
+                        enum: dateFields,
                         required: true,
+                        default: 'createdAt',
                         'x-component': 'Select',
                         'x-decorator': 'FormItem',
                       },
                       end: {
                         title: '结束日期字段',
-                        enum: fieldEnum,
+                        enum: dateFields,
                         'x-component': 'Select',
                         'x-decorator': 'FormItem',
                       },

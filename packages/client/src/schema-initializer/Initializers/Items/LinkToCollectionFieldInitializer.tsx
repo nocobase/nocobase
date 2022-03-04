@@ -115,6 +115,7 @@ export const LinkToFieldInitializer = (props) => {
                 drawer1: {
                   'x-component': 'Action.Drawer',
                   'x-component-props': {
+                    className: 'nb-action-popup',
                   },
                   type: 'void',
                   title: 'Drawer Title',

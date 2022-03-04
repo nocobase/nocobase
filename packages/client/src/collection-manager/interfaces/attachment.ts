@@ -1,5 +1,5 @@
 import { uid } from '@formily/shared';
-import { defaultProps } from './properties';
+import { defaultProps, operators } from './properties';
 import { IField } from './types';
 
 export const attachment: IField = {
@@ -51,12 +51,22 @@ export const attachment: IField = {
   filterable: {
     children: [
       {
+        name: 'id',
+        title: '{{t("Exists")}}',
+        operators: [
+          { label: '{{t("exists")}}', value: '$exists', noValue: true },
+          { label: '{{t("not exists")}}', value: '$notExists', noValue: true },
+        ],
+        schema: {
+          title: '{{t("Exists")}}',
+          type: 'string',
+          'x-component': 'Input',
+        },
+      },
+      {
         name: 'filename',
         title: '{{t("Filename")}}',
-        operators: [
-          { label: 'empty', value: '$empty' },
-          { label: 'notEmpty', value: '$notEmpty' },
-        ],
+        operators: operators.string,
         schema: {
           title: '{{t("Filename")}}',
           type: 'string',
