@@ -8,13 +8,14 @@ export const ResourceActionContext = createContext<Result<any, any> & { state?: 
 
 interface ResourceActionProviderProps {
   type?: 'association' | 'collection';
+  collection?: any;
   request?: any;
   uid?: string;
 }
 
 const ResourceContext = createContext<any>(null);
 
-const InternalCollectionResourceActionProvider = (props) => {
+const CollectionResourceActionProvider = (props) => {
   let { collection, request, uid } = props;
   const api = useAPIClient();
   const service = useRequest(
@@ -22,7 +23,7 @@ const InternalCollectionResourceActionProvider = (props) => {
       ...request,
       params: {
         ...request?.params,
-        appends: collection.fields.filter(field => field.target).map((field) => field.name),
+        appends: collection.fields.filter((field) => field.target).map((field) => field.name),
       },
     },
     { uid },
@@ -37,32 +38,26 @@ const InternalCollectionResourceActionProvider = (props) => {
   );
 };
 
-const CollectionResourceActionProvider = (props) => {
-  let { collection, request, uid } = props;
-  const { getCollection } = useCollectionManager();
-  if (typeof collection === 'string') {
-    collection = getCollection(collection);
-  }
-  if (!collection) {
-    return null;
-  }
-  return <InternalCollectionResourceActionProvider {...props} collection={collection} />;
-};
-
 const AssociationResourceActionProvider = (props) => {
   let { collection, association, request, uid } = props;
-  const { get } = useCollectionManager();
   const api = useAPIClient();
   const record = useRecord();
   const resourceOf = record[association.sourceKey];
-  const service = useRequest({ resourceOf, ...request }, { uid });
+  const service = useRequest(
+    {
+      resourceOf,
+      ...request,
+      params: {
+        ...request?.params,
+        appends: [
+          ...collection?.fields?.filter?.((field) => field.target).map((field) => field.name),
+          ...request?.params?.appends,
+        ],
+      },
+    },
+    { uid },
+  );
   const resource = api.resource(request.resource, resourceOf);
-  if (typeof collection === 'string') {
-    collection = get(collection);
-  }
-  if (!collection) {
-    return null;
-  }
   return (
     <ResourceContext.Provider value={{ type: 'association', resource, association }}>
       <ResourceActionContext.Provider value={service}>
@@ -73,11 +68,18 @@ const AssociationResourceActionProvider = (props) => {
 };
 
 export const ResourceActionProvider: React.FC<ResourceActionProviderProps> = (props) => {
-  const { request } = props;
-  if (request?.resource?.includes('.')) {
-    return <AssociationResourceActionProvider {...props} />;
+  let { collection, request } = props;
+  const { getCollection } = useCollectionManager();
+  if (typeof collection === 'string') {
+    collection = getCollection(collection);
   }
-  return <CollectionResourceActionProvider {...props} />;
+  if (!collection) {
+    return null;
+  }
+  if (request?.resource?.includes('.')) {
+    return <AssociationResourceActionProvider {...props} collection={collection} />;
+  }
+  return <CollectionResourceActionProvider {...props} collection={collection} />;
 };
 
 export const useResourceActionContext = () => {

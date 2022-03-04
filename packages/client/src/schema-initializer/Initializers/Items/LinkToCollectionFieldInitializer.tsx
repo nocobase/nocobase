@@ -114,45 +114,28 @@ export const LinkToFieldInitializer = (props) => {
               properties: {
                 drawer1: {
                   'x-component': 'Action.Drawer',
+                  'x-component-props': {
+                  },
                   type: 'void',
                   title: 'Drawer Title',
                   properties: {
-                    details: {
+                    tabs: {
                       type: 'void',
-                      'x-collection': 'collections',
-                      'x-decorator': 'ResourceActionProvider',
-                      'x-decorator-props': {
-                        collection: item.field.target,
-                        request: {
-                          resource: item.field.target,
-                          action: 'get',
-                          params: {},
-                        },
-                      },
-                      'x-designer': 'Form.Designer',
-                      'x-component': 'CardItem',
+                      'x-component': 'Tabs',
+                      'x-component-props': {},
+                      'x-initializer': 'TabPaneInitializers',
                       properties: {
-                        form: {
+                        tab1: {
                           type: 'void',
-                          'x-decorator': 'Form',
-                          'x-decorator-props': {},
+                          title: '详情',
+                          'x-component': 'Tabs.TabPane',
+                          'x-designer': 'Tabs.Designer',
+                          'x-component-props': {},
                           properties: {
-                            actions: {
-                              type: 'void',
-                              'x-initializer': 'FormActionInitializers',
-                              'x-component': 'ActionBar',
-                              'x-component-props': {
-                                layout: 'one-column',
-                                style: {
-                                  marginBottom: 16,
-                                },
-                              },
-                              properties: {},
-                            },
                             grid: {
                               type: 'void',
                               'x-component': 'Grid',
-                              'x-initializer': 'GridFormItemInitializers',
+                              'x-initializer': 'RecordBlockInitializers',
                               properties: {},
                             },
                           },

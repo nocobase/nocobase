@@ -63,6 +63,9 @@ export const TableRecordActionInitializers = (props: any) => {
                   drawer: {
                     type: 'void',
                     'x-component': 'Action.Drawer',
+                    'x-component-props': {
+                      className: 'nb-action-popup',
+                    },
                     title: '{{ t("View record") }}',
                     properties: {
                       tabs: {
