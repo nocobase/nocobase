@@ -18,10 +18,17 @@ const ResourceContext = createContext<any>(null);
 const CollectionResourceActionProvider = (props) => {
   let { collection, request, uid } = props;
   const api = useAPIClient();
+  const record = useRecord();
+  const actionName = request?.action;
+  const others = {};
+  if (actionName === 'get') {
+    others['filterByTk'] = record[collection.targetKey || collection.filterTargetKey || 'id'];
+  }
   const service = useRequest(
     {
       ...request,
       params: {
+        ...others,
         ...request?.params,
         appends: collection.fields.filter((field) => field.target).map((field) => field.name),
       },

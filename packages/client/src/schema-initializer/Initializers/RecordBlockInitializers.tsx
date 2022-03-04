@@ -36,7 +36,7 @@ export const RecordBlockInitializers = (props: any) => {
             {
               type: 'item',
               title: 'Details',
-              component: 'RecordFormBlockInitializer',
+              component: 'RecordDetailsBlockInitializer',
             },
             {
               type: 'item',

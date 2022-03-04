@@ -5,6 +5,8 @@ export default {
   title: '{{t("Roles")}}',
   autoGenId: false,
   model: 'RoleModel',
+  filterTargetKey: 'name',
+  // targetKey: 'name',
   fields: [
     {
       type: 'uid',

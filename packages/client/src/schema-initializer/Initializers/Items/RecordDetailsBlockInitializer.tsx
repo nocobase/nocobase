@@ -27,33 +27,23 @@ const createSchema = (collectionName) => {
           useValues: '{{ cm.useValuesFromRA }}',
         },
         properties: {
+          actions: {
+            type: 'void',
+            'x-initializer': 'RecordDetailsActionInitializers',
+            'x-component': 'ActionBar',
+            'x-component-props': {
+              style: {
+                marginBottom: 24,
+              },
+            },
+            properties: {},
+          },
           grid: {
             type: 'void',
             'x-component': 'Grid',
+            'x-read-pretty': true,
             'x-initializer': 'GridFormItemInitializers',
             properties: {},
-          },
-          actions: {
-            type: 'void',
-            'x-initializer': 'RecordFormActionInitializers',
-            'x-component': 'ActionBar',
-            'x-component-props': {
-              layout: 'one-column',
-              style: {
-                marginTop: 24,
-              },
-            },
-            properties: {
-              submit: {
-                title: '{{ t("Submit") }}',
-                'x-action': 'submit',
-                'x-component': 'Action',
-                'x-component-props': {
-                  type: 'primary',
-                  useAction: '{{ cm.useUpdateViewAction }}',
-                },
-              },
-            },
           },
         },
       },
@@ -62,7 +52,7 @@ const createSchema = (collectionName) => {
   return schema;
 };
 
-export const RecordFormBlockInitializer = (props) => {
+export const RecordDetailsBlockInitializer = (props) => {
   const { insert } = props;
   const { name } = useCollection();
   const { t } = useTranslation();
