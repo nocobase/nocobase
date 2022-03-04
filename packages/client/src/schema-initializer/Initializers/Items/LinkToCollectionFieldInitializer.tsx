@@ -1,3 +1,4 @@
+import { ISchema } from '@formily/react';
 import { Switch } from 'antd';
 import React from 'react';
 import { SchemaInitializer } from '../../SchemaInitializer';
@@ -113,6 +114,10 @@ export const LinkToFieldInitializer = (props) => {
               'x-component': 'RecordPicker.SelectedItem',
               properties: {
                 drawer1: {
+                  'x-decorator': 'CollectionProvider',
+                  'x-decorator-props': {
+                    name: item.field.target,
+                  },
                   'x-component': 'Action.Drawer',
                   'x-component-props': {
                     className: 'nb-action-popup',
@@ -148,7 +153,7 @@ export const LinkToFieldInitializer = (props) => {
               },
             },
           },
-        });
+        } as ISchema);
       }}
     >
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>

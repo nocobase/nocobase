@@ -6,6 +6,8 @@ import { GridFormItemInitializers } from './GridFormItemInitializers';
 import * as Items from './Items';
 import { PopupFormActionInitializers } from './PopupFormActionInitializers';
 import { RecordBlockInitializers } from './RecordBlockInitializers';
+import { RecordDetailsActionInitializers } from './RecordDetailsActionInitializers';
+import { RecordFormActionInitializers } from './RecordFormActionInitializers';
 import { TableActionInitializers } from './TableActionInitializers';
 import { TableColumnInitializers } from './TableColumnInitializers';
 import { TableFieldRecordActionInitializers } from './TableFieldRecordActionInitializers';
@@ -39,4 +41,8 @@ export const initializes = {
   TableFieldRecordActionInitializers,
   // 添加标签页
   TabPaneInitializers,
+
+  RecordDetailsActionInitializers,
+
+  RecordFormActionInitializers,
 };

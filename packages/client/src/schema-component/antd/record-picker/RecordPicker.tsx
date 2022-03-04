@@ -16,6 +16,8 @@ import { toArr } from '@formily/shared';
 import { Button, Drawer, Select, Space } from 'antd';
 import React, { createContext, useContext, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useCollectionField } from '../../../collection-manager';
+import { RecordProvider } from '../../../record-provider';
 import { useAttach } from '../../hooks/useAttach';
 import { ActionContext, useActionContext } from '../action';
 
@@ -191,12 +193,15 @@ RecordPicker.SelectedItem = () => {
   const fieldSchema = useFieldSchema();
   const [visible, setVisible] = useState(false);
   const fieldNames = ctx.field.componentProps.fieldNames;
+  const { target } = useCollectionField();
   return (
     <ActionContext.Provider value={{ visible, setVisible }}>
       <a style={{ cursor: 'pointer' }} onClick={() => setVisible(true)}>
         {ctx.record[fieldNames?.label || 'id']}
       </a>
-      <RecursionField onlyRenderProperties schema={fieldSchema}></RecursionField>
+      <RecordProvider record={ctx.record}>
+        <RecursionField onlyRenderProperties schema={fieldSchema}></RecursionField>
+      </RecordProvider>
     </ActionContext.Provider>
   );
 };

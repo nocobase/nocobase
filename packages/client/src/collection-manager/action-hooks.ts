@@ -1,4 +1,5 @@
 import { useForm } from '@formily/react';
+import { message } from 'antd';
 import { useCollection, useCollectionManager } from '.';
 import { useRequest } from '../api-client';
 import { useRecord } from '../record-provider';
@@ -121,6 +122,22 @@ export const useCreateActionWithoutRefresh = () => {
   };
 };
 
+export const useUpdateViewAction = () => {
+  const form = useForm();
+  const ctx = useActionContext();
+  // const { refresh } = useResourceActionContext();
+  const { resource, targetKey } = useResourceContext();
+  const { [targetKey]: filterByTk } = useRecord();
+  return {
+    async run() {
+      await form.submit();
+      await resource.update({ filterByTk, values: form.values });
+      // refresh();
+      message.success('保存成功');
+    },
+  };
+}
+
 export const useUpdateAction = () => {
   const form = useForm();
   const ctx = useActionContext();
@@ -169,6 +186,14 @@ export const useValuesFromRecord = (options) => {
   return useRequest(() => Promise.resolve({ data: record }), {
     ...options,
     refreshDeps: [record],
+  });
+};
+
+export const useValuesFromRA = (options) => {
+  const ctx = useResourceActionContext();
+  return useRequest(() => Promise.resolve(ctx.data), {
+    ...options,
+    refreshDeps: [ctx.data],
   });
 };
 

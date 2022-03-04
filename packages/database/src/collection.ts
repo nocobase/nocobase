@@ -67,7 +67,7 @@ export class Collection<
   private sequelizeModelOptions() {
     const { name, tableName } = this.options;
     return {
-      ..._.omit(this.options, ['name', 'fields', 'model']),
+      ..._.omit(this.options, ['name', 'fields', 'model', 'targetKey']),
       modelName: name,
       sequelize: this.context.database.sequelize,
       tableName: tableName || name,
