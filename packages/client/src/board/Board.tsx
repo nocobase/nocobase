@@ -11,7 +11,7 @@ import {
   getCoordinates,
   isAColumnMove,
   isMovingACardToAnotherPosition,
-  isMovingAColumnToAnotherPosition
+  isMovingAColumnToAnotherPosition,
 } from './services';
 import { partialRight, when } from './utils';
 import withDroppable from './withDroppable';
@@ -22,7 +22,7 @@ const DroppableBoard = withDroppable(Columns);
 
 const Board: any = (props) => {
   return props.initialBoard ? <UncontrolledBoard {...props} /> : <ControlledBoard {...props} />;
-}
+};
 
 Object.keys(helpers).forEach((key) => {
   Board[key] = helpers[key];
@@ -251,7 +251,7 @@ function BoardContainer(props) {
       : isMovingACardToAnotherPosition(coordinates) &&
         onCardDragEnd({ ...coordinates, subject: getCard(board, coordinates.source) });
   }
-
+  debugger;
   return (
     <DragDropContext onDragEnd={handleOnDragEnd}>
       <div style={{ overflowY: 'hidden', display: 'flex', alignItems: 'flex-start' }} className="react-kanban-board">
