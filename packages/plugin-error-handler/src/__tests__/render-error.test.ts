@@ -1,9 +1,17 @@
-import { mockServer } from '@nocobase/test';
-
+import { MockServer, mockServer } from '@nocobase/test';
+import { PluginErrorHandler } from '../server';
 describe('create with exception', () => {
-  it('should handle not null error', async () => {
-    const app = mockServer();
+  let app: MockServer;
+  beforeEach(async () => {
+    app = mockServer();
+    app.plugin(PluginErrorHandler);
+  });
 
+  afterEach(async () => {
+    await app.destroy();
+  });
+
+  it('should handle not null error', async () => {
     app.collection({
       name: 'users',
       fields: [
@@ -35,13 +43,9 @@ describe('create with exception', () => {
         },
       ],
     });
-
-    await app.destroy();
   });
 
   it('should handle unique error', async () => {
-    const app = mockServer();
-
     app.collection({
       name: 'users',
       fields: [
@@ -82,7 +86,5 @@ describe('create with exception', () => {
         },
       ],
     });
-
-    await app.destroy();
   });
 });

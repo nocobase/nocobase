@@ -5,30 +5,15 @@ import { Command } from 'commander';
 import i18next from 'i18next';
 import { DefaultContext, DefaultState } from 'koa';
 import bodyParser from 'koa-bodyparser';
-import { BaseError } from 'sequelize';
 import Application, { ApplicationOptions } from './application';
 import { dataWrapping } from './middlewares/data-wrapping';
 import { table2resource } from './middlewares/table2resource';
-import zhCN from './locale/zh_CN';
-import enUS from './locale/en_US';
-import { message } from 'antd';
 
 export function createI18n(options: ApplicationOptions) {
   const instance = i18next.createInstance();
   instance.init({
     lng: 'en-US',
-    resources: {
-      'en-US': {
-        app: {
-          ...enUS,
-        },
-      },
-      'zh-CN': {
-        app: {
-          ...zhCN,
-        },
-      },
-    },
+    resources: {},
     ...options.i18n,
   });
   return instance;
@@ -108,24 +93,7 @@ export function createCli(app: Application, options: ApplicationOptions): Comman
   return cli;
 }
 
-function registerErrorHandler(app: Application) {
-  app.errorHandler.register(
-    (err) => err?.errors?.length && err instanceof BaseError,
-    (err, ctx) => {
-      ctx.body = {
-        errors: err.errors.map((err) => {
-          return { message: app.i18n.t(err.type, { ns: 'app', field: err.path }) };
-        }),
-      };
-      ctx.status = 400;
-    },
-  );
-  app.use(app.errorHandler.middleware());
-}
-
 export function registerMiddlewares(app: Application, options: ApplicationOptions) {
-  registerErrorHandler(app);
-
   if (options.bodyParser !== false) {
     app.use(
       bodyParser({
