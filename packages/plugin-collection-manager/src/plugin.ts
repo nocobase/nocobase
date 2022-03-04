@@ -25,7 +25,10 @@ export class CollectionManagerPlugin extends Plugin {
     this.app.db.on('fields.beforeCreate', beforeCreateForChildrenCollection(this.app.db));
     this.app.db.on('fields.beforeCreate', async (model, options) => {
       const type = model.get('type');
-      await this.app.db.emitAsync(`fields.${type}.beforeInitOptions`, model, options);
+      await this.app.db.emitAsync(`fields.${type}.beforeInitOptions`, model, {
+        ...options,
+        database: this.app.db,
+      });
     });
     for (const key in beforeInitOptions) {
       if (Object.prototype.hasOwnProperty.call(beforeInitOptions, key)) {
