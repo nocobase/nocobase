@@ -17,13 +17,13 @@ export const useColumnSchema = () => {
     return {};
   }
   const collectionField = getField(fieldSchema.name);
-  return { columnSchema, fieldSchema, uiSchema: compile(collectionField?.uiSchema) };
+  return { columnSchema, fieldSchema, collectionField, uiSchema: compile(collectionField?.uiSchema) };
 };
 
 export const TableColumnDecorator = (props) => {
   const Designer = useDesigner();
   const field = useField();
-  const { fieldSchema, uiSchema } = useColumnSchema();
+  const { fieldSchema, uiSchema, collectionField } = useColumnSchema();
   const { refresh } = useDesignable();
   const compile = useCompile();
   useLayoutEffect(() => {
@@ -37,10 +37,9 @@ export const TableColumnDecorator = (props) => {
       field.title = uiSchema?.title;
     }
   }, [uiSchema?.title]);
-  console.log('field.title', uiSchema?.title, field.title);
   return (
     <SortableItem className={designerCss}>
-      <Designer />
+      <Designer fieldSchema={fieldSchema} uiSchema={uiSchema} collectionField={collectionField}/>
       {/* <RecursionField name={columnSchema.name} schema={columnSchema}/> */}
       {field.title || compile(uiSchema?.title)}
       {/* <div

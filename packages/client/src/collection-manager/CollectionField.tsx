@@ -1,5 +1,6 @@
 import { Field } from '@formily/core';
 import { connect, useField, useFieldSchema } from '@formily/react';
+import { merge } from '@formily/shared';
 import React, { useEffect } from 'react';
 import { useCompile, useComponent } from '..';
 import { CollectionFieldProvider } from './CollectionFieldProvider';
@@ -33,7 +34,9 @@ const InternalField: React.FC = (props) => {
     setRequired();
     // @ts-ignore
     field.dataSource = uiSchema.enum;
-    field.component = [component, uiSchema['x-component-props']];
+    const originalProps = compile(uiSchema['x-component-props']);
+    const componentProps = field.componentProps;
+    field.component = [component, merge(originalProps, componentProps)];
   }, [uiSchema?.title, uiSchema?.description, uiSchema?.required]);
   if (!uiSchema) {
     return null;

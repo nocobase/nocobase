@@ -17,6 +17,7 @@ export const AddNewActionInitializer = (props) => {
           type: 'void',
           title: '{{ t("Add new") }}',
           'x-action': 'create',
+          'x-designer': 'Action.Designer',
           'x-component': 'Action',
           'x-component-props': {
             type: 'primary',
