@@ -55,7 +55,9 @@ export const collectionSchema: ISchema = {
           action: 'list',
           params: {
             pageSize: 50,
-            filter: {},
+            filter: {
+              inherit: false,
+            },
             sort: ['sort'],
             appends: [],
           },

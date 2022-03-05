@@ -117,6 +117,12 @@ const TableIndex = (props) => {
   );
 };
 
+const useDefAction = () => {
+  return {
+    async move() {},
+  };
+};
+
 export const TableArray: React.FC<any> = observer((props) => {
   const field = useField<ArrayField>();
   const columns = useTableColumns();
@@ -125,6 +131,7 @@ export const TableArray: React.FC<any> = observer((props) => {
     showIndex = true,
     useSelectedRowKeys = useDef,
     useDataSource = useDefDataSource,
+    useAction = useDefAction,
     onChange,
     ...others
   } = props;
@@ -134,6 +141,7 @@ export const TableArray: React.FC<any> = observer((props) => {
       field.value = data?.data || [];
     },
   });
+  const { move } = useAction();
   const restProps = {
     rowSelection: props.rowSelection
       ? {
@@ -223,9 +231,11 @@ export const TableArray: React.FC<any> = observer((props) => {
     <div>
       <ReactDragListView
         handleSelector={'.drag-handle'}
-        onDragEnd={(fromIndex, toIndex) => {
-          console.log('ReactDragListView', fromIndex, toIndex);
+        onDragEnd={async (fromIndex, toIndex) => {
+          const from = field.value[fromIndex];
+          const to = field.value[toIndex];
           field.move(fromIndex, toIndex);
+          await move(from, to);
         }}
         lineClassName={css`
           border-bottom: 2px solid rgba(241, 139, 98, 0.6) !important;

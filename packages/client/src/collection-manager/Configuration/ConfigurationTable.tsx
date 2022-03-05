@@ -4,7 +4,7 @@ import { uid } from '@formily/shared';
 import React, { useEffect, useState } from 'react';
 import { useRequest } from '../../api-client';
 import { useRecord } from '../../record-provider';
-import { SchemaComponent, useActionContext } from '../../schema-component';
+import { SchemaComponent, useActionContext, useCompile } from '../../schema-component';
 import { useCollectionManager } from '../hooks/useCollectionManager';
 import { AddSubFieldAction } from './AddSubFieldAction';
 import { EditSubFieldAction } from './EditSubFieldAction';
@@ -76,9 +76,10 @@ const useBulkDestroySubField = () => {
 
 export const ConfigurationTable = () => {
   const { collections = [] } = useCollectionManager();
+  const compile = useCompile();
   const loadCollections = async (field: any) => {
     return collections?.map((item: any) => ({
-      label: item.title,
+      label: compile(item.title),
       value: item.name,
     }));
   };

@@ -20,7 +20,13 @@ export function beforeCreateForChildrenCollection(db: Database) {
     });
     if (!collection) {
       await Collection.repository.create({
-        values: { name: parentTarget },
+        values: {
+          name: parentTarget,
+          createdBy: true,
+          updatedBy: true,
+          sortable: true,
+          inherit: true,
+        },
         transaction,
         context,
       });

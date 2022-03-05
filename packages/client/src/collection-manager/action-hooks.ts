@@ -136,7 +136,21 @@ export const useUpdateViewAction = () => {
       message.success('保存成功');
     },
   };
-}
+};
+
+export const useMoveAction = () => {
+  const { resource } = useResourceContext();
+  const { refresh } = useResourceActionContext();
+  return {
+    async move(from, to) {
+      // await resource.move({
+      //   sourceId: from.id,
+      //   targetId: to.id,
+      // });
+      // refresh();
+    },
+  };
+};
 
 export const useUpdateAction = () => {
   const form = useForm();

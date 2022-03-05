@@ -27,6 +27,11 @@ export default {
       required: true,
     },
     {
+      type: 'boolean',
+      name: 'inherit',
+      defaultValue: false,
+    },
+    {
       type: 'json',
       name: 'options',
       defaultValue: {},
