@@ -1,10 +1,11 @@
+import { FormDialog, FormLayout } from '@formily/antd';
 import { GeneralField } from '@formily/core';
-import { ISchema, Schema } from '@formily/react';
+import { ISchema, Schema, SchemaOptionsContext } from '@formily/react';
 import { uid } from '@formily/shared';
 import { Dropdown, Menu, MenuItemProps, Modal, Select } from 'antd';
 import React, { createContext, useContext, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { ActionContext, Designable, SchemaComponent } from '..';
+import { ActionContext, Designable, SchemaComponent, SchemaComponentOptions, useActionContext } from '..';
 
 interface SchemaSettingsProps {
   title?: any;
@@ -86,7 +87,6 @@ SchemaSettings.Item = (props) => {
     <Menu.Item
       {...props}
       onClick={(info) => {
-        //
         info.domEvent.preventDefault();
         info.domEvent.stopPropagation();
         props?.onClick?.(info);
@@ -153,11 +153,13 @@ SchemaSettings.PopupItem = (props) => {
   const { schema, ...others } = props;
   const [visible, setVisible] = useState(false);
   const ctx = useContext(SchemaSettingsContext);
+  const actx = useActionContext();
   return (
     <ActionContext.Provider value={{ visible, setVisible }}>
       <SchemaSettings.Item
         {...others}
         onClick={() => {
+          // actx.setVisible(false);
           ctx.setVisible(false);
           setVisible(true);
         }}
@@ -171,5 +173,34 @@ SchemaSettings.PopupItem = (props) => {
         }}
       />
     </ActionContext.Provider>
+  );
+};
+
+SchemaSettings.ModalItem = (props) => {
+  const { title, schema, onSubmit, initialValues, ...others } = props;
+  const options = useContext(SchemaOptionsContext);
+  return (
+    <SchemaSettings.Item
+      {...others}
+      onClick={() => {
+        FormDialog(schema.title || title, () => {
+          return (
+            <SchemaComponentOptions scope={options.scope} components={options.components}>
+              <FormLayout layout={'vertical'}>
+                <SchemaComponent schema={schema} />
+              </FormLayout>
+            </SchemaComponentOptions>
+          );
+        })
+          .open({
+            initialValues,
+          })
+          .then((values) => {
+            onSubmit(values);
+          });
+      }}
+    >
+      {props.children || props.title}
+    </SchemaSettings.Item>
   );
 };
