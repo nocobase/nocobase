@@ -30,7 +30,7 @@ export const useCancelFilterAction = () => {
 export const useCollectionFilterOptions = (collectionName: string) => {
   const { getCollectionFields, getInterface } = useCollectionManager();
   const fields = getCollectionFields(collectionName);
-  const field2option = (field) => {
+  const field2option = (field, nochildren) => {
     if (!field.interface) {
       return;
     }
@@ -45,21 +45,24 @@ export const useCollectionFilterOptions = (collectionName: string) => {
       schema: field?.uiSchema,
       operators: operators || [],
     };
+    if (nochildren) {
+      return option;
+    }
     if (children?.length) {
       option['children'] = children;
     }
     if (nested) {
       const targetFields = getCollectionFields(field.target);
-      const options = getOptions(targetFields);
+      const options = getOptions(targetFields, true);
       option['children'] = option['children'] || [];
       option['children'].push(...options);
     }
     return option;
   };
-  const getOptions = (fields) => {
+  const getOptions = (fields, nochildren = false) => {
     const options = [];
     fields.forEach((field) => {
-      const option = field2option(field);
+      const option = field2option(field, nochildren);
       if (option) {
         options.push(option);
       }

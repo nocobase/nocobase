@@ -32,4 +32,6 @@ export interface CollectionFieldOptions {
   collectionName?: string;
   sourceKey?: string; // association field
   uiSchema?: ISchema;
+  target?: string;
+  [key: string]: any;
 }

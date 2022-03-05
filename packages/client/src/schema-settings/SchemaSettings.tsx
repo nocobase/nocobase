@@ -1,7 +1,7 @@
 import { GeneralField } from '@formily/core';
 import { ISchema, Schema } from '@formily/react';
 import { uid } from '@formily/shared';
-import { Dropdown, Menu, MenuItemProps, Modal } from 'antd';
+import { Dropdown, Menu, MenuItemProps, Modal, Select } from 'antd';
 import React, { createContext, useContext, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ActionContext, Designable, SchemaComponent } from '..';
@@ -17,6 +17,8 @@ interface SchemaSettingsContextProps {
   dn?: Designable;
   field?: GeneralField;
   fieldSchema?: Schema;
+  setVisible?: any;
+  visible?: any;
 }
 
 const SchemaSettingsContext = createContext<SchemaSettingsContextProps>(null);
@@ -42,23 +44,36 @@ interface SchemaSettingsProviderProps {
   dn?: Designable;
   field?: GeneralField;
   fieldSchema?: Schema;
+  setVisible?: any;
+  visible?: any;
 }
 
 export const SchemaSettingsProvider: React.FC<SchemaSettingsProviderProps> = (props) => {
-  const { dn, field, fieldSchema, children } = props;
-  return <SchemaSettingsContext.Provider value={{ dn, field, fieldSchema }}>{children}</SchemaSettingsContext.Provider>;
+  const { visible, setVisible, dn, field, fieldSchema, children } = props;
+  return (
+    <SchemaSettingsContext.Provider value={{ visible, setVisible, dn, field, fieldSchema }}>
+      {children}
+    </SchemaSettingsContext.Provider>
+  );
 };
 
 export const SchemaSettings: React.FC<SchemaSettingsProps> & SchemaSettingsNested = (props) => {
   const { title, dn, field, fieldSchema } = props;
+  const [visible, setVisible] = useState(false);
   const DropdownMenu = (
-    <Dropdown overlay={<Menu>{props.children}</Menu>}>
+    <Dropdown
+      visible={visible}
+      onVisibleChange={(visible) => {
+        setVisible(visible);
+      }}
+      overlay={<Menu>{props.children}</Menu>}
+    >
       {typeof title === 'string' ? <span>{title}</span> : title}
     </Dropdown>
   );
   if (dn) {
     return (
-      <SchemaSettingsProvider dn={dn} field={field} fieldSchema={fieldSchema}>
+      <SchemaSettingsProvider visible={visible} setVisible={setVisible} dn={dn} field={field} fieldSchema={fieldSchema}>
         {DropdownMenu}
       </SchemaSettingsProvider>
     );
@@ -121,21 +136,29 @@ SchemaSettings.Remove = (props: any) => {
 };
 
 SchemaSettings.SelectItem = (props) => {
-  return null;
+  const { title, options, value, onChange, ...others } = props;
+  return (
+    <SchemaSettings.Item {...others}>
+      {title}
+      <Select bordered={false} defaultValue={value} onChange={onChange} options={options} style={{ minWidth: 100 }} />
+    </SchemaSettings.Item>
+  );
 };
 
 SchemaSettings.SwitchItem = (props) => {
   return null;
 };
 
-SchemaSettings.Popup = (props) => {
+SchemaSettings.PopupItem = (props) => {
   const { schema, ...others } = props;
   const [visible, setVisible] = useState(false);
+  const ctx = useContext(SchemaSettingsContext);
   return (
     <ActionContext.Provider value={{ visible, setVisible }}>
       <SchemaSettings.Item
         {...others}
         onClick={() => {
+          ctx.setVisible(false);
           setVisible(true);
         }}
       >
@@ -147,15 +170,6 @@ SchemaSettings.Popup = (props) => {
           ...schema,
         }}
       />
-    </ActionContext.Provider>
-  );
-};
-
-SchemaSettings.DrawerItem = (props) => {
-  const [visible, setVisible] = useState(false);
-  return (
-    <ActionContext.Provider value={{ visible, setVisible }}>
-      <SchemaSettings.Item {...props}>{props.children || props.title}</SchemaSettings.Item>
     </ActionContext.Provider>
   );
 };
