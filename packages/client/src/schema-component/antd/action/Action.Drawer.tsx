@@ -28,13 +28,16 @@ export const ActionDrawer: ComposedActionDrawer = observer((props) => {
           destroyOnClose
           visible={visible}
           onClose={() => setVisible(false)}
-          className={classNames(others.className, css`
-            &.nb-action-popup {
-              .ant-drawer-content {
-                background: #f0f2f5;
+          className={classNames(
+            others.className,
+            css`
+              &.nb-action-popup {
+                .ant-drawer-content {
+                  background: #f0f2f5;
+                }
               }
-            }
-          `)}
+            `,
+          )}
           footer={
             footerSchema && (
               <div

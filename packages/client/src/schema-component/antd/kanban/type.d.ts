@@ -1,6 +1,6 @@
 interface IGroupField {
   name: string;
-  enum: Array<{ label: string; value: string }>;
+  enum: Array<{ label: string; value: string; index: number }>;
 }
 
 interface IDataSource {

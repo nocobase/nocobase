@@ -258,7 +258,7 @@ function BoardContainer(props) {
           {board.columns?.map((column, index) => (
             <Column
               key={column.id}
-              index={index}
+              index={column?.index ?? index}
               renderCard={renderCard}
               renderCardAdder={renderCardAdder}
               renderColumnHeader={(column) =>

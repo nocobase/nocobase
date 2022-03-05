@@ -1,10 +1,11 @@
 import { VoidField } from '@formily/core';
 import { observer, Schema, useField, useFieldSchema } from '@formily/react';
+import { uid } from '@formily/shared';
 import React, { useState } from 'react';
 import { SchemaComponent } from '../..';
-import { AsyncDataProvider, useRequest } from '../../../';
+import { AsyncDataProvider, RecordProvider, useRequest } from '../../../';
 import { Board } from '../../../board';
-import { CardContext } from './context';
+import { CardContext, ColumnContext } from './context';
 import { KanbanCard } from './Kanban.Card';
 import { KanbanCardDesigner } from './Kanban.Card.Designer';
 import { KanbanCardAdder } from './Kanban.CardAdder';
@@ -29,12 +30,13 @@ const useDefDataSource = (options, props) => {
 };
 
 export const Kanban: ComposedKanban = observer((props: any) => {
-  const { useDataSource = useDefDataSource, groupField, ...restProps } = props;
+  const { useDataSource = useDefDataSource, groupField, useDragEndAction, ...restProps } = props;
   const field = useField<VoidField>();
   const fieldSchema = useFieldSchema();
   const [dataSource, setDataSource] = useState<IDataSource>({ columns: [] });
   const [visible, setVisible] = useState(false);
   const [record, setRecord] = useState<any>({});
+  const { run: runDragEnd } = useDragEndAction?.() ?? {};
   const result = useDataSource(
     {
       uid: fieldSchema['x-uid'],
@@ -52,14 +54,33 @@ export const Kanban: ComposedKanban = observer((props: any) => {
     }
     return buf;
   }, null);
+  const createSchema: Schema = fieldSchema.reduceProperties((buf, current) => {
+    if (current['x-component'] === 'Kanban.CardAdder') {
+      return current;
+    }
+    return buf;
+  }, null);
+
   return (
     <AsyncDataProvider value={result}>
       <Board
+        onCardDragEnd={(card, fromColumn, toColumn) => {
+          runDragEnd?.(card, fromColumn, toColumn);
+        }}
         renderCard={(card, column, dragging) => {
           return (
-            <CardContext.Provider value={{ card, column, dragging }}>
-              <SchemaComponent memoized name={cardSchema.name} schema={cardSchema as any} />
-            </CardContext.Provider>
+            <RecordProvider record={card}>
+              <CardContext.Provider value={{ card, column, dragging }}>
+                <SchemaComponent name={cardSchema.name} schema={cardSchema as any} />
+              </CardContext.Provider>
+            </RecordProvider>
+          );
+        }}
+        renderCardAdder={({ column }) => {
+          return (
+            <ColumnContext.Provider value={{ column }}>
+              <SchemaComponent memoized name={uid()} schema={createSchema as any} />
+            </ColumnContext.Provider>
           );
         }}
         {...restProps}

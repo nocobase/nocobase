@@ -2,17 +2,21 @@
  * title: Kanban
  */
 
+import { useForm } from '@formily/react';
+import { observable } from '@formily/reactive';
 import {
+  ActionContext,
   AntdSchemaComponentProvider,
+  CollectionField,
   CollectionManagerProvider,
   CollectionProvider,
   SchemaComponent,
   SchemaComponentProvider,
   SchemaInitializerProvider,
 } from '@nocobase/client';
-import React from 'react';
+import React, { useContext } from 'react';
 
-const dataSource = [
+const dataSource = observable([
   {
     id: 1,
     title: 'Card title 1',
@@ -33,41 +37,87 @@ const dataSource = [
   },
   {
     id: 4,
-    title: 'Card title 3',
+    title: 'Card title 4',
     description: 'Card content',
     status: 'doing',
   },
   {
     id: 5,
-    title: 'Card title 3',
+    title: 'Card title 5',
     description: 'Card content',
     status: 'done',
   },
-];
+]);
 
 const groupField = {
   name: 'status',
   enum: [
-    { label: '未开始', value: 'undo' },
-    { label: '进行中', value: 'doing' },
-    { label: '已完成', value: 'done' },
+    { label: '未开始', value: 'undo', index: 1 },
+    { label: '进行中', value: 'doing', index: 2 },
+    { label: '已完成', value: 'done', index: 3 },
   ],
 };
 
 const schema: any = {
-  type: 'array',
+  type: 'void',
   name: 'kanban',
   'x-component': 'Kanban',
   'x-component-props': {
     dataSource,
     groupField,
+    cardAdderPosition: 'bottom',
+    allowAddCard: { on: 'bottom' },
+    disableColumnDrag: true,
+    useDragEndAction: '{{ useDragEndHandler }}',
   },
   properties: {
     card: {
       type: 'void',
       name: 'card',
+      'x-decorator': 'Form',
       'x-component': 'Kanban.Card',
       'x-designer': 'Kanban.Card.Designer',
+    },
+    create: {
+      type: 'void',
+      name: 'create',
+      'x-component': 'Kanban.CardAdder',
+      properties: {
+        modal: {
+          'x-component': 'Action.Drawer',
+          'x-decorator': 'Form',
+          type: 'void',
+          title: 'Drawer Title',
+          properties: {
+            grid: {
+              type: 'void',
+              'x-component': 'Grid',
+              'x-initializer': 'GridFormItemInitializers',
+            },
+            footer: {
+              'x-component': 'Action.Drawer.Footer',
+              type: 'void',
+              properties: {
+                action1: {
+                  title: '{{ t("Cancel") }}',
+                  'x-component': 'Action',
+                  'x-component-props': {
+                    useAction: '{{ useCancelAction }}',
+                  },
+                },
+                action2: {
+                  title: '{{ t("Submit") }}',
+                  'x-component': 'Action',
+                  'x-component-props': {
+                    type: 'primary',
+                    useAction: '{{ useOkAction }}',
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
     },
   },
 };
@@ -78,45 +128,97 @@ const collection = {
   fields: [
     {
       type: 'string',
-      name: 'name',
+      name: 'id',
       interface: 'input',
-      title: 'name',
+      title: 'ID',
       uiSchema: {
         type: 'string',
         'x-component': 'Input',
+        'x-decorator': 'FormItem',
       },
     },
     {
       type: 'string',
-      name: 'endTime',
-      interface: 'datetime',
-      title: 'End Time',
+      name: 'title',
+      interface: 'input',
+      title: '标题',
       uiSchema: {
         type: 'string',
-        'x-component': 'DatePicker',
-        'x-component-props': {
-          dateFormat: 'YYYY-MM-DD',
-        },
+        'x-component': 'Input',
+        'x-decorator': 'FormItem',
       },
     },
     {
       type: 'string',
-      name: 'content',
-      interface: 'textarea',
-      title: 'Content',
+      name: 'description',
+      interface: 'input',
+      title: '描述',
       uiSchema: {
         type: 'string',
-        'x-component': 'Input.Textarea',
+        'x-component': 'Input',
+        'x-decorator': 'FormItem',
+      },
+    },
+    {
+      type: 'string',
+      name: 'status',
+      interface: 'select',
+      title: '状态',
+      uiSchema: {
+        type: 'string',
+        'x-component': 'Select',
+        enum: [
+          { label: '未开始', value: 'undo' },
+          { label: '进行中', value: 'doing' },
+          { label: '已完成', value: 'done' },
+        ],
+        'x-decorator': 'FormItem',
       },
     },
   ],
 };
 
 export default () => {
+  const useDragEndHandler = () => {
+    return {
+      async run(card, fromColumn, toColumn) {
+        for (const ds of dataSource) {
+          if (ds.id === card.id) {
+            ds.status = toColumn.toColumnId;
+            break;
+          }
+        }
+      },
+    };
+  };
+  const useOkAction = () => {
+    const form = useForm();
+    const { setVisible } = useContext(ActionContext);
+    return {
+      async run() {
+        console.log(form);
+        dataSource.push(form.values);
+        setVisible(false);
+      },
+    };
+  };
+  const useCancelAction = () => {
+    const form = useForm();
+    const { setVisible } = useContext(ActionContext);
+    return {
+      async run() {
+        setVisible(false);
+      },
+    };
+  };
   return (
     <CollectionManagerProvider>
       <CollectionProvider collection={collection}>
-        <SchemaComponentProvider designable={true}>
+        <SchemaComponentProvider
+          designable={true}
+          components={{ CollectionField }}
+          scope={{ useOkAction, useCancelAction, useDragEndHandler }}
+        >
           <SchemaInitializerProvider>
             <AntdSchemaComponentProvider>
               <SchemaComponent schema={schema} />

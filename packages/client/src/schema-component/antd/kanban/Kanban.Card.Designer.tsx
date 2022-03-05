@@ -3,8 +3,10 @@ import { css } from '@emotion/css';
 import { useField, useFieldSchema } from '@formily/react';
 import { Space } from 'antd';
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { useCompile, useDesignable } from '../../../schema-component';
-import { SchemaSettings } from '../../../schema-settings';
+import { SchemaInitializer } from '../../../schema-initializer';
+import { useCardItemInitializerFields } from './hoooks';
 
 const titleCss = css`
   pointer-events: none;
@@ -23,9 +25,9 @@ const titleCss = css`
 
 export const KanbanCardDesigner = (props: any) => {
   const { dn, designable } = useDesignable();
+  const { t } = useTranslation();
   const field = useField();
   const fieldSchema = useFieldSchema();
-  debugger;
   const compile = useCompile();
   const schemaSettingsProps = {
     dn,
@@ -39,9 +41,16 @@ export const KanbanCardDesigner = (props: any) => {
     <div className={'general-schema-designer'}>
       <div className={'general-schema-designer-icons'}>
         <Space size={2} align={'center'}>
-          <SchemaSettings title={<MenuOutlined style={{ cursor: 'pointer', fontSize: 12 }} />} {...schemaSettingsProps}>
-            {props.children}
-          </SchemaSettings>
+          <SchemaInitializer.Button
+            items={[
+              {
+                type: 'itemGroup',
+                title: t('Display fields'),
+                children: useCardItemInitializerFields(),
+              },
+            ]}
+            component={<MenuOutlined style={{ cursor: 'pointer', fontSize: 12 }} />}
+          />
         </Space>
       </div>
     </div>
