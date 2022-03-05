@@ -22,7 +22,7 @@ export const ActionModal: ComposedActionDrawer = observer((props) => {
       {createPortal(
         <Modal
           // width={'50%'}
-          title={schema.title}
+          title={field.title}
           {...others}
           destroyOnClose
           visible={visible}

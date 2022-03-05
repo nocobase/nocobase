@@ -47,11 +47,13 @@ export const TableRecordActionInitializers = (props: any) => {
                 'x-action': 'view',
                 'x-designer': 'Action.Designer',
                 'x-component': 'Action.Link',
-                'x-component-props': {},
+                'x-component-props': {
+                  openMode: 'drawer',
+                },
                 properties: {
                   drawer: {
                     type: 'void',
-                    'x-component': 'Action.Drawer',
+                    'x-component': 'Action.Container',
                     'x-component-props': {
                       className: 'nb-action-popup',
                     },
@@ -95,7 +97,9 @@ export const TableRecordActionInitializers = (props: any) => {
                 'x-action': 'update',
                 'x-designer': 'Action.Designer',
                 'x-component': 'Action.Link',
-                'x-component-props': {},
+                'x-component-props': {
+                  openMode: 'drawer',
+                },
                 properties: {
                   drawer: {
                     type: 'void',
@@ -103,7 +107,7 @@ export const TableRecordActionInitializers = (props: any) => {
                     'x-decorator-props': {
                       useValues: '{{ cm.useValuesFromRecord }}',
                     },
-                    'x-component': 'Action.Drawer',
+                    'x-component': 'Action.Container',
                     title: '{{ t("Edit record") }}',
                     properties: {
                       grid: {
@@ -114,7 +118,7 @@ export const TableRecordActionInitializers = (props: any) => {
                       },
                       footer: {
                         type: 'void',
-                        'x-component': 'Action.Drawer.Footer',
+                        'x-component': 'Action.Container.Footer',
                         properties: {
                           actions: {
                             type: 'void',

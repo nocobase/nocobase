@@ -4,11 +4,12 @@ import { Button, Modal, Popover } from 'antd';
 import classnames from 'classnames';
 import React, { useState } from 'react';
 import { useActionContext } from '../..';
-import { GeneralSchemaDesigner, SchemaSettings } from '../../../schema-settings';
 import { SortableItem } from '../../common';
 import { useDesigner } from '../../hooks';
 import ActionContainer from './Action.Container';
+import { ActionDesigner } from './Action.Designer';
 import { ActionDrawer } from './Action.Drawer';
+import { ActionLink } from './Action.Link';
 import { ActionModal } from './Action.Modal';
 import { ActionPage } from './Action.Page';
 import { ActionContext } from './context';
@@ -146,23 +147,8 @@ Action.Popover.Footer = observer((props) => {
   );
 });
 
-Action.Designer = () => {
-  return (
-    <GeneralSchemaDesigner>
-      <SchemaSettings.Remove
-        removeParentsIfNoChildren
-        breakRemoveOn={(s) => {
-          return s['x-component'] === 'Space' || s['x-component'] === 'ActionBar';
-        }}
-      />
-    </GeneralSchemaDesigner>
-  );
-};
-
-Action.Link = observer((props) => {
-  return <Action {...props} component={'a'} className={'nb-action-link'} />;
-});
-
+Action.Link = ActionLink;
+Action.Designer = ActionDesigner;
 Action.Drawer = ActionDrawer;
 Action.Modal = ActionModal;
 Action.Container = ActionContainer;
