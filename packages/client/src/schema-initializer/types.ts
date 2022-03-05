@@ -7,6 +7,7 @@ export interface SchemaInitializerButtonProps extends ButtonProps {
   insertPosition?: 'beforeBegin' | 'afterBegin' | 'beforeEnd' | 'afterEnd';
   items?: SchemaInitializerItemOptions[];
   dropdown?: DropDownProps;
+  component?: any;
 }
 
 export type SchemaInitializerItemOptions = ItemGroupOptions | SubMenuOptions | ItemOptions | DividerOptions;

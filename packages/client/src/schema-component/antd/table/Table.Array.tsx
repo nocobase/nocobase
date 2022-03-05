@@ -1,9 +1,11 @@
+import { MenuOutlined } from '@ant-design/icons';
 import { css } from '@emotion/css';
 import { ArrayField, Field } from '@formily/core';
 import { observer, RecursionField, Schema, useField, useFieldSchema } from '@formily/react';
 import { Table, TableColumnProps } from 'antd';
-import cls from 'classnames';
+import { default as classNames, default as cls } from 'classnames';
 import React, { useState } from 'react';
+import ReactDragListView from 'react-drag-listview';
 import { DndContext } from '../..';
 import { RecordIndexProvider, RecordProvider, useRequest, useSchemaInitializer } from '../../../';
 
@@ -82,6 +84,9 @@ export const components = {
         </DndContext>
       );
     },
+    row: (props) => {
+      return <tr draggable {...props} />;
+    },
   },
 };
 
@@ -99,10 +104,30 @@ const useDefDataSource = (options, props) => {
   }, options);
 };
 
+const SortHandle = () => {
+  return <MenuOutlined className={'drag-handle'} style={{ cursor: 'grab' }} />;
+};
+
+const TableIndex = (props) => {
+  const { index } = props;
+  return (
+    <div className={classNames('nb-table-index')} style={{ padding: '0 8px 0 16px' }}>
+      {index + 1}
+    </div>
+  );
+};
+
 export const TableArray: React.FC<any> = observer((props) => {
   const field = useField<ArrayField>();
   const columns = useTableColumns();
-  const { useSelectedRowKeys = useDef, useDataSource = useDefDataSource, onChange, ...others } = props;
+  const {
+    dragSort = false,
+    showIndex = true,
+    useSelectedRowKeys = useDef,
+    useDataSource = useDefDataSource,
+    onChange,
+    ...others
+  } = props;
   const [selectedRowKeys, setSelectedRowKeys] = useSelectedRowKeys();
   useDataSource({
     onSuccess(data) {
@@ -117,6 +142,74 @@ export const TableArray: React.FC<any> = observer((props) => {
           onChange(selectedRowKeys: any[]) {
             setSelectedRowKeys(selectedRowKeys);
           },
+          renderCell: (checked, record, index, originNode) => {
+            const current = props?.pagination?.current;
+            const pageSize = props?.pagination?.pageSize || 20;
+            if (current) {
+              index = index + (current - 1) * pageSize;
+            }
+            return (
+              <div
+                className={classNames(
+                  checked ? 'checked' : null,
+                  css`
+                    position: relative;
+                    display: flex;
+                    align-items: center;
+                    justify-content: space-evenly;
+                    padding-right: 8px;
+                    .nb-table-index {
+                      opacity: 0;
+                    }
+                    &:not(.checked) {
+                      .nb-table-index {
+                        opacity: 1;
+                      }
+                    }
+                    &:hover {
+                      .nb-table-index {
+                        opacity: 0;
+                      }
+                      .nb-origin-node {
+                        display: block;
+                      }
+                    }
+                  `,
+                )}
+              >
+                <div
+                  className={classNames(
+                    checked ? 'checked' : null,
+                    css`
+                      position: relative;
+                      display: flex;
+                      align-items: center;
+                      justify-content: space-evenly;
+                    `,
+                  )}
+                >
+                  {dragSort && <SortHandle />}
+                  {showIndex && <TableIndex index={index} />}
+                </div>
+                <div
+                  className={classNames(
+                    'nb-origin-node',
+                    checked ? 'checked' : null,
+                    css`
+                      position: absolute;
+                      right: 50%;
+                      transform: translateX(50%);
+                      &:not(.checked) {
+                        display: none;
+                      }
+                    `,
+                  )}
+                >
+                  {originNode}
+                </div>
+              </div>
+            );
+          },
           ...props.rowSelection,
         }
       : undefined,
@@ -128,14 +221,25 @@ export const TableArray: React.FC<any> = observer((props) => {
 
   return (
     <div>
-      <Table
-        rowKey={defaultRowKey}
-        {...others}
-        {...restProps}
-        components={components}
-        columns={columns}
-        dataSource={field?.value?.slice?.()}
-      />
+      <ReactDragListView
+        handleSelector={'.drag-handle'}
+        onDragEnd={(fromIndex, toIndex) => {
+          console.log('ReactDragListView', fromIndex, toIndex);
+          field.move(fromIndex, toIndex);
+        }}
+        lineClassName={css`
+          border-bottom: 2px solid rgba(241, 139, 98, 0.6) !important;
+        `}
+      >
+        <Table
+          rowKey={defaultRowKey}
+          {...others}
+          {...restProps}
+          components={components}
+          columns={columns}
+          dataSource={field?.value?.slice?.()}
+        />
+      </ReactDragListView>
     </div>
   );
 });
