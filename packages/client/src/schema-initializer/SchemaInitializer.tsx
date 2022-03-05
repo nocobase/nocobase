@@ -124,9 +124,7 @@ SchemaInitializer.Button = observer((props: SchemaInitializerButtonProps) => {
       {...dropdown}
       overlay={menu}
     >
-      {component ? (
-        React.createElement(component)
-      ) : (
+      {component ? component : (
         <Button
           {...others}
           type={'dashed'}

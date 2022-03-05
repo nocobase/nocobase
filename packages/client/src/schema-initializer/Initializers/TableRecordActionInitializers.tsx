@@ -1,5 +1,4 @@
 import { MenuOutlined } from '@ant-design/icons';
-import { css } from '@emotion/css';
 import { useFieldSchema } from '@formily/react';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
@@ -14,16 +13,6 @@ export const TableRecordActionInitializers = (props: any) => {
   const { t } = useTranslation();
   return (
     <SchemaInitializer.Button
-      className={css`
-        border: 0 !important;
-        color: #fff !important;
-        background: none !important;
-        height: auto !important;
-        line-height: 12px !important;
-        width: 12px !important;
-        padding: 0;
-        font-size: 12px;
-      `}
       insertPosition={'beforeEnd'}
       insert={(schema) => {
         const spaceSchema = fieldSchema.reduceProperties((buf, schema) => {
@@ -181,7 +170,7 @@ export const TableRecordActionInitializers = (props: any) => {
           ],
         },
       ]}
-      component={MenuOutlined}
+      component={<MenuOutlined style={{ cursor: 'pointer' }} />}
     />
   );
 };
