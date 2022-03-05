@@ -12,72 +12,45 @@ import {
 } from '@nocobase/client';
 import React from 'react';
 
-const dataSource = {
-  columns: [
-    {
-      id: 1,
-      title: 'Backlog',
-      cards: [
-        {
-          id: 1,
-          title: 'Card title 1',
-          description: 'Card content',
-        },
-        {
-          id: 2,
-          title: 'Card title 2',
-          description: 'Card content',
-        },
-        {
-          id: 3,
-          title: 'Card title 3',
-          description: 'Card content',
-        },
-      ],
-    },
-    {
-      id: 2,
-      title: 'Doing',
-      cards: [
-        {
-          id: 9,
-          title: 'Card title 9',
-          description: 'Card content',
-        },
-      ],
-    },
-    {
-      id: 3,
-      title: 'Q&A',
-      cards: [
-        {
-          id: 10,
-          title: 'Card title 10',
-          description: 'Card content',
-        },
-        {
-          id: 11,
-          title: 'Card title 11',
-          description: 'Card content',
-        },
-      ],
-    },
-    {
-      id: 4,
-      title: 'Production',
-      cards: [
-        {
-          id: 12,
-          title: 'Card title 12',
-          description: 'Card content',
-        },
-        {
-          id: 13,
-          title: 'Card title 13',
-          description: 'Card content',
-        },
-      ],
-    },
+const dataSource = [
+  {
+    id: 1,
+    title: 'Card title 1',
+    description: 'Card content',
+    status: 'doing',
+  },
+  {
+    id: 2,
+    title: 'Card title 2',
+    description: 'Card content',
+    status: 'doing',
+  },
+  {
+    id: 3,
+    title: 'Card title 3',
+    description: 'Card content',
+    status: 'undo',
+  },
+  {
+    id: 4,
+    title: 'Card title 3',
+    description: 'Card content',
+    status: 'doing',
+  },
+  {
+    id: 5,
+    title: 'Card title 3',
+    description: 'Card content',
+    status: 'done',
+  },
+];
+
+const groupField = {
+  name: 'status',
+  enum: [
+    { label: '未开始', value: 'undo' },
+    { label: '进行中', value: 'doing' },
+    { label: '已完成', value: 'done' },
   ],
 };
 
@@ -87,22 +60,21 @@ const schema: any = {
   'x-component': 'Kanban',
   'x-component-props': {
     dataSource,
+    groupField,
   },
-  items: {
-    type: 'object',
-    properties: {
-      card: {
-        type: 'void',
-        name: 'card',
-        'x-component': 'Kanban.Card',
-        properties: {},
-      },
+  properties: {
+    card: {
+      type: 'void',
+      name: 'card',
+      'x-component': 'Kanban.Card',
+      'x-designer': 'Kanban.Card.Designer',
     },
   },
 };
 
 const collection = {
   name: 'KanbanCollection',
+  title: '看板',
   fields: [
     {
       type: 'string',
@@ -144,7 +116,7 @@ export default () => {
   return (
     <CollectionManagerProvider>
       <CollectionProvider collection={collection}>
-        <SchemaComponentProvider>
+        <SchemaComponentProvider designable={true}>
           <SchemaInitializerProvider>
             <AntdSchemaComponentProvider>
               <SchemaComponent schema={schema} />

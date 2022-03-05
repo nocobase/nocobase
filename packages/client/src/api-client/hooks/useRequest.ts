@@ -28,14 +28,12 @@ export function useRequest<P>(
     const result = useReq(service, {
       ...options,
       onSuccess(...args) {
-        debugger;
         options.onSuccess?.(...args);
         if (options.uid) {
           api.services[options.uid] = result;
         }
       },
     });
-    debugger;
     return { ...result, state, setState };
   }
   const result = useReq(

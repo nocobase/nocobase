@@ -6,6 +6,7 @@ const Def = () => null;
 export const useDesigner = () => {
   const { designable } = useDesignable();
   const fieldSchema = useFieldSchema();
+  debugger;
   const component = useComponent(fieldSchema['x-designer'], Def);
   return designable ? component : Def;
 };
