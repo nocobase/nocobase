@@ -181,8 +181,7 @@ export const TableRecordActionInitializers = (props: any) => {
           ],
         },
       ]}
-    >
-      <MenuOutlined />
-    </SchemaInitializer.Button>
+      component={MenuOutlined}
+    />
   );
 };

@@ -28,6 +28,7 @@ SchemaInitializer.Button = observer((props: SchemaInitializerButtonProps) => {
     items = [],
     insertPosition = 'beforeEnd',
     dropdown,
+    component,
     style,
     ...others
   } = props;
@@ -123,17 +124,21 @@ SchemaInitializer.Button = observer((props: SchemaInitializerButtonProps) => {
       {...dropdown}
       overlay={menu}
     >
-      <Button
-        {...others}
-        type={'dashed'}
-        style={{
-          ...style,
-          borderColor: '#f18b62',
-          color: '#f18b62',
-        }}
-      >
-        {compile(props.children || props.title)}
-      </Button>
+      {component ? (
+        React.createElement(component)
+      ) : (
+        <Button
+          {...others}
+          type={'dashed'}
+          style={{
+            ...style,
+            borderColor: '#f18b62',
+            color: '#f18b62',
+          }}
+        >
+          {compile(props.children || props.title)}
+        </Button>
+      )}
     </Dropdown>
   );
 });
