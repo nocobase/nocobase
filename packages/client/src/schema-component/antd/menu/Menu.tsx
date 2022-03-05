@@ -311,12 +311,13 @@ export const Menu: ComposedMenu = observer((props) => {
 Menu.Item = observer((props) => {
   const { icon, ...others } = props;
   const schema = useFieldSchema();
+  const field = useField();
   const Designer = useContext(MenuItemDesignerContext);
   return (
     <AntdMenu.Item {...others} key={schema.name} eventKey={schema.name} schema={schema}>
       <SortableItem className={designerCss}>
         <Icon type={icon} style={{ marginRight: 5 }} />
-        {schema.title}
+        {field.title}
         <Designer />
       </SortableItem>
     </AntdMenu.Item>
@@ -340,7 +341,7 @@ Menu.URL = observer((props) => {
     >
       <SortableItem className={designerCss}>
         <Icon style={{ marginRight: 5 }} type={icon} />
-        {schema.title}
+        {field.title}
         <Designer />
       </SortableItem>
     </AntdMenu.Item>

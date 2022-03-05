@@ -65,7 +65,6 @@ export const IconPicker = connect(
   mapProps((props, field) => {
     return {
       ...props,
-      value: props.type,
       suffix: <span>{field?.['loading'] || field?.['validating'] ? <LoadingOutlined /> : props.suffix}</span>,
     };
   }),
