@@ -85,7 +85,7 @@ export const components = {
       );
     },
     row: (props) => {
-      return <tr draggable {...props} />;
+      return <tr {...props} />;
     },
   },
 };
