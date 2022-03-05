@@ -24,6 +24,23 @@ export const linkTo: IField = {
         },
       },
     },
+    reverseField: {
+      interface: 'linkTo',
+      type: 'belongsToMany',
+      // name,
+      uiSchema: {
+        // title,
+        'x-component': 'RecordPicker',
+        'x-component-props': {
+          // mode: 'tags',
+          multiple: true,
+          fieldNames: {
+            label: 'id',
+            value: 'id',
+          },
+        },
+      },
+    },
   },
   initialize: (values: any) => {
     if (values.type === 'belongsToMany') {
@@ -53,6 +70,13 @@ export const linkTo: IField = {
       'x-reactions': ['{{useAsyncDataSource(loadCollections)}}'],
       'x-decorator': 'FormItem',
       'x-component': 'Select',
+    },
+    'reverseField.uiSchema.title': {
+      type: 'string',
+      title: '{{t("Reverse field display name")}}',
+      required: true,
+      'x-decorator': 'FormItem',
+      'x-component': 'Input',
     },
     // 'uiSchema.x-component-props.fieldNames.label': {
     //   type: 'string',
