@@ -49,16 +49,16 @@ export const TabPaneInitializers = () => {
               },
               type: 'dashed',
             },
-            title: '添加标签页',
+            title: '{{t("Add tab")}}',
             properties: {
               drawer1: {
                 'x-decorator': 'Form',
                 'x-component': 'Action.Modal',
                 type: 'void',
-                title: 'Drawer Title',
+                title: '{{t("Add tab")}}',
                 properties: {
                   title: {
-                    title: '标题',
+                    title: '{{t("Tab name")}}',
                     required: true,
                     'x-component': 'Input',
                     'x-decorator': 'FormItem',
@@ -68,7 +68,7 @@ export const TabPaneInitializers = () => {
                     type: 'void',
                     properties: {
                       cancel: {
-                        title: 'Cancel',
+                        title: '{{t("Cancel")}}',
                         'x-component': 'Action',
                         'x-component-props': {
                           useAction: () => {
@@ -82,7 +82,7 @@ export const TabPaneInitializers = () => {
                         },
                       },
                       submit: {
-                        title: 'Submit',
+                        title: '{{t("Submit")}}',
                         'x-component': 'Action',
                         'x-component-props': {
                           type: 'primary',
