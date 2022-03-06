@@ -64,6 +64,7 @@ interface UpdateAssociationOptions extends Transactionable, Hookable {
   updateAssociationValues?: string[];
   sourceModel?: Model;
   context?: any;
+  associationContext?: any;
 }
 
 export async function updateModelByValues(instance: Model, values: UpdateValue, options?: UpdateOptions) {
@@ -164,6 +165,21 @@ export async function updateAssociations(instance: Model, values: any, options: 
   }
 }
 
+function isReverseAssociationPair(a: Association, b: Association) {
+  if (a.associationType == 'BelongsToMany' && b.associationType == 'BelongsToMany') {
+    // @ts-ignore
+    if (
+      (a as any).through.tableName === (b as any).through.tableName &&
+      a.target.name === b.source.name &&
+      b.target.name === a.source.name
+    ) {
+      return true;
+    }
+  }
+
+  return false;
+}
+
 /**
  * update model association by key
  * @param instance
@@ -180,6 +196,10 @@ export async function updateAssociation(
   const association = modelAssociationByKey(instance, key);
 
   if (!association) {
+    return false;
+  }
+
+  if (options.associationContext && isReverseAssociationPair(association, options.associationContext)) {
     return false;
   }
 
@@ -405,7 +425,12 @@ export async function updateMultipleAssociation(
         if (updateAssociationValues.includes(key)) {
           await instance.update(item, { ...options, transaction });
         }
-        await updateAssociations(instance, item, { ...options, transaction, updateAssociationValues: keys });
+        await updateAssociations(instance, item, {
+          ...options,
+          transaction,
+          associationContext: association,
+          updateAssociationValues: keys,
+        });
         list3.push(instance);
       }
     }
