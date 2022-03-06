@@ -1,9 +1,5 @@
-import Application from './application';
-
 export class ErrorHandler {
   handlers = [];
-
-  constructor(app: Application) {}
 
   register(guard: (err) => boolean, render: (err, ctx) => void) {
     this.handlers.push({
