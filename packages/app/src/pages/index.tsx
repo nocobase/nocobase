@@ -23,7 +23,8 @@ import {
   SignupPage,
   SystemSettingsProvider,
   SystemSettingsShortcut,
-  useRequest
+  useRequest,
+  WorkflowShortcut
 } from '@nocobase/client';
 import { notification, Spin } from 'antd';
 import 'antd/dist/antd.css';
@@ -58,6 +59,7 @@ const providers = [
         ACLShortcut,
         DesignableSwitch,
         CollectionManagerShortcut,
+        WorkflowShortcut,
         SystemSettingsShortcut,
       },
     },

@@ -46,6 +46,7 @@ const plugins = [
   '@nocobase/plugin-users',
   '@nocobase/plugin-acl',
   '@nocobase/plugin-china-region',
+  '@nocobase/plugin-workflow',
 ];
 
 for (const plugin of plugins) {

@@ -82,6 +82,7 @@ const InternalAdminLayout = (props: any) => {
               { component: 'DesignableSwitch', pin: true },
               { component: 'CollectionManagerShortcut', pin: true },
               { component: 'ACLShortcut', pin: true },
+              { component: 'WorkflowShortcut', pin: true },
               { component: 'SystemSettingsShortcut' },
             ]}
           />

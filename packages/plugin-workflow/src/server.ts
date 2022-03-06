@@ -5,10 +5,6 @@ import { Plugin } from '@nocobase/server';
 import WorkflowModel from './models/Workflow';
 import ExecutionModel from './models/Execution';
 
-export * from './calculators';
-export * from './triggers';
-export * from './instructions';
-
 export default class WorkflowPlugin extends Plugin {
   async load(options = {}) {
     const { db } = this.app;
