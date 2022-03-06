@@ -6,7 +6,7 @@ import {
   HasOne,
   Hookable,
   ModelCtor,
-  Transactionable
+  Transactionable,
 } from 'sequelize';
 import { Model } from './model';
 import { TransactionAble } from './repository';
@@ -64,6 +64,7 @@ interface UpdateAssociationOptions extends Transactionable, Hookable {
   updateAssociationValues?: string[];
   sourceModel?: Model;
   context?: any;
+  associationContext?: any;
 }
 
 export async function updateModelByValues(instance: Model, values: UpdateValue, options?: UpdateOptions) {
@@ -164,6 +165,37 @@ export async function updateAssociations(instance: Model, values: any, options: 
   }
 }
 
+function isReverseAssociationPair(a: any, b: any) {
+  const typeSet = new Set();
+  typeSet.add(a.associationType);
+  typeSet.add(b.associationType);
+
+  if (typeSet.size == 1 && typeSet.has('BelongsToMany')) {
+    return (
+      a.through.tableName === b.through.tableName &&
+      a.target.name === b.source.name &&
+      b.target.name === a.source.name &&
+      a.foreignKey === b.otherKey &&
+      a.sourceKey === b.targetKey &&
+      a.otherKey === b.foreignKey &&
+      a.targetKey === b.sourceKey
+    );
+  }
+
+  if ((typeSet.has('HasOne') && typeSet.has('BelongsTo')) || (typeSet.has('HasMany') && typeSet.has('BelongsTo'))) {
+    const sourceAssoc = a.associationType == 'BelongsTo' ? b : a;
+    const targetAssoc = sourceAssoc == a ? b : a;
+
+    return (
+      sourceAssoc.source.name === targetAssoc.target.name &&
+      sourceAssoc.foreignKey === targetAssoc.foreignKey &&
+      sourceAssoc.sourceKey === targetAssoc.targetKey
+    );
+  }
+
+  return false;
+}
+
 /**
  * update model association by key
  * @param instance
@@ -180,6 +212,10 @@ export async function updateAssociation(
   const association = modelAssociationByKey(instance, key);
 
   if (!association) {
+    return false;
+  }
+
+  if (options.associationContext && isReverseAssociationPair(association, options.associationContext)) {
     return false;
   }
 
@@ -280,7 +316,12 @@ export async function updateSingleAssociation(
           await instance.update(value, { ...options, transaction });
         }
 
-        await updateAssociations(instance, value, { ...options, transaction, updateAssociationValues: keys });
+        await updateAssociations(instance, value, {
+          ...options,
+          transaction,
+          associationContext: association,
+          updateAssociationValues: keys,
+        });
         model.setDataValue(key, instance);
         if (!options.transaction) {
           await transaction.commit();
@@ -290,7 +331,12 @@ export async function updateSingleAssociation(
     }
 
     const instance = await model[createAccessor](value, { context, transaction });
-    await updateAssociations(instance, value, { ...options, transaction, updateAssociationValues: keys });
+    await updateAssociations(instance, value, {
+      ...options,
+      transaction,
+      associationContext: association,
+      updateAssociationValues: keys,
+    });
     model.setDataValue(key, instance);
     // @ts-ignore
     if (association.targetKey) {
@@ -392,7 +438,12 @@ export async function updateMultipleAssociation(
       if (isUndefinedOrNull(item[pk])) {
         // create new record
         const instance = await model[createAccessor](item, accessorOptions);
-        await updateAssociations(instance, item, { ...options, transaction, updateAssociationValues: keys });
+        await updateAssociations(instance, item, {
+          ...options,
+          transaction,
+          associationContext: association,
+          updateAssociationValues: keys,
+        });
         list3.push(instance);
       } else {
         // set & update record
@@ -405,7 +456,12 @@ export async function updateMultipleAssociation(
         if (updateAssociationValues.includes(key)) {
           await instance.update(item, { ...options, transaction });
         }
-        await updateAssociations(instance, item, { ...options, transaction, updateAssociationValues: keys });
+        await updateAssociations(instance, item, {
+          ...options,
+          transaction,
+          associationContext: association,
+          updateAssociationValues: keys,
+        });
         list3.push(instance);
       }
     }
