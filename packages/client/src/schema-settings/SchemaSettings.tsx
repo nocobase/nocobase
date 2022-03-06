@@ -83,8 +83,11 @@ export const SchemaSettings: React.FC<SchemaSettingsProps> & SchemaSettingsNeste
 };
 
 SchemaSettings.Item = (props) => {
+  const { eventKey } = props;
   return (
     <Menu.Item
+      key={eventKey}
+      eventKey={eventKey}
       {...props}
       onClick={(info) => {
         info.domEvent.preventDefault();
@@ -103,7 +106,7 @@ SchemaSettings.ItemGroup = (props) => {
 };
 
 SchemaSettings.SubMenu = (props) => {
-  return <Menu.SubMenu {...props}>{props.children || props.title}</Menu.SubMenu>;
+  return <Menu.SubMenu {...props} />;
 };
 
 SchemaSettings.Divider = (props) => {
