@@ -142,8 +142,10 @@ SchemaSettings.SelectItem = (props) => {
   const { title, options, value, onChange, ...others } = props;
   return (
     <SchemaSettings.Item {...others}>
-      {title}
-      <Select bordered={false} defaultValue={value} onChange={onChange} options={options} style={{ minWidth: 100 }} />
+      <div style={{ alignItems: 'center', display: 'flex', justifyContent: 'space-between' }}>
+        {title}
+        <Select bordered={false} defaultValue={value} onChange={onChange} options={options} style={{ minWidth: 100 }} />
+      </div>
     </SchemaSettings.Item>
   );
 };

@@ -20,7 +20,7 @@ const createSchema = (collectionName, { title, start, end }) => {
         params: {},
       },
     },
-    'x-designer': 'Form.Designer',
+    'x-designer': 'Calendar.Designer',
     'x-component': 'CardItem',
     properties: {
       calendar: {

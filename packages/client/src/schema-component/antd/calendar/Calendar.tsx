@@ -9,6 +9,7 @@ import { SchemaComponent } from '../..';
 import { AsyncDataProvider, RecordProvider, useRequest } from '../../../';
 import { i18n } from '../../../i18n';
 import { ActionBar, ActionContext } from '../action';
+import { CalendarDesigner } from './Calendar.Designer';
 import { CalendarContext, ToolbarContext } from './context';
 import { Event } from './Event';
 import { Nav } from './Nav';
@@ -101,6 +102,7 @@ export const Calendar: any = observer((props: any) => {
       refreshDeps: [props.dataSource],
       onSuccess(data) {
         const events = toEvents(data?.data, fieldNames);
+        console.log('events', events, data);
         setDataSource(events);
       },
     },
@@ -112,6 +114,7 @@ export const Calendar: any = observer((props: any) => {
     }
     return buf;
   }, null);
+  console.log('field', field);
   return (
     <AsyncDataProvider value={result}>
       <CalendarContext.Provider value={{ field, props, record }}>
@@ -180,3 +183,5 @@ Calendar.Today = Today;
 Calendar.Nav = Nav;
 
 Calendar.ViewSelect = ViewSelect;
+
+Calendar.Designer = CalendarDesigner;
