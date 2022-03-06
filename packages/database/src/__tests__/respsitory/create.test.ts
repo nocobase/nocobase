@@ -1,6 +1,67 @@
 import { mockDatabase } from '../index';
 import Database from '../../database';
 
+describe('create with belongsToMany', () => {
+  let db: Database;
+  let Post;
+  let Tag;
+
+  afterEach(async () => {
+    await db.close();
+  });
+
+  beforeEach(async () => {
+    db = mockDatabase();
+    Post = db.collection({
+      name: 'posts',
+      fields: [
+        {
+          type: 'string',
+          name: 'title',
+        },
+        {
+          type: 'belongsToMany',
+          name: 'tags',
+        },
+      ],
+    });
+
+    Tag = db.collection({
+      name: 'tags',
+      fields: [
+        {
+          type: 'string',
+          name: 'name',
+        },
+        {
+          type: 'belongsToMany',
+          name: 'posts',
+        },
+      ],
+    });
+
+    await db.sync();
+  });
+
+  it('should save associations with reverseField value', async () => {
+    const t1 = await db.getRepository('tags').create({
+      values: {
+        name: 't1',
+      },
+    });
+
+    const p1 = await db.getRepository('posts').create({
+      values: {
+        title: 'p1',
+        tags: [{ id: t1.get('id'), name: 't1', posts: [] }],
+      },
+    });
+
+    // @ts-ignore
+    expect(await p1.countTags()).toEqual(1);
+  });
+});
+
 describe('create', () => {
   let db: Database;
   let User;
@@ -29,6 +90,7 @@ describe('create', () => {
   afterEach(async () => {
     await db.close();
   });
+
   test('create with association', async () => {
     const u1 = await User.repository.create({
       values: {

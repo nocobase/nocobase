@@ -6,7 +6,7 @@ import {
   HasOne,
   Hookable,
   ModelCtor,
-  Transactionable
+  Transactionable,
 } from 'sequelize';
 import { Model } from './model';
 import { TransactionAble } from './repository';
