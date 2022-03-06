@@ -42,22 +42,22 @@ const schema: ISchema = {
       'x-decorator': 'Form',
       'x-component': 'Action.Drawer',
       type: 'void',
-      title: '修改密码',
+      title: '{{t("Change password")}}',
       properties: {
         oldPassword: {
           type: 'string',
-          title: '{{t("Old Password")}}',
+          title: '{{t("Old password")}}',
           required: true,
           'x-component': 'Password',
           'x-decorator': 'FormItem',
         },
         newPassword: {
           type: 'string',
-          title: '{{t("New Password")}}',
+          title: '{{t("New password")}}',
           required: true,
           'x-component': 'Password',
           'x-decorator': 'FormItem',
-          'x-component-props': { placeholder: '{{t("New Password")}}', checkStrength: true, style: {} },
+          'x-component-props': { checkStrength: true, style: {} },
           'x-reactions': [
             {
               dependencies: ['.confirmPassword'],
@@ -72,10 +72,10 @@ const schema: ISchema = {
         confirmPassword: {
           type: 'string',
           required: true,
-          title: '{{t("Confirm Password")}}',
+          title: '{{t("Confirm password")}}',
           'x-component': 'Password',
           'x-decorator': 'FormItem',
-          'x-component-props': { placeholder: '{{t("Confirm password")}}', checkStrength: true, style: {} },
+          'x-component-props': { checkStrength: true, style: {} },
           'x-reactions': [
             {
               dependencies: ['.newPassword'],

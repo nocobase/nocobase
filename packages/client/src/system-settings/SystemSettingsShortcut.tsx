@@ -2,6 +2,7 @@ import { SettingOutlined } from '@ant-design/icons';
 import { ISchema, useForm } from '@formily/react';
 import { uid } from '@formily/shared';
 import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useSystemSettings } from '.';
 import { PluginManager, useAPIClient, useRequest } from '..';
 import { ActionContext, SchemaComponent, useActionContext } from '../schema-component';
@@ -54,7 +55,7 @@ const schema: ISchema = {
       },
       'x-component': 'Action.Drawer',
       type: 'void',
-      title: '系统设置',
+      title: '{{t("System settings")}}',
       properties: {
         title: {
           type: 'string',
@@ -69,7 +70,8 @@ const schema: ISchema = {
           'x-decorator': 'FormItem',
           'x-component': 'Upload.Attachment',
           'x-component-props': {
-            'action': 'attachments:upload'
+            action: 'attachments:upload',
+            multiple: false,
             // accept: 'jpg,png'
           },
         },
@@ -84,15 +86,15 @@ const schema: ISchema = {
           ],
         },
         allowSignUp: {
-          type: 'string',
-          title: '{{t("Allow sign up")}}',
+          type: 'boolean',
+          default: true,
+          'x-content': '{{t("Allow sign up")}}',
           'x-component': 'Checkbox',
           'x-decorator': 'FormItem',
-          default: true,
         },
         footer1: {
-          'x-component': 'Action.Drawer.Footer',
           type: 'void',
+          'x-component': 'Action.Drawer.Footer',
           properties: {
             cancel: {
               title: 'Cancel',
@@ -118,6 +120,7 @@ const schema: ISchema = {
 
 export const SystemSettingsShortcut = () => {
   const [visible, setVisible] = useState(false);
+  const { t } = useTranslation();
   return (
     <ActionContext.Provider value={{ visible, setVisible }}>
       <PluginManager.Toolbar.Item
@@ -126,7 +129,7 @@ export const SystemSettingsShortcut = () => {
           setVisible(true);
         }}
         icon={<SettingOutlined />}
-        title={'系统设置'}
+        title={t('System settings')}
       />
       <SchemaComponent
         scope={{ useSaveSystemSettingsValues, useSystemSettingsValues, useCloseAction }}

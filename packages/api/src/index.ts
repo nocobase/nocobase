@@ -37,6 +37,7 @@ const api = new Application({
 });
 
 const plugins = [
+  '@nocobase/plugin-error-handler',
   '@nocobase/plugin-collection-manager',
   '@nocobase/plugin-ui-schema-storage',
   '@nocobase/plugin-ui-routes-storage',

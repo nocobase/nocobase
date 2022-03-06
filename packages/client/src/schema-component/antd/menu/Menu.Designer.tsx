@@ -1,10 +1,12 @@
 import { ISchema, useField, useFieldSchema } from '@formily/react';
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { GeneralSchemaDesigner, SchemaSettings, useDesignable } from '../../../';
 
 const InsertMenuItems = (props) => {
-  const { dn, refresh } = useDesignable();
   const { eventKey, title, insertPosition } = props;
+  const { t } = useTranslation();
+  const { dn } = useDesignable();
   const fieldSchema = useFieldSchema();
   const isSubMenu = fieldSchema['x-component'] === 'Menu.SubMenu';
   if (!isSubMenu && insertPosition === 'beforeEnd') {
@@ -14,21 +16,21 @@ const InsertMenuItems = (props) => {
     <SchemaSettings.SubMenu eventKey={eventKey} title={title}>
       <SchemaSettings.ModalItem
         eventKey={`${insertPosition}group`}
-        title={'分组'}
+        title={t('Group')}
         schema={
           {
             type: 'object',
-            title: `${title}分组`,
+            title: t('Add group'),
             properties: {
               title: {
                 'x-decorator': 'FormItem',
                 'x-component': 'Input',
-                title: '分组名称',
+                title: t('Menu item title'),
                 'x-component-props': {},
                 // description: `原字段标题：${collectionField?.uiSchema?.title}`,
               },
               icon: {
-                title: '图标',
+                title: t('Icon'),
                 'x-component': 'IconPicker',
                 'x-decorator': 'FormItem',
               },
@@ -48,21 +50,20 @@ const InsertMenuItems = (props) => {
       />
       <SchemaSettings.ModalItem
         eventKey={`${insertPosition}page`}
-        title={'页面'}
+        title={t('Page')}
         schema={
           {
             type: 'object',
-            title: `${title}页面`,
+            title: t('Add page'),
             properties: {
               title: {
                 'x-decorator': 'FormItem',
                 'x-component': 'Input',
-                title: '菜单项名称',
+                title: t('Menu item title'),
                 'x-component-props': {},
-                // description: `原字段标题：${collectionField?.uiSchema?.title}`,
               },
               icon: {
-                title: '图标',
+                title: t('Icon'),
                 'x-component': 'IconPicker',
                 'x-decorator': 'FormItem',
               },
@@ -97,25 +98,25 @@ const InsertMenuItems = (props) => {
       />
       <SchemaSettings.ModalItem
         eventKey={`${insertPosition}link`}
-        title={'链接'}
+        title={t('Link')}
         schema={
           {
             type: 'object',
-            title: `${title}链接`,
+            title: t('Add link'),
             properties: {
               title: {
-                title: '链接文字',
-                'x-component': 'Input',
-                'x-decorator': 'FormItem',
-              },
-              href: {
-                title: '链接',
+                title: t('Menu item title'),
                 'x-component': 'Input',
                 'x-decorator': 'FormItem',
               },
               icon: {
-                title: '图标',
+                title: t('Icon'),
                 'x-component': 'IconPicker',
+                'x-decorator': 'FormItem',
+              },
+              href: {
+                title: t('Link'),
+                'x-component': 'Input',
                 'x-decorator': 'FormItem',
               },
             },
@@ -141,24 +142,24 @@ export const MenuDesigner = () => {
   const field = useField();
   const fieldSchema = useFieldSchema();
   const { dn, refresh } = useDesignable();
+  const { t } = useTranslation();
   return (
     <GeneralSchemaDesigner>
       <SchemaSettings.ModalItem
-        title={'编辑'}
+        title={t('Edit')}
         schema={
           {
             type: 'object',
-            title: '编辑菜单项',
+            title: t('Edit menu item'),
             properties: {
               title: {
+                title: t('Menu item title'),
                 'x-decorator': 'FormItem',
                 'x-component': 'Input',
-                title: '菜单项名称',
                 'x-component-props': {},
-                // description: `原字段标题：${collectionField?.uiSchema?.title}`,
               },
               icon: {
-                title: '图标',
+                title: t('Menu item icon'),
                 'x-component': 'IconPicker',
                 'x-decorator': 'FormItem',
               },
@@ -189,11 +190,15 @@ export const MenuDesigner = () => {
         }}
       />
       <SchemaSettings.Divider />
-      <InsertMenuItems eventKey={'insertbeforeBegin'} title={'在前面插入'} insertPosition={'beforeBegin'} />
-      <InsertMenuItems eventKey={'insertafterEnd'} title={'在后面插入'} insertPosition={'afterEnd'} />
-      <InsertMenuItems eventKey={'insertbeforeEnd'} title={'在里面插入'} insertPosition={'beforeEnd'} />
+      <InsertMenuItems eventKey={'insertbeforeBegin'} title={t('Insert before')} insertPosition={'beforeBegin'} />
+      <InsertMenuItems eventKey={'insertafterEnd'} title={t('Insert after')} insertPosition={'afterEnd'} />
+      <InsertMenuItems eventKey={'insertbeforeEnd'} title={t('Insert inner')} insertPosition={'beforeEnd'} />
       <SchemaSettings.Divider />
-      <SchemaSettings.Remove />
+      <SchemaSettings.Remove
+        confirm={{
+          title: t('Delete menu item'),
+        }}
+      />
     </GeneralSchemaDesigner>
   );
 };
