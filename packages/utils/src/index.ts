@@ -1,5 +1,7 @@
 export * from './merge';
 export * from './mixin';
 export * from './mixin/AsyncEmitter';
-export * from './uid';
 export * from './registry';
+export * from './uid';
+export * from './umiConfig';
+
