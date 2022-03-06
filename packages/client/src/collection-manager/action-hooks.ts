@@ -85,13 +85,15 @@ export const useFilterDataSource = (options) => {
 };
 
 export const useFilterAction = () => {
-  const { run, params } = useResourceActionContext();
+  const { run, params, defaultRequest } = useResourceActionContext();
   const form = useForm();
   const ctx = useActionContext();
   const [first, ...others] = params;
   return {
     async run() {
-      run({ ...first, filter: form.values.filter }, ...others);
+      const prevFilter = defaultRequest?.params?.filter;
+      const filter = prevFilter ? { $and: [prevFilter, form.values.filter] } : form.values.filter;
+      run({ ...first, filter }, ...others);
       ctx.setVisible(false);
     },
   };

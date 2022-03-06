@@ -4,7 +4,9 @@ import { useCollectionManager } from '.';
 import { CollectionProvider, useRecord } from '..';
 import { useAPIClient, useRequest } from '../api-client';
 
-export const ResourceActionContext = createContext<Result<any, any> & { state?: any; setState?: any }>(null);
+export const ResourceActionContext = createContext<
+  Result<any, any> & { state?: any; setState?: any; defaultRequest?: any }
+>(null);
 
 interface ResourceActionProviderProps {
   type?: 'association' | 'collection';
@@ -38,7 +40,7 @@ const CollectionResourceActionProvider = (props) => {
   const resource = api.resource(request.resource);
   return (
     <ResourceContext.Provider value={{ type: 'collection', resource, collection }}>
-      <ResourceActionContext.Provider value={service}>
+      <ResourceActionContext.Provider value={{ ...service, defaultRequest: request }}>
         <CollectionProvider collection={collection}>{props.children}</CollectionProvider>
       </ResourceActionContext.Provider>
     </ResourceContext.Provider>
@@ -67,7 +69,7 @@ const AssociationResourceActionProvider = (props) => {
   const resource = api.resource(request.resource, resourceOf);
   return (
     <ResourceContext.Provider value={{ type: 'association', resource, association }}>
-      <ResourceActionContext.Provider value={service}>
+      <ResourceActionContext.Provider value={{ ...service, defaultRequest: request }}>
         <CollectionProvider collection={collection}>{props.children}</CollectionProvider>
       </ResourceActionContext.Provider>
     </ResourceContext.Provider>

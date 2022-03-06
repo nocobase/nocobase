@@ -57,9 +57,7 @@ export const ActionDesigner = () => {
             dn.emit('patch', {
               schema: {
                 'x-uid': fieldSchema['x-uid'],
-                'x-component-props': {
-                  openMode: value,
-                },
+                'x-component-props': fieldSchema['x-component-props'],
               },
             });
             dn.refresh();
