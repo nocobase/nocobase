@@ -1,4 +1,5 @@
 import { TableArray } from './Table.Array';
+import { TableArrayDesigner } from './Table.Array.Designer';
 import { TableColumn } from './Table.Column';
 import { TableColumnActionBar } from './Table.Column.ActionBar';
 import { TableColumnDecorator } from './Table.Column.Decorator';
@@ -23,3 +24,4 @@ Table.Column.Deigner = TableColumnDeigner;
 
 Table.RowActionDesigner = TableRowActionDesigner;
 Table.Designer = TableDesigner;
+Table.Array.Designer = TableArrayDesigner;

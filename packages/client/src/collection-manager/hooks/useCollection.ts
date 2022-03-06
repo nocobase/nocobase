@@ -7,7 +7,7 @@ import { CollectionFieldOptions } from '../types';
 export const useCollection = () => {
   const collection = useContext(CollectionContext);
   const api = useAPIClient();
-  const resource = api?.resource(collection.name);
+  const resource = api?.resource(collection?.name);
   return {
     ...collection,
     resource,

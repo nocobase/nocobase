@@ -35,7 +35,7 @@ export const RemoteCollectionManagerProvider = (props: any) => {
       paginate: false,
       appends: ['fields', 'fields.uiSchema'],
       filter: {
-        inherit: false,
+        // inherit: false,
       },
     },
   };

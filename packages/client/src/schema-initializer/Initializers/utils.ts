@@ -57,7 +57,7 @@ const findTableColumn = (schema: Schema, key: string, action: string, deepth: nu
 };
 
 export const useTableColumnInitializerFields = () => {
-  const { name, fields } = useCollection();
+  const { name, fields = [] } = useCollection();
   return fields
     .filter((field) => field?.interface && field?.interface !== 'subTable')
     .map((field) => {
@@ -113,7 +113,7 @@ export const useFormItemInitializerFields = () => {
           schema: {
             type: 'void',
             name: field.name,
-            'x-designer': 'FormItem.Designer',
+            'x-designer': 'Table.Array.Designer',
             'x-component': 'div',
             'x-decorator': 'FormItem',
             'x-collection-field': `${name}.${field.name}`,
