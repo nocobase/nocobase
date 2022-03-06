@@ -3,7 +3,7 @@ interface IGroupField {
   enum: Array<{ label: string; value: string; index: number }>;
 }
 
-interface IDataSource {
+interface IBoard {
   columns: Array<any>;
 }
 

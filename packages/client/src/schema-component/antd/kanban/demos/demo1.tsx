@@ -78,10 +78,14 @@ const schema: any = {
       'x-component': 'Kanban.Card',
       'x-designer': 'Kanban.Card.Designer',
     },
-    create: {
+    cardAdder: {
       type: 'void',
-      name: 'create',
+      name: 'cardAdder',
       'x-component': 'Kanban.CardAdder',
+      'x-component-props': {
+        block: true,
+      },
+      title: '添加卡片',
       properties: {
         modal: {
           'x-component': 'Action.Drawer',
@@ -114,6 +118,26 @@ const schema: any = {
                   },
                 },
               },
+            },
+          },
+        },
+      },
+    },
+    cardViewer: {
+      type: 'void',
+      name: 'cardViewer',
+      'x-component': 'Kanban.CardViewer',
+      properties: {
+        modal: {
+          'x-component': 'Action.Drawer',
+          'x-decorator': 'Form',
+          type: 'void',
+          title: 'Drawer Title',
+          properties: {
+            grid: {
+              type: 'void',
+              'x-component': 'Grid',
+              'x-initializer': 'GridFormItemInitializers',
             },
           },
         },

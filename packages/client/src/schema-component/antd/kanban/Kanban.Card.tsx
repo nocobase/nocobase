@@ -1,5 +1,6 @@
 import { createForm } from '@formily/core';
 import { FieldContext, FormContext, observer } from '@formily/react';
+import { Card } from 'antd';
 import React, { useContext, useMemo } from 'react';
 import { BlockItem } from '../block-item';
 import { CardContext } from './context';
@@ -18,19 +19,7 @@ export const KanbanCard: any = observer((props: any) => {
     <BlockItem className={'noco-card-item'}>
       <FieldContext.Provider value={undefined}>
         <FormContext.Provider value={form}>
-          <div className={`react-kanban-card ${dragging ? 'react-kanban-card--dragging' : ''}`}>
-            <span>
-              <div className="react-kanban-card__title">
-                <span>{card.title}</span>
-                {allowRemoveCard && (
-                  <span style={{ cursor: 'pointer' }} onClick={() => onCardRemove(card)}>
-                    ×
-                  </span>
-                )}
-              </div>
-            </span>
-            <div className="react-kanban-card__description">{children}</div>
-          </div>
+          <Card style={{ width: 220, marginBottom: 15, cursor: 'pointer' }}>{children}</Card>
         </FormContext.Provider>
       </FieldContext.Provider>
     </BlockItem>

@@ -5,11 +5,10 @@ import React, { useState } from 'react';
 import { SchemaComponent } from '../..';
 import { AsyncDataProvider, RecordProvider, useRequest } from '../../../';
 import { Board } from '../../../board';
+import { Action } from '../action';
 import { CardContext, ColumnContext } from './context';
 import { KanbanCard } from './Kanban.Card';
 import { KanbanCardDesigner } from './Kanban.Card.Designer';
-import { KanbanCardAdder } from './Kanban.CardAdder';
-import { KanbanCardViewer } from './Kanban.CardViewer';
 import { KanbanDesigner } from './Kanban.Designer';
 import { toGroupDataSource } from './utils';
 
@@ -33,7 +32,7 @@ export const Kanban: ComposedKanban = observer((props: any) => {
   const { useDataSource = useDefDataSource, groupField, useDragEndAction, ...restProps } = props;
   const field = useField<VoidField>();
   const fieldSchema = useFieldSchema();
-  const [dataSource, setDataSource] = useState<IDataSource>({ columns: [] });
+  const [board, setBoard] = useState<IBoard>({ columns: [] });
   const [visible, setVisible] = useState(false);
   const [record, setRecord] = useState<any>({});
   const { run: runDragEnd } = useDragEndAction?.() ?? {};
@@ -43,7 +42,7 @@ export const Kanban: ComposedKanban = observer((props: any) => {
       refreshDeps: [props.dataSource],
       onSuccess({ data }) {
         const ds = toGroupDataSource(groupField, data);
-        setDataSource(ds);
+        setBoard(ds);
       },
     },
     props,
@@ -54,19 +53,33 @@ export const Kanban: ComposedKanban = observer((props: any) => {
     }
     return buf;
   }, null);
-  const createSchema: Schema = fieldSchema.reduceProperties((buf, current) => {
+  const cardAdderSchema: Schema = fieldSchema.reduceProperties((buf, current) => {
     if (current['x-component'] === 'Kanban.CardAdder') {
       return current;
     }
     return buf;
   }, null);
+  const cardViewerSchema: Schema = fieldSchema.reduceProperties((buf, current) => {
+    if (current['x-component'] === 'Kanban.CardViewer') {
+      return current;
+    }
+    return buf;
+  }, null);
 
+  const cardRemoveHandler = (card, column) => {
+    const updatedBoard = Board.removeCard(board, column, card);
+    setBoard(updatedBoard);
+  };
+  const cardDragEndHandler = (card, fromColumn, toColumn) => {
+    const updatedBoard = Board.moveCard(board, fromColumn, toColumn);
+    setBoard(updatedBoard);
+    runDragEnd?.(card, fromColumn, toColumn);
+  };
   return (
     <AsyncDataProvider value={result}>
       <Board
-        onCardDragEnd={(card, fromColumn, toColumn) => {
-          runDragEnd?.(card, fromColumn, toColumn);
-        }}
+        onCardRemove={cardRemoveHandler}
+        onCardDragEnd={cardDragEndHandler}
         renderCard={(card, column, dragging) => {
           return (
             <RecordProvider record={card}>
@@ -79,13 +92,13 @@ export const Kanban: ComposedKanban = observer((props: any) => {
         renderCardAdder={({ column }) => {
           return (
             <ColumnContext.Provider value={{ column }}>
-              <SchemaComponent memoized name={uid()} schema={createSchema as any} />
+              <SchemaComponent memoized name={uid()} schema={cardAdderSchema as any} />
             </ColumnContext.Provider>
           );
         }}
         {...restProps}
       >
-        {dataSource}
+        {board}
       </Board>
     </AsyncDataProvider>
   );
@@ -93,9 +106,9 @@ export const Kanban: ComposedKanban = observer((props: any) => {
 
 Kanban.Card = KanbanCard;
 
-Kanban.CardAdder = KanbanCardAdder;
+Kanban.CardAdder = Action;
 
-Kanban.CardViewer = KanbanCardViewer;
+Kanban.CardViewer = Action;
 
 Kanban.Card.Designer = KanbanCardDesigner;
 
