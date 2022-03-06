@@ -2,6 +2,7 @@ import { LockOutlined } from '@ant-design/icons';
 import { ISchema, useForm } from '@formily/react';
 import { uid } from '@formily/shared';
 import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { PluginManager } from '../plugin-manager';
 import { ActionContext, SchemaComponent, useActionContext } from '../schema-component';
 import * as components from './Configuration';
@@ -25,7 +26,7 @@ const schema: ISchema = {
     [uid()]: {
       'x-component': 'Action.Drawer',
       type: 'void',
-      title: '角色配置',
+      title: '{{t("Roles & Permissions")}}',
       properties: {
         hello1: {
           type: 'void',
@@ -38,11 +39,12 @@ const schema: ISchema = {
 
 export const ACLShortcut = () => {
   const [visible, setVisible] = useState(false);
+  const { t } = useTranslation();
   return (
     <ActionContext.Provider value={{ visible, setVisible }}>
       <PluginManager.Toolbar.Item
         icon={<LockOutlined />}
-        title={'角色和权限'}
+        title={t('Roles & Permissions')}
         onClick={() => {
           setVisible(true);
         }}

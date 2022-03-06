@@ -1,10 +1,10 @@
-import { Plugin } from '@nocobase/server';
-import { ErrorHandler } from './error-handler';
-import { BaseError } from 'sequelize';
-import zhCN from './locale/zh_CN';
-import enUS from './locale/en_US';
-import lodash from 'lodash';
 import { compile } from '@formily/json-schema/lib/compiler';
+import { Plugin } from '@nocobase/server';
+import lodash from 'lodash';
+import { BaseError } from 'sequelize';
+import { ErrorHandler } from './error-handler';
+import enUS from './locale/en_US';
+import zhCN from './locale/zh_CN';
 
 export class PluginErrorHandler extends Plugin {
   errorHandler: ErrorHandler = new ErrorHandler();

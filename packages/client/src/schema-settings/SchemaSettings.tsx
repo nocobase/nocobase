@@ -29,6 +29,7 @@ export const useSchemaSettings = () => {
 };
 
 interface RemoveProps {
+  confirm?: any;
   removeParentsIfNoChildren?: boolean;
   breakRemoveOn?: ISchema | ((s: ISchema) => boolean);
 }

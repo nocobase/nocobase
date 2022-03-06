@@ -2,6 +2,7 @@ import { DatabaseOutlined } from '@ant-design/icons';
 import { ISchema } from '@formily/react';
 import { uid } from '@formily/shared';
 import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { PluginManager } from '../plugin-manager';
 import { ActionContext, SchemaComponent } from '../schema-component';
 import { AddFieldAction, ConfigurationTable, EditFieldAction } from './Configuration';
@@ -12,7 +13,7 @@ const schema: ISchema = {
     [uid()]: {
       'x-component': 'Action.Drawer',
       type: 'void',
-      title: '数据表配置',
+      title: '{{t("Collections & Fields")}}',
       properties: {
         configuration: {
           'x-component': 'ConfigurationTable',
@@ -24,11 +25,12 @@ const schema: ISchema = {
 
 export const CollectionManagerShortcut = () => {
   const [visible, setVisible] = useState(false);
+  const { t } = useTranslation();
   return (
     <ActionContext.Provider value={{ visible, setVisible }}>
       <PluginManager.Toolbar.Item
         icon={<DatabaseOutlined />}
-        title={'数据表配置'}
+        title={t('Collections & Fields')}
         onClick={() => {
           setVisible(true);
         }}

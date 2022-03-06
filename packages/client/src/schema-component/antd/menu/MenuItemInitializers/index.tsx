@@ -46,7 +46,7 @@ export const GroupItem = itemWrap((props) => {
     <SchemaInitializer.Item
       {...props}
       onClick={async () => {
-        const values = await FormDialog('添加分组', () => {
+        const values = await FormDialog(t('Add group'), () => {
           return (
             <SchemaComponentOptions scope={options.scope} components={{ ...options.components }}>
               <FormLayout layout={'vertical'}>
@@ -54,12 +54,12 @@ export const GroupItem = itemWrap((props) => {
                   schema={{
                     properties: {
                       title: {
-                        title: '分组标题',
+                        title: t('Menu item title'),
                         'x-component': 'Input',
                         'x-decorator': 'FormItem',
                       },
                       icon: {
-                        title: '图标',
+                        title: t('Icon'),
                         'x-component': 'IconPicker',
                         'x-decorator': 'FormItem',
                       },
@@ -94,7 +94,7 @@ export const PageMenuItem = itemWrap((props) => {
     <SchemaInitializer.Item
       {...props}
       onClick={async () => {
-        const values = await FormDialog('添加页面', () => {
+        const values = await FormDialog(t('Add page'), () => {
           return (
             <SchemaComponentOptions scope={options.scope} components={{ ...options.components }}>
               <FormLayout layout={'vertical'}>
@@ -102,12 +102,12 @@ export const PageMenuItem = itemWrap((props) => {
                   schema={{
                     properties: {
                       title: {
-                        title: '页面标题',
+                        title: t('Menu item title'),
                         'x-component': 'Input',
                         'x-decorator': 'FormItem',
                       },
                       icon: {
-                        title: '图标',
+                        title: t('Icon'),
                         'x-component': 'IconPicker',
                         'x-decorator': 'FormItem',
                       },
@@ -157,7 +157,7 @@ export const LinkMenuItem = itemWrap((props) => {
     <SchemaInitializer.Item
       {...props}
       onClick={async () => {
-        const values = await FormDialog('添加链接', () => {
+        const values = await FormDialog(t('Add link'), () => {
           return (
             <SchemaComponentOptions scope={options.scope} components={{ ...options.components }}>
               <FormLayout layout={'vertical'}>
@@ -165,18 +165,18 @@ export const LinkMenuItem = itemWrap((props) => {
                   schema={{
                     properties: {
                       title: {
-                        title: '链接文字',
-                        'x-component': 'Input',
-                        'x-decorator': 'FormItem',
-                      },
-                      href: {
-                        title: '链接',
+                        title: t('Menu item title'),
                         'x-component': 'Input',
                         'x-decorator': 'FormItem',
                       },
                       icon: {
-                        title: '图标',
+                        title: t('Icon'),
                         'x-component': 'IconPicker',
+                        'x-decorator': 'FormItem',
+                      },
+                      href: {
+                        title: t('Link'),
+                        'x-component': 'Input',
                         'x-decorator': 'FormItem',
                       },
                     },

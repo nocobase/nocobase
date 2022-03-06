@@ -5,6 +5,7 @@ import { uid } from '@formily/shared';
 import { Button, Dropdown, Menu } from 'antd';
 import { cloneDeep } from 'lodash';
 import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useRequest } from '../../api-client';
 import { RecordProvider } from '../../record-provider';
 import { ActionContext, SchemaComponent, useActionContext, useCompile } from '../../schema-component';
@@ -98,6 +99,7 @@ export const AddSubFieldAction = () => {
   const [visible, setVisible] = useState(false);
   const [schema, setSchema] = useState({});
   const compile = useCompile();
+  const { t } = useTranslation();
   return (
     <ActionContext.Provider value={{ visible, setVisible }}>
       <Dropdown
@@ -122,7 +124,7 @@ export const AddSubFieldAction = () => {
         }
       >
         <Button icon={<PlusOutlined />} type={'primary'}>
-          添加字段
+          {t('Add field')}
         </Button>
       </Dropdown>
       <RecordProvider record={{}}>
