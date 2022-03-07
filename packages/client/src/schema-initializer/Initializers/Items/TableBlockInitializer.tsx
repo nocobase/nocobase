@@ -12,6 +12,7 @@ const createSchema = (collectionName) => {
     'x-decorator': 'ResourceActionProvider',
     'x-decorator-props': {
       collection: collectionName,
+      dragSort: false,
       request: {
         resource: collectionName,
         action: 'list',

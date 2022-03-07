@@ -13,8 +13,24 @@ export const TableVoidDesigner = () => {
   const ctx = useResourceActionContext();
   const { dn } = useDesignable();
   const defaultFilter = fieldSchema?.['x-decorator-props']?.request?.params?.filter || {};
+  const defaultSort = fieldSchema?.['x-decorator-props']?.request?.params?.sort || [];
   return (
     <GeneralSchemaDesigner title={title || name}>
+      <SchemaSettings.SwitchItem
+        title={'启用手动排序'}
+        checked={field.decoratorProps.dragSort}
+        onChange={(dragSort) => {
+          field.decoratorProps.dragSort = dragSort;
+          fieldSchema['x-decorator-props'].dragSort = dragSort;
+          ctx.run({ ...ctx.params?.[0], sort: defaultSort });
+          dn.emit('patch', {
+            schema: {
+              ['x-uid']: fieldSchema['x-uid'],
+              'x-decorator-props': fieldSchema['x-decorator-props'],
+            },
+          });
+        }}
+      />
       <SchemaSettings.ModalItem
         title={'设置数据范围'}
         schema={
