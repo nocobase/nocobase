@@ -10,6 +10,9 @@ services:
       - nocobase
     ports:
       - ${ADMINER_PORT}:8080
+    volumes:
+      - ./docker/adminer/login-sqlite-plugin.php:/var/www/html/plugins-enabled/login-sqlite-plugin.php
+      - ./:/var/www/app
   postgres:
     image: postgres:10
     restart: always

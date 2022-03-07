@@ -4,6 +4,11 @@ export default {
   name: 'uiSchemaTreePath',
   autoGenId: false,
   timestamps: false,
+  indexes: [
+    {
+      fields: ['descendant'],
+    },
+  ],
   fields: [
     {
       type: 'string',
