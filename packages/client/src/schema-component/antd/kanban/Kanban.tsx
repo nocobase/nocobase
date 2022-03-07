@@ -5,10 +5,11 @@ import React, { useState } from 'react';
 import { SchemaComponent } from '../..';
 import { AsyncDataProvider, RecordProvider, useRequest } from '../../../';
 import { Board } from '../../../board';
-import { Action } from '../action';
+import { Action, ActionContext } from '../action';
 import { CardContext, ColumnContext } from './context';
 import { KanbanCard } from './Kanban.Card';
 import { KanbanCardDesigner } from './Kanban.Card.Designer';
+import { KanbanCardViewer } from './Kanban.CardViewer';
 import { KanbanDesigner } from './Kanban.Designer';
 import { toGroupDataSource } from './utils';
 
@@ -77,14 +78,24 @@ export const Kanban: ComposedKanban = observer((props: any) => {
   };
   return (
     <AsyncDataProvider value={result}>
+      {cardViewerSchema && (
+        <ActionContext.Provider value={{ visible, setVisible }}>
+          <RecordProvider record={record}>
+            <SchemaComponent name={record.id} schema={cardViewerSchema as any} onlyRenderProperties />
+          </RecordProvider>
+        </ActionContext.Provider>
+      )}
       <Board
         onCardRemove={cardRemoveHandler}
         onCardDragEnd={cardDragEndHandler}
         renderCard={(card, column, dragging) => {
+          setRecord(card);
           return (
             <RecordProvider record={card}>
               <CardContext.Provider value={{ card, column, dragging }}>
-                <SchemaComponent name={cardSchema.name} schema={cardSchema as any} />
+                <span onClick={() => setVisible(true)}>
+                  <SchemaComponent name={cardSchema.name} schema={cardSchema as any} />
+                </span>
               </CardContext.Provider>
             </RecordProvider>
           );
@@ -108,7 +119,7 @@ Kanban.Card = KanbanCard;
 
 Kanban.CardAdder = Action;
 
-Kanban.CardViewer = Action;
+Kanban.CardViewer = KanbanCardViewer;
 
 Kanban.Card.Designer = KanbanCardDesigner;
 
