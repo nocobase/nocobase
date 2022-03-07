@@ -148,11 +148,11 @@ export const useMoveAction = () => {
   const { refresh } = useResourceActionContext();
   return {
     async move(from, to) {
-      // await resource.move({
-      //   sourceId: from.id,
-      //   targetId: to.id,
-      // });
-      // refresh();
+      await resource.move({
+        sourceId: from.id,
+        targetId: to.id,
+      });
+      refresh();
     },
   };
 };
