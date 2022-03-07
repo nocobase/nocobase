@@ -2,7 +2,7 @@
  * title: Kanban
  */
 
-import { useForm } from '@formily/react';
+import { ISchema, useForm } from '@formily/react';
 import { observable } from '@formily/reactive';
 import {
   ActionContext,
@@ -12,7 +12,7 @@ import {
   CollectionProvider,
   SchemaComponent,
   SchemaComponentProvider,
-  SchemaInitializerProvider,
+  SchemaInitializerProvider
 } from '@nocobase/client';
 import React, { useContext } from 'react';
 
@@ -58,8 +58,8 @@ const groupField = {
   ],
 };
 
-const schema: any = {
-  type: 'void',
+const schema: ISchema = {
+  type: 'array',
   name: 'kanban',
   'x-component': 'Kanban',
   'x-component-props': {
@@ -74,9 +74,20 @@ const schema: any = {
     card: {
       type: 'void',
       name: 'card',
-      'x-decorator': 'Form',
       'x-component': 'Kanban.Card',
-      'x-designer': 'Kanban.Card.Designer',
+      properties: {
+        title: {
+          'x-decorator': 'div',
+          'x-component': 'Input',
+          'x-read-pretty': true,
+        },
+        description: {
+          'x-decorator': 'div',
+          'x-component': 'Input',
+          'x-read-pretty': true,
+        },
+      },
+      // 'x-designer': 'Kanban.Card.Designer',
     },
     cardAdder: {
       type: 'void',
@@ -84,6 +95,7 @@ const schema: any = {
       'x-component': 'Kanban.CardAdder',
       'x-component-props': {
         block: true,
+        type: 'text',
       },
       title: '添加卡片',
       properties: {

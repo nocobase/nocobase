@@ -1,13 +1,13 @@
-import { VoidField } from '@formily/core';
-import { observer, Schema, useField, useFieldSchema } from '@formily/react';
+import { ArrayField } from '@formily/core';
+import { observer, RecursionField, Schema, useField, useFieldSchema } from '@formily/react';
 import { uid } from '@formily/shared';
+import { Card } from 'antd';
 import React, { useState } from 'react';
 import { SchemaComponent } from '../..';
 import { AsyncDataProvider, RecordProvider, useRequest } from '../../../';
 import { Board } from '../../../board';
 import { Action } from '../action';
 import { CardContext, ColumnContext } from './context';
-import { KanbanCard } from './Kanban.Card';
 import { KanbanCardDesigner } from './Kanban.Card.Designer';
 import { KanbanDesigner } from './Kanban.Designer';
 import { toGroupDataSource } from './utils';
@@ -30,19 +30,20 @@ const useDefDataSource = (options, props) => {
 
 export const Kanban: ComposedKanban = observer((props: any) => {
   const { useDataSource = useDefDataSource, groupField, useDragEndAction, ...restProps } = props;
-  const field = useField<VoidField>();
+  const field = useField<ArrayField>();
   const fieldSchema = useFieldSchema();
-  const [board, setBoard] = useState<IBoard>({ columns: [] });
+  const [board, setBoard] = useState<any>({ columns: [] });
   const [visible, setVisible] = useState(false);
   const [record, setRecord] = useState<any>({});
   const { run: runDragEnd } = useDragEndAction?.() ?? {};
   const result = useDataSource(
     {
       uid: fieldSchema['x-uid'],
-      refreshDeps: [props.dataSource],
+      // refreshDeps: [props.dataSource],
       onSuccess({ data }) {
         const ds = toGroupDataSource(groupField, data);
         setBoard(ds);
+        field.value = ds.columns;
       },
     },
     props,
@@ -53,6 +54,7 @@ export const Kanban: ComposedKanban = observer((props: any) => {
     }
     return buf;
   }, null);
+  console.log('board', board);
   const cardAdderSchema: Schema = fieldSchema.reduceProperties((buf, current) => {
     if (current['x-component'] === 'Kanban.CardAdder') {
       return current;
@@ -67,12 +69,12 @@ export const Kanban: ComposedKanban = observer((props: any) => {
   }, null);
 
   const cardRemoveHandler = (card, column) => {
-    const updatedBoard = Board.removeCard(board, column, card);
-    setBoard(updatedBoard);
+    const updatedBoard = Board.removeCard({ columns: field.value }, column, card);
+    field.value = updatedBoard.columns;
   };
   const cardDragEndHandler = (card, fromColumn, toColumn) => {
-    const updatedBoard = Board.moveCard(board, fromColumn, toColumn);
-    setBoard(updatedBoard);
+    const updatedBoard = Board.moveCard({ columns: field.value }, fromColumn, toColumn);
+    field.value = updatedBoard.columns;
     runDragEnd?.(card, fromColumn, toColumn);
   };
   return (
@@ -80,11 +82,15 @@ export const Kanban: ComposedKanban = observer((props: any) => {
       <Board
         onCardRemove={cardRemoveHandler}
         onCardDragEnd={cardDragEndHandler}
-        renderCard={(card, column, dragging) => {
+        renderCard={(card, { column, dragging }) => {
+          const columnIndex = field.value?.indexOf(column);
+          const cardIndex = column?.cards?.indexOf(card);
           return (
             <RecordProvider record={card}>
               <CardContext.Provider value={{ card, column, dragging }}>
-                <SchemaComponent name={cardSchema.name} schema={cardSchema as any} />
+                <Card style={{ width: 220, marginBottom: 15, cursor: 'pointer' }}>
+                  <RecursionField name={`${columnIndex}.cards.${cardIndex}`} schema={cardSchema} onlyRenderProperties />
+                </Card>
               </CardContext.Provider>
             </RecordProvider>
           );
@@ -98,13 +104,15 @@ export const Kanban: ComposedKanban = observer((props: any) => {
         }}
         {...restProps}
       >
-        {board}
+        {{
+          columns: field.value?.slice() || [],
+        }}
       </Board>
     </AsyncDataProvider>
   );
 });
 
-Kanban.Card = KanbanCard;
+Kanban.Card = () => null;
 
 Kanban.CardAdder = Action;
 
