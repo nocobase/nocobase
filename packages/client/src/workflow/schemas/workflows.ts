@@ -1,29 +1,4 @@
 import { ISchema, useForm } from '@formily/react';
-import { useActionContext, useAPIClient, useRecord, useResourceActionContext } from '../../';
-
-function useUpdateConfigAction() {
-  const form = useForm();
-  const api = useAPIClient();
-  const record = useRecord();
-  const ctx = useActionContext();
-  const { refresh } = useResourceActionContext();
-  return {
-    async run() {
-      await api.resource('workflows', record.id).update({
-        filterByTk: record.id,
-        values: {
-          config: {
-            ...record.config,
-            ...form.values
-          }
-        },
-      });
-      ctx.setVisible(false);
-      refresh();
-    },
-  };
-};
-
 
 const collection = {
   name: 'workflows',
@@ -66,11 +41,15 @@ const collection = {
     {
       type: 'boolean',
       name: 'enabled',
-      interface: 'checkbox',
+      interface: 'radio',
       uiSchema: {
         title: '状态',
-        type: 'boolean',
-        'x-component': 'Checkbox',
+        type: 'string',
+        enum: [
+          { label: '启用', value: true },
+          { label: '禁用', value: false },
+        ],
+        'x-component': 'Radio.Group',
         'x-decorator': 'FormItem',
       } as ISchema
     }
@@ -210,7 +189,7 @@ export const workflowSchema: ISchema = {
               'x-component': 'Table.Column',
               properties: {
                 enabled: {
-                  type: 'string',
+                  type: 'boolean',
                   'x-component': 'CollectionField',
                   'x-read-pretty': true,
                 },
@@ -228,49 +207,11 @@ export const workflowSchema: ISchema = {
                     split: '|',
                   },
                   properties: {
-                    view: {
+                    triggerConfig: {
                       type: 'void',
                       title: '触发器配置',
-                      'x-component': 'Action.Link',
-                      'x-component-props': {},
-                      properties: {
-                        drawer: {
-                          type: 'void',
-                          title: '触发器配置',
-                          'x-component': 'Action.Drawer',
-                          'x-decorator': 'Form',
-                          'x-decorator-props': {
-                          },
-                          properties: {
-                            config: {
-                              type: 'void',
-                              'x-component': 'TriggerConfig',
-                              'x-component-props': {}
-                            },
-                            actions: {
-                              type: 'void',
-                              'x-component': 'Action.Drawer.Footer',
-                              properties: {
-                                cancel: {
-                                  title: 'Cancel',
-                                  'x-component': 'Action',
-                                  'x-component-props': {
-                                    useAction: '{{ cm.useCancelAction }}',
-                                  },
-                                },
-                                submit: {
-                                  title: 'Submit',
-                                  'x-component': 'Action',
-                                  'x-component-props': {
-                                    type: 'primary',
-                                    useAction: useUpdateConfigAction
-                                  }
-                                }
-                              }
-                            }
-                          }
-                        }
-                      }
+                      'x-component': 'TriggerConfig',
+                      'x-component-props': {}
                     }
                   }
                 }
