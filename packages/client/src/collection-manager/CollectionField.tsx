@@ -10,7 +10,7 @@ import { useCollectionField } from './hooks';
 const InternalField: React.FC = (props) => {
   const field = useField<Field>();
   const fieldSchema = useFieldSchema();
-  const { uiSchema } = useCollectionField();
+  const { name, uiSchema } = useCollectionField();
   const component = useComponent(uiSchema?.['x-component']);
   const compile = useCompile();
   const setFieldProps = (key, value) => {
@@ -34,9 +34,10 @@ const InternalField: React.FC = (props) => {
     setRequired();
     // @ts-ignore
     field.dataSource = uiSchema.enum;
-    const originalProps = compile(uiSchema['x-component-props']);
-    const componentProps = field.componentProps;
-    field.component = [component, merge(originalProps, componentProps)];
+    const originalProps = compile(uiSchema['x-component-props']) || {};
+    const componentProps = merge(originalProps, field.componentProps || {});
+    field.component = [component, componentProps];
+    // console.log('componentProps', uiSchema?.title, field.componentProps);
   }, [uiSchema?.title, uiSchema?.description, uiSchema?.required]);
   if (!uiSchema) {
     return null;

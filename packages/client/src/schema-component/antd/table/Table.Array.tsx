@@ -87,6 +87,20 @@ export const components = {
     row: (props) => {
       return <tr {...props} />;
     },
+    cell: (props) => (
+      <td
+        {...props}
+        className={classNames(
+          props.className,
+          css`
+            max-width: 300px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+          `,
+        )}
+      />
+    ),
   },
 };
 
@@ -228,7 +242,14 @@ export const TableArray: React.FC<any> = observer((props) => {
   };
 
   return (
-    <div>
+    <div
+      className={css`
+        .ant-table {
+          overflow-x: auto;
+          overflow-y: hidden;
+        }
+      `}
+    >
       <ReactDragListView
         handleSelector={'.drag-handle'}
         onDragEnd={async (fromIndex, toIndex) => {
