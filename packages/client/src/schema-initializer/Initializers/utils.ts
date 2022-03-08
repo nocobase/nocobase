@@ -61,6 +61,28 @@ export const useTableColumnInitializerFields = () => {
   return fields
     .filter((field) => field?.interface && field?.interface !== 'subTable')
     .map((field) => {
+      const componentProps = {};
+      if (field?.uiSchema['x-component']?.startsWith?.('Input')) {
+        componentProps['ellipsis'] = true;
+      }
+      if (field.interface === 'attachment') {
+        componentProps['size'] = 'small';
+        return {
+          type: 'item',
+          title: field?.uiSchema?.title || field.name,
+          component: 'CollectionFieldInitializer',
+          find: findTableColumn,
+          remove: removeTableColumn,
+          schema: {
+            name: field.name,
+            'x-collection-field': `${name}.${field.name}`,
+            'x-component': 'CollectionField',
+            'x-component-props': {
+              ...componentProps,
+            },
+          },
+        } as SchemaInitializerItemOptions;
+      }
       if (field.target) {
         return {
           field,
@@ -73,12 +95,11 @@ export const useTableColumnInitializerFields = () => {
             name: field.name,
             'x-collection-field': `${name}.${field.name}`,
             'x-component': 'CollectionField',
+            'x-component-props': {
+              ...componentProps,
+            },
           },
         } as SchemaInitializerItemOptions;
-      }
-      const componentProps = {};
-      if (field.interface === 'attachment') {
-        componentProps['size'] = 'small';
       }
       return {
         type: 'item',
