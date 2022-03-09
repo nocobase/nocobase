@@ -5,7 +5,7 @@ import {
   afterCreateForReverseField,
   beforeCreateForChildrenCollection,
   beforeCreateForReverseField,
-  beforeInitOptions
+  beforeInitOptions,
 } from './hooks';
 import { CollectionModel, FieldModel } from './models';
 
@@ -65,6 +65,8 @@ export class CollectionManagerPlugin extends Plugin {
       }
       await next();
     });
+
+    this.app.acl.skip('collections', 'list', 'logined');
   }
 
   async load() {

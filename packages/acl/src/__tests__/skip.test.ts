@@ -8,25 +8,86 @@ describe('skip', () => {
   });
 
   it('should skip action', async () => {
-    expect(acl.isSkipped('user', 'login')).toBeFalsy();
-    acl.skip('user', 'login');
-    expect(acl.isSkipped('user', 'login')).toBeTruthy();
+    const middlewareFunc = acl.middleware();
+    const ctx: any = {
+      state: {},
+      action: {
+        resourceName: 'users',
+        actionName: 'login',
+      },
+      app: {
+        acl,
+      },
+      throw() {},
+    };
 
-    expect(acl.isSkipped('user', 'logout')).toBeFalsy();
+    const nextFunc = jest.fn();
+
+    await middlewareFunc(ctx, nextFunc);
+    expect(nextFunc).toHaveBeenCalledTimes(0);
+
+    acl.skip('users', 'login');
+
+    await middlewareFunc(ctx, nextFunc);
+    expect(nextFunc).toHaveBeenCalledTimes(1);
   });
 
-  it('should skip action with global resource', async () => {
-    expect(acl.isSkipped('user', 'login')).toBeFalsy();
-    acl.skip('*', 'login');
-    expect(acl.isSkipped('user', 'login')).toBeTruthy();
+  it('should skip action with condition', async () => {
+    const middlewareFunc = acl.middleware();
+    const ctx: any = {
+      state: {},
+      action: {
+        resourceName: 'users',
+        actionName: 'login',
+      },
+      app: {
+        acl,
+      },
+      throw() {},
+    };
 
-    expect(acl.isSkipped('user', 'logout')).toBeFalsy();
+    const nextFunc = jest.fn();
+
+    let skip = false;
+    acl.skip('users', 'login', (ctx) => {
+      return skip;
+    });
+
+    await middlewareFunc(ctx, nextFunc);
+    expect(nextFunc).toHaveBeenCalledTimes(0);
+
+    skip = true;
+    await middlewareFunc(ctx, nextFunc);
+    expect(nextFunc).toHaveBeenCalledTimes(1);
   });
 
-  it('should skip action with global action', async () => {
-    expect(acl.isSkipped('user', 'login')).toBeFalsy();
-    acl.skip('user', '*');
-    expect(acl.isSkipped('user', 'login')).toBeTruthy();
-    expect(acl.isSkipped('admin', 'logout')).toBeFalsy();
+  it('should skip action with registered condition', async () => {
+    const middlewareFunc = acl.middleware();
+
+    const conditionFn = jest.fn();
+    acl.skipManager.registerSkipCondition('superUser', () => {
+      conditionFn();
+      return true;
+    });
+
+    const ctx: any = {
+      state: {},
+      action: {
+        resourceName: 'users',
+        actionName: 'login',
+      },
+      app: {
+        acl,
+      },
+      throw() {},
+    };
+
+    const nextFunc = jest.fn();
+
+    acl.skip('users', 'login', 'superUser');
+
+    await middlewareFunc(ctx, nextFunc);
+    expect(nextFunc).toHaveBeenCalledTimes(1);
+    expect(conditionFn).toHaveBeenCalledTimes(1);
   });
 });

@@ -5,6 +5,7 @@ import lodash from 'lodash';
 import { AclAvailableAction, AvailableActionOptions } from './acl-available-action';
 import { ACLAvailableStrategy, AvailableStrategyOptions, predicate } from './acl-available-strategy';
 import { ACLRole, RoleActionParams } from './acl-role';
+import { SkipManager } from './skip-manager';
 const parse = require('json-templates');
 
 interface CanResult {
@@ -44,8 +45,9 @@ interface CanArgs {
 export class ACL extends EventEmitter {
   protected availableActions = new Map<string, AclAvailableAction>();
   protected availableStrategy = new Map<string, ACLAvailableStrategy>();
-  protected skipActions = new Map<string, Set<string>>();
   protected middlewares = [];
+
+  public skipManager = new SkipManager(this);
 
   roles = new Map<string, ACLRole>();
 
@@ -85,7 +87,18 @@ export class ACL extends EventEmitter {
 
     this.middlewares.push(async (ctx, next) => {
       const { resourceName, actionName } = ctx.action;
-      if (ctx.app.acl.isSkipped(resourceName, actionName)) {
+      const skippedCondition = ctx.app.acl.skipManager.getSkippedCondition(resourceName, actionName);
+      let skip = false;
+
+      if (skippedCondition) {
+        if (typeof skippedCondition === 'function') {
+          skip = skippedCondition(ctx);
+        } else if (skippedCondition) {
+          skip = true;
+        }
+      }
+
+      if (skip) {
         ctx.permission = {
           skip: true,
         };
@@ -218,20 +231,12 @@ export class ACL extends EventEmitter {
     this.middlewares.push(fn);
   }
 
-  skip(resourceName: string, actionName: string) {
-    const actionSet = this.skipActions.get(resourceName) || new Set<string>();
-    actionSet.add(actionName);
-    this.skipActions.set(resourceName, actionSet);
+  skip(resourceName: string, actionName: string, condition?: any) {
+    this.skipManager.skip(resourceName, actionName, condition);
   }
 
-  isSkipped(resourceName: string, actionName: string): boolean {
-    const globalSkip = this.skipActions.get('*');
-    if (globalSkip && (globalSkip.has('*') || globalSkip.has(actionName))) {
-      return true;
-    }
-
-    const resourceSkip = this.skipActions.get(resourceName);
-    return resourceSkip && (resourceSkip.has('*') || resourceSkip.has(actionName));
+  getSkippedCondition(resourceName: string, actionName: string) {
+    return this.skipManager.getSkippedCondition(resourceName, actionName);
   }
 
   middleware() {
