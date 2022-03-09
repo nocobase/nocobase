@@ -8,6 +8,7 @@ import {
   findByUid,
   findMenuItem,
   PluginManager,
+  RemoteCollectionManagerProvider,
   RemoteSchemaComponent,
   useDocumentTitle,
   useRoute,
@@ -100,9 +101,11 @@ const InternalAdminLayout = (props: any) => {
 
 export const AdminLayout = () => {
   return (
-    <CurrentUserProvider>
-      <InternalAdminLayout />
-    </CurrentUserProvider>
+    <RemoteCollectionManagerProvider>
+      <CurrentUserProvider>
+        <InternalAdminLayout />
+      </CurrentUserProvider>
+    </RemoteCollectionManagerProvider>
   );
 };
 
