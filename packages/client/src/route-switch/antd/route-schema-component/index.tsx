@@ -1,7 +1,8 @@
 import React from 'react';
-import { RemoteSchemaComponent, useRoute } from '../../../';
+import { useRouteMatch } from 'react-router-dom';
+import { RemoteSchemaComponent } from '../../../';
 
 export function RouteSchemaComponent(props: any) {
-  const route = useRoute();
-  return <RemoteSchemaComponent uid={route.uiSchemaUid} />;
+  const match = useRouteMatch<any>();
+  return <RemoteSchemaComponent onlyRenderProperties uid={match.params.name} />;
 }
