@@ -115,8 +115,6 @@ FormItem.Designer = () => {
                             dn.emit('patch', {
                               schema,
                             });
-                            // dn.refresh();
-                            reset();
                             refresh();
                           },
                         };

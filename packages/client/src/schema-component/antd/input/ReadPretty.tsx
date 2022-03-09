@@ -2,6 +2,7 @@ import { usePrefixCls } from '@formily/antd/lib/__builtins__';
 import { InputProps, TextAreaProps } from 'antd/lib/input';
 import cls from 'classnames';
 import React from 'react';
+import { useCompile } from '../..';
 import { EllipsisWithTooltip } from './EllipsisWithTooltip';
 
 type Composed = {
@@ -14,11 +15,12 @@ export const ReadPretty: Composed = () => null;
 
 ReadPretty.Input = (props) => {
   const prefixCls = usePrefixCls('description-input', props);
+  const compile = useCompile();
   return (
     <div className={cls(prefixCls, props.className)} style={props.style}>
       {props.addonBefore}
       {props.prefix}
-      <EllipsisWithTooltip ellipsis={props.ellipsis}>{props.value}</EllipsisWithTooltip>
+      <EllipsisWithTooltip ellipsis={props.ellipsis}>{compile(props.value)}</EllipsisWithTooltip>
       {props.suffix}
       {props.addonAfter}
     </div>
@@ -26,13 +28,13 @@ ReadPretty.Input = (props) => {
 };
 
 ReadPretty.TextArea = (props) => {
-  console.log('EllipsisWithTooltip', props.ellipsis);
   const prefixCls = usePrefixCls('description-textarea', props);
+  const compile = useCompile();
   return (
     <div className={cls(prefixCls, props.className)} style={props.style}>
       {props.addonBefore}
       {props.prefix}
-      <EllipsisWithTooltip ellipsis={props.ellipsis}>{props.value}</EllipsisWithTooltip>
+      <EllipsisWithTooltip ellipsis={props.ellipsis}>{compile(props.value)}</EllipsisWithTooltip>
       {props.suffix}
       {props.addonAfter}
     </div>
