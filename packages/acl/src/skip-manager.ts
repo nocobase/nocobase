@@ -22,21 +22,57 @@ export class SkipManager {
     this.skipActions.set(resourceName, actionMap);
   }
 
-  getSkippedCondition(resourceName: string, actionName: string): ConditionFunc | true {
+  getSkippedConditions(resourceName: string, actionName: string): Array<ConditionFunc | true> {
     const fetchActionSteps: string[] = ['*', resourceName];
+
+    const results = [];
 
     for (const fetchActionStep of fetchActionSteps) {
       const resource = this.skipActions.get(fetchActionStep);
       if (resource) {
         const condition = resource.get('*') || resource.get(actionName);
         if (condition) {
-          return typeof condition === 'string' ? this.registeredCondition.get(condition) : condition;
+          results.push(typeof condition === 'string' ? this.registeredCondition.get(condition) : condition);
         }
       }
     }
+
+    return results;
   }
 
   registerSkipCondition(name: string, condition: ConditionFunc) {
     this.registeredCondition.set(name, condition);
+  }
+
+  aclMiddleware() {
+    return async (ctx, next) => {
+      const { resourceName, actionName } = ctx.action;
+      const skippedConditions = ctx.app.acl.skipManager.getSkippedConditions(resourceName, actionName);
+      let skip = false;
+
+      for (const skippedCondition of skippedConditions) {
+        if (skippedCondition) {
+          let skipResult = false;
+
+          if (typeof skippedCondition === 'function') {
+            skipResult = skippedCondition(ctx);
+          } else if (skippedCondition) {
+            skipResult = true;
+          }
+
+          if (skipResult) {
+            skip = true;
+            break;
+          }
+        }
+      }
+
+      if (skip) {
+        ctx.permission = {
+          skip: true,
+        };
+      }
+      await next();
+    };
   }
 }

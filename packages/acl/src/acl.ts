@@ -85,26 +85,7 @@ export class ACL extends EventEmitter {
       }
     });
 
-    this.middlewares.push(async (ctx, next) => {
-      const { resourceName, actionName } = ctx.action;
-      const skippedCondition = ctx.app.acl.skipManager.getSkippedCondition(resourceName, actionName);
-      let skip = false;
-
-      if (skippedCondition) {
-        if (typeof skippedCondition === 'function') {
-          skip = skippedCondition(ctx);
-        } else if (skippedCondition) {
-          skip = true;
-        }
-      }
-
-      if (skip) {
-        ctx.permission = {
-          skip: true,
-        };
-      }
-      await next();
-    });
+    this.middlewares.push(this.skipManager.aclMiddleware());
   }
 
   define(options: DefineOptions): ACLRole {
@@ -233,10 +214,6 @@ export class ACL extends EventEmitter {
 
   skip(resourceName: string, actionName: string, condition?: any) {
     this.skipManager.skip(resourceName, actionName, condition);
-  }
-
-  getSkippedCondition(resourceName: string, actionName: string) {
-    return this.skipManager.getSkippedCondition(resourceName, actionName);
   }
 
   middleware() {

@@ -62,6 +62,12 @@ export default class UsersPlugin extends Plugin {
 
     this.app.acl.skip('users', 'signin');
     this.app.acl.skip('users', 'check');
+
+    const rootUserEmail = this.getRootUserInfo().adminEmail;
+
+    this.app.acl.skip('*', '*', (ctx) => {
+      return ctx.state.currentUser.email === rootUserEmail;
+    });
   }
 
   async load() {
@@ -70,12 +76,21 @@ export default class UsersPlugin extends Plugin {
     });
   }
 
-  async install() {
+  getRootUserInfo() {
     const {
       adminNickname = 'Super Admin',
       adminEmail = 'admin@nocobase.com',
       adminPassword = 'admin123',
     } = this.options;
+
+    return {
+      adminNickname,
+      adminEmail,
+      adminPassword,
+    };
+  }
+  async install() {
+    const { adminNickname, adminPassword, adminEmail } = this.getRootUserInfo();
 
     const User = this.db.getCollection('users');
     await User.repository.create({
