@@ -1,5 +1,6 @@
 import { useForm } from '@formily/react';
 import { message } from 'antd';
+import { useEffect } from 'react';
 import { useCollection, useCollectionManager } from '.';
 import { useRequest } from '../api-client';
 import { useRecord } from '../record-provider';
@@ -148,11 +149,11 @@ export const useMoveAction = () => {
   const { refresh } = useResourceActionContext();
   return {
     async move(from, to) {
-      // await resource.move({
-      //   sourceId: from.id,
-      //   targetId: to.id,
-      // });
-      // refresh();
+      await resource.move({
+        sourceId: from.id,
+        targetId: to.id,
+      });
+      refresh();
     },
   };
 };
@@ -202,10 +203,17 @@ export const useBulkDestroyAction = () => {
 
 export const useValuesFromRecord = (options) => {
   const record = useRecord();
-  return useRequest(() => Promise.resolve({ data: record }), {
+  const result = useRequest(() => Promise.resolve({ data: record }), {
     ...options,
-    refreshDeps: [record],
+    manual: true,
   });
+  const ctx = useActionContext();
+  useEffect(() => {
+    if (ctx.visible) {
+      result.run();
+    }
+  }, [ctx.visible]);
+  return result;
 };
 
 export const useValuesFromRA = (options) => {

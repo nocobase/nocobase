@@ -1,7 +1,7 @@
 import { APIClient } from '@nocobase/client';
 
 const apiClient = new APIClient({
-  baseURL: `http://localhost:3000/api/`,
+  baseURL: process.env.API_BASE_URL,
 });
 
 export default apiClient;

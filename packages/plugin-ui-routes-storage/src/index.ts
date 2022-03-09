@@ -34,10 +34,16 @@ export class UiRoutesStoragePlugin extends Plugin {
         component: 'AdminLayout',
         title: 'NocoBase Admin',
         routes: [
+          // test...
           {
             type: 'route',
             path: '/admin/workflow',
             component: 'WorkflowPage',
+          },
+          {
+            type: 'route',
+            path: '/admin/:name(.+)?',
+            component: 'RouteSchemaComponent',
           },
         ],
       },

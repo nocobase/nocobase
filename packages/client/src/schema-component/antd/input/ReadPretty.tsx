@@ -1,9 +1,8 @@
 import { usePrefixCls } from '@formily/antd/lib/__builtins__';
-import { Popover } from 'antd';
 import { InputProps, TextAreaProps } from 'antd/lib/input';
 import cls from 'classnames';
-import React, { useEffect, useState } from 'react';
-import { useCompile } from '../../hooks/useCompile';
+import React from 'react';
+import { EllipsisWithTooltip } from './EllipsisWithTooltip';
 
 type Composed = {
   Input: React.FC<InputProps & { ellipsis?: any }>;
@@ -15,25 +14,11 @@ export const ReadPretty: Composed = () => null;
 
 ReadPretty.Input = (props) => {
   const prefixCls = usePrefixCls('description-input', props);
-  const domRef = React.useRef<HTMLInputElement>(null);
-  const compile = useCompile();
-  const [ellipsis, setEllipsis] = useState(false);
-  const content = compile(props.value);
-  const ellipsisContent = (
-    <Popover content={content} style={{ width: 100 }}>
-      <span className={'input-ellipsis'}>{content}</span>
-    </Popover>
-  );
-  useEffect(() => {
-    if (domRef.current?.scrollWidth > domRef.current?.clientWidth) {
-      setEllipsis(true);
-    }
-  }, []);
   return (
     <div className={cls(prefixCls, props.className)} style={props.style}>
       {props.addonBefore}
       {props.prefix}
-      <span ref={domRef}>{ellipsis ? ellipsisContent : content}</span>
+      <EllipsisWithTooltip ellipsis={props.ellipsis}>{props.value}</EllipsisWithTooltip>
       {props.suffix}
       {props.addonAfter}
     </div>
@@ -41,32 +26,13 @@ ReadPretty.Input = (props) => {
 };
 
 ReadPretty.TextArea = (props) => {
+  console.log('EllipsisWithTooltip', props.ellipsis);
   const prefixCls = usePrefixCls('description-textarea', props);
-  const domRef = React.useRef<HTMLInputElement>(null);
-  const [ellipsis, setEllipsis] = useState(false);
-  const ellipsisProp = props.ellipsis === true ? {} : props.ellipsis;
-  const ellipsisContent = (
-    <Popover content={props.value}>
-      <span
-        className={'input-ellipsis'}
-        style={{
-          ...ellipsisProp,
-        }}
-      >
-        {props.text || props.value}
-      </span>
-    </Popover>
-  );
-  useEffect(() => {
-    if (domRef.current?.scrollWidth > domRef.current?.clientWidth) {
-      setEllipsis(true);
-    }
-  }, []);
   return (
     <div className={cls(prefixCls, props.className)} style={props.style}>
       {props.addonBefore}
       {props.prefix}
-      <span ref={domRef}>{ellipsis ? ellipsisContent : props.value}</span>
+      <EllipsisWithTooltip ellipsis={props.ellipsis}>{props.value}</EllipsisWithTooltip>
       {props.suffix}
       {props.addonAfter}
     </div>

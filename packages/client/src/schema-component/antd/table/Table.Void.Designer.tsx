@@ -1,5 +1,6 @@
 import { ISchema, useField, useFieldSchema } from '@formily/react';
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { useCollection, useResourceActionContext } from '../../../collection-manager';
 import { useCollectionFilterOptions } from '../../../collection-manager/action-hooks';
 import { GeneralSchemaDesigner, SchemaSettings } from '../../../schema-settings';
@@ -11,10 +12,27 @@ export const TableVoidDesigner = () => {
   const fieldSchema = useFieldSchema();
   const dataSource = useCollectionFilterOptions(name);
   const ctx = useResourceActionContext();
+  const { t } = useTranslation();
   const { dn } = useDesignable();
   const defaultFilter = fieldSchema?.['x-decorator-props']?.request?.params?.filter || {};
+  const defaultSort = fieldSchema?.['x-decorator-props']?.request?.params?.sort || [];
   return (
     <GeneralSchemaDesigner title={title || name}>
+      <SchemaSettings.SwitchItem
+        title={t('Enable drag and drop sorting')}
+        checked={field.decoratorProps.dragSort}
+        onChange={(dragSort) => {
+          field.decoratorProps.dragSort = dragSort;
+          fieldSchema['x-decorator-props'].dragSort = dragSort;
+          ctx.run({ ...ctx.params?.[0], sort: defaultSort });
+          dn.emit('patch', {
+            schema: {
+              ['x-uid']: fieldSchema['x-uid'],
+              'x-decorator-props': fieldSchema['x-decorator-props'],
+            },
+          });
+        }}
+      />
       <SchemaSettings.ModalItem
         title={'设置数据范围'}
         schema={

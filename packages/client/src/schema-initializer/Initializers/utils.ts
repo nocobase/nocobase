@@ -57,10 +57,32 @@ const findTableColumn = (schema: Schema, key: string, action: string, deepth: nu
 };
 
 export const useTableColumnInitializerFields = () => {
-  const { name, fields } = useCollection();
+  const { name, fields = [] } = useCollection();
   return fields
     .filter((field) => field?.interface && field?.interface !== 'subTable')
     .map((field) => {
+      const componentProps = {};
+      if (field?.uiSchema['x-component']?.startsWith?.('Input')) {
+        componentProps['ellipsis'] = true;
+      }
+      if (field.interface === 'attachment') {
+        componentProps['size'] = 'small';
+        return {
+          type: 'item',
+          title: field?.uiSchema?.title || field.name,
+          component: 'CollectionFieldInitializer',
+          find: findTableColumn,
+          remove: removeTableColumn,
+          schema: {
+            name: field.name,
+            'x-collection-field': `${name}.${field.name}`,
+            'x-component': 'CollectionField',
+            'x-component-props': {
+              ...componentProps,
+            },
+          },
+        } as SchemaInitializerItemOptions;
+      }
       if (field.target) {
         return {
           field,
@@ -73,12 +95,11 @@ export const useTableColumnInitializerFields = () => {
             name: field.name,
             'x-collection-field': `${name}.${field.name}`,
             'x-component': 'CollectionField',
+            'x-component-props': {
+              ...componentProps,
+            },
           },
         } as SchemaInitializerItemOptions;
-      }
-      const componentProps = {};
-      if (field.interface === 'attachment') {
-        componentProps['size'] = 'small';
       }
       return {
         type: 'item',
@@ -113,7 +134,7 @@ export const useFormItemInitializerFields = () => {
           schema: {
             type: 'void',
             name: field.name,
-            'x-designer': 'FormItem.Designer',
+            'x-designer': 'Table.Array.Designer',
             'x-component': 'div',
             'x-decorator': 'FormItem',
             'x-collection-field': `${name}.${field.name}`,
@@ -143,6 +164,7 @@ export const useFormItemInitializerFields = () => {
         remove: removeGridFormItem,
         schema: {
           name: field.name,
+          title: field?.uiSchema?.title || field.name,
           'x-designer': 'FormItem.Designer',
           'x-component': 'CollectionField',
           'x-decorator': 'FormItem',

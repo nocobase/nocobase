@@ -255,7 +255,7 @@ export const DataSourceProvider = observer((props: any) => {
     },
   );
   return (
-    <CollectionProvider name={collection}>
+    <CollectionProvider collection={coll}>
       <DataSourceContext.Provider
         value={{
           rowKey,

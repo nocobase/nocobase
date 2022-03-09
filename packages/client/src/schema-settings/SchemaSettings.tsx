@@ -2,7 +2,7 @@ import { FormDialog, FormLayout } from '@formily/antd';
 import { GeneralField } from '@formily/core';
 import { ISchema, Schema, SchemaOptionsContext } from '@formily/react';
 import { uid } from '@formily/shared';
-import { Dropdown, Menu, MenuItemProps, Modal, Select } from 'antd';
+import { Dropdown, Menu, MenuItemProps, Modal, Select, Switch } from 'antd';
 import React, { createContext, useContext, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ActionContext, Designable, SchemaComponent, SchemaComponentOptions, useActionContext } from '..';
@@ -29,6 +29,7 @@ export const useSchemaSettings = () => {
 };
 
 interface RemoveProps {
+  confirm?: any;
   removeParentsIfNoChildren?: boolean;
   breakRemoveOn?: ISchema | ((s: ISchema) => boolean);
 }
@@ -151,7 +152,22 @@ SchemaSettings.SelectItem = (props) => {
 };
 
 SchemaSettings.SwitchItem = (props) => {
-  return null;
+  const { title, onChange, ...others } = props;
+  const [checked, setChecked] = useState(!!props.checked);
+  return (
+    <SchemaSettings.Item
+      {...others}
+      onClick={() => {
+        onChange?.(!checked);
+        setChecked(!checked);
+      }}
+    >
+      <div style={{ alignItems: 'center', display: 'flex', justifyContent: 'space-between' }}>
+        {title}
+        <Switch size={'small'} checked={checked} />
+      </div>
+    </SchemaSettings.Item>
+  );
 };
 
 SchemaSettings.PopupItem = (props) => {

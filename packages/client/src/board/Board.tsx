@@ -11,7 +11,7 @@ import {
   getCoordinates,
   isAColumnMove,
   isMovingACardToAnotherPosition,
-  isMovingAColumnToAnotherPosition
+  isMovingAColumnToAnotherPosition,
 } from './services';
 import { partialRight, when } from './utils';
 import withDroppable from './withDroppable';
@@ -22,7 +22,7 @@ const DroppableBoard = withDroppable(Columns);
 
 const Board: any = (props) => {
   return props.initialBoard ? <UncontrolledBoard {...props} /> : <ControlledBoard {...props} />;
-}
+};
 
 Object.keys(helpers).forEach((key) => {
   Board[key] = helpers[key];
@@ -247,19 +247,18 @@ function BoardContainer(props) {
 
     isAColumnMove(event.type)
       ? isMovingAColumnToAnotherPosition(coordinates) &&
-        onColumnDragEnd({ ...coordinates, subject: board.columns[coordinates.source.fromPosition] })
+        onColumnDragEnd({ ...coordinates, subject: board.columns?.[coordinates.source.fromPosition] })
       : isMovingACardToAnotherPosition(coordinates) &&
         onCardDragEnd({ ...coordinates, subject: getCard(board, coordinates.source) });
   }
-
   return (
     <DragDropContext onDragEnd={handleOnDragEnd}>
       <div style={{ overflowY: 'hidden', display: 'flex', alignItems: 'flex-start' }} className="react-kanban-board">
         <DroppableBoard droppableId="board-droppable" direction="horizontal" type="BOARD">
-          {board.columns.map((column, index) => (
+          {board.columns?.map((column, index) => (
             <Column
               key={column.id}
-              index={index}
+              index={column?.index ?? index}
               renderCard={renderCard}
               renderCardAdder={renderCardAdder}
               renderColumnHeader={(column) =>

@@ -37,6 +37,7 @@ const api = new Application({
 });
 
 const plugins = [
+  '@nocobase/plugin-error-handler',
   '@nocobase/plugin-collection-manager',
   '@nocobase/plugin-ui-schema-storage',
   '@nocobase/plugin-ui-routes-storage',
@@ -64,8 +65,6 @@ if (process.argv.length < 3) {
   // @ts-ignore
   process.argv.push('start', '--port', process.env.API_PORT || 12302);
 }
-
-console.log(process.argv);
 
 api.parse(process.argv).then(() => {
   console.log(`${new Date().toLocaleTimeString()} Start-up time: ${(Date.now() - start) / 1000}s`);

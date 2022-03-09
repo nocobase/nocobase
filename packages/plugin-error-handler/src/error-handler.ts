@@ -27,6 +27,7 @@ export class ErrorHandler {
       try {
         await next();
       } catch (err) {
+        console.error(err);
         for (const handler of self.handlers) {
           if (handler.guard(err)) {
             return handler.render(err, ctx);
@@ -34,7 +35,6 @@ export class ErrorHandler {
         }
 
         self.defaultHandler(err, ctx);
-        console.error(err);
       }
     };
   }

@@ -8,6 +8,7 @@ import {
   findByUid,
   findMenuItem,
   PluginManager,
+  RemoteCollectionManagerProvider,
   RemoteSchemaComponent,
   useDocumentTitle,
   useRoute,
@@ -91,10 +92,7 @@ const InternalAdminLayout = (props: any) => {
       </Layout.Header>
       <Layout>
         <Layout.Sider style={{ display: 'none' }} theme={'light'} ref={sideMenuRef}></Layout.Sider>
-        <Layout.Content style={{ minHeight: 'calc(100vh - 46px)' }}>
-          {props.children}
-          <RemoteSchemaComponent onlyRenderProperties uid={match.params.name} />
-        </Layout.Content>
+        <Layout.Content style={{ minHeight: 'calc(100vh - 46px)' }}>{props.children}</Layout.Content>
       </Layout>
     </Layout>
   );
@@ -102,9 +100,11 @@ const InternalAdminLayout = (props: any) => {
 
 export const AdminLayout = (props) => {
   return (
-    <CurrentUserProvider>
-      <InternalAdminLayout {...props}/>
-    </CurrentUserProvider>
+    <RemoteCollectionManagerProvider>
+      <CurrentUserProvider>
+        <InternalAdminLayout {...props} />
+      </CurrentUserProvider>
+    </RemoteCollectionManagerProvider>
   );
 };
 

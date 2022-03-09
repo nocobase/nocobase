@@ -46,7 +46,7 @@ const schema: ISchema = {
       },
       'x-component': 'Action.Drawer',
       type: 'void',
-      title: '个人资料',
+      title: '{{t("Edit profile")}}',
       properties: {
         nickname: {
           type: 'string',

@@ -12,6 +12,7 @@ const createSchema = (collectionName) => {
     'x-decorator': 'ResourceActionProvider',
     'x-decorator-props': {
       collection: collectionName,
+      dragSort: false,
       request: {
         resource: collectionName,
         action: 'list',
@@ -91,13 +92,15 @@ export const TableBlockInitializer = (props) => {
         {
           type: 'itemGroup',
           title: t('Select data source'),
-          children: collections?.map((item) => {
-            return {
-              type: 'item',
-              name: item.name,
-              title: item.title,
-            };
-          }),
+          children: collections
+            ?.filter((item) => !item.inherit)
+            ?.map((item) => {
+              return {
+                type: 'item',
+                name: item.name,
+                title: item.title,
+              };
+            }),
         },
       ]}
     />
