@@ -91,19 +91,17 @@ const InternalAdminLayout = (props: any) => {
       </Layout.Header>
       <Layout>
         <Layout.Sider style={{ display: 'none' }} theme={'light'} ref={sideMenuRef}></Layout.Sider>
-        <Layout.Content style={{ minHeight: 'calc(100vh - 46px)' }}>
-          <RemoteSchemaComponent onlyRenderProperties uid={match.params.name} />
-        </Layout.Content>
+        <Layout.Content style={{ minHeight: 'calc(100vh - 46px)' }}>{props.children}</Layout.Content>
       </Layout>
     </Layout>
   );
 };
 
-export const AdminLayout = () => {
+export const AdminLayout = (props) => {
   return (
     <RemoteCollectionManagerProvider>
       <CurrentUserProvider>
-        <InternalAdminLayout />
+        <InternalAdminLayout {...props} />
       </CurrentUserProvider>
     </RemoteCollectionManagerProvider>
   );
