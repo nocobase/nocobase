@@ -4,7 +4,9 @@ networks:
     driver: bridge
 services:
   adminer:
-    image: adminer
+    build:
+      context: .
+      dockerfile: ./docker/adminer/Dockerfile
     restart: always
     networks:
       - nocobase
@@ -28,7 +30,7 @@ services:
   nocobase:
     build:
       context: .
-      dockerfile: Dockerfile
+      dockerfile: ./docker/nocobase/Dockerfile
     networks:
       - nocobase
     command: [ "yarn", "start" ]
