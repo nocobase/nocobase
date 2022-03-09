@@ -66,7 +66,7 @@ export default class UsersPlugin extends Plugin {
     const rootUserEmail = this.getRootUserInfo().adminEmail;
 
     this.app.acl.skip('*', '*', (ctx) => {
-      return ctx.state.currentUser.email === rootUserEmail;
+      return ctx.state.currentUser?.email === rootUserEmail;
     });
   }
 
