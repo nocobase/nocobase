@@ -10,6 +10,10 @@ export const Markdown: any = connect(
   AntdInput.TextArea,
   mapProps((props: any, field) => {
     return {
+      autoSize: {
+        maxRows: 10,
+        minRows: 3,
+      },
       ...props,
       suffix: <span>{field?.['loading'] || field?.['validating'] ? <LoadingOutlined /> : props.suffix}</span>,
     };
