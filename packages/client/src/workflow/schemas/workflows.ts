@@ -1,4 +1,5 @@
-import { ISchema, useForm } from '@formily/react';
+import { ISchema } from '@formily/react';
+import { executionSchema } from './executions';
 
 const collection = {
   name: 'workflows',
@@ -72,7 +73,7 @@ export const workflowSchema: ISchema = {
             pageSize: 50,
             filter: {},
             sort: ['createdAt'],
-            appends: [],
+            except: ['config'],
           },
         },
       },
@@ -207,12 +208,89 @@ export const workflowSchema: ISchema = {
                     split: '|',
                   },
                   properties: {
-                    triggerConfig: {
+                    config: {
                       type: 'void',
-                      title: '触发器配置',
-                      'x-component': 'TriggerConfig',
-                      'x-component-props': {}
-                    }
+                      title: '配置流程',
+                      'x-component': 'WorkflowLink'
+                    },
+                    executions: {
+                      type: 'void',
+                      title: '执行历史',
+                      'x-component': 'Action.Link',
+                      'x-component-props': {
+                        type: 'primary',
+                      },
+                      properties: {
+                        drawer: {
+                          type: 'void',
+                          title: '执行历史',
+                          'x-component': 'Action.Drawer',
+                          properties: executionSchema
+                        }
+                      }
+                    },
+                    update: {
+                      type: 'void',
+                      title: '{{ t("Edit") }}',
+                      'x-component': 'Action.Link',
+                      'x-component-props': {
+                        type: 'primary',
+                      },
+                      properties: {
+                        modal: {
+                          type: 'void',
+                          'x-component': 'Action.Modal',
+                          'x-decorator': 'Form',
+                          'x-decorator-props': {
+                            useValues: '{{ cm.useValuesFromRecord }}',
+                          },
+                          title: '编辑工作流',
+                          properties: {
+                            title: {
+                              'x-component': 'CollectionField',
+                              'x-decorator': 'FormItem',
+                            },
+                            enabled: {
+                              'x-component': 'CollectionField',
+                              'x-decorator': 'FormItem',
+                            },
+                            footer: {
+                              type: 'void',
+                              'x-component': 'Action.Modal.Footer',
+                              properties: {
+                                cancel: {
+                                  title: '{{ t("Cancel") }}',
+                                  'x-component': 'Action',
+                                  'x-component-props': {
+                                    useAction: '{{ cm.useCancelAction }}',
+                                  },
+                                },
+                                submit: {
+                                  title: '{{ t("Submit") }}',
+                                  'x-component': 'Action',
+                                  'x-component-props': {
+                                    type: 'primary',
+                                    useAction: '{{ cm.useUpdateAction }}',
+                                  },
+                                },
+                              },
+                            },
+                          },
+                        },
+                      },
+                    },
+                    delete: {
+                      type: 'void',
+                      title: '{{ t("Delete") }}',
+                      'x-component': 'Action.Link',
+                      'x-component-props': {
+                        confirm: {
+                          title: "{{t('Delete record')}}",
+                          content: "{{t('Are you sure you want to delete it?')}}",
+                        },
+                        useAction: '{{ cm.useDestroyActionAndRefreshCM }}',
+                      },
+                    },
                   }
                 }
               }

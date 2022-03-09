@@ -1,5 +1,5 @@
-import { connect, useForm } from "@formily/react";
 import React from "react";
+import { useForm } from "@formily/react";
 import { useActionContext, useAPIClient, useRecord, useResourceActionContext } from '../../';
 import { SchemaComponent } from "../../schema-component";
 import * as model from './model';

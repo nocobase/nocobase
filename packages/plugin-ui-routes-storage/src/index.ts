@@ -37,7 +37,7 @@ export class UiRoutesStoragePlugin extends Plugin {
           // test...
           {
             type: 'route',
-            path: '/admin/workflow',
+            path: '/admin/workflows/:id',
             component: 'WorkflowPage',
           },
           {
