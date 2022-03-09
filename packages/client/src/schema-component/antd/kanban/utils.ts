@@ -7,7 +7,7 @@ export const toGroupDataSource = (groupField: IGroupField, dataSource: Array<any
     groupDataSource.push({
       id: item.value,
       title: item.label,
-      index: item.index,
+      color: item.color,
       cards: [],
     });
   });

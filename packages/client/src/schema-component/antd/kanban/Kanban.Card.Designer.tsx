@@ -6,7 +6,7 @@ import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { useCompile, useDesignable } from '../../../schema-component';
 import { SchemaInitializer } from '../../../schema-initializer';
-import { useCardItemInitializerFields } from './hoooks';
+import { useFormItemInitializerFields } from '../../../schema-initializer/Initializers/utils';
 
 const titleCss = css`
   pointer-events: none;
@@ -23,6 +23,15 @@ const titleCss = css`
   left: 2px;
 `;
 
+export const removeGridFormItem = (schema, cb) => {
+  cb(schema, {
+    removeParentsIfNoChildren: true,
+    breakRemoveOn: {
+      'x-component': 'Kanban.Card',
+    },
+  });
+};
+
 export const KanbanCardDesigner = (props: any) => {
   const { dn, designable } = useDesignable();
   const { t } = useTranslation();
@@ -34,6 +43,7 @@ export const KanbanCardDesigner = (props: any) => {
     field,
     fieldSchema,
   };
+  const fields = useFormItemInitializerFields();
   if (!designable) {
     return null;
   }
@@ -42,11 +52,21 @@ export const KanbanCardDesigner = (props: any) => {
       <div className={'general-schema-designer-icons'}>
         <Space size={2} align={'center'}>
           <SchemaInitializer.Button
+            wrap={(s) => {
+              s['type'] = 'string';
+              s['x-read-pretty'] = true;
+              return s;
+            }}
             items={[
               {
                 type: 'itemGroup',
                 title: t('Display fields'),
-                children: useCardItemInitializerFields(),
+                children: fields.map((field) => {
+                  return {
+                    ...field,
+                    remove: removeGridFormItem,
+                  };
+                }),
               },
             ]}
             component={<MenuOutlined style={{ cursor: 'pointer', fontSize: 12 }} />}

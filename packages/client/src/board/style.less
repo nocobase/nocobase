@@ -1,5 +1,6 @@
 .react-kanban-board {
-  padding: 5px;
+  // padding: 5px;
+  margin-bottom: 24px;
 }
 
 .react-kanban-card {
@@ -35,15 +36,16 @@
 }
 
 .react-kanban-column {
+  // padding: 15px 0;
+  // border-radius: 2px;
+  background-color: #f9f9f9;
+  margin-right: 15px;
+  padding-bottom: 15px;
+  width: 300px;
+}
+
+.react-kanban-column-header {
   padding: 15px;
-  border-radius: 2px;
-  background-color: #eee;
-  margin: 5px;
-  input {
-    &:focus {
-      outline: none;
-    }
-  }
 }
 
 .react-kanban-card-adder-form {
@@ -114,14 +116,7 @@
 }
 
 .react-kanban-column-header {
-  padding-bottom: 10px;
-  font-weight: bold;
 
-  input {
-    &:focus {
-      outline: none;
-    }
-  }
 }
 
 .react-kanban-column-header__button {
