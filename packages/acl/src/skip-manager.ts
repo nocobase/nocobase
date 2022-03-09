@@ -1,8 +1,6 @@
 import { ACL } from './acl';
-import { Context } from '@nocobase/actions';
-import lodash from 'lodash';
 
-type ConditionFunc = (ctx: Context) => boolean;
+type ConditionFunc = (ctx: any) => boolean;
 
 export class SkipManager {
   protected skipActions = new Map<string, Map<string, string | ConditionFunc | true>>();
