@@ -164,6 +164,7 @@ export const useFormItemInitializerFields = () => {
         remove: removeGridFormItem,
         schema: {
           name: field.name,
+          title: field?.uiSchema?.title || field.name,
           'x-designer': 'FormItem.Designer',
           'x-component': 'CollectionField',
           'x-decorator': 'FormItem',

@@ -9,14 +9,16 @@ group:
 
 ## 参数说明
 
-- dataSource 数据源
-- groupField 分组字段，dataSource 以哪个字段作为分组
-- useDataSource，动态数据源
-- useGroupField，动态的分组字段
+* dataSource 数据源
+* groupField 分组字段，dataSource 以哪个字段作为分组
+* useDataSource，动态数据源
+* useGroupField，动态的分组字段
 
 ## 示例
 
 ### 静态数据
+
+<code src="./demos/demo1.tsx" />
 
 ```ts
 {
@@ -60,9 +62,9 @@ group:
 
 ### 特殊节点
 
-- Kanban.Card 卡片的 schema
-- Kanban.CardViewer 卡片点击打开的详情
-- Kanban.CardAdder 添加卡片的按钮
+* Kanban. Card 卡片的 schema
+* Kanban. CardViewer 卡片点击打开的详情
+* Kanban. CardAdder 添加卡片的按钮
 
 ```ts
 {
