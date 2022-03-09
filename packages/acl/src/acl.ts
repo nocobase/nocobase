@@ -44,6 +44,7 @@ interface CanArgs {
 export class ACL extends EventEmitter {
   protected availableActions = new Map<string, AclAvailableAction>();
   protected availableStrategy = new Map<string, ACLAvailableStrategy>();
+  protected skipActions = new Map<string, Set<string>>();
   protected middlewares = [];
 
   roles = new Map<string, ACLRole>();
@@ -80,6 +81,16 @@ export class ACL extends EventEmitter {
           };
         }
       }
+    });
+
+    this.middlewares.push(async (ctx, next) => {
+      const { resourceName, actionName } = ctx.action;
+      if (ctx.app.acl.isSkipped(resourceName, actionName)) {
+        ctx.permission = {
+          skip: true,
+        };
+      }
+      await next();
     });
   }
 
@@ -205,6 +216,22 @@ export class ACL extends EventEmitter {
 
   use(fn: any) {
     this.middlewares.push(fn);
+  }
+
+  skip(resourceName: string, actionName: string) {
+    const actionSet = this.skipActions.get(resourceName) || new Set<string>();
+    actionSet.add(actionName);
+    this.skipActions.set(resourceName, actionSet);
+  }
+
+  isSkipped(resourceName: string, actionName: string): boolean {
+    const globalSkip = this.skipActions.get('*');
+    if (globalSkip && (globalSkip.has('*') || globalSkip.has(actionName))) {
+      return true;
+    }
+
+    const resourceSkip = this.skipActions.get(resourceName);
+    return resourceSkip && (resourceSkip.has('*') || resourceSkip.has(actionName));
   }
 
   middleware() {
