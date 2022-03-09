@@ -21,7 +21,19 @@ export const Input: ComposedInput = connect(
   mapReadPretty(ReadPretty.Input),
 );
 
-Input.TextArea = connect(AntdInput.TextArea, mapReadPretty(ReadPretty.TextArea));
+Input.TextArea = connect(
+  AntdInput.TextArea,
+  mapProps((props, field) => {
+    return {
+      autoSize: {
+        maxRows: 10,
+        minRows: 3,
+      },
+      ...props,
+    };
+  }),
+  mapReadPretty(ReadPretty.TextArea),
+);
 Input.URL = connect(AntdInput, mapReadPretty(ReadPretty.URL));
 
 export default Input;

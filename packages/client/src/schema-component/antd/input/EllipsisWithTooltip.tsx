@@ -21,10 +21,16 @@ export const EllipsisWithTooltip = (props) => {
       onVisibleChange={(visible) => {
         setVisible(ellipsis && visible);
       }}
-      content={props.children}
-      overlayStyle={{
-        width: 300,
-      }}
+      content={
+        <div
+          style={{
+            width: 300,
+            overflowX: 'auto',
+          }}
+        >
+          {props.children}
+        </div>
+      }
     >
       <div
         style={{ ...ellipsisDefaultStyle }}
