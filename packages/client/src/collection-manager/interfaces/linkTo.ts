@@ -71,13 +71,13 @@ export const linkTo: IField = {
       'x-decorator': 'FormItem',
       'x-component': 'Select',
     },
-    'reverseField.uiSchema.title': {
-      type: 'string',
-      title: '{{t("Reverse field display name")}}',
-      required: true,
-      'x-decorator': 'FormItem',
-      'x-component': 'Input',
-    },
+    // 'reverseField.uiSchema.title': {
+    //   type: 'string',
+    //   title: '{{t("Reverse field display name")}}',
+    //   // required: true,
+    //   'x-decorator': 'FormItem',
+    //   'x-component': 'Input',
+    // },
     // 'uiSchema.x-component-props.fieldNames.label': {
     //   type: 'string',
     //   title: '要显示的标题字段',

@@ -7,6 +7,7 @@ import { cloneDeep } from 'lodash';
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useRequest } from '../../api-client';
+import { useRecord } from '../../record-provider';
 import { ActionContext, SchemaComponent, useCompile } from '../../schema-component';
 import { useCreateAction } from '../action-hooks';
 import { useCollectionManager } from '../hooks';
@@ -78,20 +79,25 @@ const useCreateCollectionField = () => {
   const form = useForm();
   const { run } = useCreateAction();
   const { refreshCM } = useCollectionManager();
+  const { title } = useRecord();
   return {
     async run() {
       await form.submit();
       const options = form?.values?.uiSchema?.enum?.slice() || [];
-      form.setValuesIn(
-        'uiSchema.enum',
-        options.map((option) => {
-          return {
-            value: uid(),
-            ...option,
-          };
-        }),
-      );
-      console.log('form.values', form.values);
+      if (options?.length) {
+        form.setValuesIn(
+          'uiSchema.enum',
+          options.map((option) => {
+            return {
+              value: uid(),
+              ...option,
+            };
+          }),
+        );
+      }
+      if (form?.values?.interface === 'linkTo' && title) {
+        form.setValuesIn('reverseField.uiSchema.title', title);
+      }
       await run();
       await refreshCM();
     },
