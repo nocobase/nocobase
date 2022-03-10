@@ -36,7 +36,7 @@ const useCreateKanbanCardValues = (options) => {
     () =>
       Promise.resolve({
         data: {
-          [groupField.name]: column.id,
+          [groupField.name]: column.id === '__unknown__' ? undefined : column.id,
         },
       }),
     {
