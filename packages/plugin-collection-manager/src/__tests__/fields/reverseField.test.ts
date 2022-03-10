@@ -81,6 +81,25 @@ describe('reverseField options', () => {
       },
     });
 
+    let err;
+
+    try {
+      await Field.repository.update({
+        filterByTk: field.get('key') as string,
+        values: {
+          reverseField: {
+            uiSchema: {
+              title: '123',
+            },
+          },
+        },
+      });
+    } catch (e) {
+      err = e;
+    }
+
+    expect(err).toBeDefined();
+
     await Field.repository.update({
       filterByTk: field.get('key') as string,
       values: {
