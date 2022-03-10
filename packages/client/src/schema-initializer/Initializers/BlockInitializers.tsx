@@ -24,6 +24,11 @@ export const BlockInitializers = {
           title: 'Calendar',
           component: 'CalendarBlockInitializer',
         },
+        {
+          type: 'item',
+          title: 'Kanban',
+          component: 'KanbanBlockInitializer',
+        },
       ],
     },
     {

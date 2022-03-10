@@ -2,20 +2,29 @@ export const toGroupDataSource = (groupField: IGroupField, dataSource: Array<any
   if (dataSource.length === 0) {
     return { columns: [] };
   }
-  const groupDataSource = [];
-  groupField.enum.forEach((item, index) => {
-    groupDataSource.push({
+  const groupDataSource = {
+    __unknown__: {
+      id: '__unknown__',
+      title: 'Unknown',
+      color: 'default',
+      cards: [],
+    },
+  };
+  groupField.enum.forEach((item) => {
+    groupDataSource[item.value] = {
       id: item.value,
       title: item.label,
-      index: item.index,
+      color: item.color,
       cards: [],
-    });
+    };
   });
   dataSource.forEach((ds) => {
-    const group = groupDataSource.find((g) => g.id === ds[groupField.name]);
-    if (group) {
-      group.cards.push(ds);
+    const value = ds[groupField.name];
+    if (value && groupDataSource[value]) {
+      groupDataSource[value].cards.push(ds);
+    } else {
+      groupDataSource.__unknown__.cards.push(ds);
     }
   });
-  return { columns: groupDataSource };
+  return { columns: Object.values(groupDataSource) };
 };
