@@ -1,14 +1,16 @@
 import { DndContext as DndKitContext, DragEndEvent, DragOverlay, rectIntersection } from '@dnd-kit/core';
+import { Props } from '@dnd-kit/core/dist/components/DndContext/DndContext';
 import { observer } from '@formily/react';
 import React from 'react';
 import { useAPIClient } from '../../../';
 import { createDesignable, useDesignable } from '../../hooks';
 
-const useDragEnd = () => {
+const useDragEnd = (props?: any) => {
   const { refresh } = useDesignable();
   const api = useAPIClient();
 
-  return ({ active, over }: DragEndEvent) => {
+  return (event: DragEndEvent) => {
+    const { active, over } = event;
     const activeSchema = active?.data?.current?.schema;
     const overSchema = over?.data?.current?.schema;
     const insertAdjacent = over?.data?.current?.insertAdjacent;
@@ -16,10 +18,12 @@ const useDragEnd = () => {
     const wrapSchema = over?.data?.current?.wrapSchema;
 
     if (!activeSchema || !overSchema) {
+      props?.onDragEnd?.(event);
       return;
     }
 
     if (activeSchema === overSchema) {
+      props?.onDragEnd?.(event);
       return;
     }
 
@@ -32,7 +36,9 @@ const useDragEnd = () => {
     dn.loadAPIClientEvents();
 
     if (activeSchema.parent === overSchema.parent) {
-      return dn.insertBeforeBeginOrAfterEnd(activeSchema);
+      dn.insertBeforeBeginOrAfterEnd(activeSchema);
+      props?.onDragEnd?.(event);
+      return;
     }
 
     if (insertAdjacent) {
@@ -41,14 +47,15 @@ const useDragEnd = () => {
         breakRemoveOn,
         removeParentsIfNoChildren: true,
       });
+      props?.onDragEnd?.(event);
       return;
     }
   };
 };
 
-export const DndContext = observer((props) => {
+export const DndContext = observer((props: Props) => {
   return (
-    <DndKitContext collisionDetection={rectIntersection} onDragEnd={useDragEnd()}>
+    <DndKitContext collisionDetection={rectIntersection} {...props} onDragEnd={useDragEnd(props)}>
       <DragOverlay
         dropAnimation={{
           duration: 10,
