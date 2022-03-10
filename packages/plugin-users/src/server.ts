@@ -61,7 +61,7 @@ export default class UsersPlugin extends Plugin {
     this.app.resourcer.use(middlewares.parseToken());
 
     const publicActions = ['check', 'signin', 'signup', 'lostpassword', 'resetpassword', 'getUserByResetToken'];
-    const loggedInActions = ['signout', 'updateProfile', 'changePassword'];
+    const loggedInActions = ['signout', 'updateProfile', 'changePassword', 'setDefaultRole'];
 
     publicActions.forEach((action) => this.app.acl.skip('users', action));
     loggedInActions.forEach((action) => this.app.acl.skip('users', action, 'logged-in'));
