@@ -85,6 +85,7 @@ describe('reverseField options', () => {
       filterByTk: field.get('key') as string,
       values: {
         reverseField: {
+          key: reverseField.get('key'),
           uiSchema: {
             title: '123',
           },
