@@ -2,6 +2,7 @@ import { FormItem as Item } from '@formily/antd';
 import { Field } from '@formily/core';
 import { ISchema, useField, useFieldSchema, useForm } from '@formily/react';
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { useActionContext } from '..';
 import { useCompile, useDesignable } from '../..';
 import { useCollection, useCollectionManager } from '../../../collection-manager';
@@ -21,7 +22,8 @@ FormItem.Designer = () => {
   const { getField } = useCollection();
   const field = useField<Field>();
   const fieldSchema = useFieldSchema();
-  const { dn, reset, refresh } = useDesignable();
+  const { t } = useTranslation();
+  const { dn, refresh } = useDesignable();
   const compile = useCompile();
   const collectionField = getField(fieldSchema['name']);
   const originalTitle = collectionField?.uiSchema?.title;
@@ -60,12 +62,6 @@ FormItem.Designer = () => {
                   'x-component-props': {},
                   description: `原字段标题：${collectionField?.uiSchema?.title}`,
                 },
-                required: {
-                  'x-decorator': 'FormItem',
-                  'x-component': 'Checkbox',
-                  'x-content': '必填',
-                  'x-hidden': field.readPretty,
-                },
                 footer: {
                   type: 'void',
                   'x-component': 'Action.Modal.Footer',
@@ -96,7 +92,7 @@ FormItem.Designer = () => {
                           const ctx = useActionContext();
                           return {
                             async run() {
-                              const { title, required, label } = form.values;
+                              const { title } = form.values;
 
                               const schema = {
                                 ['x-uid']: fieldSchema['x-uid'],
@@ -107,10 +103,6 @@ FormItem.Designer = () => {
                                 fieldSchema['title'] = title;
                                 schema['title'] = title;
                               }
-
-                              field.required = required;
-                              fieldSchema['required'] = required;
-                              schema['required'] = required;
 
                               ctx.setVisible(false);
                               dn.emit('patch', {
@@ -127,6 +119,24 @@ FormItem.Designer = () => {
               },
             } as ISchema
           }
+        />
+      )}
+      {!field.readPretty && (
+        <SchemaSettings.SwitchItem
+          title={t('Required')}
+          checked={field.required}
+          onChange={(required) => {
+            const schema = {
+              ['x-uid']: fieldSchema['x-uid'],
+            };
+            field.required = required;
+            fieldSchema['required'] = required;
+            schema['required'] = required;
+            dn.emit('patch', {
+              schema,
+            });
+            refresh();
+          }}
         />
       )}
       {collectionField?.target && (
