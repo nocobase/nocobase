@@ -46,16 +46,18 @@ function Column({
             {cardAdderPosition === 'top' && allowAddCard && renderCardAdder({ column: children, onConfirm: onCardNew })}
             <DroppableColumn droppableId={String(children.id)}>
               {children?.cards?.length ? (
-                children.cards.map((card, index) => (
-                  <Card
-                    key={card.id}
-                    index={index}
-                    renderCard={(dragging) => renderCard(children, card, dragging)}
-                    disableCardDrag={disableCardDrag}
-                  >
-                    {card}
-                  </Card>
-                ))
+                <div className="react-kanban-card-skeleton">
+                  {children.cards.map((card, index) => (
+                    <Card
+                      key={card.id}
+                      index={index}
+                      renderCard={(dragging) => renderCard(children, card, dragging)}
+                      disableCardDrag={disableCardDrag}
+                    >
+                      {card}
+                    </Card>
+                  ))}
+                </div>
               ) : (
                 <div className="react-kanban-card-skeleton" />
               )}

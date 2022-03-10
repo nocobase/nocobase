@@ -3,11 +3,12 @@ import { FormDialog, FormLayout } from '@formily/antd';
 import { ISchema, SchemaOptionsContext } from '@formily/react';
 import React, { useContext } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useAPIClient } from '../../../api-client';
 import { useCollectionManager } from '../../../collection-manager';
 import { SchemaComponent, SchemaComponentOptions } from '../../../schema-component';
 import { SchemaInitializer } from '../../SchemaInitializer';
 
-const createSchema = (collectionName, { groupField }) => {
+const createSchema = (collectionName, { groupField, sortName }) => {
   const schema: ISchema = {
     type: 'void',
     'x-collection': 'collections',
@@ -19,6 +20,7 @@ const createSchema = (collectionName, { groupField }) => {
         action: 'list',
         params: {
           paginate: false,
+          sort: [sortName],
         },
       },
     },
@@ -35,7 +37,7 @@ const createSchema = (collectionName, { groupField }) => {
           cardAdderPosition: 'bottom',
           allowAddCard: { on: 'bottom' },
           disableColumnDrag: true,
-          // useDragEndAction: '{{ useDragEndHandler }}',
+          useEvents: '{{ cm.useKanbanEvents }}',
         },
         properties: {
           card: {
@@ -144,6 +146,7 @@ export const KanbanBlockInitializer = (props) => {
   const { collections, getCollection } = useCollectionManager();
   const { t } = useTranslation();
   const options = useContext(SchemaOptionsContext);
+  const api = useAPIClient();
   return (
     <SchemaInitializer.Item
       {...props}
@@ -189,8 +192,19 @@ export const KanbanBlockInitializer = (props) => {
         }).open({
           initialValues: {},
         });
-        console.log('groupField', values.groupField);
-        insert(createSchema(item.name, values));
+        const sortName = `${values.groupField.value}_sort`;
+        const exists = collection?.fields?.find((field) => field.name === sortName);
+        if (!exists) {
+          await api.resource('collections.fields', item.name).create({
+            values: {
+              type: 'sort',
+              name: sortName,
+              hidden: true,
+              scopeKey: values.groupField.value,
+            },
+          });
+        }
+        insert(createSchema(item.name, { ...values, sortName }));
       }}
       items={[
         {

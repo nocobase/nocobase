@@ -1,7 +1,9 @@
+import { css } from '@emotion/css';
 import { observer, RecursionField, useFieldSchema } from '@formily/react';
 import { Card } from 'antd';
 import React, { useContext, useState } from 'react';
 import { ActionContext, BlockItem } from '..';
+import { DndContext } from '../..';
 import { RecordProvider } from '../../../record-provider';
 import { SchemaComponentOptions } from '../../core/SchemaComponentOptions';
 import { KanbanCardContext } from './context';
@@ -11,7 +13,8 @@ const FormItem = observer((props) => {
 });
 
 export const KanbanCard: any = observer((props: any) => {
-  const { cardViewerSchema, card, cardField, columnIndex, cardIndex } = useContext(KanbanCardContext);
+  const { setDisableCardDrag, cardViewerSchema, card, cardField, columnIndex, cardIndex } =
+    useContext(KanbanCardContext);
   const fieldSchema = useFieldSchema();
   const [visible, setVisible] = useState(false);
   return (
@@ -20,16 +23,41 @@ export const KanbanCard: any = observer((props: any) => {
         onClick={(e) => {
           setVisible(true);
         }}
+        className={css`
+          /* .ant-description-input {
+            line-height: 1.15;
+          } */
+          .ant-formily-item-label {
+            display: none;
+          }
+          .ant-formily-item-feedback-layout-loose {
+            margin-bottom: 12px;
+          }
+          .nb-block-item:last-child {
+            .ant-formily-item {
+              margin-bottom: 0;
+            }
+          }
+        `}
         bordered={false}
         hoverable
-        style={{ width: 280, margin: '0 10px 10px 10px', cursor: 'pointer' }}
+        style={{ cursor: 'pointer', overflow: 'hidden' }}
       >
         <SchemaComponentOptions components={{}}>
-          <RecursionField
-            basePath={cardField.address.concat(`${columnIndex}.cards.${cardIndex}`)}
-            schema={fieldSchema}
-            onlyRenderProperties
-          />
+          <DndContext
+            onDragStart={() => {
+              setDisableCardDrag(true);
+            }}
+            onDragEnd={() => {
+              setDisableCardDrag(false);
+            }}
+          >
+            <RecursionField
+              basePath={cardField.address.concat(`${columnIndex}.cards.${cardIndex}`)}
+              schema={fieldSchema}
+              onlyRenderProperties
+            />
+          </DndContext>
         </SchemaComponentOptions>
       </Card>
       {cardViewerSchema && (

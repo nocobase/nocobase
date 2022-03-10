@@ -28,6 +28,30 @@ export const useCancelFilterAction = () => {
   };
 };
 
+export const useKanbanEvents = () => {
+  const { resource } = useCollection();
+  return {
+    async onCardDragEnd({ columns, groupField }, { fromColumnId, fromPosition }, { toColumnId, toPosition }) {
+      const sourceColumn = columns.find((column) => column.id === fromColumnId);
+      const destinationColumn = columns.find((column) => column.id === toColumnId);
+      const sourceCard = sourceColumn?.cards?.[fromPosition];
+      const targetCard = destinationColumn?.cards?.[toPosition];
+      const values = {
+        sourceId: sourceCard.id,
+        sortField: `${groupField.name}_sort`,
+      };
+      if (targetCard) {
+        values['targetId'] = targetCard.id;
+      } else {
+        values['targetScope'] = {
+          [groupField.name]: toColumnId,
+        };
+      }
+      await resource.move(values);
+    },
+  };
+};
+
 export const useSortFields = (collectionName: string) => {
   const { getCollectionFields, getInterface } = useCollectionManager();
   const fields = getCollectionFields(collectionName);

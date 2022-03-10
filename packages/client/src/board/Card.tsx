@@ -12,7 +12,8 @@ function Card({ children, index, renderCard, disableCardDrag }) {
             {...provided.dragHandleProps}
             data-testid={`card-${children.id}`}
           >
-            <div style={{ display: 'inline-block', whiteSpace: 'normal' }}>{renderCard(isDragging)}</div>
+            {renderCard(isDragging)}
+            {/* <div style={{ display: 'inline-block', whiteSpace: 'normal' }}></div> */}
           </div>
         );
       }}
