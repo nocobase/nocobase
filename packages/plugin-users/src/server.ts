@@ -60,13 +60,14 @@ export default class UsersPlugin extends Plugin {
 
     this.app.resourcer.use(middlewares.parseToken());
 
-    this.app.acl.skip('users', 'signin');
-    this.app.acl.skip('users', 'check');
+    const publicActions = ['check', 'signin', 'signup', 'lostpassword', 'resetpassword', 'getUserByResetToken'];
+    const loggedInActions = ['signout', 'updateProfile', 'changePassword'];
 
-    const rootUserEmail = this.getRootUserInfo().adminEmail;
+    publicActions.forEach((action) => this.app.acl.skip('users', action));
+    loggedInActions.forEach((action) => this.app.acl.skip('users', action, 'logged-in'));
 
     this.app.acl.skip('*', '*', (ctx) => {
-      return ctx.state.currentUser?.email === rootUserEmail;
+      return ctx.state.currentUser?.id == 1;
     });
   }
 

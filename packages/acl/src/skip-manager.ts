@@ -8,7 +8,7 @@ export class SkipManager {
   protected registeredCondition = new Map<string, ConditionFunc>();
 
   constructor(public acl: ACL) {
-    this.registerSkipCondition('logined', (ctx) => {
+    this.registerSkipCondition('logged-in', (ctx) => {
       return ctx.state.currentUser;
     });
   }

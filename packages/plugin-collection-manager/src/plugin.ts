@@ -66,7 +66,7 @@ export class CollectionManagerPlugin extends Plugin {
       await next();
     });
 
-    this.app.acl.skip('collections', 'list', 'logined');
+    this.app.acl.skip('collections', 'list', 'logged-in');
   }
 
   async load() {
