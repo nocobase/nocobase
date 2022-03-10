@@ -25,7 +25,7 @@ FormItem.Designer = () => {
   const compile = useCompile();
   const collectionField = getField(fieldSchema['name']);
   const originalTitle = collectionField?.uiSchema?.title;
-  const targetFields = collectionField.target ? getCollectionFields(collectionField.target) : [];
+  const targetFields = collectionField?.target ? getCollectionFields(collectionField.target) : [];
   const initialValue = {
     title: field.title === originalTitle ? undefined : field.title,
   };
@@ -40,93 +40,95 @@ FormItem.Designer = () => {
     }));
   return (
     <GeneralSchemaDesigner>
-      <SchemaSettings.PopupItem
-        title={'编辑'}
-        schema={
-          {
-            title: '编辑字段',
-            'x-component': 'Action.Modal',
-            'x-decorator': 'Form',
-            'x-decorator-props': {
-              initialValue,
-            },
-            type: 'void',
-            properties: {
-              title: {
-                'x-decorator': 'FormItem',
-                'x-component': 'Input',
-                title: '字段标题',
-                'x-component-props': {},
-                description: `原字段标题：${collectionField?.uiSchema?.title}`,
+      {collectionField && (
+        <SchemaSettings.PopupItem
+          title={'编辑'}
+          schema={
+            {
+              title: '编辑字段',
+              'x-component': 'Action.Modal',
+              'x-decorator': 'Form',
+              'x-decorator-props': {
+                initialValue,
               },
-              required: {
-                'x-decorator': 'FormItem',
-                'x-component': 'Checkbox',
-                'x-content': '必填',
-                'x-hidden': field.readPretty,
-              },
-              footer: {
-                type: 'void',
-                'x-component': 'Action.Modal.Footer',
-                properties: {
-                  cancel: {
-                    type: 'void',
-                    title: '{{t("Cancel")}}',
-                    'x-component': 'Action',
-                    'x-component-props': {
-                      useAction() {
-                        const ctx = useActionContext();
-                        return {
-                          async run() {
-                            ctx.setVisible(false);
-                          },
-                        };
+              type: 'void',
+              properties: {
+                title: {
+                  'x-decorator': 'FormItem',
+                  'x-component': 'Input',
+                  title: '字段标题',
+                  'x-component-props': {},
+                  description: `原字段标题：${collectionField?.uiSchema?.title}`,
+                },
+                required: {
+                  'x-decorator': 'FormItem',
+                  'x-component': 'Checkbox',
+                  'x-content': '必填',
+                  'x-hidden': field.readPretty,
+                },
+                footer: {
+                  type: 'void',
+                  'x-component': 'Action.Modal.Footer',
+                  properties: {
+                    cancel: {
+                      type: 'void',
+                      title: '{{t("Cancel")}}',
+                      'x-component': 'Action',
+                      'x-component-props': {
+                        useAction() {
+                          const ctx = useActionContext();
+                          return {
+                            async run() {
+                              ctx.setVisible(false);
+                            },
+                          };
+                        },
                       },
                     },
-                  },
-                  submit: {
-                    type: 'void',
-                    title: 'Submit',
-                    'x-component': 'Action',
-                    'x-component-props': {
-                      type: 'primary',
-                      useAction() {
-                        const form = useForm();
-                        const ctx = useActionContext();
-                        return {
-                          async run() {
-                            const { title, required, label } = form.values;
+                    submit: {
+                      type: 'void',
+                      title: 'Submit',
+                      'x-component': 'Action',
+                      'x-component-props': {
+                        type: 'primary',
+                        useAction() {
+                          const form = useForm();
+                          const ctx = useActionContext();
+                          return {
+                            async run() {
+                              const { title, required, label } = form.values;
 
-                            const schema = {
-                              ['x-uid']: fieldSchema['x-uid'],
-                            };
+                              const schema = {
+                                ['x-uid']: fieldSchema['x-uid'],
+                              };
 
-                            if (title) {
-                              field.title = title;
-                              fieldSchema['title'] = title;
-                              schema['title'] = title;
-                            }
+                              if (title) {
+                                field.title = title;
+                                fieldSchema['title'] = title;
+                                schema['title'] = title;
+                              }
 
-                            field.required = required;
-                            fieldSchema['required'] = required;
-                            schema['required'] = required;
+                              field.required = required;
+                              fieldSchema['required'] = required;
+                              schema['required'] = required;
 
-                            ctx.setVisible(false);
-                            dn.emit('patch', {
-                              schema,
-                            });
-                            refresh();
-                          },
-                        };
+                              ctx.setVisible(false);
+                              dn.emit('patch', {
+                                schema,
+                              });
+                              refresh();
+                            },
+                          };
+                        },
                       },
                     },
                   },
                 },
               },
-            },
-          } as ISchema
-        }
-      />
+            } as ISchema
+          }
+        />
+      )}
       {collectionField?.target && (
         <SchemaSettings.SelectItem
           title={'标题字段'}
@@ -152,7 +154,7 @@ FormItem.Designer = () => {
           }}
         />
       )}
-      <SchemaSettings.Divider />
+      {collectionField && <SchemaSettings.Divider />}
       <SchemaSettings.Remove
         removeParentsIfNoChildren
         breakRemoveOn={{
