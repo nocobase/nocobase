@@ -49,6 +49,9 @@ FormItem.Designer = () => {
             {
               title: '编辑字段',
               'x-component': 'Action.Modal',
+              'x-component-props': {
+                width: 520,
+              },
               'x-decorator': 'Form',
               'x-decorator-props': {
                 initialValue,
