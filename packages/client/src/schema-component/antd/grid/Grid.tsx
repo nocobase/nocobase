@@ -120,7 +120,14 @@ const useColProperties = () => {
   }, []);
 };
 
-export const Grid: any = observer((props) => {
+const DndWrapper = (props) => {
+  if (props.dndContext === false) {
+    return <>{props.children}</>;
+  }
+  return <DndContext {...props.dndContext}>{props.children}</DndContext>;
+};
+
+export const Grid: any = observer((props: any) => {
   const field = useField();
   const fieldSchema = useFieldSchema();
   const { render } = useSchemaInitializer(fieldSchema['x-initializer']);
@@ -128,7 +135,7 @@ export const Grid: any = observer((props) => {
   const rows = useRowProperties();
   return (
     <div className={'nb-grid'} style={{ position: 'relative' }}>
-      <DndContext>
+      <DndWrapper dndContext={props.dndContext}>
         <RowDivider
           id={`${addr}_0`}
           data={{ wrapSchema: wrapRowSchema, insertAdjacent: 'afterBegin', schema: fieldSchema }}
@@ -144,7 +151,7 @@ export const Grid: any = observer((props) => {
             </React.Fragment>
           );
         })}
-      </DndContext>
+      </DndWrapper>
       <div>{render()}</div>
     </div>
   );

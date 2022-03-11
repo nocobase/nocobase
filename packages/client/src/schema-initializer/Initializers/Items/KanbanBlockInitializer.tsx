@@ -47,12 +47,25 @@ const createSchema = (collectionName, { groupField, sortName }) => {
             'x-decorator': 'BlockItem',
             'x-designer': 'Kanban.Card.Designer',
             'x-read-pretty': true,
-            properties: {},
+            properties: {
+              grid: {
+                type: 'void',
+                'x-component': 'Grid',
+                'x-read-pretty': true,
+                'x-component-props': {
+                  dndContext: false,
+                },
+                properties: {},
+              },
+            },
           },
           cardAdder: {
             type: 'void',
             'x-component': 'Kanban.CardAdder',
             'x-designer': 'Action.Designer',
+            'x-designer-props': {
+              draggable: false,
+            },
             'x-component-props': {
               type: 'text',
               openMode: 'drawer',
