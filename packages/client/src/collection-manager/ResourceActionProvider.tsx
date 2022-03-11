@@ -34,7 +34,10 @@ const CollectionResourceActionProvider = (props) => {
       params: {
         ...others,
         ...request?.params,
-        appends: collection.fields.filter((field) => field.target).map((field) => field.name),
+        appends: [
+          ...collection?.fields?.filter?.((field) => field.target).map((field) => field.name),
+          ...request?.params?.appends,
+        ],
         sort: dragSort ? [collection.sortable === true ? 'sort' : collection.sortable] : request?.params?.sort,
       },
     },
