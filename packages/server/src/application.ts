@@ -102,6 +102,7 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     });
 
     registerMiddlewares(this, options);
+
     if (options.registerActions !== false) {
       registerActions(this);
     }

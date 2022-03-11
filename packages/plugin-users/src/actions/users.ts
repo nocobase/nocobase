@@ -148,3 +148,34 @@ export async function changePassword(ctx: Context, next: Next) {
   ctx.body = ctx.state.currentUser.toJSON();
   await next();
 }
+
+export async function setDefaultRole(ctx: Context, next: Next) {
+  const {
+    values: { defaultRole },
+  } = ctx.action.params;
+
+  const currentUserId = ctx.state.currentUser.id;
+
+  await ctx.db.getRepository('rolesUsers').update({
+    filter: {
+      userId: currentUserId,
+    },
+    values: {
+      default: false,
+    },
+  });
+
+  await ctx.db.getRepository('rolesUsers').update({
+    filter: {
+      userId: currentUserId,
+      roleName: defaultRole,
+    },
+    values: {
+      default: true,
+    },
+  });
+
+  ctx.body = 'ok';
+
+  await next();
+}
