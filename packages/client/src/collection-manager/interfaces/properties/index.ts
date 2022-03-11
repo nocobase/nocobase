@@ -87,7 +87,9 @@ export const dataSource: ISchema = {
   'x-decorator': 'FormItem',
   'x-component': 'ArrayTable',
   'x-component-props': {
-    pagination: false,
+    pagination: {
+      pageSize: 1000,
+    },
     // scroll: { x: '100%' },
   },
   items: {

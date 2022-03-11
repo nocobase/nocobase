@@ -57,6 +57,7 @@ export const GroupItem = itemWrap((props) => {
                         title: t('Menu item title'),
                         'x-component': 'Input',
                         'x-decorator': 'FormItem',
+                        required: true,
                       },
                       icon: {
                         title: t('Icon'),
@@ -103,6 +104,7 @@ export const PageMenuItem = itemWrap((props) => {
                     properties: {
                       title: {
                         title: t('Menu item title'),
+                        required: true,
                         'x-component': 'Input',
                         'x-decorator': 'FormItem',
                       },
@@ -166,6 +168,7 @@ export const LinkMenuItem = itemWrap((props) => {
                     properties: {
                       title: {
                         title: t('Menu item title'),
+                        required: true,
                         'x-component': 'Input',
                         'x-decorator': 'FormItem',
                       },
