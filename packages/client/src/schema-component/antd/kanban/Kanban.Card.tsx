@@ -1,3 +1,4 @@
+import { css } from '@emotion/css';
 import { FormLayout } from '@formily/antd';
 import { observer, RecursionField, useFieldSchema } from '@formily/react';
 import { Card } from 'antd';
@@ -27,6 +28,18 @@ export const KanbanCard: any = observer((props: any) => {
         hoverable
         style={{ cursor: 'pointer', overflow: 'hidden' }}
         bodyStyle={{ paddingBottom: 0 }}
+        className={css`
+          .ant-description-input {
+            text-overflow: ellipsis;
+            width: 100%;
+            overflow: hidden;
+          }
+          .ant-description-textarea {
+            text-overflow: ellipsis;
+            width: 100%;
+            overflow: hidden;
+          }
+        `}
       >
         <SchemaComponentOptions components={{}}>
           <DndContext

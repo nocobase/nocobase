@@ -4,10 +4,23 @@ import { useMenuItems } from '.';
 import { useAPIClient, useRequest } from '../../api-client';
 import { useRecord } from '../../record-provider';
 
+const findUids = (items) => {
+  if (!Array.isArray(items)) {
+    return [];
+  }
+  const uids = [];
+  for (const item of items) {
+    uids.push(item.uid);
+    uids.push(...findUids(item.children));
+  }
+  return uids;
+};
+
 export const MenuConfigure = () => {
   const record = useRecord();
   const api = useAPIClient();
   const items = useMenuItems();
+  const allUids = findUids(items);
   const [uids, setUids] = useState([]);
   const { loading, refresh } = useRequest(
     {
@@ -25,7 +38,7 @@ export const MenuConfigure = () => {
     },
   );
   const resource = api.resource('roles.menuUiSchemas', record.name);
-  const allChecked = items.length === uids.length;
+  const allChecked = allUids.length === uids.length;
   return (
     <Table
       loading={loading}
@@ -52,7 +65,7 @@ export const MenuConfigure = () => {
                     });
                   } else {
                     await resource.set({
-                      values: items.map((item) => item.uid),
+                      values: allUids,
                     });
                   }
                   refresh();
@@ -62,7 +75,8 @@ export const MenuConfigure = () => {
               允许访问
             </>
           ),
-          render: (checked, schema) => {
+          render: (_, schema) => {
+            const checked = uids.includes(schema.uid);
             return (
               <Checkbox
                 checked={checked}
@@ -86,10 +100,7 @@ export const MenuConfigure = () => {
           },
         },
       ]}
-      dataSource={items.map((item) => {
-        const accessible = uids.includes(item.uid);
-        return { ...item, accessible };
-      })}
+      dataSource={items}
     />
   );
 };
