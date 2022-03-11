@@ -69,8 +69,8 @@ export const roleCollectionsSchema: ISchema = {
       resource: 'roles.collections',
       action: 'list',
       params: {
-        pageSize: 5,
-        filter: {},
+        pageSize: 20,
+        filter: { inherit: false },
         sort: ['sort'],
         appends: [],
       },

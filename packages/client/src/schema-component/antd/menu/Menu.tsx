@@ -317,7 +317,17 @@ Menu.Item = observer((props) => {
     <AntdMenu.Item {...others} key={schema.name} eventKey={schema.name} schema={schema}>
       <SortableItem className={designerCss}>
         <Icon type={icon} style={{ marginRight: 5 }} />
-        {field.title}
+        <span
+          className={css`
+            overflow: hidden;
+            text-overflow: ellipsis;
+            display: inline-block;
+            width: 100%;
+            vertical-align: middle;
+          `}
+        >
+          {field.title}
+        </span>
         <Designer />
       </SortableItem>
     </AntdMenu.Item>

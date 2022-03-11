@@ -54,6 +54,9 @@ export const TabPaneInitializers = () => {
               drawer1: {
                 'x-decorator': 'Form',
                 'x-component': 'Action.Modal',
+                'x-component-props': {
+                  width: 520,
+                },
                 type: 'void',
                 title: '{{t("Add tab")}}',
                 properties: {

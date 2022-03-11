@@ -1,6 +1,7 @@
 import { useCookieState } from 'ahooks';
 import { Menu, Select } from 'antd';
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { useCurrentUserContext } from './CurrentUserProvider';
 
 const useCurrentRoles = () => {
@@ -10,6 +11,7 @@ const useCurrentRoles = () => {
 
 export const SwitchRole = () => {
   const roles = useCurrentRoles();
+  const { t } = useTranslation();
   const [roleName, setRoleName] = useCookieState('currentRoleName', {
     defaultValue: roles?.find((role) => role.default)?.name,
   });
@@ -18,7 +20,7 @@ export const SwitchRole = () => {
   }
   return (
     <Menu.Item>
-      切换角色{' '}
+      {t('Switch role')}{' '}
       <Select
         style={{ minWidth: 100 }}
         bordered={false}

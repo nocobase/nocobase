@@ -26,5 +26,8 @@ export const toGroupDataSource = (groupField: IGroupField, dataSource: Array<any
       groupDataSource.__unknown__.cards.push(ds);
     }
   });
+  if (groupDataSource.__unknown__.cards.length === 0) {
+    delete groupDataSource.__unknown__;
+  }
   return { columns: Object.values(groupDataSource) };
 };
