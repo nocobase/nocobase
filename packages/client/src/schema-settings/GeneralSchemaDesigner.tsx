@@ -23,7 +23,7 @@ const titleCss = css`
 `;
 
 export const GeneralSchemaDesigner = (props: any) => {
-  const { title } = props;
+  const { title, draggable = true } = props;
   const { dn, designable } = useDesignable();
   const field = useField();
   const fieldSchema = useFieldSchema();
@@ -41,9 +41,11 @@ export const GeneralSchemaDesigner = (props: any) => {
       {title && <div className={classNames('general-schema-designer-title', titleCss)}>{compile(title)}</div>}
       <div className={'general-schema-designer-icons'}>
         <Space size={2} align={'center'}>
-          <DragHandler>
-            <DragOutlined />
-          </DragHandler>
+          {draggable && (
+            <DragHandler>
+              <DragOutlined />
+            </DragHandler>
+          )}
           <SchemaSettings title={<MenuOutlined style={{ cursor: 'pointer', fontSize: 12 }} />} {...schemaSettingsProps}>
             {props.children}
           </SchemaSettings>

@@ -1,10 +1,12 @@
 import { MenuOutlined } from '@ant-design/icons';
 import { css } from '@emotion/css';
-import { useField, useFieldSchema } from '@formily/react';
+import { ISchema, useField, useFieldSchema } from '@formily/react';
+import { uid } from '@formily/shared';
 import { Space } from 'antd';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { useCompile, useDesignable } from '../../../schema-component';
+import { useAPIClient } from '../../../api-client';
+import { createDesignable, useDesignable } from '../../../schema-component';
 import { SchemaInitializer } from '../../../schema-initializer';
 import { useFormItemInitializerFields } from '../../../schema-initializer/Initializers/utils';
 
@@ -23,26 +25,39 @@ const titleCss = css`
   left: 2px;
 `;
 
-export const removeGridFormItem = (schema, cb) => {
-  cb(schema, {
-    removeParentsIfNoChildren: true,
-    breakRemoveOn: {
-      'x-component': 'Kanban.Card',
+const gridRowColWrap = (schema: ISchema) => {
+  schema['x-read-pretty'] = true;
+  return {
+    type: 'void',
+    'x-component': 'Grid.Row',
+    properties: {
+      [uid()]: {
+        type: 'void',
+        'x-component': 'Grid.Col',
+        properties: {
+          [schema.name || uid()]: schema,
+        },
+      },
     },
-  });
+  };
 };
+
+// export const removeGridFormItem = (schema, cb) => {
+//   cb(schema, {
+//     removeParentsIfNoChildren: true,
+//     breakRemoveOn: {
+//       'x-component': 'Kanban.Card',
+//     },
+//   });
+// };
 
 export const KanbanCardDesigner = (props: any) => {
   const { dn, designable } = useDesignable();
   const { t } = useTranslation();
+  const api = useAPIClient();
+  const { refresh } = useDesignable();
   const field = useField();
   const fieldSchema = useFieldSchema();
-  const compile = useCompile();
-  const schemaSettingsProps = {
-    dn,
-    field,
-    fieldSchema,
-  };
   const fields = useFormItemInitializerFields();
   if (!designable) {
     return null;
@@ -52,21 +67,30 @@ export const KanbanCardDesigner = (props: any) => {
       <div className={'general-schema-designer-icons'}>
         <Space size={2} align={'center'}>
           <SchemaInitializer.Button
-            wrap={(s) => {
-              s['type'] = 'string';
-              s['x-read-pretty'] = true;
-              return s;
+            wrap={gridRowColWrap}
+            insert={(schema) => {
+              const gridSchema = fieldSchema.reduceProperties((buf, schema) => {
+                if (schema['x-component'] === 'Grid') {
+                  return schema;
+                }
+                return buf;
+              }, null);
+              if (!gridSchema) {
+                return;
+              }
+              const dn = createDesignable({
+                api,
+                refresh,
+                current: gridSchema,
+              });
+              dn.loadAPIClientEvents();
+              dn.insertBeforeEnd(schema);
             }}
             items={[
               {
                 type: 'itemGroup',
                 title: t('Display fields'),
-                children: fields.map((field) => {
-                  return {
-                    ...field,
-                    remove: removeGridFormItem,
-                  };
-                }),
+                children: fields,
               },
             ]}
             component={<MenuOutlined style={{ cursor: 'pointer', fontSize: 12 }} />}

@@ -1,4 +1,4 @@
-import { css } from '@emotion/css';
+import { FormLayout } from '@formily/antd';
 import { observer, RecursionField, useFieldSchema } from '@formily/react';
 import { Card } from 'antd';
 import React, { useContext, useState } from 'react';
@@ -23,25 +23,10 @@ export const KanbanCard: any = observer((props: any) => {
         onClick={(e) => {
           setVisible(true);
         }}
-        className={css`
-          /* .ant-description-input {
-            line-height: 1.15;
-          } */
-          .ant-formily-item-label {
-            display: none;
-          }
-          .ant-formily-item-feedback-layout-loose {
-            margin-bottom: 12px;
-          }
-          .nb-block-item:last-child {
-            .ant-formily-item {
-              margin-bottom: 0;
-            }
-          }
-        `}
         bordered={false}
         hoverable
         style={{ cursor: 'pointer', overflow: 'hidden' }}
+        bodyStyle={{ paddingBottom: 0 }}
       >
         <SchemaComponentOptions components={{}}>
           <DndContext
@@ -52,11 +37,13 @@ export const KanbanCard: any = observer((props: any) => {
               setDisableCardDrag(false);
             }}
           >
-            <RecursionField
-              basePath={cardField.address.concat(`${columnIndex}.cards.${cardIndex}`)}
-              schema={fieldSchema}
-              onlyRenderProperties
-            />
+            <FormLayout layout={'vertical'}>
+              <RecursionField
+                basePath={cardField.address.concat(`${columnIndex}.cards.${cardIndex}`)}
+                schema={fieldSchema}
+                onlyRenderProperties
+              />
+            </FormLayout>
           </DndContext>
         </SchemaComponentOptions>
       </Card>
