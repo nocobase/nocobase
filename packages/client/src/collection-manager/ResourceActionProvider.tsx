@@ -28,6 +28,7 @@ const CollectionResourceActionProvider = (props) => {
   if (actionName === 'get') {
     others['filterByTk'] = record[collection.targetKey || collection.filterTargetKey || 'id'];
   }
+  const appends = request?.params?.appends || [];
   const service = useRequest(
     {
       ...request,
@@ -36,7 +37,7 @@ const CollectionResourceActionProvider = (props) => {
         ...request?.params,
         appends: [
           ...collection?.fields?.filter?.((field) => field.target).map((field) => field.name),
-          ...request?.params?.appends,
+          ...appends,
         ],
         sort: dragSort ? [collection.sortable === true ? 'sort' : collection.sortable] : request?.params?.sort,
       },
@@ -58,6 +59,7 @@ const AssociationResourceActionProvider = (props) => {
   const api = useAPIClient();
   const record = useRecord();
   const resourceOf = record[association.sourceKey];
+  const appends = request?.params?.appends || [];
   const service = useRequest(
     {
       resourceOf,
@@ -66,7 +68,7 @@ const AssociationResourceActionProvider = (props) => {
         ...request?.params,
         appends: [
           ...collection?.fields?.filter?.((field) => field.target).map((field) => field.name),
-          ...request?.params?.appends,
+          ...appends,
         ],
       },
     },
