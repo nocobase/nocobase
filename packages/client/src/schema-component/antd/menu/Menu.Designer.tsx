@@ -61,6 +61,7 @@ const InsertMenuItems = (props) => {
                 'x-decorator': 'FormItem',
                 'x-component': 'Input',
                 title: t('Menu item title'),
+                required: true,
                 'x-component-props': {},
                 // description: `原字段标题：${collectionField?.uiSchema?.title}`,
               },
@@ -95,6 +96,7 @@ const InsertMenuItems = (props) => {
                 'x-decorator': 'FormItem',
                 'x-component': 'Input',
                 title: t('Menu item title'),
+                required: true,
                 'x-component-props': {},
               },
               icon: {
@@ -141,6 +143,7 @@ const InsertMenuItems = (props) => {
             properties: {
               title: {
                 title: t('Menu item title'),
+                required: true,
                 'x-component': 'Input',
                 'x-decorator': 'FormItem',
               },
@@ -210,6 +213,7 @@ export const MenuDesigner = () => {
             properties: {
               title: {
                 title: t('Menu item title'),
+                required: true,
                 'x-decorator': 'FormItem',
                 'x-component': 'Input',
                 'x-component-props': {},
