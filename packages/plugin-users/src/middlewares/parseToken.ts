@@ -24,7 +24,7 @@ function setCurrentRole(ctx, user) {
     userRole = userRoles[0].get('name');
   } else if (userRoles.length > 1) {
     const defaultRole = userRoles.findIndex((role) => role.get('rolesUsers').default);
-    userRole = defaultRole !== -1 ? userRoles[defaultRole] : userRoles[0];
+    userRole = (defaultRole !== -1 ? userRoles[defaultRole] : userRoles[0]).get('name');
   }
 
   if (userRole) {
