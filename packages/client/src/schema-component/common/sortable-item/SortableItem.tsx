@@ -80,7 +80,7 @@ export const DragHandler = (props) => {
         {...listeners}
         {...attributes}
       >
-        <span style={{ cursor: 'move', fontSize: 12 }}>{props.children}</span>
+        <span style={{ cursor: 'move', fontSize: 14 }}>{props.children}</span>
       </div>
     </div>
   );
