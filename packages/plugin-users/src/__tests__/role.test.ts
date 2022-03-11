@@ -1,4 +1,4 @@
-import Database from '@nocobase/database';
+import Database, { BelongsToManyRepository } from '@nocobase/database';
 import PluginACL from '@nocobase/plugin-acl';
 import { MockServer, mockServer } from '@nocobase/test';
 
@@ -68,5 +68,51 @@ describe('role', () => {
 
     expect(roles.length).toEqual(1);
     expect(roles[0].get('name')).toEqual('test2');
+  });
+
+  it('should set users default role', async () => {
+    await db.getRepository('roles').create({
+      values: {
+        name: 'test1',
+        title: 'Admin User',
+        allowConfigure: true,
+        default: true,
+      },
+    });
+
+    await db.getRepository('roles').create({
+      values: {
+        name: 'test2',
+        title: 'test2 user',
+        allowConfigure: true,
+      },
+    });
+
+    const user = await db.getRepository('users').create({
+      values: {
+        token: '123',
+      },
+    });
+
+    const userRolesRepo = db.getRepository<BelongsToManyRepository>('users.roles', user.get('id') as string);
+    await userRolesRepo.add('test1');
+    await userRolesRepo.add('test2');
+
+    const response = await api
+      .agent()
+      .post('/users:setDefaultRole')
+      .send({
+        defaultRole: 'test2',
+      })
+      .set({
+        Authorization: `Bearer ${user.get('token')}`,
+      });
+
+    expect(response.statusCode).toEqual(200);
+
+    const userRoles = await userRolesRepo.find();
+    const defaultRole = userRoles.find((userRole) => userRole.get('rolesUsers').default);
+
+    expect(defaultRole['name']).toEqual('test2');
   });
 });
