@@ -198,6 +198,26 @@ describe('sort action', () => {
       return api.destroy();
     });
 
+    it('should not touch updatedAt field', async () => {
+      const getUpdatedAts = async () => {
+        return (
+          await api.db.getRepository('tests').find({
+            order: ['id'],
+          })
+        ).map((item) => item.get('updatedAt'));
+      };
+
+      const beforeUpdatedAts = await getUpdatedAts();
+
+      await api.agent().resource('tests').move({
+        sourceId: 1,
+        targetId: 6,
+      });
+
+      const afterUpdatedAts = await getUpdatedAts();
+      expect(afterUpdatedAts).toEqual(beforeUpdatedAts);
+    });
+
     it('targetId/1->6', async () => {
       await api.agent().resource('tests').move({
         sourceId: 1,

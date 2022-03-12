@@ -62,8 +62,14 @@ export class SortAbleCollection {
     const targetInstance = await this.collection.repository.findById(targetInstanceId);
 
     if (this.scopeKey && sourceInstance.get(this.scopeKey) !== targetInstance.get(this.scopeKey)) {
-      await sourceInstance.set(this.scopeKey, targetInstance.get(this.scopeKey));
-      await sourceInstance.save();
+      await sourceInstance.update(
+        {
+          [this.scopeKey]: targetInstance.get(this.scopeKey),
+        },
+        {
+          silent: true,
+        },
+      );
     }
 
     await this.sameScopeMove(sourceInstance, targetInstance, options);
@@ -74,8 +80,14 @@ export class SortAbleCollection {
     const targetScopeValue = targetScope[this.scopeKey];
 
     if (targetScopeValue && sourceInstance.get(this.scopeKey) !== targetScopeValue) {
-      await sourceInstance.set(this.scopeKey, targetScopeValue);
-      await sourceInstance.save();
+      await sourceInstance.update(
+        {
+          [this.scopeKey]: targetScopeValue,
+        },
+        {
+          silent: true,
+        },
+      );
 
       if (method === 'prepend') {
         await this.sticky(sourceInstanceId);
@@ -85,8 +97,14 @@ export class SortAbleCollection {
 
   async sticky(sourceInstanceId: TargetKey) {
     const sourceInstance = await this.collection.repository.findById(sourceInstanceId);
-    sourceInstance.set(this.field.get('name'), 0);
-    await sourceInstance.save();
+    await sourceInstance.update(
+      {
+        [this.field.get('name')]: 0,
+      },
+      {
+        silent: true,
+      },
+    );
   }
 
   async sameScopeMove(sourceInstance: Model, targetInstance: Model, options: MoveOptions) {
@@ -126,13 +144,20 @@ export class SortAbleCollection {
         [Op.eq]: scopeValue,
       };
     }
+
     await this.collection.model.increment(fieldName, {
       where,
       by: change,
+      silent: true,
     });
 
-    await sourceInstance.update({
-      [fieldName]: targetSort,
-    });
+    await sourceInstance.update(
+      {
+        [fieldName]: targetSort,
+      },
+      {
+        silent: true,
+      },
+    );
   }
 }
