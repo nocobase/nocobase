@@ -2,6 +2,8 @@ import { Plugin } from '@nocobase/server';
 import { resolve } from 'path';
 import { availableActionResource } from './actions/available-actions';
 import { roleCollectionsResource } from './actions/role-collections';
+import { checkAction } from './actions/role-check';
+
 import { RoleModel } from './model/RoleModel';
 import { RoleResourceActionModel } from './model/RoleResourceActionModel';
 import { RoleResourceModel } from './model/RoleResourceModel';
@@ -123,6 +125,8 @@ export class PluginACL extends Plugin {
 
     this.app.resourcer.define(availableActionResource);
     this.app.resourcer.define(roleCollectionsResource);
+
+    this.app.resourcer.registerActionHandler('roles:check', checkAction);
 
     this.app.db.on('roles.afterSave', async (model, options) => {
       const { transaction } = options;
@@ -257,6 +261,7 @@ export class PluginACL extends Plugin {
         ],
       });
     });
+    this.app.acl.skip('roles', 'check', 'logged-in');
   }
 
   async install() {
