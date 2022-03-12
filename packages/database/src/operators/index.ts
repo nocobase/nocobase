@@ -4,4 +4,5 @@ export default {
   ...require('./array').default,
   ...require('./empty').default,
   ...require('./string').default,
+  ...require('./ne').default,
 };
