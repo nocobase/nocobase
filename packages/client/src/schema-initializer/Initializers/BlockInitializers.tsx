@@ -42,5 +42,16 @@ export const BlockInitializers = {
         },
       ],
     },
+    {
+      type: 'itemGroup',
+      title: 'Templates',
+      children: [
+        {
+          type: 'item',
+          title: 'Action logs',
+          component: 'ActionLogBlockInitializer',
+        },
+      ],
+    },
   ],
 };
