@@ -4,7 +4,7 @@ import { SchemaComponentOptions } from '../schema-component';
 import { initializes as globals, items } from './Initializers';
 import { SchemaInitializer } from './SchemaInitializer';
 
-const SchemaInitializerContext = createContext(null);
+export const SchemaInitializerContext = createContext(null);
 
 export interface SchemaInitializerProviderProps {
   components?: any;

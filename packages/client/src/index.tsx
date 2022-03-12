@@ -3,6 +3,7 @@ import './global.less';
 debug.log = console.log.bind(console);
 
 export * from './acl';
+export * from './action-logs';
 export * from './antd-config-provider';
 export * from './api-client';
 export * from './application';
@@ -22,4 +23,3 @@ export * from './schema-settings';
 export * from './settings-form';
 export * from './system-settings';
 export * from './user';
-
