@@ -1,4 +1,5 @@
 import debug from 'debug';
+import './global.less';
 debug.log = console.log.bind(console);
 
 export * from './acl';

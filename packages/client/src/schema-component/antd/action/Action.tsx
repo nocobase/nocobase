@@ -80,6 +80,7 @@ export const Action: ComposedAction = observer((props: any) => {
   const field = useField();
   const { run } = useAction();
   const fieldSchema = useFieldSchema();
+  const designerProps = fieldSchema['x-designer-props'];
   const renderButton = () => (
     <SortableItem
       {...others}
@@ -103,7 +104,7 @@ export const Action: ComposedAction = observer((props: any) => {
       component={component || Button}
       className={classnames(className, actionDesignerCss)}
     >
-      <Designer />
+      <Designer {...designerProps} />
       {field.title}
     </SortableItem>
   );

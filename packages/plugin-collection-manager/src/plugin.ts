@@ -5,9 +5,10 @@ import {
   afterCreateForReverseField,
   beforeCreateForChildrenCollection,
   beforeCreateForReverseField,
-  beforeInitOptions
+  beforeInitOptions,
 } from './hooks';
 import { CollectionModel, FieldModel } from './models';
+import lodash from 'lodash';
 
 export class CollectionManagerPlugin extends Plugin {
   async beforeLoad() {
@@ -18,6 +19,17 @@ export class CollectionManagerPlugin extends Plugin {
 
     this.app.db.registerRepositories({
       CollectionRepository,
+    });
+
+    this.app.db.on('fields.beforeUpdate', async (model, options) => {
+      const newValue = options.values;
+      if (
+        model.get('reverseKey') &&
+        lodash.get(newValue, 'reverseField') &&
+        !lodash.get(newValue, 'reverseField.key')
+      ) {
+        throw new Error('cant update field without a reverseField key');
+      }
     });
 
     // 要在 beforeInitOptions 之前处理
@@ -65,6 +77,8 @@ export class CollectionManagerPlugin extends Plugin {
       }
       await next();
     });
+
+    this.app.acl.skip('collections', 'list', 'logged-in');
   }
 
   async load() {

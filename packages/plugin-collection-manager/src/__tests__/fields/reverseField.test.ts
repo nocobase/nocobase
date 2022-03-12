@@ -56,4 +56,78 @@ describe('reverseField options', () => {
     });
     expect(json.foreignKey).toBe(json.reverseField.foreignKey);
   });
+
+  it('should update reverseField', async () => {
+    const field = await Field.repository.create({
+      values: {
+        type: 'hasMany',
+        collectionName: 'tests',
+        target: 'targets',
+        reverseField: {},
+      },
+    });
+
+    expect(
+      await Field.repository.count({
+        filter: {
+          collectionName: 'targets',
+        },
+      }),
+    ).toEqual(1);
+
+    let reverseField = await Field.repository.findOne({
+      filter: {
+        collectionName: 'targets',
+      },
+    });
+
+    let err;
+
+    try {
+      await Field.repository.update({
+        filterByTk: field.get('key') as string,
+        values: {
+          reverseField: {
+            uiSchema: {
+              title: '123',
+            },
+          },
+        },
+      });
+    } catch (e) {
+      err = e;
+    }
+
+    expect(err).toBeDefined();
+
+    await Field.repository.update({
+      filterByTk: field.get('key') as string,
+      values: {
+        reverseField: {
+          key: reverseField.get('key'),
+          uiSchema: {
+            title: '123',
+          },
+        },
+      },
+    });
+
+    expect(
+      await Field.repository.count({
+        filter: {
+          collectionName: 'targets',
+        },
+      }),
+    ).toEqual(1);
+
+    reverseField = await db.getRepository('fields').findOne({
+      filter: {
+        key: reverseField.get('key'),
+      },
+      appends: ['uiSchema'],
+    });
+
+    const uiSchema = reverseField.get('uiSchema');
+    expect(uiSchema['schema']).toEqual({ title: '123' });
+  });
 });

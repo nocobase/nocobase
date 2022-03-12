@@ -3,14 +3,14 @@ import React from 'react';
 import { useDesignable } from '../..';
 import { GeneralSchemaDesigner, SchemaSettings } from '../../../schema-settings';
 
-export const ActionDesigner = () => {
+export const ActionDesigner = (props) => {
   const initialValue = {};
   const field = useField();
   const fieldSchema = useFieldSchema();
   const { dn } = useDesignable();
   const isPopupAction = ['create', 'update', 'view'].includes(fieldSchema['x-action'] || '');
   return (
-    <GeneralSchemaDesigner>
+    <GeneralSchemaDesigner {...props}>
       <SchemaSettings.ModalItem
         title={'编辑'}
         schema={

@@ -198,7 +198,7 @@ SchemaSettings.PopupItem = (props) => {
 };
 
 SchemaSettings.ModalItem = (props) => {
-  const { title, schema, onSubmit, initialValues, ...others } = props;
+  const { title, components, scope, effects, schema, onSubmit, initialValues, ...others } = props;
   const options = useContext(SchemaOptionsContext);
   return (
     <SchemaSettings.Item
@@ -208,13 +208,14 @@ SchemaSettings.ModalItem = (props) => {
           return (
             <SchemaComponentOptions scope={options.scope} components={options.components}>
               <FormLayout layout={'vertical'}>
-                <SchemaComponent schema={schema} />
+                <SchemaComponent components={components} scope={scope} schema={schema} />
               </FormLayout>
             </SchemaComponentOptions>
           );
         })
           .open({
             initialValues,
+            effects,
           })
           .then((values) => {
             onSubmit(values);

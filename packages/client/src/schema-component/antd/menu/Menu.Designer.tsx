@@ -1,7 +1,42 @@
-import { ISchema, useField, useFieldSchema } from '@formily/react';
+import { TreeSelect } from '@formily/antd';
+import { Field, onFieldChange } from '@formily/core';
+import { ISchema, Schema, useField, useFieldSchema } from '@formily/react';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { GeneralSchemaDesigner, SchemaSettings, useDesignable } from '../../../';
+import { findByUid } from '.';
+import { createDesignable } from '../..';
+import { GeneralSchemaDesigner, SchemaSettings, useAPIClient, useDesignable } from '../../../';
+
+const toItems = (properties = {}) => {
+  const items = [];
+  for (const key in properties) {
+    if (Object.prototype.hasOwnProperty.call(properties, key)) {
+      const element = properties[key];
+      const item = {
+        label: element.title,
+        value: `${element['x-uid']}||${element['x-component']}`,
+      };
+      if (element.properties) {
+        const children = toItems(element.properties);
+        if (children?.length) {
+          item['children'] = children;
+        }
+      }
+      items.push(item);
+    }
+  }
+  return items;
+};
+
+const findMenuSchema = (fieldSchema: Schema) => {
+  let parent = fieldSchema.parent;
+  while (parent) {
+    if (parent['x-component'] === 'Menu') {
+      return parent;
+    }
+    parent = parent.parent;
+  }
+};
 
 const InsertMenuItems = (props) => {
   const { eventKey, title, insertPosition } = props;
@@ -26,6 +61,7 @@ const InsertMenuItems = (props) => {
                 'x-decorator': 'FormItem',
                 'x-component': 'Input',
                 title: t('Menu item title'),
+                required: true,
                 'x-component-props': {},
                 // description: `原字段标题：${collectionField?.uiSchema?.title}`,
               },
@@ -60,6 +96,7 @@ const InsertMenuItems = (props) => {
                 'x-decorator': 'FormItem',
                 'x-component': 'Input',
                 title: t('Menu item title'),
+                required: true,
                 'x-component-props': {},
               },
               icon: {
@@ -106,6 +143,7 @@ const InsertMenuItems = (props) => {
             properties: {
               title: {
                 title: t('Menu item title'),
+                required: true,
                 'x-component': 'Input',
                 'x-decorator': 'FormItem',
               },
@@ -141,8 +179,29 @@ const InsertMenuItems = (props) => {
 export const MenuDesigner = () => {
   const field = useField();
   const fieldSchema = useFieldSchema();
+  const api = useAPIClient();
   const { dn, refresh } = useDesignable();
   const { t } = useTranslation();
+  const menuSchema = findMenuSchema(fieldSchema);
+  const items = toItems(menuSchema?.properties);
+  const effects = (form) => {
+    onFieldChange('target', (field: Field) => {
+      const [, component] = field?.value?.split?.('||') || [];
+      field.query('position').take((f: Field) => {
+        f.dataSource =
+          component === 'Menu.SubMenu'
+            ? [
+                { label: t('Before'), value: 'beforeBegin' },
+                { label: t('After'), value: 'afterEnd' },
+                { label: t('Inner'), value: 'beforeEnd' },
+              ]
+            : [
+                { label: t('Before'), value: 'beforeBegin' },
+                { label: t('After'), value: 'afterEnd' },
+              ];
+      });
+    });
+  };
   return (
     <GeneralSchemaDesigner>
       <SchemaSettings.ModalItem
@@ -154,6 +213,7 @@ export const MenuDesigner = () => {
             properties: {
               title: {
                 title: t('Menu item title'),
+                required: true,
                 'x-decorator': 'FormItem',
                 'x-component': 'Input',
                 'x-component-props': {},
@@ -187,6 +247,52 @@ export const MenuDesigner = () => {
           dn.emit('patch', {
             schema,
           });
+        }}
+      />
+      <SchemaSettings.ModalItem
+        title={t('Move to')}
+        components={{ TreeSelect }}
+        effects={effects}
+        schema={
+          {
+            type: 'object',
+            title: t('Move to'),
+            properties: {
+              target: {
+                title: t('Target'),
+                enum: items,
+                required: true,
+                'x-decorator': 'FormItem',
+                'x-component': 'TreeSelect',
+                'x-component-props': {},
+              },
+              position: {
+                title: t('Position'),
+                required: true,
+                enum: [
+                  { label: t('Before'), value: 'beforeBegin' },
+                  { label: t('After'), value: 'afterEnd' },
+                ],
+                default: 'afterEnd',
+                'x-component': 'Radio.Group',
+                'x-decorator': 'FormItem',
+              },
+            },
+          } as ISchema
+        }
+        onSubmit={({ target, position }) => {
+          const [uid] = target?.split?.('||') || [];
+          if (!uid) {
+            return;
+          }
+          const current = findByUid(menuSchema, uid);
+          const dn = createDesignable({
+            api,
+            refresh,
+            current,
+          });
+          dn.loadAPIClientEvents();
+          dn.insertAdjacent(position, fieldSchema);
         }}
       />
       <SchemaSettings.Divider />

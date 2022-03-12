@@ -13,8 +13,8 @@ const useLabelFields = (collectionName?: any) => {
   const { getCollectionFields } = useCollectionManager();
   const targetFields = getCollectionFields(collectionName);
   return targetFields
-    ?.filter((field) => !field?.target && field.type !== 'boolean')
-    ?.map((field) => {
+    ?.filter?.((field) => !field?.target && field.type !== 'boolean')
+    ?.map?.((field) => {
       return {
         value: field.name,
         label: compile(field?.uiSchema?.title || field.name),
@@ -30,7 +30,7 @@ export const TableColumnDeigner = (props) => {
   const initialValue = {
     title: columnSchema?.title,
   };
-  const options = useLabelFields(collectionField.target);
+  const options = useLabelFields(collectionField?.target);
   return (
     <GeneralSchemaDesigner>
       <SchemaSettings.PopupItem
@@ -39,6 +39,9 @@ export const TableColumnDeigner = (props) => {
           {
             title: '编辑字段',
             'x-component': 'Action.Modal',
+            'x-component-props': {
+              width: 520,
+            },
             'x-decorator': 'Form',
             'x-decorator-props': {
               initialValue,

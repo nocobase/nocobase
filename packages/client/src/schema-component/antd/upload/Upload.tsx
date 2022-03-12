@@ -123,40 +123,42 @@ Upload.Attachment = connect((props: UploadProps) => {
               </div>
             );
           })}
-          <div className={'ant-upload-list-picture-card-container'}>
-            <AntdUpload
-              {...useUploadProps({ ...props })}
-              disabled={disabled}
-              multiple={multiple}
-              listType={'picture-card'}
-              fileList={fileList}
-              onChange={(info) => {
-                setSync(false);
-                if (multiple) {
-                  if (info.file.status === 'done') {
-                    onChange(toValue(info.fileList));
+          {!disabled && (multiple || toArr(value).length < 1) && (
+            <div className={'ant-upload-list-picture-card-container'}>
+              <AntdUpload
+                {...useUploadProps({ ...props })}
+                disabled={disabled}
+                multiple={multiple}
+                listType={'picture-card'}
+                fileList={fileList}
+                onChange={(info) => {
+                  setSync(false);
+                  if (multiple) {
+                    if (info.file.status === 'done') {
+                      onChange(toValue(info.fileList));
+                    }
+                    setFileList(info.fileList.map(toItem));
+                  } else {
+                    if (info.file.status === 'done') {
+                      console.log('field.value', info.file?.response?.data);
+                      // TODO(BUG): object 的联动有问题，不响应，折中的办法先置空再赋值
+                      onChange(null);
+                      onChange(info.file?.response?.data);
+                    }
+                    setFileList([toItem(info.file)]);
                   }
-                  setFileList(info.fileList.map(toItem));
-                } else {
-                  if (info.file.status === 'done') {
-                    console.log('field.value', info.file?.response?.data);
-                    // TODO(BUG): object 的联动有问题，不响应，折中的办法先置空再赋值
-                    onChange(null);
-                    onChange(info.file?.response?.data);
-                  }
-                  setFileList([toItem(info.file)]);
-                }
-              }}
-              showUploadList={false}
-            >
-              {!disabled && (multiple || toArr(value).length < 1) && (
-                <span>
-                  <PlusOutlined />
-                  <br /> {t('Upload')}
-                </span>
-              )}
-            </AntdUpload>
-          </div>
+                }}
+                showUploadList={false}
+              >
+                {!disabled && (multiple || toArr(value).length < 1) && (
+                  <span>
+                    <PlusOutlined />
+                    <br /> {t('Upload')}
+                  </span>
+                )}
+              </AntdUpload>
+            </div>
+          )}
         </div>
       </div>
       {visible && (

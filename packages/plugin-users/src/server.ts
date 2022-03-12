@@ -59,6 +59,16 @@ export default class UsersPlugin extends Plugin {
     }
 
     this.app.resourcer.use(middlewares.parseToken());
+
+    const publicActions = ['check', 'signin', 'signup', 'lostpassword', 'resetpassword', 'getUserByResetToken'];
+    const loggedInActions = ['signout', 'updateProfile', 'changePassword', 'setDefaultRole'];
+
+    publicActions.forEach((action) => this.app.acl.skip('users', action));
+    loggedInActions.forEach((action) => this.app.acl.skip('users', action, 'logged-in'));
+
+    this.app.acl.skip('*', '*', (ctx) => {
+      return ctx.state.currentUser?.id == 1;
+    });
   }
 
   async load() {
@@ -67,12 +77,21 @@ export default class UsersPlugin extends Plugin {
     });
   }
 
-  async install() {
+  getRootUserInfo() {
     const {
       adminNickname = 'Super Admin',
       adminEmail = 'admin@nocobase.com',
       adminPassword = 'admin123',
     } = this.options;
+
+    return {
+      adminNickname,
+      adminEmail,
+      adminPassword,
+    };
+  }
+  async install() {
+    const { adminNickname, adminPassword, adminEmail } = this.getRootUserInfo();
 
     const User = this.db.getCollection('users');
     await User.repository.create({

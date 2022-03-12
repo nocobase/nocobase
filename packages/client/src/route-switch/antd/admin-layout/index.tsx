@@ -34,7 +34,18 @@ const InternalAdminLayout = (props: any) => {
   const result = useSystemSettings();
   return (
     <Layout>
-      <Layout.Header style={{ height: 46, lineHeight: '46px', position: 'relative', paddingLeft: 0 }}>
+      <Layout.Header
+        className={css`
+          .ant-menu.ant-menu-dark .ant-menu-item-selected,
+          .ant-menu-submenu-popup.ant-menu-dark .ant-menu-item-selected {
+            background-color: rgba(255, 255, 255, 0.1);
+          }
+          .ant-menu-dark.ant-menu-horizontal > .ant-menu-item:hover {
+            background-color: rgba(255, 255, 255, 0.1);
+          }
+        `}
+        style={{ height: 46, lineHeight: '46px', position: 'relative', paddingLeft: 0 }}
+      >
         <div style={{ display: 'flex', height: '100%' }}>
           <div style={{ width: 200, display: 'inline-flex', color: '#fff', padding: '0', alignItems: 'center' }}>
             <img
