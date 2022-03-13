@@ -277,13 +277,6 @@ export class Collection<
 
     for (const model of models) {
       await model.sync(syncOptions);
-      const collection = this.context.database.modelCollection.get(model);
-
-      if (collection) {
-        await this.context.database.emitAsync(`${collection.name}.afterSync`, {
-          syncOptions,
-        });
-      }
     }
   }
 }
