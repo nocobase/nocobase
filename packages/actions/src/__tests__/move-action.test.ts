@@ -245,6 +245,9 @@ describe('sort action', () => {
 
       const beforeUpdatedAts = await getUpdatedAts();
 
+      const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+      await sleep(1000);
+
       await api.agent().resource('tests').move({
         sourceId: moveItemId,
         targetId: 6,
