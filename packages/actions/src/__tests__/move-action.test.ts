@@ -198,7 +198,8 @@ describe('sort action', () => {
       return api.destroy();
     });
 
-    it('should not touch updatedAt field', async () => {
+    it('should not touch updatedAt on no scope change', async () => {
+      const moveItemId = 1;
       const getUpdatedAts = async () => {
         return (
           await api.db.getRepository('tests').find({
@@ -210,12 +211,50 @@ describe('sort action', () => {
       const beforeUpdatedAts = await getUpdatedAts();
 
       await api.agent().resource('tests').move({
-        sourceId: 1,
+        sourceId: moveItemId,
+        targetId: 4,
+      });
+
+      const afterUpdatedAts = await getUpdatedAts();
+
+      expect(afterUpdatedAts).toEqual(beforeUpdatedAts);
+    });
+
+    it('should only touch updatedAt on change scope item', async () => {
+      const moveItemId = 1;
+      const getUpdatedAts = async () => {
+        return (
+          await api.db.getRepository('tests').find({
+            order: ['id'],
+            filter: {
+              id: { $ne: moveItemId },
+            },
+          })
+        ).map((item) => item.get('updatedAt'));
+      };
+
+      const findMoveItem = async () => {
+        return await api.db.getRepository('tests').findOne({
+          filter: {
+            id: moveItemId,
+          },
+        });
+      };
+
+      const beforeMoveItem = await findMoveItem();
+
+      const beforeUpdatedAts = await getUpdatedAts();
+
+      await api.agent().resource('tests').move({
+        sourceId: moveItemId,
         targetId: 6,
       });
 
       const afterUpdatedAts = await getUpdatedAts();
+      const afterMoveItem = await findMoveItem();
+
       expect(afterUpdatedAts).toEqual(beforeUpdatedAts);
+      expect(beforeMoveItem.get('updatedAt')).not.toEqual(afterMoveItem.get('updatedAt'));
     });
 
     it('targetId/1->6', async () => {

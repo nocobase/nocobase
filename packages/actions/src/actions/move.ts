@@ -62,14 +62,9 @@ export class SortAbleCollection {
     const targetInstance = await this.collection.repository.findById(targetInstanceId);
 
     if (this.scopeKey && sourceInstance.get(this.scopeKey) !== targetInstance.get(this.scopeKey)) {
-      await sourceInstance.update(
-        {
-          [this.scopeKey]: targetInstance.get(this.scopeKey),
-        },
-        {
-          silent: true,
-        },
-      );
+      await sourceInstance.update({
+        [this.scopeKey]: targetInstance.get(this.scopeKey),
+      });
     }
 
     await this.sameScopeMove(sourceInstance, targetInstance, options);
