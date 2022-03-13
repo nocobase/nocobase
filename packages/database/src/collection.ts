@@ -1,7 +1,7 @@
 import merge from 'deepmerge';
 import { EventEmitter } from 'events';
 import { default as lodash, default as _ } from 'lodash';
-import { ModelCtor, ModelOptions, SyncOptions } from 'sequelize';
+import { col, ModelCtor, ModelOptions, SyncOptions } from 'sequelize';
 import { Database } from './database';
 import { Field, FieldOptions } from './fields';
 import { Model } from './model';
@@ -277,6 +277,13 @@ export class Collection<
 
     for (const model of models) {
       await model.sync(syncOptions);
+      const collection = this.context.database.modelCollection.get(model);
+
+      if (collection) {
+        await this.context.database.emitAsync(`${collection.name}.afterSync`, {
+          syncOptions,
+        });
+      }
     }
   }
 }
