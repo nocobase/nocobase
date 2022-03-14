@@ -111,7 +111,7 @@ SchemaInitializer.Button = observer((props: SchemaInitializerButtonProps) => {
     </Menu>
   );
 
-  if (!designable) {
+  if (!designable && props.designable !== true) {
     return null;
   }
 
@@ -126,13 +126,13 @@ SchemaInitializer.Button = observer((props: SchemaInitializerButtonProps) => {
     >
       {component ? component : (
         <Button
-          {...others}
           type={'dashed'}
           style={{
-            ...style,
             borderColor: '#f18b62',
             color: '#f18b62',
+            ...style,
           }}
+          {...others}
         >
           {compile(props.children || props.title)}
         </Button>

@@ -42,6 +42,16 @@ export class UiRoutesStoragePlugin extends Plugin {
           },
           {
             type: 'route',
+            path: '/admin/block-templates/:key',
+            component: 'BlockTemplateDetails',
+          },
+          {
+            type: 'route',
+            path: '/admin/block-templates',
+            component: 'BlockTemplatePage',
+          },
+          {
+            type: 'route',
             path: '/admin/:name(.+)?',
             component: 'RouteSchemaComponent',
           },
