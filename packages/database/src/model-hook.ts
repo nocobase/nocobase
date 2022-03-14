@@ -31,8 +31,14 @@ export class ModelHook {
         return (<Model>arg).constructor.name;
       }
 
-      if (lodash.isPlainObject(arg) && arg['model']) {
-        return arg['model'].name;
+      if (lodash.isPlainObject(arg)) {
+        if (arg['model']) {
+          return arg['model'].name;
+        }
+
+        if (lodash.get(arg, 'name.plural')) {
+          return lodash.get(arg, 'name.plural');
+        }
       }
     }
 
@@ -50,6 +56,7 @@ export class ModelHook {
   sequelizeHookBuilder(eventName) {
     return async (...args: any[]) => {
       const modelName = this.findModelName(args);
+
       if (modelName) {
         // emit model event
         await this.database.emitAsync(`${modelName}.${eventName}`, ...args);
