@@ -1,14 +1,16 @@
+import { ISchema } from '@formily/react';
 import {
-  ActionLogBlockInitializer,
+  ActionLog,
   AntdSchemaComponentProvider,
   APIClient,
   APIClientProvider,
+  CollectionManagerProvider,
   SchemaComponent,
   SchemaComponentProvider,
-  SchemaInitializerContext,
+  SchemaInitializerProvider,
 } from '@nocobase/client';
 import MockAdapter from 'axios-mock-adapter';
-import React, { useContext } from 'react';
+import React from 'react';
 import { mockData } from './mockData';
 
 const apiClient = new APIClient();
@@ -19,22 +21,65 @@ mock.onGet('/action_logs:list').reply(200, mockData);
 
 const schema = {
   type: 'void',
-  'x-component': 'Grid',
-  'x-initializer': 'BlockInitializers',
+  name: 'ActionLog',
+  'x-component': 'ActionLog',
 };
 
+const collections = [
+  {
+    name: 'action_logs',
+    fields: [
+      {
+        type: 'integer',
+        name: 'id',
+        interface: 'input',
+        uiSchema: {
+          title: 'ID',
+          type: 'number',
+          'x-component': 'InputNumber',
+          required: true,
+          description: 'description1',
+        } as ISchema,
+      },
+      {
+        type: 'string',
+        name: 'created_at',
+        interface: 'createdAt',
+        uiSchema: {
+          title: 'Created At',
+          type: 'number',
+          'x-component': 'DatePicker',
+          required: true,
+          description: 'Date Picker',
+        } as ISchema,
+      },
+      {
+        type: 'string',
+        name: 'collection_name',
+        interface: 'input',
+        uiSchema: {
+          title: 'collection name',
+          type: 'number',
+          'x-component': 'Input',
+          description: 'collection name',
+        } as ISchema,
+      },
+    ],
+  },
+];
+
 export default () => {
-  const initializers = useContext(SchemaInitializerContext);
-  initializers.BlockInitializers.items.push(ActionLogBlockInitializer);
   return (
     <APIClientProvider apiClient={apiClient}>
-      <SchemaInitializerContext.Provider value={initializers}>
-        <SchemaComponentProvider>
+      <SchemaInitializerProvider>
+        <SchemaComponentProvider components={{ ActionLog }}>
           <AntdSchemaComponentProvider>
-            <SchemaComponent schema={schema} />
+            <CollectionManagerProvider collections={collections}>
+              <SchemaComponent schema={schema} />
+            </CollectionManagerProvider>
           </AntdSchemaComponentProvider>
         </SchemaComponentProvider>
-      </SchemaInitializerContext.Provider>
+      </SchemaInitializerProvider>
     </APIClientProvider>
   );
 };
