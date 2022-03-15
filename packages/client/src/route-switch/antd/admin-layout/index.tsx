@@ -10,6 +10,7 @@ import {
   PluginManager,
   RemoteCollectionManagerProvider,
   RemoteSchemaComponent,
+  RemoteSchemaTemplateManagerProvider,
   useDocumentTitle,
   useRoute,
   useSystemSettings
@@ -111,11 +112,13 @@ const InternalAdminLayout = (props: any) => {
 
 export const AdminLayout = (props) => {
   return (
-    <RemoteCollectionManagerProvider>
-      <CurrentUserProvider>
-        <InternalAdminLayout {...props} />
-      </CurrentUserProvider>
-    </RemoteCollectionManagerProvider>
+    <RemoteSchemaTemplateManagerProvider>
+      <RemoteCollectionManagerProvider>
+        <CurrentUserProvider>
+          <InternalAdminLayout {...props} />
+        </CurrentUserProvider>
+      </RemoteCollectionManagerProvider>
+    </RemoteSchemaTemplateManagerProvider>
   );
 };
 

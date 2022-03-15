@@ -1,12 +1,13 @@
 import { Input, PageHeader as AntdPageHeader, Spin } from 'antd';
 import React, { useContext, useState } from 'react';
 import { useHistory, useRouteMatch } from 'react-router-dom';
-import { useAPIClient, useRequest } from '..';
+import { useAPIClient, useRequest, useSchemaTemplateManager } from '..';
 import { RemoteSchemaComponent, SchemaComponentContext } from '../schema-component';
 
 const EditableTitle = (props) => {
   const [title, setTitle] = useState(props.title);
   const [visible, setVisible] = useState(false);
+  const { refresh } = useSchemaTemplateManager();
   const api = useAPIClient();
   const { run } = useRequest(
     {
@@ -19,6 +20,9 @@ const EditableTitle = (props) => {
     {
       manual: true,
       debounceWait: 500,
+      onSuccess() {
+        refresh();
+      },
     },
   );
   return (

@@ -6,6 +6,7 @@ import { Dropdown, Menu, MenuItemProps, Modal, Select, Switch } from 'antd';
 import React, { createContext, useContext, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ActionContext, Designable, SchemaComponent, SchemaComponentOptions, useActionContext } from '..';
+import { useBlockTemplateContext } from '../schema-templates/BlockTemplate';
 
 interface SchemaSettingsProps {
   title?: any;
@@ -116,8 +117,9 @@ SchemaSettings.Divider = (props) => {
 
 SchemaSettings.Remove = (props: any) => {
   const { confirm, removeParentsIfNoChildren, breakRemoveOn } = props;
-  const { dn } = useSchemaSettings();
+  const { dn, fieldSchema } = useSchemaSettings();
   const { t } = useTranslation();
+  const ctx = useBlockTemplateContext();
   return (
     <SchemaSettings.Item
       onClick={() => {
@@ -126,10 +128,15 @@ SchemaSettings.Remove = (props: any) => {
           content: t('Are you sure you want to delete it?'),
           ...confirm,
           onOk() {
-            dn.remove(null, {
+            const options = {
               removeParentsIfNoChildren,
               breakRemoveOn,
-            });
+            };
+            if (ctx?.dn) {
+              ctx?.dn.remove(null, options);
+            } else {
+              dn.remove(null, options);
+            }
           },
         });
       }}

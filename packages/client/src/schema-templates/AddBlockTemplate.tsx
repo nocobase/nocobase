@@ -1,60 +1,59 @@
 import { uid } from '@formily/shared';
+import { Button, Dropdown, Menu } from 'antd';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { useHistory } from 'react-router-dom';
-import { useAPIClient } from '..';
-import { SchemaInitializer } from '../schema-initializer/SchemaInitializer';
+import { useAPIClient, useCollectionManager, useCompile, useSchemaTemplateManager } from '..';
+import { createTableBlockSchema } from '../schema-initializer/Initializers/Items';
 
 export const AddBlockTemplate = (props: any) => {
   const { t } = useTranslation();
   const history = useHistory();
   const api = useAPIClient();
+  const { refresh } = useSchemaTemplateManager();
+  const { collections } = useCollectionManager();
+  const compile = useCompile();
+  const insert = ({ uiSchema, collectionName }) => {
+    const key = uid();
+    api
+      .resource('uiSchemaTemplates')
+      .create({
+        values: {
+          key,
+          collectionName,
+          uiSchema,
+        },
+      })
+      .then((res) => {
+        refresh();
+        history.push(`/admin/block-templates/${key}`);
+      });
+  };
   return (
-    <SchemaInitializer.Button
-      type={'primary'}
-      style={{
-        color: undefined,
-        borderColor: undefined,
-      }}
-      designable={true}
-      insert={(uiSchema) => {
-        const key = uid();
-        api
-          .resource('uiSchemaTemplates')
-          .create({
-            values: {
-              key,
-              uiSchema,
-            },
-          })
-          .then((res) => {
-            history.push(`/admin/block-templates/${key}`);
-          });
-      }}
-      items={[
-        {
-          type: 'item',
-          title: 'Table',
-          component: 'TableBlockInitializer',
-        },
-        {
-          type: 'item',
-          title: 'Form',
-          component: 'FormBlockInitializer',
-        },
-        {
-          type: 'item',
-          title: 'Calendar',
-          component: 'CalendarBlockInitializer',
-        },
-        {
-          type: 'item',
-          title: 'Kanban',
-          component: 'KanbanBlockInitializer',
-        },
-      ]}
-    >
-      {t('Add block template')}
-    </SchemaInitializer.Button>
+    <>
+      <Dropdown
+        overlay={
+          <Menu>
+            <Menu.SubMenu title={'Table'}>
+              {collections?.map((collection) => {
+                return (
+                  <Menu.Item
+                    key={collection.name}
+                    onClick={() => {
+                      const uiSchema = createTableBlockSchema(collection.name);
+                      insert({ uiSchema, collectionName: collection.name });
+                    }}
+                  >
+                    {compile(collection.title)}
+                  </Menu.Item>
+                );
+              })}
+            </Menu.SubMenu>
+          </Menu>
+        }
+      >
+        <Button type={'primary'}>{t('Add block template')}</Button>
+      </Dropdown>
+    </>
   );
 };

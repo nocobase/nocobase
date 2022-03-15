@@ -42,74 +42,54 @@ SchemaInitializer.Button = observer((props: SchemaInitializerButtonProps) => {
       insertAdjacent(insertPosition, wrap(schema));
     }
   };
-  const menu = (
-    <Menu>
-      {items?.map((item, indexA) => {
-        if (item.type === 'divider') {
-          return <Menu.Divider key={`item-${indexA}`} />;
-        }
-        if (item.type === 'item' && item.component) {
-          const Component = findComponent(item.component);
-          return (
-            Component && (
-              <SchemaInitializerItemContext.Provider
-                key={`item-${indexA}`}
-                value={{
-                  index: indexA,
-                  item,
-                  info: item,
-                  insert: insertSchema,
-                }}
-              >
-                <Component
-                  {...item}
-                  item={{
-                    ...item,
-                    title: compile(item.title),
-                  }}
-                  insert={insertSchema}
-                />
-              </SchemaInitializerItemContext.Provider>
-            )
-          );
-        }
+  const renderItems = (items: any) => {
+    return items?.map((item, indexA) => {
+      if (item.type === 'divider') {
+        return <Menu.Divider key={item.key || `item-${indexA}`} />;
+      }
+      if (item.type === 'item' && item.component) {
+        const Component = findComponent(item.component);
         return (
-          item?.children?.length > 0 && (
-            <Menu.ItemGroup key={`item-group-${indexA}`} title={compile(item.title)}>
-              {item?.children?.map((child, indexB) => {
-                if (!child.component) {
-                  return null;
-                }
-                const Component = findComponent(child.component);
-                return (
-                  Component && (
-                    <SchemaInitializerItemContext.Provider
-                      key={`item-${indexB}`}
-                      value={{
-                        index: indexB,
-                        item: child,
-                        info: child,
-                        insert: insertSchema,
-                      }}
-                    >
-                      <Component
-                        {...child}
-                        item={{
-                          ...child,
-                          title: compile(child.title),
-                        }}
-                        insert={insertSchema}
-                      />
-                    </SchemaInitializerItemContext.Provider>
-                  )
-                );
-              })}
-            </Menu.ItemGroup>
+          Component && (
+            <SchemaInitializerItemContext.Provider
+              key={`item-${indexA}`}
+              value={{
+                index: indexA,
+                item,
+                info: item,
+                insert: insertSchema,
+              }}
+            >
+              <Component
+                {...item}
+                item={{
+                  ...item,
+                  title: compile(item.title),
+                }}
+                insert={insertSchema}
+              />
+            </SchemaInitializerItemContext.Provider>
           )
         );
-      })}
-    </Menu>
-  );
+      }
+      if (item.type === 'itemGroup') {
+        return (
+          <Menu.ItemGroup key={item.key || `item-group-${indexA}`} title={compile(item.title)}>
+            {renderItems(item.children)}
+          </Menu.ItemGroup>
+        );
+      }
+      if (item.type === 'subMenu') {
+        return (
+          <Menu.SubMenu key={item.key || `item-group-${indexA}`} title={compile(item.title)}>
+            {renderItems(item.children)}
+          </Menu.SubMenu>
+        );
+      }
+    });
+  };
+
+  const menu = <Menu>{renderItems(items)}</Menu>;
 
   if (!designable && props.designable !== true) {
     return null;
@@ -124,7 +104,9 @@ SchemaInitializer.Button = observer((props: SchemaInitializerButtonProps) => {
       {...dropdown}
       overlay={menu}
     >
-      {component ? component : (
+      {component ? (
+        component
+      ) : (
         <Button
           type={'dashed'}
           style={{
@@ -156,16 +138,24 @@ SchemaInitializer.Item = (props: SchemaInitializerItemProps) => {
         }
         if (item.type === 'itemGroup') {
           return (
-            // @ts-ignore
-            <Menu.ItemGroup eventKey={`item-group-${indexA}`} key={`item-group-${indexA}`} title={compile(item.title)}>
+            <Menu.ItemGroup
+              // @ts-ignore
+              eventKey={item.key || `item-group-${indexA}`}
+              key={item.key || `item-group-${indexA}`}
+              title={compile(item.title)}
+            >
               {renderMenuItem(item.children)}
             </Menu.ItemGroup>
           );
         }
         if (item.type === 'subMenu') {
           return (
-            // @ts-ignore
-            <Menu.SubMenu eventKey={`sub-menu-${indexA}`} key={`sub-menu-${indexA}`} title={compile(item.title)}>
+            <Menu.SubMenu
+              // @ts-ignore
+              eventKey={item.key || `sub-menu-${indexA}`}
+              key={item.key || `sub-menu-${indexA}`}
+              title={compile(item.title)}
+            >
               {renderMenuItem(item.children)}
             </Menu.SubMenu>
           );

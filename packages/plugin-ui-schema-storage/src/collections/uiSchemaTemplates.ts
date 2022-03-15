@@ -20,5 +20,12 @@ export default defineCollection({
       foreignKey: 'uid',
       onDelete: 'CASCADE',
     },
+    {
+      type: 'belongsTo',
+      name: 'collection',
+      target: 'collections',
+      foreignKey: 'collectionName',
+      targetKey: 'name',
+    },
   ],
 });

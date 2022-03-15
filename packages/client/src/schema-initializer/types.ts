@@ -15,6 +15,7 @@ export type SchemaInitializerItemOptions = ItemGroupOptions | SubMenuOptions | I
 
 interface ItemCommonOptions {
   title?: any;
+  key?: string;
 }
 
 interface ItemGroupOptions extends ItemCommonOptions {

@@ -1,32 +1,23 @@
-import { css } from '@emotion/css';
 import { Card, PageHeader as AntdPageHeader, Table } from 'antd';
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { useRequest } from '..';
-import { AddBlockTemplate } from './AddBlockTemplate';
+import { useCompile, useRequest } from '..';
 
 export const BlockTemplatePage = () => {
   const { data, loading } = useRequest({
     resource: 'uiSchemaTemplates',
     action: 'list',
+    params: {
+      appends: ['collection'],
+      sort: ['-createdAt'],
+    },
   });
+  const compile = useCompile();
   return (
     <div>
       <AntdPageHeader ghost={false} title={'Block templates'} />
       <div style={{ margin: 24 }}>
         <Card bordered={false}>
-          <div
-            className={css`
-              display: flex;
-              justify-content: space-between;
-              align-items: center;
-              width: 100%;
-              margin-bottom: 16px;
-            `}
-          >
-            <div></div>
-            <AddBlockTemplate />
-          </div>
           <Table
             rowSelection={{
               type: 'checkbox',
@@ -36,6 +27,11 @@ export const BlockTemplatePage = () => {
                 dataIndex: 'name',
                 title: 'Template name',
                 render: (value) => <>{value || '未命名'}</>,
+              },
+              {
+                dataIndex: ['collection', 'title'],
+                title: 'Collection name',
+                render: (value) => compile(value),
               },
               {
                 dataIndex: 'actions',
