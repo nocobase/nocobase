@@ -11,11 +11,11 @@ export const ActionLog = () => {
   const initializers = useContext(SchemaInitializerContext);
   initializers.BlockInitializers.items.push({
     type: 'itemGroup',
-    title: '{{t("others")}}',
+    title: '{{t("Others")}}',
     children: [
       {
         type: 'item',
-        title: '{{t("operation log")}}',
+        title: '{{t("Action logs")}}',
         component: 'ActionLogBlockInitializer',
       },
     ],
