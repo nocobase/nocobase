@@ -31,10 +31,10 @@ export const ActionInitializer = observer((props: any) => {
             },
             {
               type: 'item',
-              title: t('Turn page'),
+              title: t('Turn the page'),
               component: InitializeAction,
               schema: {
-                title: t('Turn page'),
+                title: t('Turn the page'),
                 'x-component': 'Calendar.Nav',
                 'x-action': `calendar:nav`,
                 'x-align': 'left',
