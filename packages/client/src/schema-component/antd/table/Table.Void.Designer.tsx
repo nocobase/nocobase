@@ -5,6 +5,7 @@ import { useTranslation } from 'react-i18next';
 import { useCollection, useResourceActionContext } from '../../../collection-manager';
 import { useCollectionFilterOptions, useSortFields } from '../../../collection-manager/action-hooks';
 import { GeneralSchemaDesigner, SchemaSettings } from '../../../schema-settings';
+import { useSchemaTemplate } from '../../../schema-templates';
 import { useDesignable } from '../../hooks';
 
 export const TableVoidDesigner = () => {
@@ -29,8 +30,9 @@ export const TableVoidDesigner = () => {
           direction: 'asc',
         };
   });
+  const template = useSchemaTemplate();
   return (
-    <GeneralSchemaDesigner title={title || name}>
+    <GeneralSchemaDesigner template={template} title={title || name}>
       <SchemaSettings.SwitchItem
         title={t('Enable drag and drop sorting')}
         checked={field.decoratorProps.dragSort}
@@ -193,7 +195,7 @@ export const TableVoidDesigner = () => {
         }}
       />
       <SchemaSettings.Divider />
-      <SchemaSettings.SaveAsTemplate collectionName={name}/>
+      <SchemaSettings.Template componentName={'Table'} collectionName={name}/>
       <SchemaSettings.Divider />
       <SchemaSettings.Remove
         removeParentsIfNoChildren

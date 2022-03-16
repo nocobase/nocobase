@@ -206,7 +206,7 @@ export const useCurrentSchema = (action: string, key: string, find = findSchema,
   };
 };
 
-export const useCollectionDataSourceItems = () => {
+export const useCollectionDataSourceItems = (componentName) => {
   const { t } = useTranslation();
   const { collections } = useCollectionManager();
   const { getTemplatesByCollection } = useSchemaTemplateManager();
@@ -218,7 +218,9 @@ export const useCollectionDataSourceItems = () => {
       children: collections
         ?.filter((item) => !item.inherit)
         ?.map((item, index) => {
-          const templates = getTemplatesByCollection(item.name);
+          const templates = getTemplatesByCollection(item.name).filter((template) => {
+            return componentName && template.componentName === componentName;
+          });
           if (!templates.length) {
             return {
               type: 'item',
@@ -227,7 +229,7 @@ export const useCollectionDataSourceItems = () => {
             };
           }
           return {
-            key: `table_subMenu_${index}`,
+            key: `${componentName}_table_subMenu_${index}`,
             type: 'subMenu',
             name: `${item.name}_${index}`,
             title: item.title,
@@ -241,7 +243,7 @@ export const useCollectionDataSourceItems = () => {
                 type: 'divider',
               },
               {
-                key: `table_subMenu_${index}_copy`,
+                key: `${componentName}_table_subMenu_${index}_copy`,
                 type: 'subMenu',
                 name: 'copy',
                 title: '复制模板',
@@ -251,12 +253,12 @@ export const useCollectionDataSourceItems = () => {
                     mode: 'copy',
                     name: item.name,
                     template,
-                    title: template.name,
+                    title: template.name || '未命名',
                   };
                 }),
               },
               {
-                key: `table_subMenu_${index}_ref`,
+                key: `${componentName}_table_subMenu_${index}_ref`,
                 type: 'subMenu',
                 name: 'ref',
                 title: '引用模板',
@@ -266,7 +268,7 @@ export const useCollectionDataSourceItems = () => {
                     mode: 'reference',
                     name: item.name,
                     template,
-                    title: template.name,
+                    title: template.name || '未命名',
                   };
                 }),
               },

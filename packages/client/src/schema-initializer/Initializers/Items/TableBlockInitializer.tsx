@@ -102,7 +102,7 @@ export const TableBlockInitializer = (props) => {
           insert(createTableBlockSchema(item.name));
         }
       }}
-      items={useCollectionDataSourceItems()}
+      items={useCollectionDataSourceItems('Table')}
     />
   );
 };

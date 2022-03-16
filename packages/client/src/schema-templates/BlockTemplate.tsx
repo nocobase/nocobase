@@ -3,7 +3,7 @@ import React, { createContext, useContext, useMemo } from 'react';
 import { RemoteSchemaComponent, useDesignable } from '..';
 import { useSchemaTemplateManager } from './SchemaTemplateManagerProvider';
 
-const BlockTemplateContext = createContext(null);
+const BlockTemplateContext = createContext<any>({});
 
 export const useBlockTemplateContext = () => {
   return useContext(BlockTemplateContext);

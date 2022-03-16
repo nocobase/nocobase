@@ -6,6 +6,7 @@ import { useTranslation } from 'react-i18next';
 import { useCollectionManager } from '../../../collection-manager';
 import { SchemaComponent, SchemaComponentOptions } from '../../../schema-component';
 import { SchemaInitializer } from '../../SchemaInitializer';
+import { useCollectionDataSourceItems } from '../utils';
 
 const createSchema = (collectionName, { title, start, end }) => {
   const schema: ISchema = {
@@ -163,21 +164,7 @@ export const CalendarBlockInitializer = (props) => {
         });
         insert(createSchema(item.name, values));
       }}
-      items={[
-        {
-          type: 'itemGroup',
-          title: t('Select data source'),
-          children: collections
-            ?.filter((item) => !item.inherit)
-            ?.map((item) => {
-              return {
-                type: 'item',
-                name: item.name,
-                title: item.title,
-              };
-            }),
-        },
-      ]}
+      items={useCollectionDataSourceItems('Calendar')}
     />
   );
 };

@@ -4,6 +4,7 @@ import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { SchemaInitializer } from '../..';
 import { useCollectionManager } from '../../../collection-manager';
+import { useCollectionDataSourceItems } from '../utils';
 
 const createSchema = (collectionName) => {
   const schema: ISchema = {
@@ -62,21 +63,7 @@ export const FormBlockInitializer = (props) => {
       onClick={({ item }) => {
         insert(createSchema(item.name));
       }}
-      items={[
-        {
-          type: 'itemGroup',
-          title: t('Select data source'),
-          children: collections
-            ?.filter((item) => !item.inherit)
-            ?.map((item) => {
-              return {
-                type: 'item',
-                name: item.name,
-                title: item.title,
-              };
-            }),
-        },
-      ]}
+      items={useCollectionDataSourceItems('Form')}
     />
   );
 };

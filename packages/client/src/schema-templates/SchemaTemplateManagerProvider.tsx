@@ -1,7 +1,8 @@
-import { ISchema } from '@formily/react';
+import { ISchema, useFieldSchema } from '@formily/react';
 import { uid } from '@formily/shared';
 import { Spin } from 'antd';
-import React, { createContext, useContext } from 'react';
+import { cloneDeep } from 'lodash';
+import React, { createContext, useContext, useMemo } from 'react';
 import { useAPIClient, useRequest } from '../api-client';
 import { SchemaComponentOptions } from '../schema-component';
 import { BlockTemplate } from './BlockTemplate';
@@ -19,10 +20,16 @@ export const SchemaTemplateManagerProvider: React.FC<any> = (props) => {
 
 const regenerateUid = (s: ISchema) => {
   s['x-uid'] = uid();
-  delete s['x-index'];
   Object.keys(s.properties || {}).forEach((key) => {
     regenerateUid(s.properties[key]);
   });
+};
+
+export const useSchemaTemplate = () => {
+  const { getTemplateBySchemaId } = useSchemaTemplateManager();
+  const fieldSchema = useFieldSchema();
+  const schemaId = fieldSchema['x-uid'];
+  return useMemo(() => getTemplateBySchemaId(schemaId), [schemaId]);
 };
 
 export const useSchemaTemplateManager = () => {
@@ -37,7 +44,8 @@ export const useSchemaTemplateManager = () => {
       });
       const s = data?.data || {};
       regenerateUid(s);
-      return s;
+      console.log('sssssssssssssss', cloneDeep(s));
+      return cloneDeep(s);
     },
     async saveAsTemplate(values) {
       const { uiSchema } = values;

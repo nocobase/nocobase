@@ -1,4 +1,4 @@
-import { FormDialog, FormLayout } from '@formily/antd';
+import { FormDialog, FormItem, FormLayout, Input } from '@formily/antd';
 import { GeneralField } from '@formily/core';
 import { ISchema, Schema, SchemaOptionsContext } from '@formily/react';
 import { uid } from '@formily/shared';
@@ -100,20 +100,23 @@ export const SchemaSettings: React.FC<SchemaSettingsProps> & SchemaSettingsNeste
   return DropdownMenu;
 };
 
-SchemaSettings.SaveAsTemplate = (props) => {
-  const { collectionName } = props;
+SchemaSettings.Template = (props) => {
+  const { componentName, collectionName } = props;
   const { t } = useTranslation();
-  const { dn, template, fieldSchema } = useSchemaSettings();
+  const { dn, setVisible, template, fieldSchema } = useSchemaSettings();
   const api = useAPIClient();
-  const { saveAsTemplate, duplicate } = useSchemaTemplateManager();
+  const { dn: tdn } = useBlockTemplateContext();
+  const { saveAsTemplate, copyTemplateSchema } = useSchemaTemplateManager();
+  if (!collectionName) {
+    return null;
+  }
   if (template) {
     return (
       <SchemaSettings.Item
         onClick={async () => {
-          const schema = await duplicate(template);
-          console.log('duplicate', schema);
-          const removed = dn.removeWithoutEmit();
-          dn.insertAfterEnd(schema, {
+          const schema = await copyTemplateSchema(template);
+          const removed = tdn.removeWithoutEmit();
+          tdn.insertAfterEnd(schema, {
             async onSuccess() {
               await api.request({
                 url: `/uiSchemas:remove/${removed['x-uid']}`,
@@ -129,8 +132,31 @@ SchemaSettings.SaveAsTemplate = (props) => {
   return (
     <SchemaSettings.Item
       onClick={async () => {
+        setVisible(false);
+        const values = await FormDialog('Save as template', () => {
+          return (
+            <FormLayout layout={'vertical'}>
+              <SchemaComponent
+                components={{ Input, FormItem }}
+                schema={{
+                  type: 'object',
+                  properties: {
+                    name: {
+                      title: '模板名称',
+                      required: true,
+                      'x-decorator': 'FormItem',
+                      'x-component': 'Input',
+                    },
+                  },
+                }}
+              />
+            </FormLayout>
+          );
+        }).open({});
         const { key } = await saveAsTemplate({
           collectionName,
+          componentName,
+          name: values.name,
           uiSchema: fieldSchema.toJSON(),
         });
         const removed = dn.removeWithoutEmit();
@@ -190,7 +216,7 @@ SchemaSettings.Divider = (props) => {
 
 SchemaSettings.Remove = (props: any) => {
   const { confirm, removeParentsIfNoChildren, breakRemoveOn } = props;
-  const { dn, fieldSchema } = useSchemaSettings();
+  const { dn, template } = useSchemaSettings();
   const { t } = useTranslation();
   const ctx = useBlockTemplateContext();
   return (
@@ -205,7 +231,7 @@ SchemaSettings.Remove = (props: any) => {
               removeParentsIfNoChildren,
               breakRemoveOn,
             };
-            if (ctx?.dn) {
+            if (template && ctx?.dn) {
               ctx?.dn.remove(null, options);
             } else {
               dn.remove(null, options);
