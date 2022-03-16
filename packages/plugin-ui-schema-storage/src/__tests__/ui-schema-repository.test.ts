@@ -1063,4 +1063,49 @@ describe('ui_schema repository', () => {
       'x-async': false,
     });
   });
+
+  it('should remove schema ancestor', async () => {
+    const schema = {
+      'x-uid': 'A',
+      name: 'A',
+      properties: {
+        B: {
+          'x-uid': 'B',
+          properties: {
+            C: {
+              'x-uid': 'C',
+              properties: {
+                D: {
+                  'x-uid': 'D',
+                },
+              },
+            },
+            F: {
+              'x-uid': 'F',
+            },
+          },
+        },
+        E: {
+          'x-uid': 'E',
+        },
+      },
+    };
+
+    await repository.insert(schema);
+    expect((await repository.getJsonSchema('B')).properties.C).toBeDefined();
+
+    await repository.clearAncestor('C');
+
+    expect((await repository.getJsonSchema('B')).properties.C).not.toBeDefined();
+
+    const c = await repository.getJsonSchema('C');
+    expect(c).toMatchObject({
+      'x-uid': 'C',
+      properties: {
+        D: {
+          'x-uid': 'D',
+        },
+      },
+    });
+  });
 });

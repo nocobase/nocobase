@@ -1,56 +1,33 @@
 import { Context } from '@nocobase/actions';
 import UiSchemaRepository from '../repository';
+import lodash from 'lodash';
 
 const getRepositoryFromCtx = (ctx: Context) => {
   return ctx.db.getCollection('uiSchemas').repository as UiSchemaRepository;
 };
 
+const callRepositoryMethod = (method, paramsKey: 'resourceIndex' | 'values') => {
+  return async (ctx, next) => {
+    const params = lodash.get(ctx.action.params, paramsKey);
+
+    const repository = getRepositoryFromCtx(ctx);
+    const returnValue = await repository[method](params);
+
+    ctx.body = returnValue || {
+      result: 'ok',
+    };
+
+    await next();
+  };
+};
+
 export const uiSchemaActions = {
-  async getJsonSchema(ctx: Context, next) {
-    const { resourceIndex } = ctx.action.params;
-    const repository = getRepositoryFromCtx(ctx);
-    ctx.body = await repository.getJsonSchema(resourceIndex);
-    await next();
-  },
-
-  async getProperties(ctx: Context, next) {
-    const { resourceIndex } = ctx.action.params;
-    const repository = getRepositoryFromCtx(ctx);
-    ctx.body = await repository.getProperties(resourceIndex);
-    await next();
-  },
-
-  async insert(ctx: Context, next) {
-    const { values } = ctx.action.params;
-    const repository = getRepositoryFromCtx(ctx);
-
-    ctx.body = await repository.insert(values);
-    await next();
-  },
-
-  async remove(ctx: Context, next) {
-    const { resourceIndex } = ctx.action.params;
-    const repository = getRepositoryFromCtx(ctx);
-    await repository.remove(resourceIndex);
-
-    ctx.body = {
-      result: 'ok',
-    };
-
-    await next();
-  },
-
-  async patch(ctx: Context, next) {
-    const { values } = ctx.action.params;
-    const repository = getRepositoryFromCtx(ctx);
-    await repository.patch(values);
-
-    ctx.body = {
-      result: 'ok',
-    };
-
-    await next();
-  },
+  getJsonSchema: callRepositoryMethod('getJsonSchema', 'resourceIndex'),
+  getProperties: callRepositoryMethod('getProperties', 'resourceIndex'),
+  insert: callRepositoryMethod('insert', 'values'),
+  remove: callRepositoryMethod('remove', 'resourceIndex'),
+  patch: callRepositoryMethod('patch', 'values'),
+  clearAncestor: callRepositoryMethod('clearAncestor', 'resourceIndex'),
 
   async insertAdjacent(ctx: Context, next) {
     const { resourceIndex, position, values, removeParentsIfNoChildren, breakRemoveOn } = ctx.action.params;
@@ -63,6 +40,7 @@ export const uiSchemaActions = {
 
     await next();
   },
+
   insertBeforeBegin: insertPositionActionBuilder('beforeBegin'),
   insertAfterBegin: insertPositionActionBuilder('afterBegin'),
   insertBeforeEnd: insertPositionActionBuilder('beforeEnd'),
