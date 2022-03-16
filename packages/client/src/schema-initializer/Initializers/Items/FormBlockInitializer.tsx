@@ -4,6 +4,7 @@ import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { SchemaInitializer } from '../..';
 import { useCollectionManager } from '../../../collection-manager';
+import { useSchemaTemplateManager } from '../../../schema-templates';
 import { useCollectionDataSourceItems } from '../utils';
 
 const createSchema = (collectionName) => {
@@ -56,12 +57,18 @@ export const FormBlockInitializer = (props) => {
   const { insert } = props;
   const { collections } = useCollectionManager();
   const { t } = useTranslation();
+  const { getTemplateSchemaByMode } = useSchemaTemplateManager();
   return (
     <SchemaInitializer.Item
       {...props}
       icon={<FormOutlined />}
-      onClick={({ item }) => {
-        insert(createSchema(item.name));
+      onClick={async ({ item }) => {
+        if (item.template) {
+          const s = await getTemplateSchemaByMode(item);
+          insert(s);
+        } else {
+          insert(createSchema(item.name));
+        }
       }}
       items={useCollectionDataSourceItems('Form')}
     />

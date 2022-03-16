@@ -79,25 +79,15 @@ export const createTableBlockSchema = (collectionName) => {
 
 export const TableBlockInitializer = (props) => {
   const { insert } = props;
-  const { copyTemplateSchema } = useSchemaTemplateManager();
+  const { getTemplateSchemaByMode } = useSchemaTemplateManager();
   return (
     <SchemaInitializer.Item
       {...props}
       icon={<TableOutlined />}
       onClick={async ({ item }) => {
         if (item.template) {
-          if (item.mode === 'copy') {
-            const schema = await copyTemplateSchema(item.template);
-            insert(schema);
-          } else if (item.mode === 'reference') {
-            insert({
-              type: 'void',
-              'x-component': 'BlockTemplate',
-              'x-component-props': {
-                templateId: item.template.key,
-              },
-            });
-          }
+          const s = await getTemplateSchemaByMode(item);
+          insert(s);
         } else {
           insert(createTableBlockSchema(item.name));
         }

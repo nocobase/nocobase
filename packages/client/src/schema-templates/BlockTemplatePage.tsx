@@ -34,6 +34,11 @@ export const BlockTemplatePage = () => {
                 render: (value) => compile(value),
               },
               {
+                dataIndex: 'componentName',
+                title: 'Component name',
+                render: (value) => value,
+              },
+              {
                 dataIndex: 'actions',
                 title: 'Actions',
                 render: (_, record) => <Link to={`/admin/block-templates/${record.key}`}>查看</Link>,

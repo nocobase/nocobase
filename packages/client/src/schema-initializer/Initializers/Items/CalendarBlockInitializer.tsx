@@ -5,6 +5,7 @@ import React, { useContext } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useCollectionManager } from '../../../collection-manager';
 import { SchemaComponent, SchemaComponentOptions } from '../../../schema-component';
+import { useSchemaTemplateManager } from '../../../schema-templates';
 import { SchemaInitializer } from '../../SchemaInitializer';
 import { useCollectionDataSourceItems } from '../utils';
 
@@ -103,11 +104,17 @@ export const CalendarBlockInitializer = (props) => {
   const { collections, getCollection } = useCollectionManager();
   const { t } = useTranslation();
   const options = useContext(SchemaOptionsContext);
+  const { getTemplateSchemaByMode } = useSchemaTemplateManager();
   return (
     <SchemaInitializer.Item
       {...props}
       icon={<FormOutlined />}
       onClick={async ({ item }) => {
+        if (item.template) {
+          const s = await getTemplateSchemaByMode(item);
+          insert(s);
+          return;
+        }
         const collection = getCollection(item.name);
         const stringFields = collection?.fields
           ?.filter((field) => field.type === 'string')
@@ -162,6 +169,7 @@ export const CalendarBlockInitializer = (props) => {
         }).open({
           initialValues: {},
         });
+
         insert(createSchema(item.name, values));
       }}
       items={useCollectionDataSourceItems('Calendar')}

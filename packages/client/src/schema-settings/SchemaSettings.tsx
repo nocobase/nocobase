@@ -7,6 +7,7 @@ import React, { createContext, useContext, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   ActionContext,
+  createDesignable,
   Designable,
   SchemaComponent,
   SchemaComponentOptions,
@@ -153,29 +154,26 @@ SchemaSettings.Template = (props) => {
             </FormLayout>
           );
         }).open({});
+        const sdn = createDesignable({
+          api,
+          refresh: dn.refresh.bind(dn),
+          current: fieldSchema.parent,
+        });
+        sdn.loadAPIClientEvents();
         const { key } = await saveAsTemplate({
           collectionName,
           componentName,
           name: values.name,
-          uiSchema: fieldSchema.toJSON(),
+          uid: fieldSchema['x-uid'],
         });
-        const removed = dn.removeWithoutEmit();
-        dn.insertAfterEnd(
-          {
-            type: 'void',
-            'x-component': 'BlockTemplate',
-            'x-component-props': {
-              templateId: key,
-            },
+        sdn.removeWithoutEmit(fieldSchema);
+        sdn.insertBeforeEnd({
+          type: 'void',
+          'x-component': 'BlockTemplate',
+          'x-component-props': {
+            templateId: key,
           },
-          {
-            async onSuccess() {
-              await api.request({
-                url: `/uiSchemas:remove/${removed['x-uid']}`,
-              });
-            },
-          },
-        );
+        });
       }}
     >
       {t('Save as template')}

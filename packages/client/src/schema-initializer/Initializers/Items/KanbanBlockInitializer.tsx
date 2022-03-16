@@ -6,6 +6,7 @@ import { useTranslation } from 'react-i18next';
 import { useAPIClient } from '../../../api-client';
 import { useCollectionManager } from '../../../collection-manager';
 import { SchemaComponent, SchemaComponentOptions } from '../../../schema-component';
+import { useSchemaTemplateManager } from '../../../schema-templates';
 import { SchemaInitializer } from '../../SchemaInitializer';
 import { useCollectionDataSourceItems } from '../utils';
 
@@ -159,6 +160,7 @@ export const KanbanBlockInitializer = (props) => {
   const { insert } = props;
   const { collections, getCollection } = useCollectionManager();
   const { t } = useTranslation();
+  const { getTemplateSchemaByMode } = useSchemaTemplateManager();
   const options = useContext(SchemaOptionsContext);
   const api = useAPIClient();
   return (
@@ -166,6 +168,11 @@ export const KanbanBlockInitializer = (props) => {
       {...props}
       icon={<FormOutlined />}
       onClick={async ({ item }) => {
+        if (item.template) {
+          const s = await getTemplateSchemaByMode(item);
+          insert(s);
+          return;
+        }
         const collection = getCollection(item.name);
         const fields = collection?.fields
           ?.filter((field) => ['select', 'radioGroup'].includes(field.interface))
