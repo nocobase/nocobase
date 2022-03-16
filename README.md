@@ -48,7 +48,7 @@ Why choose NocoBase
 
 Note
 ----------
-NocoBase is still in early development and is for preview purposes only and is not suitable for use in a production environment.  A relatively stable and well-documented public beta is expected to be released as early as the first quarter of 2022.
+NocoBase is still in early development and is for preview purposes only and is not suitable for use in a production environment.  A relatively stable and well-documented public beta is expected to be released as early as April 2022.
 If you are interested in NocoBase, please join us to discuss and develop it together.
 
 Architecture
