@@ -19,6 +19,7 @@ export const SchemaTemplateManagerProvider: React.FC<any> = (props) => {
 
 const regenerateUid = (s: ISchema) => {
   s['x-uid'] = uid();
+  delete s['x-index'];
   Object.keys(s.properties || {}).forEach((key) => {
     regenerateUid(s.properties[key]);
   });
@@ -38,8 +39,33 @@ export const useSchemaTemplateManager = () => {
       regenerateUid(s);
       return s;
     },
+    async saveAsTemplate(values) {
+      const { uiSchema } = values;
+      const key = uid();
+      regenerateUid(uiSchema);
+      await api.resource('uiSchemaTemplates').create({
+        values: {
+          key,
+          ...values,
+          uiSchema,
+        },
+      });
+      await refresh();
+      return { key };
+    },
+    async duplicate(template) {
+      const { data } = await api.request({
+        url: `/uiSchemas:getJsonSchema/${template.uid}`,
+      });
+      const s = data?.data || {};
+      regenerateUid(s);
+      return s;
+    },
+    getTemplateBySchemaId(schemaId) {
+      return templates?.find((template) => template.uid === schemaId);
+    },
     getTemplateById(key) {
-      return templates?.find(template => template.key === key);
+      return templates?.find((template) => template.key === key);
     },
     getTemplatesByCollection(collectionName: string) {
       const items = templates?.filter?.((template) => template.collectionName === collectionName);

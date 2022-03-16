@@ -193,6 +193,8 @@ export const TableVoidDesigner = () => {
         }}
       />
       <SchemaSettings.Divider />
+      <SchemaSettings.SaveAsTemplate collectionName={name}/>
+      <SchemaSettings.Divider />
       <SchemaSettings.Remove
         removeParentsIfNoChildren
         breakRemoveOn={{

@@ -5,7 +5,16 @@ import { uid } from '@formily/shared';
 import { Dropdown, Menu, MenuItemProps, Modal, Select, Switch } from 'antd';
 import React, { createContext, useContext, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { ActionContext, Designable, SchemaComponent, SchemaComponentOptions, useActionContext } from '..';
+import {
+  ActionContext,
+  Designable,
+  SchemaComponent,
+  SchemaComponentOptions,
+  useActionContext,
+  useAPIClient,
+  useCollection
+} from '..';
+import { useSchemaTemplateManager } from '../schema-templates';
 import { useBlockTemplateContext } from '../schema-templates/BlockTemplate';
 
 interface SchemaSettingsProps {
@@ -21,6 +30,8 @@ interface SchemaSettingsContextProps {
   fieldSchema?: Schema;
   setVisible?: any;
   visible?: any;
+  template?: any;
+  collectionName?: any;
 }
 
 const SchemaSettingsContext = createContext<SchemaSettingsContextProps>(null);
@@ -49,19 +60,24 @@ interface SchemaSettingsProviderProps {
   fieldSchema?: Schema;
   setVisible?: any;
   visible?: any;
+  template?: any;
+  collectionName?: any;
 }
 
 export const SchemaSettingsProvider: React.FC<SchemaSettingsProviderProps> = (props) => {
-  const { visible, setVisible, dn, field, fieldSchema, children } = props;
+  const { children, fieldSchema, ...others } = props;
+  const { getTemplateBySchemaId } = useSchemaTemplateManager();
+  const { name } = useCollection();
+  const template = getTemplateBySchemaId(fieldSchema['x-uid']);
   return (
-    <SchemaSettingsContext.Provider value={{ visible, setVisible, dn, field, fieldSchema }}>
+    <SchemaSettingsContext.Provider value={{ collectionName: name, template, fieldSchema, ...others }}>
       {children}
     </SchemaSettingsContext.Provider>
   );
 };
 
 export const SchemaSettings: React.FC<SchemaSettingsProps> & SchemaSettingsNested = (props) => {
-  const { title, dn, field, fieldSchema } = props;
+  const { title, dn, ...others } = props;
   const [visible, setVisible] = useState(false);
   const DropdownMenu = (
     <Dropdown
@@ -76,12 +92,69 @@ export const SchemaSettings: React.FC<SchemaSettingsProps> & SchemaSettingsNeste
   );
   if (dn) {
     return (
-      <SchemaSettingsProvider visible={visible} setVisible={setVisible} dn={dn} field={field} fieldSchema={fieldSchema}>
+      <SchemaSettingsProvider visible={visible} setVisible={setVisible} dn={dn} {...others}>
         {DropdownMenu}
       </SchemaSettingsProvider>
     );
   }
   return DropdownMenu;
+};
+
+SchemaSettings.SaveAsTemplate = (props) => {
+  const { collectionName } = props;
+  const { t } = useTranslation();
+  const { dn, template, fieldSchema } = useSchemaSettings();
+  const api = useAPIClient();
+  const { saveAsTemplate, duplicate } = useSchemaTemplateManager();
+  if (template) {
+    return (
+      <SchemaSettings.Item
+        onClick={async () => {
+          const schema = await duplicate(template);
+          console.log('duplicate', schema);
+          const removed = dn.removeWithoutEmit();
+          dn.insertAfterEnd(schema, {
+            async onSuccess() {
+              await api.request({
+                url: `/uiSchemas:remove/${removed['x-uid']}`,
+              });
+            },
+          });
+        }}
+      >
+        {t('Convert reference to duplicate')}
+      </SchemaSettings.Item>
+    );
+  }
+  return (
+    <SchemaSettings.Item
+      onClick={async () => {
+        const { key } = await saveAsTemplate({
+          collectionName,
+          uiSchema: fieldSchema.toJSON(),
+        });
+        const removed = dn.removeWithoutEmit();
+        dn.insertAfterEnd(
+          {
+            type: 'void',
+            'x-component': 'BlockTemplate',
+            'x-component-props': {
+              templateId: key,
+            },
+          },
+          {
+            async onSuccess() {
+              await api.request({
+                url: `/uiSchemas:remove/${removed['x-uid']}`,
+              });
+            },
+          },
+        );
+      }}
+    >
+      {t('Save as template')}
+    </SchemaSettings.Item>
+  );
 };
 
 SchemaSettings.Item = (props) => {

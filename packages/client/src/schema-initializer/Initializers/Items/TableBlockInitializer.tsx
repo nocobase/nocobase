@@ -1,10 +1,9 @@
 import { TableOutlined } from '@ant-design/icons';
 import { ISchema } from '@formily/react';
-import { useSchemaTemplateManager } from '@nocobase/client';
 import React from 'react';
-import { useTranslation } from 'react-i18next';
 import { SchemaInitializer } from '../..';
-import { useCollectionManager } from '../../../collection-manager';
+import { useSchemaTemplateManager } from '../../../schema-templates';
+import { useCollectionDataSourceItems } from '../utils';
 
 export const createTableBlockSchema = (collectionName) => {
   const schema: ISchema = {
@@ -80,9 +79,7 @@ export const createTableBlockSchema = (collectionName) => {
 
 export const TableBlockInitializer = (props) => {
   const { insert } = props;
-  const { collections } = useCollectionManager();
-  const { t } = useTranslation();
-  const { getTemplatesByCollection, copyTemplateSchema } = useSchemaTemplateManager();
+  const { copyTemplateSchema } = useSchemaTemplateManager();
   return (
     <SchemaInitializer.Item
       {...props}
@@ -105,64 +102,7 @@ export const TableBlockInitializer = (props) => {
           insert(createTableBlockSchema(item.name));
         }
       }}
-      items={[
-        {
-          key: 'tableBlock',
-          type: 'itemGroup',
-          title: t('Select data source'),
-          children: collections
-            ?.filter((item) => !item.inherit)
-            ?.map((item, index) => {
-              const templates = getTemplatesByCollection(item.name);
-              return {
-                key: `table_subMenu_${index}`,
-                type: 'subMenu',
-                name: `${item.name}_${index}`,
-                title: item.title,
-                children: [
-                  {
-                    type: 'item',
-                    name: item.name,
-                    title: '空白区块',
-                  },
-                  {
-                    type: 'divider',
-                  },
-                  {
-                    key: `table_subMenu_${index}_copy`,
-                    type: 'subMenu',
-                    name: 'copy',
-                    title: '复制模板',
-                    children: templates.map((template) => {
-                      return {
-                        type: 'item',
-                        mode: 'copy',
-                        name: item.name,
-                        template,
-                        title: template.name,
-                      };
-                    }),
-                  },
-                  {
-                    key: `table_subMenu_${index}_ref`,
-                    type: 'subMenu',
-                    name: 'ref',
-                    title: '引用模板',
-                    children: templates.map((template) => {
-                      return {
-                        type: 'item',
-                        mode: 'reference',
-                        name: item.name,
-                        template,
-                        title: template.name,
-                      };
-                    }),
-                  },
-                ],
-              };
-            }),
-        },
-      ]}
+      items={useCollectionDataSourceItems()}
     />
   );
 };
