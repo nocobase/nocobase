@@ -13,7 +13,7 @@ type BreakRemoveOnType = {
   [key: string]: any;
 };
 
-export interface removeParentOptions {
+export interface removeParentOptions extends TransactionAble {
   removeParentsIfNoChildren?: boolean;
   breakRemoveOn?: BreakRemoveOnType;
 }
@@ -21,6 +21,45 @@ export interface removeParentOptions {
 interface InsertAdjacentOptions extends removeParentOptions {}
 
 const nodeKeys = ['properties', 'definitions', 'patternProperties', 'additionalProperties', 'items'];
+
+function transaction(transactionAbleArgPosition?: number) {
+  return (target: any, propertyKey: string, descriptor: PropertyDescriptor) => {
+    const originalMethod = descriptor.value;
+
+    descriptor.value = async function (...args) {
+      if (!lodash.isNumber(transactionAbleArgPosition)) {
+        transactionAbleArgPosition = originalMethod.length - 1;
+      }
+
+      let transaction = lodash.get(args, [transactionAbleArgPosition, 'transaction']);
+      let handleTransaction = false;
+      if (!transaction) {
+        transaction = await this.database.sequelize.transaction();
+        handleTransaction = true;
+
+        lodash.set(args, transactionAbleArgPosition, {
+          ...lodash.get(args, transactionAbleArgPosition, {}),
+          transaction,
+        });
+      }
+
+      if (handleTransaction) {
+        try {
+          const results = await originalMethod.apply(this, args);
+          await transaction.commit();
+          return results;
+        } catch (e) {
+          await transaction.rollback();
+          throw e;
+        }
+      } else {
+        return await originalMethod.apply(this, args);
+      }
+    };
+
+    return descriptor;
+  };
+}
 
 export class UiSchemaRepository extends Repository {
   tableNameAdapter(tableName) {
@@ -212,19 +251,32 @@ export class UiSchemaRepository extends Repository {
     return buildTree(nodes.find((node) => node['x-uid'] == rootUid));
   }
 
-  treeCollection() {
-    return this.database.getCollection('uiSchemaTreePath');
+  @transaction()
+  async clearAncestor(uid: string, options?: TransactionAble) {
+    const db = this.database;
+    const treeTable = this.uiSchemaTreePathTableName;
+
+    await db.sequelize.query(
+      `DELETE
+       FROM ${treeTable}
+       WHERE descendant IN
+             (SELECT descendant FROM (SELECT descendant FROM ${treeTable} WHERE ancestor = :uid) as descendantTable)
+         AND ancestor IN (SELECT ancestor
+                          FROM (SELECT ancestor FROM ${treeTable} WHERE descendant = :uid AND ancestor != descendant) as ancestorTable)
+      `,
+      {
+        type: 'DELETE',
+        replacements: {
+          uid,
+        },
+        transaction: options.transaction,
+      },
+    );
   }
 
+  @transaction()
   async patch(newSchema: any, options?) {
-    let handleTransaction = true;
-    let transaction;
-    if (options?.transaction) {
-      handleTransaction = false;
-      transaction = options.transaction;
-    } else {
-      transaction = await this.database.sequelize.transaction();
-    }
+    const { transaction } = options;
 
     const rootUid = newSchema['x-uid'];
     const oldTree = await this.getJsonSchema(rootUid);
@@ -244,14 +296,7 @@ export class UiSchemaRepository extends Repository {
       }
     };
 
-    try {
-      await traverSchemaTree(newSchema);
-
-      handleTransaction && (await transaction.commit());
-    } catch (err) {
-      handleTransaction && (await transaction.rollback());
-      throw err;
-    }
+    await traverSchemaTree(newSchema);
   }
 
   async updateNode(uid: string, schema: any, transaction?: Transaction) {
@@ -406,65 +451,44 @@ export class UiSchemaRepository extends Repository {
     await removeLeafNode(uid);
   }
 
+  @transaction()
   async remove(uid: string, options?: TransactionAble & removeParentOptions) {
-    let handleTransaction: boolean = true;
-    let transaction;
+    let { transaction } = options;
 
-    if (options?.transaction) {
-      transaction = options.transaction;
-      handleTransaction = false;
-    } else {
-      transaction = await this.database.sequelize.transaction();
+    if (options?.removeParentsIfNoChildren) {
+      await this.removeEmptyParents({ transaction, uid, breakRemoveOn: options.breakRemoveOn });
+      return;
     }
 
-    try {
-      if (options?.removeParentsIfNoChildren) {
-        await this.removeEmptyParents({ transaction, uid, breakRemoveOn: options.breakRemoveOn });
-        if (handleTransaction) {
-          await transaction.commit();
-        }
-        return;
-      }
-
-      await this.database.sequelize.query(
-        this.sqlAdapter(`DELETE FROM ${this.uiSchemasTableName} WHERE "x-uid" IN (
+    await this.database.sequelize.query(
+      this.sqlAdapter(`DELETE FROM ${this.uiSchemasTableName} WHERE "x-uid" IN (
             SELECT descendant FROM ${this.uiSchemaTreePathTableName} WHERE ancestor = :uid
         )`),
-        {
-          replacements: {
-            uid,
-          },
-          transaction,
+      {
+        replacements: {
+          uid,
         },
-      );
+        transaction,
+      },
+    );
 
-      await this.database.sequelize.query(
-        `
-            DELETE FROM ${this.uiSchemaTreePathTableName}
+    await this.database.sequelize.query(
+      ` DELETE FROM ${this.uiSchemaTreePathTableName}
             WHERE descendant IN (
                 select descendant FROM
                     (SELECT descendant
                      FROM ${this.uiSchemaTreePathTableName}
                      WHERE ancestor = :uid)as descendantTable) `,
-        {
-          replacements: {
-            uid,
-          },
-          transaction,
+      {
+        replacements: {
+          uid,
         },
-      );
-
-      if (handleTransaction) {
-        await transaction.commit();
-      }
-    } catch (err) {
-      if (handleTransaction) {
-        await transaction.rollback();
-      }
-      throw err;
-    }
+        transaction,
+      },
+    );
   }
 
+  @transaction()
   async insertBeside(targetUid: string, schema: any, side: 'before' | 'after', options?: InsertAdjacentOptions) {
     const targetParent = await this.findParentUid(targetUid);
 
@@ -496,6 +520,7 @@ export class UiSchemaRepository extends Repository {
     return await this.getJsonSchema(insertedNodes[0].get('x-uid'));
   }
 
+  @transaction()
   async insertInner(targetUid: string, schema: any, position: 'first' | 'last', options?: InsertAdjacentOptions) {
     const nodes = UiSchemaRepository.schemaToSingleNodes(schema);
     const rootNode = nodes[0];
@@ -510,6 +535,7 @@ export class UiSchemaRepository extends Repository {
     return await this.getJsonSchema(insertedNodes[0].get('x-uid'));
   }
 
+  @transaction()
   async insertAdjacent(
     position: 'beforeBegin' | 'afterBegin' | 'beforeEnd' | 'afterEnd',
     target: string,
@@ -519,58 +545,45 @@ export class UiSchemaRepository extends Repository {
     return await this[`insert${lodash.upperFirst(position)}`](target, schema, options);
   }
 
+  @transaction()
   async insertAfterBegin(targetUid: string, schema: any, options?: InsertAdjacentOptions) {
     return await this.insertInner(targetUid, schema, 'first', options);
   }
 
+  @transaction()
   async insertBeforeEnd(targetUid: string, schema: any, options?: InsertAdjacentOptions) {
     return await this.insertInner(targetUid, schema, 'last', options);
   }
 
+  @transaction()
   async insertBeforeBegin(targetUid: string, schema: any, options?: InsertAdjacentOptions) {
     return await this.insertBeside(targetUid, schema, 'before', options);
   }
 
+  @transaction()
   async insertAfterEnd(targetUid: string, schema: any, options?: InsertAdjacentOptions) {
     return await this.insertBeside(targetUid, schema, 'after', options);
   }
 
-  async insertNodes(nodes: SchemaNode[], options?) {
-    let handleTransaction: boolean = true;
-    let transaction;
-
-    if (options?.transaction) {
-      transaction = options.transaction;
-      handleTransaction = false;
-    } else {
-      transaction = await this.database.sequelize.transaction();
-    }
+  @transaction()
+  async insertNodes(nodes: SchemaNode[], options?: TransactionAble) {
+    const { transaction } = options;
 
     const insertedNodes = [];
 
-    try {
-      for (const node of nodes) {
-        insertedNodes.push(
-          await this.insertSingleNode(node, {
-            ...options,
-            transaction,
-          }),
-        );
-      }
-
-      if (handleTransaction) {
-        await transaction.commit();
-      }
-      return insertedNodes;
-    } catch (err) {
-      console.log({ err });
-      if (handleTransaction) {
-        await transaction.rollback();
-      }
-      throw err;
+    for (const node of nodes) {
+      insertedNodes.push(
+        await this.insertSingleNode(node, {
+          ...options,
+          transaction,
+        }),
+      );
     }
+
+    return insertedNodes;
   }
 
+  @transaction()
   async insert(schema: any, options?: TransactionAble) {
     const nodes = UiSchemaRepository.schemaToSingleNodes(schema);
     const insertedNodes = await this.insertNodes(nodes, options);

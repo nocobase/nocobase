@@ -52,6 +52,18 @@ export const uiSchemaActions = {
     await next();
   },
 
+  async clearAncestor(ctx: Context, next) {
+    const { values } = ctx.action.params;
+    const repository = getRepositoryFromCtx(ctx);
+    await repository.clearAncestor(values);
+
+    ctx.body = {
+      result: 'ok',
+    };
+
+    await next();
+  },
+
   async insertAdjacent(ctx: Context, next) {
     const { resourceIndex, position, values, removeParentsIfNoChildren, breakRemoveOn } = ctx.action.params;
     const repository = getRepositoryFromCtx(ctx);
