@@ -663,20 +663,7 @@ export class UiSchemaRepository extends Repository {
 
       // if node is a tree root move tree to new path
       if (isTree) {
-        // delete old tree path
-        await db.sequelize.query(
-          `DELETE FROM ${treeTable}
-           WHERE descendant IN (SELECT descendant FROM (SELECT descendant FROM ${treeTable} WHERE ancestor = :uid) as descendantTable )
-             AND ancestor IN (SELECT ancestor FROM (SELECT ancestor FROM  ${treeTable} WHERE descendant = :uid AND ancestor != descendant) as ancestorTable)
-          `,
-          {
-            type: 'DELETE',
-            replacements: {
-              uid,
-            },
-            transaction,
-          },
-        );
+        await this.clearAncestor(uid, { transaction });
 
         // insert new tree path
         await db.sequelize.query(
