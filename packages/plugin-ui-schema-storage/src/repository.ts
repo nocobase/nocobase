@@ -490,7 +490,8 @@ export class UiSchemaRepository extends Repository {
 
   @transaction()
   async insertBeside(targetUid: string, schema: any, side: 'before' | 'after', options?: InsertAdjacentOptions) {
-    const targetParent = await this.findParentUid(targetUid);
+    const { transaction } = options;
+    const targetParent = await this.findParentUid(targetUid, transaction);
 
     const db = this.database;
 
@@ -501,6 +502,7 @@ export class UiSchemaRepository extends Repository {
       replacements: {
         uid: targetUid,
       },
+      transaction,
     });
 
     const nodes = UiSchemaRepository.schemaToSingleNodes(schema);
@@ -517,11 +519,15 @@ export class UiSchemaRepository extends Repository {
     };
 
     const insertedNodes = await this.insertNodes(nodes, options);
-    return await this.getJsonSchema(insertedNodes[0].get('x-uid'));
+    return await this.getJsonSchema(insertedNodes[0].get('x-uid'), {
+      transaction,
+    });
   }
 
   @transaction()
   async insertInner(targetUid: string, schema: any, position: 'first' | 'last', options?: InsertAdjacentOptions) {
+    const { transaction } = options;
+
     const nodes = UiSchemaRepository.schemaToSingleNodes(schema);
     const rootNode = nodes[0];
 
@@ -532,7 +538,9 @@ export class UiSchemaRepository extends Repository {
     };
 
     const insertedNodes = await this.insertNodes(nodes, options);
-    return await this.getJsonSchema(insertedNodes[0].get('x-uid'));
+    return await this.getJsonSchema(insertedNodes[0].get('x-uid'), {
+      transaction,
+    });
   }
 
   @transaction()
