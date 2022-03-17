@@ -1,5 +1,6 @@
 import { Card, PageHeader as AntdPageHeader, Table } from 'antd';
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
 import { useCompile, useRequest } from '..';
 
@@ -13,9 +14,10 @@ export const BlockTemplatePage = () => {
     },
   });
   const compile = useCompile();
+  const { t } = useTranslation();
   return (
     <div>
-      <AntdPageHeader ghost={false} title={'Block templates'} />
+      <AntdPageHeader ghost={false} title={t('Block templates')} />
       <div style={{ margin: 24 }}>
         <Card bordered={false}>
           <Table
@@ -25,22 +27,22 @@ export const BlockTemplatePage = () => {
             columns={[
               {
                 dataIndex: 'name',
-                title: 'Template name',
+                title: t('Template name'),
                 render: (value) => <>{value || '未命名'}</>,
               },
               {
                 dataIndex: ['collection', 'title'],
-                title: 'Collection name',
+                title: t('Collection display name'),
                 render: (value) => compile(value),
               },
               {
                 dataIndex: 'componentName',
-                title: 'Component name',
+                title: t('Block type'),
                 render: (value) => value,
               },
               {
                 dataIndex: 'actions',
-                title: 'Actions',
+                title: t('Actions'),
                 render: (_, record) => <Link to={`/admin/block-templates/${record.key}`}>查看</Link>,
               },
             ]}
