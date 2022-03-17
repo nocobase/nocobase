@@ -10,6 +10,7 @@ import {
   PluginManager,
   RemoteCollectionManagerProvider,
   RemoteSchemaComponent,
+  RemoteSchemaTemplateManagerProvider,
   useDocumentTitle,
   useRoute,
   useSystemSettings
@@ -94,6 +95,7 @@ const InternalAdminLayout = (props: any) => {
               { component: 'DesignableSwitch', pin: true },
               { component: 'CollectionManagerShortcut', pin: true },
               { component: 'ACLShortcut', pin: true },
+              { component: 'SchemaTemplateShortcut', pin: true },
               { component: 'SystemSettingsShortcut' },
             ]}
           />
@@ -110,11 +112,13 @@ const InternalAdminLayout = (props: any) => {
 
 export const AdminLayout = (props) => {
   return (
-    <RemoteCollectionManagerProvider>
-      <CurrentUserProvider>
-        <InternalAdminLayout {...props} />
-      </CurrentUserProvider>
-    </RemoteCollectionManagerProvider>
+    <RemoteSchemaTemplateManagerProvider>
+      <RemoteCollectionManagerProvider>
+        <CurrentUserProvider>
+          <InternalAdminLayout {...props} />
+        </CurrentUserProvider>
+      </RemoteCollectionManagerProvider>
+    </RemoteSchemaTemplateManagerProvider>
   );
 };
 

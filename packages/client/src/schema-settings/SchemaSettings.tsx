@@ -1,11 +1,22 @@
-import { FormDialog, FormLayout } from '@formily/antd';
+import { FormDialog, FormItem, FormLayout, Input } from '@formily/antd';
 import { GeneralField } from '@formily/core';
 import { ISchema, Schema, SchemaOptionsContext } from '@formily/react';
 import { uid } from '@formily/shared';
 import { Dropdown, Menu, MenuItemProps, Modal, Select, Switch } from 'antd';
 import React, { createContext, useContext, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { ActionContext, Designable, SchemaComponent, SchemaComponentOptions, useActionContext } from '..';
+import {
+  ActionContext,
+  createDesignable,
+  Designable,
+  SchemaComponent,
+  SchemaComponentOptions,
+  useActionContext,
+  useAPIClient,
+  useCollection
+} from '..';
+import { useSchemaTemplateManager } from '../schema-templates';
+import { useBlockTemplateContext } from '../schema-templates/BlockTemplate';
 
 interface SchemaSettingsProps {
   title?: any;
@@ -20,6 +31,8 @@ interface SchemaSettingsContextProps {
   fieldSchema?: Schema;
   setVisible?: any;
   visible?: any;
+  template?: any;
+  collectionName?: any;
 }
 
 const SchemaSettingsContext = createContext<SchemaSettingsContextProps>(null);
@@ -48,19 +61,24 @@ interface SchemaSettingsProviderProps {
   fieldSchema?: Schema;
   setVisible?: any;
   visible?: any;
+  template?: any;
+  collectionName?: any;
 }
 
 export const SchemaSettingsProvider: React.FC<SchemaSettingsProviderProps> = (props) => {
-  const { visible, setVisible, dn, field, fieldSchema, children } = props;
+  const { children, fieldSchema, ...others } = props;
+  const { getTemplateBySchemaId } = useSchemaTemplateManager();
+  const { name } = useCollection();
+  const template = getTemplateBySchemaId(fieldSchema['x-uid']);
   return (
-    <SchemaSettingsContext.Provider value={{ visible, setVisible, dn, field, fieldSchema }}>
+    <SchemaSettingsContext.Provider value={{ collectionName: name, template, fieldSchema, ...others }}>
       {children}
     </SchemaSettingsContext.Provider>
   );
 };
 
 export const SchemaSettings: React.FC<SchemaSettingsProps> & SchemaSettingsNested = (props) => {
-  const { title, dn, field, fieldSchema } = props;
+  const { title, dn, ...others } = props;
   const [visible, setVisible] = useState(false);
   const DropdownMenu = (
     <Dropdown
@@ -75,12 +93,92 @@ export const SchemaSettings: React.FC<SchemaSettingsProps> & SchemaSettingsNeste
   );
   if (dn) {
     return (
-      <SchemaSettingsProvider visible={visible} setVisible={setVisible} dn={dn} field={field} fieldSchema={fieldSchema}>
+      <SchemaSettingsProvider visible={visible} setVisible={setVisible} dn={dn} {...others}>
         {DropdownMenu}
       </SchemaSettingsProvider>
     );
   }
   return DropdownMenu;
+};
+
+SchemaSettings.Template = (props) => {
+  const { componentName, collectionName } = props;
+  const { t } = useTranslation();
+  const { dn, setVisible, template, fieldSchema } = useSchemaSettings();
+  const api = useAPIClient();
+  const { dn: tdn } = useBlockTemplateContext();
+  const { saveAsTemplate, copyTemplateSchema } = useSchemaTemplateManager();
+  if (!collectionName) {
+    return null;
+  }
+  if (template) {
+    return (
+      <SchemaSettings.Item
+        onClick={async () => {
+          const schema = await copyTemplateSchema(template);
+          const removed = tdn.removeWithoutEmit();
+          tdn.insertAfterEnd(schema, {
+            async onSuccess() {
+              await api.request({
+                url: `/uiSchemas:remove/${removed['x-uid']}`,
+              });
+            },
+          });
+        }}
+      >
+        {t('Convert reference to duplicate')}
+      </SchemaSettings.Item>
+    );
+  }
+  return (
+    <SchemaSettings.Item
+      onClick={async () => {
+        setVisible(false);
+        const values = await FormDialog('Save as template', () => {
+          return (
+            <FormLayout layout={'vertical'}>
+              <SchemaComponent
+                components={{ Input, FormItem }}
+                schema={{
+                  type: 'object',
+                  properties: {
+                    name: {
+                      title: '模板名称',
+                      required: true,
+                      'x-decorator': 'FormItem',
+                      'x-component': 'Input',
+                    },
+                  },
+                }}
+              />
+            </FormLayout>
+          );
+        }).open({});
+        const sdn = createDesignable({
+          api,
+          refresh: dn.refresh.bind(dn),
+          current: fieldSchema.parent,
+        });
+        sdn.loadAPIClientEvents();
+        const { key } = await saveAsTemplate({
+          collectionName,
+          componentName,
+          name: values.name,
+          uid: fieldSchema['x-uid'],
+        });
+        sdn.removeWithoutEmit(fieldSchema);
+        sdn.insertBeforeEnd({
+          type: 'void',
+          'x-component': 'BlockTemplate',
+          'x-component-props': {
+            templateId: key,
+          },
+        });
+      }}
+    >
+      {t('Save as template')}
+    </SchemaSettings.Item>
+  );
 };
 
 SchemaSettings.Item = (props) => {
@@ -116,8 +214,9 @@ SchemaSettings.Divider = (props) => {
 
 SchemaSettings.Remove = (props: any) => {
   const { confirm, removeParentsIfNoChildren, breakRemoveOn } = props;
-  const { dn } = useSchemaSettings();
+  const { dn, template } = useSchemaSettings();
   const { t } = useTranslation();
+  const ctx = useBlockTemplateContext();
   return (
     <SchemaSettings.Item
       onClick={() => {
@@ -126,10 +225,15 @@ SchemaSettings.Remove = (props: any) => {
           content: t('Are you sure you want to delete it?'),
           ...confirm,
           onOk() {
-            dn.remove(null, {
+            const options = {
               removeParentsIfNoChildren,
               breakRemoveOn,
-            });
+            };
+            if (template && ctx?.dn) {
+              ctx?.dn.remove(null, options);
+            } else {
+              dn.remove(null, options);
+            }
           },
         });
       }}
