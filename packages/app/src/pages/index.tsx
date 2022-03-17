@@ -5,6 +5,8 @@ import {
   AntdSchemaComponentProvider,
   APIClientProvider,
   AuthLayout,
+  BlockTemplateDetails,
+  BlockTemplatePage,
   ChinaRegionProvider,
   CollectionManagerShortcut,
   compose,
@@ -13,19 +15,20 @@ import {
   i18n,
   MenuItemInitializers,
   PluginManagerProvider,
+  RemoteRouteSwitchProvider,
   // RemoteCollectionManagerProvider,
   RouteSchemaComponent,
   RouteSwitch,
-  RouteSwitchProvider,
   SchemaComponentProvider,
   SchemaInitializerProvider,
+  SchemaTemplateShortcut,
   SigninPage,
   SignupPage,
   SystemSettingsProvider,
   SystemSettingsShortcut,
-  useRequest
+  useRoutes
 } from '@nocobase/client';
-import { notification, Spin } from 'antd';
+import { notification } from 'antd';
 import 'antd/dist/antd.css';
 import React from 'react';
 import { I18nextProvider } from 'react-i18next';
@@ -50,6 +53,20 @@ const providers = [
   [APIClientProvider, { apiClient }],
   [I18nextProvider, { i18n }],
   [AntdConfigProvider, { remoteLocale: true }],
+  [
+    RemoteRouteSwitchProvider,
+    {
+      components: {
+        AuthLayout,
+        AdminLayout,
+        RouteSchemaComponent,
+        SigninPage,
+        SignupPage,
+        BlockTemplatePage,
+        BlockTemplateDetails,
+      },
+    },
+  ],
   SystemSettingsProvider,
   [
     PluginManagerProvider,
@@ -59,39 +76,30 @@ const providers = [
         DesignableSwitch,
         CollectionManagerShortcut,
         SystemSettingsShortcut,
+        SchemaTemplateShortcut,
       },
     },
   ],
   [SchemaComponentProvider, { components: { Link, NavLink } }],
   // RemoteCollectionManagerProvider,
-  [SchemaInitializerProvider, { initializers: { MenuItemInitializers } }],
-  AntdSchemaComponentProvider,
-  ChinaRegionProvider,
-  [DocumentTitleProvider, { addonAfter: 'NocoBase' }],
   [
-    RouteSwitchProvider,
+    SchemaInitializerProvider,
     {
-      components: {
-        AuthLayout,
-        AdminLayout,
-        RouteSchemaComponent,
-        SigninPage,
-        SignupPage,
+      initializers: {
+        MenuItemInitializers,
       },
     },
   ],
+  AntdSchemaComponentProvider,
+  ChinaRegionProvider,
+  [DocumentTitleProvider, { addonAfter: 'NocoBase' }],
 ];
 
 const App = compose(...providers)(() => {
-  const { data, loading } = useRequest({
-    url: 'uiRoutes:getAccessible',
-  });
-  if (loading) {
-    return <Spin />;
-  }
+  const routes = useRoutes();
   return (
     <div>
-      <RouteSwitch routes={data?.data || []} />
+      <RouteSwitch routes={routes} />
     </div>
   );
 });
