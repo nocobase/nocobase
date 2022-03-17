@@ -1108,4 +1108,34 @@ describe('ui_schema repository', () => {
       },
     });
   });
+
+  it('should insert big schema', async () => {
+    const schema = require('./fixtures/data').default;
+    await repository.insert(schema);
+    const rootUid = schema['x-uid'];
+    const savedSchema = await repository.getJsonSchema(rootUid);
+    expect(savedSchema).toBeDefined();
+  });
+
+  it('should insert big schema using insertAfterEnd', async () => {
+    const tree = {
+      'x-uid': 'root',
+      properties: {
+        A: {
+          'x-uid': 'A',
+        },
+        B: {
+          'x-uid': 'B',
+        },
+      },
+    };
+    await repository.insert(tree);
+    const schema = require('./fixtures/data').default;
+
+    await repository.insertAdjacent('afterEnd', 'A', schema);
+
+    const rootUid = schema['x-uid'];
+    const savedSchema = await repository.getJsonSchema(rootUid);
+    expect(savedSchema).toBeDefined();
+  });
 });
