@@ -4,6 +4,7 @@ import { Plugin } from '@nocobase/server';
 
 import WorkflowModel from './models/Workflow';
 import ExecutionModel from './models/Execution';
+import actions from './actions';
 
 export default class WorkflowPlugin extends Plugin {
   async load(options = {}) {
@@ -17,6 +18,8 @@ export default class WorkflowPlugin extends Plugin {
     await db.import({
       directory: path.resolve(__dirname, 'collections'),
     });
+
+    actions(this.app);
 
     // [Life Cycle]:
     //   * load all workflows in db

@@ -2,7 +2,7 @@ import React from "react";
 import { useForm } from "@formily/react";
 import { useActionContext, useAPIClient, useRecord, useResourceActionContext } from '../../';
 import { SchemaComponent } from "../../schema-component";
-import * as model from './model';
+import model from './model';
 
 
 function useUpdateConfigAction() {
@@ -34,7 +34,11 @@ const triggerTypes = {
 };
 
 export const TriggerConfig = () => {
-  const { type, config } = useRecord();
+  const { data } = useResourceActionContext();
+  if (!data) {
+    return null;
+  }
+  const { type, config } = data.data;
   const { properties, scope } = triggerTypes[type];
   return (
     <SchemaComponent
@@ -59,14 +63,14 @@ export const TriggerConfig = () => {
                 'x-component': 'Action.Drawer.Footer',
                 properties: {
                   cancel: {
-                    title: 'Cancel',
+                    title: '{{t("Cancel")}}',
                     'x-component': 'Action',
                     'x-component-props': {
                       useAction: '{{ cm.useCancelAction }}',
                     },
                   },
                   submit: {
-                    title: 'Submit',
+                    title: '{{t("Submit")}}',
                     'x-component': 'Action',
                     'x-component-props': {
                       type: 'primary',

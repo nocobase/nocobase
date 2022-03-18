@@ -9,12 +9,7 @@ export default {
       interface: 'string',
       type: 'string',
       name: 'title',
-      title: '名称',
-      component: {
-        showInTable: true,
-        showInDetail: true,
-        showInForm: true,
-      },
+      title: '名称'
     },
     // which workflow belongs to
     {
@@ -34,7 +29,7 @@ export default {
       type: 'hasMany',
       target: 'flow_nodes',
       sourceKey: 'id',
-      foreignKey: 'upstream_id',
+      foreignKey: 'upstreamId',
     },
     // only works when upstream node is branching type, such as condition and parallel.
     // put here because the design of flow-links model is not really necessary for now.
