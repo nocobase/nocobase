@@ -648,7 +648,10 @@ export class UiSchemaRepository extends Repository {
         transaction,
       },
     );
-    return nodes;
+
+    return this.getJsonSchema(nodes[0]['x-uid'], {
+      transaction,
+    });
   }
 
   private async insertSchemaRecord(name, uid, schema, transaction) {
