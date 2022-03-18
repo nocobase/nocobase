@@ -25,6 +25,7 @@ export const uiSchemaActions = {
   getJsonSchema: callRepositoryMethod('getJsonSchema', 'resourceIndex'),
   getProperties: callRepositoryMethod('getProperties', 'resourceIndex'),
   insert: callRepositoryMethod('insert', 'values'),
+  insertNewSchema: callRepositoryMethod('insertNewSchema', 'values'),
   remove: callRepositoryMethod('remove', 'resourceIndex'),
   patch: callRepositoryMethod('patch', 'values'),
   clearAncestor: callRepositoryMethod('clearAncestor', 'resourceIndex'),

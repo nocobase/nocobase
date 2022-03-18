@@ -1111,7 +1111,11 @@ describe('ui_schema repository', () => {
 
   it('should insert big schema', async () => {
     const schema = require('./fixtures/data').default;
-    await repository.insert(schema);
+
+    console.time('test');
+    await repository.insertNewSchema(schema);
+    console.timeEnd('test');
+
     const rootUid = schema['x-uid'];
     const savedSchema = await repository.getJsonSchema(rootUid);
     expect(savedSchema).toBeDefined();
@@ -1133,9 +1137,48 @@ describe('ui_schema repository', () => {
     const schema = require('./fixtures/data').default;
 
     await repository.insertAdjacent('afterEnd', 'A', schema);
-
     const rootUid = schema['x-uid'];
     const savedSchema = await repository.getJsonSchema(rootUid);
     expect(savedSchema).toBeDefined();
+  });
+
+  describe('schemaToSingleNodes', () => {
+    it('should with parent Paths', async () => {
+      const schema = {
+        name: 'root-name',
+        'x-uid': 'root',
+        properties: {
+          p1: {
+            'x-uid': 'p1',
+          },
+          p2: {
+            'x-uid': 'p2',
+            properties: {
+              p21: {
+                'x-uid': 'p21',
+                properties: {
+                  p211: {
+                    'x-uid': 'p211',
+                  },
+                },
+              },
+            },
+          },
+        },
+        items: [
+          {
+            name: 'i1',
+            'x-uid': 'i1',
+          },
+          {
+            name: 'i2',
+            'x-uid': 'i2',
+          },
+        ],
+      };
+      const nodes = UiSchemaRepository.schemaToSingleNodes(schema);
+      const p211Node = nodes.find((node) => node['x-uid'] === 'p211');
+      expect(p211Node['childOptions'].parentPath).toEqual(['p21', 'p2', 'root']);
+    });
   });
 });

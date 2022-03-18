@@ -111,31 +111,30 @@ export class UiSchemaRepository extends Repository {
 
     for (const nodeKey of nodeKeys) {
       const nodeProperty = lodash.get(node, nodeKey);
+      const childNodeChildOptions = {
+        parentUid: node['x-uid'],
+        parentPath: [node['x-uid'], ...lodash.get(childOptions, 'parentPath', [])],
+        type: nodeKey,
+      };
 
       // array items
       if (nodeKey === 'items' && nodeProperty) {
         const handleItems = lodash.isArray(nodeProperty) ? nodeProperty : [nodeProperty];
-        for (const item of handleItems) {
-          carry = this.schemaToSingleNodes(item, carry, {
-            parentUid: node['x-uid'],
-            type: nodeKey,
-          });
+        for (const [i, item] of handleItems.entries()) {
+          carry = this.schemaToSingleNodes(item, carry, { ...childNodeChildOptions, sort: i + 1 });
         }
       } else if (lodash.isPlainObject(nodeProperty)) {
         const subNodeNames = lodash.keys(lodash.get(node, nodeKey));
 
         delete node[nodeKey];
 
-        for (const subNodeName of subNodeNames) {
+        for (const [i, subNodeName] of subNodeNames.entries()) {
           const subSchema = {
             name: subNodeName,
             ...lodash.get(nodeProperty, subNodeName),
           };
 
-          carry = this.schemaToSingleNodes(subSchema, carry, {
-            parentUid: node['x-uid'],
-            type: nodeKey,
-          });
+          carry = this.schemaToSingleNodes(subSchema, carry, { ...childNodeChildOptions, sort: i + 1 });
         }
       }
     }
@@ -600,6 +599,58 @@ export class UiSchemaRepository extends Repository {
     });
   }
 
+  @transaction()
+  async insertNewSchema(schema: any, options?: TransactionAble) {
+    const { transaction } = options;
+
+    const nodes = UiSchemaRepository.schemaToSingleNodes(schema);
+    // insert schema fist
+    await this.database.sequelize.query(
+      this.sqlAdapter(
+        `INSERT INTO ${this.uiSchemasTableName} ("x-uid", "name", "schema") VALUES ${nodes
+          .map((n) => '(?)')
+          .join(',')};`,
+      ),
+      {
+        replacements: lodash.cloneDeep(nodes).map((node) => {
+          const { uid, name } = this.prepareSingleNodeForInsert(node);
+          return [uid, name, JSON.stringify(node)];
+        }),
+        type: 'insert',
+        transaction,
+      },
+    );
+
+    const treePathData: Array<any> = lodash.cloneDeep(nodes).reduce((carry, item) => {
+      const { uid, childOptions, async } = this.prepareSingleNodeForInsert(item);
+
+      return [
+        ...carry,
+        // self reference
+        [uid, uid, 0, childOptions?.type || null, async, null],
+        // parent references
+        ...lodash.get(childOptions, 'parentPath', []).map((parentUid, index) => {
+          return [parentUid, uid, index + 1, null, null, childOptions.sort];
+        }),
+      ];
+    }, []);
+
+    // insert tree path
+    await this.database.sequelize.query(
+      this.sqlAdapter(
+        `INSERT INTO ${
+          this.uiSchemaTreePathTableName
+        } (ancestor, descendant, depth, type, async, sort) VALUES ${treePathData.map((item) => '(?)').join(',')}`,
+      ),
+      {
+        replacements: treePathData,
+        type: 'insert',
+        transaction,
+      },
+    );
+    return nodes;
+  }
+
   private async insertSchemaRecord(name, uid, schema, transaction) {
     const serverHooks = schema['x-server-hooks'] || [];
 
@@ -619,11 +670,7 @@ export class UiSchemaRepository extends Repository {
     return node;
   }
 
-  async insertSingleNode(schema: SchemaNode, options: TransactionAble & removeParentOptions) {
-    const { transaction } = options;
-
-    const db = this.database;
-
+  private prepareSingleNodeForInsert(schema: SchemaNode) {
     const uid = schema['x-uid'];
     const name = schema['name'];
     const async = lodash.get(schema, 'x-async', false);
@@ -633,6 +680,16 @@ export class UiSchemaRepository extends Repository {
     delete schema['x-async'];
     delete schema['name'];
     delete schema['childOptions'];
+
+    return { uid, name, async, childOptions };
+  }
+
+  async insertSingleNode(schema: SchemaNode, options: TransactionAble & removeParentOptions) {
+    const { transaction } = options;
+
+    const db = this.database;
+
+    const { uid, name, async, childOptions } = this.prepareSingleNodeForInsert(schema);
 
     let savedNode;
 
