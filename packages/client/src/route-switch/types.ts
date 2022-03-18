@@ -23,6 +23,7 @@ export interface RouteProps {
 export interface RouteSwitchProviderProps {
   components?: any;
   children?: any;
+  routes?: RouteRedirectProps[];
 }
 
 export type RouteRedirectProps = RedirectProps | RouteProps;

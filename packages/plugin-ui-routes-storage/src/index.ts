@@ -40,6 +40,16 @@ export class UiRoutesStoragePlugin extends Plugin {
             path: '/admin/workflows/:id',
             component: 'WorkflowPage',
           },
+          // {
+          //   type: 'route',
+          //   path: '/admin/block-templates/:key',
+          //   component: 'BlockTemplateDetails',
+          // },
+          // {
+          //   type: 'route',
+          //   path: '/admin/block-templates',
+          //   component: 'BlockTemplatePage',
+          // },
           {
             type: 'route',
             path: '/admin/:name(.+)?',

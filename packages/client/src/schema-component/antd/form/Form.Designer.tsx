@@ -6,6 +6,8 @@ export const FormDesigner = () => {
   const { name, title } = useCollection();
   return (
     <GeneralSchemaDesigner title={title || name}>
+      <SchemaSettings.Template componentName={'Form'} collectionName={name} />
+      <SchemaSettings.Divider />
       <SchemaSettings.Remove
         removeParentsIfNoChildren
         breakRemoveOn={{

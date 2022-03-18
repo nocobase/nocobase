@@ -41,8 +41,43 @@ export class SortField extends Field {
     }
   }
 
+  async initRecordsSortValue({ transaction }) {
+    const totalCount = await this.collection.repository.count({
+      transaction,
+    });
+    const emptyCount = await this.collection.repository.count({
+      filter: {
+        [this.name]: null,
+      },
+      transaction,
+    });
+
+    if (emptyCount === totalCount && emptyCount > 0) {
+      const records = await this.collection.repository.find({
+        order: [this.collection.model.primaryKeyAttribute],
+        transaction,
+      });
+
+      let start = 1;
+      for (const record of records) {
+        await record.update(
+          {
+            sort: start,
+          },
+          {
+            transaction,
+            silent: true,
+          },
+        );
+
+        start += 1;
+      }
+    }
+  }
+
   bind() {
     super.bind();
+    this.on('afterSync', this.initRecordsSortValue.bind(this));
     this.on('beforeUpdate', this.onScopeChange.bind(this));
     this.on('beforeCreate', this.setSortValue.bind(this));
   }
@@ -51,6 +86,7 @@ export class SortField extends Field {
     super.unbind();
     this.off('beforeUpdate', this.onScopeChange.bind(this));
     this.off('beforeCreate', this.setSortValue.bind(this));
+    this.off('afterSync', this.initRecordsSortValue.bind(this));
   }
 }
 
