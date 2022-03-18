@@ -1,5 +1,5 @@
 import { Context } from '..';
-import { getRepositoryFromParams } from './utils';
+import { getRepositoryFromParams } from '../utils';
 import { BelongsToManyRepository, MultipleRelationRepository, HasManyRepository } from '@nocobase/database';
 
 export async function add(ctx: Context, next) {
