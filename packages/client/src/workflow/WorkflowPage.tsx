@@ -104,7 +104,7 @@ function Branch({ entry, branchIndex = null }) {
 
   return (
     <div className="workflow-branch">
-      <AddButton upstream={list[0].upstream} branchIndex={branchIndex} />
+      <AddButton upstream={list[0]?.upstream} branchIndex={branchIndex} />
       {list.map(item => <NodeFactory key={item.id} {...item} />)}
     </div>
   );
