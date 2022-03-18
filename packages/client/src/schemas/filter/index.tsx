@@ -42,7 +42,7 @@ const toValue = (value) => {
   }
   if (value.or) {
     return {
-      logical: 'and',
+      logical: 'or',
       list: value.or,
     };
   }
