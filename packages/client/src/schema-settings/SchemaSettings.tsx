@@ -116,14 +116,21 @@ SchemaSettings.Template = (props) => {
       <SchemaSettings.Item
         onClick={async () => {
           const schema = await copyTemplateSchema(template);
-          const removed = tdn.removeWithoutEmit();
-          tdn.insertAfterEnd(schema, {
-            async onSuccess() {
-              await api.request({
-                url: `/uiSchemas:remove/${removed['x-uid']}`,
-              });
-            },
+          await api.request({
+            method: 'post',
+            url: `/uiSchemas:insertNewSchema`,
+            data: schema,
           });
+          const removed = tdn.removeWithoutEmit();
+          tdn.insertAfterEnd(schema,
+            {
+              async onSuccess() {
+                await api.request({
+                  url: `/uiSchemas:remove/${removed['x-uid']}`,
+                });
+              },
+            },
+          );
         }}
       >
         {t('Convert reference to duplicate')}
