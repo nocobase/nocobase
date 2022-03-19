@@ -41,7 +41,6 @@ const plugins = [
   '@nocobase/plugin-collection-manager',
   '@nocobase/plugin-ui-schema-storage',
   '@nocobase/plugin-ui-routes-storage',
-  '@nocobase/plugin-client',
   '@nocobase/plugin-file-manager',
   '@nocobase/plugin-system-settings',
   '@nocobase/plugin-users',
@@ -52,6 +51,10 @@ const plugins = [
 for (const plugin of plugins) {
   api.plugin(require(plugin).default);
 }
+
+api.plugin(require('@nocobase/plugin-client').default, {
+  dist: resolve(__dirname, '../../app/dist'),
+});
 
 if (process.argv.length < 3) {
   // @ts-ignore
