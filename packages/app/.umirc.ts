@@ -13,6 +13,7 @@ const umiConfig = getUmiConfig();
 
 export default defineConfig({
   define: {
+    'process.env.NOCOBASE_ENV': process.env.NOCOBASE_ENV,
     ...umiConfig.define,
   },
   // only proxy when using `umi dev`
