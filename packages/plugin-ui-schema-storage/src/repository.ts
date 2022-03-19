@@ -18,7 +18,9 @@ export interface removeParentOptions extends TransactionAble {
   breakRemoveOn?: BreakRemoveOnType;
 }
 
-interface InsertAdjacentOptions extends removeParentOptions {}
+interface InsertAdjacentOptions extends removeParentOptions {
+  wrap?: any;
+}
 
 const nodeKeys = ['properties', 'definitions', 'patternProperties', 'additionalProperties', 'items'];
 
@@ -537,6 +539,7 @@ export class UiSchemaRepository extends Repository {
     };
 
     const insertedNodes = await this.insertNodes(nodes, options);
+
     return await this.getJsonSchema(insertedNodes[0].get('x-uid'), {
       transaction,
     });
@@ -549,26 +552,50 @@ export class UiSchemaRepository extends Repository {
     schema: any,
     options?: InsertAdjacentOptions,
   ) {
+    const { transaction } = options;
+    if (options.wrap) {
+      const wrapSchemaNodes = await this.insertNewSchema(options.wrap, {
+        transaction,
+        returnNode: true,
+      });
+
+      const lastWrapNode = wrapSchemaNodes[wrapSchemaNodes.length - 1];
+
+      await this.insertAfterBegin(
+        lastWrapNode['x-uid'],
+        {
+          'x-uid': schema['x-uid'],
+        },
+        options,
+      );
+
+      schema = {
+        'x-uid': wrapSchemaNodes[0]['x-uid'],
+      };
+
+      options.removeParentsIfNoChildren = false;
+    }
+
     return await this[`insert${lodash.upperFirst(position)}`](target, schema, options);
   }
 
   @transaction()
-  async insertAfterBegin(targetUid: string, schema: any, options?: InsertAdjacentOptions) {
+  protected async insertAfterBegin(targetUid: string, schema: any, options?: InsertAdjacentOptions) {
     return await this.insertInner(targetUid, schema, 'first', options);
   }
 
   @transaction()
-  async insertBeforeEnd(targetUid: string, schema: any, options?: InsertAdjacentOptions) {
+  protected async insertBeforeEnd(targetUid: string, schema: any, options?: InsertAdjacentOptions) {
     return await this.insertInner(targetUid, schema, 'last', options);
   }
 
   @transaction()
-  async insertBeforeBegin(targetUid: string, schema: any, options?: InsertAdjacentOptions) {
+  protected async insertBeforeBegin(targetUid: string, schema: any, options?: InsertAdjacentOptions) {
     return await this.insertBeside(targetUid, schema, 'before', options);
   }
 
   @transaction()
-  async insertAfterEnd(targetUid: string, schema: any, options?: InsertAdjacentOptions) {
+  protected async insertAfterEnd(targetUid: string, schema: any, options?: InsertAdjacentOptions) {
     return await this.insertBeside(targetUid, schema, 'after', options);
   }
 
@@ -600,7 +627,12 @@ export class UiSchemaRepository extends Repository {
   }
 
   @transaction()
-  async insertNewSchema(schema: any, options?: TransactionAble) {
+  async insertNewSchema(
+    schema: any,
+    options?: TransactionAble & {
+      returnNode?: boolean;
+    },
+  ) {
     const { transaction } = options;
 
     const nodes = UiSchemaRepository.schemaToSingleNodes(schema);
@@ -648,6 +680,10 @@ export class UiSchemaRepository extends Repository {
         transaction,
       },
     );
+
+    if (options?.returnNode) {
+      return nodes;
+    }
 
     return this.getJsonSchema(nodes[0]['x-uid'], {
       transaction,
