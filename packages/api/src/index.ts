@@ -1,6 +1,8 @@
 import { Application } from '@nocobase/server';
 import { resolve } from 'path';
 
+require('dotenv').config({ path: resolve(process.cwd(), '.env') });
+
 const start = Date.now();
 
 const api = new Application({
