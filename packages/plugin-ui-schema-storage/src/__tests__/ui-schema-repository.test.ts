@@ -593,6 +593,7 @@ describe('ui_schema repository', () => {
 
       const schema = await repository.getJsonSchema('n1');
       expect(schema.properties.f.properties.g.properties.d.properties.e['x-uid']).toEqual('n5');
+      expect(schema.properties.f.properties.g.properties.d['x-uid']).toEqual('n4');
     });
 
     it('should insertAfterBegin by node', async () => {
@@ -1119,6 +1120,61 @@ describe('ui_schema repository', () => {
     const rootUid = schema['x-uid'];
     const savedSchema = await repository.getJsonSchema(rootUid);
     expect(savedSchema).toBeDefined();
+  });
+
+  it('should insert new with insertAfterEnd', async () => {
+    const root = {
+      'x-uid': 'root',
+      name: 'root',
+      properties: {
+        c1: {
+          'x-uid': 'c1',
+        },
+      },
+    };
+
+    const newNode = {
+      'x-uid': 'new',
+      name: 'new',
+      properties: {
+        nc1: {
+          'x-uid': 'nc1',
+        },
+      },
+    };
+
+    await repository.insertNewSchema(root);
+    await repository.insertNewSchema(newNode);
+
+    await repository.insertAfterEnd('c1', {
+      'x-uid': 'new',
+    });
+
+    const json = await repository.getJsonSchema('root');
+    expect(json).toEqual({
+      properties: {
+        c1: {
+          'x-uid': 'c1',
+          'x-async': false,
+          'x-index': 1,
+        },
+        new: {
+          properties: {
+            nc1: {
+              'x-uid': 'nc1',
+              'x-async': false,
+              'x-index': 1,
+            },
+          },
+          'x-uid': 'new',
+          'x-async': false,
+          'x-index': 2,
+        },
+      },
+      name: 'root',
+      'x-uid': 'root',
+      'x-async': false,
+    });
   });
 
   it('should insert big schema using insertAfterEnd', async () => {

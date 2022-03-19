@@ -693,7 +693,6 @@ export class UiSchemaRepository extends Repository {
     const db = this.database;
 
     const { uid, name, async, childOptions } = this.prepareSingleNodeForInsert(schema);
-
     let savedNode;
 
     // check node exists or not
@@ -716,18 +715,9 @@ export class UiSchemaRepository extends Repository {
       const oldParentUid = await this.findParentUid(uid, transaction);
       const parentUid = childOptions.parentUid;
 
-      const isTreeQuery = await db.sequelize.query(
-        `SELECT COUNT(*) as childrenCount from ${treeTable} WHERE ancestor = :ancestor AND descendant != ancestor`,
-        {
-          type: 'SELECT',
-          replacements: {
-            ancestor: uid,
-          },
-          transaction,
-        },
-      );
+      const childrenCount = await this.childrenCount(uid, transaction);
 
-      const isTree = isTreeQuery[0]['childrenCount'];
+      const isTree = childrenCount > 0;
 
       // if node is a tree root move tree to new path
       if (isTree) {
@@ -750,6 +740,16 @@ export class UiSchemaRepository extends Repository {
             transaction,
           },
         );
+        // update type
+        const updateSql = `UPDATE ${treeTable} SET type = :type WHERE depth = 0 AND ancestor = :uid AND descendant = :uid`;
+        await db.sequelize.query(updateSql, {
+          type: 'update',
+          transaction,
+          replacements: {
+            type: childOptions.type,
+            uid,
+          },
+        });
       }
 
       if (!isTree) {

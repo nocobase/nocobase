@@ -13,7 +13,7 @@ import {
   SchemaComponentOptions,
   useActionContext,
   useAPIClient,
-  useCollection
+  useCollection,
 } from '..';
 import { useSchemaTemplateManager } from '../schema-templates';
 import { useBlockTemplateContext } from '../schema-templates/BlockTemplate';
@@ -122,15 +122,13 @@ SchemaSettings.Template = (props) => {
             data: schema,
           });
           const removed = tdn.removeWithoutEmit();
-          tdn.insertAfterEnd(schema,
-            {
-              async onSuccess() {
-                await api.request({
-                  url: `/uiSchemas:remove/${removed['x-uid']}`,
-                });
-              },
+          tdn.insertAfterEnd(schema, {
+            async onSuccess() {
+              await api.request({
+                url: `/uiSchemas:remove/${removed['x-uid']}`,
+              });
             },
-          );
+          });
         }}
       >
         {t('Convert reference to duplicate')}
