@@ -229,4 +229,33 @@ describe('action test', () => {
     const { data } = response.body;
     expect(data.properties.e['x-uid']).toEqual('n5');
   });
+
+  test('insert adjacent with bit schema', async () => {
+    const schema = require('./fixtures/data').default;
+
+    await app
+      .agent()
+      .resource('uiSchemas')
+      .insert({
+        values: {
+          'x-uid': 'root',
+          properties: {
+            A: {
+              'x-uid': 'A',
+            },
+            B: {
+              'x-uid': 'B',
+            },
+          },
+        },
+      });
+
+    let response = await app.agent().resource('uiSchemas').insertAdjacent({
+      resourceIndex: 'A',
+      position: 'afterEnd',
+      values: schema,
+    });
+
+    expect(response.statusCode).toEqual(200);
+  });
 });

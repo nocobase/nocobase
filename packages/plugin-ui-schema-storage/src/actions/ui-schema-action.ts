@@ -1,6 +1,6 @@
 import { Context } from '@nocobase/actions';
-import UiSchemaRepository from '../repository';
 import lodash from 'lodash';
+import UiSchemaRepository from '../repository';
 
 const getRepositoryFromCtx = (ctx: Context) => {
   return ctx.db.getCollection('uiSchemas').repository as UiSchemaRepository;
@@ -21,10 +21,19 @@ const callRepositoryMethod = (method, paramsKey: 'resourceIndex' | 'values') => 
   };
 };
 
+function parseInsertAdjacentValues(values) {
+  if (lodash.has(values, 'schema')) {
+    return values;
+  }
+
+  return { schema: values, wrap: null };
+}
+
 export const uiSchemaActions = {
   getJsonSchema: callRepositoryMethod('getJsonSchema', 'resourceIndex'),
   getProperties: callRepositoryMethod('getProperties', 'resourceIndex'),
   insert: callRepositoryMethod('insert', 'values'),
+  insertNewSchema: callRepositoryMethod('insertNewSchema', 'values'),
   remove: callRepositoryMethod('remove', 'resourceIndex'),
   patch: callRepositoryMethod('patch', 'values'),
   clearAncestor: callRepositoryMethod('clearAncestor', 'resourceIndex'),
@@ -33,9 +42,12 @@ export const uiSchemaActions = {
     const { resourceIndex, position, values, removeParentsIfNoChildren, breakRemoveOn } = ctx.action.params;
     const repository = getRepositoryFromCtx(ctx);
 
-    ctx.body = await repository.insertAdjacent(position, resourceIndex, values, {
+    const { schema, wrap } = parseInsertAdjacentValues(values);
+
+    ctx.body = await repository.insertAdjacent(position, resourceIndex, schema, {
       removeParentsIfNoChildren,
       breakRemoveOn,
+      wrap,
     });
 
     await next();
@@ -51,9 +63,12 @@ function insertPositionActionBuilder(position: 'beforeBegin' | 'afterBegin' | 'b
   return async function (ctx: Context, next) {
     const { resourceIndex, values, removeParentsIfNoChildren, breakRemoveOn } = ctx.action.params;
     const repository = getRepositoryFromCtx(ctx);
-    ctx.body = await repository.insertAdjacent(position, resourceIndex, values, {
+    const { schema, wrap } = parseInsertAdjacentValues(values);
+
+    ctx.body = await repository.insertAdjacent(position, resourceIndex, schema, {
       removeParentsIfNoChildren,
       breakRemoveOn,
+      wrap,
     });
     await next();
   };

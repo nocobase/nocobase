@@ -418,7 +418,7 @@ describe('ui_schema repository', () => {
       };
 
       await repository.insert(schema);
-      await repository.insertBeforeBegin('i1', {
+      await repository.insertAdjacent('beforeBegin', 'i1', {
         'x-uid': 'i2',
       });
 
@@ -476,7 +476,7 @@ describe('ui_schema repository', () => {
         name: 'newNode',
       };
 
-      await repository.insertAfterBegin(rootUid, newNode);
+      await repository.insertAdjacent('afterBegin', rootUid, newNode);
       const schema = await repository.getJsonSchema(rootUid);
       expect(schema['properties']['newNode']['x-index']).toEqual(1);
       expect(schema['properties'].a1['x-index']).toEqual(2);
@@ -488,7 +488,7 @@ describe('ui_schema repository', () => {
         name: 'newNode',
       };
 
-      await repository.insertBeforeEnd(rootUid, newNode);
+      await repository.insertAdjacent('beforeEnd', rootUid, newNode);
       const schema = await repository.getJsonSchema(rootUid);
       expect(schema['properties']['newNode']['x-index']).toEqual(3);
       expect(schema['properties'].a1['x-index']).toEqual(1);
@@ -506,7 +506,7 @@ describe('ui_schema repository', () => {
         },
       });
 
-      await repository.insertBeforeBegin(b1Node.get('x-uid') as string, newNode);
+      await repository.insertAdjacent('beforeBegin', b1Node.get('x-uid') as string, newNode);
 
       const schema = await repository.getJsonSchema(rootUid);
       expect(schema['properties']['newNode']['x-index']).toEqual(2);
@@ -525,7 +525,7 @@ describe('ui_schema repository', () => {
         },
       });
 
-      await repository.insertAfterEnd(a1Node.get('x-uid') as string, newNode);
+      await repository.insertAdjacent('afterEnd', a1Node.get('x-uid') as string, newNode);
 
       const schema = await repository.getJsonSchema(rootUid);
       expect(schema['properties']['newNode']['x-index']).toEqual(2);
@@ -544,7 +544,7 @@ describe('ui_schema repository', () => {
         },
       });
 
-      await repository.insertAfterEnd(b1Node.get('x-uid') as string, newNode);
+      await repository.insertAdjacent('afterEnd', b1Node.get('x-uid') as string, newNode);
 
       const schema = await repository.getJsonSchema(rootUid);
       expect(schema['properties']['newNode']['x-index']).toEqual(3);
@@ -578,21 +578,28 @@ describe('ui_schema repository', () => {
         },
       });
 
-      await repository.insertAfterBegin('n1', {
-        name: 'f',
-        'x-uid': 'n6',
-        properties: {
-          g: {
-            'x-uid': 'n7',
+      await repository.insertAdjacent(
+        'afterBegin',
+        'n1',
+        {
+          'x-uid': 'n4',
+        },
+        {
+          wrap: {
+            name: 'f',
+            'x-uid': 'n6',
             properties: {
-              d: { 'x-uid': 'n4' },
+              g: {
+                'x-uid': 'n7',
+              },
             },
           },
         },
-      });
+      );
 
       const schema = await repository.getJsonSchema('n1');
       expect(schema.properties.f.properties.g.properties.d.properties.e['x-uid']).toEqual('n5');
+      expect(schema.properties.f.properties.g.properties.d['x-uid']).toEqual('n4');
     });
 
     it('should insertAfterBegin by node', async () => {
@@ -612,7 +619,7 @@ describe('ui_schema repository', () => {
         },
       });
 
-      await repository.insertAfterBegin('n2', 'n4');
+      await repository.insertAdjacent('afterBegin', 'n2', 'n4');
       const schema = await repository.getJsonSchema('n1');
       expect(schema['properties'].b.properties.d['x-uid']).toEqual('n4');
     });
@@ -878,24 +885,23 @@ describe('ui_schema repository', () => {
 
     await repository.insert(schema);
 
-    await repository.insertAfterBegin(
+    await repository.insertAdjacent(
+      'afterBegin',
       'E',
       {
-        'x-uid': 'F',
-        name: 'F',
-        properties: {
-          G: {
-            'x-uid': 'G',
-            properties: {
-              D: {
-                'x-uid': 'D',
-              },
-            },
-          },
-        },
+        'x-uid': 'D',
       },
       {
         removeParentsIfNoChildren: true,
+        wrap: {
+          'x-uid': 'F',
+          name: 'F',
+          properties: {
+            G: {
+              'x-uid': 'G',
+            },
+          },
+        },
       },
     );
 
@@ -962,24 +968,23 @@ describe('ui_schema repository', () => {
 
     await repository.insert(schema);
 
-    await repository.insertAfterEnd(
+    await repository.insertAdjacent(
+      'afterEnd',
       'E',
       {
-        'x-uid': 'F',
-        name: 'F',
-        properties: {
-          G: {
-            'x-uid': 'G',
-            properties: {
-              D: {
-                'x-uid': 'D',
-              },
-            },
-          },
-        },
+        'x-uid': 'D',
       },
       {
         removeParentsIfNoChildren: true,
+        wrap: {
+          'x-uid': 'F',
+          name: 'F',
+          properties: {
+            G: {
+              'x-uid': 'G',
+            },
+          },
+        },
       },
     );
 
@@ -1106,6 +1111,492 @@ describe('ui_schema repository', () => {
           'x-uid': 'D',
         },
       },
+    });
+  });
+
+  it('should insert big schema', async () => {
+    const schema = require('./fixtures/data').default;
+
+    console.time('test');
+    await repository.insertNewSchema(schema);
+    console.timeEnd('test');
+
+    const rootUid = schema['x-uid'];
+    const savedSchema = await repository.getJsonSchema(rootUid);
+    expect(savedSchema).toBeDefined();
+  });
+
+  it('should insert new with insertAfterEnd', async () => {
+    const root = {
+      'x-uid': 'root',
+      name: 'root',
+      properties: {
+        c1: {
+          'x-uid': 'c1',
+        },
+      },
+    };
+
+    const newNode = {
+      'x-uid': 'new',
+      name: 'new',
+      properties: {
+        nc1: {
+          'x-uid': 'nc1',
+        },
+      },
+    };
+
+    await repository.insertNewSchema(root);
+    await repository.insertNewSchema(newNode);
+
+    await repository.insertAdjacent('afterEnd', 'c1', {
+      'x-uid': 'new',
+    });
+
+    const json = await repository.getJsonSchema('root');
+    expect(json).toEqual({
+      properties: {
+        c1: {
+          'x-uid': 'c1',
+          'x-async': false,
+          'x-index': 1,
+        },
+        new: {
+          properties: {
+            nc1: {
+              'x-uid': 'nc1',
+              'x-async': false,
+              'x-index': 1,
+            },
+          },
+          'x-uid': 'new',
+          'x-async': false,
+          'x-index': 2,
+        },
+      },
+      name: 'root',
+      'x-uid': 'root',
+      'x-async': false,
+    });
+  });
+
+  it('should insert big schema using insertAfterEnd', async () => {
+    const tree = {
+      'x-uid': 'root',
+      properties: {
+        A: {
+          'x-uid': 'A',
+        },
+        B: {
+          'x-uid': 'B',
+        },
+      },
+    };
+    await repository.insert(tree);
+    const schema = require('./fixtures/data').default;
+
+    await repository.insertAdjacent('afterEnd', 'A', schema);
+    const rootUid = schema['x-uid'];
+    const savedSchema = await repository.getJsonSchema(rootUid);
+    expect(savedSchema).toBeDefined();
+  });
+
+  describe('schemaToSingleNodes', () => {
+    it('should with parent Paths', async () => {
+      const schema = {
+        name: 'root-name',
+        'x-uid': 'root',
+        properties: {
+          p1: {
+            'x-uid': 'p1',
+          },
+          p2: {
+            'x-uid': 'p2',
+            properties: {
+              p21: {
+                'x-uid': 'p21',
+                properties: {
+                  p211: {
+                    'x-uid': 'p211',
+                  },
+                },
+              },
+            },
+          },
+        },
+        items: [
+          {
+            name: 'i1',
+            'x-uid': 'i1',
+          },
+          {
+            name: 'i2',
+            'x-uid': 'i2',
+          },
+        ],
+      };
+      const nodes = UiSchemaRepository.schemaToSingleNodes(schema);
+      const p211Node = nodes.find((node) => node['x-uid'] === 'p211');
+      expect(p211Node['childOptions'].parentPath).toEqual(['p21', 'p2', 'root']);
+    });
+  });
+
+  describe('insertAdjacent', () => {
+    it('should works with wrap and new schema', async () => {
+      const schema = {
+        name: 'root-name',
+        'x-uid': 'root',
+        properties: {
+          p1: {
+            'x-uid': 'p1',
+            properties: {
+              p11: {
+                'x-uid': 'p11',
+              },
+            },
+          },
+          p2: {
+            'x-uid': 'p2',
+            properties: {
+              p21: {
+                'x-uid': 'p21',
+              },
+            },
+          },
+        },
+      };
+
+      await repository.insert(schema);
+
+      await repository.insertAdjacent(
+        'afterEnd',
+        'p2',
+        {
+          name: 'p311',
+          'x-uid': 'p311',
+        },
+        {
+          wrap: {
+            'x-uid': 'p3',
+            name: 'p3',
+            properties: {
+              p31: {
+                'x-uid': 'p31',
+              },
+            },
+          },
+        },
+      );
+
+      const root = await repository.getJsonSchema('root');
+      expect(root).toEqual({
+        properties: {
+          p1: {
+            properties: {
+              p11: {
+                'x-uid': 'p11',
+                'x-async': false,
+                'x-index': 1,
+              },
+            },
+            'x-uid': 'p1',
+            'x-async': false,
+            'x-index': 1,
+          },
+          p2: {
+            properties: {
+              p21: {
+                'x-uid': 'p21',
+                'x-async': false,
+                'x-index': 1,
+              },
+            },
+            'x-uid': 'p2',
+            'x-async': false,
+            'x-index': 2,
+          },
+          p3: {
+            properties: {
+              p31: {
+                properties: {
+                  p311: {
+                    'x-uid': 'p311',
+                    'x-async': false,
+                    'x-index': 1,
+                  },
+                },
+                'x-uid': 'p31',
+                'x-async': false,
+                'x-index': 1,
+              },
+            },
+            'x-uid': 'p3',
+            'x-async': false,
+            'x-index': 3,
+          },
+        },
+        name: 'root-name',
+        'x-uid': 'root',
+        'x-async': false,
+      });
+    });
+
+    it('should works with wrap', async () => {
+      const schema = {
+        name: 'root-name',
+        'x-uid': 'root',
+        properties: {
+          p1: {
+            'x-uid': 'p1',
+            properties: {
+              p11: {
+                'x-uid': 'p11',
+              },
+            },
+          },
+          p2: {
+            'x-uid': 'p2',
+            properties: {
+              p21: {
+                'x-uid': 'p21',
+              },
+            },
+          },
+        },
+      };
+
+      await repository.insert(schema);
+
+      await repository.insertAdjacent(
+        'afterEnd',
+        'p1',
+        {
+          'x-uid': 'p21',
+        },
+        {
+          removeParentsIfNoChildren: true,
+          breakRemoveOn: {
+            'x-uid': 'root',
+          },
+          wrap: {
+            'x-uid': 'p3',
+            name: 'p3',
+            properties: {
+              p31: {
+                'x-uid': 'p31',
+              },
+            },
+          },
+        },
+      );
+
+      const root = await repository.getJsonSchema('root');
+      expect(root).toEqual({
+        properties: {
+          p1: {
+            properties: {
+              p11: {
+                'x-uid': 'p11',
+                'x-async': false,
+                'x-index': 1,
+              },
+            },
+            'x-uid': 'p1',
+            'x-async': false,
+            'x-index': 1,
+          },
+          p3: {
+            properties: {
+              p31: {
+                properties: {
+                  p21: {
+                    'x-uid': 'p21',
+                    'x-async': false,
+                    'x-index': 1,
+                  },
+                },
+                'x-uid': 'p31',
+                'x-async': false,
+                'x-index': 1,
+              },
+            },
+            'x-uid': 'p3',
+            'x-async': false,
+            'x-index': 2,
+          },
+        },
+        name: 'root-name',
+        'x-uid': 'root',
+        'x-async': false,
+      });
+    });
+
+    it('should insert newSchema using insertNewSchema', async () => {
+      const schema = {
+        name: 'root-name',
+        'x-uid': 'root',
+        properties: {
+          p1: {
+            'x-uid': 'p1',
+            properties: {
+              p11: {
+                'x-uid': 'p11',
+              },
+            },
+          },
+          p2: {
+            'x-uid': 'p2',
+            properties: {
+              p21: {
+                'x-uid': 'p21',
+              },
+            },
+          },
+        },
+      };
+
+      await repository.insert(schema);
+
+      await repository.insertAdjacent('afterEnd', 'p2', {
+        'x-uid': 'p3',
+        name: 'p3',
+        properties: {
+          p31: {
+            'x-uid': 'p31',
+          },
+        },
+      });
+
+      const root = await repository.getJsonSchema('root');
+      expect(root).toEqual({
+        properties: {
+          p1: {
+            properties: {
+              p11: {
+                'x-uid': 'p11',
+                'x-async': false,
+                'x-index': 1,
+              },
+            },
+            'x-uid': 'p1',
+            'x-async': false,
+            'x-index': 1,
+          },
+          p2: {
+            properties: {
+              p21: {
+                'x-uid': 'p21',
+                'x-async': false,
+                'x-index': 1,
+              },
+            },
+            'x-uid': 'p2',
+            'x-async': false,
+            'x-index': 2,
+          },
+          p3: {
+            properties: {
+              p31: {
+                'x-uid': 'p31',
+                'x-async': false,
+                'x-index': 1,
+              },
+            },
+            'x-uid': 'p3',
+            'x-async': false,
+            'x-index': 3,
+          },
+        },
+        name: 'root-name',
+        'x-uid': 'root',
+        'x-async': false,
+      });
+    });
+
+    it('should insert oldSchema using first x-uid', async () => {
+      const schema = {
+        name: 'root-name',
+        'x-uid': 'root',
+        properties: {
+          p1: {
+            'x-uid': 'p1',
+            properties: {
+              p11: {
+                'x-uid': 'p11',
+              },
+            },
+          },
+          p2: {
+            'x-uid': 'p2',
+            properties: {
+              p21: {
+                'x-uid': 'p21',
+              },
+            },
+          },
+        },
+      };
+
+      await repository.insert(schema);
+
+      const insertSchema = {
+        'x-uid': 'p3',
+        name: 'p3',
+        properties: {
+          p31: {
+            'x-uid': 'p31',
+          },
+        },
+      };
+
+      await repository.insert(insertSchema);
+      await repository.insertAdjacent('afterEnd', 'p2', insertSchema);
+
+      const root = await repository.getJsonSchema('root');
+      expect(root).toEqual({
+        properties: {
+          p1: {
+            properties: {
+              p11: {
+                'x-uid': 'p11',
+                'x-async': false,
+                'x-index': 1,
+              },
+            },
+            'x-uid': 'p1',
+            'x-async': false,
+            'x-index': 1,
+          },
+          p2: {
+            properties: {
+              p21: {
+                'x-uid': 'p21',
+                'x-async': false,
+                'x-index': 1,
+              },
+            },
+            'x-uid': 'p2',
+            'x-async': false,
+            'x-index': 2,
+          },
+          p3: {
+            properties: {
+              p31: {
+                'x-uid': 'p31',
+                'x-async': false,
+                'x-index': 1,
+              },
+            },
+            'x-uid': 'p3',
+            'x-async': false,
+            'x-index': 3,
+          },
+        },
+        name: 'root-name',
+        'x-uid': 'root',
+        'x-async': false,
+      });
     });
   });
 });
