@@ -1,6 +1,6 @@
 import * as fs from 'fs';
-import path from 'path';
 import lodash from 'lodash';
+import path from 'path';
 
 export type ImportFileExtension = 'js' | 'ts' | 'json';
 
@@ -35,7 +35,13 @@ export class ImporterReader {
         encoding: 'utf-8',
       })
     )
-      .filter((fileName) => this.extensions.has(path.parse(fileName).ext.replace('.', '')))
+      .filter((fileName) => {
+        if (fileName.endsWith('.d.ts')) {
+          return false;
+        }
+        const ext = path.parse(fileName).ext.replace('.', '');
+        return this.extensions.has(ext);
+      })
       .map(async (fileName) => await requireModule(path.join(this.directory, fileName)));
 
     return (await Promise.all(modules)).filter((module) => lodash.isPlainObject(module));

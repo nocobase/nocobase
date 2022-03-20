@@ -4,8 +4,10 @@ export interface TargetPosition {
 }
 export interface ChildOptions {
   parentUid: string;
+  parentPath?: string[];
   type: string;
   position?: 'first' | 'last' | TargetPosition;
+  sort?: number;
 }
 
 export interface SchemaNode {

@@ -338,20 +338,24 @@ describe('server hooks', () => {
 
     await uiSchemaRepository.insert(schema);
 
-    await uiSchemaRepository.insertAfterEnd('E', {
-      'x-uid': 'F',
-      name: 'F',
-      properties: {
-        G: {
-          'x-uid': 'G',
+    await uiSchemaRepository.insertAdjacent(
+      'afterEnd',
+      'E',
+      {
+        'x-uid': 'D',
+      },
+      {
+        wrap: {
+          'x-uid': 'F',
+          name: 'F',
           properties: {
-            D: {
-              'x-uid': 'D',
+            G: {
+              'x-uid': 'G',
             },
           },
         },
       },
-    });
+    );
 
     const A = await uiSchemaRepository.getJsonSchema('A');
     expect(A).toEqual({
