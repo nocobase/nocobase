@@ -41,17 +41,21 @@ export class SortField extends Field {
     }
   }
 
-  async initRecordsSortValue({ syncOptions }) {
-    const totalCount = await this.collection.repository.count();
+  async initRecordsSortValue({ transaction }) {
+    const totalCount = await this.collection.repository.count({
+      transaction,
+    });
     const emptyCount = await this.collection.repository.count({
       filter: {
         [this.name]: null,
       },
+      transaction,
     });
 
     if (emptyCount === totalCount && emptyCount > 0) {
       const records = await this.collection.repository.find({
         order: [this.collection.model.primaryKeyAttribute],
+        transaction,
       });
 
       let start = 1;
@@ -61,6 +65,7 @@ export class SortField extends Field {
             sort: start,
           },
           {
+            transaction,
             silent: true,
           },
         );
