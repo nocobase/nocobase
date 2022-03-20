@@ -18,7 +18,9 @@ export interface removeParentOptions extends TransactionAble {
   breakRemoveOn?: BreakRemoveOnType;
 }
 
-interface InsertAdjacentOptions extends removeParentOptions {}
+interface InsertAdjacentOptions extends removeParentOptions {
+  wrap?: any;
+}
 
 const nodeKeys = ['properties', 'definitions', 'patternProperties', 'additionalProperties', 'items'];
 
@@ -111,31 +113,30 @@ export class UiSchemaRepository extends Repository {
 
     for (const nodeKey of nodeKeys) {
       const nodeProperty = lodash.get(node, nodeKey);
+      const childNodeChildOptions = {
+        parentUid: node['x-uid'],
+        parentPath: [node['x-uid'], ...lodash.get(childOptions, 'parentPath', [])],
+        type: nodeKey,
+      };
 
       // array items
       if (nodeKey === 'items' && nodeProperty) {
         const handleItems = lodash.isArray(nodeProperty) ? nodeProperty : [nodeProperty];
-        for (const item of handleItems) {
-          carry = this.schemaToSingleNodes(item, carry, {
-            parentUid: node['x-uid'],
-            type: nodeKey,
-          });
+        for (const [i, item] of handleItems.entries()) {
+          carry = this.schemaToSingleNodes(item, carry, { ...childNodeChildOptions, sort: i + 1 });
         }
       } else if (lodash.isPlainObject(nodeProperty)) {
         const subNodeNames = lodash.keys(lodash.get(node, nodeKey));
 
         delete node[nodeKey];
 
-        for (const subNodeName of subNodeNames) {
+        for (const [i, subNodeName] of subNodeNames.entries()) {
           const subSchema = {
             name: subNodeName,
             ...lodash.get(nodeProperty, subNodeName),
           };
 
-          carry = this.schemaToSingleNodes(subSchema, carry, {
-            parentUid: node['x-uid'],
-            type: nodeKey,
-          });
+          carry = this.schemaToSingleNodes(subSchema, carry, { ...childNodeChildOptions, sort: i + 1 });
         }
       }
     }
@@ -538,9 +539,30 @@ export class UiSchemaRepository extends Repository {
     };
 
     const insertedNodes = await this.insertNodes(nodes, options);
+
     return await this.getJsonSchema(insertedNodes[0].get('x-uid'), {
       transaction,
     });
+  }
+
+  private async schemaExists(schema: any, options?: TransactionAble): Promise<boolean> {
+    if (lodash.isObject(schema) && !schema['x-uid']) {
+      return false;
+    }
+
+    const { transaction } = options;
+    const result = await this.database.sequelize.query(
+      this.sqlAdapter(`select "x-uid" from ${this.uiSchemasTableName} where "x-uid" = :uid`),
+      {
+        type: 'SELECT',
+        replacements: {
+          uid: lodash.isString(schema) ? schema : schema['x-uid'],
+        },
+        transaction,
+      },
+    );
+
+    return result.length > 0;
   }
 
   @transaction()
@@ -550,26 +572,57 @@ export class UiSchemaRepository extends Repository {
     schema: any,
     options?: InsertAdjacentOptions,
   ) {
+    const { transaction } = options;
+
+    if (options.wrap) {
+      // insert wrap schema using insertNewSchema
+      const wrapSchemaNodes = await this.insertNewSchema(options.wrap, {
+        transaction,
+        returnNode: true,
+      });
+
+      const lastWrapNode = wrapSchemaNodes[wrapSchemaNodes.length - 1];
+
+      // insert schema into wrap schema
+      await this.insertAdjacent('afterBegin', lastWrapNode['x-uid'], schema, lodash.omit(options, 'wrap'));
+
+      schema = wrapSchemaNodes[0]['x-uid'];
+
+      options.removeParentsIfNoChildren = false;
+    } else {
+      const schemaExists = await this.schemaExists(schema, { transaction });
+      if (schemaExists) {
+        schema = lodash.isString(schema) ? schema : schema['x-uid'];
+      } else {
+        const insertedSchema = await this.insertNewSchema(schema, {
+          transaction,
+          returnNode: true,
+        });
+
+        schema = insertedSchema[0]['x-uid'];
+      }
+    }
+
     return await this[`insert${lodash.upperFirst(position)}`](target, schema, options);
   }
 
   @transaction()
-  async insertAfterBegin(targetUid: string, schema: any, options?: InsertAdjacentOptions) {
+  protected async insertAfterBegin(targetUid: string, schema: any, options?: InsertAdjacentOptions) {
     return await this.insertInner(targetUid, schema, 'first', options);
   }
 
   @transaction()
-  async insertBeforeEnd(targetUid: string, schema: any, options?: InsertAdjacentOptions) {
+  protected async insertBeforeEnd(targetUid: string, schema: any, options?: InsertAdjacentOptions) {
     return await this.insertInner(targetUid, schema, 'last', options);
   }
 
   @transaction()
-  async insertBeforeBegin(targetUid: string, schema: any, options?: InsertAdjacentOptions) {
+  protected async insertBeforeBegin(targetUid: string, schema: any, options?: InsertAdjacentOptions) {
     return await this.insertBeside(targetUid, schema, 'before', options);
   }
 
   @transaction()
-  async insertAfterEnd(targetUid: string, schema: any, options?: InsertAdjacentOptions) {
+  protected async insertAfterEnd(targetUid: string, schema: any, options?: InsertAdjacentOptions) {
     return await this.insertBeside(targetUid, schema, 'after', options);
   }
 
@@ -600,6 +653,70 @@ export class UiSchemaRepository extends Repository {
     });
   }
 
+  @transaction()
+  async insertNewSchema(
+    schema: any,
+    options?: TransactionAble & {
+      returnNode?: boolean;
+    },
+  ) {
+    const { transaction } = options;
+
+    const nodes = UiSchemaRepository.schemaToSingleNodes(schema);
+    // insert schema fist
+    await this.database.sequelize.query(
+      this.sqlAdapter(
+        `INSERT INTO ${this.uiSchemasTableName} ("x-uid", "name", "schema") VALUES ${nodes
+          .map((n) => '(?)')
+          .join(',')};`,
+      ),
+      {
+        replacements: lodash.cloneDeep(nodes).map((node) => {
+          const { uid, name } = this.prepareSingleNodeForInsert(node);
+          return [uid, name, JSON.stringify(node)];
+        }),
+        type: 'insert',
+        transaction,
+      },
+    );
+
+    const treePathData: Array<any> = lodash.cloneDeep(nodes).reduce((carry, item) => {
+      const { uid, childOptions, async } = this.prepareSingleNodeForInsert(item);
+
+      return [
+        ...carry,
+        // self reference
+        [uid, uid, 0, childOptions?.type || null, async, null],
+        // parent references
+        ...lodash.get(childOptions, 'parentPath', []).map((parentUid, index) => {
+          return [parentUid, uid, index + 1, null, null, childOptions.sort];
+        }),
+      ];
+    }, []);
+
+    // insert tree path
+    await this.database.sequelize.query(
+      this.sqlAdapter(
+        `INSERT INTO ${
+          this.uiSchemaTreePathTableName
+        } (ancestor, descendant, depth, type, async, sort) VALUES ${treePathData.map((item) => '(?)').join(',')}`,
+      ),
+      {
+        replacements: treePathData,
+        type: 'insert',
+        transaction,
+      },
+    );
+
+    if (options?.returnNode) {
+      return nodes;
+    }
+
+    return this.getJsonSchema(nodes[0]['x-uid'], {
+      transaction,
+    });
+  }
+
   private async insertSchemaRecord(name, uid, schema, transaction) {
     const serverHooks = schema['x-server-hooks'] || [];
 
@@ -619,11 +736,7 @@ export class UiSchemaRepository extends Repository {
     return node;
   }
 
-  async insertSingleNode(schema: SchemaNode, options: TransactionAble & removeParentOptions) {
-    const { transaction } = options;
-
-    const db = this.database;
-
+  private prepareSingleNodeForInsert(schema: SchemaNode) {
     const uid = schema['x-uid'];
     const name = schema['name'];
     const async = lodash.get(schema, 'x-async', false);
@@ -634,6 +747,15 @@ export class UiSchemaRepository extends Repository {
     delete schema['name'];
     delete schema['childOptions'];
 
+    return { uid, name, async, childOptions };
+  }
+
+  async insertSingleNode(schema: SchemaNode, options: TransactionAble & removeParentOptions) {
+    const { transaction } = options;
+
+    const db = this.database;
+
+    const { uid, name, async, childOptions } = this.prepareSingleNodeForInsert(schema);
     let savedNode;
 
     // check node exists or not
@@ -656,18 +778,9 @@ export class UiSchemaRepository extends Repository {
       const oldParentUid = await this.findParentUid(uid, transaction);
       const parentUid = childOptions.parentUid;
 
-      const isTreeQuery = await db.sequelize.query(
-        `SELECT COUNT(*) as childrenCount from ${treeTable} WHERE ancestor = :ancestor AND descendant != ancestor`,
-        {
-          type: 'SELECT',
-          replacements: {
-            ancestor: uid,
-          },
-          transaction,
-        },
-      );
+      const childrenCount = await this.childrenCount(uid, transaction);
 
-      const isTree = isTreeQuery[0]['childrenCount'];
+      const isTree = childrenCount > 0;
 
       // if node is a tree root move tree to new path
       if (isTree) {
@@ -691,6 +804,19 @@ export class UiSchemaRepository extends Repository {
           },
         );
       }
+
+      // update type
+      await db.sequelize.query(
+        `UPDATE ${treeTable} SET type = :type WHERE depth = 0 AND ancestor = :uid AND descendant = :uid`,
+        {
+          type: 'update',
+          transaction,
+          replacements: {
+            type: childOptions.type,
+            uid,
+          },
+        },
+      );
 
       if (!isTree) {
         if (existsNode) {
