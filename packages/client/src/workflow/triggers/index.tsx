@@ -1,8 +1,10 @@
 import React from "react";
 import { useForm } from "@formily/react";
-import { useActionContext, useAPIClient, useRecord, useResourceActionContext } from '../../';
-import { SchemaComponent } from "../../schema-component";
+import { cx } from "@emotion/css";
+
+import { SchemaComponent, useActionContext, useAPIClient, useRecord, useResourceActionContext } from '../../';
 import model from './model';
+import { nodeClass } from "../style";
 
 
 function useUpdateConfigAction() {
@@ -39,51 +41,54 @@ export const TriggerConfig = () => {
     return null;
   }
   const { type, config } = data.data;
-  const { properties, scope } = triggerTypes[type];
+  const { title, fieldset, scope } = triggerTypes[type];
   return (
-    <SchemaComponent
-      schema={{
-        type: 'void',
-        title: '触发器配置',
-        'x-component': 'Action.Link',
-        name: 'drawer',
-        properties: {
-          drawer: {
-            type: 'void',
-            title: '触发器配置',
-            'x-component': 'Action.Drawer',
-            'x-decorator': 'Form',
-            'x-decorator-props': {
-              initialValue: config
-            },
-            properties: {
-              ...properties,
-              actions: {
-                type: 'void',
-                'x-component': 'Action.Drawer.Footer',
-                properties: {
-                  cancel: {
-                    title: '{{t("Cancel")}}',
-                    'x-component': 'Action',
-                    'x-component-props': {
-                      useAction: '{{ cm.useCancelAction }}',
+    <div className={cx(nodeClass)}>
+      <h4>{title}</h4>
+      <SchemaComponent
+        schema={{
+          type: 'void',
+          title: '触发器配置',
+          'x-component': 'Action.Link',
+          name: 'drawer',
+          properties: {
+            drawer: {
+              type: 'void',
+              title: '触发器配置',
+              'x-component': 'Action.Drawer',
+              'x-decorator': 'Form',
+              'x-decorator-props': {
+                initialValue: config
+              },
+              properties: {
+                ...fieldset,
+                actions: {
+                  type: 'void',
+                  'x-component': 'Action.Drawer.Footer',
+                  properties: {
+                    cancel: {
+                      title: '{{t("Cancel")}}',
+                      'x-component': 'Action',
+                      'x-component-props': {
+                        useAction: '{{ cm.useCancelAction }}',
+                      },
                     },
-                  },
-                  submit: {
-                    title: '{{t("Submit")}}',
-                    'x-component': 'Action',
-                    'x-component-props': {
-                      type: 'primary',
-                      useAction: useUpdateConfigAction
+                    submit: {
+                      title: '{{t("Submit")}}',
+                      'x-component': 'Action',
+                      'x-component-props': {
+                        type: 'primary',
+                        useAction: useUpdateConfigAction
+                      }
                     }
                   }
                 }
               }
             }
           }
-        }
-      }}
-      scope={scope}
-    />
+        }}
+        scope={scope}
+      />
+    </div>
   );
 }
