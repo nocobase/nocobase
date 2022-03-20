@@ -4,6 +4,7 @@ import { useCompile, useDesignable } from '../..';
 import { useCollection, useResourceActionContext } from '../../../collection-manager';
 import { useCollectionFilterOptions } from '../../../collection-manager/action-hooks';
 import { GeneralSchemaDesigner, SchemaSettings } from '../../../schema-settings';
+import { useSchemaTemplate } from '../../../schema-templates';
 
 export const CalendarDesigner = () => {
   const field = useField();
@@ -13,6 +14,7 @@ export const CalendarDesigner = () => {
   const ctx = useResourceActionContext();
   const { dn } = useDesignable();
   const compile = useCompile();
+  const template = useSchemaTemplate();
   const defaultFilter = fieldSchema?.['x-decorator-props']?.request?.params?.filter || {};
   const options = fields?.map((field) => {
     return {
@@ -23,7 +25,7 @@ export const CalendarDesigner = () => {
   const calendarSchema = fieldSchema.properties.calendar;
   const fieldNames = calendarSchema?.['x-component-props']?.['fieldNames'] || {};
   return (
-    <GeneralSchemaDesigner title={title || name}>
+    <GeneralSchemaDesigner template={template} title={title || name}>
       <SchemaSettings.SelectItem
         title={'标题字段'}
         value={fieldNames.title}
@@ -127,6 +129,8 @@ export const CalendarDesigner = () => {
           });
         }}
       />
+      <SchemaSettings.Divider />
+      <SchemaSettings.Template componentName={'Calendar'} collectionName={name} />
       <SchemaSettings.Divider />
       <SchemaSettings.Remove
         removeParentsIfNoChildren

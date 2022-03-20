@@ -11,6 +11,7 @@ interface CreateDesignableProps {
   current: Schema;
   api?: APIClient;
   refresh?: () => void;
+  onSuccess?: any;
 }
 
 export function createDesignable(options: CreateDesignableProps) {
@@ -26,6 +27,7 @@ interface InsertAdjacentOptions {
   wrap?: (s: ISchema) => ISchema;
   removeParentsIfNoChildren?: boolean;
   breakRemoveOn?: ISchema | BreakFn;
+  onSuccess?: any;
 }
 
 type BreakFn = (s: ISchema) => boolean;
@@ -80,7 +82,7 @@ export class Designable {
     if (!api) {
       return;
     }
-    this.on('insertAdjacent', async ({ current, position, schema, removed }) => {
+    this.on('insertAdjacent', async ({ onSuccess, current, position, schema, removed }) => {
       refresh();
       await api.request({
         url: `/uiSchemas:insertAdjacent/${current['x-uid']}?position=${position}`,
@@ -93,6 +95,7 @@ export class Designable {
           method: 'post',
         });
       }
+      onSuccess?.();
       message.success('配置保存成功！', 0.2);
     });
     this.on('patch', async ({ schema }) => {
@@ -227,6 +230,19 @@ export class Designable {
       }
     }
     this.emit('remove', { removed });
+  }
+
+  removeWithoutEmit(schema?: Schema, options: RemoveOptions = {}) {
+    const { breakRemoveOn, removeParentsIfNoChildren } = options;
+    let s = schema || this.current;
+    let removed = s.parent.removeProperty(s.name);
+    if (removeParentsIfNoChildren) {
+      const parent = this.recursiveRemoveIfNoChildren(s.parent, { breakRemoveOn });
+      if (parent) {
+        removed = parent;
+      }
+    }
+    return removed;
   }
 
   insertBeforeBeginOrAfterEnd(schema: ISchema, options: InsertAdjacentOptions = {}) {
@@ -393,7 +409,7 @@ export class Designable {
     if (!Schema.isSchemaInstance(this.current)) {
       return;
     }
-    const opts = {};
+    const opts = { onSuccess: options?.onSuccess };
     const { wrap = defaultWrap, breakRemoveOn, removeParentsIfNoChildren } = options;
     if (Schema.isSchemaInstance(schema)) {
       if (this.parentsIn(schema)) {

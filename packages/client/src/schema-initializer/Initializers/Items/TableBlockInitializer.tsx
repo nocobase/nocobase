@@ -1,11 +1,11 @@
 import { TableOutlined } from '@ant-design/icons';
 import { ISchema } from '@formily/react';
 import React from 'react';
-import { useTranslation } from 'react-i18next';
 import { SchemaInitializer } from '../..';
-import { useCollectionManager } from '../../../collection-manager';
+import { useSchemaTemplateManager } from '../../../schema-templates';
+import { useCollectionDataSourceItems } from '../utils';
 
-const createSchema = (collectionName) => {
+export const createTableBlockSchema = (collectionName) => {
   const schema: ISchema = {
     type: 'void',
     'x-collection': 'collections',
@@ -79,30 +79,20 @@ const createSchema = (collectionName) => {
 
 export const TableBlockInitializer = (props) => {
   const { insert } = props;
-  const { collections } = useCollectionManager();
-  const { t } = useTranslation();
+  const { getTemplateSchemaByMode } = useSchemaTemplateManager();
   return (
     <SchemaInitializer.Item
       {...props}
       icon={<TableOutlined />}
-      onClick={({ item }) => {
-        insert(createSchema(item.name));
+      onClick={async ({ item }) => {
+        if (item.template) {
+          const s = await getTemplateSchemaByMode(item);
+          insert(s);
+        } else {
+          insert(createTableBlockSchema(item.name));
+        }
       }}
-      items={[
-        {
-          type: 'itemGroup',
-          title: t('Select data source'),
-          children: collections
-            ?.filter((item) => !item.inherit)
-            ?.map((item) => {
-              return {
-                type: 'item',
-                name: item.name,
-                title: item.title,
-              };
-            }),
-        },
-      ]}
+      items={useCollectionDataSourceItems('Table')}
     />
   );
 };
