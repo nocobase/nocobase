@@ -1243,6 +1243,105 @@ describe('ui_schema repository', () => {
   });
 
   describe('insertAdjacent', () => {
+    it('should works with wrap and new schema', async () => {
+      const schema = {
+        name: 'root-name',
+        'x-uid': 'root',
+        properties: {
+          p1: {
+            'x-uid': 'p1',
+            properties: {
+              p11: {
+                'x-uid': 'p11',
+              },
+            },
+          },
+          p2: {
+            'x-uid': 'p2',
+            properties: {
+              p21: {
+                'x-uid': 'p21',
+              },
+            },
+          },
+        },
+      };
+
+      await repository.insert(schema);
+
+      await repository.insertAdjacent(
+        'afterEnd',
+        'p2',
+        {
+          name: 'p311',
+          'x-uid': 'p311',
+        },
+        {
+          wrap: {
+            'x-uid': 'p3',
+            name: 'p3',
+            properties: {
+              p31: {
+                'x-uid': 'p31',
+              },
+            },
+          },
+        },
+      );
+
+      const root = await repository.getJsonSchema('root');
+      expect(root).toEqual({
+        properties: {
+          p1: {
+            properties: {
+              p11: {
+                'x-uid': 'p11',
+                'x-async': false,
+                'x-index': 1,
+              },
+            },
+            'x-uid': 'p1',
+            'x-async': false,
+            'x-index': 1,
+          },
+          p2: {
+            properties: {
+              p21: {
+                'x-uid': 'p21',
+                'x-async': false,
+                'x-index': 1,
+              },
+            },
+            'x-uid': 'p2',
+            'x-async': false,
+            'x-index': 2,
+          },
+          p3: {
+            properties: {
+              p31: {
+                properties: {
+                  p311: {
+                    'x-uid': 'p311',
+                    'x-async': false,
+                    'x-index': 1,
+                  },
+                },
+                'x-uid': 'p31',
+                'x-async': false,
+                'x-index': 1,
+              },
+            },
+            'x-uid': 'p3',
+            'x-async': false,
+            'x-index': 3,
+          },
+        },
+        name: 'root-name',
+        'x-uid': 'root',
+        'x-async': false,
+      });
+    });
+
     it('should works with wrap', async () => {
       const schema = {
         name: 'root-name',

@@ -583,14 +583,8 @@ export class UiSchemaRepository extends Repository {
 
       const lastWrapNode = wrapSchemaNodes[wrapSchemaNodes.length - 1];
 
-      // insert schema info wrap schema
-      await this.insertAfterBegin(
-        lastWrapNode['x-uid'],
-        {
-          'x-uid': schema['x-uid'],
-        },
-        options,
-      );
+      // insert schema into wrap schema
+      await this.insertAdjacent('afterBegin', lastWrapNode['x-uid'], schema, lodash.omit(options, 'wrap'));
 
       schema = wrapSchemaNodes[0]['x-uid'];
 
