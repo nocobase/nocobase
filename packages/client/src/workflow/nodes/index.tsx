@@ -43,6 +43,7 @@ export interface Instruction {
   fieldset: { [key: string]: ISchema };
   view: ISchema;
   scope?: { [key: string]: any };
+  render?(props): React.ReactElement
 };
 
 export const instructions = new Registry<Instruction>();
@@ -58,6 +59,10 @@ export function useNodeContext() {
 
 export function Node(data) {
   const instruction = instructions.get(data.type);
+
+  if (instruction.render) {
+    return instruction.render(data);
+  }
 
   return (
     <NodeContext.Provider value={data}>
