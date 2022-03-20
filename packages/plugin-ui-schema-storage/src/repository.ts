@@ -545,6 +545,26 @@ export class UiSchemaRepository extends Repository {
     });
   }
 
+  private async schemaExists(schema: any, options?: TransactionAble): Promise<boolean> {
+    if (lodash.isObject(schema) && !schema['x-uid']) {
+      return false;
+    }
+
+    const { transaction } = options;
+    const result = await this.database.sequelize.query(
+      this.sqlAdapter(`select "x-uid" from ${this.uiSchemasTableName} where "x-uid" = :uid`),
+      {
+        type: 'SELECT',
+        replacements: {
+          uid: lodash.isString(schema) ? schema : schema['x-uid'],
+        },
+        transaction,
+      },
+    );
+
+    return result.length > 0;
+  }
+
   @transaction()
   async insertAdjacent(
     position: 'beforeBegin' | 'afterBegin' | 'beforeEnd' | 'afterEnd',
@@ -553,7 +573,9 @@ export class UiSchemaRepository extends Repository {
     options?: InsertAdjacentOptions,
   ) {
     const { transaction } = options;
+
     if (options.wrap) {
+      // insert wrap schema using insertNewSchema
       const wrapSchemaNodes = await this.insertNewSchema(options.wrap, {
         transaction,
         returnNode: true,
@@ -561,6 +583,7 @@ export class UiSchemaRepository extends Repository {
 
       const lastWrapNode = wrapSchemaNodes[wrapSchemaNodes.length - 1];
 
+      // insert schema info wrap schema
       await this.insertAfterBegin(
         lastWrapNode['x-uid'],
         {
@@ -569,11 +592,21 @@ export class UiSchemaRepository extends Repository {
         options,
       );
 
-      schema = {
-        'x-uid': wrapSchemaNodes[0]['x-uid'],
-      };
+      schema = wrapSchemaNodes[0]['x-uid'];
 
       options.removeParentsIfNoChildren = false;
+    } else {
+      const schemaExists = await this.schemaExists(schema, { transaction });
+      if (schemaExists) {
+        schema = lodash.isString(schema) ? schema : schema['x-uid'];
+      } else {
+        const insertedSchema = await this.insertNewSchema(schema, {
+          transaction,
+          returnNode: true,
+        });
+
+        schema = insertedSchema[0]['x-uid'];
+      }
     }
 
     return await this[`insert${lodash.upperFirst(position)}`](target, schema, options);
@@ -776,17 +809,20 @@ export class UiSchemaRepository extends Repository {
             transaction,
           },
         );
-        // update type
-        const updateSql = `UPDATE ${treeTable} SET type = :type WHERE depth = 0 AND ancestor = :uid AND descendant = :uid`;
-        await db.sequelize.query(updateSql, {
+      }
+
+      // update type
+      await db.sequelize.query(
+        `UPDATE ${treeTable} SET type = :type WHERE depth = 0 AND ancestor = :uid AND descendant = :uid`,
+        {
           type: 'update',
           transaction,
           replacements: {
             type: childOptions.type,
             uid,
           },
-        });
-      }
+        },
+      );
 
       if (!isTree) {
         if (existsNode) {

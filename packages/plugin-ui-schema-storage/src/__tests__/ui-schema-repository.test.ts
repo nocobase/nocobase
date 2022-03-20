@@ -578,18 +578,24 @@ describe('ui_schema repository', () => {
         },
       });
 
-      await repository.insertAdjacent('afterBegin', 'n1', {
-        name: 'f',
-        'x-uid': 'n6',
-        properties: {
-          g: {
-            'x-uid': 'n7',
+      await repository.insertAdjacent(
+        'afterBegin',
+        'n1',
+        {
+          'x-uid': 'n4',
+        },
+        {
+          wrap: {
+            name: 'f',
+            'x-uid': 'n6',
             properties: {
-              d: { 'x-uid': 'n4' },
+              g: {
+                'x-uid': 'n7',
+              },
             },
           },
         },
-      });
+      );
 
       const schema = await repository.getJsonSchema('n1');
       expect(schema.properties.f.properties.g.properties.d.properties.e['x-uid']).toEqual('n5');
@@ -883,21 +889,19 @@ describe('ui_schema repository', () => {
       'afterBegin',
       'E',
       {
-        'x-uid': 'F',
-        name: 'F',
-        properties: {
-          G: {
-            'x-uid': 'G',
-            properties: {
-              D: {
-                'x-uid': 'D',
-              },
-            },
-          },
-        },
+        'x-uid': 'D',
       },
       {
         removeParentsIfNoChildren: true,
+        wrap: {
+          'x-uid': 'F',
+          name: 'F',
+          properties: {
+            G: {
+              'x-uid': 'G',
+            },
+          },
+        },
       },
     );
 
@@ -968,21 +972,19 @@ describe('ui_schema repository', () => {
       'afterEnd',
       'E',
       {
-        'x-uid': 'F',
-        name: 'F',
-        properties: {
-          G: {
-            'x-uid': 'G',
-            properties: {
-              D: {
-                'x-uid': 'D',
-              },
-            },
-          },
-        },
+        'x-uid': 'D',
       },
       {
         removeParentsIfNoChildren: true,
+        wrap: {
+          'x-uid': 'F',
+          name: 'F',
+          properties: {
+            G: {
+              'x-uid': 'G',
+            },
+          },
+        },
       },
     );
 
@@ -1323,6 +1325,173 @@ describe('ui_schema repository', () => {
             'x-uid': 'p3',
             'x-async': false,
             'x-index': 2,
+          },
+        },
+        name: 'root-name',
+        'x-uid': 'root',
+        'x-async': false,
+      });
+    });
+
+    it('should insert newSchema using insertNewSchema', async () => {
+      const schema = {
+        name: 'root-name',
+        'x-uid': 'root',
+        properties: {
+          p1: {
+            'x-uid': 'p1',
+            properties: {
+              p11: {
+                'x-uid': 'p11',
+              },
+            },
+          },
+          p2: {
+            'x-uid': 'p2',
+            properties: {
+              p21: {
+                'x-uid': 'p21',
+              },
+            },
+          },
+        },
+      };
+
+      await repository.insert(schema);
+
+      await repository.insertAdjacent('afterEnd', 'p2', {
+        'x-uid': 'p3',
+        name: 'p3',
+        properties: {
+          p31: {
+            'x-uid': 'p31',
+          },
+        },
+      });
+
+      const root = await repository.getJsonSchema('root');
+      expect(root).toEqual({
+        properties: {
+          p1: {
+            properties: {
+              p11: {
+                'x-uid': 'p11',
+                'x-async': false,
+                'x-index': 1,
+              },
+            },
+            'x-uid': 'p1',
+            'x-async': false,
+            'x-index': 1,
+          },
+          p2: {
+            properties: {
+              p21: {
+                'x-uid': 'p21',
+                'x-async': false,
+                'x-index': 1,
+              },
+            },
+            'x-uid': 'p2',
+            'x-async': false,
+            'x-index': 2,
+          },
+          p3: {
+            properties: {
+              p31: {
+                'x-uid': 'p31',
+                'x-async': false,
+                'x-index': 1,
+              },
+            },
+            'x-uid': 'p3',
+            'x-async': false,
+            'x-index': 3,
+          },
+        },
+        name: 'root-name',
+        'x-uid': 'root',
+        'x-async': false,
+      });
+    });
+
+    it('should insert oldSchema using first x-uid', async () => {
+      const schema = {
+        name: 'root-name',
+        'x-uid': 'root',
+        properties: {
+          p1: {
+            'x-uid': 'p1',
+            properties: {
+              p11: {
+                'x-uid': 'p11',
+              },
+            },
+          },
+          p2: {
+            'x-uid': 'p2',
+            properties: {
+              p21: {
+                'x-uid': 'p21',
+              },
+            },
+          },
+        },
+      };
+
+      await repository.insert(schema);
+
+      const insertSchema = {
+        'x-uid': 'p3',
+        name: 'p3',
+        properties: {
+          p31: {
+            'x-uid': 'p31',
+          },
+        },
+      };
+
+      await repository.insert(insertSchema);
+      await repository.insertAdjacent('afterEnd', 'p2', insertSchema);
+
+      const root = await repository.getJsonSchema('root');
+      expect(root).toEqual({
+        properties: {
+          p1: {
+            properties: {
+              p11: {
+                'x-uid': 'p11',
+                'x-async': false,
+                'x-index': 1,
+              },
+            },
+            'x-uid': 'p1',
+            'x-async': false,
+            'x-index': 1,
+          },
+          p2: {
+            properties: {
+              p21: {
+                'x-uid': 'p21',
+                'x-async': false,
+                'x-index': 1,
+              },
+            },
+            'x-uid': 'p2',
+            'x-async': false,
+            'x-index': 2,
+          },
+          p3: {
+            properties: {
+              p31: {
+                'x-uid': 'p31',
+                'x-async': false,
+                'x-index': 1,
+              },
+            },
+            'x-uid': 'p3',
+            'x-async': false,
+            'x-index': 3,
           },
         },
         name: 'root-name',
