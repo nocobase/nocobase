@@ -13,7 +13,7 @@ import {
   SchemaComponentOptions,
   useActionContext,
   useAPIClient,
-  useCollection,
+  useCollection
 } from '..';
 import { useSchemaTemplateManager } from '../schema-templates';
 import { useBlockTemplateContext } from '../schema-templates/BlockTemplate';
@@ -116,11 +116,6 @@ SchemaSettings.Template = (props) => {
       <SchemaSettings.Item
         onClick={async () => {
           const schema = await copyTemplateSchema(template);
-          await api.request({
-            method: 'post',
-            url: `/uiSchemas:insertNewSchema`,
-            data: schema,
-          });
           const removed = tdn.removeWithoutEmit();
           tdn.insertAfterEnd(schema, {
             async onSuccess() {
