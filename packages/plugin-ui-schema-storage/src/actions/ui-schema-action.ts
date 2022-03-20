@@ -1,6 +1,6 @@
 import { Context } from '@nocobase/actions';
-import UiSchemaRepository from '../repository';
 import lodash from 'lodash';
+import UiSchemaRepository from '../repository';
 
 const getRepositoryFromCtx = (ctx: Context) => {
   return ctx.db.getCollection('uiSchemas').repository as UiSchemaRepository;
@@ -22,7 +22,7 @@ const callRepositoryMethod = (method, paramsKey: 'resourceIndex' | 'values') => 
 };
 
 function parseInsertAdjacentValues(values) {
-  if (lodash.has(values, 'schema') && lodash.has(values, 'wrap')) {
+  if (lodash.has(values, 'schema')) {
     return values;
   }
 
