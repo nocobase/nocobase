@@ -1,17 +1,19 @@
 import { Context } from '@nocobase/actions';
 import lodash from 'lodash';
 import UiSchemaRepository from '../repository';
+import { ActionParams } from '@nocobase/resourcer';
 
 const getRepositoryFromCtx = (ctx: Context) => {
   return ctx.db.getCollection('uiSchemas').repository as UiSchemaRepository;
 };
 
-const callRepositoryMethod = (method, paramsKey: 'resourceIndex' | 'values') => {
+const callRepositoryMethod = (method, paramsKey: 'resourceIndex' | 'values', optionsBuilder?) => {
   return async (ctx, next) => {
     const params = lodash.get(ctx.action.params, paramsKey);
+    const options = optionsBuilder ? optionsBuilder(ctx.action.params) : {};
 
     const repository = getRepositoryFromCtx(ctx);
-    const returnValue = await repository[method](params);
+    const returnValue = await repository[method](params, options);
 
     ctx.body = returnValue || {
       result: 'ok',
@@ -30,7 +32,12 @@ function parseInsertAdjacentValues(values) {
 }
 
 export const uiSchemaActions = {
-  getJsonSchema: callRepositoryMethod('getJsonSchema', 'resourceIndex'),
+  getJsonSchema: callRepositoryMethod('getJsonSchema', 'resourceIndex', (params: ActionParams) => {
+    return {
+      includeAsyncNode: params?.includeAsyncNode,
+    };
+  }),
+
   getProperties: callRepositoryMethod('getProperties', 'resourceIndex'),
   insert: callRepositoryMethod('insert', 'values'),
   insertNewSchema: callRepositoryMethod('insertNewSchema', 'values'),

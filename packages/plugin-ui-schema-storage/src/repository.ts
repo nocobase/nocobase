@@ -144,7 +144,9 @@ export class UiSchemaRepository extends Repository {
     return carry;
   }
 
-  async getProperties(uid: string) {
+  async getProperties(uid: string, options: TransactionAble = {}) {
+    const { transaction } = options;
+
     const db = this.database;
 
     const rawSql = `
@@ -161,6 +163,7 @@ export class UiSchemaRepository extends Repository {
       replacements: {
         ancestor: uid,
       },
+      transaction,
     });
 
     if (nodes[0].length == 0) {
