@@ -3,7 +3,15 @@ import { uid } from '@formily/shared';
 import { Menu } from 'antd';
 import React, { useContext, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { ActionContext, DropdownVisibleContext, SchemaComponent, useActionContext, useCurrentUserContext, useRequest } from '../';
+import {
+  ActionContext,
+  DropdownVisibleContext,
+  SchemaComponent,
+  useActionContext,
+  useCurrentUserContext,
+  useRequest
+} from '../';
+import { useAPIClient } from '../api-client';
 
 const useCloseAction = () => {
   const { setVisible } = useActionContext();
@@ -24,13 +32,22 @@ const useCurrentUserValues = (options) => {
 };
 
 const useSaveCurrentUserValues = () => {
+  const ctx = useCurrentUserContext();
   const { setVisible } = useActionContext();
   const form = useForm();
+  const api = useAPIClient();
   return {
     async run() {
-      form.submit((values) => {
-        setVisible(false);
-        console.log(values);
+      const values = await form.submit<any>();
+      setVisible(false);
+      await api.resource('users').updateProfile({
+        values,
+      });
+      ctx.mutate({
+        data: {
+          ...ctx?.data?.data,
+          ...values,
+        },
       });
     },
   };

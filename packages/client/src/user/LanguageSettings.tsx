@@ -1,10 +1,13 @@
 import { Menu, Select } from 'antd';
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useAPIClient, useCurrentUserContext } from '..';
 
 export const LanguageSettings = () => {
   const { t, i18n } = useTranslation();
   const [open, setOpen] = useState(false);
+  const api = useAPIClient();
+  const ctx = useCurrentUserContext();
   return (
     <Menu.Item
       onClick={() => {
@@ -25,6 +28,11 @@ export const LanguageSettings = () => {
         ]}
         value={i18n.language}
         onChange={async (lang) => {
+          await api.resource('users').updateProfile({
+            values: {
+              appLang: lang,
+            },
+          });
           await i18n.changeLanguage(lang);
           window.location.reload();
         }}

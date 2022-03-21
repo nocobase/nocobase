@@ -32,8 +32,11 @@ export class ClientPlugin extends Plugin {
       name: 'app',
       actions: {
         async getLang(ctx, next) {
+          const SystemSetting = ctx.db.getRepository('systemSettings');
+          const systemSetting = await SystemSetting.findOne();
+          const currentUser = ctx.state.currentUser;
           ctx.body = {
-            lang: 'zh-CN',
+            lang: currentUser?.appLang || systemSetting?.appLang || process.env.APP_LANG || 'en-US',
           };
           await next();
         },

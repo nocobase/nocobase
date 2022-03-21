@@ -19,7 +19,7 @@ export function AntdConfigProvider(props) {
           i18n.changeLanguage(data?.data?.lang);
         }
       },
-      manual: true, // !remoteLocale,
+      manual: !remoteLocale,
     },
   );
   if (loading) {
