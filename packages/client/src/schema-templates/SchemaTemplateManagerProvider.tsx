@@ -62,7 +62,7 @@ export const useSchemaTemplateManager = () => {
       const { mode, template } = options;
       if (mode === 'copy') {
         const { data } = await api.request({
-          url: `/uiSchemas:getJsonSchema/${template.uid}`,
+          url: `/uiSchemas:getJsonSchema/${template.uid}?includeAsyncNode=true`,
         });
         const s = data?.data || {};
         regenerateUid(s);
@@ -79,7 +79,7 @@ export const useSchemaTemplateManager = () => {
     },
     async copyTemplateSchema(template) {
       const { data } = await api.request({
-        url: `/uiSchemas:getJsonSchema/${template.uid}`,
+        url: `/uiSchemas:getJsonSchema/${template.uid}?includeAsyncNode=true`,
       });
       const s = data?.data || {};
       regenerateUid(s);
@@ -88,25 +88,15 @@ export const useSchemaTemplateManager = () => {
     async saveAsTemplate(values) {
       const { uid: schemaId } = values;
       const key = uid();
-      await api.resource('uiSchemaTemplates').create({
+      await api.resource('uiSchemas').saveAsTemplate({
+        filterByTk: schemaId,
         values: {
           key,
           ...values,
         },
       });
-      await api.request({
-        url: `/uiSchemas:clearAncestor/${schemaId}`,
-      });
       await refresh();
       return { key };
-    },
-    async duplicate(template) {
-      const { data } = await api.request({
-        url: `/uiSchemas:getJsonSchema/${template.uid}`,
-      });
-      const s = data?.data || {};
-      regenerateUid(s);
-      return s;
     },
     getTemplateBySchemaId(schemaId) {
       return templates?.find((template) => template.uid === schemaId);
