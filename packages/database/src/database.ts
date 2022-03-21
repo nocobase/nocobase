@@ -1,15 +1,7 @@
 import { applyMixins, AsyncEmitter } from '@nocobase/utils';
 import merge from 'deepmerge';
 import { EventEmitter } from 'events';
-import {
-  ModelCtor,
-  Op,
-  Options,
-  QueryInterfaceDropAllTablesOptions,
-  Sequelize,
-  SyncOptions,
-  Utils
-} from 'sequelize';
+import { ModelCtor, Op, Options, QueryInterfaceDropAllTablesOptions, Sequelize, SyncOptions, Utils } from 'sequelize';
 import { Collection, CollectionOptions, RepositoryType } from './collection';
 import { ImporterReader, ImportFileExtension } from './collection-importer';
 import * as FieldTypes from './fields';

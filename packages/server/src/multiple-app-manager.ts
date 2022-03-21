@@ -4,7 +4,7 @@ import http, { IncomingMessage } from 'http';
 type AppSelector = (ctx) => Application | string;
 
 export class MultipleAppManager {
-  protected applications: Map<string, Application> = new Map<string, Application>();
+  public applications: Map<string, Application> = new Map<string, Application>();
 
   constructor(private app: Application) {}
 
