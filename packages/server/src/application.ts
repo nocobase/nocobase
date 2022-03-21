@@ -12,6 +12,7 @@ import { createACL } from './acl';
 import { createCli, createDatabase, createI18n, createResourcer, registerMiddlewares } from './helper';
 import { Plugin } from './plugin';
 import { PluginManager, InstallOptions } from './plugin-manager';
+import { MultipleAppManager } from './multiple-app-manager';
 
 export interface ResourcerOptions {
   prefix?: string;
@@ -84,6 +85,8 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
 
   public readonly acl: ACL;
 
+  public readonly multiAppManager: MultipleAppManager;
+
   protected plugins = new Map<string, Plugin>();
 
   public listenServer: Server;
@@ -100,6 +103,8 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     this.pm = new PluginManager({
       app: this,
     });
+
+    this.multiAppManager = new MultipleAppManager(this);
 
     registerMiddlewares(this, options);
 
@@ -174,6 +179,10 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     }
 
     await this.emitAsync('afterStart', this, options);
+  }
+
+  listen(...args): Server {
+    return this.multiAppManager.listen(...args);
   }
 
   async stop(options?: any) {
