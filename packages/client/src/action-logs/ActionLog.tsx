@@ -1,31 +1,14 @@
 import { Field } from '@formily/core';
 import { observer, RecursionField, useField, useFieldSchema } from '@formily/react';
-import React, { useContext } from 'react';
+import React from 'react';
 import { useCollection } from '..';
 import { SchemaComponent } from '../schema-component';
-import { SchemaInitializerContext } from '../schema-initializer';
 import { ActionLogDesigner } from './ActionLog.Designer';
 import { createSchema } from './utils';
 
 export const ActionLog = () => {
-  const initializers = useContext(SchemaInitializerContext);
-  initializers.BlockInitializers.items.push({
-    type: 'itemGroup',
-    title: '{{t("Others")}}',
-    children: [
-      {
-        type: 'item',
-        title: '{{t("Action logs")}}',
-        component: 'ActionLogBlockInitializer',
-      },
-    ],
-  });
   const schema = createSchema();
-  return (
-    <SchemaInitializerContext.Provider value={initializers}>
-      <SchemaComponent schema={schema} name={schema.name} />
-    </SchemaInitializerContext.Provider>
-  );
+  return <SchemaComponent schema={schema} name={schema.name} />;
 };
 
 ActionLog.Designer = ActionLogDesigner;

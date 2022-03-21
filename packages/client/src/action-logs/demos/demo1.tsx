@@ -1,6 +1,7 @@
 import { ISchema } from '@formily/react';
 import {
   ActionLog,
+  ActionLogProvider,
   AntdSchemaComponentProvider,
   APIClient,
   APIClientProvider,
@@ -75,7 +76,9 @@ export default () => {
         <SchemaComponentProvider components={{ ActionLog }}>
           <AntdSchemaComponentProvider>
             <CollectionManagerProvider collections={collections}>
-              <SchemaComponent schema={schema} />
+              <ActionLogProvider>
+                <SchemaComponent schema={schema} />
+              </ActionLogProvider>
             </CollectionManagerProvider>
           </AntdSchemaComponentProvider>
         </SchemaComponentProvider>
