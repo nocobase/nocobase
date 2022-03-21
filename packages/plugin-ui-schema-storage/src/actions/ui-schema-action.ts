@@ -1,7 +1,7 @@
 import { Context } from '@nocobase/actions';
+import { ActionParams } from '@nocobase/resourcer';
 import lodash from 'lodash';
 import UiSchemaRepository from '../repository';
-import { ActionParams } from '@nocobase/resourcer';
 
 const getRepositoryFromCtx = (ctx: Context) => {
   return ctx.db.getCollection('uiSchemas').repository as UiSchemaRepository;
@@ -64,6 +64,30 @@ export const uiSchemaActions = {
   insertAfterBegin: insertPositionActionBuilder('afterBegin'),
   insertBeforeEnd: insertPositionActionBuilder('beforeEnd'),
   insertAfterEnd: insertPositionActionBuilder('afterEnd'),
+
+  async saveAsTemplate(ctx: Context, next) {
+    const { filterByTk, values } = ctx.action.params;
+    const db = ctx.db;
+    const transaction = await db.sequelize.transaction();
+    try {
+      await db.getRepository('uiSchemaTemplates').create({
+        values: {
+          ...values,
+          uid: filterByTk,
+        },
+        transaction,
+      });
+      await db.getRepository<UiSchemaRepository>('uiSchemas').clearAncestor(filterByTk, { transaction });
+      ctx.body = {
+        result: 'ok',
+      };
+      await transaction.commit();
+    } catch (error) {
+      await transaction.rollback();
+      throw error;
+    }
+    await next();
+  },
 };
 
 function insertPositionActionBuilder(position: 'beforeBegin' | 'afterBegin' | 'beforeEnd' | 'afterEnd') {
