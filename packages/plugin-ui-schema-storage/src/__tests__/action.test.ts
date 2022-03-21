@@ -56,6 +56,43 @@ describe('action test', () => {
     expect(response.statusCode).toEqual(200);
   });
 
+  test('getJsonSchema with async node', async () => {
+    await app
+      .agent()
+      .resource('uiSchemas')
+      .insert({
+        values: {
+          'x-uid': 'n1',
+          name: 'a',
+          type: 'object',
+          properties: {
+            b: {
+              'x-async': true,
+              'x-uid': 'n2',
+              type: 'object',
+              properties: {
+                c: { 'x-uid': 'n3' },
+              },
+            },
+            d: { 'x-uid': 'n4' },
+          },
+        },
+      });
+
+    let response = await app.agent().resource('uiSchemas').getJsonSchema({
+      resourceIndex: 'n1',
+    });
+
+    expect(response.body.data.properties.b).toBeUndefined();
+
+    response = await app.agent().resource('uiSchemas').getJsonSchema({
+      resourceIndex: 'n1',
+      includeAsyncNode: true,
+    });
+
+    expect(response.body.data.properties.b).toBeDefined();
+  });
+
   test('getJsonSchema', async () => {
     await app
       .agent()
