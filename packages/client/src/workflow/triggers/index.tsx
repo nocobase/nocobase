@@ -4,7 +4,7 @@ import { cx } from "@emotion/css";
 
 import { SchemaComponent, useActionContext, useAPIClient, useRecord, useResourceActionContext } from '../../';
 import model from './model';
-import { nodeClass } from "../style";
+import { nodeCardClass } from "../style";
 
 
 function useUpdateConfigAction() {
@@ -43,7 +43,7 @@ export const TriggerConfig = () => {
   const { type, config } = data.data;
   const { title, fieldset, scope } = triggerTypes[type];
   return (
-    <div className={cx(nodeClass)}>
+    <div className={cx(nodeCardClass)}>
       <h4>{title}</h4>
       <SchemaComponent
         schema={{

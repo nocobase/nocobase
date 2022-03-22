@@ -1,9 +1,9 @@
+import { Op } from 'sequelize';
 import actions, { Context, utils } from '@nocobase/actions';
 
 export async function create(context: Context, next) {
   return actions.create(context, async () => {
     const { body: instance, db } = context;
-
     const repository = utils.getRepositoryFromParams(context);
 
     if (!instance.upstreamId) {
@@ -37,14 +37,18 @@ export async function create(context: Context, next) {
       await upstream.update({
         downstreamId: instance.id
       });
-      console.log(upstream);
+
       upstream.set('downstream', instance);
     } else {
       const [downstream] = await upstream.getBranches({
         where: {
+          id: {
+            [Op.ne]: instance.id
+          },
           branchIndex: instance.branchIndex
         }
       });
+      console.log(downstream);
 
       if (downstream) {
         await downstream.update({

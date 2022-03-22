@@ -2,7 +2,7 @@ import React, { useContext } from 'react';
 import { Dropdown, Menu, Button } from 'antd';
 import { PlusOutlined } from '@ant-design/icons';
 import { cx } from '@emotion/css';
-import { addButtonClass, branchClass, nodeBlockClass, nodeClass, nodeHeaderClass, nodeTitleClass } from './style';
+import { addButtonClass, branchBlockClass, branchClass, nodeBlockClass, nodeCardClass, nodeHeaderClass, nodeTitleClass } from './style';
 
 import {
   useCollection,
@@ -29,7 +29,7 @@ function makeNodes(nodes): void {
 
 const FlowContext = React.createContext(null);
 
-function useFlowContext() {
+export function useFlowContext() {
   return useContext(FlowContext);
 }
 
@@ -47,14 +47,19 @@ export function WorkflowCanvas() {
   const entry = nodes.find(item => !item.upstream);
 
   return (
-    <FlowContext.Provider value={{ onNodeAdded: refresh }}>
-      <Branch entry={entry} />
-      <div className={cx(nodeClass)}>结束</div>
+    <FlowContext.Provider value={{
+      nodes,
+      onNodeAdded: refresh
+    }}>
+      <div className={branchBlockClass}>
+        <Branch entry={entry} />
+      </div>
+      <div className={cx(nodeCardClass)}>结束</div>
     </FlowContext.Provider>
   );
 }
 
-export function Branch({ entry, branchIndex = null }) {
+export function Branch({ from = null, entry, branchIndex = null }) {
   const list = [];
   for (let node = entry; node; node = node.downstream) {
     list.push(node);
@@ -62,15 +67,18 @@ export function Branch({ entry, branchIndex = null }) {
 
   return (
     <div className={cx(branchClass)}>
-      <AddButton upstream={list[0]?.upstream} branchIndex={branchIndex} />
-      {list.map(item => {
-        return (
-          <div key={item.id} className={cx(nodeBlockClass)}>
-            <Node {...item} />
-            <AddButton upstream={item} />
-          </div>
-        );
-      })}
+      <div className="workflow-branch-lines" />
+      <AddButton upstream={from} branchIndex={branchIndex} />
+      <div className="workflow-node-list">
+        {list.map(item => {
+          return (
+            <div key={item.id} className={cx(nodeBlockClass)}>
+              <Node data={item} />
+              <AddButton upstream={item} />
+            </div>
+          );
+        })}
+      </div>
     </div>
   );
 }
@@ -88,13 +96,22 @@ function AddButton({ upstream, branchIndex = null }: AddButtonProps) {
   const { data } = useResourceActionContext();
   const { onNodeAdded } = useFlowContext();
 
-  async function onCreate(type) {
+  async function onCreate({ keyPath }) {
+    const type = keyPath.pop();
+    const config = {};
+    const [optionKey] = keyPath;
+    if (optionKey) {
+      const { value } = instructions.get(type).options.find(item => item.key === optionKey);
+      Object.assign(config, value);
+    }
+
     const { data: { data: node } } = await resource.create({
       values: {
         type,
         workflowId: data.data.id,
         upstreamId: upstream?.id ?? null,
-        branchIndex
+        branchIndex,
+        config
       }
     });
 
@@ -104,8 +121,16 @@ function AddButton({ upstream, branchIndex = null }: AddButtonProps) {
   return (
     <div className={cx(addButtonClass)}>
       <Dropdown trigger={['click']} overlay={
-        <Menu onClick={({ key: type }) => onCreate(type)}>
-          {Array.from(instructions.getValues()).map(item => (
+        <Menu onClick={ev => onCreate(ev)}>
+          {Array.from(instructions.getValues()).map(item => item.options
+          ? (
+            <Menu.SubMenu key={item.type} title={item.title}>
+              {item.options.map(option => (
+                <Menu.Item key={option.key}>{option.label}</Menu.Item>
+              ))}
+            </Menu.SubMenu>
+          )
+          : (
             <Menu.Item key={item.type}>{item.title}</Menu.Item>
           ))}
         </Menu>
