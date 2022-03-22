@@ -22,7 +22,6 @@ ReadPretty.Attachment = (props: UploadProps) => {
   const [photoIndex, setPhotoIndex] = useState(0);
   const [visible, setVisible] = useState(false);
   const { size } = props;
-  console.log('field.value', field.value, images);
   return (
     <div>
       <div className={cls('ant-upload-picture-card-wrapper nb-upload', size ? `nb-upload-${size}` : null)}>

@@ -136,7 +136,6 @@ export const scopesSchema: ISchema = {
                 // },
                 useDataSource(options) {
                   const record = useRecord();
-                  console.log('useRecord', record);
                   return useRequest(
                     {
                       resource: 'rolesResourcesScopes',
