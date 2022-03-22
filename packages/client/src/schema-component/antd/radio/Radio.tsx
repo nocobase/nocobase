@@ -30,7 +30,6 @@ Radio.Group = connect(
     const { options = [], value } = props;
     const field = useField<any>();
     const dataSource = field.dataSource || [];
-    console.log({ dataSource });
     return (
       <div>
         {dataSource

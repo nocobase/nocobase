@@ -25,7 +25,6 @@ const getSchema = (schema: IField): ISchema => {
     name: `f_${uid()}`,
   };
   initialValue.uiSchema.title = schema.title;
-  console.log('initialValue', initialValue);
   return {
     type: 'object',
     properties: {

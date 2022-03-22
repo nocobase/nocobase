@@ -33,6 +33,7 @@ const schema: ISchema = {
           type: 'void',
           'x-component': 'Action',
           'x-component-props': {
+            htmlType: 'submit',
             block: true,
             type: 'primary',
             useAction: '{{ useSignin }}',

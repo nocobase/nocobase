@@ -1,4 +1,4 @@
-import { CheckOutlined, CloseOutlined } from '@ant-design/icons';
+import { CheckOutlined } from '@ant-design/icons';
 import { connect, mapProps, mapReadPretty, useField } from '@formily/react';
 import { isValid } from '@formily/shared';
 import { Checkbox as AntdCheckbox, Tag } from 'antd';
@@ -29,11 +29,7 @@ export const Checkbox: ComposedCheckbox = connect(
     if (!isValid(props.value)) {
       return <div></div>;
     }
-    return props.value ? (
-      <CheckOutlined style={{ color: '#52c41a' }} />
-    ) : (
-      <CloseOutlined style={{ color: '#f5222d' }} />
-    );
+    return props.value ? <CheckOutlined style={{ color: '#52c41a' }} /> : null;
   }),
 );
 
