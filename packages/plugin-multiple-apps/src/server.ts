@@ -23,6 +23,6 @@ export class PluginMultipleApps extends Plugin {
   }
 
   getName(): string {
-    return '@nocobase/multiple-apps';
+    return this.getPackageName(__dirname);
   }
 }

@@ -86,6 +86,10 @@ export class CollectionManagerPlugin extends Plugin {
       directory: path.resolve(__dirname, './collections'),
     });
   }
+
+  getName(): string {
+    return this.getPackageName(__dirname);
+  }
 }
 
 export default CollectionManagerPlugin;
