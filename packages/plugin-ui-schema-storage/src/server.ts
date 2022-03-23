@@ -69,6 +69,10 @@ export class UiSchemaStoragePlugin extends Plugin {
       directory: path.resolve(__dirname, 'collections'),
     });
   }
+
+  getName(): string {
+    return '@nocobase/plugin-ui-schema-storage';
+  }
 }
 
 export default UiSchemaStoragePlugin;

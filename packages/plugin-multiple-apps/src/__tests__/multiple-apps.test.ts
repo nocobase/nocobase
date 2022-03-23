@@ -1,5 +1,5 @@
 import { mockServer, MockServer } from '@nocobase/test';
-import { Database } from '@nocobase/database';
+import { Database, getConfigByEnv } from '@nocobase/database';
 import { PluginMultipleApps } from '../server';
 
 describe('multiple apps', () => {
@@ -25,6 +25,43 @@ describe('multiple apps', () => {
         name: 'miniApp',
       },
     });
+
     expect(app.multiAppManager.applications.get('miniApp')).toBeDefined();
+  });
+
+  it('should remove application', async () => {
+    await db.getRepository('applications').create({
+      values: {
+        name: 'miniApp',
+      },
+    });
+
+    expect(app.multiAppManager.applications.get('miniApp')).toBeDefined();
+
+    await db.getRepository('applications').destroy({
+      filter: {
+        name: 'miniApp',
+      },
+    });
+
+    expect(app.multiAppManager.applications.get('miniApp')).toBeUndefined();
+  });
+
+  it('should create with plugins', async () => {
+    await db.getRepository('applications').create({
+      values: {
+        name: 'miniApp',
+        plugins: [
+          {
+            name: '@nocobase/plugin-ui-schema-storage',
+          },
+        ],
+      },
+    });
+
+    const miniApp = app.multiAppManager.applications.get('miniApp');
+    expect(miniApp).toBeDefined();
+
+    expect(miniApp.pm.get('@nocobase/plugin-ui-schema-storage')).toBeDefined();
   });
 });

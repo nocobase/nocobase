@@ -91,7 +91,7 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
 
   public listenServer: Server;
 
-  constructor(options: ApplicationOptions) {
+  constructor(public options: ApplicationOptions) {
     super();
 
     this.acl = createACL();

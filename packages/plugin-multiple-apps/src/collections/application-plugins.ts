@@ -2,6 +2,7 @@ import { defineCollection } from '@nocobase/database';
 
 export default defineCollection({
   name: 'applicationPlugins',
+  timestamps: false,
   fields: [
     {
       type: 'string',

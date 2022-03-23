@@ -37,9 +37,7 @@ export abstract class Plugin<O = any> implements PluginInterface {
     this.options = options || ({} as any);
   }
 
-  getName(): string {
-    return this.constructor.name;
-  }
+  public abstract getName(): string;
 
   beforeLoad() {}
 

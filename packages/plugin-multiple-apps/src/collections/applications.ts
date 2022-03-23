@@ -11,6 +11,10 @@ export default defineCollection({
       primaryKey: true,
     },
     {
+      type: 'json',
+      name: 'options',
+    },
+    {
       type: 'hasMany',
       name: 'plugins',
       target: 'applicationPlugins',
