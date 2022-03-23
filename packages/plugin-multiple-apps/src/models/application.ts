@@ -1,10 +1,17 @@
 import Database, { IDatabaseOptions, Model, TransactionAble } from '@nocobase/database';
 import { Application } from '@nocobase/server';
 import lodash from 'lodash';
+import * as path from 'path';
 
 export class ApplicationModel extends Model {
   static getPluginByName(pluginName: string) {
     return require(pluginName).default;
+  }
+
+  static getDatabaseConfig(app: Application): IDatabaseOptions {
+    return lodash.isPlainObject(app.options.database)
+      ? (app.options.database as IDatabaseOptions)
+      : (app.options.database as Database).options;
   }
 
   async registerToMainApp(mainApp: Application, options: TransactionAble) {
@@ -20,18 +27,48 @@ export class ApplicationModel extends Model {
       app.plugin(plugin);
     }
 
-    await app.load();
+    app.on('beforeInstall', async function createDatabase() {
+      const { host, port, username, password, database, dialect } = ApplicationModel.getDatabaseConfig(app);
 
+      if (dialect === 'mysql') {
+        const mysql = require('mysql2/promise');
+        const connection = await mysql.createConnection({ host, port, user: username, password });
+        await connection.query(`CREATE DATABASE IF NOT EXISTS \`${database}\`;`);
+      }
+
+      if (dialect === 'postgres') {
+        const { Client } = require('pg');
+
+        const client = new Client({
+          user: username,
+          host,
+          password: password,
+          port,
+        });
+
+        await client.connect();
+
+        try {
+          await client.query(`CREATE DATABASE ${database}`);
+        } catch (e) {
+          console.error(e);
+        }
+      }
+    });
+
+    await app.load();
     await app.install();
+    await app.start();
   }
 
   static initOptions(appName: string, mainApp: Application) {
-    const rawDatabaseOptions = lodash.isPlainObject(mainApp.options.database)
-      ? (mainApp.options.database as IDatabaseOptions)
-      : (mainApp.options.database as Database).options;
+    const rawDatabaseOptions = ApplicationModel.getDatabaseConfig(mainApp);
 
     if (rawDatabaseOptions.dialect === 'sqlite') {
-      // rawDatabaseOptions.storage = '';
+      const mainAppStorage = rawDatabaseOptions.storage;
+      const mainStorageDir = path.dirname(mainAppStorage);
+
+      rawDatabaseOptions.storage = path.join(mainStorageDir, `${appName}.sqlite`);
     } else {
       rawDatabaseOptions.database = appName;
     }

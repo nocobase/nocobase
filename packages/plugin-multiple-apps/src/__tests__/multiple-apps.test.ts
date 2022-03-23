@@ -52,6 +52,28 @@ describe('multiple apps', () => {
 
     await app.destroy();
   });
+
+  it('should install into difference database', async () => {
+    const app = mockServer();
+    await app.cleanDb();
+    app.plugin(PluginMultipleApps);
+
+    await app.loadAndInstall();
+    await app.start();
+
+    const db = app.db;
+
+    await db.getRepository('applications').create({
+      values: {
+        name: 'sub1',
+        plugins: [
+          {
+            name: '@nocobase/plugin-ui-schema-storage',
+          },
+        ],
+      },
+    });
+  });
 });
 
 describe('multiple apps create', () => {
