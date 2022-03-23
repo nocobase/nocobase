@@ -18,6 +18,12 @@ export class MultipleAppManager {
         await application.start(options);
       }
     });
+
+    app.on('afterDestroy', async (mainApp, options) => {
+      for (const [appName, application] of this.applications) {
+        await application.destroy(options);
+      }
+    });
   }
 
   appSelector: AppSelector = (req: IncomingMessage) => this.app;

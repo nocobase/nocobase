@@ -28,6 +28,7 @@ export class ApplicationModel extends Model {
 
     for (const pluginInstance of plugins) {
       const plugin = ApplicationModel.getPluginByName(pluginInstance.get('name') as string);
+      console.log({ plugin });
       app.plugin(plugin);
     }
 
@@ -38,6 +39,7 @@ export class ApplicationModel extends Model {
         const mysql = require('mysql2/promise');
         const connection = await mysql.createConnection({ host, port, user: username, password });
         await connection.query(`CREATE DATABASE IF NOT EXISTS \`${database}\`;`);
+        await connection.close();
       }
 
       if (dialect === 'postgres') {
@@ -53,16 +55,16 @@ export class ApplicationModel extends Model {
         await client.connect();
 
         try {
-          await client.query(`CREATE DATABASE ${database}`);
-        } catch (e) {
-          console.error(e);
-        }
+          await client.query(`CREATE DATABASE "${database}"`);
+        } catch (e) {}
+
+        await client.end();
       }
     });
 
     await app.load();
 
-    if (lodash.get(options, 'skipInstall', false)) {
+    if (!lodash.get(options, 'skipInstall', false)) {
       await app.install();
     }
 

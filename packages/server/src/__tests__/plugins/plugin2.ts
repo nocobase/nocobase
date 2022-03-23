@@ -6,4 +6,8 @@ export default class Plugin2 extends Plugin {
       name: 'tests',
     });
   }
+
+  getName(): string {
+    return 'Plugin2';
+  }
 }

@@ -188,8 +188,13 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
   async stop(options?: any) {
     await this.emitAsync('beforeStop', this, options);
 
-    // close database connection
-    await this.db.close();
+    try {
+      // close database connection
+      // silent if database already closed
+      await this.db.close();
+    } catch (e) {
+      console.log(e);
+    }
 
     // close http server
     if (this.listenServer) {
