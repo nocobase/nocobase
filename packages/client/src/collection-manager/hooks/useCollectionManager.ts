@@ -12,7 +12,10 @@ export const useCollectionManager = () => {
     get(name: string) {
       return collections?.find((collection) => collection.name === name);
     },
-    getCollection(name: string) {
+    getCollection(name: any) {
+      if (typeof name !== 'string') {
+        return name;
+      }
       return collections?.find((collection) => collection.name === name);
     },
     getCollectionFields(name: string) {
