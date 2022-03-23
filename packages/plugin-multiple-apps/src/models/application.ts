@@ -3,7 +3,7 @@ import { Application } from '@nocobase/server';
 import lodash from 'lodash';
 
 export class ApplicationModel extends Model {
-  getPluginByName(pluginName: string) {
+  static getPluginByName(pluginName: string) {
     return require(pluginName).default;
   }
 
@@ -16,9 +16,13 @@ export class ApplicationModel extends Model {
     const plugins = await this.getPlugins({ transaction });
 
     for (const pluginInstance of plugins) {
-      const plugin = this.getPluginByName(pluginInstance.get('name') as string);
+      const plugin = ApplicationModel.getPluginByName(pluginInstance.get('name') as string);
       app.plugin(plugin);
     }
+
+    await app.load();
+
+    await app.install();
   }
 
   static initOptions(appName: string, mainApp: Application) {
