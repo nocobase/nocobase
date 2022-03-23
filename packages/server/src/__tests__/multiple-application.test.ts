@@ -2,6 +2,46 @@ import { mockServer, MockServer } from '@nocobase/test';
 import { IncomingMessage } from 'http';
 import * as url from 'url';
 
+describe('multiple apps', () => {
+  it('should listen stop event', async () => {
+    const app = mockServer();
+
+    const subApp1 = app.multiAppManager.createApplication('sub1', {
+      database: app.db,
+    });
+
+    const subApp1StopFn = jest.fn();
+
+    subApp1.on('afterStop', subApp1StopFn);
+
+    await app.stop();
+
+    expect(subApp1StopFn).toBeCalledTimes(1);
+
+    await app.destroy();
+  });
+
+  it('should listen start event', async () => {
+    const app = mockServer();
+
+    const subApp1 = app.multiAppManager.createApplication('sub1', {
+      database: app.db,
+    });
+
+    const subApp1StartApp = jest.fn();
+
+    await app.stop();
+
+    subApp1.on('beforeStart', subApp1StartApp);
+
+    await app.start();
+
+    expect(subApp1StartApp).toBeCalledTimes(1);
+
+    await app.destroy();
+  });
+});
+
 describe('multiple application', () => {
   let app: MockServer;
   beforeEach(async () => {

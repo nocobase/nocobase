@@ -6,7 +6,19 @@ type AppSelector = (ctx) => Application | string;
 export class MultipleAppManager {
   public applications: Map<string, Application> = new Map<string, Application>();
 
-  constructor(private app: Application) {}
+  constructor(private app: Application) {
+    app.on('beforeStop', async (mainApp, options) => {
+      for (const [appName, application] of this.applications) {
+        await application.stop(options);
+      }
+    });
+
+    app.on('beforeStart', async (mainApp, options) => {
+      for (const [appName, application] of this.applications) {
+        await application.start(options);
+      }
+    });
+  }
 
   appSelector: AppSelector = (req: IncomingMessage) => this.app;
 
@@ -16,11 +28,13 @@ export class MultipleAppManager {
     return application;
   }
 
-  removeApplication(name: string) {
+  async removeApplication(name: string) {
     const application = this.applications.get(name);
     if (!application) {
       return;
     }
+
+    await application.destroy();
 
     this.applications.delete(name);
   }
