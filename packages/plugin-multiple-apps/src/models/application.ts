@@ -3,6 +3,10 @@ import { Application } from '@nocobase/server';
 import lodash from 'lodash';
 import * as path from 'path';
 
+interface registerAppOptions extends TransactionAble {
+  skipInstall?: boolean;
+}
+
 export class ApplicationModel extends Model {
   static getPluginByName(pluginName: string) {
     return require(pluginName).default;
@@ -14,7 +18,7 @@ export class ApplicationModel extends Model {
       : (app.options.database as Database).options;
   }
 
-  async registerToMainApp(mainApp: Application, options: TransactionAble) {
+  async registerToMainApp(mainApp: Application, options: registerAppOptions) {
     const { transaction } = options;
     const appName = this.get('name') as string;
     const app = mainApp.multiAppManager.createApplication(appName, ApplicationModel.initOptions(appName, mainApp));
@@ -57,7 +61,11 @@ export class ApplicationModel extends Model {
     });
 
     await app.load();
-    await app.install();
+
+    if (lodash.get(options, 'skipInstall', false)) {
+      await app.install();
+    }
+
     await app.start();
   }
 

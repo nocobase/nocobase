@@ -5,7 +5,7 @@ import { Plugin } from '@nocobase/server';
 import { ApplicationModel } from '../models/application';
 
 describe('multiple apps', () => {
-  it('should load subApp', async () => {
+  it('should load subApp on create', async () => {
     const loadFn = jest.fn();
     const installFn = jest.fn();
 
@@ -73,6 +73,55 @@ describe('multiple apps', () => {
         ],
       },
     });
+  });
+
+  it('should load applications on start', async () => {
+    class TestPlugin extends Plugin {
+      getName(): string {
+        return 'test-package';
+      }
+    }
+
+    let app = mockServer();
+    await app.cleanDb();
+    app.plugin(PluginMultipleApps);
+
+    await app.loadAndInstall();
+    await app.start();
+
+    const db = app.db;
+
+    const mockGetPluginByName = jest.fn();
+    mockGetPluginByName.mockReturnValue(TestPlugin);
+    ApplicationModel.getPluginByName = mockGetPluginByName;
+
+    await db.getRepository('applications').create({
+      values: {
+        name: 'sub1',
+        plugins: [
+          {
+            name: 'test-package',
+          },
+        ],
+      },
+    });
+
+    expect(app.multiAppManager.applications.get('sub1')).toBeDefined();
+
+    await app.stop();
+
+    let newApp = mockServer({
+      database: app.db,
+    });
+
+    newApp.plugin(PluginMultipleApps);
+    await newApp.db.reconnect();
+
+    await newApp.load();
+    await newApp.start();
+
+    expect(await newApp.db.getRepository('applications').count()).toEqual(1);
+    expect(newApp.multiAppManager.applications.get('sub1')).toBeDefined();
   });
 });
 

@@ -1,4 +1,4 @@
-import { mockDatabase } from '@nocobase/database';
+import { Database, mockDatabase } from '@nocobase/database';
 import Application, { ApplicationOptions } from '@nocobase/server';
 import qs from 'qs';
 import supertest, { SuperAgentTest } from 'supertest';
@@ -130,7 +130,13 @@ export class MockServer extends Application {
 }
 
 export function mockServer(options: ApplicationOptions = {}) {
-  const database = mockDatabase(<any>options?.database || {});
+  let database;
+  if (options?.database instanceof Database) {
+    database = options.database;
+  } else {
+    database = mockDatabase(<any>options?.database || {});
+  }
+
   return new MockServer({
     ...options,
     database,
