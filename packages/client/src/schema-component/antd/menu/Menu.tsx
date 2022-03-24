@@ -5,7 +5,7 @@ import {
   Schema,
   SchemaExpressionScopeContext,
   useField,
-  useFieldSchema
+  useFieldSchema,
 } from '@formily/react';
 import { Menu as AntdMenu } from 'antd';
 import React, { createContext, useContext, useEffect, useState } from 'react';
@@ -65,7 +65,9 @@ const subMenuDesignerCss = css`
 
 const designerCss = css`
   position: relative;
-  display: inline-block;
+  display: flex;
+  justify-content: center;
+  align-items: center;
   margin-left: -20px;
   margin-right: -20px;
   padding: 0 20px;
