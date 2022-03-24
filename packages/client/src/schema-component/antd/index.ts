@@ -1,5 +1,6 @@
 export * from './action';
 export * from './block-item';
+export * from './blocks';
 export * from './calendar';
 export * from './card-item';
 export * from './cascader';
@@ -24,7 +25,6 @@ export * from './record-picker';
 export * from './select';
 export * from './space';
 export * from './table';
-export * from './table2';
 export * from './tabs';
 export * from './time-picker';
 export * from './tree-select';

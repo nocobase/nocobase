@@ -1,0 +1,74 @@
+import { useRequest } from 'ahooks';
+import React, { createContext } from 'react';
+import { useAPIClient, useRecord } from '../../../';
+import { CollectionProvider, useCollectionManager } from '../../../collection-manager';
+
+export const ResourceContext = createContext(null);
+export const AssociationContext = createContext(null);
+
+interface UseReousrceProps {
+  resource: any;
+  association?: any;
+}
+
+const useAssociation = (props) => {
+  const { association } = props;
+  const { getCollectionField } = useCollectionManager();
+  if (typeof association === 'string') {
+    return getCollectionField(association);
+  } else if (association?.collectionName && association?.name) {
+    return getCollectionField(`${association?.collectionName}.${association?.name}`);
+  }
+};
+
+const useReousrce = (props: UseReousrceProps) => {
+  const { resource } = props;
+  const record = useRecord();
+  const api = useAPIClient();
+  const association = useAssociation(props);
+  if (!association) {
+    return api.resource(resource);
+  }
+  return api.resource(resource, record[association?.sourceKey || 'id']);
+};
+
+const useActionParams = (props) => {
+  const { useParams } = props;
+  const params = useParams?.() || {};
+  return { ...params, ...props.params };
+};
+
+export const useResourceAction = (props) => {
+  const { resource, action } = props;
+  const params = useActionParams(props);
+  const options = {
+    defaultParams: [params],
+    // manual: true,
+  };
+  const result = useRequest(
+    (params) => (action ? resource[action](params).then((res) => res.data) : Promise.resolve({})),
+    options,
+  );
+  return result;
+};
+
+const MaybeCollectionProvider = (props) => {
+  const { collection } = props;
+  return collection ? (
+    <CollectionProvider collection={collection}>{props.children}</CollectionProvider>
+  ) : (
+    <>{props.children}</>
+  );
+};
+
+export const BlockProvider = (props) => {
+  const { collection, association } = props;
+  const resource = useReousrce(props);
+  return (
+    <MaybeCollectionProvider collection={collection}>
+      <AssociationContext.Provider value={association}>
+        <ResourceContext.Provider value={resource}>{props.children}</ResourceContext.Provider>
+      </AssociationContext.Provider>
+    </MaybeCollectionProvider>
+  );
+};

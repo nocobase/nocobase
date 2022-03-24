@@ -4,7 +4,7 @@ import { ArrayField } from '@formily/core';
 import { observer, RecursionField, Schema, useField, useFieldSchema } from '@formily/react';
 import { Table as AntdTable, TableColumnProps } from 'antd';
 import { default as classNames, default as cls } from 'classnames';
-import React, { useEffect } from 'react';
+import React from 'react';
 import ReactDragListView from 'react-drag-listview';
 import { DndContext } from '../..';
 import { RecordIndexProvider, RecordProvider, useSchemaInitializer } from '../../../';
@@ -116,14 +116,11 @@ const TableIndex = (props) => {
   );
 };
 
-export const TableV2: any = observer((props: any) => {
+export const TableBlock: any = observer((props: any) => {
   const field = useField<ArrayField>();
   const columns = useTableColumns();
-  const { dragSort = false, showIndex = true, useEvents, onChange, ...others } = props;
-  const { onLoad, onRowSelectionChange } = useEvents?.() || {};
-  useEffect(() => {
-    onLoad?.();
-  }, []);
+  const { dragSort = false, showIndex = true, useProps, onChange, ...others } = props;
+  const { onRowSelectionChange, onChange: onTableChange } = useProps?.() || {};
   const restProps = {
     rowSelection: props.rowSelection
       ? {
@@ -206,11 +203,9 @@ export const TableV2: any = observer((props: any) => {
         }
       : undefined,
   };
-
   const defaultRowKey = (record: any) => {
     return field.value?.indexOf?.(record);
   };
-
   return (
     <div>
       <ReactDragListView
@@ -230,6 +225,9 @@ export const TableV2: any = observer((props: any) => {
           {...others}
           {...restProps}
           components={components}
+          onChange={(pagination, filters, sorter, extra) => {
+            onTableChange?.(pagination, filters, sorter, extra);
+          }}
           columns={columns}
           dataSource={field?.value?.slice?.()}
         />
@@ -238,7 +236,7 @@ export const TableV2: any = observer((props: any) => {
   );
 });
 
-TableV2.Column = (props) => {
+TableBlock.Column = (props) => {
   const field = useField();
   return <div>{field.title}</div>;
 };
