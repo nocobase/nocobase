@@ -18,7 +18,7 @@ export class PluginMultipleApps extends Plugin {
     });
 
     this.db.on('applications.afterDestroy', async (model: ApplicationModel) => {
-      await this.app.multiAppManager.removeApplication(model.get('name') as string);
+      await this.app.appManager.removeApplication(model.get('name') as string);
     });
 
     this.app.on('beforeStart', async () => {

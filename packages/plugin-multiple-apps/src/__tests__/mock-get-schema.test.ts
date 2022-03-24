@@ -106,7 +106,7 @@ describe('test with start', () => {
       },
     });
 
-    expect(app.multiAppManager.applications.get('sub1')).toBeDefined();
+    expect(app.appManager.applications.get('sub1')).toBeDefined();
 
     await app.stop();
 
@@ -121,7 +121,7 @@ describe('test with start', () => {
     await newApp.start();
 
     expect(await newApp.db.getRepository('applications').count()).toEqual(1);
-    expect(newApp.multiAppManager.applications.get('sub1')).toBeDefined();
+    expect(newApp.appManager.applications.get('sub1')).toBeDefined();
 
     await app.destroy();
   });

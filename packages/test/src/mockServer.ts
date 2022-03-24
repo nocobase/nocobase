@@ -72,7 +72,7 @@ export class MockServer extends Application {
   }
 
   agent(): SuperAgentTest & { resource: (name: string, resourceOf?: any) => Resource } {
-    const agent = supertest.agent(this.multiAppManager.callback());
+    const agent = supertest.agent(this.appManager.callback());
     const prefix = this.resourcer.options.prefix;
     const proxy = new Proxy(agent, {
       get(target, method: string, receiver) {

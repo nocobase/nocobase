@@ -26,7 +26,7 @@ describe('multiple apps create', () => {
       },
     });
 
-    expect(app.multiAppManager.applications.get('miniApp')).toBeDefined();
+    expect(app.appManager.applications.get('miniApp')).toBeDefined();
   });
 
   it('should remove application', async () => {
@@ -36,7 +36,7 @@ describe('multiple apps create', () => {
       },
     });
 
-    expect(app.multiAppManager.applications.get('miniApp')).toBeDefined();
+    expect(app.appManager.applications.get('miniApp')).toBeDefined();
 
     await db.getRepository('applications').destroy({
       filter: {
@@ -44,7 +44,7 @@ describe('multiple apps create', () => {
       },
     });
 
-    expect(app.multiAppManager.applications.get('miniApp')).toBeUndefined();
+    expect(app.appManager.applications.get('miniApp')).toBeUndefined();
   });
 
   it('should create with plugins', async () => {
@@ -59,7 +59,7 @@ describe('multiple apps create', () => {
       },
     });
 
-    const miniApp = app.multiAppManager.applications.get('miniApp');
+    const miniApp = app.appManager.applications.get('miniApp');
     expect(miniApp).toBeDefined();
 
     expect(miniApp.pm.get('@nocobase/plugin-ui-schema-storage')).toBeDefined();

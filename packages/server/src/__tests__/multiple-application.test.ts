@@ -3,10 +3,32 @@ import { IncomingMessage } from 'http';
 import * as url from 'url';
 
 describe('multiple apps', () => {
+  it('should emit beforeGetApplication event', async () => {
+    const beforeGetApplicationFn = jest.fn();
+
+    const app = mockServer();
+
+    app.appManager.on('beforeGetApplication', beforeGetApplicationFn);
+
+    app.appManager.createApplication('sub1', {
+      database: app.db,
+    });
+
+    app.appManager.setAppSelector(() => 'sub1');
+
+    await app.agent().resource('test').test({});
+
+    await app.agent().resource('test').test({});
+
+    expect(beforeGetApplicationFn).toHaveBeenCalledTimes(2);
+
+    await app.destroy();
+  });
+
   it('should listen stop event', async () => {
     const app = mockServer();
 
-    const subApp1 = app.multiAppManager.createApplication('sub1', {
+    const subApp1 = app.appManager.createApplication('sub1', {
       database: app.db,
     });
 
@@ -24,7 +46,7 @@ describe('multiple apps', () => {
   it('should listen start event', async () => {
     const app = mockServer();
 
-    const subApp1 = app.multiAppManager.createApplication('sub1', {
+    const subApp1 = app.appManager.createApplication('sub1', {
       database: app.db,
     });
 
@@ -53,7 +75,7 @@ describe('multiple application', () => {
   });
 
   it('should create multiple apps', async () => {
-    const subApp1 = app.multiAppManager.createApplication('sub1', {
+    const subApp1 = app.appManager.createApplication('sub1', {
       database: app.db,
     });
 
@@ -66,7 +88,7 @@ describe('multiple application', () => {
       },
     });
 
-    const subApp2 = app.multiAppManager.createApplication('sub2', {
+    const subApp2 = app.appManager.createApplication('sub2', {
       database: app.db,
     });
 
@@ -82,7 +104,7 @@ describe('multiple application', () => {
     let response = await app.agent().resource('test').test();
     expect(response.statusCode).toEqual(404);
 
-    app.multiAppManager.setAppSelector((req: IncomingMessage) => {
+    app.appManager.setAppSelector((req: IncomingMessage) => {
       const queryObject = url.parse(req.url, true).query;
       return queryObject['app'] as string;
     });

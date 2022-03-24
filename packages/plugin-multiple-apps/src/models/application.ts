@@ -21,14 +21,13 @@ export class ApplicationModel extends Model {
   async registerToMainApp(mainApp: Application, options: registerAppOptions) {
     const { transaction } = options;
     const appName = this.get('name') as string;
-    const app = mainApp.multiAppManager.createApplication(appName, ApplicationModel.initOptions(appName, mainApp));
+    const app = mainApp.appManager.createApplication(appName, ApplicationModel.initOptions(appName, mainApp));
 
     // @ts-ignore
     const plugins = await this.getPlugins({ transaction });
 
     for (const pluginInstance of plugins) {
       const plugin = ApplicationModel.getPluginByName(pluginInstance.get('name') as string);
-      console.log({ plugin });
       app.plugin(plugin);
     }
 

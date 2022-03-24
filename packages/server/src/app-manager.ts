@@ -1,21 +1,19 @@
 import Application, { ApplicationOptions } from './application';
 import http, { IncomingMessage } from 'http';
+import EventEmitter from 'events';
+import { applyMixins, AsyncEmitter } from '@nocobase/utils';
 
 type AppSelector = (ctx) => Application | string;
 
-export class MultipleAppManager {
+export class AppManager extends EventEmitter {
   public applications: Map<string, Application> = new Map<string, Application>();
 
   constructor(private app: Application) {
+    super();
+
     app.on('beforeStop', async (mainApp, options) => {
       for (const [appName, application] of this.applications) {
         await application.stop(options);
-      }
-    });
-
-    app.on('beforeStart', async (mainApp, options) => {
-      for (const [appName, application] of this.applications) {
-        await application.start(options);
       }
     });
 
@@ -54,15 +52,28 @@ export class MultipleAppManager {
     return server.listen(...args);
   }
 
+  async getApplication(appName: string): Promise<null | Application> {
+    await this.emitAsync('beforeGetApplication', {
+      appManager: this,
+      name: appName,
+    });
+
+    return this.applications.get(appName);
+  }
+
   callback() {
-    return (req, res) => {
+    return async (req, res) => {
       let handleApp = this.appSelector(req);
 
       if (typeof handleApp === 'string') {
-        handleApp = this.applications.get(handleApp) || this.app;
+        handleApp = (await this.getApplication(handleApp)) || this.app;
       }
 
       handleApp.callback()(req, res);
     };
   }
+
+  emitAsync: (event: string | symbol, ...args: any[]) => Promise<boolean>;
 }
+
+applyMixins(AppManager, [AsyncEmitter]);
