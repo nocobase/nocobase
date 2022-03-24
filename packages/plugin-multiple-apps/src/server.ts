@@ -1,8 +1,13 @@
 import { Plugin } from '@nocobase/server';
 import { resolve } from 'path';
 import { ApplicationModel } from './models/application';
+import { AppManager } from '@nocobase/server';
 
 export class PluginMultipleApps extends Plugin {
+  getName(): string {
+    return this.getPackageName(__dirname);
+  }
+
   async load() {
     this.db.registerModels({
       ApplicationModel,
@@ -30,9 +35,22 @@ export class PluginMultipleApps extends Plugin {
         });
       }
     });
-  }
 
-  getName(): string {
-    return this.getPackageName(__dirname);
+    this.app.appManager.on(
+      'beforeGetApplication',
+      async function lazyLoadApplication({ appManager, name }: { appManager: AppManager; name: string }) {
+        if (!appManager.applications.has(name)) {
+          const existsApplication = (await this.app.db.getRepository('applications').findOne({
+            filter: {
+              name,
+            },
+          })) as ApplicationModel | null;
+
+          if (existsApplication) {
+            await existsApplication.registerToMainApp(this.app, { skipInstall: true });
+          }
+        }
+      },
+    );
   }
 }

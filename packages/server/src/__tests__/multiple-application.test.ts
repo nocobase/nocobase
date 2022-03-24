@@ -42,26 +42,6 @@ describe('multiple apps', () => {
 
     await app.destroy();
   });
-
-  it('should listen start event', async () => {
-    const app = mockServer();
-
-    const subApp1 = app.appManager.createApplication('sub1', {
-      database: app.db,
-    });
-
-    const subApp1StartApp = jest.fn();
-
-    await app.stop();
-
-    subApp1.on('beforeStart', subApp1StartApp);
-
-    await app.start();
-
-    expect(subApp1StartApp).toBeCalledTimes(1);
-
-    await app.destroy();
-  });
 });
 
 describe('multiple application', () => {
