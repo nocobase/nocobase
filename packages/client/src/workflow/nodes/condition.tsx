@@ -1,24 +1,152 @@
 import React from "react";
 import { css, cx } from "@emotion/css";
+import { Button, Select } from "antd";
+import { CloseCircleOutlined } from '@ant-design/icons';
+import { Trans } from "react-i18next";
+
 import { NodeDefaultView } from ".";
 import { Branch, useFlowContext } from "../WorkflowCanvas";
 import { branchBlockClass, nodeSubtreeClass } from "../style";
+import { calculators, Operand } from "../calculators";
+// import { SchemaComponent } from "../../schema-component";
 
+function CalculationItem({ value, onChange, onRemove }) {
+  if (!value) {
+    return null;
+  }
 
-function Calculation(props) {
-  return 123;
+  const { calculator, operands = [] } = value;
+
+  return (
+    <div className={css`
+      display: flex;
+      position: relative;
+      margin: .5em 0;
+    `}>
+      {value.group
+        ? (
+          <CalculationGroup
+            value={value.group}
+            onChange={group => onChange({ ...value, group })}
+          />
+        )
+        : (
+          <div className={css`
+            display: flex;
+            gap: .5em;
+
+            .ant-select{
+              width: auto;
+            }
+          `}>
+            <Operand value={operands[0]} onChange={v => onChange({ ...value, operands: [v, operands[1]] })} />
+            <Select value={calculator} onChange={v => onChange({ ...value, calculator: v })}>
+              {calculators.map(item => (
+                <Select.Option key={item.value} value={item.value}>{item.name}</Select.Option>
+              ))}
+            </Select>
+            <Operand value={operands[1]} onChange={v => onChange({ ...value, operands: [operands[0], v] })} />
+          </div>
+        )
+      }
+      <Button onClick={onRemove} type="text" icon={<CloseCircleOutlined />} />
+    </div>
+  );
+}
+
+function CalculationGroup({ value, onChange }) {
+  const { type = 'and', calculations = [] } = value;
+
+  function onAddSingle() {
+    onChange({
+      ...value,
+      calculations: [...calculations, { not: false, calculator: 'equal' }]
+    });
+  }
+
+  function onAddGroup() {
+    onChange({
+      ...value,
+      calculations: [...calculations, { not: false, group: { type: 'and', calculations: [] } }]
+    });
+  }
+
+  function onRemove(i: number) {
+    calculations.splice(i, 1);
+    onChange({ ...value, calculations: [...calculations] });
+  }
+
+  function onItemChange(i: number, v) {
+    calculations.splice(i, 1, v);
+
+    onChange({ ...value, calculations: [...calculations] });
+  }
+
+  return (
+    <div className={css`
+      position: relative;
+      width: 100%;
+      padding: .5em 1em;
+      border: 1px dashed #ddd;
+
+      + button{
+        position: absolute;
+        right: 0;
+      }
+    `}>
+      <div className={css`
+        display: flex;
+        align-items: center;
+        gap: .5em;
+
+        .ant-select{
+          width: auto;
+        }
+      `}>
+        <Trans>
+          {'Meet '}
+          <Select value={type} onChange={t => onChange({ ...value, type: t })}>
+            <Select.Option value="and">All</Select.Option>
+            <Select.Option value="or">Any</Select.Option>
+          </Select>
+          {' conditions in the group'}
+        </Trans>
+      </div>
+      <div className="calculation-items">
+        {calculations.map((calculation, i) => (
+          <CalculationItem
+            key={`${calculation.calculator}_${i}`}
+            value={calculation}
+            onChange={onItemChange.bind(this, i)}
+            onRemove={() => onRemove(i)}
+          />
+        ))}
+      </div>
+      <div className={css`
+        a:not(:last-child){
+          margin-right: 1em;
+        }
+      `} >
+        <a onClick={onAddSingle}>添加条件</a>
+        <a onClick={onAddGroup}>添加条件组</a>
+      </div>
+    </div>
+  );
+}
+
+function CalculationConfig({ value, onChange }) {
+  const rule = value && Object.keys(value).length
+    ? value
+    : { group: { type: 'and', calculations: [] } };
+  return (
+    <CalculationGroup value={rule.group} onChange={group => onChange({ ...rule, group })} />
+  );
 }
 
 export default {
   title: '条件判断',
   type: 'condition',
   fieldset: {
-    calculation: {
-      type: 'string',
-      name: 'collection',
-      'x-decorator': 'FormItem',
-      'x-component': 'Calculation',
-    },
     rejectOnFalse: {
       type: 'boolean',
       name: 'rejectOnFalse',
@@ -32,6 +160,13 @@ export default {
         { value: true, label: '通行模式' },
         { value: false, label: '分支模式' },
       ],
+    },
+    calculation: {
+      type: 'string',
+      name: 'calculation',
+      title: '条件配置',
+      'x-decorator': 'FormItem',
+      'x-component': 'CalculationConfig',
     }
   },
   view: {
@@ -86,6 +221,6 @@ export default {
     )
   },
   components: {
-    Calculation
+    CalculationConfig
   }
 };

@@ -22,7 +22,7 @@ export const branchBlockClass = css`
     position: absolute;
     top: 0;
     bottom: 0;
-    left: 50%;
+    left: calc(50% - .5px);
     width: 1px;
     background-color: #f0f2f5;
   }

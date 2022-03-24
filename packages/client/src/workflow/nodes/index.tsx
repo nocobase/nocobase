@@ -72,7 +72,7 @@ export function Node({ data }) {
 }
 
 export function NodeDefaultView(props) {
-  const { data } = props;
+  const { data, children } = props;
   const instruction = instructions.get(data.type);
 
   return (
@@ -125,7 +125,7 @@ export function NodeDefaultView(props) {
                               title: '{{t("Cancel")}}',
                               'x-component': 'Action',
                               'x-component-props': {
-                                // useAction: '{{ cm.useCancelAction }}',
+                                useAction: '{{ cm.useCancelAction }}',
                               },
                             },
                             submit: {
@@ -146,7 +146,7 @@ export function NodeDefaultView(props) {
             }}
           />
         </div>
-        {props.children}
+        {children}
       </div>
     </NodeContext.Provider>
   );
