@@ -243,7 +243,7 @@ export class Database extends EventEmitter implements AsyncEmitter {
     }
   }
 
-  private isSqliteMemory() {
+  public isSqliteMemory() {
     return this.sequelize.getDialect() === 'sqlite' && lodash.get(this.options, 'storage') == ':memory:';
   }
 
