@@ -38,7 +38,11 @@ export abstract class Plugin<O = any> implements PluginInterface {
     this.options = options || ({} as any);
   }
 
-  public abstract getName(): string;
+  getName(): string {
+    const path = require.main.children[require.main.children.length - 1].path;
+
+    return '';
+  }
 
   beforeLoad() {}
 

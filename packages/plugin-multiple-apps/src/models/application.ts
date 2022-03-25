@@ -75,9 +75,10 @@ export class ApplicationModel extends Model {
 
     if (rawDatabaseOptions.dialect === 'sqlite') {
       const mainAppStorage = rawDatabaseOptions.storage;
-      const mainStorageDir = path.dirname(mainAppStorage);
-
-      rawDatabaseOptions.storage = path.join(mainStorageDir, `${appName}.sqlite`);
+      if (mainAppStorage !== ':memory:') {
+        const mainStorageDir = path.dirname(mainAppStorage);
+        rawDatabaseOptions.storage = path.join(mainStorageDir, `${appName}.sqlite`);
+      }
     } else {
       rawDatabaseOptions.database = appName;
     }
