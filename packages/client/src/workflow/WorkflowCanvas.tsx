@@ -8,7 +8,7 @@ import {
   useCollection,
   useResourceActionContext
 } from '..';
-import { instructions, Node } from './nodes';
+import { Instruction, instructions, Node } from './nodes';
 
 
 
@@ -122,7 +122,7 @@ function AddButton({ upstream, branchIndex = null }: AddButtonProps) {
     <div className={cx(addButtonClass)}>
       <Dropdown trigger={['click']} overlay={
         <Menu onClick={ev => onCreate(ev)}>
-          {Array.from(instructions.getValues()).map(item => item.options
+          {(Array.from(instructions.getValues()) as Instruction[]).map(item => item.options
           ? (
             <Menu.SubMenu key={item.type} title={item.title}>
               {item.options.map(option => (
