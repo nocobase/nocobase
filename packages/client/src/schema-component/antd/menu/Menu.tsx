@@ -288,6 +288,9 @@ export const Menu: ComposedMenu = observer((props) => {
                             > .general-schema-designer {
                               right: 6px !important;
                             }
+                            > span.anticon {
+                              margin-right: 15px !important;
+                            }
                           }
                         }
                       }
