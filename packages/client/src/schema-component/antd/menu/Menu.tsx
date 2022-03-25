@@ -192,59 +192,66 @@ export const Menu: ComposedMenu = observer((props) => {
     <DndContext>
       <MenuItemDesignerContext.Provider value={Designer}>
         <MenuModeContext.Provider value={mode}>
-          <AntdMenu
-            {...others}
+          <div
             style={{
-              width: mode === 'mix' ? '100%' : undefined,
+              width: 'calc(100% - 200px - 390px)',
+              display: 'flex',
+              justifyContent: 'flex-start',
+              alignItems: 'center',
             }}
-            className={css`
-              .ant-menu-item:hover {
-                > .ant-menu-title-content > div {
-                  .general-schema-designer {
-                    display: block;
-                  }
-                }
-              }
-            `}
-            onSelect={(info: any) => {
-              const s = schema.properties[info.key];
-              if (mode === 'mix') {
-                setSideMenuSchema(s);
-                if (s['x-component'] !== 'Menu.SubMenu') {
-                  onSelect && onSelect(info);
-                } else {
-                  const menuItemSchema = findMenuItem(s);
-                  if (!menuItemSchema) {
-                    return;
-                  }
-                  // TODO
-                  setLoading(true);
-                  const keys = findKeysByUid(schema, menuItemSchema['x-uid']);
-                  setDefaultSelectedKeys(keys);
-                  setTimeout(() => {
-                    setLoading(false);
-                  }, 100);
-                  onSelect &&
-                    onSelect({
-                      key: menuItemSchema.name,
-                      item: {
-                        props: {
-                          schema: menuItemSchema,
-                        },
-                      },
-                    });
-                }
-              } else {
-                onSelect && onSelect(info);
-              }
-            }}
-            mode={mode === 'mix' ? 'horizontal' : mode}
-            defaultOpenKeys={defaultOpenKeys}
-            defaultSelectedKeys={defaultSelectedKeys}
           >
-            <RecursionField schema={schema} onlyRenderProperties />
-            {render({ style: { background: 'none', marginTop: 7, marginLeft: 8 } })}
-          </AntdMenu>
+            <AntdMenu
+              {...others}
+              style={{
+                width: mode === 'mix' ? '100%' : undefined,
+              }}
+              className={css`
+                .ant-menu-item:hover {
+                  > .ant-menu-title-content > div {
+                    .general-schema-designer {
+                      display: block;
+                    }
+                  }
+                }
+              `}
+              onSelect={(info: any) => {
+                const s = schema.properties[info.key];
+                if (mode === 'mix') {
+                  setSideMenuSchema(s);
+                  if (s['x-component'] !== 'Menu.SubMenu') {
+                    onSelect && onSelect(info);
+                  } else {
+                    const menuItemSchema = findMenuItem(s);
+                    if (!menuItemSchema) {
+                      return;
+                    }
+                    // TODO
+                    setLoading(true);
+                    const keys = findKeysByUid(schema, menuItemSchema['x-uid']);
+                    setDefaultSelectedKeys(keys);
+                    setTimeout(() => {
+                      setLoading(false);
+                    }, 100);
+                    onSelect &&
+                      onSelect({
+                        key: menuItemSchema.name,
+                        item: {
+                          props: {
+                            schema: menuItemSchema,
+                          },
+                        },
+                      });
+                  }
+                } else {
+                  onSelect && onSelect(info);
+                }
+              }}
+              mode={mode === 'mix' ? 'horizontal' : mode}
+              defaultOpenKeys={defaultOpenKeys}
+              defaultSelectedKeys={defaultSelectedKeys}
+            ></AntdMenu>
+            {render({ style: { background: 'none' } })}
+          </div>
           {loading
             ? null
             : mode === 'mix' &&
