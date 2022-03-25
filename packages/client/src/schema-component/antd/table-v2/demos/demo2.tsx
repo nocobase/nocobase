@@ -7,21 +7,10 @@ import {
   RecordProvider,
   SchemaComponent,
   SchemaComponentProvider,
-  useTableFieldContext,
   useTableFieldProps
 } from '@nocobase/client';
 import React from 'react';
 import collections from './collections';
-
-function useAction() {
-  const ctx = useTableFieldContext();
-  return {
-    async run() {
-      const params = ctx.service.params?.[0] || {};
-      ctx.service.run({ ...params, page: 2 });
-    },
-  };
-}
 
 const schema: ISchema = {
   type: 'object',
@@ -38,6 +27,8 @@ const schema: ISchema = {
           // pageSize: 999,
           paginate: false,
         },
+        showIndex: true,
+        dragSort: false,
       },
       properties: {
         button: {
@@ -61,21 +52,19 @@ const schema: ISchema = {
         },
         table: {
           type: 'array',
-          title: `编辑模式`,
-          'x-component': 'TableBlock',
+          'x-component': 'TableV2',
           'x-component-props': {
             rowKey: 'id',
             rowSelection: {
               type: 'checkbox',
             },
-            pagination: false,
             useProps: '{{ useTableFieldProps }}',
           },
           properties: {
             column1: {
               type: 'void',
               title: 'Name',
-              'x-component': 'TableBlock.Column',
+              'x-component': 'TableV2.Column',
               properties: {
                 f_m7ibo1vrvnm: {
                   type: 'string',

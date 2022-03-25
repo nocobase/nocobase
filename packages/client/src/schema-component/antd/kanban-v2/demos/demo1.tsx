@@ -1,5 +1,4 @@
 import { ISchema } from '@formily/react';
-import { uid } from '@formily/shared';
 import {
   AntdSchemaComponentProvider,
   APIClient,
@@ -10,9 +9,9 @@ import {
   useKanbanBlockProps
 } from '@nocobase/client';
 import MockAdapter from 'axios-mock-adapter';
-import { range } from 'lodash';
 import React from 'react';
 import collections from './collections';
+import data from './data';
 
 const schema: ISchema = {
   type: 'object',
@@ -32,15 +31,14 @@ const schema: ISchema = {
       properties: {
         kanban: {
           type: 'array',
-          'x-component': 'KanbanBlock',
+          'x-component': 'KanbanV2',
           'x-component-props': {
             useProps: '{{ useKanbanBlockProps }}',
           },
           properties: {
             card: {
               type: 'void',
-              name: 'card',
-              'x-component': 'KanbanBlock.Card',
+              'x-component': 'KanbanV2.Card',
               properties: {
                 f_g8j5jvalqh0: {
                   'x-decorator': 'FormItem',
@@ -69,40 +67,13 @@ const apiClient = new APIClient({
 
 const mock = (api: APIClient) => {
   const mock = new MockAdapter(api.axios);
-
-  mock.onGet('/users:list').reply(async (config) => {
-    const { page = 1, pageSize = 10 } = config.params;
-    await sleep(2000);
-    return [
-      200,
-      {
-        data: range(0, pageSize).map((index) => {
-          return {
-            id: index + (page - 1) * pageSize,
-            nickname: uid(),
-          };
-        }),
-        meta: { count: 100, page, pageSize },
-      },
-    ];
-  });
-
-  mock.onGet('/users:get').reply(async (config) => {
-    const { filterByTk } = config.params;
-    await sleep(2000);
-    return [
-      200,
-      {
-        data: {
-          id: filterByTk,
-          nickname: filterByTk,
-        },
-      },
-    ];
+  mock.onGet('/t_j6omof6tza8:list').reply(async (config) => {
+    await sleep(200);
+    return [200, data];
   });
 };
 
-// mock(apiClient);
+mock(apiClient);
 
 export default () => {
   return (

@@ -9,7 +9,7 @@ import {
   SchemaComponentProvider,
   useFormBlockContext,
   useFormBlockProps,
-  useRecord,
+  useParamsFromRecord,
   useTableBlockContext,
   useTableBlockProps
 } from '@nocobase/client';
@@ -48,24 +48,23 @@ const formSchema: ISchema = {
     collection: 'users',
     resource: 'users',
     action: 'get',
-    useParams() {
-      const record = useRecord();
-      return {
-        filterByTk: record.id,
-      };
-    },
-    // params: {
-    //   pageSize: 2,
-    // },
+    useParams: '{{ useParamsFromRecord }}',
   },
   properties: {
     form: {
       type: 'void',
-      'x-component': 'FormBlock',
+      'x-component': 'FormV2',
       'x-component-props': {
         useProps: '{{ useFormBlockProps }}',
       },
       properties: {
+        id: {
+          type: 'string',
+          title: 'ID',
+          'x-decorator': 'FormItem',
+          'x-component': 'InputNumber',
+          'x-read-pretty': true,
+        },
         nickname: {
           type: 'string',
           'x-decorator': 'FormItem',
@@ -98,6 +97,8 @@ const schema: ISchema = {
         params: {
           pageSize: 2,
         },
+        showIndex: true,
+        dragSort: false,
       },
       properties: {
         button: {
@@ -110,7 +111,7 @@ const schema: ISchema = {
         table: {
           type: 'array',
           title: `编辑模式`,
-          'x-component': 'TableBlock',
+          'x-component': 'TableV2',
           'x-component-props': {
             rowKey: 'id',
             rowSelection: {
@@ -122,7 +123,7 @@ const schema: ISchema = {
             column1: {
               type: 'void',
               title: 'Name',
-              'x-component': 'TableBlock.Column',
+              'x-component': 'TableV2.Column',
               properties: {
                 nickname: {
                   type: 'string',
@@ -134,7 +135,7 @@ const schema: ISchema = {
             actions: {
               type: 'void',
               title: 'Actions',
-              'x-component': 'TableBlock.Column',
+              'x-component': 'TableV2.Column',
               properties: {
                 view: {
                   type: 'void',
@@ -172,13 +173,13 @@ const mock = (api: APIClient) => {
 
   mock.onGet('/users:list').reply(async (config) => {
     const { page = 1, pageSize = 10 } = config.params;
-    await sleep(2000);
+    await sleep(200);
     return [
       200,
       {
         data: range(0, pageSize).map((index) => {
           return {
-            id: index + (page - 1) * pageSize,
+            id: index + (page - 1) * pageSize + 1,
             nickname: uid(),
           };
         }),
@@ -189,13 +190,13 @@ const mock = (api: APIClient) => {
 
   mock.onGet('/users:get').reply(async (config) => {
     const { filterByTk } = config.params;
-    await sleep(2000);
+    await sleep(200);
     return [
       200,
       {
         data: {
           id: filterByTk,
-          nickname: filterByTk,
+          nickname: uid(),
         },
       },
     ];
@@ -210,7 +211,10 @@ export default () => {
       <SchemaComponentProvider>
         <CollectionManagerProvider collections={collections.data}>
           <AntdSchemaComponentProvider>
-            <SchemaComponent schema={schema} scope={{ useCreateAction, useTableBlockProps, useFormBlockProps }} />
+            <SchemaComponent
+              schema={schema}
+              scope={{ useCreateAction, useTableBlockProps, useFormBlockProps, useParamsFromRecord }}
+            />
           </AntdSchemaComponentProvider>
         </CollectionManagerProvider>
       </SchemaComponentProvider>

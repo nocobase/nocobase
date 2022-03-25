@@ -73,6 +73,7 @@ export const Action: ComposedAction = observer((props: any) => {
     useAction = useA,
     onClick,
     className,
+    disabled,
     ...others
   } = props;
   const [visible, setVisible] = useState(false);

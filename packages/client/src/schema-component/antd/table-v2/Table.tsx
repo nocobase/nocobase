@@ -116,13 +116,32 @@ const TableIndex = (props) => {
   );
 };
 
-export const TableBlock: any = observer((props: any) => {
+const usePaginationProps = (pagination1, pagination2) => {
+  if (pagination2 === false) {
+    return false;
+  }
+  if (!pagination2 && pagination1 === false) {
+    return false;
+  }
+  return { ...pagination1, ...pagination2 };
+};
+
+export const Table: any = observer((props: any) => {
   const field = useField<ArrayField>();
   const columns = useTableColumns();
-  const { dragSort = false, showIndex = true, useProps, onChange, ...others } = props;
-  const { onRowSelectionChange, onChange: onTableChange } = useProps?.() || {};
+  const { pagination: pagination1, useProps, onChange, ...others1 } = props;
+  const { pagination: pagination2, ...others2 } = useProps?.() || {};
+  const {
+    dragSort = false,
+    showIndex = true,
+    onRowSelectionChange,
+    onChange: onTableChange,
+    rowSelection,
+    ...others
+  } = { ...others1, ...others2 } as any;
+  const paginationProps = usePaginationProps(pagination1, pagination2);
   const restProps = {
-    rowSelection: props.rowSelection
+    rowSelection: rowSelection
       ? {
           type: 'checkbox',
           selectedRowKeys: field?.data?.selectedRowKeys || [],
@@ -199,7 +218,7 @@ export const TableBlock: any = observer((props: any) => {
               </div>
             );
           },
-          ...props.rowSelection,
+          ...rowSelection,
         }
       : undefined,
   };
@@ -224,6 +243,7 @@ export const TableBlock: any = observer((props: any) => {
           rowKey={defaultRowKey}
           {...others}
           {...restProps}
+          pagination={paginationProps}
           components={components}
           onChange={(pagination, filters, sorter, extra) => {
             onTableChange?.(pagination, filters, sorter, extra);
@@ -236,7 +256,7 @@ export const TableBlock: any = observer((props: any) => {
   );
 });
 
-TableBlock.Column = (props) => {
+Table.Column = (props) => {
   const field = useField();
   return <div>{field.title}</div>;
 };

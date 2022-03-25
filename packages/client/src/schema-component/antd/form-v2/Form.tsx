@@ -1,18 +1,13 @@
 import { FormLayout } from '@formily/antd';
 import { createForm, Field } from '@formily/core';
 import { FieldContext, FormContext, observer, RecursionField, useField, useFieldSchema } from '@formily/react';
-import { Options, Result } from 'ahooks/lib/useRequest/src/types';
 import { Spin } from 'antd';
 import React, { useMemo } from 'react';
 import { useAttach, useComponent } from '../..';
 
-type Opts = Options<any, any> & { uid?: string };
-
 export interface FormProps {
   [key: string]: any;
 }
-
-export type FormUseValues = (opts?: Opts, props?: FormProps) => Result<any, any>;
 
 const FormComponent: React.FC<FormProps> = (props) => {
   const { form, children, ...others } = props;
@@ -71,13 +66,16 @@ const WithoutForm = (props) => {
   );
 };
 
-export const FormBlock: React.FC<FormProps> & { Designer?: any } = observer((props) => {
-  const { useProps } = props;
+export const Form: React.FC<FormProps> & { Designer?: any } = observer((props) => {
+  const { useProps, ...restProps } = props;
   const field = useField<Field>();
-  const { form } = useProps?.() || {};
+  const { form, ...otherProps } = useProps?.() || {};
+  const others = { ...restProps, ...otherProps };
   return (
     <form>
-      <Spin spinning={field.loading || false}>{form ? <WithForm form={form} /> : <WithoutForm />}</Spin>
+      <Spin spinning={field.loading || false}>
+        {form ? <WithForm form={form} {...others} /> : <WithoutForm {...others} />}
+      </Spin>
     </form>
   );
 });

@@ -2,9 +2,9 @@ import { ArrayField } from '@formily/core';
 import { useField } from '@formily/react';
 import { Spin } from 'antd';
 import React, { createContext, useContext, useEffect } from 'react';
+import { BlockProvider, useBlockResource, useResourceAction } from '../../../block-provider';
 import { useCollection } from '../../../collection-manager';
-import { BlockProvider, ResourceContext, useResourceAction } from './BlockProvider';
-import { toColumns } from './KanbanBlock';
+import { toColumns } from './Kanban';
 
 export const KanbanBlockContext = createContext<any>({});
 
@@ -21,8 +21,15 @@ const useGroupField = (props) => {
 
 const InternalKanbanBlockProvider = (props) => {
   const field = useField();
-  const resource = useContext(ResourceContext);
-  const service = useResourceAction({ ...props, resource });
+  const resource = useBlockResource();
+  const service = useResourceAction(
+    { ...props, resource },
+    {
+      onSuccess(data) {
+        console.log('onSuccess', data);
+      },
+    },
+  );
   const groupField = useGroupField(props);
   if (!groupField) {
     return null;
@@ -65,5 +72,7 @@ export const useKanbanBlockProps = () => {
     }
     field.loading = ctx?.service?.loading;
   }, [ctx?.service?.loading]);
-  return {};
+  return {
+    groupField: ctx.groupField,
+  };
 };

@@ -5,6 +5,7 @@ export * from './antd-config-provider';
 export * from './api-client';
 export * from './application';
 export * from './async-data-provider';
+export * from './block-provider';
 export * from './board';
 export * from './china-region';
 export * from './collection-manager';

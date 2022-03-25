@@ -2,20 +2,29 @@ import { createForm } from '@formily/core';
 import { useField } from '@formily/react';
 import { Spin } from 'antd';
 import React, { createContext, useContext, useMemo } from 'react';
-import { BlockProvider, ResourceContext, useResourceAction } from './BlockProvider';
+import { BlockProvider, useBlockResource, useResourceAction } from '../../../block-provider';
 
 export const FormBlockContext = createContext<any>({});
 
 const InternalFormBlockProvider = (props) => {
   const field = useField();
-  const resource = useContext(ResourceContext);
-  const service = useResourceAction({ ...props, resource });
+  const resource = useBlockResource();
+  const form = useMemo(() => createForm(), []);
+  const service = useResourceAction(
+    { ...props, resource },
+    {
+      onSuccess(data) {
+        form.setInitialValues(data?.data);
+      },
+    },
+  );
   if (service.loading) {
     return <Spin />;
   }
   return (
     <FormBlockContext.Provider
       value={{
+        form,
         field,
         service,
         resource,
@@ -40,14 +49,7 @@ export const useFormBlockContext = () => {
 
 export const useFormBlockProps = () => {
   const ctx = useFormBlockContext();
-  const form = useMemo(
-    () =>
-      createForm({
-        initialValues: ctx?.service?.data?.data,
-      }),
-    [],
-  );
   return {
-    form,
+    form: ctx.form,
   };
 };

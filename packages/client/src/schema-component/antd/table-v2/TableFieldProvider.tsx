@@ -1,13 +1,14 @@
 import { ArrayField } from '@formily/core';
 import { useField } from '@formily/react';
 import React, { createContext, useContext, useEffect } from 'react';
-import { BlockProvider, ResourceContext, useResourceAction } from './BlockProvider';
+import { BlockProvider, useBlockResource, useResourceAction } from '../../../block-provider';
 
 export const TableFieldContext = createContext<any>({});
 
 const InternalTableFieldProvider = (props) => {
+  const { params = {}, showIndex, dragSort } = props;
   const field = useField();
-  const resource = useContext(ResourceContext);
+  const resource = useBlockResource();
   const service = useResourceAction({ ...props, resource });
   // if (service.loading) {
   //   return <Spin />;
@@ -18,6 +19,9 @@ const InternalTableFieldProvider = (props) => {
         field,
         service,
         resource,
+        params,
+        showIndex,
+        dragSort,
       }}
     >
       {props.children}
@@ -53,6 +57,9 @@ export const useTableFieldProps = () => {
     field.loading = ctx?.service?.loading;
   }, [ctx?.service?.loading]);
   return {
+    showIndex: ctx.showIndex,
+    dragSort: ctx.dragSort,
+    pagination: false,
     onRowSelectionChange(selectedRowKeys) {
       ctx.field.data = ctx?.field?.data || {};
       ctx.field.data.selectedRowKeys = selectedRowKeys;

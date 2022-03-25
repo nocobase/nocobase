@@ -1,10 +1,14 @@
 import { useRequest } from 'ahooks';
-import React, { createContext } from 'react';
-import { useAPIClient, useRecord } from '../../../';
-import { CollectionProvider, useCollectionManager } from '../../../collection-manager';
+import React, { createContext, useContext } from 'react';
+import { useAPIClient, useRecord } from '../';
+import { CollectionProvider, useCollectionManager } from '../collection-manager';
 
-export const ResourceContext = createContext(null);
-export const AssociationContext = createContext(null);
+export const BlockResourceContext = createContext(null);
+export const BlockAssociationContext = createContext(null);
+
+export const useBlockResource = () => {
+  return useContext(BlockResourceContext);
+};
 
 interface UseReousrceProps {
   resource: any;
@@ -35,13 +39,14 @@ const useReousrce = (props: UseReousrceProps) => {
 const useActionParams = (props) => {
   const { useParams } = props;
   const params = useParams?.() || {};
-  return { ...params, ...props.params };
+  return { ...props.params, ...params };
 };
 
-export const useResourceAction = (props) => {
+export const useResourceAction = (props, opts = {}) => {
   const { resource, action } = props;
   const params = useActionParams(props);
   const options = {
+    ...opts,
     defaultParams: [params],
     // manual: true,
   };
@@ -66,9 +71,21 @@ export const BlockProvider = (props) => {
   const resource = useReousrce(props);
   return (
     <MaybeCollectionProvider collection={collection}>
-      <AssociationContext.Provider value={association}>
-        <ResourceContext.Provider value={resource}>{props.children}</ResourceContext.Provider>
-      </AssociationContext.Provider>
+      <BlockAssociationContext.Provider value={association}>
+        <BlockResourceContext.Provider value={resource}>{props.children}</BlockResourceContext.Provider>
+      </BlockAssociationContext.Provider>
     </MaybeCollectionProvider>
   );
+};
+
+export const useFilterByTk = () => {
+  const record = useRecord();
+  return record.id;
+};
+
+export const useParamsFromRecord = () => {
+  const filterByTk = useFilterByTk();
+  return {
+    filterByTk,
+  };
 };
