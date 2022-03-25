@@ -64,4 +64,29 @@ describe('multiple apps create', () => {
 
     expect(miniApp.pm.get('@nocobase/plugin-ui-schema-storage')).toBeDefined();
   });
+
+  it('should lazy load applications', async () => {
+    await db.getRepository('applications').create({
+      values: {
+        name: 'miniApp',
+        plugins: [
+          {
+            name: '@nocobase/plugin-ui-schema-storage',
+          },
+        ],
+      },
+    });
+
+    await app.appManager.removeApplication('miniApp');
+
+    app.appManager.setAppSelector(() => {
+      return 'miniApp';
+    });
+
+    expect(app.appManager.applications.has('miniApp')).toBeFalsy();
+
+    await app.agent().resource('test').test();
+
+    expect(app.appManager.applications.has('miniApp')).toBeTruthy();
+  });
 });
