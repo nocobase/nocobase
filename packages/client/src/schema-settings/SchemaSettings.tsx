@@ -13,7 +13,7 @@ import {
   SchemaComponentOptions,
   useActionContext,
   useAPIClient,
-  useCollection
+  useCollection,
 } from '..';
 import { useSchemaTemplateManager } from '../schema-templates';
 import { useBlockTemplateContext } from '../schema-templates/BlockTemplate';
@@ -182,11 +182,11 @@ SchemaSettings.Template = (props) => {
 };
 
 SchemaSettings.Item = (props) => {
-  const { eventKey } = props;
+  let { eventKey } = props;
   return (
     <Menu.Item
       key={eventKey}
-      eventKey={eventKey}
+      eventKey={eventKey as any}
       {...props}
       onClick={(info) => {
         info.domEvent.preventDefault();
@@ -198,10 +198,6 @@ SchemaSettings.Item = (props) => {
       {props.children || props.title}
     </Menu.Item>
   );
-};
-
-SchemaSettings.ItemGroup = (props) => {
-  return <Menu.ItemGroup {...props}>{props.children || props.title}</Menu.ItemGroup>;
 };
 
 SchemaSettings.SubMenu = (props) => {
