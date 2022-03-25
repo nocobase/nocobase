@@ -38,6 +38,7 @@ Upload.Attachment = connect((props: UploadProps) => {
       setFileList(toFileList(value));
     }
   }, [value, sync]);
+  const uploadProps = useUploadProps({ ...props });
   return (
     <div>
       <div className={cls('ant-upload-picture-card-wrapper nb-upload')}>
@@ -126,7 +127,7 @@ Upload.Attachment = connect((props: UploadProps) => {
           {!disabled && (multiple || toArr(value).length < 1) && (
             <div className={'ant-upload-list-picture-card-container'}>
               <AntdUpload
-                {...useUploadProps({ ...props })}
+                {...uploadProps}
                 disabled={disabled}
                 multiple={multiple}
                 listType={'picture-card'}
@@ -140,7 +141,6 @@ Upload.Attachment = connect((props: UploadProps) => {
                     setFileList(info.fileList.map(toItem));
                   } else {
                     if (info.file.status === 'done') {
-                      console.log('field.value', info.file?.response?.data);
                       // TODO(BUG): object 的联动有问题，不响应，折中的办法先置空再赋值
                       onChange(null);
                       onChange(info.file?.response?.data);

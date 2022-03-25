@@ -26,7 +26,6 @@ const InternalField: React.FC = (props) => {
     if (!uiSchema) {
       return;
     }
-    console.log('uiSchema', uiSchema);
     setFieldProps('title', uiSchema.title);
     setFieldProps('description', uiSchema.description);
     setFieldProps('initialValue', uiSchema.default);

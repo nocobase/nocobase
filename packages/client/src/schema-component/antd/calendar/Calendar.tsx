@@ -102,7 +102,6 @@ export const Calendar: any = observer((props: any) => {
       refreshDeps: [props.dataSource],
       onSuccess(data) {
         const events = toEvents(data?.data, fieldNames);
-        console.log('events', events, data);
         setDataSource(events);
       },
     },
@@ -114,7 +113,6 @@ export const Calendar: any = observer((props: any) => {
     }
     return buf;
   }, null);
-  console.log('field', field);
   return (
     <AsyncDataProvider value={result}>
       <CalendarContext.Provider value={{ field, props, record }}>

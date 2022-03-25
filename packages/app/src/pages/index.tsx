@@ -38,8 +38,6 @@ import { I18nextProvider } from 'react-i18next';
 import { Link, NavLink } from 'react-router-dom';
 import apiClient from './apiClient';
 
-console.log = (...args) => null;
-
 apiClient.axios.interceptors.response.use(
   (response) => response,
   (error) => {

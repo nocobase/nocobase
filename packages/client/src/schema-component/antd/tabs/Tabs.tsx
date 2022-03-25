@@ -80,7 +80,6 @@ const designerCss = css`
 Tabs.TabPane = observer((props: TabPaneProps) => {
   const Designer = useDesigner();
   const field = useField();
-  console.log('Designer', Designer);
   return (
     <SortableItem className={classNames('nb-action-link', designerCss, props.className)}>
       {props.tab || field.title}
