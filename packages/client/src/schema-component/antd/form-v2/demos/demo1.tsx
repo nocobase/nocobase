@@ -3,6 +3,7 @@ import {
   AntdSchemaComponentProvider,
   APIClient,
   APIClientProvider,
+  BlockSchemaComponentProvider,
   CollectionManagerProvider,
   SchemaComponent,
   SchemaComponentProvider,
@@ -71,7 +72,9 @@ export default () => {
       <SchemaComponentProvider>
         <CollectionManagerProvider collections={collections.data}>
           <AntdSchemaComponentProvider>
-            <SchemaComponent schema={schema} />
+            <BlockSchemaComponentProvider>
+              <SchemaComponent schema={schema} />
+            </BlockSchemaComponentProvider>
           </AntdSchemaComponentProvider>
         </CollectionManagerProvider>
       </SchemaComponentProvider>

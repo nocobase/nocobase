@@ -1,7 +1,7 @@
 import { ArrayField } from '@formily/core';
 import { useField } from '@formily/react';
 import React, { createContext, useContext, useEffect } from 'react';
-import { BlockProvider, useBlockResource, useResourceAction } from '../../../block-provider';
+import { BlockProvider, useBlockResource, useResourceAction } from './BlockProvider';
 
 export const TableFieldContext = createContext<any>({});
 
@@ -49,14 +49,10 @@ export const useTableFieldProps = () => {
       field.value = ctx?.service?.data?.data;
       field.data = field.data || {};
       field.data.selectedRowKeys = ctx?.field?.data?.selectedRowKeys;
-      // field.componentProps.pagination = field.componentProps.pagination || {};
-      // field.componentProps.pagination.pageSize = ctx?.service?.data?.meta?.pageSize;
-      // field.componentProps.pagination.total = ctx?.service?.data?.meta?.count;
-      // field.componentProps.pagination.current = ctx?.service?.data?.meta?.page;
     }
-    field.loading = ctx?.service?.loading;
   }, [ctx?.service?.loading]);
   return {
+    loading: ctx?.service?.loading,
     showIndex: ctx.showIndex,
     dragSort: ctx.dragSort,
     pagination: false,

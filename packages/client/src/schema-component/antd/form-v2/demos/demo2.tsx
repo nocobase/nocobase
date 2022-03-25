@@ -3,14 +3,13 @@ import {
   AntdSchemaComponentProvider,
   APIClient,
   APIClientProvider,
+  BlockSchemaComponentProvider,
   CollectionManagerProvider,
   RecordProvider,
   SchemaComponent,
   SchemaComponentProvider,
   useFilterByTk,
-  useFormBlockContext,
-  useFormBlockProps,
-  useParamsFromRecord
+  useFormBlockContext
 } from '@nocobase/client';
 import React from 'react';
 import collections from './collections';
@@ -92,7 +91,9 @@ export default () => {
         <CollectionManagerProvider collections={collections.data}>
           <AntdSchemaComponentProvider>
             <RecordProvider record={record}>
-              <SchemaComponent schema={schema} scope={{ useFormBlockProps, useParamsFromRecord }} />
+              <BlockSchemaComponentProvider>
+                <SchemaComponent schema={schema} />
+              </BlockSchemaComponentProvider>
             </RecordProvider>
           </AntdSchemaComponentProvider>
         </CollectionManagerProvider>

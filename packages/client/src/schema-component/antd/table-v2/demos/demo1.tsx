@@ -4,14 +4,12 @@ import {
   AntdSchemaComponentProvider,
   APIClient,
   APIClientProvider,
+  BlockSchemaComponentProvider,
   CollectionManagerProvider,
   SchemaComponent,
   SchemaComponentProvider,
   useFormBlockContext,
-  useFormBlockProps,
-  useParamsFromRecord,
-  useTableBlockContext,
-  useTableBlockProps
+  useTableBlockContext
 } from '@nocobase/client';
 import MockAdapter from 'axios-mock-adapter';
 import { range } from 'lodash';
@@ -211,10 +209,9 @@ export default () => {
       <SchemaComponentProvider>
         <CollectionManagerProvider collections={collections.data}>
           <AntdSchemaComponentProvider>
-            <SchemaComponent
-              schema={schema}
-              scope={{ useCreateAction, useTableBlockProps, useFormBlockProps, useParamsFromRecord }}
-            />
+            <BlockSchemaComponentProvider>
+              <SchemaComponent schema={schema} scope={{ useCreateAction }} />
+            </BlockSchemaComponentProvider>
           </AntdSchemaComponentProvider>
         </CollectionManagerProvider>
       </SchemaComponentProvider>

@@ -1,7 +1,7 @@
 import { ArrayField } from '@formily/core';
 import { useField } from '@formily/react';
 import React, { createContext, useContext, useEffect } from 'react';
-import { BlockProvider, useBlockResource, useResourceAction } from '../../../block-provider';
+import { BlockProvider, useBlockResource, useResourceAction } from './BlockProvider';
 
 export const TableBlockContext = createContext<any>({});
 
@@ -54,9 +54,10 @@ export const useTableBlockProps = () => {
       field.componentProps.pagination.total = ctx?.service?.data?.meta?.count;
       field.componentProps.pagination.current = ctx?.service?.data?.meta?.page;
     }
-    field.loading = ctx?.service?.loading;
+    // field.loading = ctx?.service?.loading;
   }, [ctx?.service?.loading]);
   return {
+    loading: ctx?.service?.loading,
     showIndex: ctx.showIndex,
     dragSort: ctx.dragSort,
     pagination:

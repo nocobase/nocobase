@@ -3,11 +3,11 @@ import {
   AntdSchemaComponentProvider,
   APIClient,
   APIClientProvider,
+  BlockSchemaComponentProvider,
   CollectionManagerProvider,
   RecordProvider,
   SchemaComponent,
-  SchemaComponentProvider,
-  useTableFieldProps
+  SchemaComponentProvider
 } from '@nocobase/client';
 import React from 'react';
 import collections from './collections';
@@ -180,7 +180,9 @@ export default () => {
         <RecordProvider record={record}>
           <CollectionManagerProvider collections={collections.data}>
             <AntdSchemaComponentProvider>
-              <SchemaComponent schema={schema} scope={{ useTableFieldProps }} />
+              <BlockSchemaComponentProvider>
+                <SchemaComponent schema={schema} />
+              </BlockSchemaComponentProvider>
             </AntdSchemaComponentProvider>
           </CollectionManagerProvider>
         </RecordProvider>

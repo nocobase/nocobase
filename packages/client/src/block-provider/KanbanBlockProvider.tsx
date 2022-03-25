@@ -2,9 +2,9 @@ import { ArrayField } from '@formily/core';
 import { useField } from '@formily/react';
 import { Spin } from 'antd';
 import React, { createContext, useContext, useEffect } from 'react';
-import { BlockProvider, useBlockResource, useResourceAction } from '../../../block-provider';
-import { useCollection } from '../../../collection-manager';
-import { toColumns } from './Kanban';
+import { useCollection } from '../collection-manager';
+import { toColumns } from '../schema-component/antd/kanban-v2/Kanban';
+import { BlockProvider, useBlockResource, useResourceAction } from './BlockProvider';
 
 export const KanbanBlockContext = createContext<any>({});
 

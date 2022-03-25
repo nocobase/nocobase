@@ -3,10 +3,10 @@ import {
   AntdSchemaComponentProvider,
   APIClient,
   APIClientProvider,
+  BlockSchemaComponentProvider,
   CollectionManagerProvider,
   SchemaComponent,
-  SchemaComponentProvider,
-  useKanbanBlockProps
+  SchemaComponentProvider
 } from '@nocobase/client';
 import MockAdapter from 'axios-mock-adapter';
 import React from 'react';
@@ -81,7 +81,9 @@ export default () => {
       <SchemaComponentProvider>
         <CollectionManagerProvider collections={collections.data}>
           <AntdSchemaComponentProvider>
-            <SchemaComponent schema={schema} scope={{ useKanbanBlockProps }} />
+            <BlockSchemaComponentProvider>
+              <SchemaComponent schema={schema} />
+            </BlockSchemaComponentProvider>
           </AntdSchemaComponentProvider>
         </CollectionManagerProvider>
       </SchemaComponentProvider>

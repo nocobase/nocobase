@@ -16,6 +16,4 @@ CalendarV2.Nav = Nav;
 CalendarV2.ViewSelect = ViewSelect;
 CalendarV2.Designer = CalendarDesigner;
 
-export * from './CalendarBlockProvider';
 export { CalendarV2 };
-

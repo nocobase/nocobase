@@ -6,6 +6,5 @@ const KanbanV2 = Kanban;
 KanbanV2.Card = KanbanCard;
 KanbanV2.CardAdder = Action;
 
-export * from './KanbanBlockProvider';
 export { KanbanV2 };
 

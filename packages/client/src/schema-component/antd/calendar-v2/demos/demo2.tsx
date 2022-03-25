@@ -3,10 +3,10 @@ import {
   AntdSchemaComponentProvider,
   APIClient,
   APIClientProvider,
+  BlockSchemaComponentProvider,
   CollectionManagerProvider,
   SchemaComponent,
-  SchemaComponentProvider,
-  useCalendarBlockProps
+  SchemaComponentProvider
 } from '@nocobase/client';
 import MockAdapter from 'axios-mock-adapter';
 import React from 'react';
@@ -106,7 +106,9 @@ export default () => {
       <SchemaComponentProvider>
         <CollectionManagerProvider collections={collections.data}>
           <AntdSchemaComponentProvider>
-            <SchemaComponent schema={schema} scope={{ useCalendarBlockProps }} />
+            <BlockSchemaComponentProvider>
+              <SchemaComponent schema={schema} />
+            </BlockSchemaComponentProvider>
           </AntdSchemaComponentProvider>
         </CollectionManagerProvider>
       </SchemaComponentProvider>

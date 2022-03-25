@@ -14,6 +14,7 @@ const isColumnComponent = (schema: Schema) => {
 };
 
 const useTableColumns = () => {
+  const start = Date.now();
   const field = useField<ArrayField>();
   const schema = useFieldSchema();
   const { exists, render } = useSchemaInitializer(schema['x-initializer']);
@@ -30,6 +31,7 @@ const useTableColumns = () => {
         key: s.name,
         render: (v, record) => {
           const index = field.value?.indexOf(record);
+          console.log((Date.now() - start) / 1000);
           return (
             <RecordIndexProvider index={index}>
               <RecordProvider record={record}>

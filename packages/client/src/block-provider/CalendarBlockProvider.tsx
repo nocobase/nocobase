@@ -2,7 +2,7 @@ import { ArrayField } from '@formily/core';
 import { useField } from '@formily/react';
 import { Spin } from 'antd';
 import React, { createContext, useContext, useEffect } from 'react';
-import { BlockProvider, useBlockResource, useResourceAction } from '../../../block-provider';
+import { BlockProvider, useBlockResource, useResourceAction } from './BlockProvider';
 
 export const CalendarBlockContext = createContext<any>({});
 
