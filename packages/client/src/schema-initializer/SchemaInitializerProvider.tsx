@@ -4,7 +4,7 @@ import { SchemaComponentOptions } from '../schema-component';
 import { initializes as globals, items } from './Initializers';
 import { SchemaInitializer } from './SchemaInitializer';
 
-const SchemaInitializerContext = createContext(null);
+const SchemaInitializerContext = createContext<any>({});
 
 export interface SchemaInitializerProviderProps {
   components?: any;
@@ -19,13 +19,13 @@ export const useSchemaInitializer = (name: string) => {
   };
 
   if (!name) {
-    return { exists: false, render };
+    return { exists: false, render: (props?: any) => render(null) };
   }
 
   const initializer = initializers?.[name];
 
   if (!initializer) {
-    return { exists: false, render };
+    return { exists: false, render: (props?: any) => render(null) };
   }
 
   if (isPlainObj(initializer)) {
