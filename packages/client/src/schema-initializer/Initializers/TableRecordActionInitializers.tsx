@@ -40,135 +40,25 @@ export const TableRecordActionInitializers = (props: any) => {
             {
               type: 'item',
               title: t('View'),
-              component: 'ActionInitializer',
+              component: 'ViewActionInitializer',
               schema: {
-                title: '{{ t("View") }}',
-                type: 'void',
-                'x-action': 'view',
-                'x-designer': 'Action.Designer',
                 'x-component': 'Action.Link',
-                'x-component-props': {
-                  openMode: 'drawer',
-                },
-                properties: {
-                  drawer: {
-                    type: 'void',
-                    'x-component': 'Action.Container',
-                    'x-component-props': {
-                      className: 'nb-action-popup',
-                    },
-                    title: '{{ t("View record") }}',
-                    properties: {
-                      tabs: {
-                        type: 'void',
-                        'x-component': 'Tabs',
-                        'x-component-props': {},
-                        'x-initializer': 'TabPaneInitializers',
-                        properties: {
-                          tab1: {
-                            type: 'void',
-                            title: '详情',
-                            'x-component': 'Tabs.TabPane',
-                            'x-designer': 'Tabs.Designer',
-                            'x-component-props': {},
-                            properties: {
-                              grid: {
-                                type: 'void',
-                                'x-component': 'Grid',
-                                'x-initializer': 'RecordBlockInitializers',
-                                properties: {},
-                              },
-                            },
-                          },
-                        },
-                      },
-                    },
-                  },
-                },
               },
             },
             {
               type: 'item',
               title: t('Edit'),
-              component: 'ActionInitializer',
+              component: 'EditActionInitializer',
               schema: {
-                title: '{{ t("Edit") }}',
-                type: 'void',
-                'x-action': 'update',
-                'x-designer': 'Action.Designer',
                 'x-component': 'Action.Link',
-                'x-component-props': {
-                  openMode: 'drawer',
-                },
-                properties: {
-                  drawer: {
-                    type: 'void',
-                    'x-decorator': 'Form',
-                    'x-decorator-props': {
-                      useValues: '{{ cm.useValuesFromRecord }}',
-                    },
-                    'x-component': 'Action.Container',
-                    title: '{{ t("Edit record") }}',
-                    properties: {
-                      grid: {
-                        type: 'void',
-                        'x-component': 'Grid',
-                        'x-initializer': 'GridFormItemInitializers',
-                        properties: {},
-                      },
-                      footer: {
-                        type: 'void',
-                        'x-component': 'Action.Container.Footer',
-                        properties: {
-                          actions: {
-                            type: 'void',
-                            'x-component': 'ActionBar',
-                            'x-component-props': {
-                              layout: 'one-column',
-                            },
-                            properties: {
-                              cancel: {
-                                title: '{{ t("Cancel") }}',
-                                'x-action': 'cancel',
-                                'x-component': 'Action',
-                                'x-component-props': {
-                                  useAction: '{{ cm.useCancelAction }}',
-                                },
-                              },
-                              submit: {
-                                title: '{{ t("Submit") }}',
-                                'x-action': 'submit',
-                                'x-component': 'Action',
-                                'x-component-props': {
-                                  type: 'primary',
-                                  useAction: '{{ cm.useUpdateAction }}',
-                                },
-                              },
-                            },
-                          },
-                        },
-                      },
-                    },
-                  },
-                },
               },
             },
             {
               type: 'item',
               title: t('Delete'),
-              component: 'ActionInitializer',
+              component: 'DestroyActionInitializer',
               schema: {
-                title: '{{ t("Delete") }}',
-                'x-action': 'destroy',
-                'x-designer': 'Action.Designer',
                 'x-component': 'Action.Link',
-                'x-component-props': {
-                  confirm: {
-                    title: "{{t('Delete record')}}",
-                    content: "{{t('Are you sure you want to delete it?')}}",
-                  },
-                  useAction: '{{ cm.useDestroyAction }}',
-                },
               },
             },
           ],

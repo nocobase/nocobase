@@ -5,6 +5,8 @@ import { TableColumnActionBar } from './Table.Column.ActionBar';
 import { TableColumnDecorator } from './Table.Column.Decorator';
 import { TableRowActionDesigner } from './Table.RowActionDesigner';
 
+export * from './TableBlockDesigner';
+
 export const TableV2 = Table;
 
 TableV2.Column = TableColumn;

@@ -1,7 +1,9 @@
 export * from './ActionInitializer';
 export * from './AddNewActionInitializer';
+export * from './BulkDestroyActionInitializer';
 export * from './CalendarBlockInitializer';
 export * from './CollectionFieldInitializer';
+export * from './EditActionInitializer';
 export * from './FilterActionInitializer';
 export * from './FormBlockInitializer';
 export * from './GeneralInitializer';
@@ -14,4 +16,5 @@ export * from './RecordRelationBlockInitializer';
 export * from './SubTableFieldInitializer';
 export * from './TableBlockInitializer';
 export * from './UserFieldInitializer';
+export * from './ViewActionInitializer';
 

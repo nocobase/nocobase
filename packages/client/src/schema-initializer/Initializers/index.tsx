@@ -6,6 +6,7 @@ import { GridFormItemInitializers } from './GridFormItemInitializers';
 import * as Items from './Items';
 import { PopupFormActionInitializers } from './PopupFormActionInitializers';
 import { RecordBlockInitializers } from './RecordBlockInitializers';
+import { RecordCreateFormInitializers } from './RecordCreateFormInitializers';
 import { RecordDetailsActionInitializers } from './RecordDetailsActionInitializers';
 import { RecordFormActionInitializers } from './RecordFormActionInitializers';
 import { TableActionInitializers } from './TableActionInitializers';
@@ -45,4 +46,6 @@ export const initializes = {
   RecordDetailsActionInitializers,
 
   RecordFormActionInitializers,
+  // 创建表单区块
+  RecordCreateFormInitializers,
 };

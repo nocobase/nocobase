@@ -3,9 +3,9 @@ import React from 'react';
 import { SchemaInitializer } from '../../SchemaInitializer';
 import { useCurrentSchema } from '../utils';
 
-export const AddNewActionInitializer = (props) => {
+export const EditActionInitializer = (props) => {
   const { item, insert } = props;
-  const { exists, remove } = useCurrentSchema(item?.schema?.['x-action'] || 'create', 'x-action', item.find);
+  const { exists, remove } = useCurrentSchema(item?.schema?.['x-action'] || 'update', 'x-action', item.find);
 
   return (
     <SchemaInitializer.Item
@@ -15,18 +15,17 @@ export const AddNewActionInitializer = (props) => {
         }
         insert({
           type: 'void',
-          title: '{{ t("Add new") }}',
-          'x-action': 'create',
+          title: '{{ t("Edit") }}',
+          'x-action': 'update',
           'x-designer': 'Action.Designer',
-          'x-component': 'Action',
+          'x-component': 'Action.Link',
           'x-component-props': {
-            type: 'primary',
             openMode: 'drawer',
           },
           properties: {
             drawer: {
               type: 'void',
-              title: '{{ t("Add new record") }}',
+              title: '{{ t("Edit record") }}',
               'x-component': 'Action.Container',
               'x-component-props': {
                 className: 'nb-action-popup',

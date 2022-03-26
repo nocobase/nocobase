@@ -10,23 +10,22 @@ import { useCollectionDataSourceItems } from '../utils';
 const createSchema = (collectionName) => {
   const schema: ISchema = {
     type: 'void',
-    'x-collection': 'collections',
-    'x-decorator': 'ResourceActionProvider',
+    'x-decorator': 'FormBlockProvider',
     'x-decorator-props': {
       collection: collectionName,
-      request: {
-        resource: collectionName,
-        action: 'get',
-        params: {},
-      },
+      resource: collectionName,
+      // action: 'get',
+      // useParams: '{{ useParamsFromRecord }}',
     },
-    'x-designer': 'Form.Designer',
+    'x-designer': 'FormV2.Designer',
     'x-component': 'CardItem',
     properties: {
       form: {
         type: 'void',
-        'x-decorator': 'Form',
-        'x-decorator-props': {},
+        'x-component': 'FormV2',
+        'x-component-props': {
+          useProps: '{{ useFormBlockProps }}',
+        },
         properties: {
           grid: {
             type: 'void',

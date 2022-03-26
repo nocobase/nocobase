@@ -278,3 +278,125 @@ export const useCollectionDataSourceItems = (componentName) => {
     },
   ];
 };
+
+export const createFormBlockSchema = (options) => {
+  const {
+    formItemInitializers = 'GridFormItemInitializers',
+    actionInitializers = 'FormActionInitializers',
+    collection,
+    resource,
+    ...others
+  } = options;
+  const schema: ISchema = {
+    type: 'void',
+    'x-decorator': 'FormBlockProvider',
+    'x-decorator-props': {
+      ...others,
+      resource: resource || collection,
+      collection,
+      // action: 'get',
+      // useParams: '{{ useParamsFromRecord }}',
+    },
+    'x-designer': 'FormV2.Designer',
+    'x-component': 'CardItem',
+    properties: {
+      form: {
+        type: 'void',
+        'x-component': 'FormV2',
+        'x-component-props': {
+          useProps: '{{ useFormBlockProps }}',
+        },
+        properties: {
+          grid: {
+            type: 'void',
+            'x-component': 'Grid',
+            'x-initializer': formItemInitializers,
+            properties: {},
+          },
+          actions: {
+            type: 'void',
+            'x-initializer': actionInitializers,
+            'x-component': 'ActionBar',
+            'x-component-props': {
+              layout: 'one-column',
+              style: {
+                marginTop: 24,
+              },
+            },
+            properties: {},
+          },
+        },
+      },
+    },
+  };
+  return schema;
+};
+
+export const createTableBlockSchema = (options) => {
+  const { collection, resource, ...others } = options;
+  const schema: ISchema = {
+    type: 'void',
+    'x-decorator': 'TableBlockProvider',
+    'x-decorator-props': {
+      collection,
+      resource: resource || collection,
+      action: 'list',
+      params: {
+        pageSize: 20,
+      },
+      rowKey: 'id',
+      showIndex: true,
+      dragSort: false,
+      ...others,
+    },
+    'x-designer': 'TableBlockDesigner',
+    'x-component': 'CardItem',
+    properties: {
+      actions: {
+        type: 'void',
+        'x-initializer': 'TableActionInitializers',
+        'x-component': 'ActionBar',
+        'x-component-props': {
+          style: {
+            marginBottom: 16,
+          },
+        },
+        properties: {},
+      },
+      table: {
+        type: 'array',
+        'x-initializer': 'TableColumnInitializers',
+        'x-component': 'TableV2',
+        'x-component-props': {
+          rowKey: 'id',
+          rowSelection: {
+            type: 'checkbox',
+          },
+          useProps: '{{ useTableBlockProps }}',
+        },
+        properties: {
+          actions: {
+            type: 'void',
+            title: '{{ t("Actions") }}',
+            'x-decorator': 'TableV2.Column.ActionBar',
+            'x-component': 'TableV2.Column',
+            'x-designer': 'TableV2.RowActionDesigner',
+            'x-initializer': 'TableRecordActionInitializers',
+            properties: {
+              actions: {
+                type: 'void',
+                'x-decorator': 'DndContext',
+                'x-component': 'Space',
+                'x-component-props': {
+                  split: '|',
+                },
+                properties: {},
+              },
+            },
+          },
+        },
+      },
+    },
+  };
+  return schema;
+};

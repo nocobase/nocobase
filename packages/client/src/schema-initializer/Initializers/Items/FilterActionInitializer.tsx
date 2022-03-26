@@ -4,12 +4,15 @@ import { SchemaInitializer } from '../../SchemaInitializer';
 import { useCurrentSchema } from '../utils';
 
 const schema = {
+  type: 'void',
+  title: '{{t("Filter")}}',
+  'x-action': 'filter',
+  'x-align': 'left',
   'x-component': 'Action',
+  'x-designer': 'Action.Designer',
   'x-component-props': {
     popover: true,
   },
-  type: 'void',
-  title: '{{t("Filter")}}',
   properties: {
     popover: {
       type: 'void',
@@ -72,7 +75,7 @@ const schema = {
 
 export const FilterActionInitializer = (props) => {
   const { item, insert } = props;
-  const { exists, remove } = useCurrentSchema(item.schema['x-action'], 'x-action', item.find);
+  const { exists, remove } = useCurrentSchema(item?.schema?.['x-action'] || 'filter', 'x-action', item.find);
 
   return (
     <SchemaInitializer.Item

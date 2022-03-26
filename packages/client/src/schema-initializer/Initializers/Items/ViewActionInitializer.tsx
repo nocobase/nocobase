@@ -3,9 +3,9 @@ import React from 'react';
 import { SchemaInitializer } from '../../SchemaInitializer';
 import { useCurrentSchema } from '../utils';
 
-export const AddNewActionInitializer = (props) => {
+export const ViewActionInitializer = (props) => {
   const { item, insert } = props;
-  const { exists, remove } = useCurrentSchema(item?.schema?.['x-action'] || 'create', 'x-action', item.find);
+  const { exists, remove } = useCurrentSchema(item?.schema?.['x-action'] || 'view', 'x-action', item.find);
 
   return (
     <SchemaInitializer.Item
@@ -15,18 +15,17 @@ export const AddNewActionInitializer = (props) => {
         }
         insert({
           type: 'void',
-          title: '{{ t("Add new") }}',
-          'x-action': 'create',
+          title: '{{ t("View") }}',
+          'x-action': 'view',
           'x-designer': 'Action.Designer',
-          'x-component': 'Action',
+          'x-component': 'Action.Link',
           'x-component-props': {
-            type: 'primary',
             openMode: 'drawer',
           },
           properties: {
             drawer: {
               type: 'void',
-              title: '{{ t("Add new record") }}',
+              title: '{{ t("View record") }}',
               'x-component': 'Action.Container',
               'x-component-props': {
                 className: 'nb-action-popup',
@@ -35,7 +34,7 @@ export const AddNewActionInitializer = (props) => {
                 grid: {
                   type: 'void',
                   'x-component': 'Grid',
-                  'x-initializer': 'RecordCreateFormInitializers',
+                  'x-initializer': 'RecordBlockInitializers',
                   properties: {},
                 },
               },
