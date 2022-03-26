@@ -49,7 +49,8 @@ export function WorkflowCanvas() {
   return (
     <FlowContext.Provider value={{
       nodes,
-      onNodeAdded: refresh
+      onNodeAdded: refresh,
+      onNodeRemoved: refresh
     }}>
       <div className={branchBlockClass}>
         <Branch entry={entry} />

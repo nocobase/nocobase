@@ -1,6 +1,6 @@
 import React, { useContext } from 'react';
 import { cx } from '@emotion/css';
-import { Button, Tag } from 'antd';
+import { Button, Modal, Tag } from 'antd';
 import { DeleteOutlined } from '@ant-design/icons';
 import { ISchema, useForm } from '@formily/react';
 
@@ -9,7 +9,8 @@ import { Registry } from '@nocobase/utils';
 import query from './query';
 import condition from './condition';
 import { nodeClass, nodeCardClass, nodeHeaderClass, nodeTitleClass } from '../style';
-import { SchemaComponent, useActionContext, useAPIClient, useRequest, useResourceActionContext } from '../..';
+import { SchemaComponent, useActionContext, useAPIClient, useCollection, useRequest, useResourceActionContext } from '../..';
+import { useFlowContext } from '../WorkflowCanvas';
 
 
 function useUpdateConfigAction() {
@@ -71,6 +72,35 @@ export function Node({ data }) {
   );
 }
 
+export function RemoveButton() {
+  const { resource } = useCollection();
+  const current = useNodeContext();
+  const { nodes, onNodeRemoved } = useFlowContext();
+
+  async function onRemove() {
+    async function onOk() {
+      const { data: { data: node } } = await resource.destroy({
+        filterByTk: current.id
+      });
+      onNodeRemoved(node);
+    }
+
+    if (!nodes.find(item => item.upstream === current && item.branchIndex != null)) {
+      return onOk();
+    }
+
+    Modal.confirm({
+      title: '删除分支',
+      content: '节点包含分支，将删除其所有分支下的子节点，确定继续？',
+      onOk
+    });
+  }
+
+  return (
+    <Button type="text" shape="circle" icon={<DeleteOutlined />} onClick={onRemove} />
+  );
+}
+
 export function NodeDefaultView(props) {
   const { data, children } = props;
   const instruction = instructions.get(data.type);
@@ -85,7 +115,7 @@ export function NodeDefaultView(props) {
               <strong>{data.title}</strong>
               <span className="workflow-node-id">#{data.id}</span>
             </h4>
-            <Button type="text" shape="circle" icon={<DeleteOutlined />} />
+            <RemoveButton />
           </div>
           <SchemaComponent
             scope={instruction.scope}
