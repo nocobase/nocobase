@@ -5,7 +5,7 @@ import {
   Schema,
   SchemaExpressionScopeContext,
   useField,
-  useFieldSchema,
+  useFieldSchema
 } from '@formily/react';
 import { Menu as AntdMenu } from 'antd';
 import React, { createContext, useContext, useEffect, useState } from 'react';
@@ -203,7 +203,7 @@ export const Menu: ComposedMenu = observer((props) => {
             <AntdMenu
               {...others}
               style={{
-                width: mode === 'mix' ? '100%' : undefined,
+                // width: mode === 'mix' ? '100%' : undefined,
               }}
               className={css`
                 .ant-menu-item:hover {
@@ -289,7 +289,7 @@ export const Menu: ComposedMenu = observer((props) => {
                               right: 6px !important;
                             }
                             > span.anticon {
-                              margin-right: 15px !important;
+                              margin-right: 10px;
                             }
                           }
                         }
@@ -328,7 +328,7 @@ Menu.Item = observer((props) => {
   return (
     <AntdMenu.Item {...others} key={schema.name} eventKey={schema.name} schema={schema}>
       <SortableItem className={designerCss}>
-        <Icon type={icon} style={{ marginRight: 5 }} />
+        <Icon type={icon} />
         <span
           className={css`
             overflow: hidden;
@@ -362,7 +362,7 @@ Menu.URL = observer((props) => {
       }}
     >
       <SortableItem className={designerCss}>
-        <Icon style={{ marginRight: 5 }} type={icon} />
+        <Icon type={icon} />
         {field.title}
         <Designer />
       </SortableItem>
@@ -386,7 +386,7 @@ Menu.SubMenu = observer((props) => {
       eventKey={schema.name}
       title={
         <SortableItem className={subMenuDesignerCss}>
-          <Icon style={{ marginRight: 5 }} type={icon} />
+          <Icon type={icon} />
           {field.title}
           <Designer />
         </SortableItem>
