@@ -18,11 +18,15 @@ export const useCancelAction = () => {
   };
 };
 
-export const useCancelFilterAction = () => {
+export const useResetFilterAction = () => {
+  const { run } = useResourceActionContext();
   const form = useForm();
   const ctx = useActionContext();
+
   return {
     async run() {
+      form.reset();
+      run();
       ctx.setVisible(false);
     },
   };

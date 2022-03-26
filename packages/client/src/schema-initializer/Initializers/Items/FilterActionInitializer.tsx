@@ -44,12 +44,12 @@ const schema = {
                   'x-component': 'Filter.SaveDefaultValue',
                   'x-component-props': {},
                 },
-                cancel: {
+                reset: {
                   type: 'void',
-                  title: '{{t("Cancel")}}',
+                  title: '{{t("Reset")}}',
                   'x-component': 'Action',
                   'x-component-props': {
-                    useAction: '{{cm.useCancelFilterAction}}',
+                    useAction: '{{cm.useResetFilterAction}}',
                   },
                 },
                 submit: {

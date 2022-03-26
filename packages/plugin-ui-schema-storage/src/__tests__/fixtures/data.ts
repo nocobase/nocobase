@@ -88,13 +88,13 @@ export default {
                           'x-async': false,
                           'x-index': 1,
                         },
-                        cancel: {
+                        reset: {
                           _isJSONSchemaObject: true,
                           version: '2.0',
                           type: 'void',
-                          title: '{{t("Cancel")}}',
+                          title: '{{t("Reset")}}',
                           'x-component': 'Action',
-                          'x-component-props': { useAction: '{{cm.useCancelFilterAction}}' },
+                          'x-component-props': { useAction: '{{cm.useResetFilterAction}}' },
                           'x-uid': '40ifgzo3pks',
                           'x-async': false,
                           'x-index': 2,
