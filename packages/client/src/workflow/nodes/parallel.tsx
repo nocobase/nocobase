@@ -43,6 +43,7 @@ export default {
     const [branchCount, setBranchCount] = useState(Math.max(2, branches.length));
 
     const tempBranches = Array(Math.max(0, branchCount - branches.length)).fill(null);
+    const lastBranchHead = branches[branches.length - 1];
 
     return (
       <NodeDefaultView data={data}>
@@ -51,11 +52,11 @@ export default {
             {branches.map((branch) => (
               <Branch key={branch.id} from={data} entry={branch} branchIndex={branch.branchIndex} />
             ))}
-            {tempBranches.map((branch, i) => (
+            {tempBranches.map((_, i) => (
               <Branch
                 key={`temp_${branches.length + i}`}
                 from={data}
-                branchIndex={branches.length + i}
+                branchIndex={(lastBranchHead ? lastBranchHead.branchIndex : 0) + i + 1}
                 controller={
                   branches.length + i > 1
                     ? (
