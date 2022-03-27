@@ -1,5 +1,4 @@
-import { calculate, Operand } from "../calculators";
-import calculators from "../calculators";
+import calculators, { calculate, Operand } from "../calculators";
 import { JOB_STATUS } from "../constants";
 
 type BaseCalculation = {

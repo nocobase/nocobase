@@ -1,5 +1,5 @@
 import { MultipleRelationRepository, Repository } from '@nocobase/database';
-import { Context } from '..';
+import { Context } from '.';
 
 export function getRepositoryFromParams(ctx: Context) {
   const { resourceName, resourceOf } = ctx.action;

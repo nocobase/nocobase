@@ -26,6 +26,9 @@ import {
   SignupPage,
   SystemSettingsProvider,
   SystemSettingsShortcut,
+  useRequest,
+  WorkflowPage,
+  WorkflowShortcut,
   useRoutes
 } from '@nocobase/client';
 import { notification } from 'antd';
@@ -62,6 +65,7 @@ const providers = [
         RouteSchemaComponent,
         SigninPage,
         SignupPage,
+        WorkflowPage,
         BlockTemplatePage,
         BlockTemplateDetails,
       },
@@ -75,6 +79,7 @@ const providers = [
         ACLShortcut,
         DesignableSwitch,
         CollectionManagerShortcut,
+        WorkflowShortcut,
         SystemSettingsShortcut,
         SchemaTemplateShortcut,
       },

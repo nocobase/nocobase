@@ -30,6 +30,10 @@ export class Registry<T> {
     return this.map.get(key);
   }
 
+  getKeys(): Iterable<string> {
+    return this.map.keys();
+  }
+
   getValues(): Iterable<T> {
     return this.map.values();
   }
