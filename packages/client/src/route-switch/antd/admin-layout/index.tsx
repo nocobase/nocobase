@@ -13,7 +13,7 @@ import {
   RemoteSchemaTemplateManagerProvider,
   useDocumentTitle,
   useRoute,
-  useSystemSettings
+  useSystemSettings,
 } from '../../../';
 
 const InternalAdminLayout = (props: any) => {

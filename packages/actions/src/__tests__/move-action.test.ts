@@ -1,5 +1,7 @@
 import { mockServer, MockServer } from './index';
 import { registerActions } from '@nocobase/actions';
+import { Database } from '@nocobase/database';
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
 describe('sort action', () => {
   describe('same scope', () => {
@@ -171,9 +173,12 @@ describe('sort action', () => {
 
   describe('different scope', () => {
     let api: MockServer;
+    let db: Database;
 
     beforeEach(async () => {
       api = mockServer();
+      db = api.db;
+
       registerActions(api);
       api.db.collection({
         name: 'tests',
@@ -245,7 +250,6 @@ describe('sort action', () => {
 
       const beforeUpdatedAts = await getUpdatedAts();
 
-      const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
       await sleep(1000);
 
       await api.agent().resource('tests').move({
@@ -258,6 +262,64 @@ describe('sort action', () => {
 
       expect(afterUpdatedAts).toEqual(beforeUpdatedAts);
       expect(beforeMoveItem.get('updatedAt')).not.toEqual(afterMoveItem.get('updatedAt'));
+    });
+
+    it('should touch updatedAt when no item at target scope', async () => {
+      db.collection({
+        name: 'tasks',
+        fields: [
+          {
+            name: 'title',
+            type: 'string',
+          },
+          {
+            name: 'state',
+            type: 'string',
+          },
+          {
+            type: 'sort',
+            name: 'sort',
+            scopeKey: 'state',
+          },
+        ],
+      });
+
+      await db.sync();
+
+      const t1 = await db.getRepository('tasks').create({
+        values: {
+          title: 't1',
+          state: '1',
+        },
+      });
+
+      const t2 = await db.getRepository('tasks').create({
+        values: {
+          title: 't2',
+          state: '1',
+        },
+      });
+
+      const beforeUpdated = t1.get('updatedAt');
+      await sleep(1000);
+
+      await api
+        .agent()
+        .resource('tasks')
+        .move({
+          sourceId: t1.get('id'),
+          targetScope: {
+            state: '2',
+          },
+        });
+
+      const afterT1 = await db.getRepository('tasks').findOne({
+        filter: {
+          id: t1.get('id'),
+        },
+      });
+
+      expect(beforeUpdated).not.toEqual(afterT1.get('updatedAt'));
     });
 
     it('targetId/1->6', async () => {

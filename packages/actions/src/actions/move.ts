@@ -80,7 +80,7 @@ export class SortAbleCollection {
           [this.scopeKey]: targetScopeValue,
         },
         {
-          silent: true,
+          silent: false,
         },
       );
 
