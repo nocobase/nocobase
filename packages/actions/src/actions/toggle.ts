@@ -1,5 +1,5 @@
 import { Context } from '..';
-import { getRepositoryFromParams } from './utils';
+import { getRepositoryFromParams } from '../utils';
 import { BelongsToManyRepository } from '@nocobase/database';
 
 export async function toggle(ctx: Context, next) {

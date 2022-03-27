@@ -200,8 +200,8 @@ describe('workflow > instructions > condition', () => {
 
       const post = await PostModel.create({ title: 't1' });
 
-      const [execution] = await workflow.getExecutions();
-      const [job] = await execution.getJobs();
+      const [execution] = await workflow.getExecutions({ include: ['jobs'] });
+      const [job] = execution.jobs;
       expect(job.result).toBe(true);
     });
 

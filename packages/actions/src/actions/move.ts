@@ -2,7 +2,7 @@ import { Op, Model } from 'sequelize';
 
 import { Context } from '..';
 import { Collection, TargetKey, Repository, SortField } from '@nocobase/database';
-import { getRepositoryFromParams } from './utils';
+import { getRepositoryFromParams } from '../utils';
 
 export async function move(ctx: Context, next) {
   const repository = getRepositoryFromParams(ctx);
