@@ -26,10 +26,10 @@ import {
   SignupPage,
   SystemSettingsProvider,
   SystemSettingsShortcut,
-  useRequest,
+  useRoutes,
   WorkflowPage,
-  WorkflowShortcut,
-  useRoutes
+  WorkflowRouteProvider,
+  WorkflowShortcut
 } from '@nocobase/client';
 import { notification } from 'antd';
 import 'antd/dist/antd.css';
@@ -97,6 +97,7 @@ const providers = [
   ],
   AntdSchemaComponentProvider,
   ChinaRegionProvider,
+  WorkflowRouteProvider,
   [DocumentTitleProvider, { addonAfter: 'NocoBase' }],
 ];
 
