@@ -185,36 +185,44 @@ export default {
       <NodeDefaultView data={data}>
         {rejectOnFalse ? null : (
           <div className={cx(nodeSubtreeClass)}>
-            <div className={cx(branchBlockClass)}>
+            <div
+              className={cx(branchBlockClass, css`
+                > * > .workflow-branch-lines{
+                  > button{
+                    display: none;
+                  }
+                }
+              `)}
+            >
               <Branch from={data} entry={falseEntry} branchIndex={0}/>
               <Branch from={data} entry={trueEntry} branchIndex={1} />
             </div>
-            <div className={css`
-              position: relative;
-              height: 2em;
-              width: 1px;
-              overflow: visible;
-              background-color: #ddd;
+            <div
+              className={css`
+                position: relative;
+                height: 2em;
+                overflow: visible;
 
-              :before,:after{
-                position: absolute;
-                top: calc(1.5em - 1px);
-                line-height: 1em;
-                color: #999;
-                background-color: #f0f2f5;
-                padding: 1px;
-              }
+                :before,:after{
+                  position: absolute;
+                  top: calc(1.5em - 1px);
+                  line-height: 1em;
+                  color: #999;
+                  background-color: #f0f2f5;
+                  padding: 1px;
+                }
 
-              :before{
-                content: "否";
-                right: 4em;
-              }
+                :before{
+                  content: "否";
+                  right: 4em;
+                }
 
-              :after{
-                content: "是";
-                left: 4em;
-              }
-            `} />
+                :after{
+                  content: "是";
+                  left: 4em;
+                }
+              `}
+            />
           </div>
         )}
       </NodeDefaultView>

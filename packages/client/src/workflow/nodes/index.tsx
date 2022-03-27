@@ -6,11 +6,14 @@ import { ISchema, useForm } from '@formily/react';
 
 import { Registry } from '@nocobase/utils';
 
-import query from './query';
-import condition from './condition';
-import { nodeClass, nodeCardClass, nodeHeaderClass, nodeTitleClass } from '../style';
 import { SchemaComponent, useActionContext, useAPIClient, useCollection, useRequest, useResourceActionContext } from '../..';
 import { useFlowContext } from '../WorkflowCanvas';
+
+import { nodeClass, nodeCardClass, nodeHeaderClass, nodeTitleClass } from '../style';
+
+import query from './query';
+import condition from './condition';
+import parallel from './parallel';
 
 
 function useUpdateConfigAction() {
@@ -53,6 +56,7 @@ export const instructions = new Registry<Instruction>();
 
 instructions.register('query', query);
 instructions.register('condition', condition);
+instructions.register('parallel', parallel);
 
 const NodeContext = React.createContext(null);
 

@@ -6,6 +6,8 @@ export const workflowPageClass = css`
   overflow: auto;
 
   .workflow-canvas{
+    width: min-content;
+    min-width: 100%;
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -123,7 +125,6 @@ export const nodeSubtreeClass = css`
   display: flex;
   flex-direction: column-reverse;
   align-items: center;
-
 `;
 
 export const addButtonClass = css`
