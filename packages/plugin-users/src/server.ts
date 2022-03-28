@@ -107,4 +107,8 @@ export default class UsersPlugin extends Plugin {
       await repo.db2cm('users');
     }
   }
+
+  getName(): string {
+    return this.getPackageName(__dirname);
+  }
 }

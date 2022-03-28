@@ -30,7 +30,7 @@ describe('server hooks', () => {
 
     uiSchemaRepository = db.getRepository('uiSchemas');
 
-    uiSchemaPlugin = app.getPlugin<UiSchemaStoragePlugin>('UiSchemaStoragePlugin');
+    uiSchemaPlugin = app.getPlugin<UiSchemaStoragePlugin>('@nocobase/plugin-ui-schema-storage');
   });
 
   it('should clean row struct', async () => {

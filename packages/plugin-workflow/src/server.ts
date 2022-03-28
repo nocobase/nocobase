@@ -28,12 +28,10 @@ export default class WorkflowPlugin extends Plugin {
     this.app.on('beforeStart', async () => {
       const { model } = db.getCollection('workflows');
       await (model as typeof WorkflowModel).mount();
-    })
+    });
 
     // [Life Cycle]: initialize all necessary seed data
-    this.app.on('db.init', async () => {
-
-    });
+    this.app.on('db.init', async () => {});
 
     // const [Automation, AutomationJob] = database.getModels(['automations', 'automations_jobs']);
 
@@ -59,5 +57,9 @@ export default class WorkflowPlugin extends Plugin {
     // AutomationJob.addHook('beforeDestroy', async (model: AutomationJobModel) => {
     //   await model.cancel();
     // });
+  }
+
+  getName(): string {
+    return this.getPackageName(__dirname);
   }
 }

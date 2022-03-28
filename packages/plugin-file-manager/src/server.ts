@@ -36,4 +36,8 @@ export default class PluginFileManager extends Plugin {
       await getStorageConfig(STORAGE_TYPE_LOCAL).middleware(this.app);
     }
   }
+
+  getName(): string {
+    return this.getPackageName(__dirname);
+  }
 }

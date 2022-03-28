@@ -20,6 +20,10 @@ export class PluginManager {
     this.app = options.app;
   }
 
+  getPlugins() {
+    return this.plugins;
+  }
+
   get(name: string) {
     return this.plugins.get(name);
   }
