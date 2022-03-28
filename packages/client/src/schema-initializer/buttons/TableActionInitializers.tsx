@@ -13,16 +13,25 @@ export const TableActionInitializers = {
           type: 'item',
           title: "{{t('Filter')}}",
           component: 'FilterActionInitializer',
+          schema: {
+            'x-align': 'left',
+          },
         },
         {
           type: 'item',
           title: "{{t('Add new')}}",
-          component: 'AddNewActionInitializer',
+          component: 'CreateActionInitializer',
+          schema: {
+            'x-align': 'right',
+          },
         },
         {
           type: 'item',
           title: "{{t('Delete')}}",
           component: 'BulkDestroyActionInitializer',
+          schema: {
+            'x-align': 'right',
+          },
         },
       ],
     },

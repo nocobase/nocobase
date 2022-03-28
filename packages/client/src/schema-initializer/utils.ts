@@ -2,9 +2,9 @@ import { ISchema, Schema, useFieldSchema } from '@formily/react';
 import { uid } from '@formily/shared';
 import { useTranslation } from 'react-i18next';
 import { SchemaInitializerItemOptions } from '../';
-import { useCollection, useCollectionManager } from '../../collection-manager';
-import { useDesignable } from '../../schema-component';
-import { useSchemaTemplateManager } from '../../schema-templates';
+import { useCollection, useCollectionManager } from '../collection-manager';
+import { useDesignable } from '../schema-component';
+import { useSchemaTemplateManager } from '../schema-templates';
 
 export const gridRowColWrap = (schema: ISchema) => {
   return {
@@ -165,6 +165,7 @@ export const useFormItemInitializerFields = () => {
         component: 'CollectionFieldInitializer',
         remove: removeGridFormItem,
         schema: {
+          type: 'string',
           name: field.name,
           title: field?.uiSchema?.title || field.name,
           'x-designer': 'FormItem.Designer',
@@ -204,6 +205,58 @@ export const useCurrentSchema = (action: string, key: string, find = findSchema,
       schema && rm(schema, remove);
     },
   };
+};
+
+export const useRecordCollectionDataSourceItems = (componentName) => {
+  const collection = useCollection();
+  const { getTemplatesByCollection } = useSchemaTemplateManager();
+  const templates = getTemplatesByCollection(collection.name).filter((template) => {
+    return componentName && template.componentName === componentName;
+  });
+  if (!templates.length) {
+    return [];
+  }
+  const index = 0;
+  return [
+    {
+      type: 'item',
+      name: collection.name,
+      title: '空白区块',
+    },
+    {
+      type: 'divider',
+    },
+    {
+      key: `${componentName}_table_subMenu_${index}_copy`,
+      type: 'subMenu',
+      name: 'copy',
+      title: '复制模板',
+      children: templates.map((template) => {
+        return {
+          type: 'item',
+          mode: 'copy',
+          name: collection.name,
+          template,
+          title: template.name || '未命名',
+        };
+      }),
+    },
+    {
+      key: `${componentName}_table_subMenu_${index}_ref`,
+      type: 'subMenu',
+      name: 'ref',
+      title: '引用模板',
+      children: templates.map((template) => {
+        return {
+          type: 'item',
+          mode: 'reference',
+          name: collection.name,
+          template,
+          title: template.name || '未命名',
+        };
+      }),
+    },
+  ];
 };
 
 export const useCollectionDataSourceItems = (componentName) => {
@@ -281,7 +334,7 @@ export const useCollectionDataSourceItems = (componentName) => {
 
 export const createFormBlockSchema = (options) => {
   const {
-    formItemInitializers = 'GridFormItemInitializers',
+    formItemInitializers = 'FormItemInitializers',
     actionInitializers = 'FormActionInitializers',
     collection,
     resource,
@@ -333,7 +386,7 @@ export const createFormBlockSchema = (options) => {
 };
 
 export const createTableBlockSchema = (options) => {
-  const { collection, resource, ...others } = options;
+  const { collection, resource, rowKey, ...others } = options;
   const schema: ISchema = {
     type: 'void',
     'x-decorator': 'TableBlockProvider',
@@ -344,7 +397,7 @@ export const createTableBlockSchema = (options) => {
       params: {
         pageSize: 20,
       },
-      rowKey: 'id',
+      rowKey,
       showIndex: true,
       dragSort: false,
       ...others,
@@ -381,7 +434,7 @@ export const createTableBlockSchema = (options) => {
             'x-decorator': 'TableV2.Column.ActionBar',
             'x-component': 'TableV2.Column',
             'x-designer': 'TableV2.RowActionDesigner',
-            'x-initializer': 'TableRecordActionInitializers',
+            'x-initializer': 'TableActionColumnInitializers',
             properties: {
               actions: {
                 type: 'void',
@@ -393,6 +446,127 @@ export const createTableBlockSchema = (options) => {
                 properties: {},
               },
             },
+          },
+        },
+      },
+    },
+  };
+  return schema;
+};
+
+export const createCalendarBlockSchema = (options) => {
+  const { collection, resource, fieldNames, ...others } = options;
+  const schema: ISchema = {
+    type: 'void',
+    'x-decorator': 'CalendarBlockProvider',
+    'x-decorator-props': {
+      collection: collection,
+      resource: resource || collection,
+      action: 'list',
+      fieldNames: {
+        id: 'id',
+        ...fieldNames,
+      },
+      params: {
+        paginate: false,
+      },
+      ...others,
+    },
+    properties: {
+      calendar: {
+        type: 'array',
+        name: 'calendar1',
+        'x-component': 'CalendarV2',
+        'x-component-props': {
+          useProps: '{{ useCalendarBlockProps }}',
+        },
+        properties: {
+          toolBar: {
+            type: 'void',
+            'x-component': 'CalendarV2.ActionBar',
+            'x-component-props': {
+              style: {
+                marginBottom: 24,
+              },
+            },
+            'x-initializer': 'CalendarActionInitializers',
+            properties: {},
+          },
+          event: {
+            type: 'void',
+            name: 'event',
+            'x-component': 'CalendarV2.Event',
+            properties: {
+              drawer: {
+                type: 'void',
+                'x-component': 'Action.Drawer',
+                'x-component-props': {
+                  className: 'nb-action-popup',
+                },
+                title: '{{ t("View record") }}',
+                properties: {
+                  tabs: {
+                    type: 'void',
+                    'x-component': 'Tabs',
+                    'x-component-props': {},
+                    'x-initializer': 'TabPaneInitializers',
+                    properties: {
+                      tab1: {
+                        type: 'void',
+                        title: '详情',
+                        'x-component': 'Tabs.TabPane',
+                        'x-designer': 'Tabs.Designer',
+                        'x-component-props': {},
+                        properties: {
+                          grid: {
+                            type: 'void',
+                            'x-component': 'Grid',
+                            'x-initializer': 'RecordBlockInitializers',
+                            properties: {},
+                          },
+                        },
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+    },
+  };
+  return schema;
+};
+
+export const createKanbanBlockSchema = (options) => {
+  const { collection, resource, groupField, ...others } = options;
+  const schema = {
+    type: 'void',
+    'x-decorator': 'KanbanBlockProvider',
+    'x-decorator-props': {
+      collection: collection,
+      resource: resource || collection,
+      action: 'list',
+      groupField,
+      params: {
+        paginate: false,
+      },
+      ...others,
+    },
+    properties: {
+      kanban: {
+        type: 'array',
+        'x-component': 'KanbanV2',
+        'x-component-props': {
+          useProps: '{{ useKanbanBlockProps }}',
+        },
+        properties: {
+          card: {
+            type: 'void',
+            'x-component': 'KanbanV2.Card',
+            'x-designer': 'KanbanV2.Card.Designer',
+            properties: {},
           },
         },
       },

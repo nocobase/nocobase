@@ -6,7 +6,7 @@ import { SchemaInitializer } from '../..';
 import { useAPIClient } from '../../api-client';
 import { createDesignable, useDesignable } from '../../schema-component';
 
-export const TableRecordActionInitializers = (props: any) => {
+export const TableActionColumnInitializers = (props: any) => {
   const fieldSchema = useFieldSchema();
   const api = useAPIClient();
   const { refresh } = useDesignable();
@@ -43,14 +43,16 @@ export const TableRecordActionInitializers = (props: any) => {
               component: 'ViewActionInitializer',
               schema: {
                 'x-component': 'Action.Link',
+                'x-action': 'view',
               },
             },
             {
               type: 'item',
               title: t('Edit'),
-              component: 'EditActionInitializer',
+              component: 'UpdateActionInitializer',
               schema: {
                 'x-component': 'Action.Link',
+                'x-action': 'update',
               },
             },
             {
@@ -59,6 +61,7 @@ export const TableRecordActionInitializers = (props: any) => {
               component: 'DestroyActionInitializer',
               schema: {
                 'x-component': 'Action.Link',
+                'x-action': 'destroy',
               },
             },
           ],

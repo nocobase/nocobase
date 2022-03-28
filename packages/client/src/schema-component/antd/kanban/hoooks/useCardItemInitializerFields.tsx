@@ -1,6 +1,6 @@
 import { useCollection } from '../../../../collection-manager';
 import type { SchemaInitializerItemOptions } from '../../../../schema-initializer';
-import { removeGridFormItem } from '../../../../schema-initializer/Initializers/utils';
+import { removeGridFormItem } from '../../../../schema-initializer/utils';
 
 export const useCardItemInitializerFields = () => {
   const { name, fields } = useCollection();

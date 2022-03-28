@@ -1,9 +1,9 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { SchemaInitializer } from '../..';
-import { gridRowColWrap } from './utils';
+import { gridRowColWrap } from '../utils';
 
-export const RecordCreateFormInitializers = (props: any) => {
+export const RecordFormBlockInitializers = (props: any) => {
   const { t } = useTranslation();
   return (
     <SchemaInitializer.Button
@@ -12,11 +12,11 @@ export const RecordCreateFormInitializers = (props: any) => {
       items={[
         {
           type: 'itemGroup',
-          title: 'Form',
+          title: '{{ t("Data blocks") }}',
           children: [
             {
               type: 'item',
-              title: 'Blank',
+              title: '{{ t("Form") }}',
               component: 'RecordFormBlockInitializer',
             },
           ],

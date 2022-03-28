@@ -1,10 +1,10 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { SchemaInitializer } from '../SchemaInitializer';
-import { gridRowColWrap, useFormItemInitializerFields } from './utils';
+import { gridRowColWrap, useFormItemInitializerFields } from '../utils';
 
-// Grid 组件里配置字段
-export const GridFormItemInitializers = (props: any) => {
+// 表单里配置字段
+export const FormItemInitializers = (props: any) => {
   const { t } = useTranslation();
   return (
     <SchemaInitializer.Button
@@ -21,7 +21,7 @@ export const GridFormItemInitializers = (props: any) => {
         {
           type: 'item',
           title: t('Add text'),
-          component: 'GeneralInitializer',
+          component: 'BlockInitializer',
           schema: {
             type: 'void',
             'x-editable': false,

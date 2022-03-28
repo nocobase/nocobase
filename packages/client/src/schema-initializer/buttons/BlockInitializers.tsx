@@ -1,4 +1,4 @@
-import { gridRowColWrap } from './utils';
+import { gridRowColWrap } from '../utils';
 
 // 页面里添加区块
 export const BlockInitializers = {
@@ -6,25 +6,30 @@ export const BlockInitializers = {
   wrap: gridRowColWrap,
   items: [
     {
+      key: 'dataBlocks',
       type: 'itemGroup',
       title: 'Data blocks',
       children: [
         {
+          key: 'table',
           type: 'item',
           title: 'Table',
           component: 'TableBlockInitializer',
         },
         {
+          key: 'form',
           type: 'item',
           title: 'Form',
           component: 'FormBlockInitializer',
         },
         {
+          key: 'calendar',
           type: 'item',
           title: 'Calendar',
           component: 'CalendarBlockInitializer',
         },
         {
+          key: 'kanban',
           type: 'item',
           title: 'Kanban',
           component: 'KanbanBlockInitializer',

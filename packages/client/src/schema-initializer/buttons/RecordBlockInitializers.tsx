@@ -1,10 +1,7 @@
-import { useFieldSchema } from '@formily/react';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { SchemaInitializer, useCollection } from '../..';
-import { useAPIClient } from '../../api-client';
-import { useDesignable } from '../../schema-component';
-import { gridRowColWrap } from './utils';
+import { gridRowColWrap } from '../utils';
 
 const useRelationFields = () => {
   const { fields } = useCollection();
@@ -15,16 +12,12 @@ const useRelationFields = () => {
         type: 'item',
         field,
         title: field?.uiSchema?.title || field.name,
-        component: 'RecordRelationBlockInitializer',
+        component: 'RecordAssociationBlockInitializer',
       };
     }) as any;
 };
 
-// 当前行记录所在面板的添加区块
 export const RecordBlockInitializers = (props: any) => {
-  const fieldSchema = useFieldSchema();
-  const api = useAPIClient();
-  const { refresh } = useDesignable();
   const { t } = useTranslation();
   return (
     <SchemaInitializer.Button
@@ -38,7 +31,7 @@ export const RecordBlockInitializers = (props: any) => {
             {
               type: 'item',
               title: 'Details',
-              component: 'RecordDetailsBlockInitializer',
+              component: 'RecordReadPrettyFormBlockInitializer',
             },
             {
               type: 'item',
@@ -60,17 +53,6 @@ export const RecordBlockInitializers = (props: any) => {
               type: 'item',
               title: 'Markdown',
               component: 'MarkdownBlockInitializer',
-            },
-          ],
-        },
-        {
-          type: 'itemGroup',
-          title: '{{t("Others")}}',
-          children: [
-            {
-              type: 'item',
-              title: '{{t("Action logs")}}',
-              component: 'ActionLogBlockInitializer',
             },
           ],
         },

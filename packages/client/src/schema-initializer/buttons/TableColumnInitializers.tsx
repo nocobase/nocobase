@@ -1,7 +1,7 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { SchemaInitializer } from '../SchemaInitializer';
-import { useTableColumnInitializerFields } from './utils';
+import { useTableColumnInitializerFields } from '../utils';
 
 // 表格列配置
 export const TableColumnInitializers = (props: any) => {
@@ -12,9 +12,9 @@ export const TableColumnInitializers = (props: any) => {
       wrap={(s) => {
         return {
           type: 'void',
-          'x-decorator': 'Table.Column.Decorator',
-          'x-designer': 'Table.Column.Deigner',
-          'x-component': 'Table.Column',
+          'x-decorator': 'TableV2.Column.Decorator',
+          'x-designer': 'TableV2.Column.Deigner',
+          'x-component': 'TableV2.Column',
           properties: {
             [s.name]: {
               'x-read-pretty': true,

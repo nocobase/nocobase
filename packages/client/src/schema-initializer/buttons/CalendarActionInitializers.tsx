@@ -23,7 +23,7 @@ export const CalendarActionInitializers = {
           title: 'Turn pages',
           component: 'ActionInitializer',
           schema: {
-            title: 'Turn the page',
+            title: 'Turn pages',
             'x-component': 'Calendar.Nav',
             'x-action': `calendar:nav`,
             'x-align': 'left',
@@ -57,17 +57,16 @@ export const CalendarActionInitializers = {
           title: "{{t('Filter')}}",
           component: 'FilterActionInitializer',
           schema: {
-            title: '{{ t("Filter") }}',
-            'x-action': 'filter',
             'x-align': 'right',
-            'x-component': 'Action',
-            'x-designer': 'Action.Designer',
           },
         },
         {
           type: 'item',
           title: '{{ t("Add new") }}',
-          component: 'AddNewActionInitializer',
+          component: 'CreateActionInitializer',
+          schema: {
+            'x-align': 'right',
+          },
         },
       ],
     },

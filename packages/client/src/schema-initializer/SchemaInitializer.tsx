@@ -1,8 +1,7 @@
 import { ISchema, observer } from '@formily/react';
-import { Button, Dropdown, Menu } from 'antd';
+import { Button, Dropdown, Menu, Switch } from 'antd';
 import React, { createContext, useContext, useState } from 'react';
 import { useCompile, useDesignable } from '../schema-component/hooks';
-import { initializes, items } from './Initializers';
 import {
   SchemaInitializerButtonProps,
   SchemaInitializerItemComponent,
@@ -15,10 +14,6 @@ const defaultWrap = (s: ISchema) => s;
 export const SchemaInitializerItemContext = createContext(null);
 
 export const SchemaInitializer = () => null;
-
-SchemaInitializer.items = items;
-
-SchemaInitializer.initializes = initializes;
 
 SchemaInitializer.Button = observer((props: SchemaInitializerButtonProps) => {
   const {
@@ -196,4 +191,14 @@ SchemaInitializer.Item = (props: SchemaInitializerItemProps) => {
 
 SchemaInitializer.itemWrap = (component?: SchemaInitializerItemComponent) => {
   return component;
+};
+
+SchemaInitializer.SwitchItem = (props) => {
+  return (
+    <SchemaInitializer.Item onClick={props.onClick}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        {props.title} <Switch style={{ marginLeft: 20 }} size={'small'} checked={props.checked} />
+      </div>
+    </SchemaInitializer.Item>
+  );
 };

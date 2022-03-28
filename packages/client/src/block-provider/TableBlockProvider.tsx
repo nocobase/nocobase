@@ -6,7 +6,7 @@ import { BlockProvider, useBlockResource, useResourceAction } from './BlockProvi
 export const TableBlockContext = createContext<any>({});
 
 const InternalTableBlockProvider = (props) => {
-  const { params = {}, showIndex, dragSort } = props;
+  const { params = {}, showIndex, dragSort, rowKey } = props;
   const field = useField();
   const resource = useBlockResource();
   const service = useResourceAction({ ...props, resource });
@@ -22,6 +22,7 @@ const InternalTableBlockProvider = (props) => {
         params,
         showIndex,
         dragSort,
+        rowKey,
       }}
     >
       {props.children}
@@ -60,6 +61,7 @@ export const useTableBlockProps = () => {
     loading: ctx?.service?.loading,
     showIndex: ctx.showIndex,
     dragSort: ctx.dragSort,
+    rowKey: ctx.rowKey,
     pagination:
       ctx?.params?.paginate !== false
         ? {
