@@ -8,14 +8,16 @@ import { gridRowColWrap } from './utils';
 
 const useRelationFields = () => {
   const { fields } = useCollection();
-  return fields.filter(field => field.interface === 'linkTo').map((field) => {
-    return {
-      type: 'item',
-      field,
-      title: field?.uiSchema?.title || field.name,
-      component: 'RecordRelationBlockInitializer',
-    };
-  }) as any;
+  return fields
+    .filter((field) => field.interface === 'linkTo')
+    .map((field) => {
+      return {
+        type: 'item',
+        field,
+        title: field?.uiSchema?.title || field.name,
+        component: 'RecordRelationBlockInitializer',
+      };
+    }) as any;
 };
 
 // 当前行记录所在面板的添加区块
@@ -58,6 +60,17 @@ export const RecordBlockInitializers = (props: any) => {
               type: 'item',
               title: 'Markdown',
               component: 'MarkdownBlockInitializer',
+            },
+          ],
+        },
+        {
+          type: 'itemGroup',
+          title: '{{t("Others")}}',
+          children: [
+            {
+              type: 'item',
+              title: '{{t("Action logs")}}',
+              component: 'ActionLogBlockInitializer',
             },
           ],
         },
