@@ -16,7 +16,7 @@ const schema = {
       'x-decorator': 'FormItem',
       'x-component': 'Input.TextArea',
       'x-reactions': {
-        target: '*(read1,read2)',
+        target: '*(read1,read2,read3)',
         fulfill: {
           state: {
             value: '{{$self.value}}',
@@ -41,6 +41,17 @@ const schema = {
       'x-component': 'Input.TextArea',
       'x-component-props': {
         ellipsis: true,
+      },
+    },
+    read3: {
+      interface: 'string',
+      type: 'string',
+      title: `Read pretty(autop)`,
+      'x-read-pretty': true,
+      'x-decorator': 'FormItem',
+      'x-component': 'Input.TextArea',
+      'x-component-props': {
+        autop: true,
       },
     },
   },
