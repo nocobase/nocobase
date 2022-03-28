@@ -1,15 +1,7 @@
 import { applyMixins, AsyncEmitter } from '@nocobase/utils';
 import merge from 'deepmerge';
 import { EventEmitter } from 'events';
-import {
-  ModelCtor,
-  Op,
-  Options,
-  QueryInterfaceDropAllTablesOptions,
-  Sequelize,
-  SyncOptions,
-  Utils
-} from 'sequelize';
+import { ModelCtor, Op, Options, QueryInterfaceDropAllTablesOptions, Sequelize, SyncOptions, Utils } from 'sequelize';
 import { Collection, CollectionOptions, RepositoryType } from './collection';
 import { ImporterReader, ImportFileExtension } from './collection-importer';
 import * as FieldTypes from './fields';
@@ -19,6 +11,7 @@ import { ModelHook } from './model-hook';
 import extendOperators from './operators';
 import { RelationRepository } from './relation-repository/relation-repository';
 import { Repository } from './repository';
+import lodash from 'lodash';
 
 export interface MergeOptions extends merge.Options {}
 
@@ -250,7 +243,14 @@ export class Database extends EventEmitter implements AsyncEmitter {
     }
   }
 
+  public isSqliteMemory() {
+    return this.sequelize.getDialect() === 'sqlite' && lodash.get(this.options, 'storage') == ':memory:';
+  }
+
   async reconnect() {
+    if (this.isSqliteMemory()) {
+      return;
+    }
     // @ts-ignore
     const ConnectionManager = this.sequelize.dialect.connectionManager.constructor;
     // @ts-ignore
@@ -267,6 +267,10 @@ export class Database extends EventEmitter implements AsyncEmitter {
   }
 
   async close() {
+    if (this.isSqliteMemory()) {
+      return;
+    }
+
     return this.sequelize.close();
   }
 

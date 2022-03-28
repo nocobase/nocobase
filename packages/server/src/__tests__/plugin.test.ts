@@ -18,7 +18,11 @@ describe('plugin', () => {
 
   describe('define', () => {
     it('should add plugin with options', async () => {
-      class MyPlugin extends Plugin {}
+      class MyPlugin extends Plugin {
+        getName(): string {
+          return 'test';
+        }
+      }
 
       const plugin = app.plugin(MyPlugin, {
         test: 'hello',
@@ -34,6 +38,10 @@ describe('plugin', () => {
       class MyPlugin extends Plugin<Options> {
         async load() {
           this.options.a;
+        }
+
+        getName(): string {
+          return 'MyPlugin';
         }
       }
       const plugin = app.plugin<Options>(MyPlugin, {
@@ -67,6 +75,10 @@ describe('plugin', () => {
             this.app.collection({
               name: 'tests',
             });
+          }
+
+          getName(): string {
+            return 'test';
           }
         },
       );

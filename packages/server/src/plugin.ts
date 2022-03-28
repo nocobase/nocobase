@@ -1,6 +1,7 @@
 import { Database } from '@nocobase/database';
 import { Application } from './application';
-import path from 'path';
+import finder from 'find-package-json';
+
 import { InstallOptions } from './plugin-manager';
 
 export interface PluginInterface {
@@ -38,7 +39,9 @@ export abstract class Plugin<O = any> implements PluginInterface {
   }
 
   getName(): string {
-    return this.constructor.name;
+    const path = require.main.children[require.main.children.length - 1].path;
+
+    return '';
   }
 
   beforeLoad() {}
@@ -56,5 +59,11 @@ export abstract class Plugin<O = any> implements PluginInterface {
 
   collectionPath() {
     return null;
+  }
+
+  protected getPackageName(dirname: string) {
+    const f = finder(dirname);
+    const packageObj = f.next().value;
+    return packageObj['name'];
   }
 }

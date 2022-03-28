@@ -278,6 +278,10 @@ export class PluginACL extends Plugin {
 
     this.app.resourcer.use(this.acl.middleware());
   }
+
+  getName(): string {
+    return this.getPackageName(__dirname);
+  }
 }
 
 export default PluginACL;

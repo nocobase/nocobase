@@ -14,4 +14,8 @@ export default class PluginActionLogs extends Plugin {
       directory: path.resolve(__dirname, 'collections'),
     });
   }
+
+  getName(): string {
+    return this.getPackageName(__dirname);
+  }
 }

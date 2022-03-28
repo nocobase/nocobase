@@ -7,4 +7,8 @@ export default class PluginNotifications extends Plugin {
       directory: path.resolve(__dirname, 'collections'),
     });
   }
+
+  getName(): string {
+    return this.getPackageName(__dirname);
+  }
 }

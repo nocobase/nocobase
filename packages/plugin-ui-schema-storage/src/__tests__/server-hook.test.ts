@@ -69,7 +69,7 @@ describe('server hooks', () => {
     uiSchemaRepository = db.getRepository('uiSchemas');
     await uiSchemaRepository.insert(schema);
 
-    uiSchemaPlugin = app.getPlugin<UiSchemaStoragePlugin>('UiSchemaStoragePlugin');
+    uiSchemaPlugin = app.getPlugin<UiSchemaStoragePlugin>('@nocobase/plugin-ui-schema-storage');
   });
 
   it('should call server hooks onFieldDestroy', async () => {
