@@ -20,7 +20,18 @@ const ColDivider = (props) => {
     backgroundColor: isOver ? 'rgba(241, 139, 98, .1)' : undefined,
   };
 
-  return <div ref={setNodeRef} style={{ width: 24, ...droppableStyle }}></div>;
+  return (
+    <div
+      ref={setNodeRef}
+      className={cls(
+        'nb-col-divider',
+        css`
+          width: 24px;
+        `,
+      )}
+      style={{ ...droppableStyle }}
+    ></div>
+  );
 };
 
 const RowDivider = (props) => {
@@ -52,17 +63,26 @@ const RowDivider = (props) => {
   });
 
   return (
-    <div
+    <span
       ref={setNodeRef}
+      className={cls(
+        'nb-row-divider',
+        css`
+          height: 24px;
+          width: 100%;
+          position: absolute;
+          margin-top: -24px;
+        `,
+      )}
       style={{
         zIndex: active ? 1000 : 0,
-        height: 2,
-        width: '100%',
-        position: 'absolute',
-        marginTop: -24,
+        // height: 24,
+        // width: '100%',
+        // position: 'absolute',
+        // marginTop: -24,
         ...droppableStyle,
       }}
-    ></div>
+    />
   );
 };
 
@@ -152,7 +172,7 @@ export const Grid: any = observer((props: any) => {
           );
         })}
       </DndWrapper>
-      <div>{render()}</div>
+      {render()}
     </div>
   );
 });
