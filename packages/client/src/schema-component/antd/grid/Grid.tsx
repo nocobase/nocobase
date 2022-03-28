@@ -56,7 +56,7 @@ const RowDivider = (props) => {
       ref={setNodeRef}
       style={{
         zIndex: active ? 1000 : 0,
-        height: 24,
+        height: 2,
         width: '100%',
         position: 'absolute',
         marginTop: -24,
