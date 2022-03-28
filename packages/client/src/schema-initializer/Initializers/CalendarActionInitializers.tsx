@@ -23,7 +23,7 @@ export const CalendarActionInitializers = {
           title: 'Turn pages',
           component: 'ActionInitializer',
           schema: {
-            title: 'Turn page',
+            title: 'Turn the page',
             'x-component': 'Calendar.Nav',
             'x-action': `calendar:nav`,
             'x-align': 'left',

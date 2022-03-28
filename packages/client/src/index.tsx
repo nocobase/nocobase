@@ -1,6 +1,7 @@
 import './global.less';
 
 export * from './acl';
+export * from './action-logs';
 export * from './antd-config-provider';
 export * from './api-client';
 export * from './application';
@@ -23,3 +24,4 @@ export * from './settings-form';
 export * from './system-settings';
 export * from './user';
 export * from './workflow';
+
