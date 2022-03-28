@@ -1,6 +1,4 @@
-import debug from 'debug';
 import './global.less';
-debug.log = console.log.bind(console);
 
 export * from './acl';
 export * from './action-logs';
@@ -20,6 +18,9 @@ export * from './route-switch';
 export * from './schema-component';
 export * from './schema-initializer';
 export * from './schema-settings';
+export * from './schema-templates';
 export * from './settings-form';
 export * from './system-settings';
 export * from './user';
+export * from './workflow';
+

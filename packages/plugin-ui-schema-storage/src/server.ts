@@ -62,6 +62,7 @@ export class UiSchemaStoragePlugin extends Plugin {
     });
 
     this.app.acl.skip('uiSchemas', '*', 'logged-in');
+    this.app.acl.skip('uiSchemaTemplates', '*', 'logged-in');
   }
 
   async load() {

@@ -63,6 +63,7 @@ const schema: ISchema = {
           'x-component-props': {
             block: true,
             type: 'primary',
+            htmlType: 'submit',
             useAction: '{{ useSignup }}',
             style: { width: '100%' },
           },

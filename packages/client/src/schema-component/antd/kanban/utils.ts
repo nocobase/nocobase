@@ -1,7 +1,4 @@
 export const toGroupDataSource = (groupField: IGroupField, dataSource: Array<any> = []) => {
-  if (dataSource.length === 0) {
-    return { columns: [] };
-  }
   const groupDataSource = {
     __unknown__: {
       id: '__unknown__',

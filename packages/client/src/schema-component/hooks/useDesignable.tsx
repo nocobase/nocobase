@@ -11,6 +11,7 @@ interface CreateDesignableProps {
   current: Schema;
   api?: APIClient;
   refresh?: () => void;
+  onSuccess?: any;
 }
 
 export function createDesignable(options: CreateDesignableProps) {
@@ -26,6 +27,7 @@ interface InsertAdjacentOptions {
   wrap?: (s: ISchema) => ISchema;
   removeParentsIfNoChildren?: boolean;
   breakRemoveOn?: ISchema | BreakFn;
+  onSuccess?: any;
 }
 
 type BreakFn = (s: ISchema) => boolean;
@@ -65,6 +67,29 @@ const matchSchema = (source: ISchema, target: ISchema) => {
   return true;
 };
 
+export const splitWrapSchema = (wrapped: Schema, schema: ISchema) => {
+  if (wrapped['x-uid'] && wrapped['x-uid'] === schema['x-uid']) {
+    return [null, wrapped.toJSON()];
+  }
+  const wrappedJson: ISchema = wrapped.toJSON();
+  let schema1 = { ...wrappedJson, properties: {} };
+  let schema2 = null;
+  const findSchema = (properties, parent) => {
+    Object.keys(properties || {}).forEach((key) => {
+      const current = properties[key];
+      if (current['x-uid'] === schema['x-uid']) {
+        schema2 = properties[key];
+        return;
+      } else {
+        parent.properties[key] = { ...current, properties: {} };
+        findSchema(current?.properties, parent.properties[key]);
+      }
+    });
+  };
+  findSchema(wrappedJson.properties, schema1);
+  return [schema1, schema2];
+};
+
 export class Designable {
   current: Schema;
   options: CreateDesignableProps;
@@ -80,12 +105,15 @@ export class Designable {
     if (!api) {
       return;
     }
-    this.on('insertAdjacent', async ({ current, position, schema, removed }) => {
+    this.on('insertAdjacent', async ({ onSuccess, current, position, schema, wrap, removed }) => {
       refresh();
       await api.request({
         url: `/uiSchemas:insertAdjacent/${current['x-uid']}?position=${position}`,
         method: 'post',
-        data: schema.toJSON(),
+        data: {
+          schema,
+          wrap,
+        },
       });
       if (removed?.['x-uid']) {
         await api.request({
@@ -93,6 +121,7 @@ export class Designable {
           method: 'post',
         });
       }
+      onSuccess?.();
       message.success('配置保存成功！', 0.2);
     });
     this.on('patch', async ({ schema }) => {
@@ -229,6 +258,19 @@ export class Designable {
     this.emit('remove', { removed });
   }
 
+  removeWithoutEmit(schema?: Schema, options: RemoveOptions = {}) {
+    const { breakRemoveOn, removeParentsIfNoChildren } = options;
+    let s = schema || this.current;
+    let removed = s.parent.removeProperty(s.name);
+    if (removeParentsIfNoChildren) {
+      const parent = this.recursiveRemoveIfNoChildren(s.parent, { breakRemoveOn });
+      if (parent) {
+        removed = parent;
+      }
+    }
+    return removed;
+  }
+
   insertBeforeBeginOrAfterEnd(schema: ISchema, options: InsertAdjacentOptions = {}) {
     if (!Schema.isSchemaInstance(this.current)) {
       return;
@@ -297,9 +339,11 @@ export class Designable {
     s['x-index'] = newOrder;
     s.parent = this.current.parent;
     this.current.parent.setProperties(properties);
+    const [schema1, schema2] = splitWrapSchema(s, schema);
     this.emit('insertAdjacent', {
       position: 'beforeBegin',
-      schema: s,
+      schema: schema2,
+      wrap: schema1,
       ...opts,
     });
   }
@@ -343,9 +387,11 @@ export class Designable {
     s['x-index'] = 0;
     s.parent = this.current;
     this.current.setProperties(properties);
+    const [schema1, schema2] = splitWrapSchema(s, schema);
     this.emit('insertAdjacent', {
       position: 'afterBegin',
-      schema: s,
+      schema: schema2,
+      wrap: schema1,
       ...opts,
     });
   }
@@ -379,9 +425,11 @@ export class Designable {
     const wrapped = wrap(schema);
     const s = this.current.addProperty(wrapped.name || uid(), wrapped);
     s.parent = this.current;
+    const [schema1, schema2] = splitWrapSchema(s, schema);
     this.emit('insertAdjacent', {
       position: 'beforeEnd',
-      schema: s,
+      schema: schema2,
+      wrap: schema1,
       ...opts,
     });
   }
@@ -393,7 +441,7 @@ export class Designable {
     if (!Schema.isSchemaInstance(this.current)) {
       return;
     }
-    const opts = {};
+    const opts = { onSuccess: options?.onSuccess };
     const { wrap = defaultWrap, breakRemoveOn, removeParentsIfNoChildren } = options;
     if (Schema.isSchemaInstance(schema)) {
       if (this.parentsIn(schema)) {
@@ -435,9 +483,11 @@ export class Designable {
     s.parent = this.current.parent;
     s['x-index'] = newOrder;
     this.current.parent.setProperties(properties);
+    const [schema1, schema2] = splitWrapSchema(s, schema);
     this.emit('insertAdjacent', {
       position: 'afterEnd',
-      schema: s,
+      schema: schema2,
+      wrap: schema1,
       ...opts,
     });
   }

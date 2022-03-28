@@ -6,6 +6,7 @@
   ],
   "scripts": {
     "start": "concurrently \"npm run start-server\" \"npm run start-client\"",
+    "start-pm2": "yarn pm2-runtime start packages/api/lib/index.js",
     "start-docs": "dumi dev",
     "bootstrap": "lerna bootstrap",
     "clean": "rimraf -rf packages/*/{lib,esm,dist} && lerna clean",

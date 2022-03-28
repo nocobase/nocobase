@@ -18,7 +18,6 @@ type TableVoidProps = TableProps<any> & {
 };
 
 const usePaginationProps = (props: TableProps<any> & { request?: any }, service): TablePaginationConfig | false => {
-  console.log('f.componentProps.pagination', props);
   if (props.pagination === false) {
     return false;
   }
@@ -97,7 +96,6 @@ export const TableVoid: React.FC<TableVoidProps> = observer((props) => {
         }
         field.componentProps.pagination.current = data?.meta?.page || 1;
         field.componentProps.pagination.pageSize = data?.meta?.pageSize || 10;
-        console.log('f.componentProps.pagination', field.componentProps.pagination);
       },
     },
     props,

@@ -28,7 +28,6 @@ export const ScopeSelect = (props) => {
       }),
     [],
   );
-  console.log('props.value', props.value, form.values);
   return (
     <FormProvider form={form}>
       <SchemaComponent
@@ -36,7 +35,6 @@ export const ScopeSelect = (props) => {
         scope={{
           onChange(value) {
             props?.onChange?.(value);
-            console.log('onChange', value);
           },
         }}
         schema={scopesSchema}

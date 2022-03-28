@@ -8,6 +8,7 @@ import { useAttach, useComponent } from '../..';
 import { useRequest } from '../../../api-client';
 import { useCollection } from '../../../collection-manager';
 import { GeneralSchemaDesigner, SchemaSettings } from '../../../schema-settings';
+import { useSchemaTemplate } from '../../../schema-templates';
 
 type Opts = Options<any, any> & { uid?: string };
 
@@ -113,8 +114,11 @@ export const Form: React.FC<FormProps> & { Designer?: any } = observer((props) =
 
 Form.Designer = () => {
   const { name, title } = useCollection();
+  const template = useSchemaTemplate();
   return (
-    <GeneralSchemaDesigner title={title || name}>
+    <GeneralSchemaDesigner template={template} title={title || name}>
+      <SchemaSettings.Template componentName={'Form'} collectionName={name} />
+      <SchemaSettings.Divider />
       <SchemaSettings.Remove
         removeParentsIfNoChildren
         breakRemoveOn={{

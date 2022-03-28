@@ -11,19 +11,26 @@ const titleCss = css`
   pointer-events: none;
   position: absolute;
   font-size: 12px;
-  background: #f18b62;
-  color: #fff;
-  padding: 0 5px;
+  /* background: #f18b62;
+  color: #fff; */
+  padding: 0;
   line-height: 16px;
   height: 16px;
   border-bottom-right-radius: 2px;
   border-radius: 2px;
   top: 2px;
   left: 2px;
+  .title-tag {
+    padding: 0 3px;
+    border-radius: 2px;
+    background: #f18b62;
+    color: #fff;
+    display: block;
+  }
 `;
 
 export const GeneralSchemaDesigner = (props: any) => {
-  const { title, draggable = true } = props;
+  const { title, template, draggable = true } = props;
   const { dn, designable } = useDesignable();
   const field = useField();
   const fieldSchema = useFieldSchema();
@@ -38,7 +45,14 @@ export const GeneralSchemaDesigner = (props: any) => {
   }
   return (
     <div className={'general-schema-designer'}>
-      {title && <div className={classNames('general-schema-designer-title', titleCss)}>{compile(title)}</div>}
+      {title && (
+        <div className={classNames('general-schema-designer-title', titleCss)}>
+          <Space size={2}>
+            <span className={'title-tag'}>{compile(title)}</span>
+            {template && <span className={'title-tag'}>引用模板: {template?.name || '未命名'}</span>}
+          </Space>
+        </div>
+      )}
       <div className={'general-schema-designer-icons'}>
         <Space size={2} align={'center'}>
           {draggable && (

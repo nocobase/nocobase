@@ -12,7 +12,9 @@ process.env.MFSU_AD = 'none';
 const umiConfig = getUmiConfig();
 
 export default defineConfig({
+  hash: true,
   define: {
+    'process.env.NOCOBASE_ENV': process.env.NOCOBASE_ENV,
     ...umiConfig.define,
   },
   // only proxy when using `umi dev`

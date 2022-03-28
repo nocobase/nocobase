@@ -36,7 +36,8 @@ export default {
       type: 'jsonb',
       title: '触发配置',
       name: 'config',
-      required: true
+      required: true,
+      defaultValue: {}
     },
     {
       interface: 'linkTo',

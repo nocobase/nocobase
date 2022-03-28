@@ -1,6 +1,8 @@
 import { Application } from '@nocobase/server';
 import { resolve } from 'path';
 
+require('dotenv').config({ path: resolve(process.cwd(), '.env') });
+
 const start = Date.now();
 
 const api = new Application({
@@ -41,17 +43,21 @@ const plugins = [
   '@nocobase/plugin-collection-manager',
   '@nocobase/plugin-ui-schema-storage',
   '@nocobase/plugin-ui-routes-storage',
-  '@nocobase/plugin-client',
   '@nocobase/plugin-file-manager',
   '@nocobase/plugin-system-settings',
   '@nocobase/plugin-users',
   '@nocobase/plugin-acl',
   '@nocobase/plugin-china-region',
+  '@nocobase/plugin-workflow',
 ];
 
 for (const plugin of plugins) {
   api.plugin(require(plugin).default);
 }
+
+api.plugin(require('@nocobase/plugin-client').default, {
+  dist: resolve(__dirname, '../../app/dist'),
+});
 
 if (process.argv.length < 3) {
   // @ts-ignore

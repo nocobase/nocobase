@@ -1,5 +1,5 @@
 import { Context } from '..';
-import { getRepositoryFromParams } from './utils';
+import { getRepositoryFromParams } from '../utils';
 
 export async function get(ctx: Context, next) {
   const repository = getRepositoryFromParams(ctx);

@@ -23,22 +23,28 @@ export default {
   on(this: WorkflowModel, callback: Function) {
     const { database } = <typeof WorkflowModel>this.constructor;
     const { collection, mode } = this.config;
-    const { model } = database.getCollection(collection);
+    const Collection = database.getCollection(collection);
+    if (!Collection) {
+      return;
+    }
     const handler = (data: any, options) => callback({ data: data.get() }, options);
     // TODO: duplication when mode change should be considered
     for (let [key, event] of MODE_BITMAP_EVENTS.entries()) {
       if (mode & key) {
-        model.addHook(event, this.getHookId(), handler);
+        Collection.model.addHook(event, this.getHookId(), handler);
       }
     }
   },
   off(this: WorkflowModel) {
     const { database } = <typeof WorkflowModel>this.constructor;
     const { collection, mode } = this.config;
-    const { model } = database.getCollection(collection);
+    const Collection = database.getCollection(collection);
+    if (!Collection) {
+      return;
+    }
     for (let [key, event] of MODE_BITMAP_EVENTS.entries()) {
       if (mode & key) {
-        model.removeHook(event, this.getHookId());
+        Collection.model.removeHook(event, this.getHookId());
       }
     }
   }

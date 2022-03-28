@@ -9,7 +9,6 @@ import { ActionContext, SchemaComponent, useActionContext } from '../schema-comp
 
 const useCloseAction = () => {
   const { setVisible } = useActionContext();
-  // const form = useForm();
   return {
     async run() {
       setVisible(false);
@@ -18,23 +17,28 @@ const useCloseAction = () => {
 };
 
 const useSystemSettingsValues = (options) => {
+  const { visible } = useActionContext();
   const result = useSystemSettings();
   return useRequest(() => Promise.resolve(result.data), {
     ...options,
+    refreshDeps: [visible],
   });
 };
 
 const useSaveSystemSettingsValues = () => {
   const { setVisible } = useActionContext();
   const form = useForm();
-  const { mutate } = useSystemSettings();
+  const { mutate, data } = useSystemSettings();
   const api = useAPIClient();
   return {
     async run() {
       await form.submit();
       setVisible(false);
       mutate({
-        data: form.values,
+        data: {
+          ...data?.data,
+          ...form.values,
+        },
       });
       await api.request({
         url: 'systemSettings:update/1',
@@ -108,6 +112,7 @@ const schema: ISchema = {
               'x-component': 'Action',
               'x-component-props': {
                 type: 'primary',
+                htmlType: 'submit',
                 useAction: '{{ useSaveSystemSettingsValues }}',
               },
             },

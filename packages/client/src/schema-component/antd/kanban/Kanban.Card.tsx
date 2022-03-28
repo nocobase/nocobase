@@ -27,8 +27,18 @@ export const KanbanCard: any = observer((props: any) => {
         bordered={false}
         hoverable
         style={{ cursor: 'pointer', overflow: 'hidden' }}
-        bodyStyle={{ paddingBottom: 0 }}
+        // bodyStyle={{ paddingBottom: 0 }}
         className={css`
+          .ant-card-body {
+            padding: 16px;
+          }
+          .nb-row-divider {
+            height: 16px;
+            margin-top: -16px;
+            &:last-child {
+              margin-top: 0;
+            }
+          }
           .ant-description-input {
             text-overflow: ellipsis;
             width: 100%;
@@ -38,6 +48,18 @@ export const KanbanCard: any = observer((props: any) => {
             text-overflow: ellipsis;
             width: 100%;
             overflow: hidden;
+          }
+          .ant-formily-item {
+            margin-bottom: 12px;
+          }
+          .nb-grid-row:last-of-type {
+            .nb-grid-col {
+              .nb-form-item:last-of-type {
+                .ant-formily-item {
+                  margin-bottom: 0;
+                }
+              }
+            }
           }
         `}
       >

@@ -40,7 +40,6 @@ const useTableColumns = () => {
         },
       } as TableColumnProps<any>;
     });
-  console.log(columns);
   if (!exists) {
     return columns;
   }

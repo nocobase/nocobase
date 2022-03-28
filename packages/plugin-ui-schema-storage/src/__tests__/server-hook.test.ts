@@ -316,24 +316,23 @@ describe('server hooks', () => {
 
     await uiSchemaRepository.insert(schema);
 
-    await uiSchemaRepository.insertAfterEnd(
+    await uiSchemaRepository.insertAdjacent(
+      'afterEnd',
       'E',
       {
-        'x-uid': 'F',
-        name: 'F',
-        properties: {
-          G: {
-            'x-uid': 'G',
-            properties: {
-              D: {
-                'x-uid': 'D',
-              },
-            },
-          },
-        },
+        'x-uid': 'D',
       },
       {
         removeParentsIfNoChildren: true,
+        wrap: {
+          'x-uid': 'F',
+          name: 'F',
+          properties: {
+            G: {
+              'x-uid': 'G',
+            },
+          },
+        },
       },
     );
 

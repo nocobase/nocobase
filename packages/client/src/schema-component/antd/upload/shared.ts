@@ -2,10 +2,10 @@ import { Field } from '@formily/core';
 import { useField } from '@formily/react';
 import { reaction } from '@formily/reactive';
 import { isArr, isValid, toArr as toArray } from '@formily/shared';
-import { useAPIClient } from '../../../api-client';
 import { UploadChangeParam } from 'antd/lib/upload';
 import { UploadFile } from 'antd/lib/upload/interface';
 import { useEffect } from 'react';
+import { useAPIClient } from '../../../api-client';
 import { UPLOAD_PLACEHOLDER } from './placeholder';
 import type { IUploadProps, UploadProps } from './type';
 
@@ -28,7 +28,6 @@ export const toMap = (fileList: any) => {
     }
     list = [fileList];
   }
-  console.log({ list, fileList });
   return list.map((item) => {
     return [item.id || item.uid, toItem(item)];
   });

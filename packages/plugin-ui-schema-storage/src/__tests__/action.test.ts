@@ -56,6 +56,43 @@ describe('action test', () => {
     expect(response.statusCode).toEqual(200);
   });
 
+  test('getJsonSchema with async node', async () => {
+    await app
+      .agent()
+      .resource('uiSchemas')
+      .insert({
+        values: {
+          'x-uid': 'n1',
+          name: 'a',
+          type: 'object',
+          properties: {
+            b: {
+              'x-async': true,
+              'x-uid': 'n2',
+              type: 'object',
+              properties: {
+                c: { 'x-uid': 'n3' },
+              },
+            },
+            d: { 'x-uid': 'n4' },
+          },
+        },
+      });
+
+    let response = await app.agent().resource('uiSchemas').getJsonSchema({
+      resourceIndex: 'n1',
+    });
+
+    expect(response.body.data.properties.b).toBeUndefined();
+
+    response = await app.agent().resource('uiSchemas').getJsonSchema({
+      resourceIndex: 'n1',
+      includeAsyncNode: true,
+    });
+
+    expect(response.body.data.properties.b).toBeDefined();
+  });
+
   test('getJsonSchema', async () => {
     await app
       .agent()
@@ -228,5 +265,34 @@ describe('action test', () => {
 
     const { data } = response.body;
     expect(data.properties.e['x-uid']).toEqual('n5');
+  });
+
+  test('insert adjacent with bit schema', async () => {
+    const schema = require('./fixtures/data').default;
+
+    await app
+      .agent()
+      .resource('uiSchemas')
+      .insert({
+        values: {
+          'x-uid': 'root',
+          properties: {
+            A: {
+              'x-uid': 'A',
+            },
+            B: {
+              'x-uid': 'B',
+            },
+          },
+        },
+      });
+
+    let response = await app.agent().resource('uiSchemas').insertAdjacent({
+      resourceIndex: 'A',
+      position: 'afterEnd',
+      values: schema,
+    });
+
+    expect(response.statusCode).toEqual(200);
   });
 });
