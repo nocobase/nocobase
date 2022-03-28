@@ -4,6 +4,8 @@ import { Action } from '@nocobase/resourcer';
 import lodash from 'lodash';
 import * as actions from './actions';
 
+export * as utils from './utils';
+
 export type Next = () => Promise<any>;
 
 export interface Context extends Koa.Context {

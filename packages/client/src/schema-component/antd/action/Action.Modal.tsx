@@ -21,58 +21,64 @@ export const ActionModal: ComposedActionDrawer = observer((props) => {
   return (
     <>
       {createPortal(
-        <Modal
-          width={'80%'}
-          title={field.title}
-          {...others}
-          destroyOnClose
-          visible={visible}
-          onCancel={() => setVisible(false)}
-          className={classNames(
-            others.className,
-            css`
-              &.nb-action-popup {
-                .ant-modal-body {
-                  background: #f0f2f5;
-                }
-              }
-            `,
-          )}
-          footer={
-            footerSchema ? (
-              <div
-                className={css`
-                  display: flex;
-                  justify-content: flex-end;
-                  width: 100%;
-                  .ant-btn {
-                    margin-right: 8px;
-                  }
-                `}
-              >
-                <RecursionField
-                  basePath={field.address}
-                  schema={schema}
-                  onlyRenderProperties
-                  filterProperties={(s) => {
-                    return s['x-component'] === footerNodeName;
-                  }}
-                />
-              </div>
-            ) : (
-              false
-            )
-          }
+        <div
+          onClick={(e) => {
+            e.stopPropagation();
+          }}
         >
-          <RecursionField
-            basePath={field.address}
-            schema={schema}
-            onlyRenderProperties
-            filterProperties={(s) => {
-              return s['x-component'] !== footerNodeName;
-            }}
-          />
-        </Modal>,
+          <Modal
+            width={'80%'}
+            title={field.title}
+            {...others}
+            destroyOnClose
+            visible={visible}
+            onCancel={() => setVisible(false)}
+            className={classNames(
+              others.className,
+              css`
+                &.nb-action-popup {
+                  .ant-modal-body {
+                    background: #f0f2f5;
+                  }
+                }
+              `,
+            )}
+            footer={
+              footerSchema ? (
+                <div
+                  className={css`
+                    display: flex;
+                    justify-content: flex-end;
+                    width: 100%;
+                    .ant-btn {
+                      margin-right: 8px;
+                    }
+                  `}
+                >
+                  <RecursionField
+                    basePath={field.address}
+                    schema={schema}
+                    onlyRenderProperties
+                    filterProperties={(s) => {
+                      return s['x-component'] === footerNodeName;
+                    }}
+                  />
+                </div>
+              ) : (
+                false
+              )
+            }
+          >
+            <RecursionField
+              basePath={field.address}
+              schema={schema}
+              onlyRenderProperties
+              filterProperties={(s) => {
+                return s['x-component'] !== footerNodeName;
+              }}
+            />
+          </Modal>
+        </div>,
         document.body,
       )}
     </>
