@@ -13,9 +13,11 @@ export class ApplicationModel extends Model {
   }
 
   static getDatabaseConfig(app: Application): IDatabaseOptions {
-    return lodash.isPlainObject(app.options.database)
-      ? (app.options.database as IDatabaseOptions)
-      : (app.options.database as Database).options;
+    return lodash.cloneDeep(
+      lodash.isPlainObject(app.options.database)
+        ? (app.options.database as IDatabaseOptions)
+        : (app.options.database as Database).options,
+    );
   }
 
   async registerToMainApp(mainApp: Application, options: registerAppOptions) {

@@ -12,15 +12,15 @@ export class AppManager extends EventEmitter {
     super();
 
     app.on('beforeStop', async (mainApp, options) => {
-      for (const [appName, application] of this.applications) {
-        await application.stop(options);
-      }
+      return await Promise.all(
+        [...this.applications.values()].map((application: Application) => application.stop(options)),
+      );
     });
 
     app.on('afterDestroy', async (mainApp, options) => {
-      for (const [appName, application] of this.applications) {
-        await application.destroy(options);
-      }
+      return await Promise.all(
+        [...this.applications.values()].map((application: Application) => application.destroy(options)),
+      );
     });
   }
 

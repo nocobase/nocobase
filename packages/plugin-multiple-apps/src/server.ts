@@ -26,16 +26,6 @@ export class PluginMultipleApps extends Plugin {
       await this.app.appManager.removeApplication(model.get('name') as string);
     });
 
-    this.app.on('beforeStart', async () => {
-      const applications = (await this.app.db.getRepository('applications').find()) as ApplicationModel[];
-
-      for (const app of applications) {
-        await app.registerToMainApp(this.app, {
-          skipInstall: true,
-        });
-      }
-    });
-
     this.app.appManager.on(
       'beforeGetApplication',
       async function lazyLoadApplication({ appManager, name }: { appManager: AppManager; name: string }) {

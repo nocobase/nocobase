@@ -75,7 +75,7 @@ describe('test with start', () => {
     await app.destroy();
   });
 
-  it('should load applications on start', async () => {
+  it('should lazy load applications', async () => {
     class TestPlugin extends Plugin {
       getName(): string {
         return 'test-package';
@@ -121,6 +121,13 @@ describe('test with start', () => {
     await newApp.start();
 
     expect(await newApp.db.getRepository('applications').count()).toEqual(1);
+    expect(newApp.appManager.applications.get('sub1')).not.toBeDefined();
+
+    newApp.appManager.setAppSelector(() => {
+      return 'sub1';
+    });
+
+    await newApp.agent().resource('test').test();
     expect(newApp.appManager.applications.get('sub1')).toBeDefined();
 
     await app.destroy();
