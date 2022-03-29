@@ -67,6 +67,10 @@ export const useTableColumnInitializerFields = () => {
       if (field?.uiSchema['x-component']?.startsWith?.('Input')) {
         componentProps['ellipsis'] = true;
       }
+      if (field?.uiSchema['x-component']?.startsWith?.('Markdown')) {
+        componentProps['ellipsis'] = true;
+        componentProps['format'] = false;
+      }
       if (field.interface === 'attachment') {
         componentProps['size'] = 'small';
         return {

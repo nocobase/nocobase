@@ -22,7 +22,7 @@ const MarkdownEditor = (props: any) => {
       <Space style={{ position: 'absolute', bottom: 5, right: 5 }}>
         <Button
           onClick={(e) => {
-            props.onCancel && props.onCancel(e);
+            props.onCancel?.(e);
           }}
         >
           {t('Cancel')}
@@ -30,7 +30,7 @@ const MarkdownEditor = (props: any) => {
         <Button
           type={'primary'}
           onClick={() => {
-            props.onSubmit && props.onSubmit(value);
+            props.onSubmit?.(value);
           }}
         >
           {t('Save')}
