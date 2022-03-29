@@ -1,10 +1,12 @@
 import { FormOutlined, TableOutlined } from '@ant-design/icons';
 import { FormDialog, FormLayout } from '@formily/antd';
 import { SchemaOptionsContext } from '@formily/react';
+import { merge } from '@formily/shared';
 import React, { useContext } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useAPIClient } from '../../api-client';
-import { useCollectionManager } from '../../collection-manager';
+import { useBlockAssociationContext } from '../../block-provider';
+import { useCollection, useCollectionManager } from '../../collection-manager';
 import { SchemaComponent, SchemaComponentOptions } from '../../schema-component';
 import { useSchemaTemplateManager } from '../../schema-templates';
 import { SchemaInitializer } from '../SchemaInitializer';
@@ -12,6 +14,7 @@ import {
   createCalendarBlockSchema,
   createFormBlockSchema,
   createKanbanBlockSchema,
+  createReadPrettyFormBlockSchema,
   createTableBlockSchema,
   useCollectionDataSourceItems,
   useCurrentSchema,
@@ -30,6 +33,27 @@ export const BlockInitializer = (props) => {
       }}
     />
   );
+};
+
+export const InitializerWithSwitch = (props) => {
+  const { type, schema, item, insert } = props;
+  const { exists, remove } = useCurrentSchema(schema?.[type] || item?.schema?.[type], type, item.find, item.remove);
+  return (
+    <SchemaInitializer.SwitchItem
+      checked={exists}
+      title={item.title}
+      onClick={() => {
+        if (exists) {
+          return remove();
+        }
+        insert(merge(schema || {}, item.schema || {}));
+      }}
+    />
+  );
+};
+
+export const ActionInitializer = (props) => {
+  return <InitializerWithSwitch {...props} type={'x-action'} />;
 };
 
 export const DataBlockInitializer = (props) => {
@@ -260,31 +284,6 @@ export const MarkdownBlockInitializer = (props) => {
   );
 };
 
-export const ActionInitializer = (props) => {
-  const { schema, item, insert } = props;
-  const { exists, remove } = useCurrentSchema(
-    schema?.['x-action'] || item?.schema?.['x-action'],
-    'x-action',
-    item.find,
-  );
-  return (
-    <SchemaInitializer.SwitchItem
-      checked={exists}
-      title={item.title}
-      onClick={() => {
-        if (exists) {
-          return remove();
-        }
-        console.log(schema, item);
-        insert({
-          ...schema,
-          ...item.schema,
-        });
-      }}
-    />
-  );
-};
-
 export const FilterActionInitializer = (props) => {
   const schema = {
     type: 'void',
@@ -348,11 +347,28 @@ export const ViewActionInitializer = (props) => {
           className: 'nb-action-popup',
         },
         properties: {
-          grid: {
+          tabs: {
             type: 'void',
-            'x-component': 'Grid',
-            'x-initializer': 'RecordBlockInitializers',
-            properties: {},
+            'x-component': 'Tabs',
+            'x-component-props': {},
+            'x-initializer': 'TabPaneInitializers',
+            properties: {
+              tab1: {
+                type: 'void',
+                title: '详情',
+                'x-component': 'Tabs.TabPane',
+                'x-designer': 'Tabs.Designer',
+                'x-component-props': {},
+                properties: {
+                  grid: {
+                    type: 'void',
+                    'x-component': 'Grid',
+                    'x-initializer': 'RecordBlockInitializers',
+                    properties: {},
+                  },
+                },
+              },
+            },
           },
         },
       },
@@ -442,12 +458,9 @@ export const SubmitActionInitializer = (props) => {
   return <ActionInitializer {...props} schema={schema} />;
 };
 
-export const CollectionFieldInitializer = () => null;
 export const AssociationFieldInitializer = () => null;
 export const TableFieldInitializer = () => null;
 export const AssociationBlockInitializer = () => null;
-
-export const RecordAssociationBlockInitializer = () => null;
 
 export const CreateFormBlockInitializer = (props) => {
   const { onCreateBlockSchema, componentType, createBlockSchema, insert, ...others } = props;
@@ -472,6 +485,9 @@ export const CreateFormBlockInitializer = (props) => {
 export const RecordFormBlockInitializer = (props) => {
   const { onCreateBlockSchema, componentType, createBlockSchema, insert, ...others } = props;
   const { getTemplateSchemaByMode } = useSchemaTemplateManager();
+  const collection = useCollection();
+  const association = useBlockAssociationContext();
+  console.log('useBlockAssociationContext', association);
   return (
     <SchemaInitializer.Item
       icon={<FormOutlined />}
@@ -481,7 +497,15 @@ export const RecordFormBlockInitializer = (props) => {
           const s = await getTemplateSchemaByMode(item);
           insert(s);
         } else {
-          insert(createFormBlockSchema({ collection: item.name }));
+          insert(
+            createFormBlockSchema({
+              association,
+              collection: collection.name,
+              action: 'get',
+              useResourceOf: '{{ useResourceOfFromRecord }}',
+              useParams: '{{ useParamsFromRecord }}',
+            }),
+          );
         }
       }}
       items={useRecordCollectionDataSourceItems('Form')}
@@ -501,10 +525,76 @@ export const RecordReadPrettyFormBlockInitializer = (props) => {
           const s = await getTemplateSchemaByMode(item);
           insert(s);
         } else {
-          insert(createFormBlockSchema({ collection: item.name }));
+          insert(createReadPrettyFormBlockSchema({ collection: item.name }));
         }
       }}
-      items={useRecordCollectionDataSourceItems('Details')}
+      items={useRecordCollectionDataSourceItems('ReadPrettyForm')}
     />
   );
+};
+
+export const RecordAssociationBlockInitializer = (props) => {
+  const { item, onCreateBlockSchema, componentType, createBlockSchema, insert, ...others } = props;
+  const { getTemplateSchemaByMode } = useSchemaTemplateManager();
+  const { getCollection } = useCollectionManager();
+  return (
+    <SchemaInitializer.Item
+      icon={<TableOutlined />}
+      {...others}
+      onClick={async ({ item }) => {
+        console.log('RecordAssociationBlockInitializer', item);
+        const field = item.field;
+        const collection = getCollection(field.target);
+        insert(
+          createTableBlockSchema({
+            rowKey: collection.filterTargetKey,
+            collection: field.target,
+            resource: `${field.collectionName}.${field.name}`,
+            association: `${field.collectionName}.${field.name}`,
+          }),
+        );
+        // if (item.template) {
+        //   const s = await getTemplateSchemaByMode(item);
+        //   insert(s);
+        // } else {
+        //   insert(createTableBlockSchema({ collection: item.name }));
+        // }
+      }}
+      items={useRecordCollectionDataSourceItems('Table')}
+    />
+  );
+};
+
+export const TableActionColumnInitializer = (props) => {
+  const schema = {
+    type: 'void',
+    title: '{{ t("Actions") }}',
+    'x-decorator': 'TableV2.Column.ActionBar',
+    'x-component': 'TableV2.Column',
+    'x-designer': 'TableV2.ActionColumnDesigner',
+    'x-initializer': 'TableActionColumnInitializers',
+    'x-action-column': 'actions',
+    properties: {
+      actions: {
+        type: 'void',
+        'x-decorator': 'DndContext',
+        'x-component': 'Space',
+        'x-component-props': {
+          split: '|',
+        },
+        properties: {},
+      },
+    },
+  };
+  return <InitializerWithSwitch {...props} schema={schema} type={'x-action-column'} />;
+};
+
+export const TableCollectionFieldInitializer = (props) => {
+  const schema = {};
+  return <InitializerWithSwitch {...props} schema={schema} type={'x-collection-field'} />;
+};
+
+export const CollectionFieldInitializer = (props) => {
+  const schema = {};
+  return <InitializerWithSwitch {...props} schema={schema} type={'x-collection-field'} />;
 };

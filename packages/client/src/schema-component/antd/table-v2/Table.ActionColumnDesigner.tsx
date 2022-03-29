@@ -5,7 +5,7 @@ import React from 'react';
 import { DragHandler } from '../../../schema-component';
 import { useSchemaInitializer } from '../../../schema-initializer';
 
-export const TableRowActionDesigner = (props: any) => {
+export const TableActionColumnDesigner = (props: any) => {
   const fieldSchema = useFieldSchema();
   const { render } = useSchemaInitializer(fieldSchema['x-initializer']);
   return (

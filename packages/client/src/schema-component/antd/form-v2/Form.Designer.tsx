@@ -17,3 +17,19 @@ export const FormDesigner = () => {
     </GeneralSchemaDesigner>
   );
 };
+
+export const ReadPrettyFormDesigner = () => {
+  const { name, title } = useCollection();
+  return (
+    <GeneralSchemaDesigner title={title || name}>
+      <SchemaSettings.Template componentName={'ReadPrettyForm'} collectionName={name} />
+      <SchemaSettings.Divider />
+      <SchemaSettings.Remove
+        removeParentsIfNoChildren
+        breakRemoveOn={{
+          'x-component': 'Grid',
+        }}
+      />
+    </GeneralSchemaDesigner>
+  );
+};

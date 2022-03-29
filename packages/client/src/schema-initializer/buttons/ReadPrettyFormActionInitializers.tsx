@@ -1,6 +1,9 @@
 // 表单的操作配置
 export const ReadPrettyFormActionInitializers = {
   title: '{{t("Configure actions")}}',
+  style: {
+    marginLeft: 8,
+  },
   items: [
     {
       type: 'itemGroup',
@@ -12,6 +15,9 @@ export const ReadPrettyFormActionInitializers = {
           component: 'UpdateActionInitializer',
           schema: {
             'x-component': 'Action',
+            'x-component-props': {
+              type: 'primary',
+            },
           },
         },
         {

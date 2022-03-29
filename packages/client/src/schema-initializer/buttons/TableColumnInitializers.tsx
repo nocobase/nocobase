@@ -1,15 +1,19 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { SchemaInitializer } from '../SchemaInitializer';
-import { useTableColumnInitializerFields } from '../utils';
+import { itemsMerge, useTableColumnInitializerFields } from '../utils';
 
 // 表格列配置
 export const TableColumnInitializers = (props: any) => {
+  const { items = [] } = props;
   const { t } = useTranslation();
   return (
     <SchemaInitializer.Button
       insertPosition={'beforeEnd'}
       wrap={(s) => {
+        if (s['x-action-column']) {
+          return s;
+        }
         return {
           type: 'void',
           'x-decorator': 'TableV2.Column.Decorator',
@@ -17,19 +21,29 @@ export const TableColumnInitializers = (props: any) => {
           'x-component': 'TableV2.Column',
           properties: {
             [s.name]: {
-              'x-read-pretty': true,
               ...s,
             },
           },
         };
       }}
-      items={[
-        {
-          type: 'itemGroup',
-          title: t('Display fields'),
-          children: useTableColumnInitializerFields(),
-        },
-      ]}
+      items={itemsMerge(
+        [
+          {
+            type: 'itemGroup',
+            title: t('Display fields'),
+            children: useTableColumnInitializerFields(),
+          },
+          {
+            type: 'divider',
+          },
+          {
+            type: 'item',
+            title: t('Action column'),
+            component: 'TableActionColumnInitializer',
+          },
+        ],
+        items,
+      )}
     >
       {t('Configure columns')}
     </SchemaInitializer.Button>

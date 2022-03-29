@@ -66,7 +66,7 @@ const WithoutForm = (props) => {
   );
 };
 
-export const Form: React.FC<FormProps> & { Designer?: any } = observer((props) => {
+export const Form: React.FC<FormProps> & { Designer?: any; ReadPrettyDesigner?: any } = observer((props) => {
   const { useProps, ...restProps } = props;
   const field = useField<Field>();
   const { form, ...otherProps } = useProps?.() || {};

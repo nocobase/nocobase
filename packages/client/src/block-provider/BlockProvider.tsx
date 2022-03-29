@@ -1,7 +1,7 @@
 import { useRequest } from 'ahooks';
 import React, { createContext, useContext } from 'react';
 import { useAPIClient, useRecord } from '../';
-import { CollectionProvider, useCollectionManager } from '../collection-manager';
+import { CollectionProvider, useCollection, useCollectionManager } from '../collection-manager';
 
 export const BlockResourceContext = createContext(null);
 export const BlockAssociationContext = createContext(null);
@@ -13,6 +13,7 @@ export const useBlockResource = () => {
 interface UseReousrceProps {
   resource: any;
   association?: any;
+  useResourceOf?: any;
 }
 
 const useAssociation = (props) => {
@@ -26,12 +27,17 @@ const useAssociation = (props) => {
 };
 
 const useReousrce = (props: UseReousrceProps) => {
-  const { resource } = props;
+  const { resource, useResourceOf } = props;
   const record = useRecord();
   const api = useAPIClient();
   const association = useAssociation(props);
+  const resourceOf = useResourceOf?.();
+  console.log('association', association, resourceOf);
   if (!association) {
     return api.resource(resource);
+  }
+  if (resourceOf) {
+    return api.resource(resource, resourceOf);
   }
   return api.resource(resource, record[association?.sourceKey || 'id']);
 };
@@ -78,9 +84,30 @@ export const BlockProvider = (props) => {
   );
 };
 
+export const useBlockAssociationContext = () => {
+  return useContext(BlockAssociationContext);
+};
+
 export const useFilterByTk = () => {
   const record = useRecord();
-  return record.id;
+  const collection = useCollection();
+  const { getCollectionField } = useCollectionManager();
+  const assoc = useContext(BlockAssociationContext);
+  if (assoc) {
+    const association = getCollectionField(assoc);
+    return record?.[association.targetKey || 'id'];
+  }
+  return record?.[collection.filterTargetKey || 'id'];
+};
+
+export const useResourceOfFromRecord = () => {
+  const record = useRecord();
+  const { getCollectionField } = useCollectionManager();
+  const assoc = useContext(BlockAssociationContext);
+  if (assoc) {
+    const association = getCollectionField(assoc);
+    return record?.__parent?.[association.sourceKey || 'id'];
+  }
 };
 
 export const useParamsFromRecord = () => {

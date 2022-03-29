@@ -69,16 +69,20 @@ SchemaInitializer.Button = observer((props: SchemaInitializerButtonProps) => {
       }
       if (item.type === 'itemGroup') {
         return (
-          <Menu.ItemGroup key={item.key || `item-group-${indexA}`} title={compile(item.title)}>
-            {renderItems(item.children)}
-          </Menu.ItemGroup>
+          !!item.children?.length && (
+            <Menu.ItemGroup key={item.key || `item-group-${indexA}`} title={compile(item.title)}>
+              {renderItems(item.children)}
+            </Menu.ItemGroup>
+          )
         );
       }
       if (item.type === 'subMenu') {
         return (
-          <Menu.SubMenu key={item.key || `item-group-${indexA}`} title={compile(item.title)}>
-            {renderItems(item.children)}
-          </Menu.SubMenu>
+          !!item.children?.length && (
+            <Menu.SubMenu key={item.key || `item-group-${indexA}`} title={compile(item.title)}>
+              {renderItems(item.children)}
+            </Menu.SubMenu>
+          )
         );
       }
     });

@@ -10,4 +10,5 @@ export * from './RecordFormBlockInitializers';
 export * from './TableActionColumnInitializers';
 export * from './TableActionInitializers';
 export * from './TableColumnInitializers';
+export * from './TabPaneInitializers';
 
