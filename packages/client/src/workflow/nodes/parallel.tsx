@@ -11,6 +11,7 @@ import { Button, Tooltip } from "antd";
 export default {
   title: '并行',
   type: 'parallel',
+  group: 'control',
   fieldset: {
     mode: {
       type: 'string',

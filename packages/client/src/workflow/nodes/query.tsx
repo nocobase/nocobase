@@ -5,6 +5,7 @@ import { useCollectionManager } from '../../collection-manager';
 export default {
   title: '数据查询',
   type: 'query',
+  group: 'model',
   fieldset: {
     collection: {
       type: 'string',

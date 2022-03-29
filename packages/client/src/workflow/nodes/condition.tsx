@@ -146,6 +146,7 @@ function CalculationConfig({ value, onChange }) {
 export default {
   title: '条件判断',
   type: 'condition',
+  group: 'control',
   fieldset: {
     rejectOnFalse: {
       type: 'boolean',
