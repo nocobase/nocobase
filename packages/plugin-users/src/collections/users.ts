@@ -67,12 +67,6 @@ export default {
     },
     {
       type: 'string',
-      name: 'token',
-      unique: true,
-      hidden: true,
-    },
-    {
-      type: 'string',
       name: 'resetToken',
       unique: true,
       hidden: true,

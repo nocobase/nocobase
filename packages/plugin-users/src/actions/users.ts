@@ -1,6 +1,7 @@
 import { Context, Next } from '@nocobase/actions';
 import { PasswordField } from '@nocobase/database';
 import crypto from 'crypto';
+import { generateAccessToken } from './jwt';
 
 export async function check(ctx: Context, next: Next) {
   if (ctx.state.currentUser) {
@@ -14,7 +15,6 @@ export async function check(ctx: Context, next: Next) {
 
 export async function signin(ctx: Context, next: Next) {
   const { uniqueField = 'email', values } = ctx.action.params;
-  console.log('signin.values', values);
   if (!values[uniqueField]) {
     ctx.throw(401, '请填写邮箱账号');
   }
@@ -32,13 +32,10 @@ export async function signin(ctx: Context, next: Next) {
   if (!isValid) {
     ctx.throw(401, '密码错误，请您重新输入');
   }
-  if (!user.token) {
-    user.token = crypto.randomBytes(20).toString('hex');
-    await user.save();
-  }
+
   ctx.body = {
     ...user.toJSON(),
-    token: user.get('token'),
+    token: generateAccessToken(user.get('id')),
   };
   await next();
 }

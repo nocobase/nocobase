@@ -102,6 +102,7 @@ export default class UsersPlugin extends Plugin {
         roles: ['admin'],
       },
     });
+
     const repo = this.db.getRepository<any>('collections');
     if (repo) {
       await repo.db2cm('users');
