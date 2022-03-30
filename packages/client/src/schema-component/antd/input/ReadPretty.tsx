@@ -42,7 +42,7 @@ ReadPretty.TextArea = (props) => {
       ellipsis={props.ellipsis}
       popoverContent={autop ? <div dangerouslySetInnerHTML={{ __html: values }} /> : value}
     >
-      {value}
+      {props.text ?? value}
     </EllipsisWithTooltip>
   );
 
