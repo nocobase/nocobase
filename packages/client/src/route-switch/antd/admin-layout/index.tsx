@@ -13,7 +13,7 @@ import {
   RemoteSchemaTemplateManagerProvider,
   useDocumentTitle,
   useRoute,
-  useSystemSettings,
+  useSystemSettings
 } from '../../../';
 
 const InternalAdminLayout = (props: any) => {
@@ -58,36 +58,42 @@ const InternalAdminLayout = (props: any) => {
             />
             {/* {result?.data?.data?.title} */}
           </div>
-          <RemoteSchemaComponent
-            hidden={hidden}
-            uid={route.uiSchemaUid}
-            scope={{ onSelect, sideMenuRef, defaultSelectedUid }}
-            schemaTransform={(data) => {
-              if (!data) {
-                return data;
-              }
-              data['x-component-props'] = data['x-component-props'] || {};
-              data['x-component-props']['defaultSelectedUid'] = defaultSelectedUid;
-              return data;
+          <div
+            style={{
+              width: 'calc(100% - 590px)',
             }}
-            onSuccess={(data) => {
-              if (defaultSelectedUid) {
-                const s = findByUid(data?.data, defaultSelectedUid);
-                if (s) {
-                  setTitle(s.title);
+          >
+            <RemoteSchemaComponent
+              hidden={hidden}
+              uid={route.uiSchemaUid}
+              scope={{ onSelect, sideMenuRef, defaultSelectedUid }}
+              schemaTransform={(data) => {
+                if (!data) {
+                  return data;
                 }
-                return;
-              }
-              setHidden(true);
-              setTimeout(() => setHidden(false), 11);
-              const s = findMenuItem(data?.data);
-              if (s) {
-                setSchema(s);
-                setTitle(s.title);
-                history.push(`/admin/${s['x-uid']}`);
-              }
-            }}
-          />
+                data['x-component-props'] = data['x-component-props'] || {};
+                data['x-component-props']['defaultSelectedUid'] = defaultSelectedUid;
+                return data;
+              }}
+              onSuccess={(data) => {
+                if (defaultSelectedUid) {
+                  const s = findByUid(data?.data, defaultSelectedUid);
+                  if (s) {
+                    setTitle(s.title);
+                  }
+                  return;
+                }
+                setHidden(true);
+                setTimeout(() => setHidden(false), 11);
+                const s = findMenuItem(data?.data);
+                if (s) {
+                  setSchema(s);
+                  setTitle(s.title);
+                  history.push(`/admin/${s['x-uid']}`);
+                }
+              }}
+            />
+          </div>
         </div>
         <div style={{ position: 'absolute', top: 0, right: 0 }}>
           <PluginManager.Toolbar

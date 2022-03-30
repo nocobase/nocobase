@@ -44,7 +44,8 @@ export async function signin(ctx: Context, next: Next) {
 }
 
 export async function signout(ctx: Context, next: Next) {
-  ctx.body = {};
+  await ctx.state.currentUser.update({ token: null });
+  ctx.body = ctx.state.currentUser;
   await next();
 }
 
