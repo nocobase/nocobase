@@ -14,6 +14,9 @@ describe('database', () => {
   });
 
   test('close state', async () => {
+    if (db.isSqliteMemory()) {
+      return;
+    }
     expect(db.closed()).toBeFalsy();
     await db.close();
     expect(db.closed()).toBeTruthy();

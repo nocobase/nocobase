@@ -18,6 +18,7 @@
     "@nocobase/resourcer": "^0.6.0-alpha.0",
     "commander": "^8.1.0",
     "dotenv": "^8.2.0",
+    "find-package-json": "^1.2.0",
     "i18next": "^21.3.2",
     "koa": "^2.13.4",
     "koa-bodyparser": "^4.3.0",

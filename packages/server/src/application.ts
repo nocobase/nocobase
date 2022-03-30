@@ -1,6 +1,6 @@
 import { ACL } from '@nocobase/acl';
 import { registerActions } from '@nocobase/actions';
-import Database, { CleanOptions, CollectionOptions, IDatabaseOptions, SyncOptions } from '@nocobase/database';
+import Database, { CollectionOptions, IDatabaseOptions } from '@nocobase/database';
 import Resourcer, { ResourceOptions } from '@nocobase/resourcer';
 import { applyMixins, AsyncEmitter } from '@nocobase/utils';
 import { Command, CommandOptions } from 'commander';
@@ -12,6 +12,7 @@ import { createACL } from './acl';
 import { createCli, createDatabase, createI18n, createResourcer, registerMiddlewares } from './helper';
 import { Plugin } from './plugin';
 import { PluginManager, InstallOptions } from './plugin-manager';
+import { AppManager } from './app-manager';
 
 export interface ResourcerOptions {
   prefix?: string;
@@ -84,11 +85,13 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
 
   public readonly acl: ACL;
 
+  public readonly appManager: AppManager;
+
   protected plugins = new Map<string, Plugin>();
 
   public listenServer: Server;
 
-  constructor(options: ApplicationOptions) {
+  constructor(public options: ApplicationOptions) {
     super();
 
     this.acl = createACL();
@@ -100,6 +103,8 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     this.pm = new PluginManager({
       app: this,
     });
+
+    this.appManager = new AppManager(this);
 
     registerMiddlewares(this, options);
 
@@ -176,11 +181,20 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     await this.emitAsync('afterStart', this, options);
   }
 
+  listen(...args): Server {
+    return this.appManager.listen(...args);
+  }
+
   async stop(options?: any) {
     await this.emitAsync('beforeStop', this, options);
 
-    // close database connection
-    await this.db.close();
+    try {
+      // close database connection
+      // silent if database already closed
+      await this.db.close();
+    } catch (e) {
+      console.log(e);
+    }
 
     // close http server
     if (this.listenServer) {

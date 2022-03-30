@@ -22,7 +22,7 @@ const useLabelFields = (collectionName?: any) => {
     });
 };
 
-export const TableColumnDeigner = (props) => {
+export const TableColumnDesigner = (props) => {
   const { uiSchema, fieldSchema, collectionField } = props;
   const field = useField();
   const columnSchema = useFieldSchema();

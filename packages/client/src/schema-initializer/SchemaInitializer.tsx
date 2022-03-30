@@ -6,7 +6,7 @@ import {
   SchemaInitializerButtonProps,
   SchemaInitializerItemComponent,
   SchemaInitializerItemOptions,
-  SchemaInitializerItemProps
+  SchemaInitializerItemProps,
 } from './types';
 
 const defaultWrap = (s: ISchema) => s;
@@ -87,7 +87,6 @@ SchemaInitializer.Button = observer((props: SchemaInitializerButtonProps) => {
       }
     });
   };
-
   const menu = <Menu>{renderItems(items)}</Menu>;
 
   if (!designable && props.designable !== true) {
