@@ -13,7 +13,7 @@ export const TableColumnInitializers = (props: any) => {
         return {
           type: 'void',
           'x-decorator': 'Table.Column.Decorator',
-          'x-designer': 'Table.Column.Deigner',
+          'x-designer': 'Table.Column.Designer',
           'x-component': 'Table.Column',
           properties: {
             [s.name]: {

@@ -3,7 +3,7 @@ import { TableArrayDesigner } from './Table.Array.Designer';
 import { TableColumn } from './Table.Column';
 import { TableColumnActionBar } from './Table.Column.ActionBar';
 import { TableColumnDecorator } from './Table.Column.Decorator';
-import { TableColumnDeigner } from './Table.Column.Deigner';
+import { TableColumnDesigner } from './Table.Column.Designer';
 import { TableDesigner } from './Table.Designer';
 import { TableRowActionDesigner } from './Table.RowActionDesigner';
 import { TableRowSelection } from './Table.RowSelection';
@@ -20,7 +20,7 @@ Table.RowSelection = TableRowSelection;
 Table.Column = TableColumn;
 Table.Column.ActionBar = TableColumnActionBar;
 Table.Column.Decorator = TableColumnDecorator;
-Table.Column.Deigner = TableColumnDeigner;
+Table.Column.Designer = TableColumnDesigner;
 
 Table.RowActionDesigner = TableRowActionDesigner;
 Table.Designer = TableDesigner;
