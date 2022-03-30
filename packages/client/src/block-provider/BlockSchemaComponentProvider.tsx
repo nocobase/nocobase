@@ -1,6 +1,6 @@
 import React from 'react';
 import { SchemaComponentOptions } from '../schema-component/core/SchemaComponentOptions';
-import { useParamsFromRecord, useResourceOfFromRecord } from './BlockProvider';
+import { useParamsFromRecord, useSourceIdFromParentRecord, useSourceIdFromRecord } from './BlockProvider';
 import { CalendarBlockProvider, useCalendarBlockProps } from './CalendarBlockProvider';
 import { FormBlockProvider, useFormBlockProps } from './FormBlockProvider';
 import { KanbanBlockProvider, useKanbanBlockProps } from './KanbanBlockProvider';
@@ -18,7 +18,8 @@ export const BlockSchemaComponentProvider: React.FC = (props) => {
         KanbanBlockProvider,
       }}
       scope={{
-        useResourceOfFromRecord,
+        useSourceIdFromRecord,
+        useSourceIdFromParentRecord,
         useParamsFromRecord,
         useCalendarBlockProps,
         useFormBlockProps,

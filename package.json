@@ -41,7 +41,7 @@
     "@types/react-dom": "^17.0.0",
     "@typescript-eslint/eslint-plugin": "^4.9.1",
     "@typescript-eslint/parser": "^4.8.2",
-    "antd": "^4.18.9",
+    "antd": "^4.19.3",
     "classnames": "^2.3.1",
     "concurrently": "^7.0.0",
     "cross-env": "^5.2.0",

@@ -13,7 +13,7 @@ export const useBlockResource = () => {
 interface UseReousrceProps {
   resource: any;
   association?: any;
-  useResourceOf?: any;
+  useSourceId?: any;
 }
 
 const useAssociation = (props) => {
@@ -27,17 +27,16 @@ const useAssociation = (props) => {
 };
 
 const useReousrce = (props: UseReousrceProps) => {
-  const { resource, useResourceOf } = props;
+  const { resource, useSourceId } = props;
   const record = useRecord();
   const api = useAPIClient();
   const association = useAssociation(props);
-  const resourceOf = useResourceOf?.();
-  console.log('association', association, resourceOf);
+  const sourceId = useSourceId?.();
   if (!association) {
     return api.resource(resource);
   }
-  if (resourceOf) {
-    return api.resource(resource, resourceOf);
+  if (sourceId) {
+    return api.resource(resource, sourceId);
   }
   return api.resource(resource, record[association?.sourceKey || 'id']);
 };
@@ -72,13 +71,32 @@ const MaybeCollectionProvider = (props) => {
   );
 };
 
+const BlockRequestContext = createContext(null);
+
+const BlockRequestProvider = (props) => {
+  const resource = useBlockResource();
+  const service = useResourceAction(
+    { ...props, resource },
+    {
+      ...props.requestOptions,
+    },
+  );
+  return <BlockRequestContext.Provider value={{ service, resource }}>{props.children}</BlockRequestContext.Provider>;
+};
+
+export const useBlockRequestContext = () => {
+  return useContext(BlockRequestContext);
+};
+
 export const BlockProvider = (props) => {
   const { collection, association } = props;
   const resource = useReousrce(props);
   return (
     <MaybeCollectionProvider collection={collection}>
       <BlockAssociationContext.Provider value={association}>
-        <BlockResourceContext.Provider value={resource}>{props.children}</BlockResourceContext.Provider>
+        <BlockResourceContext.Provider value={resource}>
+          <BlockRequestProvider {...props}>{props.children}</BlockRequestProvider>
+        </BlockResourceContext.Provider>
       </BlockAssociationContext.Provider>
     </MaybeCollectionProvider>
   );
@@ -100,7 +118,17 @@ export const useFilterByTk = () => {
   return record?.[collection.filterTargetKey || 'id'];
 };
 
-export const useResourceOfFromRecord = () => {
+export const useSourceIdFromRecord = () => {
+  const record = useRecord();
+  const { getCollectionField } = useCollectionManager();
+  const assoc = useContext(BlockAssociationContext);
+  if (assoc) {
+    const association = getCollectionField(assoc);
+    return record?.[association.sourceKey || 'id'];
+  }
+};
+
+export const useSourceIdFromParentRecord = () => {
   const record = useRecord();
   const { getCollectionField } = useCollectionManager();
   const assoc = useContext(BlockAssociationContext);

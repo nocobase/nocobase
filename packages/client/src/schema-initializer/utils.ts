@@ -310,6 +310,7 @@ export const createFormBlockSchema = (options) => {
       },
     },
   };
+  console.log(JSON.stringify(schema, null, 2));
   return schema;
 };
 
@@ -318,6 +319,7 @@ export const createReadPrettyFormBlockSchema = (options) => {
     formItemInitializers = 'ReadPrettyFormItemInitializers',
     actionInitializers = 'ReadPrettyFormActionInitializers',
     collection,
+    association,
     resource,
     ...others
   } = options;
@@ -325,8 +327,9 @@ export const createReadPrettyFormBlockSchema = (options) => {
     type: 'void',
     'x-decorator': 'FormBlockProvider',
     'x-decorator-props': {
-      resource: resource || collection,
+      resource: resource || association || collection,
       collection,
+      association,
       action: 'get',
       useParams: '{{ useParamsFromRecord }}',
       ...others,
@@ -337,6 +340,7 @@ export const createReadPrettyFormBlockSchema = (options) => {
       [uid()]: {
         type: 'void',
         'x-component': 'FormV2',
+        'x-read-pretty': true,
         'x-component-props': {
           useProps: '{{ useFormBlockProps }}',
         },
@@ -362,6 +366,7 @@ export const createReadPrettyFormBlockSchema = (options) => {
       },
     },
   };
+  console.log(JSON.stringify(schema, null, 2));
   return schema;
 };
 

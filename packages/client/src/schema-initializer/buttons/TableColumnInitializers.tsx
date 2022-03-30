@@ -17,7 +17,7 @@ export const TableColumnInitializers = (props: any) => {
         return {
           type: 'void',
           'x-decorator': 'TableV2.Column.Decorator',
-          'x-designer': 'TableV2.Column.Deigner',
+          'x-designer': 'TableV2.Column.Designer',
           'x-component': 'TableV2.Column',
           properties: {
             [s.name]: {

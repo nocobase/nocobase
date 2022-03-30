@@ -9,6 +9,7 @@ const useRelationFields = () => {
     .filter((field) => field.interface === 'linkTo')
     .map((field) => {
       return {
+        key: field.name,
         type: 'item',
         field,
         title: field?.uiSchema?.title || field.name,
@@ -29,11 +30,13 @@ export const RecordBlockInitializers = (props: any) => {
           title: '当前数据区块',
           children: [
             {
+              key: 'details',
               type: 'item',
               title: 'Details',
               component: 'RecordReadPrettyFormBlockInitializer',
             },
             {
+              key: 'form',
               type: 'item',
               title: 'Form',
               component: 'RecordFormBlockInitializer',
@@ -50,6 +53,7 @@ export const RecordBlockInitializers = (props: any) => {
           title: 'Media',
           children: [
             {
+              key: 'markdown',
               type: 'item',
               title: 'Markdown',
               component: 'MarkdownBlockInitializer',

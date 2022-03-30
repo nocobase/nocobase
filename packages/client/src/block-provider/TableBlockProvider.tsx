@@ -1,15 +1,14 @@
 import { ArrayField } from '@formily/core';
 import { useField } from '@formily/react';
 import React, { createContext, useContext, useEffect } from 'react';
-import { BlockProvider, useBlockResource, useResourceAction } from './BlockProvider';
+import { BlockProvider, useBlockRequestContext } from './BlockProvider';
 
 export const TableBlockContext = createContext<any>({});
 
 const InternalTableBlockProvider = (props) => {
   const { params = {}, showIndex, dragSort, rowKey } = props;
   const field = useField();
-  const resource = useBlockResource();
-  const service = useResourceAction({ ...props, resource });
+  const { resource, service } = useBlockRequestContext();
   // if (service.loading) {
   //   return <Spin />;
   // }

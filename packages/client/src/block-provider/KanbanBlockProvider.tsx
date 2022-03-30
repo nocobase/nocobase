@@ -4,7 +4,7 @@ import { Spin } from 'antd';
 import React, { createContext, useContext, useEffect } from 'react';
 import { useCollection } from '../collection-manager';
 import { toColumns } from '../schema-component/antd/kanban-v2/Kanban';
-import { BlockProvider, useBlockResource, useResourceAction } from './BlockProvider';
+import { BlockProvider, useBlockRequestContext } from './BlockProvider';
 
 export const KanbanBlockContext = createContext<any>({});
 
@@ -21,15 +21,7 @@ const useGroupField = (props) => {
 
 const InternalKanbanBlockProvider = (props) => {
   const field = useField();
-  const resource = useBlockResource();
-  const service = useResourceAction(
-    { ...props, resource },
-    {
-      onSuccess(data) {
-        console.log('onSuccess', data);
-      },
-    },
-  );
+  const { resource, service } = useBlockRequestContext();
   const groupField = useGroupField(props);
   if (!groupField) {
     return null;

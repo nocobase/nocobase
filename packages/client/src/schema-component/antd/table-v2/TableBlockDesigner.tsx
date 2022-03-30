@@ -17,8 +17,8 @@ export const TableBlockDesigner = () => {
   const ctx = useResourceActionContext();
   const { t } = useTranslation();
   const { dn } = useDesignable();
-  const defaultFilter = fieldSchema?.['x-decorator-props']?.request?.params?.filter || {};
-  const defaultSort = fieldSchema?.['x-decorator-props']?.request?.params?.sort || [];
+  const defaultFilter = fieldSchema?.['x-decorator-props']?.params?.filter || {};
+  const defaultSort = fieldSchema?.['x-decorator-props']?.params?.sort || [];
   const sort = defaultSort?.map((item: string) => {
     return item.startsWith('-')
       ? {
@@ -49,15 +49,15 @@ export const TableBlockDesigner = () => {
         }}
       />
       <SchemaSettings.ModalItem
-        title={'设置数据范围'}
+        title={t('Set the data scope')}
         schema={
           {
             type: 'object',
-            title: '设置数据范围',
+            title: t('Set the data scope'),
             properties: {
               filter: {
                 default: defaultFilter,
-                title: '数据范围',
+                // title: '数据范围',
                 enum: dataSource,
                 'x-component': 'Filter',
                 'x-component-props': {},
@@ -171,7 +171,7 @@ export const TableBlockDesigner = () => {
         }}
       />
       <SchemaSettings.SelectItem
-        title={'每页显示'}
+        title={'Records per page'}
         value={field.decoratorProps?.request?.params?.pageSize || 20}
         options={[
           { label: '10', value: 10 },

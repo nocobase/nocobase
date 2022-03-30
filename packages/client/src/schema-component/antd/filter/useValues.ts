@@ -32,7 +32,6 @@ export const useValues = () => {
     return option;
   };
   const option = findOption(dataIndex);
-  console.log('option', option);
   const operators = option?.operators;
   return {
     option,

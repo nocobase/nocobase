@@ -289,8 +289,11 @@ export const FilterActionInitializer = (props) => {
     type: 'void',
     title: '{{ t("Filter") }}',
     'x-action': 'filter',
-    'x-designer': 'Action.Designer',
-    'x-component': 'Action',
+    'x-designer': 'Filter.Action.Designer',
+    'x-component': 'Filter.Action',
+    'x-component-props': {
+      useProps: '{{ useFilterActionProps }}',
+    },
   };
   return <ActionInitializer {...props} schema={schema} />;
 };
@@ -465,6 +468,8 @@ export const AssociationBlockInitializer = () => null;
 export const CreateFormBlockInitializer = (props) => {
   const { onCreateBlockSchema, componentType, createBlockSchema, insert, ...others } = props;
   const { getTemplateSchemaByMode } = useSchemaTemplateManager();
+  const association = useBlockAssociationContext();
+  const collection = useCollection();
   return (
     <SchemaInitializer.Item
       icon={<FormOutlined />}
@@ -474,7 +479,12 @@ export const CreateFormBlockInitializer = (props) => {
           const s = await getTemplateSchemaByMode(item);
           insert(s);
         } else {
-          insert(createFormBlockSchema({ collection: item.name }));
+          insert(
+            createFormBlockSchema({
+              association,
+              collection: collection.name,
+            }),
+          );
         }
       }}
       items={useRecordCollectionDataSourceItems('Form')}
@@ -487,7 +497,6 @@ export const RecordFormBlockInitializer = (props) => {
   const { getTemplateSchemaByMode } = useSchemaTemplateManager();
   const collection = useCollection();
   const association = useBlockAssociationContext();
-  console.log('useBlockAssociationContext', association);
   return (
     <SchemaInitializer.Item
       icon={<FormOutlined />}
@@ -502,7 +511,7 @@ export const RecordFormBlockInitializer = (props) => {
               association,
               collection: collection.name,
               action: 'get',
-              useResourceOf: '{{ useResourceOfFromRecord }}',
+              useSourceId: '{{ useSourceIdFromParentRecord }}',
               useParams: '{{ useParamsFromRecord }}',
             }),
           );
@@ -516,6 +525,8 @@ export const RecordFormBlockInitializer = (props) => {
 export const RecordReadPrettyFormBlockInitializer = (props) => {
   const { onCreateBlockSchema, componentType, createBlockSchema, insert, ...others } = props;
   const { getTemplateSchemaByMode } = useSchemaTemplateManager();
+  const collection = useCollection();
+  const association = useBlockAssociationContext();
   return (
     <SchemaInitializer.Item
       icon={<FormOutlined />}
@@ -525,7 +536,15 @@ export const RecordReadPrettyFormBlockInitializer = (props) => {
           const s = await getTemplateSchemaByMode(item);
           insert(s);
         } else {
-          insert(createReadPrettyFormBlockSchema({ collection: item.name }));
+          insert(
+            createReadPrettyFormBlockSchema({
+              association,
+              collection: collection.name,
+              action: 'get',
+              useSourceId: '{{ useSourceIdFromParentRecord }}',
+              useParams: '{{ useParamsFromRecord }}',
+            }),
+          );
         }
       }}
       items={useRecordCollectionDataSourceItems('ReadPrettyForm')}
@@ -560,7 +579,7 @@ export const RecordAssociationBlockInitializer = (props) => {
         //   insert(createTableBlockSchema({ collection: item.name }));
         // }
       }}
-      items={useRecordCollectionDataSourceItems('Table')}
+      // items={useRecordCollectionDataSourceItems('Table')}
     />
   );
 };

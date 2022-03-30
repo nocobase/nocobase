@@ -12,6 +12,7 @@ export const FilterItem = observer((props: any) => {
   const remove = useContext(RemoveConditionContext);
   const { option, options, dataIndex, operator, setDataIndex, setOperator, value, setValue } = useValues();
   const compile = useCompile();
+  const operatorOption = option?.operators?.find(op => op.value === operator);
   return (
     <div style={{ marginBottom: 8 }}>
       <Space>
@@ -42,7 +43,7 @@ export const FilterItem = observer((props: any) => {
             minWidth: 100,
           }}
         />
-        {React.createElement(DynamicComponent, {
+        {!operatorOption?.noValue && React.createElement(DynamicComponent, {
           value,
           schema: option?.schema,
           onChange(value) {
