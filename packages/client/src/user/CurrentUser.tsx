@@ -32,7 +32,8 @@ export const CurrentUser = () => {
               <LanguageSettings />
               <Menu.Divider />
               <Menu.Item
-                onClick={() => {
+                onClick={async () => {
+                  await api.resource('users').signout();
                   api.setBearerToken(null);
                   history.push('/signin');
                 }}
