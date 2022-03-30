@@ -15,6 +15,7 @@ export const EllipsisWithTooltip = (props) => {
   if (!props.ellipsis) {
     return <>{props.children}</>;
   }
+  const { popoverContent } = props;
   return (
     <Popover
       visible={ellipsis && visible}
@@ -28,7 +29,7 @@ export const EllipsisWithTooltip = (props) => {
             overflowX: 'auto',
           }}
         >
-          {props.children}
+          {popoverContent}
         </div>
       }
     >
