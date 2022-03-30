@@ -175,7 +175,9 @@ export const CalendarBlockInitializer = (props) => {
         insert(
           createCalendarBlockSchema({
             collection: item.name,
-            ...values,
+            fieldNames: {
+              ...values,
+            },
           }),
         );
       }}

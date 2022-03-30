@@ -71,7 +71,7 @@ export const Calendar: any = observer((props: any) => {
   const field = useField<ArrayField>();
   const fieldSchema = useFieldSchema();
   const { fieldNames: fNames } = useProps?.() || {};
-  const fieldNames = { id: 'id', title: 'title', start: 'start', end: 'end', ...props.fieldNames, ...fNames };
+  const fieldNames = { id: 'id', ...props.fieldNames, ...fNames };
   const events = useEvents(fieldNames);
   const [visible, setVisible] = useState(false);
   const [record, setRecord] = useState<any>({});

@@ -458,6 +458,8 @@ export const createCalendarBlockSchema = (options) => {
       },
       ...others,
     },
+    'x-designer': 'CalendarV2.Designer',
+    'x-component': 'CardItem',
     properties: {
       calendar: {
         type: 'array',
@@ -522,6 +524,7 @@ export const createCalendarBlockSchema = (options) => {
       },
     },
   };
+  console.log(JSON.stringify(schema, null, 2));
   return schema;
 };
 
