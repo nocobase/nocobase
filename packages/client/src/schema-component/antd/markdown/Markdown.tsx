@@ -19,14 +19,8 @@ export const Markdown: any = connect(
     };
   }),
   mapReadPretty((props) => {
-    const { format = true } = props;
-    const text = props.value;
-    let value = null;
-    if (format) {
-      value = <div className={'nb-markdown'} dangerouslySetInnerHTML={{ __html: markdown(text) }} />;
-    } else {
-      value = convertToText(text);
-    }
+    let text = convertToText(props.value);
+    let value = <div className={'nb-markdown'} dangerouslySetInnerHTML={{ __html: markdown(text) }} />;
     return <InputReadPretty.TextArea {...props} text={text} value={value} />;
   }),
 );

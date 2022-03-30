@@ -64,13 +64,13 @@ export const useTableColumnInitializerFields = () => {
     .filter((field) => field?.interface && field?.interface !== 'subTable')
     .map((field) => {
       const componentProps = {};
-      if (field?.uiSchema['x-component']?.startsWith?.('Input')) {
+      if (
+        field?.uiSchema['x-component']?.startsWith?.('Input') ||
+        field?.uiSchema['x-component']?.startsWith?.('Markdown')
+      ) {
         componentProps['ellipsis'] = true;
       }
-      if (field?.uiSchema['x-component']?.startsWith?.('Markdown')) {
-        componentProps['ellipsis'] = true;
-        componentProps['format'] = false;
-      }
+
       if (field.interface === 'attachment') {
         componentProps['size'] = 'small';
         return {
