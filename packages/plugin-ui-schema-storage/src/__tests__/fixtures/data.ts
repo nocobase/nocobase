@@ -495,7 +495,7 @@ export default {
                                               version: '2.0',
                                               type: 'void',
                                               'x-decorator': 'Table.Column.Decorator',
-                                              'x-designer': 'Table.Column.Deigner',
+                                              'x-designer': 'Table.Column.Designer',
                                               'x-component': 'Table.Column',
                                               properties: {
                                                 f_zio9ewkxss7: {
@@ -519,7 +519,7 @@ export default {
                                               version: '2.0',
                                               type: 'void',
                                               'x-decorator': 'Table.Column.Decorator',
-                                              'x-designer': 'Table.Column.Deigner',
+                                              'x-designer': 'Table.Column.Designer',
                                               'x-component': 'Table.Column',
                                               properties: {
                                                 f_ojboh2wxpju: {
@@ -680,7 +680,7 @@ export default {
                                               version: '2.0',
                                               type: 'void',
                                               'x-decorator': 'Table.Column.Decorator',
-                                              'x-designer': 'Table.Column.Deigner',
+                                              'x-designer': 'Table.Column.Designer',
                                               'x-component': 'Table.Column',
                                               properties: {
                                                 nickname: {
@@ -908,7 +908,7 @@ export default {
                                               version: '2.0',
                                               type: 'void',
                                               'x-decorator': 'Table.Column.Decorator',
-                                              'x-designer': 'Table.Column.Deigner',
+                                              'x-designer': 'Table.Column.Designer',
                                               'x-component': 'Table.Column',
                                               properties: {
                                                 f_g8j5jvalqh0: {
@@ -1759,7 +1759,7 @@ export default {
                                           version: '2.0',
                                           type: 'void',
                                           'x-decorator': 'Table.Column.Decorator',
-                                          'x-designer': 'Table.Column.Deigner',
+                                          'x-designer': 'Table.Column.Designer',
                                           'x-component': 'Table.Column',
                                           properties: {
                                             f_m7ibo1vrvnm: {
@@ -1783,7 +1783,7 @@ export default {
                                           version: '2.0',
                                           type: 'void',
                                           'x-decorator': 'Table.Column.Decorator',
-                                          'x-designer': 'Table.Column.Deigner',
+                                          'x-designer': 'Table.Column.Designer',
                                           'x-component': 'Table.Column',
                                           properties: {
                                             f_kukaw9kddyj: {
@@ -1923,7 +1923,7 @@ export default {
                                           version: '2.0',
                                           type: 'void',
                                           'x-decorator': 'Table.Column.Decorator',
-                                          'x-designer': 'Table.Column.Deigner',
+                                          'x-designer': 'Table.Column.Designer',
                                           'x-component': 'Table.Column',
                                           properties: {
                                             f_4mpiovytw4d: {
@@ -1947,7 +1947,7 @@ export default {
                                           version: '2.0',
                                           type: 'void',
                                           'x-decorator': 'Table.Column.Decorator',
-                                          'x-designer': 'Table.Column.Deigner',
+                                          'x-designer': 'Table.Column.Designer',
                                           'x-component': 'Table.Column',
                                           properties: {
                                             f_lxsum89wkzd: {
@@ -3192,7 +3192,7 @@ export default {
                                                                               version: '2.0',
                                                                               type: 'void',
                                                                               'x-decorator': 'Table.Column.Decorator',
-                                                                              'x-designer': 'Table.Column.Deigner',
+                                                                              'x-designer': 'Table.Column.Designer',
                                                                               'x-component': 'Table.Column',
                                                                               properties: {
                                                                                 f_m7ibo1vrvnm: {
@@ -3217,7 +3217,7 @@ export default {
                                                                               version: '2.0',
                                                                               type: 'void',
                                                                               'x-decorator': 'Table.Column.Decorator',
-                                                                              'x-designer': 'Table.Column.Deigner',
+                                                                              'x-designer': 'Table.Column.Designer',
                                                                               'x-component': 'Table.Column',
                                                                               properties: {
                                                                                 f_kukaw9kddyj: {
@@ -3391,7 +3391,7 @@ export default {
                                                                               version: '2.0',
                                                                               type: 'void',
                                                                               'x-decorator': 'Table.Column.Decorator',
-                                                                              'x-designer': 'Table.Column.Deigner',
+                                                                              'x-designer': 'Table.Column.Designer',
                                                                               'x-component': 'Table.Column',
                                                                               properties: {
                                                                                 f_4mpiovytw4d: {
@@ -3416,7 +3416,7 @@ export default {
                                                                               version: '2.0',
                                                                               type: 'void',
                                                                               'x-decorator': 'Table.Column.Decorator',
-                                                                              'x-designer': 'Table.Column.Deigner',
+                                                                              'x-designer': 'Table.Column.Designer',
                                                                               'x-component': 'Table.Column',
                                                                               properties: {
                                                                                 f_lxsum89wkzd: {
@@ -3896,7 +3896,7 @@ export default {
                                                       version: '2.0',
                                                       type: 'void',
                                                       'x-decorator': 'Table.Column.Decorator',
-                                                      'x-designer': 'Table.Column.Deigner',
+                                                      'x-designer': 'Table.Column.Designer',
                                                       'x-component': 'Table.Column',
                                                       properties: {
                                                         f_zio9ewkxss7: {
@@ -3920,7 +3920,7 @@ export default {
                                                       version: '2.0',
                                                       type: 'void',
                                                       'x-decorator': 'Table.Column.Decorator',
-                                                      'x-designer': 'Table.Column.Deigner',
+                                                      'x-designer': 'Table.Column.Designer',
                                                       'x-component': 'Table.Column',
                                                       properties: {
                                                         f_ojboh2wxpju: {
@@ -4082,7 +4082,7 @@ export default {
                                                       version: '2.0',
                                                       type: 'void',
                                                       'x-decorator': 'Table.Column.Decorator',
-                                                      'x-designer': 'Table.Column.Deigner',
+                                                      'x-designer': 'Table.Column.Designer',
                                                       'x-component': 'Table.Column',
                                                       properties: {
                                                         nickname: {
@@ -4310,7 +4310,7 @@ export default {
                                                       version: '2.0',
                                                       type: 'void',
                                                       'x-decorator': 'Table.Column.Decorator',
-                                                      'x-designer': 'Table.Column.Deigner',
+                                                      'x-designer': 'Table.Column.Designer',
                                                       'x-component': 'Table.Column',
                                                       properties: {
                                                         f_g8j5jvalqh0: {
@@ -5536,7 +5536,7 @@ export default {
                                                   version: '2.0',
                                                   type: 'void',
                                                   'x-decorator': 'Table.Column.Decorator',
-                                                  'x-designer': 'Table.Column.Deigner',
+                                                  'x-designer': 'Table.Column.Designer',
                                                   'x-component': 'Table.Column',
                                                   properties: {
                                                     f_m7ibo1vrvnm: {
@@ -5560,7 +5560,7 @@ export default {
                                                   version: '2.0',
                                                   type: 'void',
                                                   'x-decorator': 'Table.Column.Decorator',
-                                                  'x-designer': 'Table.Column.Deigner',
+                                                  'x-designer': 'Table.Column.Designer',
                                                   'x-component': 'Table.Column',
                                                   properties: {
                                                     f_kukaw9kddyj: {
@@ -5700,7 +5700,7 @@ export default {
                                                   version: '2.0',
                                                   type: 'void',
                                                   'x-decorator': 'Table.Column.Decorator',
-                                                  'x-designer': 'Table.Column.Deigner',
+                                                  'x-designer': 'Table.Column.Designer',
                                                   'x-component': 'Table.Column',
                                                   properties: {
                                                     f_4mpiovytw4d: {
@@ -5724,7 +5724,7 @@ export default {
                                                   version: '2.0',
                                                   type: 'void',
                                                   'x-decorator': 'Table.Column.Decorator',
-                                                  'x-designer': 'Table.Column.Deigner',
+                                                  'x-designer': 'Table.Column.Designer',
                                                   'x-component': 'Table.Column',
                                                   properties: {
                                                     f_lxsum89wkzd: {
@@ -5877,7 +5877,7 @@ export default {
           version: '2.0',
           type: 'void',
           'x-decorator': 'Table.Column.Decorator',
-          'x-designer': 'Table.Column.Deigner',
+          'x-designer': 'Table.Column.Designer',
           'x-component': 'Table.Column',
           properties: {
             f_g8j5jvalqh0: {
@@ -5901,7 +5901,7 @@ export default {
           version: '2.0',
           type: 'void',
           'x-decorator': 'Table.Column.Decorator',
-          'x-designer': 'Table.Column.Deigner',
+          'x-designer': 'Table.Column.Designer',
           'x-component': 'Table.Column',
           properties: {
             f_tegyd222bcc: {
@@ -5925,7 +5925,7 @@ export default {
           version: '2.0',
           type: 'void',
           'x-decorator': 'Table.Column.Decorator',
-          'x-designer': 'Table.Column.Deigner',
+          'x-designer': 'Table.Column.Designer',
           'x-component': 'Table.Column',
           properties: {
             f_ooar0pto2ko: {
@@ -5949,7 +5949,7 @@ export default {
           version: '2.0',
           type: 'void',
           'x-decorator': 'Table.Column.Decorator',
-          'x-designer': 'Table.Column.Deigner',
+          'x-designer': 'Table.Column.Designer',
           'x-component': 'Table.Column',
           properties: {
             f_ksgzy9vmgce: {
@@ -6086,7 +6086,7 @@ export default {
           version: '2.0',
           type: 'void',
           'x-decorator': 'Table.Column.Decorator',
-          'x-designer': 'Table.Column.Deigner',
+          'x-designer': 'Table.Column.Designer',
           'x-component': 'Table.Column',
           properties: {
             f_z27302tl2bf: {
@@ -6110,7 +6110,7 @@ export default {
           version: '2.0',
           type: 'void',
           'x-decorator': 'Table.Column.Decorator',
-          'x-designer': 'Table.Column.Deigner',
+          'x-designer': 'Table.Column.Designer',
           'x-component': 'Table.Column',
           properties: {
             f_yc8jbfiqfvh: {
@@ -6134,7 +6134,7 @@ export default {
           version: '2.0',
           type: 'void',
           'x-decorator': 'Table.Column.Decorator',
-          'x-designer': 'Table.Column.Deigner',
+          'x-designer': 'Table.Column.Designer',
           'x-component': 'Table.Column',
           properties: {
             f_u007sq2jg93: {
@@ -6271,7 +6271,7 @@ export default {
           version: '2.0',
           type: 'void',
           'x-decorator': 'Table.Column.Decorator',
-          'x-designer': 'Table.Column.Deigner',
+          'x-designer': 'Table.Column.Designer',
           'x-component': 'Table.Column',
           properties: {
             f_hpmvdltzs6m: {
@@ -6295,7 +6295,7 @@ export default {
           version: '2.0',
           type: 'void',
           'x-decorator': 'Table.Column.Decorator',
-          'x-designer': 'Table.Column.Deigner',
+          'x-designer': 'Table.Column.Designer',
           'x-component': 'Table.Column',
           properties: {
             f_cht6rsiiiko: {
@@ -6319,7 +6319,7 @@ export default {
           version: '2.0',
           type: 'void',
           'x-decorator': 'Table.Column.Decorator',
-          'x-designer': 'Table.Column.Deigner',
+          'x-designer': 'Table.Column.Designer',
           'x-component': 'Table.Column',
           properties: {
             f_o8dmiub9tp9: {
