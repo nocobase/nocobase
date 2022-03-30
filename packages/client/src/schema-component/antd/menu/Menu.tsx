@@ -134,6 +134,19 @@ const useSideMenuRef = () => {
 
 const MenuItemDesignerContext = createContext(null);
 
+const AddMenuItemButton = () => {
+  const schema = useFieldSchema();
+  const { render } = useSchemaInitializer(schema['x-initializer']);
+  const { designable } = useDesignable();
+  return (
+    designable && (
+      <AntdMenu.Item disabled style={{ padding: '0 8px', order: 9999 }}>
+        {render({ style: { background: 'none' } })}
+      </AntdMenu.Item>
+    )
+  );
+};
+
 export const Menu: ComposedMenu = observer((props) => {
   let {
     onSelect,
@@ -192,66 +205,61 @@ export const Menu: ComposedMenu = observer((props) => {
     <DndContext>
       <MenuItemDesignerContext.Provider value={Designer}>
         <MenuModeContext.Provider value={mode}>
-          <div
-            style={{
-              width: 'calc(100% - 200px - 390px)',
-              display: 'flex',
-              justifyContent: 'flex-start',
-              alignItems: 'center',
-            }}
-          >
-            <AntdMenu
-              {...others}
-              style={{
+          <AntdMenu
+            {...others}
+            style={
+              {
                 // width: mode === 'mix' ? '100%' : undefined,
-              }}
-              className={css`
-                .ant-menu-item:hover {
-                  > .ant-menu-title-content > div {
-                    .general-schema-designer {
-                      display: block;
-                    }
+              }
+            }
+            className={css`
+              .ant-menu-item:hover {
+                > .ant-menu-title-content > div {
+                  .general-schema-designer {
+                    display: block;
                   }
                 }
-              `}
-              onSelect={(info: any) => {
-                const s = schema.properties[info.key];
-                if (mode === 'mix') {
-                  setSideMenuSchema(s);
-                  if (s['x-component'] !== 'Menu.SubMenu') {
-                    onSelect && onSelect(info);
-                  } else {
-                    const menuItemSchema = findMenuItem(s);
-                    if (!menuItemSchema) {
-                      return;
-                    }
-                    // TODO
-                    setLoading(true);
-                    const keys = findKeysByUid(schema, menuItemSchema['x-uid']);
-                    setDefaultSelectedKeys(keys);
-                    setTimeout(() => {
-                      setLoading(false);
-                    }, 100);
-                    onSelect &&
-                      onSelect({
-                        key: menuItemSchema.name,
-                        item: {
-                          props: {
-                            schema: menuItemSchema,
-                          },
-                        },
-                      });
-                  }
-                } else {
+              }
+            `}
+            onSelect={(info: any) => {
+              const s = schema.properties[info.key];
+              if (mode === 'mix') {
+                setSideMenuSchema(s);
+                if (s['x-component'] !== 'Menu.SubMenu') {
                   onSelect && onSelect(info);
+                } else {
+                  const menuItemSchema = findMenuItem(s);
+                  if (!menuItemSchema) {
+                    return;
+                  }
+                  // TODO
+                  setLoading(true);
+                  const keys = findKeysByUid(schema, menuItemSchema['x-uid']);
+                  setDefaultSelectedKeys(keys);
+                  setTimeout(() => {
+                    setLoading(false);
+                  }, 100);
+                  onSelect &&
+                    onSelect({
+                      key: menuItemSchema.name,
+                      item: {
+                        props: {
+                          schema: menuItemSchema,
+                        },
+                      },
+                    });
                 }
-              }}
-              mode={mode === 'mix' ? 'horizontal' : mode}
-              defaultOpenKeys={defaultOpenKeys}
-              defaultSelectedKeys={defaultSelectedKeys}
-            ></AntdMenu>
-            {render({ style: { background: 'none' } })}
-          </div>
+              } else {
+                onSelect && onSelect(info);
+              }
+            }}
+            mode={mode === 'mix' ? 'horizontal' : mode}
+            defaultOpenKeys={defaultOpenKeys}
+            defaultSelectedKeys={defaultSelectedKeys}
+          >
+            <AddMenuItemButton />
+            {props.children}
+          </AntdMenu>
           {loading
             ? null
             : mode === 'mix' &&
