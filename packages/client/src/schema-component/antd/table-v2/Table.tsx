@@ -125,7 +125,7 @@ const usePaginationProps = (pagination1, pagination2) => {
   if (!pagination2 && pagination1 === false) {
     return false;
   }
-  return { ...pagination1, ...pagination2 };
+  return { showSizeChanger: true, ...pagination1, ...pagination2 };
 };
 
 export const Table: any = observer((props: any) => {

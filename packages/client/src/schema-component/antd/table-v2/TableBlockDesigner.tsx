@@ -15,7 +15,7 @@ export const TableBlockDesigner = () => {
   const fieldSchema = useFieldSchema();
   const dataSource = useCollectionFilterOptions(name);
   const sortFields = useSortFields(name);
-  const ctx = useTableBlockContext();
+  const { service } = useTableBlockContext();
   const { t } = useTranslation();
   const { dn } = useDesignable();
   const defaultFilter = fieldSchema?.['x-decorator-props']?.params?.filter || {};
@@ -32,6 +32,7 @@ export const TableBlockDesigner = () => {
         };
   });
   const template = useSchemaTemplate();
+  const { dragSort } = field.decoratorProps;
   return (
     <GeneralSchemaDesigner template={template} title={title || name}>
       <SchemaSettings.SwitchItem
@@ -40,7 +41,7 @@ export const TableBlockDesigner = () => {
         onChange={(dragSort) => {
           field.decoratorProps.dragSort = dragSort;
           fieldSchema['x-decorator-props'].dragSort = dragSort;
-          ctx.service.run({ ...ctx.service.params?.[0], sort: defaultSort });
+          service.run({ ...service.params?.[0], sort: defaultSort });
           dn.emit('patch', {
             schema: {
               ['x-uid']: fieldSchema['x-uid'],
@@ -67,11 +68,11 @@ export const TableBlockDesigner = () => {
           } as ISchema
         }
         onSubmit={({ filter }) => {
-          const params = field.decoratorProps.request.params || {};
+          const params = field.decoratorProps.params || {};
           params.filter = filter;
-          field.decoratorProps.request.params = params;
-          fieldSchema['x-decorator-props']['request']['params'] = params;
-          ctx.run({ ...ctx.params?.[0], filter });
+          field.decoratorProps.params = params;
+          fieldSchema['x-decorator-props']['params'] = params;
+          service.run({ ...service.params?.[0], filter });
           dn.emit('patch', {
             schema: {
               ['x-uid']: fieldSchema['x-uid'],
@@ -80,100 +81,103 @@ export const TableBlockDesigner = () => {
           });
         }}
       />
-      <SchemaSettings.ModalItem
-        title={t('Set default sorting rules')}
-        components={{ ArrayItems }}
-        schema={
-          {
-            type: 'object',
-            title: t('Set default sorting rules'),
-            properties: {
-              sort: {
-                type: 'array',
-                default: sort,
-                'x-component': 'ArrayItems',
-                'x-decorator': 'FormItem',
-                items: {
-                  type: 'object',
-                  properties: {
-                    space: {
-                      type: 'void',
-                      'x-component': 'Space',
-                      properties: {
-                        sort: {
-                          type: 'void',
-                          'x-decorator': 'FormItem',
-                          'x-component': 'ArrayItems.SortHandle',
-                        },
-                        field: {
-                          type: 'string',
-                          enum: sortFields,
-                          'x-decorator': 'FormItem',
-                          'x-component': 'Select',
-                          'x-component-props': {
-                            style: {
-                              width: 260,
+      {!dragSort && (
+        <SchemaSettings.ModalItem
+          title={t('Set default sorting rules')}
+          components={{ ArrayItems }}
+          schema={
+            {
+              type: 'object',
+              title: t('Set default sorting rules'),
+              properties: {
+                sort: {
+                  type: 'array',
+                  default: sort,
+                  'x-component': 'ArrayItems',
+                  'x-decorator': 'FormItem',
+                  items: {
+                    type: 'object',
+                    properties: {
+                      space: {
+                        type: 'void',
+                        'x-component': 'Space',
+                        properties: {
+                          sort: {
+                            type: 'void',
+                            'x-decorator': 'FormItem',
+                            'x-component': 'ArrayItems.SortHandle',
+                          },
+                          field: {
+                            type: 'string',
+                            enum: sortFields,
+                            'x-decorator': 'FormItem',
+                            'x-component': 'Select',
+                            'x-component-props': {
+                              style: {
+                                width: 260,
+                              },
                             },
                           },
-                        },
-                        direction: {
-                          type: 'string',
-                          'x-decorator': 'FormItem',
-                          'x-component': 'Radio.Group',
-                          'x-component-props': {
-                            optionType: 'button',
+                          direction: {
+                            type: 'string',
+                            'x-decorator': 'FormItem',
+                            'x-component': 'Radio.Group',
+                            'x-component-props': {
+                              optionType: 'button',
+                            },
+                            enum: [
+                              {
+                                label: t('ASC'),
+                                value: 'asc',
+                              },
+                              {
+                                label: t('DESC'),
+                                value: 'desc',
+                              },
+                            ],
                           },
-                          enum: [
-                            {
-                              label: t('ASC'),
-                              value: 'asc',
-                            },
-                            {
-                              label: t('DESC'),
-                              value: 'desc',
-                            },
-                          ],
-                        },
-                        remove: {
-                          type: 'void',
-                          'x-decorator': 'FormItem',
-                          'x-component': 'ArrayItems.Remove',
+                          remove: {
+                            type: 'void',
+                            'x-decorator': 'FormItem',
+                            'x-component': 'ArrayItems.Remove',
+                          },
                         },
                       },
                     },
                   },
-                },
-                properties: {
-                  add: {
-                    type: 'void',
-                    title: t('Add sort field'),
-                    'x-component': 'ArrayItems.Addition',
+                  properties: {
+                    add: {
+                      type: 'void',
+                      title: t('Add sort field'),
+                      'x-component': 'ArrayItems.Addition',
+                    },
                   },
                 },
               },
-            },
-          } as ISchema
-        }
-        onSubmit={({ sort }) => {
-          const sortArr = sort.map((item) => {
-            return item.direction === 'desc' ? `-${item.field}` : item.field;
-          });
-          const params = field.decoratorProps.request.params || {};
-          params.sort = sortArr;
-          field.decoratorProps.request.params = params;
-          fieldSchema['x-decorator-props']['request']['params'] = params;
-          dn.emit('patch', {
-            schema: {
-              ['x-uid']: fieldSchema['x-uid'],
-              'x-decorator-props': fieldSchema['x-decorator-props'],
-            },
-          });
-          ctx.run({ ...ctx.params?.[0], sort: sortArr });
-        }}
-      />
+            } as ISchema
+          }
+          onSubmit={({ sort }) => {
+            const sortArr = sort.map((item) => {
+              return item.direction === 'desc' ? `-${item.field}` : item.field;
+            });
+            const params = field.decoratorProps.params || {};
+            params.sort = sortArr;
+            field.decoratorProps.params = params;
+            fieldSchema['x-decorator-props']['params'] = params;
+            dn.emit('patch', {
+              schema: {
+                ['x-uid']: fieldSchema['x-uid'],
+                'x-decorator-props': fieldSchema['x-decorator-props'],
+              },
+            });
+            service.run({ ...service.params?.[0], sort: sortArr });
+          }}
+        />
+      )}
+
       <SchemaSettings.SelectItem
         title={'Records per page'}
-        value={field.decoratorProps?.request?.params?.pageSize || 20}
+        value={field.decoratorProps?.params?.pageSize || 20}
         options={[
           { label: '10', value: 10 },
           { label: '20', value: 20 },
@@ -182,11 +186,11 @@ export const TableBlockDesigner = () => {
           { label: '200', value: 200 },
         ]}
         onChange={(pageSize) => {
-          const params = field.decoratorProps.request.params || {};
+          const params = field.decoratorProps.params || {};
           params.pageSize = pageSize;
-          field.decoratorProps.request.params = params;
-          fieldSchema['x-decorator-props']['request']['params'] = params;
-          ctx.run({ ...ctx.params?.[0], pageSize });
+          field.decoratorProps.params = params;
+          fieldSchema['x-decorator-props']['params'] = params;
+          service.run({ ...service.params?.[0], pageSize });
           dn.emit('patch', {
             schema: {
               ['x-uid']: fieldSchema['x-uid'],
