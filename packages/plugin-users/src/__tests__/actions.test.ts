@@ -29,7 +29,7 @@ describe('actions', () => {
   });
 
   it('should login user with password', async () => {
-    const { adminEmail, adminPassword } = userPluginConfig;
+    const { adminEmail, adminPassword } = userPluginConfig.installing;
 
     let response = await api.agent().resource('users').check();
     expect(response.statusCode).toEqual(401);

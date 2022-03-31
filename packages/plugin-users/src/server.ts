@@ -3,15 +3,26 @@ import { Plugin } from '@nocobase/server';
 import { resolve } from 'path';
 import * as actions from './actions/users';
 import * as middlewares from './middlewares';
+import { JwtOptions, JwtService } from './jwt-service';
 
 export interface UserPluginConfig {
-  jwtSecret: string;
-  adminNickname: string;
-  adminEmail: string;
-  adminPassword: string;
+  jwt: JwtOptions;
+
+  installing: {
+    adminNickname: string;
+    adminEmail: string;
+    adminPassword: string;
+  };
 }
 
 export default class UsersPlugin extends Plugin<UserPluginConfig> {
+  public jwtService: JwtService;
+
+  constructor(app, options) {
+    super(app, options);
+    this.jwtService = new JwtService(options?.jwt);
+  }
+
   async beforeLoad() {
     this.db.on('users.afterCreateWithAssociations', async (model, options) => {
       const { transaction } = options;
@@ -89,7 +100,7 @@ export default class UsersPlugin extends Plugin<UserPluginConfig> {
       adminNickname = 'Super Admin',
       adminEmail = 'admin@nocobase.com',
       adminPassword = 'admin123',
-    } = this.options;
+    } = this.options.installing;
 
     return {
       adminNickname,
@@ -97,6 +108,7 @@ export default class UsersPlugin extends Plugin<UserPluginConfig> {
       adminPassword,
     };
   }
+
   async install() {
     const { adminNickname, adminPassword, adminEmail } = this.getRootUserInfo();
 

@@ -1,5 +1,4 @@
 import { Context, Next } from '@nocobase/actions';
-import { decodeAccessToken } from '../actions/jwt';
 
 // TODO(feature): 表名应在 options 中配置
 // 中间件默认只解决解析 token 和附加对应 user 的工作，不解决是否提前报 401 退出。
@@ -40,9 +39,9 @@ async function findUserByToken(ctx: Context) {
   }
 
   // @ts-ignore
-  const secret = ctx.app.getPlugin('@nocobase/plugin-users').options['jwtSecret'];
+  const pluginUser = ctx.app.getPlugin('@nocobase/plugin-users');
 
-  const userId = await parseUserIdFromToken(token, secret);
+  const { userId } = await pluginUser.jwtService.decode(token);
 
   return await ctx.db.getRepository('users').findOne({
     filter: {
@@ -54,9 +53,4 @@ async function findUserByToken(ctx: Context) {
 
 function getTokenFromCtx(ctx: Context) {
   return ctx.get('Authorization').replace(/^Bearer\s+/gi, '');
-}
-
-async function parseUserIdFromToken(token, secret) {
-  const result = await decodeAccessToken({ token, secret });
-  return result['userId'];
 }

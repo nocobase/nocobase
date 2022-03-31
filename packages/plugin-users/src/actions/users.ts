@@ -1,7 +1,6 @@
 import { Context, Next } from '@nocobase/actions';
 import { PasswordField } from '@nocobase/database';
 import crypto from 'crypto';
-import { generateAccessToken } from './jwt';
 
 export async function check(ctx: Context, next: Next) {
   if (ctx.state.currentUser) {
@@ -35,20 +34,18 @@ export async function signin(ctx: Context, next: Next) {
   }
 
   // @ts-ignore
-  const secret = ctx.app.getPlugin('@nocobase/plugin-users').options['jwtSecret'];
+  const pluginUser = ctx.app.getPlugin('@nocobase/plugin-users');
 
   ctx.body = {
     ...user.toJSON(),
-    token: generateAccessToken({
+    token: pluginUser.jwtService.sign({
       userId: user.get('id'),
-      secret,
     }),
   };
   await next();
 }
 
 export async function signout(ctx: Context, next: Next) {
-  await ctx.state.currentUser.update({ token: null });
   ctx.body = ctx.state.currentUser;
   await next();
 }
