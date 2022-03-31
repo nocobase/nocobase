@@ -1,12 +1,12 @@
 import * as jwt from 'jsonwebtoken';
 
-export function generateAccessToken(userId) {
-  return jwt.sign({ userId }, process.env.JWT_SECRET, { expiresIn: '30d' });
+export function generateAccessToken({ userId, secret }) {
+  return jwt.sign({ userId }, secret, { expiresIn: '30d' });
 }
 
-export async function decodeAccessToken(token) {
+export async function decodeAccessToken({ token, secret }) {
   return new Promise((resolve, reject) => {
-    jwt.verify(token, process.env.JWT_SECRET as string, (err: any, decoded: any) => {
+    jwt.verify(token, secret, (err: any, decoded: any) => {
       if (err) {
         return reject(err);
       }

@@ -4,7 +4,14 @@ import { resolve } from 'path';
 import * as actions from './actions/users';
 import * as middlewares from './middlewares';
 
-export default class UsersPlugin extends Plugin {
+export interface UserPluginConfig {
+  jwtSecret: string;
+  adminNickname: string;
+  adminEmail: string;
+  adminPassword: string;
+}
+
+export default class UsersPlugin extends Plugin<UserPluginConfig> {
   async beforeLoad() {
     this.db.on('users.afterCreateWithAssociations', async (model, options) => {
       const { transaction } = options;

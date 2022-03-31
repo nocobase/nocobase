@@ -1,7 +1,9 @@
 import { mockServer, MockServer } from '@nocobase/test';
 import Database from '@nocobase/database';
 import PluginACL from '@nocobase/plugin-acl';
+import PluginUsers from '../server';
 import supertest from 'supertest';
+import { userPluginConfig } from './utils';
 
 describe('actions', () => {
   let api: MockServer;
@@ -12,7 +14,7 @@ describe('actions', () => {
   beforeEach(async () => {
     api = mockServer();
     await api.cleanDb();
-    api.plugin(require('../server').default);
+    api.plugin(PluginUsers, userPluginConfig);
     api.plugin(PluginACL);
 
     await api.loadAndInstall();
@@ -27,7 +29,7 @@ describe('actions', () => {
   });
 
   it('should login user with password', async () => {
-    const { adminEmail, adminPassword } = pluginUser.getRootUserInfo();
+    const { adminEmail, adminPassword } = userPluginConfig;
 
     let response = await api.agent().resource('users').check();
     expect(response.statusCode).toEqual(401);

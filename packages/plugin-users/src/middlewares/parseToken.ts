@@ -39,7 +39,10 @@ async function findUserByToken(ctx: Context) {
     return null;
   }
 
-  const userId = await parseUserIdFromToken(token);
+  // @ts-ignore
+  const secret = ctx.app.getPlugin('@nocobase/plugin-users').options['jwtSecret'];
+
+  const userId = await parseUserIdFromToken(token, secret);
 
   return await ctx.db.getRepository('users').findOne({
     filter: {
@@ -53,7 +56,7 @@ function getTokenFromCtx(ctx: Context) {
   return ctx.get('Authorization').replace(/^Bearer\s+/gi, '');
 }
 
-async function parseUserIdFromToken(token) {
-  const result = await decodeAccessToken(token);
+async function parseUserIdFromToken(token, secret) {
+  const result = await decodeAccessToken({ token, secret });
   return result['userId'];
 }

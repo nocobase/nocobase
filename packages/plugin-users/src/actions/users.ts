@@ -15,6 +15,7 @@ export async function check(ctx: Context, next: Next) {
 
 export async function signin(ctx: Context, next: Next) {
   const { uniqueField = 'email', values } = ctx.action.params;
+
   if (!values[uniqueField]) {
     ctx.throw(401, '请填写邮箱账号');
   }
@@ -33,9 +34,15 @@ export async function signin(ctx: Context, next: Next) {
     ctx.throw(401, '密码错误，请您重新输入');
   }
 
+  // @ts-ignore
+  const secret = ctx.app.getPlugin('@nocobase/plugin-users').options['jwtSecret'];
+
   ctx.body = {
     ...user.toJSON(),
-    token: generateAccessToken(user.get('id')),
+    token: generateAccessToken({
+      userId: user.get('id'),
+      secret,
+    }),
   };
   await next();
 }
