@@ -50,14 +50,12 @@ const useActionParams = (props) => {
 export const useResourceAction = (props, opts = {}) => {
   const { resource, action } = props;
   const params = useActionParams(props);
-  const options = {
-    ...opts,
-    defaultParams: [params],
-    // manual: true,
-  };
   const result = useRequest(
     (params) => (action ? resource[action](params).then((res) => res.data) : Promise.resolve({})),
-    options,
+    {
+      ...opts,
+      defaultParams: [params],
+    },
   );
   return result;
 };

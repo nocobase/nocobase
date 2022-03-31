@@ -1,12 +1,14 @@
+import { css } from '@emotion/css';
 import { ISchema, observer } from '@formily/react';
 import { Button, Dropdown, Menu, Switch } from 'antd';
+import classNames from 'classnames';
 import React, { createContext, useContext, useState } from 'react';
 import { useCompile, useDesignable } from '../schema-component/hooks';
 import {
   SchemaInitializerButtonProps,
   SchemaInitializerItemComponent,
   SchemaInitializerItemOptions,
-  SchemaInitializerItemProps,
+  SchemaInitializerItemProps
 } from './types';
 
 const defaultWrap = (s: ISchema) => s;
@@ -95,6 +97,17 @@ SchemaInitializer.Button = observer((props: SchemaInitializerButtonProps) => {
 
   return (
     <Dropdown
+      className={classNames('nb-schema-initializer-button')}
+      openClassName={`nb-schema-initializer-button-open`}
+      overlayClassName={classNames(
+        'nb-schema-initializer-button-overlay',
+        css`
+          .ant-dropdown-menu-item-group-list {
+            max-height: 40vh;
+            overflow: auto;
+          }
+        `,
+      )}
       visible={visible}
       onVisibleChange={(visible) => {
         setVisible(visible);

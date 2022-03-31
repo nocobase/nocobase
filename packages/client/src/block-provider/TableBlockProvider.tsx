@@ -1,6 +1,7 @@
 import { ArrayField } from '@formily/core';
-import { useField } from '@formily/react';
+import { Schema, useField, useFieldSchema } from '@formily/react';
 import React, { createContext, useContext, useEffect } from 'react';
+import { useCollectionManager } from '../collection-manager';
 import { BlockProvider, useBlockRequestContext } from './BlockProvider';
 
 export const TableBlockContext = createContext<any>({});
@@ -29,10 +30,43 @@ const InternalTableBlockProvider = (props) => {
   );
 };
 
+const useAssociationNames = (collection) => {
+  const { getCollectionFields } = useCollectionManager();
+  const names = getCollectionFields(collection)
+    ?.filter((field) => field.target)
+    .map((field) => field.name);
+  return names;
+  const fieldSchema = useFieldSchema();
+  const tableSchema = fieldSchema.reduceProperties((buf, schema) => {
+    if (schema['x-component'] === 'TableV2') {
+      return schema;
+    }
+    return buf;
+  }, null) as Schema;
+  return tableSchema.reduceProperties((buf, schema) => {
+    if (schema['x-component'] === 'TableV2.Column') {
+      const s = schema.reduceProperties((buf, s) => {
+        if (s['x-collection-field'] && names.includes(s.name)) {
+          return s;
+        }
+        return buf;
+      }, null);
+      if (s) {
+        buf.push(s.name);
+      }
+    }
+    return buf;
+  }, []);
+};
+
 export const TableBlockProvider = (props) => {
   const params = { ...props.params };
+  const appends = useAssociationNames(props.collection);
   if (props.dragSort) {
     params['sort'] = ['sort'];
+  }
+  if (appends?.length) {
+    params['appends'] = appends;
   }
   return (
     <BlockProvider {...props} params={params}>
@@ -83,7 +117,7 @@ export const useTableBlockProps = () => {
       ctx.service.refresh();
     },
     onChange({ current, pageSize }) {
-      ctx.service.run({ page: current, pageSize });
+      ctx.service.run({ ...ctx.service.params?.[0], page: current, pageSize });
     },
   };
 };
