@@ -6,12 +6,10 @@ import { SchemaComponentOptions } from '../..';
 import { RecordProvider } from '../../../';
 import { Board } from '../../../board';
 import '../../../board/style.less';
+import { useProps } from '../../hooks/useProps';
 import { KanbanCardContext, KanbanColumnContext } from './context';
 
 export const toColumns = (groupField: any, dataSource: Array<any> = []) => {
-  if (!dataSource?.length) {
-    return [];
-  }
   const columns = {
     __unknown__: {
       id: '__unknown__',
@@ -43,12 +41,10 @@ export const toColumns = (groupField: any, dataSource: Array<any> = []) => {
 };
 
 export const Kanban: ComposedKanban = observer((props: any) => {
-  const { useProps, ...restProps } = props;
+  const { groupField, onCardDragEnd, ...restProps } = useProps(props);
   const field = useField<ArrayField>();
   const fieldSchema = useFieldSchema();
-  const { groupField: gField, onCardDragEnd } = useProps?.() ?? {};
   const [disableCardDrag, setDisableCardDrag] = useState(false);
-  const groupField = gField || props.groupField;
   const schemas = useMemo(
     () =>
       fieldSchema.reduceProperties(
@@ -76,7 +72,7 @@ export const Kanban: ComposedKanban = observer((props: any) => {
     field.value = updatedBoard.columns;
   };
   return (
-    <Spin spinning={field.loading}>
+    <Spin spinning={field.loading || false}>
       <Board
         disableCardDrag={disableCardDrag}
         onCardRemove={handleCardRemove}
@@ -122,7 +118,7 @@ export const Kanban: ComposedKanban = observer((props: any) => {
         {...restProps}
       >
         {{
-          columns: field.value?.slice() || [],
+          columns: field.value || [],
         }}
       </Board>
     </Spin>

@@ -136,6 +136,7 @@ export const Table: any = observer((props: any) => {
   const {
     dragSort = false,
     showIndex = true,
+    onRowDragEnd,
     onRowSelectionChange,
     onChange: onTableChange,
     rowSelection,
@@ -235,6 +236,7 @@ export const Table: any = observer((props: any) => {
           const from = field.value[fromIndex];
           const to = field.value[toIndex];
           field.move(fromIndex, toIndex);
+          onRowDragEnd({ fromIndex, toIndex, from, to });
         }}
         lineClassName={css`
           border-bottom: 2px solid rgba(241, 139, 98, 0.6) !important;

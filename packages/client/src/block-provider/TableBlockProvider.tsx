@@ -6,7 +6,7 @@ import { BlockProvider, useBlockRequestContext } from './BlockProvider';
 export const TableBlockContext = createContext<any>({});
 
 const InternalTableBlockProvider = (props) => {
-  const { params = {}, showIndex, dragSort, rowKey } = props;
+  const { params, showIndex, dragSort, rowKey } = props;
   const field = useField();
   const { resource, service } = useBlockRequestContext();
   // if (service.loading) {
@@ -30,9 +30,13 @@ const InternalTableBlockProvider = (props) => {
 };
 
 export const TableBlockProvider = (props) => {
+  const params = { ...props.params };
+  if (props.dragSort) {
+    params['sort'] = ['sort'];
+  }
   return (
-    <BlockProvider {...props}>
-      <InternalTableBlockProvider {...props} />
+    <BlockProvider {...props} params={params}>
+      <InternalTableBlockProvider {...props} params={params} />
     </BlockProvider>
   );
 };
@@ -54,7 +58,6 @@ export const useTableBlockProps = () => {
       field.componentProps.pagination.total = ctx?.service?.data?.meta?.count;
       field.componentProps.pagination.current = ctx?.service?.data?.meta?.page;
     }
-    // field.loading = ctx?.service?.loading;
   }, [ctx?.service?.loading]);
   return {
     loading: ctx?.service?.loading,
@@ -71,6 +74,13 @@ export const useTableBlockProps = () => {
     onRowSelectionChange(selectedRowKeys) {
       ctx.field.data = ctx?.field?.data || {};
       ctx.field.data.selectedRowKeys = selectedRowKeys;
+    },
+    async onRowDragEnd({ from, to }) {
+      await ctx.resource.move({
+        sourceId: from[ctx.rowKey || 'id'],
+        targetId: to[ctx.rowKey || 'id'],
+      });
+      ctx.service.refresh();
     },
     onChange({ current, pageSize }) {
       ctx.service.run({ page: current, pageSize });

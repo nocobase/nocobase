@@ -2,7 +2,8 @@ import { ArrayItems } from '@formily/antd';
 import { ISchema, useField, useFieldSchema } from '@formily/react';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { useCollection, useResourceActionContext } from '../../../collection-manager';
+import { useTableBlockContext } from '../../../block-provider';
+import { useCollection } from '../../../collection-manager';
 import { useCollectionFilterOptions, useSortFields } from '../../../collection-manager/action-hooks';
 import { GeneralSchemaDesigner, SchemaSettings } from '../../../schema-settings';
 import { useSchemaTemplate } from '../../../schema-templates';
@@ -14,7 +15,7 @@ export const TableBlockDesigner = () => {
   const fieldSchema = useFieldSchema();
   const dataSource = useCollectionFilterOptions(name);
   const sortFields = useSortFields(name);
-  const ctx = useResourceActionContext();
+  const ctx = useTableBlockContext();
   const { t } = useTranslation();
   const { dn } = useDesignable();
   const defaultFilter = fieldSchema?.['x-decorator-props']?.params?.filter || {};
@@ -39,7 +40,7 @@ export const TableBlockDesigner = () => {
         onChange={(dragSort) => {
           field.decoratorProps.dragSort = dragSort;
           fieldSchema['x-decorator-props'].dragSort = dragSort;
-          ctx.run({ ...ctx.params?.[0], sort: defaultSort });
+          ctx.service.run({ ...ctx.service.params?.[0], sort: defaultSort });
           dn.emit('patch', {
             schema: {
               ['x-uid']: fieldSchema['x-uid'],
@@ -195,7 +196,7 @@ export const TableBlockDesigner = () => {
         }}
       />
       <SchemaSettings.Divider />
-      <SchemaSettings.Template componentName={'Table'} collectionName={name}/>
+      <SchemaSettings.Template componentName={'Table'} collectionName={name} />
       <SchemaSettings.Divider />
       <SchemaSettings.Remove
         removeParentsIfNoChildren

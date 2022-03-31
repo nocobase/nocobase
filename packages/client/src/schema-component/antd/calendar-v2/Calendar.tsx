@@ -1,17 +1,19 @@
 import { LeftOutlined, RightOutlined } from '@ant-design/icons';
-import { ArrayField } from '@formily/core';
-import { observer, RecursionField, Schema, useField, useFieldSchema } from '@formily/react';
+import { createForm } from '@formily/core';
+import { observer, RecursionField, Schema, useFieldSchema } from '@formily/react';
+import get from 'lodash/get';
 import moment from 'moment';
 import React, { useMemo, useState } from 'react';
 import { Calendar as BigCalendar, momentLocalizer } from 'react-big-calendar';
 import * as dates from 'react-big-calendar/lib/utils/dates';
+import { useTranslation } from 'react-i18next';
 import { RecordProvider } from '../../../';
 import { i18n } from '../../../i18n';
+import { useProps } from '../../hooks/useProps';
 import { ActionContext } from '../action';
 import { CalendarToolbarContext } from './context';
 import './style.less';
 import type { ToolbarProps } from './types';
-import { toEvents } from './utils';
 
 const localizer = momentLocalizer(moment);
 
@@ -59,22 +61,28 @@ const messages: any = {
   showMore: (count) => i18n.t('{{count}} more items', { count }),
 };
 
-const useEvents = (fieldNames: any) => {
-  const field = useField<ArrayField>();
-  return useMemo(() => {
-    return toEvents(field.value, fieldNames);
-  }, [fieldNames]);
+const useEvents = (dataSource: any, fieldNames: any) => {
+  const { t } = useTranslation();
+  return useMemo(
+    () =>
+      Array.isArray(dataSource)
+        ? dataSource?.map((item) => {
+            return {
+              id: get(item, fieldNames.id || 'id'),
+              title: get(item, fieldNames.title) || t('Untitle'),
+              start: new Date(get(item, fieldNames.start)),
+              end: new Date(get(item, fieldNames.end || fieldNames.start)),
+            };
+          })
+        : [],
+    [dataSource, fieldNames],
+  );
 };
 
-export const Calendar: any = observer((props: any) => {
-  const { useProps } = props;
-  const field = useField<ArrayField>();
+const CalendarRecordViewer = (props) => {
+  const { visible, setVisible, record } = props;
+  const form = useMemo(() => createForm(), [record]);
   const fieldSchema = useFieldSchema();
-  const { fieldNames: fNames } = useProps?.() || {};
-  const fieldNames = { id: 'id', ...props.fieldNames, ...fNames };
-  const events = useEvents(fieldNames);
-  const [visible, setVisible] = useState(false);
-  const [record, setRecord] = useState<any>({});
   const eventSchema: Schema = useMemo(
     () =>
       fieldSchema.reduceProperties((buf, current) => {
@@ -86,14 +94,24 @@ export const Calendar: any = observer((props: any) => {
     [],
   );
   return (
+    eventSchema && (
+      <ActionContext.Provider value={{ visible, setVisible }}>
+        <RecordProvider record={record}>
+          <RecursionField schema={eventSchema} name={eventSchema.name} />
+        </RecordProvider>
+      </ActionContext.Provider>
+    )
+  );
+};
+
+export const Calendar: any = observer((props: any) => {
+  const { dataSource, fieldNames } = useProps(props);
+  const events = useEvents(dataSource, fieldNames);
+  const [visible, setVisible] = useState(false);
+  const [record, setRecord] = useState<any>({});
+  return (
     <div {...props} style={{ height: 700 }}>
-      {eventSchema && (
-        <ActionContext.Provider value={{ visible, setVisible }}>
-          <RecordProvider record={record}>
-            <RecursionField name={eventSchema.name} schema={eventSchema} />
-          </RecordProvider>
-        </ActionContext.Provider>
-      )}
+      <CalendarRecordViewer visible={visible} setVisible={setVisible} record={record} />
       <BigCalendar
         popup
         selectable
@@ -109,7 +127,7 @@ export const Calendar: any = observer((props: any) => {
           console.log('onDoubleClickEvent');
         }}
         onSelectEvent={(event) => {
-          const record = field.value?.find((item) => item[fieldNames.id] === event.id);
+          const record = dataSource?.find((item) => item[fieldNames.id] === event.id);
           if (!record) {
             return;
           }

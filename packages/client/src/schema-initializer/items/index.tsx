@@ -250,7 +250,7 @@ export const KanbanBlockInitializer = (props) => {
         }
         insert(
           createKanbanBlockSchema({
-            ...values,
+            groupField: values.groupField.value,
             collection: item.name,
             params: {
               sort: [sortName],

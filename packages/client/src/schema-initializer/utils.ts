@@ -437,6 +437,7 @@ export const createTableBlockSchema = (options) => {
       },
     },
   };
+  console.log(JSON.stringify(schema, null, 2));
   return schema;
 };
 
@@ -461,9 +462,8 @@ export const createCalendarBlockSchema = (options) => {
     'x-designer': 'CalendarV2.Designer',
     'x-component': 'CardItem',
     properties: {
-      calendar: {
-        type: 'array',
-        name: 'calendar1',
+      [uid()]: {
+        type: 'void',
         'x-component': 'CalendarV2',
         'x-component-props': {
           useProps: '{{ useCalendarBlockProps }}',
@@ -482,7 +482,6 @@ export const createCalendarBlockSchema = (options) => {
           },
           event: {
             type: 'void',
-            name: 'event',
             'x-component': 'CalendarV2.Event',
             properties: {
               drawer: {
@@ -530,7 +529,7 @@ export const createCalendarBlockSchema = (options) => {
 
 export const createKanbanBlockSchema = (options) => {
   const { collection, resource, groupField, ...others } = options;
-  const schema = {
+  const schema: ISchema = {
     type: 'void',
     'x-decorator': 'KanbanBlockProvider',
     'x-decorator-props': {
@@ -543,8 +542,10 @@ export const createKanbanBlockSchema = (options) => {
       },
       ...others,
     },
+    'x-designer': 'KanbanV2.Designer',
+    'x-component': 'BlockItem',
     properties: {
-      kanban: {
+      [uid()]: {
         type: 'array',
         'x-component': 'KanbanV2',
         'x-component-props': {
@@ -553,9 +554,91 @@ export const createKanbanBlockSchema = (options) => {
         properties: {
           card: {
             type: 'void',
+            'x-decorator': 'BlockItem',
             'x-component': 'KanbanV2.Card',
             'x-designer': 'KanbanV2.Card.Designer',
-            properties: {},
+            properties: {
+              grid: {
+                type: 'void',
+                'x-component': 'Grid',
+                'x-component-props': { dndContext: false },
+              },
+            },
+          },
+          cardAdder: {
+            title: '添加卡片',
+            type: 'void',
+            'x-designer': 'Action.Designer',
+            'x-designer-props': {
+              draggable: false,
+            },
+            'x-component': 'KanbanV2.CardAdder',
+            'x-component-props': {
+              type: 'text',
+              openMode: 'drawer',
+            },
+            properties: {
+              drawer: {
+                type: 'void',
+                title: '{{ t("Add record") }}',
+                'x-component': 'Action.Container',
+                'x-component-props': {
+                  className: 'nb-action-popup',
+                },
+                properties: {
+                  grid: {
+                    type: 'void',
+                    'x-component': 'Grid',
+                    'x-initializer': 'CreateFormBlockInitializers',
+                    properties: {},
+                  },
+                },
+              },
+            },
+          },
+          cardViewer: {
+            type: 'void',
+            title: '{{ t("View") }}',
+            'x-designer': 'Action.Designer',
+            'x-component': 'KanbanV2.CardViewer',
+            'x-component-props': {
+              openMode: 'drawer',
+            },
+            properties: {
+              drawer: {
+                type: 'void',
+                title: '{{ t("View record") }}',
+                'x-component': 'Action.Container',
+                'x-component-props': {
+                  className: 'nb-action-popup',
+                },
+                properties: {
+                  tabs: {
+                    type: 'void',
+                    'x-component': 'Tabs',
+                    'x-component-props': {},
+                    'x-initializer': 'TabPaneInitializers',
+                    properties: {
+                      tab1: {
+                        type: 'void',
+                        title: '详情',
+                        'x-component': 'Tabs.TabPane',
+                        'x-designer': 'Tabs.Designer',
+                        'x-component-props': {},
+                        properties: {
+                          grid: {
+                            type: 'void',
+                            'x-component': 'Grid',
+                            'x-initializer': 'RecordBlockInitializers',
+                            properties: {},
+                          },
+                        },
+                      },
+                    },
+                  },
+                },
+              },
+            },
           },
         },
       },

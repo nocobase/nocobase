@@ -62,9 +62,27 @@ export const useKanbanBlockProps = () => {
     if (!ctx?.service?.loading) {
       field.value = toColumns(ctx.groupField, ctx?.service?.data?.data);
     }
-    field.loading = ctx?.service?.loading;
+    // field.loading = ctx?.service?.loading;
   }, [ctx?.service?.loading]);
   return {
     groupField: ctx.groupField,
+    async onCardDragEnd({ columns, groupField }, { fromColumnId, fromPosition }, { toColumnId, toPosition }) {
+      const sourceColumn = columns.find((column) => column.id === fromColumnId);
+      const destinationColumn = columns.find((column) => column.id === toColumnId);
+      const sourceCard = sourceColumn?.cards?.[fromPosition];
+      const targetCard = destinationColumn?.cards?.[toPosition];
+      const values = {
+        sourceId: sourceCard.id,
+        sortField: `${groupField.name}_sort`,
+      };
+      if (targetCard) {
+        values['targetId'] = targetCard.id;
+      } else {
+        values['targetScope'] = {
+          [groupField.name]: toColumnId,
+        };
+      }
+      await ctx.resource.move(values);
+    },
   };
 };

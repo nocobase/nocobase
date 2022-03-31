@@ -13,7 +13,7 @@ export const CalendarActionInitializers = {
           component: 'ActionInitializer',
           schema: {
             title: 'Today',
-            'x-component': 'Calendar.Today',
+            'x-component': 'CalendarV2.Today',
             'x-action': `calendar:today`,
             'x-align': 'left',
           },
@@ -24,7 +24,7 @@ export const CalendarActionInitializers = {
           component: 'ActionInitializer',
           schema: {
             title: 'Turn pages',
-            'x-component': 'Calendar.Nav',
+            'x-component': 'CalendarV2.Nav',
             'x-action': `calendar:nav`,
             'x-align': 'left',
           },
@@ -35,7 +35,7 @@ export const CalendarActionInitializers = {
           component: 'ActionInitializer',
           schema: {
             title: 'Title',
-            'x-component': 'Calendar.Title',
+            'x-component': 'CalendarV2.Title',
             'x-action': `calendar:title`,
             'x-align': 'left',
           },
@@ -46,7 +46,7 @@ export const CalendarActionInitializers = {
           component: 'ActionInitializer',
           schema: {
             title: 'Select view',
-            'x-component': 'Calendar.ViewSelect',
+            'x-component': 'CalendarV2.ViewSelect',
             'x-action': `calendar:viewSelect`,
             'x-align': 'right',
             'x-designer': 'Action.Designer',

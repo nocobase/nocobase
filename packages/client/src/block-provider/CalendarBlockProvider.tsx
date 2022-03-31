@@ -44,10 +44,8 @@ export const useCalendarBlockProps = () => {
   const field = useField<ArrayField>();
   useEffect(() => {
     if (!ctx?.service?.loading) {
-      field.value = ctx?.service?.data?.data;
-      console.log(field.value);
+      field.componentProps.dataSource = ctx?.service?.data?.data;
     }
-    field.loading = ctx?.service?.loading;
   }, [ctx?.service?.loading]);
   return {
     fieldNames: ctx.fieldNames,

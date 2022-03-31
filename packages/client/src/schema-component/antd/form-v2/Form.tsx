@@ -4,6 +4,7 @@ import { FieldContext, FormContext, observer, RecursionField, useField, useField
 import { Spin } from 'antd';
 import React, { useMemo } from 'react';
 import { useAttach, useComponent } from '../..';
+import { useProps } from '../../hooks/useProps';
 
 export interface FormProps {
   [key: string]: any;
@@ -67,10 +68,8 @@ const WithoutForm = (props) => {
 };
 
 export const Form: React.FC<FormProps> & { Designer?: any; ReadPrettyDesigner?: any } = observer((props) => {
-  const { useProps, ...restProps } = props;
   const field = useField<Field>();
-  const { form, ...otherProps } = useProps?.() || {};
-  const others = { ...restProps, ...otherProps };
+  const { form, ...others } = useProps(props);
   return (
     <form>
       <Spin spinning={field.loading || false}>
