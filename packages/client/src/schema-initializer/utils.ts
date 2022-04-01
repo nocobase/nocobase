@@ -60,45 +60,54 @@ export const findTableColumn = (schema: Schema, key: string, action: string, dee
 
 export const useTableColumnInitializerFields = () => {
   const { name, fields = [] } = useCollection();
+  const { getInterface } = useCollectionManager();
   return fields
     .filter((field) => field?.interface && field?.interface !== 'subTable')
     .map((field) => {
+      const interfaceConfig = getInterface(field.interface);
+      const schema = {
+        name: field.name,
+        'x-collection-field': `${name}.${field.name}`,
+        'x-component': 'CollectionField',
+        'x-read-pretty': true,
+        'x-component-props': {},
+      };
+      interfaceConfig?.schemaInitialize?.(schema, { field, readPretty: true, block: 'Table' });
       return {
         type: 'item',
         title: field?.uiSchema?.title || field.name,
         component: 'TableCollectionFieldInitializer',
         find: findTableColumn,
         remove: removeTableColumn,
-        schema: {
-          name: field.name,
-          'x-collection-field': `${name}.${field.name}`,
-          'x-component': 'CollectionField',
-          'x-read-pretty': true,
-          'x-component-props': {},
-        },
+        field,
+        schema,
       } as SchemaInitializerItemOptions;
     });
 };
 
 export const useFormItemInitializerFields = () => {
   const { name, fields } = useCollection();
+  const { getInterface } = useCollectionManager();
   return fields
     ?.filter((field) => field?.interface)
     ?.map((field) => {
+      const interfaceConfig = getInterface(field.interface);
+      const schema = {
+        type: 'string',
+        name: field.name,
+        // title: field?.uiSchema?.title || field.name,
+        'x-designer': 'FormItem.Designer',
+        'x-component': 'CollectionField',
+        'x-decorator': 'FormItem',
+        'x-collection-field': `${name}.${field.name}`,
+      };
+      interfaceConfig?.schemaInitialize?.(schema, { field, block: 'Form' });
       return {
         type: 'item',
         title: field?.uiSchema?.title || field.name,
         component: 'CollectionFieldInitializer',
         remove: removeGridFormItem,
-        schema: {
-          type: 'string',
-          name: field.name,
-          title: field?.uiSchema?.title || field.name,
-          'x-designer': 'FormItem.Designer',
-          'x-component': 'CollectionField',
-          'x-decorator': 'FormItem',
-          'x-collection-field': `${name}.${field.name}`,
-        },
+        schema,
       } as SchemaInitializerItemOptions;
     });
 };

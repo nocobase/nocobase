@@ -1,3 +1,4 @@
+import { ISchema } from '@formily/react';
 import { defaultProps, operators } from './properties';
 import { IField } from './types';
 
@@ -21,5 +22,11 @@ export const input: IField = {
   },
   filterable: {
     operators: operators.string,
+  },
+  schemaInitialize(schema: ISchema, { block }) {
+    if (['Table', 'Kanban'].includes(block)) {
+      schema['x-component-props'] = schema['x-component-props'] || {};
+      schema['x-component-props']['ellipsis'] = true;
+    }
   },
 };

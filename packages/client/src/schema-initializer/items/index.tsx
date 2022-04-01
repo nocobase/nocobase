@@ -1,6 +1,6 @@
 import { FormOutlined, TableOutlined } from '@ant-design/icons';
 import { FormDialog, FormLayout } from '@formily/antd';
-import { SchemaOptionsContext } from '@formily/react';
+import { ISchema, SchemaOptionsContext } from '@formily/react';
 import { merge } from '@formily/shared';
 import React, { useContext } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -611,11 +611,11 @@ export const TableActionColumnInitializer = (props) => {
 };
 
 export const TableCollectionFieldInitializer = (props) => {
-  const schema = {};
+  const schema: ISchema = {};
   return <InitializerWithSwitch {...props} schema={schema} type={'x-collection-field'} />;
 };
 
 export const CollectionFieldInitializer = (props) => {
-  const schema = {};
+  const schema: ISchema = {};
   return <InitializerWithSwitch {...props} schema={schema} type={'x-collection-field'} />;
 };

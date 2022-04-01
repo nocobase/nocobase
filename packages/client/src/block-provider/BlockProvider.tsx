@@ -49,7 +49,12 @@ const useActionParams = (props) => {
 
 export const useResourceAction = (props, opts = {}) => {
   const { resource, action } = props;
+  const { fields } = useCollection();
+  const appends = fields?.filter((field) => field.target).map((field) => field.name);
   const params = useActionParams(props);
+  if (appends?.length) {
+    params['appends'] = appends;
+  }
   const result = useRequest(
     (params) => (action ? resource[action](params).then((res) => res.data) : Promise.resolve({})),
     {

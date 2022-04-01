@@ -29,6 +29,7 @@ const useTableColumns = () => {
         title: <RecursionField name={s.name} schema={s} onlyRenderSelf />,
         dataIndex: s.name,
         key: s.name,
+        // width: 300,
         render: (v, record) => {
           const index = field.value?.indexOf(record);
           console.log((Date.now() - start) / 1000);
@@ -68,6 +69,7 @@ export const components = {
           className={cls(
             props.className,
             css`
+              max-width: 300px;
               &:hover .general-schema-designer {
                 display: block;
               }
@@ -95,9 +97,6 @@ export const components = {
           props.className,
           css`
             max-width: 300px;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            white-space: nowrap;
           `,
         )}
       />
@@ -229,7 +228,14 @@ export const Table: any = observer((props: any) => {
     return field.value?.indexOf?.(record);
   };
   return (
-    <div>
+    <div
+      className={css`
+        .ant-table {
+          overflow-x: auto;
+          overflow-y: hidden;
+        }
+      `}
+    >
       <ReactDragListView
         handleSelector={'.drag-handle'}
         onDragEnd={async (fromIndex, toIndex) => {
@@ -252,6 +258,8 @@ export const Table: any = observer((props: any) => {
           onChange={(pagination, filters, sorter, extra) => {
             onTableChange?.(pagination, filters, sorter, extra);
           }}
+          // tableLayout={'auto'}
+          // scroll={{ x: 12 * 300 + 80 }}
           columns={columns}
           dataSource={field?.value?.slice?.()}
         />

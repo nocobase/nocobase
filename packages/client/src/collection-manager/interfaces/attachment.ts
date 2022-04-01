@@ -21,6 +21,14 @@ export const attachment: IField = {
       },
     },
   },
+  propsInBlocks: {
+    Table: {
+      size: 'small',
+    },
+    Kanban: {
+      size: 'small',
+    },
+  },
   initialize: (values: any) => {
     if (!values.through) {
       values.through = `t_${uid()}`;
