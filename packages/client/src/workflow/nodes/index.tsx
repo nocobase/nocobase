@@ -49,9 +49,10 @@ export interface Instruction {
   fieldset: { [key: string]: ISchema };
   view?: ISchema;
   scope?: { [key: string]: any };
-  components?: { [key: string]: any }
-  render?(props): React.ReactElement,
-  endding?: boolean
+  components?: { [key: string]: any };
+  render?(props): React.ReactElement;
+  endding?: boolean;
+  getter?(node: any): React.ReactElement;
 };
 
 export const instructions = new Registry<Instruction>();
@@ -151,7 +152,7 @@ export function NodeDefaultView(props) {
           </div>
           <SchemaComponent
             scope={instruction.scope}
-            components={{...instruction.components}}
+            components={instruction.components}
             schema={{
               type: 'void',
               properties: {

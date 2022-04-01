@@ -7,7 +7,7 @@ import { Trans } from "react-i18next";
 import { NodeDefaultView } from ".";
 import { Branch, useFlowContext } from "../WorkflowCanvas";
 import { branchBlockClass, nodeSubtreeClass } from "../style";
-import { calculators, Operand } from "../calculators";
+import { Calculation } from "../calculators";
 // import { SchemaComponent } from "../../schema-component";
 
 function CalculationItem({ value, onChange, onRemove }) {
@@ -30,24 +30,7 @@ function CalculationItem({ value, onChange, onRemove }) {
             onChange={group => onChange({ ...value, group })}
           />
         )
-        : (
-          <div className={css`
-            display: flex;
-            gap: .5em;
-
-            .ant-select{
-              width: auto;
-            }
-          `}>
-            <Operand value={operands[0]} onChange={v => onChange({ ...value, operands: [v, operands[1]] })} />
-            <Select value={calculator} onChange={v => onChange({ ...value, calculator: v })}>
-              {calculators.map(item => (
-                <Select.Option key={item.value} value={item.value}>{item.name}</Select.Option>
-              ))}
-            </Select>
-            <Operand value={operands[1]} onChange={v => onChange({ ...value, operands: [operands[0], v] })} />
-          </div>
-        )
+        : <Calculation operands={operands} calculator={calculator} onChange={onChange} />
       }
       <Button onClick={onRemove} type="text" icon={<CloseCircleOutlined />} />
     </div>

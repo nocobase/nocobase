@@ -40,7 +40,7 @@ export default {
         return result.concat(node);
       }
       return result;
-    }, []);
+    }, []).sort((a, b) => a.branchIndex - b.branchIndex);
     const [branchCount, setBranchCount] = useState(Math.max(2, branches.length));
 
     const tempBranches = Array(Math.max(0, branchCount - branches.length)).fill(null);
