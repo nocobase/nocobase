@@ -127,7 +127,7 @@ export const AddFieldAction = () => {
             {options.map((option) => {
               return (
                 option.children.length > 0 && (
-                  <Menu.ItemGroup title={compile(option.label)}>
+                  <Menu.ItemGroup key={option.label} title={compile(option.label)}>
                     {option.children.map((child) => {
                       return <Menu.Item key={child.name}>{compile(child.title)}</Menu.Item>;
                     })}
