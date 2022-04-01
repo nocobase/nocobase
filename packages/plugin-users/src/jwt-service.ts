@@ -20,7 +20,7 @@ export class JwtService {
     return jwt.sign(payload, this.secret(), { expiresIn: this.expiresIn() });
   }
 
-  decode(token: string) {
+  decode(token: string): Promise<any> {
     return new Promise((resolve, reject) => {
       jwt.verify(token, this.secret(), (err: any, decoded: any) => {
         if (err) {

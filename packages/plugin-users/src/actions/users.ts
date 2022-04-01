@@ -1,5 +1,7 @@
 import { Context, Next } from '@nocobase/actions';
 import { PasswordField } from '@nocobase/database';
+import UsersPlugin from '../server';
+
 import crypto from 'crypto';
 
 export async function check(ctx: Context, next: Next) {
@@ -33,8 +35,7 @@ export async function signin(ctx: Context, next: Next) {
     ctx.throw(401, '密码错误，请您重新输入');
   }
 
-  // @ts-ignore
-  const pluginUser = ctx.app.getPlugin('@nocobase/plugin-users');
+  const pluginUser = ctx.app.getPlugin<UsersPlugin>('@nocobase/plugin-users');
 
   ctx.body = {
     ...user.toJSON(),

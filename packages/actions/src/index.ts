@@ -3,6 +3,7 @@ import { Database } from '@nocobase/database';
 import { Action } from '@nocobase/resourcer';
 import lodash from 'lodash';
 import * as actions from './actions';
+import { Application } from '@nocobase/server';
 
 export * as utils from './utils';
 
@@ -12,6 +13,7 @@ export interface Context extends Koa.Context {
   db: Database;
   action: Action;
   body: any;
+  app: Application;
   [key: string]: any;
 }
 

@@ -1,4 +1,5 @@
 import { Context, Next } from '@nocobase/actions';
+import UsersPlugin from '../server';
 
 // TODO(feature): 表名应在 options 中配置
 // 中间件默认只解决解析 token 和附加对应 user 的工作，不解决是否提前报 401 退出。
@@ -38,8 +39,7 @@ async function findUserByToken(ctx: Context) {
     return null;
   }
 
-  // @ts-ignore
-  const pluginUser = ctx.app.getPlugin('@nocobase/plugin-users');
+  const pluginUser = ctx.app.getPlugin<UsersPlugin>('@nocobase/plugin-users');
 
   const { userId } = await pluginUser.jwtService.decode(token);
 
