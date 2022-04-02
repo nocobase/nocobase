@@ -1,75 +1,7 @@
 import { ISchema } from '@formily/react';
 import { uid } from '@formily/shared';
-import { defaultProps } from './properties';
+import { defaultProps, recordPickerSelector, recordPickerViewer } from './properties';
 import { IField } from './types';
-
-const selector: ISchema = {
-  type: 'void',
-  title: '{{ t("Select record") }}',
-  'x-component': 'RecordPicker.Selector',
-  'x-component-props': {
-    className: 'nb-action-popup',
-  },
-  properties: {
-    tabs: {
-      type: 'void',
-      'x-component': 'Tabs',
-      'x-component-props': {},
-      'x-initializer': 'TabPaneInitializers',
-      properties: {
-        tab1: {
-          type: 'void',
-          title: '详情',
-          'x-component': 'Tabs.TabPane',
-          'x-designer': 'Tabs.Designer',
-          'x-component-props': {},
-          properties: {
-            grid: {
-              type: 'void',
-              'x-component': 'Grid',
-              'x-initializer': 'RecordBlockInitializers',
-              properties: {},
-            },
-          },
-        },
-      },
-    },
-  },
-};
-
-const viewer = {
-  type: 'void',
-  title: '{{ t("View record") }}',
-  'x-component': 'RecordPicker.Viewer',
-  'x-component-props': {
-    className: 'nb-action-popup',
-  },
-  properties: {
-    tabs: {
-      type: 'void',
-      'x-component': 'Tabs',
-      'x-component-props': {},
-      'x-initializer': 'TabPaneInitializers',
-      properties: {
-        tab1: {
-          type: 'void',
-          title: '详情',
-          'x-component': 'Tabs.TabPane',
-          'x-designer': 'Tabs.Designer',
-          'x-component-props': {},
-          properties: {
-            grid: {
-              type: 'void',
-              'x-component': 'Grid',
-              'x-initializer': 'RecordBlockInitializers',
-              properties: {},
-            },
-          },
-        },
-      },
-    },
-  },
-};
 
 export const linkTo: IField = {
   name: 'linkTo',
@@ -112,13 +44,14 @@ export const linkTo: IField = {
     },
   },
   schemaInitialize(schema: ISchema, { readPretty }) {
+    console.log('readPretty', readPretty);
     if (readPretty) {
       schema['properties'] = {
-        viewer,
+        viewer: recordPickerViewer,
       };
     } else {
       schema['properties'] = {
-        selector,
+        selector: recordPickerSelector,
       };
     }
   },

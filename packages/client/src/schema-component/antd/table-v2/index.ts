@@ -6,6 +6,7 @@ import { TableColumnDecorator } from './Table.Column.Decorator';
 import { TableColumnDesigner } from './Table.Column.Designer';
 
 export * from './TableBlockDesigner';
+export * from './TableField';
 
 export const TableV2 = Table;
 
@@ -14,3 +15,4 @@ TableV2.Column.ActionBar = TableColumnActionBar;
 TableV2.Column.Decorator = TableColumnDecorator;
 TableV2.Column.Designer = TableColumnDesigner;
 TableV2.ActionColumnDesigner = TableActionColumnDesigner;
+

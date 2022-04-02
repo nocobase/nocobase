@@ -1,9 +1,9 @@
-import { ISchema, useField, useFieldSchema, useForm } from '@formily/react';
+import { ISchema, useField, useFieldSchema } from '@formily/react';
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { useCollectionManager } from '../../../collection-manager';
 import { GeneralSchemaDesigner, SchemaSettings } from '../../../schema-settings';
 import { useCompile, useDesignable } from '../../hooks';
-import { useActionContext } from '../action';
 
 const useLabelFields = (collectionName?: any) => {
   if (!collectionName) {
@@ -13,7 +13,7 @@ const useLabelFields = (collectionName?: any) => {
   const { getCollectionFields } = useCollectionManager();
   const targetFields = getCollectionFields(collectionName);
   return targetFields
-    ?.filter?.((field) => !field?.target && field.type !== 'boolean')
+    ?.filter?.((field) => field?.interface && !field?.target && field.type !== 'boolean')
     ?.map?.((field) => {
       return {
         value: field.name,
@@ -25,95 +25,51 @@ const useLabelFields = (collectionName?: any) => {
 export const TableColumnDesigner = (props) => {
   const { uiSchema, fieldSchema, collectionField } = props;
   const field = useField();
+  const { t } = useTranslation();
   const columnSchema = useFieldSchema();
   const { dn } = useDesignable();
-  const initialValue = {
-    title: columnSchema?.title,
-  };
+  const fieldNames =
+    fieldSchema?.['x-component-props']?.['fieldNames'] || uiSchema?.['x-component-props']?.['fieldNames'];
   const options = useLabelFields(collectionField?.target);
   return (
     <GeneralSchemaDesigner>
-      <SchemaSettings.PopupItem
-        title={'编辑'}
+      <SchemaSettings.ModalItem
+        title={t('Edit column title')}
         schema={
           {
-            title: '编辑字段',
-            'x-component': 'Action.Modal',
-            'x-component-props': {
-              width: 520,
-            },
-            'x-decorator': 'Form',
-            'x-decorator-props': {
-              initialValue,
-            },
-            type: 'void',
+            type: 'object',
+            title: t('Edit column title'),
             properties: {
               title: {
+                title: t('Column title'),
+                default: columnSchema?.title,
+                description: `${t('Original field title: ')}${collectionField?.uiSchema?.title}`,
                 'x-decorator': 'FormItem',
                 'x-component': 'Input',
-                title: '字段标题',
                 'x-component-props': {},
-                description: `原字段标题：${collectionField?.uiSchema?.title}`,
-              },
-              footer: {
-                type: 'void',
-                'x-component': 'Action.Modal.Footer',
-                properties: {
-                  cancel: {
-                    type: 'void',
-                    title: '{{t("Cancel")}}',
-                    'x-component': 'Action',
-                    'x-component-props': {
-                      useAction() {
-                        const ctx = useActionContext();
-                        return {
-                          async run() {
-                            ctx.setVisible(false);
-                          },
-                        };
-                      },
-                    },
-                  },
-                  submit: {
-                    type: 'void',
-                    title: 'Submit',
-                    'x-component': 'Action',
-                    'x-component-props': {
-                      type: 'primary',
-                      useAction() {
-                        const form = useForm();
-                        const ctx = useActionContext();
-                        return {
-                          async run() {
-                            const { title } = form.values;
-                            if (title) {
-                              field.title = title;
-                              columnSchema.title = title;
-                              dn.emit('patch', {
-                                schema: {
-                                  'x-uid': columnSchema['x-uid'],
-                                  title: columnSchema.title,
-                                },
-                              });
-                            }
-                            ctx.setVisible(false);
-                            dn.refresh();
-                          },
-                        };
-                      },
-                    },
-                  },
-                },
               },
             },
           } as ISchema
         }
+        onSubmit={({ title }) => {
+          if (title) {
+            field.title = title;
+            columnSchema.title = title;
+            dn.emit('patch', {
+              schema: {
+                'x-uid': columnSchema['x-uid'],
+                title: columnSchema.title,
+              },
+            });
+          }
+          dn.refresh();
+        }}
       />
-      {collectionField?.target && (
+      {collectionField?.interface === 'linkTo' && (
         <SchemaSettings.SelectItem
-          title={'标题字段'}
+          title={t('Title field')}
           options={options}
-          value={fieldSchema?.['x-component-props']?.['fieldNames']?.['label']}
+          value={fieldNames?.['label']}
           onChange={(label) => {
             const fieldNames = {
               ...fieldSchema['x-component-props']['fieldNames'],

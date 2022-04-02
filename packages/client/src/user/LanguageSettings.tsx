@@ -10,6 +10,7 @@ export const LanguageSettings = () => {
   const ctx = useCurrentUserContext();
   return (
     <Menu.Item
+      eventKey={'LanguageSettings'}
       onClick={() => {
         setOpen(true);
       }}

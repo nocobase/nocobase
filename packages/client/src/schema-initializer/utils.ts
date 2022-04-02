@@ -1,4 +1,4 @@
-import { ISchema, Schema, useFieldSchema } from '@formily/react';
+import { ISchema, Schema, useFieldSchema, useForm } from '@formily/react';
 import { uid } from '@formily/shared';
 import { useTranslation } from 'react-i18next';
 import { SchemaInitializerItemOptions } from '../';
@@ -88,6 +88,8 @@ export const useTableColumnInitializerFields = () => {
 export const useFormItemInitializerFields = () => {
   const { name, fields } = useCollection();
   const { getInterface } = useCollectionManager();
+  const form = useForm();
+  console.log('form.readPretty', form.pattern);
   return fields
     ?.filter((field) => field?.interface)
     ?.map((field) => {
@@ -101,7 +103,7 @@ export const useFormItemInitializerFields = () => {
         'x-decorator': 'FormItem',
         'x-collection-field': `${name}.${field.name}`,
       };
-      interfaceConfig?.schemaInitialize?.(schema, { field, block: 'Form' });
+      interfaceConfig?.schemaInitialize?.(schema, { field, block: 'Form', readPretty: form.readPretty });
       return {
         type: 'item',
         title: field?.uiSchema?.title || field.name,
@@ -339,6 +341,7 @@ export const createReadPrettyFormBlockSchema = (options) => {
       resource: resource || association || collection,
       collection,
       association,
+      readPretty: true,
       action: 'get',
       useParams: '{{ useParamsFromRecord }}',
       ...others,

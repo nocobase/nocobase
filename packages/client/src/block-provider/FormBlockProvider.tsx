@@ -7,8 +7,15 @@ import { BlockProvider, useBlockRequestContext } from './BlockProvider';
 export const FormBlockContext = createContext<any>({});
 
 const InternalFormBlockProvider = (props) => {
+  const { readPretty } = props;
   const field = useField();
-  const form = useMemo(() => createForm(), []);
+  const form = useMemo(
+    () =>
+      createForm({
+        readPretty,
+      }),
+    [],
+  );
   const { resource, service } = useBlockRequestContext();
   if (service.loading) {
     return <Spin />;

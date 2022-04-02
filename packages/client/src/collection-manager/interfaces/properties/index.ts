@@ -1,5 +1,7 @@
 import { ISchema } from '@formily/react';
 
+export * as operators from './operators';
+
 export const type: ISchema = {
   type: 'string',
   title: '{{t("Storage type")}}',
@@ -199,5 +201,53 @@ export const defaultProps = {
   type,
 };
 
+export const recordPickerSelector: ISchema = {
+  type: 'void',
+  title: '{{ t("Select record") }}',
+  'x-component': 'RecordPicker.Selector',
+  'x-component-props': {
+    className: 'nb-action-popup',
+  },
+  properties: {
+    grid: {
+      type: 'void',
+      'x-component': 'Grid',
+      'x-initializer': 'RecordBlockInitializers',
+      properties: {},
+    },
+  },
+};
 
-export * as operators from './operators';
+export const recordPickerViewer = {
+  type: 'void',
+  title: '{{ t("View record") }}',
+  'x-component': 'RecordPicker.Viewer',
+  'x-component-props': {
+    className: 'nb-action-popup',
+  },
+  properties: {
+    tabs: {
+      type: 'void',
+      'x-component': 'Tabs',
+      'x-component-props': {},
+      'x-initializer': 'TabPaneInitializers',
+      properties: {
+        tab1: {
+          type: 'void',
+          title: '{{t("Details")}}',
+          'x-component': 'Tabs.TabPane',
+          'x-designer': 'Tabs.Designer',
+          'x-component-props': {},
+          properties: {
+            grid: {
+              type: 'void',
+              'x-component': 'Grid',
+              'x-initializer': 'RecordBlockInitializers',
+              properties: {},
+            },
+          },
+        },
+      },
+    },
+  },
+};

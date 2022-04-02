@@ -70,6 +70,7 @@ export const components = {
             props.className,
             css`
               max-width: 300px;
+              white-space: nowrap;
               &:hover .general-schema-designer {
                 display: block;
               }
@@ -97,6 +98,7 @@ export const components = {
           props.className,
           css`
             max-width: 300px;
+            white-space: nowrap;
           `,
         )}
       />

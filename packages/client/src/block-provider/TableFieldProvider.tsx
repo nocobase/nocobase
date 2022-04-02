@@ -51,6 +51,7 @@ export const useTableFieldProps = () => {
     }
   }, [ctx?.service?.loading]);
   return {
+    size: 'middle',
     loading: ctx?.service?.loading,
     showIndex: ctx.showIndex,
     dragSort: ctx.dragSort,
