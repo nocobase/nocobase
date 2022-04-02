@@ -12,7 +12,8 @@
   },
   "dependencies": {
     "@nocobase/database": "^0.6.0-alpha.0",
-    "@nocobase/resourcer": "^0.6.0-alpha.0"
+    "@nocobase/resourcer": "^0.6.0-alpha.0",
+    "@nocobase/server": "^0.6.0-alpha.0"
   },
   "repository": {
     "type": "git",
