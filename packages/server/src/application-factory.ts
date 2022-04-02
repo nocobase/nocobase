@@ -3,8 +3,8 @@ import * as path from 'path';
 import lodash from 'lodash';
 import Application from './application';
 
-type PluginConfiguration = string | [string, any];
-type PluginsConfigurations = Array<PluginConfiguration>;
+export type PluginConfiguration = string | [string, any];
+export type PluginsConfigurations = Array<PluginConfiguration>;
 
 export class ApplicationFactory {
   static async buildWithConfiguration(configurationDir: string): Promise<Application> {
