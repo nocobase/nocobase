@@ -1,5 +1,6 @@
 import * as fs from 'fs';
 import * as path from 'path';
+import lodash from 'lodash';
 
 export class ApplicationFactory {
   static async buildWithConfigDir(configDir: string) {
@@ -17,6 +18,16 @@ export class ConfigurationRepository {
 
   set(key, value) {
     return this.items.set(key, value);
+  }
+
+  toObject() {
+    const result = {};
+
+    for (const [key, value] of this.items.entries()) {
+      lodash.set(result, key, value);
+    }
+
+    return result;
   }
 }
 

@@ -22,7 +22,8 @@
     "i18next": "^21.3.2",
     "koa": "^2.13.4",
     "koa-bodyparser": "^4.3.0",
-    "koa-static": "^5.0.0"
+    "koa-static": "^5.0.0",
+    "lodash": "^4.17.21"
   },
   "gitHead": "e7df1f93c4e23b9a666d99ee7372c02bdaec97c4"
 }
