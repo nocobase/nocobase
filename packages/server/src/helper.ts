@@ -74,7 +74,7 @@ export function createCli(app: Application, options: ApplicationOptions): Comman
     });
 
   cli
-    .command('start')
+    .command('start', { isDefault: true })
     .option('-p, --port [port]')
     .action(async (...cliArgs) => {
       const [opts] = cliArgs;

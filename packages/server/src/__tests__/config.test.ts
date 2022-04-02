@@ -1,7 +1,7 @@
 import * as path from 'path';
 import { ApplicationFactory, ConfigurationRepository, loadConfiguration } from '../application-factory';
 import databaseConfiguration from './config/database';
-import userConfiguration from './config/plugins/users';
+import userConfiguration from './config/plugins-options/users';
 
 const configurationDir = path.join(__dirname, './config');
 
@@ -20,11 +20,32 @@ describe('config', () => {
 
     const result = configurationRepository.toObject();
     expect(result['database']).toEqual(databaseConfiguration);
-    expect(result['plugins']['users']).toEqual(userConfiguration);
+    expect(result['plugins-options']['users']).toEqual(userConfiguration);
   });
 
   it('should create application from configuration', async () => {
+    const TestA = require('./plugins/test-a').default;
+    const TestB = require('./plugins/test-b').default;
+
+    ApplicationFactory.resolvePlugin = (name) => {
+      if (name === 'test-a') {
+        return TestA;
+      }
+
+      if (name === 'test-b') {
+        return TestB;
+      }
+    };
+
     const app = await ApplicationFactory.buildWithConfiguration(configurationDir);
-    expect(app).toBeDefined();
+
+    const appPluginA = app.getPlugin('test-a');
+
+    expect(appPluginA).toBeInstanceOf(TestA);
+
+    const appPluginB = app.getPlugin('test-b');
+
+    expect(appPluginB).toBeInstanceOf(TestB);
+    expect(appPluginB.options).toBeDefined();
   });
 });
