@@ -1,11 +1,14 @@
 import * as fs from 'fs';
 import * as path from 'path';
 import lodash from 'lodash';
+import Application from './application';
 
 export class ApplicationFactory {
-  static async buildWithConfigDir(configDir: string) {
+  static async buildWithConfiguration(configurationDir: string): Promise<Application> {
     const configurationRepository = new ConfigurationRepository();
-    await loadConfiguration(configDir, configurationRepository);
+    await loadConfiguration(configurationDir, configurationRepository);
+
+    return new Application(configurationRepository.toObject());
   }
 }
 
