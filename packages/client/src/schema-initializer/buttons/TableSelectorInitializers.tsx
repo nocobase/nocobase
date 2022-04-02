@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { SchemaInitializer } from '../..';
 import { gridRowColWrap } from '../utils';
 
-export const RecordPickerSelectorInitializers = (props: any) => {
+export const TableSelectorInitializers = (props: any) => {
   const { t } = useTranslation();
   return (
     <SchemaInitializer.Button

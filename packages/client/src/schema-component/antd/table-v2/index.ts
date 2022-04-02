@@ -7,6 +7,7 @@ import { TableColumnDesigner } from './Table.Column.Designer';
 
 export * from './TableBlockDesigner';
 export * from './TableField';
+export * from './TableSelectorDesigner';
 
 export const TableV2 = Table;
 

@@ -3,11 +3,11 @@ import { SchemaComponentOptions } from '../schema-component/core/SchemaComponent
 import { useParamsFromRecord, useSourceIdFromParentRecord, useSourceIdFromRecord } from './BlockProvider';
 import { CalendarBlockProvider, useCalendarBlockProps } from './CalendarBlockProvider';
 import { FormBlockProvider, useFormBlockProps } from './FormBlockProvider';
+import * as bp from './hooks';
 import { KanbanBlockProvider, useKanbanBlockProps } from './KanbanBlockProvider';
 import { TableBlockProvider, useTableBlockProps } from './TableBlockProvider';
 import { TableFieldProvider, useTableFieldProps } from './TableFieldProvider';
 import { TableSelectorProvider, useTableSelectorProps } from './TableSelectorProvider';
-
 export const BlockSchemaComponentProvider: React.FC = (props) => {
   return (
     <SchemaComponentOptions
@@ -20,6 +20,7 @@ export const BlockSchemaComponentProvider: React.FC = (props) => {
         KanbanBlockProvider,
       }}
       scope={{
+        ...bp,
         useSourceIdFromRecord,
         useSourceIdFromParentRecord,
         useParamsFromRecord,

@@ -7,10 +7,10 @@ export * from './ReadPrettyFormActionInitializers';
 export * from './ReadPrettyFormItemInitializers';
 export * from './RecordBlockInitializers';
 export * from './RecordFormBlockInitializers';
-export * from './RecordPickerSelectorInitializers';
 export * from './SubTableActionInitializers';
 export * from './TableActionColumnInitializers';
 export * from './TableActionInitializers';
 export * from './TableColumnInitializers';
+export * from './TableSelectorInitializers';
 export * from './TabPaneInitializers';
 

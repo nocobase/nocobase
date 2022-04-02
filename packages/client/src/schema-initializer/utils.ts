@@ -468,10 +468,10 @@ export const createTableSelectorSchema = (options) => {
       rowKey,
       ...others,
     },
-    'x-designer': 'TableBlockDesigner',
+    'x-designer': 'TableSelectorDesigner',
     'x-component': 'BlockItem',
     properties: {
-      topActions: {
+      actions: {
         type: 'void',
         'x-initializer': 'TableActionInitializers',
         'x-component': 'ActionBar',
@@ -482,7 +482,7 @@ export const createTableSelectorSchema = (options) => {
         },
         properties: {},
       },
-      [uid()]: {
+      value: {
         type: 'array',
         'x-initializer': 'TableColumnInitializers',
         'x-component': 'TableV2',

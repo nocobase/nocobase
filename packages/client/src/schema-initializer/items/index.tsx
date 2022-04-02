@@ -430,7 +430,7 @@ export const DestroyActionInitializer = (props) => {
         title: "{{t('Delete record')}}",
         content: "{{t('Are you sure you want to delete it?')}}",
       },
-      // useProps: '{{ bp.useBulkDestroyActionProps }}',
+      useProps: '{{ useDestroyActionProps }}',
     },
   };
   return <ActionInitializer {...props} schema={schema} />;
@@ -448,7 +448,7 @@ export const BulkDestroyActionInitializer = (props) => {
         title: "{{t('Delete record')}}",
         content: "{{t('Are you sure you want to delete it?')}}",
       },
-      // useProps: '{{ bp.useDestroyActionProps }}',
+      useProps: '{{ useBulkDestroyActionProps }}',
     },
   };
   return <ActionInitializer {...props} schema={schema} />;
@@ -469,9 +469,35 @@ export const SubmitActionInitializer = (props) => {
   return <ActionInitializer {...props} schema={schema} />;
 };
 
-export const AssociationFieldInitializer = () => null;
-export const TableFieldInitializer = () => null;
-export const AssociationBlockInitializer = () => null;
+export const CreateSubmitActionInitializer = (props) => {
+  const schema = {
+    title: '{{ t("Submit") }}',
+    'x-action': 'submit',
+    'x-component': 'Action',
+    'x-designer': 'Action.Designer',
+    'x-component-props': {
+      type: 'primary',
+      htmlType: 'submit',
+      useProps: '{{ useCreateActionProps }}',
+    },
+  };
+  return <ActionInitializer {...props} schema={schema} />;
+};
+
+export const UpdateSubmitActionInitializer = (props) => {
+  const schema = {
+    title: '{{ t("Submit") }}',
+    'x-action': 'submit',
+    'x-component': 'Action',
+    'x-designer': 'Action.Designer',
+    'x-component-props': {
+      type: 'primary',
+      htmlType: 'submit',
+      useProps: '{{ useUpdateActionProps }}',
+    },
+  };
+  return <ActionInitializer {...props} schema={schema} />;
+};
 
 export const CreateFormBlockInitializer = (props) => {
   const { onCreateBlockSchema, componentType, createBlockSchema, insert, ...others } = props;
@@ -489,8 +515,10 @@ export const CreateFormBlockInitializer = (props) => {
         } else {
           insert(
             createFormBlockSchema({
+              actionInitializers: 'CreateFormActionInitializers',
               association,
               collection: collection.name,
+              
             }),
           );
         }
@@ -521,6 +549,7 @@ export const RecordFormBlockInitializer = (props) => {
               action: 'get',
               useSourceId: '{{ useSourceIdFromParentRecord }}',
               useParams: '{{ useParamsFromRecord }}',
+              actionInitializers: 'UpdateFormActionInitializers',
             }),
           );
         }

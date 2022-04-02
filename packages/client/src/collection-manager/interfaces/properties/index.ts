@@ -212,7 +212,7 @@ export const recordPickerSelector: ISchema = {
     grid: {
       type: 'void',
       'x-component': 'Grid',
-      'x-initializer': 'RecordPickerSelectorInitializers',
+      'x-initializer': 'TableSelectorInitializers',
       properties: {},
     },
     footer: {
@@ -232,7 +232,7 @@ export const recordPickerSelector: ISchema = {
               'x-component-props': {
                 type: 'primary',
                 htmlType: 'submit',
-                // useProps: '{{ bp.useSubmitActionProps }}',
+                useProps: '{{ usePickActionProps }}',
               },
             },
           },
