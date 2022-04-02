@@ -3171,7 +3171,7 @@
 
 "@types/jsonwebtoken@^8.5.8":
   version "8.5.8"
-  resolved "http://192.168.92.17:4873/@types%2fjsonwebtoken/-/jsonwebtoken-8.5.8.tgz#01b39711eb844777b7af1d1f2b4cf22fda1c0c44"
+  resolved "https://registry.npmjs.org/@types%2fjsonwebtoken/-/jsonwebtoken-8.5.8.tgz#01b39711eb844777b7af1d1f2b4cf22fda1c0c44"
   integrity sha512-zm6xBQpFDIDM6o9r6HSgDeIcLy82TKWctCXEPbJJcXb5AKmi5BNNdLXneixK4lplX3PqIVcwLBCGE/kAGnlD4A==
   dependencies:
     "@types/node" "*"
