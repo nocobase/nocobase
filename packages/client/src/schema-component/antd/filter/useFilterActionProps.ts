@@ -52,8 +52,9 @@ export const useFilterActionProps = () => {
   const { service } = useBlockRequestContext();
   return {
     options,
-    onSubmit() {
-      service.refresh();
+    onSubmit({ filter }) {
+      console.log('filter', filter)
+      service.run({ ...service.params?.[0], filter });
     },
   };
 };

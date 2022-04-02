@@ -3,6 +3,7 @@ import { ISchema, observer } from '@formily/react';
 import { Button, Dropdown, Menu, Switch } from 'antd';
 import classNames from 'classnames';
 import React, { createContext, useContext, useState } from 'react';
+import { Icon } from '../icon';
 import { useCompile, useDesignable } from '../schema-component/hooks';
 import {
   SchemaInitializerButtonProps,
@@ -27,6 +28,7 @@ SchemaInitializer.Button = observer((props: SchemaInitializerButtonProps) => {
     dropdown,
     component,
     style,
+    icon,
     ...others
   } = props;
   const compile = useCompile();
@@ -126,6 +128,7 @@ SchemaInitializer.Button = observer((props: SchemaInitializerButtonProps) => {
             ...style,
           }}
           {...others}
+          icon={<Icon type={icon as string}/>}
         >
           {compile(props.children || props.title)}
         </Button>

@@ -453,6 +453,54 @@ export const createTableBlockSchema = (options) => {
   return schema;
 };
 
+export const createTableSelectorSchema = (options) => {
+  const { collection, resource, rowKey, ...others } = options;
+  const schema: ISchema = {
+    type: 'void',
+    'x-decorator': 'TableSelectorProvider',
+    'x-decorator-props': {
+      collection,
+      resource: resource || collection,
+      action: 'list',
+      params: {
+        pageSize: 20,
+      },
+      rowKey,
+      ...others,
+    },
+    'x-designer': 'TableBlockDesigner',
+    'x-component': 'BlockItem',
+    properties: {
+      topActions: {
+        type: 'void',
+        'x-initializer': 'TableActionInitializers',
+        'x-component': 'ActionBar',
+        'x-component-props': {
+          style: {
+            marginBottom: 16,
+          },
+        },
+        properties: {},
+      },
+      [uid()]: {
+        type: 'array',
+        'x-initializer': 'TableColumnInitializers',
+        'x-component': 'TableV2',
+        'x-component-props': {
+          rowKey: 'id',
+          rowSelection: {
+            type: 'checkbox',
+          },
+          useProps: '{{ useTableSelectorProps }}',
+        },
+        properties: {},
+      },
+    },
+  };
+  console.log(JSON.stringify(schema, null, 2));
+  return schema;
+};
+
 export const createCalendarBlockSchema = (options) => {
   const { collection, resource, fieldNames, ...others } = options;
   const schema: ISchema = {

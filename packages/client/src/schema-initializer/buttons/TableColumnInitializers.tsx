@@ -10,6 +10,7 @@ export const TableColumnInitializers = (props: any) => {
   return (
     <SchemaInitializer.Button
       insertPosition={'beforeEnd'}
+      icon={'SettingOutlined'}
       wrap={(s) => {
         if (s['x-action-column']) {
           return s;

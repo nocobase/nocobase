@@ -1,6 +1,7 @@
 // 表单的操作配置
 export const ReadPrettyFormActionInitializers = {
   title: '{{t("Configure actions")}}',
+  icon: 'SettingOutlined',
   style: {
     marginLeft: 8,
   },

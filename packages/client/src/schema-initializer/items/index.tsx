@@ -16,6 +16,7 @@ import {
   createKanbanBlockSchema,
   createReadPrettyFormBlockSchema,
   createTableBlockSchema,
+  createTableSelectorSchema,
   useCollectionDataSourceItems,
   useCurrentSchema,
   useRecordCollectionDataSourceItems
@@ -294,6 +295,7 @@ export const FilterActionInitializer = (props) => {
     'x-designer': 'Filter.Action.Designer',
     'x-component': 'Filter.Action',
     'x-component-props': {
+      icon: 'FilterOutlined',
       useProps: '{{ useFilterActionProps }}',
     },
   };
@@ -308,6 +310,7 @@ export const CreateActionInitializer = (props) => {
     'x-designer': 'Action.Designer',
     'x-component': 'Action',
     'x-component-props': {
+      icon: 'PlusOutlined',
       openMode: 'drawer',
       type: 'primary',
     },
@@ -391,6 +394,7 @@ export const UpdateActionInitializer = (props) => {
     'x-component': 'Action',
     'x-component-props': {
       openMode: 'drawer',
+      icon: 'EditOutlined',
     },
     properties: {
       drawer: {
@@ -421,6 +425,7 @@ export const DestroyActionInitializer = (props) => {
     'x-component': 'Action',
     'x-designer': 'Action.Designer',
     'x-component-props': {
+      icon: 'DeleteOutlined',
       confirm: {
         title: "{{t('Delete record')}}",
         content: "{{t('Are you sure you want to delete it?')}}",
@@ -438,6 +443,7 @@ export const BulkDestroyActionInitializer = (props) => {
     'x-component': 'Action',
     'x-designer': 'Action.Designer',
     'x-component-props': {
+      icon: 'DeleteOutlined',
       confirm: {
         title: "{{t('Delete record')}}",
         content: "{{t('Are you sure you want to delete it?')}}",
@@ -618,4 +624,26 @@ export const TableCollectionFieldInitializer = (props) => {
 export const CollectionFieldInitializer = (props) => {
   const schema: ISchema = {};
   return <InitializerWithSwitch {...props} schema={schema} type={'x-collection-field'} />;
+};
+
+export const TableSelectorInitializer = (props) => {
+  const { onCreateBlockSchema, componentType, createBlockSchema, insert, ...others } = props;
+  const { getTemplateSchemaByMode } = useSchemaTemplateManager();
+  const collection = useCollection();
+  return (
+    <SchemaInitializer.Item
+      icon={<FormOutlined />}
+      {...others}
+      onClick={async ({ item }) => {
+        const field = item.field;
+        insert(
+          createTableSelectorSchema({
+            rowKey: collection.filterTargetKey,
+            collection: collection.name,
+            resource: collection.name,
+          }),
+        );
+      }}
+    />
+  );
 };

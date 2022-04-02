@@ -6,6 +6,7 @@ import { FormBlockProvider, useFormBlockProps } from './FormBlockProvider';
 import { KanbanBlockProvider, useKanbanBlockProps } from './KanbanBlockProvider';
 import { TableBlockProvider, useTableBlockProps } from './TableBlockProvider';
 import { TableFieldProvider, useTableFieldProps } from './TableFieldProvider';
+import { TableSelectorProvider, useTableSelectorProps } from './TableSelectorProvider';
 
 export const BlockSchemaComponentProvider: React.FC = (props) => {
   return (
@@ -14,6 +15,7 @@ export const BlockSchemaComponentProvider: React.FC = (props) => {
         CalendarBlockProvider,
         TableFieldProvider,
         TableBlockProvider,
+        TableSelectorProvider,
         FormBlockProvider,
         KanbanBlockProvider,
       }}
@@ -25,6 +27,7 @@ export const BlockSchemaComponentProvider: React.FC = (props) => {
         useFormBlockProps,
         useTableFieldProps,
         useTableBlockProps,
+        useTableSelectorProps,
         useKanbanBlockProps,
       }}
     >

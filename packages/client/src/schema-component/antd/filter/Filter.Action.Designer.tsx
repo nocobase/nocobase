@@ -3,7 +3,8 @@ import React from 'react';
 import { useDesignable } from '../..';
 import { GeneralSchemaDesigner, SchemaSettings } from '../../../schema-settings';
 
-export const ActionDesigner = (props) => {
+export const FilterActionDesigner = (props) => {
+  const initialValue = {};
   const field = useField();
   const fieldSchema = useFieldSchema();
   const { dn } = useDesignable();

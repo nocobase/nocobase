@@ -1,6 +1,7 @@
 // 表单的操作配置
 export const FormActionInitializers = {
   title: '{{t("Configure actions")}}',
+  icon: 'SettingOutlined',
   items: [
     {
       type: 'itemGroup',

@@ -6,6 +6,7 @@ import { Table as AntdTable, TableColumnProps } from 'antd';
 import { default as classNames, default as cls } from 'classnames';
 import React from 'react';
 import ReactDragListView from 'react-drag-listview';
+import { useTranslation } from 'react-i18next';
 import { DndContext } from '../..';
 import { RecordIndexProvider, RecordProvider, useSchemaInitializer } from '../../../';
 
@@ -120,13 +121,19 @@ const TableIndex = (props) => {
 };
 
 const usePaginationProps = (pagination1, pagination2) => {
+  const { t } = useTranslation();
   if (pagination2 === false) {
     return false;
   }
   if (!pagination2 && pagination1 === false) {
     return false;
   }
-  return { showSizeChanger: true, ...pagination1, ...pagination2 };
+  return {
+    showTotal: (total) => t('Total {{count}} items', { count: total }),
+    showSizeChanger: true,
+    ...pagination1,
+    ...pagination2,
+  };
 };
 
 export const Table: any = observer((props: any) => {
@@ -155,6 +162,9 @@ export const Table: any = observer((props: any) => {
             onRowSelectionChange?.(selectedRowKeys, selectedRows);
           },
           renderCell: (checked, record, index, originNode) => {
+            if (!dragSort && !showIndex) {
+              return originNode;
+            }
             const current = props?.pagination?.current;
             const pageSize = props?.pagination?.pageSize || 20;
             if (current) {

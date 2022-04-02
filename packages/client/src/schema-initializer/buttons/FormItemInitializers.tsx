@@ -9,6 +9,7 @@ export const FormItemInitializers = (props: any) => {
   return (
     <SchemaInitializer.Button
       wrap={gridRowColWrap}
+      icon={'SettingOutlined'}
       items={[
         {
           type: 'itemGroup',

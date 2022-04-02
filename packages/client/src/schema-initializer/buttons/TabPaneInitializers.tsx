@@ -43,6 +43,7 @@ export const TabPaneInitializers = () => {
             type: 'void',
             'x-component': 'Action',
             'x-component-props': {
+              icon: 'PlusOutlined',
               style: {
                 borderColor: 'rgb(241, 139, 98)',
                 color: 'rgb(241, 139, 98)',

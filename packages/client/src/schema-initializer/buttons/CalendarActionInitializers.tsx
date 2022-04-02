@@ -1,6 +1,7 @@
 // 日历的操作配置
 export const CalendarActionInitializers = {
   title: 'Configure actions',
+  icon: 'SettingOutlined',
   style: { marginLeft: 8 },
   items: [
     {

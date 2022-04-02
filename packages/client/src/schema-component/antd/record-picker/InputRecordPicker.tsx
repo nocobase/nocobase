@@ -2,6 +2,7 @@ import { createForm, Field, onFormSubmit } from '@formily/core';
 import { RecursionField, useField, useFieldSchema } from '@formily/react';
 import { Select } from 'antd';
 import React, { useEffect, useMemo, useState } from 'react';
+import { CollectionProvider, useCollection } from '../../../collection-manager';
 import { FormProvider } from '../../core';
 import { ActionContext } from '../action';
 import { useFieldNames } from './useFieldNames';
@@ -48,6 +49,8 @@ export const InputRecordPicker: React.FC<any> = (props) => {
       value: value[fieldNames.value],
     };
   };
+  const { getField } = useCollection();
+  const collectionField = getField(fieldSchema.name);
   return (
     <div>
       <Select
@@ -61,11 +64,13 @@ export const InputRecordPicker: React.FC<any> = (props) => {
         value={toValue(value)}
         open={false}
       />
-      <ActionContext.Provider value={{ visible, setVisible }}>
-        <FormProvider form={form}>
-          <RecursionField schema={fieldSchema} onlyRenderProperties />
-        </FormProvider>
-      </ActionContext.Provider>
+      <CollectionProvider name={collectionField.target}>
+        <ActionContext.Provider value={{ openMode: 'drawer', visible, setVisible }}>
+          <FormProvider form={form}>
+            <RecursionField schema={fieldSchema} onlyRenderProperties />
+          </FormProvider>
+        </ActionContext.Provider>
+      </CollectionProvider>
     </div>
   );
 };

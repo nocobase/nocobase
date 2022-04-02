@@ -3,6 +3,7 @@ import { gridRowColWrap } from '../utils';
 // 页面里添加区块
 export const BlockInitializers = {
   title: '{{t("Add block")}}',
+  icon: 'PlusOutlined',
   wrap: gridRowColWrap,
   items: [
     {

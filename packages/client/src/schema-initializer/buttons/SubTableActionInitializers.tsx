@@ -1,6 +1,7 @@
 // 表格操作配置
 export const SubTableActionInitializers = {
   title: "{{t('Configure actions')}}",
+  icon: 'SettingOutlined',
   style: {
     marginLeft: 8,
   },

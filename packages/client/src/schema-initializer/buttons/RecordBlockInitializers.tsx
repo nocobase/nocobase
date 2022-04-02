@@ -24,6 +24,7 @@ export const RecordBlockInitializers = (props: any) => {
     <SchemaInitializer.Button
       wrap={gridRowColWrap}
       title={t('Add block')}
+      icon={'PlusOutlined'}
       items={[
         {
           type: 'itemGroup',

@@ -36,6 +36,17 @@ export const ActionDrawer: ComposedActionDrawer = observer((props) => {
                   background: #f0f2f5;
                 }
               }
+              &.nb-record-picker-selector {
+                .nb-block-item {
+                  margin-bottom: 24px;
+                  .general-schema-designer {
+                    top: -8px;
+                    bottom: -8px;
+                    left: -8px;
+                    right: -8px;
+                  }
+                }
+              }
             `,
           )}
           footer={

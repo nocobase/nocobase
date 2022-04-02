@@ -1,25 +1,24 @@
 import { css } from '@emotion/css';
 import { createForm, Field, Form } from '@formily/core';
 import { observer, useField, useFieldSchema, useForm } from '@formily/react';
-import { merge } from '@formily/shared';
 import { Button, Popover, Space } from 'antd';
 import React, { createContext, useContext, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { FormProvider, SchemaComponent } from '../../core';
 import { useDesignable } from '../../hooks';
+import { useProps } from '../../hooks/useProps';
+import { Action } from '../action';
 
 export const FilterActionContext = createContext<any>(null);
 
 export const FilterAction = observer((props: any) => {
-  const { useProps, ...rest1 } = props;
-  const rest2 = useProps?.();
   const { t } = useTranslation();
   const field = useField<Field>();
   const [visible, setVisible] = useState(false);
   const { designable, dn } = useDesignable();
   const fieldSchema = useFieldSchema();
   const form = useMemo<Form>(() => props.form || createForm(), [visible]);
-  const { options, onSubmit, onReset } = merge(rest1 || {}, rest2);
+  const { options, onSubmit, onReset, ...others } = useProps(props);
   return (
     <FilterActionContext.Provider value={{ field, fieldSchema, designable, dn }}>
       <Popover
@@ -37,7 +36,7 @@ export const FilterAction = observer((props: any) => {
                   type: 'object',
                   properties: {
                     filter: {
-                      type: 'object',
+                      type: 'string',
                       enum: options || field.dataSource,
                       default: fieldSchema.default,
                       'x-component': 'Filter',
@@ -70,7 +69,7 @@ export const FilterAction = observer((props: any) => {
                     onClick={(e) => {
                       e.preventDefault();
                       e.stopPropagation();
-                      onSubmit?.();
+                      onSubmit?.(form.values);
                       setVisible(false);
                     }}
                   >
@@ -82,7 +81,7 @@ export const FilterAction = observer((props: any) => {
           </form>
         }
       >
-        <Button>{field.title || t('Filter')}</Button>
+        <Action {...others}/>
       </Popover>
     </FilterActionContext.Provider>
   );

@@ -1,8 +1,10 @@
-{
+export default {
   "{{count}} filter items_one": "{{count}} filter item",
   "{{count}} filter items_other": "{{count}} filter items",
   "{{count}} more items_one": "{{count}} more item",
   "{{count}} more items_other": "{{count}} more items",
+  "Total {{count}} items_one": "Total {{count}} item",
+  "Total {{count}} items_other": "Total {{count}} items",
   "Delete menu item": "Delete menu item",
   "Today": "Today",
   "Month": "Month",
