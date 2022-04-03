@@ -285,5 +285,7 @@ export default {
   "Block templates": "区块模板",
   "Convert reference to duplicate": "模板引用转为复制",
   "Template name": "模板名称",
-  "Block type": "区块类型"
+  "Block type": "区块类型",
+  "Action column": "操作列",
+  "Records per page": "每页显示数量"
 }

@@ -176,7 +176,7 @@ export const TableBlockDesigner = () => {
       )}
 
       <SchemaSettings.SelectItem
-        title={'Records per page'}
+        title={t('Records per page')}
         value={field.decoratorProps?.params?.pageSize || 20}
         options={[
           { label: '10', value: 10 },

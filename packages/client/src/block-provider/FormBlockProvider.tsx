@@ -7,7 +7,7 @@ import { BlockProvider, useBlockRequestContext } from './BlockProvider';
 export const FormBlockContext = createContext<any>({});
 
 const InternalFormBlockProvider = (props) => {
-  const { readPretty } = props;
+  const { action, readPretty } = props;
   const field = useField();
   const form = useMemo(
     () =>
@@ -23,6 +23,7 @@ const InternalFormBlockProvider = (props) => {
   return (
     <FormBlockContext.Provider
       value={{
+        action,
         form,
         field,
         service,

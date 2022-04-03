@@ -524,7 +524,7 @@ export const CreateFormBlockInitializer = (props) => {
           );
         }
       }}
-      items={useRecordCollectionDataSourceItems('Form')}
+      items={useRecordCollectionDataSourceItems('CreateForm')}
     />
   );
 };
@@ -555,7 +555,7 @@ export const RecordFormBlockInitializer = (props) => {
           );
         }
       }}
-      items={useRecordCollectionDataSourceItems('Form')}
+      items={useRecordCollectionDataSourceItems('RecordForm')}
     />
   );
 };

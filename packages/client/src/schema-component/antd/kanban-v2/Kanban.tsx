@@ -1,13 +1,26 @@
 import { ArrayField } from '@formily/core';
-import { observer, RecursionField, useField, useFieldSchema } from '@formily/react';
+import { observer, RecursionField, useField, useFieldSchema, useForm } from '@formily/react';
 import { Spin, Tag } from 'antd';
-import React, { useMemo, useState } from 'react';
+import React, { useContext, useMemo, useState } from 'react';
 import { SchemaComponentOptions } from '../..';
 import { RecordProvider } from '../../../';
+import { useCreateActionProps as useCAP } from '../../../block-provider/hooks';
 import { Board } from '../../../board';
 import '../../../board/style.less';
 import { useProps } from '../../hooks/useProps';
 import { KanbanCardContext, KanbanColumnContext } from './context';
+
+const useCreateActionProps = () => {
+  const form = useForm();
+  const { column, groupField } = useContext(KanbanColumnContext);
+  const { onClick } = useCAP();
+  return {
+    async onClick() {
+      form.setValuesIn(groupField.name, column.id);
+      await onClick();
+    },
+  };
+};
 
 export const toColumns = (groupField: any, dataSource: Array<any> = []) => {
   const columns = {
@@ -74,6 +87,8 @@ export const Kanban: ComposedKanban = observer((props: any) => {
   return (
     <Spin spinning={field.loading || false}>
       <Board
+        allowAddCard
+        cardAdderPosition={'bottom'}
         disableCardDrag={disableCardDrag}
         onCardRemove={handleCardRemove}
         onCardDragEnd={handleCardDragEnd}
@@ -109,7 +124,7 @@ export const Kanban: ComposedKanban = observer((props: any) => {
         renderCardAdder={({ column }) => {
           return (
             <KanbanColumnContext.Provider value={{ column, groupField }}>
-              <SchemaComponentOptions scope={{}}>
+              <SchemaComponentOptions scope={{ useCreateActionProps }}>
                 <RecursionField name={schemas.cardAdder.name} schema={schemas.cardAdder} />
               </SchemaComponentOptions>
             </KanbanColumnContext.Provider>
