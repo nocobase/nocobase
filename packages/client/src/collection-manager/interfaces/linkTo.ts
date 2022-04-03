@@ -1,5 +1,7 @@
+import { ISchema } from '@formily/react';
 import { uid } from '@formily/shared';
-import { defaultProps } from './properties';
+import { cloneDeep } from 'lodash';
+import { defaultProps, recordPickerSelector, recordPickerViewer } from './properties';
 import { IField } from './types';
 
 export const linkTo: IField = {
@@ -41,6 +43,17 @@ export const linkTo: IField = {
         },
       },
     },
+  },
+  schemaInitialize(schema: ISchema, { readPretty }) {
+    if (readPretty) {
+      schema['properties'] = {
+        viewer: cloneDeep(recordPickerViewer),
+      };
+    } else {
+      schema['properties'] = {
+        selector: cloneDeep(recordPickerSelector),
+      };
+    }
   },
   initialize: (values: any) => {
     if (values.type === 'belongsToMany') {

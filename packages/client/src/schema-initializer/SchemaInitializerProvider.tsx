@@ -1,7 +1,8 @@
 import { isPlainObj } from '@formily/shared';
 import React, { createContext, useContext } from 'react';
 import { SchemaComponentOptions } from '../schema-component';
-import { initializes as globals, items } from './Initializers';
+import * as globals from './buttons';
+import * as items from './items';
 import { SchemaInitializer } from './SchemaInitializer';
 
 export const SchemaInitializerContext = createContext<any>({});
@@ -46,7 +47,6 @@ export const useSchemaInitializer = (name: string) => {
 
 export const SchemaInitializerProvider: React.FC<SchemaInitializerProviderProps> = (props) => {
   const { initializers, components, children } = props;
-
   return (
     <SchemaInitializerContext.Provider value={{ ...globals, ...initializers }}>
       <SchemaComponentOptions components={{ ...items, ...components }}>{children}</SchemaComponentOptions>

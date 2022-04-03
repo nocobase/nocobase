@@ -134,19 +134,6 @@ const useSideMenuRef = () => {
 
 const MenuItemDesignerContext = createContext(null);
 
-const AddMenuItemButton = () => {
-  const schema = useFieldSchema();
-  const { render } = useSchemaInitializer(schema['x-initializer']);
-  const { designable } = useDesignable();
-  return (
-    designable && (
-      <AntdMenu.Item disabled style={{ padding: '0 8px', order: 9999 }}>
-        {render({ style: { background: 'none' } })}
-      </AntdMenu.Item>
-    )
-  );
-};
-
 export const Menu: ComposedMenu = observer((props) => {
   let {
     onSelect,
@@ -201,6 +188,7 @@ export const Menu: ComposedMenu = observer((props) => {
     }
     sideMenuElement.style.display = sideMenuSchema?.['x-component'] === 'Menu.SubMenu' ? 'block' : 'none';
   }, [sideMenuSchema?.name, sideMenuRef]);
+  const { designable } = useDesignable();
   return (
     <DndContext>
       <MenuItemDesignerContext.Provider value={Designer}>
@@ -257,7 +245,11 @@ export const Menu: ComposedMenu = observer((props) => {
             defaultOpenKeys={defaultOpenKeys}
             defaultSelectedKeys={defaultSelectedKeys}
           >
-            <AddMenuItemButton />
+            {designable && (
+              <AntdMenu.Item disabled style={{ padding: '0 8px', order: 9999 }}>
+                {render({ style: { background: 'none' } })}
+              </AntdMenu.Item>
+            )}
             {props.children}
           </AntdMenu>
           {loading

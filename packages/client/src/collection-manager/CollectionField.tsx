@@ -10,7 +10,7 @@ import { useCollectionField } from './hooks';
 const InternalField: React.FC = (props) => {
   const field = useField<Field>();
   const fieldSchema = useFieldSchema();
-  const { name, uiSchema } = useCollectionField();
+  const { name, interface: interfaceType, uiSchema } = useCollectionField();
   const component = useComponent(uiSchema?.['x-component']);
   const compile = useCompile();
   const setFieldProps = (key, value) => {
@@ -29,6 +29,9 @@ const InternalField: React.FC = (props) => {
     setFieldProps('title', uiSchema.title);
     setFieldProps('description', uiSchema.description);
     setFieldProps('initialValue', uiSchema.default);
+    if (!field.validator && uiSchema['x-validator']) {
+      field.validator = uiSchema['x-validator'];
+    }
     field.readPretty = uiSchema['x-read-pretty'];
     setRequired();
     // @ts-ignore
@@ -36,8 +39,16 @@ const InternalField: React.FC = (props) => {
     const originalProps = compile(uiSchema['x-component-props']) || {};
     const componentProps = merge(originalProps, field.componentProps || {});
     field.component = [component, componentProps];
-    // console.log('componentProps', uiSchema?.title, field.componentProps);
-  }, [uiSchema?.title, uiSchema?.description, uiSchema?.required]);
+    // if (interfaceType === 'input') {
+    //   field.componentProps.ellipsis = true;
+    // } else if (interfaceType === 'textarea') {
+    //   field.componentProps.ellipsis = true;
+    // } else if (interfaceType === 'markdown') {
+    //   field.componentProps.ellipsis = true;
+    // } else if (interfaceType === 'attachment') {
+    //   field.componentProps.size = 'small';
+    // }
+  }, [JSON.stringify(uiSchema)]);
   if (!uiSchema) {
     return null;
   }

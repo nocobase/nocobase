@@ -4,8 +4,10 @@ import { Button, Modal, Popover } from 'antd';
 import classnames from 'classnames';
 import React, { useState } from 'react';
 import { useActionContext } from '../..';
+import { Icon } from '../../../icon';
 import { SortableItem } from '../../common';
 import { useDesigner } from '../../hooks';
+import { useProps } from '../../hooks/useProps';
 import ActionContainer from './Action.Container';
 import { ActionDesigner } from './Action.Designer';
 import { ActionDrawer } from './Action.Drawer';
@@ -71,10 +73,12 @@ export const Action: ComposedAction = observer((props: any) => {
     containerRefKey,
     component,
     useAction = useA,
-    onClick,
     className,
+    disabled,
+    icon,
     ...others
   } = props;
+  const { onClick } = useProps(props);
   const [visible, setVisible] = useState(false);
   const Designer = useDesigner();
   const field = useField();
@@ -84,6 +88,7 @@ export const Action: ComposedAction = observer((props: any) => {
   const renderButton = () => (
     <SortableItem
       {...others}
+      icon={<Icon type={icon} />}
       onClick={(e: React.MouseEvent) => {
         e.preventDefault();
         e.stopPropagation();
@@ -104,8 +109,8 @@ export const Action: ComposedAction = observer((props: any) => {
       component={component || Button}
       className={classnames(className, actionDesignerCss)}
     >
-      <Designer {...designerProps} />
       {field.title}
+      <Designer {...designerProps} />
     </SortableItem>
   );
   return (

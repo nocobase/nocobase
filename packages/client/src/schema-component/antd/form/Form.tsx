@@ -78,11 +78,6 @@ const useDef = (opts: any = {}, props: FormProps = {}) => {
 
 const FormBlockContext = createContext<any>(null);
 
-export const useFormBlockContext = () => {
-  const ctx = useContext(FormBlockContext);
-  return ctx;
-};
-
 export const Form: React.FC<FormProps> & { Designer?: any } = observer((props) => {
   const { request, effects, initialValue, useValues = useDef, ...others } = props;
   const fieldSchema = useFieldSchema();

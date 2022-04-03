@@ -107,6 +107,9 @@ export class Designable {
     }
     this.on('insertAdjacent', async ({ onSuccess, current, position, schema, wrap, removed }) => {
       refresh();
+      if (!current['x-uid']) {
+        return;
+      }
       await api.request({
         url: `/uiSchemas:insertAdjacent/${current['x-uid']}?position=${position}`,
         method: 'post',
@@ -126,25 +129,27 @@ export class Designable {
     });
     this.on('patch', async ({ schema }) => {
       refresh();
-      if (schema?.['x-uid']) {
-        await api.request({
-          url: `/uiSchemas:patch`,
-          method: 'post',
-          data: {
-            ...schema,
-          },
-        });
+      if (!schema?.['x-uid']) {
+        return;
       }
+      await api.request({
+        url: `/uiSchemas:patch`,
+        method: 'post',
+        data: {
+          ...schema,
+        },
+      });
       message.success('配置保存成功！', 0.2);
     });
     this.on('remove', async ({ removed }) => {
       refresh();
-      if (removed?.['x-uid']) {
-        await api.request({
-          url: `/uiSchemas:remove/${removed['x-uid']}`,
-          method: 'post',
-        });
+      if (!removed?.['x-uid']) {
+        return;
       }
+      await api.request({
+        url: `/uiSchemas:remove/${removed['x-uid']}`,
+        method: 'post',
+      });
       message.success('配置保存成功！', 0.2);
     });
   }

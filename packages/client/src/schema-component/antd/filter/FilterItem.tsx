@@ -1,5 +1,5 @@
 import { CloseCircleOutlined } from '@ant-design/icons';
-import { observer, useField } from '@formily/react';
+import { observer } from '@formily/react';
 import { Cascader, Select, Space } from 'antd';
 import React, { useContext } from 'react';
 import { useCompile } from '../..';
@@ -8,10 +8,9 @@ import { DynamicComponent } from './DynamicComponent';
 import { useValues } from './useValues';
 
 export const FilterItem = observer((props: any) => {
-  const field = useField<any>();
-  const remove = useContext(RemoveConditionContext);
-  const { option, options, dataIndex, operator, setDataIndex, setOperator, value, setValue } = useValues();
   const compile = useCompile();
+  const remove = useContext(RemoveConditionContext);
+  const { schema, fields, operators, dataIndex, operator, setDataIndex, setOperator, value, setValue } = useValues();
   return (
     <div style={{ marginBottom: 8 }}>
       <Space>
@@ -25,16 +24,15 @@ export const FilterItem = observer((props: any) => {
             width: 150,
           }}
           changeOnSelect={false}
-          key={field.address.toString()}
           value={dataIndex}
-          options={compile(options)}
+          options={compile(fields)}
           onChange={(value) => {
             setDataIndex(value);
           }}
         />
         <Select
-          value={operator}
-          options={compile(option?.operators)}
+          value={operator?.value}
+          options={compile(operators)}
           onChange={(value) => {
             setOperator(value);
           }}
@@ -42,13 +40,14 @@ export const FilterItem = observer((props: any) => {
             minWidth: 100,
           }}
         />
-        {React.createElement(DynamicComponent, {
-          value,
-          schema: option?.schema,
-          onChange(value) {
-            setValue(value);
-          },
-        })}
+        {!operator?.noValue &&
+          React.createElement(DynamicComponent, {
+            value,
+            schema,
+            onChange(value) {
+              setValue(value);
+            },
+          })}
         <CloseCircleOutlined onClick={() => remove()} />
       </Space>
     </div>

@@ -12,7 +12,7 @@ export const datetime: IField = {
     type: 'date',
     // name,
     uiSchema: {
-      type: 'datetime',
+      type: 'string',
       // title,
       'x-component': 'DatePicker',
       'x-component-props': {

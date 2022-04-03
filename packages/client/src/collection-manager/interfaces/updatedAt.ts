@@ -13,7 +13,7 @@ export const updatedAt: IField = {
     field: 'updatedAt',
     // name,
     uiSchema: {
-      type: 'datetime',
+      type: 'string',
       title: '{{t("Last updated at")}}',
       'x-component': 'DatePicker',
       'x-component-props': {},

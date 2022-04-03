@@ -1,24 +1,11 @@
 import { LockOutlined } from '@ant-design/icons';
-import { ISchema, useForm } from '@formily/react';
+import { ISchema } from '@formily/react';
 import { uid } from '@formily/shared';
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { PluginManager } from '../plugin-manager';
-import { ActionContext, SchemaComponent, useActionContext } from '../schema-component';
+import { ActionContext, SchemaComponent } from '../schema-component';
 import * as components from './Configuration';
-
-const useCloseAction = () => {
-  const { setVisible } = useActionContext();
-  const form = useForm();
-  return {
-    async run() {
-      setVisible(false);
-      form.submit((values) => {
-        console.log(values);
-      });
-    },
-  };
-};
 
 const schema: ISchema = {
   type: 'object',
@@ -49,7 +36,7 @@ export const ACLShortcut = () => {
           setVisible(true);
         }}
       />
-      <SchemaComponent components={components} scope={{ useCloseAction }} schema={schema} />
+      <SchemaComponent components={components} schema={schema} />
     </ActionContext.Provider>
   );
 };

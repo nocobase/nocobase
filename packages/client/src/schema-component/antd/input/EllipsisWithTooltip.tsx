@@ -29,7 +29,7 @@ export const EllipsisWithTooltip = (props) => {
             overflowX: 'auto',
           }}
         >
-          {popoverContent}
+          {popoverContent || props.children}
         </div>
       }
     >
