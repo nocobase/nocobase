@@ -1,13 +1,15 @@
+import { css } from '@emotion/css';
 import { ISchema, observer } from '@formily/react';
-import { Button, Dropdown, Menu } from 'antd';
+import { Button, Dropdown, Menu, Switch } from 'antd';
+import classNames from 'classnames';
 import React, { createContext, useContext, useState } from 'react';
+import { Icon } from '../icon';
 import { useCompile, useDesignable } from '../schema-component/hooks';
-import { initializes, items } from './Initializers';
 import {
   SchemaInitializerButtonProps,
   SchemaInitializerItemComponent,
   SchemaInitializerItemOptions,
-  SchemaInitializerItemProps,
+  SchemaInitializerItemProps
 } from './types';
 
 const defaultWrap = (s: ISchema) => s;
@@ -15,10 +17,6 @@ const defaultWrap = (s: ISchema) => s;
 export const SchemaInitializerItemContext = createContext(null);
 
 export const SchemaInitializer = () => null;
-
-SchemaInitializer.items = items;
-
-SchemaInitializer.initializes = initializes;
 
 SchemaInitializer.Button = observer((props: SchemaInitializerButtonProps) => {
   const {
@@ -30,6 +28,7 @@ SchemaInitializer.Button = observer((props: SchemaInitializerButtonProps) => {
     dropdown,
     component,
     style,
+    icon,
     ...others
   } = props;
   const compile = useCompile();
@@ -74,16 +73,20 @@ SchemaInitializer.Button = observer((props: SchemaInitializerButtonProps) => {
       }
       if (item.type === 'itemGroup') {
         return (
-          <Menu.ItemGroup key={item.key || `item-group-${indexA}`} title={compile(item.title)}>
-            {renderItems(item.children)}
-          </Menu.ItemGroup>
+          !!item.children?.length && (
+            <Menu.ItemGroup key={item.key || `item-group-${indexA}`} title={compile(item.title)}>
+              {renderItems(item.children)}
+            </Menu.ItemGroup>
+          )
         );
       }
       if (item.type === 'subMenu') {
         return (
-          <Menu.SubMenu key={item.key || `item-group-${indexA}`} title={compile(item.title)}>
-            {renderItems(item.children)}
-          </Menu.SubMenu>
+          !!item.children?.length && (
+            <Menu.SubMenu key={item.key || `item-group-${indexA}`} title={compile(item.title)}>
+              {renderItems(item.children)}
+            </Menu.SubMenu>
+          )
         );
       }
     });
@@ -96,6 +99,17 @@ SchemaInitializer.Button = observer((props: SchemaInitializerButtonProps) => {
 
   return (
     <Dropdown
+      className={classNames('nb-schema-initializer-button')}
+      openClassName={`nb-schema-initializer-button-open`}
+      overlayClassName={classNames(
+        'nb-schema-initializer-button-overlay',
+        css`
+          .ant-dropdown-menu-item-group-list {
+            max-height: 40vh;
+            overflow: auto;
+          }
+        `,
+      )}
       visible={visible}
       onVisibleChange={(visible) => {
         setVisible(visible);
@@ -114,6 +128,7 @@ SchemaInitializer.Button = observer((props: SchemaInitializerButtonProps) => {
             ...style,
           }}
           {...others}
+          icon={<Icon type={icon as string}/>}
         >
           {compile(props.children || props.title)}
         </Button>
@@ -195,4 +210,14 @@ SchemaInitializer.Item = (props: SchemaInitializerItemProps) => {
 
 SchemaInitializer.itemWrap = (component?: SchemaInitializerItemComponent) => {
   return component;
+};
+
+SchemaInitializer.SwitchItem = (props) => {
+  return (
+    <SchemaInitializer.Item onClick={props.onClick}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        {props.title} <Switch style={{ marginLeft: 20 }} size={'small'} checked={props.checked} />
+      </div>
+    </SchemaInitializer.Item>
+  );
 };

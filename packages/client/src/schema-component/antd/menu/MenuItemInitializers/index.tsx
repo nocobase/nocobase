@@ -10,6 +10,7 @@ export const MenuItemInitializers = (props: any) => {
   return (
     <SchemaInitializer.Button
       insertPosition={'beforeEnd'}
+      icon={'PlusOutlined'}
       insert={props.insert}
       style={props.style}
       {...props}

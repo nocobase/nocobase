@@ -12,5 +12,3 @@ group:
 ## compose
 
 <code src="./demos/demo1/index.tsx"/>
-
-<code src="./demos/demo2/index.tsx"/>

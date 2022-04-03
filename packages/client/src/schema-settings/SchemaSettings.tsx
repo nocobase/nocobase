@@ -13,7 +13,7 @@ import {
   SchemaComponentOptions,
   useActionContext,
   useAPIClient,
-  useCollection,
+  useCollection
 } from '..';
 import { useSchemaTemplateManager } from '../schema-templates';
 import { useBlockTemplateContext } from '../schema-templates/BlockTemplate';
@@ -245,7 +245,7 @@ SchemaSettings.SelectItem = (props) => {
     <SchemaSettings.Item {...others}>
       <div style={{ alignItems: 'center', display: 'flex', justifyContent: 'space-between' }}>
         {title}
-        <Select bordered={false} defaultValue={value} onChange={onChange} options={options} style={{ minWidth: 100 }} />
+        <Select bordered={false} defaultValue={value} onChange={onChange} options={options} style={{ textAlign: 'right', minWidth: 100 }} />
       </div>
     </SchemaSettings.Item>
   );
@@ -264,7 +264,7 @@ SchemaSettings.SwitchItem = (props) => {
     >
       <div style={{ alignItems: 'center', display: 'flex', justifyContent: 'space-between' }}>
         {title}
-        <Switch size={'small'} checked={checked} />
+        <Switch size={'small'} checked={checked} style={{ marginLeft: 32 }} />
       </div>
     </SchemaSettings.Item>
   );

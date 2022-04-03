@@ -4,7 +4,6 @@ import { useDesignable } from '../..';
 import { GeneralSchemaDesigner, SchemaSettings } from '../../../schema-settings';
 
 export const ActionDesigner = (props) => {
-  const initialValue = {};
   const field = useField();
   const fieldSchema = useFieldSchema();
   const { dn } = useDesignable();
@@ -22,21 +21,35 @@ export const ActionDesigner = (props) => {
                 'x-decorator': 'FormItem',
                 'x-component': 'Input',
                 title: '按钮标题',
+                default: fieldSchema.title,
+                'x-component-props': {},
+                // description: `原字段标题：${collectionField?.uiSchema?.title}`,
+              },
+              icon: {
+                'x-decorator': 'FormItem',
+                'x-component': 'IconPicker',
+                title: '按钮图标',
+                default: fieldSchema?.['x-component-props']?.icon,
                 'x-component-props': {},
                 // description: `原字段标题：${collectionField?.uiSchema?.title}`,
               },
             },
           } as ISchema
         }
-        initialValues={{ title: field.title }}
-        onSubmit={({ title }) => {
+        onSubmit={({ title, icon }) => {
           if (title) {
             fieldSchema.title = title;
             field.title = title;
+            field.componentProps.icon = icon;
+            fieldSchema['x-component-props'] = fieldSchema['x-component-props'] || {};
+            fieldSchema['x-component-props'].icon = icon;
             dn.emit('patch', {
               schema: {
                 ['x-uid']: fieldSchema['x-uid'],
                 title,
+                'x-component-props': {
+                  ...fieldSchema['x-component-props'],
+                },
               },
             });
             dn.refresh();

@@ -1,4 +1,4 @@
-import { Button, Dropdown, Menu } from 'antd';
+import { Dropdown, Menu } from 'antd';
 import React, { createContext, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useHistory } from 'react-router-dom';
@@ -43,9 +43,9 @@ export const CurrentUser = () => {
             </Menu>
           }
         >
-          <Button ghost style={{ border: 0 }}>
+          <span style={{ border: 0, padding: '16px', color: 'rgba(255, 255, 255, 0.65)' }}>
             {data?.data?.nickname || data?.data?.email}
-          </Button>
+          </span>
         </Dropdown>
       </DropdownVisibleContext.Provider>
     </div>

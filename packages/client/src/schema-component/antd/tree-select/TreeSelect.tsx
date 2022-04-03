@@ -4,7 +4,7 @@ import { TreeSelect as AntdTreeSelect } from 'antd';
 import React from 'react';
 import { ReadPretty } from './ReadPretty';
 
-export const TreeSelect = connect(
+export const TreeSelect: any = connect(
   AntdTreeSelect,
   mapProps(
     {

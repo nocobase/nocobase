@@ -8,7 +8,7 @@ import { useTranslation } from 'react-i18next';
 import { useAPIClient } from '../../../api-client';
 import { createDesignable, useDesignable } from '../../../schema-component';
 import { SchemaInitializer } from '../../../schema-initializer';
-import { useFormItemInitializerFields } from '../../../schema-initializer/Initializers/utils';
+import { useFormItemInitializerFields } from '../../../schema-initializer/utils';
 
 const titleCss = css`
   pointer-events: none;

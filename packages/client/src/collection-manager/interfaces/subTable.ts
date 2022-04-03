@@ -1,3 +1,4 @@
+import { ISchema } from '@formily/react';
 import { uid } from '@formily/shared';
 import { defaultProps } from './properties';
 import { IField } from './types';
@@ -13,12 +14,52 @@ export const subTable: IField = {
     type: 'hasMany',
     // name,
     uiSchema: {
-      type: 'array',
+      type: 'void',
       // title,
-      'x-component': 'Table',
+      'x-component': 'TableField',
       'x-component-props': {},
-      enum: [],
     },
+  },
+  schemaInitialize(schema: ISchema, { field, readPretty }) {
+    const association = `${field.collectionName}.${field.name}`;
+    schema['type'] = 'void';
+    schema['x-component'] = 'TableField';
+    schema['properties'] = {
+      block: {
+        type: 'void',
+        'x-decorator': 'TableFieldProvider',
+        'x-decorator-props': {
+          collection: field.target,
+          association: association,
+          resource: association,
+          action: 'list',
+          params: {
+            paginate: false,
+          },
+          showIndex: true,
+          dragSort: false,
+        },
+        properties: {
+          actions: {
+            type: 'void',
+            'x-initializer': 'SubTableActionInitializers',
+            'x-component': 'TableField.ActionBar',
+            'x-component-props': {},
+          },
+          [field.name]: {
+            type: 'array',
+            'x-initializer': 'TableColumnInitializers',
+            'x-component': 'TableV2',
+            'x-component-props': {
+              rowSelection: {
+                type: 'checkbox',
+              },
+              useProps: '{{ useTableFieldProps }}',
+            },
+          },
+        },
+      },
+    };
   },
   initialize: (values: any) => {
     if (!values.target) {

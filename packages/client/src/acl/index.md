@@ -7,10 +7,6 @@ group:
   path: /client
 ---
 
-# ACL <Badge>待定</Badge>
+# ACL
 
-访问控制列表，plugin-acl 的前端模块
-
-<code src="./demos/demo1.tsx" />
-<code src="./demos/demo2.tsx" />
-<code src="./demos/demo3.tsx" />
+访问控制列表，plugin-acl 的前端模块，详细文档待补充。
