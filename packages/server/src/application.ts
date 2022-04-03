@@ -14,6 +14,9 @@ import { Plugin } from './plugin';
 import { PluginManager, InstallOptions } from './plugin-manager';
 import { AppManager } from './app-manager';
 
+export type PluginConfiguration = string | [string, any];
+export type PluginsConfigurations = Array<PluginConfiguration>;
+
 export interface ResourcerOptions {
   prefix?: string;
 }
@@ -26,6 +29,7 @@ export interface ApplicationOptions {
   dataWrapping?: boolean;
   registerActions?: boolean;
   i18n?: i18n | InitOptions;
+  plugins?: PluginsConfigurations;
 }
 
 interface DefaultState {
@@ -111,10 +115,25 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     if (options.registerActions !== false) {
       registerActions(this);
     }
+
+    this.loadPluginConfig(options.plugins || []);
   }
 
   plugin<O = any>(pluginClass: any, options?: O): Plugin<O> {
     return this.pm.add(pluginClass, options);
+  }
+
+  loadPluginConfig(pluginsConfigurations: PluginsConfigurations) {
+    for (let pluginConfiguration of pluginsConfigurations) {
+      if (typeof pluginConfiguration == 'string') {
+        pluginConfiguration = [pluginConfiguration, {}];
+      }
+
+      const plugin = PluginManager.resolvePlugin(pluginConfiguration[0]);
+      const pluginOptions = pluginConfiguration[1];
+
+      this.plugin(plugin, pluginOptions);
+    }
   }
 
   use<NewStateT = {}, NewContextT = {}>(

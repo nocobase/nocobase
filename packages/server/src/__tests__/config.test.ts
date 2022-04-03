@@ -1,33 +1,26 @@
 import * as path from 'path';
-import { ApplicationFactory, ConfigurationRepository, loadConfiguration } from '../application-factory';
 import databaseConfiguration from './config/database';
 import userConfiguration from './config/plugins-options/users';
+import { readConfig } from '../read-config';
+import { PluginManager } from '../plugin-manager';
+import Application from '../application';
 
 const configurationDir = path.join(__dirname, './config');
 
 describe('config', () => {
-  it('should load configuration from directory', async () => {
-    const configurationRepository = new ConfigurationRepository();
-    await loadConfiguration(configurationDir, configurationRepository);
-
-    expect(configurationRepository.get('not-exists')).toBeUndefined();
-    expect(configurationRepository.get('database')).toEqual(databaseConfiguration);
-  });
-
-  it('should load configuration to object', async () => {
-    const configurationRepository = new ConfigurationRepository();
-    await loadConfiguration(configurationDir, configurationRepository);
-
-    const result = configurationRepository.toObject();
-    expect(result['database']).toEqual(databaseConfiguration);
-    expect(result['plugins-options']['users']).toEqual(userConfiguration);
+  it('should read configuration from directory', async () => {
+    const config = await readConfig(configurationDir);
+    expect(config['not-exists']).toBeUndefined();
+    expect(config['database']).toEqual(databaseConfiguration);
+    expect(config['database']).toEqual(databaseConfiguration);
+    expect(config['plugins-options']['users']).toEqual(userConfiguration);
   });
 
   it('should create application from configuration', async () => {
     const TestA = require('./plugins/test-a').default;
     const TestB = require('./plugins/test-b').default;
 
-    ApplicationFactory.resolvePlugin = (name) => {
+    PluginManager.resolvePlugin = (name) => {
       if (name === 'test-a') {
         return TestA;
       }
@@ -37,7 +30,9 @@ describe('config', () => {
       }
     };
 
-    const app = await ApplicationFactory.buildWithConfiguration(configurationDir);
+    const config = await readConfig(configurationDir);
+
+    const app = new Application(config);
 
     const appPluginA = app.getPlugin('test-a');
 

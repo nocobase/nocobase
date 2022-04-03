@@ -4,6 +4,10 @@ import { Plugin } from '../plugin';
 
 class MyPlugin extends Plugin {
   async load() {}
+
+  getName(): string {
+    return 'MyPlugin';
+  }
 }
 
 describe('application', () => {
@@ -119,4 +123,6 @@ describe('application', () => {
     const response = await agent.get('/api/foos/1/bars');
     expect(response.body).toEqual([1, 2]);
   });
+
+  it('should create application with plugins config', async () => {});
 });

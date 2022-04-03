@@ -1,39 +1,11 @@
-import * as fs from 'fs';
-import * as path from 'path';
 import lodash from 'lodash';
-import Application from './application';
+import fs from 'fs';
+import path from 'path';
 
-export type PluginConfiguration = string | [string, any];
-export type PluginsConfigurations = Array<PluginConfiguration>;
-
-export class ApplicationFactory {
-  static async buildWithConfiguration(configurationDir: string): Promise<Application> {
-    const configurationRepository = new ConfigurationRepository();
-    await loadConfiguration(configurationDir, configurationRepository);
-
-    const app = new Application(configurationRepository.toObject());
-
-    this.loadPlugins(app, configurationRepository.get('plugins', []));
-
-    return app;
-  }
-
-  static loadPlugins(app: Application, pluginsConfigurations: PluginsConfigurations) {
-    for (let pluginConfiguration of pluginsConfigurations) {
-      if (typeof pluginConfiguration == 'string') {
-        pluginConfiguration = [pluginConfiguration, {}];
-      }
-
-      const plugin = this.resolvePlugin(pluginConfiguration[0]);
-      const pluginOptions = pluginConfiguration[1];
-
-      app.plugin(plugin, pluginOptions);
-    }
-  }
-
-  static resolvePlugin(pluginName: string) {
-    return require(pluginName).default;
-  }
+export async function readConfig(dir: string) {
+  const repository = new ConfigurationRepository();
+  await loadConfiguration(dir, repository);
+  return repository.toObject();
 }
 
 export class ConfigurationRepository {

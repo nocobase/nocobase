@@ -65,4 +65,8 @@ export class PluginManager {
       await this.app.emitAsync('afterInstallPlugin', plugin, options);
     }
   }
+
+  static resolvePlugin(pluginName: string) {
+    return require(pluginName).default;
+  }
 }
