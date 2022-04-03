@@ -35,7 +35,7 @@ export async function signin(ctx: Context, next: Next) {
     ctx.throw(401, '密码错误，请您重新输入');
   }
 
-  const pluginUser = ctx.app.getPlugin<UsersPlugin>('@nocobase/plugin-users');
+  const pluginUser = ctx.app.getPlugin('@nocobase/plugin-users');
 
   ctx.body = {
     ...user.toJSON(),
