@@ -27,7 +27,6 @@ export const Filter: any = observer((props: any) => {
       <FilterContext.Provider value={{ field, fieldSchema, dynamicComponent, options: field.dataSource || [] }}>
         <FilterGroup {...props} />
       </FilterContext.Provider>
-      <pre>{JSON.stringify(field.value, null, 2)}</pre>
     </div>
   );
 });

@@ -22,6 +22,7 @@ export const FilterAction = observer((props: any) => {
   return (
     <FilterActionContext.Provider value={{ field, fieldSchema, designable, dn }}>
       <Popover
+        destroyTooltipOnHide
         placement={'bottomLeft'}
         visible={visible}
         onVisibleChange={(visible) => {
@@ -58,6 +59,7 @@ export const FilterAction = observer((props: any) => {
                     onClick={async () => {
                       await form.reset();
                       onReset?.();
+                      field.title = t('Filter');
                       setVisible(false);
                     }}
                   >
@@ -70,6 +72,9 @@ export const FilterAction = observer((props: any) => {
                       e.preventDefault();
                       e.stopPropagation();
                       onSubmit?.(form.values);
+                      const items = form.values?.filter?.$and || form.values?.filter?.$or;
+                      console.log('form.values.filter', form.values, items);
+                      field.title = t('{{count}} filter items', { count: items?.length || 0 });
                       setVisible(false);
                     }}
                   >
@@ -81,7 +86,7 @@ export const FilterAction = observer((props: any) => {
           </form>
         }
       >
-        <Action {...others}/>
+        <Action {...others} />
       </Popover>
     </FilterActionContext.Provider>
   );
