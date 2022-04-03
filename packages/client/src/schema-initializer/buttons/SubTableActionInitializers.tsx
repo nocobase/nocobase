@@ -5,7 +5,7 @@ export const SubTableActionInitializers = {
   style: {
     marginLeft: 8,
   },
-  size: 'small',
+  // size: 'small',
   items: [
     {
       type: 'itemGroup',
@@ -17,9 +17,9 @@ export const SubTableActionInitializers = {
           component: 'CreateActionInitializer',
           schema: {
             'x-align': 'right',
-            'x-component-props': {
-              size: 'small',
-            },
+            // 'x-component-props': {
+            //   size: 'small',
+            // },
           },
         },
         {
@@ -28,9 +28,9 @@ export const SubTableActionInitializers = {
           component: 'BulkDestroyActionInitializer',
           schema: {
             'x-align': 'right',
-            'x-component-props': {
-              size: 'small',
-            },
+            // 'x-component-props': {
+            //   size: 'small',
+            // },
           },
         },
       ],

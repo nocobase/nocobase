@@ -27,7 +27,6 @@ export const gridRowColWrap = (schema: ISchema) => {
 };
 
 export const removeTableColumn = (schema, cb) => {
-  console.log('schema.parent', schema.parent);
   cb(schema.parent);
 };
 
@@ -92,7 +91,6 @@ export const useFormItemInitializerFields = () => {
   const { name, fields } = useCollection();
   const { getInterface } = useCollectionManager();
   const form = useForm();
-  console.log('form.readPretty', form.pattern);
   return fields
     ?.filter((field) => field?.interface)
     ?.map((field) => {

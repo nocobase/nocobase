@@ -48,7 +48,7 @@ const useReousrce = (props: UseReousrceProps) => {
     return new TableFieldResource(options);
   }
   const __parent = useContext(BlockRequestContext);
-  if (__parent?.resource instanceof TableFieldResource) {
+  if (__parent?.block === 'TableField' && __parent?.resource instanceof TableFieldResource) {
     return __parent.resource;
   }
   if (!association) {
@@ -103,9 +103,8 @@ const BlockRequestProvider = (props) => {
     },
   );
   const __parent = useContext(BlockRequestContext);
-  const isTableField = resource instanceof TableFieldResource;
   return (
-    <BlockRequestContext.Provider value={{ isTableField, field, service, resource, __parent }}>
+    <BlockRequestContext.Provider value={{ block: props.block, field, service, resource, __parent }}>
       {props.children}
     </BlockRequestContext.Provider>
   );
@@ -134,13 +133,13 @@ export const useBlockAssociationContext = () => {
 };
 
 export const useFilterByTk = () => {
-  const __parent = useContext(BlockRequestContext);
+  const { resource, __parent } = useContext(BlockRequestContext);
   const recordIndex = useRecordIndex();
   const record = useRecord();
   const collection = useCollection();
   const { getCollectionField } = useCollectionManager();
   const assoc = useContext(BlockAssociationContext);
-  if (__parent?.isTableField) {
+  if (resource instanceof TableFieldResource || __parent?.block === 'TableField') {
     return recordIndex;
   }
   if (assoc) {
