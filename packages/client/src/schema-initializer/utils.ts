@@ -485,7 +485,7 @@ export const createTableSelectorSchema = (options) => {
       value: {
         type: 'array',
         'x-initializer': 'TableColumnInitializers',
-        'x-component': 'TableV2',
+        'x-component': 'TableV2.Selector',
         'x-component-props': {
           rowKey: 'id',
           rowSelection: {

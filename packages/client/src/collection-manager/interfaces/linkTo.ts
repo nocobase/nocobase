@@ -44,7 +44,6 @@ export const linkTo: IField = {
     },
   },
   schemaInitialize(schema: ISchema, { readPretty }) {
-    console.log('readPretty', readPretty);
     if (readPretty) {
       schema['properties'] = {
         viewer: recordPickerViewer,

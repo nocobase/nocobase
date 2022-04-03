@@ -97,7 +97,7 @@ export const useTableBlockProps = () => {
     loading: ctx?.service?.loading,
     showIndex: ctx.showIndex,
     dragSort: ctx.dragSort,
-    rowKey: ctx.rowKey,
+    rowKey: ctx.rowKey || 'id',
     pagination:
       ctx?.params?.paginate !== false
         ? {

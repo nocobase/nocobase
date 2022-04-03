@@ -261,7 +261,6 @@ export const Table: any = observer((props: any) => {
         `}
       >
         <AntdTable
-          loading={field.loading}
           rowKey={defaultRowKey}
           {...others}
           {...restProps}

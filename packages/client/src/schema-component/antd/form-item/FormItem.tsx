@@ -137,6 +137,7 @@ FormItem.Designer = () => {
               ...field.componentProps.fieldNames,
               label,
             };
+            fieldSchema['x-component-props'] = fieldSchema['x-component-props'] || {};
             fieldSchema['x-component-props']['fieldNames'] = fieldNames;
             field.componentProps.fieldNames = fieldNames;
             schema['x-component-props'] = {

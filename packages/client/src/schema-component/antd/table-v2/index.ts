@@ -4,6 +4,7 @@ import { TableColumn } from './Table.Column';
 import { TableColumnActionBar } from './Table.Column.ActionBar';
 import { TableColumnDecorator } from './Table.Column.Decorator';
 import { TableColumnDesigner } from './Table.Column.Designer';
+import { TableSelector } from './TableSelector';
 
 export * from './TableBlockDesigner';
 export * from './TableField';
@@ -16,4 +17,4 @@ TableV2.Column.ActionBar = TableColumnActionBar;
 TableV2.Column.Decorator = TableColumnDecorator;
 TableV2.Column.Designer = TableColumnDesigner;
 TableV2.ActionColumnDesigner = TableActionColumnDesigner;
-
+TableV2.Selector = TableSelector;

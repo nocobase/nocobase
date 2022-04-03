@@ -82,9 +82,16 @@ export const useTableSelectorProps = () => {
             defaultPageSize: ctx?.params?.pageSize,
           }
         : false,
-    onRowSelectionChange(selectedRowKeys) {
+    onRowSelectionChange(selectedRowKeys, selectedRows) {
       ctx.field.data = ctx?.field?.data || {};
       ctx.field.data.selectedRowKeys = selectedRowKeys;
+    },
+    async onRowDragEnd({ from, to }) {
+      await ctx.resource.move({
+        sourceId: from[ctx.rowKey || 'id'],
+        targetId: to[ctx.rowKey || 'id'],
+      });
+      ctx.service.refresh();
     },
     onChange({ current, pageSize }) {
       ctx.service.run({ ...ctx.service.params?.[0], page: current, pageSize });

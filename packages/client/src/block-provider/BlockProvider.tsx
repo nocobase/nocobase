@@ -1,3 +1,4 @@
+import { useField } from '@formily/react';
 import { useRequest } from 'ahooks';
 import React, { createContext, useContext } from 'react';
 import { useAPIClient, useRecord } from '../';
@@ -77,6 +78,7 @@ const MaybeCollectionProvider = (props) => {
 const BlockRequestContext = createContext(null);
 
 const BlockRequestProvider = (props) => {
+  const field = useField();
   const resource = useBlockResource();
   const service = useResourceAction(
     { ...props, resource },
@@ -84,7 +86,12 @@ const BlockRequestProvider = (props) => {
       ...props.requestOptions,
     },
   );
-  return <BlockRequestContext.Provider value={{ service, resource }}>{props.children}</BlockRequestContext.Provider>;
+  const __parent = useContext(BlockRequestContext);
+  return (
+    <BlockRequestContext.Provider value={{ field, service, resource, __parent }}>
+      {props.children}
+    </BlockRequestContext.Provider>
+  );
 };
 
 export const useBlockRequestContext = () => {
