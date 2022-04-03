@@ -1,9 +1,12 @@
 import { MockServer, mockServer } from '@nocobase/test';
 import { PluginErrorHandler } from '../server';
+import { Database } from '@nocobase/database';
+import supertest from 'supertest';
 describe('create with exception', () => {
   let app: MockServer;
   beforeEach(async () => {
     app = mockServer();
+    await app.cleanDb();
     app.plugin(PluginErrorHandler);
   });
 
@@ -116,5 +119,52 @@ describe('create with exception', () => {
         },
       ],
     });
+  });
+
+  it('should handle unique error with raw sql', async () => {
+    const userCollection = app.collection({
+      name: 'users',
+      autoGenId: false,
+      timestamps: false,
+      fields: [
+        {
+          name: 'name',
+          type: 'string',
+          primaryKey: true,
+        },
+      ],
+    });
+
+    await app.loadAndInstall();
+
+    app.resourcer.define({
+      name: 'test',
+      actions: {
+        async test(ctx) {
+          const db: Database = ctx.db;
+
+          const sql = `INSERT INTO ${userCollection.model.tableName} (name)
+                   VALUES (:name)`;
+
+          await db.sequelize.query(sql, {
+            replacements: { name: ctx.action.params.values.name },
+            type: 'INSERT',
+          });
+        },
+      },
+    });
+
+    const agent = supertest.agent(app.callback());
+
+    await agent.post('/test:test').send({
+      name: 'u1',
+    });
+
+    const response = await agent.post('/test:test').send({
+      name: 'u1',
+    });
+
+    const body = response.body;
+    expect(body['errors'][0]['message']).toBeDefined();
   });
 });
