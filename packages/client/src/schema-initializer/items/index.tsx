@@ -47,7 +47,9 @@ export const InitializerWithSwitch = (props) => {
         if (exists) {
           return remove();
         }
-        insert(merge(schema || {}, item.schema || {}));
+        const s = merge(schema || {}, item.schema || {});
+        item?.schemaInitialize?.(s);
+        insert(s);
       }}
     />
   );
@@ -518,7 +520,6 @@ export const CreateFormBlockInitializer = (props) => {
               actionInitializers: 'CreateFormActionInitializers',
               association,
               collection: collection.name,
-              
             }),
           );
         }

@@ -72,13 +72,16 @@ export const useTableColumnInitializerFields = () => {
         'x-read-pretty': true,
         'x-component-props': {},
       };
-      interfaceConfig?.schemaInitialize?.(schema, { field, readPretty: true, block: 'Table' });
+      // interfaceConfig?.schemaInitialize?.(schema, { field, readPretty: true, block: 'Table' });
       return {
         type: 'item',
         title: field?.uiSchema?.title || field.name,
         component: 'TableCollectionFieldInitializer',
         find: findTableColumn,
         remove: removeTableColumn,
+        schemaInitialize: (s) => {
+          interfaceConfig?.schemaInitialize?.(s, { field, readPretty: true, block: 'Table' });
+        },
         field,
         schema,
       } as SchemaInitializerItemOptions;
@@ -103,12 +106,15 @@ export const useFormItemInitializerFields = () => {
         'x-decorator': 'FormItem',
         'x-collection-field': `${name}.${field.name}`,
       };
-      interfaceConfig?.schemaInitialize?.(schema, { field, block: 'Form', readPretty: form.readPretty });
+      // interfaceConfig?.schemaInitialize?.(schema, { field, block: 'Form', readPretty: form.readPretty });
       return {
         type: 'item',
         title: field?.uiSchema?.title || field.name,
         component: 'CollectionFieldInitializer',
         remove: removeGridFormItem,
+        schemaInitialize: (s) => {
+          interfaceConfig?.schemaInitialize?.(s, { field, block: 'Form', readPretty: form.readPretty });
+        },
         schema,
       } as SchemaInitializerItemOptions;
     });

@@ -35,6 +35,7 @@ export const useUpdateActionProps = () => {
   return {
     async onClick() {
       await form.submit();
+
       await resource.update({
         filterByTk,
         values: form.values,

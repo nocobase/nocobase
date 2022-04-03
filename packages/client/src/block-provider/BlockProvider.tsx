@@ -1,11 +1,14 @@
+import { Field } from '@formily/core';
 import { useField } from '@formily/react';
 import { useRequest } from 'ahooks';
 import React, { createContext, useContext } from 'react';
-import { useAPIClient, useRecord } from '../';
+import { TableFieldResource, useAPIClient, useRecord } from '../';
 import { CollectionProvider, useCollection, useCollectionManager } from '../collection-manager';
+import { useRecordIndex } from '../record-provider';
 
 export const BlockResourceContext = createContext(null);
 export const BlockAssociationContext = createContext(null);
+const BlockRequestContext = createContext(null);
 
 export const useBlockResource = () => {
   return useContext(BlockResourceContext);
@@ -15,6 +18,7 @@ interface UseReousrceProps {
   resource: any;
   association?: any;
   useSourceId?: any;
+  block?: any;
 }
 
 const useAssociation = (props) => {
@@ -28,11 +32,25 @@ const useAssociation = (props) => {
 };
 
 const useReousrce = (props: UseReousrceProps) => {
-  const { resource, useSourceId } = props;
+  const { block, resource, useSourceId } = props;
   const record = useRecord();
   const api = useAPIClient();
   const association = useAssociation(props);
   const sourceId = useSourceId?.();
+  const field = useField<Field>();
+  if (block === 'TableField') {
+    const options = {
+      field,
+      api,
+      resource,
+      sourceId: sourceId || record[association?.sourceKey || 'id'],
+    };
+    return new TableFieldResource(options);
+  }
+  const __parent = useContext(BlockRequestContext);
+  if (__parent?.resource instanceof TableFieldResource) {
+    return __parent.resource;
+  }
   if (!association) {
     return api.resource(resource);
   }
@@ -75,8 +93,6 @@ const MaybeCollectionProvider = (props) => {
   );
 };
 
-const BlockRequestContext = createContext(null);
-
 const BlockRequestProvider = (props) => {
   const field = useField();
   const resource = useBlockResource();
@@ -87,8 +103,9 @@ const BlockRequestProvider = (props) => {
     },
   );
   const __parent = useContext(BlockRequestContext);
+  const isTableField = resource instanceof TableFieldResource;
   return (
-    <BlockRequestContext.Provider value={{ field, service, resource, __parent }}>
+    <BlockRequestContext.Provider value={{ isTableField, field, service, resource, __parent }}>
       {props.children}
     </BlockRequestContext.Provider>
   );
@@ -117,10 +134,15 @@ export const useBlockAssociationContext = () => {
 };
 
 export const useFilterByTk = () => {
+  const __parent = useContext(BlockRequestContext);
+  const recordIndex = useRecordIndex();
   const record = useRecord();
   const collection = useCollection();
   const { getCollectionField } = useCollectionManager();
   const assoc = useContext(BlockAssociationContext);
+  if (__parent?.isTableField) {
+    return recordIndex;
+  }
   if (assoc) {
     const association = getCollectionField(assoc);
     return record?.[association.targetKey || 'id'];
@@ -151,6 +173,6 @@ export const useSourceIdFromParentRecord = () => {
 export const useParamsFromRecord = () => {
   const filterByTk = useFilterByTk();
   return {
-    filterByTk,
+    filterByTk: filterByTk,
   };
 };

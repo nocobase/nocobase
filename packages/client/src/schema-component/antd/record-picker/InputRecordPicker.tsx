@@ -10,12 +10,13 @@ import { useFieldNames } from './useFieldNames';
 const RecordPickerContext = createContext(null);
 
 const useTableSelectorProps = () => {
-  const { multiple, setSelectedRows, selectedRows } = useContext(RecordPickerContext);
+  const { multiple, value, setSelectedRows, selectedRows } = useContext(RecordPickerContext);
   const { onRowSelectionChange, ...others } = useTsp();
   return {
     ...others,
     rowSelection: {
       type: multiple ? 'checkbox' : 'radio',
+      defaultSelectedRowKeys: selectedRows?.map((item) => item.id),
       selectedRowKeys: selectedRows?.map((item) => item.id),
     },
     onRowSelectionChange(selectedRowKeys, selectedRows) {
@@ -45,10 +46,10 @@ export const InputRecordPicker: React.FC<any> = (props) => {
   const fieldNames = useFieldNames(props);
   const [visible, setVisible] = useState(false);
   const fieldSchema = useFieldSchema();
-  const [selectedRows, setSelectedRows] = useState([]);
   const { getField } = useCollection();
   const collectionField = getField(fieldSchema.name);
   const options = Array.isArray(value) ? value : value ? [value] : [];
+  const [selectedRows, setSelectedRows] = useState(options);
   const values = options?.map((option) => option[fieldNames.value]);
   return (
     <div>
