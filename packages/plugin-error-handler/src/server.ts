@@ -20,6 +20,10 @@ export class PluginErrorHandler extends Plugin {
 
   registerSequelizeValidationErrorHandler() {
     const findFieldTitle = (instance, path, tFunc) => {
+      if (!instance) {
+        return path;
+      }
+
       const model = instance.constructor;
       const collection = this.db.modelCollection.get(model);
       const field = collection.getField(path);
