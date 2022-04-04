@@ -106,6 +106,37 @@ FormItem.Designer = () => {
           }}
         />
       )}
+      {field.readPretty && (
+        <SchemaSettings.ModalItem
+          title={t('Edit tooltip')}
+          schema={
+            {
+              type: 'object',
+              title: t('Edit description'),
+              properties: {
+                tooltip: {
+                  default: fieldSchema?.['x-decorator-props']?.tooltip,
+                  'x-decorator': 'FormItem',
+                  'x-component': 'Input.TextArea',
+                  'x-component-props': {},
+                },
+              },
+            } as ISchema
+          }
+          onSubmit={({ tooltip }) => {
+            field.decoratorProps.tooltip = tooltip;
+            fieldSchema['x-decorator-props'] = fieldSchema['x-decorator-props'] || {};
+            fieldSchema['x-decorator-props']['tooltip'] = tooltip;
+            dn.emit('patch', {
+              schema: {
+                'x-uid': fieldSchema['x-uid'],
+                'x-decorator-props': fieldSchema['x-decorator-props'],
+              },
+            });
+            dn.refresh();
+          }}
+        />
+      )}
       {!field.readPretty && (
         <SchemaSettings.SwitchItem
           title={t('Required')}
