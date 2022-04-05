@@ -1,6 +1,6 @@
 {
   "name": "@nocobase/plugin-action-logs",
-  "version": "0.6.0-alpha.0",
+  "version": "0.6.0-alpha.1",
   "main": "lib/index.js",
   "license": "MIT",
   "scripts": {
@@ -9,7 +9,7 @@
     "build:esm": "tsc --project tsconfig.build.json --module es2015 --outDir esm"
   },
   "devDependencies": {
-    "@nocobase/test": "^0.6.0-alpha.0"
+    "@nocobase/test": "0.6.0-alpha.1"
   },
   "gitHead": "e7df1f93c4e23b9a666d99ee7372c02bdaec97c4"
 }

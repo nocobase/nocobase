@@ -1,7 +1,7 @@
 {
   "name": "@nocobase/api",
   "private": true,
-  "version": "0.6.0-alpha.0",
+  "version": "0.6.0-alpha.1",
   "description": "",
   "license": "MIT",
   "main": "./lib/index.js",
@@ -12,7 +12,7 @@
     "build:esm": "tsc --project tsconfig.build.json --module es2015 --outDir esm"
   },
   "dependencies": {
-    "@nocobase/server": "^0.6.0-alpha.0"
+    "@nocobase/server": "0.6.0-alpha.1"
   },
   "repository": {
     "type": "git",
