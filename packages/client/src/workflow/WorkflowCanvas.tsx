@@ -77,14 +77,7 @@ export function Branch({
       {controller}
       <AddButton upstream={from} branchIndex={branchIndex} />
       <div className="workflow-node-list">
-        {list.map(item => {
-          return (
-            <div key={item.id} className={cx(nodeBlockClass)}>
-              <Node data={item} />
-              <AddButton upstream={item} />
-            </div>
-          );
-        })}
+        {list.map(item => <Node data={item} key={item.id} />)}
       </div>
     </div>
   );
@@ -98,7 +91,7 @@ interface AddButtonProps {
   branchIndex?: number;
 };
 
-function AddButton({ upstream, branchIndex = null }: AddButtonProps) {
+export function AddButton({ upstream, branchIndex = null }: AddButtonProps) {
   const { resource } = useCollection();
   const { data } = useResourceActionContext();
   const { onNodeAdded } = useFlowContext();
@@ -125,20 +118,30 @@ function AddButton({ upstream, branchIndex = null }: AddButtonProps) {
     onNodeAdded(node);
   }
 
+  const groups = [
+    { value: 'control', name: '流程控制' },
+    { value: 'model', name: '数据表操作' },
+  ];
+  const instructionList = (Array.from(instructions.getValues()) as Instruction[]);
+
   return (
     <div className={cx(addButtonClass)}>
       <Dropdown trigger={['click']} overlay={
         <Menu onClick={ev => onCreate(ev)}>
-          {(Array.from(instructions.getValues()) as Instruction[]).map(item => item.options
-          ? (
-            <Menu.SubMenu key={item.type} title={item.title}>
-              {item.options.map(option => (
-                <Menu.Item key={option.key}>{option.label}</Menu.Item>
+          {groups.map(group => (
+            <Menu.ItemGroup key={group.value} title={group.name}>
+              {instructionList.filter(item => item.group === group.value).map(item => item.options
+              ? (
+                <Menu.SubMenu key={item.type} title={item.title}>
+                  {item.options.map(option => (
+                    <Menu.Item key={option.key}>{option.label}</Menu.Item>
+                  ))}
+                </Menu.SubMenu>
+              )
+              : (
+                <Menu.Item key={item.type}>{item.title}</Menu.Item>
               ))}
-            </Menu.SubMenu>
-          )
-          : (
-            <Menu.Item key={item.type}>{item.title}</Menu.Item>
+            </Menu.ItemGroup>
           ))}
         </Menu>
       }>
