@@ -12,7 +12,7 @@ export const ReadPretty: React.FC<InputProps & InputNumberProps> = (props: any) 
   }
   const precision = Math.max(getNumberPrecision(String(value)), getNumberPrecision(step));
   return (
-    <div>
+    <div className={'nb-read-pretty-input-number'}>
       {addonBefore}
       {toFixed(String(value), '.', precision)}
       {addonAfter}
