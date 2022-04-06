@@ -2,7 +2,7 @@ import { ISchema, useForm } from '@formily/react';
 import { uid } from '@formily/shared';
 import React from 'react';
 import { useHistory } from 'react-router-dom';
-import { SchemaComponent, useAPIClient, useCurrentDocumentTitle } from '..';
+import { SchemaComponent, useAPIClient, useCurrentDocumentTitle, useSystemSettings } from '..';
 
 const schema: ISchema = {
   type: 'object',
@@ -45,6 +45,7 @@ const schema: ISchema = {
     link: {
       type: 'void',
       'x-component': 'div',
+      'x-visible': '{{allowSignUp}}',
       properties: {
         link: {
           title: '{{t("Create an account")}}',
@@ -78,9 +79,12 @@ const useSignin = () => {
 
 export const SigninPage = () => {
   useCurrentDocumentTitle('Signin');
+  const ctx = useSystemSettings();
+  const allowSignUp = ctx?.data?.data?.allowSignUp;
+  console.log('ctx.data.allowSignUp', ctx?.data?.data?.allowSignUp);
   return (
     <div>
-      <SchemaComponent scope={{ useSignin }} schema={schema} />
+      <SchemaComponent scope={{ useSignin, allowSignUp }} schema={schema} />
     </div>
   );
 };
