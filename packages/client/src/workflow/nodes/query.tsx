@@ -1,13 +1,14 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useForm } from '@formily/react';
 import { action } from '@formily/reactive';
+import { Cascader, Select } from 'antd';
 import { t } from 'i18next';
+import { css } from '@emotion/css';
 
 import { useRequest, useCollectionManager } from '../..';
 import { useCollectionFilterOptions } from '../../collection-manager/action-hooks';
-import { Select } from 'antd';
 import { useFlowContext } from '../WorkflowCanvas';
-import { css } from '@emotion/css';
+import { parseStringValue, VariableTypes } from '../calculators';
 
 const BaseTypeSet = new Set(['boolean', 'number', 'string', 'date']);
 
@@ -62,7 +63,7 @@ export default {
                 data
               }), options)
             },
-            // dynamicComponent: ''
+            dynamicComponent: 'VariableComponent'
           }
         }
       }
@@ -85,27 +86,76 @@ export default {
     }
   },
   components: {
-    VariableComponent() {
+    VariableComponent({ value, onChange, renderSchemaComponent }) {
+      const VTypes = { ...VariableTypes,
+        constant: {
+          title: '常量',
+          value: 'constant',
+          options: undefined
+        }
+      };
 
+      const operand = typeof value === 'string'
+        ? parseStringValue(value, VTypes)
+        : { type: 'constant', value };
+
+      const { component, appendTypeValue } = VTypes[operand.type];
+      const [types, setTypes] = useState([operand.type, ...(appendTypeValue ? appendTypeValue(operand) : [])]);
+      const [type] = types;
+
+      const VariableComponent = typeof component === 'function' ? component(operand) : component;
+
+      return (
+        <div className={css`
+          display: flex;
+          gap: .5em;
+          align-items: center;
+        `}>
+          <Cascader
+            allowClear={false}
+            value={types}
+            options={Object.values(VTypes).map(item => ({
+              label: item.title,
+              value: item.value,
+              children: typeof item.options === 'function' ? item.options() : item.options
+            }))}
+            onChange={(next: Array<any>) => {
+              const { onTypeChange, stringify } = VTypes[next[0]];
+              setTypes(next);
+              if (typeof onTypeChange === 'function') {
+                onTypeChange(operand, next, (op) => {
+                  onChange(stringify(op));
+                });
+              } else {
+                if (next[0] !== type) {
+                  onChange(null);
+                }
+              }
+            }}
+          />
+          {type === 'constant'
+            ? renderSchemaComponent()
+            : <VariableComponent {...operand} onChange={(v) => {
+              const { stringify } = VTypes[type];
+              onChange(stringify(v));
+            }} />
+          }
+        </div>
+      );
     }
   },
   getter({ options, onChange }) {
     const { collections = [] } = useCollectionManager();
     const { nodes } = useFlowContext();
-    const { config } = nodes.find(n => n.id === options.nodeId);
+    const { config } = nodes.find(n => n.id == options.nodeId);
     const collection = collections.find(item => item.name === config.collection) ?? { fields: [] };
-
-    const selectOptions = collection.fields
-      .filter(field => BaseTypeSet.has(field.uiSchema.type))
-      .map(field => ({
-        label: field.uiSchema.title,
-        value: field.name
-      }));
 
     return (
       <Select value={options.path} placeholder="选择字段" onChange={path => onChange({ options: { ...options, path } })}>
-        {selectOptions.map(option => (
-          <Select.Option value={option.value}>{option.label}</Select.Option>
+        {collection.fields
+          .filter(field => BaseTypeSet.has(field.uiSchema.type))
+          .map(field => (
+          <Select.Option key={field.name} value={field.name}>{t(field.uiSchema.title)}</Select.Option>
         ))}
       </Select>
     );
