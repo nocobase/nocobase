@@ -100,6 +100,9 @@ export const components = {
           css`
             max-width: 300px;
             white-space: nowrap;
+            .nb-read-pretty-input-number {
+              text-align: right;
+            }
           `,
         )}
       />
