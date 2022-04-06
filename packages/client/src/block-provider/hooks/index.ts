@@ -1,6 +1,9 @@
 import { useForm } from '@formily/react';
+import { Modal } from 'antd';
+import { useHistory } from 'react-router-dom';
 import { useActionContext } from '../../schema-component';
 import { useBlockRequestContext, useFilterByTk } from '../BlockProvider';
+import { useFormBlockContext } from '../FormBlockProvider';
 
 export const usePickActionProps = () => {
   const form = useForm();
@@ -11,10 +14,24 @@ export const usePickActionProps = () => {
   };
 };
 
+function isURL(string) {
+  let url;
+
+  try {
+    url = new URL(string);
+  } catch (e) {
+    return false;
+  }
+
+  return url.protocol === 'http:' || url.protocol === 'https:';
+}
+
 export const useCreateActionProps = () => {
   const form = useForm();
   const { resource, __parent } = useBlockRequestContext();
   const { setVisible } = useActionContext();
+  const { field } = useFormBlockContext();
+  const history = useHistory();
   return {
     async onClick() {
       await form.submit();
@@ -23,6 +40,27 @@ export const useCreateActionProps = () => {
       });
       __parent?.service?.refresh?.();
       setVisible?.(false);
+      const onSuccess = field?.decoratorProps?.onSuccess;
+      if (!onSuccess) {
+        return;
+      }
+      if (typeof onSuccess === 'function') {
+        onSuccess({ form });
+      } else if (typeof onSuccess === 'object') {
+        Modal.success({
+          title: onSuccess.successMessage,
+          onOk: async () => {
+            await form.reset();
+            if (onSuccess.redirecting && onSuccess.redirectTo) {
+              if (isURL(onSuccess.redirectTo)) {
+                window.location.href = onSuccess.redirectTo;
+              } else {
+                history.push(onSuccess.redirectTo);
+              }
+            }
+          },
+        });
+      }
     },
   };
 };
