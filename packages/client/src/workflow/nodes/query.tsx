@@ -1,10 +1,21 @@
+import React, { useState } from 'react';
+import { useForm } from '@formily/react';
 import { action } from '@formily/reactive';
+import { Cascader, Select } from 'antd';
 import { t } from 'i18next';
-import { useCollectionManager } from '../../collection-manager';
+import { css } from '@emotion/css';
+
+import { useRequest, useCollectionManager } from '../..';
+import { useCollectionFilterOptions } from '../../collection-manager/action-hooks';
+import { useFlowContext } from '../WorkflowCanvas';
+import { parseStringValue, VariableTypes } from '../calculators';
+
+const BaseTypeSet = new Set(['boolean', 'number', 'string', 'date']);
 
 export default {
   title: '数据查询',
   type: 'query',
+  group: 'model',
   fieldset: {
     collection: {
       type: 'string',
@@ -20,7 +31,42 @@ export default {
       title: '多条数据',
       name: 'multiple',
       'x-decorator': 'FormItem',
-      'x-component': 'Checkbox'
+      'x-component': 'Checkbox',
+      'x-component-props': {
+        disabled: true
+      }
+    },
+    params: {
+      type: 'object',
+      name: 'params',
+      title: '查询参数',
+      'x-decorator': 'FormItem',
+      properties: {
+        filter: {
+          type: 'object',
+          title: '筛选条件',
+          name: 'filter',
+          'x-decorator': 'div',
+          'x-decorator-props': {
+            className: css`
+              .ant-select{
+                width: auto;
+              }
+            `
+          },
+          'x-component': 'Filter',
+          'x-component-props': {
+            useDataSource(options) {
+              const { values } = useForm();
+              const data = useCollectionFilterOptions(values.collection);
+              return useRequest(() => Promise.resolve({
+                data
+              }), options)
+            },
+            dynamicComponent: 'VariableComponent'
+          }
+        }
+      }
     }
   },
   view: {
@@ -38,5 +84,80 @@ export default {
         })(collections);
       }
     }
+  },
+  components: {
+    VariableComponent({ value, onChange, renderSchemaComponent }) {
+      const VTypes = { ...VariableTypes,
+        constant: {
+          title: '常量',
+          value: 'constant',
+          options: undefined
+        }
+      };
+
+      const operand = typeof value === 'string'
+        ? parseStringValue(value, VTypes)
+        : { type: 'constant', value };
+
+      const { component, appendTypeValue } = VTypes[operand.type];
+      const [types, setTypes] = useState([operand.type, ...(appendTypeValue ? appendTypeValue(operand) : [])]);
+      const [type] = types;
+
+      const VariableComponent = typeof component === 'function' ? component(operand) : component;
+
+      return (
+        <div className={css`
+          display: flex;
+          gap: .5em;
+          align-items: center;
+        `}>
+          <Cascader
+            allowClear={false}
+            value={types}
+            options={Object.values(VTypes).map(item => ({
+              label: item.title,
+              value: item.value,
+              children: typeof item.options === 'function' ? item.options() : item.options
+            }))}
+            onChange={(next: Array<any>) => {
+              const { onTypeChange, stringify } = VTypes[next[0]];
+              setTypes(next);
+              if (typeof onTypeChange === 'function') {
+                onTypeChange(operand, next, (op) => {
+                  onChange(stringify(op));
+                });
+              } else {
+                if (next[0] !== type) {
+                  onChange(null);
+                }
+              }
+            }}
+          />
+          {type === 'constant'
+            ? renderSchemaComponent()
+            : <VariableComponent {...operand} onChange={(v) => {
+              const { stringify } = VTypes[type];
+              onChange(stringify(v));
+            }} />
+          }
+        </div>
+      );
+    }
+  },
+  getter({ options, onChange }) {
+    const { collections = [] } = useCollectionManager();
+    const { nodes } = useFlowContext();
+    const { config } = nodes.find(n => n.id == options.nodeId);
+    const collection = collections.find(item => item.name === config.collection) ?? { fields: [] };
+
+    return (
+      <Select value={options.path} placeholder="选择字段" onChange={path => onChange({ options: { ...options, path } })}>
+        {collection.fields
+          .filter(field => BaseTypeSet.has(field.uiSchema.type))
+          .map(field => (
+          <Select.Option key={field.name} value={field.name}>{t(field.uiSchema.title)}</Select.Option>
+        ))}
+      </Select>
+    );
   }
 };

@@ -88,6 +88,8 @@ export const branchClass = css`
 `;
 
 export const nodeBlockClass = css`
+  flex-grow: 1;
+  flex-shrink: 0;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -95,6 +97,7 @@ export const nodeBlockClass = css`
 `;
 
 export const nodeClass = css`
+  flex-shrink: 0;
   display: flex;
   flex-direction: column;
   align-items: center;
