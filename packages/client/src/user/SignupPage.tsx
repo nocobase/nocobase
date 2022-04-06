@@ -2,8 +2,8 @@ import { ISchema, useForm } from '@formily/react';
 import { uid } from '@formily/shared';
 import { message } from 'antd';
 import React from 'react';
-import { useHistory } from 'react-router-dom';
-import { SchemaComponent, useAPIClient, useCurrentDocumentTitle } from '..';
+import { Redirect, useHistory } from 'react-router-dom';
+import { SchemaComponent, useAPIClient, useCurrentDocumentTitle, useSystemSettings } from '..';
 
 const schema: ISchema = {
   type: 'object',
@@ -105,5 +105,10 @@ const useSignup = () => {
 
 export const SignupPage = () => {
   useCurrentDocumentTitle('Signup');
+  const ctx = useSystemSettings();
+  const allowSignUp = ctx?.data?.data?.allowSignUp;
+  if (!allowSignUp) {
+    return <Redirect to={'/signin'} />;
+  }
   return <SchemaComponent schema={schema} scope={{ useSignup }} />;
 };
