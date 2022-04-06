@@ -34,18 +34,19 @@ ReadPretty.TextArea = (props) => {
   const prefixCls = usePrefixCls('description-textarea', props);
   const compile = useCompile();
   const value = compile(props.value ?? '');
-  const { autop = true } = props;
-  let content = null;
-  const values = HTMLEncode(value).split('\n').join('<br/>');
-  content = (
-    <EllipsisWithTooltip
-      ellipsis={props.ellipsis}
-      popoverContent={autop ? <div dangerouslySetInnerHTML={{ __html: values }} /> : value}
-    >
-      {props.text ?? value}
+  const { autop = true, ellipsis, text } = props;
+  const html = (
+    <div
+      dangerouslySetInnerHTML={{
+        __html: HTMLEncode(value).split('\n').join('<br/>'),
+      }}
+    />
+  );
+  const content = (
+    <EllipsisWithTooltip ellipsis={ellipsis} popoverContent={autop ? html : value}>
+      {ellipsis ? text || value : html}
     </EllipsisWithTooltip>
   );
-
   return (
     <div className={cls(prefixCls, props.className)} style={props.style}>
       {props.addonBefore}
