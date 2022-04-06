@@ -41,6 +41,7 @@ export const useUpdateActionProps = () => {
         values: form.values,
       });
       __parent?.service?.refresh?.();
+      __parent?.__parent?.service?.refresh?.();
       setVisible?.(false);
     },
   };
