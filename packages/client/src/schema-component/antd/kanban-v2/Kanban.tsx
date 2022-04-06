@@ -88,6 +88,7 @@ export const Kanban: ComposedKanban = observer((props: any) => {
     <Spin spinning={field.loading || false}>
       <Board
         allowAddCard
+        disableColumnDrag
         cardAdderPosition={'bottom'}
         disableCardDrag={disableCardDrag}
         onCardRemove={handleCardRemove}
