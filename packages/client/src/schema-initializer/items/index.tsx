@@ -365,7 +365,7 @@ export const ViewActionInitializer = (props) => {
             properties: {
               tab1: {
                 type: 'void',
-                title: '详情',
+                title: '{{t("Details")}}',
                 'x-component': 'Tabs.TabPane',
                 'x-designer': 'Tabs.Designer',
                 'x-component-props': {},
@@ -407,11 +407,28 @@ export const UpdateActionInitializer = (props) => {
           className: 'nb-action-popup',
         },
         properties: {
-          grid: {
+          tabs: {
             type: 'void',
-            'x-component': 'Grid',
-            'x-initializer': 'RecordFormBlockInitializers',
-            properties: {},
+            'x-component': 'Tabs',
+            'x-component-props': {},
+            'x-initializer': 'TabPaneInitializers',
+            properties: {
+              tab1: {
+                type: 'void',
+                title: '{{t("Edit")}}',
+                'x-component': 'Tabs.TabPane',
+                'x-designer': 'Tabs.Designer',
+                'x-component-props': {},
+                properties: {
+                  grid: {
+                    type: 'void',
+                    'x-component': 'Grid',
+                    'x-initializer': 'RecordBlockInitializers',
+                    properties: {},
+                  },
+                },
+              },
+            },
           },
         },
       },
