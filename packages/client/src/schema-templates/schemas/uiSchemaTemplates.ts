@@ -1,49 +1,26 @@
 import { ISchema } from '@formily/react';
-import { CollectionOptions } from '../../collection-manager';
-
-const collection: CollectionOptions = {
-  name: 'uiSchemaTemplates',
-  filterTargetKey: 'name',
-  targetKey: 'name',
-  fields: [
-    {
-      type: 'integer',
-      name: 'name',
-      interface: 'input',
-      uiSchema: {
-        title: '{{ t("Template name") }}',
-        type: 'number',
-        'x-component': 'Input',
-        required: true,
-      },
-    },
-  ],
-};
+import { uid } from '@formily/shared';
 
 export const uiSchemaTemplatesSchema: ISchema = {
   type: 'object',
   properties: {
-    block1: {
+    [uid()]: {
       type: 'void',
-      'x-collection': 'collections',
-      'x-decorator': 'ResourceActionProvider',
+      'x-decorator': 'TableBlockProvider',
       'x-decorator-props': {
-        collection,
-        request: {
-          resource: 'uiSchemaTemplates',
-          action: 'list',
-          params: {
-            pageSize: 50,
-            filter: {},
-            // sort: ['sort'],
-            appends: [],
-          },
+        collection: 'uiSchemaTemplates',
+        resource: 'uiSchemaTemplates',
+        action: 'list',
+        params: {
+          pageSize: 20,
+          appends: ['collection'],
+          sort: ['-createdAt'],
         },
+        rowKey: 'key',
+        showIndex: true,
+        dragSort: false,
       },
-      // 'x-component': 'CollectionProvider',
-      // 'x-component-props': {
-      //   collection,
-      // },
+      'x-component': 'CardItem',
       properties: {
         actions: {
           type: 'void',
@@ -54,93 +31,173 @@ export const uiSchemaTemplatesSchema: ISchema = {
             },
           },
           properties: {
-            delete: {
-              type: 'void',
+            destroy: {
               title: '{{ t("Delete") }}',
+              'x-action': 'destroy',
               'x-component': 'Action',
+              'x-designer': 'Action.Designer',
               'x-component-props': {
-                useAction: '{{ cm.useBulkDestroyActionAndRefreshCM }}',
+                icon: 'DeleteOutlined',
                 confirm: {
                   title: "{{t('Delete record')}}",
                   content: "{{t('Are you sure you want to delete it?')}}",
                 },
-              },
-            },
-            create: {
-              type: 'void',
-              title: '{{ t("Add block template") }}',
-              'x-component': 'Action',
-              'x-component-props': {
-                type: 'primary',
+                useProps: '{{ useBulkDestroyActionProps }}',
               },
             },
           },
         },
-        table: {
-          type: 'void',
-          'x-uid': 'input',
-          'x-component': 'Table.Void',
+        [uid()]: {
+          type: 'array',
+          'x-component': 'TableV2',
           'x-component-props': {
-            rowKey: 'name',
             rowSelection: {
               type: 'checkbox',
             },
-            useDataSource: '{{ cm.useDataSourceFromRAC }}',
+            useProps: '{{ useTableBlockProps }}',
           },
           properties: {
-            column1: {
-              type: 'void',
-              'x-decorator': 'Table.Column.Decorator',
-              'x-component': 'Table.Column',
-              properties: {
-                title: {
-                  'x-component': 'CollectionField',
-                  'x-read-pretty': true,
-                },
-              },
-            },
-            column2: {
-              type: 'void',
-              'x-decorator': 'Table.Column.Decorator',
-              'x-component': 'Table.Column',
-              properties: {
-                name: {
-                  type: 'string',
-                  'x-component': 'CollectionField',
-                  'x-read-pretty': true,
-                },
-              },
-            },
-            column3: {
+            actions: {
               type: 'void',
               title: '{{ t("Actions") }}',
-              'x-component': 'Table.Column',
+              'x-component': 'TableV2.Column',
               properties: {
                 actions: {
                   type: 'void',
+                  'x-decorator': 'DndContext',
                   'x-component': 'Space',
                   'x-component-props': {
                     split: '|',
                   },
                   properties: {
                     view: {
-                      type: 'void',
-                      title: '{{ t("Configure fields") }}',
-                      'x-component': 'Action.Link',
-                      'x-component-props': {},
+                      title: '{{ t("View") }}',
+                      'x-action': 'view',
+                      'x-component': 'RecordLink',
+                      'x-component-props': {
+                        to: '/admin/block-templates/${record.key}',
+                      },
                     },
-                    delete: {
+                    edit: {
                       type: 'void',
-                      title: '{{ t("Delete") }}',
+                      title: '{{ t("Edit") }}',
+                      'x-action': 'update',
                       'x-component': 'Action.Link',
                       'x-component-props': {
+                        openMode: 'drawer',
+                        icon: 'EditOutlined',
+                      },
+                      properties: {
+                        drawer: {
+                          type: 'void',
+                          title: '{{ t("Edit record") }}',
+                          'x-component': 'Action.Container',
+                          'x-component-props': {
+                            className: 'nb-action-popup',
+                          },
+                          properties: {
+                            form: {
+                              type: 'void',
+                              'x-decorator': 'FormBlockProvider',
+                              'x-decorator-props': {
+                                resource: 'uiSchemaTemplates',
+                                collection: 'uiSchemaTemplates',
+                                action: 'get',
+                                useParams: '{{ useParamsFromRecord }}',
+                              },
+                              'x-component': 'CardItem',
+                              properties: {
+                                [uid()]: {
+                                  type: 'void',
+                                  'x-component': 'FormV2',
+                                  'x-component-props': {
+                                    useProps: '{{ useFormBlockProps }}',
+                                  },
+                                  properties: {
+                                    name: {
+                                      type: 'string',
+                                      'x-component': 'CollectionField',
+                                      'x-decorator': 'FormItem',
+                                      'x-collection-field': 'uiSchemaTemplates.name',
+                                      required: true,
+                                    },
+                                    actions: {
+                                      type: 'void',
+                                      'x-component': 'ActionBar',
+                                      'x-component-props': {
+                                        layout: 'one-column',
+                                        style: {
+                                          marginTop: 24,
+                                        },
+                                      },
+                                      properties: {
+                                        submit: {
+                                          title: 'Submit',
+                                          'x-action': 'submit',
+                                          'x-component': 'Action',
+                                          'x-component-props': {
+                                            type: 'primary',
+                                            htmlType: 'submit',
+                                            useProps: '{{ useUpdateActionProps }}',
+                                          },
+                                          type: 'void',
+                                        },
+                                      },
+                                    },
+                                  },
+                                },
+                              },
+                            },
+                          },
+                        },
+                      },
+                    },
+                    destroy: {
+                      title: '{{ t("Delete") }}',
+                      'x-action': 'destroy',
+                      'x-component': 'Action.Link',
+                      'x-component-props': {
+                        icon: 'DeleteOutlined',
                         confirm: {
                           title: "{{t('Delete record')}}",
                           content: "{{t('Are you sure you want to delete it?')}}",
                         },
-                        useAction: '{{ cm.useDestroyActionAndRefreshCM }}',
+                        useProps: '{{ useDestroyActionProps }}',
                       },
                     },
+                  },
+                },
+              },
+            },
+            column1: {
+              type: 'void',
+              'x-decorator': 'TableV2.Column.Decorator',
+              'x-component': 'TableV2.Column',
+              properties: {
+                name: {
+                  type: 'string',
+                  'x-collection-field': 'uiSchemaTemplates.name',
+                  'x-component': 'CollectionField',
+                  'x-read-pretty': true,
+                  'x-component-props': {
+                    ellipsis: true,
+                  },
+                },
+              },
+            },
+            column2: {
+              type: 'void',
+              title: '{{t("Collection display name")}}',
+              'x-decorator': 'TableV2.Column.Decorator',
+              'x-component': 'TableV2.Column',
+              properties: {
+                'collection.title': {
+                  type: 'string',
+                  'x-collection-field': 'uiSchemaTemplates.collection',
+                  'x-component': 'Input',
+                  'x-read-pretty': true,
+                  'x-component-props': {
+                    ellipsis: true,
                   },
                 },
               },

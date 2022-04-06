@@ -1,6 +1,6 @@
 import React from 'react';
 import { SchemaComponentOptions } from '../schema-component/core/SchemaComponentOptions';
-import { useParamsFromRecord, useSourceIdFromParentRecord, useSourceIdFromRecord } from './BlockProvider';
+import { RecordLink, useParamsFromRecord, useSourceIdFromParentRecord, useSourceIdFromRecord } from './BlockProvider';
 import { CalendarBlockProvider, useCalendarBlockProps } from './CalendarBlockProvider';
 import { FormBlockProvider, useFormBlockProps } from './FormBlockProvider';
 import * as bp from './hooks';
@@ -18,6 +18,7 @@ export const BlockSchemaComponentProvider: React.FC = (props) => {
         TableSelectorProvider,
         FormBlockProvider,
         KanbanBlockProvider,
+        RecordLink,
       }}
       scope={{
         ...bp,

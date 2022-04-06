@@ -1,7 +1,9 @@
 import { Field } from '@formily/core';
 import { useField } from '@formily/react';
 import { useRequest } from 'ahooks';
+import template from 'lodash/template';
 import React, { createContext, useContext } from 'react';
+import { Link } from 'react-router-dom';
 import { TableFieldResource, useAPIClient, useRecord } from '../';
 import { CollectionProvider, useCollection, useCollectionManager } from '../collection-manager';
 import { useRecordIndex } from '../record-provider';
@@ -174,4 +176,12 @@ export const useParamsFromRecord = () => {
   return {
     filterByTk: filterByTk,
   };
+};
+
+export const RecordLink = (props) => {
+  const field = useField();
+  const record = useRecord();
+  const { title, to, ...others } = props;
+  const compiled = template(to || '');
+  return <Link {...others} to={compiled({ record: record || {} })}>{field.title}</Link>;
 };
