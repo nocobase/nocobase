@@ -298,8 +298,11 @@ SchemaSettings.PopupItem = (props) => {
 };
 
 SchemaSettings.ModalItem = (props) => {
-  const { title, components, scope, effects, schema, onSubmit, initialValues, ...others } = props;
+  const { hidden, title, components, scope, effects, schema, onSubmit, initialValues, ...others } = props;
   const options = useContext(SchemaOptionsContext);
+  if (hidden) {
+    return null;
+  }
   return (
     <SchemaSettings.Item
       {...others}

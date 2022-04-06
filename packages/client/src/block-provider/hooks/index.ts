@@ -1,5 +1,6 @@
 import { useForm } from '@formily/react';
 import { Modal } from 'antd';
+import { useTranslation } from 'react-i18next';
 import { useHistory } from 'react-router-dom';
 import { useActionContext } from '../../schema-component';
 import { useBlockRequestContext, useFilterByTk } from '../BlockProvider';
@@ -29,9 +30,10 @@ function isURL(string) {
 export const useCreateActionProps = () => {
   const form = useForm();
   const { resource, __parent } = useBlockRequestContext();
-  const { setVisible } = useActionContext();
+  const { visible, setVisible } = useActionContext();
   const { field } = useFormBlockContext();
   const history = useHistory();
+  const { t } = useTranslation();
   return {
     async onClick() {
       await form.submit();
@@ -46,12 +48,12 @@ export const useCreateActionProps = () => {
       }
       if (typeof onSuccess === 'function') {
         onSuccess({ form });
-      } else if (typeof onSuccess === 'object') {
+      } else if (visible === undefined) {
         Modal.success({
-          title: onSuccess.successMessage,
+          title: onSuccess?.successMessage || t('Submitted successfully!'),
           onOk: async () => {
             await form.reset();
-            if (onSuccess.redirecting && onSuccess.redirectTo) {
+            if (onSuccess?.redirecting && onSuccess?.redirectTo) {
               if (isURL(onSuccess.redirectTo)) {
                 window.location.href = onSuccess.redirectTo;
               } else {
