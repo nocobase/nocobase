@@ -24,7 +24,7 @@ export const useValues = () => {
   const { options } = useContext(FilterContext);
   const data2value = () => {
     field.value = flat.unflatten({
-      [`${field.data.dataIndex.join('.')}.${field.data?.operator?.value}`]: field.data?.value,
+      [`${field.data.dataIndex?.join('.')}.${field.data?.operator?.value}`]: field.data?.value,
     });
   };
   const value2data = () => {
@@ -63,9 +63,9 @@ export const useValues = () => {
       const option = findOption(dataIndex, options);
       const operator = option?.operators?.[0];
       field.data = field.data || {};
-      field.data.operators = option.operators;
+      field.data.operators = option?.operators;
       field.data.operator = operator;
-      field.data.schema = merge(option.schema, operator.schema);
+      field.data.schema = merge(option?.schema, operator?.schema);
       field.data.dataIndex = dataIndex;
       field.data.value = null;
       data2value();
