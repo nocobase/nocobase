@@ -6,6 +6,7 @@ import { useCollection } from '../../../collection-manager';
 import { GeneralSchemaDesigner, SchemaSettings } from '../../../schema-settings';
 import { useSchemaTemplate } from '../../../schema-templates';
 import { useDesignable } from '../../hooks';
+import { useActionContext } from '../action';
 
 export const FormDesigner = () => {
   const { name, title } = useCollection();
@@ -15,9 +16,11 @@ export const FormDesigner = () => {
   const fieldSchema = useFieldSchema();
   const { dn } = useDesignable();
   const { t } = useTranslation();
+  const { visible } = useActionContext();
   return (
     <GeneralSchemaDesigner template={template} title={title || name}>
       <SchemaSettings.ModalItem
+        hidden={visible !== undefined}
         title={t('After successful submission')}
         initialValues={fieldSchema['x-decorator-props']?.['onSuccess']}
         schema={
