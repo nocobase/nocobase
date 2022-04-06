@@ -16,7 +16,10 @@
     "build": "lerna run build",
     "build-docs": "dumi build",
     "test": "node ./jest.cli.js -i",
-    "lint": "eslint ."
+    "lint": "eslint .",
+    "version:alpha": "lerna version prerelease --preid alpha --force-publish=* --no-git-tag-version -m \"chore(versions): publish packages %s\"",
+    "release:force": "lerna publish from-package --yes",
+    "release": "lerna publish"
   },
   "resolutions": {
     "@types/react": "^17.0.0",
