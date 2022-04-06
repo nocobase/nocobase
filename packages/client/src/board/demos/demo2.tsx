@@ -95,7 +95,7 @@ export default function App() {
       onNewCardConfirm={(draftCard) => draftCard}
       onCardNew={console.log}
       renderCard={(card, { column, dragging }) => {
-        return <Card style={{ width: 220, marginBottom: 15 }}>{card.title}</Card>;
+        return <Card style={{ marginBottom: 15 }}>{card.title}</Card>;
       }}
       renderCardAdder={({ column }) => {
         return (

@@ -1,4 +1,5 @@
-import { defaultProps, operators } from './properties';
+import { ISchema } from '@formily/react';
+import { defaultProps, operators, recordPickerViewer } from './properties';
 import { IField } from './types';
 
 export const updatedBy: IField = {
@@ -41,5 +42,10 @@ export const updatedBy: IField = {
         },
       },
     ],
+  },
+  schemaInitialize(schema: ISchema, { readPretty }) {
+    schema['properties'] = {
+      viewer: recordPickerViewer,
+    };
   },
 };

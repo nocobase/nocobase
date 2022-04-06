@@ -34,7 +34,7 @@ ReadPretty.TextArea = (props) => {
   const prefixCls = usePrefixCls('description-textarea', props);
   const compile = useCompile();
   const value = compile(props.value ?? '');
-  const { autop = false } = props;
+  const { autop = true } = props;
   let content = null;
   const values = HTMLEncode(value).split('\n').join('<br/>');
   content = (

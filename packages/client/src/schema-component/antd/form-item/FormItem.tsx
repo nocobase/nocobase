@@ -1,9 +1,8 @@
 import { FormItem as Item } from '@formily/antd';
 import { Field } from '@formily/core';
-import { ISchema, useField, useFieldSchema, useForm } from '@formily/react';
+import { ISchema, useField, useFieldSchema } from '@formily/react';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { useActionContext } from '..';
 import { useCompile, useDesignable } from '../..';
 import { useCollection, useCollectionManager } from '../../../collection-manager';
 import { GeneralSchemaDesigner, SchemaSettings } from '../../../schema-settings';
@@ -43,85 +42,99 @@ FormItem.Designer = () => {
   return (
     <GeneralSchemaDesigner>
       {collectionField && (
-        <SchemaSettings.PopupItem
-          title={'编辑'}
+        <SchemaSettings.ModalItem
+          title={t('Edit field title')}
           schema={
             {
-              title: '编辑字段',
-              'x-component': 'Action.Modal',
-              'x-component-props': {
-                width: 520,
-              },
-              'x-decorator': 'Form',
-              'x-decorator-props': {
-                initialValue,
-              },
-              type: 'void',
+              type: 'object',
+              title: t('Edit field title'),
               properties: {
                 title: {
+                  title: t('Field title'),
+                  default: field?.title,
+                  description: `${t('Original field title: ')}${collectionField?.uiSchema?.title}`,
                   'x-decorator': 'FormItem',
                   'x-component': 'Input',
-                  title: '字段标题',
                   'x-component-props': {},
-                  description: `原字段标题：${collectionField?.uiSchema?.title}`,
-                },
-                footer: {
-                  type: 'void',
-                  'x-component': 'Action.Modal.Footer',
-                  properties: {
-                    cancel: {
-                      type: 'void',
-                      title: '{{t("Cancel")}}',
-                      'x-component': 'Action',
-                      'x-component-props': {
-                        useAction() {
-                          const ctx = useActionContext();
-                          return {
-                            async run() {
-                              ctx.setVisible(false);
-                            },
-                          };
-                        },
-                      },
-                    },
-                    submit: {
-                      type: 'void',
-                      title: 'Submit',
-                      'x-component': 'Action',
-                      'x-component-props': {
-                        type: 'primary',
-                        useAction() {
-                          const form = useForm();
-                          const ctx = useActionContext();
-                          return {
-                            async run() {
-                              const { title } = form.values;
-
-                              const schema = {
-                                ['x-uid']: fieldSchema['x-uid'],
-                              };
-
-                              if (title) {
-                                field.title = title;
-                                fieldSchema['title'] = title;
-                                schema['title'] = title;
-                              }
-
-                              ctx.setVisible(false);
-                              dn.emit('patch', {
-                                schema,
-                              });
-                              refresh();
-                            },
-                          };
-                        },
-                      },
-                    },
-                  },
                 },
               },
             } as ISchema
           }
+          onSubmit={({ title }) => {
+            if (title) {
+              field.title = title;
+              fieldSchema.title = title;
+              dn.emit('patch', {
+                schema: {
+                  'x-uid': fieldSchema['x-uid'],
+                  title: fieldSchema.title,
+                },
+              });
+            }
+            dn.refresh();
+          }}
+        />
+      )}
+      {!field.readPretty && (
+        <SchemaSettings.ModalItem
+          title={t('Edit description')}
+          schema={
+            {
+              type: 'object',
+              title: t('Edit description'),
+              properties: {
+                description: {
+                  // title: t('Description'),
+                  default: field?.description,
+                  'x-decorator': 'FormItem',
+                  'x-component': 'Input.TextArea',
+                  'x-component-props': {},
+                },
+              },
+            } as ISchema
+          }
+          onSubmit={({ description }) => {
+            field.description = description;
+            fieldSchema.description = description;
+            dn.emit('patch', {
+              schema: {
+                'x-uid': fieldSchema['x-uid'],
+                description: fieldSchema.description,
+              },
+            });
+            dn.refresh();
+          }}
+        />
+      )}
+      {field.readPretty && (
+        <SchemaSettings.ModalItem
+          title={t('Edit tooltip')}
+          schema={
+            {
+              type: 'object',
+              title: t('Edit description'),
+              properties: {
+                tooltip: {
+                  default: fieldSchema?.['x-decorator-props']?.tooltip,
+                  'x-decorator': 'FormItem',
+                  'x-component': 'Input.TextArea',
+                  'x-component-props': {},
+                },
+              },
+            } as ISchema
+          }
+          onSubmit={({ tooltip }) => {
+            field.decoratorProps.tooltip = tooltip;
+            fieldSchema['x-decorator-props'] = fieldSchema['x-decorator-props'] || {};
+            fieldSchema['x-decorator-props']['tooltip'] = tooltip;
+            dn.emit('patch', {
+              schema: {
+                'x-uid': fieldSchema['x-uid'],
+                'x-decorator-props': fieldSchema['x-decorator-props'],
+              },
+            });
+            dn.refresh();
+          }}
         />
       )}
       {!field.readPretty && (
@@ -155,6 +168,7 @@ FormItem.Designer = () => {
               ...field.componentProps.fieldNames,
               label,
             };
+            fieldSchema['x-component-props'] = fieldSchema['x-component-props'] || {};
             fieldSchema['x-component-props']['fieldNames'] = fieldNames;
             field.componentProps.fieldNames = fieldNames;
             schema['x-component-props'] = {

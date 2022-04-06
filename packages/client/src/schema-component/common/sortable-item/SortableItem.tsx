@@ -28,11 +28,15 @@ export const Sortable = (props: any) => {
     droppableStyle['color'] = 'rgba(241, 139, 98, .1)';
   }
 
-  return React.createElement(component || 'div', {
-    ...others,
-    ref: setNodeRef,
-    style: droppableStyle,
-  }, children);
+  return React.createElement(
+    component || 'div',
+    {
+      ...others,
+      ref: setNodeRef,
+      style: droppableStyle,
+    },
+    children,
+  );
 };
 
 export const SortableItem: React.FC<any> = observer((props) => {

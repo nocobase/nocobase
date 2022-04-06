@@ -20,3 +20,7 @@ group:
 ### Custom Dynamic Component
 
 <code src="./demos/demo4.tsx" />
+
+### FilterAction
+
+<code src="./demos/demo5.tsx" />

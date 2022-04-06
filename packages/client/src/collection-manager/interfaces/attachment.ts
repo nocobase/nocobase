@@ -1,3 +1,4 @@
+import { ISchema } from '@formily/react';
 import { uid } from '@formily/shared';
 import { defaultProps, operators } from './properties';
 import { IField } from './types';
@@ -20,6 +21,12 @@ export const attachment: IField = {
         action: 'attachments:upload',
       },
     },
+  },
+  schemaInitialize(schema: ISchema, { block }) {
+    if (['Table', 'Kanban'].includes(block)) {
+      schema['x-component-props'] = schema['x-component-props'] || {};
+      schema['x-component-props']['size'] = 'small';
+    }
   },
   initialize: (values: any) => {
     if (!values.through) {

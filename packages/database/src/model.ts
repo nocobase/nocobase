@@ -40,7 +40,7 @@ export class Model<TModelAttributes extends {} = any, TCreationAttributes extend
 
     const handleArray = (arrayOfObj, options: JSONTransformerOptions) => {
       const handles = [this.sortAssociations];
-      return handles.reduce((carry, fn) => fn.apply(this, [carry, options]), arrayOfObj);
+      return handles.reduce((carry, fn) => fn.apply(this, [carry, options]), arrayOfObj || []);
     };
 
     const opts = {

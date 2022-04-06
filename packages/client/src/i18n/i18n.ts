@@ -1,34 +1,21 @@
 import i18next from 'i18next';
 import moment from 'moment';
 import { initReactI18next } from 'react-i18next';
-
-const zhCN = require('../locale/zh_CN');
-const enUS = require('../locale/en_US');
+import { resources } from '../locale';
 const log = require('debug')('i18next');
 
 export const i18n = i18next.createInstance();
 
 i18n.use(initReactI18next).init({
   lng: localStorage.getItem('locale') || 'en-US',
-  debug: false,
+  // debug: true,
   defaultNS: 'client',
   // parseMissingKeyHandler: (key) => {
   //   console.log('parseMissingKeyHandler', `'${key}': '${key}',`);
   //   return key;
   // },
   // ns: ['client'],
-  resources: {
-    'en-US': {
-      client: {
-        ...enUS,
-      },
-    },
-    'zh-CN': {
-      client: {
-        ...zhCN,
-      },
-    },
-  },
+  resources,
 });
 
 const momentLngs = {

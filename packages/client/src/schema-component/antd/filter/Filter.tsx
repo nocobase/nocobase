@@ -3,6 +3,8 @@ import { observer, useField, useFieldSchema } from '@formily/react';
 import React from 'react';
 import { useRequest } from '../../../api-client';
 import { FilterContext } from './context';
+import { FilterActionDesigner } from './Filter.Action.Designer';
+import { FilterAction } from './FilterAction';
 import { FilterGroup } from './FilterGroup';
 import { SaveDefaultValue } from './SaveDefaultValue';
 
@@ -17,7 +19,6 @@ export const Filter: any = observer((props: any) => {
   const fieldSchema = useFieldSchema();
   useDataSource({
     onSuccess(data) {
-      console.log('onSuccess', data?.data);
       field.dataSource = data?.data || [];
     },
   });
@@ -26,9 +27,11 @@ export const Filter: any = observer((props: any) => {
       <FilterContext.Provider value={{ field, fieldSchema, dynamicComponent, options: field.dataSource || [] }}>
         <FilterGroup {...props} />
       </FilterContext.Provider>
-      {/* <pre>{JSON.stringify(field.value, null, 2)}</pre> */}
     </div>
   );
 });
 
 Filter.SaveDefaultValue = SaveDefaultValue;
+
+Filter.Action = FilterAction;
+Filter.Action.Designer = FilterActionDesigner;

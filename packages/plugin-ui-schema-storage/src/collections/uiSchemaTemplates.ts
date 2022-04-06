@@ -18,6 +18,10 @@ export default defineCollection({
       name: 'componentName',
     },
     {
+      type: 'string',
+      name: 'associationName',
+    },
+    {
       type: 'belongsTo',
       name: 'uiSchema',
       target: 'uiSchemas',
