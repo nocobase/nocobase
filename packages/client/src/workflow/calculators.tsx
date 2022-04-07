@@ -185,7 +185,8 @@ export function Operand({ onChange, value: operand = { type: 'constant', value: 
             label: item.title,
             value: item.value,
             children,
-            disabled: children && !children.length
+            disabled: children && !children.length,
+            isLeaf: !children
           };
         })}
         onChange={(t: Array<string | number>) => {
@@ -204,7 +205,7 @@ export function Operand({ onChange, value: operand = { type: 'constant', value: 
   );
 }
 
-export function Calculation({ calculator, operands, onChange }) {
+export function Calculation({ calculator, operands = [], onChange }) {
   return (
     <div className={css`
       display: flex;

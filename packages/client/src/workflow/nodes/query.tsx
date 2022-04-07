@@ -5,7 +5,7 @@ import { Cascader, Select } from 'antd';
 import { t } from 'i18next';
 import { css } from '@emotion/css';
 
-import { useRequest, useCollectionManager } from '../..';
+import { useCollectionManager } from '../..';
 import { useCollectionFilterOptions } from '../../collection-manager/action-hooks';
 import { useFlowContext } from '../WorkflowCanvas';
 import { parseStringValue, VariableTypes } from '../calculators';
@@ -56,12 +56,10 @@ export default {
           },
           'x-component': 'Filter',
           'x-component-props': {
-            useDataSource(options) {
+            useProps() {
               const { values } = useForm();
-              const data = useCollectionFilterOptions(values.collection);
-              return useRequest(() => Promise.resolve({
-                data
-              }), options)
+              const options = useCollectionFilterOptions(values.collection);
+              return { options };
             },
             dynamicComponent: 'VariableComponent'
           }
@@ -114,11 +112,16 @@ export default {
           <Cascader
             allowClear={false}
             value={types}
-            options={Object.values(VTypes).map(item => ({
-              label: item.title,
-              value: item.value,
-              children: typeof item.options === 'function' ? item.options() : item.options
-            }))}
+            options={Object.values(VTypes).map(item => {
+              const children = typeof item.options === 'function' ? item.options() : item.options;
+              return {
+                label: item.title,
+                value: item.value,
+                children,
+                disabled: children && !children.length,
+                isLeaf: !children
+              };
+            })}
             onChange={(next: Array<any>) => {
               const { onTypeChange, stringify } = VTypes[next[0]];
               setTypes(next);
