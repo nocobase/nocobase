@@ -44,13 +44,7 @@ export const useValues = () => {
     field.data.dataIndex = dataIndex;
     field.data.operators = operators;
     field.data.operator = operator;
-    field.data.schema = merge(merge(option?.schema, operator?.schema), {
-      'x-component-props': {
-        style: {
-          minWidth: 150,
-        },
-      },
-    });
+    field.data.schema = merge(option?.schema, operator?.schema);
     field.data.value = get(field.value, `${fieldPath}.$${operatorValue}`);
     console.log('option', operator, field.data.value);
   };
