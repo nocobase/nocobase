@@ -24,3 +24,7 @@ group:
 ### FilterAction
 
 <code src="./demos/demo5.tsx" />
+
+### Dynamic options
+
+<code src="./demos/demo6.tsx" />

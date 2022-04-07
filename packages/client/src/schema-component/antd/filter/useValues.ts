@@ -37,7 +37,7 @@ export const useValues = () => {
     const [operatorValue] = otherPath.split('.', 2);
     const dataIndex = fieldPath.split('.');
     const option = findOption(dataIndex, options);
-    const operators = option.operators;
+    const operators = option?.operators;
     const operator = operators?.find?.((item) => item.value === `$${operatorValue}`);
     field.data = field.data || {};
     field.data.dataIndex = dataIndex;
