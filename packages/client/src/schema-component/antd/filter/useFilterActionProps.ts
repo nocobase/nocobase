@@ -72,6 +72,19 @@ const removeNullCondition = (filter) => {
   return flat.unflatten(values);
 };
 
+export const mergeFilter = (filter1, filter2) => {
+  if (filter1 && filter2) {
+    return { $and: [filter1, filter2] };
+  }
+  if (!filter1 && filter2) {
+    return filter2;
+  }
+  if (filter1 && !filter2) {
+    return filter1;
+  }
+  return {};
+};
+
 export const useFilterActionProps = () => {
   const { name } = useCollection();
   const options = useFilterOptions(name);
@@ -82,7 +95,8 @@ export const useFilterActionProps = () => {
     options,
     onSubmit(values) {
       const filter = removeNullCondition(values?.filter);
-      service.run({ ...service.params?.[0], filter });
+      const f1 = service.params?.[0]?.filter;
+      service.run({ ...service.params?.[0], filter: mergeFilter(f1, filter) });
       const items = filter?.$and || filter?.$or;
       if (items?.length) {
         field.title = t('{{count}} filter items', { count: items?.length || 0 });
@@ -92,7 +106,8 @@ export const useFilterActionProps = () => {
     },
     onReset(values) {
       const filter = removeNullCondition(values?.filter);
-      service.run({ ...service.params?.[0], filter });
+      const f1 = service.params?.[0]?.filter;
+      service.run({ ...service.params?.[0], filter: mergeFilter(f1, filter) });
       field.title = t('Filter');
     },
   };
