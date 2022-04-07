@@ -9,7 +9,9 @@ const { Command } = require('commander');
 const loadApplication = async () => {
   const configurationDir = path.join(process.cwd(), 'packages/server/src/config');
   const config = await readConfig(configurationDir);
-  return new Application(config);
+  const app = new Application(config);
+  await app.load();
+  return app;
 };
 
 (async () => {
