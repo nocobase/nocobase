@@ -88,9 +88,11 @@ export class UiRoutesStoragePlugin extends Plugin {
   async load() {
     this.app.resourcer.registerActionHandler('uiRoutes:getAccessible', getAccessible);
     this.app.db.registerModels({ MagicAttributeModel });
-    this.app.db.import({
+
+    await this.app.db.import({
       directory: resolve(__dirname, 'collections'),
     });
+
     this.app.acl.use(
       skip({
         resourceName: 'uiRoutes',
