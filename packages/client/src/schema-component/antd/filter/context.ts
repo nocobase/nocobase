@@ -11,3 +11,4 @@ export interface FilterContextProps {
 
 export const RemoveConditionContext = createContext(null);
 export const FilterContext = createContext<FilterContextProps>(null);
+export const FilterLogicContext = createContext(null);

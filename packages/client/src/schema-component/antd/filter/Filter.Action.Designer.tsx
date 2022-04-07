@@ -1,16 +1,66 @@
 import { ISchema, useField, useFieldSchema } from '@formily/react';
 import React from 'react';
 import { useDesignable } from '../..';
+import { useCollection, useCollectionManager } from '../../../collection-manager';
 import { GeneralSchemaDesigner, SchemaSettings } from '../../../schema-settings';
 
+export const useFilterableFields = (collectionName: string) => {
+  const { getCollectionFields, getInterface } = useCollectionManager();
+  const fields = getCollectionFields(collectionName);
+  return fields?.filter?.((field) => {
+    if (!field.interface) {
+      return false;
+    }
+    const fieldInterface = getInterface(field.interface);
+    if (!fieldInterface.filterable) {
+      return false;
+    }
+    return true;
+  });
+};
+
 export const FilterActionDesigner = (props) => {
-  const initialValue = {};
   const field = useField();
   const fieldSchema = useFieldSchema();
   const { dn } = useDesignable();
-  const isPopupAction = ['create', 'update', 'view'].includes(fieldSchema['x-action'] || '');
+  const { name } = useCollection();
+  const fields = useFilterableFields(name);
+  const fieldNames = fieldSchema?.['x-component-props']?.fieldNames || [];
   return (
     <GeneralSchemaDesigner {...props}>
+      <SchemaSettings.ItemGroup title={'可筛选字段'}>
+        {fields.map((field) => {
+          const checked = fieldNames.includes(field.name);
+          return (
+            <SchemaSettings.SwitchItem
+              checked={checked}
+              title={field?.uiSchema?.title}
+              onChange={(value) => {
+                fieldSchema['x-component-props'] = fieldSchema?.['x-component-props'] || {};
+                const fieldNames = fieldSchema?.['x-component-props']?.fieldNames || [];
+                console.log('fieldNames.checked', value)
+                if (value) {
+                  fieldNames.push(field.name);
+                } else {
+                  const index = fieldNames.indexOf(field.name);
+                  fieldNames.splice(index, 1);
+                }
+                fieldSchema['x-component-props'].fieldNames = fieldNames;
+                dn.emit('patch', {
+                  schema: {
+                    ['x-uid']: fieldSchema['x-uid'],
+                    'x-component-props': {
+                      ...fieldSchema['x-component-props'],
+                    },
+                  },
+                });
+                dn.refresh();
+              }}
+            />
+          );
+        })}
+      </SchemaSettings.ItemGroup>
+      <SchemaSettings.Divider />
       <SchemaSettings.ModalItem
         title={'编辑'}
         schema={
@@ -57,27 +107,6 @@ export const FilterActionDesigner = (props) => {
           }
         }}
       />
-      {isPopupAction && (
-        <SchemaSettings.SelectItem
-          title={'打开方式'}
-          options={[
-            { label: '抽屉', value: 'drawer' },
-            { label: '对话框', value: 'modal' },
-          ]}
-          value={field.componentProps.openMode}
-          onChange={(value) => {
-            field.componentProps.openMode = value;
-            fieldSchema['x-component-props']['openMode'] = value;
-            dn.emit('patch', {
-              schema: {
-                'x-uid': fieldSchema['x-uid'],
-                'x-component-props': fieldSchema['x-component-props'],
-              },
-            });
-            dn.refresh();
-          }}
-        />
-      )}
       <SchemaSettings.Divider />
       <SchemaSettings.Remove
         removeParentsIfNoChildren

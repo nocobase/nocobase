@@ -3,7 +3,7 @@ import { merge } from '@formily/shared';
 import flat from 'flat';
 import get from 'lodash/get';
 import { useContext, useEffect } from 'react';
-import { FilterContext } from './context';
+import { FilterContext, FilterLogicContext } from './context';
 
 // import { useValues } from './useValues';
 const findOption = (dataIndex = [], options) => {
@@ -21,6 +21,7 @@ const findOption = (dataIndex = [], options) => {
 
 export const useValues = () => {
   const field = useField<any>();
+  const logic = useContext(FilterLogicContext);
   const { options } = useContext(FilterContext);
   const data2value = () => {
     field.value = flat.unflatten({
@@ -55,7 +56,7 @@ export const useValues = () => {
   };
   useEffect(() => {
     value2data();
-  }, []);
+  }, [logic]);
   return {
     fields: options,
     ...field.data,
@@ -75,7 +76,7 @@ export const useValues = () => {
       const operator = field.data?.operators?.find?.((item) => item.value === operatorValue);
       field.data.operator = operator;
       field.data.schema = merge(field.data.schema, operator.schema);
-      field.data.value = null;
+      field.data.value = operator.noValue ? true : null;
       data2value();
       console.log('setOperator', field.data);
     },
