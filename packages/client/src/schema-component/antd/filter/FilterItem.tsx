@@ -43,12 +43,14 @@ export const FilterItem = observer((props: any) => {
         {!operator?.noValue &&
           React.createElement(DynamicComponent, {
             value,
-            schema,
+            schema: {},
             onChange(value) {
               setValue(value);
             },
           })}
-        <CloseCircleOutlined onClick={() => remove()} />
+        <a>
+          <CloseCircleOutlined onClick={() => remove()} />
+        </a>
       </Space>
     </div>
   );

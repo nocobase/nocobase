@@ -8,6 +8,7 @@ import { FilterLogicContext, RemoveConditionContext } from './context';
 import { FilterItems } from './FilterItems';
 
 export const FilterGroup = connect((props) => {
+  const { bordered = true } = props;
   const field = useField<ObjectFieldModel>();
   const remove = useContext(RemoveConditionContext);
   const { t } = useTranslation();
@@ -19,25 +20,30 @@ export const FilterGroup = connect((props) => {
       [value]: [...(obj[logic] || [])],
     };
   };
-  console.log('logic', logic);
   return (
     <FilterLogicContext.Provider value={logic}>
       <div
-        style={{
+        style={bordered ? {
           position: 'relative',
           border: '1px dashed #dedede',
           padding: 14,
           marginBottom: 8,
+        } : {
+          position: 'relative',
+          marginBottom: 8,
         }}
       >
         {remove && (
-          <CloseCircleOutlined
-            style={{
-              position: 'absolute',
-              right: 10,
-            }}
-            onClick={() => remove()}
-          />
+          <a>
+            <CloseCircleOutlined
+              style={{
+                position: 'absolute',
+                right: 10,
+                top: 10,
+              }}
+              onClick={() => remove()}
+            />
+          </a>
         )}
         <div style={{ marginBottom: 8 }}>
           <Trans>
