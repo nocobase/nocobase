@@ -38,6 +38,9 @@
     "react-i18next": "^11.15.1",
     "react-image-lightbox": "^5.1.4",
     "react-router-dom": "^5.2.0",
+    "slate": "^0.76.1",
+    "slate-history": "^0.66.0",
+    "slate-react": "^0.76.1",
     "use-deep-compare-effect": "^1.8.1"
   },
   "peerDependencies": {
