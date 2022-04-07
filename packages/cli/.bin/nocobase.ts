@@ -5,19 +5,6 @@ import { Application } from '@nocobase/server';
 import { readConfig } from '@nocobase/server';
 
 const { Command } = require('commander');
-const runSubCommand =
-  (name) =>
-  (...args) => {
-    const script = require(`../commands/${name}`).default;
-    Promise.resolve()
-      .then(() => {
-        return script(...args);
-      })
-      .catch((error) => {
-        console.error(error);
-        process.exit(1);
-      });
-  };
 
 const loadApplication = async () => {
   const configurationDir = path.join(process.cwd(), 'packages/server/src/config');
@@ -29,7 +16,23 @@ const loadApplication = async () => {
   const program = new Command();
   const application = await loadApplication();
 
+  const runSubCommand =
+    (name) =>
+    (...args) => {
+      const command = require(`../commands/${name}`).default;
+
+      Promise.resolve()
+        .then(() => {
+          return command({ app: application, args });
+        })
+        .catch((error) => {
+          console.error(error);
+          process.exit(1);
+        });
+    };
+
   program.command('hello').action(runSubCommand('hello'));
+  program.command('console').action(runSubCommand('console'));
   program
     .command('develop')
     .alias('dev')
