@@ -25,27 +25,26 @@ export const FilterActionDesigner = (props) => {
   const { dn } = useDesignable();
   const { name } = useCollection();
   const fields = useFilterableFields(name);
-  const fieldNames = fieldSchema?.['x-component-props']?.fieldNames || [];
+  const nonfilterable = fieldSchema?.['x-component-props']?.nonfilterable || [];
   return (
     <GeneralSchemaDesigner {...props}>
       <SchemaSettings.ItemGroup title={'可筛选字段'}>
         {fields.map((field) => {
-          const checked = fieldNames.includes(field.name);
+          const checked = !nonfilterable.includes(field.name);
           return (
             <SchemaSettings.SwitchItem
               checked={checked}
               title={field?.uiSchema?.title}
               onChange={(value) => {
                 fieldSchema['x-component-props'] = fieldSchema?.['x-component-props'] || {};
-                const fieldNames = fieldSchema?.['x-component-props']?.fieldNames || [];
-                console.log('fieldNames.checked', value)
-                if (value) {
-                  fieldNames.push(field.name);
+                const nonfilterable = fieldSchema?.['x-component-props']?.nonfilterable || [];
+                if (!value) {
+                  nonfilterable.push(field.name);
                 } else {
-                  const index = fieldNames.indexOf(field.name);
-                  fieldNames.splice(index, 1);
+                  const index = nonfilterable.indexOf(field.name);
+                  nonfilterable.splice(index, 1);
                 }
-                fieldSchema['x-component-props'].fieldNames = fieldNames;
+                fieldSchema['x-component-props'].nonfilterable = nonfilterable;
                 dn.emit('patch', {
                   schema: {
                     ['x-uid']: fieldSchema['x-uid'],

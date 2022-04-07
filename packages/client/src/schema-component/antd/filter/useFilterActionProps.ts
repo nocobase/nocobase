@@ -7,11 +7,11 @@ import { useCollection, useCollectionManager } from '../../../collection-manager
 
 export const useFilterOptions = (collectionName: string) => {
   const fieldSchema = useFieldSchema();
-  const fieldNames = fieldSchema?.['x-component-props']?.fieldNames || [];
+  const nonfilterable = fieldSchema?.['x-component-props']?.nonfilterable || [];
   const { getCollectionFields, getInterface } = useCollectionManager();
   const fields = getCollectionFields(collectionName);
   const field2option = (field, nochildren) => {
-    if (fieldNames.length && !nochildren && !fieldNames.includes(field.name)) {
+    if (nonfilterable.length && !nochildren && nonfilterable.includes(field.name)) {
       return;
     }
     if (!field.interface) {
@@ -88,7 +88,7 @@ export const mergeFilter = (filter1, filter2) => {
 export const useFilterActionProps = () => {
   const { name } = useCollection();
   const options = useFilterOptions(name);
-  const { service } = useBlockRequestContext();
+  const { service, props } = useBlockRequestContext();
   const field = useField<Field>();
   const { t } = useTranslation();
   return {
@@ -105,9 +105,8 @@ export const useFilterActionProps = () => {
       }
     },
     onReset(values) {
-      const filter = removeNullCondition(values?.filter);
-      const f1 = service.params?.[0]?.filter;
-      service.run({ ...service.params?.[0], filter: mergeFilter(f1, filter) });
+      const filter = removeNullCondition(props.params.filter);
+      service.run({ ...service.params?.[0], filter });
       field.title = t('Filter');
     },
   };

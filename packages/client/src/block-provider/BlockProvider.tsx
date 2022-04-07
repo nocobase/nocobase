@@ -106,7 +106,7 @@ const BlockRequestProvider = (props) => {
   );
   const __parent = useContext(BlockRequestContext);
   return (
-    <BlockRequestContext.Provider value={{ block: props.block, field, service, resource, __parent }}>
+    <BlockRequestContext.Provider value={{ block: props.block, props, field, service, resource, __parent }}>
       {props.children}
     </BlockRequestContext.Provider>
   );
