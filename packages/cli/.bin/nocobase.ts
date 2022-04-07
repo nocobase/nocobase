@@ -1,5 +1,7 @@
 #! /usr/bin/env ts-node-script
 
+require('dotenv').config();
+
 import path from 'path';
 import { Application, PluginManager } from '@nocobase/server';
 import { readConfig } from '@nocobase/server';
