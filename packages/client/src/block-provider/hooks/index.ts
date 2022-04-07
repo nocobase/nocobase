@@ -42,13 +42,13 @@ export const useCreateActionProps = () => {
       });
       __parent?.service?.refresh?.();
       setVisible?.(false);
-      const onSuccess = field?.decoratorProps?.onSuccess;
-      if (!onSuccess) {
+      if (visible !== undefined) {
         return;
       }
+      const onSuccess = field?.decoratorProps?.onSuccess;
       if (typeof onSuccess === 'function') {
         onSuccess({ form });
-      } else if (visible === undefined) {
+      } else {
         Modal.success({
           title: onSuccess?.successMessage || t('Submitted successfully!'),
           onOk: async () => {
