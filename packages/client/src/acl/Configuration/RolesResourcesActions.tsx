@@ -4,8 +4,8 @@ import { connect, useField, useForm } from '@formily/react';
 import { Checkbox, Table, Tag } from 'antd';
 import React, { createContext } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useAvailableActions } from '.';
 import { useCollectionManager, useCompile, useRecord } from '../..';
+import { useAvailableActions } from './RoleTable';
 import { ScopeSelect } from './ScopeSelect';
 
 const toActionMap = (arr: any[]) => {

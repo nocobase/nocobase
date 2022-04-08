@@ -3,8 +3,8 @@ import { connect, useField } from '@formily/react';
 import { Checkbox, Select, Table, Tag } from 'antd';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { useAvailableActions } from '.';
 import { useCompile } from '../..';
+import { useAvailableActions } from './RoleTable';
 
 const toScopes = (value) => {
   if (!value) {
