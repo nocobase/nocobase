@@ -1,4 +1,5 @@
 import { ISchema } from '@formily/react';
+import { cloneDeep } from 'lodash';
 import { defaultProps, operators, recordPickerViewer } from './properties';
 import { IField } from './types';
 
@@ -45,7 +46,7 @@ export const updatedBy: IField = {
   },
   schemaInitialize(schema: ISchema, { readPretty }) {
     schema['properties'] = {
-      viewer: recordPickerViewer,
+      viewer: cloneDeep(recordPickerViewer),
     };
   },
 };
