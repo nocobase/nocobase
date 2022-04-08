@@ -1,5 +1,6 @@
 node_modules/
 lib/
+!packages/create-nocobase-app/lib
 esm/
 .env
 .DS_Store
