@@ -1,9 +1,8 @@
 import { Plugin } from '@nocobase/server';
 import { resolve } from 'path';
 import { availableActionResource } from './actions/available-actions';
-import { roleCollectionsResource } from './actions/role-collections';
 import { checkAction } from './actions/role-check';
-
+import { roleCollectionsResource } from './actions/role-collections';
 import { RoleModel } from './model/RoleModel';
 import { RoleResourceActionModel } from './model/RoleResourceActionModel';
 import { RoleResourceModel } from './model/RoleResourceModel';
@@ -257,6 +256,10 @@ export class PluginACL extends Plugin {
             name: 'member',
             title: 'Member',
             default: true,
+          },
+          {
+            name: 'anonymous',
+            title: 'Anonymous',
           },
         ],
       });
