@@ -1,4 +1,5 @@
 import isHotkey from 'is-hotkey';
+import { cloneDeep } from 'lodash';
 import React, { useCallback, useMemo, useState } from 'react';
 import type { Node } from 'slate';
 import { createEditor, Descendant, Editor, Element as SlateElement, Transforms } from 'slate';
@@ -16,7 +17,7 @@ const HOTKEYS = {
 
 const LIST_TYPES = ['numbered-list', 'bulleted-list'];
 const TEXT_ALIGN_TYPES = ['left', 'center', 'right', 'justify'];
-const DEFAULT_TEXT = [
+const DEFAULT_VALUE = [
   {
     type: 'paragraph',
     children: [{ text: '' }],
@@ -24,39 +25,46 @@ const DEFAULT_TEXT = [
 ];
 
 export const RichText = (props: any) => {
-  const { text = DEFAULT_TEXT, placeholder = 'Enter text…', onChange } = props;
+  const { value = DEFAULT_VALUE, placeholder = 'Enter text…', readOnly, onChange } = props;
+  debugger;
   const renderElement = useCallback((props) => <Element {...props} />, []);
   const renderLeaf = useCallback((props) => <Leaf {...props} />, []);
   const editor = useMemo(() => withHistory(withReact(createEditor() as ReactEditor)), []);
-  const [value, setValue] = useState<Descendant[]>(text);
+  const [richValue, setRIchValue] = useState<Descendant[]>(cloneDeep(value));
 
   const changeHandler = (val) => {
     onChange?.(val);
   };
   return (
-    <Slate editor={editor} value={value} onChange={changeHandler}>
-      <Toolbar>
-        <MarkButton format="bold" icon="format_bold" />
-        <MarkButton format="italic" icon="format_italic" />
-        <MarkButton format="underline" icon="format_underlined" />
-        <MarkButton format="code" icon="code" />
-        <BlockButton format="heading-one" icon="looks_one" />
-        <BlockButton format="heading-two" icon="looks_two" />
-        <BlockButton format="block-quote" icon="format_quote" />
-        <BlockButton format="numbered-list" icon="format_list_numbered" />
-        <BlockButton format="bulleted-list" icon="format_list_bulleted" />
-        <BlockButton format="left" icon="format_align_left" />
-        <BlockButton format="center" icon="format_align_center" />
-        <BlockButton format="right" icon="format_align_right" />
-        <BlockButton format="justify" icon="format_align_justify" />
-      </Toolbar>
+    <Slate editor={editor} value={richValue} onChange={changeHandler}>
+      {!readOnly && (
+        <Toolbar>
+          <MarkButton format="bold" icon="format_bold" />
+          <MarkButton format="italic" icon="format_italic" />
+          <MarkButton format="underline" icon="format_underlined" />
+          <MarkButton format="code" icon="code" />
+          <BlockButton format="heading-one" icon="looks_one" />
+          <BlockButton format="heading-two" icon="looks_two" />
+          <BlockButton format="block-quote" icon="format_quote" />
+          <BlockButton format="numbered-list" icon="format_list_numbered" />
+          <BlockButton format="bulleted-list" icon="format_list_bulleted" />
+          <BlockButton format="left" icon="format_align_left" />
+          <BlockButton format="center" icon="format_align_center" />
+          <BlockButton format="right" icon="format_align_right" />
+          <BlockButton format="justify" icon="format_align_justify" />
+        </Toolbar>
+      )}
       <Editable
         renderElement={renderElement}
         renderLeaf={renderLeaf}
         placeholder={placeholder}
         spellCheck
         autoFocus
+        readOnly={readOnly}
         onKeyDown={(event) => {
+          if (readOnly) {
+            return;
+          }
           for (const hotkey in HOTKEYS) {
             if (isHotkey(hotkey, event as any)) {
               event.preventDefault();
@@ -66,6 +74,17 @@ export const RichText = (props: any) => {
           }
         }}
       />
+    </Slate>
+  );
+};
+
+export const RichTextReadPretty = (props: any) => {
+  const { value = DEFAULT_VALUE } = props;
+  debugger;
+  const editor = useMemo(() => withReact(createEditor() as ReactEditor), []);
+  return (
+    <Slate editor={editor} value={value}>
+      <Editable readOnly placeholder="" />
     </Slate>
   );
 };

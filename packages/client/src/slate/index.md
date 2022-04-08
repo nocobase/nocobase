@@ -11,4 +11,10 @@ group:
 
 ## Examples
 
+### Slate Rich Text Editor
+
 <code src="./demos/demo1.tsx" />
+
+### Slate Rich Text Editor is Read Pretty
+
+<code src="./demos/demo2.tsx" />
