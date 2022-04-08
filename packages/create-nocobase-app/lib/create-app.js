@@ -4,7 +4,7 @@ const path = require('path');
 const { hasYarn, runInit, runInstall } = require('./utils');
 const ora = require('ora');
 const execa = require('execa');
-const { join } = require('path');
+const { join, resolve } = require('path');
 
 const createEnvFile = require('./resources/templates/env');
 const createPackageJson = require('./resources/templates/package.json.js');
@@ -19,7 +19,7 @@ const getDatabaseOptionsFromCommandOptions = (commandOptions) => {
   ) {
     return {
       dialect: 'sqlite',
-      storage: commandOptions.dbstorage || 'db.sqlite',
+      storage: resolve(process.cwd(), commandOptions.dbstorage || 'db.sqlite'),
     };
   }
 
@@ -48,17 +48,18 @@ async function createApp(directory, options) {
   // write .env file
   await fse.writeFile(join(projectPath, '.env'), createEnvFile({ dbOptions }));
 
-  // write packages.json
+  // write root packages.json
   await fse.writeJson(
     join(projectPath, 'package.json'),
     createPackageJson({
       projectName: 'nocobase-app',
     }),
     {
-      space: 2,
+      spaces: 2,
     },
   );
 
+  // write server package.json
   await fse.writeJson(
     join(projectPath, 'packages/server/package.json'),
     createServerPackageJson({
@@ -66,9 +67,11 @@ async function createApp(directory, options) {
       dbOptions,
     }),
     {
-      space: 2,
+      spaces: 2,
     },
   );
+
+  // run install command
 }
 
 function setCommandOptions(command) {

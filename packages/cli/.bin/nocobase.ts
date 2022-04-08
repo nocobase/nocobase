@@ -1,6 +1,6 @@
 #! /usr/bin/env ts-node-script
 require('dotenv').config();
-import path from 'path';
+import * as path from 'path';
 import { Application, PluginManager } from '@nocobase/server';
 import { readConfig } from '@nocobase/server';
 import { setCommandOptions as setCreateAppCommandOptions, createApp } from 'create-nocobase-app/lib/create-app';
@@ -25,7 +25,9 @@ const loadApplication = async () => {
     await app.load();
     return app;
   } catch (e) {
-    console.log({ e });
+    if (e.code !== 'ENOENT') {
+      console.log(e);
+    }
     return null;
   }
 };

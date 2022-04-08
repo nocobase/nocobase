@@ -40,6 +40,7 @@ module.exports = (opts) => {
       '@nocobase/plugin-ui-schema-storage': version,
       '@nocobase/plugin-users': version,
       '@nocobase/plugin-workflow': version,
+      '@nocobase/database': version,
       '@nocobase/server': version,
       dotenv: '^16.0.0',
     },
