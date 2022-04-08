@@ -8,6 +8,7 @@
   "dependencies": {
     "@nocobase/server": "^0.6.0-alpha.0",
     "commander": "^9.1.0",
+    "create-nocobase-app": "^0.6.0-alpha.0",
     "dotenv": "^16.0.0",
     "ts-node": "^10.7.0",
     "typescript": "^4.6.3"

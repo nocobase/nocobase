@@ -1,10 +1,9 @@
 #! /usr/bin/env ts-node-script
-
 require('dotenv').config();
-
 import path from 'path';
 import { Application, PluginManager } from '@nocobase/server';
 import { readConfig } from '@nocobase/server';
+import { setCommandOptions as setCreateAppCommandOptions, createApp } from 'create-nocobase-app/lib/create-app';
 
 const { Command } = require('commander');
 
@@ -50,15 +49,9 @@ const loadApplication = async () => {
         });
     };
 
-  program.command('hello').action(runSubCommand('hello'));
-
-  program
-    .command('develop')
-    .alias('dev')
-    .description('Start your NocoBase application with auto reload')
-    .action(runSubCommand('dev'));
-
-  program.command('create-plugin').description('create new plugin');
+  setCreateAppCommandOptions(program.command('create-app')).action((directory, options) => {
+    createApp(directory, options);
+  });
 
   if (application) {
     const appCommand = program.command('app').description('Application Command');

@@ -52,7 +52,15 @@ const plugins = [
 ];
 
 for (const plugin of plugins) {
-  api.plugin(require(plugin).default);
+  let pluginScript;
+
+  try {
+    pluginScript = require(`${plugin}/server`);
+  } catch (e) {
+    pluginScript = require(`${plugin}`);
+  }
+
+  api.plugin(pluginScript.default);
 }
 
 api.plugin(require('@nocobase/plugin-client').default, {
