@@ -41,13 +41,22 @@ const usePickActionProps = () => {
   };
 };
 
+const useAssociation = (props) => {
+  const fieldSchema = useFieldSchema();
+  const { association } = props;
+  const { getField } = useCollection();
+  if (association) {
+    return association;
+  }
+  return getField(fieldSchema.name);
+}
+
 export const InputRecordPicker: React.FC<any> = (props) => {
   const { value, multiple, onChange } = props;
   const fieldNames = useFieldNames(props);
   const [visible, setVisible] = useState(false);
   const fieldSchema = useFieldSchema();
-  const { getField } = useCollection();
-  const collectionField = getField(fieldSchema.name);
+  const collectionField = useAssociation(props);
   const options = Array.isArray(value) ? value : value ? [value] : [];
   const [selectedRows, setSelectedRows] = useState(options);
   const values = options?.map((option) => option[fieldNames.value]);

@@ -49,6 +49,7 @@ export const FilterGroup = connect((props) => {
           <Trans>
             {'Meet '}
             <Select
+              style={{ width: 'auto' }}
               value={logic}
               onChange={(value) => {
                 setLogic(value);

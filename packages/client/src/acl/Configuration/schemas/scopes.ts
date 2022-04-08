@@ -1,14 +1,15 @@
-import { ISchema, useForm } from '@formily/react';
-import { useActionContext } from '../../../';
-import { useAPIClient, useRequest } from '../../../api-client';
-import { useRecord } from '../../../record-provider';
+import { ISchema } from '@formily/react';
+import { useContext, useEffect } from 'react';
+import { useFormBlockContext } from '../../../block-provider';
+import { useFilterOptions } from '../../../schema-component';
+import { RoleResourceCollectionContext } from '../RolesResourcesActions';
 
-const collection = {
+export const rolesResourcesScopesCollection = {
   name: 'rolesResourcesScopes',
   fields: [
     {
       type: 'string',
-      name: 'title',
+      name: 'name',
       interface: 'input',
       uiSchema: {
         title: '名称',
@@ -18,6 +19,19 @@ const collection = {
       } as ISchema,
     },
   ],
+};
+
+const useFormBlockProps = () => {
+  const { name } = useContext(RoleResourceCollectionContext);
+  const ctx = useFormBlockContext();
+  useEffect(() => {
+    ctx.form.setInitialValues({
+      resourceName: name,
+    });
+  }, [name]);
+  return {
+    form: ctx.form,
+  };
 };
 
 export const scopesSchema: ISchema = {
@@ -31,86 +45,277 @@ export const scopesSchema: ISchema = {
           label: 'name',
           value: 'id',
         },
+        association: {
+          target: 'rolesResourcesScopes',
+        },
         onChange: '{{ onChange }}',
       },
       properties: {
-        options: {
-          'x-decorator': 'RolesResourcesScopesSelectedRowKeysProvider',
-          'x-component': 'RecordPicker.Options',
+        selector: {
           type: 'void',
-          title: '可操作的数据范围',
+          title: '{{ t("Select record") }}',
+          'x-component': 'RecordPicker.Selector',
+          'x-component-props': {
+            className: 'nb-record-picker-selector',
+          },
           properties: {
-            actions: {
+            tableBlock: {
               type: 'void',
-              'x-component': 'ActionBar',
-              'x-component-props': {
-                style: {
-                  marginBottom: 16,
+              'x-decorator': 'TableSelectorProvider',
+              'x-decorator-props': {
+                collection: rolesResourcesScopesCollection,
+                resource: 'rolesResourcesScopes',
+                action: 'list',
+                params: {
+                  pageSize: 20,
                 },
+                useParams() {
+                  const ctx = useContext(RoleResourceCollectionContext);
+                  return {
+                    filter: {
+                      $or: [{ resourceName: ctx.name }, { resourceName: null }],
+                    },
+                  };
+                },
+                rowKey: 'id',
               },
+              'x-component': 'BlockItem',
               properties: {
-                // delete: {
-                //   type: 'void',
-                //   title: '删除',
-                //   'x-component': 'Action',
-                // },
-                create: {
+                actions: {
                   type: 'void',
-                  title: '添加数据范围',
-                  'x-component': 'Action',
+                  'x-component': 'ActionBar',
                   'x-component-props': {
-                    type: 'primary',
+                    style: {
+                      marginBottom: 16,
+                    },
                   },
                   properties: {
-                    drawer: {
+                    create: {
                       type: 'void',
-                      'x-component': 'Action.Drawer',
-                      'x-decorator': 'Form',
-                      title: '添加数据范围',
+                      title: '{{ t("Add new") }}',
+                      'x-action': 'create',
+                      'x-component': 'Action',
+                      'x-component-props': {
+                        icon: 'PlusOutlined',
+                        openMode: 'drawer',
+                        type: 'primary',
+                      },
                       properties: {
-                        name: {
-                          title: '数据范围名称',
-                          'x-component': 'Input',
-                          'x-decorator': 'FormItem',
-                        },
-                        // scope: {
-                        //   'x-component': 'Input',
-                        //   'x-decorator': 'FormItem',
-                        // },
-                        footer: {
+                        drawer: {
                           type: 'void',
-                          'x-component': 'Action.Drawer.Footer',
+                          title: '{{ t("Add record") }}',
+                          'x-component': 'Action.Container',
+                          'x-component-props': {
+                            className: 'nb-action-popup',
+                          },
                           properties: {
-                            action1: {
-                              title: 'Cancel',
-                              'x-component': 'Action',
-                              'x-component-props': {
-                                useAction: '{{ cm.useCancelAction }}',
+                            formBlock: {
+                              type: 'void',
+                              'x-decorator': 'FormBlockProvider',
+                              'x-decorator-props': {
+                                resource: 'rolesResourcesScopes',
+                                collection: rolesResourcesScopesCollection,
+                                // useParams: '{{ useParamsFromRecord }}',
+                              },
+                              'x-component': 'CardItem',
+                              properties: {
+                                form: {
+                                  type: 'void',
+                                  'x-component': 'FormV2',
+                                  'x-component-props': {
+                                    useProps: useFormBlockProps,
+                                  },
+                                  properties: {
+                                    name: {
+                                      type: 'string',
+                                      'x-component': 'CollectionField',
+                                      'x-decorator': 'FormItem',
+                                    },
+                                    scope: {
+                                      type: 'object',
+                                      title: 'Data scope',
+                                      name: 'filter',
+                                      'x-decorator': 'FormItem',
+                                      'x-component': 'Filter',
+                                      'x-component-props': {
+                                        useProps() {
+                                          const ctx = useContext(RoleResourceCollectionContext);
+                                          const options = useFilterOptions(ctx.name);
+                                          console.log('ctx.name', ctx.name, options);
+                                          return {
+                                            options,
+                                          };
+                                        },
+                                      },
+                                    },
+                                    actions: {
+                                      type: 'void',
+                                      'x-component': 'ActionBar',
+                                      'x-component-props': {
+                                        layout: 'one-column',
+                                        style: {
+                                          marginTop: 24,
+                                        },
+                                      },
+                                      properties: {
+                                        create: {
+                                          title: '{{ t("Submit") }}',
+                                          'x-action': 'submit',
+                                          'x-component': 'Action',
+                                          'x-component-props': {
+                                            type: 'primary',
+                                            htmlType: 'submit',
+                                            useProps: '{{ useCreateActionProps }}',
+                                          },
+                                        },
+                                      },
+                                    },
+                                  },
+                                },
                               },
                             },
-                            action2: {
-                              title: 'Submit',
-                              'x-component': 'Action',
+                          },
+                        },
+                      },
+                    },
+                  },
+                },
+                value: {
+                  type: 'array',
+                  'x-component': 'TableV2.Selector',
+                  'x-component-props': {
+                    rowKey: 'id',
+                    rowSelection: {
+                      type: 'checkbox',
+                    },
+                    useProps: '{{ useTableSelectorProps }}',
+                  },
+                  properties: {
+                    column1: {
+                      type: 'void',
+                      'x-decorator': 'TableV2.Column.Decorator',
+                      'x-component': 'TableV2.Column',
+                      properties: {
+                        name: {
+                          type: 'string',
+                          'x-component': 'CollectionField',
+                          'x-read-pretty': true,
+                        },
+                      },
+                    },
+                    actions: {
+                      type: 'void',
+                      title: '{{ t("Actions") }}',
+                      'x-action-column': 'actions',
+                      'x-component': 'TableV2.Column',
+                      properties: {
+                        actions: {
+                          type: 'void',
+                          'x-decorator': 'DndContext',
+                          'x-component': 'Space',
+                          'x-component-props': {
+                            split: '|',
+                          },
+                          properties: {
+                            edit: {
+                              type: 'void',
+                              title: '{{ t("Edit") }}',
+                              'x-action': 'update',
+                              'x-component': 'Action.Link',
                               'x-component-props': {
-                                type: 'primary',
-                                useAction() {
-                                  const api = useAPIClient();
-                                  const ctx = useActionContext();
-                                  const form = useForm();
-                                  const record = useRecord();
-                                  return {
-                                    async run() {
-                                      await api.resource('rolesResourcesScopes').create({
-                                        values: {
-                                          ...form.values,
-                                          resourceName: record.name,
+                                openMode: 'drawer',
+                                icon: 'EditOutlined',
+                              },
+                              properties: {
+                                drawer: {
+                                  type: 'void',
+                                  title: '{{ t("Edit record") }}',
+                                  'x-component': 'Action.Container',
+                                  'x-component-props': {
+                                    className: 'nb-action-popup',
+                                  },
+                                  properties: {
+                                    formBlock: {
+                                      type: 'void',
+                                      'x-decorator': 'FormBlockProvider',
+                                      'x-decorator-props': {
+                                        resource: 'rolesResourcesScopes',
+                                        collection: rolesResourcesScopesCollection,
+                                        action: 'get',
+                                        useParams: '{{ useParamsFromRecord }}',
+                                      },
+                                      'x-component': 'CardItem',
+                                      properties: {
+                                        form: {
+                                          type: 'void',
+                                          'x-component': 'FormV2',
+                                          'x-component-props': {
+                                            useProps: '{{ useFormBlockProps }}',
+                                          },
+                                          properties: {
+                                            name: {
+                                              type: 'string',
+                                              'x-component': 'CollectionField',
+                                              'x-decorator': 'FormItem',
+                                            },
+                                            scope: {
+                                              type: 'object',
+                                              title: 'Data scope',
+                                              name: 'filter',
+                                              'x-decorator': 'FormItem',
+                                              'x-component': 'Filter',
+                                              'x-component-props': {
+                                                useProps() {
+                                                  const ctx = useContext(RoleResourceCollectionContext);
+                                                  const options = useFilterOptions(ctx.name);
+                                                  return {
+                                                    options,
+                                                  };
+                                                },
+                                              },
+                                            },
+                                            actions: {
+                                              type: 'void',
+                                              'x-component': 'ActionBar',
+                                              'x-component-props': {
+                                                layout: 'one-column',
+                                                style: {
+                                                  marginTop: 24,
+                                                },
+                                              },
+                                              properties: {
+                                                update: {
+                                                  title: '{{ t("Submit") }}',
+                                                  'x-action': 'submit',
+                                                  'x-component': 'Action',
+                                                  'x-component-props': {
+                                                    type: 'primary',
+                                                    htmlType: 'submit',
+                                                    useProps: '{{ useUpdateActionProps }}',
+                                                  },
+                                                },
+                                              },
+                                            },
+                                          },
                                         },
-                                      });
-                                      ctx.setVisible(false);
-                                      api.service('rolesResourcesScopesList')?.refresh?.();
+                                      },
                                     },
-                                  };
+                                  },
                                 },
+                              },
+                            },
+                            destroy: {
+                              title: '{{ t("Delete") }}',
+                              'x-action': 'destroy',
+                              'x-component': 'Action.Link',
+                              'x-designer': 'Action.Designer',
+                              'x-component-props': {
+                                icon: 'DeleteOutlined',
+                                confirm: {
+                                  title: "{{t('Delete record')}}",
+                                  content: "{{t('Are you sure you want to delete it?')}}",
+                                },
+                                useProps: '{{ useDestroyActionProps }}',
                               },
                             },
                           },
@@ -121,75 +326,27 @@ export const scopesSchema: ISchema = {
                 },
               },
             },
-            input: {
-              type: 'array',
-              'x-component': 'Table.RowSelection',
-              'x-component-props': {
-                rowKey: 'id',
-                objectValue: true,
-                rowSelection: {
-                  type: 'radio',
-                },
-                // useSelectedRowKeys() {
-                //   const [selectedRowKeys, setSelectedRowKeys] = useRolesResourcesScopesSelectedRowKeys();
-                //   return [selectedRowKeys, setSelectedRowKeys];
-                // },
-                useDataSource(options) {
-                  const record = useRecord();
-                  return useRequest(
-                    {
-                      resource: 'rolesResourcesScopes',
-                      action: 'list',
-                      params: {
-                        sort: 'id',
-                        filter: JSON.stringify({
-                          $or: [
-                            {
-                              'resourceName.$eq': record.name,
-                            },
-                            {
-                              'resourceName.$eq': '*',
-                            },
-                          ],
-                        }),
+            footer: {
+              'x-component': 'Action.Container.Footer',
+              'x-component-props': {},
+              properties: {
+                actions: {
+                  type: 'void',
+                  'x-component': 'ActionBar',
+                  'x-component-props': {},
+                  properties: {
+                    submit: {
+                      title: '{{ t("Submit") }}',
+                      'x-action': 'submit',
+                      'x-component': 'Action',
+                      'x-designer': 'Action.Designer',
+                      'x-component-props': {
+                        type: 'primary',
+                        htmlType: 'submit',
+                        useProps: '{{ usePickActionProps }}',
                       },
                     },
-                    {
-                      ...options,
-                      uid: 'rolesResourcesScopesList',
-                    },
-                  );
-                },
-                // dataSource: [
-                //   { id: 1, name: 'Name1' },
-                //   { id: 2, name: 'Name2' },
-                //   { id: 3, name: 'Name3' },
-                // ],
-              },
-              properties: {
-                column1: {
-                  type: 'void',
-                  title: 'Name',
-                  'x-component': 'Table.Column',
-                  properties: {
-                    name: {
-                      type: 'string',
-                      'x-component': 'Input',
-                      'x-read-pretty': true,
-                    },
                   },
-                },
-                column2: {
-                  type: 'void',
-                  title: 'Actions',
-                  'x-component': 'Table.Column',
-                  // properties: {
-                  //   delete: {
-                  //     type: 'void',
-                  //     title: '删除',
-                  //     'x-component': 'Action.Link',
-                  //   },
-                  // },
                 },
               },
             },
