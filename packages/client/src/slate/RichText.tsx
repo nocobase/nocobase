@@ -26,11 +26,10 @@ const DEFAULT_VALUE = [
 
 export const RichText = (props: any) => {
   const { value = DEFAULT_VALUE, placeholder = 'Enter text…', readOnly, onChange } = props;
-  debugger;
   const renderElement = useCallback((props) => <Element {...props} />, []);
   const renderLeaf = useCallback((props) => <Leaf {...props} />, []);
   const editor = useMemo(() => withHistory(withReact(createEditor() as ReactEditor)), []);
-  const [richValue, setRIchValue] = useState<Descendant[]>(cloneDeep(value));
+  const [richValue, setRichValue] = useState<Descendant[]>(cloneDeep(value));
 
   const changeHandler = (val) => {
     onChange?.(val);
@@ -74,17 +73,6 @@ export const RichText = (props: any) => {
           }
         }}
       />
-    </Slate>
-  );
-};
-
-export const RichTextReadPretty = (props: any) => {
-  const { value = DEFAULT_VALUE } = props;
-  debugger;
-  const editor = useMemo(() => withReact(createEditor() as ReactEditor), []);
-  return (
-    <Slate editor={editor} value={value}>
-      <Editable readOnly placeholder="" />
     </Slate>
   );
 };
