@@ -60,6 +60,12 @@ const loadApplication = async () => {
     application.cli.commands.forEach((cmd) => appCommand.addCommand(cmd));
 
     program.command('console').action(runSubCommand('console'));
+
+    program
+      .command('create-plugin')
+      .argument('<name>', 'name of plugin')
+      .description('create NocoBase plugin')
+      .action(runSubCommand('create-plugin'));
   }
 
   await program.parseAsync(process.argv);
