@@ -2,8 +2,8 @@ import { Collection } from '@nocobase/database';
 import { Plugin } from '@nocobase/server';
 import { resolve } from 'path';
 import * as actions from './actions/users';
-import * as middlewares from './middlewares';
 import { JwtOptions, JwtService } from './jwt-service';
+import * as middlewares from './middlewares';
 
 export interface UserPluginConfig {
   jwt: JwtOptions;
@@ -76,7 +76,7 @@ export default class UsersPlugin extends Plugin<UserPluginConfig> {
       this.app.resourcer.registerActionHandler(`users:${key}`, action);
     }
 
-    this.app.resourcer.use(middlewares.parseToken());
+    this.app.resourcer.use(middlewares.parseToken({ plugin: this }));
 
     const publicActions = ['check', 'signin', 'signup', 'lostpassword', 'resetpassword', 'getUserByResetToken'];
     const loggedInActions = ['signout', 'updateProfile', 'changePassword', 'setDefaultRole'];
@@ -100,7 +100,7 @@ export default class UsersPlugin extends Plugin<UserPluginConfig> {
       adminNickname = 'Super Admin',
       adminEmail = 'admin@nocobase.com',
       adminPassword = 'admin123',
-    } = this.options.installing;
+    } = this.options.installing || {};
 
     return {
       adminNickname,

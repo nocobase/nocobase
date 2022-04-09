@@ -1,14 +1,9 @@
 import { Context, Next } from '@nocobase/actions';
 import UsersPlugin from '../server';
 
-// TODO(feature): 表名应在 options 中配置
-// 中间件默认只解决解析 token 和附加对应 user 的工作，不解决是否提前报 401 退出。
-
-// 因为是否提供匿名访问资源是应用决定的，不是使用插件就一定不能匿名访问。
-export function parseToken(options?: any) {
+export function parseToken(options?: { plugin: UsersPlugin }) {
   return async function parseToken(ctx: Context, next: Next) {
-    const user = await findUserByToken(ctx);
-
+    const user = await findUserByToken(ctx, options.plugin);
     if (user) {
       ctx.state.currentUser = user;
       setCurrentRole(ctx, user);
@@ -33,24 +28,21 @@ function setCurrentRole(ctx, user) {
   }
 }
 
-async function findUserByToken(ctx: Context) {
-  const token = getTokenFromCtx(ctx);
+async function findUserByToken(ctx: Context, plugin: UsersPlugin) {
+  const token = ctx.getBearerToken();
   if (!token) {
     return null;
   }
+  try {
+    const { userId } = await plugin.jwtService.decode(token);
 
-  const pluginUser = ctx.app.getPlugin('@nocobase/plugin-users');
-
-  const { userId } = await pluginUser.jwtService.decode(token);
-
-  return await ctx.db.getRepository('users').findOne({
-    filter: {
-      id: userId,
-    },
-    appends: ['roles'],
-  });
-}
-
-function getTokenFromCtx(ctx: Context) {
-  return ctx.get('Authorization').replace(/^Bearer\s+/gi, '');
+    return await ctx.db.getRepository('users').findOne({
+      filter: {
+        id: userId,
+      },
+      appends: ['roles'],
+    });
+  } catch (error) {
+    console.warn(error);
+  }
 }
