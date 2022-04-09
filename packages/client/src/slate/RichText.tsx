@@ -1,4 +1,3 @@
-import { useUpdateEffect } from 'ahooks';
 import isHotkey from 'is-hotkey';
 import React, { useCallback, useMemo } from 'react';
 import type { Node } from 'slate';
@@ -29,19 +28,13 @@ export const RichText = (props: any) => {
   const renderElement = useCallback((props) => <Element {...props} />, []);
   const renderLeaf = useCallback((props) => <Leaf {...props} />, []);
   const editor = useMemo(() => withHistory(withReact(createEditor() as ReactEditor)), []);
-  const initialValue = JSON.parse(JSON.stringify(value));
-  const changeHandler = (val) => {
-    onChange?.(val);
-  };
-  useUpdateEffect(() => {
-    if (readOnly || !editor?.history?.undos?.length) {
-      editor.children = initialValue;
-      editor.onChange();
-    }
-    console.log('editor.children', readOnly, editor);
-  }, [JSON.stringify(value)]);
+  const slateValue = useMemo(() => {
+    editor.children = JSON.parse(JSON.stringify(value));
+    Editor.normalize(editor, { force: true });
+    return editor.children;
+  }, [editor, value]);
   return (
-    <Slate editor={editor} value={initialValue} onChange={changeHandler}>
+    <Slate editor={editor} value={slateValue} onChange={onChange}>
       {!readOnly && (
         <Toolbar>
           <MarkButton format="bold" icon="format_bold" />
