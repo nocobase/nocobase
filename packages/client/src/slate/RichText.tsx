@@ -1,8 +1,8 @@
+import { useUpdateEffect } from 'ahooks';
 import isHotkey from 'is-hotkey';
-import { cloneDeep } from 'lodash';
-import React, { useCallback, useMemo, useState } from 'react';
+import React, { useCallback, useMemo } from 'react';
 import type { Node } from 'slate';
-import { createEditor, Descendant, Editor, Element as SlateElement, Transforms } from 'slate';
+import { createEditor, Editor, Element as SlateElement, Transforms } from 'slate';
 import { withHistory } from 'slate-history';
 import type { ReactEditor } from 'slate-react';
 import { Editable, Slate, useSlate, withReact } from 'slate-react';
@@ -29,13 +29,19 @@ export const RichText = (props: any) => {
   const renderElement = useCallback((props) => <Element {...props} />, []);
   const renderLeaf = useCallback((props) => <Leaf {...props} />, []);
   const editor = useMemo(() => withHistory(withReact(createEditor() as ReactEditor)), []);
-  const [richValue, setRichValue] = useState<Descendant[]>(cloneDeep(value));
-
+  const initialValue = JSON.parse(JSON.stringify(value));
   const changeHandler = (val) => {
     onChange?.(val);
   };
+  useUpdateEffect(() => {
+    if (readOnly || !editor?.history?.undos?.length) {
+      editor.children = initialValue;
+      editor.onChange();
+    }
+    console.log('editor.children', readOnly, editor);
+  }, [JSON.stringify(value)]);
   return (
-    <Slate editor={editor} value={richValue} onChange={changeHandler}>
+    <Slate editor={editor} value={initialValue} onChange={changeHandler}>
       {!readOnly && (
         <Toolbar>
           <MarkButton format="bold" icon="format_bold" />
