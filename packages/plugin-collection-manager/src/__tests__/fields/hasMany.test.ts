@@ -1,4 +1,4 @@
-import Database, { Collection as DBCollection, StringFieldOptions } from '@nocobase/database';
+import Database, { Collection as DBCollection } from '@nocobase/database';
 import Application from '@nocobase/server';
 import { createApp } from '..';
 
@@ -38,6 +38,7 @@ describe('hasMany field options', () => {
         target: 'foos',
       },
     });
+    await field.reload();
     const json = field.toJSON();
     expect(json).toMatchObject({
       type: 'hasMany',
@@ -62,6 +63,7 @@ describe('hasMany field options', () => {
         targetKey: 'ghi',
       },
     });
+    await field.reload();
     expect(field.toJSON()).toMatchObject({
       name: 'foos',
       type: 'hasMany',
