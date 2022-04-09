@@ -9,7 +9,8 @@ import { i18n, InitOptions } from 'i18next';
 import Koa from 'koa';
 import { isBoolean } from 'lodash';
 import { createACL } from './acl';
-import { createCli, createDatabase, createI18n, createResourcer, registerMiddlewares } from './helper';
+import { createCli } from './commands';
+import { createDatabase, createI18n, createResourcer, registerMiddlewares } from './helper';
 import { Plugin } from './plugin';
 import { PluginManager, InstallOptions } from './plugin-manager';
 import { AppManager } from './app-manager';
@@ -101,7 +102,7 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     this.acl = createACL();
     this.db = createDatabase(options);
     this.resourcer = createResourcer(options);
-    this.cli = createCli(this, options);
+    this.cli = createCli(this);
     this.i18n = createI18n(options);
 
     this.pm = new PluginManager({

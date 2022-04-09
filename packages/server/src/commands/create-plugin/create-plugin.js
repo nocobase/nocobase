@@ -1,7 +1,7 @@
 const chalk = require('chalk');
 const fse = require('fs-extra');
 const { join } = require('path');
-const createPackageJson = require('./resources/templates/package.json');
+const createPackageJson = require('./resources/templates/package.json.js');
 const createPluginClass = require('./resources/templates/plugin');
 
 module.exports = async (name) => {

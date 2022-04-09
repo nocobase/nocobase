@@ -31,68 +31,6 @@ export function createResourcer(options: ApplicationOptions) {
   return new Resourcer({ ...options.resourcer });
 }
 
-export function createCli(app: Application, options: ApplicationOptions): Command {
-  const cli = new Command();
-
-  cli
-    .command('db:sync')
-    .option('-f, --force')
-    .action(async (...cliArgs) => {
-      const [opts] = cliArgs;
-      console.log('db sync...');
-      await app.db.sync(
-        opts.force
-          ? {
-              force: true,
-              alter: {
-                drop: true,
-              },
-            }
-          : {},
-      );
-      await app.stop({
-        cliArgs,
-      });
-    });
-
-  cli
-    .command('install')
-    .option('-f, --force')
-    .option('-c, --clean')
-    .action(async (...cliArgs) => {
-      const [opts] = cliArgs;
-      await app.install({
-        cliArgs,
-        clean: opts.clean,
-        sync: {
-          force: opts.force,
-        },
-      });
-      await app.stop({
-        cliArgs,
-      });
-    });
-
-  cli
-    .command('start', { isDefault: true })
-    .option('-p, --port [port]')
-    .action(async (...cliArgs) => {
-      const [opts] = cliArgs;
-      const port = opts.port || 3000;
-
-      await app.start({
-        cliArgs,
-        listen: {
-          port,
-        },
-      });
-
-      console.log(`http://localhost:${port}/`);
-    });
-
-  return cli;
-}
-
 export function registerMiddlewares(app: Application, options: ApplicationOptions) {
   if (options.bodyParser !== false) {
     app.use(
