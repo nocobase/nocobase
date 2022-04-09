@@ -1,5 +1,6 @@
 import Database from '@nocobase/database';
 import { mockServer, MockServer } from '@nocobase/test';
+import { userPluginConfig } from './utils';
 
 describe('createdBy/updatedBy', () => {
   let api: MockServer;
@@ -7,7 +8,7 @@ describe('createdBy/updatedBy', () => {
 
   beforeEach(async () => {
     api = mockServer();
-    api.plugin(require('../server').default);
+    api.plugin(require('../server').default, userPluginConfig);
     await api.loadAndInstall();
     db = api.db;
   });
