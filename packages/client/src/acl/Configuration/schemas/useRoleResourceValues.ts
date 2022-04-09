@@ -17,7 +17,7 @@ export const useRoleResourceValues = (options) => {
     { ...options, manual: true },
   );
   useEffect(() => {
-    if (record.usingConfig === 'strategy') {
+    if (!record.exists) {
       options.onSuccess({
         data: {},
       });
@@ -26,6 +26,6 @@ export const useRoleResourceValues = (options) => {
     if (visible) {
       result.run();
     }
-  }, [visible, record.usingConfig]);
+  }, [visible, record.exists]);
   return result;
 };
