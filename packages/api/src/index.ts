@@ -45,18 +45,43 @@ const plugins = [
   '@nocobase/plugin-ui-routes-storage',
   '@nocobase/plugin-file-manager',
   '@nocobase/plugin-system-settings',
-  '@nocobase/plugin-users',
+  [
+    '@nocobase/plugin-users',
+    {
+      jwt: {
+        secret: process.env.JWT_SECRET || '09f26e402586e2faa8da4c98a35f1b20d6b033c60',
+      },
+      installing: {
+        adminNickname: 'Super Admin',
+        adminEmail: 'admin@nocobase.com',
+        adminPassword: 'admin123',
+      },
+    },
+  ],
   '@nocobase/plugin-acl',
   '@nocobase/plugin-china-region',
   '@nocobase/plugin-workflow',
+  [
+    '@nocobase/plugin-client',
+    {
+      dist: resolve(__dirname, '../../app/dist'),
+    },
+  ],
 ];
 
 for (const plugin of plugins) {
-  api.plugin(require(plugin).default);
+  if (Array.isArray(plugin)) {
+    api.plugin(require(plugin.shift() as string).default, plugin.shift());
+  } else {
+    api.plugin(require(plugin).default);
+  }
 }
 
-api.plugin(require('@nocobase/plugin-client').default, {
-  dist: resolve(__dirname, '../../app/dist'),
+api.acl.use(async (ctx, next) => {
+  ctx.permission = {
+    skip: true,
+  };
+  await next();
 });
 
 if (process.argv.length < 3) {
