@@ -12,6 +12,7 @@ export interface Context extends Koa.Context {
   db: Database;
   action: Action;
   body: any;
+  app: any;
   [key: string]: any;
 }
 

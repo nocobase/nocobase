@@ -1,4 +1,5 @@
 import { Context, Next } from '@nocobase/actions';
+import UsersPlugin from '../server';
 
 // TODO(feature): 表名应在 options 中配置
 // 中间件默认只解决解析 token 和附加对应 user 的工作，不解决是否提前报 401 退出。
@@ -33,14 +34,23 @@ function setCurrentRole(ctx, user) {
 }
 
 async function findUserByToken(ctx: Context) {
-  const token = ctx.get('Authorization').replace(/^Bearer\s+/gi, '');
-  const User = ctx.db.getCollection('users');
-  const user = await User.repository.findOne({
+  const token = getTokenFromCtx(ctx);
+  if (!token) {
+    return null;
+  }
+
+  const pluginUser = ctx.app.getPlugin('@nocobase/plugin-users');
+
+  const { userId } = await pluginUser.jwtService.decode(token);
+
+  return await ctx.db.getRepository('users').findOne({
     filter: {
-      token,
+      id: userId,
     },
     appends: ['roles'],
   });
+}
 
-  return user;
+function getTokenFromCtx(ctx: Context) {
+  return ctx.get('Authorization').replace(/^Bearer\s+/gi, '');
 }
