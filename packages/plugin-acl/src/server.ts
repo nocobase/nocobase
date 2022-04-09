@@ -245,8 +245,8 @@ export class PluginACL extends Plugin {
       if (plugin.constructor.name !== 'UsersPlugin') {
         return;
       }
-      const repository = this.app.db.getRepository('roles');
-      await repository.createMany({
+      const roles = this.app.db.getRepository('roles');
+      await roles.createMany({
         records: [
           {
             name: 'admin',
@@ -260,6 +260,21 @@ export class PluginACL extends Plugin {
           {
             name: 'anonymous',
             title: 'Anonymous',
+          },
+        ],
+      });
+      const rolesResourcesScopes = this.app.db.getRepository('rolesResourcesScopes');
+      await rolesResourcesScopes.createMany({
+        records: [
+          {
+            name: '{{t("All records")}}',
+            scope: {},
+          },
+          {
+            name: '{{t("Own records")}}',
+            scope: {
+              createdById: '{{ ctx.state.currentUser.id }}',
+            },
           },
         ],
       });

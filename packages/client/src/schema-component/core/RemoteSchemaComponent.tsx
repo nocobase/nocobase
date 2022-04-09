@@ -11,6 +11,7 @@ export interface RemoteSchemaComponentProps {
   scope?: any;
   uid?: string;
   onSuccess?: any;
+  components?: any;
   schemaTransform?: (schema: Schema) => Schema;
   render?: any;
   hidden?: any;
@@ -20,7 +21,7 @@ export interface RemoteSchemaComponentProps {
 const defaultTransform = (s: Schema) => s;
 
 const RequestSchemaComponent: React.FC<RemoteSchemaComponentProps> = (props) => {
-  const { onlyRenderProperties, hidden, scope, uid, onSuccess, schemaTransform = defaultTransform } = props;
+  const { onlyRenderProperties, hidden, scope, uid, components, onSuccess, schemaTransform = defaultTransform } = props;
   const { reset } = useSchemaComponentContext();
   const conf = {
     url: `/uiSchemas:${onlyRenderProperties ? 'getProperties' : 'getJsonSchema'}/${uid}`,
@@ -41,7 +42,7 @@ const RequestSchemaComponent: React.FC<RemoteSchemaComponentProps> = (props) => 
   }
   return (
     <FormProvider form={form}>
-      <SchemaComponent memoized scope={scope} schema={schemaTransform(data?.data || {})} />
+      <SchemaComponent memoized components={components} scope={scope} schema={schemaTransform(data?.data || {})} />
     </FormProvider>
   );
 };

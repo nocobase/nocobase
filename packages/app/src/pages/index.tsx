@@ -1,4 +1,5 @@
 import {
+  ACLProvider,
   ACLShortcut,
   AdminLayout,
   AntdConfigProvider,
@@ -98,6 +99,7 @@ const providers = [
   ],
   BlockSchemaComponentProvider,
   AntdSchemaComponentProvider,
+  ACLProvider,
   ChinaRegionProvider,
   WorkflowRouteProvider,
   [DocumentTitleProvider, { addonAfter: 'NocoBase' }],

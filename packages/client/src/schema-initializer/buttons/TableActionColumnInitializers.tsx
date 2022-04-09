@@ -44,6 +44,7 @@ export const TableActionColumnInitializers = (props: any) => {
               schema: {
                 'x-component': 'Action.Link',
                 'x-action': 'view',
+                'x-decorator': 'ACLActionProvider',
               },
             },
             {
@@ -53,6 +54,7 @@ export const TableActionColumnInitializers = (props: any) => {
               schema: {
                 'x-component': 'Action.Link',
                 'x-action': 'update',
+                'x-decorator': 'ACLActionProvider',
               },
             },
             {
@@ -62,6 +64,7 @@ export const TableActionColumnInitializers = (props: any) => {
               schema: {
                 'x-component': 'Action.Link',
                 'x-action': 'destroy',
+                'x-decorator': 'ACLActionProvider',
               },
             },
           ],
