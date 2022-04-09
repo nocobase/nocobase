@@ -1,10 +1,11 @@
+import { css, cx } from '@emotion/css';
 import isHotkey from 'is-hotkey';
 import React, { useCallback, useMemo } from 'react';
-import type { Node } from 'slate';
-import { createEditor, Editor, Element as SlateElement, Transforms } from 'slate';
+import { createEditor, Editor, Element as SlateElement, Node, Transforms } from 'slate';
 import { withHistory } from 'slate-history';
 import type { ReactEditor } from 'slate-react';
 import { Editable, Slate, useSlate, withReact } from 'slate-react';
+import { EllipsisWithTooltip } from '../schema-component/antd/input/EllipsisWithTooltip';
 import { Button, Icon, Toolbar } from './components';
 
 const HOTKEYS = {
@@ -24,7 +25,7 @@ const DEFAULT_VALUE = [
 ];
 
 export const RichText = (props: any) => {
-  const { value = DEFAULT_VALUE, placeholder = 'Enter text…', readOnly, onChange } = props;
+  const { value = DEFAULT_VALUE, placeholder = '', className, readOnly, autop = true, ellipsis, onChange } = props;
   const renderElement = useCallback((props) => <Element {...props} />, []);
   const renderLeaf = useCallback((props) => <Leaf {...props} />, []);
   const editor = useMemo(() => withHistory(withReact(createEditor() as ReactEditor)), []);
@@ -33,9 +34,33 @@ export const RichText = (props: any) => {
     Editor.normalize(editor, { force: true });
     return editor.children;
   }, [editor, value]);
+  if (readOnly) {
+    debugger;
+    const slateContent = (
+      <Slate editor={editor} value={slateValue}>
+        <Editable renderElement={renderElement} renderLeaf={renderLeaf} spellCheck autoFocus readOnly={readOnly} />
+      </Slate>
+    );
+    const slatePlainText = serialize(slateValue);
+    const content = (
+      <EllipsisWithTooltip ellipsis={ellipsis} popoverContent={autop ? slateContent : slatePlainText}>
+        {ellipsis ? slatePlainText : slateContent}
+      </EllipsisWithTooltip>
+    );
+    return content;
+  }
   return (
-    <Slate editor={editor} value={slateValue} onChange={onChange}>
-      {!readOnly && (
+    <div
+      className={cx(
+        className,
+        'slate',
+        css`
+          border: solid 1px #d2d2d2;
+          border-radius: 2px;
+        `,
+      )}
+    >
+      <Slate editor={editor} value={slateValue} onChange={onChange}>
         <Toolbar>
           <MarkButton format="bold" icon="format_bold" />
           <MarkButton format="italic" icon="format_italic" />
@@ -51,31 +76,37 @@ export const RichText = (props: any) => {
           <BlockButton format="right" icon="format_align_right" />
           <BlockButton format="justify" icon="format_align_justify" />
         </Toolbar>
-      )}
-      <Editable
-        renderElement={renderElement}
-        renderLeaf={renderLeaf}
-        placeholder={placeholder}
-        spellCheck
-        autoFocus
-        readOnly={readOnly}
-        onKeyDown={(event) => {
-          if (readOnly) {
-            return;
-          }
-          for (const hotkey in HOTKEYS) {
-            if (isHotkey(hotkey, event as any)) {
-              event.preventDefault();
-              const mark = HOTKEYS[hotkey];
-              toggleMark(editor, mark);
-            }
-          }
-        }}
-      />
-    </Slate>
+        <div
+          className={css`
+            padding: 5px 11px;
+          `}
+        >
+          <Editable
+            renderElement={renderElement}
+            renderLeaf={renderLeaf}
+            placeholder={placeholder}
+            spellCheck
+            autoFocus
+            readOnly={readOnly}
+            onKeyDown={(event) => {
+              for (const hotkey in HOTKEYS) {
+                if (isHotkey(hotkey, event as any)) {
+                  event.preventDefault();
+                  const mark = HOTKEYS[hotkey];
+                  toggleMark(editor, mark);
+                }
+              }
+            }}
+          />
+        </div>
+      </Slate>
+    </div>
   );
 };
 
+const serialize = (nodes) => {
+  return nodes.map((n) => Node.string(n)).join('\n');
+};
 const toggleBlock = (editor, format) => {
   const isActive = isBlockActive(editor, format, TEXT_ALIGN_TYPES.includes(format) ? 'align' : 'type');
   const isList = LIST_TYPES.includes(format);
