@@ -24,7 +24,6 @@ Slate.RichText = connect(
     if (!fieldValue) {
       field.value = undefined;
     }
-    console.log('===============', fieldValue, field.value);
     return {
       ...props,
     };

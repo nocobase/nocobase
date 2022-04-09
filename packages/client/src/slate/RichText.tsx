@@ -35,7 +35,6 @@ export const RichText = (props: any) => {
     return editor.children;
   }, [editor, value]);
   if (readOnly) {
-    debugger;
     const slateContent = (
       <Slate editor={editor} value={slateValue}>
         <Editable renderElement={renderElement} renderLeaf={renderLeaf} spellCheck autoFocus readOnly={readOnly} />
