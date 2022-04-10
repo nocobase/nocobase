@@ -25,12 +25,12 @@ const DEFAULT_VALUE = [
 ];
 
 export const RichText = (props: any) => {
-  const { value = DEFAULT_VALUE, placeholder = '', className, readOnly, autop = true, ellipsis, onChange } = props;
+  const { value, placeholder = '', className, readOnly, autop = true, ellipsis, onChange } = props;
   const renderElement = useCallback((props) => <Element {...props} />, []);
   const renderLeaf = useCallback((props) => <Leaf {...props} />, []);
   const editor = useMemo(() => withHistory(withReact(createEditor() as ReactEditor)), []);
   const slateValue = useMemo(() => {
-    editor.children = JSON.parse(JSON.stringify(value || []));
+    editor.children = JSON.parse(JSON.stringify(value || DEFAULT_VALUE));
     Editor.normalize(editor, { force: true });
     return editor.children;
   }, [editor, value]);
