@@ -4,11 +4,14 @@ module.exports = (opts) => {
     name: projectName,
     version: '0.1.0',
     private: true,
-    workspaces: ['packages/**'],
+    workspaces: ['packages/app/*', 'packages/plugins/*'],
     main: 'index.js',
     license: 'MIT',
     scripts: {
-      nocobase: 'ts-node-dev -r dotenv/config -r tsconfig-paths/register ./packages/server/src/index.ts',
+      nocobase:
+        'DOTENV_CONFIG_PATH=.env ts-node-dev -r dotenv/config -r tsconfig-paths/register ./packages/app/server/src/index.ts',
+      'start-client': 'cd packages/app/client && npm run start',
+      'start-server': 'npm run nocobase start',
     },
     dependencies: {
       dotenv: '^16.0.0',

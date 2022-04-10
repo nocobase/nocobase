@@ -7,7 +7,6 @@ const { join } = require('path');
 const crypto = require('crypto');
 
 module.exports = async (packageName, target) => {
-  console.log({ packageName, target });
   const viewResult = await execa('npm', ['v', packageName, 'dist.tarball']);
   const url = viewResult['stdout'];
 
@@ -35,17 +34,16 @@ module.exports = async (packageName, target) => {
     });
   });
 
-  console.log({ tarballFile });
   const result = await tar.x({
     file: tarballFile,
     gzip: true,
     cwd: target,
     strip: 1,
+    k: true,
     filter(path, entry) {
       return !(path.startsWith('package/lib') || path.startsWith('package/esm') || path.startsWith('package/dist'));
     },
   });
-  console.log({ result });
 
   await fsP.unlink(tarballFile);
 };

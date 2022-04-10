@@ -46,7 +46,10 @@ async function createApp(directory, options) {
   // copy files
   await fse.copy(path.join(resourcePath, 'files'), projectPath);
 
+  console.log('download @nocobase/app-server');
   await loadSrcFromNpm('@nocobase/app-server', path.join(projectPath, 'packages/app/server'));
+
+  console.log('download @nocobase/app-client');
   await loadSrcFromNpm('@nocobase/app-client', path.join(projectPath, 'packages/app/client'));
 
   // write .env file
