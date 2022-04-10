@@ -26,7 +26,7 @@ export const ACLRolesCheckProvider = (props) => {
     },
     {
       onSuccess(data) {
-        if (!data?.data?.allowConfigure) {
+        if (!data?.data?.allowConfigure && !data?.data?.allowAll) {
           setDesignable(false);
         }
       },
