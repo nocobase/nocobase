@@ -4,6 +4,7 @@ import { resolve } from 'path';
 import * as actions from './actions/users';
 import { JwtOptions, JwtService } from './jwt-service';
 import * as middlewares from './middlewares';
+import { UserModel } from './models/UserModel';
 
 export interface UserPluginConfig {
   jwt: JwtOptions;
@@ -24,6 +25,7 @@ export default class UsersPlugin extends Plugin<UserPluginConfig> {
   }
 
   async beforeLoad() {
+    this.db.registerModels({ UserModel });
     this.db.on('users.afterCreateWithAssociations', async (model, options) => {
       const { transaction } = options;
 
@@ -113,7 +115,7 @@ export default class UsersPlugin extends Plugin<UserPluginConfig> {
     const { adminNickname, adminPassword, adminEmail } = this.getRootUserInfo();
 
     const User = this.db.getCollection('users');
-    await User.repository.create({
+    const user = await User.repository.create<UserModel>({
       values: {
         nickname: adminNickname,
         email: adminEmail,
@@ -121,6 +123,8 @@ export default class UsersPlugin extends Plugin<UserPluginConfig> {
         roles: ['root', 'admin'],
       },
     });
+
+    await user.setDefaultRole('root');
 
     const repo = this.db.getRepository<any>('collections');
     if (repo) {

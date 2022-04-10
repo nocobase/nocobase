@@ -4,6 +4,7 @@ export default {
   name: 'users',
   title: '{{t("Users")}}',
   sortable: 'sort',
+  model: 'UserModel',
   fields: [
     {
       interface: 'input',
