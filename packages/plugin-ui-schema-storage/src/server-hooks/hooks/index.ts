@@ -1,7 +1,7 @@
+import { bindMenuToRole } from './bind-menu-to-role';
 import { hookFactory } from './factory';
-import { removeSchema } from './remove-schema';
-import { bindMenuToRole } from './bind-menu-to-row';
 import { removeParentsIfNoChildren } from './remove-parents-if-no-children';
+import { removeSchema } from './remove-schema';
 
 const hooks = [
   hookFactory('onCollectionDestroy', 'removeSchema', removeSchema),

@@ -78,9 +78,16 @@ const InsertMenuItems = (props) => {
             type: 'void',
             title,
             'x-component': 'Menu.SubMenu',
+            'x-decorator': 'ACLMenuItemProvider',
             'x-component-props': {
               icon,
             },
+            'x-server-hooks': [
+              {
+                type: 'onSelfCreate',
+                method: 'bindMenuToRole',
+              },
+            ],
           });
         }}
       />
@@ -112,9 +119,16 @@ const InsertMenuItems = (props) => {
             type: 'void',
             title,
             'x-component': 'Menu.Item',
+            'x-decorator': 'ACLMenuItemProvider',
             'x-component-props': {
               icon,
             },
+            'x-server-hooks': [
+              {
+                type: 'onSelfCreate',
+                method: 'bindMenuToRole',
+              },
+            ],
             properties: {
               page: {
                 type: 'void',
@@ -165,10 +179,17 @@ const InsertMenuItems = (props) => {
             type: 'void',
             title,
             'x-component': 'Menu.URL',
+            'x-decorator': 'ACLMenuItemProvider',
             'x-component-props': {
               icon,
               href,
             },
+            'x-server-hooks': [
+              {
+                type: 'onSelfCreate',
+                method: 'bindMenuToRole',
+              },
+            ],
           });
         }}
       />

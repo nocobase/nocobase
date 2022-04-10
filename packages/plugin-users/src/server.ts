@@ -118,7 +118,7 @@ export default class UsersPlugin extends Plugin<UserPluginConfig> {
         nickname: adminNickname,
         email: adminEmail,
         password: adminPassword,
-        roles: ['admin'],
+        roles: ['root', 'admin'],
       },
     });
 

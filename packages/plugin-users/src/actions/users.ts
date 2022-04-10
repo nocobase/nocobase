@@ -1,7 +1,5 @@
 import { Context, Next } from '@nocobase/actions';
 import { PasswordField } from '@nocobase/database';
-import UsersPlugin from '../server';
-
 import crypto from 'crypto';
 
 export async function check(ctx: Context, next: Next) {
@@ -154,8 +152,13 @@ export async function changePassword(ctx: Context, next: Next) {
 
 export async function setDefaultRole(ctx: Context, next: Next) {
   const {
-    values: { defaultRole },
+    values: { roleName },
   } = ctx.action.params;
+
+  if (roleName == 'anonymous') {
+    ctx.body = 'ok';
+    return next();
+  }
 
   const currentUserId = ctx.state.currentUser.id;
 
@@ -171,7 +174,7 @@ export async function setDefaultRole(ctx: Context, next: Next) {
   await ctx.db.getRepository('rolesUsers').update({
     filter: {
       userId: currentUserId,
-      roleName: defaultRole,
+      roleName,
     },
     values: {
       default: true,

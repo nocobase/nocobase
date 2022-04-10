@@ -1,6 +1,6 @@
-import { ACLResource } from './acl-resource';
-import { AvailableStrategyOptions } from './acl-available-strategy';
 import { ACL, DefineOptions } from './acl';
+import { AvailableStrategyOptions } from './acl-available-strategy';
+import { ACLResource } from './acl-resource';
 
 export interface RoleActionParams {
   fields?: string[];

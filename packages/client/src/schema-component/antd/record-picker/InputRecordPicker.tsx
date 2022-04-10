@@ -4,6 +4,7 @@ import React, { createContext, useContext, useState } from 'react';
 import { useTableSelectorProps as useTsp } from '../../../block-provider/TableSelectorProvider';
 import { CollectionProvider, useCollection } from '../../../collection-manager';
 import { FormProvider, SchemaComponentOptions } from '../../core';
+import { useCompile } from '../../hooks';
 import { ActionContext, useActionContext } from '../action';
 import { useFieldNames } from './useFieldNames';
 
@@ -49,7 +50,7 @@ const useAssociation = (props) => {
     return association;
   }
   return getField(fieldSchema.name);
-}
+};
 
 export const InputRecordPicker: React.FC<any> = (props) => {
   const { value, multiple, onChange } = props;
@@ -57,7 +58,14 @@ export const InputRecordPicker: React.FC<any> = (props) => {
   const [visible, setVisible] = useState(false);
   const fieldSchema = useFieldSchema();
   const collectionField = useAssociation(props);
-  const options = Array.isArray(value) ? value : value ? [value] : [];
+  const compile = useCompile();
+  const options = (Array.isArray(value) ? value : value ? [value] : []).map(option => {
+    const label = option[fieldNames.label];
+    return {
+      ...option,
+      [fieldNames.label]: compile(label),
+    };
+  });
   const [selectedRows, setSelectedRows] = useState(options);
   const values = options?.map((option) => option[fieldNames.value]);
   return (
