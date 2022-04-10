@@ -8,7 +8,12 @@ import { useCurrentUserContext } from './CurrentUserProvider';
 const useCurrentRoles = () => {
   const { data } = useCurrentUserContext();
   return [
-    ...(data?.data?.roles || []),
+    ...(data?.data?.roles || []).map(item => {
+      return {
+        title: item.title,
+        name: item.name,
+      }
+    }),
     {
       title: 'Anonymous',
       name: 'anonymous',
