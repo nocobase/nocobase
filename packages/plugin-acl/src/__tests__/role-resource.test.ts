@@ -7,6 +7,7 @@ describe('role resource api', () => {
   let app: MockServer;
   let db: Database;
   let role: Model;
+
   afterEach(async () => {
     await app.destroy();
   });
@@ -28,6 +29,46 @@ describe('role resource api', () => {
         name: 'admin',
       },
     });
+  });
+
+  it('should grant resource by createRepository', async () => {
+    const collectionManager = db.getRepository('collections') as CollectionRepository;
+    await collectionManager.create({
+      values: {
+        name: 'c1',
+        title: 'table1',
+      },
+      context: {},
+    });
+
+    await collectionManager.create({
+      values: {
+        name: 'c2',
+        title: 'table2',
+      },
+      context: {},
+    });
+
+    await db.getRepository('roles').create({
+      values: {
+        name: 'testRole',
+        resources: [
+          {
+            name: 'c1',
+            actions: [
+              {
+                name: 'create',
+              },
+            ],
+          },
+        ],
+      },
+    });
+
+    const acl = app.acl;
+    const testRole = acl.getRole('testRole');
+    const resource = testRole.getResource('c1');
+    expect(resource).toBeDefined();
   });
 
   it('should grant resource action', async () => {
