@@ -16,6 +16,7 @@ export * from './password';
 export * from './percent';
 export * from './phone';
 export * from './radioGroup';
+export * from './richText';
 export * from './select';
 export * from './subTable';
 export * from './textarea';

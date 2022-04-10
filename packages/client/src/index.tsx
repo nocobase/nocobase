@@ -21,7 +21,7 @@ export * from './schema-initializer';
 export * from './schema-settings';
 export * from './schema-templates';
 export * from './settings-form';
+export * from './slate';
 export * from './system-settings';
 export * from './user';
 export * from './workflow';
-
