@@ -241,7 +241,7 @@ export class ACL extends EventEmitter {
         }
 
         if (!permission.can || typeof permission.can !== 'object') {
-          ctx.throw(403, 'no permission');
+          ctx.throw(403, 'No permissions');
           return;
         }
 

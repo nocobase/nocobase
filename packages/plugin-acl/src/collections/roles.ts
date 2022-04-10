@@ -50,6 +50,11 @@ export default {
     },
     {
       type: 'boolean',
+      name: 'hidden',
+      defaultValue: false,
+    },
+    {
+      type: 'boolean',
       name: 'allowConfigure',
     },
     {

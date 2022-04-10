@@ -67,6 +67,7 @@ export const CalendarActionInitializers = {
           component: 'CreateActionInitializer',
           schema: {
             'x-align': 'right',
+            'x-decorator': 'ACLActionProvider',
           },
         },
       ],

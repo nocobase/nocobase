@@ -2,14 +2,22 @@ import { useCookieState } from 'ahooks';
 import { Menu, Select } from 'antd';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
+import { useAPIClient } from '../api-client';
 import { useCurrentUserContext } from './CurrentUserProvider';
 
 const useCurrentRoles = () => {
   const { data } = useCurrentUserContext();
-  return data?.data?.roles || [];
+  return [
+    ...(data?.data?.roles || []),
+    {
+      title: 'Anonymous',
+      name: 'anonymous',
+    },
+  ];
 };
 
 export const SwitchRole = () => {
+  const api = useAPIClient();
   const roles = useCurrentRoles();
   const { t } = useTranslation();
   const [roleName, setRoleName] = useCookieState('currentRoleName', {
@@ -30,8 +38,9 @@ export const SwitchRole = () => {
         }}
         options={roles}
         value={roleName}
-        onChange={(roleName) => {
+        onChange={async (roleName) => {
           setRoleName(roleName);
+          await api.resource('users').setDefaultRole({ values: { roleName } });
           window.location.reload();
         }}
       />
