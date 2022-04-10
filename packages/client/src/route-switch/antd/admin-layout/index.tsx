@@ -15,6 +15,7 @@ import {
   useRoute,
   useSystemSettings
 } from '../../../';
+import { PoweredBy } from '../../../powered-by';
 
 const InternalAdminLayout = (props: any) => {
   const route = useRoute();
@@ -111,7 +112,24 @@ const InternalAdminLayout = (props: any) => {
       </Layout.Header>
       <Layout>
         <Layout.Sider style={{ display: 'none' }} theme={'light'} ref={sideMenuRef}></Layout.Sider>
-        <Layout.Content style={{ minHeight: 'calc(100vh - 46px)' }}>{props.children}</Layout.Content>
+        <Layout.Content
+          className={css`
+            min-height: calc(100vh - 46px);
+            position: relative;
+            padding-bottom: 70px;
+            .ant-layout-footer {
+              position: absolute;
+              bottom: 0;
+              text-align: center;
+              width: 100%;
+            }
+          `}
+        >
+          {props.children}
+          <Layout.Footer>
+            <PoweredBy />
+          </Layout.Footer>
+        </Layout.Content>
       </Layout>
     </Layout>
   );
