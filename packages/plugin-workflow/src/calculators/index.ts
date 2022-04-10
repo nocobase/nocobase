@@ -172,6 +172,41 @@ calculators.register('*', multipe);
 calculators.register('/', divide);
 calculators.register('%', mod);
 
+function includes(a, b) {
+  return a.includes(b);
+}
+
+function notIncludes(a, b) {
+  return !a.includes(b);
+}
+
+function startsWith(a: string, b: string) {
+  return a.startsWith(b);
+}
+
+function notStartsWith(a: string, b: string) {
+  return !a.startsWith(b);
+}
+
+function endsWith(a: string, b: string) {
+  return a.endsWith(b);
+}
+
+function notEndsWith(a: string, b: string) {
+  return !a.endsWith(b);
+}
+
+calculators.register('includes', includes);
+calculators.register('notIncludes', notIncludes);
+calculators.register('startsWith', startsWith);
+calculators.register('notStartsWith', notStartsWith);
+calculators.register('endsWith', endsWith);
+calculators.register('notEndsWith', notEndsWith);
+
+function before(a: string, b: string) {
+  return a < b;
+}
+
 calculators.register('now', () => new Date());
 
 // TODO: add more common calculators

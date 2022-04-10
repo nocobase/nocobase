@@ -14,6 +14,7 @@ import { nodeClass, nodeCardClass, nodeHeaderClass, nodeTitleClass, nodeBlockCla
 import query from './query';
 import condition from './condition';
 import parallel from './parallel';
+import calculation from './calculation';
 
 
 function useUpdateConfigAction() {
@@ -60,6 +61,7 @@ export const instructions = new Registry<Instruction>();
 instructions.register('query', query);
 instructions.register('condition', condition);
 instructions.register('parallel', parallel);
+instructions.register('calculation', calculation);
 
 const NodeContext = React.createContext(null);
 
