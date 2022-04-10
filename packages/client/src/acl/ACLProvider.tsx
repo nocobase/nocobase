@@ -4,7 +4,7 @@ import React, { createContext, useContext } from 'react';
 import { Redirect } from 'react-router-dom';
 import { useRequest } from '../api-client';
 import { useCollection } from '../collection-manager';
-import { SchemaComponentOptions } from '../schema-component';
+import { SchemaComponentOptions, useDesignable } from '../schema-component';
 
 export const ACLContext = createContext(null);
 
@@ -19,9 +19,19 @@ export const ACLProvider = (props) => {
 };
 
 export const ACLRolesCheckProvider = (props) => {
-  const result = useRequest({
-    url: 'roles:check',
-  });
+  const { setDesignable } = useDesignable();
+  const result = useRequest(
+    {
+      url: 'roles:check',
+    },
+    {
+      onSuccess(data) {
+        if (!data?.data?.allowConfigure) {
+          setDesignable(false);
+        }
+      },
+    },
+  );
   if (result.loading) {
     return <Spin />;
   }
@@ -31,13 +41,20 @@ export const ACLRolesCheckProvider = (props) => {
   return <ACLContext.Provider value={result}>{props.children}</ACLContext.Provider>;
 };
 
-export const useAclRoleContext = () => {
-  return useContext(ACLContext);
+export const useACLRoleContext = () => {
+  const ctx = useContext(ACLContext);
+  const data = ctx.data?.data;
+  return {
+    ...data,
+    getActionParams(path) {
+      return data?.actions?.[path];
+    },
+  };
 };
 
 export const ACLAllowConfigure = (props) => {
-  const ctx = useContext(ACLContext);
-  if (ctx.data?.data?.allowConfigure) {
+  const { allowAll, allowConfigure } = useACLRoleContext();
+  if (allowAll || allowConfigure) {
     return <>{props.children}</>;
   }
   return null;
@@ -52,12 +69,12 @@ export const ACLCollectionProvider = (props) => {
 export const ACLActionProvider = (props) => {
   const { name } = useCollection();
   const fieldSchema = useFieldSchema();
-  const ctx = useContext(ACLContext);
-  if (!name) {
+  const { allowAll, getActionParams } = useACLRoleContext();
+  if (!name || allowAll) {
     return <>{props.children}</>;
   }
   const actionName = fieldSchema['x-action'];
-  const params = ctx.data?.data?.actions?.[`${name}:${actionName}`];
+  const params = getActionParams([`${name}:${actionName}`]);
   if (!params) {
     return null;
   }
@@ -69,9 +86,11 @@ export const ACLCollectionFieldProvider = (props) => {
 };
 
 export const ACLMenuItemProvider = (props) => {
-  const ctx = useContext(ACLContext);
-  const allowMenuItemIds: Array<string> = ctx.data?.data?.allowMenuItemIds || [];
+  const { allowAll, allowMenuItemIds = [] } = useACLRoleContext();
   const fieldSchema = useFieldSchema();
+  if (allowAll) {
+    return <>{props.children}</>;
+  }
   if (!fieldSchema['x-uid']) {
     return <>{props.children}</>;
   }

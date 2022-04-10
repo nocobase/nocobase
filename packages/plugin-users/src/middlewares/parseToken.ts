@@ -13,6 +13,13 @@ export function parseToken(options?: { plugin: UsersPlugin }) {
 }
 
 function setCurrentRole(ctx, user) {
+  const roleName = ctx.get('X-Role');
+
+  if (roleName === 'anonymous') {
+    ctx.state.currentRole = roleName;
+    return;
+  }
+
   const userRoles = user.get('roles');
   let userRole;
 

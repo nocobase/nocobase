@@ -249,6 +249,11 @@ export class PluginACL extends Plugin {
       await roles.createMany({
         records: [
           {
+            name: 'root',
+            title: 'Root',
+            hidden: true,
+          },
+          {
             name: 'admin',
             title: 'Admin',
           },
@@ -279,7 +284,26 @@ export class PluginACL extends Plugin {
         ],
       });
     });
+    this.app.acl.skip('roles.menuUiSchemas', 'set', 'logged-in');
+    this.app.acl.skip('roles.menuUiSchemas', 'toggle', 'logged-in');
+    this.app.acl.skip('roles.menuUiSchemas', 'list', 'logged-in');
     this.app.acl.skip('roles', 'check', 'logged-in');
+    this.app.acl.skip('*', '*', (ctx) => {
+      return ctx.state.currentRole === 'root';
+    });
+
+    // root role 
+    this.app.resourcer.use(async (ctx, next) => {
+      const { actionName, resourceName } = ctx.action.params;
+      if (actionName === 'list' && resourceName === 'roles') {
+        ctx.action.mergeParams({
+          filter: {
+            'name.$ne': 'root',
+          },
+        });
+      }
+      await next();
+    });
   }
 
   async install() {

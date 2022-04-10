@@ -2,6 +2,7 @@ import { FormItem, FormLayout } from '@formily/antd';
 import { ArrayField } from '@formily/core';
 import { connect, useField, useForm } from '@formily/react';
 import { Checkbox, Table, Tag } from 'antd';
+import { isEmpty } from 'lodash';
 import React, { createContext } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useCollectionManager, useCompile, useRecord } from '../..';
@@ -13,6 +14,7 @@ const toActionMap = (arr: any[]) => {
   arr?.forEach?.((action) => {
     if (action.name) {
       obj[action.name] = action;
+      obj[action.name]['scope'] = isEmpty(action.scope) ? null : action.scope;
     }
   });
   return obj;
@@ -21,7 +23,16 @@ const toActionMap = (arr: any[]) => {
 export const RoleResourceCollectionContext = createContext<any>({});
 
 export const RolesResourcesActions = connect((props) => {
-  const { onChange } = props;
+  // const { onChange } = props;
+  const onChange = (values) => {
+    const items = values.map((item) => {
+      return {
+        ...item,
+        scope: isEmpty(item.scope) ? null : item.scope,
+      };
+    });
+    props.onChange(items);
+  };
   const form = useForm();
   const roleCollection = useRecord();
   const availableActions = useAvailableActions();
@@ -60,8 +71,11 @@ export const RolesResourcesActions = connect((props) => {
   const setScope = (actionName, scope) => {
     if (!actionMap[actionName]) {
       toggleAction(actionName);
+      actionMap[actionName]['scope'] = scope;
+    } else {
+      actionMap[actionName]['scope'] = scope;
+      onChange(Object.values(actionMap));
     }
-    actionMap[actionName]['scope'] = scope;
   };
   const allChecked = {};
   for (const action of availableActionsWithFields) {
@@ -122,7 +136,9 @@ export const RolesResourcesActions = connect((props) => {
                 let scope = null;
                 if (actionMap[item.name]) {
                   enabled = true;
-                  scope = actionMap[item.name]['scope'];
+                  if (!item.onNewRecord) {
+                    scope = actionMap[item.name]['scope'];
+                  }
                 }
                 return {
                   ...item,
