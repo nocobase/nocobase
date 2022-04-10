@@ -25,9 +25,6 @@ module.exports = (opts) => {
     name: 'server',
     version: '0.1.0',
     main: 'index.js',
-    scripts: {
-      start: 'node-dev -r dotenv/config src/index.ts dotenv_config_path=../../.env',
-    },
     dependencies: {
       ...dialectLib(dbOptions.dialect),
       '@nocobase/plugin-acl': version,

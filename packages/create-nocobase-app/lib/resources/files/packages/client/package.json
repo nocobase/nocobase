@@ -1,7 +1,7 @@
 {
-  "name": "@nocobase/app",
+  "name": "client",
   "private": true,
-  "version": "1.0.0",
+  "version": "0.1.0",
   "scripts": {
     "start": "umi dev",
     "build": "umi build",
@@ -10,7 +10,7 @@
     "test:coverage": "umi-test --coverage"
   },
   "dependencies": {
-    "@nocobase/client": "0.6.0-alpha.2",
+    "@nocobase/client": "0.6.0-alpha.0",
     "antd": "^4.19.3",
     "dotenv": "^16.0.0",
     "react": "17.x",

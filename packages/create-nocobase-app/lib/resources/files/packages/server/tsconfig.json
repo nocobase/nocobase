@@ -13,9 +13,6 @@
     "declaration": true,
     "experimentalDecorators": true,
     "downlevelIteration": true,
-    "baseUrl": "../..",
-    "outDir": "./lib/apis",
     "paths": {}
-  },
-  "include": ["src/apis"]
+  }
 }

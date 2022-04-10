@@ -8,13 +8,15 @@ module.exports = (opts) => {
     main: 'index.js',
     license: 'MIT',
     scripts: {
-      'start-server': 'cd packages/server && npm run start',
-      'start-client': 'cd packages/client && npm run start',
-      nocobase: 'nocobase',
+      nocobase: 'ts-node-dev -r dotenv/config -r tsconfig-paths/register ./packages/server/src/index.ts',
     },
     dependencies: {
-      '@nocobase/cli': '^0.6.0-alpha.0',
       dotenv: '^16.0.0',
+    },
+    devDependencies: {
+      'node-dev': '^7.4.2',
+      'ts-node-dev': '^1.1.8',
+      'tsconfig-paths': '^3.14.1',
     },
   };
 };
